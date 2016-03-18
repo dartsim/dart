@@ -266,27 +266,6 @@ void EndEffector::resetRelativeTransform()
 }
 
 //==============================================================================
-Support* EndEffector::getSupport(bool _createIfNull)
-{
-  if(nullptr == getSupport() && _createIfNull)
-    createSupport();
-
-  return getSupport();
-}
-
-//==============================================================================
-std::shared_ptr<Skeleton> EndEffector::getSkeleton()
-{
-  return mBodyNode->getSkeleton();
-}
-
-//==============================================================================
-std::shared_ptr<const Skeleton> EndEffector::getSkeleton() const
-{
-  return mBodyNode->getSkeleton();
-}
-
-//==============================================================================
 bool EndEffector::dependsOn(size_t _genCoordIndex) const
 {
   return mBodyNode->dependsOn(_genCoordIndex);

@@ -428,6 +428,12 @@ size_t Frame::getNumChildFrames() const
 }
 
 //==============================================================================
+bool Frame::isShapeFrame() const
+{
+  return mAmShapeFrame;
+}
+
+//==============================================================================
 bool Frame::isWorld() const
 {
   return mAmWorld;
@@ -435,7 +441,7 @@ bool Frame::isWorld() const
 
 //==============================================================================
 void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
-                 bool _useDefaultColor, int /*_depth*/) const
+                 bool _useDefaultColor, int _depth) const
 {
   if(nullptr == _ri)
     return;
@@ -448,14 +454,7 @@ void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
   // on an Entity or Frame which is not a child of the World Frame
   _ri->transform(getRelativeTransform());
 
-  // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
-  for(size_t i=0; i < mEntityP.mVizShapes.size(); ++i)
-  {
-    _ri->pushMatrix();
-    mEntityP.mVizShapes[i]->draw(_ri, _color, _useDefaultColor);
-    _ri->popMatrix();
-  }
-  // _ri.popName();
+  Entity::draw(_ri, _color, _useDefaultColor, _depth);
 
   // render the subtree
   for(Entity* entity : mChildEntities)
@@ -525,7 +524,8 @@ Frame::Frame(Frame* _refFrame, const std::string& _name)
     mWorldTransform(Eigen::Isometry3d::Identity()),
     mVelocity(Eigen::Vector6d::Zero()),
     mAcceleration(Eigen::Vector6d::Zero()),
-    mAmWorld(false)
+    mAmWorld(false),
+    mAmShapeFrame(false)
 {
   mAmFrame = true;
   mEntityP.mName = _name;
@@ -535,7 +535,8 @@ Frame::Frame(Frame* _refFrame, const std::string& _name)
 //==============================================================================
 Frame::Frame(ConstructAbstract_t)
   : Entity(Entity::ConstructAbstract),
-    mAmWorld(false)
+    mAmWorld(false),
+    mAmShapeFrame(false)
 {
   dterr << "[Frame::constructor] You are calling a constructor for the Frame "
         << "class which is only meant to be used by pure abstract classes. If "
@@ -602,7 +603,8 @@ Frame::Frame(ConstructWorld_t)
     mWorldTransform(Eigen::Isometry3d::Identity()),
     mVelocity(Eigen::Vector6d::Zero()),
     mAcceleration(Eigen::Vector6d::Zero()),
-    mAmWorld(true)
+    mAmWorld(true),
+    mAmShapeFrame(false)
 {
   mAmFrame = true;
 }

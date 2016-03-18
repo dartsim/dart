@@ -59,21 +59,15 @@ PlaneShape::PlaneShape(const Eigen::Vector3d& _normal,
 }
 
 //==============================================================================
-void PlaneShape::draw(renderer::RenderInterface* _ri,
-                      const Eigen::Vector4d& _color,
-                      bool _useDefaultColor) const
+void PlaneShape::draw(renderer::RenderInterface* ri,
+                      const Eigen::Vector4d& color) const
 {
+  if (!ri)
+    return;
+
+  ri->setPenColor(color);
   // TODO(JS): Not implemented yet
-  if (!_ri) return;
-  if (mHidden) return;
-  if (!_useDefaultColor)
-    _ri->setPenColor(_color);
-  else
-    _ri->setPenColor(mColor);
-  _ri->pushMatrix();
-  _ri->transform(mTransform);
-//  _ri->drawCube(mDim);
-  _ri->popMatrix();
+  // _ri->drawPlane(...);
 }
 
 //==============================================================================

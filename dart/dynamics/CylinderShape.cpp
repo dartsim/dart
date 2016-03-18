@@ -73,19 +73,15 @@ void CylinderShape::setHeight(double _height) {
   updateVolume();
 }
 
-void CylinderShape::draw(renderer::RenderInterface* _ri,
-                         const Eigen::Vector4d& _color,
-                         bool _useDefaultColor) const {
-  if (!_ri) return;
-  if (mHidden) return;
-  if (!_useDefaultColor)
-    _ri->setPenColor(_color);
-  else
-    _ri->setPenColor(mColor);
-  _ri->pushMatrix();
-  _ri->transform(mTransform);
-  _ri->drawCylinder(mRadius, mHeight);
-  _ri->popMatrix();
+//==============================================================================
+void CylinderShape::draw(renderer::RenderInterface* ri,
+                         const Eigen::Vector4d& color) const
+{
+  if (!ri)
+    return;
+
+  ri->setPenColor(color);
+  ri->drawCylinder(mRadius, mHeight);
 }
 
 //==============================================================================

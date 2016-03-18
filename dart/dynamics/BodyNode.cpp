@@ -42,6 +42,7 @@
 #include <string>
 
 #include "dart/common/Console.h"
+#include "dart/common/StlHelpers.h"
 #include "dart/math/Helpers.h"
 #include "dart/renderer/RenderInterface.h"
 #include "dart/dynamics/Joint.h"
@@ -113,14 +114,14 @@ typedef std::set<Entity*> EntityPtrSet;
 //==============================================================================
 size_t BodyNode::msBodyNodeCount = 0;
 
+namespace detail {
+
 //==============================================================================
-BodyNode::UniqueProperties::UniqueProperties(
+BodyNodeUniqueProperties::BodyNodeUniqueProperties(
     const Inertia& _inertia,
-    const std::vector<ShapePtr>& _collisionShapes,
     bool _isCollidable, double _frictionCoeff,
     double _restitutionCoeff, bool _gravityMode)
   : mInertia(_inertia),
-    mColShapes(_collisionShapes),
     mIsCollidable(_isCollidable),
     mFrictionCoeff(_frictionCoeff),
     mRestitutionCoeff(_restitutionCoeff),
@@ -130,20 +131,21 @@ BodyNode::UniqueProperties::UniqueProperties(
 }
 
 //==============================================================================
-BodyNode::Properties::Properties(const Entity::Properties& _entityProperties,
-                                 const UniqueProperties& _bodyNodeProperties)
+BodyNodeProperties::BodyNodeProperties(
+    const Entity::Properties& _entityProperties,
+    const BodyNodeUniqueProperties& _bodyNodeProperties)
   : Entity::Properties(_entityProperties),
-    UniqueProperties(_bodyNodeProperties)
+    BodyNodeUniqueProperties(_bodyNodeProperties)
 {
   // Do nothing
 }
 
 //==============================================================================
-BodyNode::ExtendedProperties::ExtendedProperties(
-    const Properties& standardProperties,
+BodyNodeExtendedProperties::BodyNodeExtendedProperties(
+    const BodyNodeProperties& standardProperties,
     const NodeProperties& nodeProperties,
     const AddonProperties& addonProperties)
-  : Properties(standardProperties),
+  : BodyNodeProperties(standardProperties),
     mNodeProperties(nodeProperties),
     mAddonProperties(addonProperties)
 {
@@ -151,15 +153,17 @@ BodyNode::ExtendedProperties::ExtendedProperties(
 }
 
 //==============================================================================
-BodyNode::ExtendedProperties::ExtendedProperties(
-    Properties&& standardProperties,
+BodyNodeExtendedProperties::BodyNodeExtendedProperties(
+    BodyNodeProperties&& standardProperties,
     NodeProperties&& nodeProperties,
     AddonProperties&& addonProperties)
-  : Properties(std::move(standardProperties))
+  : BodyNodeProperties(std::move(standardProperties))
 {
   mNodeProperties = std::move(nodeProperties);
   mAddonProperties = std::move(addonProperties);
 }
+
+} // namespace detail
 
 //==============================================================================
 BodyNode::~BodyNode()
@@ -246,10 +250,6 @@ void BodyNode::setProperties(const UniqueProperties& _properties)
   setGravityMode(_properties.mGravityMode);
   setFrictionCoeff(_properties.mFrictionCoeff);
   setRestitutionCoeff(_properties.mRestitutionCoeff);
-
-  removeAllCollisionShapes();
-  for(size_t i=0; i<_properties.mColShapes.size(); ++i)
-    addCollisionShape(_properties.mColShapes[i]);
 
   mBodyP.mMarkerProperties = _properties.mMarkerProperties;
   // Remove current markers
@@ -599,78 +599,6 @@ double BodyNode::getRestitutionCoeff() const
 }
 
 //==============================================================================
-void BodyNode::addCollisionShape(const ShapePtr& _shape)
-{
-  if(nullptr == _shape)
-  {
-    dtwarn << "[BodyNode::addCollisionShape] Attempting to add a nullptr as a "
-           << "collision shape\n";
-    return;
-  }
-
-  if(_shape->getShapeType() == Shape::LINE_SEGMENT)
-  {
-    dtwarn << "[BodyNode::addCollisionShape] Attempting to add a LINE_SEGMENT "
-           << "type shape as a collision shape. This is not supported.\n";
-    return;
-  }
-
-  if(std::find(mBodyP.mColShapes.begin(), mBodyP.mColShapes.end(), _shape)
-     != mBodyP.mColShapes.end())
-  {
-    dtwarn << "[BodyNode::addCollisionShape] Attempting to add a duplicate "
-           << "collision shape.\n";
-    return;
-  }
-
-  mBodyP.mColShapes.push_back(_shape);
-
-  mColShapeAddedSignal.raise(this, _shape);
-}
-
-//==============================================================================
-void BodyNode::removeCollisionShape(const ShapePtr& _shape)
-{
-  if (nullptr == _shape)
-    return;
-
-  mBodyP.mColShapes.erase(std::remove(mBodyP.mColShapes.begin(),
-                                      mBodyP.mColShapes.end(), _shape),
-                          mBodyP.mColShapes.end());
-
-  mColShapeRemovedSignal.raise(this, _shape);
-}
-
-//==============================================================================
-void BodyNode::removeAllCollisionShapes()
-{
-  std::vector<ShapePtr>::iterator it = mBodyP.mColShapes.begin();
-  while (it != mBodyP.mColShapes.end())
-  {
-    removeCollisionShape(*it);
-    it = mBodyP.mColShapes.begin();
-  }
-}
-
-//==============================================================================
-size_t BodyNode::getNumCollisionShapes() const
-{
-  return mBodyP.mColShapes.size();
-}
-
-//==============================================================================
-ShapePtr BodyNode::getCollisionShape(size_t _index)
-{
-  return getVectorObjectIfAvailable<ShapePtr>(_index, mBodyP.mColShapes);
-}
-
-//==============================================================================
-ConstShapePtr BodyNode::getCollisionShape(size_t _index) const
-{
-  return getVectorObjectIfAvailable<ShapePtr>(_index, mBodyP.mColShapes);
-}
-
-//==============================================================================
 size_t BodyNode::getIndexInSkeleton() const
 {
   return mIndexInSkeleton;
@@ -863,13 +791,13 @@ size_t BodyNode::getNumChildBodyNodes() const
 //==============================================================================
 BodyNode* BodyNode::getChildBodyNode(size_t _index)
 {
-  return getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
+  return common::getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
 }
 
 //==============================================================================
 const BodyNode* BodyNode::getChildBodyNode(size_t _index) const
 {
-  return getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
+  return common::getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
 }
 
 //==============================================================================
@@ -893,6 +821,84 @@ Joint* BodyNode::getChildJoint(size_t _index)
 const Joint* BodyNode::getChildJoint(size_t _index) const
 {
   return const_cast<BodyNode*>(this)->getChildJoint(_index);
+}
+
+//==============================================================================
+ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape)
+{
+  ShapeNode::Properties properties;
+  properties.mShape = shape;
+
+  return createShapeNode(properties, true);
+}
+
+//==============================================================================
+ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
+                                     const std::string& name)
+{
+  ShapeNode::Properties properties;
+  properties.mShape = shape;
+  properties.mName = name;
+
+  return createShapeNode(properties, false);
+}
+
+//==============================================================================
+ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape, const char* name)
+{
+  return createShapeNode(shape, std::string(name));
+}
+
+//==============================================================================
+size_t BodyNode::getNumShapeNodes() const
+{
+  return getNumNodes<ShapeNode>();
+}
+
+//==============================================================================
+ShapeNode* BodyNode::getShapeNode(size_t index)
+{
+  return getNode<ShapeNode>(index);
+}
+
+//==============================================================================
+const ShapeNode* BodyNode::getShapeNode(size_t index) const
+{
+  return getNode<ShapeNode>(index);
+}
+
+//==============================================================================
+const std::vector<ShapeNode*> BodyNode::getShapeNodes()
+{
+  const auto numShapeNodes = getNumShapeNodes();
+
+  std::vector<ShapeNode*> shapeNodes(numShapeNodes);
+
+  for (auto i = 0u; i < numShapeNodes; ++i)
+    shapeNodes[i] = getShapeNode(i);
+
+  return shapeNodes;
+}
+
+//==============================================================================
+const std::vector<const ShapeNode*> BodyNode::getShapeNodes() const
+{
+  const auto numShapeNodes = getNumShapeNodes();
+
+  std::vector<const ShapeNode*> shapeNodes(numShapeNodes);
+
+  for (auto i = 0u; i < numShapeNodes; ++i)
+    shapeNodes[i] = getShapeNode(i);
+
+  return shapeNodes;
+}
+
+//==============================================================================
+void BodyNode::removeAllShapeNodes()
+{
+  auto shapeNodes = getShapeNodes();
+  for (auto shapeNode : shapeNodes)
+    shapeNode->remove();
 }
 
 //==============================================================================
@@ -928,13 +934,13 @@ size_t BodyNode::getNumMarkers() const
 //==============================================================================
 Marker* BodyNode::getMarker(size_t _index)
 {
-  return getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
+  return common::getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
 }
 
 //==============================================================================
 const Marker* BodyNode::getMarker(size_t _index) const
 {
-  return getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
+  return common::getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
 }
 
 //==============================================================================
@@ -974,13 +980,15 @@ size_t BodyNode::getNumDependentDofs() const
 //==============================================================================
 DegreeOfFreedom* BodyNode::getDependentDof(size_t _index)
 {
-  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_index, mDependentDofs);
+  return common::getVectorObjectIfAvailable<DegreeOfFreedom*>(
+        _index, mDependentDofs);
 }
 
 //==============================================================================
 const DegreeOfFreedom* BodyNode::getDependentDof(size_t _index) const
 {
-  return getVectorObjectIfAvailable<DegreeOfFreedom*>(_index, mDependentDofs);
+  return common::getVectorObjectIfAvailable<DegreeOfFreedom*>(
+        _index, mDependentDofs);
 }
 
 //==============================================================================
@@ -1367,6 +1375,35 @@ void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
 }
 
 //==============================================================================
+void BodyNode::draw(renderer::RenderInterface* ri,
+                    const Eigen::Vector4d& color,
+                    bool useDefaultColor, int /*depth*/) const
+{
+  if (nullptr == ri)
+    return;
+
+  ri->pushMatrix();
+
+  // Use the relative transform of this Frame. We assume that we are being
+  // called from the parent Frame's renderer.
+  // TODO(MXG): This can cause trouble if the draw function is originally called
+  // on an Entity or Frame which is not a child of the World Frame
+  ri->transform(getRelativeTransform());
+
+  // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
+  auto shapeNodes = getShapeNodesWith<VisualAddon>();
+  for (auto shapeNode : shapeNodes)
+    shapeNode->draw(ri, color, useDefaultColor);
+  // _ri.popName();
+
+  // render the subtree
+  for(Entity* entity : mChildEntities)
+    entity->draw(ri, color, useDefaultColor);
+
+  ri->popMatrix();
+}
+
+//==============================================================================
 void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
                            const Eigen::Vector4d& _color,
                            bool _useDefaultColor) const
@@ -1723,8 +1760,8 @@ void BodyNode::updateVelocityChangeFD()
 
 //==============================================================================
 void BodyNode::updateJointForceID(double _timeStep,
-                                  double _withDampingForces,
-                                  double _withSpringForces)
+                                  bool _withDampingForces,
+                                  bool _withSpringForces)
 {
   assert(mParentJoint != nullptr);
   mParentJoint->updateForceID(mF, _timeStep,
@@ -1733,8 +1770,8 @@ void BodyNode::updateJointForceID(double _timeStep,
 
 //==============================================================================
 void BodyNode::updateJointForceFD(double _timeStep,
-                                  double _withDampingForces,
-                                  double _withSpringForces)
+                                  bool _withDampingForces,
+                                  bool _withSpringForces)
 {
   assert(mParentJoint != nullptr);
   mParentJoint->updateForceFD(mF, _timeStep,

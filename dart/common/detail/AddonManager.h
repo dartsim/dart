@@ -80,23 +80,14 @@ const T* AddonManager::get() const
 template <class T>
 void AddonManager::set(const T* addon)
 {
-  if(addon)
-  {
-    mAddonMap[typeid(T)] = addon->cloneAddon(this);
-    becomeManager(mAddonMap[typeid(T)].get(), false);
-  }
-  else
-  {
-    mAddonMap[typeid(T)] = nullptr;
-  }
+  _set(typeid(T), addon);
 }
 
 //==============================================================================
 template <class T>
 void AddonManager::set(std::unique_ptr<T>&& addon)
 {
-  mAddonMap[typeid(T)] = std::move(addon);
-  becomeManager(mAddonMap[typeid(T)].get(), true);
+  _set(typeid(T), std::move(addon));
 }
 
 //==============================================================================
@@ -147,29 +138,78 @@ bool AddonManager::requires() const
   return (mRequiredAddons.find(typeid(T)) != mRequiredAddons.end());
 }
 
+//==============================================================================
+template <class T>
+void createAddons(T* /*mgr*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <class T, class NextAddon, class... Addons>
+void createAddons(T* mgr)
+{
+  mgr->template create<NextAddon>();
+
+  createAddons<T, Addons...>(mgr);
+}
+
 } // namespace common
 } // namespace dart
 
 //==============================================================================
 // Create non-template alternatives to AddonManager functions
-#define DART_BAKE_SPECIALIZED_ADDON_IRREGULAR( TypeName, AddonName )\
-  inline bool has ## AddonName () const\
-  { return this->template has<TypeName>(); }\
-  inline TypeName * get ## AddonName ()\
-  { return this->template get<TypeName>(); }\
-  inline const TypeName* get ## AddonName () const\
-  { return this->template get<TypeName>(); }\
-  inline void set ## AddonName (const TypeName * addon)\
-  { this->template set<TypeName>(addon); }\
-  inline void set ## AddonName (std::unique_ptr< TypeName >&& addon)\
-  { this->template set<TypeName>(std::move(addon)); }\
-  template <typename ...Args>\
-  inline TypeName * create ## AddonName (Args&&... args)\
-  { return this->template create<TypeName>(std::forward<Args>(args)...); }\
-  inline void erase ## AddonName ()\
-  { this->template erase<TypeName>(); }\
-  inline std::unique_ptr< TypeName > release ## AddonName ()\
-  { return this->template release<TypeName>(); }
+#define DART_BAKE_SPECIALIZED_ADDON_IRREGULAR( TypeName, AddonName )     \
+  inline bool has ## AddonName () const                                  \
+  {                                                                      \
+    return this->template has<TypeName>();                               \
+  }                                                                      \
+                                                                         \
+  inline TypeName * get ## AddonName ()                                  \
+  {                                                                      \
+    return this->template get<TypeName>();                               \
+  }                                                                      \
+                                                                         \
+  inline const TypeName* get ## AddonName () const                       \
+  {                                                                      \
+    return this->template get<TypeName>();                               \
+  }                                                                      \
+                                                                         \
+  inline TypeName * get ## AddonName (const bool createIfNull)           \
+  {                                                                      \
+    TypeName* addon = get ## AddonName();                                \
+                                                                         \
+    if (createIfNull && nullptr == addon)                                \
+      return create ## AddonName();                                      \
+                                                                         \
+    return addon;                                                        \
+  }                                                                      \
+                                                                         \
+  inline void set ## AddonName (const TypeName * addon)                  \
+  {                                                                      \
+    this->template set<TypeName>(addon);                                 \
+  }                                                                      \
+                                                                         \
+  inline void set ## AddonName (std::unique_ptr< TypeName >&& addon)     \
+  {                                                                      \
+    this->template set<TypeName>(std::move(addon));                      \
+  }                                                                      \
+                                                                         \
+  template <typename ...Args>                                            \
+  inline TypeName * create ## AddonName (Args&&... args)                 \
+  {                                                                      \
+    return this->template create<TypeName>(std::forward<Args>(args)...); \
+  }                                                                      \
+                                                                         \
+  inline void erase ## AddonName ()                                      \
+  {                                                                      \
+    this->template erase<TypeName>();                                    \
+  }                                                                      \
+                                                                         \
+  inline std::unique_ptr< TypeName > release ## AddonName ()             \
+  {                                                                      \
+    return this->template release<TypeName>();                           \
+  }
 
 //==============================================================================
 #define DART_BAKE_SPECIALIZED_ADDON(AddonName)\

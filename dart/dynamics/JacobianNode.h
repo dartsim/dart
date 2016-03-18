@@ -93,12 +93,6 @@ public:
   // Documentation inherited
   const std::string& getName() const override final;
 
-  /// Return the Skeleton this JacobianNode is attached to
-  virtual std::shared_ptr<Skeleton> getSkeleton() = 0;
-
-  /// Return the Skeleton this JacobianNode is attached to
-  virtual std::shared_ptr<const Skeleton> getSkeleton() const = 0;
-
   /// Return true if _genCoordIndex-th generalized coordinate
   virtual bool dependsOn(size_t _genCoordIndex) const = 0;
 

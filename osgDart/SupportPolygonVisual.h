@@ -42,7 +42,7 @@
 #include "dart/dynamics/SmartPointer.h"
 
 #include "osgDart/Viewer.h"
-#include "FrameNode.h"
+#include "ShapeFrameNode.h"
 
 namespace osgDart {
 
@@ -190,10 +190,10 @@ protected:
   osg::ref_ptr<osg::DrawElementsUShort> mFaces;
 
   /// Node to render the centroid
-  osg::ref_ptr<FrameNode> mCentroidNode;
+  osg::ref_ptr<ShapeFrameNode> mCentroidNode;
 
   /// Node to render the COM
-  osg::ref_ptr<FrameNode> mComNode;
+  osg::ref_ptr<ShapeFrameNode> mComNode;
 };
 
 } // namespace osgDart

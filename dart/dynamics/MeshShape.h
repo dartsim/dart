@@ -85,7 +85,7 @@ public:
   virtual void update();
 
   // Documentation inherited
-  void setAlpha(double _alpha) override;
+  void notifyAlphaUpdate(double alpha) override;
 
   /// \brief
   void setMesh(
@@ -127,9 +127,9 @@ public:
   void setDisplayList(int _index);
 
   // Documentation inherited.
-  void draw(renderer::RenderInterface* _ri = nullptr,
-            const Eigen::Vector4d& _col = Eigen::Vector4d::Ones(),
-            bool _default = true) const override;
+  void draw(
+      renderer::RenderInterface* _ri = nullptr,
+      const Eigen::Vector4d& _col = Eigen::Vector4d::Ones()) const override;
 
   /// \brief
   static const aiScene* loadMesh(const std::string& _fileName);

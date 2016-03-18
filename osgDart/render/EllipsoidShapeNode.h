@@ -60,7 +60,7 @@ public:
 
   EllipsoidShapeNode(
       std::shared_ptr<dart::dynamics::EllipsoidShape> shape,
-      EntityNode* parent);
+      ShapeFrameNode* parent);
 
   void refresh();
   void extractData(bool firstTime);

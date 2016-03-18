@@ -125,7 +125,7 @@ class NodeManagerJoinerForSkeleton<Base1> : public Base1 { };
 //==============================================================================
 template <class Base1, class Base2>
 class NodeManagerJoinerForSkeleton<Base1, Base2> :
-    NodeManagerJoinerForBodyNode<Base1, Base2>
+    public NodeManagerJoinerForBodyNode<Base1, Base2>
 {
 public:
 

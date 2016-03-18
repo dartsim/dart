@@ -127,11 +127,6 @@ public:
   /// Set the Properties of this SoftBodyNode
   void setProperties(const UniqueProperties& _properties);
 
-  /// Remove all SoftBodyShapes and return the last one that was encountered
-  /// Note: This will be deprecated once VisualizationNodes and CollisionNodes
-  /// are implemented. Please see #394.
-  ShapePtr removeSoftBodyShapes();
-
   using SkeletonRefCountingBase::getSkeleton;
 
   /// Get the Properties of this SoftBodyNode
@@ -274,13 +269,13 @@ protected:
 
   // Documentation inherited.
   virtual void updateJointForceID(double _timeStep,
-                                  double _withDampingForces,
-                                  double _withSpringForces) override;
+                                  bool _withDampingForces,
+                                  bool _withSpringForces) override;
 
   // Documentation inherited.
   virtual void updateJointForceFD(double _timeStep,
-                                  double _withDampingForces,
-                                  double _withSpringForces) override;
+                                  bool _withDampingForces,
+                                  bool _withSpringForces) override;
 
   // Documentation inherited.
   virtual void updateJointImpulseFD() override;
@@ -361,7 +356,7 @@ protected:
   UniqueProperties mSoftP;
 
   /// \brief Soft mesh shape belonging to this node.
-  std::shared_ptr<SoftMeshShape> mSoftShape;
+  WeakShapeNodePtr mSoftShapeNode;
 
   /// Generalized inertia with point masses
   math::Inertia mI2;

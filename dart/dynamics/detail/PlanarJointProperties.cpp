@@ -153,24 +153,21 @@ PlanarJointProperties::PlanarJointProperties(
 void PlanarJointAddon::setXYPlane()
 {
   mProperties.setXYPlane();
-  UpdateProperties(this);
-  incrementSkeletonVersion();
+  notifyPropertiesUpdate();
 }
 
 //==============================================================================
 void PlanarJointAddon::setYZPlane()
 {
   mProperties.setYZPlane();
-  UpdateProperties(this);
-  incrementSkeletonVersion();
+  notifyPropertiesUpdate();
 }
 
 //==============================================================================
 void PlanarJointAddon::setZXPlane()
 {
   mProperties.setZXPlane();
-  UpdateProperties(this);
-  incrementSkeletonVersion();
+  notifyPropertiesUpdate();
 }
 
 //==============================================================================
@@ -178,8 +175,7 @@ void PlanarJointAddon::setArbitraryPlane(const Eigen::Vector3d& _axis1,
                                          const Eigen::Vector3d& _axis2)
 {
   mProperties.setArbitraryPlane(_axis1, _axis2);
-  UpdateProperties(this);
-  incrementSkeletonVersion();
+  notifyPropertiesUpdate();
 }
 
 } // namespace detail

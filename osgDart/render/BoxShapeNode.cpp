@@ -41,6 +41,7 @@
 #include "osgDart/Utils.h"
 
 #include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/SimpleFrame.h"
 
 namespace osgDart {
 namespace render {
@@ -49,9 +50,8 @@ class BoxShapeGeode : public ShapeNode, public osg::Geode
 {
 public:
 
-  BoxShapeGeode(dart::dynamics::BoxShape* shape,
-                EntityNode* parentEntity,
-                BoxShapeNode* parentNode);
+  BoxShapeGeode(const std::shared_ptr<dart::dynamics::BoxShape>& shape,
+                ShapeFrameNode* parentShapeFrame);
 
   void refresh();
   void extractData();
@@ -60,7 +60,7 @@ protected:
 
   virtual ~BoxShapeGeode();
 
-  dart::dynamics::BoxShape* mBoxShape;
+  std::shared_ptr<dart::dynamics::BoxShape> mBoxShape;
   BoxShapeDrawable* mDrawable;
 
 };
@@ -70,7 +70,8 @@ class BoxShapeDrawable : public osg::ShapeDrawable
 {
 public:
 
-  BoxShapeDrawable(dart::dynamics::BoxShape* shape);
+  BoxShapeDrawable(dart::dynamics::BoxShape* shape,
+                   dart::dynamics::VisualAddon* visualAddon);
 
   void refresh(bool firstTime);
 
@@ -79,18 +80,19 @@ protected:
   virtual ~BoxShapeDrawable();
 
   dart::dynamics::BoxShape* mBoxShape;
+  dart::dynamics::VisualAddon* mVisualAddon;
 
 };
 
 //==============================================================================
 BoxShapeNode::BoxShapeNode(std::shared_ptr<dart::dynamics::BoxShape> shape,
-                           EntityNode* parent)
+                           ShapeFrameNode* parent)
   : ShapeNode(shape, parent, this),
     mBoxShape(shape),
     mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -98,7 +100,7 @@ void BoxShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -107,15 +109,11 @@ void BoxShapeNode::refresh()
 }
 
 //==============================================================================
-void BoxShapeNode::extractData(bool firstTime)
+void BoxShapeNode::extractData(bool /*firstTime*/)
 {
-  if(mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-     || firstTime)
-    setMatrix(eigToOsgMatrix(mShape->getLocalTransform()));
-
   if(nullptr == mGeode)
   {
-    mGeode = new BoxShapeGeode(mBoxShape.get(), mParentEntity, this);
+    mGeode = new BoxShapeGeode(mBoxShape, mParentShapeFrameNode);
     addChild(mGeode);
     return;
   }
@@ -130,10 +128,10 @@ BoxShapeNode::~BoxShapeNode()
 }
 
 //==============================================================================
-BoxShapeGeode::BoxShapeGeode(dart::dynamics::BoxShape* shape,
-                             EntityNode* parent,
-                             BoxShapeNode* parentNode)
-  : ShapeNode(parentNode->getShape(), parent, this),
+BoxShapeGeode::BoxShapeGeode(
+    const std::shared_ptr<dart::dynamics::BoxShape>& shape,
+    ShapeFrameNode* parentShapeFrame)
+  : ShapeNode(shape, parentShapeFrame, this),
     mBoxShape(shape),
     mDrawable(nullptr)
 {
@@ -154,7 +152,7 @@ void BoxShapeGeode::extractData()
 {
   if(nullptr == mDrawable)
   {
-    mDrawable = new BoxShapeDrawable(mBoxShape);
+    mDrawable = new BoxShapeDrawable(mBoxShape.get(), mVisualAddon);
     addDrawable(mDrawable);
     return;
   }
@@ -169,8 +167,10 @@ BoxShapeGeode::~BoxShapeGeode()
 }
 
 //==============================================================================
-BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape)
-  : mBoxShape(shape)
+BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape,
+                                   dart::dynamics::VisualAddon* visualAddon)
+  : mBoxShape(shape),
+    mVisualAddon(visualAddon)
 {
   refresh(true);
 }
@@ -196,7 +196,7 @@ void BoxShapeDrawable::refresh(bool firstTime)
   if(mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
-    setColor(eigToOsgVec4(mBoxShape->getRGBA()));
+    setColor(eigToOsgVec4(mVisualAddon->getRGBA()));
   }
 }
 

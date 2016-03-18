@@ -50,7 +50,7 @@ class WarningShapeNode : public ShapeNode, public osg::Node
 public:
 
   WarningShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
-                   EntityNode* parent);
+                   ShapeFrameNode* parent);
 
   void refresh();
 

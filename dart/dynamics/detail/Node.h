@@ -41,19 +41,10 @@
 
 #include "dart/dynamics/Node.h"
 
+#include "dart/common/StlHelpers.h"
+
 namespace dart {
 namespace dynamics {
-
-//==============================================================================
-template <typename T>
-static T getVectorObjectIfAvailable(size_t _index, const std::vector<T>& _vec)
-{
-  assert(_index < _vec.size());
-  if(_index < _vec.size())
-    return _vec[_index];
-
-  return nullptr;
-}
 
 //==============================================================================
 template <class NodeType>

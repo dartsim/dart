@@ -53,12 +53,12 @@ namespace render {
 class PlaneShapeGeode;
 class PlaneShapeDrawable;
 
-class PlaneShapeNode : public ShapeNode, public osg::MatrixTransform
+class PlaneShapeNode : public ShapeNode, public osg::Group
 {
 public:
 
   PlaneShapeNode(std::shared_ptr<dart::dynamics::PlaneShape> shape,
-                 EntityNode* parent);
+                 ShapeFrameNode* parent);
 
   void refresh();
   void extractData(bool firstTime);

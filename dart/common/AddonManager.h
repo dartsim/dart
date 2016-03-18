@@ -83,6 +83,12 @@ public:
   /// It is currently unsafe to move an AddonManager
   AddonManager(AddonManager&&) = delete;
 
+  /// It is currently unsafe to copy an AddonManager
+  AddonManager& operator=(const AddonManager&) = delete;
+
+  /// It is currently unsafe to move an AddonManager
+  AddonManager& operator=(AddonManager&&) = delete;
+
   /// Check if this AddonManager currently has a certain type of Addon
   template <class T>
   bool has() const;
@@ -155,7 +161,7 @@ public:
   void copyAddonPropertiesTo(Properties& outgoingProperties) const;
 
   /// Give this AddonManager a copy of each Addon from otherManager
-  void duplicateAddons(const AddonManager* otherManager);
+  void duplicateAddons(const AddonManager* fromManager);
 
   /// Make the Addons of this AddonManager match the Addons of otherManager. Any
   /// Addons in this AddonManager which do not exist in otherManager will be
@@ -170,6 +176,12 @@ protected:
   /// AddonManager types to call the protected Addon::setManager function.
   void becomeManager(Addon* addon, bool transfer);
 
+  /// Non-templated version of set(const T*)
+  void _set(std::type_index type_idx, const Addon* addon);
+
+  /// Non-templated version of set(std::unqiue_ptr<T>&&)
+  void _set(std::type_index type_idx, std::unique_ptr<Addon> addon);
+
   /// A map that relates the type of Addon to its pointer
   AddonMap mAddonMap;
 
@@ -177,6 +189,18 @@ protected:
   /// leave this manager.
   RequiredAddonSet mRequiredAddons;
 };
+
+//==============================================================================
+/// Attach an arbitrary number of Addons to the specified AddonManager type.
+// TODO(MXG): Consider putting this functionality into the AddonManager class
+// itself. Also consider allowing the user to specify arguments for the
+// constructors of the Addons.
+template <class T>
+void createAddons(T* /*mgr*/);
+
+//==============================================================================
+template <class T, class NextAddon, class... Addons>
+void createAddons(T* mgr);
 
 } // namespace common
 } // namespace dart

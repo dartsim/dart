@@ -55,21 +55,21 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
   BodyNode::Properties node(std::string("link1"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim1));
-  node.mVizShapes.push_back(shape);
-  node.mColShapes.push_back(shape);
 
   BodyNode* parent_node = robot->createJointAndBodyNodePair<FreeJoint>(nullptr,
     MultiDofJoint<6>::Properties(std::string("joint1")), node).second;
+  parent_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
+        shape);
 
   // Create the second link
   node = BodyNode::Properties(std::string("link2"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
   shape = std::shared_ptr<Shape>(new BoxShape(dim2));
-  node.mVizShapes.push_back(shape);
-  node.mColShapes.push_back(shape);
 
   std::pair<Joint*, BodyNode*> pair2 = add1DofJoint(
         robot, parent_node, node, "joint2", 0.0, -DART_PI, DART_PI, type2);
+  pair2.second->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
+        shape);
 
   Joint* joint = pair2.first;
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();

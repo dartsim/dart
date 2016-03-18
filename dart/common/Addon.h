@@ -130,161 +130,122 @@ protected:
 };
 
 //==============================================================================
-/// AddonWithProtectedState generates implementations of the State managing
-/// functions for an Addon class.
-template <class Base, typename StateData,
-          class ManagerType = AddonManager,
-          void (*updateState)(Base*) = &detail::NoOp<Base*> >
-class AddonWithProtectedState : public Addon
+template <class ManagerType>
+class ManagerTrackingAddon : public Addon
 {
 public:
 
-  using State = Addon::StateMixer<StateData>;
-  constexpr static void (*UpdateState)(Base*) = updateState;
+  /// Default constructor
+  ManagerTrackingAddon(AddonManager* mgr);
 
-  AddonWithProtectedState() = delete;
-  AddonWithProtectedState(const AddonWithProtectedState&) = delete;
+  /// Get the Manager of this Addon
+  ManagerType* getManager();
 
-  /// Construct using a StateData instance
-  AddonWithProtectedState(
-      AddonManager* mgr, const StateData& state = StateData());
-
-  // Documentation inherited
-  void setAddonState(const Addon::State& otherState) override final;
-
-  // Documentation inherited
-  const Addon::State* getAddonState() const override final;
-
-  /// Set the State of this Addon
-  void setState(const StateData& state);
-
-  /// Get the State of this Addon
-  const State& getState() const;
-
-  // Documentation inherited
-  std::unique_ptr<Addon> cloneAddon(
-      AddonManager* newManager) const override final;
+  /// Get the Manager of this Addon
+  const ManagerType* getManager() const;
 
 protected:
 
-  /// State of this Addon
-  State mState;
-};
+  /// Grab the new manager
+  void setManager(AddonManager* newManager, bool transfer);
 
-//==============================================================================
-/// AddonWithProtectedProperties generates implementations of the Property
-/// managing functions for an Addon class.
-template <class Base, typename PropertiesData,
-          class ManagerType = AddonManager,
-          void (*updateProperties)(Base*) = &detail::NoOp<Base*> >
-class AddonWithProtectedProperties : public Addon
-{
-public:
+  /// Pointer to the current Manager of this Addon
+  ManagerType* mManager;
 
-  using Properties = Addon::PropertiesMixer<PropertiesData>;
-  constexpr static void (*UpdateProperties)(Base*) = updateProperties;
-
-  AddonWithProtectedProperties() = delete;
-  AddonWithProtectedProperties(const AddonWithProtectedProperties&) = delete;
-
-  /// Construct using a PropertiesData instance
-  AddonWithProtectedProperties(
-      AddonManager* mgr, const PropertiesData& properties = PropertiesData());
-
-  // Documentation inherited
-  void setAddonProperties(const Addon::Properties& someProperties) override final;
-
-  // Documentation inherited
-  const Addon::Properties* getAddonProperties() const override final;
-
-  /// Set the Properties of this Addon
-  void setProperties(const PropertiesData& properties);
-
-  /// Get the Properties of this Addon
-  const Properties& getProperties() const;
-
-  // Documentation inherited
-  std::unique_ptr<Addon> cloneAddon(
-      AddonManager* newManager) const override final;
-
-protected:
-
-  /// Properties of this Addon
-  Properties mProperties;
-};
-
-//==============================================================================
-/// AddonWithProtectedStateAndProperties combines the
-/// AddonWithProtectedState and AddonWithProtectedProperties classes into a
-/// single templated class
-template <class Base, typename StateData, typename PropertiesData,
-          class ManagerType = AddonManager,
-          void (*updateState)(Base*) = &detail::NoOp<Base*>,
-          void (*updateProperties)(Base*) = updateState>
-class AddonWithProtectedStateAndProperties : public Addon
-{
-public:
-
-  using State = Addon::StateMixer<StateData>;
-  using Properties = Addon::PropertiesMixer<PropertiesData>;
-  constexpr static void (*UpdateState)(Base*) = updateState;
-  constexpr static void (*UpdateProperties)(Base*) = updateProperties;
-
-  AddonWithProtectedStateAndProperties() = delete;
-  AddonWithProtectedStateAndProperties(
-      const AddonWithProtectedStateAndProperties&) = delete;
-
-  /// Construct using a StateData and a PropertiesData instance
-  AddonWithProtectedStateAndProperties(
-      AddonManager* mgr,
-      const StateData& state = StateData(),
-      const PropertiesData& properties = PropertiesData());
-
-  /// Construct using a StateData and a PropertiesData instance, flipped
-  AddonWithProtectedStateAndProperties(
-      AddonManager* mgr,
-      const PropertiesData& properties,
-      const StateData& state = StateData());
-
-  // Documentation inherited
-  void setAddonState(const Addon::State& otherState) override final;
-
-  // Documentation inherited
-  const Addon::State* getAddonState() const override final;
-
-  /// Set the State of this Addon
-  void setState(const StateData& state);
-
-  /// Get the State of this Addon
-  const State& getState() const;
-
-  // Documentation inherited
-  void setAddonProperties(const Addon::Properties& otherProperties) override final;
-
-  // Documentation inherited
-  const Addon::Properties* getAddonProperties() const override final;
-
-  /// Set the Properties of this Addon
-  void setProperties(const PropertiesData& properties);
-
-  /// Get the Properties of this Addon
-  const Properties& getProperties() const;
-
-  // Documentation inherited
-  std::unique_ptr<Addon> cloneAddon(
-      AddonManager* newManager) const override final;
-
-protected:
-
-  /// State of this Addon
-  State mState;
-
-  /// Properties of this Addon
-  Properties mProperties;
 };
 
 } // namespace common
 } // namespace dart
+
+//==============================================================================
+#define DART_COMMON_ADDON_PROPERTY_CONSTRUCTOR( ClassName, UpdatePropertiesMacro )\
+  ClassName (const ClassName &) = delete;\
+  inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties = PropertiesData())\
+    : AddonWithVersionedProperties< Base, Derived, PropertiesData, ManagerType, UpdatePropertiesMacro>(mgr, properties) { }
+
+//==============================================================================
+#define DART_COMMON_JOINT_ADDON_CONSTRUCTOR( ClassName )\
+  DART_COMMON_ADDON_PROPERTY_CONSTRUCTOR( ClassName, &detail::JointPropertyUpdate )
+
+//==============================================================================
+#define DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS(ClassName)\
+  ClassName (const ClassName &) = delete;\
+  inline ClassName (dart::common::AddonManager* mgr, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
+    : AddonImplementation(mgr, state, properties) { }\
+  inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties, const StateData state = StateData())\
+    : AddonImplementation(mgr, properties, state) { }
+
+//==============================================================================
+#define DART_COMMON_SET_ADDON_PROPERTY_CUSTOM( Type, Name, Update )\
+  inline void set ## Name (const Type & value)\
+  { mProperties.m ## Name = value; Update(); }
+
+//==============================================================================
+#define DART_COMMON_SET_ADDON_PROPERTY( Type, Name )\
+  DART_COMMON_SET_ADDON_PROPERTY_CUSTOM( Type, Name, notifyPropertiesUpdate )
+
+//==============================================================================
+#define DART_COMMON_GET_ADDON_PROPERTY( Type, Name )\
+  inline const Type& get ## Name () const\
+  { return mProperties.m ## Name; }
+
+//==============================================================================
+#define DART_COMMON_SET_GET_ADDON_PROPERTY( Type, Name )\
+  DART_COMMON_SET_ADDON_PROPERTY( Type, Name )\
+  DART_COMMON_GET_ADDON_PROPERTY( Type, Name )
+
+//==============================================================================
+#define DART_COMMON_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
+  void set ## SingleName (size_t index, const SingleType & value)\
+  {\
+    if( index >= Size )\
+    {\
+      dterr << "[" #Class << "::set" #SingleName << "] Invalid index (" << index << "). "\
+            << "The specified index must be less than " #Size << "!\n";\
+      assert(false); return;\
+    }\
+    this->mProperties.m ## PluralName [index] = value;\
+    this->notifyPropertiesUpdate();\
+  }\
+  void set ## PluralName (const VectorType & vec)\
+  {\
+    this->mProperties.m ## PluralName = vec;\
+    this->notifyPropertiesUpdate();\
+  }
+
+//==============================================================================
+#define DART_COMMON_GET_ADDON_PROPERTY_ARRAY(Class, SingleType, VectorType, SingleName, PluralName, Size)\
+  inline const SingleType& get ## SingleName (size_t index) const\
+  {\
+    if(index >= Size)\
+    {\
+      dterr << "[" #Class << "::get" #SingleName << "] Invalid index (" << index << "). "\
+            << "The specified index must be less than " #Size << "!\n";\
+      assert(false); index = 0;\
+    }\
+    return this->mProperties.m ## PluralName [index];\
+  }\
+  inline const VectorType& get ## PluralName () const\
+  {\
+    return this->mProperties.m ## PluralName;\
+  }
+
+//==============================================================================
+#define DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
+  DART_COMMON_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
+  DART_COMMON_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )
+
+//==============================================================================
+#define DART_COMMON_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, Size )\
+  DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, SingleName ## s, Size )
+
+//==============================================================================
+#define DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName, PluralName )\
+  DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( MultiDofJointAddon, SingleType, VectorType, SingleName, PluralName, DOF )
+
+//==============================================================================
+#define DART_COMMON_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName )\
+  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName, SingleName ## s )
 
 #include "dart/common/detail/Addon.h"
 

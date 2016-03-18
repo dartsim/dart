@@ -62,8 +62,7 @@ RevoluteJointProperties::RevoluteJointProperties(
 void RevoluteJointAddon::setAxis(const Eigen::Vector3d& _axis)
 {
   mProperties.mAxis = _axis.normalized();
-  incrementSkeletonVersion();
-  UpdateProperties(this);
+  notifyPropertiesUpdate();
 }
 
 //==============================================================================

@@ -34,16 +34,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_ENTITYNODE_H
-#define OSGDART_ENTITYNODE_H
+#ifndef OSGDART_SHAPEFRAMENODE_H
+#define OSGDART_SHAPEFRAMENODE_H
 
 #include <map>
 #include <memory>
-
-#include <osg/Group>
+#include <osg/MatrixTransform>
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace dynamics {
+class ShapeFrame;
 class Entity;
 class Shape;
 } // namespace dynamics
@@ -56,28 +57,35 @@ namespace render {
 class ShapeNode;
 } // namespace render
 
-class FrameNode;
+class WorldNode;
 
-class EntityNode : public osg::Group
+class ShapeFrameNode : public osg::MatrixTransform
 {
 public:
 
-  /// Constructor
-  EntityNode(dart::dynamics::Entity* _entity, FrameNode* _parent);
+  /// Create a ShapeFrameNode. If recursive is set to true, it will also create
+  /// nodes for all child Entities and child Frames
+  ShapeFrameNode(dart::dynamics::ShapeFrame* frame,
+                 WorldNode* worldNode);
 
-  /// Pointer to the Entity associated with this EntityNode
-  dart::dynamics::Entity* getEntity() const;
+  /// Pointer to the ShapeFrame associated with this ShapeFrameNode
+  dart::dynamics::ShapeFrame* getShapeFrame();
 
-  /// Pointer to the parent FrameNode of this EntityNode
-  FrameNode* getParentFrameNode();
+  /// Pointer to the ShapeFrame associated with this ShapeFrameNode
+  const dart::dynamics::ShapeFrame* getShapeFrame() const;
 
-  /// Pointer to the parent FrameNode of this EntityNode
-  const FrameNode* getParentFrameNode() const;
+  WorldNode* getWorldNode();
 
-  /// Update all rendering data for this EntityNode
-  void refresh();
+  const WorldNode* getWorldNode() const;
 
-  /// True iff this EntityNode has been utilized on the latest update
+  /// Update all rendering data for this ShapeFrame
+  ///
+  /// If shortCircuitIfUtilized is true, this will skip the refresh process if
+  /// mUtilized is set to true. clearUtilization() needs to be called before
+  /// this function if short circuiting is going to be used.
+  void refresh(bool shortCircuitIfUtilized = false);
+
+  /// True iff this ShapeFrameNode has been utilized on the latest update
   bool wasUtilized() const;
 
   /// Set mUtilized to false
@@ -85,31 +93,21 @@ public:
 
 protected:
 
-  virtual ~EntityNode();
+  virtual ~ShapeFrameNode();
 
-  void clearChildUtilizationFlags();
+  void refreshShapeNode(const std::shared_ptr<dart::dynamics::Shape>& shape);
 
-  void clearUnusedNodes();
+  void createShapeNode(const std::shared_ptr<dart::dynamics::Shape>& shape);
 
-  void refreshShapeNode(std::shared_ptr<dart::dynamics::Shape> shape);
+  /// Pointer to the ShapeFrame that this ShapeFrameNode is associated with
+  dart::dynamics::ShapeFrame* mShapeFrame;
 
-  void createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape);
+  /// Pointer to the WorldNode that this ShapeFrameNode belongs to
+  WorldNode* mWorldNode;
 
-  /// Pointer to the Entity that this EntityNode is associated with
-  dart::dynamics::Entity* mEntity;
+  render::ShapeNode* mShapeNode;
 
-  /// Pointer to the parent FrameNode of this EntityNode
-  FrameNode* mParent;
-
-  /// Map from Shapes to ShapeGeodes
-  std::map<std::shared_ptr<dart::dynamics::Shape>,
-           render::ShapeNode*> mShapeToNode;
-
-  /// Map from ShapeGeodes to Shapes
-  std::map<render::ShapeNode*,
-           std::shared_ptr<dart::dynamics::Shape> > mNodeToShape;
-
-  /// True iff this EntityNode has been utilized on the latest update.
+  /// True iff this ShapeFrameNode has been utilized on the latest update.
   /// If it has not, that is an indication that it is no longer being
   /// used and should be deleted.
   bool mUtilized;
@@ -118,4 +116,4 @@ protected:
 
 } // namespace osgDart
 
-#endif // OSGDART_ENTITYNODE_H
+#endif // OSGDART_SHAPEFRAMENODE_H

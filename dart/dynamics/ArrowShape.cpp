@@ -65,10 +65,10 @@ ArrowShape::ArrowShape(const Eigen::Vector3d& _tail,
     mHead(_head),
     mProperties(_properties)
 {
-  mColor = _color;
   instantiate(_resolution);
   configureArrow(mTail, mHead, mProperties);
   setColorMode(MeshShape::COLOR_INDEX);
+  notifyColorUpdate(_color);
 }
 
 //==============================================================================
@@ -97,9 +97,8 @@ void ArrowShape::setProperties(const Properties& _properties)
 }
 
 //==============================================================================
-void ArrowShape::setRGBA(const Eigen::Vector4d& _color)
+void ArrowShape::notifyColorUpdate(const Eigen::Vector4d& _color)
 {
-  mColor = _color;
   for(size_t i=0; i<mMesh->mNumMeshes; ++i)
   {
     aiMesh* mesh = mMesh->mMeshes[i];
@@ -371,7 +370,8 @@ void ArrowShape::instantiate(size_t resolution)
 
   mMesh = scene;
 
-  setColor(mColor);
+  //setColor(mColor);
+  // TODO(JS)
 }
 
 } // namespace dynamics

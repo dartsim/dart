@@ -42,7 +42,6 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/SingleDofJoint.h"
-#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -78,12 +77,12 @@ struct PrismaticJointProperties :
 
 //==============================================================================
 class PrismaticJointAddon final :
-    public AddonWithProtectedPropertiesInSkeleton<
+    public common::AddonWithVersionedProperties<
         PrismaticJointAddon, PrismaticJointUniqueProperties, PrismaticJoint,
         detail::JointPropertyUpdate<PrismaticJointAddon> >
 {
 public:
-  DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( PrismaticJointAddon )
+  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( PrismaticJointAddon )
 
   void setAxis(const Eigen::Vector3d& _axis);
   const Eigen::Vector3d& getAxis() const;

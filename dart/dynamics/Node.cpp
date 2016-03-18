@@ -127,6 +127,36 @@ bool Node::isRemoved() const
 }
 
 //==============================================================================
+std::shared_ptr<Skeleton> Node::getSkeleton()
+{
+  return mBodyNode->getSkeleton();
+}
+
+//==============================================================================
+std::shared_ptr<const Skeleton> Node::getSkeleton() const
+{
+  return mBodyNode->getSkeleton();
+}
+
+//==============================================================================
+size_t Node::incrementVersion()
+{
+  if(const SkeletonPtr& skel = getSkeleton())
+    return skel->incrementVersion();
+
+  return 0;
+}
+
+//==============================================================================
+size_t Node::getVersion() const
+{
+  if(const ConstSkeletonPtr& skel = getSkeleton())
+    return skel->getVersion();
+
+  return 0;
+}
+
+//==============================================================================
 std::shared_ptr<NodeDestructor> Node::getOrCreateDestructor()
 {
   std::shared_ptr<NodeDestructor> destructor = mDestructor.lock();
@@ -187,13 +217,11 @@ void Node::attach()
     return;
 #endif
 
-  BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
+  using NodeMapPair = std::pair<std::type_index, std::vector<Node*>>;
 
-  if(mBodyNode->mNodeMap.end() == it)
-  {
-    mBodyNode->mNodeMap[typeid(*this)] = std::vector<Node*>();
-    it = mBodyNode->mNodeMap.find(typeid(*this));
-  }
+  // Add empty list of Node pointers only when typeid(*this) doesn't exist.
+  BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.insert(
+      NodeMapPair(typeid(*this), std::vector<Node*>())).first;
 
   std::vector<Node*>& nodes = it->second;
   BodyNode::NodeDestructorSet& destructors = mBodyNode->mNodeDestructors;

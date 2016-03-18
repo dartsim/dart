@@ -60,8 +60,6 @@ int main(int argc, char* argv[]) {
   body.mName = "LHY";
   dart::dynamics::ShapePtr shape(
         new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
-  body.mVizShapes.push_back(shape); // Use 'shape' for visualizing
-  body.mColShapes.push_back(shape); // Use 'shape' for collision detection
   body.mInertia.setMass(mass);
 
   dart::dynamics::RevoluteJoint::Properties joint;
@@ -74,49 +72,55 @@ int main(int argc, char* argv[]) {
   std::pair<dart::dynamics::Joint*, dart::dynamics::BodyNode*> pair =
       LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
         nullptr, joint, body);
+  pair.second->createShapeNodeWith<
+      dart::dynamics::VisualAddon,
+      dart::dynamics::CollisionAddon,
+      dart::dynamics::DynamicsAddon>(shape);
   dart::dynamics::BodyNode* parent = pair.second;
-
 
   // BodyNode 2: Left Hip Roll (LHR) whose parent is: LHY
   body = dart::dynamics::BodyNode::Properties(); // create a fresh properties container
   body.mName = "LHR";
   shape = dart::dynamics::ShapePtr(
         new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
-  shape->setOffset(Eigen::Vector3d(0.0, 0.0, 0.5));
-  body.mVizShapes.push_back(shape);
-  body.mColShapes.push_back(shape);
-  body.mInertia.setLocalCOM(shape->getOffset());
-  body.mInertia.setMass(mass);
 
   joint.mName = "LHR";
   joint.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.0, 0.5);
 
   // You can get the specific type of Joint Pointer instead of just a basic Joint pointer
-  std::pair<dart::dynamics::RevoluteJoint*, dart::dynamics::BodyNode*> nextPair =
+  std::pair<dart::dynamics::RevoluteJoint*, dart::dynamics::BodyNode*> pair1 =
   LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
         parent, joint, body);
-  nextPair.first->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
-
+  pair1.first->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
+  auto shapeNode1 = pair1.second->createShapeNodeWith<
+      dart::dynamics::VisualAddon,
+      dart::dynamics::CollisionAddon,
+      dart::dynamics::DynamicsAddon>(shape);
+  shapeNode1->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+  pair1.second->setLocalCOM(shapeNode1->getRelativeTranslation());
+  pair1.second->setMass(mass);
 
   // BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR
   body = dart::dynamics::BodyNode::Properties(); // create a fresh properties container
   body.mName = "LHP";
   shape = dart::dynamics::ShapePtr(
         new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
-  shape->setOffset(Eigen::Vector3d(0.0, 0.0, 0.5));
-  body.mVizShapes.push_back(shape);
-  body.mColShapes.push_back(shape);
-  body.mInertia.setLocalCOM(shape->getOffset());
-  body.mInertia.setMass(mass);
 
   joint.mName = "LHP";
   joint.mAxis = Eigen::Vector3d(0.0, 1.0, 0.0);
   joint.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.0, 1.0);
 
   // Or you can completely ignore the return value of this function
+  std::pair<dart::dynamics::RevoluteJoint*, dart::dynamics::BodyNode*> pair2 =
   LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
         LeftLegSkel->getBodyNode(1), joint, body);
-
+  auto shapeNode2 = pair2.second->createShapeNodeWith<
+      dart::dynamics::VisualAddon,
+      dart::dynamics::CollisionAddon,
+      dart::dynamics::DynamicsAddon>(shape);
+  shapeNode2->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+  pair2.second->setLocalCOM(shapeNode2->getRelativeTranslation());
+  pair2.second->setMass(mass);
 
   // Window stuff
   MyWindow window(LeftLegSkel);

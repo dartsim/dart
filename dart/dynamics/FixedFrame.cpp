@@ -49,7 +49,7 @@ FixedFrame::FixedFrame(Frame* _refFrame, const std::string& _name,
     Frame(_refFrame, _name),
     mRelativeTf(_relativeTransform)
 {
-
+  // Do nothing
 }
 
 //==============================================================================

@@ -40,6 +40,7 @@
 #include <fcl/shape/geometric_shapes.h>
 
 #include "dart/common/Console.h"
+#include "dart/dynamics/ShapeNode.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
@@ -325,12 +326,11 @@ fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh,
 }
 
 //==============================================================================
-FCLUserData::FCLUserData(FCLCollisionNode* _fclCollNode,
-                         dynamics::BodyNode* _bodyNode,
-                         dynamics::Shape* _shape)
-  : fclCollNode(_fclCollNode),
-    bodyNode(_bodyNode),
-    shape(_shape)
+FCLCollisionNode::FCLUserData::FCLUserData(
+    FCLCollisionNode* fclCollNode,
+    const dynamics::WeakShapeNodePtr& shapeNode)
+  : fclCollNode(fclCollNode),
+    shapeNode(shapeNode)
 {
   // Do nothing
 }
@@ -347,9 +347,10 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
 
-  for (size_t i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
+  auto collShapeNodes = _bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+  for (auto shapeNode : collShapeNodes)
   {
-    dynamics::ShapePtr shape = _bodyNode->getCollisionShape(i);
+    auto shape = shapeNode->getShape();
 
     boost::shared_ptr<fcl::CollisionGeometry> fclCollGeom;
 
@@ -446,9 +447,8 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
     }
 
     assert(nullptr != fclCollGeom);
-    fcl::CollisionObject* fclCollObj
-        = new fcl::CollisionObject(fclCollGeom, getFCLTransform(i));
-    fclCollObj->setUserData(new FCLUserData(this, _bodyNode, shape.get()));
+    fcl::CollisionObject* fclCollObj = new fcl::CollisionObject(fclCollGeom);
+    fclCollObj->setUserData(new FCLUserData(this, shapeNode));
     mCollisionObjects.push_back(fclCollObj);
   }
 }
@@ -479,24 +479,11 @@ fcl::CollisionObject* FCLCollisionNode::getCollisionObject(size_t _idx) const
 }
 
 //==============================================================================
-fcl::Transform3f FCLCollisionNode::getFCLTransform(size_t _idx) const
-{
-  Eigen::Isometry3d worldTrans
-      = mBodyNode->getTransform()
-        * mBodyNode->getCollisionShape(_idx)->getLocalTransform();
-
-  return fcl::Transform3f(
-        fcl::Matrix3f(worldTrans(0, 0), worldTrans(0, 1), worldTrans(0, 2),
-                      worldTrans(1, 0), worldTrans(1, 1), worldTrans(1, 2),
-                      worldTrans(2, 0), worldTrans(2, 1), worldTrans(2, 2)),
-        fcl::Vec3f(worldTrans(0, 3), worldTrans(1, 3), worldTrans(2, 3)));
-}
-
-//==============================================================================
 void FCLCollisionNode::updateFCLCollisionObjects()
 {
   using dart::dynamics::BodyNode;
   using dart::dynamics::Shape;
+  using dart::dynamics::ShapeNode;
   using dart::dynamics::SoftMeshShape;
 
   for (auto& fclCollObj : mCollisionObjects)
@@ -504,12 +491,11 @@ void FCLCollisionNode::updateFCLCollisionObjects()
     FCLUserData* userData
         = static_cast<FCLUserData*>(fclCollObj->getUserData());
 
-    BodyNode* bodyNode = userData->bodyNode;
-    Shape*    shape    = userData->shape;
+    ShapeNode* shapeNode = userData->shapeNode.lock().get();
+    Shape* shape = shapeNode->getShape().get();
 
     // Update shape's transform
-    const Eigen::Isometry3d W = bodyNode->getWorldTransform()
-                                * shape->getLocalTransform();
+    const Eigen::Isometry3d& W = shapeNode->getWorldTransform();
     fclCollObj->setTransform(FCLTypes::convertTransform(W));
     fclCollObj->computeAABB();
 

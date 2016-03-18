@@ -42,7 +42,6 @@
 #include <Eigen/Dense>
 
 #include "dart/dynamics/MultiDofJoint.h"
-#include "dart/dynamics/Addon.h"
 
 namespace dart {
 namespace dynamics {
@@ -79,12 +78,12 @@ struct UniversalJointProperties :
 
 //==============================================================================
 class UniversalJointAddon final :
-    public AddonWithProtectedPropertiesInSkeleton<
+    public common::AddonWithVersionedProperties<
         UniversalJointAddon, UniversalJointUniqueProperties, UniversalJoint,
         detail::JointPropertyUpdate<UniversalJointAddon> >
 {
 public:
-  DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( UniversalJointAddon )
+  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( UniversalJointAddon )
   void setAxis1(const Eigen::Vector3d& _axis);
   const Eigen::Vector3d& getAxis1() const;
   void setAxis2(const Eigen::Vector3d& _axis);

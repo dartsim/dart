@@ -71,10 +71,12 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
   using dart::dynamics::SoftMeshShape;
 
   // Create meshes according to types of the shapes
-  for (size_t i = 0; i < _bodyNode->getNumCollisionShapes(); i++)
+  auto collShapeNodes = _bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+  for (auto shapeNode : collShapeNodes)
   {
-    dynamics::ShapePtr shape = _bodyNode->getCollisionShape(i);
-    fcl::Transform3f shapeT = getFclTransform(shape->getLocalTransform());
+    auto shape = shapeNode->getShape();
+    auto shapeT = getFclTransform(shapeNode->getRelativeTransform());
+
     switch (shape->getShapeType())
     {
       case Shape::ELLIPSOID:
@@ -156,6 +158,12 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
   _otherNode->evalRT();
   bool collision = false;
 
+  auto bodyNode1 = this->getBodyNode();
+  auto bodyNode2 = _otherNode->getBodyNode();
+
+  auto collShapeNodes1 = bodyNode1->getShapeNodesWith<dynamics::CollisionAddon>();
+  auto collShapeNodes2 = bodyNode2->getShapeNodesWith<dynamics::CollisionAddon>();
+
   for (size_t i = 0; i < mMeshes.size(); i++)
   {
     for (size_t j = 0; j < _otherNode->mMeshes.size(); j++)
@@ -200,14 +208,14 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
         //            pair1.bd2 = _otherNode->mBodyNode;
         //            pair1.bdID1 = this->mBodyNodeID;
         //            pair1.bdID2 = _otherNode->mBodyNodeID;
-        pair1.bodyNode1 = this->getBodyNode();
-        pair1.bodyNode2 = _otherNode->getBodyNode();
+        pair1.bodyNode1 = bodyNode1;
+        pair1.bodyNode2 = bodyNode2;
         fcl::Vec3f v;
         pair1.triID1 = res.getContact(k).b1;
         pair1.triID2 = res.getContact(k).b2;
         pair1.penetrationDepth = res.getContact(k).penetration_depth;
-        pair1.shape1 = pair1.bodyNode1.lock()->getCollisionShape(i);
-        pair1.shape2 = pair1.bodyNode2.lock()->getCollisionShape(j);
+        pair1.shape1 = collShapeNodes1[i]->getShape();
+        pair1.shape2 = collShapeNodes2[j]->getShape();
         pair2 = pair1;
         int contactResult =
             evalContactPosition(res.getContact(k), mMeshes[i],
@@ -307,10 +315,17 @@ void FCLMeshCollisionNode::updateShape()
   // using-declaration
   using dart::dynamics::SoftMeshShape;
 
-  for (size_t i = 0; i < mBodyNode->getNumCollisionShapes(); i++)
+  for (auto i = 0u; i < mBodyNode->getNumNodes<dynamics::ShapeNode>(); ++i)
   {
-    dynamics::ShapePtr shape = mBodyNode->getCollisionShape(i);
-    fcl::Transform3f shapeT = getFclTransform(shape->getLocalTransform());
+    auto shapeNode = mBodyNode->getNode<dynamics::ShapeNode>(i);
+
+    auto collisionAddon = shapeNode->get<dynamics::CollisionAddon>();
+    if (!collisionAddon)
+      continue;
+
+    auto shape = shapeNode->getShape();
+    auto shapeT = getFclTransform(shapeNode->getRelativeTransform());
+
     switch (shape->getShapeType())
     {
       case dynamics::Shape::SOFT_MESH:

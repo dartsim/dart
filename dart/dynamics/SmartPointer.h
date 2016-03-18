@@ -53,6 +53,7 @@
 namespace dart {
 namespace dynamics {
 
+DART_COMMON_MAKE_SHARED_WEAK(ShapeFrame)
 DART_COMMON_MAKE_SHARED_WEAK(SimpleFrame)
 
 DART_COMMON_MAKE_SHARED_WEAK(NodeDestructor)
@@ -77,7 +78,6 @@ DART_COMMON_MAKE_SHARED_WEAK(Group)
 DART_COMMON_MAKE_SHARED_WEAK(Linkage)
 DART_COMMON_MAKE_SHARED_WEAK(Branch)
 DART_COMMON_MAKE_SHARED_WEAK(Chain)
-
 
 //-----------------------------------------------------------------------------
 // Shape Smart Pointers
@@ -168,6 +168,8 @@ DART_DYNAMICS_MAKE_NODEPTR(EndEffector)
 // TemplateNodePtr<const EndEffector>       --> ConstEndEffectorPtr
 // TemplateWeakNodePtr<EndEffector>         --> WeakEndEffectorPtr
 // TemplateWeakNodePtr<const EndEffector>   --> WeakConstEndEffectorPtr
+
+DART_DYNAMICS_MAKE_NODEPTR(ShapeNode)
 
 
 //-----------------------------------------------------------------------------

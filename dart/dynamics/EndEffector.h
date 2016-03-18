@@ -37,10 +37,11 @@
 #ifndef DART_DYNAMICS_ENDEFFECTOR_H_
 #define DART_DYNAMICS_ENDEFFECTOR_H_
 
+#include "dart/common/Addon.h"
+#include "dart/common/SpecializedForAddon.h"
+#include "dart/common/AddonWithVersion.h"
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
-#include "dart/dynamics/Addon.h"
-#include "dart/common/SpecializedForAddon.h"
 
 namespace dart {
 namespace dynamics {
@@ -70,7 +71,7 @@ void SupportUpdate(Support* support);
 } // namespace detail
 
 class Support final :
-    public AddonWithProtectedStateAndPropertiesInSkeleton<
+    public common::AddonWithStateAndVersionedProperties<
         Support,
         detail::SupportStateData,
         detail::SupportPropertiesData,
@@ -79,12 +80,13 @@ class Support final :
 {
 public:
 
-  DART_DYNAMICS_ADDON_STATE_PROPERTY_CONSTRUCTORS( Support, &detail::SupportUpdate, &detail::SupportUpdate )
+//  DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS( Support, &detail::SupportUpdate, &detail::SupportUpdate )
+  DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS(Support)
 
   /// Set/Get the support geometry for this EndEffector. The SupportGeometry
   /// represents points in the EndEffector frame that can be used for contact
   /// when solving balancing or manipulation constraints.
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(math::SupportGeometry, Geometry)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(math::SupportGeometry, Geometry)
   // void setGeometry(const math::SupportGeometry&);
   // const math::SupportGeometry& getGeometry() const;
 
@@ -227,16 +229,6 @@ public:
   void resetRelativeTransform();
 
   DART_BAKE_SPECIALIZED_ADDON(Support)
-
-  /// Get a pointer to the Support Addon for this EndEffector. If _createIfNull
-  /// is true, then the Support will be generated if one does not already exist.
-  Support* getSupport(bool _createIfNull);
-
-  // Documentation inherited
-  std::shared_ptr<Skeleton> getSkeleton() override;
-
-  // Documentation inherited
-  std::shared_ptr<const Skeleton> getSkeleton() const override;
 
   // Documentation inherited
   bool dependsOn(size_t _genCoordIndex) const override;

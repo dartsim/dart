@@ -41,6 +41,8 @@
 
 #include "dart/common/Subject.h"
 #include "dart/common/Extensible.h"
+#include "dart/common/VersionCounter.h"
+
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
@@ -77,7 +79,9 @@ private:
 ///
 /// In most cases, when creating your own custom Node class, you will also want
 /// to inherit from AccessoryNode using CRTP.
-class Node : public virtual common::Subject
+class Node :
+    public virtual common::Subject,
+    public virtual common::VersionCounter
 {
 public:
 
@@ -170,6 +174,20 @@ public:
   /// It will be deleted once all strong references to it expire. If it is an
   /// AccessoryNode, you can call reattach() to prevent that from happening.
   bool isRemoved() const;
+
+  /// Return the Skeleton that this Node is attached to
+  virtual std::shared_ptr<Skeleton> getSkeleton();
+
+  /// Return the Skeleton that this Node is attached to
+  virtual std::shared_ptr<const Skeleton> getSkeleton() const;
+
+  /// Increment the version of this Node (by default, this will increment the
+  /// version number of the Skeleton).
+  size_t incrementVersion() override;
+
+  /// Get the version of this Node (by default, this will get the version
+  /// number of the Skeleton).
+  size_t getVersion() const override;
 
 private:
 

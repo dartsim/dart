@@ -194,10 +194,10 @@ public:
   dart::dynamics::SimpleFrame* getSimpleFrame() const;
 
   // Documentation inherited
-  virtual void move() override;
+  void move() override;
 
   // Documentation inherited
-  virtual void saveState() override;
+  void saveState() override;
 
 protected:
 
@@ -227,7 +227,7 @@ public:
   dart::dynamics::Shape* getShape() const;
 
   // Documentation inherited
-  virtual void update() override;
+  void update() override;
 
 protected:
 
@@ -254,13 +254,13 @@ public:
   InteractiveFrame* getFrame() const;
 
   // Documentation inherited
-  virtual void update() override;
+  void update() override;
 
   // Documentation inherited
-  virtual void move() override;
+  void move() override;
 
   // Documentation inherited
-  virtual void saveState() override;
+  void saveState() override;
 
 protected:
 
@@ -287,13 +287,16 @@ public:
   dart::dynamics::BodyNode* getBodyNode() const;
 
   // Documentation inherited
-  virtual void move() override;
+  void update() override;
 
   // Documentation inherited
-  virtual void saveState() override;
+  void move() override;
 
   // Documentation inherited
-  virtual void release() override;
+  void saveState() override;
+
+  // Documentation inherited
+  void release() override;
 
   /// Tell this DnD to use an external IK instead of the one embedded in the
   /// BodyNode. Using the one embedded in the BodyNode allows it to

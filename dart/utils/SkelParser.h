@@ -37,212 +37,34 @@
 #ifndef DART_UTILS_SKEL_PARSER_H
 #define DART_UTILS_SKEL_PARSER_H
 
-#include <cstddef>
-
-#include <Eigen/StdVector>
-#include <Eigen/Dense>
-// TinyXML-2 Library
-// http://www.grinninglizard.com/tinyxml2/index.html
-#include <tinyxml2.h>
-
-#include "dart/common/Deprecated.h"
-#include "dart/utils/XmlHelpers.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/SingleDofJoint.h"
-#include "dart/dynamics/MultiDofJoint.h"
+#include <string>
+#include "dart/common/Uri.h"
+#include "dart/common/LocalResourceRetriever.h"
 #include "dart/simulation/World.h"
 
 namespace dart {
-
-namespace dynamics {
-class Joint;
-class WeldJoint;
-class PrismaticJoint;
-class RevoluteJoint;
-class ScrewJoint;
-class UniversalJoint;
-class BallJoint;
-class EulerXYZJoint;
-class EulerJoint;
-class TranslationalJoint;
-class PlanarJoint;
-class FreeJoint;
-class Marker;
-}
-
-namespace dynamics {
-class BodyNode;
-class Shape;
-class Skeleton;
-}
-
-namespace simulation {
-class World;
-}
-
 namespace utils {
 
 /// SkelParser
-class SkelParser
-{
-public:
+namespace SkelParser {
+
   /// Read World from skel file
-  static simulation::WorldPtr readWorld(
-    const common::Uri& _uri,
-    const common::ResourceRetrieverPtr& _retriever = nullptr);
+  simulation::WorldPtr readWorld(
+    const common::Uri& uri,
+    const common::ResourceRetrieverPtr& retriever = nullptr);
 
   /// Read World from an xml-formatted string
-  static simulation::WorldPtr readWorldXML(
-    const std::string& _xmlString,
-    const common::Uri& _baseUri = "",
-    const common::ResourceRetrieverPtr& _retriever = nullptr);
+  simulation::WorldPtr readWorldXML(
+    const std::string& xmlString,
+    const common::Uri& baseUri = "",
+    const common::ResourceRetrieverPtr& retriever = nullptr);
 
   /// Read Skeleton from skel file
-  static dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& _fileUri,
-    const common::ResourceRetrieverPtr& _retriever = nullptr);
+  dynamics::SkeletonPtr readSkeleton(
+    const common::Uri& fileUri,
+    const common::ResourceRetrieverPtr& retriever = nullptr);
 
-  typedef std::shared_ptr<dynamics::BodyNode::Properties> BodyPropPtr;
-
-  ///
-  struct SkelBodyNode
-  {
-    BodyPropPtr properties;
-    Eigen::Isometry3d initTransform;
-    std::string type;
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
-  // first: BodyNode name | second: BodyNode information
-  typedef Eigen::aligned_map<std::string, SkelBodyNode> BodyMap;
-
-  typedef std::shared_ptr<dynamics::Joint::Properties> JointPropPtr;
-  struct SkelJoint
-  {
-    JointPropPtr properties;
-    Eigen::VectorXd position;
-    Eigen::VectorXd velocity;
-    Eigen::VectorXd acceleration;
-    Eigen::VectorXd force;
-    std::string parentName;
-    std::string childName;
-    std::string type;
-  };
-
-  // first: Child BodyNode name | second: Joint information
-  typedef std::map<std::string, SkelJoint> JointMap;
-
-  // first: Order that Joint appears in file | second: Child BodyNode name
-  typedef std::map<size_t, std::string> IndexToJoint;
-
-  // first: Child BodyNode name | second: Order that Joint appears in file
-  typedef std::map<std::string, size_t> JointToIndex;
-
-protected:
-
-  static simulation::WorldPtr readWorld(
-      tinyxml2::XMLElement* _worldElement,
-      const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _retriever);
-
-  static dart::dynamics::SkeletonPtr readSkeleton(
-      tinyxml2::XMLElement* _skeletonElement,
-      const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _retriever);
-
-  static SkelBodyNode readBodyNode(
-      tinyxml2::XMLElement* _bodyElement,
-      const Eigen::Isometry3d& _skeletonFrame,
-      const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _retriever);
-
-  static SkelBodyNode readSoftBodyNode(
-      tinyxml2::XMLElement* _softBodyNodeElement,
-      const Eigen::Isometry3d& _skeletonFrame,
-      const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _retriever);
-
-  static dynamics::ShapePtr readShape(
-      tinyxml2::XMLElement* _shapeElement,
-      const std::string& bodyName,
-      const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _retriever);
-
-  /// Read marker
-  static dynamics::Marker::Properties readMarker(
-      tinyxml2::XMLElement* _markerElement);
-
-  ///
-  static void readJoint(
-      tinyxml2::XMLElement* _jointElement,
-      const BodyMap& _bodyNodes,
-      JointMap& _joints,
-      IndexToJoint& _order,
-      JointToIndex& _lookup);
-
-  ///
-  static JointPropPtr readRevoluteJoint(
-      tinyxml2::XMLElement* _jointElement,
-      SkelJoint& _joint,
-      const std::string& _name);
-
-  ///
-  static JointPropPtr readPrismaticJoint(
-      tinyxml2::XMLElement* _jointElement,
-      SkelJoint& _joint,
-      const std::string& _name);
-
-  ///
-  static JointPropPtr readScrewJoint(
-      tinyxml2::XMLElement* _jointElement,
-      SkelJoint& _joint,
-      const std::string& _name);
-
-  ///
-  static JointPropPtr readUniversalJoint(
-      tinyxml2::XMLElement* _universalJointElement,
-      SkelJoint& _joint,
-      const std::string& _name);
-
-  ///
-  static JointPropPtr readBallJoint(
-      tinyxml2::XMLElement* _jointElement,
-      SkelJoint& _joint,
-      const std::string& _name);
-
-  ///
-  static JointPropPtr readEulerJoint(
-      tinyxml2::XMLElement* _jointElement,
-      SkelJoint& _joint,
-      const std::string& _name);
-
-  ///
-  static JointPropPtr readTranslationalJoint(
-      tinyxml2::XMLElement* _jointElement,
-      SkelJoint& _joint,
-      const std::string& _name);
-
-  ///
-  static JointPropPtr readPlanarJoint(
-      tinyxml2::XMLElement* _jointElement,
-      SkelJoint& _joint,
-      const std::string& _name);
-
-  ///
-  static JointPropPtr readFreeJoint(
-      tinyxml2::XMLElement* _jointElement,
-      SkelJoint& _joint,
-      const std::string& _name);
-
-  ///
-  static JointPropPtr readWeldJoint(
-      tinyxml2::XMLElement* _jointElement,
-      SkelJoint& _joint,
-      const std::string& _name);
-
-  static common::ResourceRetrieverPtr getRetriever(const common::ResourceRetrieverPtr& _retriever);
-};
+} // namespace SkelParser
 
 } // namespace utils
 } // namespace dart

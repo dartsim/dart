@@ -85,10 +85,12 @@ struct CollisionFilter : public btOverlapFilterCallback
       btCollisionObject* collObj1 =
           static_cast<btCollisionObject*>(_proxy1->m_clientObject);
 
-      BulletUserData* userData0 =
-          static_cast<BulletUserData*>(collObj0->getUserPointer());
-      BulletUserData* userData1 =
-          static_cast<BulletUserData*>(collObj1->getUserPointer());
+      BulletCollisionNode::BulletUserData* userData0 =
+          static_cast<BulletCollisionNode::BulletUserData*>(
+            collObj0->getUserPointer());
+      BulletCollisionNode::BulletUserData* userData1 =
+          static_cast<BulletCollisionNode::BulletUserData*>(
+            collObj1->getUserPointer());
 
       // Assume single collision detector
       assert(userData0->btCollDet == userData1->btCollDet);
@@ -141,8 +143,9 @@ CollisionNode* BulletCollisionDetector::createCollisionNode(
   for (int i = 0; i < collNode->getNumBulletCollisionObjects(); ++i)
   {
     btCollisionObject* collObj = collNode->getBulletCollisionObject(i);
-    BulletUserData* userData
-        = static_cast<BulletUserData*>(collObj->getUserPointer());
+    BulletCollisionNode::BulletUserData* userData
+        = static_cast<BulletCollisionNode::BulletUserData*>(
+          collObj->getUserPointer());
     userData->btCollDet = this;
     mBulletCollisionWorld->addCollisionObject(collObj);
   }
@@ -151,8 +154,8 @@ CollisionNode* BulletCollisionDetector::createCollisionNode(
 }
 
 //==============================================================================
-bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
-                                              bool _calculateContactPoints)
+bool BulletCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
+                                              bool /*_calculateContactPoints*/)
 {
   // Update all the transformations of the collision nodes
   for (size_t i = 0; i < mCollisionNodes.size(); ++i)
@@ -187,10 +190,12 @@ bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
     const btCollisionObject* obA = contactManifold->getBody0();
     const btCollisionObject* obB = contactManifold->getBody1();
 
-    BulletUserData* userDataA
-        = static_cast<BulletUserData*>(obA->getUserPointer());
-    BulletUserData* userDataB
-        = static_cast<BulletUserData*>(obB->getUserPointer());
+    BulletCollisionNode::BulletUserData* userDataA
+        = static_cast<BulletCollisionNode::BulletUserData*>(
+          obA->getUserPointer());
+    BulletCollisionNode::BulletUserData* userDataB
+        = static_cast<BulletCollisionNode::BulletUserData*>(
+          obB->getUserPointer());
 
     int numContacts = contactManifold->getNumContacts();
     for (int j = 0; j < numContacts; j++)
@@ -217,9 +222,9 @@ bool BulletCollisionDetector::detectCollision(bool _checkAllCollisions,
 }
 
 //==============================================================================
-bool BulletCollisionDetector::detectCollision(CollisionNode* _node1,
-                                              CollisionNode* _node2,
-                                              bool _calculateContactPoints)
+bool BulletCollisionDetector::detectCollision(CollisionNode* /*_node1*/,
+                                              CollisionNode* /*_node2*/,
+                                              bool /*_calculateContactPoints*/)
 {
   assert(false);
   return false;

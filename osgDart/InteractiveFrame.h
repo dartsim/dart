@@ -50,7 +50,7 @@ namespace osgDart
 
 class InteractiveFrame;
 
-class InteractiveTool : public dart::dynamics::Entity
+class InteractiveTool : public dart::dynamics::SimpleFrame
 {
 public:
 
@@ -91,7 +91,18 @@ public:
   /// Get the InteractiveFrame that this tool belongs to
   const InteractiveFrame* getInteractiveFrame() const;
 
+  dart::dynamics::SimpleFrame* addShapeFrame(
+      const dart::dynamics::ShapePtr& shape);
+
+  const std::vector<dart::dynamics::SimpleFrame*> getShapeFrames();
+
+  const std::vector<const dart::dynamics::SimpleFrame*> getShapeFrames() const;
+
+  void removeAllShapeFrames();
+
 protected:
+
+  std::vector<std::unique_ptr<dart::dynamics::SimpleFrame>> mSimpleFrames;
 
   double mDefaultAlpha;
 
@@ -127,6 +138,15 @@ public:
   const InteractiveTool* getTool(InteractiveTool::Type tool,
                                  size_t coordinate) const;
 
+  dart::dynamics::SimpleFrame* addShapeFrame(
+      const dart::dynamics::ShapePtr& shape);
+
+  const std::vector<dart::dynamics::SimpleFrame*> getShapeFrames();
+
+  const std::vector<const dart::dynamics::SimpleFrame*> getShapeFrames() const;
+
+  void removeAllShapeFrames();
+
 protected:
   /// Creates the standard visualization shapes for InteractiveFrames. Overload
   /// this to create an InteractiveFrame with custom visualization shapes.
@@ -140,6 +160,8 @@ protected:
 
   /// Array of tools belonging to this InteractiveFrame
   InteractiveTool* mTools[InteractiveTool::NUM_TYPES][3];
+
+  std::vector<std::unique_ptr<dart::dynamics::SimpleFrame>> mSimpleFrames;
 
 };
 

@@ -526,11 +526,15 @@ bool readShape(const tinyxml2::XMLElement* shapeEle,
     return false;
   }
 
-  shape->setLocalTransform(localTransform);
-  shape->setColor(vskData.bodyNodeColorMap[parent]);
+  dynamics::ShapeNode* node = parent->createShapeNodeWith<
+      dynamics::VisualAddon,
+      dynamics::CollisionAddon,
+      dynamics::DynamicsAddon>(
+        shape,
+        parent->getName()+"_shape_"+std::to_string(parent->getNumShapeNodes()));
 
-  parent->addVisualizationShape(shape);
-  parent->addCollisionShape(shape);
+  node->setRelativeTransform(localTransform);
+  node->getVisualAddon()->setColor(vskData.bodyNodeColorMap[parent]);
 
   return true;
 }
@@ -894,7 +898,7 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
 
     // If a body already has enough shapes, do NOT automatically generate a new
     // shape.
-    if (parent->getNumCollisionShapes() >= parent->getNumChildBodyNodes())
+    if (parent->getNumShapeNodes() >= parent->getNumChildBodyNodes())
       continue;
 
     // Determine the diameters of the ellipsoid shape. The diameter along X-axis
@@ -910,12 +914,16 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
                                                     math::AxisType::AXIS_X);
     localTransform.translation() = 0.5 * tf.translation();
 
-    dynamics::ShapePtr shape(new dynamics::EllipsoidShape(size));
-    shape->setLocalTransform(localTransform);
-    shape->setColor(vskData.bodyNodeColorMap[parent]);
+    dynamics::ShapeNode* shapeNode = parent->createShapeNodeWith<
+        dynamics::VisualAddon,
+        dynamics::CollisionAddon,
+        dynamics::DynamicsAddon>(
+          dynamics::ShapePtr(new dynamics::EllipsoidShape(size)),
+          parent->getName()+"_shape_"+
+          std::to_string(parent->getNumShapeNodes()));
 
-    parent->addVisualizationShape(shape);
-    parent->addCollisionShape(shape);
+    shapeNode->setRelativeTransform(localTransform);
+    shapeNode->getVisualAddon()->setColor(vskData.bodyNodeColorMap[parent]);
   }
 
   // Remove redundant leaf body nodes with no shape
@@ -926,7 +934,7 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
     {
       dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
 
-      if (bodyNode->getVisualizationShapes().empty()
+      if (bodyNode->getNumShapeNodes() == 0
           && bodyNode->getNumChildBodyNodes() == 0)
       {
         emptynodes.push_back(bodyNode);
@@ -945,12 +953,14 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
 
     double totalMass = 0.0;
     Eigen::Matrix3d totalMoi = Eigen::Matrix3d::Zero();
-    const auto& shapes = bodyNode->getVisualizationShapes();
+    auto numShapeNodes = bodyNode->getNumNodes<dynamics::ShapeNode>();
 
-    for (const dynamics::ShapePtr& shape : shapes)
+    for (auto i = 0u; i < numShapeNodes; ++i)
     {
+      auto shapeNode = bodyNode->getNode<dynamics::ShapeNode>(i);
+      auto shape     = shapeNode->getShape();
       const double             mass    = density * shape->getVolume();
-      const Eigen::Isometry3d& localTf = shape->getLocalTransform();
+      const Eigen::Isometry3d& localTf = shapeNode->getRelativeTransform();
       const Eigen::Matrix3d    moi     = shape->computeInertia(mass);
 
       totalMass += mass;

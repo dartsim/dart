@@ -38,7 +38,7 @@
 #define OSGDART_WORLDNODE_H
 
 #include <osg/Group>
-#include <map>
+#include <unordered_map>
 #include <memory>
 
 #include "osgDart/Viewer.h"
@@ -52,6 +52,7 @@ class World;
 namespace dynamics {
 class Frame;
 class Entity;
+class ShapeFrame;
 }
 
 } // namespace dart
@@ -60,6 +61,7 @@ namespace osgDart
 {
 
 class FrameNode;
+class ShapeFrameNode;
 class EntityNode;
 class Viewer;
 
@@ -154,31 +156,16 @@ protected:
   void refreshSkeletons();
 
   /// Refresh all the custom Frame rendering data
-  void refreshCustomFrames();
+  void refreshSimpleFrames();
 
-  /// Refresh the specified Frame's rendering data
-  void refreshBaseFrameNode(dart::dynamics::Frame* _frame);
+  void refreshBaseFrameNode(dart::dynamics::Frame* frame);
 
-  /// Create a node for the specified Frame
-  void createBaseFrameNode(dart::dynamics::Frame* _frame);
+  void refreshShapeFrameNode(dart::dynamics::Frame* frame);
 
-  /// Refresh the specified Entity's rendering data
-  void refreshBaseEntityNode(dart::dynamics::Entity* _entity);
+  using NodeMap = std::unordered_map<dart::dynamics::Frame*, ShapeFrameNode*>;
 
-  /// Create a node for the specified Entity
-  void createBaseEntityNode(dart::dynamics::Entity* _entity);
-
-  /// Map from Frame pointers to child FrameNode pointers
-  std::map<dart::dynamics::Frame*, FrameNode*> mFrameToNode;
-
-  /// Map from child FrameNode pointers to Frame pointers
-  std::map<FrameNode*, dart::dynamics::Frame*> mNodeToFrame;
-
-  /// Map from Entity pointers to child EntityNode pointers
-  std::map<dart::dynamics::Entity*, EntityNode*> mEntityToNode;
-
-  /// Map from child EntityNode pointers to Entity pointers
-  std::map<EntityNode*, dart::dynamics::Entity*> mNodeToEntity;
+  /// Map from Frame pointers to FrameNode pointers
+  NodeMap mFrameToNode;
 
   /// The World that this WorldNode is associated with
   std::shared_ptr<dart::simulation::World> mWorld;

@@ -41,6 +41,7 @@
 #include "osgDart/Utils.h"
 
 #include "dart/dynamics/CylinderShape.h"
+#include "dart/dynamics/SimpleFrame.h"
 
 namespace osgDart {
 namespace render {
@@ -50,7 +51,7 @@ class CylinderShapeGeode : public ShapeNode, public osg::Geode
 public:
 
   CylinderShapeGeode(dart::dynamics::CylinderShape* shape,
-                     EntityNode* parentEntity,
+                     ShapeFrameNode* parent,
                      CylinderShapeNode* parentNode);
 
   void refresh();
@@ -71,6 +72,7 @@ class CylinderShapeDrawable : public osg::ShapeDrawable
 public:
 
   CylinderShapeDrawable(dart::dynamics::CylinderShape* shape,
+                        dart::dynamics::VisualAddon* visualAddon,
                         CylinderShapeGeode* parent);
 
   void refresh(bool firstTime);
@@ -80,6 +82,8 @@ protected:
   virtual ~CylinderShapeDrawable();
 
   dart::dynamics::CylinderShape* mCylinderShape;
+  dart::dynamics::VisualAddon* mVisualAddon;
+
   CylinderShapeGeode* mParent;
 
 };
@@ -87,13 +91,13 @@ protected:
 //==============================================================================
 CylinderShapeNode::CylinderShapeNode(
     std::shared_ptr<dart::dynamics::CylinderShape> shape,
-    EntityNode* parent)
+    ShapeFrameNode* parent)
   : ShapeNode(shape, parent, this),
     mCylinderShape(shape),
     mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -101,7 +105,7 @@ void CylinderShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mShape->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -110,15 +114,11 @@ void CylinderShapeNode::refresh()
 }
 
 //==============================================================================
-void CylinderShapeNode::extractData(bool firstTime)
+void CylinderShapeNode::extractData(bool /*firstTime*/)
 {
-  if(mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-     || firstTime)
-    setMatrix(eigToOsgMatrix(mShape->getLocalTransform()));
-
   if(nullptr == mGeode)
   {
-    mGeode = new CylinderShapeGeode(mCylinderShape.get(), mParentEntity, this);
+    mGeode = new CylinderShapeGeode(mCylinderShape.get(), mParentShapeFrameNode, this);
     addChild(mGeode);
     return;
   }
@@ -133,10 +133,11 @@ CylinderShapeNode::~CylinderShapeNode()
 }
 
 //==============================================================================
-CylinderShapeGeode::CylinderShapeGeode(dart::dynamics::CylinderShape* shape,
-    EntityNode* parentEntity,
+CylinderShapeGeode::CylinderShapeGeode(
+    dart::dynamics::CylinderShape* shape,
+    ShapeFrameNode* parent,
     CylinderShapeNode* parentNode)
-  : ShapeNode(parentNode->getShape(), parentEntity, this),
+  : ShapeNode(parentNode->getShape(), parent, this),
     mCylinderShape(shape),
     mDrawable(nullptr)
 {
@@ -157,7 +158,7 @@ void CylinderShapeGeode::extractData()
 {
   if(nullptr == mDrawable)
   {
-    mDrawable = new CylinderShapeDrawable(mCylinderShape, this);
+    mDrawable = new CylinderShapeDrawable(mCylinderShape, mVisualAddon, this);
     addDrawable(mDrawable);
     return;
   }
@@ -173,8 +174,11 @@ CylinderShapeGeode::~CylinderShapeGeode()
 
 //==============================================================================
 CylinderShapeDrawable::CylinderShapeDrawable(
-    dart::dynamics::CylinderShape* shape, CylinderShapeGeode* parent)
+    dart::dynamics::CylinderShape* shape,
+    dart::dynamics::VisualAddon* visualAddon,
+    CylinderShapeGeode* parent)
   : mCylinderShape(shape),
+    mVisualAddon(visualAddon),
     mParent(parent)
 {
   refresh(true);
@@ -202,7 +206,7 @@ void CylinderShapeDrawable::refresh(bool firstTime)
   if(mCylinderShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
-    setColor(eigToOsgVec4(mCylinderShape->getRGBA()));
+    setColor(eigToOsgVec4(mVisualAddon->getRGBA()));
   }
 }
 

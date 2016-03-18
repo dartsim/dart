@@ -34,7 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "osgDart/EntityNode.h"
+#include "osg/Geode"
+#include "osg/Node"
+#include "osg/Group"
+
+#include "osgDart/ShapeFrameNode.h"
+#include "osgDart/Utils.h"
 #include "osgDart/render/ShapeNode.h"
 #include "osgDart/render/BoxShapeNode.h"
 #include "osgDart/render/EllipsoidShapeNode.h"
@@ -45,7 +50,8 @@
 #include "osgDart/render/LineSegmentShapeNode.h"
 #include "osgDart/render/WarningShapeNode.h"
 
-#include "dart/common/Console.h"
+#include "dart/dynamics/Frame.h"
+#include "dart/dynamics/ShapeFrame.h"
 #include "dart/dynamics/Entity.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
@@ -54,102 +60,94 @@
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/dynamics/LineSegmentShape.h"
+#include "dart/dynamics/SimpleFrame.h"
 
 namespace osgDart {
 
-EntityNode::EntityNode(dart::dynamics::Entity* _entity, FrameNode* _parent)
-  : mEntity(_entity),
-    mParent(_parent),
+//==============================================================================
+ShapeFrameNode::ShapeFrameNode(
+    dart::dynamics::ShapeFrame* _frame,
+    WorldNode* _worldNode)
+  : mShapeFrame(_frame),
+    mWorldNode(_worldNode),
+    mShapeNode(nullptr),
     mUtilized(false)
 {
   refresh();
-  setName(mEntity->getName()+" [entity]");
+  setName(_frame->getName()+" [frame]");
 }
 
 //==============================================================================
-dart::dynamics::Entity* EntityNode::getEntity() const
+dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame()
 {
-  return mEntity;
+  return mShapeFrame;
 }
 
 //==============================================================================
-FrameNode* EntityNode::getParentFrameNode()
+const dart::dynamics::ShapeFrame* ShapeFrameNode::getShapeFrame() const
 {
-  return mParent;
+  return mShapeFrame;
 }
 
 //==============================================================================
-const FrameNode* EntityNode::getParentFrameNode() const
+WorldNode* ShapeFrameNode::getWorldNode()
 {
-  return mParent;
+  return mWorldNode;
 }
 
 //==============================================================================
-void EntityNode::refresh()
+const WorldNode* ShapeFrameNode::getWorldNode() const
 {
+  return mWorldNode;
+}
+
+//==============================================================================
+void ShapeFrameNode::refresh(bool shortCircuitIfUtilized)
+{
+  if(shortCircuitIfUtilized && mUtilized)
+    return;
+
   mUtilized = true;
 
-  const std::vector<dart::dynamics::ShapePtr>& visShapes =
-      mEntity->getVisualizationShapes();
+  auto shape = mShapeFrame->getShape();
 
-  for(dart::dynamics::ShapePtr shape : visShapes)
+  setMatrix(eigToOsgMatrix(mShapeFrame->getWorldTransform()));
+  // TODO(JS): Maybe the data varicance information should be in ShapeFrame and
+  // checked here.
+
+  if(shape)
     refreshShapeNode(shape);
 }
 
 //==============================================================================
-bool EntityNode::wasUtilized() const
+bool ShapeFrameNode::wasUtilized() const
 {
   return mUtilized;
 }
 
 //==============================================================================
-void EntityNode::clearUtilization()
+void ShapeFrameNode::clearUtilization()
 {
   mUtilized = false;
 }
 
 //==============================================================================
-EntityNode::~EntityNode()
+ShapeFrameNode::~ShapeFrameNode()
 {
   // Do nothing
 }
 
 //==============================================================================
-void EntityNode::clearChildUtilizationFlags()
+void ShapeFrameNode::refreshShapeNode(
+    const std::shared_ptr<dart::dynamics::Shape>& shape)
 {
-  for(auto& node : mNodeToShape)
-    node.first->clearUtilization();
-}
-
-//==============================================================================
-void EntityNode::clearUnusedNodes()
-{
-  for(auto& node_pair : mNodeToShape)
+  if(mShapeNode && mShapeNode->getShape() == shape)
   {
-    render::ShapeNode* node = node_pair.first;
-    if(!node->wasUtilized())
-    {
-      mNodeToShape.erase(node);
-      mShapeToNode.erase(node_pair.second);
-
-      removeChild(node->getNode());
-    }
-  }
-}
-
-//==============================================================================
-void EntityNode::refreshShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
-{
-  std::map<dart::dynamics::ShapePtr, render::ShapeNode*>::iterator it =
-      mShapeToNode.find(shape);
-
-  if(it == mShapeToNode.end())
-  {
-    createShapeNode(shape);
+    mShapeNode->refresh();
     return;
   }
 
-  (it->second)->refresh();
+  createShapeNode(shape);
 }
 
 //==============================================================================
@@ -164,10 +162,14 @@ static void warnAboutUnsuccessfulCast(const std::string& shapeType,
 }
 
 //==============================================================================
-void EntityNode::createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
+void ShapeFrameNode::createShapeNode(
+    const std::shared_ptr<dart::dynamics::Shape>& shape)
 {
   using namespace dart::dynamics;
-  render::ShapeNode* node = nullptr;
+  if(mShapeNode)
+    removeChild(mShapeNode->getNode());
+
+  mShapeNode = nullptr;
 
   switch(shape->getShapeType())
   {
@@ -176,9 +178,9 @@ void EntityNode::createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
       std::shared_ptr<BoxShape> bs =
           std::dynamic_pointer_cast<BoxShape>(shape);
       if(bs)
-        node = new render::BoxShapeNode(bs, this);
+        mShapeNode = new render::BoxShapeNode(bs, this);
       else
-        warnAboutUnsuccessfulCast("BoxShape", mEntity->getName());
+        warnAboutUnsuccessfulCast("BoxShape", mShapeFrame->getName());
       break;
     }
 
@@ -187,9 +189,9 @@ void EntityNode::createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
       std::shared_ptr<EllipsoidShape> es =
           std::dynamic_pointer_cast<EllipsoidShape>(shape);
       if(es)
-        node = new render::EllipsoidShapeNode(es, this);
+        mShapeNode = new render::EllipsoidShapeNode(es, this);
       else
-        warnAboutUnsuccessfulCast("EllipsoidShape", mEntity->getName());
+        warnAboutUnsuccessfulCast("EllipsoidShape", mShapeFrame->getName());
       break;
     }
 
@@ -198,9 +200,9 @@ void EntityNode::createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
       std::shared_ptr<CylinderShape> cs =
           std::dynamic_pointer_cast<CylinderShape>(shape);
       if(cs)
-        node = new render::CylinderShapeNode(cs, this);
+        mShapeNode = new render::CylinderShapeNode(cs, this);
       else
-        warnAboutUnsuccessfulCast("CylinderShape", mEntity->getName());
+        warnAboutUnsuccessfulCast("CylinderShape", mShapeFrame->getName());
       break;
     }
 
@@ -209,9 +211,9 @@ void EntityNode::createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
       std::shared_ptr<PlaneShape> ps =
           std::dynamic_pointer_cast<PlaneShape>(shape);
       if(ps)
-        node = new render::PlaneShapeNode(ps, this);
+        mShapeNode = new render::PlaneShapeNode(ps, this);
       else
-        warnAboutUnsuccessfulCast("PlaneShape", mEntity->getName());
+        warnAboutUnsuccessfulCast("PlaneShape", mShapeFrame->getName());
       break;
     }
 
@@ -220,9 +222,9 @@ void EntityNode::createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
       std::shared_ptr<MeshShape> ms =
           std::dynamic_pointer_cast<MeshShape>(shape);
       if(ms)
-        node = new render::MeshShapeNode(ms, this);
+        mShapeNode = new render::MeshShapeNode(ms, this);
       else
-        warnAboutUnsuccessfulCast("MeshShape", mEntity->getName());
+        warnAboutUnsuccessfulCast("MeshShape", mShapeFrame->getName());
       break;
     }
 
@@ -231,9 +233,9 @@ void EntityNode::createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
       std::shared_ptr<SoftMeshShape> sms =
           std::dynamic_pointer_cast<SoftMeshShape>(shape);
       if(sms)
-        node = new render::SoftMeshShapeNode(sms, this);
+        mShapeNode = new render::SoftMeshShapeNode(sms, this);
       else
-        warnAboutUnsuccessfulCast("SoftMeshShape", mEntity->getName());
+        warnAboutUnsuccessfulCast("SoftMeshShape", mShapeFrame->getName());
       break;
     }
 
@@ -242,24 +244,21 @@ void EntityNode::createShapeNode(std::shared_ptr<dart::dynamics::Shape> shape)
       std::shared_ptr<LineSegmentShape> lss =
           std::dynamic_pointer_cast<LineSegmentShape>(shape);
       if(lss)
-        node = new render::LineSegmentShapeNode(lss, this);
+        mShapeNode = new render::LineSegmentShapeNode(lss, this);
       else
-        warnAboutUnsuccessfulCast("LineSegmentShape", mEntity->getName());
+        warnAboutUnsuccessfulCast("LineSegmentShape", mShapeFrame->getName());
       break;
     }
 
     default:
-      node = new render::WarningShapeNode(shape, this);
+      mShapeNode = new render::WarningShapeNode(shape, this);
       break;
   }
 
-  if(nullptr == node)
+  if(nullptr == mShapeNode)
     return;
 
-  mShapeToNode[shape] = node;
-  mNodeToShape[node] = shape;
-
-  addChild(node->getNode());
+  addChild(mShapeNode->getNode());
 }
 
 } // namespace osgDart

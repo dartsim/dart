@@ -39,7 +39,7 @@
 
 #include "dart/common/RequiresAddon.h"
 
-#include "dart/dynamics/Addon.h"
+#include "dart/common/AddonWithVersion.h"
 #include "dart/dynamics/Joint.h"
 
 namespace dart {
@@ -137,32 +137,32 @@ struct SingleDofJointProperties :
 
 //==============================================================================
 class SingleDofJointAddon final :
-    public AddonWithProtectedPropertiesInSkeleton<
+    public common::AddonWithVersionedProperties<
         SingleDofJointAddon, SingleDofJointUniqueProperties,
         SingleDofJoint, common::detail::NoOp>
 {
 public:
-  DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( SingleDofJointAddon, &common::detail::NoOp )
+  DART_COMMON_ADDON_PROPERTY_CONSTRUCTOR( SingleDofJointAddon, &common::detail::NoOp )
 
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, PositionLowerLimit)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, PositionUpperLimit)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, InitialPosition)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, VelocityLowerLimit)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, VelocityUpperLimit)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, InitialVelocity)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, AccelerationLowerLimit)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, AccelerationUpperLimit)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, ForceLowerLimit)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, ForceUpperLimit)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, SpringStiffness)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, RestPosition)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, DampingCoefficient)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(double, Friction)
-  DART_DYNAMICS_SET_GET_ADDON_PROPERTY(bool, PreserveDofName)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, PositionLowerLimit)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, PositionUpperLimit)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, InitialPosition)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, VelocityLowerLimit)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, VelocityUpperLimit)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, InitialVelocity)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, AccelerationLowerLimit)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, AccelerationUpperLimit)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, ForceLowerLimit)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, ForceUpperLimit)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, SpringStiffness)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, RestPosition)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, DampingCoefficient)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(double, Friction)
+  DART_COMMON_SET_GET_ADDON_PROPERTY(bool, PreserveDofName)
 
   const std::string& setDofName(const std::string& name,
                                 bool preserveName = true);
-  DART_DYNAMICS_GET_ADDON_PROPERTY(std::string, DofName)
+  DART_COMMON_GET_ADDON_PROPERTY(std::string, DofName)
 
   friend class dart::dynamics::SingleDofJoint;
 };

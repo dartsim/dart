@@ -59,7 +59,7 @@ public:
 
   SoftMeshShapeNode(
       std::shared_ptr<dart::dynamics::SoftMeshShape> shape,
-      EntityNode* parent);
+      ShapeFrameNode* parent);
 
   void refresh();
   void extractData(bool firstTime);

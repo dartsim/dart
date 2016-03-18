@@ -35,7 +35,7 @@
  */
 
 #include "osgDart/render/WarningShapeNode.h"
-#include "osgDart/EntityNode.h"
+#include "osgDart/ShapeFrameNode.h"
 
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/Entity.h"
@@ -45,11 +45,11 @@ namespace osgDart {
 namespace render {
 
 WarningShapeNode::WarningShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
-                                   EntityNode* parent)
+                                   ShapeFrameNode* parent)
   : ShapeNode(shape, parent, this)
 {
   dtwarn << "Shape type (" << shape->getShapeType()
-         << ") found in Entity '" << parent->getEntity()->getName()
+         << ") found in Entity '" << parent->getName()
          << "' is not currently supported by osgDart, "
          << "and will not be rendered\n";
 }

@@ -77,9 +77,9 @@ NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
 }
 
 //==============================================================================
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(size_t, NodeManagerJoinerForBodyNode, getNumNodes, () const, ())
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForBodyNode, getNode, (size_t index), (index))
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForBodyNode, getNode, (size_t index) const, (index))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(size_t, NodeManagerJoinerForBodyNode, getNumNodes, () const, isSpecializedForNode, ())
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForBodyNode, getNode, (size_t index), isSpecializedForNode, (index))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForBodyNode, getNode, (size_t index) const, isSpecializedForNode, (index))
 
 //==============================================================================
 template <class Base1, class Base2>
@@ -112,11 +112,11 @@ NodeManagerJoinerForSkeleton<Base1, Base2>::NodeManagerJoinerForSkeleton(
 }
 
 //==============================================================================
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(size_t, NodeManagerJoinerForSkeleton, getNumNodes, (size_t treeIndex) const, (treeIndex))
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForSkeleton, getNode, (size_t treeIndex, size_t nodeIndex), (treeIndex, nodeIndex))
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForSkeleton, getNode, (size_t treeIndex, size_t nodeIndex) const, (treeIndex, nodeIndex))
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForSkeleton, getNode, (const std::string& name), (name))
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForSkeleton, getNode, (const std::string& name) const, (name))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(size_t, NodeManagerJoinerForSkeleton, getNumNodes, (size_t treeIndex) const, isSpecializedForNode, (treeIndex))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForSkeleton, getNode, (size_t treeIndex, size_t nodeIndex), isSpecializedForNode, (treeIndex, nodeIndex))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForSkeleton, getNode, (size_t treeIndex, size_t nodeIndex) const, isSpecializedForNode, (treeIndex, nodeIndex))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForSkeleton, getNode, (const std::string& name), isSpecializedForNode, (name))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForSkeleton, getNode, (const std::string& name) const, isSpecializedForNode, (name))
 
 //==============================================================================
 template <class Base1, class Base2, class... OtherBases>

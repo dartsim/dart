@@ -45,20 +45,22 @@ namespace osgDart {
 //==============================================================================
 InteractiveTool::InteractiveTool(InteractiveFrame* frame, double defaultAlpha,
                                  const std::string& name)
-  : Entity(frame, name, false),
+  : Entity(ConstructFrame),
+    Frame(frame, name),
+    SimpleFrame(frame, name),
     mDefaultAlpha(defaultAlpha),
     mEnabled(true),
     mInteractiveFrame(frame)
 {
-
+  // Do nothing
 }
 
 //==============================================================================
 void InteractiveTool::setEnabled(bool enabled)
 {
   mEnabled = enabled;
-  for(size_t i=0; i<mEntityP.mVizShapes.size(); ++i)
-    mEntityP.mVizShapes[i]->setHidden(!enabled);
+  for(auto& frame : mSimpleFrames)
+    frame->getVisualAddon(true)->setHidden(!enabled);
 }
 
 //==============================================================================
@@ -70,8 +72,8 @@ bool InteractiveTool::getEnabled() const
 //==============================================================================
 void InteractiveTool::setAlpha(double alpha)
 {
-  for(size_t i=0; i<mEntityP.mVizShapes.size(); ++i)
-    mEntityP.mVizShapes[i]->setAlpha(alpha);
+  for(auto& frame : mSimpleFrames)
+    frame->getVisualAddon(true)->setAlpha(alpha);
 }
 
 //==============================================================================
@@ -107,12 +109,57 @@ const InteractiveFrame* InteractiveTool::getInteractiveFrame() const
 }
 
 //==============================================================================
+dart::dynamics::SimpleFrame* InteractiveTool::addShapeFrame(const dart::dynamics::ShapePtr& shape)
+{
+  mSimpleFrames.push_back(
+        std::unique_ptr<dart::dynamics::SimpleFrame>(
+          new dart::dynamics::SimpleFrame(this)));
+
+  auto shapeFrame = mSimpleFrames.back().get();
+  shapeFrame->setShape(shape);
+  shapeFrame->createVisualAddon();
+
+  return shapeFrame;
+}
+
+//==============================================================================
+const std::vector<dart::dynamics::SimpleFrame*>
+InteractiveTool::getShapeFrames()
+{
+  std::vector<dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
+
+  for(auto i = 0u; i < frames.size(); ++i)
+    frames[i] = mSimpleFrames[i].get();
+
+  return frames;
+}
+
+//==============================================================================
+const std::vector<const dart::dynamics::SimpleFrame*>
+InteractiveTool::getShapeFrames() const
+{
+  std::vector<const dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
+
+  for(auto i = 0u; i < frames.size(); ++i)
+    frames[i] = mSimpleFrames[i].get();
+
+  return frames;
+}
+
+//==============================================================================
+void InteractiveTool::removeAllShapeFrames()
+{
+  mSimpleFrames.clear();
+}
+
+//==============================================================================
 InteractiveFrame::InteractiveFrame(
     dart::dynamics::Frame* referenceFrame,
     const std::string& name,
     const Eigen::Isometry3d& relativeTransform,
     double size_scale, double thickness_scale)
   : Entity(referenceFrame, name, false),
+    Frame(referenceFrame, name),
     SimpleFrame(referenceFrame, name, relativeTransform)
 {
   for(size_t i=0; i<3; ++i)
@@ -176,6 +223,51 @@ const InteractiveTool* InteractiveFrame::getTool(
 }
 
 //==============================================================================
+dart::dynamics::SimpleFrame* InteractiveFrame::addShapeFrame(
+    const dart::dynamics::ShapePtr& shape)
+{
+  mSimpleFrames.push_back(
+        std::unique_ptr<dart::dynamics::SimpleFrame>(
+          new dart::dynamics::SimpleFrame(this)));
+
+  auto shapeFrame = mSimpleFrames.back().get();
+  shapeFrame->setShape(shape);
+  shapeFrame->createVisualAddon();
+
+  return shapeFrame;
+}
+
+//==============================================================================
+const std::vector<dart::dynamics::SimpleFrame*>
+InteractiveFrame::getShapeFrames()
+{
+  std::vector<dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
+
+  for(auto i = 0u; i < frames.size(); ++i)
+    frames[i] = mSimpleFrames[i].get();
+
+  return frames;
+}
+
+//==============================================================================
+const std::vector<const dart::dynamics::SimpleFrame*>
+InteractiveFrame::getShapeFrames() const
+{
+  std::vector<const dart::dynamics::SimpleFrame*> frames(mSimpleFrames.size());
+
+  for(auto i = 0u; i < frames.size(); ++i)
+    frames[i] = mSimpleFrames[i].get();
+
+  return frames;
+}
+
+//==============================================================================
+void InteractiveFrame::removeAllShapeFrames()
+{
+  mSimpleFrames.clear();
+}
+
+//==============================================================================
 void InteractiveFrame::createStandardVisualizationShapes(double size,
                                                          double thickness)
 {
@@ -205,7 +297,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     p.mHeadLengthScale = 0.4;
     p.mDoubleArrow = false;
 
-    mTools[InteractiveTool::LINEAR][a]->addVisualizationShape(
+    mTools[InteractiveTool::LINEAR][a]->addShapeFrame(
           dart::dynamics::ShapePtr(
             new dart::dynamics::ArrowShape(tail, head, p, color, 100)));
 
@@ -213,7 +305,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     tail[a] = -ring_inner_scale;
     head[a] = -size;
 
-    mTools[InteractiveTool::LINEAR][a]->addVisualizationShape(
+    mTools[InteractiveTool::LINEAR][a]->addShapeFrame(
           dart::dynamics::ShapePtr(
             new dart::dynamics::ArrowShape(tail, head, p, color, 100)));
   }
@@ -371,9 +463,8 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     else if( r == 2 )
       tf.rotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d(0,1,0)));
 
-    shape->setLocalTransform(tf);
-
-    mTools[InteractiveTool::ANGULAR][r]->addVisualizationShape(shape);
+    auto shapeFrame = mTools[InteractiveTool::ANGULAR][r]->addShapeFrame(shape);
+    shapeFrame->setRelativeTransform(tf);
   }
 
   // Create translation planes
@@ -460,19 +551,21 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     else if( p == 2 )
       tf.rotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d(0,1,0)));
 
-    shape->setLocalTransform(tf);
-
-    mTools[InteractiveTool::PLANAR][p]->addVisualizationShape(shape);
+    auto shapeFrame
+        = mTools[InteractiveTool::PLANAR][p]->addShapeFrame(shape);
+    shapeFrame->setRelativeTransform(tf);
   }
 
   for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
   {
     for(size_t j=0; j<3; ++j)
     {
-      const std::vector<dart::dynamics::ShapePtr>& shapes =
-          mTools[i][j]->getVisualizationShapes();
-      for(size_t s=0; s<shapes.size(); ++s)
-        shapes[s]->setDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
+      const auto& shapesFrames = mTools[i][j]->getShapeFrames();
+      for(size_t s=0; s<shapesFrames.size(); ++s)
+      {
+        shapesFrames[s]->getShape()->setDataVariance(
+              dart::dynamics::Shape::DYNAMIC_COLOR);
+      }
     }
   }
 
@@ -487,22 +580,22 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     line->addVertex(v);
     Eigen::Vector3d c(Eigen::Vector3d::Zero());
     c[i] = 1.0;
-    line->setColor(c);
-    addVisualizationShape(line);
+    auto shapeFrame = addShapeFrame(line);
+    shapeFrame->getVisualAddon(true)->setColor(c);
   }
 }
 
 //==============================================================================
 void InteractiveFrame::deleteAllVisualizationShapes()
 {
-  mEntityP.mVizShapes.clear();
+  removeAllShapeFrames();
 
   for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
   {
     for(size_t j=0; j<3; ++j)
     {
       InteractiveTool* tool = mTools[i][j];
-      tool->removeAllVisualizationShapes();
+      tool->removeAllShapeFrames();
     }
   }
 }

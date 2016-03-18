@@ -52,6 +52,26 @@
 
 using namespace dart::common;
 
+// Testing the creation of an Addon using the AddonWithState template class
+class StateAddonTest : public dart::common::AddonWithState<
+    StateAddonTest, dart::common::Empty>
+{
+public:
+
+  StateAddonTest(AddonManager* mgr, const StateData& state = StateData())
+    : dart::common::AddonWithState<StateAddonTest, dart::common::Empty>(mgr, state)
+  {
+
+  }
+
+};
+
+class StateAndPropertiesAddonTest : public dart::common::AddonWithVersionedProperties<
+    StateAndPropertiesAddonTest, dart::common::Empty>
+{
+
+};
+
 class GenericAddon : public Addon, public Subject
 {
 public:
@@ -427,6 +447,8 @@ TEST(Addon, StateAndProperties)
   mgr2.create<DoubleAddon>();
   mgr2.create<FloatAddon>();
 
+  mgr1.create<StateAddonTest>();
+
   // ---- Test state transfer ----
 
   mgr2.setAddonStates(mgr1.getAddonStates());
@@ -551,6 +573,25 @@ TEST(Addon, Joints)
   EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
   universal->getUniversalJointAddon();
   EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+}
+
+TEST(Addon, Duplication)
+{
+  AddonManager mgr1, mgr2;
+
+  mgr1.create<DoubleAddon>();
+  mgr1.create<IntAddon>();
+  mgr1.create<FloatAddon>();
+  mgr1.create<CharAddon>();
+
+  mgr2.create<DoubleAddon>();
+
+  mgr2.duplicateAddons(&mgr1);
+
+  EXPECT_FALSE(mgr2.get<DoubleAddon>() == nullptr);
+  EXPECT_FALSE(mgr2.get<IntAddon>() == nullptr);
+  EXPECT_FALSE(mgr2.get<FloatAddon>() == nullptr);
+  EXPECT_FALSE(mgr2.get<CharAddon>() == nullptr);
 }
 
 int main(int argc, char* argv[])

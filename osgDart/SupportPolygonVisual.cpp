@@ -155,7 +155,7 @@ void SupportPolygonVisual::setCentroidRadius(double radius)
     return;
 
   mCentroidRadius = radius;
-  const dart::dynamics::ShapePtr& shape = mCentroid->getVisualizationShape(0);
+  const dart::dynamics::ShapePtr& shape = mCentroid->getShape();
   std::static_pointer_cast<dart::dynamics::EllipsoidShape>(shape)->setSize(
         mCentroidRadius/2.0*Eigen::Vector3d::Ones());
   shape->addDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
@@ -194,7 +194,7 @@ void SupportPolygonVisual::setCenterOfMassRadius(double radius)
     return;
 
   mComRadius = radius;
-  const dart::dynamics::ShapePtr& shape = mCom->getVisualizationShape(0);
+  const dart::dynamics::ShapePtr& shape = mCom->getShape();
   std::static_pointer_cast<dart::dynamics::EllipsoidShape>(shape)->setSize(
         mComRadius/2.0*Eigen::Vector3d::Ones());
   shape->addDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
@@ -285,10 +285,10 @@ void SupportPolygonVisual::refresh()
 
     mCentroid->setTransform(tf);
 
-    mCentroidNode->refresh(false, true);
+    mCentroidNode->refresh();
 
     // Turn off primitive variance each cycle to avoid unnecessary re-updating
-    mCentroid->getVisualizationShape(0)->removeDataVariance(
+    mCentroid->getShape()->removeDataVariance(
           dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
   }
 
@@ -329,14 +329,14 @@ void SupportPolygonVisual::refresh()
     mCom->setTransform(tf);
 
     if(dart::math::isInsideSupportPolygon(Cproj, poly))
-      mCom->getVisualizationShape(0)->setColor(mValidColor);
+      mCom->getVisualAddon(true)->setColor(mValidColor);
     else
-      mCom->getVisualizationShape(0)->setColor(mInvalidColor);
+      mCom->getVisualAddon(true)->setColor(mInvalidColor);
 
-    mComNode->refresh(false, true);
+    mComNode->refresh();
 
     // Turn off primitive variance each cycle to avoid unnecessary re-updating
-    mCom->getVisualizationShape(0)->removeDataVariance(
+    mCom->getShape()->removeDataVariance(
           dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
   }
 }
@@ -372,14 +372,14 @@ void SupportPolygonVisual::initialize()
         dart::dynamics::Frame::World(), "centroid");
 
   mCentroidRadius = 0.12;
-  mCentroid->addVisualizationShape(
+  mCentroid->setShape(
         std::make_shared<dart::dynamics::EllipsoidShape>(
           mCentroidRadius/2.0*Eigen::Vector3d::Ones()));
 
-  mCentroid->getVisualizationShape(0)->setColor(
+  mCentroid->getVisualAddon(true)->setColor(
         Eigen::Vector4d(color[0], color[1], color[2], color[3]));
 
-  mCentroidNode = new FrameNode(mCentroid.get(), nullptr, false, false);
+  mCentroidNode = new ShapeFrameNode(mCentroid.get(), nullptr);
   addChild(mCentroidNode);
 
   mValidColor = dart::Color::Blue(1.0);
@@ -390,12 +390,11 @@ void SupportPolygonVisual::initialize()
         dart::dynamics::Frame::World(), "com");
 
   mComRadius = mCentroidRadius;
-  mCom->addVisualizationShape(std::make_shared<dart::dynamics::EllipsoidShape>(
+  mCom->setShape(std::make_shared<dart::dynamics::EllipsoidShape>(
                                 mComRadius/2.0*Eigen::Vector3d::Ones()));
-  mCom->getVisualizationShape(0)->addDataVariance(
-        dart::dynamics::Shape::DYNAMIC_COLOR);
+  mCom->getShape()->addDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
 
-  mComNode = new FrameNode(mCom.get(), nullptr, false, false);
+  mComNode = new ShapeFrameNode(mCom.get(), nullptr);
   addChild(mComNode);
 }
 

@@ -53,12 +53,12 @@ namespace render {
 class LineSegmentShapeGeode;
 class LineSegmentShapeDrawable;
 
-class LineSegmentShapeNode : public ShapeNode, public osg::MatrixTransform
+class LineSegmentShapeNode : public ShapeNode, public osg::Group
 {
 public:
 
   LineSegmentShapeNode(std::shared_ptr<dart::dynamics::LineSegmentShape> shape,
-                       EntityNode* parent);
+                       ShapeFrameNode* parent);
 
   void refresh();
   void extractData(bool firstTime);
