@@ -125,6 +125,7 @@ SoftBodyNodeProperties::SoftBodyNodeProperties(
 //==============================================================================
 void SoftBodyNodePropertiesUpdate(SoftBodyAddon* addon)
 {
+  static_assert(false, "This should actually update kinematics things, I don't think the configuring is necessary");
   if(SoftBodyNode* sbn = addon->getManager())
     sbn->configureSoftMeshShape(addon->getProperties());
 }
@@ -158,7 +159,7 @@ void SoftBodyNode::setProperties(const UniqueProperties& _properties)
 //==============================================================================
 SoftBodyNode::Properties SoftBodyNode::getSoftBodyNodeProperties() const
 {
-  return Properties(getBodyNodeProperties(), getSoft());
+  return Properties(getBodyNodeProperties(), getSoftProperties());
 }
 
 //==============================================================================
@@ -282,11 +283,12 @@ void SoftBodyNode::configureSoftMeshShape(
   setDampingCoefficient(softProperties.mDampCoeff);
   mSoftP.mFaces = softProperties.mFaces;
 
+  static_assert(false, "This is all very wrong and needs to be fixed");
   // Create a new SoftMeshShape for this SoftBodyNode
   auto softMesh = std::shared_ptr<SoftMeshShape>(new SoftMeshShape(this));
   auto newSoftShapeNode
       = createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
-          softMesh, "soft mesh");
+          softMesh, getName()+"_SoftMeshShape");
 
   // Copy the properties of the previous soft shape, if it exists
   ShapeNodePtr softNode = mSoftShapeNode.lock();
@@ -301,6 +303,8 @@ void SoftBodyNode::configureSoftMeshShape(
     softNode->remove();
   }
 
+  getSoftBodyAddon()->_getState().mPointStates.resize(
+        allProps.size(), PointMass::State());
   mSoftShapeNode = newSoftShapeNode;
 }
 
@@ -377,46 +381,46 @@ double SoftBodyNode::getMass() const
 void SoftBodyNode::setVertexSpringStiffness(double _kv)
 {
   assert(0.0 <= _kv);
-  getSoftAndInc().mKv = _kv;
+  getSoftPropertiesAndInc().mKv = _kv;
 }
 
 //==============================================================================
 double SoftBodyNode::getVertexSpringStiffness() const
 {
-  return getSoft().mKv;
+  return getSoftProperties().mKv;
 }
 
 //==============================================================================
 void SoftBodyNode::setEdgeSpringStiffness(double _ke)
 {
   assert(0.0 <= _ke);
-  getSoftAndInc().mKe = _ke;
+  getSoftPropertiesAndInc().mKe = _ke;
 }
 
 //==============================================================================
 double SoftBodyNode::getEdgeSpringStiffness() const
 {
-  return getSoft().mKe;
+  return getSoftProperties().mKe;
 }
 
 //==============================================================================
 void SoftBodyNode::setDampingCoefficient(double _damp)
 {
   assert(_damp >= 0.0);
-  getSoftAndInc().mDampCoeff = _damp;
+  getSoftPropertiesAndInc().mDampCoeff = _damp;
 }
 
 //==============================================================================
 double SoftBodyNode::getDampingCoefficient() const
 {
-  return getSoft().mDampCoeff;
+  return getSoftProperties().mDampCoeff;
 }
 
 //==============================================================================
 void SoftBodyNode::removeAllPointMasses()
 {
   mPointMasses.clear();
-  getSoftAndInc().mPointProps.clear();
+  getSoftPropertiesAndInc().mPointProps.clear();
 }
 
 //==============================================================================
@@ -424,7 +428,8 @@ PointMass* SoftBodyNode::addPointMass(const PointMass::Properties& _properties)
 {
   mPointMasses.push_back(new PointMass(this));
   mPointMasses.back()->mIndex = mPointMasses.size()-1;
-  getSoftAndInc().mPointProps.push_back(_properties);
+  getSoftPropertiesAndInc().mPointProps.push_back(_properties);
+  configureSoftMeshShape(getSoftProperties());
 
   return mPointMasses.back();
 }
@@ -442,20 +447,20 @@ void SoftBodyNode::connectPointMasses(size_t _idx1, size_t _idx2)
 //==============================================================================
 void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
 {
-  getSoftAndInc().addFace(_face);
+  getSoftPropertiesAndInc().addFace(_face);
 }
 
 //==============================================================================
 const Eigen::Vector3i& SoftBodyNode::getFace(size_t _idx) const
 {
-  assert(_idx < getSoft().mFaces.size());
-  return getSoft().mFaces[_idx];
+  assert(_idx < getSoftProperties().mFaces.size());
+  return getSoftProperties().mFaces[_idx];
 }
 
 //==============================================================================
 size_t SoftBodyNode::getNumFaces() const
 {
-  return getSoft().mFaces.size();
+  return getSoftProperties().mFaces.size();
 }
 
 //==============================================================================
@@ -1202,20 +1207,20 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 
     Eigen::Vector3d pos;
     Eigen::Vector3d pos_normalized;
-    for (size_t i = 0; i < getSoft().mFaces.size(); ++i)
+    for (size_t i = 0; i < getSoftProperties().mFaces.size(); ++i)
     {
       glEnable(GL_AUTO_NORMAL);
       glBegin(GL_TRIANGLES);
 
-      pos = mPointMasses[getSoft().mFaces[i](0)]->getLocalPosition();
+      pos = mPointMasses[getSoftProperties().mFaces[i](0)]->getLocalPosition();
       pos_normalized = pos.normalized();
       glNormal3f(pos_normalized(0), pos_normalized(1), pos_normalized(2));
       glVertex3f(pos(0), pos(1), pos(2));
-      pos = mPointMasses[getSoft().mFaces[i](1)]->getLocalPosition();
+      pos = mPointMasses[getSoftProperties().mFaces[i](1)]->getLocalPosition();
       pos_normalized = pos.normalized();
       glNormal3f(pos_normalized(0), pos_normalized(1), pos_normalized(2));
       glVertex3f(pos(0), pos(1), pos(2));
-      pos = mPointMasses[getSoft().mFaces[i](2)]->getLocalPosition();
+      pos = mPointMasses[getSoftProperties().mFaces[i](2)]->getLocalPosition();
       pos_normalized = pos.normalized();
       glNormal3f(pos_normalized(0), pos_normalized(1), pos_normalized(2));
       glVertex3f(pos(0), pos(1), pos(2));
@@ -1237,14 +1242,20 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 }
 
 //==============================================================================
-SoftBodyNode::UniqueProperties& SoftBodyNode::getSoftAndInc()
+PointMass::State& SoftBodyNode::getPointState(size_t index)
+{
+  return getSoftBodyAddon()->_getState().mPointStates.at(index);
+}
+
+//==============================================================================
+SoftBodyNode::UniqueProperties& SoftBodyNode::getSoftPropertiesAndInc()
 {
   getSoftBodyAddon()->incrementVersion();
   return getSoftBodyAddon()->_getProperties();
 }
 
 //==============================================================================
-const SoftBodyNode::UniqueProperties& SoftBodyNode::getSoft() const
+const SoftBodyNode::UniqueProperties& SoftBodyNode::getSoftProperties() const
 {
   return getSoftBodyAddon()->_getProperties();
 }

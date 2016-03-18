@@ -57,6 +57,13 @@ namespace detail {
 class SoftBodyAddon;
 
 //==============================================================================
+struct SoftBodyNodeUniqueState
+{
+  /// Array of States for PointMasses
+  std::vector<PointMass::State> mPointStates;
+};
+
+//==============================================================================
 struct SoftBodyNodeUniqueProperties
 {
   /// Spring stiffness for vertex deformation restoring spring force of the
@@ -115,21 +122,28 @@ void SoftBodyNodePropertiesUpdate(SoftBodyAddon* addon);
 
 //==============================================================================
 class SoftBodyAddon final :
-    public common::AddonWithVersionedProperties<
-        SoftBodyAddon, SoftBodyNodeUniqueProperties, SoftBodyNode,
+    public common::AddonWithStateAndVersionedProperties<
+        SoftBodyAddon, SoftBodyNodeUniqueState, SoftBodyNodeUniqueProperties,
+        SoftBodyNode, &common::detail::NoOp<SoftBodyAddon*>,
         &SoftBodyNodePropertiesUpdate >
 {
 public:
 
   friend class dart::dynamics::SoftBodyNode;
 
-  DART_COMMON_ADDON_PROPERTY_CONSTRUCTOR(SoftBodyAddon, SoftBodyNodePropertiesUpdate)
+  DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS(SoftBodyAddon)
 
   DART_COMMON_SET_GET_ADDON_PROPERTY(double, Kv)
   DART_COMMON_SET_GET_ADDON_PROPERTY(double, Ke)
   DART_COMMON_SET_GET_ADDON_PROPERTY(double, DampCoeff)
 
 protected:
+
+  /// Get a direct reference to the State of this Addon
+  inline StateData& _getState() { return mState; }
+
+  /// Get a direct reference to the State of this Addon
+  inline const StateData& _getState() const { return mState; }
 
   /// Get a direct reference to the Properties of this Addon
   inline PropertiesData& _getProperties() { return mProperties; }

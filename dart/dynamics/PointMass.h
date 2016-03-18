@@ -61,6 +61,29 @@ class PointMass : public common::Subject
 public:
   friend class SoftBodyNode;
 
+  /// State for each PointMass
+  struct State
+  {
+    /// Position
+    Eigen::Vector3d mPositions;
+
+    /// Generalized velocity
+    Eigen::Vector3d mVelocities;
+
+    /// Generalized acceleration
+    Eigen::Vector3d mAccelerations;
+
+    /// Generalized force
+    Eigen::Vector3d mForces;
+
+    /// Default constructor
+    State(const Eigen::Vector3d& positions = Eigen::Vector3d::Zero(),
+          const Eigen::Vector3d& velocities = Eigen::Vector3d::Zero(),
+          const Eigen::Vector3d& accelerations = Eigen::Vector3d::Zero(),
+          const Eigen::Vector3d& forces = Eigen::Vector3d::Zero());
+  };
+
+  /// Properties for each PointMass
   struct Properties
   {
     /// Resting position viewed in the parent SoftBodyNode frame
@@ -127,6 +150,12 @@ public:
 
   /// Default destructor
   virtual ~PointMass();
+
+  /// State of this PointMass
+  State& getState();
+
+  /// State of this PointMass
+  const State& getState() const;
 
   ///
   size_t getIndexInSoftBodyNode() const;
@@ -529,18 +558,12 @@ protected:
   // Configuration
   //----------------------------------------------------------------------------
 
-  /// Position
-  Eigen::Vector3d mPositions;
-
   /// Derivatives w.r.t. an arbitrary scalr variable
   Eigen::Vector3d mPositionDeriv;
 
   //----------------------------------------------------------------------------
   // Velocity
   //----------------------------------------------------------------------------
-
-  /// Generalized velocity
-  Eigen::Vector3d mVelocities;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
   Eigen::Vector3d mVelocitiesDeriv;
@@ -549,9 +572,6 @@ protected:
   // Acceleration
   //----------------------------------------------------------------------------
 
-  /// Generalized acceleration
-  Eigen::Vector3d mAccelerations;
-
   /// Derivatives w.r.t. an arbitrary scalr variable
   Eigen::Vector3d mAccelerationsDeriv;
 
@@ -559,8 +579,6 @@ protected:
   // Force
   //----------------------------------------------------------------------------
 
-  /// Generalized force
-  Eigen::Vector3d mForces;
 
   /// Derivatives w.r.t. an arbitrary scalr variable
   Eigen::Vector3d mForcesDeriv;

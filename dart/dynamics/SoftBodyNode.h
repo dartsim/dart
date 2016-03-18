@@ -295,12 +295,15 @@ protected:
 
 protected:
 
+  /// Get a reference to the State of a PointMass
+  PointMass::State& getPointState(size_t index);
+
   /// Get a reference to the UniqueProperties of this SoftBodyNode and increment
   /// its version.
-  UniqueProperties& getSoftAndInc();
+  UniqueProperties& getSoftPropertiesAndInc();
 
   /// Get a reference to the UniqueProperties of this SoftBodyNode
-  const UniqueProperties& getSoft() const;
+  const UniqueProperties& getSoftProperties() const;
 
   /// \brief List of point masses composing deformable mesh.
   std::vector<PointMass*> mPointMasses;
