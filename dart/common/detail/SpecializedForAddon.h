@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_SPECIALIZEDADDONMANAGER_H_
-#define DART_COMMON_DETAIL_SPECIALIZEDADDONMANAGER_H_
+#ifndef DART_COMMON_DETAIL_SPECIALIZEDFORADDON_H_
+#define DART_COMMON_DETAIL_SPECIALIZEDFORADDON_H_
 
 #include "dart/common/SpecializedForAddon.h"
 
@@ -326,4 +326,4 @@ constexpr bool SpecializedForAddon<SpecAddon>::_isSpecializedFor(type<SpecAddon>
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_SPECIALIZEDADDONMANAGER_H_
+#endif // DART_COMMON_DETAIL_SPECIALIZEDFORADDON_H_
