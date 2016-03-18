@@ -39,10 +39,11 @@
 
 #include "dart/common/AddonManager.h"
 
-#define DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE( Func, it, ReturnType )\
-  if(it ->second && !it ->second->isOptional(this))\
+#define DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE( Func, T, ReturnType )\
+  if(requires< T >())\
   {\
-    dterr << "[AddonManager::" #Func << "] Illegal request to remove Addon!\n";\
+    dterr << "[AddonManager::" #Func << "] Illegal request to remove required "\
+          << "Addon [" << typeid(T).name() << "]!\n";\
     assert(false);\
     return ReturnType ;\
   }
@@ -114,7 +115,7 @@ template <class T>
 void AddonManager::erase()
 {
   AddonMap::iterator it = mAddonMap.find( typeid(T) );
-  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(erase, it, DART_BLANK)
+  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(erase, T, DART_BLANK)
   if(mAddonMap.end() != it)
     it->second = nullptr;
 }
@@ -125,7 +126,7 @@ std::unique_ptr<T> AddonManager::release()
 {
   std::unique_ptr<T> extraction = nullptr;
   AddonMap::iterator it = mAddonMap.find( typeid(T) );
-  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(release, it, nullptr)
+  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(release, T, nullptr)
   if(mAddonMap.end() != it)
     extraction = std::unique_ptr<T>(static_cast<T*>(it->second.release()));
 
@@ -139,6 +140,13 @@ constexpr bool AddonManager::isSpecializedFor()
   return false;
 }
 
+//==============================================================================
+template <class T>
+bool AddonManager::requires() const
+{
+  return (mRequiredAddons.find(typeid(T)) != mRequiredAddons.end());
+}
+
 } // namespace common
 } // namespace dart
 
@@ -146,22 +154,22 @@ constexpr bool AddonManager::isSpecializedFor()
 // Create non-template alternatives to AddonManager functions
 #define DART_BAKE_SPECIALIZED_ADDON_IRREGULAR( TypeName, AddonName )\
   inline bool has ## AddonName () const\
-  { return has<TypeName>(); }\
+  { return this->template has<TypeName>(); }\
   inline TypeName * get ## AddonName ()\
-  { return get<TypeName>(); }\
+  { return this->template get<TypeName>(); }\
   inline const TypeName* get ## AddonName () const\
-  { return get<TypeName>(); }\
+  { return this->template get<TypeName>(); }\
   inline void set ## AddonName (const TypeName * addon)\
-  { set<TypeName>(addon); }\
+  { this->template set<TypeName>(addon); }\
   inline void set ## AddonName (std::unique_ptr< TypeName >&& addon)\
-  { set<TypeName>(std::move(addon)); }\
+  { this->template set<TypeName>(std::move(addon)); }\
   template <typename ...Args>\
   inline TypeName * create ## AddonName (Args&&... args)\
-  { return create<TypeName>(std::forward<Args>(args)...); }\
+  { return this->template create<TypeName>(std::forward<Args>(args)...); }\
   inline void erase ## AddonName ()\
-  { erase<TypeName>(); }\
+  { this->template erase<TypeName>(); }\
   inline std::unique_ptr< TypeName > release ## AddonName ()\
-  { return release<TypeName>(); }
+  { return this->template release<TypeName>(); }
 
 //==============================================================================
 #define DART_BAKE_SPECIALIZED_ADDON(AddonName)\

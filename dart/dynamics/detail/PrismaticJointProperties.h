@@ -80,7 +80,7 @@ struct PrismaticJointProperties :
 class PrismaticJointAddon final :
     public AddonWithProtectedPropertiesInSkeleton<
         PrismaticJointAddon, PrismaticJointUniqueProperties, PrismaticJoint,
-        detail::JointPropertyUpdate<PrismaticJointAddon>, false >
+        detail::JointPropertyUpdate<PrismaticJointAddon> >
 {
 public:
   DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( PrismaticJointAddon )
@@ -91,7 +91,7 @@ public:
 
 //==============================================================================
 using PrismaticJointBase = common::AddonManagerJoiner<
-    SingleDofJoint, common::SpecializedAddonManager<PrismaticJointAddon> >;
+    SingleDofJoint, common::RequiresAddon<PrismaticJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

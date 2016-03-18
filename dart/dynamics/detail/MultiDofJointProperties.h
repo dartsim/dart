@@ -159,7 +159,7 @@ template <size_t DOF>
 class MultiDofJointAddon final :
     public AddonWithProtectedPropertiesInSkeleton<
         MultiDofJointAddon<DOF>, MultiDofJointUniqueProperties<DOF>, MultiDofJoint<DOF>,
-        common::detail::NoOp<MultiDofJointAddon<DOF>*>, false >
+        common::detail::NoOp<MultiDofJointAddon<DOF>*> >
 {
 public:
   MultiDofJointAddon(const MultiDofJointAddon&) = delete;
@@ -307,8 +307,8 @@ MultiDofJointAddon<DOF>::MultiDofJointAddon(
         typename MultiDofJointAddon<DOF>::Base,
         typename MultiDofJointAddon<DOF>::PropertiesData,
         typename MultiDofJointAddon<DOF>::ManagerType,
-        &common::detail::NoOp<typename MultiDofJointAddon<DOF>::Base*>,
-        MultiDofJointAddon<DOF>::Optional>(mgr, properties)
+        &common::detail::NoOp<typename MultiDofJointAddon<DOF>::Base*> >(
+      mgr, properties)
 {
   // Do nothing
 }

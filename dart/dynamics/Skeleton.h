@@ -58,7 +58,7 @@ namespace dynamics {
 /// class Skeleton
 class Skeleton :  public virtual common::AddonManager,
                   public MetaSkeleton,
-                  public virtual SpecializedNodeManagerForSkeleton<EndEffector>
+                  public virtual SkeletonSpecializedFor<EndEffector>
 {
 public:
 

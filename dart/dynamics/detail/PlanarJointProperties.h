@@ -127,7 +127,7 @@ struct PlanarJointProperties :
 class PlanarJointAddon final :
     public AddonWithProtectedPropertiesInSkeleton<
         PlanarJointAddon, PlanarJointUniqueProperties, PlanarJoint,
-        detail::JointPropertyUpdate<PlanarJointAddon>, false >
+        detail::JointPropertyUpdate<PlanarJointAddon> >
 {
 public:
   DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( PlanarJointAddon )
@@ -146,7 +146,7 @@ public:
 
 //==============================================================================
 using PlanarJointBase = common::AddonManagerJoiner<
-    MultiDofJoint<3>, common::SpecializedAddonManager<PlanarJointAddon> >;
+    MultiDofJoint<3>, common::RequiresAddon<PlanarJointAddon> >;
 
 } // namespace detail
 } // namespace dynamics

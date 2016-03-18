@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -34,56 +34,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cassert>
-#include <string>
-#include <iostream>
+#ifndef DART_COMMON_DETAIL_REQUIRESADDON_H_
+#define DART_COMMON_DETAIL_REQUIRESADDON_H_
 
-#include "dart/common/Addon.h"
-#include "dart/common/Console.h"
+#include "dart/common/RequiresAddon.h"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-void Addon::setAddonState(const State& /*otherState*/)
+template <class ReqAddon>
+RequiresAddon<ReqAddon>::RequiresAddon()
 {
-  // Do nothing
-}
-
-//==============================================================================
-const Addon::State* Addon::getAddonState() const
-{
-  return nullptr;
-}
-
-//==============================================================================
-void Addon::setAddonProperties(const Properties& /*someProperties*/)
-{
-  // Do nothing
-}
-
-//==============================================================================
-const Addon::Properties* Addon::getAddonProperties() const
-{
-  return nullptr;
-}
-
-//==============================================================================
-Addon::Addon(AddonManager* manager)
-{
-  if(nullptr == manager)
-  {
-    dterr << "[Addon::constructor] You are not allowed to construct an Addon "
-          << "outside of an AddonManager!\n";
-    assert(false);
-  }
-}
-
-//==============================================================================
-void Addon::setManager(AddonManager* /*newManager*/, bool /*transfer*/)
-{
-  // Do nothing
+  AddonManager::mRequiredAddons.insert(typeid(ReqAddon));
 }
 
 } // namespace common
 } // namespace dart
+
+#endif // DART_COMMON_DETAIL_REQUIRESADDON_H_

@@ -84,7 +84,7 @@ class Marker;
 /// BodyNode of the BodyNode.
 class BodyNode :
     public virtual common::AddonManager,
-    public virtual SpecializedNodeManagerForBodyNode<EndEffector>,
+    public virtual BodyNodeSpecializedFor<EndEffector>,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
 {

@@ -50,8 +50,7 @@ namespace dynamics {
 /// Node class). This will increment the version count any time the
 /// Addon::setProperties function is called.
 template <class BaseT, typename PropertiesDataT, class ManagerT = Node,
-          void (*updateProperties)(BaseT*) = common::detail::NoOp<BaseT*>,
-          bool OptionalT = true>
+          void (*updateProperties)(BaseT*) = common::detail::NoOp<BaseT*> >
 class AddonWithProtectedPropertiesInSkeleton : public common::Addon
 {
 public:
@@ -61,10 +60,9 @@ public:
   using ManagerType = ManagerT;
   using Properties = common::Addon::PropertiesMixer<PropertiesData>;
   constexpr static void (*UpdateProperties)(Base*) = updateProperties;
-  constexpr static bool Optional = OptionalT;
 
   using Implementation = AddonWithProtectedPropertiesInSkeleton<
-      BaseT, PropertiesDataT, ManagerT, updateProperties, OptionalT>;
+      BaseT, PropertiesDataT, ManagerT, updateProperties>;
 
   AddonWithProtectedPropertiesInSkeleton() = delete;
   AddonWithProtectedPropertiesInSkeleton(
@@ -90,9 +88,6 @@ public:
 
   /// Get the Properties of this Addon
   const Properties& getProperties() const;
-
-  // Documentation inherited
-  bool isOptional(common::AddonManager* oldManager) override final;
 
   /// Get the Skeleton that this Addon is embedded in
   SkeletonPtr getSkeleton();
@@ -131,8 +126,7 @@ protected:
 template <class BaseT, typename StateDataT, typename PropertiesDataT,
           class ManagerT = Node,
           void (*updateState)(BaseT*) = &common::detail::NoOp<BaseT*>,
-          void (*updateProperties)(BaseT*) = updateState,
-          bool OptionalT = true>
+          void (*updateProperties)(BaseT*) = updateState>
 class AddonWithProtectedStateAndPropertiesInSkeleton : public common::Addon
 {
 public:
@@ -145,7 +139,6 @@ public:
   using Properties = common::Addon::PropertiesMixer<PropertiesData>;
   constexpr static void (*UpdateState)(Base*) = updateState;
   constexpr static void (*UpdateProperties)(Base*) = updateProperties;
-  constexpr static bool Optional = OptionalT;
 
   AddonWithProtectedStateAndPropertiesInSkeleton() = delete;
   AddonWithProtectedStateAndPropertiesInSkeleton(
@@ -191,9 +184,6 @@ public:
   /// Get the Properties of this Addon
   const Properties& getProperties() const;
 
-  // Documentation inherited
-  bool isOptional(common::AddonManager* oldManager) override final;
-
   /// Get the Skeleton that this Addon is embedded in
   SkeletonPtr getSkeleton();
 
@@ -232,7 +222,7 @@ protected:
 #define DART_DYNAMICS_ADDON_PROPERTY_CONSTRUCTOR( ClassName, UpdatePropertiesMacro )\
   ClassName (const ClassName &) = delete;\
   inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties)\
-    : AddonWithProtectedPropertiesInSkeleton< Base, PropertiesData, ManagerType, UpdatePropertiesMacro, Optional>(mgr, properties) { }
+    : AddonWithProtectedPropertiesInSkeleton< Base, PropertiesData, ManagerType, UpdatePropertiesMacro>(mgr, properties) { }
 
 //==============================================================================
 #define DART_DYNAMICS_JOINT_ADDON_CONSTRUCTOR( ClassName )\
@@ -242,9 +232,9 @@ protected:
 #define DART_DYNAMICS_ADDON_STATE_PROPERTY_CONSTRUCTORS( ClassName, UpdateStateMacro, UpdatePropertiesMacro )\
   ClassName (const ClassName &) = delete;\
   inline ClassName (dart::common::AddonManager* mgr, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
-    : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateStateMacro, UpdatePropertiesMacro, Optional >(mgr, state, properties) { }\
+    : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateStateMacro, UpdatePropertiesMacro >(mgr, state, properties) { }\
   inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties, const StateData state = StateData())\
-    : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateStateMacro, UpdatePropertiesMacro, Optional >(mgr, properties, state) { }
+    : AddonWithProtectedStateAndPropertiesInSkeleton< Base, StateData, PropertiesData, ManagerType, UpdateStateMacro, UpdatePropertiesMacro >(mgr, properties, state) { }
 
 //==============================================================================
 #define DART_DYNAMICS_SET_ADDON_PROPERTY_CUSTOM( Type, Name, Update )\
@@ -319,52 +309,6 @@ protected:
 //==============================================================================
 #define DART_DYNAMICS_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName )\
   DART_DYNAMICS_IRREGULAR_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName, SingleName ## s )
-
-//==============================================================================
-#define DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon )\
-  AddonName :: UpdateProperties( GetAddon () );\
-  GetAddon ()->incrementSkeletonVersion();
-
-//==============================================================================
-#define DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( AddonName, GetAddon )\
-  AddonName :: UpdateState( GetAddon () );\
-  DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, GetAddon );
-
-//==============================================================================
-// Used for Addons that have Properties (but no State) inside of a Skeleton
-#define DART_DYNAMICS_SKEL_PROPERTIES_ADDON_INLINE( AddonName )\
-  DETAIL_DART_SPECIALIZED_ADDON_INLINE( AddonName,\
-      DETAIL_DART_ADDON_PROPERTIES_UPDATE( AddonName, get ## AddonName ) )
-
-//==============================================================================
-// Used for Addons that have both State and Properties inside of a Skeleton
-#define DART_DYNAMICS_SKEL_ADDON_INLINE( AddonName )\
-  DETAIL_DART_SPECIALIZED_ADDON_INLINE( AddonName,\
-      DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( AddonName, get ## AddonName ) )
-
-//==============================================================================
-// Used for edge cases, such as nested template classes, that have Properties
-// (but no State) inside of a Skeleton
-#define DART_DYNAMICS_IRREGULAR_SKEL_PROPERTIES_ADDON_INLINE( TypeName, HomogenizedName )\
-  DETAIL_DART_IRREGULAR_SPECIALIZED_ADDON_INLINE( TypeName, HomogenizedName,\
-    DETAIL_DART_ADDON_PROPERTIES_UPDATE( TypeName, get ## HomogenizedName ) )
-
-//==============================================================================
-// Used for edge cases, such as nested template classes, that have both State
-// and Properties inside of a Skeleton
-#define DART_DYNAMICS_IRREGULAR_SKEL_ADDON_INLINE( TypeName, HomogenizedName )\
-  DETAIL_DART_IRREGULAR_SPECIALIZED_ADDON_INLINE( TypeName, HomogenizedName,\
-    DETAIL_DART_ADDON_STATE_PROPERTIES_UPDATE( TypeName, get ## HomogenizedName ) )
-
-//==============================================================================
-// Used for nested-class Addons that have Properties (but no State) inside of a Skeleton
-#define DART_DYNAMICS_NESTED_SKEL_PROPERTIES_ADDON_INLINE( ParentName, AddonName )\
-  DART_DYNAMICS_IRREGULAR_SKEL_PROPERTIES_ADDON_INLINE( ParentName :: AddonName, ParentName ## AddonName )
-
-//==============================================================================
-// Used for nested-class Addons that have both State and Properties inside of a Skeleton
-#define DART_DYNAMICS_NESTED_SKEL_ADDON_INLINE( ParentName, AddonName )\
-  DART_DYNAMICS_IRREGULAR_SKEL_ADDON_INLINE( ParentName :: AddonName, ParentName ## AddonName )
 
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/detail/Addon.h"
