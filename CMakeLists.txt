@@ -368,9 +368,9 @@ endif()
 
 # BulletCollision
 if(UNIX)
-  pkg_check_modules(BULLET bullet>=2.82 QUIET)
+  pkg_check_modules(BULLET bullet>=2.81 QUIET)
   if(NOT BULLET_FOUND)
-     pkg_check_modules(BULLET bullet2.82>=2.82 QUIET)
+     pkg_check_modules(BULLET bullet2.81>=2.81 QUIET)
   endif()
 else()
   find_package(Bullet COMPONENTS BulletMath BulletCollision QUIET)

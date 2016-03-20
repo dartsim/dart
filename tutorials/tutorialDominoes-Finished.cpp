@@ -235,8 +235,8 @@ public:
     mFirstDomino = world->getSkeleton("domino");
     mFloor = world->getSkeleton("floor");
 
-    mController = std::unique_ptr<Controller>(
-        new Controller(world->getSkeleton("manipulator"), mFirstDomino));
+    mController = std::make_unique<Controller>(
+        world->getSkeleton("manipulator"), mFirstDomino);
   }
 
   // Attempt to create a new domino. If the new domino would be in collision

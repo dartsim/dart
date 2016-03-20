@@ -111,9 +111,7 @@ const InteractiveFrame* InteractiveTool::getInteractiveFrame() const
 //==============================================================================
 dart::dynamics::SimpleFrame* InteractiveTool::addShapeFrame(const dart::dynamics::ShapePtr& shape)
 {
-  mSimpleFrames.push_back(
-        std::unique_ptr<dart::dynamics::SimpleFrame>(
-          new dart::dynamics::SimpleFrame(this)));
+  mSimpleFrames.push_back(std::make_unique<dart::dynamics::SimpleFrame>(this));
 
   auto shapeFrame = mSimpleFrames.back().get();
   shapeFrame->setShape(shape);
@@ -226,9 +224,7 @@ const InteractiveTool* InteractiveFrame::getTool(
 dart::dynamics::SimpleFrame* InteractiveFrame::addShapeFrame(
     const dart::dynamics::ShapePtr& shape)
 {
-  mSimpleFrames.push_back(
-        std::unique_ptr<dart::dynamics::SimpleFrame>(
-          new dart::dynamics::SimpleFrame(this)));
+  mSimpleFrames.push_back(std::make_unique<dart::dynamics::SimpleFrame>(this));
 
   auto shapeFrame = mSimpleFrames.back().get();
   shapeFrame->setShape(shape);

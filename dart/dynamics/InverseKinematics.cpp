@@ -432,8 +432,8 @@ InverseKinematics::TaskSpaceRegion::TaskSpaceRegion(
 std::unique_ptr<InverseKinematics::ErrorMethod>
 InverseKinematics::TaskSpaceRegion::clone(InverseKinematics* _newIK) const
 {
-  return std::unique_ptr<ErrorMethod>(
-        new TaskSpaceRegion(_newIK, getTaskSpaceRegionProperties()));
+  return std::make_unique<TaskSpaceRegion>(
+      _newIK, getTaskSpaceRegionProperties());
 }
 
 //==============================================================================
@@ -743,8 +743,7 @@ InverseKinematics::JacobianDLS::JacobianDLS(
 std::unique_ptr<InverseKinematics::GradientMethod>
 InverseKinematics::JacobianDLS::clone(InverseKinematics* _newIK) const
 {
-  return std::unique_ptr<GradientMethod>(
-        new JacobianDLS(_newIK, getJacobianDLSProperties()));
+  return std::make_unique<JacobianDLS>(_newIK, getJacobianDLSProperties());
 }
 
 //==============================================================================
@@ -802,8 +801,8 @@ InverseKinematics::JacobianTranspose::JacobianTranspose(
 std::unique_ptr<InverseKinematics::GradientMethod>
 InverseKinematics::JacobianTranspose::clone(InverseKinematics* _newIK) const
 {
-  return std::unique_ptr<GradientMethod>(
-        new JacobianTranspose(_newIK, getGradientMethodProperties()));
+  return std::make_unique<JacobianTranspose>(
+      _newIK, getGradientMethodProperties());
 }
 
 //==============================================================================

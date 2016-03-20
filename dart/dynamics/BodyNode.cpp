@@ -286,8 +286,8 @@ BodyNode::NodeProperties BodyNode::getAttachedNodeProperties() const
         vec.push_back(std::move(prop));
     }
 
-    nodeProperties[entry.first] = std::unique_ptr<NodePropertiesVector>(
-          new NodePropertiesVector(std::move(vec)));
+    nodeProperties[entry.first] = std::make_unique<NodePropertiesVector>(
+        std::move(vec));
   }
 
   return nodeProperties;

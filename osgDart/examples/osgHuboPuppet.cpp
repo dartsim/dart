@@ -189,7 +189,7 @@ public:
 
   std::unique_ptr<GradientMethod> clone(InverseKinematics* _newIK) const override
   {
-    return std::unique_ptr<GradientMethod>(new HuboArmIK(_newIK, mBaseLinkName, getAnalyticalProperties()));
+    return std::make_unique<HuboArmIK>(_newIK, mBaseLinkName, getAnalyticalProperties());
   }
 
   const std::vector<Solution>& computeSolutions(
@@ -478,7 +478,7 @@ public:
 
   std::unique_ptr<GradientMethod> clone(InverseKinematics* _newIK) const override
   {
-    return std::unique_ptr<GradientMethod>(new HuboLegIK(_newIK, mBaseLinkName, getAnalyticalProperties()));
+    return std::make_unique<HuboLegIK>(_newIK, mBaseLinkName, getAnalyticalProperties());
   }
 
   const std::vector<Solution>& computeSolutions(

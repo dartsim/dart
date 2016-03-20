@@ -41,6 +41,7 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Console.h"
+#include "dart/common/StlHelpers.h"
 #include "dart/optimizer/Problem.h"
 #include "dart/optimizer/Function.h"
 
@@ -100,7 +101,7 @@ bool NloptSolver::solve()
      || mOpt->get_dimension() != dimension
      || mOpt->get_algorithm() != mAlg)
   {
-    mOpt = std::unique_ptr<nlopt::opt>(new nlopt::opt(mAlg, dimension));
+    mOpt = std::make_unique<nlopt::opt>(mAlg, dimension);
   }
   else
   {
