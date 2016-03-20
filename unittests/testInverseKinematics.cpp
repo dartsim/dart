@@ -85,12 +85,12 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
   return robot;
 }
 
-#ifdef HAVE_NLOPT
+#if HAVE_NLOPT
 //==============================================================================
 //TEST(InverseKinematics, FittingTransformation)
 //{
 //  const double TOLERANCE = 1e-6;
-//#ifdef BUILD_TYPE_RELEASE
+//#if BUILD_TYPE_RELEASE
 //  const size_t numRandomTests = 100;
 //#else
 //  const size_t numRandomTests = 10;
@@ -204,7 +204,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 //TEST(InverseKinematics, FittingVelocity)
 //{
 //  const double TOLERANCE = 1e-4;
-//#ifdef BUILD_TYPE_RELEASE
+//#if BUILD_TYPE_RELEASE
 //  const size_t numRandomTests = 100;
 //#else
 //  const size_t numRandomTests = 10;
