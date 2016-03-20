@@ -286,7 +286,7 @@ BodyNode::NodeProperties BodyNode::getAttachedNodeProperties() const
         vec.push_back(std::move(prop));
     }
 
-    nodeProperties[entry.first] = std::make_unique<NodePropertiesVector>(
+    nodeProperties[entry.first] = common::make_unique<NodePropertiesVector>(
         std::move(vec));
   }
 

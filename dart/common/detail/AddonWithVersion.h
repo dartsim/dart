@@ -237,7 +237,7 @@ std::unique_ptr<Addon>
 AddonWithState<BaseT, DerivedT, StateData, ManagerT, updateState>::
     cloneAddon(AddonManager* newManager) const
 {
-  return std::make_unique<Derived>(newManager, mState);
+  return common::make_unique<Derived>(newManager, mState);
 }
 
 //==============================================================================
@@ -316,7 +316,7 @@ AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
                              ManagerT, updateProperties>::
 cloneAddon(AddonManager* newManager) const
 {
-  return std::make_unique<Derived>(newManager, mProperties);
+  return common::make_unique<Derived>(newManager, mProperties);
 }
 
 //==============================================================================

@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
   assert(myWorld != NULL);
 #ifndef FCL_DART5
   myWorld->getConstraintSolver()->setCollisionDetector(
-        std::make_unique<dart::collision::FCLMeshCollisionDetector>());
+        dart::common::make_unique<dart::collision::FCLMeshCollisionDetector>());
 #endif
   // create a window and link it to the world
   MyWindow window;

@@ -130,7 +130,7 @@ ExtensibleMixer<T, Mixin>& ExtensibleMixer<T, Mixin>::operator=(
 template <class T, class Mixin>
 std::unique_ptr<T> ExtensibleMixer<T, Mixin>::clone() const
 {
-  return std::make_unique<ExtensibleMixer<T, Mixin>>(*this);
+  return common::make_unique<ExtensibleMixer<T, Mixin>>(*this);
 }
 
 //==============================================================================
@@ -290,7 +290,7 @@ std::unique_ptr< ExtensibleVector<T> > ExtensibleVector<T>::clone() const
   for(const T& entry : mVector)
     clonedVector.push_back(entry->clone());
 
-  return std::make_unique< ExtensibleVector<T> >( std::move(clonedVector) );
+  return common::make_unique< ExtensibleVector<T> >( std::move(clonedVector) );
 }
 
 //==============================================================================

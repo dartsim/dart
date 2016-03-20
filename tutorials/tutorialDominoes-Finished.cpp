@@ -235,7 +235,7 @@ public:
     mFirstDomino = world->getSkeleton("domino");
     mFloor = world->getSkeleton("floor");
 
-    mController = std::make_unique<Controller>(
+    mController = dart::common::make_unique<Controller>(
         world->getSkeleton("manipulator"), mFirstDomino);
   }
 

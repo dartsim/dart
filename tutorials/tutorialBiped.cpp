@@ -157,7 +157,8 @@ public:
   {
     setWorld(world);
     
-    mController = std::make_unique<Controller>(mWorld->getSkeleton("biped"));
+    mController = dart::common::make_unique<Controller>(
+        mWorld->getSkeleton("biped"));
   }
   
   /// Handle keyboard input
@@ -310,7 +311,7 @@ int main(int argc, char* argv[])
 
 #ifdef HAVE_BULLET_COLLISION
   world->getConstraintSolver()->setCollisionDetector(
-      std::make_unique<dart::collision::BulletCollisionDetector>());
+      dart::common::make_unique<dart::collision::BulletCollisionDetector>());
 #endif
   
   world->addSkeleton(floor);
