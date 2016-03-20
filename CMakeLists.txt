@@ -153,6 +153,17 @@ if(FCL_FOUND)
 else()
   if(FCL_VERSION)
     message(SEND_ERROR "Looking for FCL - ${FCL_VERSION} found, ${PROJECT_NAME} requires 0.2.9 or greater.")
+    if("${FCL_VERSION}" VERSION_LESS "0.4.0")
+      message(WARNING
+        "Found FCL version ${FCL_VERSION}, which is older than 0.4.0. FCL"
+        " versions predating 0.4.0 return incorrect contacts for"
+        " primitive-primitive collsions. You should use FCLMeshCollisionDetector"
+        " instead of FCLCollisionDetector if you need accurate contacts."
+      )
+      set(DART_USE_FCLMESHCOLLISIONDETECTOR 1)
+    else()
+      set(DART_USE_FCLMESHCOLLISIONDETECTOR 0)
+    endif()
   else()
     message(SEND_ERROR "Looking for FCL - NOT found, please install libfcl-dev")
   endif()
@@ -367,14 +378,8 @@ else()
 endif()
 
 # BulletCollision
-if(UNIX)
-  pkg_check_modules(BULLET bullet>=2.81 QUIET)
-  if(NOT BULLET_FOUND)
-     pkg_check_modules(BULLET bullet2.81>=2.81 QUIET)
-  endif()
-else()
-  find_package(Bullet COMPONENTS BulletMath BulletCollision QUIET)
-endif()
+find_package(Bullet COMPONENTS BulletMath BulletCollision QUIET)
+
 if(BULLET_FOUND)
   message(STATUS "Looking for BulletCollision - ${BULLET_VERSION} found")
   set(HAVE_BULLET_COLLISION TRUE)
