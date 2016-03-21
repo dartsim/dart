@@ -53,7 +53,8 @@ public:
   friend class Skeleton;
   friend class PointMass;
   friend class PointMassNotifier;
-  friend void detail::SoftBodyNodePropertiesUpdate(SoftBodyAddon *addon);
+  friend void detail::SoftBodyNodeStateUpdate(SoftBodyAddon* addon);
+  friend void detail::SoftBodyNodePropertiesUpdate(SoftBodyAddon* addon);
 
   using UniqueProperties = detail::SoftBodyNodeUniqueProperties;
   using Properties = detail::SoftBodyNodeProperties;
@@ -155,7 +156,7 @@ protected:
 
   /// Used by SoftBodyAddon to have this SoftBodyNode reconstruct its
   /// SoftMeshShape
-  void configureSoftMeshShape(const UniqueProperties& softProperties);
+  void configurePointMasses(ShapeNode* softNode);
 
   //--------------------------------------------------------------------------
   // Sub-functions for Recursive Kinematics Algorithms

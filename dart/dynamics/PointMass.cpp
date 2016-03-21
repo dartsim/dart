@@ -671,19 +671,24 @@ Eigen::Vector3d PointMass::getWorldAcceleration() const
 //==============================================================================
 void PointMass::init()
 {
-  // Dependen generalized coordinate setting
-  int parentDof = mParentSoftBodyNode->getNumDependentGenCoords();
+  mDependentGenCoordIndices = mParentSoftBodyNode->getDependentGenCoordIndices();
 
-  mDependentGenCoordIndices.resize(parentDof + 3);
-  for (int i = 0; i < parentDof; ++i)
-  {
-    mDependentGenCoordIndices[i]
-        = mParentSoftBodyNode->getDependentGenCoordIndex(i);
-  }
+  // TODO(MXG): The old code below would result in undefined behavior if the
+  // coordinates were actually used for anything.
 
-//  mDependentGenCoordIndices[parentDof]     = mIndexInSkeleton[0];
-//  mDependentGenCoordIndices[parentDof + 1] = mIndexInSkeleton[1];
-//  mDependentGenCoordIndices[parentDof + 2] = mIndexInSkeleton[2];
+//  // Dependen generalized coordinate setting
+//  int parentDof = mParentSoftBodyNode->getNumDependentGenCoords();
+
+//  mDependentGenCoordIndices.resize(parentDof + 3);
+//  for (int i = 0; i < parentDof; ++i)
+//  {
+//    mDependentGenCoordIndices[i]
+//        = mParentSoftBodyNode->getDependentGenCoordIndex(i);
+//  }
+
+////  mDependentGenCoordIndices[parentDof]     = mIndexInSkeleton[0];
+////  mDependentGenCoordIndices[parentDof + 1] = mIndexInSkeleton[1];
+////  mDependentGenCoordIndices[parentDof + 2] = mIndexInSkeleton[2];
 }
 
 //==============================================================================

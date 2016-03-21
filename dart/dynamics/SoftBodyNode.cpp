@@ -123,11 +123,20 @@ SoftBodyNodeProperties::SoftBodyNodeProperties(
 }
 
 //==============================================================================
+void SoftBodyNodeStateUpdate(SoftBodyAddon* addon)
+{
+  if(SoftBodyNode* sbn = addon->getManager())
+    sbn->mNotifier->notifyTransformUpdate();
+}
+
+//==============================================================================
 void SoftBodyNodePropertiesUpdate(SoftBodyAddon* addon)
 {
-  static_assert(false, "This should actually update kinematics things, I don't think the configuring is necessary");
   if(SoftBodyNode* sbn = addon->getManager())
-    sbn->configureSoftMeshShape(addon->getProperties());
+  {
+    sbn->configurePointMasses(sbn->mSoftShapeNode.lock());
+    SoftBodyNodeStateUpdate(addon);
+  }
 }
 
 } // namespace detail
@@ -221,7 +230,18 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
 {
   createSoftBodyAddon();
   mNotifier = new PointMassNotifier(this, "PointMassNotifier");
-  setProperties(_properties);
+  std::cout << "Creating and assigning mSoftShapeNode" << std::endl;
+  ShapeNode* softNode = createShapeNodeWith<
+      VisualAddon, CollisionAddon, DynamicsAddon>(
+        std::make_shared<SoftMeshShape>(this), getName()+"_SoftMeshShape");
+  mSoftShapeNode = softNode;
+
+  // Dev's Note: We do this workaround (instead of just using setProperties(~))
+  // because mSoftShapeNode cannot be used until init(SkeletonPtr) has been
+  // called on this BodyNode, but that happens after construction is finished.
+  getSoftBodyAddon()->mProperties = _properties;
+  configurePointMasses(softNode);
+  mNotifier->notifyTransformUpdate();
 }
 
 //==============================================================================
@@ -240,24 +260,26 @@ BodyNode* SoftBodyNode::clone(BodyNode* _parentBodyNode,
 }
 
 //==============================================================================
-void SoftBodyNode::configureSoftMeshShape(
-    const UniqueProperties& softProperties)
+void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
 {
-  UniqueProperties& mSoftP = getSoftBodyAddon()->_getProperties();
+  const UniqueProperties& softProperties = getSoftBodyAddon()->getProperties();
 
   size_t newCount = softProperties.mPointProps.size();
   size_t oldCount = mPointMasses.size();
+
+  if(newCount == oldCount)
+    return;
+
+  // Adjust the number of PointMass objects since that has changed
   if(newCount < oldCount)
   {
     for(size_t i = newCount; i < oldCount; ++i)
       delete mPointMasses[i];
     mPointMasses.resize(newCount);
-    mSoftP.mPointProps.resize(newCount);
   }
   else if(oldCount < newCount)
   {
     mPointMasses.resize(newCount);
-    mSoftP.mPointProps.resize(newCount);
     for(size_t i = oldCount; i < newCount; ++i)
     {
       mPointMasses[i] = new PointMass(this);
@@ -266,46 +288,33 @@ void SoftBodyNode::configureSoftMeshShape(
     }
   }
 
-  const std::vector<PointMass::Properties>& allProps = softProperties.mPointProps;
-  for(size_t i=0; i<newCount; ++i)
-  {
-    PointMass* p = mPointMasses[i];
-    const PointMass::Properties& props = allProps[i];
-    p->setRestingPosition(props.mX0);
-    p->setMass(props.mMass);
+  // Resize the number of States in the Addon
+  getSoftBodyAddon()->_getState().mPointStates.resize(
+        softProperties.mPointProps.size(), PointMass::State());
 
-    mSoftP.mPointProps[i].mConnectedPointMassIndices =
-        props.mConnectedPointMassIndices;
-  }
-
-  setVertexSpringStiffness(softProperties.mKv);
-  setEdgeSpringStiffness(softProperties.mKe);
-  setDampingCoefficient(softProperties.mDampCoeff);
-  mSoftP.mFaces = softProperties.mFaces;
-
-  static_assert(false, "This is all very wrong and needs to be fixed");
-  // Create a new SoftMeshShape for this SoftBodyNode
-  auto softMesh = std::shared_ptr<SoftMeshShape>(new SoftMeshShape(this));
-  auto newSoftShapeNode
-      = createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
-          softMesh, getName()+"_SoftMeshShape");
-
-  // Copy the properties of the previous soft shape, if it exists
-  ShapeNodePtr softNode = mSoftShapeNode.lock();
+  // Access the SoftMeshShape and reallocate its meshes
   if(softNode)
   {
-    newSoftShapeNode->getVisualAddon()->setColor(
-          softNode->getVisualAddon()->getRGBA());
+    std::shared_ptr<SoftMeshShape> softShape =
+        std::dynamic_pointer_cast<SoftMeshShape>(softNode->getShape());
 
-    newSoftShapeNode->setRelativeTransform(
-          softNode->getRelativeTransform());
-
-    softNode->remove();
+    if(softShape)
+      softShape->_buildMesh();
   }
+  else
+  {
+    dtwarn << "[SoftBodyNode::configurePointMasses] The ShapeNode containing "
+           << "the SoftMeshShape for the SoftBodyNode named [" << getName()
+           << "] (" << this << ") has been removed. The soft body features for "
+           << "this SoftBodyNode cannot be used unless you recreate the "
+           << "SoftMeshShape.\n";
 
-  getSoftBodyAddon()->_getState().mPointStates.resize(
-        allProps.size(), PointMass::State());
-  mSoftShapeNode = newSoftShapeNode;
+    std::cout << "ShapeNodes: " << std::endl;
+    for(size_t i=0; i < getNumShapeNodes(); ++i)
+    {
+      std::cout << "- " << i << ") " << getShapeNode(i)->getName() << std::endl;
+    }
+  }
 }
 
 //==============================================================================
@@ -429,7 +438,7 @@ PointMass* SoftBodyNode::addPointMass(const PointMass::Properties& _properties)
   mPointMasses.push_back(new PointMass(this));
   mPointMasses.back()->mIndex = mPointMasses.size()-1;
   getSoftPropertiesAndInc().mPointProps.push_back(_properties);
-  configureSoftMeshShape(getSoftProperties());
+  configurePointMasses(mSoftShapeNode.lock());
 
   return mPointMasses.back();
 }

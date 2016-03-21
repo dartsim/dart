@@ -50,6 +50,9 @@ class SoftBodyNode;
 class SoftMeshShape : public Shape
 {
 public:
+
+  friend class SoftBodyNode;
+
   /// \brief Constructor.
   explicit SoftMeshShape(SoftBodyNode* _softBodyNode);
 
@@ -85,7 +88,7 @@ private:
   SoftBodyNode* mSoftBodyNode;
 
   /// \brief
-  aiMesh* mAssimpMesh;
+  std::unique_ptr<aiMesh> mAssimpMesh;
 };
 
 }  // namespace dynamics

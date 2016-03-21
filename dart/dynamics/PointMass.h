@@ -641,7 +641,7 @@ protected:
   Eigen::Vector3d mFext;
 
   /// A increasingly sorted list of dependent dof indices.
-  std::vector<int> mDependentGenCoordIndices;
+  std::vector<size_t> mDependentGenCoordIndices;
 
   /// Whether the node is currently in collision with another node.
   bool mIsColliding;

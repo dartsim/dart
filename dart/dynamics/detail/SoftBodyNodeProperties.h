@@ -118,14 +118,16 @@ struct SoftBodyNodeProperties
 };
 
 //==============================================================================
+void SoftBodyNodeStateUpdate(SoftBodyAddon* addon);
+
+//==============================================================================
 void SoftBodyNodePropertiesUpdate(SoftBodyAddon* addon);
 
 //==============================================================================
 class SoftBodyAddon final :
     public common::AddonWithStateAndVersionedProperties<
         SoftBodyAddon, SoftBodyNodeUniqueState, SoftBodyNodeUniqueProperties,
-        SoftBodyNode, &common::detail::NoOp<SoftBodyAddon*>,
-        &SoftBodyNodePropertiesUpdate >
+        SoftBodyNode, &SoftBodyNodeStateUpdate, &SoftBodyNodePropertiesUpdate >
 {
 public:
 
