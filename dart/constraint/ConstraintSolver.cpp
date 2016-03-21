@@ -249,7 +249,7 @@ void ConstraintSolver::setCollisionDetector(
 
 //==============================================================================
 void ConstraintSolver::setCollisionDetector(
-  std::unique_ptr<collision::CollisionDetector>&& _collisionDetector)
+  std::unique_ptr<collision::CollisionDetector> _collisionDetector)
 {
   assert(_collisionDetector && "Invalid collision detector.");
 
@@ -265,6 +265,20 @@ void ConstraintSolver::setCollisionDetector(
 collision::CollisionDetector* ConstraintSolver::getCollisionDetector() const
 {
   return mCollisionDetector.get();
+}
+
+//==============================================================================
+void ConstraintSolver::setLCPSolver(std::unique_ptr<LCPSolver> _lcpSolver)
+{
+  assert(_lcpSolver && "Invalid LCP solver.");
+
+  mLCPSolver = std::move(_lcpSolver);
+}
+
+//==============================================================================
+LCPSolver* ConstraintSolver::getLCPSolver() const
+{
+  return mLCPSolver.get();
 }
 
 //==============================================================================
