@@ -84,7 +84,7 @@ public:
 
   std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const override final
   {
-    return std::unique_ptr<GenericAddon>(new GenericAddon(newManager));
+    return dart::common::make_unique<GenericAddon>(newManager);
   }
 
 };
@@ -101,7 +101,7 @@ public:
 
   std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const override final
   {
-    return std::unique_ptr<SpecializedAddon>(new SpecializedAddon(newManager));
+    return dart::common::make_unique<SpecializedAddon>(newManager);
   }
 };
 
@@ -124,7 +124,7 @@ public:
 
     std::unique_ptr<Addon::State> clone() const override
     {
-      return std::unique_ptr<Addon::State>(new State(*this));
+      return dart::common::make_unique<State>(*this);
     }
 
     void copy(const Addon::State& anotherState) override
@@ -147,7 +147,7 @@ public:
 
     std::unique_ptr<Addon::Properties> clone() const override
     {
-      return std::unique_ptr<Addon::Properties>(new Properties(*this));
+      return dart::common::make_unique<Properties>(*this);
     }
 
     void copy(const Addon::Properties& otherProperties) override
@@ -184,7 +184,7 @@ public:
 
   std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const override final
   {
-    return std::unique_ptr<Addon>(new StatefulAddon(newManager, *this));
+    return dart::common::make_unique<StatefulAddon>(newManager, *this);
   }
 
   void setAddonState(const Addon::State& otherState) override

@@ -38,6 +38,7 @@
 #define DART_COMMON_DETAIL_ADDONWITHVERSION_H_
 
 #include "dart/common/Addon.h"
+#include "dart/common/StlHelpers.h"
 
 namespace dart {
 namespace common {
@@ -236,7 +237,7 @@ std::unique_ptr<Addon>
 AddonWithState<BaseT, DerivedT, StateData, ManagerT, updateState>::
     cloneAddon(AddonManager* newManager) const
 {
-  return std::unique_ptr<Derived>(new Derived(newManager, mState));
+  return common::make_unique<Derived>(newManager, mState);
 }
 
 //==============================================================================
@@ -315,7 +316,7 @@ AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
                              ManagerT, updateProperties>::
 cloneAddon(AddonManager* newManager) const
 {
-  return std::unique_ptr<Derived>(new Derived(newManager, mProperties));
+  return common::make_unique<Derived>(newManager, mProperties);
 }
 
 //==============================================================================
