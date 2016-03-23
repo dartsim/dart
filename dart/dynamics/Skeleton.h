@@ -64,7 +64,7 @@ class Skeleton :
     public virtual common::VersionCounter,
     public virtual common::AddonManager,
     public MetaSkeleton,
-    public virtual SpecializedNodeManagerForSkeleton<ShapeNode, EndEffector>
+    public virtual SkeletonSpecializedFor<ShapeNode, EndEffector>
 {
 public:
 
@@ -789,7 +789,7 @@ public:
   // Documentation inherited
   math::LinearJacobian getLinearJacobianDeriv(
       const JacobianNode* _node,
-      const Eigen::Vector3d& _localOffset = Eigen::Vector3d::Zero(),
+      const Eigen::Vector3d& _localOffset,
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   // Documentation inherited

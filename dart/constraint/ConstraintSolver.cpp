@@ -38,8 +38,11 @@
 
 #include "dart/common/Console.h"
 #include "dart/collision/CollisionGroup.h"
-#include "dart/collision/fcl/FCLCollisionDetector.h"
-#include "dart/collision/fcl/FCLMeshCollisionDetector.h"
+#if DART_USE_FCLMESHCOLLISIONDETECTOR
+  #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#else
+  #include "dart/collision/fcl/FCLCollisionDetector.h"
+#endif
 #include "dart/collision/dart/DARTCollisionDetector.h"
 #ifdef HAVE_BULLET_COLLISION
   #include "dart/collision/bullet/BulletCollisionDetector.h"
@@ -64,16 +67,18 @@ namespace constraint {
 using namespace dynamics;
 
 //==============================================================================
-ConstraintSolver::ConstraintSolver(double _timeStep)
+ConstraintSolver::ConstraintSolver(double timeStep)
+#if DART_USE_FCLMESHCOLLISIONDETECTOR
+  : mCollisionDetector(collision::FCLMeshCollisionDetector::create()),
+#else
   : mCollisionDetector(collision::FCLCollisionDetector::create()),
-    mCollisionGroup(mCollisionDetector->createCollisionGroup()),
-    mCollisionOption(collision::Option(true, 100,
-        std::unique_ptr<collision::CollisionFilter>(
-        new BodyNodeCollisionFilter()))),
-    mTimeStep(_timeStep),
-    mLCPSolver(new DantzigLCPSolver(mTimeStep))
+#endif
+  mCollisionGroup(mCollisionDetector->createCollisionGroup()),
+  mCollisionOption(collision::Option(true, 100, std::make_shared<BodyNodeCollisionFilter>())),
+  mTimeStep(timeStep),
+  mLCPSolver(new DantzigLCPSolver(mTimeStep))
 {
-  assert(_timeStep > 0.0);
+  assert(timeStep > 0.0);
 }
 
 //==============================================================================
@@ -208,17 +213,17 @@ void ConstraintSolver::setCollisionDetector(
     collision::CollisionDetector* collisionDetector)
 {
   setCollisionDetector(
-    std::shared_ptr<collision::CollisionDetector>(collisionDetector));
+    std::unique_ptr<collision::CollisionDetector>(collisionDetector));
 }
 
 //==============================================================================
 void ConstraintSolver::setCollisionDetector(
-    const std::shared_ptr<collision::CollisionDetector>& collisionDetector)
+  const std::shared_ptr<collision::CollisionDetector>& collisionDetector)
 {
   assert(collisionDetector && "Invalid collision detector.");
 
   // Change the collision detector of the constraint solver to new one
-  mCollisionDetector = collisionDetector;
+  mCollisionDetector = std::move(collisionDetector);
 
   auto newCollisionGroup = mCollisionDetector->createCollisionGroup();
 
@@ -229,17 +234,16 @@ void ConstraintSolver::setCollisionDetector(
 }
 
 //==============================================================================
-collision::CollisionDetectorPtr ConstraintSolver::getCollisionDetector()
+collision::CollisionDetector* ConstraintSolver::getCollisionDetector()
 {
-  return mCollisionDetector;
+  return mCollisionDetector.get();
 }
 
 //==============================================================================
-collision::ConstCollisionDetectorPtr
+const collision::CollisionDetector*
 ConstraintSolver::getCollisionDetector() const
 {
-  return std::const_pointer_cast<const collision::CollisionDetector>(
-        mCollisionDetector);
+  return mCollisionDetector.get();
 }
 
 //==============================================================================
@@ -264,6 +268,20 @@ collision::Result& ConstraintSolver::getLastCollisionResult()
 const collision::Result& ConstraintSolver::getLastCollisionResult() const
 {
   return mCollisionResult;
+}
+
+//==============================================================================
+void ConstraintSolver::setLCPSolver(std::unique_ptr<LCPSolver> _lcpSolver)
+{
+  assert(_lcpSolver && "Invalid LCP solver.");
+
+  mLCPSolver = std::move(_lcpSolver);
+}
+
+//==============================================================================
+LCPSolver* ConstraintSolver::getLCPSolver() const
+{
+  return mLCPSolver.get();
 }
 
 //==============================================================================

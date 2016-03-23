@@ -45,6 +45,7 @@
 
 #include "dart/config.h"
 #include "dart/common/Console.h"
+#include "dart/collision/CollisionObject.h"
 #ifdef HAVE_BULLET_COLLISION
   #include "dart/collision/bullet/BulletCollisionDetector.h"
 #endif
@@ -739,8 +740,7 @@ simulation::WorldPtr readWorld(
     if (!collision_detector)
       collision_detector = collision::FCLMeshCollisionDetector::create();
 
-    newWorld->getConstraintSolver()->setCollisionDetector(
-      std::move(collision_detector));
+    newWorld->getConstraintSolver()->setCollisionDetector(collision_detector);
   }
 
   //--------------------------------------------------------------------------

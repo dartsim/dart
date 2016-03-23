@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SPECIALIZEDADDONMANAGER_H_
-#define DART_COMMON_SPECIALIZEDADDONMANAGER_H_
+#ifndef DART_COMMON_SPECIALIZEDFORADDON_H_
+#define DART_COMMON_SPECIALIZEDFORADDON_H_
 
 #include "dart/common/AddonManager.h"
 #include "dart/common/AddonManagerJoiner.h"
@@ -46,18 +46,18 @@ namespace common {
 
 /// Declaration of the variadic template
 template <class... OtherSpecAddons>
-class SpecializedAddonManager { };
+class SpecializedForAddon { };
 
 //==============================================================================
-/// SpecializedAddonManager allows classes that inherit AddonManager to have
+/// SpecializedForAddon allows classes that inherit AddonManager to have
 /// constant-time access to a specific type of Addon
 template <class SpecAddon>
-class SpecializedAddonManager<SpecAddon> : public virtual AddonManager
+class SpecializedForAddon<SpecAddon> : public virtual AddonManager
 {
 public:
 
   /// Default Constructor
-  SpecializedAddonManager();
+  SpecializedForAddon();
 
   /// Check if this AddonManager currently has a certain type of Addon
   template <class T>
@@ -173,23 +173,23 @@ protected:
   /// Return true
   static constexpr bool _isSpecializedFor(type<SpecAddon>);
 
-  /// Iterator that points to the Addon of this SpecializedAddonManager
+  /// Iterator that points to the Addon of this SpecializedForAddon
   AddonManager::AddonMap::iterator mSpecAddonIterator;
 
 };
 
 //==============================================================================
-/// This is the variadic version of the SpecializedAddonManager class which
+/// This is the variadic version of the SpecializedForAddon class which
 /// allows you to include arbitrarily many specialized types in the
 /// specialization.
 template <class SpecAddon1, class... OtherSpecAddons>
-class SpecializedAddonManager<SpecAddon1, OtherSpecAddons...> :
-    public AddonManagerJoiner< Virtual< SpecializedAddonManager<SpecAddon1> >,
-                               Virtual< SpecializedAddonManager<OtherSpecAddons...> > > { };
+class SpecializedForAddon<SpecAddon1, OtherSpecAddons...> :
+    public AddonManagerJoiner< Virtual< SpecializedForAddon<SpecAddon1> >,
+                               Virtual< SpecializedForAddon<OtherSpecAddons...> > > { };
 
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/SpecializedAddonManager.h"
+#include "dart/common/detail/SpecializedForAddon.h"
 
-#endif // DART_COMMON_SPECIALIZEDADDONMANAGER_H_
+#endif // DART_COMMON_SPECIALIZEDFORADDON_H_

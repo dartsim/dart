@@ -1203,6 +1203,20 @@ TEST(Skeleton, Configurations)
   EXPECT_TRUE(c2.mAccelerations.size() == 0);
 }
 
+TEST(Skeleton, LinearJacobianDerivOverload)
+{
+  // Regression test for #626: Make sure that getLinearJacobianDeriv's overload
+  // is working appropriately.
+  SkeletonPtr skeleton = createThreeLinkRobot(Vector3d::Ones(), DOF_PITCH,
+                                              Vector3d::Ones(), DOF_ROLL,
+                                              Vector3d::Ones(), DOF_YAW);
+
+  skeleton->getLinearJacobianDeriv(skeleton->getBodyNode(0));
+
+  LinkagePtr linkage = Branch::create(skeleton->getBodyNode(0));
+  linkage->getLinearJacobianDeriv(linkage->getBodyNode(0));
+}
+
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

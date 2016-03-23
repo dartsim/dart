@@ -56,7 +56,7 @@ namespace common {
 /// certain Addon types that it will need to access frequently, and it would be
 /// beneficial to have constant-time access to those Addon types. To get
 /// constant-time access to specific Addon types, you can use the templated
-/// class SpecializedAddonManager.
+/// class SpecializedForAddon.
 class AddonManager
 {
 public:

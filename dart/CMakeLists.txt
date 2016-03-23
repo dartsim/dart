@@ -26,8 +26,9 @@ if(NOT BUILD_CORE_ONLY)
 endif()
 
 # Set header and source files
+get_filename_component(dart_core_h "dart-core.h" ABSOLUTE)
 set(dart_core_hdrs
-  dart-core.h
+  ${dart_core_h}
   ${dart_common_hdrs}
   ${dart_math_hdrs}
   ${dart_integration_hdrs}
@@ -52,8 +53,9 @@ set(dart_core_srcs
   ${dart_simulation_srcs}
 )
 if(NOT BUILD_CORE_ONLY)
+  get_filename_component(dart_h "dart.h" ABSOLUTE)
   set(dart_hdrs
-    dart.h
+    ${dart_h}
     ${dart_gui_hdrs}
     ${dart_planning_hdrs}
     ${dart_utils_hdrs}
@@ -90,4 +92,14 @@ if(NOT BUILD_CORE_ONLY)
   install(FILES dart.h DESTINATION include/dart/ COMPONENT headers)
   install(TARGETS dart-core dart EXPORT DARTTargets DESTINATION lib)
 endif()
+
+# Setup the coveralls target and tell it to gather
+# coverage data for all the lib sources.
+if(DART_COVERALLS)
+  if(BUILD_CORE_ONLY)
+    message(SEND_ERROR "'BUILD_CORE_ONLY' option is 'on'. This option should be 'off' when 'DART_COVERALLS' option is 'on'.")
+  endif()
+  coveralls_setup("${dart_core_hdrs};${dart_core_srcs};${dart_hdrs};${dart_srcs}" ${DART_COVERALLS_UPLOAD})
+endif()
+
 

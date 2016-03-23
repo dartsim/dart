@@ -63,7 +63,7 @@ class ConstraintSolver
 {
 public:
   /// Constructor
-  explicit ConstraintSolver(double _timeStep);
+  explicit ConstraintSolver(double timeStep);
 
   /// Copy constructor
   // TODO: implement copy constructor since this class contains a pointer to
@@ -111,13 +111,13 @@ public:
 
   /// Set collision detector
   void setCollisionDetector(
-    const std::shared_ptr<collision::CollisionDetector>& collisionDetector);
+      const std::shared_ptr<collision::CollisionDetector>& collisionDetector);
 
   /// Get collision detector
-  collision::CollisionDetectorPtr getCollisionDetector();
+  collision::CollisionDetector* getCollisionDetector();
 
   /// Get collision detector
-  collision::ConstCollisionDetectorPtr getCollisionDetector() const;
+  const collision::CollisionDetector* getCollisionDetector() const;
 
   /// Return collision group of collision objects that are added to this
   /// ConstraintSolver
@@ -132,6 +132,12 @@ public:
 
   /// Return the last collision checking result
   const collision::Result& getLastCollisionResult() const;
+
+  /// Set LCP solver
+  void setLCPSolver(std::unique_ptr<LCPSolver> _lcpSolver);
+
+  /// Get LCP solver
+  LCPSolver* getLCPSolver() const;
 
   /// Solve constraint impulses and apply them to the skeletons
   void solve();

@@ -41,7 +41,7 @@
 
 #include "dart/common/Signal.h"
 #include "dart/common/AddonWithVersion.h"
-#include "dart/common/SpecializedAddonManager.h"
+#include "dart/common/SpecializedForAddon.h"
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
 #include "dart/dynamics/EllipsoidShape.h"
@@ -214,7 +214,7 @@ public:
 
 class ShapeFrame :
     public virtual common::VersionCounter,
-    public common::SpecializedAddonManager<
+    public common::SpecializedForAddon<
         VisualAddon, CollisionAddon, DynamicsAddon>,
     public virtual Frame
 {

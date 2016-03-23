@@ -32,3 +32,5 @@ else
   sudo apt-get -qq --yes --force-yes install $APT_CORE
 fi
 
+sudo apt-get -qq --yes install lcov curl
+

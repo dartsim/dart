@@ -187,8 +187,7 @@ void EndEffector::setNodeState(const Node::State& otherState)
 //==============================================================================
 std::unique_ptr<Node::State> EndEffector::getNodeState() const
 {
-  return std::unique_ptr<EndEffector::State>(
-        new EndEffector::State(getEndEffectorState()));
+  return common::make_unique<EndEffector::State>(getEndEffectorState());
 }
 
 //==============================================================================
@@ -217,8 +216,8 @@ void EndEffector::setNodeProperties(const Node::Properties& otherProperties)
 //==============================================================================
 std::unique_ptr<Node::Properties> EndEffector::getNodeProperties() const
 {
-  return std::unique_ptr<EndEffector::Properties>(
-        new EndEffector::Properties(getEndEffectorProperties()));
+  return common::make_unique<EndEffector::Properties>(
+      getEndEffectorProperties());
 }
 
 //==============================================================================
