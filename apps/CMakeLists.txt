@@ -28,3 +28,5 @@ foreach(APPDIR ${directories})
     endif(TARGET ${APPTARGET})
   endif(WIN32)
 endforeach(APPDIR)
+
+add_custom_target(examples DEPENDS ${directories})

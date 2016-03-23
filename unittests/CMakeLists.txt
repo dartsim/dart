@@ -61,11 +61,13 @@ message(STATUS "")
 message(STATUS "[ Unit tests ]")
 file(GLOB tests "test*.cpp")
 foreach(test ${tests})
-
   # Get the name (i.e. bla.cpp => bla)
   get_filename_component(base ${test} NAME_WE)
+  list(APPEND all_tests ${base})
+
   link_directories(${DARTExt_LIBRARY_DIRS})
   add_executable(${base} ${test})
+
   if(MSVC)
     target_link_libraries(${base} dart optimized gtest debug gtestd)
   else()
@@ -80,8 +82,8 @@ foreach(test ${tests})
     add_test(${base} ${CMAKE_BINARY_DIR}/bin/tests/${base})
     message(STATUS "Adding test: " ${base})
   endif(NOT contains)
-
 endforeach(test)
+
 
 if(HAVE_IPOPT)
   target_link_libraries(testOptimizer dart-optimizer-ipopt ${IPOPT_LIBRARIES})
@@ -94,3 +96,5 @@ endif(HAVE_NLOPT)
 if(HAVE_SNOPT)
   target_link_libraries(testOptimizer dart-optimizer-snopt)
 endif(HAVE_SNOPT)
+
+add_custom_target(tests DEPENDS ${all_tests})

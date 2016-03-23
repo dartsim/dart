@@ -615,21 +615,12 @@ if(NOT BUILD_CORE_ONLY)
     add_subdirectory(osgDart)
   endif(DART_BUILD_OSGDART)
 
+  add_subdirectory(apps EXCLUDE_FROM_ALL)
+  add_subdirectory(tutorials EXCLUDE_FROM_ALL)
+
   # Unit tests
-  if(DART_BUILD_UNITTESTS)
-    enable_testing()
-    add_subdirectory(unittests)
-  endif(DART_BUILD_UNITTESTS)
-
-  # Examples
-  if(DART_BUILD_EXAMPLES)
-    add_subdirectory(apps)
-  endif(DART_BUILD_EXAMPLES)
-
-  if(DART_BUILD_TUTORIALS)
-    add_subdirectory(tutorials)
-  endif()
-
+  enable_testing()
+  add_subdirectory(unittests EXCLUDE_FROM_ALL)
 endif(NOT BUILD_CORE_ONLY)
 
 #===============================================================================
