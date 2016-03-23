@@ -34,110 +34,120 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLMeshCollisionGroupData.h"
+#include "dart/collision/fcl/FCLCollisionGroup.h"
 
 #include "dart/collision/CollisionObject.h"
-#include "dart/collision/fcl/FCLMeshCollisionObjectData.h"
+#include "dart/collision/fcl/FCLCollisionObject.h"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-FCLMeshCollisionGroupData::FCLMeshCollisionGroupData(
-    CollisionDetector* collisionDetector,
-    CollisionGroup* parent,
-    const FCLMeshCollisionGroupData::CollisionObjects& collObjects)
-  : CollisionGroupData(collisionDetector, parent),
-    mBroadPhaseAlg(new FCLCollisionManager())
+FCLCollisionGroup::FCLCollisionGroup(
+    const CollisionDetectorPtr& collisionDetector)
+  : CollisionGroup(collisionDetector),
+    mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
 {
-  for (auto collObj : collObjects)
-  {
-    auto data = static_cast<FCLMeshCollisionObjectData*>(collObj->getEngineData());
-    mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
-  }
+  assert(mCollisionDetector);
+}
 
+//==============================================================================
+FCLCollisionGroup::FCLCollisionGroup(
+    const CollisionDetectorPtr& collisionDetector,
+    const dynamics::ShapeFrame* shapeFrame)
+  : CollisionGroup(collisionDetector),
+    mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
+{
+  assert(mCollisionDetector);
+  assert(shapeFrame);
+
+  addShapeFrame(shapeFrame);
+}
+
+//==============================================================================
+FCLCollisionGroup::FCLCollisionGroup(
+    const CollisionDetectorPtr& collisionDetector,
+    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
+  : CollisionGroup(collisionDetector),
+    mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
+{
+  assert(mCollisionDetector);
+
+  addShapeFrames(shapeFrames);
+}
+
+//==============================================================================
+FCLCollisionGroup::~FCLCollisionGroup()
+{
+  removeAllShapeFrames();
+}
+
+//==============================================================================
+void FCLCollisionGroup::initializeEngineData()
+{
   mBroadPhaseAlg->setup();
 }
 
 //==============================================================================
-std::unique_ptr<CollisionGroupData>
-FCLMeshCollisionGroupData::clone(
-    CollisionGroup* newParent,
-    const CollisionGroupData::CollisionObjectPtrs& collObjects) const
+void FCLCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
-  return std::unique_ptr<CollisionGroupData>(
-        new FCLMeshCollisionGroupData(mCollisionDetector, newParent, collObjects));
+  auto casted = static_cast<FCLCollisionObject*>(object);
+  mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
+
+  this->initializeEngineData();
 }
 
 //==============================================================================
-void FCLMeshCollisionGroupData::init()
-{
-  mBroadPhaseAlg->setup();
-}
-
-//==============================================================================
-void FCLMeshCollisionGroupData::addCollisionObject(
-    const CollisionObjectPtr& object, const bool init)
-{
-  auto data = static_cast<FCLMeshCollisionObjectData*>(
-        object->getEngineData());
-  mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
-
-  if (init)
-    this->init();
-}
-
-//==============================================================================
-void FCLMeshCollisionGroupData::addCollisionObjects(
-    const CollisionGroupData::CollisionObjectPtrs& collObjects, const bool init)
+void FCLCollisionGroup::addCollisionObjectsToEngine(
+    const std::vector<CollisionObject*>& collObjects)
 {
   for (auto collObj : collObjects)
   {
-    auto data = static_cast<FCLMeshCollisionObjectData*>(
-          collObj->getEngineData());
+    auto casted = static_cast<FCLCollisionObject*>(collObj);
 
-    mBroadPhaseAlg->registerObject(data->getFCLCollisionObject());
+    mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
   }
 
-  if (init)
-    this->init();
+  this->initializeEngineData();
 }
 
 //==============================================================================
-void FCLMeshCollisionGroupData::removeCollisionObject(
-    const CollisionObjectPtr& object, const bool init)
+void FCLCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 {
-  auto data = static_cast<FCLMeshCollisionObjectData*>(
-        object->getEngineData());
-  mBroadPhaseAlg->unregisterObject(data->getFCLCollisionObject());
+  auto casted = static_cast<FCLCollisionObject*>(object);
 
-  if (init)
-    this->init();
+  mBroadPhaseAlg->unregisterObject(casted->getFCLCollisionObject());
+
+  this->initializeEngineData();
 }
 
 //==============================================================================
-void FCLMeshCollisionGroupData::removeAllCollisionObjects(bool init)
+void FCLCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
   mBroadPhaseAlg->clear();
 
-  if (init)
-    this->init();
+  this->initializeEngineData();
 }
 
 //==============================================================================
-void FCLMeshCollisionGroupData::update()
+void FCLCollisionGroup::updateEngineData()
 {
-  mBroadPhaseAlg->setup();
   mBroadPhaseAlg->update();
 }
 
 //==============================================================================
-FCLMeshCollisionGroupData::FCLCollisionManager*
-FCLMeshCollisionGroupData::getFCLCollisionManager() const
+FCLCollisionGroup::FCLCollisionManager*
+FCLCollisionGroup::getFCLCollisionManager()
 {
   return mBroadPhaseAlg.get();
 }
 
+//==============================================================================
+const FCLCollisionGroup::FCLCollisionManager*
+FCLCollisionGroup::getFCLCollisionManager() const
+{
+  return mBroadPhaseAlg.get();
+}
 
 }  // namespace collision
 }  // namespace dart

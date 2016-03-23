@@ -34,29 +34,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLMeshCollisionObjectData.h"
+#include "dart/collision/fcl/FCLMeshCollisionObject.h"
 
 #include <fcl/BVH/BVH_model.h>
 
 #include "dart/collision/CollisionDetector.h"
 #include "dart/collision/CollisionObject.h"
 #include "dart/collision/fcl/FCLTypes.h"
-#include "dart/collision/fcl/FCLCollisionObjectData.h"
+#include "dart/collision/fcl/FCLCollisionObject.h"
+#include "dart/dynamics/ShapeFrame.h"
 #include "dart/dynamics/SoftMeshShape.h"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-void FCLMeshCollisionObjectData::updateTransform(
-    const Eigen::Isometry3d& tf)
+fcl::CollisionObject* FCLMeshCollisionObject::getFCLCollisionObject()
 {
-  mFCLCollisionObject->setTransform(FCLTypes::convertTransform(tf));
-  mFCLCollisionObject->computeAABB();
+  return mFCLCollisionObject.get();
 }
 
 //==============================================================================
-void FCLMeshCollisionObjectData::update()
+const fcl::CollisionObject* FCLMeshCollisionObject::getFCLCollisionObject() const
+{
+  return mFCLCollisionObject.get();
+}
+
+//==============================================================================
+FCLMeshCollisionObject::FCLMeshCollisionObject(
+    CollisionDetector* collisionDetector,
+    const dynamics::ShapeFrame* shapeFrame,
+    const boost::shared_ptr<fcl::CollisionGeometry>& fclCollGeom)
+  : CollisionObject(collisionDetector, shapeFrame),
+    mFCLCollisionObjectUserData(new FCLCollisionObject::UserData(this)),
+    mFCLCollisionObject(new fcl::CollisionObject(fclCollGeom))
+{
+  mFCLCollisionObject->setUserData(mFCLCollisionObjectUserData.get());
+}
+
+//==============================================================================
+void FCLMeshCollisionObject::updateEngineData()
 {
   using dart::dynamics::BodyNode;
   using dart::dynamics::Shape;
@@ -70,10 +87,11 @@ void FCLMeshCollisionObjectData::update()
     // Update soft-body's vertices
     if (shape->getShapeType() == Shape::SOFT_MESH)
     {
-      assert(dynamic_cast<SoftMeshShape*>(shape));
-      SoftMeshShape* softMeshShape = static_cast<SoftMeshShape*>(shape);
+      assert(dynamic_cast<const SoftMeshShape*>(shape));
+      auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
       const aiMesh* mesh = softMeshShape->getAssimpMesh();
-      softMeshShape->update();
+      const_cast<SoftMeshShape*>(softMeshShape)->update();
+      // TODO(JS): update function be called by somewhere out of here.
 
 #if FCL_VERSION_AT_LEAST(0,3,0)
       auto collGeom = const_cast<fcl::CollisionGeometry*>(
@@ -103,25 +121,9 @@ void FCLMeshCollisionObjectData::update()
     }
   }
 
-  updateTransform(collisionObject->getTransform());
-}
-
-//==============================================================================
-fcl::CollisionObject* FCLMeshCollisionObjectData::getFCLCollisionObject() const
-{
-  return mFCLCollisionObject.get();
-}
-
-//==============================================================================
-FCLMeshCollisionObjectData::FCLMeshCollisionObjectData(
-    CollisionDetector* collisionDetector,
-    CollisionObject* parent,
-    const boost::shared_ptr<fcl::CollisionGeometry>& fclCollGeom)
-  : CollisionObjectData(collisionDetector, parent),
-    mFCLCollisionObjectUserData(new FCLCollisionObjectData::UserData(parent)),
-    mFCLCollisionObject(new fcl::CollisionObject(fclCollGeom))
-{
-  mFCLCollisionObject->setUserData(mFCLCollisionObjectUserData.get());
+  mFCLCollisionObject->setTransform(
+      FCLTypes::convertTransform(mShapeFrame->getWorldTransform()));
+  mFCLCollisionObject->computeAABB();
 }
 
 }  // namespace collision

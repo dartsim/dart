@@ -34,67 +34,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONOBJECTDATA_H_
-#define DART_COLLISION_BULLET_BULLETCOLLISIONOBJECTDATA_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_H_
+#define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_H_
 
 #include <cstddef>
 #include <Eigen/Dense>
-#include <assimp/mesh.h>
-#include <assimp/scene.h>
-#include <btBulletCollisionCommon.h>
-#include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
-#include "dart/collision/CollisionObjectData.h"
+
+#include <fcl/collision_object.h>
+
+#include "dart/collision/CollisionObject.h"
 
 namespace dart {
 namespace collision {
 
 class CollisionObject;
 
-class BulletCollisionObjectData : public CollisionObjectData
+class FCLCollisionObject : public CollisionObject
 {
 public:
 
+  friend class FCLCollisionDetector;
+
   struct UserData
   {
-    CollisionObject* collisionObject;
+    CollisionObject* mCollisionObject;
 
-    CollisionDetector* collisionDetector;
-    CollisionGroup* group;
-
-    UserData(CollisionObject* collisionObject,
-             CollisionDetector* collisionDetector,
-             CollisionGroup* collisionGroup);
+    UserData(CollisionObject* collisionObject);
   };
 
-  friend class BulletCollisionDetector;
-
-  // Documentation inherited
-  void updateTransform(const Eigen::Isometry3d& tf) override;
-
-  // Documentation inherited
-  void update() override;
+  /// Return FCL collision object
+  fcl::CollisionObject* getFCLCollisionObject();
 
   /// Return FCL collision object
-  btCollisionObject* getBulletCollisionObject() const;
+  const fcl::CollisionObject* getFCLCollisionObject() const;
 
 protected:
 
   /// Constructor
-  BulletCollisionObjectData(CollisionDetector* collisionDetector,
-                            CollisionObject* parent,
-                            btCollisionShape* bulletCollisionShape);
+  FCLCollisionObject(CollisionDetector* collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame,
+      const boost::shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
+
+  // Documentation inherited
+  void updateEngineData() override;
 
 protected:
 
-  /// Bullet collision geometry user data
-  std::unique_ptr<UserData> mBulletCollisionObjectUserData;
+  /// FCL collision geometry user data
+  std::unique_ptr<UserData> mFCLCollisionObjectUserData;
 
-  /// Bullet collision object
-  std::unique_ptr<btCollisionObject> mBulletCollisionObject;
+  /// FCL collision object
+  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
 
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONOBJECTDATA_H_
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECT_H_

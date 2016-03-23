@@ -67,36 +67,40 @@ public:
   /// Return collision detection engine type in std::string
   virtual const std::string& getType() const = 0;
 
-  /// Create a collision object
-  template <typename CollisionObjectType, typename... Args>
-  std::shared_ptr<CollisionObjectType> createCollisionObject(
-      const dynamics::ShapePtr& shape,
-      const Args&... args);
-
   /// Create a collision group
+  virtual std::shared_ptr<CollisionGroup> createCollisionGroup() = 0;
+
+  /// Create a collision group from ShapeFrame
+  virtual std::shared_ptr<CollisionGroup> createCollisionGroup(
+      const dynamics::ShapeFrame* shapeFrame) = 0;
+
+  /// Create a collision group from ShapeFrames
+  virtual std::shared_ptr<CollisionGroup> createCollisionGroup(
+      const std::vector<const dynamics::ShapeFrame*>& shapeFrames) = 0;
+
+  /// Create a collision group from Skeleton
   std::shared_ptr<CollisionGroup> createCollisionGroup(
-      const std::vector<CollisionObjectPtr>& objects
-          = std::vector<CollisionObjectPtr>());
+      dynamics::Skeleton* skeleton);
 
-  /// Perform collision detection for object1-object2.
-  bool detect(CollisionObject* object1, CollisionObject* object2,
-              const Option& option, Result& result);
+//  /// Perform collision detection for object1-object2.
+//  bool detect(CollisionObject* object1, CollisionObject* object2,
+//              const Option& option, Result& result);
 
-  /// Perform collision detection for object-group.
-  bool detect(CollisionObject* object, CollisionGroup* group,
-              const Option& option, Result& result);
+//  /// Perform collision detection for object-group.
+//  bool detect(CollisionObject* object, CollisionGroup* group,
+//              const Option& option, Result& result);
 
-  /// Identical with detect(object, group, option, result)
-  bool detect(CollisionGroup* group, CollisionObject* object,
-              const Option& option, Result& result);
+//  /// Identical with detect(object, group, option, result)
+//  bool detect(CollisionGroup* group, CollisionObject* object,
+//              const Option& option, Result& result);
 
   /// Perform collision detection for group.
-  bool detect(CollisionGroup* group,
-              const Option& option, Result& result);
+//  bool detect(CollisionGroup* group,
+//              const Option& option, Result& result);
 
-  /// Perform collision detection for group1-group2.
-  bool detect(CollisionGroup* group1, CollisionGroup* group2,
-              const Option& option, Result& result);
+//  /// Perform collision detection for group1-group2.
+//  bool detect(CollisionGroup* group1, CollisionGroup* group2,
+//              const Option& option, Result& result);
 
 protected:
 
@@ -105,51 +109,43 @@ protected:
   /// Constructor
   CollisionDetector() = default;
 
-  /// Reclaim collisionObject from this CollisionDetector.
-  void reclaimCollisionObject(CollisionObject* collisionObject);
+  /// Return CollisionObject associated with shapeFrame. New CollisionObject
+  /// will be created if it hasn't created yet for shapeFrame.
+  CollisionObject* claimCollisionObject(const dynamics::ShapeFrame* shapeFrame);
+  // TODO(JS): Maybe WeakShapeFramePtr
 
-  /// Create collision detection engine specific data for CollisionObject
-  virtual std::unique_ptr<CollisionObjectData> createCollisionObjectData(
-      CollisionObject* parent,
-      const dynamics::ShapePtr& shape) = 0;
+  /// Create CollisionObject
+  virtual std::unique_ptr<CollisionObject> createCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) = 0;
 
-  /// Reclaim collision detection engine specific data for CollisionObject
-  virtual void reclaimCollisionObjectData(
-      CollisionObjectData* collisionObjectData) = 0;
+  ///
+  virtual void notifyDestroyingCollisionObject(CollisionObject* collObj) = 0;
 
-  /// Create collision detection engine specific data for CollisionGroup
-  virtual std::unique_ptr<CollisionGroupData> createCollisionGroupData(
-      CollisionGroup* parent,
-      const CollisionObjectPtrs& collObjects) = 0;
+  /// Reclaim CollisionObject associated with shapeFrame. The CollisionObject
+  /// will be destroyed if no CollisionGroup holds it.
+  void reclaimCollisionObject(const CollisionObject* shapeFrame);
 
   /// Return true if collisionObject is created from this CollisionDetector
   bool hasCollisionObject(const CollisionObject* collisionObject) const;
 
-  /// Perform collision detection for object1-object2.
-  virtual bool detect(CollisionObjectData* object1,
-                      CollisionObjectData* object2,
-                      const Option& option, Result& result) = 0;
-
-  /// Perform collision detection for object-group.
-  virtual bool detect(CollisionObjectData* object, CollisionGroupData* group,
-                      const Option& option, Result& result) = 0;
-
-  /// Identical with detect(object, group, option, result)
-  bool detect(CollisionGroupData* group, CollisionObjectData* object,
-              const Option& option, Result& result);
-
   /// Perform collision detection for group.
-  virtual bool detect(CollisionGroupData* group,
+  virtual bool detect(CollisionGroup* group,
                       const Option& option, Result& result) = 0;
 
   /// Perform collision detection for group1-group2.
-  virtual bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
+  virtual bool detect(CollisionGroup* group1, CollisionGroup* group2,
                       const Option& option, Result& result) = 0;
 
 protected:
 
-  /// CollisionObject array created from this CollisionDetector
-  std::vector<WeakCollisionObjectPtr> mCollisionObjects;
+  using CollisionObjectMapValue
+      = std::pair<std::unique_ptr<CollisionObject>, size_t>;
+  using CollisionObjectMap
+      = std::map<const dynamics::ShapeFrame*, CollisionObjectMapValue>;
+  using CollisionObjectPair
+      = std::pair<const dynamics::ShapeFrame*, CollisionObjectMapValue>;
+
+  CollisionObjectMap mCollisionObjectMap;
 
 };
 

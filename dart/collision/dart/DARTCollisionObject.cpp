@@ -34,48 +34,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONOBJECTDATA_H_
-#define DART_COLLISION_COLLISIONOBJECTDATA_H_
-
-#include <Eigen/Dense>
-
-#include "dart/collision/SmartPointer.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/collision/dart/DARTCollisionObject.h"
 
 namespace dart {
 namespace collision {
 
-class CollisionObjectData
+//==============================================================================
+DARTCollisionObject::DARTCollisionObject(
+    CollisionDetector* collisionDetector,
+    const dynamics::ShapeFrame* shapeFrame)
+  : CollisionObject(collisionDetector, shapeFrame)
 {
-public:
+  // Do nothing
+}
 
-  CollisionObjectData(CollisionDetector* collisionDetector,
-                      CollisionObject* parent);
-
-  virtual void updateTransform(const Eigen::Isometry3d& tf) = 0;
-
-  /// Update engine data. This function will be called ahead of every collision
-  /// checking
-  virtual void update() = 0;
-  // TODO(JS): reorganize updateTansform/updateShape/update
-
-  CollisionDetector* getCollisionDetector();
-
-  const CollisionDetector* getCollisionDetector() const;
-
-  CollisionObject* getCollisionObject();
-
-  const CollisionObject* getCollisionObject() const;
-
-protected:
-
-  CollisionDetector* mCollisionDetector;
-
-  CollisionObject* mParent;
-
-};
+//==============================================================================
+void DARTCollisionObject::updateEngineData()
+{
+  // Do nothing
+}
 
 }  // namespace collision
 }  // namespace dart
-
-#endif  // DART_COLLISION_COLLISIONOBJECTDATA_H_

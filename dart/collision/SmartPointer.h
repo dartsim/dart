@@ -52,11 +52,7 @@ DART_COMMON_MAKE_SHARED_WEAK(DARTCollisionDetector)
 #endif
 
 DART_COMMON_MAKE_SHARED_WEAK(CollisionObject)
-DART_COMMON_MAKE_SHARED_WEAK(CollisionObjectData)
-DART_COMMON_MAKE_SHARED_WEAK(FreeCollisionObject)
-
 DART_COMMON_MAKE_SHARED_WEAK(CollisionGroup)
-DART_COMMON_MAKE_SHARED_WEAK(CollisionGroupData)
 
 
 }  // namespace collision

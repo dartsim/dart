@@ -42,27 +42,7 @@
 namespace dart {
 namespace collision {
 
-//==============================================================================
-template <typename CollisionObjectType, typename... Args>
-std::shared_ptr<CollisionObjectType> CollisionDetector::createCollisionObject(
-    const dynamics::ShapePtr& shape, const Args&... args)
-{
-  auto newCollisionObject = std::shared_ptr<CollisionObjectType>(
-      new CollisionObjectType(shared_from_this(), shape, args...));
 
-  for (auto collisionObject : mCollisionObjects)
-  {
-    auto locked = collisionObject.lock();
-    assert(locked);
-
-    if (newCollisionObject->isEqual(locked.get()))
-      return std::static_pointer_cast<CollisionObjectType>(locked);
-  }
-
-  mCollisionObjects.push_back(newCollisionObject);
-
-  return newCollisionObject;
-}
 
 }  // namespace collision
 }  // namespace dart

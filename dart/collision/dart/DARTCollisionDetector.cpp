@@ -39,8 +39,8 @@
 #include <iostream>
 #include "dart/collision/CollisionObject.h"
 #include "dart/collision/dart/DARTCollide.h"
-#include "dart/collision/dart/DARTCollisionObjectData.h"
-#include "dart/collision/dart/DARTCollisionGroupData.h"
+#include "dart/collision/dart/DARTCollisionObject.h"
+#include "dart/collision/dart/DARTCollisionGroup.h"
 
 namespace dart {
 namespace collision {
@@ -80,102 +80,74 @@ const std::string& DARTCollisionDetector::getType() const
 }
 
 //==============================================================================
-std::unique_ptr<CollisionObjectData>
-DARTCollisionDetector::createCollisionObjectData(
-    CollisionObject* parent,
-    const dynamics::ShapePtr& /*shape*/)
+std::shared_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup()
 {
-  return std::unique_ptr<CollisionObjectData>(
-        new DARTCollisionObjectData(this, parent));
+  return std::make_shared<DARTCollisionGroup>(shared_from_this());
 }
 
 //==============================================================================
-void DARTCollisionDetector::reclaimCollisionObjectData(
-    CollisionObjectData* /*collisionObjectData*/)
+std::shared_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup(
+    const dynamics::ShapeFrame* shapeFrame)
 {
-  // Do nothing
+  return std::make_shared<DARTCollisionGroup>(shared_from_this(), shapeFrame);
 }
 
 //==============================================================================
-std::unique_ptr<CollisionGroupData>
-DARTCollisionDetector::createCollisionGroupData(
-    CollisionGroup* parent,
-    const CollisionObjectPtrs& collObjects)
+std::shared_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup(
+    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
 {
-  return std::unique_ptr<CollisionGroupData>(
-        new DARTCollisionGroupData(this, parent, collObjects));
+  return std::make_shared<DARTCollisionGroup>(shared_from_this(), shapeFrames);
 }
 
 //==============================================================================
-bool DARTCollisionDetector::detect(
-    CollisionObjectData* objectData1,
-    CollisionObjectData* objectData2,
-    const Option& /*option*/, Result& result)
+std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
+    const dynamics::ShapeFrame* shapeFrame)
 {
-  result.contacts.clear();
+  auto collObj = new DARTCollisionObject(this, shapeFrame);
 
-  assert(objectData1->getCollisionDetector()->getType()
-         == DARTCollisionDetector::getTypeStatic());
-  assert(objectData2->getCollisionDetector()->getType()
-         == DARTCollisionDetector::getTypeStatic());
+  mDARTCollisionObjects.push_back(collObj);
 
-  auto collObj1 = objectData1->getCollisionObject();
-  auto collObj2 = objectData2->getCollisionObject();
-
-  return checkPair(collObj1, collObj2, result);
+  return std::unique_ptr<CollisionObject>(collObj);
 }
 
 //==============================================================================
-bool DARTCollisionDetector::detect(
-    CollisionObjectData* objectData,
-    CollisionGroupData* groupData,
-    const Option& /*option*/, Result& result)
+void DARTCollisionDetector::notifyDestroyingCollisionObject(
+    CollisionObject* collObj)
 {
-  result.contacts.clear();
+  if (!collObj)
+    return;
 
-  assert(objectData);
-  assert(groupData);
-  assert(objectData->getCollisionDetector()->getType()
-         == DARTCollisionDetector::getTypeStatic());
-  assert(groupData->getCollisionDetector()->getType()
-         == DARTCollisionDetector::getTypeStatic());
-
-  auto collObj1 = objectData->getCollisionObject();
-  auto collGrp = groupData->getCollisionGroup();
-  auto collObjs2 = collGrp->getCollisionObjects();
-
-  for (auto collObj2 : collObjs2)
-    checkPair(collObj1, collObj2.get(), result);
-
-  return !result.contacts.empty();
+  auto casted = static_cast<DARTCollisionObject*>(collObj);
+  mDARTCollisionObjects.erase(
+        std::remove(mDARTCollisionObjects.begin(), mDARTCollisionObjects.end(),
+                    casted), mDARTCollisionObjects.end());
 }
 
 //==============================================================================
 bool DARTCollisionDetector::detect(
-    CollisionGroupData* groupData,
+    CollisionGroup* group,
     const Option& /*option*/, Result& result)
 {
   result.contacts.clear();
 
-  assert(groupData);
-  assert(groupData->getCollisionDetector()->getType()
+  assert(group);
+  assert(group->getCollisionDetector()->getType()
          == DARTCollisionDetector::getTypeStatic());
 
-  auto collGrp = groupData->getCollisionGroup();
-  auto collObjs = collGrp->getCollisionObjects();
+  auto objects = group->getCollisionObjects();
 
-  if (collObjs.empty())
+  if (objects.empty())
     return false;
 
-  for (auto i = 0u; i < collObjs.size() - 1; ++i)
+  for (auto i = 0u; i < objects.size() - 1; ++i)
   {
-    auto collObj1 = collObjs[i];
+    auto collObj1 = objects[i];
 
-    for (auto j = i + 1u; j < collObjs.size(); ++j)
+    for (auto j = i + 1u; j < objects.size(); ++j)
     {
-      auto collObj2 = collObjs[j];
+      auto collObj2 = objects[j];
 
-      checkPair(collObj1.get(), collObj2.get(), result);
+      checkPair(collObj1, collObj2, result);
     }
   }
 
@@ -184,37 +156,34 @@ bool DARTCollisionDetector::detect(
 
 //==============================================================================
 bool DARTCollisionDetector::detect(
-    CollisionGroupData* groupData1,
-    CollisionGroupData* groupData2,
+    CollisionGroup* group1,
+    CollisionGroup* group2,
     const Option& /*option*/, Result& result)
 {
   result.contacts.clear();
 
-  assert(groupData1);
-  assert(groupData2);
-  assert(groupData1->getCollisionDetector()->getType()
+  assert(group1);
+  assert(group2);
+  assert(group1->getCollisionDetector()->getType()
          == DARTCollisionDetector::getTypeStatic());
-  assert(groupData2->getCollisionDetector()->getType()
+  assert(group2->getCollisionDetector()->getType()
          == DARTCollisionDetector::getTypeStatic());
 
-  auto collGrp1 = groupData1->getCollisionGroup();
-  auto collGrp2 = groupData2->getCollisionGroup();
+  auto objects1 = group1->getCollisionObjects();
+  auto objects2 = group2->getCollisionObjects();
 
-  auto collObjs1 = collGrp1->getCollisionObjects();
-  auto collObjs2 = collGrp2->getCollisionObjects();
-
-  if (collObjs1.empty() || collObjs2.empty())
+  if (objects1.empty() || objects2.empty())
     return false;
 
-  for (auto i = 0u; i < collObjs1.size(); ++i)
+  for (auto i = 0u; i < objects1.size(); ++i)
   {
-    auto collObj1 = collObjs1[i];
+    auto collObj1 = objects1[i];
 
-    for (auto j = 0u; j < collObjs2.size(); ++j)
+    for (auto j = 0u; j < objects2.size(); ++j)
     {
-      auto collObj2 = collObjs2[j];
+      auto collObj2 = objects2[j];
 
-      checkPair(collObj1.get(), collObj2.get(), result);
+      checkPair(collObj1, collObj2, result);
     }
   }
 

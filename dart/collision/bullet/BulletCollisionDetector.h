@@ -45,8 +45,7 @@
 namespace dart {
 namespace collision {
 
-class CollisionGroup;
-class BulletCollisionObjectData;
+class BulletCollisionObject;
 
 class BulletCollisionDetector : public CollisionDetector
 {
@@ -65,56 +64,59 @@ public:
   // Documentation inherited
   const std::string& getType() const override;
 
+  // Documentation inherited
+  std::shared_ptr<CollisionGroup> createCollisionGroup() override;
+
+  // Documentation inherited
+  std::shared_ptr<CollisionGroup> createCollisionGroup(
+      const dynamics::ShapeFrame* shapeFrame) override;
+
+  // Documentation inherited
+  std::shared_ptr<CollisionGroup> createCollisionGroup(
+      const std::vector<const dynamics::ShapeFrame*>& shapeFrames) override;
+
   using CollisionDetector::detect;
-
-  BulletCollisionObjectData* findCollisionObjectData(
-      btCollisionObject* bulletCollObj) const;
-
-  CollisionObject* findCollisionObject(
-      btCollisionObject* bulletCollObj) const;
-
-protected:
-
-  /// Constructor
-  BulletCollisionDetector() = default;
-
-  // Documentation inherited
-  std::unique_ptr<CollisionObjectData> createCollisionObjectData(
-      CollisionObject* parent,
-      const dynamics::ShapePtr& shape) override;
-
-  // Documentation inherited
-  void reclaimCollisionObjectData(
-      CollisionObjectData* collisionObjectData) override;
-
-  // Documentation inherited
-  std::unique_ptr<CollisionGroupData> createCollisionGroupData(
-      CollisionGroup* parent,
-      const CollisionObjectPtrs& collObjects) override;
-
-  // Documentation inherited
-  bool detect(CollisionObjectData* object1, CollisionObjectData* object2,
-              const Option& option, Result& result) override;
-
-  // Documentation inherited
-  bool detect(CollisionObjectData* object, CollisionGroupData* group,
-              const Option& option, Result& result) override;
-
-  // Documentation inherited
-  bool detect(CollisionGroupData* group,
-              const Option& option, Result& result) override;
-
-  // Documentation inherited
-  bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
-              const Option& option, Result& result) override;
 
 protected:
 
   struct BulletCollsionPack
   {
-    std::unique_ptr<btCollisionShape> collisionShape;
-    std::unique_ptr<btTriangleMesh> triMesh;
+    std::shared_ptr<btCollisionShape> collisionShape;
+    std::shared_ptr<btTriangleMesh> triMesh;
+    // TODO(JS): change to unique_ptr
   };
+
+  /// Constructor
+  BulletCollisionDetector() = default;
+
+  // Documentation inherited
+  std::unique_ptr<CollisionObject> createCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) override;
+
+public:
+
+  BulletCollisionObject* findCollisionObject(
+      btCollisionObject* bulletCollObj) const;
+
+protected:
+
+  // Documentation inherited
+  void notifyDestroyingCollisionObject(CollisionObject* collObj) override;
+
+  ///
+  BulletCollsionPack claimBulletCollisionGeometry(
+      const dynamics::ConstShapePtr& shape);
+
+  // Documentation inherited
+  void reclaimBulletCollisionGeometry(const dynamics::ConstShapePtr& shape);
+
+  // Documentation inherited
+  bool detect(CollisionGroup* group,
+              const Option& option, Result& result) override;
+
+  // Documentation inherited
+  bool detect(CollisionGroup* group1, CollisionGroup* group2,
+              const Option& option, Result& result) override;
 
   BulletCollsionPack createMesh(
       const Eigen::Vector3d& scale, const aiScene* mesh);
@@ -122,18 +124,19 @@ protected:
   BulletCollsionPack createSoftMesh(const aiMesh* mesh);
 
   BulletCollsionPack createBulletCollisionShape(
-      const dynamics::ShapePtr& shape);
+      const dynamics::ConstShapePtr& shape);
 
 protected:
 
   using ShapeMapValue = std::pair<BulletCollsionPack, size_t>;
 
-  std::map<dynamics::ShapePtr, ShapeMapValue> mShapeMap;
+  std::map<dynamics::ConstShapePtr, ShapeMapValue> mShapeMap;
 
   std::map<btCollisionObject*,
-           BulletCollisionObjectData*> mCollisionObjectMap;
+           BulletCollisionObject*> mBulletCollisionObjectMap;
 
   std::shared_ptr<CollisionGroup> mBulletCollisionGroupForSinglePair;
+  // TODO(JS): should be unique_ptr
 
 };
 

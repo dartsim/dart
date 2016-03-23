@@ -34,54 +34,78 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTDATA_H_
-#define DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTDATA_H_
+#ifndef DART_COLLISION_FCL_FCLMESHCOLLISIONGROUP_H_
+#define DART_COLLISION_FCL_FCLMESHCOLLISIONGROUP_H_
 
-#include <cstddef>
-#include <Eigen/Dense>
+#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
+#include <fcl/broadphase/broadphase_bruteforce.h>
 
-#include <fcl/collision_object.h>
-
-#include "dart/collision/CollisionObjectData.h"
-#include "dart/collision/fcl/FCLCollisionObjectData.h"
+#include "dart/collision/CollisionGroup.h"
 
 namespace dart {
 namespace collision {
 
-class FCLMeshCollisionObjectData : public CollisionObjectData
+class CollisionObject;
+class FCLCollisionObjectUserData;
+
+class FCLMeshCollisionGroup : public CollisionGroup
 {
 public:
 
   friend class FCLMeshCollisionDetector;
 
-  // Documentation inherited
-  void updateTransform(const Eigen::Isometry3d& tf) override;
-
-  // Documentation inherited
-  void update() override;
-
-  /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject() const;
-
-protected:
+  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
+  using CollisionObjects = CollisionGroup::CollisionObjectPtrs;
 
   /// Constructor
-  FCLMeshCollisionObjectData(
-      CollisionDetector* collisionDetector,
-      CollisionObject* parent,
-      const boost::shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
+  FCLMeshCollisionGroup(
+      const CollisionDetectorPtr& collisionDetector);
+
+  /// Constructor
+  FCLMeshCollisionGroup(
+      const CollisionDetectorPtr& collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame);
+
+  /// Constructor
+  FCLMeshCollisionGroup(
+      const CollisionDetectorPtr& collisionDetector,
+      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
+
+  /// Destructor
+  virtual ~FCLMeshCollisionGroup();
 
 protected:
 
-  /// FCL collision geometry user data
-  std::unique_ptr<FCLCollisionObjectData::UserData> mFCLCollisionObjectUserData;
+  // Documentation inherited
+  void initializeEngineData() override;
 
-  /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
+  // Documentation inherited
+  void addCollisionObjectToEngine(CollisionObject* object) override;
+
+  // Documentation inherited
+  void addCollisionObjectsToEngine(
+      const std::vector<CollisionObject*>& collObjects) override;
+
+  // Documentation inherited
+  void removeCollisionObjectFromEngine(CollisionObject* object) override;
+
+  // Documentation inherited
+  void removeAllCollisionObjectsFromEngine() override;
+
+  // Documentation inherited
+  void updateEngineData() override;
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  FCLCollisionManager* getFCLCollisionManager() const;
+
+protected:
+
+  /// FCL broad-phase algorithm
+  std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
 
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECTDATA_H_
+#endif  // DART_COLLISION_FCL_FCLMESHCOLLISIONGROUP_H_

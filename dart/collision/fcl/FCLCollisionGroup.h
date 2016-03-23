@@ -34,66 +34,80 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONGROUPDATA_H_
-#define DART_COLLISION_COLLISIONGROUPDATA_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_
+#define DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_
 
-#include <vector>
-#include "dart/collision/SmartPointer.h"
+#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
+
+#include "dart/collision/CollisionGroup.h"
 
 namespace dart {
 namespace collision {
 
 class CollisionObject;
+class FCLCollisionObjectUserData;
 
-class CollisionGroupData
+class FCLCollisionGroup : public CollisionGroup
 {
 public:
 
-  using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
+  friend class FCLCollisionDetector;
 
-  CollisionGroupData(CollisionDetector* collisionDetector,
-                     CollisionGroup* parent);
+  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
+  using CollisionObjects = CollisionGroup::CollisionObjectPtrs;
 
-  /// Initiate collision group data. This function should be called whenever
-  /// collision object is added or removed.
-  virtual void init() = 0;
+  /// Constructor
+  FCLCollisionGroup(
+      const CollisionDetectorPtr& collisionDetector);
 
-  virtual void addCollisionObject(const CollisionObjectPtr& object,
-                                  bool init = true) = 0;
+  /// Constructor
+  FCLCollisionGroup(
+      const CollisionDetectorPtr& collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame);
 
-  virtual void addCollisionObjects(const CollisionObjectPtrs& objects,
-                                   bool init = true) = 0;
+  /// Constructor
+  FCLCollisionGroup(
+      const CollisionDetectorPtr& collisionDetector,
+      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
 
-  virtual void removeCollisionObject(const CollisionObjectPtr& object,
-                                     bool init = true) = 0;
-
-  virtual void removeAllCollisionObjects(bool init = true) = 0;
-
-  /// Update engine data. This function will be called ahead of every collision
-  /// checking
-  virtual void update() = 0;
-
-  virtual std::unique_ptr<CollisionGroupData> clone(
-      CollisionGroup* newCollisionGroup,
-      const CollisionObjectPtrs& collObjects) const = 0;
-
-  CollisionDetector* getCollisionDetector();
-
-  const CollisionDetector* getCollisionDetector() const;
-
-  CollisionGroup* getCollisionGroup();
-
-  const CollisionGroup* getCollisionGroup() const;
+  /// Destructor
+  virtual ~FCLCollisionGroup();
 
 protected:
 
-  CollisionDetector* mCollisionDetector;
+  // Documentation inherited
+  void initializeEngineData() override;
 
-  CollisionGroup* mParent;
+  // Documentation inherited
+  void addCollisionObjectToEngine(CollisionObject* object) override;
+
+  // Documentation inherited
+  void addCollisionObjectsToEngine(
+      const std::vector<CollisionObject*>& collObjects) override;
+
+  // Documentation inherited
+  void removeCollisionObjectFromEngine(CollisionObject* object) override;
+
+  // Documentation inherited
+  void removeAllCollisionObjectsFromEngine() override;
+
+  // Documentation inherited
+  void updateEngineData() override;
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  FCLCollisionManager* getFCLCollisionManager();
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  const FCLCollisionManager* getFCLCollisionManager() const;
+
+protected:
+
+  /// FCL broad-phase algorithm
+  std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
 
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_COLLISIONGROUPDATA_H_
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_

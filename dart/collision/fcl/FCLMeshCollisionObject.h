@@ -34,74 +34,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONGROUPDATA_H_
-#define DART_COLLISION_BULLET_BULLETCOLLISIONGROUPDATA_H_
+#ifndef DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECT_H_
+#define DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECT_H_
 
-#include <btBulletCollisionCommon.h>
+#include <cstddef>
+#include <Eigen/Dense>
 
-#include "dart/collision/CollisionGroup.h"
-#include "dart/collision/CollisionGroupData.h"
+#include <fcl/collision_object.h>
+
+#include "dart/collision/CollisionObject.h"
+#include "dart/collision/fcl/FCLCollisionObject.h"
 
 namespace dart {
 namespace collision {
 
-class BulletCollisionGroupData : public CollisionGroupData
+class FCLMeshCollisionObject : public CollisionObject
 {
 public:
 
-  using CollisionObjects = CollisionGroup::CollisionObjectPtrs;
+  friend class FCLMeshCollisionDetector;
 
-  /// Constructor
-  BulletCollisionGroupData(
-      CollisionDetector* collisionDetector,
-      CollisionGroup* parent,
-      const CollisionObjects& collObjects = CollisionObjects());
+  /// Return FCL collision object
+  fcl::CollisionObject* getFCLCollisionObject();
 
-  // Documentation inherited
-  std::unique_ptr<CollisionGroupData> clone(
-      CollisionGroup* newParent,
-      const CollisionObjectPtrs& collObjects) const override;
-
-  // Documentation inherited
-  void init() override;
-
-  // Documentation inherited
-  void addCollisionObject(const CollisionObjectPtr& object,
-                          const bool init) override;
-
-  // Documentation inherited
-  void addCollisionObjects(const CollisionObjectPtrs& collObjects,
-                           const bool init) override;
-
-  // Documentation inherited
-  void removeCollisionObject(const CollisionObjectPtr& object,
-                             const bool init) override;
-
-  // Documentation inherited
-  void removeAllCollisionObjects(bool init) override;
-
-  // Documentation inherited
-  void update() override;
-
-  /// Return Bullet collision world
-  btCollisionWorld* getBulletCollisionWorld() const;
+  /// Return FCL collision object
+  const fcl::CollisionObject* getFCLCollisionObject() const;
 
 protected:
 
-  /// Bullet broad-phase algorithm
-  std::unique_ptr<btBroadphaseInterface> mBulletProadphaseAlg;
+  /// Constructor
+  FCLMeshCollisionObject(
+      CollisionDetector* collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame,
+      const boost::shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
 
-  /// Bullet collision configuration
-  std::unique_ptr<btCollisionConfiguration> mBulletCollisionConfiguration;
+  // Documentation inherited
+  void updateEngineData() override;
 
-  /// Bullet collision dispatcher
-  std::unique_ptr<btDispatcher> mBulletDispatcher;
+protected:
 
-  /// Bullet collision world
-  std::unique_ptr<btCollisionWorld> mBulletCollisionWorld;
+  /// FCL collision geometry user data
+  std::unique_ptr<FCLCollisionObject::UserData> mFCLCollisionObjectUserData;
+
+  /// FCL collision object
+  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
+
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONGROUPDATA_H_
+#endif  // DART_COLLISION_FCL_FCLMESHCOLLISIONOBJECT_H_

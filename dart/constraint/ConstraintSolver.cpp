@@ -90,7 +90,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
 
   if (!containSkeleton(skeleton))
   {
-    auto group = createShapeFrameCollisionGroup(mCollisionDetector, skeleton);
+    auto group = mCollisionDetector->createCollisionGroup(skeleton.get());
     mCollisionGroup->unionGroup(group);
 
     mSkeletons.push_back(skeleton);
@@ -119,7 +119,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
 
   if (containSkeleton(skeleton))
   {
-    auto group = createShapeFrameCollisionGroup(mCollisionDetector, skeleton);
+    auto group = mCollisionDetector->createCollisionGroup(skeleton.get());
     mCollisionGroup->subtractGroup(group);
 
     mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), skeleton),
@@ -145,7 +145,7 @@ void ConstraintSolver::removeSkeletons(
 //==============================================================================
 void ConstraintSolver::removeAllSkeletons()
 {
-  mCollisionGroup->removeAllCollisionObjects();
+  mCollisionGroup->removeAllShapeFrames();
   mSkeletons.clear();
 }
 
@@ -220,8 +220,11 @@ void ConstraintSolver::setCollisionDetector(
   // Change the collision detector of the constraint solver to new one
   mCollisionDetector = collisionDetector;
 
-  auto newCollisionGroup = mCollisionDetector->createCollisionGroup(
-        mCollisionGroup->getCollisionObjects());
+  auto newCollisionGroup = mCollisionDetector->createCollisionGroup();
+
+  for (const auto& skeleton : mSkeletons)
+    newCollisionGroup->addShapeFrames(skeleton.get());
+
   mCollisionGroup = newCollisionGroup;
 }
 
@@ -543,26 +546,21 @@ void ConstraintSolver::solveConstrainedGroups()
 }
 
 //==============================================================================
-bool ConstraintSolver::isSoftContact(const collision::Contact& _contact) const
+bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
 {
-  assert(dynamic_cast<dynamics::ShapeNodeCollisionObject*>(
-           _contact.collisionObject1));
-  assert(dynamic_cast<dynamics::ShapeNodeCollisionObject*>(
-           _contact.collisionObject2));
+  auto shapeNode1 = contact.collisionObject1->getShapeFrame()->asShapeNode();
+  auto shapeNode2 = contact.collisionObject2->getShapeFrame()->asShapeNode();
+  assert(shapeNode1);
+  assert(shapeNode2);
 
-  auto shapeFrameCollObj1 = static_cast<dynamics::ShapeNodeCollisionObject*>(
-        _contact.collisionObject1);
-  auto shapeFrameCollObj2 = static_cast<dynamics::ShapeNodeCollisionObject*>(
-        _contact.collisionObject2);
-
-  auto bodyNode1 = shapeFrameCollObj1->getBodyNode();
-  auto bodyNode2 = shapeFrameCollObj2->getBodyNode();
+  auto bodyNode1 = shapeNode1->getBodyNodePtr().get();
+  auto bodyNode2 = shapeNode2->getBodyNodePtr().get();
 
   auto bodyNode1IsSoft =
-      dynamic_cast<dynamics::SoftBodyNode*>(bodyNode1) != nullptr;
+      dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode1) != nullptr;
 
   auto bodyNode2IsSoft =
-      dynamic_cast<dynamics::SoftBodyNode*>(bodyNode2) != nullptr;
+      dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode2) != nullptr;
 
   return bodyNode1IsSoft || bodyNode2IsSoft;
 }

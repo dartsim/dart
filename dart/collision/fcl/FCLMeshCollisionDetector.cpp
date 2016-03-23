@@ -49,10 +49,11 @@
 #include "dart/common/Console.h"
 #include "dart/collision/CollisionObject.h"
 #include "dart/collision/fcl/FCLTypes.h"
-#include "dart/collision/fcl/FCLCollisionObjectData.h"
+#include "dart/collision/fcl/FCLCollisionObject.h"
 #include "dart/collision/fcl/tri_tri_intersection_test.h"
-#include "dart/collision/fcl/FCLMeshCollisionObjectData.h"
-#include "dart/collision/fcl/FCLMeshCollisionGroupData.h"
+#include "dart/collision/fcl/FCLMeshCollisionObject.h"
+#include "dart/collision/fcl/FCLMeshCollisionGroup.h"
+#include "dart/dynamics/ShapeFrame.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
@@ -549,7 +550,7 @@ fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
 
 //==============================================================================
 boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
-    const dynamics::ShapePtr& shape)
+    const dynamics::ConstShapePtr& shape)
 {
   using ::dart::dynamics::Shape;
   using ::dart::dynamics::BoxShape;
@@ -565,8 +566,8 @@ boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
   {
     case Shape::BOX:
     {
-      assert(dynamic_cast<BoxShape*>(shape.get()));
-      const BoxShape* box = static_cast<const BoxShape*>(shape.get());
+      assert(dynamic_cast<const BoxShape*>(shape.get()));
+      auto box = static_cast<const BoxShape*>(shape.get());
       const Eigen::Vector3d& size = box->getSize();
 
       auto model = new fcl::BVHModel<fcl::OBBRSS>;
@@ -578,8 +579,8 @@ boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
     }
     case Shape::ELLIPSOID:
     {
-      assert(dynamic_cast<EllipsoidShape*>(shape.get()));
-      EllipsoidShape* ellipsoid = static_cast<EllipsoidShape*>(shape.get());
+      assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
+      auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
 
       const Eigen::Vector3d& size = ellipsoid->getSize();
 
@@ -590,9 +591,8 @@ boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
     }
     case Shape::CYLINDER:
     {
-      assert(dynamic_cast<CylinderShape*>(shape.get()));
-      const CylinderShape* cylinder
-          = static_cast<const CylinderShape*>(shape.get());
+      assert(dynamic_cast<const CylinderShape*>(shape.get()));
+      auto cylinder = static_cast<const CylinderShape*>(shape.get());
       const double radius = cylinder->getRadius();
       const double height = cylinder->getHeight();
       fclCollGeom.reset(createCylinder<fcl::OBBRSS>(
@@ -608,8 +608,8 @@ boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
     }
     case Shape::MESH:
     {
-      assert(dynamic_cast<MeshShape*>(shape.get()));
-      MeshShape* shapeMesh = static_cast<MeshShape*>(shape.get());
+      assert(dynamic_cast<const MeshShape*>(shape.get()));
+      auto shapeMesh = static_cast<const MeshShape*>(shape.get());
       fclCollGeom.reset(createMesh<fcl::OBBRSS>(shapeMesh->getScale()[0],
                                                 shapeMesh->getScale()[1],
                                                 shapeMesh->getScale()[2],
@@ -618,8 +618,8 @@ boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
     }
     case Shape::SOFT_MESH:
     {
-      assert(dynamic_cast<SoftMeshShape*>(shape.get()));
-      SoftMeshShape* softMeshShape = static_cast<SoftMeshShape*>(shape.get());
+      assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
+      auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
       fclCollGeom.reset(
             createSoftMesh<fcl::OBBRSS>(softMeshShape->getAssimpMesh()));
 
@@ -652,35 +652,13 @@ std::shared_ptr<FCLMeshCollisionDetector> FCLMeshCollisionDetector::create()
 FCLMeshCollisionDetector::~FCLMeshCollisionDetector()
 {
   assert(mShapeMap.empty());
+  assert(mFCLCollisionObjectMap.empty());
 }
 
 //==============================================================================
 const std::string& FCLMeshCollisionDetector::getType() const
 {
   return getTypeStatic();
-}
-
-//==============================================================================
-FCLMeshCollisionObjectData* FCLMeshCollisionDetector::findCollisionObjectData(
-    fcl::CollisionObject* fclCollObj) const
-{
-  auto search = mCollisionObjectMap.find(fclCollObj);
-  if (mCollisionObjectMap.end() != search)
-    return search->second;
-  else
-    return nullptr;
-}
-
-//==============================================================================
-CollisionObject* FCLMeshCollisionDetector::findCollisionObject(
-    fcl::CollisionObject* fclCollObj) const
-{
-  auto data = findCollisionObjectData(fclCollObj);
-
-  if (data)
-    return data->getCollisionObject();
-  else
-    return nullptr;
 }
 
 //==============================================================================
@@ -691,18 +669,82 @@ const std::string& FCLMeshCollisionDetector::getTypeStatic()
 }
 
 //==============================================================================
-std::unique_ptr<CollisionObjectData>
-FCLMeshCollisionDetector::createCollisionObjectData(
-    CollisionObject* parent,
-    const dynamics::ShapePtr& shape)
+std::shared_ptr<CollisionGroup> FCLMeshCollisionDetector::createCollisionGroup()
+{
+  return std::make_shared<FCLMeshCollisionGroup>(shared_from_this());
+}
+
+//==============================================================================
+std::shared_ptr<CollisionGroup> FCLMeshCollisionDetector::createCollisionGroup(
+    const dynamics::ShapeFrame* shapeFrame)
+{
+  return std::make_shared<FCLMeshCollisionGroup>(shared_from_this(),
+                                                 shapeFrame);
+}
+
+//==============================================================================
+std::shared_ptr<CollisionGroup> FCLMeshCollisionDetector::createCollisionGroup(
+    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
+{
+  return std::make_shared<FCLMeshCollisionGroup>(shared_from_this(),
+                                                 shapeFrames);
+}
+
+//==============================================================================
+std::unique_ptr<CollisionObject>
+FCLMeshCollisionDetector::createCollisionObject(
+    const dynamics::ShapeFrame* shapeFrame)
+{
+  auto fclCollGeom = claimFCLCollisionGeometry(shapeFrame->getShape());
+  auto collObj = new FCLMeshCollisionObject(this, shapeFrame, fclCollGeom);
+  auto fclCollObj = collObj->getFCLCollisionObject();
+
+  mFCLCollisionObjectMap[fclCollObj] = collObj;
+
+  return std::unique_ptr<CollisionObject>(collObj);
+}
+
+//==============================================================================
+FCLMeshCollisionObject* FCLMeshCollisionDetector::findCollisionObject(
+    fcl::CollisionObject* fclCollObj) const
+{
+  auto search = mFCLCollisionObjectMap.find(fclCollObj);
+  if (mFCLCollisionObjectMap.end() != search)
+    return search->second;
+  else
+    return nullptr;
+}
+
+//==============================================================================
+void FCLMeshCollisionDetector::notifyDestroyingCollisionObject(
+    CollisionObject* collObj)
+{
+  if (!collObj)
+    return;
+
+  reclaimFCLCollisionGeometry(collObj->getShape());
+
+  auto casted = static_cast<FCLCollisionObject*>(collObj);
+  mFCLCollisionObjectMap.erase(casted->getFCLCollisionObject());
+}
+
+//==============================================================================
+boost::shared_ptr<fcl::CollisionGeometry>
+FCLMeshCollisionDetector::claimFCLCollisionGeometry(
+    const dynamics::ConstShapePtr& shape)
 {
   boost::shared_ptr<fcl::CollisionGeometry> fclCollGeom;
 
-  auto findResult = mShapeMap.find(shape);
-  if (mShapeMap.end() != findResult)
+  auto search = mShapeMap.find(shape);
+  if (mShapeMap.end() != search)
   {
-    fclCollGeom = findResult->second.first;
-    findResult->second.second++;
+    auto& fclCollGeomAndCount = search->second;
+
+    fclCollGeom = search->second.first;
+
+    auto& count = fclCollGeomAndCount.second;
+    assert(0u != count);
+    count++;
   }
   else
   {
@@ -710,109 +752,42 @@ FCLMeshCollisionDetector::createCollisionObjectData(
     mShapeMap[shape] = std::make_pair(fclCollGeom, 1u);
   }
 
-  auto fclCollObjData
-      = new FCLMeshCollisionObjectData(this, parent, fclCollGeom);
-  auto fclCollObj = fclCollObjData->getFCLCollisionObject();
-
-  mCollisionObjectMap[fclCollObj] = fclCollObjData;
-
-  return std::unique_ptr<CollisionObjectData>(fclCollObjData);
+  return fclCollGeom;
 }
 
 //==============================================================================
-void FCLMeshCollisionDetector::reclaimCollisionObjectData(
-    CollisionObjectData* collisionObjectData)
+void FCLMeshCollisionDetector::reclaimFCLCollisionGeometry(
+    const dynamics::ConstShapePtr& shape)
 {
-  // Retrieve associated shape
-  auto shape = collisionObjectData->getCollisionObject()->getShape();
-  assert(shape);
+  auto search = mShapeMap.find(shape);
+  assert(mShapeMap.end() != search);
 
-  auto findResult = mShapeMap.find(shape);
-  assert(mShapeMap.end() != findResult);
+  auto& fclCollGeomAndCount = search->second;
+  auto& count = fclCollGeomAndCount.second;
+  assert(0u != count);
 
-  auto& fclCollGeomAndCount = findResult->second;
-  assert(0u != fclCollGeomAndCount.second);
+  count--;
 
-  fclCollGeomAndCount.second--;
-
-  if (0u == fclCollGeomAndCount.second)
-    mShapeMap.erase(findResult);
-
-  auto castedCollObjData
-      = static_cast<FCLMeshCollisionObjectData*>(collisionObjectData);
-  mCollisionObjectMap.erase(castedCollObjData->getFCLCollisionObject());
-}
-
-//==============================================================================
-std::unique_ptr<CollisionGroupData>
-FCLMeshCollisionDetector::createCollisionGroupData(
-    CollisionGroup* parent,
-    const CollisionObjectPtrs& collObjects)
-{
-  return std::unique_ptr<CollisionGroupData>(
-        new FCLMeshCollisionGroupData(this, parent, collObjects));
+  if (0u == count)
+    mShapeMap.erase(search);
 }
 
 //==============================================================================
 bool FCLMeshCollisionDetector::detect(
-    CollisionObjectData* objectData1,
-    CollisionObjectData* objectData2,
-    const Option& option, Result& result)
+    CollisionGroup* group, const Option& option, Result& result)
 {
   result.contacts.clear();
 
-  assert(objectData1->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
-  assert(objectData2->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
+  if (!group)
+    return false;
 
-  auto castedData1 = static_cast<const FCLMeshCollisionObjectData*>(objectData1);
-  auto castedData2 = static_cast<const FCLMeshCollisionObjectData*>(objectData2);
+  if (group->getCollisionDetector()->getType()
+      != FCLMeshCollisionDetector::getTypeStatic())
+  {
+      return false;
+  }
 
-  auto fclCollObj1 = castedData1->getFCLCollisionObject();
-  auto fclCollObj2 = castedData2->getFCLCollisionObject();
-
-  FCLCollisionCallbackData collData(this, &option, &result);
-  collisionCallback(fclCollObj1, fclCollObj2, &collData);
-
-  return !result.contacts.empty();
-}
-
-//==============================================================================
-bool FCLMeshCollisionDetector::detect(
-    CollisionObjectData* objectData,
-    CollisionGroupData* groupData,
-    const Option& option, Result& result)
-{
-  result.contacts.clear();
-
-  assert(objectData);
-  assert(groupData);
-  assert(objectData->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
-  assert(groupData->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
-
-  auto castedObjData = static_cast<FCLMeshCollisionObjectData*>(objectData);
-  auto castedGrpData = static_cast<FCLMeshCollisionGroupData*>(groupData);
-
-  auto fclObject = castedObjData->getFCLCollisionObject();
-  auto broadPhaseAlg = castedGrpData->getFCLCollisionManager();
-
-  FCLCollisionCallbackData collData(this, &option, &result);
-  broadPhaseAlg->collide(fclObject, &collData, collisionCallback);
-
-  return !result.contacts.empty();
-}
-
-//==============================================================================
-bool FCLMeshCollisionDetector::detect(
-    CollisionGroupData* groupData,
-    const Option& option, Result& result)
-{
-  result.contacts.clear();
-
-  assert(groupData);
-  assert(groupData->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
-
-  auto castedData = static_cast<FCLMeshCollisionGroupData*>(groupData);
-
+  auto castedData = static_cast<FCLMeshCollisionGroup*>(group);
   auto broadPhaseAlg = castedData->getFCLCollisionManager();
 
   FCLCollisionCallbackData collData(this, &option, &result);
@@ -823,22 +798,34 @@ bool FCLMeshCollisionDetector::detect(
 
 //==============================================================================
 bool FCLMeshCollisionDetector::detect(
-    CollisionGroupData* groupData1,
-    CollisionGroupData* groupData2,
+    CollisionGroup* group1, CollisionGroup* group2,
     const Option& option, Result& result)
 {
   result.contacts.clear();
 
-  assert(groupData1);
-  assert(groupData2);
-  assert(groupData1->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
-  assert(groupData2->getCollisionDetector()->getType() == FCLMeshCollisionDetector::getTypeStatic());
+  if (!group1 || !group2)
+    return false;
 
-  auto castedData1 = static_cast<FCLMeshCollisionGroupData*>(groupData1);
-  auto castedData2 = static_cast<FCLMeshCollisionGroupData*>(groupData2);
+  if (group1->getCollisionDetector()->getType()
+      != FCLMeshCollisionDetector::getTypeStatic())
+  {
+      return false;
+  }
 
-  auto broadPhaseAlg1 = castedData1->getFCLCollisionManager();
-  auto broadPhaseAlg2 = castedData2->getFCLCollisionManager();
+  if (group2->getCollisionDetector()->getType()
+      != FCLMeshCollisionDetector::getTypeStatic())
+  {
+      return false;
+  }
+
+  group1->update();
+  group2->update();
+
+  auto casted1 = static_cast<FCLMeshCollisionGroup*>(group1);
+  auto casted2 = static_cast<FCLMeshCollisionGroup*>(group2);
+
+  auto broadPhaseAlg1 = casted1->getFCLCollisionManager();
+  auto broadPhaseAlg2 = casted2->getFCLCollisionManager();
 
   FCLCollisionCallbackData collData(this, &option, &result);
   broadPhaseAlg1->collide(broadPhaseAlg2, &collData, collisionCallback);
@@ -926,9 +913,9 @@ void postProcess(const fcl::CollisionResult& fclResult,
     const auto& c = fclResult.getContact(k);
 
     auto userData1
-        = static_cast<FCLCollisionObjectData::UserData*>(o1->getUserData());
+        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
     auto userData2
-        = static_cast<FCLCollisionObjectData::UserData*>(o2->getUserData());
+        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
     assert(userData1);
     assert(userData2);
 
@@ -1169,9 +1156,9 @@ Contact convertContact(const fcl::Contact& fclContact,
   contact.triID2 = fclContact.b2;
 
   auto userData1
-      = static_cast<FCLCollisionObjectData::UserData*>(o1->getUserData());
+      = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
   auto userData2
-      = static_cast<FCLCollisionObjectData::UserData*>(o2->getUserData());
+      = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
   assert(userData1);
   assert(userData2);
   contact.collisionObject1 = userData1->mCollisionObject;

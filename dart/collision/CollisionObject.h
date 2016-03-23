@@ -41,11 +41,13 @@
 
 #include "dart/collision/CollisionDetector.h"
 #include "dart/collision/SmartPointer.h"
-#include "dart/collision/CollisionObjectData.h"
+#include "dart/collision/CollisionObject.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
 
+// TODO: this should be in collision::detail namespace
 class CollisionObject
 {
 public:
@@ -55,43 +57,49 @@ public:
   virtual ~CollisionObject();
 
   /// Return collision detection engine associated with this CollisionObject
-  CollisionDetector* getCollisionDetector() const;
+  CollisionDetector* getCollisionDetector();
 
-  /// Return shape pointer that associated with this CollisionObject
-  dynamics::ShapePtr getShape() const;
-  // TODO(JS): Shape should be in common or math
+  /// Return collision detection engine associated with this CollisionObject
+  const CollisionDetector* getCollisionDetector() const;
+
+//  /// Return the associated ShapeFrame
+//  dynamics::ShapeFrame* getShapeFrame();
+
+  /// Return the associated ShapeFrame
+  const dynamics::ShapeFrame* getShapeFrame() const;
+
+//  /// Return the associated Shape
+//  dynamics::ShapePtr getShape();
+
+  /// Return the associated Shape
+  dynamics::ConstShapePtr getShape() const;
 
   /// Return the transformation of this CollisionObject in world coordinates
-  virtual const Eigen::Isometry3d getTransform() const = 0;
-
-  /// Return true if this CollisionObject is identical to other
-  virtual bool isEqual(const CollisionObject* other) const = 0;
+  const Eigen::Isometry3d& getTransform() const;
 
   /// Perform collision detection with other CollisionObject.
   ///
   /// Return false if the engine type of the other CollisionObject is different
   /// from this CollisionObject engine.
-  bool detect(CollisionObject* other, const Option& option, Result& result);
+//  bool detect(CollisionObject* other, const Option& option, Result& result);
 
   /// Perform collision detection with other CollisionGroup.
   ///
   /// Return false if the engine type of the other CollisionGroup is different
   /// from this CollisionObject engine.
-  bool detect(CollisionGroup* group, const Option& option, Result& result);
-
-  /// Return the collision detection engine specific data of this
-  /// CollisionObject
-  CollisionObjectData* getEngineData() const;
-
-  /// Update engine data. This function should be called before the collision
-  /// detection is performed by the engine in most cases.
-  void updateEngineData();
+//  bool detect(CollisionGroup* group, const Option& option, Result& result);
 
 protected:
 
   /// Contructor
-  CollisionObject(const CollisionDetectorPtr& collisionDetector,
-                  const dynamics::ShapePtr& shape);
+  CollisionObject(CollisionDetector* collisionDetector,
+                  const dynamics::ShapeFrame* shapeFrame);
+
+  /// Update the collision object of the collision detection engine. This
+  /// function will be called ahead of every collision checking by
+  /// CollisionGroup.
+  virtual void updateEngineData() = 0;
+  // TODO(JS): Rename
 
   void addGroup(CollisionGroup* group);
 
@@ -102,13 +110,10 @@ protected:
 protected:
 
   /// Collision detector
-  CollisionDetectorPtr mCollisionDetector;
+  CollisionDetector* mCollisionDetector;
 
-  /// Shape
-  dynamics::ShapePtr mShape;
-
-  /// Collision detection engine specific data
-  std::unique_ptr<CollisionObjectData> mEngineData;
+  /// ShapeFrame
+  const dynamics::ShapeFrame* mShapeFrame;
 
   std::vector<CollisionGroup*> mGroups;
 
@@ -116,45 +121,45 @@ protected:
 
 /// FreeCollisionOjbect is a basic collision object whose transformation can be
 /// set freely.
-class FreeCollisionObject : public CollisionObject
-{
-public:
+//class FreeCollisionObject : public CollisionObject
+//{
+//public:
 
-  friend class CollisionDetector;
+//  friend class CollisionDetector;
 
-  static std::shared_ptr<FreeCollisionObject> create(
-      const CollisionDetectorPtr& collisionDetector,
-      const dynamics::ShapePtr& shape,
-      const Eigen::Isometry3d& tf = Eigen::Isometry3d::Identity());
+//  static std::shared_ptr<FreeCollisionObject> create(
+//      const CollisionDetectorPtr& collisionDetector,
+//      const dynamics::ShapePtr& shape,
+//      const Eigen::Isometry3d& tf = Eigen::Isometry3d::Identity());
 
-  /// Set world transformation of this FreeCollisionObject
-  void setTransform(const Eigen::Isometry3d& tf);
+//  /// Set world transformation of this FreeCollisionObject
+//  void setTransform(const Eigen::Isometry3d& tf);
 
-  /// Set world rotation of this FreeCollisionObject
-  void setRotation(const Eigen::Matrix3d& rotation);
+//  /// Set world rotation of this FreeCollisionObject
+//  void setRotation(const Eigen::Matrix3d& rotation);
 
-  /// Set world translation of this FreeCollisionObject
-  void setTranslation(const Eigen::Vector3d& translation);
+//  /// Set world translation of this FreeCollisionObject
+//  void setTranslation(const Eigen::Vector3d& translation);
 
-  /// Return world transformation of this FreeCollisionObject
-  const Eigen::Isometry3d getTransform() const override;
+//  /// Return world transformation of this FreeCollisionObject
+//  const Eigen::Isometry3d getTransform() const override;
 
-  // Documentation inherited
-  bool isEqual(const CollisionObject* other) const override;
+//  // Documentation inherited
+//  bool isEqual(const CollisionObject* other) const override;
 
-protected:
+//protected:
 
-  /// Constructor
-  FreeCollisionObject(
-      const CollisionDetectorPtr& collisionDetector,
-      const dynamics::ShapePtr& shape,
-      const Eigen::Isometry3d& tf = Eigen::Isometry3d::Identity());
-  // TODO(JS): change to engine pointer
+//  /// Constructor
+//  FreeCollisionObject(
+//      const CollisionDetectorPtr& collisionDetector,
+//      const dynamics::ShapePtr& shape,
+//      const Eigen::Isometry3d& tf = Eigen::Isometry3d::Identity());
+//  // TODO(JS): change to engine pointer
 
-  /// Transformation in world coordinates
-  Eigen::Isometry3d mW;
+//  /// Transformation in world coordinates
+//  Eigen::Isometry3d mW;
 
-};
+//};
 
 }  // namespace collision
 }  // namespace dart

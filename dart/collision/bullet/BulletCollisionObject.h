@@ -34,55 +34,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTCOLLISIONGROUPDATA_H_
-#define DART_COLLISION_DART_DARTCOLLISIONGROUPDATA_H_
+#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_H_
+#define DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_H_
 
-#include "dart/collision/CollisionGroup.h"
-#include "dart/collision/CollisionGroupData.h"
+#include <cstddef>
+#include <Eigen/Dense>
+#include <assimp/mesh.h>
+#include <assimp/scene.h>
+#include <btBulletCollisionCommon.h>
+#include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
+#include "dart/collision/CollisionObject.h"
 
 namespace dart {
 namespace collision {
 
-class DARTCollisionObject;
+class CollisionObject;
 
-class DARTCollisionGroupData : public CollisionGroupData
+class BulletCollisionObject : public CollisionObject
 {
 public:
 
+  struct UserData
+  {
+    CollisionObject* collisionObject;
+
+    CollisionDetector* collisionDetector;
+    CollisionGroup* group;
+
+    UserData(CollisionObject* collisionObject,
+             CollisionDetector* collisionDetector,
+             CollisionGroup* collisionGroup);
+  };
+
+  friend class BulletCollisionDetector;
+
+  /// Return FCL collision object
+  btCollisionObject* getBulletCollisionObject() const;
+
+protected:
+
   /// Constructor
-  DARTCollisionGroupData(CollisionDetector* collisionDetector,
-                         CollisionGroup* parent,
-                         const CollisionObjectPtrs& collObjects);
+  BulletCollisionObject(CollisionDetector* collisionDetector,
+                        const dynamics::ShapeFrame* shapeFrame,
+                        btCollisionShape* bulletCollisionShape);
 
   // Documentation inherited
-  std::unique_ptr<CollisionGroupData> clone(
-      CollisionGroup* newParent,
-      const CollisionObjectPtrs& collObjects) const override;
+  void updateEngineData() override;
 
-  // Documentation inherited
-  void init() override;
+protected:
 
-  // Documentation inherited
-  void addCollisionObject(const CollisionObjectPtr& object,
-                          const bool init) override;
+  /// Bullet collision geometry user data
+  std::unique_ptr<UserData> mBulletCollisionObjectUserData;
 
-  // Documentation inherited
-  void addCollisionObjects(const CollisionObjectPtrs& collObjects,
-                           const bool init) override;
-
-  // Documentation inherited
-  void removeCollisionObject(const CollisionObjectPtr& object,
-                             const bool init) override;
-
-  // Documentation inherited
-  void removeAllCollisionObjects(bool init) override;
-
-  // Documentation inherited
-  void update() override;
+  /// Bullet collision object
+  std::unique_ptr<btCollisionObject> mBulletCollisionObject;
 
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_DART_DARTCOLLISIONGROUPDATA_H_
+#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_H_

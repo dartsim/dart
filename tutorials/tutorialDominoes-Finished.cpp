@@ -266,7 +266,7 @@ public:
     // something
     auto collisionEngine = mWorld->getConstraintSolver()->getCollisionDetector();
     auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
-    auto newGroup = createShapeFrameCollisionGroup(collisionEngine, newDomino);
+    auto newGroup = collisionEngine->createCollisionGroup(newDomino.get());
 
     dart::collision::Option option;
     dart::collision::Result result;

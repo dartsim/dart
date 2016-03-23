@@ -53,74 +53,96 @@ namespace collision {
 //==============================================================================
 CollisionDetector::~CollisionDetector()
 {
-//  assert(mCollisionObjects.empty());
+  assert(mCollisionObjectMap.empty());
 }
 
 //==============================================================================
 std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
-    const std::vector<CollisionObjectPtr>& objects)
+    dynamics::Skeleton* skel)
 {
-  return std::make_shared<CollisionGroup>(shared_from_this(), objects);
+  assert(skel);
+
+  auto group = createCollisionGroup();
+
+  auto numBodyNodes = skel->getNumBodyNodes();
+  for (auto i = 0u; i < numBodyNodes; ++i)
+  {
+    auto bodyNode = skel->getBodyNode(i);
+    auto collisionShapeNodes
+        = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+
+    for (auto& shapeNode : collisionShapeNodes)
+      group->addShapeFrame(shapeNode);
+  }
+
+  return group;
 }
 
-//==============================================================================
-bool CollisionDetector::detect(
-    CollisionObject* object1, CollisionObject* object2,
-    const Option& option, Result& result)
-{
-  assert(object1->getCollisionDetector() == object2->getCollisionDetector());
+////==============================================================================
+//std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
+//    const std::vector<CollisionObjectPtr>& objects)
+//{
+//  return std::make_shared<CollisionGroup>(shared_from_this(), objects);
+//}
 
-  object1->updateEngineData();
-  object2->updateEngineData();
+////==============================================================================
+//bool CollisionDetector::detect(
+//    CollisionObject* object1, CollisionObject* object2,
+//    const Option& option, Result& result)
+//{
+//  assert(object1->getCollisionDetector() == object2->getCollisionDetector());
 
-  return detect(object1->getEngineData(), object2->getEngineData(),
-                option, result);
-}
+//  object1->updateEngineData();
+//  object2->updateEngineData();
 
-//==============================================================================
-bool CollisionDetector::detect(
-    CollisionObject* object, CollisionGroup* group,
-    const Option& option, Result& result)
-{
-  assert(object->getCollisionDetector() == group->getCollisionDetector());
+//  return detect(object1->getEngineData(), object2->getEngineData(),
+//                option, result);
+//}
 
-  object->updateEngineData();
-  group->updateEngineData();
+////==============================================================================
+//bool CollisionDetector::detect(
+//    CollisionObject* object, CollisionGroup* group,
+//    const Option& option, Result& result)
+//{
+//  assert(object->getCollisionDetector() == group->getCollisionDetector());
 
-  return detect(object->getEngineData(), group->getEngineData(),
-                option, result);
-}
+//  object->updateEngineData();
+//  group->updateEngineData();
 
-//==============================================================================
-bool CollisionDetector::detect(
-    CollisionGroup* group, CollisionObject* object,
-    const Option& option, Result& result)
-{
-  return detect(object, group, option, result);
-}
+//  return detect(object->getEngineData(), group->getEngineData(),
+//                option, result);
+//}
 
-//==============================================================================
-bool CollisionDetector::detect(
-    CollisionGroup* group, const Option& option, Result& result)
-{
-  group->updateEngineData();
+////==============================================================================
+//bool CollisionDetector::detect(
+//    CollisionGroup* group, CollisionObject* object,
+//    const Option& option, Result& result)
+//{
+//  return detect(object, group, option, result);
+//}
 
-  return detect(group->getEngineData(), option, result);
-}
+////==============================================================================
+//bool CollisionDetector::detect(
+//    CollisionGroup* group, const Option& option, Result& result)
+//{
+//  group->update();
 
-//==============================================================================
-bool CollisionDetector::detect(
-    CollisionGroup* group1, CollisionGroup* group2,
-    const Option& option, Result& result)
-{
-  assert(group1->getCollisionDetector() == group2->getCollisionDetector());
+//  return detect(group, option, result);
+//}
 
-  group1->updateEngineData();
-  group2->updateEngineData();
+////==============================================================================
+//bool CollisionDetector::detect(
+//    CollisionGroup* group1, CollisionGroup* group2,
+//    const Option& option, Result& result)
+//{
+//  assert(group1->getCollisionDetector() == group2->getCollisionDetector());
 
-  return detect(group1->getEngineData(), group2->getEngineData(),
-                option, result);
-}
+//  group1->updateEngineData();
+//  group2->updateEngineData();
+
+//  return detect(group1->getEngineData(), group2->getEngineData(),
+//                option, result);
+//}
 
 //==============================================================================
 struct is_collision_object_equal
@@ -141,33 +163,69 @@ struct is_collision_object_equal
 };
 
 //==============================================================================
-void CollisionDetector::reclaimCollisionObject(CollisionObject* collisionObject)
+CollisionObject* CollisionDetector::claimCollisionObject(
+    const dynamics::ShapeFrame* shapeFrame)
 {
-  assert(hasCollisionObject(collisionObject));
+  auto search = mCollisionObjectMap.find(shapeFrame);
 
-  mCollisionObjects.erase(
-      std::remove_if(mCollisionObjects.begin(), mCollisionObjects.end(),
-                     is_collision_object_equal(collisionObject)),
-      mCollisionObjects.end());
+  // Found existing collision object
+  if (mCollisionObjectMap.end() != search)
+  {
+    auto& collObjAndCount = search->second;
 
-  reclaimCollisionObjectData(collisionObject->getEngineData());
+    auto& collObj = collObjAndCount.first;
+    auto& count   = collObjAndCount.second;
+    assert(count != 0u);
+
+    count++;
+
+    return collObj.get();
+  }
+
+  auto newCollisionObject = createCollisionObject(shapeFrame);
+
+  mCollisionObjectMap[shapeFrame]
+      = std::make_pair(std::move(newCollisionObject), 1u);
+
+  return mCollisionObjectMap[shapeFrame].first.get();
 }
 
 //==============================================================================
-bool CollisionDetector::hasCollisionObject(
-    const CollisionObject* collisionObject) const
+void CollisionDetector::reclaimCollisionObject(const CollisionObject* collObj)
 {
-  return std::find_if(mCollisionObjects.begin(), mCollisionObjects.end(),
-                      is_collision_object_equal(collisionObject))
-      != mCollisionObjects.end();
+  auto shapeFrame = collObj->getShapeFrame();
+  auto search = mCollisionObjectMap.find(shapeFrame);
+
+  if (mCollisionObjectMap.end() == search)
+    return;
+
+  auto& collObjAndCount = search->second;
+  auto& count = collObjAndCount.second;
+  assert(count != 0u);
+
+  count--;
+
+  if (0u == count)
+  {
+    auto& collisionObject = collObjAndCount.first;
+    notifyDestroyingCollisionObject(collisionObject.get());
+
+    mCollisionObjectMap.erase(search);
+  }
 }
 
 //==============================================================================
-bool CollisionDetector::detect(
-    CollisionGroupData* group, CollisionObjectData* object,
-    const Option& option, Result& result)
+bool CollisionDetector::hasCollisionObject(const CollisionObject* collObj) const
 {
-  return detect(object, group, option, result);
+  if (!collObj)
+    return false;
+
+  return true;
+//  return std::find_if(
+//      mCollisionObjectMap.begin(), mCollisionObjectMap.end(),
+//      [&](const CollisionObjectPair& pair)
+//      { return pair.second.first.get() == collObj; })
+//      != mCollisionObjectMap.end();
 }
 
 }  // namespace collision

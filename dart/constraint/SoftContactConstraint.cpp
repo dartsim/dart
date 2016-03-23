@@ -70,31 +70,24 @@ double SoftContactConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
 SoftContactConstraint::SoftContactConstraint(
-    collision::Contact& _contact, double _timeStep)
+    collision::Contact& contact, double timeStep)
   : ConstraintBase(),
-    mTimeStep(_timeStep),
-    mBodyNode1(static_cast<dynamics::ShapeNodeCollisionObject*>(
-        _contact.collisionObject1)->getBodyNode()),
-    mBodyNode2(static_cast<dynamics::ShapeNodeCollisionObject*>(
-        _contact.collisionObject2)->getBodyNode()),
+    mTimeStep(timeStep),
+    mBodyNode1(const_cast<dynamics::ShapeFrame*>(contact.collisionObject1->getShapeFrame())->asShapeNode()->getBodyNodePtr().get()),
+    mBodyNode2(const_cast<dynamics::ShapeFrame*>(contact.collisionObject2->getShapeFrame())->asShapeNode()->getBodyNodePtr().get()),
     mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
     mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
     mPointMass1(nullptr),
     mPointMass2(nullptr),
-    mSoftCollInfo(static_cast<collision::SoftCollisionInfo*>(_contact.userData)),
+    mSoftCollInfo(static_cast<collision::SoftCollisionInfo*>(contact.userData)),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),
     mAppliedImpulseIndex(-1),
     mIsBounceOn(false),
     mActive(false)
 {
-  assert(dynamic_cast<dynamics::ShapeNodeCollisionObject*>(
-      _contact.collisionObject1)->getBodyNode());
-  assert(dynamic_cast<dynamics::ShapeNodeCollisionObject*>(
-      _contact.collisionObject2)->getBodyNode());
-
   // TODO(JS): Assumed single contact
-  mContacts.push_back(&_contact);
+  mContacts.push_back(&contact);
 
   // Set the colliding state of body nodes and point masses to false
   if (mSoftBodyNode1)
@@ -111,20 +104,20 @@ SoftContactConstraint::SoftContactConstraint(
   // Select colling point mass based on trimesh ID
   if (mSoftBodyNode1)
   {
-    if (_contact.collisionObject1->getShape()->getShapeType()
+    if (contact.collisionObject1->getShape()->getShapeType()
         == dynamics::Shape::SOFT_MESH)
     {
-      mPointMass1 = selectCollidingPointMass(mSoftBodyNode1, _contact.point,
-                                             _contact.triID1);
+      mPointMass1 = selectCollidingPointMass(mSoftBodyNode1, contact.point,
+                                             contact.triID1);
     }
   }
   if (mSoftBodyNode2)
   {
-    if (_contact.collisionObject2->getShape()->getShapeType()
+    if (contact.collisionObject2->getShape()->getShapeType()
         == dynamics::Shape::SOFT_MESH)
     {
-      mPointMass2 = selectCollidingPointMass(mSoftBodyNode2, _contact.point,
-                                             _contact.triID2);
+      mPointMass2 = selectCollidingPointMass(mSoftBodyNode2, contact.point,
+                                             contact.triID2);
     }
   }
 

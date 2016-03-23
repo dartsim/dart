@@ -34,61 +34,86 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletCollisionObjectData.h"
+#include "dart/collision/dart/DARTCollisionGroup.h"
 
-#include "dart/common/Console.h"
-#include "dart/collision/bullet/BulletTypes.h"
-#include "dart/collision/CollisionDetector.h"
 #include "dart/collision/CollisionObject.h"
-#include "dart/collision/bullet/BulletTypes.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/SoftMeshShape.h"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-BulletCollisionObjectData::UserData::UserData(
-    CollisionObject* collisionObject,
-    CollisionDetector* collisionDetector,
-    CollisionGroup* collisionGroup)
-  : collisionObject(collisionObject),
-    collisionDetector(collisionDetector),
-    group(collisionGroup)
+DARTCollisionGroup::DARTCollisionGroup(
+    const CollisionDetectorPtr& collisionDetector)
+  : CollisionGroup(collisionDetector)
+{
+  assert(mCollisionDetector);
+}
+
+//==============================================================================
+DARTCollisionGroup::DARTCollisionGroup(
+    const CollisionDetectorPtr& collisionDetector,
+    const dynamics::ShapeFrame* shapeFrame)
+  : CollisionGroup(collisionDetector)
+{
+  assert(mCollisionDetector);
+  assert(shapeFrame);
+
+  addShapeFrame(shapeFrame);
+}
+
+//==============================================================================
+DARTCollisionGroup::DARTCollisionGroup(
+    const CollisionDetectorPtr& collisionDetector,
+    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
+  : CollisionGroup(collisionDetector)
+{
+  assert(mCollisionDetector);
+
+  addShapeFrames(shapeFrames);
+}
+
+//==============================================================================
+DARTCollisionGroup::~DARTCollisionGroup()
+{
+  removeAllShapeFrames();
+}
+
+//==============================================================================
+void DARTCollisionGroup::initializeEngineData()
 {
   // Do nothing
 }
 
 //==============================================================================
-void BulletCollisionObjectData::updateTransform(const Eigen::Isometry3d& tf)
+void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* /*object*/)
 {
-  mBulletCollisionObject->setWorldTransform(convertTransform(tf));
+  // Do nothing
 }
 
 //==============================================================================
-void BulletCollisionObjectData::update()
+void DARTCollisionGroup::addCollisionObjectsToEngine(
+    const std::vector<CollisionObject*>& /*collObjects*/)
 {
-  updateTransform(mParent->getTransform());
+  // Do nothing
 }
 
 //==============================================================================
-btCollisionObject* BulletCollisionObjectData::getBulletCollisionObject() const
+void DARTCollisionGroup::removeCollisionObjectFromEngine(
+    CollisionObject* /*object*/)
 {
-  return mBulletCollisionObject.get();
+  // Do nothing
 }
 
 //==============================================================================
-BulletCollisionObjectData::BulletCollisionObjectData(
-    CollisionDetector* collisionDetector,
-    CollisionObject* parent,
-    btCollisionShape* bulletCollisionShape)
-  : CollisionObjectData(collisionDetector, parent),
-    mBulletCollisionObjectUserData(new UserData(mParent, mCollisionDetector,
-                                                nullptr)),
-    mBulletCollisionObject(new btCollisionObject())
+void DARTCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
-  mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
-  mBulletCollisionObject->setUserPointer(mBulletCollisionObjectUserData.get());
+  // Do nothing
+}
+
+//==============================================================================
+void DARTCollisionGroup::updateEngineData()
+{
+  // Do nothing
 }
 
 }  // namespace collision

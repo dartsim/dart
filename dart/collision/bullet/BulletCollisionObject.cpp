@@ -34,46 +34,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionGroupData.h"
+#include "dart/collision/bullet/BulletCollisionObject.h"
 
-#include <cassert>
+#include "dart/common/Console.h"
+#include "dart/collision/bullet/BulletTypes.h"
+#include "dart/collision/CollisionDetector.h"
+#include "dart/collision/CollisionObject.h"
+#include "dart/collision/bullet/BulletTypes.h"
+#include "dart/dynamics/Shape.h"
+#include "dart/dynamics/ShapeFrame.h"
+#include "dart/dynamics/SoftMeshShape.h"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-CollisionGroupData::CollisionGroupData(
+BulletCollisionObject::UserData::UserData(
+    CollisionObject* collisionObject,
     CollisionDetector* collisionDetector,
-    CollisionGroup* parent)
-  : mCollisionDetector(collisionDetector),
-    mParent(parent)
+    CollisionGroup* collisionGroup)
+  : collisionObject(collisionObject),
+    collisionDetector(collisionDetector),
+    group(collisionGroup)
 {
-  assert(mCollisionDetector);
-  assert(mParent);
+  // Do nothing
 }
 
 //==============================================================================
-CollisionDetector* CollisionGroupData::getCollisionDetector()
+btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
 {
-  return mCollisionDetector;
+  return mBulletCollisionObject.get();
 }
 
 //==============================================================================
-const CollisionDetector* CollisionGroupData::getCollisionDetector() const
+BulletCollisionObject::BulletCollisionObject(
+    CollisionDetector* collisionDetector,
+    const dynamics::ShapeFrame* shapeFrame,
+    btCollisionShape* bulletCollisionShape)
+  : CollisionObject(collisionDetector, shapeFrame),
+    mBulletCollisionObjectUserData(new UserData(this, mCollisionDetector,
+                                                nullptr)),
+    mBulletCollisionObject(new btCollisionObject())
 {
-  return mCollisionDetector;
+  mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
+  mBulletCollisionObject->setUserPointer(mBulletCollisionObjectUserData.get());
 }
 
 //==============================================================================
-CollisionGroup* CollisionGroupData::getCollisionGroup()
+void BulletCollisionObject::updateEngineData()
 {
-  return mParent;
-}
-
-//==============================================================================
-const CollisionGroup* CollisionGroupData::getCollisionGroup() const
-{
-  return mParent;
+  mBulletCollisionObject->setWorldTransform(
+      convertTransform(mShapeFrame->getWorldTransform()));
 }
 
 }  // namespace collision

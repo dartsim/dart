@@ -38,11 +38,12 @@
 #define DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_
 
 #include <vector>
-
 #include "dart/collision/CollisionDetector.h"
 
 namespace dart {
 namespace collision {
+
+class DARTCollisionObject;
 
 class DARTCollisionDetector : public CollisionDetector
 {
@@ -56,6 +57,17 @@ public:
   // Documentation inherited
   const std::string& getType() const override;
 
+  // Documentation inherited
+  std::shared_ptr<CollisionGroup> createCollisionGroup() override;
+
+  // Documentation inherited
+  std::shared_ptr<CollisionGroup> createCollisionGroup(
+      const dynamics::ShapeFrame* shapeFrame) override;
+
+  // Documentation inherited
+  std::shared_ptr<CollisionGroup> createCollisionGroup(
+      const std::vector<const dynamics::ShapeFrame*>& shapeFrames) override;
+
   using CollisionDetector::detect;
 
 protected:
@@ -64,34 +76,23 @@ protected:
   DARTCollisionDetector() = default;
 
   // Documentation inherited
-  std::unique_ptr<CollisionObjectData> createCollisionObjectData(
-      CollisionObject* parent,
-      const dynamics::ShapePtr& shape) override;
+  std::unique_ptr<CollisionObject> createCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) override;
 
   // Documentation inherited
-  void reclaimCollisionObjectData(
-      CollisionObjectData* collisionObjectData) override;
+  void notifyDestroyingCollisionObject(CollisionObject* collObj) override;
 
   // Documentation inherited
-  std::unique_ptr<CollisionGroupData> createCollisionGroupData(
-      CollisionGroup* parent,
-      const CollisionObjectPtrs& collObjects) override;
-
-  // Documentation inherited
-  bool detect(CollisionObjectData* object1, CollisionObjectData* object2,
+  bool detect(CollisionGroup* group,
               const Option& option, Result& result) override;
 
   // Documentation inherited
-  bool detect(CollisionObjectData* object, CollisionGroupData* group,
+  bool detect(CollisionGroup* group1, CollisionGroup* group2,
               const Option& option, Result& result) override;
 
-  // Documentation inherited
-  bool detect(CollisionGroupData* group,
-              const Option& option, Result& result) override;
+protected:
 
-  // Documentation inherited
-  bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
-              const Option& option, Result& result) override;
+  std::vector<DARTCollisionObject*> mDARTCollisionObjects;
 
 };
 

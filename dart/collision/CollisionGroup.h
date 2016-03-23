@@ -38,9 +38,10 @@
 #define DART_COLLISION_COLLISIONGROUP_H_
 
 #include <vector>
+#include <map>
 
 #include "dart/collision/CollisionDetector.h"
-#include "dart/collision/CollisionGroupData.h"
+#include "dart/collision/CollisionGroup.h"
 #include "dart/collision/CollisionFilter.h"
 
 namespace dart {
@@ -50,60 +51,36 @@ class CollisionGroup
 {
 public:
 
-  using CollisionObjectPtr = std::shared_ptr<CollisionObject>;
-  using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
-  using ConstCollisionObjectPtrs = std::vector<ConstCollisionObjectPtr>;
-
   /// Constructor
-  CollisionGroup(
-      const CollisionDetectorPtr& collisionDetector,
-      const CollisionObjectPtrs& collObjects = CollisionObjectPtrs());
-
-  /// Copy constructor
-  CollisionGroup(const CollisionGroup& other);
+  CollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
   /// Destructor
   virtual ~CollisionGroup();
 
-  /// Assignment operator
-  CollisionGroup& operator=(const CollisionGroup& other);
-
-  /// Copy another CollisionGroup into this CollisionGroup
-  void copy(const CollisionGroup& other);
-
-  /// Change engine
-  void changeDetector(const CollisionDetectorPtr& collisionDetector);
-
   /// Return collision detection engine associated with this CollisionGroup
   CollisionDetector* getCollisionDetector() const;
 
-  /// Return true if this CollisionGroup contains given object
-  bool hasCollisionObject(const CollisionObjectPtr& object) const;
+  /// Add a ShapeFrame to this CollisionGroup
+  void addShapeFrame(const dynamics::ShapeFrame* shapeFrame);
 
-  /// Add collision object to this CollisionGroup
-  void addCollisionObject(const CollisionObjectPtr& object,
-                          bool init = true);
+  /// Add ShapeFrames to this CollisionGroup
+  void addShapeFrames(
+      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
 
-  /// Add collision objects to this CollisionGroup
-  void addCollisionObjects(const CollisionObjectPtrs& objects,
-                           bool init = true);
+  void addShapeFrames(const dynamics::Skeleton* skeleton);
 
   /// Remove collision object from this CollisionGroup
-  void removeCollisionObject(const CollisionObjectPtr& object,
-                             bool init = true);
+  void removeShapeFrame(const dynamics::ShapeFrame* shapeFrame);
 
   /// Remove collision objects from this CollisionGroup
-  void removeCollisionObjects(const CollisionObjectPtrs& objects,
-                              bool init = true);
+  void removeShapeFrames(
+      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
 
   /// Remove all the collision object in this CollisionGroup
-  void removeAllCollisionObjects(bool init = true);
+  void removeAllShapeFrames();
 
-  /// Return array of collision objects
-  const CollisionObjectPtrs& getCollisionObjects();
-
-  /// Return array of (const) collision objects
-  const ConstCollisionObjectPtrs getCollisionObjects() const;
+  /// Return true if this CollisionGroup contains shapeFrame
+  bool hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const;
 
   /// Merge other CollisionGroup into this CollisionGroup
   void unionGroup(const CollisionGroupPtr& other);
@@ -111,14 +88,12 @@ public:
   /// Merge other CollisionGroup into this CollisionGroup
   void subtractGroup(const CollisionGroupPtr& other);
 
+  /// Update engine data. This function should be called before the collision
+  /// detection is performed by the engine in most cases.
+  void update();
+
   /// Perform collision detection within this CollisionGroup.
   bool detect(const Option& option, Result& result);
-
-  /// Perform collision detection with other CollisionObject.
-  ///
-  /// Return false if the engine type of the other CollisionObject is different
-  /// from this CollisionObject engine.
-  bool detect(CollisionObject* object, const Option& option, Result& result);
 
   /// Perform collision detection with other CollisionGroup.
   ///
@@ -126,24 +101,40 @@ public:
   /// from this CollisionObject engine.
   bool detect(CollisionGroup* group, const Option& option, Result& result);
 
-  /// Return the collision detection engine specific data of this
-  /// CollisionObject
-  CollisionGroupData* getEngineData();
+  const std::vector<CollisionObject*>& getCollisionObjects();
 
-  /// Update engine data. This function should be called before the collision
-  /// detection is performed by the engine in most cases.
-  void updateEngineData();
+protected:
+
+  /// Initialize the collision group data of the collision detection engine such
+  /// as broadphase algorithm. This function will be called whenever ShapeFrame
+  /// is either added to or removed from this CollisionGroup.
+  virtual void initializeEngineData() = 0;
+
+  virtual void addCollisionObjectToEngine(CollisionObject* object) = 0;
+
+  virtual void addCollisionObjectsToEngine(
+      const std::vector<CollisionObject*>& collObjects) = 0;
+
+  virtual void removeCollisionObjectFromEngine(CollisionObject* object) = 0;
+
+  virtual void removeAllCollisionObjectsFromEngine() = 0;
+
+  /// Update the collision group of the collision detection engine such as
+  /// broadphase algorithm. This function will be called ahead of every
+  /// collision checking.
+  virtual void updateEngineData() = 0;
+
+  using CollisionObjectPtr = std::shared_ptr<CollisionObject>;
+  using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
+  using ConstCollisionObjectPtrs = std::vector<ConstCollisionObjectPtr>;
 
 protected:
 
   /// Collision detector
   CollisionDetectorPtr mCollisionDetector;
 
-  /// Collision objects
-  CollisionObjectPtrs mCollisionObjects;
-
-  /// Engine specific data
-  std::unique_ptr<CollisionGroupData> mEngineData;
+  std::vector<const dynamics::ShapeFrame*> mShapeFrames;
+  std::vector<CollisionObject*> mCollisionObjects;
 
 };
 

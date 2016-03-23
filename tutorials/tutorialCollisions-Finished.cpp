@@ -215,7 +215,7 @@ protected:
     // collision with something
     auto collisionEngine = mWorld->getConstraintSolver()->getCollisionDetector();
     auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
-    auto newGroup = createShapeFrameCollisionGroup(collisionEngine, object);
+    auto newGroup = collisionEngine->createCollisionGroup(object.get());
 
     dart::collision::Option option;
     dart::collision::Result result;

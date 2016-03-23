@@ -34,20 +34,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletCollisionGroupData.h"
+#include "dart/collision/bullet/BulletCollisionGroup.h"
 
 #include "dart/collision/CollisionObject.h"
-#include "dart/collision/bullet/BulletCollisionObjectData.h"
+#include "dart/collision/bullet/BulletCollisionObject.h"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-BulletCollisionGroupData::BulletCollisionGroupData(
-    CollisionDetector* collisionDetector,
-    CollisionGroup* parent,
-    const BulletCollisionGroupData::CollisionObjects& collObjects)
-  : CollisionGroupData(collisionDetector, parent),
+BulletCollisionGroup::BulletCollisionGroup(
+    const CollisionDetectorPtr& collisionDetector)
+  : CollisionGroup(collisionDetector),
     mBulletProadphaseAlg(
       new btDbvtBroadphase()),
     mBulletCollisionConfiguration(
@@ -59,21 +57,60 @@ BulletCollisionGroupData::BulletCollisionGroupData(
                            mBulletProadphaseAlg.get(),
                            mBulletCollisionConfiguration.get()))
 {
-  addCollisionObjects(collObjects, true);
+  assert(mCollisionDetector);
 }
 
 //==============================================================================
-std::unique_ptr<CollisionGroupData> BulletCollisionGroupData::clone(
-    CollisionGroup* newParent,
-    const CollisionObjectPtrs& collObjects) const
+BulletCollisionGroup::BulletCollisionGroup(
+    const CollisionDetectorPtr& collisionDetector,
+    const dynamics::ShapeFrame* shapeFrame)
+  : CollisionGroup(collisionDetector),
+    mBulletProadphaseAlg(
+      new btDbvtBroadphase()),
+    mBulletCollisionConfiguration(
+      new btDefaultCollisionConfiguration()),
+    mBulletDispatcher(
+      new btCollisionDispatcher(mBulletCollisionConfiguration.get())),
+    mBulletCollisionWorld(
+      new btCollisionWorld(mBulletDispatcher.get(),
+                           mBulletProadphaseAlg.get(),
+                           mBulletCollisionConfiguration.get()))
 {
-  return std::unique_ptr<CollisionGroupData>(
-        new BulletCollisionGroupData(mCollisionDetector, newParent,
-                                     collObjects));
+  assert(mCollisionDetector);
+  assert(shapeFrame);
+
+  addShapeFrame(shapeFrame);
 }
 
 //==============================================================================
-void BulletCollisionGroupData::init()
+BulletCollisionGroup::BulletCollisionGroup(
+    const CollisionDetectorPtr& collisionDetector,
+    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
+  : CollisionGroup(collisionDetector),
+    mBulletProadphaseAlg(
+      new btDbvtBroadphase()),
+    mBulletCollisionConfiguration(
+      new btDefaultCollisionConfiguration()),
+    mBulletDispatcher(
+      new btCollisionDispatcher(mBulletCollisionConfiguration.get())),
+    mBulletCollisionWorld(
+      new btCollisionWorld(mBulletDispatcher.get(),
+                           mBulletProadphaseAlg.get(),
+                           mBulletCollisionConfiguration.get()))
+{
+  assert(mCollisionDetector);
+
+  addShapeFrames(shapeFrames);
+}
+
+//==============================================================================
+BulletCollisionGroup::~BulletCollisionGroup()
+{
+  removeAllShapeFrames();
+}
+
+//==============================================================================
+void BulletCollisionGroup::initializeEngineData()
 {
   btDispatcherInfo& dispatchInfo = mBulletCollisionWorld->getDispatchInfo();
   // dispatchInfo.m_timeStep  = 0.001;
@@ -81,58 +118,53 @@ void BulletCollisionGroupData::init()
 }
 
 //==============================================================================
-void BulletCollisionGroupData::addCollisionObject(
-    const CollisionObjectPtr& object, const bool init)
+void BulletCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
-  auto data = static_cast<BulletCollisionObjectData*>(object->getEngineData());
-  mBulletCollisionWorld->addCollisionObject(data->getBulletCollisionObject());
+  auto casted = static_cast<BulletCollisionObject*>(object);
 
-  if (init)
-    this->init();
+  mBulletCollisionWorld->addCollisionObject(casted->getBulletCollisionObject());
+
+  this->initializeEngineData();
 }
 
 //==============================================================================
-void BulletCollisionGroupData::addCollisionObjects(
-    const BulletCollisionGroupData::CollisionObjectPtrs& collObjects,
-    const bool init)
+void BulletCollisionGroup::addCollisionObjectsToEngine(
+    const std::vector<CollisionObject*>& collObjects)
 {
   for (auto collObj : collObjects)
   {
-    auto data = static_cast<BulletCollisionObjectData*>(
-          collObj->getEngineData());
+    auto casted = static_cast<BulletCollisionObject*>(collObj);
 
-    mBulletCollisionWorld->addCollisionObject(data->getBulletCollisionObject());
+    mBulletCollisionWorld->addCollisionObject(
+          casted->getBulletCollisionObject());
   }
 
-  if (init)
-    this->init();
+  this->initializeEngineData();
 }
 
 //==============================================================================
-void BulletCollisionGroupData::removeCollisionObject(
-    const CollisionObjectPtr& object, const bool init)
+void BulletCollisionGroup::removeCollisionObjectFromEngine(
+    CollisionObject* object)
 {
-  auto data = static_cast<BulletCollisionObjectData*>(object->getEngineData());
+  auto casted = static_cast<BulletCollisionObject*>(object);
+
   mBulletCollisionWorld->removeCollisionObject(
-        data->getBulletCollisionObject());
+        casted->getBulletCollisionObject());
 
-  if (init)
-    this->init();
+  this->initializeEngineData();
 }
 
 //==============================================================================
-void BulletCollisionGroupData::removeAllCollisionObjects(bool init)
+void BulletCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
-  auto collisionObjects = mParent->getCollisionObjects();
-  for (auto collisionObject : collisionObjects)
-    removeCollisionObject(collisionObject, false);
+  for (const auto& collisionObject : getCollisionObjects())
+    removeCollisionObjectFromEngine(collisionObject);
 
-  if (init)
-    this->init();
+  this->initializeEngineData();
 }
 
 //==============================================================================
-void BulletCollisionGroupData::update()
+void BulletCollisionGroup::updateEngineData()
 {
   // Setting up broadphase collision detection options
   btDispatcherInfo& dispatchInfo = mBulletCollisionWorld->getDispatchInfo();
@@ -143,7 +175,7 @@ void BulletCollisionGroupData::update()
 }
 
 //==============================================================================
-btCollisionWorld* BulletCollisionGroupData::getBulletCollisionWorld() const
+btCollisionWorld* BulletCollisionGroup::getBulletCollisionWorld() const
 {
   return mBulletCollisionWorld.get();
 }

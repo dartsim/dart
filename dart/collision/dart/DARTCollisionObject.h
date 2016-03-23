@@ -34,65 +34,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECTDATA_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONOBJECTDATA_H_
+#ifndef DART_COLLISION_DART_DARTCOLLISIONOBJECT_H_
+#define DART_COLLISION_DART_DARTCOLLISIONOBJECT_H_
 
-#include <cstddef>
 #include <Eigen/Dense>
-
-#include <fcl/collision_object.h>
-
-#include "dart/collision/CollisionObjectData.h"
+#include "dart/collision/CollisionObject.h"
 
 namespace dart {
 namespace collision {
 
 class CollisionObject;
 
-class FCLCollisionObjectData : public CollisionObjectData
+class DARTCollisionObject : public CollisionObject
 {
 public:
 
-  struct UserData
-  {
-    CollisionObject* mCollisionObject;
-
-    UserData(CollisionObject* collisionObject);
-  };
-
-  friend class FCLCollisionDetector;
-
-  // Documentation inherited
-  void updateTransform(const Eigen::Isometry3d& tf) override;
-
-  // Documentation inherited
-  void update() override;
-
-  /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject() const;
+  friend class DARTCollisionDetector;
 
 protected:
 
   /// Constructor
-  FCLCollisionObjectData(
-      CollisionDetector* collisionDetector,
-      CollisionObject* parent,
-      const boost::shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
+  DARTCollisionObject(CollisionDetector* collisionDetector,
+                      const dynamics::ShapeFrame* shapeFrame);
 
-protected:
-
-  /// FCL collision geometry user data
-  std::unique_ptr<UserData> mFCLCollisionObjectUserData;
-
-  /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
-  // Note: We can consider sharing fcl::CollisionGeometry with other
-  // CollisionObjects that are associated with the same Shape of DART to avoid
-  // unnecessary copy of fcl::CollisionGeometry.
+  // Documentation inherited
+  void updateEngineData() override;
 
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECTDATA_H_
+#endif  // DART_COLLISION_DART_DARTCOLLISIONOBJECT_H_

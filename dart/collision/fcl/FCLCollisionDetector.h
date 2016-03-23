@@ -45,7 +45,7 @@
 namespace dart {
 namespace collision {
 
-class FCLCollisionObjectData;
+class FCLCollisionObject;
 
 class FCLCollisionDetector : public CollisionDetector
 {
@@ -62,13 +62,18 @@ public:
   // Documentation inherited
   const std::string& getType() const override;
 
+  // Documentation inherited
+  std::shared_ptr<CollisionGroup> createCollisionGroup() override;
+
+  // Documentation inherited
+  std::shared_ptr<CollisionGroup> createCollisionGroup(
+      const dynamics::ShapeFrame* shapeFrame) override;
+
+  // Documentation inherited
+  std::shared_ptr<CollisionGroup> createCollisionGroup(
+      const std::vector<const dynamics::ShapeFrame*>& shapeFrames) override;
+
   using CollisionDetector::detect;
-
-  FCLCollisionObjectData* findCollisionObjectData(
-      fcl::CollisionObject* fclCollObj) const;
-
-  CollisionObject* findCollisionObject(
-      fcl::CollisionObject* fclCollObj) const;
 
 protected:
 
@@ -76,33 +81,33 @@ protected:
   FCLCollisionDetector() = default;
 
   // Documentation inherited
-  std::unique_ptr<CollisionObjectData> createCollisionObjectData(
-      CollisionObject* parent,
-      const dynamics::ShapePtr& shape) override;
+  std::unique_ptr<CollisionObject> createCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) override;
+
+public:
+
+  FCLCollisionObject* findCollisionObject(
+      fcl::CollisionObject* fclCollObj) const;
+  // TODO(JS): fix const correctness
+
+protected:
 
   // Documentation inherited
-  void reclaimCollisionObjectData(
-      CollisionObjectData* collisionObjectData) override;
+  void notifyDestroyingCollisionObject(CollisionObject* collObj) override;
+
+  ///
+  boost::shared_ptr<fcl::CollisionGeometry> claimFCLCollisionGeometry(
+      const dynamics::ConstShapePtr& shape);
+
+  ///
+  void reclaimFCLCollisionGeometry(const dynamics::ConstShapePtr& shape);
 
   // Documentation inherited
-  std::unique_ptr<CollisionGroupData> createCollisionGroupData(
-      CollisionGroup* parent,
-      const CollisionObjectPtrs& collObjects) override;
-
-  // Documentation inherited
-  bool detect(CollisionObjectData* object1, CollisionObjectData* object2,
+  bool detect(CollisionGroup* group,
               const Option& option, Result& result) override;
 
   // Documentation inherited
-  bool detect(CollisionObjectData* object, CollisionGroupData* group,
-              const Option& option, Result& result) override;
-
-  // Documentation inherited
-  bool detect(CollisionGroupData* group,
-              const Option& option, Result& result) override;
-
-  // Documentation inherited
-  bool detect(CollisionGroupData* group1, CollisionGroupData* group2,
+  bool detect(CollisionGroup* group1, CollisionGroup* group2,
               const Option& option, Result& result) override;
 
 protected:
@@ -110,9 +115,9 @@ protected:
   using ShapeMapValue
       = std::pair<boost::shared_ptr<fcl::CollisionGeometry>, size_t>;
 
-  std::map<dynamics::ShapePtr, ShapeMapValue> mShapeMap;
+  std::map<dynamics::ConstShapePtr, ShapeMapValue> mShapeMap;
 
-  std::map<fcl::CollisionObject*, FCLCollisionObjectData*> mCollisionObjectMap;
+  std::map<fcl::CollisionObject*, FCLCollisionObject*> mFCLCollisionObjectMap;
 
 };
 
