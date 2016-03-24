@@ -82,25 +82,13 @@ public:
   std::shared_ptr<CollisionGroup> createCollisionGroup(
       dynamics::Skeleton* skeleton);
 
-//  /// Perform collision detection for object1-object2.
-//  bool detect(CollisionObject* object1, CollisionObject* object2,
-//              const Option& option, Result& result);
-
-//  /// Perform collision detection for object-group.
-//  bool detect(CollisionObject* object, CollisionGroup* group,
-//              const Option& option, Result& result);
-
-//  /// Identical with detect(object, group, option, result)
-//  bool detect(CollisionGroup* group, CollisionObject* object,
-//              const Option& option, Result& result);
-
   /// Perform collision detection for group.
-//  bool detect(CollisionGroup* group,
-//              const Option& option, Result& result);
+  virtual bool detect(CollisionGroup* group,
+                      const Option& option, Result& result) = 0;
 
-//  /// Perform collision detection for group1-group2.
-//  bool detect(CollisionGroup* group1, CollisionGroup* group2,
-//              const Option& option, Result& result);
+  /// Perform collision detection for group1-group2.
+  virtual bool detect(CollisionGroup* group1, CollisionGroup* group2,
+                      const Option& option, Result& result) = 0;
 
 protected:
 
@@ -124,17 +112,6 @@ protected:
   /// Reclaim CollisionObject associated with shapeFrame. The CollisionObject
   /// will be destroyed if no CollisionGroup holds it.
   void reclaimCollisionObject(const CollisionObject* shapeFrame);
-
-  /// Return true if collisionObject is created from this CollisionDetector
-  bool hasCollisionObject(const CollisionObject* collisionObject) const;
-
-  /// Perform collision detection for group.
-  virtual bool detect(CollisionGroup* group,
-                      const Option& option, Result& result) = 0;
-
-  /// Perform collision detection for group1-group2.
-  virtual bool detect(CollisionGroup* group1, CollisionGroup* group2,
-                      const Option& option, Result& result) = 0;
 
 protected:
 

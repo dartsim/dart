@@ -82,6 +82,9 @@ public:
   /// Return true if this CollisionGroup contains shapeFrame
   bool hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const;
 
+  /// Return number of ShapeFrames added to this CollisionGroup
+  size_t getNumShapeFrames() const;
+
   /// Merge other CollisionGroup into this CollisionGroup
   void unionGroup(const CollisionGroupPtr& other);
 

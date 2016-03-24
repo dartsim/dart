@@ -68,7 +68,13 @@ public:
   std::shared_ptr<CollisionGroup> createCollisionGroup(
       const std::vector<const dynamics::ShapeFrame*>& shapeFrames) override;
 
-  using CollisionDetector::detect;
+  // Documentation inherited
+  bool detect(CollisionGroup* group,
+              const Option& option, Result& result) override;
+
+  // Documentation inherited
+  bool detect(CollisionGroup* group1, CollisionGroup* group2,
+              const Option& option, Result& result) override;
 
 protected:
 
@@ -81,14 +87,6 @@ protected:
 
   // Documentation inherited
   void notifyDestroyingCollisionObject(CollisionObject* collObj) override;
-
-  // Documentation inherited
-  bool detect(CollisionGroup* group,
-              const Option& option, Result& result) override;
-
-  // Documentation inherited
-  bool detect(CollisionGroup* group1, CollisionGroup* group2,
-              const Option& option, Result& result) override;
 
 protected:
 

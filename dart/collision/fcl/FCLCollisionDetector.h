@@ -73,12 +73,49 @@ public:
   std::shared_ptr<CollisionGroup> createCollisionGroup(
       const std::vector<const dynamics::ShapeFrame*>& shapeFrames) override;
 
-  using CollisionDetector::detect;
+  // Documentation inherited
+  bool detect(CollisionGroup* group,
+              const Option& option, Result& result) override;
+
+  // Documentation inherited
+  bool detect(CollisionGroup* group1, CollisionGroup* group2,
+              const Option& option, Result& result) override;
+
+  /// FCL's primitive shape support is still not complete. FCL 0.4.0 fixed lots
+  /// of the bugs, but it still returns single contact point per shape pair
+  /// except for box-box collision. For this reason, we recommend using mesh for
+  /// primitive shapes until FCL fully support primitive shapes.
+  enum PrimitiveShape_t
+  {
+    MESH = 0,
+    PRIMITIVE
+  };
+
+  /// Set primitive shape type
+  void setPrimitiveShapeType(PrimitiveShape_t type);
+
+  /// Get primitive shape type
+  PrimitiveShape_t getPrimitiveShapeType() const;
+
+  /// FCL's contact computation is still (at least until 0.4.0) not correct for
+  /// mesh collision. We recommend using DART's contact point computation
+  /// instead until it's fixed in FCL.
+  enum ContactPointComputationMethod_t
+  {
+    DART = 0,
+    FCL
+  };
+
+  /// Set contact point computation method
+  void setContactPointComputationMethod(ContactPointComputationMethod_t method);
+
+  /// Get contact point computation method
+  ContactPointComputationMethod_t getContactPointComputationMethod() const;
 
 protected:
 
   /// Constructor
-  FCLCollisionDetector() = default;
+  FCLCollisionDetector();
 
   // Documentation inherited
   std::unique_ptr<CollisionObject> createCollisionObject(
@@ -102,14 +139,6 @@ protected:
   ///
   void reclaimFCLCollisionGeometry(const dynamics::ConstShapePtr& shape);
 
-  // Documentation inherited
-  bool detect(CollisionGroup* group,
-              const Option& option, Result& result) override;
-
-  // Documentation inherited
-  bool detect(CollisionGroup* group1, CollisionGroup* group2,
-              const Option& option, Result& result) override;
-
 protected:
 
   using ShapeMapValue
@@ -118,6 +147,10 @@ protected:
   std::map<dynamics::ConstShapePtr, ShapeMapValue> mShapeMap;
 
   std::map<fcl::CollisionObject*, FCLCollisionObject*> mFCLCollisionObjectMap;
+
+  PrimitiveShape_t mPrimitiveShapeType;
+
+  ContactPointComputationMethod_t mContactPointComputationMethod;
 
 };
 

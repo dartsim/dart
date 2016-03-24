@@ -100,30 +100,6 @@ std::shared_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup(
 }
 
 //==============================================================================
-std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
-    const dynamics::ShapeFrame* shapeFrame)
-{
-  auto collObj = new DARTCollisionObject(this, shapeFrame);
-
-  mDARTCollisionObjects.push_back(collObj);
-
-  return std::unique_ptr<CollisionObject>(collObj);
-}
-
-//==============================================================================
-void DARTCollisionDetector::notifyDestroyingCollisionObject(
-    CollisionObject* collObj)
-{
-  if (!collObj)
-    return;
-
-  auto casted = static_cast<DARTCollisionObject*>(collObj);
-  mDARTCollisionObjects.erase(
-        std::remove(mDARTCollisionObjects.begin(), mDARTCollisionObjects.end(),
-                    casted), mDARTCollisionObjects.end());
-}
-
-//==============================================================================
 bool DARTCollisionDetector::detect(
     CollisionGroup* group,
     const Option& /*option*/, Result& result)
@@ -188,6 +164,30 @@ bool DARTCollisionDetector::detect(
   }
 
   return !result.contacts.empty();
+}
+
+//==============================================================================
+std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
+    const dynamics::ShapeFrame* shapeFrame)
+{
+  auto collObj = new DARTCollisionObject(this, shapeFrame);
+
+  mDARTCollisionObjects.push_back(collObj);
+
+  return std::unique_ptr<CollisionObject>(collObj);
+}
+
+//==============================================================================
+void DARTCollisionDetector::notifyDestroyingCollisionObject(
+    CollisionObject* collObj)
+{
+  if (!collObj)
+    return;
+
+  auto casted = static_cast<DARTCollisionObject*>(collObj);
+  mDARTCollisionObjects.erase(
+        std::remove(mDARTCollisionObjects.begin(), mDARTCollisionObjects.end(),
+                    casted), mDARTCollisionObjects.end());
 }
 
 

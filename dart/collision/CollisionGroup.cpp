@@ -164,6 +164,12 @@ bool CollisionGroup::hasShapeFrame(
 }
 
 //==============================================================================
+size_t CollisionGroup::getNumShapeFrames() const
+{
+  return mShapeFrames.size();
+}
+
+//==============================================================================
 void CollisionGroup::unionGroup(const CollisionGroupPtr& other)
 {
   if (!other)

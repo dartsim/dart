@@ -78,90 +78,6 @@ std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
   return group;
 }
 
-////==============================================================================
-//std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
-//    const std::vector<CollisionObjectPtr>& objects)
-//{
-//  return std::make_shared<CollisionGroup>(shared_from_this(), objects);
-//}
-
-////==============================================================================
-//bool CollisionDetector::detect(
-//    CollisionObject* object1, CollisionObject* object2,
-//    const Option& option, Result& result)
-//{
-//  assert(object1->getCollisionDetector() == object2->getCollisionDetector());
-
-//  object1->updateEngineData();
-//  object2->updateEngineData();
-
-//  return detect(object1->getEngineData(), object2->getEngineData(),
-//                option, result);
-//}
-
-////==============================================================================
-//bool CollisionDetector::detect(
-//    CollisionObject* object, CollisionGroup* group,
-//    const Option& option, Result& result)
-//{
-//  assert(object->getCollisionDetector() == group->getCollisionDetector());
-
-//  object->updateEngineData();
-//  group->updateEngineData();
-
-//  return detect(object->getEngineData(), group->getEngineData(),
-//                option, result);
-//}
-
-////==============================================================================
-//bool CollisionDetector::detect(
-//    CollisionGroup* group, CollisionObject* object,
-//    const Option& option, Result& result)
-//{
-//  return detect(object, group, option, result);
-//}
-
-////==============================================================================
-//bool CollisionDetector::detect(
-//    CollisionGroup* group, const Option& option, Result& result)
-//{
-//  group->update();
-
-//  return detect(group, option, result);
-//}
-
-////==============================================================================
-//bool CollisionDetector::detect(
-//    CollisionGroup* group1, CollisionGroup* group2,
-//    const Option& option, Result& result)
-//{
-//  assert(group1->getCollisionDetector() == group2->getCollisionDetector());
-
-//  group1->updateEngineData();
-//  group2->updateEngineData();
-
-//  return detect(group1->getEngineData(), group2->getEngineData(),
-//                option, result);
-//}
-
-//==============================================================================
-struct is_collision_object_equal
-    : public std::unary_function<WeakCollisionObjectPtr, bool>
-{
-  explicit is_collision_object_equal(const CollisionObject* object)
-    : mObject(object) {}
-
-  bool operator() (const WeakCollisionObjectPtr& arg)
-  {
-    auto locked = arg.lock();
-    assert(locked);
-
-    return mObject == locked.get();
-  }
-
-  const CollisionObject* mObject;
-};
-
 //==============================================================================
 CollisionObject* CollisionDetector::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
@@ -212,20 +128,6 @@ void CollisionDetector::reclaimCollisionObject(const CollisionObject* collObj)
 
     mCollisionObjectMap.erase(search);
   }
-}
-
-//==============================================================================
-bool CollisionDetector::hasCollisionObject(const CollisionObject* collObj) const
-{
-  if (!collObj)
-    return false;
-
-  return true;
-//  return std::find_if(
-//      mCollisionObjectMap.begin(), mCollisionObjectMap.end(),
-//      [&](const CollisionObjectPair& pair)
-//      { return pair.second.first.get() == collObj; })
-//      != mCollisionObjectMap.end();
 }
 
 }  // namespace collision

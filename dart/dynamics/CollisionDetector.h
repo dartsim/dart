@@ -57,58 +57,6 @@ struct BodyNodeCollisionFilter : collision::CollisionFilter
                         const BodyNode* bodyNode2) const;
 };
 
-//class ShapeNodeCollisionObject : public collision::CollisionObject
-//{
-//public:
-
-//  friend class collision::CollisionDetector;
-
-//  // Documentation inherited
-//  const Eigen::Isometry3d getTransform() const override;
-
-//  // Documentation inherited
-//  bool isEqual(const CollisionObject* other) const override;
-
-//  /// Return ShapeNode pointer associated with this ShapeNodeCollisionObject
-//  dynamics::ShapeNode* getShapeNode();
-
-//  /// Return ShapeNode pointer associated with this ShapeNodeCollisionObject
-//  const dynamics::ShapeNode* getShapeNode() const;
-
-//  /// Return BodyNode pointer associated with this ShapeNodeCollisionObject
-//  dynamics::BodyNode* getBodyNode();
-
-//  /// Return BodyNode pointer associated with this ShapeNodeCollisionObject
-//  const dynamics::BodyNode* getBodyNode() const;
-
-//protected:
-
-//  ShapeNodeCollisionObject(
-//      const collision::CollisionDetectorPtr& collisionDetector,
-//      const ShapePtr& shape,
-//      const ShapeNodePtr& shapeNode);
-
-//  dynamics::ShapeNodePtr mShapeNode;
-
-//};
-
-//using ShapeNodeCollisionObjectPtr = std::shared_ptr<ShapeNodeCollisionObject>;
-
-///// Create a ShapeNodeCollisionObjectPtr given ShapeNode
-//ShapeNodeCollisionObjectPtr createShapeNodeCollisionObject(
-//    const collision::CollisionDetectorPtr& collisionDetector,
-//    const ShapeNodePtr& shapeNode);
-
-///// Create a ShapeNodeCollisionObjectPtr given Skeleton
-//std::vector<collision::CollisionObjectPtr> createShapeFrameCollisionObjects(
-//    const collision::CollisionDetectorPtr& collisionDetector,
-//    const dynamics::SkeletonPtr& skel);
-
-///// Create a CollisionGroup given Skeleton
-//collision::CollisionGroupPtr createShapeFrameCollisionGroup(
-//    const collision::CollisionDetectorPtr& collisionDetector,
-//    const dynamics::SkeletonPtr& skel);
-
 } // namespace dynamics
 } // namespace dart
 

@@ -38,11 +38,7 @@
 
 #include "dart/common/Console.h"
 #include "dart/collision/CollisionGroup.h"
-#if DART_USE_FCLMESHCOLLISIONDETECTOR
-  #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#else
-  #include "dart/collision/fcl/FCLCollisionDetector.h"
-#endif
+#include "dart/collision/fcl/FCLCollisionDetector.h"
 #include "dart/collision/dart/DARTCollisionDetector.h"
 #ifdef HAVE_BULLET_COLLISION
   #include "dart/collision/bullet/BulletCollisionDetector.h"
@@ -68,17 +64,23 @@ using namespace dynamics;
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver(double timeStep)
-#if DART_USE_FCLMESHCOLLISIONDETECTOR
-  : mCollisionDetector(collision::FCLMeshCollisionDetector::create()),
-#else
   : mCollisionDetector(collision::FCLCollisionDetector::create()),
-#endif
-  mCollisionGroup(mCollisionDetector->createCollisionGroup()),
-  mCollisionOption(collision::Option(true, 100, std::make_shared<BodyNodeCollisionFilter>())),
-  mTimeStep(timeStep),
-  mLCPSolver(new DantzigLCPSolver(mTimeStep))
+    mCollisionGroup(mCollisionDetector->createCollisionGroup()),
+    mCollisionOption(collision::Option(
+                     true, 100, std::make_shared<BodyNodeCollisionFilter>())),
+    mTimeStep(timeStep),
+    mLCPSolver(new DantzigLCPSolver(mTimeStep))
 {
   assert(timeStep > 0.0);
+
+  auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
+        mCollisionDetector);
+
+#if DART_USE_FCLMESHCOLLISIONDETECTOR
+  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+#else
+  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
+#endif
 }
 
 //==============================================================================
@@ -223,7 +225,7 @@ void ConstraintSolver::setCollisionDetector(
   assert(collisionDetector && "Invalid collision detector.");
 
   // Change the collision detector of the constraint solver to new one
-  mCollisionDetector = std::move(collisionDetector);
+  mCollisionDetector = collisionDetector;
 
   auto newCollisionGroup = mCollisionDetector->createCollisionGroup();
 

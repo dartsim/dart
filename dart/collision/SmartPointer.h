@@ -45,7 +45,6 @@ namespace collision {
 
 DART_COMMON_MAKE_SHARED_WEAK(CollisionDetector)
 DART_COMMON_MAKE_SHARED_WEAK(FCLCollisionDetector)
-DART_COMMON_MAKE_SHARED_WEAK(FCLMeshCollisionDetector)
 DART_COMMON_MAKE_SHARED_WEAK(DARTCollisionDetector)
 #ifdef HAVE_BULLET_COLLISION
   DART_COMMON_MAKE_SHARED_WEAK(BulletCollisionDetector)

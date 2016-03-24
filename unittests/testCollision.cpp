@@ -46,7 +46,6 @@
 #include "dart/math/math.h"
 #include "dart/collision/CollisionGroup.h"
 #include "dart/collision/fcl/FCLCollisionDetector.h"
-#include "dart/collision/fcl/FCLMeshCollisionDetector.h"
 #include "dart/collision/dart/DARTCollisionDetector.h"
 #ifdef HAVE_BULLET_COLLISION
   #include "dart/collision/bullet/BulletCollisionDetector.h"
@@ -531,36 +530,44 @@ void testSimpleFrames()
   simpleFrame3->setShape(shape3);
 
   auto group1 = cd->createCollisionGroup(simpleFrame1.get());
-//  auto group2 = cd->createCollisionGroup(simpleFrame2.get());
-//  auto group3 = cd->createCollisionGroup(simpleFrame3.get());
+  auto group2 = cd->createCollisionGroup(simpleFrame2.get());
+  auto group3 = cd->createCollisionGroup(simpleFrame3.get());
 
-//  auto groupAll = cd->createCollisionGroup();
-//  groupAll->unionGroup(group1);
-//  groupAll->unionGroup(group2);
-//  groupAll->unionGroup(group3);
+  auto groupAll = cd->createCollisionGroup();
+  groupAll->unionGroup(group1);
+  groupAll->unionGroup(group2);
+  groupAll->unionGroup(group3);
 
-//  collision::Option option;
-//  collision::Result result;
+  EXPECT_EQ(group1->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group2->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group3->getNumShapeFrames(), 1u);
+  EXPECT_EQ(groupAll->getNumShapeFrames(),
+            group1->getNumShapeFrames()
+            + group2->getNumShapeFrames()
+            + group3->getNumShapeFrames());
 
-//  EXPECT_FALSE(group1->detect(option, result));
-//  EXPECT_FALSE(group2->detect(option, result));
-//  EXPECT_FALSE(group3->detect(option, result));
+  collision::Option option;
+  collision::Result result;
 
-//  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-//  simpleFrame2->setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
-//  simpleFrame3->setTranslation(Eigen::Vector3d(2.2, 0.0, 0.0));
-//  EXPECT_FALSE(group1->detect(group2.get(), option, result));
-//  EXPECT_FALSE(group1->detect(group3.get(), option, result));
-//  EXPECT_FALSE(group2->detect(group3.get(), option, result));
-//  EXPECT_FALSE(groupAll->detect(option, result));
+  EXPECT_FALSE(group1->detect(option, result));
+  EXPECT_FALSE(group2->detect(option, result));
+  EXPECT_FALSE(group3->detect(option, result));
 
-//  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-//  simpleFrame2->setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
-//  simpleFrame3->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
-//  EXPECT_TRUE(group1->detect(group2.get(), option, result));
-//  EXPECT_TRUE(group1->detect(group2.get(), option, result));
-//  EXPECT_TRUE(group2->detect(group3.get(), option, result));
-//  EXPECT_TRUE(groupAll->detect(option, result));
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
+  simpleFrame3->setTranslation(Eigen::Vector3d(2.2, 0.0, 0.0));
+  EXPECT_FALSE(group1->detect(group2.get(), option, result));
+  EXPECT_FALSE(group1->detect(group3.get(), option, result));
+  EXPECT_FALSE(group2->detect(group3.get(), option, result));
+  EXPECT_FALSE(groupAll->detect(option, result));
+
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
+  simpleFrame3->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
+  EXPECT_TRUE(group1->detect(group2.get(), option, result));
+  EXPECT_TRUE(group1->detect(group2.get(), option, result));
+  EXPECT_TRUE(group2->detect(group3.get(), option, result));
+  EXPECT_TRUE(groupAll->detect(option, result));
 }
 
 //==============================================================================
@@ -568,8 +575,97 @@ TEST_F(COLLISION, SimpleFrames)
 {
   testSimpleFrames<collision::FCLCollisionDetector>();
 //  testSimpleFrames<collision::FCLMeshCollisionDetector>();
-//  testSimpleFrames<collision::DARTCollisionDetector>();
+  testSimpleFrames<collision::DARTCollisionDetector>();
 //  testSimpleFrames<collision::BulletCollisionDetector>();
+}
+
+//==============================================================================
+bool checkBoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max,
+                      const Eigen::Vector3d& point, double tol = 1e-12)
+{
+  for (auto i = 0u; i < 3u; ++i)
+  {
+    if (min[i] - tol > point[i] || point[i] > max[i] + tol)
+      return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
+void testBoxBox(const std::shared_ptr<CollisionDetector> cd, double tol = 1e-12)
+{
+  auto simpleFrame1 = std::make_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = std::make_shared<SimpleFrame>(Frame::World());
+
+  ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape2(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+
+  Eigen::Vector3d pos1 = Eigen::Vector3d(0.0, 0.0, -0.5);
+  Eigen::Vector3d pos2 = Eigen::Vector3d(0.0, 0.5, 0.25);
+  simpleFrame1->setTranslation(pos1);
+  simpleFrame2->setTranslation(pos2);
+
+  auto group1 = cd->createCollisionGroup(simpleFrame1.get());
+  auto group2 = cd->createCollisionGroup(simpleFrame2.get());
+  auto groupAll = cd->createCollisionGroup();
+  groupAll->unionGroup(group1);
+  groupAll->unionGroup(group2);
+
+  EXPECT_EQ(group1->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group2->getNumShapeFrames(), 1u);
+  EXPECT_EQ(groupAll->getNumShapeFrames(),
+            group1->getNumShapeFrames()
+            + group2->getNumShapeFrames());
+
+  collision::Option option;
+  collision::Result result;
+
+  EXPECT_TRUE(group1->detect(group2.get(), option, result));
+
+  Eigen::Vector3d min = Eigen::Vector3d(-0.25, 0.25, 0.0);
+  Eigen::Vector3d max = Eigen::Vector3d(0.25, 0.5, 0.0);
+
+  const auto numContacts = result.contacts.size();
+
+  EXPECT_TRUE(numContacts <= 4u);
+
+  for (auto i = 0u; i < numContacts; ++i)
+  {
+    const auto& contact = result.contacts[i];
+    const auto& point = contact.point;
+
+    std::cout << point.transpose() << std::endl;
+
+    EXPECT_TRUE(checkBoundingBox(min, max, point, tol));
+  }
+}
+
+//==============================================================================
+TEST_F(COLLISION, BoxBox)
+{
+  auto fcl_prim_fcl = FCLCollisionDetector::create();
+  fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  testBoxBox(fcl_prim_fcl);
+
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testBoxBox(fcl_mesh_dart);
+
+  auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+//  testBoxBox(fcl_mesh_fcl);
+
+  auto bullet = BulletCollisionDetector::create();
+//  testBoxBox(bullet);
+
+  auto dart = DARTCollisionDetector::create();
+  testBoxBox(dart);
 }
 
 //==============================================================================
@@ -597,44 +693,36 @@ void testBodyNodes()
   auto group1 = cd->createCollisionGroup(boxShapeNode1);
   auto group2 = cd->createCollisionGroup(boxShapeNode2);
 
-//  EXPECT_TRUE(group1->detect(group2.get(), option, result));
-//  EXPECT_TRUE(cd->detect(group1.get(), group2.get(), option, result));
-
-//  auto group3 = cd->createCollisionGroup(boxShapeNode2);
-
-//  EXPECT_EQ(group1->getCollisionObjects().size(), 1u);
-//  EXPECT_EQ(group2->getCollisionObjects().size(), 1u);
-
-//  group1->unionGroup(group2);
-//  EXPECT_EQ(group1->getCollisionObjects().size(), 1u);
+  EXPECT_TRUE(group1->detect(group2.get(), option, result));
+  EXPECT_TRUE(cd->detect(group1.get(), group2.get(), option, result));
 }
 
 //==============================================================================
 TEST_F(COLLISION, BodyNodeNodes)
 {
   testBodyNodes<collision::FCLCollisionDetector>();
-  testBodyNodes<collision::FCLMeshCollisionDetector>();
+//  testBodyNodes<collision::FCLMeshCollisionDetector>();
   testBodyNodes<collision::DARTCollisionDetector>();
-  testBodyNodes<collision::BulletCollisionDetector>();
+//  testBodyNodes<collision::BulletCollisionDetector>();
 }
 
 //==============================================================================
 template <class CollisionDetectorType>
 void testSkeletons()
 {
-//  auto engine = CollisionDetectorType::create();
+  auto cd = CollisionDetectorType::create();
 
-//  Eigen::Vector3d size(1.0, 1.0, 1.0);
-//  Eigen::Vector3d pos1(0.0, 0.0, 0.0);
-//  Eigen::Vector3d pos2(0.5, 0.0, 0.0);
+  Eigen::Vector3d size(1.0, 1.0, 1.0);
+  Eigen::Vector3d pos1(0.0, 0.0, 0.0);
+  Eigen::Vector3d pos2(0.5, 0.0, 0.0);
 
-//  auto boxSkel1 = createBox(size, pos1);
-//  auto boxSkel2 = createBox(size, pos2);
+  auto boxSkel1 = createBox(size, pos1);
+  auto boxSkel2 = createBox(size, pos2);
 
-//  collision::Option option;
-//  collision::Result result;
+  collision::Option option;
+  collision::Result result;
 
-//  auto hit = dynamics::detect(engine, boxSkel1, boxSkel2, option, result);
+//  auto hit = cd->detect(boxSkel1, boxSkel2, option, result);
 
 //  EXPECT_TRUE(hit);
 }
@@ -643,7 +731,7 @@ void testSkeletons()
 TEST_F(COLLISION, Skeletons)
 {
   testSkeletons<collision::FCLCollisionDetector>();
-  testSkeletons<collision::FCLMeshCollisionDetector>();
+//  testSkeletons<collision::FCLMeshCollisionDetector>();
   testSkeletons<collision::DARTCollisionDetector>();
   testSkeletons<collision::BulletCollisionDetector>();
 }
