@@ -576,7 +576,9 @@ TEST_F(COLLISION, SimpleFrames)
   testSimpleFrames<collision::FCLCollisionDetector>();
 //  testSimpleFrames<collision::FCLMeshCollisionDetector>();
   testSimpleFrames<collision::DARTCollisionDetector>();
+#ifdef HAVE_BULLET_COLLISION
 //  testSimpleFrames<collision::BulletCollisionDetector>();
+#endif
 }
 
 //==============================================================================
@@ -661,8 +663,10 @@ TEST_F(COLLISION, BoxBox)
   fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
 //  testBoxBox(fcl_mesh_fcl);
 
+#ifdef HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
 //  testBoxBox(bullet);
+#endif
 
   auto dart = DARTCollisionDetector::create();
   testBoxBox(dart);
@@ -703,7 +707,9 @@ TEST_F(COLLISION, BodyNodeNodes)
   testBodyNodes<collision::FCLCollisionDetector>();
 //  testBodyNodes<collision::FCLMeshCollisionDetector>();
   testBodyNodes<collision::DARTCollisionDetector>();
+#ifdef HAVE_BULLET_COLLISION
 //  testBodyNodes<collision::BulletCollisionDetector>();
+#endif
 }
 
 //==============================================================================
@@ -733,7 +739,9 @@ TEST_F(COLLISION, Skeletons)
   testSkeletons<collision::FCLCollisionDetector>();
 //  testSkeletons<collision::FCLMeshCollisionDetector>();
   testSkeletons<collision::DARTCollisionDetector>();
+#ifdef HAVE_BULLET_COLLISION
   testSkeletons<collision::BulletCollisionDetector>();
+#endif
 }
 
 //==============================================================================
