@@ -614,8 +614,13 @@ boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
         }
         else
         {
+#if FCL_VERSION_AT_LEAST(0,4,0)
           fclCollGeom.reset(
                 new fcl::Ellipsoid(FCLTypes::convertVector3(size * 0.5)));
+#else
+          fclCollGeom.reset(
+                createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]));
+#endif
         }
       }
       else
