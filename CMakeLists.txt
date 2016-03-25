@@ -245,7 +245,7 @@ if(NOT BUILD_CORE_ONLY)
   if(WIN32 AND NOT CYGWIN)
     set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
     set(GLUT_LIBRARIES glut32)
-  else()#define
+  else()
     find_package(GLUT QUIET)
     if(GLUT_FOUND)
       message(STATUS "Looking for GLUT - found")
