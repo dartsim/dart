@@ -178,7 +178,7 @@ std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
 }
 
 //==============================================================================
-void DARTCollisionDetector::notifyDestroyingCollisionObject(
+void DARTCollisionDetector::notifyCollisionObjectDestorying(
     CollisionObject* collObj)
 {
   if (!collObj)

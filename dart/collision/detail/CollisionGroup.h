@@ -34,17 +34,44 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DETAIL_COLLISIONDETECTOR_H_
-#define DART_COLLISION_DETAIL_COLLISIONDETECTOR_H_
+#ifndef DART_COLLISION_DETAIL_COLLISIONGROUP_H_
+#define DART_COLLISION_DETAIL_COLLISIONGROUP_H_
 
-#include "dart/collision/CollisionDetector.h"
+#include "dart/collision/CollisionGroup.h"
+#include "dart/common/Console.h"
 
 namespace dart {
 namespace collision {
 
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::registerShapeFramesFrom(const CollisionGroup* first,
+                                             const Others*... others)
+{
+  if (!first)
+    return;
 
+  for (const auto& shapeFrame : first->mShapeFrames)
+    registerShapeFrame(shapeFrame);
+
+  registerShapeFramesFrom(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::unregisterShapeFramesFrom(const CollisionGroup* first,
+                                               const Others*... others)
+{
+  if (!first)
+    return;
+
+  for (const auto& shapeFrame : first->mShapeFrames)
+      unregisterShapeFrame(shapeFrame);
+
+  registerShapeFramesFrom(others...);
+}
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_COLLISIONDETECTOR_H_
+#endif  // DART_COLLISION_DETAIL_COLLISIONGROUP_H_

@@ -38,11 +38,10 @@
 #define DART_COLLISION_COLLISIONGROUP_H_
 
 #include <vector>
-#include <map>
-
-#include "dart/collision/CollisionDetector.h"
-#include "dart/collision/CollisionGroup.h"
-#include "dart/collision/CollisionFilter.h"
+#include "dart/collision/SmartPointer.h"
+#include "dart/collision/Option.h"
+#include "dart/collision/Result.h"
+#include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
@@ -60,36 +59,54 @@ public:
   /// Return collision detection engine associated with this CollisionGroup
   CollisionDetector* getCollisionDetector() const;
 
-  /// Add a ShapeFrame to this CollisionGroup
-  void addShapeFrame(const dynamics::ShapeFrame* shapeFrame);
+  /// Register a ShapeFrame to this CollisionGroup
+  void registerShapeFrame(const dynamics::ShapeFrame* shapeFrame);
 
-  /// Add ShapeFrames to this CollisionGroup
-  void addShapeFrames(
+  /// Register ShapeFrames to this CollisionGroup
+  void registerShapeFrames(
       const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
 
-  void addShapeFrames(const dynamics::Skeleton* skeleton);
+  /// Register all the ShapeFrames with CollisionAddon to this CollisionGroup
+  void registerShapeFramesFrom(const dynamics::Skeleton* skeleton);
 
-  /// Remove collision object from this CollisionGroup
-  void removeShapeFrame(const dynamics::ShapeFrame* shapeFrame);
+  /// Register all the ShapeFrames in the other groups to this CollisionGroup
+  template <typename... Others>
+  void registerShapeFramesFrom(const CollisionGroup* first,
+                               const Others*... others);
 
-  /// Remove collision objects from this CollisionGroup
-  void removeShapeFrames(
+  /// Do nothing. This function is for terminating the variadic template
+  /// function template<typename...> registerShapeFramesFrom().
+  void registerShapeFramesFrom();
+
+  /// Unregister a ShapeFrame from this CollisionGroup
+  void unregisterShapeFrame(const dynamics::ShapeFrame* shapeFrame);
+
+  /// Unregister ShapeFrames from this CollisionGroup
+  void unregisterShapeFrames(
       const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
 
-  /// Remove all the collision object in this CollisionGroup
-  void removeAllShapeFrames();
+  /// Unregister all the ShapeFrames with CollisionAddon from this
+  /// CollisionGroup
+  void unregisterShapeFramesFrom(const dynamics::Skeleton* skeleton);
+
+  /// Unregister all the ShapeFrames in the other groups from this
+  /// CollisionGroup
+  template <typename... Others>
+  void unregisterShapeFramesFrom(const CollisionGroup* first,
+                                 const Others*... others);
+
+  /// Do nothing. This function is for terminating the variadic template
+  /// function template<typename...> unregisterShapeFramesFrom().
+  void unregisterShapeFramesFrom();
+
+  /// Unregister all the ShapeFrames in this CollisionGroup
+  void unregisterAllShapeFrames();
 
   /// Return true if this CollisionGroup contains shapeFrame
   bool hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const;
 
   /// Return number of ShapeFrames added to this CollisionGroup
   size_t getNumShapeFrames() const;
-
-  /// Merge other CollisionGroup into this CollisionGroup
-  void unionGroup(const CollisionGroupPtr& other);
-
-  /// Merge other CollisionGroup into this CollisionGroup
-  void subtractGroup(const CollisionGroupPtr& other);
 
   /// Update engine data. This function should be called before the collision
   /// detection is performed by the engine in most cases.
@@ -104,44 +121,53 @@ public:
   /// from this CollisionObject engine.
   bool detect(CollisionGroup* group, const Option& option, Result& result);
 
+  /// Return all the CollisionObjects in this CollisionGroup
   const std::vector<CollisionObject*>& getCollisionObjects();
 
 protected:
 
-  /// Initialize the collision group data of the collision detection engine such
-  /// as broadphase algorithm. This function will be called whenever ShapeFrame
-  /// is either added to or removed from this CollisionGroup.
+  /// Initialize the collision detection engine data such as broadphase
+  /// algorithm. This function will be called whenever ShapeFrame is either
+  /// added to or removed from this CollisionGroup.
   virtual void initializeEngineData() = 0;
 
-  virtual void addCollisionObjectToEngine(CollisionObject* object) = 0;
+  /// Notify that a CollisionObject is added so that the collision detection
+  /// engine do some relevant work
+  virtual void notifyCollisionObjectAdded(CollisionObject* object) = 0;
 
-  virtual void addCollisionObjectsToEngine(
+  /// Notify that CollisionObjects are added so that the collision detection
+  /// engine do some relevant work
+  virtual void notifyCollisionObjectsAdded(
       const std::vector<CollisionObject*>& collObjects) = 0;
 
-  virtual void removeCollisionObjectFromEngine(CollisionObject* object) = 0;
+  /// Notify that a CollisionObject is removed so that the collision detection
+  /// engine do some relevant work
+  virtual void notifyCollisionObjectRemoved(CollisionObject* object) = 0;
 
-  virtual void removeAllCollisionObjectsFromEngine() = 0;
+  /// Notify that all the CollisionObjects are remove so that the collision
+  /// detection engine do some relevant work
+  virtual void notifyAllCollisionObjectsRemoved() = 0;
 
-  /// Update the collision group of the collision detection engine such as
-  /// broadphase algorithm. This function will be called ahead of every
-  /// collision checking.
+  /// Update the collision detection engine data such as broadphase algorithm.
+  /// This function will be called ahead of every collision checking.
   virtual void updateEngineData() = 0;
-
-  using CollisionObjectPtr = std::shared_ptr<CollisionObject>;
-  using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
-  using ConstCollisionObjectPtrs = std::vector<ConstCollisionObjectPtr>;
 
 protected:
 
   /// Collision detector
   CollisionDetectorPtr mCollisionDetector;
 
+  /// ShapeFrames registered to this CollisionGroup
   std::vector<const dynamics::ShapeFrame*> mShapeFrames;
+
+  /// CollisionObjects associated with the registered ShapeFrames
   std::vector<CollisionObject*> mCollisionObjects;
 
 };
 
 }  // namespace collision
 }  // namespace dart
+
+#include "dart/collision/detail/CollisionGroup.h"
 
 #endif  // DART_COLLISION_COLLISIONGROUP_H_

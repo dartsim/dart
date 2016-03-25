@@ -39,7 +39,6 @@
 #include <cassert>
 
 #include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionGroup.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
@@ -68,7 +67,7 @@ CollisionDetector* CollisionGroup::getCollisionDetector() const
 }
 
 //==============================================================================
-void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
+void CollisionGroup::registerShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 {
   if (!shapeFrame)
     return;
@@ -78,22 +77,22 @@ void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 
   auto collObj = mCollisionDetector->claimCollisionObject(shapeFrame);
 
-  addCollisionObjectToEngine(collObj);
+  notifyCollisionObjectAdded(collObj);
 
   mShapeFrames.push_back(shapeFrame);
   mCollisionObjects.push_back(collObj);
 }
 
 //==============================================================================
-void CollisionGroup::addShapeFrames(
+void CollisionGroup::registerShapeFrames(
     const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
 {
   for (const auto& shapeFrame : shapeFrames)
-    addShapeFrame(shapeFrame);
+    registerShapeFrame(shapeFrame);
 }
 
 //==============================================================================
-void CollisionGroup::addShapeFrames(const dynamics::Skeleton* skel)
+void CollisionGroup::registerShapeFramesFrom(const dynamics::Skeleton* skel)
 {
   assert(skel);
 
@@ -105,12 +104,18 @@ void CollisionGroup::addShapeFrames(const dynamics::Skeleton* skel)
         = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
 
     for (auto& shapeNode : collisionShapeNodes)
-      addShapeFrame(shapeNode);
+      registerShapeFrame(shapeNode);
   }
 }
 
 //==============================================================================
-void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
+void CollisionGroup::registerShapeFramesFrom()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void CollisionGroup::unregisterShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 {
   if (!shapeFrame)
     return;
@@ -125,7 +130,7 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 
   const size_t index = search - mShapeFrames.begin();
 
-  removeCollisionObjectFromEngine(mCollisionObjects[index]);
+  notifyCollisionObjectRemoved(mCollisionObjects[index]);
 
   mCollisionDetector->reclaimCollisionObject(mCollisionObjects[index]);
 
@@ -134,17 +139,40 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 }
 
 //==============================================================================
-void CollisionGroup::removeShapeFrames(
+void CollisionGroup::unregisterShapeFrames(
     const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
 {
   for (const auto& shapeFrame : shapeFrames)
-    removeShapeFrame(shapeFrame);
+    unregisterShapeFrame(shapeFrame);
 }
 
 //==============================================================================
-void CollisionGroup::removeAllShapeFrames()
+void CollisionGroup::unregisterShapeFramesFrom(const dynamics::Skeleton* skel)
 {
-  removeAllCollisionObjectsFromEngine();
+  assert(skel);
+
+  auto numBodyNodes = skel->getNumBodyNodes();
+  for (auto i = 0u; i < numBodyNodes; ++i)
+  {
+    auto bodyNode = skel->getBodyNode(i);
+    auto collisionShapeNodes
+        = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+
+    for (auto& shapeNode : collisionShapeNodes)
+      unregisterShapeFrame(shapeNode);
+  }
+}
+
+//==============================================================================
+void CollisionGroup::unregisterShapeFramesFrom()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void CollisionGroup::unregisterAllShapeFrames()
+{
+  notifyAllCollisionObjectsRemoved();
 
   for (const auto& object : mCollisionObjects)
     mCollisionDetector->reclaimCollisionObject(object);
@@ -167,38 +195,6 @@ bool CollisionGroup::hasShapeFrame(
 size_t CollisionGroup::getNumShapeFrames() const
 {
   return mShapeFrames.size();
-}
-
-//==============================================================================
-void CollisionGroup::unionGroup(const CollisionGroupPtr& other)
-{
-  if (!other)
-    return;
-
-  if (mCollisionDetector != other->mCollisionDetector)
-  {
-    // TODO(JS): warning message
-    return;
-  }
-
-  for (const auto& shapeFrame : other->mShapeFrames)
-    addShapeFrame(shapeFrame);
-}
-
-//==============================================================================
-void CollisionGroup::subtractGroup(const CollisionGroupPtr& other)
-{
-  if (!other)
-    return;
-
-  if (mCollisionDetector != other->mCollisionDetector)
-  {
-    // TODO(JS): warning message
-    return;
-  }
-
-  for (const auto& shapeFrame : other->mShapeFrames)
-    removeShapeFrame(shapeFrame);
 }
 
 //==============================================================================

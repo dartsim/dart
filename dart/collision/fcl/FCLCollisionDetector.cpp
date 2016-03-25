@@ -49,6 +49,7 @@
 
 #include "dart/common/Console.h"
 #include "dart/collision/CollisionObject.h"
+#include "dart/collision/CollisionFilter.h"
 #include "dart/collision/fcl/FCLTypes.h"
 #include "dart/collision/fcl/FCLCollisionObject.h"
 #include "dart/collision/fcl/FCLCollisionGroup.h"
@@ -891,7 +892,7 @@ FCLCollisionObject* FCLCollisionDetector::findCollisionObject(
 }
 
 //==============================================================================
-void FCLCollisionDetector::notifyDestroyingCollisionObject(
+void FCLCollisionDetector::notifyCollisionObjectDestorying(
     CollisionObject* collObj)
 {
   if (!collObj)

@@ -107,7 +107,7 @@ public:
 protected:
 
   // Documentation inherited
-  void notifyDestroyingCollisionObject(CollisionObject* collObj) override;
+  void notifyCollisionObjectDestorying(CollisionObject* collObj) override;
 
   ///
   BulletCollsionPack claimBulletCollisionGeometry(

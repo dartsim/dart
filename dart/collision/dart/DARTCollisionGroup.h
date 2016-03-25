@@ -69,17 +69,17 @@ protected:
   void initializeEngineData() override;
 
   // Documentation inherited
-  void addCollisionObjectToEngine(CollisionObject* object) override;
+  void notifyCollisionObjectAdded(CollisionObject* object) override;
 
   // Documentation inherited
-  void addCollisionObjectsToEngine(
+  void notifyCollisionObjectsAdded(
       const std::vector<CollisionObject*>& collObjects) override;
 
   // Documentation inherited
-  void removeCollisionObjectFromEngine(CollisionObject* object) override;
+  void notifyCollisionObjectRemoved(CollisionObject* object) override;
 
   // Documentation inherited
-  void removeAllCollisionObjectsFromEngine() override;
+  void notifyAllCollisionObjectsRemoved() override;
 
   // Documentation inherited
   void updateEngineData() override;

@@ -37,7 +37,6 @@
 #include "dart/collision/CollisionObject.h"
 
 #include "dart/collision/CollisionDetector.h"
-#include "dart/collision/CollisionObject.h"
 #include "dart/dynamics/ShapeFrame.h"
 
 namespace dart {
@@ -61,23 +60,11 @@ const CollisionDetector* CollisionObject::getCollisionDetector() const
   return mCollisionDetector;
 }
 
-////==============================================================================
-//const dynamics::ShapeFrame* CollisionObject::getShapeFrame()
-//{
-//  return mShapeFrame;
-//}
-
 //==============================================================================
 const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
 {
   return mShapeFrame;
 }
-
-////==============================================================================
-//dynamics::ShapePtr CollisionObject::getShape()
-//{
-//  return mShapeFrame->getShape();
-//}
 
 //==============================================================================
 dynamics::ConstShapePtr CollisionObject::getShape() const
@@ -91,21 +78,6 @@ const Eigen::Isometry3d& CollisionObject::getTransform() const
   return mShapeFrame->getWorldTransform();
 }
 
-////==============================================================================
-//bool CollisionObject::detect(CollisionObject* other,
-//                             const Option& option,
-//                             Result& result)
-//{
-//  return mCollisionDetector->detect(this, other, option, result);
-//}
-
-////==============================================================================
-//bool CollisionObject::detect(CollisionGroup* group,
-//                             const Option& option, Result& result)
-//{
-//  return mCollisionDetector->detect(this, group, option, result);
-//}
-
 //==============================================================================
 CollisionObject::CollisionObject(
     CollisionDetector* collisionDetector,
@@ -116,79 +88,6 @@ CollisionObject::CollisionObject(
   assert(mCollisionDetector);
   assert(mShapeFrame);
 }
-
-//==============================================================================
-void CollisionObject::addGroup(CollisionGroup* group)
-{
-  if (!group)
-    return;
-
-  if (!hasGroup(group))
-    mGroups.push_back(group);
-}
-
-//==============================================================================
-void CollisionObject::removeGroup(CollisionGroup* group)
-{
-  mGroups.erase(std::remove(mGroups.begin(), mGroups.end(), group),
-                mGroups.end());
-}
-
-//==============================================================================
-bool CollisionObject::hasGroup(CollisionGroup* group)
-{
-  return std::find(mGroups.begin(), mGroups.end(), group) != mGroups.end();
-}
-
-////==============================================================================
-//std::shared_ptr<FreeCollisionObject> FreeCollisionObject::create(
-//    const CollisionDetectorPtr& collisionDetector,
-//    const dynamics::ShapePtr& shape, const Eigen::Isometry3d& tf)
-//{
-//  return collisionDetector->createCollisionObject<FreeCollisionObject>(
-//        shape, tf);
-//}
-
-////==============================================================================
-//void FreeCollisionObject::setTransform(const Eigen::Isometry3d& tf)
-//{
-//  mW = tf;
-//}
-
-////==============================================================================
-//void FreeCollisionObject::setRotation(const Eigen::Matrix3d& rotation)
-//{
-//  mW.linear() = rotation;
-//}
-
-////==============================================================================
-//void FreeCollisionObject::setTranslation(const Eigen::Vector3d& translation)
-//{
-//  mW.translation() = translation;
-//}
-
-////==============================================================================
-//const Eigen::Isometry3d FreeCollisionObject::getTransform() const
-//{
-//  return mW;
-//}
-
-////==============================================================================
-//bool FreeCollisionObject::isEqual(const CollisionObject* other) const
-//{
-//  return this == other;
-//}
-
-////==============================================================================
-//FreeCollisionObject::FreeCollisionObject(
-//    const CollisionDetectorPtr& collisionDetector,
-//    const dynamics::ShapePtr& shape,
-//    const Eigen::Isometry3d& tf)
-//  : CollisionObject(collisionDetector, shape),
-//    mW(tf)
-//{
-//  // Do nothing
-//}
 
 }  // namespace collision
 }  // namespace dart

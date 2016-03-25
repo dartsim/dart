@@ -40,6 +40,7 @@
 
 #include "dart/common/Console.h"
 #include "dart/collision/CollisionObject.h"
+#include "dart/collision/CollisionFilter.h"
 #include "dart/collision/bullet/BulletTypes.h"
 #include "dart/collision/bullet/BulletCollisionObject.h"
 #include "dart/collision/bullet/BulletCollisionGroup.h"
@@ -212,7 +213,7 @@ bool BulletCollisionDetector::detect(
 //==============================================================================
 bool BulletCollisionDetector::detect(
     CollisionGroup* group1, CollisionGroup* group2,
-    const Option& option, Result& result)
+    const Option& /*option*/, Result& result)
 {
   result.contacts.clear();
 
@@ -222,13 +223,13 @@ bool BulletCollisionDetector::detect(
   if (group1->getCollisionDetector()->getType()
       != BulletCollisionDetector::getTypeStatic())
   {
-      return false;
+    return false;
   }
 
   if (group2->getCollisionDetector()->getType()
       != BulletCollisionDetector::getTypeStatic())
   {
-      return false;
+    return false;
   }
 
   auto castedData1 = static_cast<BulletCollisionGroup*>(group1);
@@ -236,6 +237,9 @@ bool BulletCollisionDetector::detect(
 
   auto bulletCollisionWorld1 = castedData1->getBulletCollisionWorld();
   auto bulletCollisionWorld2 = castedData2->getBulletCollisionWorld();
+
+  mBulletCollisionGroupForSinglePair->unregisterAllShapeFrames();
+  mBulletCollisionGroupForSinglePair->registerShapeFramesFrom(group1, group2);
 
 //  BulletCollisionData collData(&option, &result);
 //  bulletCollisionWorld1->collide(bulletCollisionWorld2, &collData, checkPair);
@@ -271,7 +275,7 @@ BulletCollisionObject* BulletCollisionDetector::findCollisionObject(
 }
 
 //==============================================================================
-void BulletCollisionDetector::notifyDestroyingCollisionObject(
+void BulletCollisionDetector::notifyCollisionObjectDestorying(
     CollisionObject* collObj)
 {
   if (!collObj)

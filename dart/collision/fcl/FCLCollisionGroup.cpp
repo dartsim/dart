@@ -61,7 +61,7 @@ FCLCollisionGroup::FCLCollisionGroup(
   assert(mCollisionDetector);
   assert(shapeFrame);
 
-  addShapeFrame(shapeFrame);
+  registerShapeFrame(shapeFrame);
 }
 
 //==============================================================================
@@ -73,13 +73,13 @@ FCLCollisionGroup::FCLCollisionGroup(
 {
   assert(mCollisionDetector);
 
-  addShapeFrames(shapeFrames);
+  registerShapeFrames(shapeFrames);
 }
 
 //==============================================================================
 FCLCollisionGroup::~FCLCollisionGroup()
 {
-  removeAllShapeFrames();
+  unregisterAllShapeFrames();
 }
 
 //==============================================================================
@@ -89,7 +89,7 @@ void FCLCollisionGroup::initializeEngineData()
 }
 
 //==============================================================================
-void FCLCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
+void FCLCollisionGroup::notifyCollisionObjectAdded(CollisionObject* object)
 {
   auto casted = static_cast<FCLCollisionObject*>(object);
   mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
@@ -98,7 +98,7 @@ void FCLCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 }
 
 //==============================================================================
-void FCLCollisionGroup::addCollisionObjectsToEngine(
+void FCLCollisionGroup::notifyCollisionObjectsAdded(
     const std::vector<CollisionObject*>& collObjects)
 {
   for (auto collObj : collObjects)
@@ -112,7 +112,7 @@ void FCLCollisionGroup::addCollisionObjectsToEngine(
 }
 
 //==============================================================================
-void FCLCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
+void FCLCollisionGroup::notifyCollisionObjectRemoved(CollisionObject* object)
 {
   auto casted = static_cast<FCLCollisionObject*>(object);
 
@@ -122,7 +122,7 @@ void FCLCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 }
 
 //==============================================================================
-void FCLCollisionGroup::removeAllCollisionObjectsFromEngine()
+void FCLCollisionGroup::notifyAllCollisionObjectsRemoved()
 {
   mBroadPhaseAlg->clear();
 

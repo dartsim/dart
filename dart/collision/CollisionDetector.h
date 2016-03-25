@@ -92,8 +92,6 @@ public:
 
 protected:
 
-  using CollisionObjectPtrs = std::vector<CollisionObjectPtr>;
-
   /// Constructor
   CollisionDetector() = default;
 
@@ -107,7 +105,7 @@ protected:
       const dynamics::ShapeFrame* shapeFrame) = 0;
 
   ///
-  virtual void notifyDestroyingCollisionObject(CollisionObject* collObj) = 0;
+  virtual void notifyCollisionObjectDestorying(CollisionObject* collObj) = 0;
 
   /// Reclaim CollisionObject associated with shapeFrame. The CollisionObject
   /// will be destroyed if no CollisionGroup holds it.
@@ -128,7 +126,5 @@ protected:
 
 }  // namespace collision
 }  // namespace dart
-
-#include "dart/collision/detail/CollisionDetector.h"
 
 #endif  // DART_COLLISION_COLLISIONDETECTOR_H_

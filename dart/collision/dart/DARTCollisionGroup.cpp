@@ -58,7 +58,7 @@ DARTCollisionGroup::DARTCollisionGroup(
   assert(mCollisionDetector);
   assert(shapeFrame);
 
-  addShapeFrame(shapeFrame);
+  registerShapeFrame(shapeFrame);
 }
 
 //==============================================================================
@@ -69,13 +69,13 @@ DARTCollisionGroup::DARTCollisionGroup(
 {
   assert(mCollisionDetector);
 
-  addShapeFrames(shapeFrames);
+  registerShapeFrames(shapeFrames);
 }
 
 //==============================================================================
 DARTCollisionGroup::~DARTCollisionGroup()
 {
-  removeAllShapeFrames();
+  unregisterAllShapeFrames();
 }
 
 //==============================================================================
@@ -85,27 +85,27 @@ void DARTCollisionGroup::initializeEngineData()
 }
 
 //==============================================================================
-void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* /*object*/)
+void DARTCollisionGroup::notifyCollisionObjectAdded(CollisionObject* /*object*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionGroup::addCollisionObjectsToEngine(
+void DARTCollisionGroup::notifyCollisionObjectsAdded(
     const std::vector<CollisionObject*>& /*collObjects*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionGroup::removeCollisionObjectFromEngine(
+void DARTCollisionGroup::notifyCollisionObjectRemoved(
     CollisionObject* /*object*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionGroup::removeAllCollisionObjectsFromEngine()
+void DARTCollisionGroup::notifyAllCollisionObjectsRemoved()
 {
   // Do nothing
 }

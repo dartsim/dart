@@ -72,7 +72,7 @@ std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
         = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
 
     for (auto& shapeNode : collisionShapeNodes)
-      group->addShapeFrame(shapeNode);
+      group->registerShapeFrame(shapeNode);
   }
 
   return group;
@@ -124,7 +124,7 @@ void CollisionDetector::reclaimCollisionObject(const CollisionObject* collObj)
   if (0u == count)
   {
     auto& collisionObject = collObjAndCount.first;
-    notifyDestroyingCollisionObject(collisionObject.get());
+    notifyCollisionObjectDestorying(collisionObject.get());
 
     mCollisionObjectMap.erase(search);
   }

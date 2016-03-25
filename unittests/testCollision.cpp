@@ -534,9 +534,9 @@ void testSimpleFrames()
   auto group3 = cd->createCollisionGroup(simpleFrame3.get());
 
   auto groupAll = cd->createCollisionGroup();
-  groupAll->unionGroup(group1);
-  groupAll->unionGroup(group2);
-  groupAll->unionGroup(group3);
+  groupAll->registerShapeFramesFrom(group1.get());
+  groupAll->registerShapeFramesFrom(group2.get());
+  groupAll->registerShapeFramesFrom(group3.get());
 
   EXPECT_EQ(group1->getNumShapeFrames(), 1u);
   EXPECT_EQ(group2->getNumShapeFrames(), 1u);
@@ -613,8 +613,8 @@ void testBoxBox(const std::shared_ptr<CollisionDetector> cd, double tol = 1e-12)
   auto group1 = cd->createCollisionGroup(simpleFrame1.get());
   auto group2 = cd->createCollisionGroup(simpleFrame2.get());
   auto groupAll = cd->createCollisionGroup();
-  groupAll->unionGroup(group1);
-  groupAll->unionGroup(group2);
+  groupAll->registerShapeFramesFrom(group1.get());
+  groupAll->registerShapeFramesFrom(group2.get());
 
   EXPECT_EQ(group1->getNumShapeFrames(), 1u);
   EXPECT_EQ(group2->getNumShapeFrames(), 1u);
@@ -665,7 +665,7 @@ TEST_F(COLLISION, BoxBox)
 
 #ifdef HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
-//  testBoxBox(bullet);
+  testBoxBox(bullet);
 #endif
 
   auto dart = DARTCollisionDetector::create();

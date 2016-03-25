@@ -130,7 +130,7 @@ public:
 protected:
 
   // Documentation inherited
-  void notifyDestroyingCollisionObject(CollisionObject* collObj) override;
+  void notifyCollisionObjectDestorying(CollisionObject* collObj) override;
 
   ///
   boost::shared_ptr<fcl::CollisionGeometry> claimFCLCollisionGeometry(
