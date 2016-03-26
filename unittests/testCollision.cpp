@@ -512,11 +512,8 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 //}
 
 //==============================================================================
-template <class CollisionDetectorType>
-void testSimpleFrames()
+void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
 {
-  auto cd = CollisionDetectorType::create();
-
   auto simpleFrame1 = std::make_shared<SimpleFrame>(Frame::World());
   auto simpleFrame2 = std::make_shared<SimpleFrame>(Frame::World());
   auto simpleFrame3 = std::make_shared<SimpleFrame>(Frame::World());
@@ -567,12 +564,33 @@ void testSimpleFrames()
 //==============================================================================
 TEST_F(COLLISION, SimpleFrames)
 {
-  testSimpleFrames<collision::FCLCollisionDetector>();
-//  testSimpleFrames<collision::FCLMeshCollisionDetector>();
-  testSimpleFrames<collision::DARTCollisionDetector>();
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testSimpleFrames(fcl_mesh_dart);
+
+  // auto fcl_prim_fcl = FCLCollisionDetector::create();
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testSimpleFrames(fcl_prim_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testSimpleFrames(fcl_mesh_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testSimpleFrames(fcl_mesh_fcl);
+
 #ifdef HAVE_BULLET_COLLISION
-  testSimpleFrames<collision::BulletCollisionDetector>();
+  auto bullet = BulletCollisionDetector::create();
+  testSimpleFrames(bullet);
 #endif
+
+  auto dart = DARTCollisionDetector::create();
+  testSimpleFrames(dart);
 }
 
 //==============================================================================
@@ -589,7 +607,8 @@ bool checkBoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max,
 }
 
 //==============================================================================
-void testBoxBox(const std::shared_ptr<CollisionDetector> cd, double tol = 1e-12)
+void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
+                double tol = 1e-12)
 {
   auto simpleFrame1 = std::make_shared<SimpleFrame>(Frame::World());
   auto simpleFrame2 = std::make_shared<SimpleFrame>(Frame::World());
@@ -625,34 +644,46 @@ void testBoxBox(const std::shared_ptr<CollisionDetector> cd, double tol = 1e-12)
 
   const auto numContacts = result.contacts.size();
 
-  EXPECT_TRUE(numContacts <= 4u);
+  const auto checkNumContacts = (numContacts <= 4u);
+  EXPECT_TRUE(checkNumContacts);
+  if (!checkNumContacts)
+    std::cout << "# of contants: " << numContacts << "\n";
 
   for (auto i = 0u; i < numContacts; ++i)
   {
     const auto& contact = result.contacts[i];
     const auto& point = contact.point;
 
-    EXPECT_TRUE(checkBoundingBox(min, max, point, tol));
+    const auto result = checkBoundingBox(min, max, point, tol);
+    EXPECT_TRUE(result);
+
+    if (!result)
+      std::cout << "point: " << point.transpose() << "\n";
   }
 }
 
 //==============================================================================
 TEST_F(COLLISION, BoxBox)
 {
-  auto fcl_prim_fcl = FCLCollisionDetector::create();
-  fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
-  testBoxBox(fcl_prim_fcl);
-
   auto fcl_mesh_dart = FCLCollisionDetector::create();
   fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
   fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
   testBoxBox(fcl_mesh_dart);
 
-  auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
-//  testBoxBox(fcl_mesh_fcl);
+  // auto fcl_prim_fcl = FCLCollisionDetector::create();
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testBoxBox(fcl_prim_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testBoxBox(fcl_mesh_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testBoxBox(fcl_mesh_fcl);
 
 #ifdef HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
@@ -664,11 +695,8 @@ TEST_F(COLLISION, BoxBox)
 }
 
 //==============================================================================
-template <class CollisionDetectorType>
-void testBodyNodes()
+void testBodyNodes(const std::shared_ptr<CollisionDetector>& cd)
 {
-  auto cd = CollisionDetectorType::create();
-
   Eigen::Vector3d size(1.0, 1.0, 1.0);
   Eigen::Vector3d pos1(0.0, 0.0, 0.0);
   Eigen::Vector3d pos2(0.5, 0.0, 0.0);
@@ -695,20 +723,38 @@ void testBodyNodes()
 //==============================================================================
 TEST_F(COLLISION, BodyNodeNodes)
 {
-  testBodyNodes<collision::FCLCollisionDetector>();
-//  testBodyNodes<collision::FCLMeshCollisionDetector>();
-  testBodyNodes<collision::DARTCollisionDetector>();
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testBodyNodes(fcl_mesh_dart);
+
+  // auto fcl_prim_fcl = FCLCollisionDetector::create();
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testBodyNodes(fcl_prim_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testBodyNodes(fcl_mesh_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testBodyNodes(fcl_mesh_fcl);
+
 #ifdef HAVE_BULLET_COLLISION
-  testBodyNodes<collision::BulletCollisionDetector>();
+  auto bullet = BulletCollisionDetector::create();
+  testBodyNodes(bullet);
 #endif
+
+  auto dart = DARTCollisionDetector::create();
+  testBodyNodes(dart);
 }
 
 //==============================================================================
-template <class CollisionDetectorType>
-void testSkeletons()
+void testSkeletons(const std::shared_ptr<CollisionDetector>& cd)
 {
-  auto cd = CollisionDetectorType::create();
-
   Eigen::Vector3d size(1.0, 1.0, 1.0);
   Eigen::Vector3d pos1(0.0, 0.0, 0.0);
   Eigen::Vector3d pos2(0.5, 0.0, 0.0);
@@ -727,12 +773,33 @@ void testSkeletons()
 //==============================================================================
 TEST_F(COLLISION, Skeletons)
 {
-  testSkeletons<collision::FCLCollisionDetector>();
-//  testSkeletons<collision::FCLMeshCollisionDetector>();
-  testSkeletons<collision::DARTCollisionDetector>();
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testSkeletons(fcl_mesh_dart);
+
+  // auto fcl_prim_fcl = FCLCollisionDetector::create();
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testSkeletons(fcl_prim_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testSkeletons(fcl_mesh_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testSkeletons(fcl_mesh_fcl);
+
 #ifdef HAVE_BULLET_COLLISION
-  testSkeletons<collision::BulletCollisionDetector>();
+  auto bullet = BulletCollisionDetector::create();
+  testSkeletons(bullet);
 #endif
+
+  auto dart = DARTCollisionDetector::create();
+  testSkeletons(dart);
 }
 
 //==============================================================================

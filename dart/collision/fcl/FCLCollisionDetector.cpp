@@ -835,6 +835,16 @@ bool FCLCollisionDetector::detect(
 void FCLCollisionDetector::setPrimitiveShapeType(
     FCLCollisionDetector::PrimitiveShape_t type)
 {
+  if (type == PRIMITIVE)
+  {
+    dtwarn << "[FCLCollisionDetector::setPrimitiveShapeType] You chose to use "
+           << "FCL's primitive shape collision feature while it's not complete "
+           << "(at least until 0.4.0) especially in use of dynamics "
+           << "simulation. It's recommended to use mesh even for primitive "
+           << "shapes by settting "
+           << "FCLCollisionDetector::setPrimitiveShapeType(MESH).\n";
+  }
+
   mPrimitiveShapeType = type;
 }
 
@@ -849,6 +859,17 @@ FCLCollisionDetector::getPrimitiveShapeType() const
 void FCLCollisionDetector::setContactPointComputationMethod(
     FCLCollisionDetector::ContactPointComputationMethod_t method)
 {
+  if (method == FCL)
+  {
+    dtwarn << "[FCLCollisionDetector::setContactPointComputationMethod] You "
+           << "chose to use FCL's built in contact point computation while"
+           << "it's buggy (see https://github.com/flexible-collision-library/"
+           << "fcl/issues/106) at least until 0.4.0. It's recommended to use "
+           << "DART's implementation for the contact point computation by "
+           << "settting "
+           << "FCLCollisionDetector::setContactPointComputationMethod(DART).\n";
+  }
+
   mContactPointComputationMethod = method;
 }
 
