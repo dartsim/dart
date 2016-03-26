@@ -46,10 +46,8 @@ namespace collision {
 BulletCollisionGroup::BulletCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
   : CollisionGroup(collisionDetector),
-    mBulletProadphaseAlg(
-      new btDbvtBroadphase()),
-    mBulletCollisionConfiguration(
-      new btDefaultCollisionConfiguration()),
+    mBulletProadphaseAlg(new btDbvtBroadphase()),
+    mBulletCollisionConfiguration(new btDefaultCollisionConfiguration()),
     mBulletDispatcher(
       new btCollisionDispatcher(mBulletCollisionConfiguration.get())),
     mBulletCollisionWorld(
@@ -65,10 +63,8 @@ BulletCollisionGroup::BulletCollisionGroup(
     const CollisionDetectorPtr& collisionDetector,
     const dynamics::ShapeFrame* shapeFrame)
   : CollisionGroup(collisionDetector),
-    mBulletProadphaseAlg(
-      new btDbvtBroadphase()),
-    mBulletCollisionConfiguration(
-      new btDefaultCollisionConfiguration()),
+    mBulletProadphaseAlg(new btDbvtBroadphase()),
+    mBulletCollisionConfiguration(new btDefaultCollisionConfiguration()),
     mBulletDispatcher(
       new btCollisionDispatcher(mBulletCollisionConfiguration.get())),
     mBulletCollisionWorld(
@@ -124,7 +120,7 @@ void BulletCollisionGroup::notifyCollisionObjectAdded(CollisionObject* object)
 
   mBulletCollisionWorld->addCollisionObject(casted->getBulletCollisionObject());
 
-  this->initializeEngineData();
+  initializeEngineData();
 }
 
 //==============================================================================
@@ -139,7 +135,7 @@ void BulletCollisionGroup::notifyCollisionObjectsAdded(
           casted->getBulletCollisionObject());
   }
 
-  this->initializeEngineData();
+  initializeEngineData();
 }
 
 //==============================================================================
@@ -151,7 +147,7 @@ void BulletCollisionGroup::notifyCollisionObjectRemoved(
   mBulletCollisionWorld->removeCollisionObject(
         casted->getBulletCollisionObject());
 
-  this->initializeEngineData();
+  initializeEngineData();
 }
 
 //==============================================================================
@@ -160,7 +156,7 @@ void BulletCollisionGroup::notifyAllCollisionObjectsRemoved()
   for (const auto& collisionObject : getCollisionObjects())
     notifyCollisionObjectRemoved(collisionObject);
 
-  this->initializeEngineData();
+  initializeEngineData();
 }
 
 //==============================================================================

@@ -167,6 +167,12 @@ bool DARTCollisionDetector::detect(
 }
 
 //==============================================================================
+DARTCollisionDetector::DARTCollisionDetector()
+{
+  mCollisionObjectManager.reset(new RefCountingCollisionObjectManager(this));
+}
+
+//==============================================================================
 std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {

@@ -74,7 +74,7 @@ BulletCollisionObject::BulletCollisionObject(
   : CollisionObject(collisionDetector, shapeFrame),
     mBulletCollisionObjectUserData(new UserData(this, mCollisionDetector,
                                                 nullptr)),
-    mBulletCollisionObject(new btCollisionObject())
+    mBulletCollisionObject(common::make_unique<btCollisionObject>())
 {
   mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
   mBulletCollisionObject->setUserPointer(mBulletCollisionObjectUserData.get());

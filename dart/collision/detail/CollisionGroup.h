@@ -48,11 +48,11 @@ template <typename... Others>
 void CollisionGroup::registerShapeFramesFrom(const CollisionGroup* first,
                                              const Others*... others)
 {
-  if (!first)
-    return;
-
-  for (const auto& shapeFrame : first->mShapeFrames)
-    registerShapeFrame(shapeFrame);
+  if (first && this != first)
+  {
+    for (const auto& shapeFrame : first->mShapeFrames)
+      registerShapeFrame(shapeFrame);
+  }
 
   registerShapeFramesFrom(others...);
 }
@@ -62,13 +62,19 @@ template <typename... Others>
 void CollisionGroup::unregisterShapeFramesFrom(const CollisionGroup* first,
                                                const Others*... others)
 {
-  if (!first)
-    return;
+  if (first)
+  {
+    if (this == first)
+    {
+      unregisterAllShapeFrames();
+      return;
+    }
 
-  for (const auto& shapeFrame : first->mShapeFrames)
+    for (const auto& shapeFrame : first->mShapeFrames)
       unregisterShapeFrame(shapeFrame);
+  }
 
-  registerShapeFramesFrom(others...);
+  unregisterShapeFramesFrom(others...);
 }
 
 }  // namespace collision

@@ -93,7 +93,7 @@ protected:
   };
 
   /// Constructor
-  BulletCollisionDetector() = default;
+  BulletCollisionDetector();
 
   // Documentation inherited
   std::unique_ptr<CollisionObject> createCollisionObject(
@@ -132,9 +132,6 @@ protected:
 
   std::map<btCollisionObject*,
            BulletCollisionObject*> mBulletCollisionObjectMap;
-
-  std::shared_ptr<CollisionGroup> mBulletCollisionGroupForSinglePair;
-  // TODO(JS): should be unique_ptr
 
 };
 

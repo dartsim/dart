@@ -61,9 +61,6 @@ public:
   friend class CollisionObject;
   friend class CollisionGroup;
 
-  /// Destructor
-  virtual ~CollisionDetector();
-
   /// Return collision detection engine type in std::string
   virtual const std::string& getType() const = 0;
 
@@ -92,24 +89,102 @@ public:
 
 protected:
 
+  // We define following collision object managers outside of this class for
+  // better code readability.
+  class CollisionObjectManager;
+  class NaiveCollisionObjectManager;
+  class RefCountingCollisionObjectManager;
+
   /// Constructor
   CollisionDetector() = default;
 
-  /// Return CollisionObject associated with shapeFrame. New CollisionObject
+  /// Claim CollisionObject associated with shapeFrame. New CollisionObject
   /// will be created if it hasn't created yet for shapeFrame.
   CollisionObject* claimCollisionObject(const dynamics::ShapeFrame* shapeFrame);
   // TODO(JS): Maybe WeakShapeFramePtr
+
+  /// Reclaim CollisionObject associated with shapeFrame. The CollisionObject
+  /// will be destroyed if no CollisionGroup holds it.
+  void reclaimCollisionObject(const CollisionObject* shapeFrame);
 
   /// Create CollisionObject
   virtual std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) = 0;
 
-  ///
+  /// Notify that a CollisionObject will be destroyed so that the collision
+  /// detection engine do some relevant work.
   virtual void notifyCollisionObjectDestorying(CollisionObject* collObj) = 0;
+
+protected:
+
+  std::unique_ptr<CollisionObjectManager> mCollisionObjectManager;
+
+};
+
+class CollisionDetector::CollisionObjectManager
+{
+public:
+
+  /// Constructor
+  CollisionObjectManager(CollisionDetector* cd);
+
+  /// Return CollisionObject associated with shapeFrame. New CollisionObject
+  /// will be created if it hasn't created yet for shapeFrame.
+  virtual CollisionObject* claimCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) = 0;
+  // TODO(JS): Maybe WeakShapeFramePtr
 
   /// Reclaim CollisionObject associated with shapeFrame. The CollisionObject
   /// will be destroyed if no CollisionGroup holds it.
-  void reclaimCollisionObject(const CollisionObject* shapeFrame);
+  virtual void reclaimCollisionObject(const CollisionObject* shapeFrame) = 0;
+
+protected:
+
+  CollisionDetector* mCollisionDetector;
+
+};
+
+class CollisionDetector::NaiveCollisionObjectManager :
+    public CollisionDetector::CollisionObjectManager
+{
+public:
+
+  /// Constructor
+  NaiveCollisionObjectManager(CollisionDetector* cd);
+
+  /// Destructor
+  virtual ~NaiveCollisionObjectManager();
+
+  // Documentation inherited
+  CollisionObject* claimCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) override;
+
+  // Documentation inherited
+  void reclaimCollisionObject(const CollisionObject* shapeFrame) override;
+
+protected:
+
+  std::vector<std::unique_ptr<CollisionObject>> mCollisionObjects;
+
+};
+
+class CollisionDetector::RefCountingCollisionObjectManager :
+    public CollisionDetector::CollisionObjectManager
+{
+public:
+
+  /// Constructor
+  RefCountingCollisionObjectManager(CollisionDetector* cd);
+
+  /// Destructor
+  virtual ~RefCountingCollisionObjectManager();
+
+  // Documentation inherited
+  CollisionObject* claimCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) override;
+
+  // Documentation inherited
+  void reclaimCollisionObject(const CollisionObject* shapeFrame) override;
 
 protected:
 

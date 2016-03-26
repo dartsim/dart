@@ -94,7 +94,7 @@ void FCLCollisionGroup::notifyCollisionObjectAdded(CollisionObject* object)
   auto casted = static_cast<FCLCollisionObject*>(object);
   mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
 
-  this->initializeEngineData();
+  initializeEngineData();
 }
 
 //==============================================================================
@@ -108,7 +108,7 @@ void FCLCollisionGroup::notifyCollisionObjectsAdded(
     mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
   }
 
-  this->initializeEngineData();
+  initializeEngineData();
 }
 
 //==============================================================================
@@ -118,7 +118,7 @@ void FCLCollisionGroup::notifyCollisionObjectRemoved(CollisionObject* object)
 
   mBroadPhaseAlg->unregisterObject(casted->getFCLCollisionObject());
 
-  this->initializeEngineData();
+  initializeEngineData();
 }
 
 //==============================================================================
@@ -126,7 +126,7 @@ void FCLCollisionGroup::notifyAllCollisionObjectsRemoved()
 {
   mBroadPhaseAlg->clear();
 
-  this->initializeEngineData();
+  initializeEngineData();
 }
 
 //==============================================================================

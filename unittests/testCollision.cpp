@@ -534,9 +534,7 @@ void testSimpleFrames()
   auto group3 = cd->createCollisionGroup(simpleFrame3.get());
 
   auto groupAll = cd->createCollisionGroup();
-  groupAll->registerShapeFramesFrom(group1.get());
-  groupAll->registerShapeFramesFrom(group2.get());
-  groupAll->registerShapeFramesFrom(group3.get());
+  groupAll->registerShapeFramesFrom(group1.get(), group2.get(), group3.get());
 
   EXPECT_EQ(group1->getNumShapeFrames(), 1u);
   EXPECT_EQ(group2->getNumShapeFrames(), 1u);
@@ -549,16 +547,12 @@ void testSimpleFrames()
   collision::Option option;
   collision::Result result;
 
-  EXPECT_FALSE(group1->detect(option, result));
-  EXPECT_FALSE(group2->detect(option, result));
-  EXPECT_FALSE(group3->detect(option, result));
-
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
   simpleFrame3->setTranslation(Eigen::Vector3d(2.2, 0.0, 0.0));
-  EXPECT_FALSE(group1->detect(group2.get(), option, result));
-  EXPECT_FALSE(group1->detect(group3.get(), option, result));
-  EXPECT_FALSE(group2->detect(group3.get(), option, result));
+  EXPECT_FALSE(group1->detect(option, result));
+  EXPECT_FALSE(group2->detect(option, result));
+  EXPECT_FALSE(group3->detect(option, result));
   EXPECT_FALSE(groupAll->detect(option, result));
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
@@ -577,7 +571,7 @@ TEST_F(COLLISION, SimpleFrames)
 //  testSimpleFrames<collision::FCLMeshCollisionDetector>();
   testSimpleFrames<collision::DARTCollisionDetector>();
 #ifdef HAVE_BULLET_COLLISION
-//  testSimpleFrames<collision::BulletCollisionDetector>();
+  testSimpleFrames<collision::BulletCollisionDetector>();
 #endif
 }
 
@@ -613,8 +607,7 @@ void testBoxBox(const std::shared_ptr<CollisionDetector> cd, double tol = 1e-12)
   auto group1 = cd->createCollisionGroup(simpleFrame1.get());
   auto group2 = cd->createCollisionGroup(simpleFrame2.get());
   auto groupAll = cd->createCollisionGroup();
-  groupAll->registerShapeFramesFrom(group1.get());
-  groupAll->registerShapeFramesFrom(group2.get());
+  groupAll->registerShapeFramesFrom(group1.get(), group2.get());
 
   EXPECT_EQ(group1->getNumShapeFrames(), 1u);
   EXPECT_EQ(group2->getNumShapeFrames(), 1u);
@@ -638,8 +631,6 @@ void testBoxBox(const std::shared_ptr<CollisionDetector> cd, double tol = 1e-12)
   {
     const auto& contact = result.contacts[i];
     const auto& point = contact.point;
-
-    std::cout << point.transpose() << std::endl;
 
     EXPECT_TRUE(checkBoundingBox(min, max, point, tol));
   }
@@ -708,7 +699,7 @@ TEST_F(COLLISION, BodyNodeNodes)
 //  testBodyNodes<collision::FCLMeshCollisionDetector>();
   testBodyNodes<collision::DARTCollisionDetector>();
 #ifdef HAVE_BULLET_COLLISION
-//  testBodyNodes<collision::BulletCollisionDetector>();
+  testBodyNodes<collision::BulletCollisionDetector>();
 #endif
 }
 

@@ -213,7 +213,7 @@ bool BulletCollisionDetector::detect(
 //==============================================================================
 bool BulletCollisionDetector::detect(
     CollisionGroup* group1, CollisionGroup* group2,
-    const Option& /*option*/, Result& result)
+    const Option& option, Result& result)
 {
   result.contacts.clear();
 
@@ -232,20 +232,27 @@ bool BulletCollisionDetector::detect(
     return false;
   }
 
-  auto castedData1 = static_cast<BulletCollisionGroup*>(group1);
-  auto castedData2 = static_cast<BulletCollisionGroup*>(group2);
+  auto group = common::make_unique<BulletCollisionGroup>(shared_from_this());
+  group->registerShapeFramesFrom(group1, group2);
+  group->update();
 
-  auto bulletCollisionWorld1 = castedData1->getBulletCollisionWorld();
-  auto bulletCollisionWorld2 = castedData2->getBulletCollisionWorld();
+  auto bulletCollisionWorld = group->getBulletCollisionWorld();
+  auto bulletPairCache = bulletCollisionWorld->getPairCache();
+  auto filterCallback
+      = new BulletOverlapFilterCallback(option.collisionFilter.get());
 
-  mBulletCollisionGroupForSinglePair->unregisterAllShapeFrames();
-  mBulletCollisionGroupForSinglePair->registerShapeFramesFrom(group1, group2);
+  bulletPairCache->setOverlapFilterCallback(filterCallback);
+  bulletCollisionWorld->performDiscreteCollisionDetection();
 
-//  BulletCollisionData collData(&option, &result);
-//  bulletCollisionWorld1->collide(bulletCollisionWorld2, &collData, checkPair);
-  // TODO(JS)
+  convertContacts(bulletCollisionWorld, result);
 
   return !result.contacts.empty();
+}
+
+//==============================================================================
+BulletCollisionDetector::BulletCollisionDetector()
+{
+  mCollisionObjectManager.reset(new NaiveCollisionObjectManager(this));
 }
 
 //==============================================================================

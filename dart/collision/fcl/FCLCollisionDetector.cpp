@@ -864,12 +864,13 @@ FCLCollisionDetector::FCLCollisionDetector()
   : mPrimitiveShapeType(MESH),
     mContactPointComputationMethod(DART)
 {
-  // Do nothing
+  mCollisionObjectManager.reset(new RefCountingCollisionObjectManager(this));
 }
 
 //==============================================================================
 std::unique_ptr<CollisionObject>
-FCLCollisionDetector::createCollisionObject(const dynamics::ShapeFrame* shapeFrame)
+FCLCollisionDetector::createCollisionObject(
+    const dynamics::ShapeFrame* shapeFrame)
 {
   auto fclCollGeom = claimFCLCollisionGeometry(shapeFrame->getShape());
   auto collObj = new FCLCollisionObject(this, shapeFrame, fclCollGeom);

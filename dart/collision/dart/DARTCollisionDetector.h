@@ -79,7 +79,7 @@ public:
 protected:
 
   /// Constructor
-  DARTCollisionDetector() = default;
+  DARTCollisionDetector();
 
   // Documentation inherited
   std::unique_ptr<CollisionObject> createCollisionObject(
