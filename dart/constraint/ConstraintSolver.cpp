@@ -76,11 +76,10 @@ ConstraintSolver::ConstraintSolver(double timeStep)
   auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
         mCollisionDetector);
 
-#if DART_USE_FCLMESHCOLLISIONDETECTOR
   cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-#else
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
-#endif
+  // TODO(JS): Consider using FCL's primitive shapes once FCL addresses
+  // incorrect contact point computation.
+  // (see: https://github.com/flexible-collision-library/fcl/issues/106)
 }
 
 //==============================================================================
