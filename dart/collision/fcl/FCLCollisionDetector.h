@@ -121,14 +121,6 @@ protected:
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
 
-public:
-
-  FCLCollisionObject* findCollisionObject(
-      fcl::CollisionObject* fclCollObj) const;
-  // TODO(JS): fix const correctness
-
-protected:
-
   // Documentation inherited
   void notifyCollisionObjectDestorying(CollisionObject* collObj) override;
 

@@ -36,7 +36,7 @@
 
 #include "dart/collision/bullet/BulletCollisionDetector.h"
 
-#include <iostream>
+#include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
 
 #include "dart/common/Console.h"
 #include "dart/collision/CollisionObject.h"
@@ -45,11 +45,11 @@
 #include "dart/collision/bullet/BulletCollisionObject.h"
 #include "dart/collision/bullet/BulletCollisionGroup.h"
 #include "dart/dynamics/ShapeFrame.h"
+#include "dart/dynamics/Shape.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/Shape.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/SoftMeshShape.h"
 
@@ -90,36 +90,14 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
       auto userData1 = static_cast<BulletCollisionObject::UserData*>(
             bulletCollObj1->getUserPointer());
 
-      auto collisionDetector = userData0->collisionDetector;
-      assert(collisionDetector == userData1->collisionDetector);
-
-      auto castedCD = static_cast<BulletCollisionDetector*>(collisionDetector);
-
-      auto collObj0 = castedCD->findCollisionObject(bulletCollObj0);
-      auto collObj1 = castedCD->findCollisionObject(bulletCollObj1);
-
-      collide = mFilter->needCollision(collObj0, collObj1);
+      collide = mFilter->needCollision(userData0->collisionObject,
+                                       userData1->collisionObject);
     }
 
     return collide;
   }
 
   CollisionFilter* mFilter;
-};
-
-struct BulletContactResultCallback : btCollisionWorld::ContactResultCallback
-{
-  BulletContactResultCallback(Result& result);
-
-  btScalar addSingleResult(btManifoldPoint& cp,
-                           const btCollisionObjectWrapper* colObj0Wrap,
-                           int partId0,
-                           int index0,
-                           const btCollisionObjectWrapper* colObj1Wrap,
-                           int partId1,
-                           int index1) override;
-
-  Result& mResult;
 };
 
 Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
@@ -271,17 +249,6 @@ BulletCollisionDetector::createCollisionObject(
 }
 
 //==============================================================================
-BulletCollisionObject* BulletCollisionDetector::findCollisionObject(
-    btCollisionObject* bulletCollObj) const
-{
-  auto search = mBulletCollisionObjectMap.find(bulletCollObj);
-  if (mBulletCollisionObjectMap.end() != search)
-    return search->second;
-  else
-    return nullptr;
-}
-
-//==============================================================================
 void BulletCollisionDetector::notifyCollisionObjectDestorying(
     CollisionObject* collObj)
 {
@@ -335,6 +302,220 @@ void BulletCollisionDetector::reclaimBulletCollisionGeometry(
   {
     mShapeMap.erase(findResult);
   }
+}
+
+//==============================================================================
+BulletCollisionDetector::BulletCollsionPack
+BulletCollisionDetector::createEllipsoidMesh(
+    float sizeX, float sizeY, float sizeZ)
+{
+  float v[59][3] =
+  {
+    {0, 0, 0},
+    {0.135299, -0.461940, -0.135299},
+    {0.000000, -0.461940, -0.191342},
+    {-0.135299, -0.461940, -0.135299},
+    {-0.191342, -0.461940, 0.000000},
+    {-0.135299, -0.461940, 0.135299},
+    {0.000000, -0.461940, 0.191342},
+    {0.135299, -0.461940, 0.135299},
+    {0.191342, -0.461940, 0.000000},
+    {0.250000, -0.353553, -0.250000},
+    {0.000000, -0.353553, -0.353553},
+    {-0.250000, -0.353553, -0.250000},
+    {-0.353553, -0.353553, 0.000000},
+    {-0.250000, -0.353553, 0.250000},
+    {0.000000, -0.353553, 0.353553},
+    {0.250000, -0.353553, 0.250000},
+    {0.353553, -0.353553, 0.000000},
+    {0.326641, -0.191342, -0.326641},
+    {0.000000, -0.191342, -0.461940},
+    {-0.326641, -0.191342, -0.326641},
+    {-0.461940, -0.191342, 0.000000},
+    {-0.326641, -0.191342, 0.326641},
+    {0.000000, -0.191342, 0.461940},
+    {0.326641, -0.191342, 0.326641},
+    {0.461940, -0.191342, 0.000000},
+    {0.353553, 0.000000, -0.353553},
+    {0.000000, 0.000000, -0.500000},
+    {-0.353553, 0.000000, -0.353553},
+    {-0.500000, 0.000000, 0.000000},
+    {-0.353553, 0.000000, 0.353553},
+    {0.000000, 0.000000, 0.500000},
+    {0.353553, 0.000000, 0.353553},
+    {0.500000, 0.000000, 0.000000},
+    {0.326641, 0.191342, -0.326641},
+    {0.000000, 0.191342, -0.461940},
+    {-0.326641, 0.191342, -0.326641},
+    {-0.461940, 0.191342, 0.000000},
+    {-0.326641, 0.191342, 0.326641},
+    {0.000000, 0.191342, 0.461940},
+    {0.326641, 0.191342, 0.326641},
+    {0.461940, 0.191342, 0.000000},
+    {0.250000, 0.353553, -0.250000},
+    {0.000000, 0.353553, -0.353553},
+    {-0.250000, 0.353553, -0.250000},
+    {-0.353553, 0.353553, 0.000000},
+    {-0.250000, 0.353553, 0.250000},
+    {0.000000, 0.353553, 0.353553},
+    {0.250000, 0.353553, 0.250000},
+    {0.353553, 0.353553, 0.000000},
+    {0.135299, 0.461940, -0.135299},
+    {0.000000, 0.461940, -0.191342},
+    {-0.135299, 0.461940, -0.135299},
+    {-0.191342, 0.461940, 0.000000},
+    {-0.135299, 0.461940, 0.135299},
+    {0.000000, 0.461940, 0.191342},
+    {0.135299, 0.461940, 0.135299},
+    {0.191342, 0.461940, 0.000000},
+    {0.000000, -0.500000, 0.000000},
+    {0.000000, 0.500000, 0.000000}
+  };
+
+  int f[112][3] =
+  {
+    {1, 2, 9},
+    {9, 2, 10},
+    {2, 3, 10},
+    {10, 3, 11},
+    {3, 4, 11},
+    {11, 4, 12},
+    {4, 5, 12},
+    {12, 5, 13},
+    {5, 6, 13},
+    {13, 6, 14},
+    {6, 7, 14},
+    {14, 7, 15},
+    {7, 8, 15},
+    {15, 8, 16},
+    {8, 1, 16},
+    {16, 1, 9},
+    {9, 10, 17},
+    {17, 10, 18},
+    {10, 11, 18},
+    {18, 11, 19},
+    {11, 12, 19},
+    {19, 12, 20},
+    {12, 13, 20},
+    {20, 13, 21},
+    {13, 14, 21},
+    {21, 14, 22},
+    {14, 15, 22},
+    {22, 15, 23},
+    {15, 16, 23},
+    {23, 16, 24},
+    {16, 9, 24},
+    {24, 9, 17},
+    {17, 18, 25},
+    {25, 18, 26},
+    {18, 19, 26},
+    {26, 19, 27},
+    {19, 20, 27},
+    {27, 20, 28},
+    {20, 21, 28},
+    {28, 21, 29},
+    {21, 22, 29},
+    {29, 22, 30},
+    {22, 23, 30},
+    {30, 23, 31},
+    {23, 24, 31},
+    {31, 24, 32},
+    {24, 17, 32},
+    {32, 17, 25},
+    {25, 26, 33},
+    {33, 26, 34},
+    {26, 27, 34},
+    {34, 27, 35},
+    {27, 28, 35},
+    {35, 28, 36},
+    {28, 29, 36},
+    {36, 29, 37},
+    {29, 30, 37},
+    {37, 30, 38},
+    {30, 31, 38},
+    {38, 31, 39},
+    {31, 32, 39},
+    {39, 32, 40},
+    {32, 25, 40},
+    {40, 25, 33},
+    {33, 34, 41},
+    {41, 34, 42},
+    {34, 35, 42},
+    {42, 35, 43},
+    {35, 36, 43},
+    {43, 36, 44},
+    {36, 37, 44},
+    {44, 37, 45},
+    {37, 38, 45},
+    {45, 38, 46},
+    {38, 39, 46},
+    {46, 39, 47},
+    {39, 40, 47},
+    {47, 40, 48},
+    {40, 33, 48},
+    {48, 33, 41},
+    {41, 42, 49},
+    {49, 42, 50},
+    {42, 43, 50},
+    {50, 43, 51},
+    {43, 44, 51},
+    {51, 44, 52},
+    {44, 45, 52},
+    {52, 45, 53},
+    {45, 46, 53},
+    {53, 46, 54},
+    {46, 47, 54},
+    {54, 47, 55},
+    {47, 48, 55},
+    {55, 48, 56},
+    {48, 41, 56},
+    {56, 41, 49},
+    {2, 1, 57},
+    {3, 2, 57},
+    {4, 3, 57},
+    {5, 4, 57},
+    {6, 5, 57},
+    {7, 6, 57},
+    {8, 7, 57},
+    {1, 8, 57},
+    {49, 50, 58},
+    {50, 51, 58},
+    {51, 52, 58},
+    {52, 53, 58},
+    {53, 54, 58},
+    {54, 55, 58},
+    {55, 56, 58},
+    {56, 49, 58}
+  };
+
+  BulletCollsionPack pack;
+  pack.triMesh.reset(new btTriangleMesh());
+
+  for (auto i = 0u; i < 112; ++i)
+  {
+    btVector3 vertices[3];
+
+    const auto& index0 = f[i][0];
+    const auto& index1 = f[i][1];
+    const auto& index2 = f[i][2];
+
+    const auto& p0 = v[index0];
+    const auto& p1 = v[index1];
+    const auto& p2 = v[index2];
+
+    vertices[0] = btVector3(p0[0] * sizeX, p0[1] * sizeY, p0[2] * sizeZ);
+    vertices[1] = btVector3(p1[0] * sizeX, p1[1] * sizeY, p1[2] * sizeZ);
+    vertices[2] = btVector3(p2[0] * sizeX, p2[1] * sizeY, p2[2] * sizeZ);
+
+    pack.triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
+  }
+
+  auto gimpactMeshShape = new btGImpactMeshShape(pack.triMesh.get());
+  gimpactMeshShape->updateBound();
+
+  pack.collisionShape.reset(gimpactMeshShape);
+
+  return pack;
 }
 
 //==============================================================================
@@ -511,45 +692,6 @@ BulletCollisionDetector::createBulletCollisionShape(
 
 
 namespace {
-
-//==============================================================================
-BulletContactResultCallback::BulletContactResultCallback(Result& result)
-  : ContactResultCallback(),
-    mResult(result)
-{
-  // Do nothing
-}
-
-//==============================================================================
-//bool BulletContactResultCallback::needsCollision(
-//    btBroadphaseProxy* proxy0) const
-//{
-//  return true;
-//}
-
-//==============================================================================
-btScalar BulletContactResultCallback::addSingleResult(
-    btManifoldPoint& cp,
-    const btCollisionObjectWrapper* colObj0Wrap,
-    int /*partId0*/,
-    int /*index0*/,
-    const btCollisionObjectWrapper* colObj1Wrap,
-    int /*partId1*/,
-    int /*index1*/)
-{
-  auto userPointer0 = colObj0Wrap->getCollisionObject()->getUserPointer();
-  auto userPointer1 = colObj1Wrap->getCollisionObject()->getUserPointer();
-
-  auto userDataA
-      = static_cast<BulletCollisionObject::UserData*>(userPointer1);
-  auto userDataB
-      = static_cast<BulletCollisionObject::UserData*>(userPointer0);
-
-  mResult.contacts.push_back(convertContact(cp, userDataA, userDataB));
-
-  return 1.0f;
-}
-
 
 //==============================================================================
 Contact convertContact(const btManifoldPoint& bulletManifoldPoint,

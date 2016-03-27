@@ -38,7 +38,6 @@
 #define DART_COLLISION_FCL_MESH_COLLISIONSHAPES_H_
 
 #include <cmath>
-#include <iostream>
 
 #include <assimp/scene.h>
 

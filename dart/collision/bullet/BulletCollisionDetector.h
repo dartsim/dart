@@ -99,13 +99,6 @@ protected:
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
 
-public:
-
-  BulletCollisionObject* findCollisionObject(
-      btCollisionObject* bulletCollObj) const;
-
-protected:
-
   // Documentation inherited
   void notifyCollisionObjectDestorying(CollisionObject* collObj) override;
 
@@ -115,6 +108,8 @@ protected:
 
   // Documentation inherited
   void reclaimBulletCollisionGeometry(const dynamics::ConstShapePtr& shape);
+
+  BulletCollsionPack createEllipsoidMesh(float sizeX, float sizeY, float sizeZ);
 
   BulletCollsionPack createMesh(
       const Eigen::Vector3d& scale, const aiScene* mesh);

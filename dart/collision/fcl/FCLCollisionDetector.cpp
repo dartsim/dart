@@ -60,7 +60,6 @@
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/Shape.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/SoftMeshShape.h"
 
@@ -112,9 +111,6 @@ Contact convertContact(const fcl::Contact& fclContact,
 /// collision algorithm.
 struct FCLCollisionCallbackData
 {
-  /// Collision detector
-  FCLCollisionDetector* mFclCollisionDetector;
-
   /// FCL collision request
   fcl::CollisionRequest mFclRequest;
 
@@ -137,15 +133,13 @@ struct FCLCollisionCallbackData
 
   /// Constructor
   FCLCollisionCallbackData(
-      FCLCollisionDetector* collisionDetector,
       const Option* option = nullptr,
       Result* result = nullptr,
       FCLCollisionDetector::PrimitiveShape_t type
           = FCLCollisionDetector::MESH,
       FCLCollisionDetector::ContactPointComputationMethod_t method
           = FCLCollisionDetector::DART)
-    : mFclCollisionDetector(collisionDetector),
-      mOption(option),
+    : mOption(option),
       mResult(result),
       mPrimitiveShapeType(type),
       mContactPointComputationMethod(method),
@@ -785,7 +779,7 @@ bool FCLCollisionDetector::detect(
   auto broadPhaseAlg = castedData->getFCLCollisionManager();
 
   FCLCollisionCallbackData collData(
-        this, &option, &result, mPrimitiveShapeType,
+        &option, &result, mPrimitiveShapeType,
         mContactPointComputationMethod);
   broadPhaseAlg->collide(&collData, collisionCallback);
 
@@ -824,7 +818,7 @@ bool FCLCollisionDetector::detect(
   auto broadPhaseAlg2 = casted2->getFCLCollisionManager();
 
   FCLCollisionCallbackData collData(
-        this, &option, &result, mPrimitiveShapeType,
+        &option, &result, mPrimitiveShapeType,
         mContactPointComputationMethod);
   broadPhaseAlg1->collide(broadPhaseAlg2, &collData, collisionCallback);
 
@@ -900,17 +894,6 @@ FCLCollisionDetector::createCollisionObject(
   mFCLCollisionObjectMap[fclCollObj] = collObj;
 
   return std::unique_ptr<CollisionObject>(collObj);
-}
-
-//==============================================================================
-FCLCollisionObject* FCLCollisionDetector::findCollisionObject(
-    fcl::CollisionObject* fclCollObj) const
-{
-  auto search = mFCLCollisionObjectMap.find(fclCollObj);
-  if (mFCLCollisionObjectMap.end() != search)
-    return search->second;
-  else
-    return nullptr;
 }
 
 //==============================================================================
@@ -992,14 +975,19 @@ bool collisionCallback(
   // Filtering
   if (filter)
   {
-    auto collisionDetector = collData->mFclCollisionDetector;
+    auto userData1
+        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
+    auto userData2
+        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
+    assert(userData1);
+    assert(userData2);
 
-    auto collObj1 = collisionDetector->findCollisionObject(o1);
-    auto collObj2 = collisionDetector->findCollisionObject(o2);
-    assert(collObj1);
-    assert(collObj2);
+    auto collisionObject1 = userData1->mCollisionObject;
+    auto collisionObject2 = userData2->mCollisionObject;
+    assert(collisionObject1);
+    assert(collisionObject2);
 
-    if (!filter->needCollision(collObj1, collObj2))
+    if (!filter->needCollision(collisionObject2, collisionObject1))
       return collData->done;
   }
 

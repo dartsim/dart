@@ -36,11 +36,12 @@
 
 #include "dart/collision/dart/DARTCollisionDetector.h"
 
-#include <iostream>
 #include "dart/collision/CollisionObject.h"
+#include "dart/collision/CollisionFilter.h"
 #include "dart/collision/dart/DARTCollide.h"
 #include "dart/collision/dart/DARTCollisionObject.h"
 #include "dart/collision/dart/DARTCollisionGroup.h"
+#include "dart/dynamics/ShapeFrame.h"
 
 namespace dart {
 namespace collision {
@@ -102,7 +103,7 @@ std::shared_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup(
 //==============================================================================
 bool DARTCollisionDetector::detect(
     CollisionGroup* group,
-    const Option& /*option*/, Result& result)
+    const Option& option, Result& result)
 {
   result.contacts.clear();
 
@@ -115,6 +116,8 @@ bool DARTCollisionDetector::detect(
   if (objects.empty())
     return false;
 
+  const auto& filter = option.collisionFilter;
+
   for (auto i = 0u; i < objects.size() - 1; ++i)
   {
     auto collObj1 = objects[i];
@@ -122,6 +125,9 @@ bool DARTCollisionDetector::detect(
     for (auto j = i + 1u; j < objects.size(); ++j)
     {
       auto collObj2 = objects[j];
+
+      if (filter && !filter->needCollision(collObj1, collObj2))
+        continue;
 
       checkPair(collObj1, collObj2, result);
     }
@@ -134,7 +140,7 @@ bool DARTCollisionDetector::detect(
 bool DARTCollisionDetector::detect(
     CollisionGroup* group1,
     CollisionGroup* group2,
-    const Option& /*option*/, Result& result)
+    const Option& option, Result& result)
 {
   result.contacts.clear();
 
@@ -151,6 +157,8 @@ bool DARTCollisionDetector::detect(
   if (objects1.empty() || objects2.empty())
     return false;
 
+  const auto& filter = option.collisionFilter;
+
   for (auto i = 0u; i < objects1.size(); ++i)
   {
     auto collObj1 = objects1[i];
@@ -158,6 +166,9 @@ bool DARTCollisionDetector::detect(
     for (auto j = 0u; j < objects2.size(); ++j)
     {
       auto collObj2 = objects2[j];
+
+      if (filter && !filter->needCollision(collObj1, collObj2))
+        continue;
 
       checkPair(collObj1, collObj2, result);
     }
@@ -173,10 +184,26 @@ DARTCollisionDetector::DARTCollisionDetector()
 }
 
 //==============================================================================
+void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
+{
+  if (!shapeFrame)
+    return;
+
+  dterr << "[DARTCollisionDetector] Attempting to create shape type '"
+        << shapeFrame->getShape()->getShapeType() << "' that is not supported "
+        << "by DARTCollisionDetector. Currently, only BoxShape and "
+        << "EllipsoidShape (only when all the radii are equal) are "
+        << "supported. This shape will always get penetrated by other "
+        << "objects.\n";
+}
+
+//==============================================================================
 std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
   auto collObj = new DARTCollisionObject(this, shapeFrame);
+
+  warnUnsupportedShapeType(shapeFrame);
 
   mDARTCollisionObjects.push_back(collObj);
 
@@ -203,8 +230,6 @@ namespace {
 //==============================================================================
 bool checkPair(CollisionObject* o1, CollisionObject* o2, Result& result)
 {
-  // TODO(JS): filtering
-
   Result pairResult;
 
   // Perform narrow-phase detection

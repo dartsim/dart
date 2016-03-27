@@ -37,12 +37,7 @@
 #ifndef DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_H_
 #define DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_H_
 
-#include <cstddef>
-#include <Eigen/Dense>
-#include <assimp/mesh.h>
-#include <assimp/scene.h>
 #include <btBulletCollisionCommon.h>
-#include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
 #include "dart/collision/CollisionObject.h"
 
 namespace dart {
@@ -58,18 +53,16 @@ public:
   {
     CollisionObject* collisionObject;
 
-    CollisionDetector* collisionDetector;
-    CollisionGroup* group;
-
-    UserData(CollisionObject* collisionObject,
-             CollisionDetector* collisionDetector,
-             CollisionGroup* collisionGroup);
+    UserData(CollisionObject* collisionObject);
   };
 
   friend class BulletCollisionDetector;
 
-  /// Return FCL collision object
-  btCollisionObject* getBulletCollisionObject() const;
+  /// Return Bullet collision object
+  btCollisionObject* getBulletCollisionObject();
+
+  /// Return Bullet collision object
+  const btCollisionObject* getBulletCollisionObject() const;
 
 protected:
 

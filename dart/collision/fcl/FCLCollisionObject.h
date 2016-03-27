@@ -37,11 +37,7 @@
 #ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_H_
 #define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_H_
 
-#include <cstddef>
-#include <Eigen/Dense>
-
 #include <fcl/collision_object.h>
-
 #include "dart/collision/CollisionObject.h"
 
 namespace dart {

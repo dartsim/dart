@@ -36,32 +36,27 @@
 
 #include "dart/collision/bullet/BulletCollisionObject.h"
 
-#include "dart/common/Console.h"
 #include "dart/collision/bullet/BulletTypes.h"
-#include "dart/collision/CollisionDetector.h"
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/bullet/BulletTypes.h"
-#include "dart/dynamics/Shape.h"
 #include "dart/dynamics/ShapeFrame.h"
-#include "dart/dynamics/SoftMeshShape.h"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-BulletCollisionObject::UserData::UserData(
-    CollisionObject* collisionObject,
-    CollisionDetector* collisionDetector,
-    CollisionGroup* collisionGroup)
-  : collisionObject(collisionObject),
-    collisionDetector(collisionDetector),
-    group(collisionGroup)
+BulletCollisionObject::UserData::UserData(CollisionObject* collisionObject)
+  : collisionObject(collisionObject)
 {
   // Do nothing
 }
 
 //==============================================================================
-btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
+btCollisionObject* BulletCollisionObject::getBulletCollisionObject()
+{
+  return mBulletCollisionObject.get();
+}
+
+//==============================================================================
+const btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
 {
   return mBulletCollisionObject.get();
 }
@@ -72,9 +67,8 @@ BulletCollisionObject::BulletCollisionObject(
     const dynamics::ShapeFrame* shapeFrame,
     btCollisionShape* bulletCollisionShape)
   : CollisionObject(collisionDetector, shapeFrame),
-    mBulletCollisionObjectUserData(new UserData(this, mCollisionDetector,
-                                                nullptr)),
-    mBulletCollisionObject(common::make_unique<btCollisionObject>())
+    mBulletCollisionObjectUserData(new UserData(this)),
+    mBulletCollisionObject(new btCollisionObject())
 {
   mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
   mBulletCollisionObject->setUserPointer(mBulletCollisionObjectUserData.get());

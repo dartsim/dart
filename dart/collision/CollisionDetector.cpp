@@ -38,8 +38,6 @@
 #include "dart/collision/CollisionDetector.h"
 
 #include <algorithm>
-#include <iostream>
-#include <vector>
 
 #include "dart/common/Console.h"
 #include "dart/collision/CollisionObject.h"

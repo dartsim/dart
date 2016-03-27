@@ -51,7 +51,7 @@ public:
 
   static std::shared_ptr<DARTCollisionDetector> create();
 
-  /// Return engine type "FCLMesh"
+  /// Return engine type "DART"
   static const std::string& getTypeStatic();
 
   // Documentation inherited

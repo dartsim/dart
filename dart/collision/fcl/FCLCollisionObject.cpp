@@ -38,8 +38,6 @@
 
 #include <fcl/BVH/BVH_model.h>
 
-#include "dart/collision/CollisionDetector.h"
-#include "dart/collision/CollisionObject.h"
 #include "dart/collision/fcl/FCLTypes.h"
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/dynamics/ShapeFrame.h"
