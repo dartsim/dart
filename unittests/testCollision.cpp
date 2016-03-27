@@ -695,6 +695,87 @@ TEST_F(COLLISION, BoxBox)
 }
 
 //==============================================================================
+void testOptions(const std::shared_ptr<CollisionDetector>& cd)
+{
+  auto simpleFrame1 = std::make_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = std::make_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame3 = std::make_shared<SimpleFrame>(Frame::World());
+
+  ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape2(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  ShapePtr shape3(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+  simpleFrame3->setShape(shape3);
+
+  Eigen::Vector3d pos1 = Eigen::Vector3d(0.0, 0.0, -0.5);
+  Eigen::Vector3d pos2 = Eigen::Vector3d(0.0, 0.5, 0.25);
+  Eigen::Vector3d pos3 = Eigen::Vector3d(0.0, -0.5, 0.25);
+  simpleFrame1->setTranslation(pos1);
+  simpleFrame2->setTranslation(pos2);
+  simpleFrame3->setTranslation(pos3);
+
+  auto group = cd->createCollisionGroup();
+  group->registerShapeFrame(simpleFrame1.get());
+  group->registerShapeFrame(simpleFrame2.get());
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::Option option;
+  collision::Result result;
+
+  result.contacts.clear();
+  option.maxNumContacts = 1000u;
+  option.binaryCheck = false;
+  EXPECT_TRUE(group->detect(option, result));
+  EXPECT_EQ(result.contacts.size(), 4u);
+
+  result.contacts.clear();
+  option.maxNumContacts = 2u;
+  option.binaryCheck = false;
+  EXPECT_TRUE(group->detect(option, result));
+  EXPECT_EQ(result.contacts.size(), 2u);
+
+  group->registerShapeFrame(simpleFrame3.get());
+  result.contacts.clear();
+  option.maxNumContacts = 1e+3;
+  option.binaryCheck = true;
+  EXPECT_TRUE(group->detect(option, result));
+  EXPECT_EQ(result.contacts.size(), 1u);
+}
+
+//==============================================================================
+TEST_F(COLLISION, Options)
+{
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testOptions(fcl_mesh_dart);
+
+  // auto fcl_prim_fcl = FCLCollisionDetector::create();
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testOptions(fcl_prim_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testOptions(fcl_mesh_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testOptions(fcl_mesh_fcl);
+
+#ifdef HAVE_BULLET_COLLISION
+  auto bullet = BulletCollisionDetector::create();
+  testOptions(bullet);
+#endif
+
+  auto dart = DARTCollisionDetector::create();
+  testOptions(dart);
+}
+
+//==============================================================================
 void testBodyNodes(const std::shared_ptr<CollisionDetector>& cd)
 {
   Eigen::Vector3d size(1.0, 1.0, 1.0);
@@ -753,17 +834,17 @@ TEST_F(COLLISION, BodyNodeNodes)
 }
 
 //==============================================================================
-void testSkeletons(const std::shared_ptr<CollisionDetector>& cd)
+void testSkeletons(const std::shared_ptr<CollisionDetector>& /*cd*/)
 {
-  Eigen::Vector3d size(1.0, 1.0, 1.0);
-  Eigen::Vector3d pos1(0.0, 0.0, 0.0);
-  Eigen::Vector3d pos2(0.5, 0.0, 0.0);
+//  Eigen::Vector3d size(1.0, 1.0, 1.0);
+//  Eigen::Vector3d pos1(0.0, 0.0, 0.0);
+//  Eigen::Vector3d pos2(0.5, 0.0, 0.0);
 
-  auto boxSkel1 = createBox(size, pos1);
-  auto boxSkel2 = createBox(size, pos2);
+//  auto boxSkel1 = createBox(size, pos1);
+//  auto boxSkel2 = createBox(size, pos2);
 
-  collision::Option option;
-  collision::Result result;
+//  collision::Option option;
+//  collision::Result result;
 
 //  auto hit = cd->detect(boxSkel1, boxSkel2, option, result);
 
@@ -793,13 +874,13 @@ TEST_F(COLLISION, Skeletons)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSkeletons(fcl_mesh_fcl);
 
-#ifdef HAVE_BULLET_COLLISION
-  auto bullet = BulletCollisionDetector::create();
-  testSkeletons(bullet);
-#endif
+//#ifdef HAVE_BULLET_COLLISION
+//  auto bullet = BulletCollisionDetector::create();
+//  testSkeletons(bullet);
+//#endif
 
-  auto dart = DARTCollisionDetector::create();
-  testSkeletons(dart);
+//  auto dart = DARTCollisionDetector::create();
+//  testSkeletons(dart);
 }
 
 //==============================================================================

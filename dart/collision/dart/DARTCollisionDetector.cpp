@@ -42,6 +42,7 @@
 #include "dart/collision/dart/DARTCollisionObject.h"
 #include "dart/collision/dart/DARTCollisionGroup.h"
 #include "dart/dynamics/ShapeFrame.h"
+#include "dart/dynamics/EllipsoidShape.h"
 
 namespace dart {
 namespace collision {
@@ -49,12 +50,12 @@ namespace collision {
 namespace {
 
 bool checkPair(CollisionObject* o1, CollisionObject* o2,
-                       Result& result);
+               const Option& option, Result& result);
 
 bool isClose(const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2,
              double tol);
 
-void postProcess(CollisionObject* o1, CollisionObject* o2,
+void postProcess(CollisionObject* o1, CollisionObject* o2, const Option& option,
                  Result& totalResult, const Result& pairResult);
 
 } // anonymous namespace
@@ -116,6 +117,7 @@ bool DARTCollisionDetector::detect(
   if (objects.empty())
     return false;
 
+  auto done = false;
   const auto& filter = option.collisionFilter;
 
   for (auto i = 0u; i < objects.size() - 1; ++i)
@@ -129,8 +131,18 @@ bool DARTCollisionDetector::detect(
       if (filter && !filter->needCollision(collObj1, collObj2))
         continue;
 
-      checkPair(collObj1, collObj2, result);
+      checkPair(collObj1, collObj2, option, result);
+
+      if ((option.binaryCheck && !result.contacts.empty())
+          || (result.contacts.size() >= option.maxNumContacts))
+      {
+        done = true;
+        break;
+      }
     }
+
+    if (done)
+      break;
   }
 
   return !result.contacts.empty();
@@ -157,6 +169,7 @@ bool DARTCollisionDetector::detect(
   if (objects1.empty() || objects2.empty())
     return false;
 
+  auto done = false;
   const auto& filter = option.collisionFilter;
 
   for (auto i = 0u; i < objects1.size(); ++i)
@@ -170,8 +183,17 @@ bool DARTCollisionDetector::detect(
       if (filter && !filter->needCollision(collObj1, collObj2))
         continue;
 
-      checkPair(collObj1, collObj2, result);
+      checkPair(collObj1, collObj2, option, result);
+
+      if (result.contacts.size() >= option.maxNumContacts)
+      {
+        done = true;
+        break;
+      }
     }
+
+    if (done)
+      break;
   }
 
   return !result.contacts.empty();
@@ -188,6 +210,19 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
 {
   if (!shapeFrame)
     return;
+
+  const auto& shape = shapeFrame->getShape();
+
+  if (shape->getShapeType() == dynamics::Shape::BOX)
+    return;
+
+  if (shape->getShapeType() == dynamics::Shape::ELLIPSOID)
+  {
+    const auto& ellipsoid
+        = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
+    if (ellipsoid->isSphere())
+      return;
+  }
 
   dterr << "[DARTCollisionDetector] Attempting to create shape type '"
         << shapeFrame->getShape()->getShapeType() << "' that is not supported "
@@ -228,7 +263,8 @@ void DARTCollisionDetector::notifyCollisionObjectDestorying(
 namespace {
 
 //==============================================================================
-bool checkPair(CollisionObject* o1, CollisionObject* o2, Result& result)
+bool checkPair(CollisionObject* o1, CollisionObject* o2,
+               const Option& option, Result& result)
 {
   Result pairResult;
 
@@ -237,7 +273,7 @@ bool checkPair(CollisionObject* o1, CollisionObject* o2, Result& result)
                            o2->getShape(), o2->getTransform(),
                            &pairResult.contacts);
 
-  postProcess(o1, o2, result, pairResult);
+  postProcess(o1, o2, option, result, pairResult);
 
   return colliding != 0;
 }
@@ -251,6 +287,7 @@ bool isClose(const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2,
 
 //==============================================================================
 void postProcess(CollisionObject* o1, CollisionObject* o2,
+                 const Option& option,
                  Result& totalResult, const Result& pairResult)
 {
   if (pairResult.contacts.empty())
@@ -278,6 +315,12 @@ void postProcess(CollisionObject* o1, CollisionObject* o2,
     totalResult.contacts.push_back(pairContact);
     totalResult.contacts.back().collisionObject1 = o1;
     totalResult.contacts.back().collisionObject2 = o2;
+
+    if (option.binaryCheck)
+      break;
+
+    if (totalResult.contacts.size() >= option.maxNumContacts)
+      break;
   }
 }
 

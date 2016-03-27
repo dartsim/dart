@@ -60,8 +60,10 @@ namespace {
 
 struct BulletOverlapFilterCallback : public btOverlapFilterCallback
 {
-  BulletOverlapFilterCallback(CollisionFilter* filter)
-    : mFilter(filter)
+  BulletOverlapFilterCallback(const Option& option, const Result& result)
+    : mOption(option),
+      mResult(result),
+      mDone(false)
   {
     // Do nothing
   }
@@ -70,6 +72,16 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
   bool needBroadphaseCollision(btBroadphaseProxy* proxy0,
                                btBroadphaseProxy* proxy1) const override
   {
+    if (mDone)
+      return false;
+
+    if ((mOption.binaryCheck && !mResult.contacts.empty())
+        || (mResult.contacts.size() >= mOption.maxNumContacts))
+    {
+      mDone = true;
+      return false;
+    }
+
     assert((proxy0 != nullptr && proxy1 != nullptr) &&
            "Bullet broadphase overlapping pair proxies are nullptr");
 
@@ -78,7 +90,9 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
     collide = collide && (proxy1->m_collisionFilterGroup &
                           proxy0->m_collisionFilterMask);
 
-    if (collide && mFilter)
+    const auto& filter = mOption.collisionFilter;
+
+    if (collide && filter)
     {
       auto bulletCollObj0
           = static_cast<btCollisionObject*>(proxy0->m_clientObject);
@@ -90,21 +104,26 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
       auto userData1 = static_cast<BulletCollisionObject::UserData*>(
             bulletCollObj1->getUserPointer());
 
-      collide = mFilter->needCollision(userData0->collisionObject,
-                                       userData1->collisionObject);
+      collide = filter->needCollision(userData0->collisionObject,
+                                      userData1->collisionObject);
     }
 
     return collide;
   }
 
-  CollisionFilter* mFilter;
+  const Option& mOption;
+  const Result& mResult;
+
+  /// Whether the collision iteration can stop
+  mutable bool mDone;
 };
 
 Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
                        const BulletCollisionObject::UserData* userData1,
                        const BulletCollisionObject::UserData* userData2);
 
-void convertContacts(btCollisionWorld* collWorld, Result& result);
+void convertContacts(
+    btCollisionWorld* collWorld, const Option& option, Result& result);
 
 } // anonymous namespace
 
@@ -177,13 +196,12 @@ bool BulletCollisionDetector::detect(
   auto castedData = static_cast<BulletCollisionGroup*>(group);
   auto bulletCollisionWorld = castedData->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
-  auto filterCallback
-      = new BulletOverlapFilterCallback(option.collisionFilter.get());
+  auto filterCallback = new BulletOverlapFilterCallback(option, result);
 
   bulletPairCache->setOverlapFilterCallback(filterCallback);
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
-  convertContacts(bulletCollisionWorld, result);
+  convertContacts(bulletCollisionWorld, option, result);
 
   return !result.contacts.empty();
 }
@@ -216,13 +234,12 @@ bool BulletCollisionDetector::detect(
 
   auto bulletCollisionWorld = group->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
-  auto filterCallback
-      = new BulletOverlapFilterCallback(option.collisionFilter.get());
+  auto filterCallback = new BulletOverlapFilterCallback(option, result);
 
   bulletPairCache->setOverlapFilterCallback(filterCallback);
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
-  convertContacts(bulletCollisionWorld, result);
+  convertContacts(bulletCollisionWorld, option, result);
 
   return !result.contacts.empty();
 }
@@ -713,7 +730,8 @@ Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
 }
 
 //==============================================================================
-void convertContacts(btCollisionWorld* collWorld, Result& result)
+void convertContacts(
+    btCollisionWorld* collWorld, const Option& option, Result& result)
 {
   assert(collWorld);
 
@@ -743,6 +761,12 @@ void convertContacts(btCollisionWorld* collWorld, Result& result)
       auto& cp = contactManifold->getContactPoint(j);
 
       result.contacts.push_back(convertContact(cp, userDataA, userDataB));
+
+      if (option.binaryCheck)
+        return;
+
+      if (result.contacts.size() >= option.maxNumContacts)
+        break;
     }
   }
 }

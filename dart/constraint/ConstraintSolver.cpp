@@ -66,8 +66,9 @@ using namespace dynamics;
 ConstraintSolver::ConstraintSolver(double timeStep)
   : mCollisionDetector(collision::FCLCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroup()),
-    mCollisionOption(collision::Option(
-                     true, 100, std::make_shared<BodyNodeCollisionFilter>())),
+    mCollisionOption(
+      collision::Option(
+        true, false, 100, std::make_shared<BodyNodeCollisionFilter>())),
     mTimeStep(timeStep),
     mLCPSolver(new DantzigLCPSolver(mTimeStep))
 {

@@ -52,8 +52,9 @@ struct Option
   /// simple information whether there is a collision of not.
   bool enableContact;
 
-  // TODO(JS): add option for immediet termination as soon as the first contact
-  // is detected
+  /// If true, the collision checking will terminate as soon as the first
+  /// contact is found.
+  bool binaryCheck;
 
   /// Maximum number of contacts to detect
   size_t maxNumContacts;
@@ -63,6 +64,7 @@ struct Option
 
   /// Constructor
   Option(bool enableContact = true,
+         bool binaryCheck = false,
          size_t maxNumContacts = 100,
          const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
 };

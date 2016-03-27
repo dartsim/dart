@@ -73,13 +73,15 @@ bool collisionCallback(fcl::CollisionObject* o1,
                        void* cdata);
 
 void postProcessFCL(const fcl::CollisionResult& fclResult,
-                 fcl::CollisionObject* o1,
-                 fcl::CollisionObject* o2,
-                 Result& result);
+                    fcl::CollisionObject* o1,
+                    fcl::CollisionObject* o2,
+                    const Option& option,
+                    Result& result);
 
 void postProcessDART(const fcl::CollisionResult& fclResult,
                      fcl::CollisionObject* o1,
                      fcl::CollisionObject* o2,
+                     const Option& option,
                      Result& result);
 
 int evalContactPosition(const fcl::Contact& fclContact,
@@ -118,7 +120,7 @@ struct FCLCollisionCallbackData
   fcl::CollisionResult mFclResult;
 
   /// Collision option of DART
-  const Option* mOption;
+  const Option& mOption;
 
   /// Collision result of DART
   Result* mResult;
@@ -133,7 +135,7 @@ struct FCLCollisionCallbackData
 
   /// Constructor
   FCLCollisionCallbackData(
-      const Option* option = nullptr,
+      const Option& option,
       Result* result = nullptr,
       FCLCollisionDetector::PrimitiveShape_t type
           = FCLCollisionDetector::MESH,
@@ -145,8 +147,12 @@ struct FCLCollisionCallbackData
       mContactPointComputationMethod(method),
       done(false)
   {
-    if (mOption)
-      convertOption(*mOption, mFclRequest);
+    convertOption(mOption, mFclRequest);
+
+    mFclRequest.num_max_contacts = std::max(static_cast<size_t>(100u),
+                                            mOption.maxNumContacts);
+    // Since some contact points can be filtered out in the post process, we ask
+    // more than the demend. 100 is randomly picked.
   }
 };
 
@@ -779,7 +785,7 @@ bool FCLCollisionDetector::detect(
   auto broadPhaseAlg = castedData->getFCLCollisionManager();
 
   FCLCollisionCallbackData collData(
-        &option, &result, mPrimitiveShapeType,
+        option, &result, mPrimitiveShapeType,
         mContactPointComputationMethod);
   broadPhaseAlg->collide(&collData, collisionCallback);
 
@@ -963,14 +969,14 @@ bool collisionCallback(
 {
   auto collData = static_cast<FCLCollisionCallbackData*>(cdata);
 
+  if (collData->done)
+    return true;
+
   const auto& fclRequest = collData->mFclRequest;
   auto& fclResult = collData->mFclResult;
   auto& result = *(collData->mResult);
-  auto option = collData->mOption;
-  auto filter = option->collisionFilter;
-
-  if (collData->done)
-    return true;
+  const auto& option = collData->mOption;
+  auto filter = option.collisionFilter;
 
   // Filtering
   if (filter)
@@ -997,20 +1003,22 @@ bool collisionCallback(
   // Perform narrow-phase detection
   fcl::collide(o1, o2, fclRequest, fclResult);
 
-  if (!fclRequest.enable_cost
-      && (fclResult.isCollision())
-      && ((fclResult.numContacts() >= fclRequest.num_max_contacts)))
-          //|| !collData->checkAllCollisions))
-    // TODO(JS): checkAllCollisions should be in FCLCollisionData
-  {
-    collData->done = true;
-  }
-
   if (FCLCollisionDetector::DART == collData->mContactPointComputationMethod
       && FCLCollisionDetector::MESH == collData->mPrimitiveShapeType)
-    postProcessDART(fclResult, o1, o2, result);
+  {
+    postProcessDART(fclResult, o1, o2, option, result);
+  }
   else
-    postProcessFCL(fclResult, o1, o2, result);
+  {
+    postProcessFCL(fclResult, o1, o2, option, result);
+  }
+
+  if ((option.binaryCheck && !result.contacts.empty())
+      || (result.contacts.size() >= option.maxNumContacts))
+  {
+    collData->done = true;
+    return true;
+  }
 
   return collData->done;
 }
@@ -1019,6 +1027,7 @@ bool collisionCallback(
 void postProcessFCL(const fcl::CollisionResult& fclResult,
                     fcl::CollisionObject* o1,
                     fcl::CollisionObject* o2,
+                    const Option& option,
                     Result& result)
 {
   auto numContacts = fclResult.numContacts();
@@ -1083,6 +1092,14 @@ void postProcessFCL(const fcl::CollisionResult& fclResult,
         }
       }
     }
+
+    if (option.binaryCheck)
+    {
+      const auto fclContact = fclResult.getContact(i);
+      convertContact(fclContact, o1, o2);
+
+      return;
+    }
   }
 
   for (size_t i = 0; i < numContacts; ++i)
@@ -1092,6 +1109,9 @@ void postProcessFCL(const fcl::CollisionResult& fclResult,
       const auto fclContact = fclResult.getContact(i);
       result.contacts.push_back(convertContact(fclContact, o1, o2));
     }
+
+    if (result.contacts.size() >= option.maxNumContacts)
+      break;
   }
 }
 
@@ -1099,6 +1119,7 @@ void postProcessFCL(const fcl::CollisionResult& fclResult,
 void postProcessDART(const fcl::CollisionResult& fclResult,
                      fcl::CollisionObject* o1,
                      fcl::CollisionObject* o2,
+                     const Option& option,
                      Result& result)
 {
   auto initNumContacts = fclResult.numContacts();
@@ -1225,12 +1246,21 @@ void postProcessDART(const fcl::CollisionResult& fclResult,
         }
       }
     }
+
+    if (option.binaryCheck)
+    {
+      result.contacts.push_back(unfiltered[i]);
+      return;
+    }
   }
 
   for (auto i = 0u; i < unfilteredSize; ++i)
   {
     if (!markForDeletion[i])
       result.contacts.push_back(unfiltered[i]);
+
+    if (result.contacts.size() >= option.maxNumContacts)
+      break;
   }
 }
 
