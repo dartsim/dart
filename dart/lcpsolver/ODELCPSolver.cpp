@@ -38,6 +38,7 @@
 
 #include <cstdio>
 
+#include "dart/common/StlHelpers.h"
 #include "dart/lcpsolver/Lemke.h"
 #include "dart/lcpsolver/lcp.h"
 #include "dart/lcpsolver/misc.h"
@@ -63,6 +64,8 @@ bool ODELCPSolver::Solve(const Eigen::MatrixXd& _A,
     return (err == 0);
   } else {
     assert(_numDir >= 4);
+    DART_UNUSED(_numDir);
+
     double* A, *b, *x, *w, *lo, *hi;
     int n = _A.rows();
 
