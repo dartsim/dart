@@ -57,8 +57,6 @@ endif()
 set_target_properties(gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Compile each test file
-message(STATUS "")
-message(STATUS "[ Unit tests ]")
 file(GLOB tests "test*.cpp")
 foreach(test ${tests})
   # Get the name (i.e. bla.cpp => bla)
@@ -67,6 +65,7 @@ foreach(test ${tests})
 
   link_directories(${DARTExt_LIBRARY_DIRS})
   add_executable(${base} ${test})
+  dart_add_unittest(${base})
 
   if(MSVC)
     target_link_libraries(${base} dart optimized gtest debug gtestd)
@@ -80,7 +79,6 @@ foreach(test ${tests})
   list_contains(contains ${base} ${dontTest})
   if(NOT contains)
     add_test(${base} ${CMAKE_BINARY_DIR}/bin/tests/${base})
-    message(STATUS "Adding test: " ${base})
   endif(NOT contains)
 endforeach(test)
 
@@ -96,5 +94,3 @@ endif(HAVE_NLOPT)
 if(HAVE_SNOPT)
   target_link_libraries(testOptimizer dart-optimizer-snopt)
 endif(HAVE_SNOPT)
-
-add_custom_target(tests DEPENDS ${all_tests})
