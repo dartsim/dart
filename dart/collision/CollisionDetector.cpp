@@ -49,28 +49,6 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
-    dynamics::Skeleton* skel)
-{
-  assert(skel);
-
-  auto group = createCollisionGroup();
-
-  auto numBodyNodes = skel->getNumBodyNodes();
-  for (auto i = 0u; i < numBodyNodes; ++i)
-  {
-    auto bodyNode = skel->getBodyNode(i);
-    auto collisionShapeNodes
-        = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
-
-    for (auto& shapeNode : collisionShapeNodes)
-      group->registerShapeFrame(shapeNode);
-  }
-
-  return group;
-}
-
-//==============================================================================
 CollisionObject* CollisionDetector::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {

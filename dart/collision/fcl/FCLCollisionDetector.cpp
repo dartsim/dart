@@ -751,20 +751,6 @@ std::shared_ptr<CollisionGroup> FCLCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-std::shared_ptr<CollisionGroup> FCLCollisionDetector::createCollisionGroup(
-    const dynamics::ShapeFrame* shapeFrame)
-{
-  return std::make_shared<FCLCollisionGroup>(shared_from_this(), shapeFrame);
-}
-
-//==============================================================================
-std::shared_ptr<CollisionGroup> FCLCollisionDetector::createCollisionGroup(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
-{
-  return std::make_shared<FCLCollisionGroup>(shared_from_this(), shapeFrames);
-}
-
-//==============================================================================
 bool FCLCollisionDetector::detect(
     CollisionGroup* group, const Option& option, Result& result)
 {

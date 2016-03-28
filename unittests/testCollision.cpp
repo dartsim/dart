@@ -530,8 +530,8 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
   auto group2 = cd->createCollisionGroup(simpleFrame2.get());
   auto group3 = cd->createCollisionGroup(simpleFrame3.get());
 
-  auto groupAll = cd->createCollisionGroup();
-  groupAll->registerShapeFramesFrom(group1.get(), group2.get(), group3.get());
+  auto groupAll = cd->createCollisionGroup(
+        group1.get(), group2.get(), group3.get());
 
   EXPECT_EQ(group1->getNumShapeFrames(), 1u);
   EXPECT_EQ(group2->getNumShapeFrames(), 1u);
@@ -625,8 +625,7 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
 
   auto group1 = cd->createCollisionGroup(simpleFrame1.get());
   auto group2 = cd->createCollisionGroup(simpleFrame2.get());
-  auto groupAll = cd->createCollisionGroup();
-  groupAll->registerShapeFramesFrom(group1.get(), group2.get());
+  auto groupAll = cd->createCollisionGroup(group1.get(), group2.get());
 
   EXPECT_EQ(group1->getNumShapeFrames(), 1u);
   EXPECT_EQ(group2->getNumShapeFrames(), 1u);
@@ -715,9 +714,7 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   simpleFrame2->setTranslation(pos2);
   simpleFrame3->setTranslation(pos3);
 
-  auto group = cd->createCollisionGroup();
-  group->registerShapeFrame(simpleFrame1.get());
-  group->registerShapeFrame(simpleFrame2.get());
+  auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
   EXPECT_EQ(group->getNumShapeFrames(), 2u);
 
   collision::Option option;

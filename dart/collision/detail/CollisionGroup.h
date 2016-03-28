@@ -38,43 +38,26 @@
 #define DART_COLLISION_DETAIL_COLLISIONGROUP_H_
 
 #include "dart/collision/CollisionGroup.h"
-#include "dart/common/Console.h"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-template <typename... Others>
-void CollisionGroup::registerShapeFramesFrom(const CollisionGroup* first,
-                                             const Others*... others)
+template <typename First, typename... Others>
+void CollisionGroup::registerShapeFrames(
+    const First* first, const Others*... others)
 {
-  if (first && this != first)
-  {
-    for (const auto& shapeFrame : first->mShapeFrames)
-      registerShapeFrame(shapeFrame);
-  }
-
-  registerShapeFramesFrom(others...);
+  registerShapeFramesOf(first);
+  registerShapeFrames(others...);
 }
 
 //==============================================================================
-template <typename... Others>
-void CollisionGroup::unregisterShapeFramesFrom(const CollisionGroup* first,
-                                               const Others*... others)
+template <typename First, typename... Others>
+void CollisionGroup::unregisterShapeFrames(
+    const First* first, const Others*... others)
 {
-  if (first)
-  {
-    if (this == first)
-    {
-      unregisterAllShapeFrames();
-      return;
-    }
-
-    for (const auto& shapeFrame : first->mShapeFrames)
-      unregisterShapeFrame(shapeFrame);
-  }
-
-  unregisterShapeFramesFrom(others...);
+  unregisterShapeFramesOf(first);
+  unregisterShapeFrames(others...);
 }
 
 }  // namespace collision

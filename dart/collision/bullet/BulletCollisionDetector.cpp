@@ -162,21 +162,6 @@ std::shared_ptr<CollisionGroup> BulletCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-std::shared_ptr<CollisionGroup> BulletCollisionDetector::createCollisionGroup(
-    const dynamics::ShapeFrame* shapeFrame)
-{
-  return std::make_shared<BulletCollisionGroup>(shared_from_this(), shapeFrame);
-}
-
-//==============================================================================
-std::shared_ptr<CollisionGroup> BulletCollisionDetector::createCollisionGroup(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
-{
-  return std::make_shared<BulletCollisionGroup>(shared_from_this(),
-                                                shapeFrames);
-}
-
-//==============================================================================
 bool BulletCollisionDetector::detect(
     CollisionGroup* group, const Option& option, Result& result)
 {
@@ -229,7 +214,7 @@ bool BulletCollisionDetector::detect(
   }
 
   auto group = common::make_unique<BulletCollisionGroup>(shared_from_this());
-  group->registerShapeFramesFrom(group1, group2);
+  group->registerShapeFrames(group1, group2);
   group->update();
 
   auto bulletCollisionWorld = group->getBulletCollisionWorld();

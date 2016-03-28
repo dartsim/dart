@@ -66,17 +66,33 @@ public:
   void registerShapeFrames(
       const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
 
-  /// Register all the ShapeFrames with CollisionAddon to this CollisionGroup
-  void registerShapeFramesFrom(const dynamics::Skeleton* skeleton);
-
-  /// Register all the ShapeFrames in the other groups to this CollisionGroup
-  template <typename... Others>
-  void registerShapeFramesFrom(const CollisionGroup* first,
-                               const Others*... others);
+  /// Register all the ShapeFrames in the other CollisionGroups to this
+  /// CollisionGroup
+  template <typename First, typename... Others>
+  void registerShapeFrames(const First* first, const Others*... others);
 
   /// Do nothing. This function is for terminating the variadic template
-  /// function template<typename...> registerShapeFramesFrom().
-  void registerShapeFramesFrom();
+  /// function template<typename...> registerShapeFrames().
+  void registerShapeFrames();
+
+  /// As as registerShapeFrame()
+  void registerShapeFramesOf(const dynamics::ShapeFrame* shapeFrame);
+
+  /// As as registerShapeFrames()
+  void registerShapeFramesOf(
+      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
+
+  /// Register all the ShapeFrames in the other CollisionGroup to this
+  /// CollisionGroup
+  void registerShapeFramesOf(const CollisionGroup* other);
+
+  /// Register all the BodyNode's ShapeFrames having CollisionAddon to this
+  /// CollisionGroup
+  void registerShapeFramesOf(const dynamics::BodyNode* bodyNode);
+
+  /// Register all the Skeleton's ShapeFrames having CollisionAddon to this
+  /// CollisionGroup
+  void registerShapeFramesOf(const dynamics::Skeleton* skeleton);
 
   /// Unregister a ShapeFrame from this CollisionGroup
   void unregisterShapeFrame(const dynamics::ShapeFrame* shapeFrame);
@@ -85,19 +101,33 @@ public:
   void unregisterShapeFrames(
       const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
 
-  /// Unregister all the ShapeFrames with CollisionAddon from this
+  /// Unregister all the ShapeFrames in the other CollisionGroups from this
   /// CollisionGroup
-  void unregisterShapeFramesFrom(const dynamics::Skeleton* skeleton);
-
-  /// Unregister all the ShapeFrames in the other groups from this
-  /// CollisionGroup
-  template <typename... Others>
-  void unregisterShapeFramesFrom(const CollisionGroup* first,
-                                 const Others*... others);
+  template <typename First, typename... Others>
+  void unregisterShapeFrames(const First* first, const Others*... others);
 
   /// Do nothing. This function is for terminating the variadic template
-  /// function template<typename...> unregisterShapeFramesFrom().
-  void unregisterShapeFramesFrom();
+  /// function template<typename...> unregisterShapeFrames().
+  void unregisterShapeFramesOf();
+
+  /// As as unregisterShapeFrame()
+  void unregisterShapeFramesOf(const dynamics::ShapeFrame* shapeFrame);
+
+  /// As as unregisterShapeFrames()
+  void unregisterShapeFramesOf(
+      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
+
+  /// Unregister all the ShapeFrames in the other CollisionGroup from this
+  /// CollisionGroup
+  void unregisterShapeFramesOf(const CollisionGroup* other);
+
+  /// Unregister all the BodyNode's ShapeFrames having CollisionAddon from this
+  /// CollisionGroup
+  void unregisterShapeFramesOf(const dynamics::BodyNode* bodyNode);
+
+  /// Unregister all the Skeleton's ShapeFrames having CollisionAddon from this
+  /// CollisionGroup
+  void unregisterShapeFramesOf(const dynamics::Skeleton* skeleton);
 
   /// Unregister all the ShapeFrames in this CollisionGroup
   void unregisterAllShapeFrames();

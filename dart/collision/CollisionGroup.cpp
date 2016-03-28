@@ -92,30 +92,62 @@ void CollisionGroup::registerShapeFrames(
 }
 
 //==============================================================================
-void CollisionGroup::registerShapeFramesFrom(const dynamics::Skeleton* skel)
-{
-  assert(skel);
-
-  auto numBodyNodes = skel->getNumBodyNodes();
-  for (auto i = 0u; i < numBodyNodes; ++i)
-  {
-    auto bodyNode = skel->getBodyNode(i);
-    auto collisionShapeNodes
-        = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
-
-    for (auto& shapeNode : collisionShapeNodes)
-      registerShapeFrame(shapeNode);
-  }
-}
-
-//==============================================================================
-void CollisionGroup::registerShapeFramesFrom()
+void CollisionGroup::registerShapeFrames()
 {
   // Do nothing
 }
 
 //==============================================================================
-void CollisionGroup::unregisterShapeFrame(const dynamics::ShapeFrame* shapeFrame)
+void CollisionGroup::registerShapeFramesOf(
+    const dynamics::ShapeFrame* shapeFrame)
+{
+  registerShapeFrame(shapeFrame);
+}
+
+//==============================================================================
+void CollisionGroup::registerShapeFramesOf(
+    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
+{
+  registerShapeFrames(shapeFrames);
+}
+
+//==============================================================================
+void CollisionGroup::registerShapeFramesOf(const CollisionGroup* other)
+{
+  assert(other);
+
+  if (other && this != other)
+  {
+    for (const auto& shapeFrame : other->mShapeFrames)
+      registerShapeFrame(shapeFrame);
+  }
+}
+
+//==============================================================================
+void CollisionGroup::registerShapeFramesOf(const dynamics::BodyNode* bodyNode)
+{
+  assert(bodyNode);
+
+  auto collisionShapeNodes
+      = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+
+  for (auto& shapeNode : collisionShapeNodes)
+    registerShapeFrame(shapeNode);
+}
+
+//==============================================================================
+void CollisionGroup::registerShapeFramesOf(const dynamics::Skeleton* skel)
+{
+  assert(skel);
+
+  auto numBodyNodes = skel->getNumBodyNodes();
+  for (auto i = 0u; i < numBodyNodes; ++i)
+    registerShapeFramesOf(skel->getBodyNode(i));
+}
+
+//==============================================================================
+void CollisionGroup::unregisterShapeFrame(
+    const dynamics::ShapeFrame* shapeFrame)
 {
   if (!shapeFrame)
     return;
@@ -147,26 +179,64 @@ void CollisionGroup::unregisterShapeFrames(
 }
 
 //==============================================================================
-void CollisionGroup::unregisterShapeFramesFrom(const dynamics::Skeleton* skel)
+void CollisionGroup::unregisterShapeFramesOf()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void CollisionGroup::unregisterShapeFramesOf(
+    const dynamics::ShapeFrame* shapeFrame)
+{
+  unregisterShapeFrame(shapeFrame);
+}
+
+//==============================================================================
+void CollisionGroup::unregisterShapeFramesOf(
+    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
+{
+  unregisterShapeFrames(shapeFrames);
+}
+
+//==============================================================================
+void CollisionGroup::unregisterShapeFramesOf(const CollisionGroup* other)
+{
+  assert(other);
+
+  if (other)
+  {
+    if (this == other)
+    {
+      unregisterAllShapeFrames();
+      return;
+    }
+
+    for (const auto& shapeFrame : other->mShapeFrames)
+      unregisterShapeFrame(shapeFrame);
+  }
+}
+
+//==============================================================================
+void CollisionGroup::unregisterShapeFramesOf(
+    const dynamics::BodyNode* bodyNode)
+{
+  assert(bodyNode);
+
+  auto collisionShapeNodes
+      = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+
+  for (auto& shapeNode : collisionShapeNodes)
+    unregisterShapeFrame(shapeNode);
+}
+
+//==============================================================================
+void CollisionGroup::unregisterShapeFramesOf(const dynamics::Skeleton* skel)
 {
   assert(skel);
 
   auto numBodyNodes = skel->getNumBodyNodes();
   for (auto i = 0u; i < numBodyNodes; ++i)
-  {
-    auto bodyNode = skel->getBodyNode(i);
-    auto collisionShapeNodes
-        = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
-
-    for (auto& shapeNode : collisionShapeNodes)
-      unregisterShapeFrame(shapeNode);
-  }
-}
-
-//==============================================================================
-void CollisionGroup::unregisterShapeFramesFrom()
-{
-  // Do nothing
+    unregisterShapeFramesOf(skel->getBodyNode(i));
 }
 
 //==============================================================================

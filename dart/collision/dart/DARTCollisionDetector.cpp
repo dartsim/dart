@@ -88,20 +88,6 @@ std::shared_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-std::shared_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup(
-    const dynamics::ShapeFrame* shapeFrame)
-{
-  return std::make_shared<DARTCollisionGroup>(shared_from_this(), shapeFrame);
-}
-
-//==============================================================================
-std::shared_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
-{
-  return std::make_shared<DARTCollisionGroup>(shared_from_this(), shapeFrames);
-}
-
-//==============================================================================
 bool DARTCollisionDetector::detect(
     CollisionGroup* group,
     const Option& option, Result& result)

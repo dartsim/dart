@@ -67,17 +67,12 @@ public:
   /// Create a collision group
   virtual std::shared_ptr<CollisionGroup> createCollisionGroup() = 0;
 
-  /// Create a collision group from ShapeFrame
-  virtual std::shared_ptr<CollisionGroup> createCollisionGroup(
-      const dynamics::ShapeFrame* shapeFrame) = 0;
-
-  /// Create a collision group from ShapeFrames
-  virtual std::shared_ptr<CollisionGroup> createCollisionGroup(
-      const std::vector<const dynamics::ShapeFrame*>& shapeFrames) = 0;
-
-  /// Create a collision group from Skeleton
-  std::shared_ptr<CollisionGroup> createCollisionGroup(
-      dynamics::Skeleton* skeleton);
+  /// Create a collision group from any object that is supported by
+  /// CollisionGroup::registerShapeFramesOf(). Currently, the supporting objects
+  /// are ShapeFrame, std::vector<ShapeFrame>, CollisionGroup, BodyNode, and
+  /// Skeleton.
+  template <typename... Args>
+  std::shared_ptr<CollisionGroup> createCollisionGroup(const Args&... args);
 
   /// Perform collision detection for group.
   virtual bool detect(CollisionGroup* group,
@@ -103,9 +98,9 @@ protected:
   CollisionObject* claimCollisionObject(const dynamics::ShapeFrame* shapeFrame);
   // TODO(JS): Maybe WeakShapeFramePtr
 
-  /// Reclaim CollisionObject associated with shapeFrame. The CollisionObject
-  /// will be destroyed if no CollisionGroup holds it.
-  void reclaimCollisionObject(const CollisionObject* shapeFrame);
+  /// Reclaim a CollisionObject. The CollisionObject will be destroyed if no
+  /// CollisionGroup holds it.
+  void reclaimCollisionObject(const CollisionObject* collObj);
 
   /// Create CollisionObject
   virtual std::unique_ptr<CollisionObject> createCollisionObject(
@@ -201,5 +196,7 @@ protected:
 
 }  // namespace collision
 }  // namespace dart
+
+#include "dart/collision/detail/CollisionDetector.h"
 
 #endif  // DART_COLLISION_COLLISIONDETECTOR_H_
