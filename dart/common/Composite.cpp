@@ -188,9 +188,9 @@ void Composite::copyAspectPropertiesTo(
 }
 
 //==============================================================================
-void Composite::duplicateAspects(const Composite* fromManager)
+void Composite::duplicateAspects(const Composite* fromComposite)
 {
-  if(nullptr == fromManager)
+  if(nullptr == fromComposite)
   {
     dterr << "[Composite::duplicateAspects] You have asked to duplicate the "
           << "Aspects of a nullptr, which is not allowed!\n";
@@ -198,10 +198,10 @@ void Composite::duplicateAspects(const Composite* fromManager)
     return;
   }
 
-  if(this == fromManager)
+  if(this == fromComposite)
     return;
 
-  const AspectMap& otherMap = fromManager->mAspectMap;
+  const AspectMap& otherMap = fromComposite->mAspectMap;
 
   AspectMap::iterator receiving = mAspectMap.begin();
   AspectMap::const_iterator incoming = otherMap.begin();
@@ -210,7 +210,7 @@ void Composite::duplicateAspects(const Composite* fromManager)
   {
     if( mAspectMap.end() == receiving )
     {
-      // If we've reached the end of this Manager's AspectMap, then we should
+      // If we've reached the end of this Composite's AspectMap, then we should
       // just add each entry
       _set(incoming->first, incoming->second.get());
       ++incoming;
@@ -229,7 +229,7 @@ void Composite::duplicateAspects(const Composite* fromManager)
     }
     else
     {
-      // If this Manager does not have an entry corresponding to the incoming
+      // If this Composite does not have an entry corresponding to the incoming
       // Aspect, then we must create it
       _set(incoming->first, incoming->second.get());
       ++incoming;
@@ -238,9 +238,9 @@ void Composite::duplicateAspects(const Composite* fromManager)
 }
 
 //==============================================================================
-void Composite::matchAspects(const Composite* otherManager)
+void Composite::matchAspects(const Composite* otherComposite)
 {
-  if(nullptr == otherManager)
+  if(nullptr == otherComposite)
   {
     dterr << "[Composite::matchAspects] You have asked to match the Aspects "
           << "of a nullptr, which is not allowed!\n";
@@ -251,14 +251,21 @@ void Composite::matchAspects(const Composite* otherManager)
   for(auto& aspect : mAspectMap)
     aspect.second = nullptr;
 
-  duplicateAspects(otherManager);
+  duplicateAspects(otherComposite);
 }
 
 //==============================================================================
-void Composite::becomeManager(Aspect* aspect, bool transfer)
+void Composite::addToComposite(Aspect* aspect)
 {
   if(aspect)
-    aspect->setManager(this, transfer);
+    aspect->setComposite(this);
+}
+
+//==============================================================================
+void Composite::removeFromComposite(Aspect* aspect)
+{
+  if(aspect)
+    aspect->loseComposite(this);
 }
 
 //==============================================================================
@@ -267,7 +274,7 @@ void Composite::_set(std::type_index type_idx, const Aspect* aspect)
   if(aspect)
   {
     mAspectMap[type_idx] = aspect->cloneAspect(this);
-    becomeManager(mAspectMap[type_idx].get(), false);
+    addToComposite(mAspectMap[type_idx].get());
   }
   else
   {
@@ -279,7 +286,7 @@ void Composite::_set(std::type_index type_idx, const Aspect* aspect)
 void Composite::_set(std::type_index type_idx, std::unique_ptr<Aspect> aspect)
 {
   mAspectMap[type_idx] = std::move(aspect);
-  becomeManager(mAspectMap[type_idx].get(), true);
+  addToComposite(mAspectMap[type_idx].get());
 }
 
 } // namespace common

@@ -125,14 +125,14 @@ SoftBodyNodeProperties::SoftBodyNodeProperties(
 //==============================================================================
 void SoftBodyNodeStateUpdate(SoftBodyAspect* aspect)
 {
-  if(SoftBodyNode* sbn = aspect->getManager())
+  if(SoftBodyNode* sbn = aspect->getComposite())
     sbn->mNotifier->notifyTransformUpdate();
 }
 
 //==============================================================================
 void SoftBodyNodePropertiesUpdate(SoftBodyAspect* aspect)
 {
-  if(SoftBodyNode* sbn = aspect->getManager())
+  if(SoftBodyNode* sbn = aspect->getComposite())
   {
     sbn->configurePointMasses(sbn->mSoftShapeNode.lock());
     SoftBodyNodeStateUpdate(aspect);

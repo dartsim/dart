@@ -210,7 +210,7 @@ void SpecializedForAspect<SpecAspect>::_set(
   if(aspect)
   {
     mSpecAspectIterator->second = aspect->cloneAspect(this);
-    becomeManager(mSpecAspectIterator->second.get(), false);
+    addToComposite(mSpecAspectIterator->second.get());
   }
   else
   {
@@ -236,7 +236,7 @@ void SpecializedForAspect<SpecAspect>::_set(
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
   mSpecAspectIterator->second = std::move(aspect);
-  becomeManager(mSpecAspectIterator->second.get(), true);
+  addToComposite(mSpecAspectIterator->second.get());
 }
 
 //==============================================================================
@@ -259,7 +259,7 @@ SpecAspect* SpecializedForAspect<SpecAspect>::_create(
 
   SpecAspect* aspect = new SpecAspect(this, std::forward<Args>(args)...);
   mSpecAspectIterator->second = std::unique_ptr<SpecAspect>(aspect);
-  becomeManager(aspect, false);
+  addToComposite(aspect);
 
   return aspect;
 }
@@ -281,6 +281,8 @@ void SpecializedForAspect<SpecAspect>::_erase(type<SpecAspect>)
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
   DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(erase, SpecAspect, DART_BLANK);
+
+  removeFromComposite(mSpecAspectIterator->second.get());
   mSpecAspectIterator->second = nullptr;
 }
 
@@ -302,6 +304,8 @@ std::unique_ptr<SpecAspect> SpecializedForAspect<SpecAspect>::_release(
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
   DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(release, SpecAspect, nullptr);
+
+  removeFromComposite(mSpecAspectIterator->second.get());
   std::unique_ptr<SpecAspect> extraction(
         static_cast<SpecAspect*>(mSpecAspectIterator->second.release()));
 

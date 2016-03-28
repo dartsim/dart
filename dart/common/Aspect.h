@@ -53,7 +53,7 @@ public:
 
   friend class Composite;
 
-  /// If your Aspect has a State class, then that State class should inherit this
+  /// If your Aspect has a State, then that State class should inherit this
   /// Aspect::State class. This allows us to safely serialize, store, and clone
   /// the states of arbitrary Aspect extensions. If your Aspect is stateless, then
   /// you do not have to worry about extending this class, because
@@ -72,7 +72,7 @@ public:
   template <class Mixin>
   using StateMixer = ExtensibleMixer<State, Mixin>;
 
-  /// If your Aspect has a Properties class, then it should inherit this
+  /// If your Aspect has Properties, then that Properties class should inherit this
   /// Aspect::Properties class. This allows us to safely serialize, store, and
   /// clone the properties of arbitrary Aspect extensions. If your Aspect has no
   /// properties, then you do not have to worry about extending this class,
@@ -95,7 +95,7 @@ public:
   virtual ~Aspect() = default;
 
   /// Clone this Aspect into a new manager
-  virtual std::unique_ptr<Aspect> cloneAspect(Composite* newManager) const = 0;
+  virtual std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const = 0;
 
   /// Set the State of this Aspect. By default, this does nothing.
   virtual void setAspectState(const State& otherState);
@@ -116,7 +116,7 @@ protected:
   /// Constructor
   ///
   /// We require the Composite argument in this constructor to make it clear
-  /// to extensions that they must have an Composite argument in their
+  /// to extensions that they must have a Composite argument in their
   /// constructors.
   Aspect(Composite* manager);
 
@@ -125,32 +125,37 @@ protected:
   /// to a new Composite [transfer will be true]. You should override this
   /// function if your Aspect requires special handling in either of those cases.
   /// By default, this function does nothing.
-  virtual void setManager(Composite* newManager, bool transfer);
+  virtual void setComposite(Composite* newComposite);
 
+  /// This function will be triggered if your Aspect is about to be removed from
+  /// its Composite. While this function is being called, the Aspect is still a
+  /// valid part of the Composite; it will be removed immediately after this
+  /// function call. By default, this function does nothing.
+  virtual void loseComposite(Composite* oldComposite);
 };
 
 //==============================================================================
-template <class ManagerType>
-class ManagerTrackingAspect : public Aspect
+template <class CompositeType>
+class CompositeTrackingAspect : public Aspect
 {
 public:
 
   /// Default constructor
-  ManagerTrackingAspect(Composite* mgr);
+  CompositeTrackingAspect(Composite* mgr);
 
-  /// Get the Manager of this Aspect
-  ManagerType* getManager();
+  /// Get the Composite of this Aspect
+  CompositeType* getComposite();
 
-  /// Get the Manager of this Aspect
-  const ManagerType* getManager() const;
+  /// Get the Composite of this Aspect
+  const CompositeType* getComposite() const;
 
 protected:
 
   /// Grab the new manager
-  void setManager(Composite* newManager, bool transfer);
+  void setComposite(Composite* newComposite);
 
-  /// Pointer to the current Manager of this Aspect
-  ManagerType* mManager;
+  /// Pointer to the current Composite of this Aspect
+  CompositeType* mComposite;
 
 };
 
@@ -161,7 +166,7 @@ protected:
 #define DART_COMMON_ASPECT_PROPERTY_CONSTRUCTOR( ClassName, UpdatePropertiesMacro )\
   ClassName (const ClassName &) = delete;\
   inline ClassName (dart::common::Composite* mgr, const PropertiesData& properties = PropertiesData())\
-    : AspectWithVersionedProperties< Base, Derived, PropertiesData, ManagerType, UpdatePropertiesMacro>(mgr, properties) { }
+    : AspectWithVersionedProperties< Base, Derived, PropertiesData, CompositeType, UpdatePropertiesMacro>(mgr, properties) { }
 
 //==============================================================================
 #define DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( ClassName )\

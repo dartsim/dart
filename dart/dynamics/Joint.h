@@ -1001,8 +1001,8 @@ namespace detail {
 template <class AspectType>
 void JointPropertyUpdate(AspectType* aspect)
 {
-  aspect->getManager()->notifyPositionUpdate();
-  aspect->getManager()->updateLocalJacobian();
+  aspect->getComposite()->notifyPositionUpdate();
+  aspect->getComposite()->updateLocalJacobian();
 }
 
 } // namespace detail

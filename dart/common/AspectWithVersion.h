@@ -45,51 +45,51 @@ namespace common {
 //==============================================================================
 template <class DerivedT,
           typename StateDataT,
-          class ManagerT = Composite,
+          class CompositeT = Composite,
           void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*> >
 using AspectWithState =
-    detail::AspectWithState<ManagerTrackingAspect<ManagerT>, DerivedT, StateDataT, ManagerT, updateState>;
+    detail::AspectWithState<CompositeTrackingAspect<CompositeT>, DerivedT, StateDataT, CompositeT, updateState>;
 
 //==============================================================================
 template <class DerivedT,
           typename PropertiesDataT,
-          class ManagerT = Composite,
+          class CompositeT = Composite,
           void (*updateProperties)(DerivedT*) = &detail::NoOp<DerivedT*> >
 using AspectWithVersionedProperties =
-    detail::AspectWithVersionedProperties<ManagerTrackingAspect<ManagerT>, DerivedT, PropertiesDataT, ManagerT, updateProperties>;
+    detail::AspectWithVersionedProperties<CompositeTrackingAspect<CompositeT>, DerivedT, PropertiesDataT, CompositeT, updateProperties>;
 
 //==============================================================================
 template <class DerivedT,
           typename StateDataT,
           typename PropertiesDataT,
-          class ManagerT = Composite,
+          class CompositeT = Composite,
           void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*>,
           void (*updateProperties)(DerivedT*) = updateState>
 class AspectWithStateAndVersionedProperties :
     public detail::AspectWithVersionedProperties<
-        AspectWithState<DerivedT, StateDataT, ManagerT, updateState>,
-        DerivedT, PropertiesDataT, ManagerT, updateProperties>
+        AspectWithState<DerivedT, StateDataT, CompositeT, updateState>,
+        DerivedT, PropertiesDataT, CompositeT, updateProperties>
 {
 public:
 
   using Derived = DerivedT;
   using StateData = StateDataT;
   using PropertiesData = PropertiesDataT;
-  using ManagerType = ManagerT;
+  using CompositeType = CompositeT;
   using State = common::Aspect::StateMixer<StateData>;
   using Properties = common::Aspect::PropertiesMixer<PropertiesData>;
   constexpr static void (*UpdateState)(Derived*) = updateState;
   constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 
   using AspectStateImplementation = AspectWithState<
-      Derived, StateData, ManagerType, updateState>;
+      Derived, StateData, CompositeType, updateState>;
 
   using AspectPropertiesImplementation = detail::AspectWithVersionedProperties<
       AspectStateImplementation,
-      Derived, PropertiesData, ManagerType, updateProperties>;
+      Derived, PropertiesData, CompositeType, updateProperties>;
 
   using AspectImplementation = AspectWithStateAndVersionedProperties<
-      DerivedT, StateDataT, PropertiesDataT, ManagerT,
+      DerivedT, StateDataT, PropertiesDataT, CompositeT,
       updateState, updateProperties>;
 
   AspectWithStateAndVersionedProperties() = delete;
@@ -128,22 +128,22 @@ public:
 template <class DerivedT,
           typename StateDataT,
           typename PropertiesDataT,
-          class ManagerT,
+          class CompositeT,
           void (*updateState)(DerivedT*),
           void (*updateProperties)(DerivedT*)>
 constexpr void (*AspectWithStateAndVersionedProperties<DerivedT, StateDataT,
-    PropertiesDataT, ManagerT, updateState, updateProperties>::UpdateState)
+    PropertiesDataT, CompositeT, updateState, updateProperties>::UpdateState)
     (DerivedT*);
 
 //==============================================================================
 template <class DerivedT,
           typename StateDataT,
           typename PropertiesDataT,
-          class ManagerT,
+          class CompositeT,
           void (*updateState)(DerivedT*),
           void (*updateProperties)(DerivedT*)>
 constexpr void (*AspectWithStateAndVersionedProperties<DerivedT, StateDataT,
-    PropertiesDataT, ManagerT, updateState, updateProperties>::UpdateProperties)
+    PropertiesDataT, CompositeT, updateState, updateProperties>::UpdateProperties)
     (DerivedT*);
 
 } // namespace common

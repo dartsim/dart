@@ -96,7 +96,7 @@ T* Composite::create(Args&&... args)
 {
   T* aspect = new T(this, std::forward<Args>(args)...);
   mAspectMap[typeid(T)] = std::unique_ptr<T>(aspect);
-  becomeManager(aspect, false);
+  addToComposite(aspect);
 
   return aspect;
 }
@@ -108,7 +108,10 @@ void Composite::erase()
   AspectMap::iterator it = mAspectMap.find( typeid(T) );
   DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(erase, T, DART_BLANK)
   if(mAspectMap.end() != it)
+  {
+    removeFromComposite(it->second.get());
     it->second = nullptr;
+  }
 }
 
 //==============================================================================
@@ -119,7 +122,10 @@ std::unique_ptr<T> Composite::release()
   AspectMap::iterator it = mAspectMap.find( typeid(T) );
   DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(release, T, nullptr)
   if(mAspectMap.end() != it)
+  {
+    removeFromComposite(it->second.get());
     extraction = std::unique_ptr<T>(static_cast<T*>(it->second.release()));
+  }
 
   return extraction;
 }
@@ -159,56 +165,56 @@ void createAspects(T* mgr)
 
 //==============================================================================
 // Create non-template alternatives to Composite functions
-#define DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR( TypeName, AspectName )     \
-  inline bool has ## AspectName () const                                  \
-  {                                                                      \
-    return this->template has<TypeName>();                               \
-  }                                                                      \
-                                                                         \
-  inline TypeName * get ## AspectName ()                                  \
-  {                                                                      \
-    return this->template get<TypeName>();                               \
-  }                                                                      \
-                                                                         \
-  inline const TypeName* get ## AspectName () const                       \
-  {                                                                      \
-    return this->template get<TypeName>();                               \
-  }                                                                      \
-                                                                         \
-  inline TypeName * get ## AspectName (const bool createIfNull)           \
-  {                                                                      \
-    TypeName* aspect = get ## AspectName();                                \
-                                                                         \
-    if (createIfNull && nullptr == aspect)                                \
-      return create ## AspectName();                                      \
-                                                                         \
-    return aspect;                                                        \
-  }                                                                      \
-                                                                         \
-  inline void set ## AspectName (const TypeName * aspect)                  \
-  {                                                                      \
-    this->template set<TypeName>(aspect);                                 \
-  }                                                                      \
-                                                                         \
-  inline void set ## AspectName (std::unique_ptr< TypeName >&& aspect)     \
-  {                                                                      \
-    this->template set<TypeName>(std::move(aspect));                      \
-  }                                                                      \
-                                                                         \
-  template <typename ...Args>                                            \
-  inline TypeName * create ## AspectName (Args&&... args)                 \
-  {                                                                      \
-    return this->template create<TypeName>(std::forward<Args>(args)...); \
-  }                                                                      \
-                                                                         \
-  inline void erase ## AspectName ()                                      \
-  {                                                                      \
-    this->template erase<TypeName>();                                    \
-  }                                                                      \
-                                                                         \
-  inline std::unique_ptr< TypeName > release ## AspectName ()             \
-  {                                                                      \
-    return this->template release<TypeName>();                           \
+#define DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR( TypeName, AspectName )\
+  inline bool has ## AspectName () const\
+  {\
+    return this->template has<TypeName>();\
+  }\
+\
+  inline TypeName * get ## AspectName ()\
+  {\
+    return this->template get<TypeName>();\
+  }\
+\
+  inline const TypeName* get ## AspectName () const\
+  {\
+    return this->template get<TypeName>();\
+  }\
+\
+  inline TypeName * get ## AspectName (const bool createIfNull)\
+  {\
+    TypeName* aspect = get ## AspectName();\
+\
+    if (createIfNull && nullptr == aspect)\
+      return create ## AspectName();\
+\
+    return aspect;\
+  }\
+\
+  inline void set ## AspectName (const TypeName * aspect)\
+  {\
+    this->template set<TypeName>(aspect);\
+  }\
+\
+  inline void set ## AspectName (std::unique_ptr< TypeName >&& aspect)\
+  {\
+    this->template set<TypeName>(std::move(aspect));\
+  }\
+\
+  template <typename ...Args>\
+  inline TypeName * create ## AspectName (Args&&... args)\
+  {\
+    return this->template create<TypeName>(std::forward<Args>(args)...);\
+  }\
+\
+  inline void erase ## AspectName ()\
+  {\
+    this->template erase<TypeName>();\
+  }\
+\
+  inline std::unique_ptr< TypeName > release ## AspectName ()\
+  {\
+    return this->template release<TypeName>();\
   }
 
 //==============================================================================

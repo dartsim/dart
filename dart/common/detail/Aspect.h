@@ -46,41 +46,40 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-template <class ManagerType>
-ManagerTrackingAspect<ManagerType>::ManagerTrackingAspect(
+template <class CompositeType>
+CompositeTrackingAspect<CompositeType>::CompositeTrackingAspect(
     Composite* mgr)
   : Aspect(mgr),
-    mManager(nullptr) // This will be set later when the Manager calls setManager
+    mComposite(nullptr) // This will be set later when the Composite calls setComposite
 {
   // Do nothing
 }
 
 //==============================================================================
-template <class ManagerType>
-ManagerType* ManagerTrackingAspect<ManagerType>::getManager()
+template <class CompositeType>
+CompositeType* CompositeTrackingAspect<CompositeType>::getComposite()
 {
-  return mManager;
+  return mComposite;
 }
 
 //==============================================================================
-template <class ManagerType>
-const ManagerType* ManagerTrackingAspect<ManagerType>::getManager() const
+template <class CompositeType>
+const CompositeType* CompositeTrackingAspect<CompositeType>::getComposite() const
 {
-  return mManager;
+  return mComposite;
 }
 
 //==============================================================================
-template <class ManagerType>
-void ManagerTrackingAspect<ManagerType>::setManager(
-    Composite* newManager, bool)
+template <class CompositeType>
+void CompositeTrackingAspect<CompositeType>::setComposite(Composite* newComposite)
 {
-  mManager = dynamic_cast<ManagerType*>(newManager);
-  if(nullptr == mManager)
+  mComposite = dynamic_cast<CompositeType*>(newComposite);
+  if(nullptr == mComposite)
   {
-    dterr << "[" << typeid(*this).name() << "::setManager] Attempting to use a "
-          << "[" << typeid(newManager).name() << "] type manager, but this "
+    dterr << "[" << typeid(*this).name() << "::setComposite] Attempting to use a "
+          << "[" << typeid(newComposite).name() << "] type manager, but this "
           << "Aspect is only designed to be attached to a ["
-          << typeid(ManagerType).name() << "] type manager. This may cause "
+          << typeid(CompositeType).name() << "] type manager. This may cause "
           << "undefined behavior!\n";
     assert(false);
   }

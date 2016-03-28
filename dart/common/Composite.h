@@ -127,13 +127,13 @@ public:
   template <class T>
   std::unique_ptr<T> release();
 
-  /// Check if this Manager is specialized for a specific type of Aspect.
+  /// Check if this Composite is specialized for a specific type of Aspect.
   ///
   /// By default, this simply returns false.
   template <class T>
   static constexpr bool isSpecializedFor();
 
-  /// Check if this Manager requires this specific type of Aspect
+  /// Check if this Composite requires this specific type of Aspect
   template <class T>
   bool requires() const;
 
@@ -160,21 +160,25 @@ public:
   /// Composite
   void copyAspectPropertiesTo(Properties& outgoingProperties) const;
 
-  /// Give this Composite a copy of each Aspect from otherManager
-  void duplicateAspects(const Composite* fromManager);
+  /// Give this Composite a copy of each Aspect from otherComposite
+  void duplicateAspects(const Composite* fromComposite);
 
-  /// Make the Aspects of this Composite match the Aspects of otherManager. Any
-  /// Aspects in this Composite which do not exist in otherManager will be
+  /// Make the Aspects of this Composite match the Aspects of otherComposite. Any
+  /// Aspects in this Composite which do not exist in otherComposite will be
   /// erased.
-  void matchAspects(const Composite* otherManager);
+  void matchAspects(const Composite* otherComposite);
 
 protected:
 
   template <class T> struct type { };
 
-  /// Become the Composite of the given Aspect. This allows derived
-  /// Composite types to call the protected Aspect::setManager function.
-  void becomeManager(Aspect* aspect, bool transfer);
+  /// Add this Aspect to the Composite. This allows derived Composite types to
+  /// call the protected Aspect::setComposite function.
+  void addToComposite(Aspect* aspect);
+
+  /// Remove this Aspect from the Composite. This allows derived Composite types
+  /// to call the protected Aspect::loseComposite function.
+  void removeFromComposite(Aspect* aspect);
 
   /// Non-templated version of set(const T*)
   void _set(std::type_index type_idx, const Aspect* aspect);

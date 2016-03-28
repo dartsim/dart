@@ -45,7 +45,7 @@ namespace detail {
 
 void SupportUpdate(Support* support)
 {
-  if(EndEffector* ee = support->getManager())
+  if(EndEffector* ee = support->getComposite())
     ee->getSkeleton()->notifySupportUpdate(ee->getTreeIndex());
 }
 

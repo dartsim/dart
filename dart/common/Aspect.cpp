@@ -80,7 +80,13 @@ Aspect::Aspect(Composite* manager)
 }
 
 //==============================================================================
-void Aspect::setManager(Composite* /*newManager*/, bool /*transfer*/)
+void Aspect::setComposite(Composite* /*newComposite*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void Aspect::loseComposite(Composite* /*oldComposite*/)
 {
   // Do nothing
 }

@@ -302,7 +302,7 @@ MultiDofJointAspect<DOF>::MultiDofJointAspect(
   : common::AspectWithVersionedProperties<
         typename MultiDofJointAspect<DOF>::Derived,
         typename MultiDofJointAspect<DOF>::PropertiesData,
-        typename MultiDofJointAspect<DOF>::ManagerType,
+        typename MultiDofJointAspect<DOF>::CompositeType,
         &common::detail::NoOp<typename MultiDofJointAspect<DOF>::Derived*> >(
       mgr, properties)
 {

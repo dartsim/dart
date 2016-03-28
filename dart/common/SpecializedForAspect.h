@@ -97,7 +97,7 @@ public:
   template <class T>
   std::unique_ptr<T> release();
 
-  /// Check if this Manager is specialized for a specific type of Aspect
+  /// Check if this Composite is specialized for a specific type of Aspect
   template <class T>
   static constexpr bool isSpecializedFor();
 
