@@ -38,6 +38,11 @@
 #define DART_COLLISION_COLLISIONFILTER_H_
 
 namespace dart {
+
+namespace dynamics {
+class BodyNode;
+}  // namespace dynamics
+
 namespace collision {
 
 class CollisionObject;
@@ -46,6 +51,15 @@ struct CollisionFilter
 {
   virtual bool needCollision(const CollisionObject* object1,
                              const CollisionObject* object2) const = 0;
+};
+
+struct BodyNodeCollisionFilter : CollisionFilter
+{
+  bool needCollision(const CollisionObject* object1,
+                     const CollisionObject* object2) const override;
+
+  bool isAdjacentBodies(const dynamics::BodyNode* bodyNode1,
+                        const dynamics::BodyNode* bodyNode2) const;
 };
 
 }  // namespace collision

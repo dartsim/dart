@@ -42,7 +42,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/CollisionDetector.h"
+#include "dart/collision/CollisionObject.h"
 #include "dart/lcpsolver/lcp.h"
 
 #define DART_ERROR_ALLOWANCE 0.0

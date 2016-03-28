@@ -37,7 +37,9 @@
 #include "dart/constraint/ConstraintSolver.h"
 
 #include "dart/common/Console.h"
+#include "dart/collision/CollisionObject.h"
 #include "dart/collision/CollisionGroup.h"
+#include "dart/collision/CollisionFilter.h"
 #include "dart/collision/fcl/FCLCollisionDetector.h"
 #include "dart/collision/dart/DARTCollisionDetector.h"
 #ifdef HAVE_BULLET_COLLISION
@@ -47,7 +49,6 @@
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/CollisionDetector.h"
 #include "dart/constraint/ConstrainedGroup.h"
 #include "dart/constraint/ContactConstraint.h"
 #include "dart/constraint/SoftContactConstraint.h"
@@ -68,7 +69,7 @@ ConstraintSolver::ConstraintSolver(double timeStep)
     mCollisionGroup(mCollisionDetector->createCollisionGroup()),
     mCollisionOption(
       collision::Option(
-        true, false, 100, std::make_shared<BodyNodeCollisionFilter>())),
+        true, false, 100, std::make_shared<collision::BodyNodeCollisionFilter>())),
     mTimeStep(timeStep),
     mLCPSolver(new DantzigLCPSolver(mTimeStep))
 {

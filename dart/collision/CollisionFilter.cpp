@@ -36,8 +36,64 @@
 
 #include "dart/collision/CollisionFilter.h"
 
+#include "dart/dynamics/BodyNode.h"
+#include "dart/collision/CollisionObject.h"
+
 namespace dart {
 namespace collision {
+
+//==============================================================================
+bool BodyNodeCollisionFilter::needCollision(
+    const collision::CollisionObject* object1,
+    const collision::CollisionObject* object2) const
+{
+  if (object1 == object2)
+    return false;
+
+  auto shapeNode1 = object1->getShapeFrame()->asShapeNode();
+  auto shapeNode2 = object2->getShapeFrame()->asShapeNode();
+
+  if (!shapeNode1 || !shapeNode2)
+    return true;
+  // Assume non-ShapeNode always collides with others.
+
+  auto bodyNode1 = shapeNode1->getBodyNodePtr();
+  auto bodyNode2 = shapeNode2->getBodyNodePtr();
+
+  if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable())
+    return false;
+
+  if (bodyNode1->getSkeleton() == bodyNode2->getSkeleton())
+  {
+    auto skeleton = bodyNode1->getSkeleton();
+
+    if (!skeleton->isEnabledSelfCollisionCheck())
+      return false;
+
+    if (!skeleton->isEnabledAdjacentBodyCheck())
+    {
+      if (isAdjacentBodies(bodyNode1, bodyNode2))
+        return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool BodyNodeCollisionFilter::isAdjacentBodies(
+    const dynamics::BodyNode* bodyNode1,
+    const dynamics::BodyNode* bodyNode2) const
+{
+  if ((bodyNode1->getParentBodyNode() == bodyNode2)
+      || (bodyNode2->getParentBodyNode() == bodyNode1))
+  {
+    assert(bodyNode1->getSkeleton() == bodyNode2->getSkeleton());
+    return true;
+  }
+
+  return false;
+}
 
 }  // namespace collision
 }  // namespace dart
