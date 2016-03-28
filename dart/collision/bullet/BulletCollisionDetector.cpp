@@ -125,6 +125,16 @@ Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
 void convertContacts(
     btCollisionWorld* collWorld, const Option& option, Result& result);
 
+BulletCollisionDetector::BulletCollsionShapePack
+createBulletEllipsoidMesh(float sizeX, float sizeY, float sizeZ);
+
+BulletCollisionDetector::BulletCollsionShapePack
+createBulletCollisionShapePackFromAssimpScene(
+    const Eigen::Vector3d& scale, const aiScene* scene);
+
+BulletCollisionDetector::BulletCollsionShapePack
+createBulletCollisionShapePackFromAssimpMesh(const aiMesh* mesh);
+
 } // anonymous namespace
 
 
@@ -264,11 +274,11 @@ void BulletCollisionDetector::notifyCollisionObjectDestorying(
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollsionPack
+BulletCollisionDetector::BulletCollsionShapePack
 BulletCollisionDetector::claimBulletCollisionGeometry(
     const dynamics::ConstShapePtr& shape)
 {
-  BulletCollsionPack pack;
+  BulletCollsionShapePack pack;
 
   auto findResult = mShapeMap.find(shape);
   if (mShapeMap.end() != findResult)
@@ -283,7 +293,7 @@ BulletCollisionDetector::claimBulletCollisionGeometry(
   }
   else
   {
-    pack = createBulletCollisionShape(shape);
+    pack = createBulletCollisionShapePack(shape);
     mShapeMap[shape] = std::make_pair(pack, 1u);
   }
 
@@ -307,8 +317,180 @@ void BulletCollisionDetector::reclaimBulletCollisionGeometry(
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollsionPack
-BulletCollisionDetector::createEllipsoidMesh(
+BulletCollisionDetector::BulletCollsionShapePack
+BulletCollisionDetector::createBulletCollisionShapePack(
+    const dynamics::ConstShapePtr& shape)
+{
+  using dynamics::Shape;
+  using dynamics::BoxShape;
+  using dynamics::EllipsoidShape;
+  using dynamics::CylinderShape;
+  using dynamics::PlaneShape;
+  using dynamics::MeshShape;
+  using dynamics::SoftMeshShape;
+
+  BulletCollsionShapePack pack;
+
+  auto& bulletCollisionShape = pack.collisionShape;
+
+  switch (shape->getShapeType())
+  {
+    case Shape::BOX:
+    {
+      assert(dynamic_cast<const BoxShape*>(shape.get()));
+
+      const auto box = static_cast<const BoxShape*>(shape.get());
+      const Eigen::Vector3d& size = box->getSize();
+
+      bulletCollisionShape.reset(new btBoxShape(convertVector3(size*0.5)));
+
+      break;
+    }
+    case Shape::ELLIPSOID:
+    {
+      assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
+
+      const auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
+      const Eigen::Vector3d& size = ellipsoid->getSize();
+
+      if (ellipsoid->isSphere())
+        bulletCollisionShape.reset(new btSphereShape(size[0] * 0.5));
+      else
+        pack = createBulletEllipsoidMesh(size[0], size[1], size[2]);
+
+      break;
+    }
+    case Shape::CYLINDER:
+    {
+      assert(dynamic_cast<const CylinderShape*>(shape.get()));
+
+      const auto cylinder = static_cast<const CylinderShape*>(shape.get());
+      const auto radius = cylinder->getRadius();
+      const auto height = cylinder->getHeight();
+      const auto size = btVector3(radius, radius, height * 0.5);
+
+      bulletCollisionShape.reset(new btCylinderShapeZ(size));
+
+      break;
+    }
+    case Shape::PLANE:
+    {
+      assert(dynamic_cast<const PlaneShape*>(shape.get()));
+
+      const auto plane = static_cast<const PlaneShape*>(shape.get());
+      const Eigen::Vector3d normal = plane->getNormal();
+      const double offset = plane->getOffset();
+
+      bulletCollisionShape.reset(new btStaticPlaneShape(
+            convertVector3(normal), offset));
+
+      break;
+    }
+    case Shape::MESH:
+    {
+      assert(dynamic_cast<const MeshShape*>(shape.get()));
+
+      const auto shapeMesh = static_cast<const MeshShape*>(shape.get());
+      const auto scale = shapeMesh->getScale();
+      const auto mesh = shapeMesh->getMesh();
+
+      pack = createBulletCollisionShapePackFromAssimpScene(scale, mesh);
+
+      break;
+    }
+    case Shape::SOFT_MESH:
+    {
+      assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
+
+      const auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
+      const auto mesh = softMeshShape->getAssimpMesh();
+
+      pack = createBulletCollisionShapePackFromAssimpMesh(mesh);
+
+      break;
+    }
+    default:
+    {
+      dterr << "[BulletCollisionObjectData::init] "
+            << "Attempting to create unsupported shape type '"
+            << shape->getShapeType() << "'.\n";
+
+      bulletCollisionShape.reset(new btSphereShape(0.1));
+
+      break;
+    }
+  }
+
+  return pack;
+}
+
+
+
+namespace {
+
+//==============================================================================
+Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
+                       const BulletCollisionObject::UserData* userData1,
+                       const BulletCollisionObject::UserData* userData2)
+{
+  assert(userData1);
+  assert(userData2);
+
+  Contact contact;
+
+  contact.point = convertVector3(bulletManifoldPoint.getPositionWorldOnA());
+  contact.normal = convertVector3(-bulletManifoldPoint.m_normalWorldOnB);
+  contact.penetrationDepth = -bulletManifoldPoint.m_distance1;
+  contact.collisionObject1 = userData1->collisionObject;
+  contact.collisionObject2 = userData2->collisionObject;
+
+  return contact;
+}
+
+//==============================================================================
+void convertContacts(
+    btCollisionWorld* collWorld, const Option& option, Result& result)
+{
+  assert(collWorld);
+
+  auto dispatcher = collWorld->getDispatcher();
+  assert(dispatcher);
+
+  auto numManifolds = dispatcher->getNumManifolds();
+
+  for (auto i = 0; i < numManifolds; ++i)
+  {
+    auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
+    const auto bulletCollObj0 = contactManifold->getBody0();
+    const auto bulletCollObj1 = contactManifold->getBody1();
+
+    auto userPointer0 = bulletCollObj0->getUserPointer();
+    auto userPointer1 = bulletCollObj1->getUserPointer();
+
+    auto userDataA
+        = static_cast<BulletCollisionObject::UserData*>(userPointer1);
+    auto userDataB
+        = static_cast<BulletCollisionObject::UserData*>(userPointer0);
+
+    auto numContacts = contactManifold->getNumContacts();
+
+    for (auto j = 0; j < numContacts; ++j)
+    {
+      auto& cp = contactManifold->getContactPoint(j);
+
+      result.addContact(convertContact(cp, userDataA, userDataB));
+
+      if (option.binaryCheck)
+        return;
+
+      if (result.getNumContacts() >= option.maxNumContacts)
+        break;
+    }
+  }
+}
+
+//==============================================================================
+BulletCollisionDetector::BulletCollsionShapePack createBulletEllipsoidMesh(
     float sizeX, float sizeY, float sizeZ)
 {
   float v[59][3] =
@@ -490,7 +672,7 @@ BulletCollisionDetector::createEllipsoidMesh(
     {56, 49, 58}
   };
 
-  BulletCollsionPack pack;
+  BulletCollisionDetector::BulletCollsionShapePack pack;
   pack.triMesh.reset(new btTriangleMesh());
 
   for (auto i = 0u; i < 112; ++i)
@@ -521,22 +703,22 @@ BulletCollisionDetector::createEllipsoidMesh(
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollsionPack
-BulletCollisionDetector::createMesh(
-    const Eigen::Vector3d& scale, const aiScene* mesh)
+BulletCollisionDetector::BulletCollsionShapePack
+createBulletCollisionShapePackFromAssimpScene(
+    const Eigen::Vector3d& scale, const aiScene* scene)
 {
-  BulletCollsionPack pack;
+  BulletCollisionDetector::BulletCollsionShapePack pack;
   pack.triMesh.reset(new btTriangleMesh());
 
-  for (unsigned int i = 0; i < mesh->mNumMeshes; i++)
+  for (auto i = 0u; i < scene->mNumMeshes; ++i)
   {
-    for (unsigned int j = 0; j < mesh->mMeshes[i]->mNumFaces; j++)
+    for (auto j = 0u; j < scene->mMeshes[i]->mNumFaces; ++j)
     {
       btVector3 vertices[3];
-      for (unsigned int k = 0; k < 3; k++)
+      for (auto k = 0u; k < 3; ++k)
       {
-        const aiVector3D& vertex = mesh->mMeshes[i]->mVertices[
-                                   mesh->mMeshes[i]->mFaces[j].mIndices[k]];
+        const aiVector3D& vertex = scene->mMeshes[i]->mVertices[
+                                   scene->mMeshes[i]->mFaces[j].mIndices[k]];
         vertices[k] = btVector3(vertex.x * scale[0],
                                 vertex.y * scale[1],
                                 vertex.z * scale[2]);
@@ -554,10 +736,10 @@ BulletCollisionDetector::createMesh(
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollsionPack
-BulletCollisionDetector::createSoftMesh(const aiMesh* mesh)
+BulletCollisionDetector::BulletCollsionShapePack
+createBulletCollisionShapePackFromAssimpMesh(const aiMesh* mesh)
 {
-  BulletCollsionPack pack;
+  BulletCollisionDetector::BulletCollsionShapePack pack;
   pack.triMesh.reset(new btTriangleMesh());
 
   for (auto i = 0u; i < mesh->mNumFaces; ++i)
@@ -577,183 +759,6 @@ BulletCollisionDetector::createSoftMesh(const aiMesh* mesh)
   pack.collisionShape.reset(gimpactMeshShape);
 
   return pack;
-}
-
-//==============================================================================
-BulletCollisionDetector::BulletCollsionPack
-BulletCollisionDetector::createBulletCollisionShape(
-    const dynamics::ConstShapePtr& shape)
-{
-  using dynamics::Shape;
-  using dynamics::BoxShape;
-  using dynamics::EllipsoidShape;
-  using dynamics::CylinderShape;
-  using dynamics::PlaneShape;
-  using dynamics::MeshShape;
-  using dynamics::SoftMeshShape;
-
-  BulletCollsionPack pack;
-
-  auto& bulletCollisionShape = pack.collisionShape;
-
-  switch (shape->getShapeType())
-  {
-    case Shape::BOX:
-    {
-      assert(dynamic_cast<const BoxShape*>(shape.get()));
-
-      const auto box = static_cast<const BoxShape*>(shape.get());
-      const Eigen::Vector3d& size = box->getSize();
-
-      bulletCollisionShape.reset(new btBoxShape(convertVector3(size*0.5)));
-
-      break;
-    }
-    case Shape::ELLIPSOID:
-    {
-      assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
-
-      const auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
-      const Eigen::Vector3d& size = ellipsoid->getSize();
-
-      if (ellipsoid->isSphere())
-      {
-        bulletCollisionShape.reset(new btSphereShape(size[0] * 0.5));
-      }
-      else
-      {
-        // TODO(JS): Add mesh for ellipsoid
-      }
-
-      break;
-    }
-    case Shape::CYLINDER:
-    {
-      assert(dynamic_cast<const CylinderShape*>(shape.get()));
-
-      const auto cylinder = static_cast<const CylinderShape*>(shape.get());
-      const auto radius = cylinder->getRadius();
-      const auto height = cylinder->getHeight();
-      const auto size = btVector3(radius, radius, height * 0.5);
-
-      bulletCollisionShape.reset(new btCylinderShapeZ(size));
-
-      break;
-    }
-    case Shape::PLANE:
-    {
-      assert(dynamic_cast<const PlaneShape*>(shape.get()));
-
-      const auto plane = static_cast<const PlaneShape*>(shape.get());
-      const Eigen::Vector3d normal = plane->getNormal();
-      const double offset = plane->getOffset();
-
-      bulletCollisionShape.reset(new btStaticPlaneShape(
-            convertVector3(normal), offset));
-
-      break;
-    }
-    case Shape::MESH:
-    {
-      assert(dynamic_cast<const MeshShape*>(shape.get()));
-
-      const auto shapeMesh = static_cast<const MeshShape*>(shape.get());
-      const auto scale = shapeMesh->getScale();
-      const auto mesh = shapeMesh->getMesh();
-
-      pack = createMesh(scale, mesh);
-
-      break;
-    }
-    case Shape::SOFT_MESH:
-    {
-      assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
-
-      const auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
-      const auto mesh = softMeshShape->getAssimpMesh();
-
-      pack = createSoftMesh(mesh);
-
-      break;
-    }
-    default:
-    {
-      dterr << "[BulletCollisionObjectData::init] "
-            << "Attempting to create unsupported shape type '"
-            << shape->getShapeType() << "'.\n";
-
-      bulletCollisionShape.reset(new btSphereShape(0.1));
-
-      break;
-    }
-  }
-
-  return pack;
-}
-
-
-
-namespace {
-
-//==============================================================================
-Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
-                       const BulletCollisionObject::UserData* userData1,
-                       const BulletCollisionObject::UserData* userData2)
-{
-  assert(userData1);
-  assert(userData2);
-
-  Contact contact;
-
-  contact.point = convertVector3(bulletManifoldPoint.getPositionWorldOnA());
-  contact.normal = convertVector3(-bulletManifoldPoint.m_normalWorldOnB);
-  contact.penetrationDepth = -bulletManifoldPoint.m_distance1;
-  contact.collisionObject1 = userData1->collisionObject;
-  contact.collisionObject2 = userData2->collisionObject;
-
-  return contact;
-}
-
-//==============================================================================
-void convertContacts(
-    btCollisionWorld* collWorld, const Option& option, Result& result)
-{
-  assert(collWorld);
-
-  auto dispatcher = collWorld->getDispatcher();
-  assert(dispatcher);
-
-  auto numManifolds = dispatcher->getNumManifolds();
-
-  for (auto i = 0; i < numManifolds; ++i)
-  {
-    auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
-    const auto bulletCollObj0 = contactManifold->getBody0();
-    const auto bulletCollObj1 = contactManifold->getBody1();
-
-    auto userPointer0 = bulletCollObj0->getUserPointer();
-    auto userPointer1 = bulletCollObj1->getUserPointer();
-
-    auto userDataA
-        = static_cast<BulletCollisionObject::UserData*>(userPointer1);
-    auto userDataB
-        = static_cast<BulletCollisionObject::UserData*>(userPointer0);
-
-    auto numContacts = contactManifold->getNumContacts();
-
-    for (auto j = 0; j < numContacts; ++j)
-    {
-      auto& cp = contactManifold->getContactPoint(j);
-
-      result.addContact(convertContact(cp, userDataA, userDataB));
-
-      if (option.binaryCheck)
-        return;
-
-      if (result.getNumContacts() >= option.maxNumContacts)
-        break;
-    }
-  }
 }
 
 } // anonymous namespace

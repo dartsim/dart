@@ -56,18 +56,7 @@ public:
   using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
 
   /// Constructor
-  FCLCollisionGroup(
-      const CollisionDetectorPtr& collisionDetector);
-
-  /// Constructor
-  FCLCollisionGroup(
-      const CollisionDetectorPtr& collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame);
-
-  /// Constructor
-  FCLCollisionGroup(
-      const CollisionDetectorPtr& collisionDetector,
-      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
+  FCLCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
   /// Destructor
   virtual ~FCLCollisionGroup();

@@ -50,29 +50,6 @@ DARTCollisionGroup::DARTCollisionGroup(
 }
 
 //==============================================================================
-DARTCollisionGroup::DARTCollisionGroup(
-    const CollisionDetectorPtr& collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : CollisionGroup(collisionDetector)
-{
-  assert(mCollisionDetector);
-  assert(shapeFrame);
-
-  registerShapeFrame(shapeFrame);
-}
-
-//==============================================================================
-DARTCollisionGroup::DARTCollisionGroup(
-    const CollisionDetectorPtr& collisionDetector,
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
-  : CollisionGroup(collisionDetector)
-{
-  assert(mCollisionDetector);
-
-  registerShapeFrames(shapeFrames);
-}
-
-//==============================================================================
 DARTCollisionGroup::~DARTCollisionGroup()
 {
   unregisterAllShapeFrames();

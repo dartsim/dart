@@ -59,47 +59,6 @@ BulletCollisionGroup::BulletCollisionGroup(
 }
 
 //==============================================================================
-BulletCollisionGroup::BulletCollisionGroup(
-    const CollisionDetectorPtr& collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : CollisionGroup(collisionDetector),
-    mBulletProadphaseAlg(new btDbvtBroadphase()),
-    mBulletCollisionConfiguration(new btDefaultCollisionConfiguration()),
-    mBulletDispatcher(
-      new btCollisionDispatcher(mBulletCollisionConfiguration.get())),
-    mBulletCollisionWorld(
-      new btCollisionWorld(mBulletDispatcher.get(),
-                           mBulletProadphaseAlg.get(),
-                           mBulletCollisionConfiguration.get()))
-{
-  assert(mCollisionDetector);
-  assert(shapeFrame);
-
-  registerShapeFrame(shapeFrame);
-}
-
-//==============================================================================
-BulletCollisionGroup::BulletCollisionGroup(
-    const CollisionDetectorPtr& collisionDetector,
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
-  : CollisionGroup(collisionDetector),
-    mBulletProadphaseAlg(
-      new btDbvtBroadphase()),
-    mBulletCollisionConfiguration(
-      new btDefaultCollisionConfiguration()),
-    mBulletDispatcher(
-      new btCollisionDispatcher(mBulletCollisionConfiguration.get())),
-    mBulletCollisionWorld(
-      new btCollisionWorld(mBulletDispatcher.get(),
-                           mBulletProadphaseAlg.get(),
-                           mBulletCollisionConfiguration.get()))
-{
-  assert(mCollisionDetector);
-
-  registerShapeFrames(shapeFrames);
-}
-
-//==============================================================================
 BulletCollisionGroup::~BulletCollisionGroup()
 {
   unregisterAllShapeFrames();
@@ -108,9 +67,7 @@ BulletCollisionGroup::~BulletCollisionGroup()
 //==============================================================================
 void BulletCollisionGroup::initializeEngineData()
 {
-  btDispatcherInfo& dispatchInfo = mBulletCollisionWorld->getDispatchInfo();
-  // dispatchInfo.m_timeStep  = 0.001;
-  dispatchInfo.m_stepCount = 0;
+  // Do nothing
 }
 
 //==============================================================================
@@ -162,11 +119,6 @@ void BulletCollisionGroup::notifyAllCollisionObjectsRemoved()
 //==============================================================================
 void BulletCollisionGroup::updateEngineData()
 {
-  // Setting up broadphase collision detection options
-  btDispatcherInfo& dispatchInfo = mBulletCollisionWorld->getDispatchInfo();
-  // dispatchInfo.m_timeStep  = 0.001;
-  dispatchInfo.m_stepCount = 0;
-
   mBulletCollisionWorld->updateAabbs();
 }
 

@@ -53,6 +53,12 @@ public:
 
   friend class CollisionDetector;
 
+  struct BulletCollsionShapePack
+  {
+    std::shared_ptr<btCollisionShape> collisionShape;
+    std::shared_ptr<btTriangleMesh> triMesh;
+  };
+
   static std::shared_ptr<BulletCollisionDetector> create();
 
   /// Constructor
@@ -77,13 +83,6 @@ public:
 
 protected:
 
-  struct BulletCollsionPack
-  {
-    std::shared_ptr<btCollisionShape> collisionShape;
-    std::shared_ptr<btTriangleMesh> triMesh;
-    // TODO(JS): change to unique_ptr
-  };
-
   /// Constructor
   BulletCollisionDetector();
 
@@ -94,26 +93,18 @@ protected:
   // Documentation inherited
   void notifyCollisionObjectDestorying(CollisionObject* collObj) override;
 
-  ///
-  BulletCollsionPack claimBulletCollisionGeometry(
+  BulletCollsionShapePack claimBulletCollisionGeometry(
       const dynamics::ConstShapePtr& shape);
 
   // Documentation inherited
   void reclaimBulletCollisionGeometry(const dynamics::ConstShapePtr& shape);
 
-  BulletCollsionPack createEllipsoidMesh(float sizeX, float sizeY, float sizeZ);
-
-  BulletCollsionPack createMesh(
-      const Eigen::Vector3d& scale, const aiScene* mesh);
-
-  BulletCollsionPack createSoftMesh(const aiMesh* mesh);
-
-  BulletCollsionPack createBulletCollisionShape(
+  BulletCollsionShapePack createBulletCollisionShapePack(
       const dynamics::ConstShapePtr& shape);
 
 protected:
 
-  using ShapeMapValue = std::pair<BulletCollsionPack, size_t>;
+  using ShapeMapValue = std::pair<BulletCollsionShapePack, size_t>;
 
   std::map<dynamics::ConstShapePtr, ShapeMapValue> mShapeMap;
 

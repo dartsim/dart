@@ -51,15 +51,6 @@ public:
   /// Constructor
   DARTCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
-  /// Constructor
-  DARTCollisionGroup(const CollisionDetectorPtr& collisionDetector,
-                     const dynamics::ShapeFrame* shapeFrame);
-
-  /// Constructor
-  DARTCollisionGroup(
-      const CollisionDetectorPtr& collisionDetector,
-      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
-
   /// Destructor
   virtual ~DARTCollisionGroup();
 

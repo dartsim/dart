@@ -51,18 +51,7 @@ public:
   friend class BulletCollisionDetector;
 
   /// Constructor
-  BulletCollisionGroup(
-      const CollisionDetectorPtr& collisionDetector);
-
-  /// Constructor
-  BulletCollisionGroup(
-      const CollisionDetectorPtr& collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame);
-
-  /// Constructor
-  BulletCollisionGroup(
-      const CollisionDetectorPtr& collisionDetector,
-      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
+  BulletCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
   /// Destructor
   virtual ~BulletCollisionGroup();

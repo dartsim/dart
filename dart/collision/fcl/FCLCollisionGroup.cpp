@@ -52,31 +52,6 @@ FCLCollisionGroup::FCLCollisionGroup(
 }
 
 //==============================================================================
-FCLCollisionGroup::FCLCollisionGroup(
-    const CollisionDetectorPtr& collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : CollisionGroup(collisionDetector),
-    mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
-{
-  assert(mCollisionDetector);
-  assert(shapeFrame);
-
-  registerShapeFrame(shapeFrame);
-}
-
-//==============================================================================
-FCLCollisionGroup::FCLCollisionGroup(
-    const CollisionDetectorPtr& collisionDetector,
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
-  : CollisionGroup(collisionDetector),
-    mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
-{
-  assert(mCollisionDetector);
-
-  registerShapeFrames(shapeFrames);
-}
-
-//==============================================================================
 FCLCollisionGroup::~FCLCollisionGroup()
 {
   unregisterAllShapeFrames();
