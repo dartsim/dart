@@ -87,7 +87,7 @@ SingleDofJointProperties::SingleDofJointProperties(
 }
 
 //==============================================================================
-const std::string& SingleDofJointAddon::setDofName(
+const std::string& SingleDofJointAspect::setDofName(
     const std::string& name, bool preserveName)
 {
   return getManager()->setDofName(0, name, preserveName);

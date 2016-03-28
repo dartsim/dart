@@ -48,9 +48,9 @@
 namespace dart {
 namespace dynamics {
 
-class VisualAddon;
-class CollisionAddon;
-class DynamicsAddon;
+class VisualAspect;
+class CollisionAspect;
+class DynamicsAspect;
 class ShapeFrame;
 
 class ShapeNode : public virtual FixedFrame,
@@ -72,7 +72,7 @@ public:
                             const Eigen::Isometry3d& oldTransform,
                             const Eigen::Isometry3d& newTransform)>;
 
-  using AddonProperties = common::AddonManager::Properties;
+  using AspectProperties = common::Composite::Properties;
 
   struct UniqueProperties
   {
@@ -96,16 +96,16 @@ public:
             = ShapeFrame::Properties(),
         const ShapeNode::UniqueProperties& shapeNodeProperties
             = ShapeNode::UniqueProperties(),
-        const AddonProperties& addonProperties = AddonProperties());
+        const AspectProperties& aspectProperties = AspectProperties());
 
     /// Composed move constructor
     Properties(
         ShapeFrame::Properties&& shapeFrameProperties,
         ShapeNode::UniqueProperties&& shapeNodeProperties,
-        AddonProperties&& addonProperties);
+        AspectProperties&& aspectProperties);
 
-    /// The properties of the ShapeNode's Addons
-    AddonProperties mAddonProperties;
+    /// The properties of the ShapeNode's Aspects
+    AspectProperties mAspectProperties;
   };
 
   /// Destructor

@@ -51,10 +51,10 @@ public:
   using AxisOrder = detail::AxisOrder;
   using UniqueProperties = detail::EulerJointUniqueProperties;
   using Properties = detail::EulerJointProperties;
-  using Addon = detail::EulerJointAddon;
+  using Aspect = detail::EulerJointAspect;
   using Base = detail::EulerJointBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, EulerJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, EulerJointAspect)
 
   EulerJoint(const EulerJoint&) = delete;
 
@@ -148,7 +148,7 @@ public:
   Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+  template<class AspectType> friend void detail::JointPropertyUpdate(AspectType*);
 
 protected:
 

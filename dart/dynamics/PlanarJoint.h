@@ -56,10 +56,10 @@ public:
   using PlaneType = detail::PlaneType;
   using UniqueProperties = detail::PlanarJointUniqueProperties;
   using Properties = detail::PlanarJointProperties;
-  using Addon = detail::PlanarJointAddon;
+  using Aspect = detail::PlanarJointAspect;
   using Base = detail::PlanarJointBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, PlanarJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, PlanarJointAspect)
 
   PlanarJoint(const PlanarJoint&) = delete;
 
@@ -132,7 +132,7 @@ public:
   Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+  template<class AspectType> friend void detail::JointPropertyUpdate(AspectType*);
 
 protected:
 

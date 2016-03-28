@@ -34,44 +34,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_REQUIRESADDON_H_
-#define DART_COMMON_REQUIRESADDON_H_
+#ifndef DART_COMMON_DETAIL_REQUIRESASPECT_H_
+#define DART_COMMON_DETAIL_REQUIRESASPECT_H_
 
-#include "dart/common/SpecializedForAddon.h"
+#include "dart/common/RequiresAspect.h"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-/// RequiresAddon allows classes that inherit AddonManager to know which Addons
-/// are required for their operation. This guarantees that there is no way for
-/// a required Addon do not get unexpectedly removed from their manager.
-///
-/// Required Addons are also automatically specialized for.
-template <class... OtherRequiredAddons>
-class RequiresAddon { };
-
-//==============================================================================
-template <class ReqAddon>
-class RequiresAddon<ReqAddon> : public virtual SpecializedForAddon<ReqAddon>
+template <class ReqAspect>
+RequiresAspect<ReqAspect>::RequiresAspect()
 {
-public:
-
-  /// Default constructor. This is where the base AddonManager is informed that
-  /// the Addon type is required.
-  RequiresAddon();
-
-};
-
-//==============================================================================
-template <class ReqAddon1, class... OtherReqAddons>
-class RequiresAddon<ReqAddon1, OtherReqAddons...> :
-    public AddonManagerJoiner< Virtual< RequiresAddon<ReqAddon1> >,
-                               Virtual< RequiresAddon<OtherReqAddons...> > > { };
+  Composite::mRequiredAspects.insert(typeid(ReqAspect));
+}
 
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/RequiresAddon.h"
-
-#endif // DART_COMMON_REQUIRESADDON_H_
+#endif // DART_COMMON_DETAIL_REQUIRESASPECT_H_

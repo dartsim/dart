@@ -77,13 +77,13 @@ struct UniversalJointProperties :
 };
 
 //==============================================================================
-class UniversalJointAddon final :
-    public common::AddonWithVersionedProperties<
-        UniversalJointAddon, UniversalJointUniqueProperties, UniversalJoint,
-        detail::JointPropertyUpdate<UniversalJointAddon> >
+class UniversalJointAspect final :
+    public common::AspectWithVersionedProperties<
+        UniversalJointAspect, UniversalJointUniqueProperties, UniversalJoint,
+        detail::JointPropertyUpdate<UniversalJointAspect> >
 {
 public:
-  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( UniversalJointAddon )
+  DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( UniversalJointAspect )
   void setAxis1(const Eigen::Vector3d& _axis);
   const Eigen::Vector3d& getAxis1() const;
   void setAxis2(const Eigen::Vector3d& _axis);
@@ -91,8 +91,8 @@ public:
 };
 
 //==============================================================================
-using UniversalJointBase = common::AddonManagerJoiner<
-    MultiDofJoint<2>, common::RequiresAddon<UniversalJointAddon> >;
+using UniversalJointBase = common::CompositeJoiner<
+    MultiDofJoint<2>, common::RequiresAspect<UniversalJointAspect> >;
 
 } // namespace detail
 } // namespace dynamics

@@ -59,7 +59,7 @@ SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
 //==============================================================================
 SimpleFrame::SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame)
   : Entity(ConstructFrame),
-    common::AddonManager(),
+    common::Composite(),
     Frame(_refFrame, ""),
     Detachable(),
     ShapeFrame(_refFrame, ""),
@@ -69,7 +69,7 @@ SimpleFrame::SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame)
     mPartialAcceleration(Eigen::Vector6d::Zero())
 {
   copy(_otherFrame, _refFrame);
-  duplicateAddons(&_otherFrame);
+  duplicateAspects(&_otherFrame);
 }
 
 //==============================================================================

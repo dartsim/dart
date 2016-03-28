@@ -329,9 +329,9 @@ void SupportPolygonVisual::refresh()
     mCom->setTransform(tf);
 
     if(dart::math::isInsideSupportPolygon(Cproj, poly))
-      mCom->getVisualAddon(true)->setColor(mValidColor);
+      mCom->getVisualAspect(true)->setColor(mValidColor);
     else
-      mCom->getVisualAddon(true)->setColor(mInvalidColor);
+      mCom->getVisualAspect(true)->setColor(mInvalidColor);
 
     mComNode->refresh();
 
@@ -376,7 +376,7 @@ void SupportPolygonVisual::initialize()
         std::make_shared<dart::dynamics::EllipsoidShape>(
           mCentroidRadius/2.0*Eigen::Vector3d::Ones()));
 
-  mCentroid->getVisualAddon(true)->setColor(
+  mCentroid->getVisualAspect(true)->setColor(
         Eigen::Vector4d(color[0], color[1], color[2], color[3]));
 
   mCentroidNode = new ShapeFrameNode(mCentroid.get(), nullptr);

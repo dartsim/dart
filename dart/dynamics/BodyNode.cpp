@@ -144,10 +144,10 @@ BodyNodeProperties::BodyNodeProperties(
 BodyNodeExtendedProperties::BodyNodeExtendedProperties(
     const BodyNodeProperties& standardProperties,
     const NodeProperties& nodeProperties,
-    const AddonProperties& addonProperties)
+    const AspectProperties& aspectProperties)
   : BodyNodeProperties(standardProperties),
     mNodeProperties(nodeProperties),
-    mAddonProperties(addonProperties)
+    mAspectProperties(aspectProperties)
 {
   // Do nothing
 }
@@ -156,11 +156,11 @@ BodyNodeExtendedProperties::BodyNodeExtendedProperties(
 BodyNodeExtendedProperties::BodyNodeExtendedProperties(
     BodyNodeProperties&& standardProperties,
     NodeProperties&& nodeProperties,
-    AddonProperties&& addonProperties)
+    AspectProperties&& aspectProperties)
   : BodyNodeProperties(std::move(standardProperties))
 {
   mNodeProperties = std::move(nodeProperties);
-  mAddonProperties = std::move(addonProperties);
+  mAspectProperties = std::move(aspectProperties);
 }
 
 } // namespace detail
@@ -188,7 +188,7 @@ void BodyNode::setProperties(const ExtendedProperties& _properties)
 
   setProperties(_properties.mNodeProperties);
 
-  setProperties(_properties.mAddonProperties);
+  setProperties(_properties.mAspectProperties);
 }
 
 //==============================================================================
@@ -231,9 +231,9 @@ void BodyNode::setProperties(const NodeProperties& _properties)
 }
 
 //==============================================================================
-void BodyNode::setProperties(const AddonProperties& _properties)
+void BodyNode::setProperties(const AspectProperties& _properties)
 {
-  setAddonProperties(_properties);
+  setAspectProperties(_properties);
 }
 
 //==============================================================================
@@ -298,7 +298,7 @@ BodyNode::ExtendedProperties BodyNode::getExtendedProperties() const
 {
   return ExtendedProperties(getBodyNodeProperties(),
                             getAttachedNodeProperties(),
-                            getAddonProperties());
+                            getAspectProperties());
 }
 
 //==============================================================================
@@ -1245,7 +1245,7 @@ BodyNode* BodyNode::clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
   BodyNode* clonedBn =
       new BodyNode(_parentBodyNode, _parentJoint, getBodyNodeProperties());
 
-  clonedBn->matchAddons(this);
+  clonedBn->matchAspects(this);
 
   if(cloneNodes)
     clonedBn->matchNodes(this);
@@ -1398,7 +1398,7 @@ void BodyNode::draw(renderer::RenderInterface* ri,
   ri->transform(getRelativeTransform());
 
   // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
-  auto shapeNodes = getShapeNodesWith<VisualAddon>();
+  auto shapeNodes = getShapeNodesWith<VisualAspect>();
   for (auto shapeNode : shapeNodes)
     shapeNode->draw(ri, color, useDefaultColor);
   // _ri.popName();

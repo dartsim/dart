@@ -50,10 +50,10 @@ public:
   friend class Skeleton;
   using UniqueProperties = detail::RevoluteJointUniqueProperties;
   using Properties = detail::RevoluteJointProperties;
-  using Addon = detail::RevoluteJointAddon;
+  using Aspect = detail::RevoluteJointAspect;
   using Base = detail::RevoluteJointBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, RevoluteJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, RevoluteJointAspect)
 
   RevoluteJoint(const RevoluteJoint&) = delete;
 
@@ -112,7 +112,7 @@ protected:
 
 public:
 
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+  template<class AspectType> friend void detail::JointPropertyUpdate(AspectType*);
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

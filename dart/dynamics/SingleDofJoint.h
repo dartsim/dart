@@ -56,9 +56,9 @@ public:
 
   using UniqueProperties = detail::SingleDofJointUniqueProperties;
   using Properties = detail::SingleDofJointProperties;
-  using Addon = detail::SingleDofJointAddon;
+  using Aspect = detail::SingleDofJointAspect;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, SingleDofJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, SingleDofJointAspect)
 
   /// Destructor
   virtual ~SingleDofJoint();
@@ -397,7 +397,7 @@ public:
   // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
 
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+  template<class AspectType> friend void detail::JointPropertyUpdate(AspectType*);
 
 protected:
 

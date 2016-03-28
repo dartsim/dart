@@ -63,13 +63,13 @@ void EulerJoint::setProperties(const Properties& _properties)
 //==============================================================================
 void EulerJoint::setProperties(const UniqueProperties& _properties)
 {
-  getEulerJointAddon()->setProperties(_properties);
+  getEulerJointAspect()->setProperties(_properties);
 }
 
 //==============================================================================
 EulerJoint::Properties EulerJoint::getEulerJointProperties() const
 {
-  return EulerJoint::Properties(getMultiDofJointProperties(), getEulerJointAddon()->getProperties());
+  return EulerJoint::Properties(getMultiDofJointProperties(), getEulerJointAspect()->getProperties());
 }
 
 //==============================================================================
@@ -119,16 +119,16 @@ bool EulerJoint::isCyclic(size_t _index) const
 //==============================================================================
 void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
 {
-  getEulerJointAddon()->setAxisOrder(_order);
+  getEulerJointAspect()->setAxisOrder(_order);
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  // The EulerJoint::Addon will take care of notifying a position update
+  // The EulerJoint::Aspect will take care of notifying a position update
 }
 
 //==============================================================================
 EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
 {
-  return getEulerJointAddon()->getAxisOrder();
+  return getEulerJointAspect()->getAxisOrder();
 }
 
 //==============================================================================
@@ -283,7 +283,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
 EulerJoint::EulerJoint(const Properties& _properties)
   : detail::EulerJointBase(_properties, common::NoArg)
 {
-  createEulerJointAddon(_properties);
+  createEulerJointAspect(_properties);
 
   // Inherited Joint Properties must be set in the final joint class or else we
   // get pure virtual function calls

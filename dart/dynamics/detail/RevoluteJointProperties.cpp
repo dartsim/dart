@@ -59,14 +59,14 @@ RevoluteJointProperties::RevoluteJointProperties(
 }
 
 //==============================================================================
-void RevoluteJointAddon::setAxis(const Eigen::Vector3d& _axis)
+void RevoluteJointAspect::setAxis(const Eigen::Vector3d& _axis)
 {
   mProperties.mAxis = _axis.normalized();
   notifyPropertiesUpdate();
 }
 
 //==============================================================================
-const Eigen::Vector3d& RevoluteJointAddon::getAxis() const
+const Eigen::Vector3d& RevoluteJointAspect::getAxis() const
 {
   return mProperties.mAxis;
 }

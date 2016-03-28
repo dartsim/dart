@@ -60,14 +60,14 @@ ScrewJointProperties::ScrewJointProperties(
 }
 
 //==============================================================================
-void ScrewJointAddon::setAxis(const Eigen::Vector3d& _axis)
+void ScrewJointAspect::setAxis(const Eigen::Vector3d& _axis)
 {
   mProperties.mAxis = _axis.normalized();
   notifyPropertiesUpdate();
 }
 
 //==============================================================================
-const Eigen::Vector3d& ScrewJointAddon::getAxis() const
+const Eigen::Vector3d& ScrewJointAspect::getAxis() const
 {
   return mProperties.mAxis;
 }

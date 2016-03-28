@@ -508,18 +508,18 @@ void OpenGLRenderInterface::draw(dynamics::BodyNode* node,
     if (!shapeFrame)
       continue;
 
-    if (shapeFrame->hasVisualAddon())
+    if (shapeFrame->hasVisualAspect())
       draw(shapeFrame->getShape().get());
-    else if (colMesh && shapeFrame->hasCollisionAddon())
+    else if (colMesh && shapeFrame->hasCollisionAspect())
       draw(shapeFrame->getShape().get());
   }
 
   for (auto i = 0u; i < node->getNumNodes<dynamics::ShapeNode>(); ++i)
   {
     auto shapeNode = node->getNode<dynamics::ShapeNode>(i);
-    if (shapeNode->hasVisualAddon())
+    if (shapeNode->hasVisualAspect())
       draw(shapeNode->getShape().get());
-    else if (colMesh && shapeNode->hasCollisionAddon())
+    else if (colMesh && shapeNode->hasCollisionAspect())
       draw(shapeNode->getShape().get());
   }
   
@@ -612,11 +612,11 @@ void OpenGLRenderInterface::draw(dynamics::ShapeFrame* shapeFrame)
   auto shape = shapeFrame->getShape().get();
 
   Eigen::Isometry3d pose = shapeFrame->getRelativeTransform();
-  auto visualAddon = shapeFrame->get<dynamics::VisualAddon>();
+  auto visualAspect = shapeFrame->get<dynamics::VisualAspect>();
 
   Eigen::Vector3d color = Eigen::Vector3d::Random();
-  if (visualAddon)
-    color = visualAddon->getColor();
+  if (visualAspect)
+    color = visualAspect->getColor();
 
   glPushMatrix();
 

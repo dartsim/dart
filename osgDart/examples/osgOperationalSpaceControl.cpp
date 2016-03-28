@@ -79,7 +79,7 @@ public:
     mTarget = std::make_shared<SimpleFrame>(Frame::World(), "target", tf);
     ShapePtr ball(new EllipsoidShape(Eigen::Vector3d(0.05,0.05,0.05)));
     mTarget->setShape(ball);
-    mTarget->getVisualAddon(true)->setColor(Eigen::Vector3d(0.9,0,0));
+    mTarget->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9,0,0));
     mWorld->addSimpleFrame(mTarget);
 
     mOffset = mEndEffector->getWorldTransform().rotation().transpose() * mOffset;
@@ -266,7 +266,7 @@ int main()
   for(size_t i=0; i<robot->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = robot->getBodyNode(i);
-    auto shapeNodes = bn->getShapeNodesWith<dart::dynamics::VisualAddon>();
+    auto shapeNodes = bn->getShapeNodesWith<dart::dynamics::VisualAspect>();
     for(auto shapeNode : shapeNodes)
     {
       std::shared_ptr<MeshShape> mesh =

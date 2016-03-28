@@ -39,7 +39,7 @@
 
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/PointMass.h"
-#include "dart/common/RequiresAddon.h"
+#include "dart/common/RequiresAspect.h"
 
 namespace dart {
 namespace dynamics {
@@ -54,7 +54,7 @@ class SoftMeshShape;
 namespace detail {
 
 //==============================================================================
-class SoftBodyAddon;
+class SoftBodyAspect;
 
 //==============================================================================
 struct SoftBodyNodeUniqueState
@@ -118,46 +118,46 @@ struct SoftBodyNodeProperties
 };
 
 //==============================================================================
-void SoftBodyNodeStateUpdate(SoftBodyAddon* addon);
+void SoftBodyNodeStateUpdate(SoftBodyAspect* aspect);
 
 //==============================================================================
-void SoftBodyNodePropertiesUpdate(SoftBodyAddon* addon);
+void SoftBodyNodePropertiesUpdate(SoftBodyAspect* aspect);
 
 //==============================================================================
-class SoftBodyAddon final :
-    public common::AddonWithStateAndVersionedProperties<
-        SoftBodyAddon, SoftBodyNodeUniqueState, SoftBodyNodeUniqueProperties,
+class SoftBodyAspect final :
+    public common::AspectWithStateAndVersionedProperties<
+        SoftBodyAspect, SoftBodyNodeUniqueState, SoftBodyNodeUniqueProperties,
         SoftBodyNode, &SoftBodyNodeStateUpdate, &SoftBodyNodePropertiesUpdate >
 {
 public:
 
   friend class dart::dynamics::SoftBodyNode;
 
-  DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS(SoftBodyAddon)
+  DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(SoftBodyAspect)
 
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, Kv)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, Ke)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, DampCoeff)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, Kv)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, Ke)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, DampCoeff)
 
 protected:
 
-  /// Get a direct reference to the State of this Addon
+  /// Get a direct reference to the State of this Aspect
   inline StateData& _getState() { return mState; }
 
-  /// Get a direct reference to the State of this Addon
+  /// Get a direct reference to the State of this Aspect
   inline const StateData& _getState() const { return mState; }
 
-  /// Get a direct reference to the Properties of this Addon
+  /// Get a direct reference to the Properties of this Aspect
   inline PropertiesData& _getProperties() { return mProperties; }
 
-  /// Get a direct const reference to the Properties of this Addon
+  /// Get a direct const reference to the Properties of this Aspect
   inline const PropertiesData& _getProperties() const { return mProperties; }
 
 };
 
 //==============================================================================
-using SoftBodyNodeBase = common::AddonManagerJoiner<
-    BodyNode, common::RequiresAddon<SoftBodyAddon> >;
+using SoftBodyNodeBase = common::CompositeJoiner<
+    BodyNode, common::RequiresAspect<SoftBodyAspect> >;
 
 } // namespace detail
 } // namespace dynamics

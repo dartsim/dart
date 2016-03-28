@@ -50,10 +50,10 @@ public:
   friend class Skeleton;
   using UniqueProperties = detail::UniversalJointUniqueProperties;
   using Properties = detail::UniversalJointProperties;
-  using Addon = detail::UniversalJointAddon;
+  using Aspect = detail::UniversalJointAspect;
   using Base = detail::UniversalJointBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, UniversalJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, UniversalJointAspect)
 
   UniversalJoint(const UniversalJoint&) = delete;
 
@@ -103,7 +103,7 @@ public:
   Eigen::Matrix<double, 6, 2> getLocalJacobianStatic(
       const Eigen::Vector2d& _positions) const override;
 
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+  template<class AspectType> friend void detail::JointPropertyUpdate(AspectType*);
 
 protected:
 

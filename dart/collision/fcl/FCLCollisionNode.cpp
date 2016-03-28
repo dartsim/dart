@@ -347,7 +347,7 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
 
-  auto collShapeNodes = _bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+  auto collShapeNodes = _bodyNode->getShapeNodesWith<dynamics::CollisionAspect>();
   for (auto shapeNode : collShapeNodes)
   {
     auto shape = shapeNode->getShape();

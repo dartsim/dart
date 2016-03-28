@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_ADDONMANAGERJOINER_H_
-#define DART_COMMON_ADDONMANAGERJOINER_H_
+#ifndef DART_COMMON_COMPOSITEJOINER_H_
+#define DART_COMMON_COMPOSITEJOINER_H_
 
-#include "dart/common/AddonManager.h"
+#include "dart/common/Composite.h"
 #include "dart/common/Empty.h"
 
 namespace dart {
@@ -45,23 +45,23 @@ namespace common {
 
 /// Terminator for the variadic template
 template <class... OtherBases>
-class AddonManagerJoiner { };
+class CompositeJoiner { };
 
 /// Special case of only having 1 class: we do nothing but inherit it.
 template <class Base1>
-class AddonManagerJoiner<Base1> : public Base1 { };
+class CompositeJoiner<Base1> : public Base1 { };
 
-/// AddonManagerJoiner allows classes that inherit from various
-/// SpecializedForAddon types to be inherited by a single derived class.
+/// CompositeJoiner allows classes that inherit from various
+/// SpecializedForAspect types to be inherited by a single derived class.
 /// This class solves the diamond-of-death problem for multiple
-/// SpecializedForAddon inheritance.
+/// SpecializedForAspect inheritance.
 template <class Base1, class Base2>
-class AddonManagerJoiner<Base1, Base2> : public Base1, public Base2
+class CompositeJoiner<Base1, Base2> : public Base1, public Base2
 {
 public:
 
   /// Default constructor
-  AddonManagerJoiner() = default;
+  CompositeJoiner() = default;
 
   /// This constructor allows one argument to be passed to the Base1 constructor
   /// and arbitrarily many arguments to be passed to the Base2 constructor.
@@ -72,17 +72,17 @@ public:
   // then, this is the best we can offer due to fundamental limitations of
   // variadic templates in C++11.
   template <typename Base1Arg, typename... Base2Args>
-  AddonManagerJoiner(Base1Arg&& arg1, Base2Args&&... args2);
+  CompositeJoiner(Base1Arg&& arg1, Base2Args&&... args2);
 
   /// This constructor passes one argument to the Base1 constructor and no
   /// arguments to the Base2 constructor.
   template <typename Base1Arg>
-  AddonManagerJoiner(Base1Arg&& arg1, NoArg_t);
+  CompositeJoiner(Base1Arg&& arg1, NoArg_t);
 
   /// This constructor passes no arguments to the Base1 constructor and
   /// arbitrarily many arguments to the Base2 constructor.
   template <typename... Base2Args>
-  AddonManagerJoiner(NoArg_t, Base2Args&&... args2);
+  CompositeJoiner(NoArg_t, Base2Args&&... args2);
 
   // Documentation inherited
   template <class T>
@@ -98,11 +98,11 @@ public:
 
   // Documentation inherited
   template <class T>
-  void set(const T* addon);
+  void set(const T* aspect);
 
   // Documentation inherited
   template <class T>
-  void set(std::unique_ptr<T>&& addon);
+  void set(std::unique_ptr<T>&& aspect);
 
   // Documentation inherited
   template <class T, typename ...Args>
@@ -122,16 +122,16 @@ public:
 
 };
 
-/// This is the variadic version of the AddonManagerJoiner class which allows
+/// This is the variadic version of the CompositeJoiner class which allows
 /// you to include arbitrarily many base classes in the joining.
 template <class Base1, class Base2, class... OtherBases>
-class AddonManagerJoiner<Base1, Base2, OtherBases...> :
-    public AddonManagerJoiner< Base1, AddonManagerJoiner<Base2, OtherBases...> >
+class CompositeJoiner<Base1, Base2, OtherBases...> :
+    public CompositeJoiner< Base1, CompositeJoiner<Base2, OtherBases...> >
 {
 public:
 
   /// Default constructor
-  AddonManagerJoiner() = default;
+  CompositeJoiner() = default;
 
   /// This constructor allows one argument to be passed to each Base class's
   /// constructor (except the final Base class, which accepts arbitrarily many
@@ -144,14 +144,14 @@ public:
   // then, this is the best we can offer due to fundamental limitations of
   // variadic templates in C++11.
   template <typename... Args>
-  AddonManagerJoiner(Args&&... args);
+  CompositeJoiner(Args&&... args);
 
 };
 
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/AddonManagerJoiner.h"
+#include "dart/common/detail/CompositeJoiner.h"
 
-#endif // DART_COMMON_ADDONMANAGERJOINER_H_
+#endif // DART_COMMON_COMPOSITEJOINER_H_
 

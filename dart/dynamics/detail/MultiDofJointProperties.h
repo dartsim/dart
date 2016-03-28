@@ -38,7 +38,7 @@
 #define DART_DYNAMICS_DETAIL_MULTIDOFJOINTPROPERTIES_H_
 
 #include "dart/dynamics/Joint.h"
-#include "dart/common/AddonWithVersion.h"
+#include "dart/common/AspectWithVersion.h"
 
 namespace dart {
 namespace dynamics {
@@ -156,40 +156,40 @@ public:
 
 //==============================================================================
 template <size_t DOF>
-class MultiDofJointAddon final :
-    public common::AddonWithVersionedProperties<
-        MultiDofJointAddon<DOF>, MultiDofJointUniqueProperties<DOF>, MultiDofJoint<DOF>,
-        common::detail::NoOp<MultiDofJointAddon<DOF>*> >
+class MultiDofJointAspect final :
+    public common::AspectWithVersionedProperties<
+        MultiDofJointAspect<DOF>, MultiDofJointUniqueProperties<DOF>, MultiDofJoint<DOF>,
+        common::detail::NoOp<MultiDofJointAspect<DOF>*> >
 {
 public:
-  MultiDofJointAddon(const MultiDofJointAddon&) = delete;
+  MultiDofJointAspect(const MultiDofJointAspect&) = delete;
 
-  MultiDofJointAddon(common::AddonManager* mgr,
-        const typename MultiDofJointAddon::PropertiesData& properties);
+  MultiDofJointAspect(common::Composite* mgr,
+        const typename MultiDofJointAspect::PropertiesData& properties);
 
   constexpr static size_t NumDofs = DOF;
   using Vector = Eigen::Matrix<double, DOF, 1>;
   using BoolArray = std::array<bool, DOF>;
   using StringArray = std::array<std::string, DOF>;
 
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, PositionLowerLimit)
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, PositionUpperLimit)
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, InitialPosition)
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, VelocityLowerLimit)
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, VelocityUpperLimit)
-  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ADDON(double, Vector, InitialVelocity, InitialVelocities)
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, AccelerationLowerLimit)
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, AccelerationUpperLimit)
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, ForceLowerLimit)
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, ForceUpperLimit)
-  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ADDON(double, Vector, SpringStiffness, SpringStiffnesses)
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, RestPosition)
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, DampingCoefficient)
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(double, Vector, Friction)
-  DART_COMMON_SET_GET_MULTIDOF_ADDON(bool, BoolArray, PreserveDofName)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, PositionLowerLimit)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, PositionUpperLimit)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, InitialPosition)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, VelocityLowerLimit)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, VelocityUpperLimit)
+  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ASPECT(double, Vector, InitialVelocity, InitialVelocities)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, AccelerationLowerLimit)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, AccelerationUpperLimit)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, ForceLowerLimit)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, ForceUpperLimit)
+  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ASPECT(double, Vector, SpringStiffness, SpringStiffnesses)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, RestPosition)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, DampingCoefficient)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, Friction)
+  DART_COMMON_SET_GET_MULTIDOF_ASPECT(bool, BoolArray, PreserveDofName)
 
   const std::string& setDofName(size_t index, const std::string& name, bool preserveName);
-  DART_COMMON_GET_ADDON_PROPERTY_ARRAY(MultiDofJointAddon, std::string, StringArray, DofName, DofNames, DOF)
+  DART_COMMON_GET_ASPECT_PROPERTY_ARRAY(MultiDofJointAspect, std::string, StringArray, DofName, DofNames, DOF)
 
   friend class MultiDofJoint<DOF>;
 
@@ -291,19 +291,19 @@ MultiDofJointProperties<DOF>::MultiDofJointProperties(
 // See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
 //
 template <size_t DOF>
-constexpr size_t MultiDofJointAddon<DOF>::NumDofs;
+constexpr size_t MultiDofJointAspect<DOF>::NumDofs;
 
 //==============================================================================
 template <size_t DOF>
-MultiDofJointAddon<DOF>::MultiDofJointAddon(
-    common::AddonManager* mgr,
-    const typename MultiDofJointAddon::PropertiesData& properties =
-        typename MultiDofJointAddon::PropertiesData())
-  : common::AddonWithVersionedProperties<
-        typename MultiDofJointAddon<DOF>::Derived,
-        typename MultiDofJointAddon<DOF>::PropertiesData,
-        typename MultiDofJointAddon<DOF>::ManagerType,
-        &common::detail::NoOp<typename MultiDofJointAddon<DOF>::Derived*> >(
+MultiDofJointAspect<DOF>::MultiDofJointAspect(
+    common::Composite* mgr,
+    const typename MultiDofJointAspect::PropertiesData& properties =
+        typename MultiDofJointAspect::PropertiesData())
+  : common::AspectWithVersionedProperties<
+        typename MultiDofJointAspect<DOF>::Derived,
+        typename MultiDofJointAspect<DOF>::PropertiesData,
+        typename MultiDofJointAspect<DOF>::ManagerType,
+        &common::detail::NoOp<typename MultiDofJointAspect<DOF>::Derived*> >(
       mgr, properties)
 {
   // Do nothing
@@ -311,7 +311,7 @@ MultiDofJointAddon<DOF>::MultiDofJointAddon(
 
 //==============================================================================
 template <size_t DOF>
-const std::string& MultiDofJointAddon<DOF>::setDofName(
+const std::string& MultiDofJointAspect<DOF>::setDofName(
     size_t index, const std::string& name, bool preserveName)
 {
   return this->getManager()->setDofName(index, name, preserveName);
@@ -319,7 +319,7 @@ const std::string& MultiDofJointAddon<DOF>::setDofName(
 
 //==============================================================================
 template <size_t DOF>
-std::string& MultiDofJointAddon<DOF>::_getDofNameReference(size_t index)
+std::string& MultiDofJointAspect<DOF>::_getDofNameReference(size_t index)
 {
   return this->mProperties.mDofNames[index];
 }

@@ -269,92 +269,92 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
 }
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_IRREGULAR( TypeName, AddonName, PluralAddonName )\
-  inline size_t getNum ## PluralAddonName () const\
+#define DART_BAKE_SPECIALIZED_NODE_IRREGULAR( TypeName, AspectName, PluralAspectName )\
+  inline size_t getNum ## PluralAspectName () const\
   { return getNumNodes< TypeName >(); }\
-  inline TypeName * get ## AddonName (size_t index)\
+  inline TypeName * get ## AspectName (size_t index)\
   { return getNode< TypeName >(index); }\
-  inline const TypeName * get ## AddonName (size_t index) const\
+  inline const TypeName * get ## AspectName (size_t index) const\
   { return getNode< TypeName >(index); }
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE( AddonName )\
-  DART_BAKE_SPECIALIZED_NODE_IRREGULAR( AddonName, AddonName, AddonName ## s )
+#define DART_BAKE_SPECIALIZED_NODE( AspectName )\
+  DART_BAKE_SPECIALIZED_NODE_IRREGULAR( AspectName, AspectName, AspectName ## s )
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR( TypeName, AddonName, PluralAddonName )\
-  DART_BAKE_SPECIALIZED_NODE_IRREGULAR( TypeName, AddonName, PluralAddonName )\
-  inline size_t getNum ## PluralAddonName (size_t treeIndex) const\
+#define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR( TypeName, AspectName, PluralAspectName )\
+  DART_BAKE_SPECIALIZED_NODE_IRREGULAR( TypeName, AspectName, PluralAspectName )\
+  inline size_t getNum ## PluralAspectName (size_t treeIndex) const\
   { return getNumNodes< TypeName >(treeIndex); }\
-  inline TypeName * get ## AddonName (size_t treeIndex, size_t nodeIndex)\
+  inline TypeName * get ## AspectName (size_t treeIndex, size_t nodeIndex)\
   { return getNode< TypeName >(treeIndex, nodeIndex); }\
-  inline const TypeName * get ## AddonName (size_t treeIndex, size_t nodeIndex) const\
+  inline const TypeName * get ## AspectName (size_t treeIndex, size_t nodeIndex) const\
   { return getNode< TypeName >(treeIndex, nodeIndex); }\
   \
-  inline TypeName * get ## AddonName (const std::string& name)\
+  inline TypeName * get ## AspectName (const std::string& name)\
   { return getNode< TypeName >(name); }\
-  inline const TypeName * get ## AddonName (const std::string& name) const\
+  inline const TypeName * get ## AspectName (const std::string& name) const\
   { return getNode< TypeName >(name); }
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_SKEL( AddonName )\
-  DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR( AddonName, AddonName, AddonName ## s)
+#define DART_BAKE_SPECIALIZED_NODE_SKEL( AspectName )\
+  DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR( AspectName, AspectName, AspectName ## s)
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( TypeName, AddonName, PluralAddonName )\
-  size_t getNum ## PluralAddonName () const;\
-  TypeName * get ## AddonName (size_t index);\
-  const TypeName * get ## AddonName (size_t index) const;
+#define DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( TypeName, AspectName, PluralAspectName )\
+  size_t getNum ## PluralAspectName () const;\
+  TypeName * get ## AspectName (size_t index);\
+  const TypeName * get ## AspectName (size_t index) const;
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( AddonName )\
-  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( AddonName, AddonName, AddonName ## s )
+#define DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( AspectName )\
+  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( AspectName, AspectName, AspectName ## s )
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DECLARATIONS( TypeName, AddonName, PluralAddonName )\
-  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( TypeName, AddonName, PluralAddonName )\
-  size_t getNum ## PluralAddonName (size_t treeIndex) const;\
-  TypeName * get ## AddonName (size_t treeIndex, size_t nodeIndex);\
-  const TypeName * get ## AddonName (size_t treeIndex, size_t nodeIndex) const;\
+#define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DECLARATIONS( TypeName, AspectName, PluralAspectName )\
+  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DECLARATIONS( TypeName, AspectName, PluralAspectName )\
+  size_t getNum ## PluralAspectName (size_t treeIndex) const;\
+  TypeName * get ## AspectName (size_t treeIndex, size_t nodeIndex);\
+  const TypeName * get ## AspectName (size_t treeIndex, size_t nodeIndex) const;\
   \
-  TypeName * get ## AddonName (const std::string& name);\
-  const TypeName * get ## AddonName (const std::string& name) const;
+  TypeName * get ## AspectName (const std::string& name);\
+  const TypeName * get ## AspectName (const std::string& name) const;
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS( AddonName )\
-  DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DECLARATIONS( AddonName, AddonName, AddonName ## s )
+#define DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS( AspectName )\
+  DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DECLARATIONS( AspectName, AspectName, AspectName ## s )
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, TypeName, AddonName, PluralAddonName )\
-  size_t ClassName :: getNum ## PluralAddonName () const\
+#define DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, TypeName, AspectName, PluralAspectName )\
+  size_t ClassName :: getNum ## PluralAspectName () const\
   { return getNumNodes< TypeName >(); }\
-  TypeName * ClassName :: get ## AddonName (size_t index)\
+  TypeName * ClassName :: get ## AspectName (size_t index)\
   { return getNode< TypeName >(index); }\
-  const TypeName * ClassName :: get ## AddonName (size_t index) const\
+  const TypeName * ClassName :: get ## AspectName (size_t index) const\
   { return getNode< TypeName >(index); }
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( ClassName, AddonName )\
-  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, AddonName, AddonName, AddonName ## s )
+#define DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( ClassName, AspectName )\
+  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, AspectName, AspectName, AspectName ## s )
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DEFINITIONS( ClassName, TypeName, AddonName, PluralAddonName )\
-  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, TypeName, AddonName, PluralAddonName )\
-  size_t ClassName :: getNum ## PluralAddonName (size_t treeIndex) const\
+#define DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DEFINITIONS( ClassName, TypeName, AspectName, PluralAspectName )\
+  DART_BAKE_SPECIALIZED_NODE_IRREGULAR_DEFINITIONS( ClassName, TypeName, AspectName, PluralAspectName )\
+  size_t ClassName :: getNum ## PluralAspectName (size_t treeIndex) const\
   { return getNumNodes< TypeName >(treeIndex); }\
-  TypeName * ClassName :: get ## AddonName (size_t treeIndex, size_t nodeIndex)\
+  TypeName * ClassName :: get ## AspectName (size_t treeIndex, size_t nodeIndex)\
   { return getNode< TypeName >(treeIndex, nodeIndex); }\
-  const TypeName * ClassName :: get ## AddonName (size_t treeIndex, size_t nodeIndex) const\
+  const TypeName * ClassName :: get ## AspectName (size_t treeIndex, size_t nodeIndex) const\
   { return getNode< TypeName >(treeIndex, nodeIndex); }\
   \
-  TypeName * ClassName :: get ## AddonName (const std::string& name)\
+  TypeName * ClassName :: get ## AspectName (const std::string& name)\
   { return getNode< TypeName >(name); }\
-  const TypeName * ClassName :: get ## AddonName (const std::string& name) const\
+  const TypeName * ClassName :: get ## AspectName (const std::string& name) const\
   { return getNode< TypeName >(name); }
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( ClassName, AddonName )\
-  DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DEFINITIONS( ClassName, AddonName, AddonName, AddonName ## s )
+#define DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( ClassName, AspectName )\
+  DART_BAKE_SPECIALIZED_NODE_SKEL_IRREGULAR_DEFINITIONS( ClassName, AspectName, AspectName, AspectName ## s )
 
 } // namespace detail
 } // namespace dynamics

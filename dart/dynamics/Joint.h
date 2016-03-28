@@ -45,7 +45,7 @@
 #include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
 #include "dart/common/VersionCounter.h"
-#include "dart/common/AddonManager.h"
+#include "dart/common/Composite.h"
 #include "dart/math/MathTypes.h"
 #include "dart/dynamics/SmartPointer.h"
 
@@ -65,7 +65,7 @@ class DegreeOfFreedom;
 /// class Joint
 class Joint : public virtual common::Subject,
               public virtual common::VersionCounter,
-              public virtual common::AddonManager
+              public virtual common::Composite
 {
 public:
 
@@ -160,22 +160,22 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-  using AddonProperties = common::AddonManager::Properties;
+  using AspectProperties = common::Composite::Properties;
 
   struct ExtendedProperties : Properties
   {
     /// Composed constructor
     ExtendedProperties(
         const Properties& standardProperties = Properties(),
-        const AddonProperties& addonProperties = AddonProperties());
+        const AspectProperties& aspectProperties = AspectProperties());
 
     /// Composed move constructor
     ExtendedProperties(
         Properties&& standardProperties,
-        AddonProperties&& addonProperties);
+        AspectProperties&& aspectProperties);
 
-    /// Properties of all the Addons attached to this Joint
-    AddonProperties mAddonProperties;
+    /// Properties of all the Aspects attached to this Joint
+    AspectProperties mAspectProperties;
   };
 
   /// Default actuator type
@@ -998,11 +998,11 @@ public:
 
 namespace detail {
 
-template <class AddonType>
-void JointPropertyUpdate(AddonType* addon)
+template <class AspectType>
+void JointPropertyUpdate(AspectType* aspect)
 {
-  addon->getManager()->notifyPositionUpdate();
-  addon->getManager()->updateLocalJacobian();
+  aspect->getManager()->notifyPositionUpdate();
+  aspect->getManager()->updateLocalJacobian();
 }
 
 } // namespace detail

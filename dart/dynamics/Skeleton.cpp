@@ -188,11 +188,11 @@ Skeleton::ExtendedProperties::ExtendedProperties(
     const BodyNodeExtendedProperties& bodyNodeProperties,
     const JointExtendedProperties& jointProperties,
     const std::vector<std::string>& parentNames,
-    const AddonProperties& addonProperties)
+    const AspectProperties& aspectProperties)
   : mBodyNodeProperties(bodyNodeProperties),
     mJointProperties(jointProperties),
     mParentBodyNodeNames(parentNames),
-    mAddonProperties(addonProperties)
+    mAspectProperties(aspectProperties)
 {
   // Do nothing
 }

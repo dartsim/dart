@@ -80,7 +80,7 @@ class Marker;
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
 class BodyNode :
-    public virtual common::AddonManager,
+    public virtual common::Composite,
     public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector>,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
@@ -98,7 +98,7 @@ public:
   using NodePropertiesVector = common::ExtensibleVector< std::unique_ptr<Node::Properties> >;
   using NodePropertiesMap = std::map< std::type_index, std::unique_ptr<NodePropertiesVector> >;
   using NodeProperties = common::ExtensibleMapHolder<NodePropertiesMap>;
-  using AddonProperties = common::AddonManager::Properties;
+  using AspectProperties = common::Composite::Properties;
 
   using UniqueProperties = detail::BodyNodeUniqueProperties;
   using Properties = detail::BodyNodeProperties;
@@ -115,8 +115,8 @@ public:
   /// Set the Properties of the attached Nodes
   void setProperties(const NodeProperties& _properties);
 
-  /// Same as setAddonProperties()
-  void setProperties(const AddonProperties& _properties);
+  /// Same as setAspectProperties()
+  void setProperties(const AspectProperties& _properties);
 
   /// Set the Properties of this BodyNode
   void setProperties(const Properties& _properties);
@@ -131,7 +131,7 @@ public:
   NodeProperties getAttachedNodeProperties() const;
 
   /// The the full extended Properties of this BodyNode, including the
-  /// Properties of its Addons, its attached Nodes, and the BodyNode itself.
+  /// Properties of its Aspects, its attached Nodes, and the BodyNode itself.
   ExtendedProperties getExtendedProperties() const;
 
   /// Copy the Properties of another BodyNode
@@ -564,30 +564,30 @@ public:
   /// Remove all ShapeNodes from this BodyNode
   void removeAllShapeNodes();
 
-  /// Create a ShapeNode with the specified Addons and an automatically assigned
+  /// Create a ShapeNode with the specified Aspects and an automatically assigned
   /// name: <BodyNodeName>_ShapeNode_<#>.
-  template <class... Addons>
+  template <class... Aspects>
   ShapeNode* createShapeNodeWith(const ShapePtr& shape);
 
-  /// Create a ShapeNode with the specified name and Addons
-  template <class... Addons>
+  /// Create a ShapeNode with the specified name and Aspects
+  template <class... Aspects>
   ShapeNode* createShapeNodeWith(const ShapePtr& shape,
                                  const std::string& name);
 
-  /// Return the number of ShapeNodes containing given Addon in this BodyNode
-  template <class Addon>
+  /// Return the number of ShapeNodes containing given Aspect in this BodyNode
+  template <class Aspect>
   size_t getNumShapeNodesWith() const;
 
-  /// Return the list of ShapeNodes containing given Addon
-  template <class Addon>
+  /// Return the list of ShapeNodes containing given Aspect
+  template <class Aspect>
   const std::vector<ShapeNode*> getShapeNodesWith();
 
-  /// Return the list of ShapeNodes containing given Addon
-  template <class Addon>
+  /// Return the list of ShapeNodes containing given Aspect
+  template <class Aspect>
   const std::vector<const ShapeNode*> getShapeNodesWith() const;
 
-  /// Remove all ShapeNodes containing given Addon from this BodyNode
-  template <class Addon>
+  /// Remove all ShapeNodes containing given Aspect from this BodyNode
+  template <class Aspect>
   void removeAllShapeNodesWith();
 
   /// Create an EndEffector attached to this BodyNode. Pass an

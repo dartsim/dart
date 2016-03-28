@@ -37,9 +37,9 @@
 #ifndef DART_DYNAMICS_DETAIL_SINGLEDOFJOINTPROPERTIES_H_
 #define DART_DYNAMICS_DETAIL_SINGLEDOFJOINTPROPERTIES_H_
 
-#include "dart/common/RequiresAddon.h"
+#include "dart/common/RequiresAspect.h"
 
-#include "dart/common/AddonWithVersion.h"
+#include "dart/common/AspectWithVersion.h"
 #include "dart/dynamics/Joint.h"
 
 namespace dart {
@@ -136,40 +136,40 @@ struct SingleDofJointProperties :
 };
 
 //==============================================================================
-class SingleDofJointAddon final :
-    public common::AddonWithVersionedProperties<
-        SingleDofJointAddon, SingleDofJointUniqueProperties,
+class SingleDofJointAspect final :
+    public common::AspectWithVersionedProperties<
+        SingleDofJointAspect, SingleDofJointUniqueProperties,
         SingleDofJoint, common::detail::NoOp>
 {
 public:
-  DART_COMMON_ADDON_PROPERTY_CONSTRUCTOR( SingleDofJointAddon, &common::detail::NoOp )
+  DART_COMMON_ASPECT_PROPERTY_CONSTRUCTOR( SingleDofJointAspect, &common::detail::NoOp )
 
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, PositionLowerLimit)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, PositionUpperLimit)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, InitialPosition)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, VelocityLowerLimit)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, VelocityUpperLimit)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, InitialVelocity)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, AccelerationLowerLimit)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, AccelerationUpperLimit)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, ForceLowerLimit)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, ForceUpperLimit)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, SpringStiffness)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, RestPosition)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, DampingCoefficient)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, Friction)
-  DART_COMMON_SET_GET_ADDON_PROPERTY(bool, PreserveDofName)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, PositionLowerLimit)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, PositionUpperLimit)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, InitialPosition)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, VelocityLowerLimit)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, VelocityUpperLimit)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, InitialVelocity)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, AccelerationLowerLimit)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, AccelerationUpperLimit)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, ForceLowerLimit)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, ForceUpperLimit)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, SpringStiffness)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, RestPosition)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, DampingCoefficient)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, Friction)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(bool, PreserveDofName)
 
   const std::string& setDofName(const std::string& name,
                                 bool preserveName = true);
-  DART_COMMON_GET_ADDON_PROPERTY(std::string, DofName)
+  DART_COMMON_GET_ASPECT_PROPERTY(std::string, DofName)
 
   friend class dart::dynamics::SingleDofJoint;
 };
 
 //==============================================================================
-using SingleDofJointBase = common::AddonManagerJoiner<
-    Joint, common::RequiresAddon<SingleDofJointAddon> >;
+using SingleDofJointBase = common::CompositeJoiner<
+    Joint, common::RequiresAspect<SingleDofJointAspect> >;
 
 } // namespace detail
 } // namespace dynamics

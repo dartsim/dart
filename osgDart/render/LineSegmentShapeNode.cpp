@@ -76,7 +76,7 @@ class LineSegmentShapeDrawable : public osg::Geometry
 public:
 
   LineSegmentShapeDrawable(dart::dynamics::LineSegmentShape* shape,
-                           dart::dynamics::VisualAddon* visualAddon);
+                           dart::dynamics::VisualAspect* visualAspect);
 
   void refresh(bool firstTime);
 
@@ -85,7 +85,7 @@ protected:
   virtual ~LineSegmentShapeDrawable();
 
   dart::dynamics::LineSegmentShape* mLineSegmentShape;
-  dart::dynamics::VisualAddon* mVisualAddon;
+  dart::dynamics::VisualAspect* mVisualAspect;
 
   osg::ref_ptr<osg::Vec3Array> mVertices;
   osg::ref_ptr<osg::Vec4Array> mColors;
@@ -101,7 +101,7 @@ LineSegmentShapeNode::LineSegmentShapeNode(
 {
   mNode = this;
   extractData(true);
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -109,7 +109,7 @@ void LineSegmentShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -170,7 +170,7 @@ void LineSegmentShapeGeode::extractData(bool firstTime)
 
   if(nullptr == mDrawable)
   {
-    mDrawable = new LineSegmentShapeDrawable(mLineSegmentShape.get(), mVisualAddon);
+    mDrawable = new LineSegmentShapeDrawable(mLineSegmentShape.get(), mVisualAspect);
     addDrawable(mDrawable);
     return;
   }
@@ -187,9 +187,9 @@ LineSegmentShapeGeode::~LineSegmentShapeGeode()
 //==============================================================================
 LineSegmentShapeDrawable::LineSegmentShapeDrawable(
     dart::dynamics::LineSegmentShape* shape,
-    dart::dynamics::VisualAddon* visualAddon)
+    dart::dynamics::VisualAspect* visualAspect)
   : mLineSegmentShape(shape),
-    mVisualAddon(visualAddon),
+    mVisualAspect(visualAspect),
     mVertices(new osg::Vec3Array),
     mColors(new osg::Vec4Array)
 {
@@ -246,7 +246,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
     if(mColors->size() != 1)
       mColors->resize(1);
 
-    (*mColors)[0] = eigToOsgVec4(mVisualAddon->getRGBA());
+    (*mColors)[0] = eigToOsgVec4(mVisualAspect->getRGBA());
 
     setColorArray(mColors, osg::Array::BIND_OVERALL);
   }

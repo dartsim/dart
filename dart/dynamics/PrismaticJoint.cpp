@@ -69,7 +69,7 @@ void PrismaticJoint::setProperties(const UniqueProperties& _properties)
 PrismaticJoint::Properties PrismaticJoint::getPrismaticJointProperties() const
 {
   return Properties(getSingleDofJointProperties(),
-                    getPrismaticJointAddon()->getProperties());
+                    getPrismaticJointAspect()->getProperties());
 }
 
 //==============================================================================
@@ -119,20 +119,20 @@ bool PrismaticJoint::isCyclic(size_t /*_index*/) const
 //==============================================================================
 void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  getPrismaticJointAddon()->setAxis(_axis);
+  getPrismaticJointAspect()->setAxis(_axis);
 }
 
 //==============================================================================
 const Eigen::Vector3d& PrismaticJoint::getAxis() const
 {
-  return getPrismaticJointAddon()->getAxis();
+  return getPrismaticJointAspect()->getAxis();
 }
 
 //==============================================================================
 PrismaticJoint::PrismaticJoint(const Properties& _properties)
   : detail::PrismaticJointBase(_properties, common::NoArg)
 {
-  createPrismaticJointAddon(_properties);
+  createPrismaticJointAspect(_properties);
 
   // Inherited Joint Properties must be set in the final joint class or else we
   // get pure virtual function calls

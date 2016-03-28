@@ -71,7 +71,7 @@ FCLMeshCollisionNode::FCLMeshCollisionNode(dynamics::BodyNode* _bodyNode)
   using dart::dynamics::SoftMeshShape;
 
   // Create meshes according to types of the shapes
-  auto collShapeNodes = _bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+  auto collShapeNodes = _bodyNode->getShapeNodesWith<dynamics::CollisionAspect>();
   for (auto shapeNode : collShapeNodes)
   {
     auto shape = shapeNode->getShape();
@@ -161,8 +161,8 @@ bool FCLMeshCollisionNode::detectCollision(FCLMeshCollisionNode* _otherNode,
   auto bodyNode1 = this->getBodyNode();
   auto bodyNode2 = _otherNode->getBodyNode();
 
-  auto collShapeNodes1 = bodyNode1->getShapeNodesWith<dynamics::CollisionAddon>();
-  auto collShapeNodes2 = bodyNode2->getShapeNodesWith<dynamics::CollisionAddon>();
+  auto collShapeNodes1 = bodyNode1->getShapeNodesWith<dynamics::CollisionAspect>();
+  auto collShapeNodes2 = bodyNode2->getShapeNodesWith<dynamics::CollisionAspect>();
 
   for (size_t i = 0; i < mMeshes.size(); i++)
   {
@@ -319,8 +319,8 @@ void FCLMeshCollisionNode::updateShape()
   {
     auto shapeNode = mBodyNode->getNode<dynamics::ShapeNode>(i);
 
-    auto collisionAddon = shapeNode->get<dynamics::CollisionAddon>();
-    if (!collisionAddon)
+    auto collisionAspect = shapeNode->get<dynamics::CollisionAspect>();
+    if (!collisionAspect)
       continue;
 
     auto shape = shapeNode->getShape();

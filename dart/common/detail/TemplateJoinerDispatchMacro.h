@@ -39,7 +39,7 @@
 
 //==============================================================================
 /// This macro provides the implementation for most of the member functions in
-/// common::AddonManagerJoiner, dynamics::NodeManagerJoinerForBodyNode, and
+/// common::CompositeJoiner, dynamics::NodeManagerJoinerForBodyNode, and
 /// NodeManagerJoinerForSkeleton. The member functions of those classes share
 /// essentially the same logic, so it makes sense to have a single macro that
 /// provides the implementation for all of them.

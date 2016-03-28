@@ -34,16 +34,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_ADDONMANAGER_H_
-#define DART_COMMON_DETAIL_ADDONMANAGER_H_
+#ifndef DART_COMMON_DETAIL_COMPOSITE_H_
+#define DART_COMMON_DETAIL_COMPOSITE_H_
 
-#include "dart/common/AddonManager.h"
+#include "dart/common/Composite.h"
 
-#define DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE( Func, T, ReturnType )\
+#define DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE( Func, T, ReturnType )\
   if(requires< T >())\
   {\
-    dterr << "[AddonManager::" #Func << "] Illegal request to remove required "\
-          << "Addon [" << typeid(T).name() << "]!\n";\
+    dterr << "[Composite::" #Func << "] Illegal request to remove required "\
+          << "Aspect [" << typeid(T).name() << "]!\n";\
     assert(false);\
     return ReturnType ;\
   }
@@ -53,17 +53,17 @@ namespace common {
 
 //==============================================================================
 template <class T>
-bool AddonManager::has() const
+bool Composite::has() const
 {
   return (get<T>() != nullptr);
 }
 
 //==============================================================================
 template <class T>
-T* AddonManager::get()
+T* Composite::get()
 {
-  AddonMap::iterator it = mAddonMap.find( typeid(T) );
-  if(mAddonMap.end() == it)
+  AspectMap::iterator it = mAspectMap.find( typeid(T) );
+  if(mAspectMap.end() == it)
     return nullptr;
 
   return static_cast<T*>(it->second.get());
@@ -71,54 +71,54 @@ T* AddonManager::get()
 
 //==============================================================================
 template <class T>
-const T* AddonManager::get() const
+const T* Composite::get() const
 {
-  return const_cast<AddonManager*>(this)->get<T>();
+  return const_cast<Composite*>(this)->get<T>();
 }
 
 //==============================================================================
 template <class T>
-void AddonManager::set(const T* addon)
+void Composite::set(const T* aspect)
 {
-  _set(typeid(T), addon);
+  _set(typeid(T), aspect);
 }
 
 //==============================================================================
 template <class T>
-void AddonManager::set(std::unique_ptr<T>&& addon)
+void Composite::set(std::unique_ptr<T>&& aspect)
 {
-  _set(typeid(T), std::move(addon));
+  _set(typeid(T), std::move(aspect));
 }
 
 //==============================================================================
 template <class T, typename ...Args>
-T* AddonManager::create(Args&&... args)
+T* Composite::create(Args&&... args)
 {
-  T* addon = new T(this, std::forward<Args>(args)...);
-  mAddonMap[typeid(T)] = std::unique_ptr<T>(addon);
-  becomeManager(addon, false);
+  T* aspect = new T(this, std::forward<Args>(args)...);
+  mAspectMap[typeid(T)] = std::unique_ptr<T>(aspect);
+  becomeManager(aspect, false);
 
-  return addon;
+  return aspect;
 }
 
 //==============================================================================
 template <class T>
-void AddonManager::erase()
+void Composite::erase()
 {
-  AddonMap::iterator it = mAddonMap.find( typeid(T) );
-  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(erase, T, DART_BLANK)
-  if(mAddonMap.end() != it)
+  AspectMap::iterator it = mAspectMap.find( typeid(T) );
+  DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(erase, T, DART_BLANK)
+  if(mAspectMap.end() != it)
     it->second = nullptr;
 }
 
 //==============================================================================
 template <class T>
-std::unique_ptr<T> AddonManager::release()
+std::unique_ptr<T> Composite::release()
 {
   std::unique_ptr<T> extraction = nullptr;
-  AddonMap::iterator it = mAddonMap.find( typeid(T) );
-  DART_COMMON_CHECK_ILLEGAL_ADDON_ERASE(release, T, nullptr)
-  if(mAddonMap.end() != it)
+  AspectMap::iterator it = mAspectMap.find( typeid(T) );
+  DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(release, T, nullptr)
+  if(mAspectMap.end() != it)
     extraction = std::unique_ptr<T>(static_cast<T*>(it->second.release()));
 
   return extraction;
@@ -126,93 +126,93 @@ std::unique_ptr<T> AddonManager::release()
 
 //==============================================================================
 template <class T>
-constexpr bool AddonManager::isSpecializedFor()
+constexpr bool Composite::isSpecializedFor()
 {
   return false;
 }
 
 //==============================================================================
 template <class T>
-bool AddonManager::requires() const
+bool Composite::requires() const
 {
-  return (mRequiredAddons.find(typeid(T)) != mRequiredAddons.end());
+  return (mRequiredAspects.find(typeid(T)) != mRequiredAspects.end());
 }
 
 //==============================================================================
 template <class T>
-void createAddons(T* /*mgr*/)
+void createAspects(T* /*mgr*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <class T, class NextAddon, class... Addons>
-void createAddons(T* mgr)
+template <class T, class NextAspect, class... Aspects>
+void createAspects(T* mgr)
 {
-  mgr->template create<NextAddon>();
+  mgr->template create<NextAspect>();
 
-  createAddons<T, Addons...>(mgr);
+  createAspects<T, Aspects...>(mgr);
 }
 
 } // namespace common
 } // namespace dart
 
 //==============================================================================
-// Create non-template alternatives to AddonManager functions
-#define DART_BAKE_SPECIALIZED_ADDON_IRREGULAR( TypeName, AddonName )     \
-  inline bool has ## AddonName () const                                  \
+// Create non-template alternatives to Composite functions
+#define DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR( TypeName, AspectName )     \
+  inline bool has ## AspectName () const                                  \
   {                                                                      \
     return this->template has<TypeName>();                               \
   }                                                                      \
                                                                          \
-  inline TypeName * get ## AddonName ()                                  \
+  inline TypeName * get ## AspectName ()                                  \
   {                                                                      \
     return this->template get<TypeName>();                               \
   }                                                                      \
                                                                          \
-  inline const TypeName* get ## AddonName () const                       \
+  inline const TypeName* get ## AspectName () const                       \
   {                                                                      \
     return this->template get<TypeName>();                               \
   }                                                                      \
                                                                          \
-  inline TypeName * get ## AddonName (const bool createIfNull)           \
+  inline TypeName * get ## AspectName (const bool createIfNull)           \
   {                                                                      \
-    TypeName* addon = get ## AddonName();                                \
+    TypeName* aspect = get ## AspectName();                                \
                                                                          \
-    if (createIfNull && nullptr == addon)                                \
-      return create ## AddonName();                                      \
+    if (createIfNull && nullptr == aspect)                                \
+      return create ## AspectName();                                      \
                                                                          \
-    return addon;                                                        \
+    return aspect;                                                        \
   }                                                                      \
                                                                          \
-  inline void set ## AddonName (const TypeName * addon)                  \
+  inline void set ## AspectName (const TypeName * aspect)                  \
   {                                                                      \
-    this->template set<TypeName>(addon);                                 \
+    this->template set<TypeName>(aspect);                                 \
   }                                                                      \
                                                                          \
-  inline void set ## AddonName (std::unique_ptr< TypeName >&& addon)     \
+  inline void set ## AspectName (std::unique_ptr< TypeName >&& aspect)     \
   {                                                                      \
-    this->template set<TypeName>(std::move(addon));                      \
+    this->template set<TypeName>(std::move(aspect));                      \
   }                                                                      \
                                                                          \
   template <typename ...Args>                                            \
-  inline TypeName * create ## AddonName (Args&&... args)                 \
+  inline TypeName * create ## AspectName (Args&&... args)                 \
   {                                                                      \
     return this->template create<TypeName>(std::forward<Args>(args)...); \
   }                                                                      \
                                                                          \
-  inline void erase ## AddonName ()                                      \
+  inline void erase ## AspectName ()                                      \
   {                                                                      \
     this->template erase<TypeName>();                                    \
   }                                                                      \
                                                                          \
-  inline std::unique_ptr< TypeName > release ## AddonName ()             \
+  inline std::unique_ptr< TypeName > release ## AspectName ()             \
   {                                                                      \
     return this->template release<TypeName>();                           \
   }
 
 //==============================================================================
-#define DART_BAKE_SPECIALIZED_ADDON(AddonName)\
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(AddonName, AddonName);
+#define DART_BAKE_SPECIALIZED_ASPECT(AspectName)\
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(AspectName, AspectName);
 
-#endif // DART_COMMON_DETAIL_ADDONMANAGER_H_
+#endif // DART_COMMON_DETAIL_COMPOSITE_H_

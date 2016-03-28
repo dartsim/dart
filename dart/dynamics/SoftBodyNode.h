@@ -53,15 +53,15 @@ public:
   friend class Skeleton;
   friend class PointMass;
   friend class PointMassNotifier;
-  friend void detail::SoftBodyNodeStateUpdate(SoftBodyAddon* addon);
-  friend void detail::SoftBodyNodePropertiesUpdate(SoftBodyAddon* addon);
+  friend void detail::SoftBodyNodeStateUpdate(SoftBodyAspect* aspect);
+  friend void detail::SoftBodyNodePropertiesUpdate(SoftBodyAspect* aspect);
 
   using UniqueProperties = detail::SoftBodyNodeUniqueProperties;
   using Properties = detail::SoftBodyNodeProperties;
-  using Addon = detail::SoftBodyAddon;
+  using Aspect = detail::SoftBodyAspect;
   using Base = detail::SoftBodyNodeBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(detail::SoftBodyAddon, SoftBodyAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(detail::SoftBodyAspect, SoftBodyAspect)
 
   /// \brief
   virtual ~SoftBodyNode();
@@ -154,7 +154,7 @@ protected:
   virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
                           bool cloneNodes) const override;
 
-  /// Used by SoftBodyAddon to have this SoftBodyNode reconstruct its
+  /// Used by SoftBodyAspect to have this SoftBodyNode reconstruct its
   /// SoftMeshShape
   void configurePointMasses(ShapeNode* softNode);
 

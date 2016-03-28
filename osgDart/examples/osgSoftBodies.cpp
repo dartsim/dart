@@ -64,12 +64,12 @@ public:
       const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
       State state;
       state.mConfig = skeleton->getConfiguration();
-      state.mAddonStates.reserve(skeleton->getNumBodyNodes());
+      state.mAspectStates.reserve(skeleton->getNumBodyNodes());
 
       for(size_t j=0; j < skeleton->getNumBodyNodes(); ++j)
       {
         BodyNode* bn = skeleton->getBodyNode(j);
-        state.mAddonStates.push_back(bn->getAddonStates());
+        state.mAspectStates.push_back(bn->getAspectStates());
       }
 
       slice.push_back(state);
@@ -110,7 +110,7 @@ public:
       for(size_t j=0; j < skeleton->getNumBodyNodes(); ++j)
       {
         BodyNode* bn = skeleton->getBodyNode(j);
-        bn->setAddonStates(state.mAddonStates[j]);
+        bn->setAspectStates(state.mAspectStates[j]);
       }
     }
 
@@ -141,7 +141,7 @@ public:
   struct State
   {
     Skeleton::Configuration mConfig;
-    std::vector<dart::common::AddonManager::State> mAddonStates;
+    std::vector<dart::common::Composite::State> mAspectStates;
   };
 
   using TimeSlice = std::vector<State>;

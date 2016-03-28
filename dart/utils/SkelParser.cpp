@@ -261,7 +261,7 @@ void readCollisionShapeNode(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
-void readAddons(
+void readAspects(
     const dynamics::SkeletonPtr& skeleton,
     tinyxml2::XMLElement* skeletonElement,
     const common::Uri& baseUri,
@@ -562,13 +562,13 @@ void readVisualizationShapeNode(
                       bodyNode->getName() + " - visual shape",
                       baseUri, retriever);
 
-  auto visualAddon = newShapeNode->getVisualAddon(true);
+  auto visualAspect = newShapeNode->getVisualAspect(true);
 
   // color
   if (hasElement(vizShapeNodeEle, "color"))
   {
     Eigen::Vector3d color = getValueVector3d(vizShapeNodeEle, "color");
-    visualAddon->setColor(color);
+    visualAspect->setColor(color);
   }
 }
 
@@ -584,19 +584,19 @@ void readCollisionShapeNode(
                       bodyNode->getName() + " - collision shape",
                       baseUri, retriever);
 
-  auto collisionAddon = newShapeNode->getCollisionAddon(true);
-  newShapeNode->createDynamicsAddon();
+  auto collisionAspect = newShapeNode->getCollisionAspect(true);
+  newShapeNode->createDynamicsAspect();
 
   // collidable
   if (hasElement(collShapeNodeEle, "collidable"))
   {
     const bool collidable = getValueDouble(collShapeNodeEle, "collidable");
-    collisionAddon->setCollidable(collidable);
+    collisionAspect->setCollidable(collidable);
   }
 }
 
 //==============================================================================
-void readAddons(
+void readAspects(
     const dynamics::SkeletonPtr& skeleton,
     tinyxml2::XMLElement* skeletonElement,
     const common::Uri& baseUri,
@@ -1010,9 +1010,9 @@ dynamics::SkeletonPtr readSkeleton(
     it = joints.find(nextJoint->second);
   }
 
-  // Read addons here since addons cannot be added if the BodyNodes haven't
+  // Read aspects here since aspects cannot be added if the BodyNodes haven't
   // created yet.
-  readAddons(newSkeleton, _skeletonElement, _baseUri, _retriever);
+  readAspects(newSkeleton, _skeletonElement, _baseUri, _retriever);
 
   newSkeleton->resetPositions();
   newSkeleton->resetVelocities();

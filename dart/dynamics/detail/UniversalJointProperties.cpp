@@ -59,27 +59,27 @@ UniversalJointProperties::UniversalJointProperties(
 }
 
 //==============================================================================
-void UniversalJointAddon::setAxis1(const Eigen::Vector3d& _axis)
+void UniversalJointAspect::setAxis1(const Eigen::Vector3d& _axis)
 {
   mProperties.mAxis[0] = _axis.normalized();
   notifyPropertiesUpdate();
 }
 
 //==============================================================================
-const Eigen::Vector3d& UniversalJointAddon::getAxis1() const
+const Eigen::Vector3d& UniversalJointAspect::getAxis1() const
 {
   return mProperties.mAxis[0];
 }
 
 //==============================================================================
-void UniversalJointAddon::setAxis2(const Eigen::Vector3d& _axis)
+void UniversalJointAspect::setAxis2(const Eigen::Vector3d& _axis)
 {
   mProperties.mAxis[1] = _axis.normalized();
   notifyPropertiesUpdate();
 }
 
 //==============================================================================
-const Eigen::Vector3d& UniversalJointAddon::getAxis2() const
+const Eigen::Vector3d& UniversalJointAspect::getAxis2() const
 {
   return mProperties.mAxis[1];
 }

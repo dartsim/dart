@@ -84,19 +84,19 @@ struct EulerJointProperties :
 };
 
 //==============================================================================
-class EulerJointAddon final :
-    public common::AddonWithVersionedProperties<
-        EulerJointAddon, EulerJointUniqueProperties, EulerJoint,
-        detail::JointPropertyUpdate<EulerJointAddon> >
+class EulerJointAspect final :
+    public common::AspectWithVersionedProperties<
+        EulerJointAspect, EulerJointUniqueProperties, EulerJoint,
+        detail::JointPropertyUpdate<EulerJointAspect> >
 {
 public:
-  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( EulerJointAddon )
-  DART_COMMON_SET_GET_ADDON_PROPERTY( AxisOrder, AxisOrder )
+  DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( EulerJointAspect )
+  DART_COMMON_SET_GET_ASPECT_PROPERTY( AxisOrder, AxisOrder )
 };
 
 //==============================================================================
-using EulerJointBase = common::AddonManagerJoiner<
-    MultiDofJoint<3>, common::RequiresAddon<EulerJointAddon> >;
+using EulerJointBase = common::CompositeJoiner<
+    MultiDofJoint<3>, common::RequiresAspect<EulerJointAspect> >;
 
 } // namespace detail
 } // namespace dynamics

@@ -158,27 +158,27 @@ ShapeNode* BodyNode::createShapeNode(ShapeNodeProperties properties,
 }
 
 //==============================================================================
-template <class... Addons>
+template <class... Aspects>
 ShapeNode* BodyNode::createShapeNodeWith(const ShapePtr& shape)
 {
-  return createShapeNodeWith<Addons...>(shape, getName()+"_ShapeNode_"
+  return createShapeNodeWith<Aspects...>(shape, getName()+"_ShapeNode_"
                                         +std::to_string(getNumShapeNodes()));
 }
 
 //==============================================================================
-template <class... Addons>
+template <class... Aspects>
 ShapeNode* BodyNode::createShapeNodeWith(
     const ShapePtr& shape, const std::string& name)
 {
   auto shapeNode = createShapeNode(shape, name);
 
-  common::createAddons<ShapeNode, Addons...>(shapeNode);
+  common::createAspects<ShapeNode, Aspects...>(shapeNode);
 
   return shapeNode;
 }
 
 //==============================================================================
-template <class Addon>
+template <class Aspect>
 size_t BodyNode::getNumShapeNodesWith() const
 {
   auto count = 0u;
@@ -186,7 +186,7 @@ size_t BodyNode::getNumShapeNodesWith() const
 
   for (auto i = 0u; i < numShapeNode; ++i)
   {
-    if (getShapeNode(i)->has<Addon>())
+    if (getShapeNode(i)->has<Aspect>())
       ++count;
   }
 
@@ -194,7 +194,7 @@ size_t BodyNode::getNumShapeNodesWith() const
 }
 
 //==============================================================================
-template <class Addon>
+template <class Aspect>
 const std::vector<ShapeNode*> BodyNode::getShapeNodesWith()
 {
   std::vector<ShapeNode*> shapeNodes;
@@ -205,7 +205,7 @@ const std::vector<ShapeNode*> BodyNode::getShapeNodesWith()
   {
     auto shapeNode = getShapeNode(i);
 
-    if (shapeNode->has<Addon>())
+    if (shapeNode->has<Aspect>())
       shapeNodes.push_back(shapeNode);
   }
 
@@ -213,7 +213,7 @@ const std::vector<ShapeNode*> BodyNode::getShapeNodesWith()
 }
 
 //==============================================================================
-template <class Addon>
+template <class Aspect>
 const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
 {
   std::vector<const ShapeNode*> shapeNodes;
@@ -224,7 +224,7 @@ const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
   {
     const auto shapeNode = getShapeNode(i);
 
-    if (shapeNode->has<Addon>())
+    if (shapeNode->has<Aspect>())
       shapeNodes.push_back(shapeNode);
   }
 
@@ -232,10 +232,10 @@ const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
 }
 
 //==============================================================================
-template <class Addon>
+template <class Aspect>
 void BodyNode::removeAllShapeNodesWith()
 {
-  auto shapeNodes = getShapeNodesWith<Addon>();
+  auto shapeNodes = getShapeNodesWith<Aspect>();
   for (auto shapeNode : shapeNodes)
     shapeNode->remove();
 }

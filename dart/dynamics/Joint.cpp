@@ -70,9 +70,9 @@ Joint::Properties::Properties(const std::string& _name,
 //==============================================================================
 Joint::ExtendedProperties::ExtendedProperties(
     const Properties& standardProperties,
-    const AddonProperties& addonProperties)
+    const AspectProperties& aspectProperties)
   : Properties(standardProperties),
-    mAddonProperties(addonProperties)
+    mAspectProperties(aspectProperties)
 {
   // Do nothing
 }
@@ -80,9 +80,9 @@ Joint::ExtendedProperties::ExtendedProperties(
 //==============================================================================
 Joint::ExtendedProperties::ExtendedProperties(
     Properties&& standardProperties,
-    AddonProperties&& addonProperties)
+    AspectProperties&& aspectProperties)
   : Properties(std::move(standardProperties)),
-    mAddonProperties(std::move(addonProperties))
+    mAspectProperties(std::move(aspectProperties))
 {
   // Do nothing
 }

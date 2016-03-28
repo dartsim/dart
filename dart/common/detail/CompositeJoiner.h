@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_ADDONMANAGERJOINER_H_
-#define DART_COMMON_DETAIL_ADDONMANAGERJOINER_H_
+#ifndef DART_COMMON_DETAIL_COMPOSITEJOINER_H_
+#define DART_COMMON_DETAIL_COMPOSITEJOINER_H_
 
-#include "dart/common/AddonManagerJoiner.h"
+#include "dart/common/CompositeJoiner.h"
 #include "dart/common/detail/TemplateJoinerDispatchMacro.h"
 
 namespace dart {
@@ -46,7 +46,7 @@ namespace common {
 //==============================================================================
 template <class Base1, class Base2>
 template <typename Base1Arg, typename... Base2Args>
-AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
+CompositeJoiner<Base1, Base2>::CompositeJoiner(
     Base1Arg&& arg1, Base2Args&&... args2)
   : Base1(std::forward<Base1Arg>(arg1)),
     Base2(std::forward<Base2Args>(args2)...)
@@ -57,7 +57,7 @@ AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
 //==============================================================================
 template <class Base1, class Base2>
 template <typename Base1Arg>
-AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
+CompositeJoiner<Base1, Base2>::CompositeJoiner(
     Base1Arg&& arg1, NoArg_t)
   : Base1(std::forward<Base1Arg>(arg1)),
     Base2()
@@ -68,7 +68,7 @@ AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
 //==============================================================================
 template <class Base1, class Base2>
 template <typename... Base2Args>
-AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
+CompositeJoiner<Base1, Base2>::CompositeJoiner(
     NoArg_t, Base2Args&&... args2)
   : Base1(),
     Base2(std::forward<Base2Args>(args2)...)
@@ -77,13 +77,13 @@ AddonManagerJoiner<Base1, Base2>::AddonManagerJoiner(
 }
 
 //==============================================================================
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(bool, AddonManagerJoiner, has, () const, ())
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(T*, AddonManagerJoiner, get, (), ())
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(const T*, AddonManagerJoiner, get, () const, ())
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, AddonManagerJoiner, set, (const T* addon), (addon))
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, AddonManagerJoiner, set, (std::unique_ptr<T>&& addon), (std::move(addon)))
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, AddonManagerJoiner, erase, (), ())
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(std::unique_ptr<T>, AddonManagerJoiner, release, (), ())
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(bool, CompositeJoiner, has, () const, ())
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(T*, CompositeJoiner, get, (), ())
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(const T*, CompositeJoiner, get, () const, ())
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, CompositeJoiner, set, (const T* aspect), (aspect))
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, CompositeJoiner, set, (std::unique_ptr<T>&& aspect), (std::move(aspect)))
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, CompositeJoiner, erase, (), ())
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(std::unique_ptr<T>, CompositeJoiner, release, (), ())
 
 //==============================================================================
 // Because this function requires a comma inside of its template argument list,
@@ -91,7 +91,7 @@ DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(std::unique_ptr<T>, AddonManagerJ
 // implement it explicitly.
 template <class Base1, class Base2>
 template <class T, typename ...Args>
-T* AddonManagerJoiner<Base1, Base2>::create(Args&&... args)
+T* CompositeJoiner<Base1, Base2>::create(Args&&... args)
 {
   if(Base1::template isSpecializedFor<T>())
     return Base1::template create<T, Args...>(std::forward<Args>(args)...);
@@ -102,7 +102,7 @@ T* AddonManagerJoiner<Base1, Base2>::create(Args&&... args)
 //==============================================================================
 template <class Base1, class Base2>
 template <class T>
-constexpr bool AddonManagerJoiner<Base1, Base2>::isSpecializedFor()
+constexpr bool CompositeJoiner<Base1, Base2>::isSpecializedFor()
 {
   return (Base1::template isSpecializedFor<T>()
           || Base2::template isSpecializedFor<T>());
@@ -111,9 +111,9 @@ constexpr bool AddonManagerJoiner<Base1, Base2>::isSpecializedFor()
 //==============================================================================
 template <class Base1, class Base2, class... OtherBases>
 template <typename... Args>
-AddonManagerJoiner<Base1, Base2, OtherBases...>::AddonManagerJoiner(
+CompositeJoiner<Base1, Base2, OtherBases...>::CompositeJoiner(
     Args&&... args)
-  : AddonManagerJoiner<Base1, AddonManagerJoiner<Base2, OtherBases...>>(
+  : CompositeJoiner<Base1, CompositeJoiner<Base2, OtherBases...>>(
       std::forward<Args>(args)...)
 {
   // Do nothing
@@ -122,5 +122,5 @@ AddonManagerJoiner<Base1, Base2, OtherBases...>::AddonManagerJoiner(
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_ADDONMANAGERJOINER_H_
+#endif // DART_COMMON_DETAIL_COMPOSITEJOINER_H_
 

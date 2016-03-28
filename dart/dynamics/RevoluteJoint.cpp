@@ -70,7 +70,7 @@ void RevoluteJoint::setProperties(const UniqueProperties& _properties)
 RevoluteJoint::Properties RevoluteJoint::getRevoluteJointProperties() const
 {
   return Properties(getSingleDofJointProperties(),
-                    getRevoluteJointAddon()->getProperties());
+                    getRevoluteJointAspect()->getProperties());
 }
 
 //==============================================================================
@@ -120,13 +120,13 @@ const std::string& RevoluteJoint::getStaticType()
 //==============================================================================
 void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  getRevoluteJointAddon()->setAxis(_axis);
+  getRevoluteJointAspect()->setAxis(_axis);
 }
 
 //==============================================================================
 const Eigen::Vector3d& RevoluteJoint::getAxis() const
 {
-  return getRevoluteJointAddon()->getAxis();
+  return getRevoluteJointAspect()->getAxis();
 }
 
 //==============================================================================
@@ -134,7 +134,7 @@ RevoluteJoint::RevoluteJoint(const Properties& _properties)
   : detail::RevoluteJointBase(_properties, common::NoArg)
 //  : detail::RevoluteJointBase(common::NextArgs, _properties)
 {
-  createRevoluteJointAddon(_properties);
+  createRevoluteJointAspect(_properties);
 
   // Inherited Joint Properties must be set in the final joint class or else we
   // get pure virtual function calls

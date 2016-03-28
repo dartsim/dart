@@ -34,162 +34,162 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SPECIALIZEDFORADDON_H_
-#define DART_COMMON_SPECIALIZEDFORADDON_H_
+#ifndef DART_COMMON_SPECIALIZEDFORASPECT_H_
+#define DART_COMMON_SPECIALIZEDFORASPECT_H_
 
-#include "dart/common/AddonManager.h"
-#include "dart/common/AddonManagerJoiner.h"
+#include "dart/common/Composite.h"
+#include "dart/common/CompositeJoiner.h"
 #include "dart/common/Virtual.h"
 
 namespace dart {
 namespace common {
 
 /// Declaration of the variadic template
-template <class... OtherSpecAddons>
-class SpecializedForAddon { };
+template <class... OtherSpecAspects>
+class SpecializedForAspect { };
 
 //==============================================================================
-/// SpecializedForAddon allows classes that inherit AddonManager to have
-/// constant-time access to a specific type of Addon
-template <class SpecAddon>
-class SpecializedForAddon<SpecAddon> : public virtual AddonManager
+/// SpecializedForAspect allows classes that inherit Composite to have
+/// constant-time access to a specific type of Aspect
+template <class SpecAspect>
+class SpecializedForAspect<SpecAspect> : public virtual Composite
 {
 public:
 
   /// Default Constructor
-  SpecializedForAddon();
+  SpecializedForAspect();
 
-  /// Check if this AddonManager currently has a certain type of Addon
+  /// Check if this Composite currently has a certain type of Aspect
   template <class T>
   bool has() const;
 
-  /// Get a certain type of Addon from this AddonManager
+  /// Get a certain type of Aspect from this Composite
   template <class T>
   T* get();
 
-  /// Get a certain type of Addon from this AddonManager
+  /// Get a certain type of Aspect from this Composite
   template <class T>
   const T* get() const;
 
-  /// Make a clone of the addon and place the clone into this AddonManager. If
-  /// an Addon of the same type already exists in this AddonManager, the
-  /// existing Addon will be destroyed.
+  /// Make a clone of the aspect and place the clone into this Composite. If
+  /// an Aspect of the same type already exists in this Composite, the
+  /// existing Aspect will be destroyed.
   template <class T>
-  void set(const T* addon);
+  void set(const T* aspect);
 
-  /// Use move semantics to place an addon into this AddonManager. If an Addon
-  /// of the same type already exists in this AddonManager, the existing Addon
+  /// Use move semantics to place an aspect into this Composite. If an Aspect
+  /// of the same type already exists in this Composite, the existing Aspect
   /// will be destroyed.
   template <class T>
-  void set(std::unique_ptr<T>&& addon);
+  void set(std::unique_ptr<T>&& aspect);
 
-  /// Construct an Addon inside of this AddonManager
+  /// Construct an Aspect inside of this Composite
   template <class T, typename ...Args>
   T* create(Args&&... args);
 
-  /// Remove an Addon from this AddonManager
+  /// Remove an Aspect from this Composite
   template <class T>
   void erase();
 
-  /// Remove an Addon from this AddonManager, but return its unique_ptr instead
+  /// Remove an Aspect from this Composite, but return its unique_ptr instead
   /// of letting it be deleted. This allows you to safely use move semantics to
-  /// transfer an Addon between two AddonManagers.
+  /// transfer an Aspect between two Composites.
   template <class T>
   std::unique_ptr<T> release();
 
-  /// Check if this Manager is specialized for a specific type of Addon
+  /// Check if this Manager is specialized for a specific type of Aspect
   template <class T>
   static constexpr bool isSpecializedFor();
 
 protected:
 
-  /// Redirect to AddonManager::has()
+  /// Redirect to Composite::has()
   template <class T>
   bool _has(type<T>) const;
 
   /// Specialized implementation of has()
-  bool _has(type<SpecAddon>) const;
+  bool _has(type<SpecAspect>) const;
 
-  /// Redirect to AddonManager::get()
+  /// Redirect to Composite::get()
   template <class T>
   T* _get(type<T>);
 
   /// Specialized implementation of get()
-  SpecAddon* _get(type<SpecAddon>);
+  SpecAspect* _get(type<SpecAspect>);
 
-  /// Redirect to AddonManager::get()
+  /// Redirect to Composite::get()
   template <class T>
   const T* _get(type<T>) const;
 
   /// Specialized implementation of get()
-  const SpecAddon* _get(type<SpecAddon>) const;
+  const SpecAspect* _get(type<SpecAspect>) const;
 
-  /// Redirect to AddonManager::set()
+  /// Redirect to Composite::set()
   ///
   /// Using the type<T> tag for this is not be necessary, but it helps to avoid
   /// confusion between the set() versus _set() function.
   template <class T>
-  void _set(type<T>, const T* addon);
+  void _set(type<T>, const T* aspect);
 
   /// Specialized implementation of set()
-  void _set(type<SpecAddon>, const SpecAddon* addon);
+  void _set(type<SpecAspect>, const SpecAspect* aspect);
 
-  /// Redirect to AddonManager::set()
+  /// Redirect to Composite::set()
   ///
   /// Using the type<T> tag for this is not be necessary, but it helps to avoid
   /// confusion between the set() versus _set() function.
   template <class T>
-  void _set(type<T>, std::unique_ptr<T>&& addon);
+  void _set(type<T>, std::unique_ptr<T>&& aspect);
 
   /// Specialized implementation of set()
-  void _set(type<SpecAddon>, std::unique_ptr<SpecAddon>&& addon);
+  void _set(type<SpecAspect>, std::unique_ptr<SpecAspect>&& aspect);
 
-  /// Redirect to AddonManager::create()
+  /// Redirect to Composite::create()
   template <class T, typename ...Args>
   T* _create(type<T>, Args&&... args);
 
   /// Specialized implementation of create()
   template <typename ...Args>
-  SpecAddon* _create(type<SpecAddon>, Args&&... args);
+  SpecAspect* _create(type<SpecAspect>, Args&&... args);
 
-  /// Redirect to AddonManager::erase()
+  /// Redirect to Composite::erase()
   template <class T>
   void _erase(type<T>);
 
   /// Specialized implementation of erase()
-  void _erase(type<SpecAddon>);
+  void _erase(type<SpecAspect>);
 
-  /// Redirect to AddonManager::release()
+  /// Redirect to Composite::release()
   template <class T>
   std::unique_ptr<T> _release(type<T>);
 
   /// Specialized implementation of release()
-  std::unique_ptr<SpecAddon> _release(type<SpecAddon>);
+  std::unique_ptr<SpecAspect> _release(type<SpecAspect>);
 
   /// Return false
   template <class T>
   static constexpr bool _isSpecializedFor(type<T>);
 
   /// Return true
-  static constexpr bool _isSpecializedFor(type<SpecAddon>);
+  static constexpr bool _isSpecializedFor(type<SpecAspect>);
 
-  /// Iterator that points to the Addon of this SpecializedForAddon
-  AddonManager::AddonMap::iterator mSpecAddonIterator;
+  /// Iterator that points to the Aspect of this SpecializedForAspect
+  Composite::AspectMap::iterator mSpecAspectIterator;
 
 };
 
 //==============================================================================
-/// This is the variadic version of the SpecializedForAddon class which
+/// This is the variadic version of the SpecializedForAspect class which
 /// allows you to include arbitrarily many specialized types in the
 /// specialization.
-template <class SpecAddon1, class... OtherSpecAddons>
-class SpecializedForAddon<SpecAddon1, OtherSpecAddons...> :
-    public AddonManagerJoiner< Virtual< SpecializedForAddon<SpecAddon1> >,
-                               Virtual< SpecializedForAddon<OtherSpecAddons...> > > { };
+template <class SpecAspect1, class... OtherSpecAspects>
+class SpecializedForAspect<SpecAspect1, OtherSpecAspects...> :
+    public CompositeJoiner< Virtual< SpecializedForAspect<SpecAspect1> >,
+                               Virtual< SpecializedForAspect<OtherSpecAspects...> > > { };
 
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/SpecializedForAddon.h"
+#include "dart/common/detail/SpecializedForAspect.h"
 
-#endif // DART_COMMON_SPECIALIZEDFORADDON_H_
+#endif // DART_COMMON_SPECIALIZEDFORASPECT_H_

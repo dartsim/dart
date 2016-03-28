@@ -35,9 +35,9 @@
  */
 
 // Use this preprocessor token to allow us to test that the specialized versions
-// of Addon functions are being used appropriately. This preprocessor token
-// should NOT be used anywhere outside of this file (testAddon.cpp).
-#define DART_UNITTEST_SPECIALIZED_ADDON_ACCESS
+// of Aspect functions are being used appropriately. This preprocessor token
+// should NOT be used anywhere outside of this file (testAspect.cpp).
+#define DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
 #include <gtest/gtest.h>
 
@@ -45,72 +45,72 @@
 
 #include "dart/common/Subject.h"
 #include "dart/common/sub_ptr.h"
-#include "dart/common/AddonManager.h"
-#include "dart/common/SpecializedForAddon.h"
+#include "dart/common/Composite.h"
+#include "dart/common/SpecializedForAspect.h"
 
 #include "dart/dynamics/EulerJoint.h"
 
 using namespace dart::common;
 
-// Testing the creation of an Addon using the AddonWithState template class
-class StateAddonTest : public dart::common::AddonWithState<
-    StateAddonTest, dart::common::Empty>
+// Testing the creation of an Aspect using the AspectWithState template class
+class StateAspectTest : public dart::common::AspectWithState<
+    StateAspectTest, dart::common::Empty>
 {
 public:
 
-  StateAddonTest(AddonManager* mgr, const StateData& state = StateData())
-    : dart::common::AddonWithState<StateAddonTest, dart::common::Empty>(mgr, state)
+  StateAspectTest(Composite* mgr, const StateData& state = StateData())
+    : dart::common::AspectWithState<StateAspectTest, dart::common::Empty>(mgr, state)
   {
 
   }
 
 };
 
-class StateAndPropertiesAddonTest : public dart::common::AddonWithVersionedProperties<
-    StateAndPropertiesAddonTest, dart::common::Empty>
+class StateAndPropertiesAspectTest : public dart::common::AspectWithVersionedProperties<
+    StateAndPropertiesAspectTest, dart::common::Empty>
 {
 
 };
 
-class GenericAddon : public Addon, public Subject
+class GenericAspect : public Aspect, public Subject
 {
 public:
 
-  GenericAddon(AddonManager* manager)
-    : Addon(manager)
+  GenericAspect(Composite* manager)
+    : Aspect(manager)
   {
     // Do nothing
   }
 
-  std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const override final
+  std::unique_ptr<Aspect> cloneAspect(Composite* newManager) const override final
   {
-    return dart::common::make_unique<GenericAddon>(newManager);
+    return dart::common::make_unique<GenericAspect>(newManager);
   }
 
 };
 
-class SpecializedAddon : public Addon, public Subject
+class SpecializedAspect : public Aspect, public Subject
 {
 public:
 
-  SpecializedAddon(AddonManager* manager)
-    : Addon(manager)
+  SpecializedAspect(Composite* manager)
+    : Aspect(manager)
   {
     // Do nothing
   }
 
-  std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const override final
+  std::unique_ptr<Aspect> cloneAspect(Composite* newManager) const override final
   {
-    return dart::common::make_unique<SpecializedAddon>(newManager);
+    return dart::common::make_unique<SpecializedAspect>(newManager);
   }
 };
 
 template <typename T>
-class StatefulAddon : public Addon, public Subject
+class StatefulAspect : public Aspect, public Subject
 {
 public:
 
-  class State : public Addon::State
+  class State : public Aspect::State
   {
   public:
 
@@ -122,18 +122,18 @@ public:
 
     T val;
 
-    std::unique_ptr<Addon::State> clone() const override
+    std::unique_ptr<Aspect::State> clone() const override
     {
       return dart::common::make_unique<State>(*this);
     }
 
-    void copy(const Addon::State& anotherState) override
+    void copy(const Aspect::State& anotherState) override
     {
       val = static_cast<const State&>(anotherState).val;
     }
   };
 
-  class Properties : public Addon::Properties
+  class Properties : public Aspect::Properties
   {
   public:
 
@@ -145,64 +145,64 @@ public:
 
     T val;
 
-    std::unique_ptr<Addon::Properties> clone() const override
+    std::unique_ptr<Aspect::Properties> clone() const override
     {
       return dart::common::make_unique<Properties>(*this);
     }
 
-    void copy(const Addon::Properties& otherProperties) override
+    void copy(const Aspect::Properties& otherProperties) override
     {
       val = static_cast<const Properties&>(otherProperties).val;
     }
   };
 
-  StatefulAddon(AddonManager* mgr)
-    : Addon(mgr)
+  StatefulAspect(Composite* mgr)
+    : Aspect(mgr)
   {
     // Do nothing
   }
 
-  StatefulAddon(AddonManager* mgr, const StatefulAddon& other)
-    : Addon(mgr),
+  StatefulAspect(Composite* mgr, const StatefulAspect& other)
+    : Aspect(mgr),
       mState(other.mState), mProperties(other.mProperties)
   {
     // Do nothing
   }
 
-  StatefulAddon(AddonManager* mgr, const T& state)
-    : Addon(mgr), mState(state)
+  StatefulAspect(Composite* mgr, const T& state)
+    : Aspect(mgr), mState(state)
   {
     // Do nothing
   }
 
-  StatefulAddon(AddonManager* mgr, const T& state, const T& properties)
-    : Addon(mgr),
+  StatefulAspect(Composite* mgr, const T& state, const T& properties)
+    : Aspect(mgr),
       mState(state), mProperties(properties)
   {
     // Do nothing
   }
 
-  std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const override final
+  std::unique_ptr<Aspect> cloneAspect(Composite* newManager) const override final
   {
-    return dart::common::make_unique<StatefulAddon>(newManager, *this);
+    return dart::common::make_unique<StatefulAspect>(newManager, *this);
   }
 
-  void setAddonState(const Addon::State& otherState) override
+  void setAspectState(const Aspect::State& otherState) override
   {
     mState.copy(otherState);
   }
 
-  const Addon::State* getAddonState() const override
+  const Aspect::State* getAspectState() const override
   {
     return &mState;
   }
 
-  void setAddonProperties(const Addon::Properties& someProperties) override
+  void setAspectProperties(const Aspect::Properties& someProperties) override
   {
     mProperties.copy(someProperties);
   }
 
-  const Addon::Properties* getAddonProperties() const override
+  const Aspect::Properties* getAspectProperties() const override
   {
     return &mProperties;
   }
@@ -219,382 +219,382 @@ public:
 
 };
 
-typedef StatefulAddon<double> DoubleAddon;
-typedef StatefulAddon<float>  FloatAddon;
-typedef StatefulAddon<char>   CharAddon;
-typedef StatefulAddon<int>    IntAddon;
+typedef StatefulAspect<double> DoubleAspect;
+typedef StatefulAspect<float>  FloatAspect;
+typedef StatefulAspect<char>   CharAspect;
+typedef StatefulAspect<int>    IntAspect;
 
-class CustomSpecializedManager : public SpecializedForAddon<SpecializedAddon> { };
+class CustomSpecializedManager : public SpecializedForAspect<SpecializedAspect> { };
 
-TEST(Addon, Generic)
+TEST(Aspect, Generic)
 {
-  AddonManager mgr;
+  Composite mgr;
 
-  EXPECT_TRUE( mgr.get<GenericAddon>() == nullptr );
+  EXPECT_TRUE( mgr.get<GenericAspect>() == nullptr );
 
-  sub_ptr<GenericAddon> addon = mgr.create<GenericAddon>();
-  GenericAddon* rawAddon = addon;
-  EXPECT_FALSE( nullptr == addon );
-  EXPECT_TRUE( mgr.get<GenericAddon>() == addon );
+  sub_ptr<GenericAspect> aspect = mgr.create<GenericAspect>();
+  GenericAspect* rawAspect = aspect;
+  EXPECT_FALSE( nullptr == aspect );
+  EXPECT_TRUE( mgr.get<GenericAspect>() == aspect );
 
-  GenericAddon* newAddon = mgr.create<GenericAddon>();
-  EXPECT_FALSE( nullptr == newAddon );
-  EXPECT_TRUE( nullptr == addon );
-  EXPECT_FALSE( rawAddon == newAddon );
+  GenericAspect* newAspect = mgr.create<GenericAspect>();
+  EXPECT_FALSE( nullptr == newAspect );
+  EXPECT_TRUE( nullptr == aspect );
+  EXPECT_FALSE( rawAspect == newAspect );
 }
 
-TEST(Addon, Specialized)
+TEST(Aspect, Specialized)
 {
-  usedSpecializedAddonAccess = false;
+  usedSpecializedAspectAccess = false;
   CustomSpecializedManager mgr;
 
-  EXPECT_TRUE( mgr.get<SpecializedAddon>() == nullptr );
-  EXPECT_TRUE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
-//  EXPECT_TRUE( mgr.getSpecializedAddon() == nullptr );
-  EXPECT_TRUE( mgr.get<GenericAddon>() == nullptr );
-  EXPECT_FALSE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
+  EXPECT_TRUE( mgr.get<SpecializedAspect>() == nullptr );
+  EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+//  EXPECT_TRUE( mgr.getSpecializedAspect() == nullptr );
+  EXPECT_TRUE( mgr.get<GenericAspect>() == nullptr );
+  EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
-  sub_ptr<SpecializedAddon> spec = mgr.create<SpecializedAddon>();
-  EXPECT_TRUE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
-  SpecializedAddon* rawSpec = spec;
+  sub_ptr<SpecializedAspect> spec = mgr.create<SpecializedAspect>();
+  EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+  SpecializedAspect* rawSpec = spec;
 
-  sub_ptr<GenericAddon> generic = mgr.create<GenericAddon>();
-  EXPECT_FALSE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
-  GenericAddon* rawGeneric = generic;
+  sub_ptr<GenericAspect> generic = mgr.create<GenericAspect>();
+  EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+  GenericAspect* rawGeneric = generic;
 
-  EXPECT_TRUE( mgr.get<SpecializedAddon>() == spec );
-  EXPECT_TRUE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
-//  EXPECT_TRUE( mgr.getSpecializedAddon() == spec );
+  EXPECT_TRUE( mgr.get<SpecializedAspect>() == spec );
+  EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+//  EXPECT_TRUE( mgr.getSpecializedAspect() == spec );
 
-  EXPECT_TRUE( mgr.get<GenericAddon>() == generic );
-  EXPECT_FALSE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
+  EXPECT_TRUE( mgr.get<GenericAspect>() == generic );
+  EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
-//  SpecializedAddon* newSpec = mgr.createSpecializedAddon();
-  SpecializedAddon* newSpec = mgr.create<SpecializedAddon>();
-  EXPECT_TRUE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
+//  SpecializedAspect* newSpec = mgr.createSpecializedAspect();
+  SpecializedAspect* newSpec = mgr.create<SpecializedAspect>();
+  EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
-  GenericAddon* newGeneric = mgr.create<GenericAddon>();
-  EXPECT_FALSE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
+  GenericAspect* newGeneric = mgr.create<GenericAspect>();
+  EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
   EXPECT_TRUE( nullptr == spec );
   EXPECT_TRUE( nullptr == generic );
 
-  EXPECT_FALSE( mgr.get<SpecializedAddon>() == rawSpec );
-  EXPECT_TRUE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
-//  EXPECT_FALSE( mgr.getSpecializedAddon() == rawSpec );
+  EXPECT_FALSE( mgr.get<SpecializedAspect>() == rawSpec );
+  EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+//  EXPECT_FALSE( mgr.getSpecializedAspect() == rawSpec );
 
-  EXPECT_FALSE( mgr.get<GenericAddon>() == rawGeneric );
-  EXPECT_FALSE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
+  EXPECT_FALSE( mgr.get<GenericAspect>() == rawGeneric );
+  EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
-  EXPECT_TRUE( mgr.get<SpecializedAddon>() == newSpec );
-  EXPECT_TRUE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
-//  EXPECT_TRUE( mgr.getSpecializedAddon() == newSpec );
+  EXPECT_TRUE( mgr.get<SpecializedAspect>() == newSpec );
+  EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
+//  EXPECT_TRUE( mgr.getSpecializedAspect() == newSpec );
 
-  EXPECT_TRUE( mgr.get<GenericAddon>() == newGeneric );
-  EXPECT_FALSE( usedSpecializedAddonAccess ); usedSpecializedAddonAccess = false;
+  EXPECT_TRUE( mgr.get<GenericAspect>() == newGeneric );
+  EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 }
 
-TEST(Addon, Releasing)
+TEST(Aspect, Releasing)
 {
-  AddonManager sender;
+  Composite sender;
   CustomSpecializedManager receiver;
 
   // ---- Test generic releases ----
   {
-    EXPECT_TRUE( sender.get<GenericAddon>() == nullptr );
-    EXPECT_TRUE( receiver.get<GenericAddon>() == nullptr );
+    EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
+    EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
 
-    sub_ptr<GenericAddon> addon = sender.create<GenericAddon>();
+    sub_ptr<GenericAspect> aspect = sender.create<GenericAspect>();
 
-    EXPECT_TRUE( sender.get<GenericAddon>() == addon );
-    EXPECT_TRUE( receiver.get<GenericAddon>() == nullptr );
+    EXPECT_TRUE( sender.get<GenericAspect>() == aspect );
+    EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
 
-    receiver.set<GenericAddon>(sender.release<GenericAddon>());
+    receiver.set<GenericAspect>(sender.release<GenericAspect>());
 
-    EXPECT_FALSE( nullptr == addon );
+    EXPECT_FALSE( nullptr == aspect );
 
-    EXPECT_TRUE( sender.get<GenericAddon>() == nullptr );
-    EXPECT_TRUE( receiver.get<GenericAddon>() == addon );
+    EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
+    EXPECT_TRUE( receiver.get<GenericAspect>() == aspect );
 
-    sender.set<GenericAddon>(receiver.release<GenericAddon>());
+    sender.set<GenericAspect>(receiver.release<GenericAspect>());
 
-    EXPECT_FALSE( nullptr == addon );
+    EXPECT_FALSE( nullptr == aspect );
 
-    EXPECT_TRUE( sender.get<GenericAddon>() == addon );
-    EXPECT_TRUE( receiver.get<GenericAddon>() == nullptr );
+    EXPECT_TRUE( sender.get<GenericAspect>() == aspect );
+    EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
 
-    sender.release<GenericAddon>();
+    sender.release<GenericAspect>();
 
-    EXPECT_TRUE( nullptr == addon );
-    EXPECT_TRUE( sender.get<GenericAddon>() == nullptr );
-    EXPECT_TRUE( receiver.get<GenericAddon>() == nullptr );
+    EXPECT_TRUE( nullptr == aspect );
+    EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
+    EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
   }
 
   // ---- Test specialized releases ----
   {
-    EXPECT_TRUE( sender.get<SpecializedAddon>() == nullptr );
-//    EXPECT_TRUE( receiver.getSpecializedAddon() == nullptr );
+    EXPECT_TRUE( sender.get<SpecializedAspect>() == nullptr );
+//    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
 
-    sub_ptr<SpecializedAddon> spec = sender.create<SpecializedAddon>();
+    sub_ptr<SpecializedAspect> spec = sender.create<SpecializedAspect>();
 
-    EXPECT_TRUE( sender.get<SpecializedAddon>() == spec );
-//    EXPECT_TRUE( receiver.getSpecializedAddon() == nullptr );
+    EXPECT_TRUE( sender.get<SpecializedAspect>() == spec );
+//    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
 
-//    receiver.setSpecializedAddon(sender.release<SpecializedAddon>());
-    receiver.set<SpecializedAddon>(sender.release<SpecializedAddon>());
-
-    EXPECT_FALSE( nullptr == spec );
-
-    EXPECT_TRUE( sender.get<SpecializedAddon>() == nullptr );
-//    EXPECT_TRUE( receiver.getSpecializedAddon() == spec );
-
-//    sender.set<SpecializedAddon>(receiver.releaseSpecializedAddon());
-    sender.set<SpecializedAddon>(receiver.release<SpecializedAddon>());
+//    receiver.setSpecializedAspect(sender.release<SpecializedAspect>());
+    receiver.set<SpecializedAspect>(sender.release<SpecializedAspect>());
 
     EXPECT_FALSE( nullptr == spec );
 
-    EXPECT_TRUE( sender.get<SpecializedAddon>() == spec );
-//    EXPECT_TRUE( receiver.getSpecializedAddon() == nullptr );
+    EXPECT_TRUE( sender.get<SpecializedAspect>() == nullptr );
+//    EXPECT_TRUE( receiver.getSpecializedAspect() == spec );
 
-    sender.release<SpecializedAddon>();
+//    sender.set<SpecializedAspect>(receiver.releaseSpecializedAspect());
+    sender.set<SpecializedAspect>(receiver.release<SpecializedAspect>());
+
+    EXPECT_FALSE( nullptr == spec );
+
+    EXPECT_TRUE( sender.get<SpecializedAspect>() == spec );
+//    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
+
+    sender.release<SpecializedAspect>();
 
     EXPECT_TRUE( nullptr == spec );
-    EXPECT_TRUE( sender.get<SpecializedAddon>() == nullptr );
-//    EXPECT_TRUE( receiver.getSpecializedAddon() == nullptr );
+    EXPECT_TRUE( sender.get<SpecializedAspect>() == nullptr );
+//    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
   }
 
 
   // ---- Test non-moving set method ----
   {
     // The set() methods being used in this block of code will make clones of
-    // the addons that are being passed in instead of transferring their
+    // the aspects that are being passed in instead of transferring their
     // ownership like the previous blocks of code were.
-    sub_ptr<GenericAddon> addon = sender.create<GenericAddon>();
+    sub_ptr<GenericAspect> aspect = sender.create<GenericAspect>();
 
-    // This should create a copy of the GenericAddon without taking the addon
+    // This should create a copy of the GenericAspect without taking the aspect
     // away from 'sender'
-    receiver.set<GenericAddon>(sender.get<GenericAddon>());
+    receiver.set<GenericAspect>(sender.get<GenericAspect>());
 
-    EXPECT_FALSE( nullptr == addon );
-    EXPECT_FALSE( receiver.get<GenericAddon>() == addon );
-    EXPECT_FALSE( receiver.get<GenericAddon>() == nullptr );
-    EXPECT_TRUE( sender.get<GenericAddon>() == addon );
+    EXPECT_FALSE( nullptr == aspect );
+    EXPECT_FALSE( receiver.get<GenericAspect>() == aspect );
+    EXPECT_FALSE( receiver.get<GenericAspect>() == nullptr );
+    EXPECT_TRUE( sender.get<GenericAspect>() == aspect );
 
-    sub_ptr<GenericAddon> rec_addon = receiver.get<GenericAddon>();
-    EXPECT_FALSE( nullptr == rec_addon );
+    sub_ptr<GenericAspect> rec_aspect = receiver.get<GenericAspect>();
+    EXPECT_FALSE( nullptr == rec_aspect );
 
-    // This should replace the first GenericAddon that was created in 'sender'
-    sender.set<GenericAddon>(receiver.get<GenericAddon>());
+    // This should replace the first GenericAspect that was created in 'sender'
+    sender.set<GenericAspect>(receiver.get<GenericAspect>());
 
-    EXPECT_TRUE( nullptr == addon );
-    EXPECT_FALSE( nullptr == rec_addon );
-    EXPECT_FALSE( sender.get<GenericAddon>() == receiver.get<GenericAddon>() );
+    EXPECT_TRUE( nullptr == aspect );
+    EXPECT_FALSE( nullptr == rec_aspect );
+    EXPECT_FALSE( sender.get<GenericAspect>() == receiver.get<GenericAspect>() );
 
-    sub_ptr<GenericAddon> addon2 = sender.get<GenericAddon>();
-    EXPECT_FALSE( nullptr == addon2 );
+    sub_ptr<GenericAspect> aspect2 = sender.get<GenericAspect>();
+    EXPECT_FALSE( nullptr == aspect2 );
 
-    sender.set<GenericAddon>(receiver.release<GenericAddon>());
-    EXPECT_TRUE( nullptr == addon2 );
-    EXPECT_FALSE( nullptr == rec_addon );
-    EXPECT_TRUE( receiver.get<GenericAddon>() == nullptr );
-    EXPECT_TRUE( sender.get<GenericAddon>() == rec_addon );
+    sender.set<GenericAspect>(receiver.release<GenericAspect>());
+    EXPECT_TRUE( nullptr == aspect2 );
+    EXPECT_FALSE( nullptr == rec_aspect );
+    EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
+    EXPECT_TRUE( sender.get<GenericAspect>() == rec_aspect );
   }
 }
 
-template <class AddonT>
-void makeStatesDifferent(AddonT* addon, const AddonT* differentFrom)
+template <class AspectT>
+void makeStatesDifferent(AspectT* aspect, const AspectT* differentFrom)
 {
   size_t counter = 0;
-  while( addon->mState.val == differentFrom->mState.val )
+  while( aspect->mState.val == differentFrom->mState.val )
   {
-    addon->randomize();
+    aspect->randomize();
     ++counter;
     if(counter > 10)
     {
-      dtwarn << "[testAddon::makeStatesDifferent] Randomization failed to make "
+      dtwarn << "[testAspect::makeStatesDifferent] Randomization failed to make "
              << "the states different after " << counter << " attempts!\n";
       break;
     }
   }
 }
 
-template <class AddonT>
-void makePropertiesDifferent(AddonT* addon, const AddonT* differentFrom)
+template <class AspectT>
+void makePropertiesDifferent(AspectT* aspect, const AspectT* differentFrom)
 {
   size_t counter = 0;
-  while( addon->mProperties.val == differentFrom->mProperties.val )
+  while( aspect->mProperties.val == differentFrom->mProperties.val )
   {
-    addon->randomize();
+    aspect->randomize();
     ++counter;
     if(counter > 10)
     {
-      dtwarn << "[testAddon::makePropertiesDifferent] Randomization failed to "
+      dtwarn << "[testAspect::makePropertiesDifferent] Randomization failed to "
              << "make the states different after " << counter << " attempts!\n";
       break;
     }
   }
 }
 
-TEST(Addon, StateAndProperties)
+TEST(Aspect, StateAndProperties)
 {
-  AddonManager mgr1;
-  mgr1.create<DoubleAddon>();
-  mgr1.create<FloatAddon>();
-  mgr1.create<CharAddon>();
-  mgr1.create<IntAddon>();
+  Composite mgr1;
+  mgr1.create<DoubleAspect>();
+  mgr1.create<FloatAspect>();
+  mgr1.create<CharAspect>();
+  mgr1.create<IntAspect>();
 
-  AddonManager mgr2;
-  mgr2.create<DoubleAddon>();
-  mgr2.create<FloatAddon>();
+  Composite mgr2;
+  mgr2.create<DoubleAspect>();
+  mgr2.create<FloatAspect>();
 
-  mgr1.create<StateAddonTest>();
+  mgr1.create<StateAspectTest>();
 
   // ---- Test state transfer ----
 
-  mgr2.setAddonStates(mgr1.getAddonStates());
+  mgr2.setAspectStates(mgr1.getAspectStates());
 
-  EXPECT_EQ( mgr1.get<DoubleAddon>()->mState.val,
-             mgr2.get<DoubleAddon>()->mState.val );
+  EXPECT_EQ( mgr1.get<DoubleAspect>()->mState.val,
+             mgr2.get<DoubleAspect>()->mState.val );
 
-  EXPECT_EQ( mgr1.get<FloatAddon>()->mState.val,
-             mgr2.get<FloatAddon>()->mState.val );
+  EXPECT_EQ( mgr1.get<FloatAspect>()->mState.val,
+             mgr2.get<FloatAspect>()->mState.val );
 
-  makeStatesDifferent( mgr2.get<DoubleAddon>(), mgr1.get<DoubleAddon>() );
-  makeStatesDifferent( mgr2.get<FloatAddon>(), mgr1.get<FloatAddon>() );
+  makeStatesDifferent( mgr2.get<DoubleAspect>(), mgr1.get<DoubleAspect>() );
+  makeStatesDifferent( mgr2.get<FloatAspect>(), mgr1.get<FloatAspect>() );
 
-  EXPECT_NE( mgr1.get<DoubleAddon>()->mState.val,
-             mgr2.get<DoubleAddon>()->mState.val );
+  EXPECT_NE( mgr1.get<DoubleAspect>()->mState.val,
+             mgr2.get<DoubleAspect>()->mState.val );
 
-  EXPECT_NE( mgr1.get<FloatAddon>()->mState.val,
-             mgr2.get<FloatAddon>()->mState.val );
+  EXPECT_NE( mgr1.get<FloatAspect>()->mState.val,
+             mgr2.get<FloatAspect>()->mState.val );
 
-  mgr1.setAddonStates( mgr2.getAddonStates() );
+  mgr1.setAspectStates( mgr2.getAspectStates() );
 
-  EXPECT_EQ( mgr1.get<DoubleAddon>()->mState.val,
-             mgr2.get<DoubleAddon>()->mState.val );
+  EXPECT_EQ( mgr1.get<DoubleAspect>()->mState.val,
+             mgr2.get<DoubleAspect>()->mState.val );
 
-  EXPECT_EQ( mgr1.get<FloatAddon>()->mState.val,
-             mgr2.get<FloatAddon>()->mState.val );
+  EXPECT_EQ( mgr1.get<FloatAspect>()->mState.val,
+             mgr2.get<FloatAspect>()->mState.val );
 
-  EXPECT_TRUE( nullptr == mgr2.get<CharAddon>() );
-  EXPECT_TRUE( nullptr == mgr2.get<IntAddon>() );
+  EXPECT_TRUE( nullptr == mgr2.get<CharAspect>() );
+  EXPECT_TRUE( nullptr == mgr2.get<IntAspect>() );
 
 
   // ---- Test property transfer ----
 
-  mgr2.setAddonProperties(mgr1.getAddonProperties());
+  mgr2.setAspectProperties(mgr1.getAspectProperties());
 
-  EXPECT_EQ( mgr1.get<DoubleAddon>()->mProperties.val,
-             mgr2.get<DoubleAddon>()->mProperties.val );
+  EXPECT_EQ( mgr1.get<DoubleAspect>()->mProperties.val,
+             mgr2.get<DoubleAspect>()->mProperties.val );
 
-  EXPECT_EQ( mgr1.get<FloatAddon>()->mProperties.val,
-             mgr2.get<FloatAddon>()->mProperties.val );
+  EXPECT_EQ( mgr1.get<FloatAspect>()->mProperties.val,
+             mgr2.get<FloatAspect>()->mProperties.val );
 
-  makePropertiesDifferent( mgr2.get<DoubleAddon>(), mgr1.get<DoubleAddon>() );
-  makePropertiesDifferent( mgr2.get<FloatAddon>(), mgr1.get<FloatAddon>() );
+  makePropertiesDifferent( mgr2.get<DoubleAspect>(), mgr1.get<DoubleAspect>() );
+  makePropertiesDifferent( mgr2.get<FloatAspect>(), mgr1.get<FloatAspect>() );
 
-  EXPECT_NE( mgr1.get<DoubleAddon>()->mProperties.val,
-             mgr2.get<DoubleAddon>()->mProperties.val );
+  EXPECT_NE( mgr1.get<DoubleAspect>()->mProperties.val,
+             mgr2.get<DoubleAspect>()->mProperties.val );
 
-  EXPECT_NE( mgr1.get<FloatAddon>()->mProperties.val,
-             mgr2.get<FloatAddon>()->mProperties.val );
+  EXPECT_NE( mgr1.get<FloatAspect>()->mProperties.val,
+             mgr2.get<FloatAspect>()->mProperties.val );
 
-  mgr1.setAddonProperties( mgr2.getAddonProperties() );
+  mgr1.setAspectProperties( mgr2.getAspectProperties() );
 
-  EXPECT_EQ( mgr1.get<DoubleAddon>()->mProperties.val,
-             mgr2.get<DoubleAddon>()->mProperties.val );
+  EXPECT_EQ( mgr1.get<DoubleAspect>()->mProperties.val,
+             mgr2.get<DoubleAspect>()->mProperties.val );
 
-  EXPECT_EQ( mgr1.get<FloatAddon>()->mProperties.val,
-             mgr2.get<FloatAddon>()->mProperties.val );
+  EXPECT_EQ( mgr1.get<FloatAspect>()->mProperties.val,
+             mgr2.get<FloatAspect>()->mProperties.val );
 
-  EXPECT_TRUE( nullptr == mgr2.get<CharAddon>() );
-  EXPECT_TRUE( nullptr == mgr2.get<IntAddon>() );
+  EXPECT_TRUE( nullptr == mgr2.get<CharAspect>() );
+  EXPECT_TRUE( nullptr == mgr2.get<IntAspect>() );
 }
 
-TEST(Addon, Construction)
+TEST(Aspect, Construction)
 {
-  AddonManager mgr;
+  Composite mgr;
 
-  mgr.create<DoubleAddon>();
+  mgr.create<DoubleAspect>();
 
   double s = dart::math::random(0, 100);
-  mgr.create<DoubleAddon>(s);
-  EXPECT_EQ(mgr.get<DoubleAddon>()->mState.val, s);
+  mgr.create<DoubleAspect>(s);
+  EXPECT_EQ(mgr.get<DoubleAspect>()->mState.val, s);
 
   double p = dart::math::random(0, 100);
-  mgr.create<DoubleAddon>(dart::math::random(0, 100), p);
-  EXPECT_EQ(mgr.get<DoubleAddon>()->mProperties.val, p);
+  mgr.create<DoubleAspect>(dart::math::random(0, 100), p);
+  EXPECT_EQ(mgr.get<DoubleAspect>()->mProperties.val, p);
 }
 
-TEST(Addon, Joints)
+TEST(Aspect, Joints)
 {
-  usedSpecializedAddonAccess = false;
+  usedSpecializedAspectAccess = false;
 
   dart::dynamics::SkeletonPtr skel = Skeleton::create();
 
   dart::dynamics::EulerJoint* euler =
       skel->createJointAndBodyNodePair<dart::dynamics::EulerJoint>().first;
-  euler->getMultiDofJointAddon();
-  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
-  euler->getEulerJointAddon();
-  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+  euler->getMultiDofJointAspect();
+  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  euler->getEulerJointAspect();
+  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::PlanarJoint* planar =
       skel->createJointAndBodyNodePair<dart::dynamics::PlanarJoint>().first;
-  planar->getMultiDofJointAddon();
-  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
-  planar->getPlanarJointAddon();
-  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+  planar->getMultiDofJointAspect();
+  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  planar->getPlanarJointAspect();
+  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::PrismaticJoint* prismatic =
       skel->createJointAndBodyNodePair<dart::dynamics::PrismaticJoint>().first;
-  prismatic->getSingleDofJointAddon();
-  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
-  prismatic->getPrismaticJointAddon();
-  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+  prismatic->getSingleDofJointAspect();
+  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  prismatic->getPrismaticJointAspect();
+  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::RevoluteJoint* revolute =
       skel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>().first;
-  revolute->getSingleDofJointAddon();
-  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
-  revolute->getRevoluteJointAddon();
-  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+  revolute->getSingleDofJointAspect();
+  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  revolute->getRevoluteJointAspect();
+  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::ScrewJoint* screw =
       skel->createJointAndBodyNodePair<dart::dynamics::ScrewJoint>().first;
-  screw->getSingleDofJointAddon();
-  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
-  screw->getScrewJointAddon();
-  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+  screw->getSingleDofJointAspect();
+  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  screw->getScrewJointAspect();
+  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::UniversalJoint* universal =
       skel->createJointAndBodyNodePair<dart::dynamics::UniversalJoint>().first;
-  universal->getMultiDofJointAddon();
-  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
-  universal->getUniversalJointAddon();
-  EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+  universal->getMultiDofJointAspect();
+  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
+  universal->getUniversalJointAspect();
+  EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   // Regression test for issue #645
-  universal->getMultiDofJointAddon(true);
+  universal->getMultiDofJointAspect(true);
 }
 
-TEST(Addon, Duplication)
+TEST(Aspect, Duplication)
 {
-  AddonManager mgr1, mgr2;
+  Composite mgr1, mgr2;
 
-  mgr1.create<DoubleAddon>();
-  mgr1.create<IntAddon>();
-  mgr1.create<FloatAddon>();
-  mgr1.create<CharAddon>();
+  mgr1.create<DoubleAspect>();
+  mgr1.create<IntAspect>();
+  mgr1.create<FloatAspect>();
+  mgr1.create<CharAspect>();
 
-  mgr2.create<DoubleAddon>();
+  mgr2.create<DoubleAspect>();
 
-  mgr2.duplicateAddons(&mgr1);
+  mgr2.duplicateAspects(&mgr1);
 
-  EXPECT_FALSE(mgr2.get<DoubleAddon>() == nullptr);
-  EXPECT_FALSE(mgr2.get<IntAddon>() == nullptr);
-  EXPECT_FALSE(mgr2.get<FloatAddon>() == nullptr);
-  EXPECT_FALSE(mgr2.get<CharAddon>() == nullptr);
+  EXPECT_FALSE(mgr2.get<DoubleAspect>() == nullptr);
+  EXPECT_FALSE(mgr2.get<IntAspect>() == nullptr);
+  EXPECT_FALSE(mgr2.get<FloatAspect>() == nullptr);
+  EXPECT_FALSE(mgr2.get<CharAspect>() == nullptr);
 }
 
 int main(int argc, char* argv[])

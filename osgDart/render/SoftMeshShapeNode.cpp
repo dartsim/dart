@@ -64,7 +64,7 @@ protected:
   virtual ~SoftMeshShapeGeode();
 
   dart::dynamics::SoftMeshShape* mSoftMeshShape;
-  dart::dynamics::VisualAddon* mVisualAddon;
+  dart::dynamics::VisualAspect* mVisualAspect;
   SoftMeshShapeDrawable* mDrawable;
 
 };
@@ -75,7 +75,7 @@ class SoftMeshShapeDrawable : public osg::Geometry
 public:
 
   SoftMeshShapeDrawable(dart::dynamics::SoftMeshShape* shape,
-                        dart::dynamics::VisualAddon* visualAddon);
+                        dart::dynamics::VisualAspect* visualAspect);
 
   void refresh(bool firstTime);
 
@@ -90,7 +90,7 @@ protected:
   std::vector<Eigen::Vector3d> mEigNormals;
 
   dart::dynamics::SoftMeshShape* mSoftMeshShape;
-  dart::dynamics::VisualAddon* mVisualAddon;
+  dart::dynamics::VisualAspect* mVisualAspect;
 
 };
 
@@ -103,7 +103,7 @@ SoftMeshShapeNode::SoftMeshShapeNode(
     mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -111,7 +111,7 @@ void SoftMeshShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -145,7 +145,7 @@ SoftMeshShapeGeode::SoftMeshShapeGeode(
     SoftMeshShapeNode* parentNode)
   : ShapeNode(parentNode->getShape(), parentShapeFrame, this),
     mSoftMeshShape(shape),
-    mVisualAddon(parentNode->getVisualAddon()),
+    mVisualAspect(parentNode->getVisualAspect()),
     mDrawable(nullptr)
 {
   getOrCreateStateSet()->setMode(GL_BLEND, osg::StateAttribute::ON);
@@ -165,7 +165,7 @@ void SoftMeshShapeGeode::extractData()
 {
   if(nullptr == mDrawable)
   {
-    mDrawable = new SoftMeshShapeDrawable(mSoftMeshShape, mVisualAddon);
+    mDrawable = new SoftMeshShapeDrawable(mSoftMeshShape, mVisualAspect);
     addDrawable(mDrawable);
     return;
   }
@@ -182,12 +182,12 @@ SoftMeshShapeGeode::~SoftMeshShapeGeode()
 //==============================================================================
 SoftMeshShapeDrawable::SoftMeshShapeDrawable(
     dart::dynamics::SoftMeshShape* shape,
-    dart::dynamics::VisualAddon* visualAddon)
+    dart::dynamics::VisualAspect* visualAspect)
   : mVertices(new osg::Vec3Array),
     mNormals(new osg::Vec3Array),
     mColors(new osg::Vec4Array),
     mSoftMeshShape(shape),
-    mVisualAddon(visualAddon)
+    mVisualAspect(visualAspect)
 {
   refresh(true);
 }
@@ -284,7 +284,7 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
     if(mColors->size() != 1)
       mColors->resize(1);
 
-    (*mColors)[0] = eigToOsgVec4(mVisualAddon->getRGBA());
+    (*mColors)[0] = eigToOsgVec4(mVisualAspect->getRGBA());
 
     setColorArray(mColors, osg::Array::BIND_OVERALL);
   }

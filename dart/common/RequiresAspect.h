@@ -34,22 +34,44 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_REQUIRESADDON_H_
-#define DART_COMMON_DETAIL_REQUIRESADDON_H_
+#ifndef DART_COMMON_REQUIRESASPECT_H_
+#define DART_COMMON_REQUIRESASPECT_H_
 
-#include "dart/common/RequiresAddon.h"
+#include "dart/common/SpecializedForAspect.h"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-template <class ReqAddon>
-RequiresAddon<ReqAddon>::RequiresAddon()
+/// RequiresAspect allows classes that inherit Composite to know which Aspects
+/// are required for their operation. This guarantees that there is no way for
+/// a required Aspect do not get unexpectedly removed from their manager.
+///
+/// Required Aspects are also automatically specialized for.
+template <class... OtherRequiredAspects>
+class RequiresAspect { };
+
+//==============================================================================
+template <class ReqAspect>
+class RequiresAspect<ReqAspect> : public virtual SpecializedForAspect<ReqAspect>
 {
-  AddonManager::mRequiredAddons.insert(typeid(ReqAddon));
-}
+public:
+
+  /// Default constructor. This is where the base Composite is informed that
+  /// the Aspect type is required.
+  RequiresAspect();
+
+};
+
+//==============================================================================
+template <class ReqAspect1, class... OtherReqAspects>
+class RequiresAspect<ReqAspect1, OtherReqAspects...> :
+    public CompositeJoiner< Virtual< RequiresAspect<ReqAspect1> >,
+                               Virtual< RequiresAspect<OtherReqAspects...> > > { };
 
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_REQUIRESADDON_H_
+#include "dart/common/detail/RequiresAspect.h"
+
+#endif // DART_COMMON_REQUIRESASPECT_H_

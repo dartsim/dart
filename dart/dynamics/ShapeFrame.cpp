@@ -44,7 +44,7 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
-VisualAddonProperties::VisualAddonProperties(const Eigen::Vector4d& color,
+VisualAspectProperties::VisualAspectProperties(const Eigen::Vector4d& color,
                                              const bool hidden)
   : mRGBA(color),
     mHidden(hidden)
@@ -53,7 +53,7 @@ VisualAddonProperties::VisualAddonProperties(const Eigen::Vector4d& color,
 }
 
 //==============================================================================
-CollisionAddonProperties::CollisionAddonProperties(
+CollisionAspectProperties::CollisionAspectProperties(
     const bool collidable)
   : mCollidable(collidable)
 {
@@ -61,7 +61,7 @@ CollisionAddonProperties::CollisionAddonProperties(
 }
 
 //==============================================================================
-DynamicsAddonProperties::DynamicsAddonProperties(
+DynamicsAspectProperties::DynamicsAspectProperties(
     const double frictionCoeff,
     const double restitutionCoeff)
   :
@@ -74,15 +74,15 @@ DynamicsAddonProperties::DynamicsAddonProperties(
 } // namespace detail
 
 //==============================================================================
-VisualAddon::VisualAddon(common::AddonManager* mgr,
+VisualAspect::VisualAspect(common::Composite* mgr,
                          const PropertiesData& properties)
-  : VisualAddon::BaseClass(mgr, properties)
+  : VisualAspect::BaseClass(mgr, properties)
 {
   // Do nothing
 }
 
 //==============================================================================
-void VisualAddon::setRGBA(const Eigen::Vector4d& color)
+void VisualAspect::setRGBA(const Eigen::Vector4d& color)
 {
   mProperties.mRGBA = color;
 
@@ -92,19 +92,19 @@ void VisualAddon::setRGBA(const Eigen::Vector4d& color)
 }
 
 //==============================================================================
-void VisualAddon::setColor(const Eigen::Vector3d& color)
+void VisualAspect::setColor(const Eigen::Vector3d& color)
 {
   setRGB(color);
 }
 
 //==============================================================================
-void VisualAddon::setColor(const Eigen::Vector4d& color)
+void VisualAspect::setColor(const Eigen::Vector4d& color)
 {
   setRGBA(color);
 }
 
 //==============================================================================
-void VisualAddon::setRGB(const Eigen::Vector3d& rgb)
+void VisualAspect::setRGB(const Eigen::Vector3d& rgb)
 {
   Eigen::Vector4d rgba = getRGBA();
   rgba.head<3>() = rgb;
@@ -113,7 +113,7 @@ void VisualAddon::setRGB(const Eigen::Vector3d& rgb)
 }
 
 //==============================================================================
-void VisualAddon::setAlpha(const double alpha)
+void VisualAspect::setAlpha(const double alpha)
 {
   mProperties.mRGBA[3] = alpha;
 
@@ -123,59 +123,59 @@ void VisualAddon::setAlpha(const double alpha)
 }
 
 //==============================================================================
-Eigen::Vector3d VisualAddon::getColor() const
+Eigen::Vector3d VisualAspect::getColor() const
 {
   return getRGB();
 }
 
 //==============================================================================
-Eigen::Vector3d VisualAddon::getRGB() const
+Eigen::Vector3d VisualAspect::getRGB() const
 {
   return getRGBA().head<3>();
 }
 
 //==============================================================================
-double VisualAddon::getAlpha() const
+double VisualAspect::getAlpha() const
 {
   return getRGBA()[3];
 }
 
 //==============================================================================
-void VisualAddon::hide()
+void VisualAspect::hide()
 {
   setHidden(true);
 }
 
 //==============================================================================
-void VisualAddon::show()
+void VisualAspect::show()
 {
   setHidden(false);
 }
 
 //==============================================================================
-bool VisualAddon::isHidden() const
+bool VisualAspect::isHidden() const
 {
   return getHidden();
 }
 
 //==============================================================================
-CollisionAddon::CollisionAddon(
-    common::AddonManager* mgr,
+CollisionAspect::CollisionAspect(
+    common::Composite* mgr,
     const PropertiesData& properties)
-  : AddonImplementation(mgr, properties)
+  : AspectImplementation(mgr, properties)
 {
 //  mIsShapeNode = dynamic_cast<ShapeNode*>(mgr);
 }
 
 //==============================================================================
-bool CollisionAddon::isCollidable() const
+bool CollisionAspect::isCollidable() const
 {
   return getCollidable();
 }
 
 //==============================================================================
-DynamicsAddon::DynamicsAddon(
-    common::AddonManager* mgr,
+DynamicsAspect::DynamicsAspect(
+    common::Composite* mgr,
     const PropertiesData& properties)
   : BaseClass(mgr, properties)
 {
@@ -202,18 +202,18 @@ ShapeFrame::UniqueProperties::UniqueProperties(ShapePtr&& shape)
 ShapeFrame::Properties::Properties(
     const Entity::Properties& entityProperties,
     const UniqueProperties& shapeFrameProperties,
-    const ShapeFrame::AddonProperties& addonProperties)
+    const ShapeFrame::AspectProperties& aspectProperties)
   : Entity::Properties(entityProperties),
     UniqueProperties(shapeFrameProperties),
-    mAddonProperties(addonProperties)
+    mAspectProperties(aspectProperties)
 {
   // Do nothing
 }
 
 //==============================================================================
-void ShapeFrame::setProperties(const ShapeFrame::AddonProperties& properties)
+void ShapeFrame::setProperties(const ShapeFrame::AspectProperties& properties)
 {
-  setAddonProperties(properties);
+  setAspectProperties(properties);
 }
 
 //==============================================================================
@@ -221,7 +221,7 @@ void ShapeFrame::setProperties(const Properties& properties)
 {
   Entity::setProperties(static_cast<const Entity::Properties&>(properties));
   setProperties(static_cast<const UniqueProperties&>(properties));
-  setProperties(properties.mAddonProperties);
+  setProperties(properties.mAspectProperties);
 }
 
 //==============================================================================
@@ -233,7 +233,7 @@ void ShapeFrame::setProperties(const ShapeFrame::UniqueProperties& properties)
 //==============================================================================
 const ShapeFrame::Properties ShapeFrame::getShapeFrameProperties() const
 {
-  return Properties(getEntityProperties(), mShapeFrameP, getAddonProperties());
+  return Properties(getEntityProperties(), mShapeFrameP, getAspectProperties());
 }
 
 //==============================================================================
@@ -284,16 +284,16 @@ void ShapeFrame::draw(renderer::RenderInterface* ri,
                      const Eigen::Vector4d& color,
                      bool useDefaultColor) const
 {
-  auto visualAddon = getVisualAddon();
+  auto visualAspect = getVisualAspect();
 
-  if (!visualAddon || visualAddon->isHidden())
+  if (!visualAspect || visualAspect->isHidden())
     return;
 
   ri->pushMatrix();
   ri->transform(getRelativeTransform());
 
   if (useDefaultColor)
-    mShapeFrameP.mShape->draw(ri, visualAddon->getRGBA());
+    mShapeFrameP.mShape->draw(ri, visualAspect->getRGBA());
   else
     mShapeFrameP.mShape->draw(ri, color);
 
@@ -314,7 +314,7 @@ size_t ShapeFrame::getVersion() const
 
 //==============================================================================
 ShapeFrame::ShapeFrame(Frame* parent, const Properties& properties)
-  : common::AddonManager(),
+  : common::Composite(),
     Entity(ConstructFrame),
     Frame(parent, ""),
     mShapeUpdatedSignal(),
@@ -330,7 +330,7 @@ ShapeFrame::ShapeFrame(Frame* parent, const Properties& properties)
 ShapeFrame::ShapeFrame(Frame* parent,
                        const std::string& name,
                        const ShapePtr& shape)
-  : common::AddonManager(),
+  : common::Composite(),
     Entity(ConstructFrame),
     Frame(parent, name),
     mShapeUpdatedSignal(),

@@ -80,23 +80,23 @@ struct ScrewJointProperties : SingleDofJoint::Properties,
 };
 
 //==============================================================================
-class ScrewJointAddon final :
-    public common::AddonWithVersionedProperties<
-        ScrewJointAddon, ScrewJointUniqueProperties, ScrewJoint,
-        detail::JointPropertyUpdate<ScrewJointAddon> >
+class ScrewJointAspect final :
+    public common::AspectWithVersionedProperties<
+        ScrewJointAspect, ScrewJointUniqueProperties, ScrewJoint,
+        detail::JointPropertyUpdate<ScrewJointAspect> >
 {
 public:
-  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( ScrewJointAddon )
+  DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( ScrewJointAspect )
 
   void setAxis(const Eigen::Vector3d& _axis);
   const Eigen::Vector3d& getAxis() const;
 
-  DART_COMMON_SET_GET_ADDON_PROPERTY(double, Pitch)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, Pitch)
 };
 
 //==============================================================================
-using ScrewJointBase = common::AddonManagerJoiner<
-    SingleDofJoint, common::RequiresAddon<ScrewJointAddon> >;
+using ScrewJointBase = common::CompositeJoiner<
+    SingleDofJoint, common::RequiresAspect<ScrewJointAspect> >;
 
 } // namespace detail
 } // namespace dynamics

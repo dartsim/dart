@@ -43,7 +43,7 @@
 
 #include "dart/common/Subject.h"
 #include "dart/common/Signal.h"
-#include "dart/common/AddonManager.h"
+#include "dart/common/Composite.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/SmartPointer.h"
 

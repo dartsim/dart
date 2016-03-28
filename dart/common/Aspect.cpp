@@ -38,49 +38,49 @@
 #include <string>
 #include <iostream>
 
-#include "dart/common/Addon.h"
+#include "dart/common/Aspect.h"
 #include "dart/common/Console.h"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-void Addon::setAddonState(const State& /*otherState*/)
+void Aspect::setAspectState(const State& /*otherState*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-const Addon::State* Addon::getAddonState() const
+const Aspect::State* Aspect::getAspectState() const
 {
   return nullptr;
 }
 
 //==============================================================================
-void Addon::setAddonProperties(const Properties& /*someProperties*/)
+void Aspect::setAspectProperties(const Properties& /*someProperties*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-const Addon::Properties* Addon::getAddonProperties() const
+const Aspect::Properties* Aspect::getAspectProperties() const
 {
   return nullptr;
 }
 
 //==============================================================================
-Addon::Addon(AddonManager* manager)
+Aspect::Aspect(Composite* manager)
 {
   if(nullptr == manager)
   {
-    dterr << "[Addon::constructor] You are not allowed to construct an Addon "
-          << "outside of an AddonManager!\n";
+    dterr << "[Aspect::constructor] You are not allowed to construct an Aspect "
+          << "outside of an Composite!\n";
     assert(false);
   }
 }
 
 //==============================================================================
-void Addon::setManager(AddonManager* /*newManager*/, bool /*transfer*/)
+void Aspect::setManager(Composite* /*newManager*/, bool /*transfer*/)
 {
   // Do nothing
 }

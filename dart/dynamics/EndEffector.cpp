@@ -70,9 +70,9 @@ bool Support::isActive() const
 //==============================================================================
 EndEffector::StateData::StateData(
     const Eigen::Isometry3d& relativeTransform,
-    const common::AddonManager::State& addonStates)
+    const common::Composite::State& aspectStates)
   : mRelativeTransform(relativeTransform),
-    mAddonStates(addonStates)
+    mAspectStates(aspectStates)
 {
   // Do nothing
 }
@@ -89,10 +89,10 @@ EndEffector::UniqueProperties::UniqueProperties(
 EndEffector::PropertiesData::PropertiesData(
     const Entity::Properties& _entityProperties,
     const UniqueProperties& _effectorProperties,
-    const common::AddonManager::Properties& _addonProperties)
+    const common::Composite::Properties& _aspectProperties)
   : Entity::Properties(_entityProperties),
     UniqueProperties(_effectorProperties),
-    mAddonProperties(_addonProperties)
+    mAspectProperties(_aspectProperties)
 {
   // Do nothing
 }
@@ -101,20 +101,20 @@ EndEffector::PropertiesData::PropertiesData(
 void EndEffector::setState(const StateData& _state)
 {
   setRelativeTransform(_state.mRelativeTransform);
-  setAddonStates(_state.mAddonStates);
+  setAspectStates(_state.mAspectStates);
 }
 
 //==============================================================================
 void EndEffector::setState(StateData&& _state)
 {
   setRelativeTransform(_state.mRelativeTransform);
-  setAddonStates(std::move(_state.mAddonStates));
+  setAspectStates(std::move(_state.mAspectStates));
 }
 
 //==============================================================================
 EndEffector::StateData EndEffector::getEndEffectorState() const
 {
-  return StateData(mRelativeTf, getAddonStates());
+  return StateData(mRelativeTf, getAspectStates());
 }
 
 //==============================================================================
@@ -122,7 +122,7 @@ void EndEffector::setProperties(const PropertiesData& _properties, bool _useNow)
 {
   Entity::setProperties(_properties);
   setProperties(static_cast<const UniqueProperties&>(_properties), _useNow);
-  setAddonProperties(_properties.mAddonProperties);
+  setAspectProperties(_properties.mAspectProperties);
 }
 
 //==============================================================================
@@ -136,7 +136,7 @@ void EndEffector::setProperties(const UniqueProperties& _properties,
 EndEffector::PropertiesData EndEffector::getEndEffectorProperties() const
 {
   return PropertiesData(getEntityProperties(), mEndEffectorP,
-                        getAddonProperties());
+                        getAspectProperties());
 }
 
 //==============================================================================
@@ -199,7 +199,7 @@ void EndEffector::copyNodeStateTo(std::unique_ptr<Node::State>& outputState) con
         static_cast<EndEffector::State*>(outputState.get());
 
     state->mRelativeTransform = mRelativeTf;
-    copyAddonStatesTo(state->mAddonStates);
+    copyAspectStatesTo(state->mAspectStates);
   }
   else
   {
@@ -231,7 +231,7 @@ void EndEffector::copyNodePropertiesTo(
 
     static_cast<Entity::Properties&>(*properties) = getEntityProperties();
     static_cast<UniqueProperties&>(*properties) = mEndEffectorP;
-    copyAddonPropertiesTo(properties->mAddonProperties);
+    copyAspectPropertiesTo(properties->mAspectProperties);
   }
   else
   {
@@ -393,7 +393,7 @@ EndEffector::EndEffector(BodyNode* _parent, const PropertiesData& _properties)
 Node* EndEffector::cloneNode(BodyNode* _parent) const
 {
   EndEffector* ee = new EndEffector(_parent, PropertiesData());
-  ee->duplicateAddons(this);
+  ee->duplicateAspects(this);
 
   ee->copy(this);
 

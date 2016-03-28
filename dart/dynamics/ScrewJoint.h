@@ -50,10 +50,10 @@ public:
   friend class Skeleton;
   using UniqueProperties = detail::ScrewJointUniqueProperties;
   using Properties = detail::ScrewJointProperties;
-  using Addon = detail::ScrewJointAddon;
+  using Aspect = detail::ScrewJointAspect;
   using Base = detail::ScrewJointBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, ScrewJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, ScrewJointAspect)
 
   ScrewJoint(const ScrewJoint&) = delete;
 
@@ -99,7 +99,7 @@ public:
   ///
   double getPitch() const;
 
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+  template<class AspectType> friend void detail::JointPropertyUpdate(AspectType*);
 
 protected:
 

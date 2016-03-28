@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_ADDONWITHVERSION_H_
-#define DART_COMMON_ADDONWITHVERSION_H_
+#ifndef DART_COMMON_ASPECTWITHVERSION_H_
+#define DART_COMMON_ASPECTWITHVERSION_H_
 
-#include "dart/common/detail/AddonWithVersion.h"
+#include "dart/common/detail/AspectWithVersion.h"
 
 namespace dart {
 namespace common {
@@ -45,29 +45,29 @@ namespace common {
 //==============================================================================
 template <class DerivedT,
           typename StateDataT,
-          class ManagerT = AddonManager,
+          class ManagerT = Composite,
           void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*> >
-using AddonWithState =
-    detail::AddonWithState<ManagerTrackingAddon<ManagerT>, DerivedT, StateDataT, ManagerT, updateState>;
+using AspectWithState =
+    detail::AspectWithState<ManagerTrackingAspect<ManagerT>, DerivedT, StateDataT, ManagerT, updateState>;
 
 //==============================================================================
 template <class DerivedT,
           typename PropertiesDataT,
-          class ManagerT = AddonManager,
+          class ManagerT = Composite,
           void (*updateProperties)(DerivedT*) = &detail::NoOp<DerivedT*> >
-using AddonWithVersionedProperties =
-    detail::AddonWithVersionedProperties<ManagerTrackingAddon<ManagerT>, DerivedT, PropertiesDataT, ManagerT, updateProperties>;
+using AspectWithVersionedProperties =
+    detail::AspectWithVersionedProperties<ManagerTrackingAspect<ManagerT>, DerivedT, PropertiesDataT, ManagerT, updateProperties>;
 
 //==============================================================================
 template <class DerivedT,
           typename StateDataT,
           typename PropertiesDataT,
-          class ManagerT = AddonManager,
+          class ManagerT = Composite,
           void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*>,
           void (*updateProperties)(DerivedT*) = updateState>
-class AddonWithStateAndVersionedProperties :
-    public detail::AddonWithVersionedProperties<
-        AddonWithState<DerivedT, StateDataT, ManagerT, updateState>,
+class AspectWithStateAndVersionedProperties :
+    public detail::AspectWithVersionedProperties<
+        AspectWithState<DerivedT, StateDataT, ManagerT, updateState>,
         DerivedT, PropertiesDataT, ManagerT, updateProperties>
 {
 public:
@@ -76,42 +76,42 @@ public:
   using StateData = StateDataT;
   using PropertiesData = PropertiesDataT;
   using ManagerType = ManagerT;
-  using State = common::Addon::StateMixer<StateData>;
-  using Properties = common::Addon::PropertiesMixer<PropertiesData>;
+  using State = common::Aspect::StateMixer<StateData>;
+  using Properties = common::Aspect::PropertiesMixer<PropertiesData>;
   constexpr static void (*UpdateState)(Derived*) = updateState;
   constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 
-  using AddonStateImplementation = AddonWithState<
+  using AspectStateImplementation = AspectWithState<
       Derived, StateData, ManagerType, updateState>;
 
-  using AddonPropertiesImplementation = detail::AddonWithVersionedProperties<
-      AddonStateImplementation,
+  using AspectPropertiesImplementation = detail::AspectWithVersionedProperties<
+      AspectStateImplementation,
       Derived, PropertiesData, ManagerType, updateProperties>;
 
-  using AddonImplementation = AddonWithStateAndVersionedProperties<
+  using AspectImplementation = AspectWithStateAndVersionedProperties<
       DerivedT, StateDataT, PropertiesDataT, ManagerT,
       updateState, updateProperties>;
 
-  AddonWithStateAndVersionedProperties() = delete;
-  AddonWithStateAndVersionedProperties(
-      const AddonWithStateAndVersionedProperties&) = delete;
+  AspectWithStateAndVersionedProperties() = delete;
+  AspectWithStateAndVersionedProperties(
+      const AspectWithStateAndVersionedProperties&) = delete;
 
   /// Construct using a StateData and a PropertiesData instance
-  AddonWithStateAndVersionedProperties(
-      common::AddonManager* mgr,
+  AspectWithStateAndVersionedProperties(
+      common::Composite* mgr,
       const StateData& state = StateData(),
       const PropertiesData& properties = PropertiesData())
-    : AddonPropertiesImplementation(mgr, properties, state)
+    : AspectPropertiesImplementation(mgr, properties, state)
   {
     // Do nothing
   }
 
   /// Construct using a PropertiesData and a StateData instance
-  AddonWithStateAndVersionedProperties(
-      common::AddonManager* mgr,
+  AspectWithStateAndVersionedProperties(
+      common::Composite* mgr,
       const PropertiesData& properties,
       const StateData& state = StateData())
-    : AddonPropertiesImplementation(mgr, properties, state)
+    : AspectPropertiesImplementation(mgr, properties, state)
   {
     // Do nothing
   }
@@ -131,7 +131,7 @@ template <class DerivedT,
           class ManagerT,
           void (*updateState)(DerivedT*),
           void (*updateProperties)(DerivedT*)>
-constexpr void (*AddonWithStateAndVersionedProperties<DerivedT, StateDataT,
+constexpr void (*AspectWithStateAndVersionedProperties<DerivedT, StateDataT,
     PropertiesDataT, ManagerT, updateState, updateProperties>::UpdateState)
     (DerivedT*);
 
@@ -142,11 +142,11 @@ template <class DerivedT,
           class ManagerT,
           void (*updateState)(DerivedT*),
           void (*updateProperties)(DerivedT*)>
-constexpr void (*AddonWithStateAndVersionedProperties<DerivedT, StateDataT,
+constexpr void (*AspectWithStateAndVersionedProperties<DerivedT, StateDataT,
     PropertiesDataT, ManagerT, updateState, updateProperties>::UpdateProperties)
     (DerivedT*);
 
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_ADDONWITHVERSION_H_
+#endif // DART_COMMON_ASPECTWITHVERSION_H_

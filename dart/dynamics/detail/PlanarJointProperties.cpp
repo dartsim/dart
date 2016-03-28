@@ -150,28 +150,28 @@ PlanarJointProperties::PlanarJointProperties(
 }
 
 //==============================================================================
-void PlanarJointAddon::setXYPlane()
+void PlanarJointAspect::setXYPlane()
 {
   mProperties.setXYPlane();
   notifyPropertiesUpdate();
 }
 
 //==============================================================================
-void PlanarJointAddon::setYZPlane()
+void PlanarJointAspect::setYZPlane()
 {
   mProperties.setYZPlane();
   notifyPropertiesUpdate();
 }
 
 //==============================================================================
-void PlanarJointAddon::setZXPlane()
+void PlanarJointAspect::setZXPlane()
 {
   mProperties.setZXPlane();
   notifyPropertiesUpdate();
 }
 
 //==============================================================================
-void PlanarJointAddon::setArbitraryPlane(const Eigen::Vector3d& _axis1,
+void PlanarJointAspect::setArbitraryPlane(const Eigen::Vector3d& _axis1,
                                          const Eigen::Vector3d& _axis2)
 {
   mProperties.setArbitraryPlane(_axis1, _axis2);

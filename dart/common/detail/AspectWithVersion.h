@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_ADDONWITHVERSION_H_
-#define DART_COMMON_DETAIL_ADDONWITHVERSION_H_
+#ifndef DART_COMMON_DETAIL_ASPECTWITHVERSION_H_
+#define DART_COMMON_DETAIL_ASPECTWITHVERSION_H_
 
-#include "dart/common/Addon.h"
+#include "dart/common/Aspect.h"
 #include "dart/common/StlHelpers.h"
 
 namespace dart {
@@ -45,12 +45,12 @@ namespace common {
 namespace detail {
 
 //==============================================================================
-/// AddonWithProtectedState generates implementations of the State managing
-/// functions for an Addon class.
+/// AspectWithProtectedState generates implementations of the State managing
+/// functions for an Aspect class.
 template <class BaseT, class DerivedT, typename StateDataT,
-          class ManagerT = AddonManager,
+          class ManagerT = Composite,
           void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*> >
-class AddonWithState : public BaseT
+class AspectWithState : public BaseT
 {
 public:
 
@@ -58,21 +58,21 @@ public:
   using Derived = DerivedT;
   using StateData = StateDataT;
   using ManagerType = ManagerT;
-  using State = Addon::StateMixer<StateData>;
+  using State = Aspect::StateMixer<StateData>;
   constexpr static void (*UpdateState)(Derived*) = updateState;
 
-  using AddonImplementation = AddonWithState<
+  using AspectImplementation = AspectWithState<
       Base, Derived, StateData, ManagerT, updateState>;
 
-  AddonWithState() = delete;
-  AddonWithState(const AddonWithState&) = delete;
+  AspectWithState() = delete;
+  AspectWithState(const AspectWithState&) = delete;
 
   /// Construct using a StateData instance
-  AddonWithState(AddonManager* mgr, const StateData& state = StateData());
+  AspectWithState(Composite* mgr, const StateData& state = StateData());
 
-  /// Construct this Addon and pass args into the constructor of the Base class
+  /// Construct this Aspect and pass args into the constructor of the Base class
   template <typename... BaseArgs>
-  AddonWithState(AddonManager* mgr, const StateData& state,
+  AspectWithState(Composite* mgr, const StateData& state,
                  BaseArgs&&... args)
     : Base(mgr, std::forward<BaseArgs>(args)...),
       mState(state)
@@ -81,34 +81,34 @@ public:
   }
 
   // Documentation inherited
-  void setAddonState(const Addon::State& otherState) override final;
+  void setAspectState(const Aspect::State& otherState) override final;
 
   // Documentation inherited
-  const Addon::State* getAddonState() const override final;
+  const Aspect::State* getAspectState() const override final;
 
-  /// Set the State of this Addon
+  /// Set the State of this Aspect
   void setState(const StateData& state);
 
-  /// Get the State of this Addon
+  /// Get the State of this Aspect
   const State& getState() const;
 
   // Documentation inherited
-  std::unique_ptr<Addon> cloneAddon(
-      AddonManager* newManager) const override;
+  std::unique_ptr<Aspect> cloneAspect(
+      Composite* newManager) const override;
 
 protected:
 
-  /// State of this Addon
+  /// State of this Aspect
   State mState;
 };
 
 //==============================================================================
-/// AddonWithProtectedProperties generates implementations of the Property
-/// managing functions for an Addon class.
+/// AspectWithProtectedProperties generates implementations of the Property
+/// managing functions for an Aspect class.
 template <class BaseT, class DerivedT, typename PropertiesDataT,
-          class ManagerT = AddonManager,
+          class ManagerT = Composite,
           void (*updateProperties)(DerivedT*) = &detail::NoOp<DerivedT*> >
-class AddonWithVersionedProperties : public BaseT
+class AspectWithVersionedProperties : public BaseT
 {
 public:
 
@@ -116,23 +116,23 @@ public:
   using Derived = DerivedT;
   using PropertiesData = PropertiesDataT;
   using ManagerType = ManagerT;
-  using Properties = Addon::PropertiesMixer<PropertiesData>;
+  using Properties = Aspect::PropertiesMixer<PropertiesData>;
   constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 
-  using AddonImplementation = AddonWithVersionedProperties<
+  using AspectImplementation = AspectWithVersionedProperties<
       Base, Derived, PropertiesData, ManagerT, updateProperties>;
 
-  AddonWithVersionedProperties() = delete;
-  AddonWithVersionedProperties(const AddonWithVersionedProperties&) = delete;
+  AspectWithVersionedProperties() = delete;
+  AspectWithVersionedProperties(const AspectWithVersionedProperties&) = delete;
 
   /// Construct using a PropertiesData instance
-  AddonWithVersionedProperties(
-      AddonManager* mgr, const PropertiesData& properties = PropertiesData());
+  AspectWithVersionedProperties(
+      Composite* mgr, const PropertiesData& properties = PropertiesData());
 
-  /// Construct this Addon and pass args into the constructor of the Base class
+  /// Construct this Aspect and pass args into the constructor of the Base class
   template <typename... BaseArgs>
-  AddonWithVersionedProperties(
-      AddonManager* mgr, const PropertiesData& properties, BaseArgs&&... args)
+  AspectWithVersionedProperties(
+      Composite* mgr, const PropertiesData& properties, BaseArgs&&... args)
     : Base(mgr, std::forward<BaseArgs>(args)...),
       mProperties(properties)
   {
@@ -140,22 +140,22 @@ public:
   }
 
   // Documentation inherited
-  void setAddonProperties(const Addon::Properties& someProperties) override final;
+  void setAspectProperties(const Aspect::Properties& someProperties) override final;
 
   // Documentation inherited
-  const Addon::Properties* getAddonProperties() const override final;
+  const Aspect::Properties* getAspectProperties() const override final;
 
-  /// Set the Properties of this Addon
+  /// Set the Properties of this Aspect
   void setProperties(const PropertiesData& properties);
 
-  /// Get the Properties of this Addon
+  /// Get the Properties of this Aspect
   const Properties& getProperties() const;
 
   // Documentation inherited
-  std::unique_ptr<Addon> cloneAddon(
-      AddonManager* newManager) const override;
+  std::unique_ptr<Aspect> cloneAspect(
+      Composite* newManager) const override;
 
-  /// Increment the version of this Addon and its Manager
+  /// Increment the version of this Aspect and its Manager
   size_t incrementVersion();
 
   /// Call UpdateProperties(this) and incrementVersion()
@@ -163,7 +163,7 @@ public:
 
 protected:
 
-  /// Properties of this Addon
+  /// Properties of this Aspect
   Properties mProperties;
 
 };
@@ -177,15 +177,15 @@ protected:
 //
 template <class BaseT, class DerivedT, typename StateDataT,
           class ManagerT, void (*updateState)(DerivedT*)>
-constexpr void (*AddonWithState<
+constexpr void (*AspectWithState<
     BaseT, DerivedT, StateDataT, ManagerT, updateState>::UpdateState)(
     DerivedT*);
 
 //==============================================================================
 template <class BaseT, class DerivedT, typename StateDataT,
           class ManagerT, void (*updateState)(DerivedT*)>
-AddonWithState<BaseT, DerivedT, StateDataT, ManagerT, updateState>::
-AddonWithState(AddonManager* mgr, const StateDataT& state)
+AspectWithState<BaseT, DerivedT, StateDataT, ManagerT, updateState>::
+AspectWithState(Composite* mgr, const StateDataT& state)
   : BaseT(mgr),
     mState(state)
 {
@@ -195,8 +195,8 @@ AddonWithState(AddonManager* mgr, const StateDataT& state)
 //==============================================================================
 template <class BaseT, class DerivedT, typename StateData,
           class ManagerT, void (*updateState)(DerivedT*)>
-void AddonWithState<BaseT, DerivedT, StateData, ManagerT, updateState>::
-setAddonState(const Addon::State& otherState)
+void AspectWithState<BaseT, DerivedT, StateData, ManagerT, updateState>::
+setAspectState(const Aspect::State& otherState)
 {
   setState(static_cast<const State&>(otherState));
 }
@@ -204,9 +204,9 @@ setAddonState(const Addon::State& otherState)
 //==============================================================================
 template <class BaseT, class DerivedT, typename StateData,
           class ManagerT, void (*updateState)(DerivedT*)>
-const Addon::State*
-AddonWithState<BaseT, DerivedT, StateData, ManagerT, updateState>::
-getAddonState() const
+const Aspect::State*
+AspectWithState<BaseT, DerivedT, StateData, ManagerT, updateState>::
+getAspectState() const
 {
   return &mState;
 }
@@ -214,7 +214,7 @@ getAddonState() const
 //==============================================================================
 template <class BaseT, class DerivedT, typename StateData,
           class ManagerT, void (*updateState)(DerivedT*)>
-void AddonWithState<BaseT, DerivedT, StateData, ManagerT, updateState>::
+void AspectWithState<BaseT, DerivedT, StateData, ManagerT, updateState>::
 setState(const StateData& state)
 {
   static_cast<StateData&>(mState) = state;
@@ -224,7 +224,7 @@ setState(const StateData& state)
 //==============================================================================
 template <class BaseT, class DerivedT, typename StateDataT,
           class ManagerT, void (*updateState)(DerivedT*)>
-auto AddonWithState<BaseT, DerivedT, StateDataT, ManagerT, updateState>::
+auto AspectWithState<BaseT, DerivedT, StateDataT, ManagerT, updateState>::
 getState() const -> const State&
 {
   return mState;
@@ -233,9 +233,9 @@ getState() const -> const State&
 //==============================================================================
 template <class BaseT, class DerivedT, typename StateData,
           class ManagerT, void (*updateState)(DerivedT*)>
-std::unique_ptr<Addon>
-AddonWithState<BaseT, DerivedT, StateData, ManagerT, updateState>::
-    cloneAddon(AddonManager* newManager) const
+std::unique_ptr<Aspect>
+AspectWithState<BaseT, DerivedT, StateData, ManagerT, updateState>::
+    cloneAspect(Composite* newManager) const
 {
   return common::make_unique<Derived>(newManager, mState);
 }
@@ -249,17 +249,17 @@ AddonWithState<BaseT, DerivedT, StateData, ManagerT, updateState>::
 //
 template <class BaseT, class DerivedT, typename PropertiesDataT,
           class ManagerT, void (*updateProperties)(DerivedT*)>
-constexpr void (*AddonWithVersionedProperties<BaseT, DerivedT, PropertiesDataT,
+constexpr void (*AspectWithVersionedProperties<BaseT, DerivedT, PropertiesDataT,
                                               ManagerT, updateProperties>::
 UpdateProperties)(DerivedT*);
 
 //==============================================================================
 template <class BaseT, class DerivedT, typename PropertiesDataT,
           class ManagerT, void (*updateProperties)(DerivedT*)>
-AddonWithVersionedProperties<BaseT, DerivedT, PropertiesDataT,
+AspectWithVersionedProperties<BaseT, DerivedT, PropertiesDataT,
                              ManagerT, updateProperties>::
-AddonWithVersionedProperties(
-    AddonManager* mgr, const PropertiesData& properties)
+AspectWithVersionedProperties(
+    Composite* mgr, const PropertiesData& properties)
   : BaseT(mgr),
     mProperties(properties)
 {
@@ -269,9 +269,9 @@ AddonWithVersionedProperties(
 //==============================================================================
 template <class BaseT, class DerivedT, typename PropertiesData,
           class ManagerT, void (*updateProperties)(DerivedT*)>
-void AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
+void AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
                                   ManagerT, updateProperties>::
-setAddonProperties(const Addon::Properties& someProperties)
+setAspectProperties(const Aspect::Properties& someProperties)
 {
   setProperties(static_cast<const Properties&>(someProperties));
 }
@@ -279,10 +279,10 @@ setAddonProperties(const Addon::Properties& someProperties)
 //==============================================================================
 template <class BaseT, class DerivedT, typename PropertiesData,
           class ManagerT, void (*updateProperties)(DerivedT*)>
-const Addon::Properties*
-AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
+const Aspect::Properties*
+AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
                              ManagerT, updateProperties>::
-getAddonProperties() const
+getAspectProperties() const
 {
   return &mProperties;
 }
@@ -290,7 +290,7 @@ getAddonProperties() const
 //==============================================================================
 template <class BaseT, class DerivedT, typename PropertiesData,
           class ManagerT, void (*updateProperties)(DerivedT*)>
-void AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
+void AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
                                   ManagerT, updateProperties>::
 setProperties(const PropertiesData& properties)
 {
@@ -301,7 +301,7 @@ setProperties(const PropertiesData& properties)
 //==============================================================================
 template <class BaseT, class DerivedT, typename PropertiesData,
           class ManagerT, void (*updateProperties)(DerivedT*)>
-auto AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
+auto AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
                                   ManagerT, updateProperties>::
 getProperties() const -> const Properties&
 {
@@ -311,10 +311,10 @@ getProperties() const -> const Properties&
 //==============================================================================
 template <class BaseT, class DerivedT, typename PropertiesData,
           class ManagerT, void (*updateProperties)(DerivedT*)>
-std::unique_ptr<Addon>
-AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
+std::unique_ptr<Aspect>
+AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
                              ManagerT, updateProperties>::
-cloneAddon(AddonManager* newManager) const
+cloneAspect(Composite* newManager) const
 {
   return common::make_unique<Derived>(newManager, mProperties);
 }
@@ -322,7 +322,7 @@ cloneAddon(AddonManager* newManager) const
 //==============================================================================
 template <class BaseT, class DerivedT, typename PropertiesData,
           class ManagerT, void (*updateProperties)(DerivedT*)>
-size_t AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
+size_t AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
                              ManagerT, updateProperties>::incrementVersion()
 {
   if(ManagerType* mgr = this->getManager())
@@ -334,7 +334,7 @@ size_t AddonWithVersionedProperties<BaseT, DerivedT, PropertiesData,
 //==============================================================================
 template <class BaseT, class DerivedT, typename PropertiesData,
           class ManagerT, void (*updateProperties)(DerivedT*)>
-void AddonWithVersionedProperties<
+void AspectWithVersionedProperties<
     BaseT, DerivedT, PropertiesData,
     ManagerT, updateProperties>::notifyPropertiesUpdate()
 {
@@ -346,4 +346,4 @@ void AddonWithVersionedProperties<
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_ADDONWITHVERSION_H_
+#endif // DART_COMMON_DETAIL_ASPECTWITHVERSION_H_

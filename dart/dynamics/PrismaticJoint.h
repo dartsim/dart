@@ -50,10 +50,10 @@ public:
   friend class Skeleton;
   using UniqueProperties = detail::PrismaticJointUniqueProperties;
   using Properties = detail::PrismaticJointProperties;
-  using Addon = detail::PrismaticJointAddon;
+  using Aspect = detail::PrismaticJointAspect;
   using Base = detail::PrismaticJointBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, PrismaticJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, PrismaticJointAspect)
 
   PrismaticJoint(const PrismaticJoint&) = delete;
 
@@ -93,7 +93,7 @@ public:
   ///
   const Eigen::Vector3d& getAxis() const;
 
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
+  template<class AspectType> friend void detail::JointPropertyUpdate(AspectType*);
 
 protected:
 

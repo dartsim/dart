@@ -61,7 +61,7 @@ int main()
   std::shared_ptr<BoxShape> x_shape(
         new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
   x_marker->setShape(x_shape);
-  x_marker->getVisualAddon(true)->setColor(Eigen::Vector3d(0.9, 0.0, 0.0));
+  x_marker->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9, 0.0, 0.0));
   world->addSimpleFrame(x_marker);
 
   tf.translation() = Eigen::Vector3d(0.0, 8.0, 0.0);
@@ -69,7 +69,7 @@ int main()
   std::shared_ptr<BoxShape> y_shape(
         new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
   y_marker->setShape(y_shape);
-  y_marker->getVisualAddon(true)->setColor(Eigen::Vector3d(0.0, 0.9, 0.0));
+  y_marker->getVisualAspect(true)->setColor(Eigen::Vector3d(0.0, 0.9, 0.0));
   world->addSimpleFrame(y_marker);
 
   tf.translation() = Eigen::Vector3d(0.0, 0.0, 8.0);
@@ -77,7 +77,7 @@ int main()
   std::shared_ptr<BoxShape> z_shape(
         new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
   z_marker->setShape(z_shape);
-  z_marker->getVisualAddon(true)->setColor(Eigen::Vector3d(0.0, 0.0, 0.9));
+  z_marker->getVisualAspect(true)->setColor(Eigen::Vector3d(0.0, 0.0, 0.9));
   world->addSimpleFrame(z_marker);
 
 

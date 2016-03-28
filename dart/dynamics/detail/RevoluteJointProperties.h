@@ -76,21 +76,21 @@ struct RevoluteJointProperties :
 };
 
 //==============================================================================
-class RevoluteJointAddon final :
-    public common::AddonWithVersionedProperties<
-        RevoluteJointAddon, RevoluteJointUniqueProperties, RevoluteJoint,
-        detail::JointPropertyUpdate<RevoluteJointAddon> >
+class RevoluteJointAspect final :
+    public common::AspectWithVersionedProperties<
+        RevoluteJointAspect, RevoluteJointUniqueProperties, RevoluteJoint,
+        detail::JointPropertyUpdate<RevoluteJointAspect> >
 {
 public:
-  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( RevoluteJointAddon )
+  DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( RevoluteJointAspect )
 
   void setAxis(const Eigen::Vector3d& _axis);
   const Eigen::Vector3d& getAxis() const;
 };
 
 //==============================================================================
-using RevoluteJointBase = common::AddonManagerJoiner<
-    SingleDofJoint, common::RequiresAddon<RevoluteJointAddon> >;
+using RevoluteJointBase = common::CompositeJoiner<
+    SingleDofJoint, common::RequiresAspect<RevoluteJointAspect> >;
 
 } // namespace detail
 

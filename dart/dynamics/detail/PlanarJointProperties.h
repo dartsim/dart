@@ -123,13 +123,13 @@ struct PlanarJointProperties :
 };
 
 //==============================================================================
-class PlanarJointAddon final :
-    public common::AddonWithVersionedProperties<
-        PlanarJointAddon, PlanarJointUniqueProperties, PlanarJoint,
-        detail::JointPropertyUpdate<PlanarJointAddon> >
+class PlanarJointAspect final :
+    public common::AspectWithVersionedProperties<
+        PlanarJointAspect, PlanarJointUniqueProperties, PlanarJoint,
+        detail::JointPropertyUpdate<PlanarJointAspect> >
 {
 public:
-  DART_COMMON_JOINT_ADDON_CONSTRUCTOR( PlanarJointAddon )
+  DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( PlanarJointAspect )
 
   void setXYPlane();
   void setYZPlane();
@@ -137,15 +137,15 @@ public:
   void setArbitraryPlane(const Eigen::Vector3d& _axis1,
                          const Eigen::Vector3d& _axis2);
 
-  DART_COMMON_GET_ADDON_PROPERTY( PlaneType, PlaneType )
-  DART_COMMON_GET_ADDON_PROPERTY( Eigen::Vector3d, TransAxis1 )
-  DART_COMMON_GET_ADDON_PROPERTY( Eigen::Vector3d, TransAxis2 )
-  DART_COMMON_GET_ADDON_PROPERTY( Eigen::Vector3d, RotAxis )
+  DART_COMMON_GET_ASPECT_PROPERTY( PlaneType, PlaneType )
+  DART_COMMON_GET_ASPECT_PROPERTY( Eigen::Vector3d, TransAxis1 )
+  DART_COMMON_GET_ASPECT_PROPERTY( Eigen::Vector3d, TransAxis2 )
+  DART_COMMON_GET_ASPECT_PROPERTY( Eigen::Vector3d, RotAxis )
 };
 
 //==============================================================================
-using PlanarJointBase = common::AddonManagerJoiner<
-    MultiDofJoint<3>, common::RequiresAddon<PlanarJointAddon> >;
+using PlanarJointBase = common::CompositeJoiner<
+    MultiDofJoint<3>, common::RequiresAspect<PlanarJointAspect> >;
 
 } // namespace detail
 } // namespace dynamics

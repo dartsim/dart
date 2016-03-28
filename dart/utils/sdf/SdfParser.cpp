@@ -186,7 +186,7 @@ void readCollisionShapeNode(
     const std::string& skelPath,
     const common::ResourceRetrieverPtr& retriever);
 
-void readAddons(
+void readAspects(
     const dynamics::SkeletonPtr& skeleton,
     tinyxml2::XMLElement* skeletonElement,
     const std::string& skelPath,
@@ -497,9 +497,9 @@ dynamics::SkeletonPtr readSkeleton(
     body = sdfBodyNodes.begin();
   }
 
-  // Read addons here since addons cannot be added if the BodyNodes haven't
+  // Read aspects here since aspects cannot be added if the BodyNodes haven't
   // created yet.
-  readAddons(newSkeleton, skeletonElement, skelPath, retriever);
+  readAspects(newSkeleton, skeletonElement, skelPath, retriever);
 
   // Set positions to their initial values
   newSkeleton->resetPositions();
@@ -997,7 +997,7 @@ void readVisualizationShapeNode(
                       bodyNode->getName() + " - visual shape",
                       skelPath, retriever);
 
-  newShapeNode->createVisualAddon();
+  newShapeNode->createVisualAspect();
 }
 
 //==============================================================================
@@ -1012,11 +1012,11 @@ void readCollisionShapeNode(
                       bodyNode->getName() + " - collision shape",
                       skelPath, retriever);
 
-  newShapeNode->createCollisionAddon();
+  newShapeNode->createCollisionAspect();
 }
 
 //==============================================================================
-void readAddons(
+void readAspects(
     const dynamics::SkeletonPtr& skeleton,
     tinyxml2::XMLElement* skeletonElement,
     const std::string& skelPath,

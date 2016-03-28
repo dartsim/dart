@@ -72,7 +72,7 @@ class CylinderShapeDrawable : public osg::ShapeDrawable
 public:
 
   CylinderShapeDrawable(dart::dynamics::CylinderShape* shape,
-                        dart::dynamics::VisualAddon* visualAddon,
+                        dart::dynamics::VisualAspect* visualAspect,
                         CylinderShapeGeode* parent);
 
   void refresh(bool firstTime);
@@ -82,7 +82,7 @@ protected:
   virtual ~CylinderShapeDrawable();
 
   dart::dynamics::CylinderShape* mCylinderShape;
-  dart::dynamics::VisualAddon* mVisualAddon;
+  dart::dynamics::VisualAspect* mVisualAspect;
 
   CylinderShapeGeode* mParent;
 
@@ -97,7 +97,7 @@ CylinderShapeNode::CylinderShapeNode(
     mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -105,7 +105,7 @@ void CylinderShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -158,7 +158,7 @@ void CylinderShapeGeode::extractData()
 {
   if(nullptr == mDrawable)
   {
-    mDrawable = new CylinderShapeDrawable(mCylinderShape, mVisualAddon, this);
+    mDrawable = new CylinderShapeDrawable(mCylinderShape, mVisualAspect, this);
     addDrawable(mDrawable);
     return;
   }
@@ -175,10 +175,10 @@ CylinderShapeGeode::~CylinderShapeGeode()
 //==============================================================================
 CylinderShapeDrawable::CylinderShapeDrawable(
     dart::dynamics::CylinderShape* shape,
-    dart::dynamics::VisualAddon* visualAddon,
+    dart::dynamics::VisualAspect* visualAspect,
     CylinderShapeGeode* parent)
   : mCylinderShape(shape),
-    mVisualAddon(visualAddon),
+    mVisualAspect(visualAspect),
     mParent(parent)
 {
   refresh(true);
@@ -206,7 +206,7 @@ void CylinderShapeDrawable::refresh(bool firstTime)
   if(mCylinderShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
-    setColor(eigToOsgVec4(mVisualAddon->getRGBA()));
+    setColor(eigToOsgVec4(mVisualAspect->getRGBA()));
   }
 }
 

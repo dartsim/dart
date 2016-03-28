@@ -38,33 +38,33 @@
 #include <iostream>
 
 #include "dart/common/Console.h"
-#include "dart/common/AddonManager.h"
+#include "dart/common/Composite.h"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-void AddonManager::setAddonStates(const State& newStates)
+void Composite::setAspectStates(const State& newStates)
 {
   const StateMap& stateMap = newStates.getMap();
 
-  AddonMap::iterator addons = mAddonMap.begin();
+  AspectMap::iterator aspects = mAspectMap.begin();
   StateMap::const_iterator states = stateMap.begin();
 
-  while( mAddonMap.end() != addons && stateMap.end() != states )
+  while( mAspectMap.end() != aspects && stateMap.end() != states )
   {
-    if( addons->first == states->first )
+    if( aspects->first == states->first )
     {
-      Addon* addon = addons->second.get();
-      if(addon && states->second)
-        addon->setAddonState(*states->second);
+      Aspect* aspect = aspects->second.get();
+      if(aspect && states->second)
+        aspect->setAspectState(*states->second);
 
-      ++addons;
+      ++aspects;
       ++states;
     }
-    else if( addons->first < states->first )
+    else if( aspects->first < states->first )
     {
-      ++addons;
+      ++aspects;
     }
     else
     {
@@ -74,19 +74,19 @@ void AddonManager::setAddonStates(const State& newStates)
 }
 
 //==============================================================================
-template <typename MapType, class DataType, const DataType* (Addon::*getData)() const>
-void extractMapData(MapType& outgoingMap, const AddonManager::AddonMap& addonMap)
+template <typename MapType, class DataType, const DataType* (Aspect::*getData)() const>
+void extractMapData(MapType& outgoingMap, const Composite::AspectMap& aspectMap)
 {
   // TODO(MXG): Consider placing this function in a header so it can be utilized
   // by anything that needs to transfer data between maps of extensibles
 
   // This method allows us to avoid dynamic allocation (cloning) whenever possible.
-  for(const auto& addon : addonMap)
+  for(const auto& aspect : aspectMap)
   {
-    if(nullptr == addon.second)
+    if(nullptr == aspect.second)
       continue;
 
-    const DataType* data = (addon.second.get()->*getData)();
+    const DataType* data = (aspect.second.get()->*getData)();
     if(data)
     {
       // Attempt to insert a nullptr to see whether this entry exists while also
@@ -95,7 +95,7 @@ void extractMapData(MapType& outgoingMap, const AddonManager::AddonMap& addonMap
       // see if the entry already exists and then searching the map again in
       // order to insert the entry if it didn't already exist.
       std::pair<typename MapType::iterator, bool> insertion =
-          outgoingMap.insert(typename MapType::value_type(addon.first, nullptr));
+          outgoingMap.insert(typename MapType::value_type(aspect.first, nullptr));
 
       typename MapType::iterator& it = insertion.first;
       bool existed = !insertion.second;
@@ -124,43 +124,43 @@ void extractMapData(MapType& outgoingMap, const AddonManager::AddonMap& addonMap
 }
 
 //==============================================================================
-AddonManager::State AddonManager::getAddonStates() const
+Composite::State Composite::getAspectStates() const
 {
   State states;
-  copyAddonStatesTo(states);
+  copyAspectStatesTo(states);
 
   return states;
 }
 
 //==============================================================================
-void AddonManager::copyAddonStatesTo(State& outgoingStates) const
+void Composite::copyAspectStatesTo(State& outgoingStates) const
 {
   StateMap& states = outgoingStates.getMap();
-  extractMapData<StateMap, Addon::State, &Addon::getAddonState>(states, mAddonMap);
+  extractMapData<StateMap, Aspect::State, &Aspect::getAspectState>(states, mAspectMap);
 }
 
 //==============================================================================
-void AddonManager::setAddonProperties(const Properties& newProperties)
+void Composite::setAspectProperties(const Properties& newProperties)
 {
   const PropertiesMap& propertiesMap = newProperties.getMap();
 
-  AddonMap::iterator addons = mAddonMap.begin();
+  AspectMap::iterator aspects = mAspectMap.begin();
   PropertiesMap::const_iterator props = propertiesMap.begin();
 
-  while( mAddonMap.end() != addons && propertiesMap.end() != props )
+  while( mAspectMap.end() != aspects && propertiesMap.end() != props )
   {
-    if( addons->first == props->first )
+    if( aspects->first == props->first )
     {
-      Addon* addon = addons->second.get();
-      if(addon)
-        addon->setAddonProperties(*props->second);
+      Aspect* aspect = aspects->second.get();
+      if(aspect)
+        aspect->setAspectProperties(*props->second);
 
-      ++addons;
+      ++aspects;
       ++props;
     }
-    else if( addons->first < props->first )
+    else if( aspects->first < props->first )
     {
-      ++addons;
+      ++aspects;
     }
     else
     {
@@ -170,30 +170,30 @@ void AddonManager::setAddonProperties(const Properties& newProperties)
 }
 
 //==============================================================================
-AddonManager::Properties AddonManager::getAddonProperties() const
+Composite::Properties Composite::getAspectProperties() const
 {
   Properties properties;
-  copyAddonPropertiesTo(properties);
+  copyAspectPropertiesTo(properties);
 
   return properties;
 }
 
 //==============================================================================
-void AddonManager::copyAddonPropertiesTo(
+void Composite::copyAspectPropertiesTo(
     Properties& outgoingProperties) const
 {
   PropertiesMap& properties = outgoingProperties.getMap();
-  extractMapData<PropertiesMap, Addon::Properties, &Addon::getAddonProperties>(
-        properties, mAddonMap);
+  extractMapData<PropertiesMap, Aspect::Properties, &Aspect::getAspectProperties>(
+        properties, mAspectMap);
 }
 
 //==============================================================================
-void AddonManager::duplicateAddons(const AddonManager* fromManager)
+void Composite::duplicateAspects(const Composite* fromManager)
 {
   if(nullptr == fromManager)
   {
-    dterr << "[AddonManager::duplicateAddons] You have asked to duplicate the "
-          << "Addons of a nullptr, which is not allowed!\n";
+    dterr << "[Composite::duplicateAspects] You have asked to duplicate the "
+          << "Aspects of a nullptr, which is not allowed!\n";
     assert(false);
     return;
   }
@@ -201,16 +201,16 @@ void AddonManager::duplicateAddons(const AddonManager* fromManager)
   if(this == fromManager)
     return;
 
-  const AddonMap& otherMap = fromManager->mAddonMap;
+  const AspectMap& otherMap = fromManager->mAspectMap;
 
-  AddonMap::iterator receiving = mAddonMap.begin();
-  AddonMap::const_iterator incoming = otherMap.begin();
+  AspectMap::iterator receiving = mAspectMap.begin();
+  AspectMap::const_iterator incoming = otherMap.begin();
 
   while( otherMap.end() != incoming )
   {
-    if( mAddonMap.end() == receiving )
+    if( mAspectMap.end() == receiving )
     {
-      // If we've reached the end of this Manager's AddonMap, then we should
+      // If we've reached the end of this Manager's AspectMap, then we should
       // just add each entry
       _set(incoming->first, incoming->second.get());
       ++incoming;
@@ -230,7 +230,7 @@ void AddonManager::duplicateAddons(const AddonManager* fromManager)
     else
     {
       // If this Manager does not have an entry corresponding to the incoming
-      // Addon, then we must create it
+      // Aspect, then we must create it
       _set(incoming->first, incoming->second.get());
       ++incoming;
     }
@@ -238,48 +238,48 @@ void AddonManager::duplicateAddons(const AddonManager* fromManager)
 }
 
 //==============================================================================
-void AddonManager::matchAddons(const AddonManager* otherManager)
+void Composite::matchAspects(const Composite* otherManager)
 {
   if(nullptr == otherManager)
   {
-    dterr << "[AddonManager::matchAddons] You have asked to match the Addons "
+    dterr << "[Composite::matchAspects] You have asked to match the Aspects "
           << "of a nullptr, which is not allowed!\n";
     assert(false);
     return;
   }
 
-  for(auto& addon : mAddonMap)
-    addon.second = nullptr;
+  for(auto& aspect : mAspectMap)
+    aspect.second = nullptr;
 
-  duplicateAddons(otherManager);
+  duplicateAspects(otherManager);
 }
 
 //==============================================================================
-void AddonManager::becomeManager(Addon* addon, bool transfer)
+void Composite::becomeManager(Aspect* aspect, bool transfer)
 {
-  if(addon)
-    addon->setManager(this, transfer);
+  if(aspect)
+    aspect->setManager(this, transfer);
 }
 
 //==============================================================================
-void AddonManager::_set(std::type_index type_idx, const Addon* addon)
+void Composite::_set(std::type_index type_idx, const Aspect* aspect)
 {
-  if(addon)
+  if(aspect)
   {
-    mAddonMap[type_idx] = addon->cloneAddon(this);
-    becomeManager(mAddonMap[type_idx].get(), false);
+    mAspectMap[type_idx] = aspect->cloneAspect(this);
+    becomeManager(mAspectMap[type_idx].get(), false);
   }
   else
   {
-    mAddonMap[type_idx] = nullptr;
+    mAspectMap[type_idx] = nullptr;
   }
 }
 
 //==============================================================================
-void AddonManager::_set(std::type_index type_idx, std::unique_ptr<Addon> addon)
+void Composite::_set(std::type_index type_idx, std::unique_ptr<Aspect> aspect)
 {
-  mAddonMap[type_idx] = std::move(addon);
-  becomeManager(mAddonMap[type_idx].get(), true);
+  mAspectMap[type_idx] = std::move(aspect);
+  becomeManager(mAspectMap[type_idx].get(), true);
 }
 
 } // namespace common

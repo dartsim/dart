@@ -37,9 +37,9 @@
 #ifndef DART_DYNAMICS_ENDEFFECTOR_H_
 #define DART_DYNAMICS_ENDEFFECTOR_H_
 
-#include "dart/common/Addon.h"
-#include "dart/common/SpecializedForAddon.h"
-#include "dart/common/AddonWithVersion.h"
+#include "dart/common/Aspect.h"
+#include "dart/common/SpecializedForAspect.h"
+#include "dart/common/AspectWithVersion.h"
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
 
@@ -71,7 +71,7 @@ void SupportUpdate(Support* support);
 } // namespace detail
 
 class Support final :
-    public common::AddonWithStateAndVersionedProperties<
+    public common::AspectWithStateAndVersionedProperties<
         Support,
         detail::SupportStateData,
         detail::SupportPropertiesData,
@@ -80,13 +80,13 @@ class Support final :
 {
 public:
 
-//  DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS( Support, &detail::SupportUpdate, &detail::SupportUpdate )
-  DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS(Support)
+//  DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS( Support, &detail::SupportUpdate, &detail::SupportUpdate )
+  DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(Support)
 
   /// Set/Get the support geometry for this EndEffector. The SupportGeometry
   /// represents points in the EndEffector frame that can be used for contact
   /// when solving balancing or manipulation constraints.
-  DART_COMMON_SET_GET_ADDON_PROPERTY(math::SupportGeometry, Geometry)
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(math::SupportGeometry, Geometry)
   // void setGeometry(const math::SupportGeometry&);
   // const math::SupportGeometry& getGeometry() const;
 
@@ -100,7 +100,7 @@ public:
 };
 
 class EndEffector final :
-    public virtual common::SpecializedForAddon<Support>,
+    public virtual common::SpecializedForAspect<Support>,
     public FixedFrame,
     public AccessoryNode<EndEffector>,
     public TemplatedJacobianNode<EndEffector>
@@ -114,16 +114,16 @@ public:
   {
     StateData(const Eigen::Isometry3d& relativeTransform =
                   Eigen::Isometry3d::Identity(),
-              const common::AddonManager::State& addonStates =
-                  common::AddonManager::State());
+              const common::Composite::State& aspectStates =
+                  common::Composite::State());
 
     /// The current relative transform of the EndEffector
     // TODO(MXG): Consider moving this to a FixedFrame::State struct and then
     // inheriting that struct
     Eigen::Isometry3d mRelativeTransform;
 
-    /// The current states of the EndEffector's Addons
-    common::AddonManager::State mAddonStates;
+    /// The current states of the EndEffector's Aspects
+    common::Composite::State mAspectStates;
   };
 
   using State = Node::StateMixer<StateData>;
@@ -145,11 +145,11 @@ public:
     PropertiesData(
         const Entity::Properties& _entityProperties = Entity::Properties(),
         const UniqueProperties& _effectorProperties = UniqueProperties(),
-        const common::AddonManager::Properties& _addonProperties =
-            common::AddonManager::Properties());
+        const common::Composite::Properties& _aspectProperties =
+            common::Composite::Properties());
 
-    /// The properties of the EndEffector's Addons
-    common::AddonManager::Properties mAddonProperties;
+    /// The properties of the EndEffector's Aspects
+    common::Composite::Properties mAspectProperties;
   };
 
   using Properties = Node::PropertiesMixer<PropertiesData>;
@@ -228,7 +228,7 @@ public:
   /// be set with setDefaultRelativeTransform()
   void resetRelativeTransform();
 
-  DART_BAKE_SPECIALIZED_ADDON(Support)
+  DART_BAKE_SPECIALIZED_ASPECT(Support)
 
   // Documentation inherited
   bool dependsOn(size_t _genCoordIndex) const override;

@@ -49,7 +49,7 @@ namespace dynamics {
 class Shape;
 class ShapeFrame;
 class SimpleFrame;
-class VisualAddon;
+class VisualAspect;
 } // namespace dynamics
 } // namespace dart
 
@@ -75,9 +75,9 @@ public:
 
   const dart::dynamics::ShapeFrame* getShapeFrame() const;
 
-  dart::dynamics::VisualAddon* getVisualAddon();
+  dart::dynamics::VisualAspect* getVisualAspect();
 
-  const dart::dynamics::VisualAddon* getVisualAddon() const;
+  const dart::dynamics::VisualAspect* getVisualAspect() const;
 
   /// Cast this ShapeNode into an osg::Node
   osg::Node* getNode();
@@ -107,8 +107,8 @@ protected:
   /// Pointer to the SimpleFrame associated with this ShapeNode
   dart::dynamics::ShapeFrame* mShapeFrame;
 
-  /// Pointer to the VisualAddon associated with this ShapeNode
-  dart::dynamics::VisualAddon* mVisualAddon;
+  /// Pointer to the VisualAspect associated with this ShapeNode
+  dart::dynamics::VisualAspect* mVisualAspect;
 
   /// Pointer to the parent ShapeFrameNode of this ShapeNode
   ShapeFrameNode* mParentShapeFrameNode;

@@ -69,7 +69,7 @@ void UniversalJoint::setProperties(const UniqueProperties& _properties)
 UniversalJoint::Properties UniversalJoint::getUniversalJointProperties() const
 {
   return Properties(getMultiDofJointProperties(),
-                    getUniversalJointAddon()->getProperties());
+                    getUniversalJointAspect()->getProperties());
 }
 
 //==============================================================================
@@ -119,25 +119,25 @@ bool UniversalJoint::isCyclic(size_t _index) const
 //==============================================================================
 void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 {
-  getUniversalJointAddon()->setAxis1(_axis);
+  getUniversalJointAspect()->setAxis1(_axis);
 }
 
 //==============================================================================
 void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
 {
-  getUniversalJointAddon()->setAxis2(_axis);
+  getUniversalJointAspect()->setAxis2(_axis);
 }
 
 //==============================================================================
 const Eigen::Vector3d& UniversalJoint::getAxis1() const
 {
-  return getUniversalJointAddon()->getAxis1();
+  return getUniversalJointAspect()->getAxis1();
 }
 
 //==============================================================================
 const Eigen::Vector3d& UniversalJoint::getAxis2() const
 {
-  return getUniversalJointAddon()->getAxis2();
+  return getUniversalJointAspect()->getAxis2();
 }
 
 //==============================================================================
@@ -157,7 +157,7 @@ Eigen::Matrix<double, 6, 2> UniversalJoint::getLocalJacobianStatic(
 UniversalJoint::UniversalJoint(const Properties& _properties)
   : detail::UniversalJointBase(_properties, common::NoArg)
 {
-  createUniversalJointAddon(_properties);
+  createUniversalJointAspect(_properties);
 
   // Inherited Joint Properties must be set in the final joint class or else we
   // get pure virtual function calls

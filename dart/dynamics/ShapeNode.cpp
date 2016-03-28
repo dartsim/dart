@@ -52,10 +52,10 @@ ShapeNode::UniqueProperties::UniqueProperties(
 ShapeNode::Properties::Properties(
     const ShapeFrame::Properties& shapeFrameProperties,
     const ShapeNode::UniqueProperties& shapeNodeProperties,
-    const ShapeNode::AddonProperties& addonProperties)
+    const ShapeNode::AspectProperties& aspectProperties)
   : ShapeFrame::Properties(shapeFrameProperties),
     ShapeNode::UniqueProperties(shapeNodeProperties),
-    mAddonProperties(addonProperties)
+    mAspectProperties(aspectProperties)
 {
   // Do nothing
 }
@@ -64,10 +64,10 @@ ShapeNode::Properties::Properties(
 ShapeNode::Properties::Properties(
     ShapeFrame::Properties&& shapeFrameProperties,
     ShapeNode::UniqueProperties&& shapeNodeProperties,
-    ShapeNode::AddonProperties&& addonProperties)
+    ShapeNode::AspectProperties&& aspectProperties)
   : ShapeFrame::Properties(std::move(shapeFrameProperties)),
     ShapeNode::UniqueProperties(std::move(shapeNodeProperties)),
-    mAddonProperties(std::move(addonProperties))
+    mAspectProperties(std::move(aspectProperties))
 {
   // Do nothing
 }
@@ -78,7 +78,7 @@ void ShapeNode::setProperties(const Properties& properties)
   ShapeFrame::setProperties(
         static_cast<const ShapeFrame::Properties&>(properties));
   setProperties(static_cast<const ShapeNode::UniqueProperties&>(properties));
-  setAddonProperties(properties.mAddonProperties);
+  setAspectProperties(properties.mAspectProperties);
 }
 
 //==============================================================================
@@ -91,7 +91,7 @@ void ShapeNode::setProperties(const ShapeNode::UniqueProperties& properties)
 const ShapeNode::Properties ShapeNode::getShapeNodeProperties() const
 {
   return Properties(getShapeFrameProperties(), mShapeNodeP,
-                    getAddonProperties());
+                    getAspectProperties());
 }
 
 //==============================================================================
@@ -353,7 +353,7 @@ ShapeNode::ShapeNode(BodyNode* bodyNode,
 Node* ShapeNode::cloneNode(BodyNode* parent) const
 {
   ShapeNode* shapeNode = new ShapeNode(parent, Properties());
-  shapeNode->duplicateAddons(this);
+  shapeNode->duplicateAspects(this);
 
   shapeNode->copy(this);
 

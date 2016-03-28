@@ -126,7 +126,7 @@ public:
 };
 
 /// MapHolder is a templated wrapper class that is used to allow maps of
-/// Addon::State and Addon::Properties to be handled in a semantically
+/// Aspect::State and Aspect::Properties to be handled in a semantically
 /// palatable way.
 template <typename MapType>
 class ExtensibleMapHolder final
@@ -168,7 +168,7 @@ public:
 
 private:
 
-  /// A map containing the collection of States for the Addon
+  /// A map containing the collection of States for the Aspect
   MapType mMap;
 };
 

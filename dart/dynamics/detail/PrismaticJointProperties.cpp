@@ -59,14 +59,14 @@ PrismaticJointProperties::PrismaticJointProperties(
 }
 
 //==============================================================================
-void PrismaticJointAddon::setAxis(const Eigen::Vector3d& _axis)
+void PrismaticJointAspect::setAxis(const Eigen::Vector3d& _axis)
 {
   mProperties.mAxis = _axis.normalized();
   notifyPropertiesUpdate();
 }
 
 //==============================================================================
-const Eigen::Vector3d& PrismaticJointAddon::getAxis() const
+const Eigen::Vector3d& PrismaticJointAspect::getAxis() const
 {
   return mProperties.mAxis;
 }

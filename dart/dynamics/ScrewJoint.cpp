@@ -70,7 +70,7 @@ void ScrewJoint::setProperties(const UniqueProperties& _properties)
 ScrewJoint::Properties ScrewJoint::getScrewJointProperties() const
 {
   return Properties(getSingleDofJointProperties(),
-                    getScrewJointAddon()->getProperties());
+                    getScrewJointAspect()->getProperties());
 }
 
 //==============================================================================
@@ -120,32 +120,32 @@ bool ScrewJoint::isCyclic(size_t /*_index*/) const
 //==============================================================================
 void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  getScrewJointAddon()->setAxis(_axis);
+  getScrewJointAspect()->setAxis(_axis);
 }
 
 //==============================================================================
 const Eigen::Vector3d& ScrewJoint::getAxis() const
 {
-  return getScrewJointAddon()->getAxis();
+  return getScrewJointAspect()->getAxis();
 }
 
 //==============================================================================
 void ScrewJoint::setPitch(double _pitch)
 {
-  getScrewJointAddon()->setPitch(_pitch);
+  getScrewJointAspect()->setPitch(_pitch);
 }
 
 //==============================================================================
 double ScrewJoint::getPitch() const
 {
-  return getScrewJointAddon()->getPitch();
+  return getScrewJointAspect()->getPitch();
 }
 
 //==============================================================================
 ScrewJoint::ScrewJoint(const Properties& _properties)
   : detail::ScrewJointBase(_properties, common::NoArg)
 {
-  createScrewJointAddon(_properties);
+  createScrewJointAspect(_properties);
 
   // Inherited Joint Properties must be set in the final joint class or else we
   // get pure virtual function calls

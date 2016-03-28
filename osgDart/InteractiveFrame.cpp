@@ -60,7 +60,7 @@ void InteractiveTool::setEnabled(bool enabled)
 {
   mEnabled = enabled;
   for(auto& frame : mSimpleFrames)
-    frame->getVisualAddon(true)->setHidden(!enabled);
+    frame->getVisualAspect(true)->setHidden(!enabled);
 }
 
 //==============================================================================
@@ -73,7 +73,7 @@ bool InteractiveTool::getEnabled() const
 void InteractiveTool::setAlpha(double alpha)
 {
   for(auto& frame : mSimpleFrames)
-    frame->getVisualAddon(true)->setAlpha(alpha);
+    frame->getVisualAspect(true)->setAlpha(alpha);
 }
 
 //==============================================================================
@@ -117,7 +117,7 @@ dart::dynamics::SimpleFrame* InteractiveTool::addShapeFrame(
 
   auto shapeFrame = mSimpleFrames.back().get();
   shapeFrame->setShape(shape);
-  shapeFrame->createVisualAddon();
+  shapeFrame->createVisualAspect();
 
   return shapeFrame;
 }
@@ -231,7 +231,7 @@ dart::dynamics::SimpleFrame* InteractiveFrame::addShapeFrame(
 
   auto shapeFrame = mSimpleFrames.back().get();
   shapeFrame->setShape(shape);
-  shapeFrame->createVisualAddon();
+  shapeFrame->createVisualAspect();
 
   return shapeFrame;
 }
@@ -580,7 +580,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     Eigen::Vector3d c(Eigen::Vector3d::Zero());
     c[i] = 1.0;
     auto shapeFrame = addShapeFrame(line);
-    shapeFrame->getVisualAddon(true)->setColor(c);
+    shapeFrame->getVisualAspect(true)->setColor(c);
   }
 }
 

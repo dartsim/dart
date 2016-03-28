@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_ADDON_H_
-#define DART_COMMON_ADDON_H_
+#ifndef DART_COMMON_ASPECT_H_
+#define DART_COMMON_ASPECT_H_
 
 #include <string>
 
@@ -45,24 +45,24 @@
 namespace dart {
 namespace common {
 
-class AddonManager;
+class Composite;
 
-class Addon
+class Aspect
 {
 public:
 
-  friend class AddonManager;
+  friend class Composite;
 
-  /// If your Addon has a State class, then that State class should inherit this
-  /// Addon::State class. This allows us to safely serialize, store, and clone
-  /// the states of arbitrary Addon extensions. If your Addon is stateless, then
+  /// If your Aspect has a State class, then that State class should inherit this
+  /// Aspect::State class. This allows us to safely serialize, store, and clone
+  /// the states of arbitrary Aspect extensions. If your Aspect is stateless, then
   /// you do not have to worry about extending this class, because
-  /// Addon::getState() will simply return a nullptr by default, which is taken
+  /// Aspect::getState() will simply return a nullptr by default, which is taken
   /// to indicate that it is stateless.
   ///
   /// The distinction between the State class and the Properties class is that
-  /// State will get stored in AddonManager::State whereas Properties will get
-  /// stored in AddonManager::Properties. Typically Properties are values that
+  /// State will get stored in Composite::State whereas Properties will get
+  /// stored in Composite::Properties. Typically Properties are values that
   /// only change rarely if ever, whereas State contains values that might
   /// change as often as every time step.
   class State : public Extensible<State> { };
@@ -72,16 +72,16 @@ public:
   template <class Mixin>
   using StateMixer = ExtensibleMixer<State, Mixin>;
 
-  /// If your Addon has a Properties class, then it should inherit this
-  /// Addon::Properties class. This allows us to safely serialize, store, and
-  /// clone the properties of arbitrary Addon extensions. If your Addon has no
+  /// If your Aspect has a Properties class, then it should inherit this
+  /// Aspect::Properties class. This allows us to safely serialize, store, and
+  /// clone the properties of arbitrary Aspect extensions. If your Aspect has no
   /// properties, then you do not have to worry about extending this class,
-  /// because Addon::getProperties() will simply return a nullptr by default,
+  /// because Aspect::getProperties() will simply return a nullptr by default,
   /// which is taken to indicate that it has no properties.
   ///
   /// The distinction between the State class and the Properties class is that
-  /// State will get stored in AddonManager::State whereas Properties will get
-  /// stored in AddonManager::Properties. Typically Properties are values that
+  /// State will get stored in Composite::State whereas Properties will get
+  /// stored in Composite::Properties. Typically Properties are values that
   /// only change rarely if ever, whereas State contains values that might
   /// change as often as every time step.
   class Properties : public Extensible<Properties> { };
@@ -92,64 +92,64 @@ public:
   using PropertiesMixer = ExtensibleMixer<Properties, Mixin>;
 
   /// Virtual destructor
-  virtual ~Addon() = default;
+  virtual ~Aspect() = default;
 
-  /// Clone this Addon into a new manager
-  virtual std::unique_ptr<Addon> cloneAddon(AddonManager* newManager) const = 0;
+  /// Clone this Aspect into a new manager
+  virtual std::unique_ptr<Aspect> cloneAspect(Composite* newManager) const = 0;
 
-  /// Set the State of this Addon. By default, this does nothing.
-  virtual void setAddonState(const State& otherState);
+  /// Set the State of this Aspect. By default, this does nothing.
+  virtual void setAspectState(const State& otherState);
 
-  /// Get the State of this Addon. By default, this returns a nullptr which
-  /// implies that the Addon is stateless.
-  virtual const State* getAddonState() const;
+  /// Get the State of this Aspect. By default, this returns a nullptr which
+  /// implies that the Aspect is stateless.
+  virtual const State* getAspectState() const;
 
-  /// Set the Properties of this Addon. By default, this does nothing.
-  virtual void setAddonProperties(const Properties& someProperties);
+  /// Set the Properties of this Aspect. By default, this does nothing.
+  virtual void setAspectProperties(const Properties& someProperties);
 
-  /// Get the Properties of this Addon. By default, this returns a nullptr
-  /// which implies that the Addon has no properties.
-  virtual const Properties* getAddonProperties() const;
+  /// Get the Properties of this Aspect. By default, this returns a nullptr
+  /// which implies that the Aspect has no properties.
+  virtual const Properties* getAspectProperties() const;
 
 protected:
 
   /// Constructor
   ///
-  /// We require the AddonManager argument in this constructor to make it clear
-  /// to extensions that they must have an AddonManager argument in their
+  /// We require the Composite argument in this constructor to make it clear
+  /// to extensions that they must have an Composite argument in their
   /// constructors.
-  Addon(AddonManager* manager);
+  Aspect(Composite* manager);
 
-  /// This function will be triggered (1) after the Addon has been created
-  /// [transfer will be false] and (2) after the Addon has been transferred
-  /// to a new AddonManager [transfer will be true]. You should override this
-  /// function if your Addon requires special handling in either of those cases.
+  /// This function will be triggered (1) after the Aspect has been created
+  /// [transfer will be false] and (2) after the Aspect has been transferred
+  /// to a new Composite [transfer will be true]. You should override this
+  /// function if your Aspect requires special handling in either of those cases.
   /// By default, this function does nothing.
-  virtual void setManager(AddonManager* newManager, bool transfer);
+  virtual void setManager(Composite* newManager, bool transfer);
 
 };
 
 //==============================================================================
 template <class ManagerType>
-class ManagerTrackingAddon : public Addon
+class ManagerTrackingAspect : public Aspect
 {
 public:
 
   /// Default constructor
-  ManagerTrackingAddon(AddonManager* mgr);
+  ManagerTrackingAspect(Composite* mgr);
 
-  /// Get the Manager of this Addon
+  /// Get the Manager of this Aspect
   ManagerType* getManager();
 
-  /// Get the Manager of this Addon
+  /// Get the Manager of this Aspect
   const ManagerType* getManager() const;
 
 protected:
 
   /// Grab the new manager
-  void setManager(AddonManager* newManager, bool transfer);
+  void setManager(Composite* newManager, bool transfer);
 
-  /// Pointer to the current Manager of this Addon
+  /// Pointer to the current Manager of this Aspect
   ManagerType* mManager;
 
 };
@@ -158,44 +158,44 @@ protected:
 } // namespace dart
 
 //==============================================================================
-#define DART_COMMON_ADDON_PROPERTY_CONSTRUCTOR( ClassName, UpdatePropertiesMacro )\
+#define DART_COMMON_ASPECT_PROPERTY_CONSTRUCTOR( ClassName, UpdatePropertiesMacro )\
   ClassName (const ClassName &) = delete;\
-  inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties = PropertiesData())\
-    : AddonWithVersionedProperties< Base, Derived, PropertiesData, ManagerType, UpdatePropertiesMacro>(mgr, properties) { }
+  inline ClassName (dart::common::Composite* mgr, const PropertiesData& properties = PropertiesData())\
+    : AspectWithVersionedProperties< Base, Derived, PropertiesData, ManagerType, UpdatePropertiesMacro>(mgr, properties) { }
 
 //==============================================================================
-#define DART_COMMON_JOINT_ADDON_CONSTRUCTOR( ClassName )\
-  DART_COMMON_ADDON_PROPERTY_CONSTRUCTOR( ClassName, &detail::JointPropertyUpdate )
+#define DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( ClassName )\
+  DART_COMMON_ASPECT_PROPERTY_CONSTRUCTOR( ClassName, &detail::JointPropertyUpdate )
 
 //==============================================================================
-#define DART_COMMON_ADDON_STATE_PROPERTY_CONSTRUCTORS(ClassName)\
+#define DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(ClassName)\
   ClassName (const ClassName &) = delete;\
-  inline ClassName (dart::common::AddonManager* mgr, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
-    : AddonImplementation(mgr, state, properties) { }\
-  inline ClassName (dart::common::AddonManager* mgr, const PropertiesData& properties, const StateData state = StateData())\
-    : AddonImplementation(mgr, properties, state) { }
+  inline ClassName (dart::common::Composite* mgr, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
+    : AspectImplementation(mgr, state, properties) { }\
+  inline ClassName (dart::common::Composite* mgr, const PropertiesData& properties, const StateData state = StateData())\
+    : AspectImplementation(mgr, properties, state) { }
 
 //==============================================================================
-#define DART_COMMON_SET_ADDON_PROPERTY_CUSTOM( Type, Name, Update )\
+#define DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM( Type, Name, Update )\
   inline void set ## Name (const Type & value)\
   { mProperties.m ## Name = value; Update(); }
 
 //==============================================================================
-#define DART_COMMON_SET_ADDON_PROPERTY( Type, Name )\
-  DART_COMMON_SET_ADDON_PROPERTY_CUSTOM( Type, Name, notifyPropertiesUpdate )
+#define DART_COMMON_SET_ASPECT_PROPERTY( Type, Name )\
+  DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM( Type, Name, notifyPropertiesUpdate )
 
 //==============================================================================
-#define DART_COMMON_GET_ADDON_PROPERTY( Type, Name )\
+#define DART_COMMON_GET_ASPECT_PROPERTY( Type, Name )\
   inline const Type& get ## Name () const\
   { return mProperties.m ## Name; }
 
 //==============================================================================
-#define DART_COMMON_SET_GET_ADDON_PROPERTY( Type, Name )\
-  DART_COMMON_SET_ADDON_PROPERTY( Type, Name )\
-  DART_COMMON_GET_ADDON_PROPERTY( Type, Name )
+#define DART_COMMON_SET_GET_ASPECT_PROPERTY( Type, Name )\
+  DART_COMMON_SET_ASPECT_PROPERTY( Type, Name )\
+  DART_COMMON_GET_ASPECT_PROPERTY( Type, Name )
 
 //==============================================================================
-#define DART_COMMON_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
+#define DART_COMMON_SET_ASPECT_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
   void set ## SingleName (size_t index, const SingleType & value)\
   {\
     if( index >= Size )\
@@ -214,7 +214,7 @@ protected:
   }
 
 //==============================================================================
-#define DART_COMMON_GET_ADDON_PROPERTY_ARRAY(Class, SingleType, VectorType, SingleName, PluralName, Size)\
+#define DART_COMMON_GET_ASPECT_PROPERTY_ARRAY(Class, SingleType, VectorType, SingleName, PluralName, Size)\
   inline const SingleType& get ## SingleName (size_t index) const\
   {\
     if(index >= Size)\
@@ -231,22 +231,22 @@ protected:
   }
 
 //==============================================================================
-#define DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
-  DART_COMMON_SET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
-  DART_COMMON_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )
+#define DART_COMMON_IRREGULAR_SET_GET_ASPECT_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
+  DART_COMMON_SET_ASPECT_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
+  DART_COMMON_GET_ASPECT_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )
 
 //==============================================================================
-#define DART_COMMON_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, Size )\
-  DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, SingleName ## s, Size )
+#define DART_COMMON_SET_GET_ASPECT_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, Size )\
+  DART_COMMON_IRREGULAR_SET_GET_ASPECT_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, SingleName ## s, Size )
 
 //==============================================================================
-#define DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName, PluralName )\
-  DART_COMMON_IRREGULAR_SET_GET_ADDON_PROPERTY_ARRAY( MultiDofJointAddon, SingleType, VectorType, SingleName, PluralName, DOF )
+#define DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ASPECT( SingleType, VectorType, SingleName, PluralName )\
+  DART_COMMON_IRREGULAR_SET_GET_ASPECT_PROPERTY_ARRAY( MultiDofJointAspect, SingleType, VectorType, SingleName, PluralName, DOF )
 
 //==============================================================================
-#define DART_COMMON_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName )\
-  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ADDON( SingleType, VectorType, SingleName, SingleName ## s )
+#define DART_COMMON_SET_GET_MULTIDOF_ASPECT( SingleType, VectorType, SingleName )\
+  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ASPECT( SingleType, VectorType, SingleName, SingleName ## s )
 
-#include "dart/common/detail/Addon.h"
+#include "dart/common/detail/Aspect.h"
 
-#endif // DART_COMMON_ADDON_H_
+#endif // DART_COMMON_ASPECT_H_

@@ -47,7 +47,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/common/RequiresAddon.h"
+#include "dart/common/RequiresAspect.h"
 #include "dart/dynamics/detail/MultiDofJointProperties.h"
 
 namespace dart {
@@ -60,7 +60,7 @@ class Skeleton;
 template<size_t DOF>
 class MultiDofJoint :
     public Joint,
-    public virtual common::RequiresAddon< detail::MultiDofJointAddon<DOF> >
+    public virtual common::RequiresAspect< detail::MultiDofJointAspect<DOF> >
 {
 public:
 
@@ -69,9 +69,9 @@ public:
 
   using UniqueProperties = detail::MultiDofJointUniqueProperties<DOF>;
   using Properties = detail::MultiDofJointProperties<DOF>;
-  using Addon = detail::MultiDofJointAddon<DOF>;
+  using Aspect = detail::MultiDofJointAspect<DOF>;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR( typename MultiDofJoint<DOF>::Addon, MultiDofJointAddon )
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR( typename MultiDofJoint<DOF>::Aspect, MultiDofJointAspect )
 
   MultiDofJoint(const MultiDofJoint&) = delete;
 

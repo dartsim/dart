@@ -62,7 +62,7 @@ namespace dynamics {
 /// class Skeleton
 class Skeleton :
     public virtual common::VersionCounter,
-    public virtual common::AddonManager,
+    public virtual common::Composite,
     public MetaSkeleton,
     public virtual SkeletonSpecializedFor<ShapeNode, EndEffector>
 {
@@ -136,7 +136,7 @@ public:
 
   /// The Properties of this Skeleton which are independent of the components
   /// within the Skeleton, such as its BodyNodes and Joints. This does not
-  /// include any Properties of the Skeleton's Addons.
+  /// include any Properties of the Skeleton's Aspects.
   struct Properties
   {
     /// Name of the Skeleton
@@ -164,7 +164,7 @@ public:
 
     /// Version number of the Skeleton. This will get incremented each time any
     /// Property of the Skeleton or a component within the Skeleton is changed.
-    /// If you create a custom Addon or Node, you must increment the Skeleton
+    /// If you create a custom Aspect or Node, you must increment the Skeleton
     /// version number each time one of its Properties is changed, or else the
     /// machinery used to record Skeletons and Worlds might fail to capture its
     /// Property changes.
@@ -183,10 +183,10 @@ public:
 
   using BodyNodeExtendedProperties = std::vector<detail::BodyNodeExtendedProperties>;
   using JointExtendedProperties = std::vector<Joint::ExtendedProperties>;
-  using AddonProperties = common::AddonManager::Properties;
+  using AspectProperties = common::Composite::Properties;
 
   /// The Properties of this Skeleton and everything within the Skeleton,
-  /// including Addons and Nodes that are attached to the
+  /// including Aspects and Nodes that are attached to the
   struct ExtendedProperties : Properties
   {
     /// Properties of all the BodyNodes in this Skeleton
@@ -199,17 +199,17 @@ public:
     /// allows the layout of the Skeleton to be reconstructed.
     std::vector<std::string> mParentBodyNodeNames;
 
-    /// Properties of any Addons that are attached directly to this Skeleton
-    /// object (does NOT include Addons that are attached to BodyNodes or Joints
+    /// Properties of any Aspects that are attached directly to this Skeleton
+    /// object (does NOT include Aspects that are attached to BodyNodes or Joints
     /// within this Skeleton).
-    AddonProperties mAddonProperties;
+    AspectProperties mAspectProperties;
 
     /// Default constructor
     ExtendedProperties(
         const BodyNodeExtendedProperties& bodyNodeProperties = BodyNodeExtendedProperties(),
         const JointExtendedProperties& jointProperties = JointExtendedProperties(),
         const std::vector<std::string>& parentNames = std::vector<std::string>(),
-        const AddonProperties& addonProperties = AddonProperties());
+        const AspectProperties& aspectProperties = AspectProperties());
   };
 
   //----------------------------------------------------------------------------

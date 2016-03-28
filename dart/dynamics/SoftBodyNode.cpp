@@ -123,19 +123,19 @@ SoftBodyNodeProperties::SoftBodyNodeProperties(
 }
 
 //==============================================================================
-void SoftBodyNodeStateUpdate(SoftBodyAddon* addon)
+void SoftBodyNodeStateUpdate(SoftBodyAspect* aspect)
 {
-  if(SoftBodyNode* sbn = addon->getManager())
+  if(SoftBodyNode* sbn = aspect->getManager())
     sbn->mNotifier->notifyTransformUpdate();
 }
 
 //==============================================================================
-void SoftBodyNodePropertiesUpdate(SoftBodyAddon* addon)
+void SoftBodyNodePropertiesUpdate(SoftBodyAspect* aspect)
 {
-  if(SoftBodyNode* sbn = addon->getManager())
+  if(SoftBodyNode* sbn = aspect->getManager())
   {
     sbn->configurePointMasses(sbn->mSoftShapeNode.lock());
-    SoftBodyNodeStateUpdate(addon);
+    SoftBodyNodeStateUpdate(aspect);
   }
 }
 
@@ -162,7 +162,7 @@ void SoftBodyNode::setProperties(const Properties& _properties)
 //==============================================================================
 void SoftBodyNode::setProperties(const UniqueProperties& _properties)
 {
-  getSoftBodyAddon()->setProperties(_properties);
+  getSoftBodyAspect()->setProperties(_properties);
 }
 
 //==============================================================================
@@ -228,18 +228,18 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
          common::NoArg),
     mSoftShapeNode(nullptr)
 {
-  createSoftBodyAddon();
+  createSoftBodyAspect();
   mNotifier = new PointMassNotifier(this, "PointMassNotifier");
   std::cout << "Creating and assigning mSoftShapeNode" << std::endl;
   ShapeNode* softNode = createShapeNodeWith<
-      VisualAddon, CollisionAddon, DynamicsAddon>(
+      VisualAspect, CollisionAspect, DynamicsAspect>(
         std::make_shared<SoftMeshShape>(this), getName()+"_SoftMeshShape");
   mSoftShapeNode = softNode;
 
   // Dev's Note: We do this workaround (instead of just using setProperties(~))
   // because mSoftShapeNode cannot be used until init(SkeletonPtr) has been
   // called on this BodyNode, but that happens after construction is finished.
-  getSoftBodyAddon()->mProperties = _properties;
+  getSoftBodyAspect()->mProperties = _properties;
   configurePointMasses(softNode);
   mNotifier->notifyTransformUpdate();
 }
@@ -251,7 +251,7 @@ BodyNode* SoftBodyNode::clone(BodyNode* _parentBodyNode,
   SoftBodyNode* clonedBn = new SoftBodyNode(
         _parentBodyNode, _parentJoint, getSoftBodyNodeProperties());
 
-  clonedBn->matchAddons(this);
+  clonedBn->matchAspects(this);
 
   if(cloneNodes)
     clonedBn->matchNodes(this);
@@ -262,7 +262,7 @@ BodyNode* SoftBodyNode::clone(BodyNode* _parentBodyNode,
 //==============================================================================
 void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
 {
-  const UniqueProperties& softProperties = getSoftBodyAddon()->getProperties();
+  const UniqueProperties& softProperties = getSoftBodyAspect()->getProperties();
 
   size_t newCount = softProperties.mPointProps.size();
   size_t oldCount = mPointMasses.size();
@@ -288,8 +288,8 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
     }
   }
 
-  // Resize the number of States in the Addon
-  getSoftBodyAddon()->_getState().mPointStates.resize(
+  // Resize the number of States in the Aspect
+  getSoftBodyAspect()->_getState().mPointStates.resize(
         softProperties.mPointProps.size(), PointMass::State());
 
   // Access the SoftMeshShape and reallocate its meshes
@@ -1189,7 +1189,7 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 
   _ri->pushName((unsigned)mID);
 
-  auto shapeNodes = getShapeNodesWith<VisualAddon>();
+  auto shapeNodes = getShapeNodesWith<VisualAspect>();
   for (auto shapeNode : shapeNodes)
     shapeNode->draw(_ri, _color, _useDefaultColor);
 
@@ -1210,7 +1210,7 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 //  _ri->setPenColor(fleshColor);
 //  if (_showMeshs)
   {
-    _ri->setPenColor(mSoftShapeNode.lock()->get<VisualAddon>()->getRGBA());
+    _ri->setPenColor(mSoftShapeNode.lock()->get<VisualAspect>()->getRGBA());
     glEnable(GL_LIGHTING);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -1253,20 +1253,20 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
 //==============================================================================
 PointMass::State& SoftBodyNode::getPointState(size_t index)
 {
-  return getSoftBodyAddon()->_getState().mPointStates.at(index);
+  return getSoftBodyAspect()->_getState().mPointStates.at(index);
 }
 
 //==============================================================================
 SoftBodyNode::UniqueProperties& SoftBodyNode::getSoftPropertiesAndInc()
 {
-  getSoftBodyAddon()->incrementVersion();
-  return getSoftBodyAddon()->_getProperties();
+  getSoftBodyAspect()->incrementVersion();
+  return getSoftBodyAspect()->_getProperties();
 }
 
 //==============================================================================
 const SoftBodyNode::UniqueProperties& SoftBodyNode::getSoftProperties() const
 {
-  return getSoftBodyAddon()->_getProperties();
+  return getSoftBodyAspect()->_getProperties();
 }
 
 //==============================================================================

@@ -34,22 +34,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_ADDON_H_
-#define DART_COMMON_DETAIL_ADDON_H_
+#ifndef DART_COMMON_DETAIL_ASPECT_H_
+#define DART_COMMON_DETAIL_ASPECT_H_
 
 #include <cassert>
 
 #include "dart/common/Console.h"
-#include "dart/common/Addon.h"
+#include "dart/common/Aspect.h"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
 template <class ManagerType>
-ManagerTrackingAddon<ManagerType>::ManagerTrackingAddon(
-    AddonManager* mgr)
-  : Addon(mgr),
+ManagerTrackingAspect<ManagerType>::ManagerTrackingAspect(
+    Composite* mgr)
+  : Aspect(mgr),
     mManager(nullptr) // This will be set later when the Manager calls setManager
 {
   // Do nothing
@@ -57,29 +57,29 @@ ManagerTrackingAddon<ManagerType>::ManagerTrackingAddon(
 
 //==============================================================================
 template <class ManagerType>
-ManagerType* ManagerTrackingAddon<ManagerType>::getManager()
+ManagerType* ManagerTrackingAspect<ManagerType>::getManager()
 {
   return mManager;
 }
 
 //==============================================================================
 template <class ManagerType>
-const ManagerType* ManagerTrackingAddon<ManagerType>::getManager() const
+const ManagerType* ManagerTrackingAspect<ManagerType>::getManager() const
 {
   return mManager;
 }
 
 //==============================================================================
 template <class ManagerType>
-void ManagerTrackingAddon<ManagerType>::setManager(
-    AddonManager* newManager, bool)
+void ManagerTrackingAspect<ManagerType>::setManager(
+    Composite* newManager, bool)
 {
   mManager = dynamic_cast<ManagerType*>(newManager);
   if(nullptr == mManager)
   {
     dterr << "[" << typeid(*this).name() << "::setManager] Attempting to use a "
           << "[" << typeid(newManager).name() << "] type manager, but this "
-          << "Addon is only designed to be attached to a ["
+          << "Aspect is only designed to be attached to a ["
           << typeid(ManagerType).name() << "] type manager. This may cause "
           << "undefined behavior!\n";
     assert(false);
@@ -89,4 +89,4 @@ void ManagerTrackingAddon<ManagerType>::setManager(
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_ADDON_H_
+#endif // DART_COMMON_DETAIL_ASPECT_H_

@@ -144,7 +144,7 @@ MeshShapeNode::MeshShapeNode(std::shared_ptr<dart::dynamics::MeshShape> shape,
     mRootAiNode(nullptr)
 {
   extractData(true);
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -152,7 +152,7 @@ void MeshShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -624,7 +624,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
     if(!isColored
        || mMeshShape->getColorMode() == dart::dynamics::MeshShape::SHAPE_COLOR)
     {
-      const Eigen::Vector4d& c = mVisualAddon->getRGBA();
+      const Eigen::Vector4d& c = mVisualAspect->getRGBA();
 
       if(mColors->size() != 1)
         mColors->resize(1);

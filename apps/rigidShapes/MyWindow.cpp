@@ -186,10 +186,10 @@ void MyWindow::spawnBox(const Eigen::Isometry3d& _T,
   auto pair = newSkeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
         nullptr, jointProp, bodyProp);
   auto shapeNode = pair.second->createShapeNodeWith<
-      dynamics::VisualAddon,
-      dynamics::CollisionAddon,
-      dynamics::DynamicsAddon>(newShape);
-  shapeNode->getVisualAddon()->setColor(math::randomVector<3>(0.0, 1.0));
+      dynamics::VisualAspect,
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(newShape);
+  shapeNode->getVisualAspect()->setColor(math::randomVector<3>(0.0, 1.0));
 
   mWorld->addSkeleton(newSkeleton);
 }
@@ -214,10 +214,10 @@ void MyWindow::spawnEllipsoid(const Eigen::Isometry3d& _T,
   auto pair = newSkeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
         nullptr, jointProp, bodyProp);
   auto shapeNode = pair.second->createShapeNodeWith<
-      dynamics::VisualAddon,
-      dynamics::CollisionAddon,
-      dynamics::DynamicsAddon>(newShape);
-  shapeNode->getVisualAddon()->setColor(math::randomVector<3>(0.0, 1.0));
+      dynamics::VisualAspect,
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(newShape);
+  shapeNode->getVisualAspect()->setColor(math::randomVector<3>(0.0, 1.0));
 
   mWorld->addSkeleton(newSkeleton);
 }
@@ -243,10 +243,10 @@ void MyWindow::spawnCylinder(const Eigen::Isometry3d& _T,
   auto pair = newSkeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
         nullptr, jointProp, bodyProp);
   auto shapeNode = pair.second->createShapeNodeWith<
-      dynamics::VisualAddon,
-      dynamics::CollisionAddon,
-      dynamics::DynamicsAddon>(newShape);
-  shapeNode->getVisualAddon()->setColor(math::randomVector<3>(0.0, 1.0));
+      dynamics::VisualAspect,
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(newShape);
+  shapeNode->getVisualAspect()->setColor(math::randomVector<3>(0.0, 1.0));
 
   mWorld->addSkeleton(newSkeleton);
 }

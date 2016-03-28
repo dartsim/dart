@@ -73,9 +73,9 @@ int main(int argc, char* argv[]) {
       LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
         nullptr, joint, body);
   pair.second->createShapeNodeWith<
-      dart::dynamics::VisualAddon,
-      dart::dynamics::CollisionAddon,
-      dart::dynamics::DynamicsAddon>(shape);
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
   dart::dynamics::BodyNode* parent = pair.second;
 
   // BodyNode 2: Left Hip Roll (LHR) whose parent is: LHY
@@ -93,9 +93,9 @@ int main(int argc, char* argv[]) {
         parent, joint, body);
   pair1.first->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
   auto shapeNode1 = pair1.second->createShapeNodeWith<
-      dart::dynamics::VisualAddon,
-      dart::dynamics::CollisionAddon,
-      dart::dynamics::DynamicsAddon>(shape);
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
   shapeNode1->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
   pair1.second->setLocalCOM(shapeNode1->getRelativeTranslation());
   pair1.second->setMass(mass);
@@ -115,9 +115,9 @@ int main(int argc, char* argv[]) {
   LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
         LeftLegSkel->getBodyNode(1), joint, body);
   auto shapeNode2 = pair2.second->createShapeNodeWith<
-      dart::dynamics::VisualAddon,
-      dart::dynamics::CollisionAddon,
-      dart::dynamics::DynamicsAddon>(shape);
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
   shapeNode2->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
   pair2.second->setLocalCOM(shapeNode2->getRelativeTranslation());
   pair2.second->setMass(mass);
