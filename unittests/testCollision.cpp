@@ -47,7 +47,7 @@
 #include "dart/collision/CollisionGroup.h"
 #include "dart/collision/fcl/FCLCollisionDetector.h"
 #include "dart/collision/dart/DARTCollisionDetector.h"
-#ifdef HAVE_BULLET_COLLISION
+#if HAVE_BULLET_COLLISION
   #include "dart/collision/bullet/BulletCollisionDetector.h"
 #endif
 #include "dart/dynamics/dynamics.h"
@@ -584,7 +584,7 @@ TEST_F(COLLISION, SimpleFrames)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSimpleFrames(fcl_mesh_fcl);
 
-#ifdef HAVE_BULLET_COLLISION
+#if HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
   testSimpleFrames(bullet);
 #endif
@@ -685,7 +685,7 @@ TEST_F(COLLISION, BoxBox)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testBoxBox(fcl_mesh_fcl);
 
-#ifdef HAVE_BULLET_COLLISION
+#if HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
   testBoxBox(bullet);
 #endif
@@ -766,7 +766,7 @@ TEST_F(COLLISION, Options)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testOptions(fcl_mesh_fcl);
 
-#ifdef HAVE_BULLET_COLLISION
+#if HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
   testOptions(bullet);
 #endif
@@ -824,7 +824,7 @@ TEST_F(COLLISION, BodyNodeNodes)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testBodyNodes(fcl_mesh_fcl);
 
-#ifdef HAVE_BULLET_COLLISION
+#if HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
   testBodyNodes(bullet);
 #endif
@@ -874,7 +874,7 @@ TEST_F(COLLISION, Skeletons)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSkeletons(fcl_mesh_fcl);
 
-//#ifdef HAVE_BULLET_COLLISION
+//#if HAVE_BULLET_COLLISION
 //  auto bullet = BulletCollisionDetector::create();
 //  testSkeletons(bullet);
 //#endif

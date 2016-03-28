@@ -37,6 +37,7 @@
 #include "dart/optimizer/ipopt/IpoptSolver.h"
 
 #include "dart/common/Console.h"
+#include "dart/common/StlHelpers.h"
 #include "dart/math/Helpers.h"
 #include "dart/optimizer/Function.h"
 #include "dart/optimizer/Problem.h"
@@ -205,6 +206,7 @@ bool DartTNLP::get_bounds_info(Ipopt::Index n,
   assert(static_cast<size_t>(n) == problem->getDimension());
   assert(static_cast<size_t>(m) == problem->getNumEqConstraints()
          + problem->getNumIneqConstraints());
+  DART_UNUSED(m);
 
   // lower and upper bounds
   for (Ipopt::Index i = 0; i < n; i++)
@@ -321,6 +323,7 @@ bool DartTNLP::eval_g(Ipopt::Index _n,
 
   assert(static_cast<size_t>(_m) == problem->getNumEqConstraints()
                                     + problem->getNumIneqConstraints());
+  DART_UNUSED(_m);
 
   // TODO(JS):
   if (_new_x)

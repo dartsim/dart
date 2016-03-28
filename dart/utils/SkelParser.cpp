@@ -46,7 +46,7 @@
 #include "dart/config.h"
 #include "dart/common/Console.h"
 #include "dart/collision/CollisionObject.h"
-#ifdef HAVE_BULLET_COLLISION
+#if HAVE_BULLET_COLLISION
   #include "dart/collision/bullet/BulletCollisionDetector.h"
 #endif
 #include "dart/collision/dart/DARTCollisionDetector.h"
@@ -740,8 +740,13 @@ simulation::WorldPtr readWorld(
               collision::FCLCollisionDetector::DART);
       }
       else if (strCD == "dart")
+<<<<<<< HEAD
         collision_detector = collision::DARTCollisionDetector::create();
-#ifdef HAVE_BULLET_COLLISION
+#if HAVE_BULLET_COLLISION
+=======
+        collision_detector.reset(new collision::DARTCollisionDetector);
+#if HAVE_BULLET_COLLISION
+>>>>>>> origin/master
       else if (strCD == "bullet")
         collision_detector = collision::BulletCollisionDetector::create();
 #endif
