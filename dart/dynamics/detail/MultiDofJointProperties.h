@@ -165,7 +165,8 @@ public:
   MultiDofJointAspect(const MultiDofJointAspect&) = delete;
 
   MultiDofJointAspect(common::Composite* comp,
-        const typename MultiDofJointAspect::PropertiesData& properties);
+        const typename MultiDofJointAspect::PropertiesData& properties =
+            typename MultiDofJointAddon::PropertiesData());
 
   constexpr static size_t NumDofs = DOF;
   using Vector = Eigen::Matrix<double, DOF, 1>;
@@ -296,8 +297,7 @@ constexpr size_t MultiDofJointAspect<DOF>::NumDofs;
 //==============================================================================
 template <size_t DOF>
 MultiDofJointAspect<DOF>::MultiDofJointAspect(common::Composite* comp,
-    const typename MultiDofJointAspect::PropertiesData& properties =
-        typename MultiDofJointAspect::PropertiesData())
+    const typename MultiDofJointAspect::PropertiesData& properties)
   : common::AspectWithVersionedProperties<
         typename MultiDofJointAspect<DOF>::Derived,
         typename MultiDofJointAspect<DOF>::PropertiesData,
