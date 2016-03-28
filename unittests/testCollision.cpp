@@ -772,111 +772,68 @@ TEST_F(COLLISION, Options)
 }
 
 //==============================================================================
-void testBodyNodes(const std::shared_ptr<CollisionDetector>& cd)
+void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
 {
   Eigen::Vector3d size(1.0, 1.0, 1.0);
   Eigen::Vector3d pos1(0.0, 0.0, 0.0);
   Eigen::Vector3d pos2(0.5, 0.0, 0.0);
 
-  auto boxSkel1 = createBox(size, pos1);
-  auto boxSkel2 = createBox(size, pos2);
+  auto boxSkeleton1 = createBox(size, pos1);
+  auto boxSkeleton2 = createBox(size, pos2);
 
-  auto boxBody1 = boxSkel1->getBodyNode(0u);
-  auto boxBody2 = boxSkel2->getBodyNode(0u);
+  auto boxBodyNode1 = boxSkeleton1->getBodyNode(0u);
+  auto boxBodyNode2 = boxSkeleton2->getBodyNode(0u);
 
-  auto boxShapeNode1 = boxBody1->getShapeNodesWith<CollisionAddon>()[0];
-  auto boxShapeNode2 = boxBody2->getShapeNodesWith<CollisionAddon>()[0];
+  auto boxShapeNode1 = boxBodyNode1->getShapeNodesWith<CollisionAddon>()[0];
+  auto boxShapeNode2 = boxBodyNode2->getShapeNodesWith<CollisionAddon>()[0];
 
   collision::Option option;
   collision::Result result;
 
-  auto group1 = cd->createCollisionGroup(boxShapeNode1);
-  auto group2 = cd->createCollisionGroup(boxShapeNode2);
+  auto skeletonGroup1 = cd->createCollisionGroup(boxSkeleton1.get());
+  auto skeletonGroup2 = cd->createCollisionGroup(boxSkeleton2.get());
 
-  EXPECT_TRUE(group1->detect(group2.get(), option, result));
-  EXPECT_TRUE(cd->detect(group1.get(), group2.get(), option, result));
+  auto bodyNodeGroup1 = cd->createCollisionGroup(boxBodyNode1);
+  auto bodyNodeGroup2 = cd->createCollisionGroup(boxBodyNode2);
+
+  auto shapeNodeGroup1 = cd->createCollisionGroup(boxShapeNode1);
+  auto shapeNodeGroup2 = cd->createCollisionGroup(boxShapeNode2);
+
+  EXPECT_TRUE(skeletonGroup1->detect(skeletonGroup2.get(), option, result));
+  EXPECT_TRUE(bodyNodeGroup1->detect(bodyNodeGroup2.get(), option, result));
+  EXPECT_TRUE(shapeNodeGroup1->detect(shapeNodeGroup2.get(), option, result));
 }
 
 //==============================================================================
-TEST_F(COLLISION, BodyNodeNodes)
+TEST_F(COLLISION, CreateCollisionGroupFromVariousObject)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
   fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
   fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  testBodyNodes(fcl_mesh_dart);
+  testCreateCollisionGroups(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
   // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
   // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
-  // testBodyNodes(fcl_prim_fcl);
+  // testCreateCollisionGroups(fcl_prim_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
   // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  // testBodyNodes(fcl_mesh_fcl);
+  // testCreateCollisionGroups(fcl_mesh_fcl);
 
   // auto fcl_mesh_fcl = FCLCollisionDetector::create();
   // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
-  // testBodyNodes(fcl_mesh_fcl);
+  // testCreateCollisionGroups(fcl_mesh_fcl);
 
 #if HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
-  testBodyNodes(bullet);
+  testCreateCollisionGroups(bullet);
 #endif
 
   auto dart = DARTCollisionDetector::create();
-  testBodyNodes(dart);
-}
-
-//==============================================================================
-void testSkeletons(const std::shared_ptr<CollisionDetector>& /*cd*/)
-{
-//  Eigen::Vector3d size(1.0, 1.0, 1.0);
-//  Eigen::Vector3d pos1(0.0, 0.0, 0.0);
-//  Eigen::Vector3d pos2(0.5, 0.0, 0.0);
-
-//  auto boxSkel1 = createBox(size, pos1);
-//  auto boxSkel2 = createBox(size, pos2);
-
-//  collision::Option option;
-//  collision::Result result;
-
-//  auto hit = cd->detect(boxSkel1, boxSkel2, option, result);
-
-//  EXPECT_TRUE(hit);
-}
-
-//==============================================================================
-TEST_F(COLLISION, Skeletons)
-{
-  auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  testSkeletons(fcl_mesh_dart);
-
-  // auto fcl_prim_fcl = FCLCollisionDetector::create();
-  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
-  // testSkeletons(fcl_prim_fcl);
-
-  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  // testSkeletons(fcl_mesh_fcl);
-
-  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
-  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
-  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
-  // testSkeletons(fcl_mesh_fcl);
-
-//#if HAVE_BULLET_COLLISION
-//  auto bullet = BulletCollisionDetector::create();
-//  testSkeletons(bullet);
-//#endif
-
-//  auto dart = DARTCollisionDetector::create();
-//  testSkeletons(dart);
+  testCreateCollisionGroups(dart);
 }
 
 //==============================================================================
