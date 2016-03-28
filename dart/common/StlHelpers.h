@@ -42,6 +42,10 @@
 #include <memory>
 #include <vector>
 
+// Macro to suppress -Wunused-parameter and -Wunused-variable warnings in
+// release mode when a variable is only used in assertions.
+#define DART_UNUSED(x) do { (void)(x); } while (0)
+
 namespace dart {
 namespace common {
 
