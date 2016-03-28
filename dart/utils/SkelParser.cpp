@@ -740,13 +740,8 @@ simulation::WorldPtr readWorld(
               collision::FCLCollisionDetector::DART);
       }
       else if (strCD == "dart")
-<<<<<<< HEAD
         collision_detector = collision::DARTCollisionDetector::create();
 #if HAVE_BULLET_COLLISION
-=======
-        collision_detector.reset(new collision::DARTCollisionDetector);
-#if HAVE_BULLET_COLLISION
->>>>>>> origin/master
       else if (strCD == "bullet")
         collision_detector = collision::BulletCollisionDetector::create();
 #endif
