@@ -138,6 +138,13 @@ public:
   /// Return number of ShapeFrames added to this CollisionGroup
   size_t getNumShapeFrames() const;
 
+  /// Return index-th ShapeFrames registered to this CollisionGroup. Return
+  /// nullptr if the index is out of the range.
+  const dynamics::ShapeFrame* getShapeFrame(size_t index) const;
+
+  /// Return all the ShapeFrames registered to this CollisionGroup
+  const std::vector<const dynamics::ShapeFrame*> getShapeFrames() const;
+
   /// Update engine data. This function should be called before the collision
   /// detection is performed by the engine in most cases.
   void update();

@@ -268,6 +268,19 @@ size_t CollisionGroup::getNumShapeFrames() const
 }
 
 //==============================================================================
+const dynamics::ShapeFrame*CollisionGroup::getShapeFrame(size_t index) const
+{
+  common::getVectorObjectIfAvailable(index, mShapeFrames);
+}
+
+//==============================================================================
+const std::vector<const dynamics::ShapeFrame*>
+CollisionGroup::getShapeFrames() const
+{
+  return mShapeFrames;
+}
+
+//==============================================================================
 void CollisionGroup::update()
 {
   for (auto& object : mCollisionObjects)

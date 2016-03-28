@@ -96,7 +96,6 @@ protected:
   /// Claim CollisionObject associated with shapeFrame. New CollisionObject
   /// will be created if it hasn't created yet for shapeFrame.
   CollisionObject* claimCollisionObject(const dynamics::ShapeFrame* shapeFrame);
-  // TODO(JS): Maybe WeakShapeFramePtr
 
   /// Reclaim a CollisionObject. The CollisionObject will be destroyed if no
   /// CollisionGroup holds it.
@@ -127,7 +126,6 @@ public:
   /// will be created if it hasn't created yet for shapeFrame.
   virtual CollisionObject* claimCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) = 0;
-  // TODO(JS): Maybe WeakShapeFramePtr
 
   /// Reclaim CollisionObject associated with shapeFrame. The CollisionObject
   /// will be destroyed if no CollisionGroup holds it.
