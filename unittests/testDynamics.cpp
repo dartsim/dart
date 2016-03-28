@@ -1655,7 +1655,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
 
     if (nullptr == rootFreeJoint || !skel->isMobile() || 0 == dof)
     {
-#ifdef BUILD_TYPE_DEBUG
+#if BUILD_TYPE_DEBUG
       dtmsg << "Skipping COM free fall test for Skeleton [" << skel->getName()
             << "] since the Skeleton doesn't have FreeJoint at the root body "
             << " or immobile." << endl;
@@ -1927,7 +1927,7 @@ TEST_F(DynamicsTest, testFiniteDifference)
 {
   for (size_t i = 0; i < getList().size(); ++i)
   {
-#ifdef BUILD_TYPE_DEBUG
+#if BUILD_TYPE_DEBUG
     dtdbg << getList()[i] << std::endl;
 #endif
     testFiniteDifferenceGeneralizedCoordinates(getList()[i]);
