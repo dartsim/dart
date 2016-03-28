@@ -74,8 +74,8 @@ const PropertiesT& DefaultGetEmbeddedProperties(const AspectT* aspect)
 
 //==============================================================================
 template <class BaseT, class DerivedT, typename StateT,
-          void (*setState)(DerivedT*, const StateT&),
-          const StateT& (*getState)(const DerivedT*)>
+          void (*setEmbeddedState)(DerivedT*, const StateT&),
+          const StateT& (*getEmbeddedState)(const DerivedT*)>
 class EmbeddedStateAspect : public BaseT
 {
 public:
@@ -83,8 +83,8 @@ public:
   using Base = BaseT;
   using Derived = DerivedT;
   using State = StateT;
-  constexpr static void (*SetState)(Derived*, const State&) = setState;
-  constexpr static const State& (*GetState)(const Derived*) = getState;
+  constexpr static void (*SetEmbeddedState)(Derived*, const State&) = setEmbeddedState;
+  constexpr static const State& (*GetEmbeddedState)(const Derived*) = getEmbeddedState;
 
   EmbeddedStateAspect() = delete;
   EmbeddedStateAspect(const EmbeddedStateAspect&) = delete;
@@ -109,16 +109,56 @@ public:
 
   void setAspectState(const Aspect::State& state) override final
   {
-    SetState(this, static_cast<const State&>(state));
+    setState(static_cast<const State&>(state));
+  }
+
+  void setState(const State& state)
+  {
+    if(this->getComposite())
+    {
+      SetEmbeddedState(this, static_cast<const State&>(state));
+      return;
+    }
+
+    mTemporaryState = make_unique(state);
   }
 
   const Aspect::State* getAspectState() const override final
   {
-    return &GetState(this);
+    return &getState();
   }
 
+  const State& getState() const
+  {
+    if(this->getComposite())
+    {
+      return GetEmbeddedState(this);
+    }
+
+    if(!mTemporaryState)
+      mTemporaryState = make_unique<State>();
+
+    return *mTemporaryState;
+  }
 
 protected:
+
+  void setComposite(Composite* newComposite) override
+  {
+    Base::setComposite(newComposite);
+    if(mTemporaryState)
+      SetEmbeddedState(this, *mTemporaryState);
+    else
+      SetEmbeddedState(this, State());
+
+    mTemporaryState = nullptr;
+  }
+
+  void loseComposite(Composite* oldComposite) override
+  {
+    mTemporaryState = make_unique(GetEmbeddedState(this));
+    Base::loseComposite(oldComposite);
+  }
 
   /// During transitions between Composite objects, this will hold the State of
   /// the Aspect. Once the Aspect has been moved into a new Composite, this
@@ -154,18 +194,18 @@ public:
 // See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
 //
 template <class BaseT, class DerivedT, typename StateT,
-          void (*setState)(DerivedT*, const StateT&),
-          const StateT& (*getState)(const DerivedT*)>
+          void (*setEmbeddedState)(DerivedT*, const StateT&),
+          const StateT& (*getEmbeddedState)(const DerivedT*)>
 constexpr void (*EmbeddedStateAspect<
-    BaseT, DerivedT, StateT, setState, getState>::SetState)(
+    BaseT, DerivedT, StateT, setEmbeddedState, getEmbeddedState>::SetEmbeddedState)(
     DerivedT*, const StateT&);
 
 //==============================================================================
 template <class BaseT, class DerivedT, typename StateT,
-          void (*setState)(DerivedT*, const StateT&),
-          const StateT& (*getState)(const DerivedT*)>
+          void (*setEmbeddedState)(DerivedT*, const StateT&),
+          const StateT& (*getEmbeddedState)(const DerivedT*)>
 constexpr const StateT& (*EmbeddedStateAspect<
-    BaseT, DerivedT, StateT, setState, getState>::GetState)(const DerivedT*);
+    BaseT, DerivedT, StateT, setEmbeddedState, getEmbeddedState>::GetEmbeddedState)(const DerivedT*);
 
 //==============================================================================
 template <class BaseT, class DerivedT, typename PropertiesT,

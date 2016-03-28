@@ -46,25 +46,26 @@ namespace common {
 template <class DerivedT,
           typename StateT,
           class CompositeT,
-          void (*setState)(DerivedT*, const StateT&) =
+          void (*setEmbeddedState)(DerivedT*, const StateT&) =
               &detail::DefaultSetEmbeddedState<DerivedT, StateT>,
-          const StateT& (*getState)(const DerivedT*) =
+          const StateT& (*getEmbeddedState)(const DerivedT*) =
               &detail::DefaultGetEmbeddedState<DerivedT, StateT> >
 using EmbeddedStateAspect =
     detail::EmbeddedStateAspect<CompositeTrackingAspect<CompositeT>, DerivedT,
-                                StateT, setState, getState>;
+                                StateT, setEmbeddedState, getEmbeddedState>;
 
 //==============================================================================
 template <class DerivedT,
           typename PropertiesT,
           class CompositeT,
-          void (*setProperties)(DerivedT, const PropertiesT&) =
+          void (*setEmbeddedProperties)(DerivedT, const PropertiesT&) =
               &detail::DefaultSetEmbeddedProperties<DerivedT, PropertiesT>,
           const PropertiesT& (*getProperties)(const DerivedT*) =
               &detail::DefaultGetEmbeddedProperties<DerivedT, PropertiesT> >
 using EmbeddedPropertiesAspect =
-    detail::EmbeddedPropertiesAspect<CompositeTrackingAspect<CompositeT>, DerivedT,
-                                     PropertiesT, setProperties, getProperties>;
+    detail::EmbeddedPropertiesAspect<
+        CompositeTrackingAspect<CompositeT>, DerivedT,
+        PropertiesT, setEmbeddedProperties, getProperties>;
 
 //==============================================================================
 
