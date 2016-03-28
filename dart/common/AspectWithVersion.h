@@ -98,20 +98,20 @@ public:
 
   /// Construct using a StateData and a PropertiesData instance
   AspectWithStateAndVersionedProperties(
-      common::Composite* mgr,
+      common::Composite* comp,
       const StateData& state = StateData(),
       const PropertiesData& properties = PropertiesData())
-    : AspectPropertiesImplementation(mgr, properties, state)
+    : AspectPropertiesImplementation(comp, properties, state)
   {
     // Do nothing
   }
 
   /// Construct using a PropertiesData and a StateData instance
   AspectWithStateAndVersionedProperties(
-      common::Composite* mgr,
+      common::Composite* comp,
       const PropertiesData& properties,
       const StateData& state = StateData())
-    : AspectPropertiesImplementation(mgr, properties, state)
+    : AspectPropertiesImplementation(comp, properties, state)
   {
     // Do nothing
   }

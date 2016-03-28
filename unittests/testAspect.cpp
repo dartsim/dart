@@ -53,9 +53,19 @@
 
 using namespace dart::common;
 
-struct SomeState { };
+struct SomeStateData { };
+using SomeState = dart::common::Aspect::StateMixer<SomeStateData>;
+struct SomePropertiesData { };
+using SomeProperties = dart::common::Aspect::PropertiesMixer<SomePropertiesData>;
 
-class SomeStateComposite : public virtual dart::common::Composite
+class SomeStateComposite;
+class SomeEmbeddedStateAspect : public dart::common::EmbeddedStateAspect<
+    SomeEmbeddedStateAspect, SomeState, SomeStateComposite>
+{
+
+};
+
+class SomeStateComposite : public virtual dart::common::RequiresAspect<SomeStateComposite>
 {
 public:
 
@@ -73,14 +83,18 @@ class SomePropertiesComposite : public virtual dart::common::Composite
 {
 public:
 
+  void setAspectProperties(const SomeProperties& properties) { mProperties = properties; }
+
+  const SomeProperties& getAspectProperties() const { return mProperties; }
+
+protected:
+
+  SomeProperties mProperties;
 
 };
 
-class SomeEmbeddedAspect : public dart::common::detail::EmbeddedStateAspect<
-    dart::common::CompositeTrackingAspect<SomeStateComposite>, SomeEmbeddedAspect, SomeState>
-{
 
-};
+
 
 // Testing the creation of an Aspect using the AspectWithState template class
 class StateAspectTest : public dart::common::AspectWithState<
@@ -625,6 +639,11 @@ TEST(Aspect, Duplication)
   EXPECT_FALSE(mgr2.get<IntAspect>() == nullptr);
   EXPECT_FALSE(mgr2.get<FloatAspect>() == nullptr);
   EXPECT_FALSE(mgr2.get<CharAspect>() == nullptr);
+}
+
+TEST(Aspect, Embedded)
+{
+  SomeStateComposite comp;
 }
 
 int main(int argc, char* argv[])

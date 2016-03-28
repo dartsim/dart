@@ -141,7 +141,7 @@ class CompositeTrackingAspect : public Aspect
 public:
 
   /// Default constructor
-  CompositeTrackingAspect(Composite* mgr);
+  CompositeTrackingAspect(Composite* comp);
 
   /// Get the Composite of this Aspect
   CompositeType* getComposite();
@@ -151,8 +151,11 @@ public:
 
 protected:
 
-  /// Grab the new manager
-  void setComposite(Composite* newComposite);
+  /// Grab the new Composite
+  void setComposite(Composite* newComposite) override;
+
+  /// Clear the old Composite
+  void loseComposite(Composite* oldComposite) override;
 
   /// Pointer to the current Composite of this Aspect
   CompositeType* mComposite;
@@ -165,8 +168,8 @@ protected:
 //==============================================================================
 #define DART_COMMON_ASPECT_PROPERTY_CONSTRUCTOR( ClassName, UpdatePropertiesMacro )\
   ClassName (const ClassName &) = delete;\
-  inline ClassName (dart::common::Composite* mgr, const PropertiesData& properties = PropertiesData())\
-    : AspectWithVersionedProperties< Base, Derived, PropertiesData, CompositeType, UpdatePropertiesMacro>(mgr, properties) { }
+  inline ClassName (dart::common::Composite* comp, const PropertiesData& properties = PropertiesData())\
+    : AspectWithVersionedProperties< Base, Derived, PropertiesData, CompositeType, UpdatePropertiesMacro>(comp, properties) { }
 
 //==============================================================================
 #define DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( ClassName )\
@@ -175,10 +178,10 @@ protected:
 //==============================================================================
 #define DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(ClassName)\
   ClassName (const ClassName &) = delete;\
-  inline ClassName (dart::common::Composite* mgr, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
-    : AspectImplementation(mgr, state, properties) { }\
-  inline ClassName (dart::common::Composite* mgr, const PropertiesData& properties, const StateData state = StateData())\
-    : AspectImplementation(mgr, properties, state) { }
+  inline ClassName (dart::common::Composite* comp, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
+    : AspectImplementation(comp, state, properties) { }\
+  inline ClassName (dart::common::Composite* comp, const PropertiesData& properties, const StateData state = StateData())\
+    : AspectImplementation(comp, properties, state) { }
 
 //==============================================================================
 #define DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM( Type, Name, Update )\

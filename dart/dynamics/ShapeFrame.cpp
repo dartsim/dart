@@ -74,9 +74,9 @@ DynamicsAspectProperties::DynamicsAspectProperties(
 } // namespace detail
 
 //==============================================================================
-VisualAspect::VisualAspect(common::Composite* mgr,
+VisualAspect::VisualAspect(common::Composite* comp,
                          const PropertiesData& properties)
-  : VisualAspect::BaseClass(mgr, properties)
+  : VisualAspect::BaseClass(comp, properties)
 {
   // Do nothing
 }
@@ -160,11 +160,11 @@ bool VisualAspect::isHidden() const
 
 //==============================================================================
 CollisionAspect::CollisionAspect(
-    common::Composite* mgr,
+    common::Composite* comp,
     const PropertiesData& properties)
-  : AspectImplementation(mgr, properties)
+  : AspectImplementation(comp, properties)
 {
-//  mIsShapeNode = dynamic_cast<ShapeNode*>(mgr);
+//  mIsShapeNode = dynamic_cast<ShapeNode*>(comp);
 }
 
 //==============================================================================
@@ -175,9 +175,9 @@ bool CollisionAspect::isCollidable() const
 
 //==============================================================================
 DynamicsAspect::DynamicsAspect(
-    common::Composite* mgr,
+    common::Composite* comp,
     const PropertiesData& properties)
-  : BaseClass(mgr, properties)
+  : BaseClass(comp, properties)
 {
   // Do nothing
 }

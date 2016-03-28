@@ -68,13 +68,13 @@ public:
   AspectWithState(const AspectWithState&) = delete;
 
   /// Construct using a StateData instance
-  AspectWithState(Composite* mgr, const StateData& state = StateData());
+  AspectWithState(Composite* comp, const StateData& state = StateData());
 
   /// Construct this Aspect and pass args into the constructor of the Base class
   template <typename... BaseArgs>
-  AspectWithState(Composite* mgr, const StateData& state,
+  AspectWithState(Composite* comp, const StateData& state,
                  BaseArgs&&... args)
-    : Base(mgr, std::forward<BaseArgs>(args)...),
+    : Base(comp, std::forward<BaseArgs>(args)...),
       mState(state)
   {
     // Do nothing
@@ -127,13 +127,13 @@ public:
 
   /// Construct using a PropertiesData instance
   AspectWithVersionedProperties(
-      Composite* mgr, const PropertiesData& properties = PropertiesData());
+      Composite* comp, const PropertiesData& properties = PropertiesData());
 
   /// Construct this Aspect and pass args into the constructor of the Base class
   template <typename... BaseArgs>
   AspectWithVersionedProperties(
-      Composite* mgr, const PropertiesData& properties, BaseArgs&&... args)
-    : Base(mgr, std::forward<BaseArgs>(args)...),
+      Composite* comp, const PropertiesData& properties, BaseArgs&&... args)
+    : Base(comp, std::forward<BaseArgs>(args)...),
       mProperties(properties)
   {
     // Do nothing
@@ -185,8 +185,8 @@ constexpr void (*AspectWithState<
 template <class BaseT, class DerivedT, typename StateDataT,
           class CompositeT, void (*updateState)(DerivedT*)>
 AspectWithState<BaseT, DerivedT, StateDataT, CompositeT, updateState>::
-AspectWithState(Composite* mgr, const StateDataT& state)
-  : BaseT(mgr),
+AspectWithState(Composite* comp, const StateDataT& state)
+  : BaseT(comp),
     mState(state)
 {
   // Do nothing
@@ -259,8 +259,8 @@ template <class BaseT, class DerivedT, typename PropertiesDataT,
 AspectWithVersionedProperties<BaseT, DerivedT, PropertiesDataT,
                              CompositeT, updateProperties>::
 AspectWithVersionedProperties(
-    Composite* mgr, const PropertiesData& properties)
-  : BaseT(mgr),
+    Composite* comp, const PropertiesData& properties)
+  : BaseT(comp),
     mProperties(properties)
 {
   // Do nothing
@@ -325,8 +325,8 @@ template <class BaseT, class DerivedT, typename PropertiesData,
 size_t AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
                              CompositeT, updateProperties>::incrementVersion()
 {
-  if(CompositeType* mgr = this->getComposite())
-    return mgr->incrementVersion();
+  if(CompositeType* comp = this->getComposite())
+    return comp->incrementVersion();
 
   return 0;
 }

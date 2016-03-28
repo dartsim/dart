@@ -47,9 +47,8 @@ namespace common {
 
 //==============================================================================
 template <class CompositeType>
-CompositeTrackingAspect<CompositeType>::CompositeTrackingAspect(
-    Composite* mgr)
-  : Aspect(mgr),
+CompositeTrackingAspect<CompositeType>::CompositeTrackingAspect(Composite* comp)
+  : Aspect(comp),
     mComposite(nullptr) // This will be set later when the Composite calls setComposite
 {
   // Do nothing
@@ -83,6 +82,13 @@ void CompositeTrackingAspect<CompositeType>::setComposite(Composite* newComposit
           << "undefined behavior!\n";
     assert(false);
   }
+}
+
+//==============================================================================
+template <class CompositeType>
+void CompositeTrackingAspect<CompositeType>::loseComposite(Composite* /*oldComposite*/)
+{
+  mComposite = nullptr;
 }
 
 } // namespace common

@@ -117,7 +117,7 @@ public:
       VisualAspect, detail::VisualAspectProperties, ShapeFrame>;
 
   /// Constructor
-  VisualAspect(common::Composite* mgr,
+  VisualAspect(common::Composite* comp,
               const PropertiesData& properties = PropertiesData());
 
   VisualAspect(const VisualAspect&) = delete;
@@ -175,7 +175,7 @@ class CollisionAspect final :
 public:
 
   CollisionAspect(const CollisionAspect &) = delete;
-  CollisionAspect(dart::common::Composite* mgr,
+  CollisionAspect(dart::common::Composite* comp,
                       const PropertiesData& properties = PropertiesData());
 
   DART_COMMON_SET_GET_ASPECT_PROPERTY( bool, Collidable )
@@ -200,7 +200,7 @@ public:
 
   DynamicsAspect(const DynamicsAspect&) = delete;
 
-  DynamicsAspect(dart::common::Composite* mgr,
+  DynamicsAspect(dart::common::Composite* comp,
                 const PropertiesData& properties = PropertiesData());
 
   DART_COMMON_SET_GET_ASPECT_PROPERTY( double, FrictionCoeff )

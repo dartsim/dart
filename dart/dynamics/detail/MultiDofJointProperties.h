@@ -164,7 +164,7 @@ class MultiDofJointAspect final :
 public:
   MultiDofJointAspect(const MultiDofJointAspect&) = delete;
 
-  MultiDofJointAspect(common::Composite* mgr,
+  MultiDofJointAspect(common::Composite* comp,
         const typename MultiDofJointAspect::PropertiesData& properties);
 
   constexpr static size_t NumDofs = DOF;
@@ -295,8 +295,7 @@ constexpr size_t MultiDofJointAspect<DOF>::NumDofs;
 
 //==============================================================================
 template <size_t DOF>
-MultiDofJointAspect<DOF>::MultiDofJointAspect(
-    common::Composite* mgr,
+MultiDofJointAspect<DOF>::MultiDofJointAspect(common::Composite* comp,
     const typename MultiDofJointAspect::PropertiesData& properties =
         typename MultiDofJointAspect::PropertiesData())
   : common::AspectWithVersionedProperties<
@@ -304,7 +303,7 @@ MultiDofJointAspect<DOF>::MultiDofJointAspect(
         typename MultiDofJointAspect<DOF>::PropertiesData,
         typename MultiDofJointAspect<DOF>::CompositeType,
         &common::detail::NoOp<typename MultiDofJointAspect<DOF>::Derived*> >(
-      mgr, properties)
+      comp, properties)
 {
   // Do nothing
 }
