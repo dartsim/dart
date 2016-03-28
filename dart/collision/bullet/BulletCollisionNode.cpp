@@ -55,7 +55,7 @@ namespace collision {
 BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* bodyNode)
   : CollisionNode(bodyNode)
 {
-  auto collShapeNodes = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+  auto collShapeNodes = bodyNode->getShapeNodesWith<dynamics::CollisionAspect>();
   for (auto shapeNode : collShapeNodes)
   {
     auto shape = shapeNode->getShape();
