@@ -179,7 +179,7 @@ TEST(Optimizer, BasicNlopt)
 #endif
 
 //==============================================================================
-#ifdef HAVE_IPOPT
+#if HAVE_IPOPT
 TEST(Optimizer, BasicIpopt)
 {
   dterr << "Ipopt does not pass this test yet. Please see #153.";
