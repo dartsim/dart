@@ -297,7 +297,8 @@ constexpr size_t MultiDofJointAddon<DOF>::NumDofs;
 template <size_t DOF>
 MultiDofJointAddon<DOF>::MultiDofJointAddon(
     common::AddonManager* mgr,
-    const typename MultiDofJointAddon::PropertiesData& properties)
+    const typename MultiDofJointAddon::PropertiesData& properties =
+        typename MultiDofJointAddon::PropertiesData())
   : common::AddonWithVersionedProperties<
         typename MultiDofJointAddon<DOF>::Derived,
         typename MultiDofJointAddon<DOF>::PropertiesData,
