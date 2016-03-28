@@ -275,7 +275,7 @@ size_t World::getNumSkeletons() const
 }
 
 //==============================================================================
-std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
+std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
   if(nullptr == _skeleton)
   {
@@ -316,7 +316,7 @@ std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
 }
 
 //==============================================================================
-void World::removeSkeleton(dynamics::SkeletonPtr _skeleton)
+void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
   assert(_skeleton != nullptr && "Attempted to remove nullptr Skeleton from world");
 
@@ -412,7 +412,7 @@ size_t World::getNumSimpleFrames() const
 }
 
 //==============================================================================
-std::string World::addSimpleFrame(dynamics::SimpleFramePtr _frame)
+std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 {
   assert(_frame != nullptr && "Attempted to add nullptr SimpleFrame to world");
 
@@ -444,7 +444,7 @@ std::string World::addSimpleFrame(dynamics::SimpleFramePtr _frame)
 }
 
 //==============================================================================
-void World::removeSimpleFrame(dynamics::SimpleFramePtr _frame)
+void World::removeSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 {
   assert(_frame != nullptr && "Attempted to remove nullptr SimpleFrame from world");
 
@@ -540,7 +540,7 @@ Recording* World::getRecording()
 
 //==============================================================================
 void World::handleSkeletonNameChange(
-    dynamics::ConstMetaSkeletonPtr _skeleton)
+    const dynamics::ConstMetaSkeletonPtr& _skeleton)
 {
   if(nullptr == _skeleton)
   {
