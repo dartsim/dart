@@ -213,7 +213,7 @@ ShapeFrame::Properties::Properties(
 //==============================================================================
 void ShapeFrame::setProperties(const ShapeFrame::AspectProperties& properties)
 {
-  setAspectProperties(properties);
+  setCompositeProperties(properties);
 }
 
 //==============================================================================
@@ -233,7 +233,7 @@ void ShapeFrame::setProperties(const ShapeFrame::UniqueProperties& properties)
 //==============================================================================
 const ShapeFrame::Properties ShapeFrame::getShapeFrameProperties() const
 {
-  return Properties(getEntityProperties(), mShapeFrameP, getAspectProperties());
+  return Properties(getEntityProperties(), mShapeFrameP, getCompositeProperties());
 }
 
 //==============================================================================

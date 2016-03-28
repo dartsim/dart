@@ -44,7 +44,7 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-void Composite::setAspectStates(const State& newStates)
+void Composite::setCompositeState(const State& newStates)
 {
   const StateMap& stateMap = newStates.getMap();
 
@@ -124,23 +124,23 @@ void extractMapData(MapType& outgoingMap, const Composite::AspectMap& aspectMap)
 }
 
 //==============================================================================
-Composite::State Composite::getAspectStates() const
+Composite::State Composite::getCompositeState() const
 {
   State states;
-  copyAspectStatesTo(states);
+  copyCompositeStateTo(states);
 
   return states;
 }
 
 //==============================================================================
-void Composite::copyAspectStatesTo(State& outgoingStates) const
+void Composite::copyCompositeStateTo(State& outgoingStates) const
 {
   StateMap& states = outgoingStates.getMap();
   extractMapData<StateMap, Aspect::State, &Aspect::getAspectState>(states, mAspectMap);
 }
 
 //==============================================================================
-void Composite::setAspectProperties(const Properties& newProperties)
+void Composite::setCompositeProperties(const Properties& newProperties)
 {
   const PropertiesMap& propertiesMap = newProperties.getMap();
 
@@ -170,16 +170,16 @@ void Composite::setAspectProperties(const Properties& newProperties)
 }
 
 //==============================================================================
-Composite::Properties Composite::getAspectProperties() const
+Composite::Properties Composite::getCompositeProperties() const
 {
   Properties properties;
-  copyAspectPropertiesTo(properties);
+  copyCompositePropertiesTo(properties);
 
   return properties;
 }
 
 //==============================================================================
-void Composite::copyAspectPropertiesTo(
+void Composite::copyCompositePropertiesTo(
     Properties& outgoingProperties) const
 {
   PropertiesMap& properties = outgoingProperties.getMap();

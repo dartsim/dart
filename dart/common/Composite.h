@@ -140,25 +140,25 @@ public:
   /// Set the states of the aspects in this Composite based on the given
   /// Composite::State. The states of any Aspect types that do not exist
   /// within this manager will be ignored.
-  void setAspectStates(const State& newStates);
+  void setCompositeState(const State& newStates);
 
   /// Get the states of the aspects inside of this Composite
-  State getAspectStates() const;
+  State getCompositeState() const;
 
   /// Fill outgoingStates with the states of the aspects inside this Composite
-  void copyAspectStatesTo(State& outgoingStates) const;
+  void copyCompositeStateTo(State& outgoingStates) const;
 
   /// Set the properties of the aspects in this Composite based on the given
   /// Composite::Properties. The properties of any Aspect types that do not
   /// exist within this manager will be ignored.
-  void setAspectProperties(const Properties& newProperties);
+  void setCompositeProperties(const Properties& newProperties);
 
   /// Get the properties of the aspects inside of this Composite
-  Properties getAspectProperties() const;
+  Properties getCompositeProperties() const;
 
   /// Fill outgoingProperties with the properties of the aspects inside this
   /// Composite
-  void copyAspectPropertiesTo(Properties& outgoingProperties) const;
+  void copyCompositePropertiesTo(Properties& outgoingProperties) const;
 
   /// Give this Composite a copy of each Aspect from otherComposite
   void duplicateAspects(const Composite* fromComposite);

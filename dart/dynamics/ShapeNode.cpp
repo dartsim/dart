@@ -78,7 +78,7 @@ void ShapeNode::setProperties(const Properties& properties)
   ShapeFrame::setProperties(
         static_cast<const ShapeFrame::Properties&>(properties));
   setProperties(static_cast<const ShapeNode::UniqueProperties&>(properties));
-  setAspectProperties(properties.mAspectProperties);
+  setCompositeProperties(properties.mAspectProperties);
 }
 
 //==============================================================================
@@ -91,7 +91,7 @@ void ShapeNode::setProperties(const ShapeNode::UniqueProperties& properties)
 const ShapeNode::Properties ShapeNode::getShapeNodeProperties() const
 {
   return Properties(getShapeFrameProperties(), mShapeNodeP,
-                    getAspectProperties());
+                    getCompositeProperties());
 }
 
 //==============================================================================

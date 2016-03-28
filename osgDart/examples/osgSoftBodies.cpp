@@ -69,7 +69,7 @@ public:
       for(size_t j=0; j < skeleton->getNumBodyNodes(); ++j)
       {
         BodyNode* bn = skeleton->getBodyNode(j);
-        state.mAspectStates.push_back(bn->getAspectStates());
+        state.mAspectStates.push_back(bn->getCompositeState());
       }
 
       slice.push_back(state);
@@ -110,7 +110,7 @@ public:
       for(size_t j=0; j < skeleton->getNumBodyNodes(); ++j)
       {
         BodyNode* bn = skeleton->getBodyNode(j);
-        bn->setAspectStates(state.mAspectStates[j]);
+        bn->setCompositeState(state.mAspectStates[j]);
       }
     }
 

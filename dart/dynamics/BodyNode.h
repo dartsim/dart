@@ -115,7 +115,7 @@ public:
   /// Set the Properties of the attached Nodes
   void setProperties(const NodeProperties& _properties);
 
-  /// Same as setAspectProperties()
+  /// Same as setCompositeProperties()
   void setProperties(const AspectProperties& _properties);
 
   /// Set the Properties of this BodyNode

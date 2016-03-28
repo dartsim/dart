@@ -101,20 +101,20 @@ EndEffector::PropertiesData::PropertiesData(
 void EndEffector::setState(const StateData& _state)
 {
   setRelativeTransform(_state.mRelativeTransform);
-  setAspectStates(_state.mAspectStates);
+  setCompositeState(_state.mAspectStates);
 }
 
 //==============================================================================
 void EndEffector::setState(StateData&& _state)
 {
   setRelativeTransform(_state.mRelativeTransform);
-  setAspectStates(std::move(_state.mAspectStates));
+  setCompositeState(std::move(_state.mAspectStates));
 }
 
 //==============================================================================
 EndEffector::StateData EndEffector::getEndEffectorState() const
 {
-  return StateData(mRelativeTf, getAspectStates());
+  return StateData(mRelativeTf, getCompositeState());
 }
 
 //==============================================================================
@@ -122,7 +122,7 @@ void EndEffector::setProperties(const PropertiesData& _properties, bool _useNow)
 {
   Entity::setProperties(_properties);
   setProperties(static_cast<const UniqueProperties&>(_properties), _useNow);
-  setAspectProperties(_properties.mAspectProperties);
+  setCompositeProperties(_properties.mAspectProperties);
 }
 
 //==============================================================================
@@ -136,7 +136,7 @@ void EndEffector::setProperties(const UniqueProperties& _properties,
 EndEffector::PropertiesData EndEffector::getEndEffectorProperties() const
 {
   return PropertiesData(getEntityProperties(), mEndEffectorP,
-                        getAspectProperties());
+                        getCompositeProperties());
 }
 
 //==============================================================================
@@ -199,7 +199,7 @@ void EndEffector::copyNodeStateTo(std::unique_ptr<Node::State>& outputState) con
         static_cast<EndEffector::State*>(outputState.get());
 
     state->mRelativeTransform = mRelativeTf;
-    copyAspectStatesTo(state->mAspectStates);
+    copyCompositeStateTo(state->mAspectStates);
   }
   else
   {
@@ -231,7 +231,7 @@ void EndEffector::copyNodePropertiesTo(
 
     static_cast<Entity::Properties&>(*properties) = getEntityProperties();
     static_cast<UniqueProperties&>(*properties) = mEndEffectorP;
-    copyAspectPropertiesTo(properties->mAspectProperties);
+    copyCompositePropertiesTo(properties->mAspectProperties);
   }
   else
   {

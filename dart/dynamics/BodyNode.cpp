@@ -233,7 +233,7 @@ void BodyNode::setProperties(const NodeProperties& _properties)
 //==============================================================================
 void BodyNode::setProperties(const AspectProperties& _properties)
 {
-  setAspectProperties(_properties);
+  setCompositeProperties(_properties);
 }
 
 //==============================================================================
@@ -298,7 +298,7 @@ BodyNode::ExtendedProperties BodyNode::getExtendedProperties() const
 {
   return ExtendedProperties(getBodyNodeProperties(),
                             getAttachedNodeProperties(),
-                            getAspectProperties());
+                            getCompositeProperties());
 }
 
 //==============================================================================

@@ -47,10 +47,40 @@
 #include "dart/common/sub_ptr.h"
 #include "dart/common/Composite.h"
 #include "dart/common/SpecializedForAspect.h"
+#include "dart/common/EmbeddedAspect.h"
 
 #include "dart/dynamics/EulerJoint.h"
 
 using namespace dart::common;
+
+struct SomeState { };
+
+class SomeStateComposite : public virtual dart::common::Composite
+{
+public:
+
+  void setAspectState(const SomeState& state) { mState = state; }
+
+  const SomeState& getAspectState() const { return mState; }
+
+protected:
+
+  SomeState mState;
+
+};
+
+class SomePropertiesComposite : public virtual dart::common::Composite
+{
+public:
+
+
+};
+
+class SomeEmbeddedAspect : public dart::common::detail::EmbeddedStateAspect<
+    dart::common::CompositeTrackingAspect<SomeStateComposite>, SomeEmbeddedAspect, SomeState>
+{
+
+};
 
 // Testing the creation of an Aspect using the AspectWithState template class
 class StateAspectTest : public dart::common::AspectWithState<
@@ -451,7 +481,7 @@ TEST(Aspect, StateAndProperties)
 
   // ---- Test state transfer ----
 
-  mgr2.setAspectStates(mgr1.getAspectStates());
+  mgr2.setCompositeState(mgr1.getCompositeState());
 
   EXPECT_EQ( mgr1.get<DoubleAspect>()->mState.val,
              mgr2.get<DoubleAspect>()->mState.val );
@@ -468,7 +498,7 @@ TEST(Aspect, StateAndProperties)
   EXPECT_NE( mgr1.get<FloatAspect>()->mState.val,
              mgr2.get<FloatAspect>()->mState.val );
 
-  mgr1.setAspectStates( mgr2.getAspectStates() );
+  mgr1.setCompositeState( mgr2.getCompositeState() );
 
   EXPECT_EQ( mgr1.get<DoubleAspect>()->mState.val,
              mgr2.get<DoubleAspect>()->mState.val );
@@ -482,7 +512,7 @@ TEST(Aspect, StateAndProperties)
 
   // ---- Test property transfer ----
 
-  mgr2.setAspectProperties(mgr1.getAspectProperties());
+  mgr2.setCompositeProperties(mgr1.getCompositeProperties());
 
   EXPECT_EQ( mgr1.get<DoubleAspect>()->mProperties.val,
              mgr2.get<DoubleAspect>()->mProperties.val );
@@ -499,7 +529,7 @@ TEST(Aspect, StateAndProperties)
   EXPECT_NE( mgr1.get<FloatAspect>()->mProperties.val,
              mgr2.get<FloatAspect>()->mProperties.val );
 
-  mgr1.setAspectProperties( mgr2.getAspectProperties() );
+  mgr1.setCompositeProperties( mgr2.getCompositeProperties() );
 
   EXPECT_EQ( mgr1.get<DoubleAspect>()->mProperties.val,
              mgr2.get<DoubleAspect>()->mProperties.val );
