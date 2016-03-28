@@ -41,11 +41,13 @@
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#include "dart/collision/dart/DARTCollisionDetector.h"
-#ifdef HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.h"
+
+#if DART_USE_FCLMESHCOLLISIONDETECTOR
+  #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
+#else
+  #include "dart/collision/fcl/FCLCollisionDetector.h"
 #endif
+
 #include "dart/constraint/ConstrainedGroup.h"
 #include "dart/constraint/ContactConstraint.h"
 #include "dart/constraint/SoftContactConstraint.h"
@@ -62,7 +64,11 @@ using namespace dynamics;
 
 //==============================================================================
 ConstraintSolver::ConstraintSolver(double _timeStep)
-  : mCollisionDetector(new collision::FCLMeshCollisionDetector()),
+#if DART_USE_FCLMESHCOLLISIONDETECTOR
+  : mCollisionDetector(new collision::FCLMeshCollisionDetector),
+#else
+  : mCollisionDetector(new collision::FCLCollisionDetector),
+#endif
     mTimeStep(_timeStep),
     mLCPSolver(new DantzigLCPSolver(mTimeStep))
 {
@@ -243,7 +249,7 @@ void ConstraintSolver::setCollisionDetector(
 
 //==============================================================================
 void ConstraintSolver::setCollisionDetector(
-  std::unique_ptr<collision::CollisionDetector>&& _collisionDetector)
+  std::unique_ptr<collision::CollisionDetector> _collisionDetector)
 {
   assert(_collisionDetector && "Invalid collision detector.");
 
@@ -259,6 +265,20 @@ void ConstraintSolver::setCollisionDetector(
 collision::CollisionDetector* ConstraintSolver::getCollisionDetector() const
 {
   return mCollisionDetector.get();
+}
+
+//==============================================================================
+void ConstraintSolver::setLCPSolver(std::unique_ptr<LCPSolver> _lcpSolver)
+{
+  assert(_lcpSolver && "Invalid LCP solver.");
+
+  mLCPSolver = std::move(_lcpSolver);
+}
+
+//==============================================================================
+LCPSolver* ConstraintSolver::getLCPSolver() const
+{
+  return mLCPSolver.get();
 }
 
 //==============================================================================

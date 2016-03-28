@@ -50,13 +50,13 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/FreeJoint.h"
 #include "dart/dynamics/InverseKinematics.h"
-#ifdef HAVE_NLOPT
+#if HAVE_NLOPT
   #include "dart/optimizer/nlopt/NloptSolver.h"
 #endif
-#ifdef HAVE_IPOPT
+#if HAVE_IPOPT
   #include "dart/optimizer/ipopt/IpoptSolver.h"
 #endif
-#ifdef HAVE_SNOPT
+#if HAVE_SNOPT
   #include "dart/optimizer/snopt/SnoptSolver.h"
 #endif
 
@@ -147,7 +147,7 @@ TEST(Optimizer, GradientDescent)
 }
 
 //==============================================================================
-#ifdef HAVE_NLOPT
+#if HAVE_NLOPT
 TEST(Optimizer, BasicNlopt)
 {
   // Problem reference: http://ab-initio.mit.edu/wiki/index.php/NLopt_Tutorial
@@ -179,7 +179,7 @@ TEST(Optimizer, BasicNlopt)
 #endif
 
 //==============================================================================
-#ifdef HAVE_IPOPT
+#if HAVE_IPOPT
 TEST(Optimizer, BasicIpopt)
 {
   dterr << "Ipopt does not pass this test yet. Please see #153.";
@@ -212,7 +212,7 @@ TEST(Optimizer, BasicIpopt)
 #endif
 
 //==============================================================================
-#ifdef HAVE_SNOPT
+#if HAVE_SNOPT
 TEST(Optimizer, BasicSnopt)
 {
   dterr << "SNOPT is not implemented yet.\n";
