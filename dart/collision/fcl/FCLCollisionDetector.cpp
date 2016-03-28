@@ -754,7 +754,7 @@ std::shared_ptr<CollisionGroup> FCLCollisionDetector::createCollisionGroup()
 bool FCLCollisionDetector::detect(
     CollisionGroup* group, const Option& option, Result& result)
 {
-  result.contacts.clear();
+  result.clear();
 
   if (!group)
     return false;
@@ -775,7 +775,7 @@ bool FCLCollisionDetector::detect(
         mContactPointComputationMethod);
   broadPhaseAlg->collide(&collData, collisionCallback);
 
-  return !result.contacts.empty();
+  return result.isCollision();
 }
 
 //==============================================================================
@@ -783,7 +783,7 @@ bool FCLCollisionDetector::detect(
     CollisionGroup* group1, CollisionGroup* group2,
     const Option& option, Result& result)
 {
-  result.contacts.clear();
+  result.clear();
 
   if (!group1 || !group2)
     return false;
@@ -814,7 +814,7 @@ bool FCLCollisionDetector::detect(
         mContactPointComputationMethod);
   broadPhaseAlg1->collide(broadPhaseAlg2, &collData, collisionCallback);
 
-  return !result.contacts.empty();
+  return result.isCollision();
 }
 
 //==============================================================================
@@ -999,8 +999,8 @@ bool collisionCallback(
     postProcessFCL(fclResult, o1, o2, option, result);
   }
 
-  if ((option.binaryCheck && !result.contacts.empty())
-      || (result.contacts.size() >= option.maxNumContacts))
+  if ((option.binaryCheck && result.isCollision())
+      || (result.getNumContacts() >= option.maxNumContacts))
   {
     collData->done = true;
     return true;
@@ -1093,10 +1093,10 @@ void postProcessFCL(const fcl::CollisionResult& fclResult,
     if (!markForDeletion[i])
     {
       const auto fclContact = fclResult.getContact(i);
-      result.contacts.push_back(convertContact(fclContact, o1, o2));
+      result.addContact(convertContact(fclContact, o1, o2));
     }
 
-    if (result.contacts.size() >= option.maxNumContacts)
+    if (result.getNumContacts() >= option.maxNumContacts)
       break;
   }
 }
@@ -1235,7 +1235,7 @@ void postProcessDART(const fcl::CollisionResult& fclResult,
 
     if (option.binaryCheck)
     {
-      result.contacts.push_back(unfiltered[i]);
+      result.addContact(unfiltered[i]);
       return;
     }
   }
@@ -1243,9 +1243,9 @@ void postProcessDART(const fcl::CollisionResult& fclResult,
   for (auto i = 0u; i < unfilteredSize; ++i)
   {
     if (!markForDeletion[i])
-      result.contacts.push_back(unfiltered[i]);
+      result.addContact(unfiltered[i]);
 
-    if (result.contacts.size() >= option.maxNumContacts)
+    if (result.getNumContacts() >= option.maxNumContacts)
       break;
   }
 }

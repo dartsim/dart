@@ -43,12 +43,36 @@
 namespace dart {
 namespace collision {
 
-struct Result
+class Result
 {
-  /// List of contact information for each contact
-  std::vector<Contact> contacts;
+public:
 
-  size_t getNumContacts() const { return contacts.size(); }
+  /// Add one contact
+  void addContact(const Contact& contact);
+
+  /// Return number of contacts
+  size_t getNumContacts() const;
+
+  /// Return the index-th contact
+  Contact& getContact(size_t index);
+
+  /// Return (const) the index-th contact
+  const Contact& getContact(size_t index) const;
+
+  /// Return contacts
+  const std::vector<Contact>& getContacts() const;
+
+  /// Return binary collision result
+  bool isCollision() const;
+
+  /// Clear all the contacts
+  void clear();
+
+protected:
+
+  /// List of contact information for each contact
+  std::vector<Contact> mContacts;
+
 };
 
 }  // namespace collision

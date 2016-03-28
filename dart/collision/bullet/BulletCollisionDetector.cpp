@@ -75,8 +75,8 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
     if (mDone)
       return false;
 
-    if ((mOption.binaryCheck && !mResult.contacts.empty())
-        || (mResult.contacts.size() >= mOption.maxNumContacts))
+    if ((mOption.binaryCheck && mResult.isCollision())
+        || (mResult.getNumContacts() >= mOption.maxNumContacts))
     {
       mDone = true;
       return false;
@@ -165,7 +165,7 @@ std::shared_ptr<CollisionGroup> BulletCollisionDetector::createCollisionGroup()
 bool BulletCollisionDetector::detect(
     CollisionGroup* group, const Option& option, Result& result)
 {
-  result.contacts.clear();
+  result.clear();
 
   if (!group)
     return false;
@@ -188,7 +188,7 @@ bool BulletCollisionDetector::detect(
 
   convertContacts(bulletCollisionWorld, option, result);
 
-  return !result.contacts.empty();
+  return result.isCollision();
 }
 
 //==============================================================================
@@ -196,7 +196,7 @@ bool BulletCollisionDetector::detect(
     CollisionGroup* group1, CollisionGroup* group2,
     const Option& option, Result& result)
 {
-  result.contacts.clear();
+  result.clear();
 
   if (!group1 || !group2)
     return false;
@@ -226,7 +226,7 @@ bool BulletCollisionDetector::detect(
 
   convertContacts(bulletCollisionWorld, option, result);
 
-  return !result.contacts.empty();
+  return result.isCollision();
 }
 
 //==============================================================================
@@ -745,12 +745,12 @@ void convertContacts(
     {
       auto& cp = contactManifold->getContactPoint(j);
 
-      result.contacts.push_back(convertContact(cp, userDataA, userDataB));
+      result.addContact(convertContact(cp, userDataA, userDataB));
 
       if (option.binaryCheck)
         return;
 
-      if (result.contacts.size() >= option.maxNumContacts)
+      if (result.getNumContacts() >= option.maxNumContacts)
         break;
     }
   }

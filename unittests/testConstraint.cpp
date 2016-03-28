@@ -189,11 +189,9 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
     world->step();
 
     const auto& result = world->getConstraintSolver()->getLastCollisionResult();
-    const auto& contacts = result.contacts;
 
-    for (size_t j = 0; j < contacts.size(); ++j)
+    for (const auto& contact : result.getContacts())
     {
-      const Contact& contact = contacts[j];
       Vector3d pos1 = sphere->getTransform().inverse() * contact.point;
       Vector3d vel1 = sphere->getLinearVelocity(pos1);
 

@@ -379,7 +379,7 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   // Update automatic constraints: contact constraints
   //----------------------------------------------------------------------------
-  mCollisionResult.contacts.clear();
+  mCollisionResult.clear();
 
   mCollisionGroup->detect(mCollisionOption, mCollisionResult);
 
@@ -390,9 +390,9 @@ void ConstraintSolver::updateConstraints()
   mSoftContactConstraints.clear();
 
   // Create new contact constraints
-  for (auto i = 0u; i < mCollisionResult.contacts.size(); ++i)
+  for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
   {
-    collision::Contact& ct = mCollisionResult.contacts[i];
+    auto& ct = mCollisionResult.getContact(i);
 
     if (isSoftContact(ct))
     {

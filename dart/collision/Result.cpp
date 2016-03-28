@@ -39,5 +39,51 @@
 namespace dart {
 namespace collision {
 
+//==============================================================================
+void Result::addContact(const Contact& contact)
+{
+  mContacts.push_back(contact);
+}
+
+//==============================================================================
+size_t Result::getNumContacts() const
+{
+  return mContacts.size();
+}
+
+//==============================================================================
+Contact& Result::getContact(size_t index)
+{
+  assert(index < mContacts.size());
+
+  return mContacts[index];
+}
+
+//==============================================================================
+const Contact& Result::getContact(size_t index) const
+{
+  assert(index < mContacts.size());
+
+  return mContacts[index];
+}
+
+//==============================================================================
+const std::vector<Contact>& Result::getContacts() const
+{
+  return mContacts;
+}
+
+//==============================================================================
+bool Result::isCollision() const
+{
+  return !mContacts.empty();
+}
+
+//==============================================================================
+void Result::clear()
+{
+  mContacts.clear();
+}
+
 }  // namespace collision
 }  // namespace dart

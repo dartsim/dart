@@ -512,7 +512,7 @@ constraint::ConstraintSolver* World::getConstraintSolver() const
 void World::bake()
 {
   const auto collisionResult = getConstraintSolver()->getLastCollisionResult();
-  const auto nContacts = static_cast<int>(collisionResult.contacts.size());
+  const auto nContacts = static_cast<int>(collisionResult.getNumContacts());
   const auto nSkeletons = getNumSkeletons();
 
   Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
@@ -525,8 +525,8 @@ void World::bake()
   for (auto i = 0; i < nContacts; ++i)
   {
     auto begin = getIndex(nSkeletons) + i * 6;
-    state.segment(begin, 3)     = collisionResult.contacts[i].point;
-    state.segment(begin + 3, 3) = collisionResult.contacts[i].force;
+    state.segment(begin, 3)     = collisionResult.getContact(i).point;
+    state.segment(begin + 3, 3) = collisionResult.getContact(i).force;
   }
 
   mRecording->addState(state);

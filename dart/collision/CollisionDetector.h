@@ -67,7 +67,7 @@ public:
   /// Create a collision group
   virtual std::shared_ptr<CollisionGroup> createCollisionGroup() = 0;
 
-  /// Create a collision group from any object that is supported by
+  /// Create a collision group from any objects that are supported by
   /// CollisionGroup::registerShapeFramesOf(). Currently, the supporting objects
   /// are ShapeFrame, std::vector<ShapeFrame>, CollisionGroup, BodyNode, and
   /// Skeleton.

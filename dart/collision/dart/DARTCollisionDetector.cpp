@@ -92,7 +92,7 @@ bool DARTCollisionDetector::detect(
     CollisionGroup* group,
     const Option& option, Result& result)
 {
-  result.contacts.clear();
+  result.clear();
 
   assert(group);
   assert(group->getCollisionDetector()->getType()
@@ -119,8 +119,8 @@ bool DARTCollisionDetector::detect(
 
       checkPair(collObj1, collObj2, option, result);
 
-      if ((option.binaryCheck && !result.contacts.empty())
-          || (result.contacts.size() >= option.maxNumContacts))
+      if ((option.binaryCheck && result.isCollision())
+          || (result.getNumContacts() >= option.maxNumContacts))
       {
         done = true;
         break;
@@ -131,7 +131,7 @@ bool DARTCollisionDetector::detect(
       break;
   }
 
-  return !result.contacts.empty();
+  return result.isCollision();
 }
 
 //==============================================================================
@@ -140,7 +140,7 @@ bool DARTCollisionDetector::detect(
     CollisionGroup* group2,
     const Option& option, Result& result)
 {
-  result.contacts.clear();
+  result.clear();
 
   assert(group1);
   assert(group2);
@@ -171,7 +171,7 @@ bool DARTCollisionDetector::detect(
 
       checkPair(collObj1, collObj2, option, result);
 
-      if (result.contacts.size() >= option.maxNumContacts)
+      if (result.getNumContacts() >= option.maxNumContacts)
       {
         done = true;
         break;
@@ -182,7 +182,7 @@ bool DARTCollisionDetector::detect(
       break;
   }
 
-  return !result.contacts.empty();
+  return result.isCollision();
 }
 
 //==============================================================================
@@ -257,7 +257,7 @@ bool checkPair(CollisionObject* o1, CollisionObject* o2,
   // Perform narrow-phase detection
   auto colliding = collide(o1->getShape(), o1->getTransform(),
                            o2->getShape(), o2->getTransform(),
-                           &pairResult.contacts);
+                           pairResult);
 
   postProcess(o1, o2, option, result, pairResult);
 
@@ -276,17 +276,17 @@ void postProcess(CollisionObject* o1, CollisionObject* o2,
                  const Option& option,
                  Result& totalResult, const Result& pairResult)
 {
-  if (pairResult.contacts.empty())
+  if (!pairResult.isCollision())
     return;
 
   // Don't add repeated points
   const auto tol = 3.0e-12;
 
-  for (auto pairContact : pairResult.contacts)
+  for (auto pairContact : pairResult.getContacts())
   {
     auto foundClose = false;
 
-    for (auto totalContact : totalResult.contacts)
+    for (auto totalContact : totalResult.getContacts())
     {
       if (isClose(pairContact.point, totalContact.point, tol))
       {
@@ -298,14 +298,15 @@ void postProcess(CollisionObject* o1, CollisionObject* o2,
     if (foundClose)
       continue;
 
-    totalResult.contacts.push_back(pairContact);
-    totalResult.contacts.back().collisionObject1 = o1;
-    totalResult.contacts.back().collisionObject2 = o2;
+    auto contact = pairContact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
+    totalResult.addContact(contact);
 
     if (option.binaryCheck)
       break;
 
-    if (totalResult.contacts.size() >= option.maxNumContacts)
+    if (totalResult.getNumContacts() >= option.maxNumContacts)
       break;
   }
 }

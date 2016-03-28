@@ -641,16 +641,15 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
   Eigen::Vector3d min = Eigen::Vector3d(-0.25, 0.25, 0.0);
   Eigen::Vector3d max = Eigen::Vector3d(0.25, 0.5, 0.0);
 
-  const auto numContacts = result.contacts.size();
+  const auto numContacts = result.getNumContacts();
 
   const auto checkNumContacts = (numContacts <= 4u);
   EXPECT_TRUE(checkNumContacts);
   if (!checkNumContacts)
     std::cout << "# of contants: " << numContacts << "\n";
 
-  for (auto i = 0u; i < numContacts; ++i)
+  for (const auto& contact : result.getContacts())
   {
-    const auto& contact = result.contacts[i];
     const auto& point = contact.point;
 
     const auto result = checkBoundingBox(min, max, point, tol);
@@ -720,24 +719,24 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   collision::Option option;
   collision::Result result;
 
-  result.contacts.clear();
+  result.clear();
   option.maxNumContacts = 1000u;
   option.binaryCheck = false;
   EXPECT_TRUE(group->detect(option, result));
-  EXPECT_EQ(result.contacts.size(), 4u);
+  EXPECT_EQ(result.getNumContacts(), 4u);
 
-  result.contacts.clear();
+  result.clear();
   option.maxNumContacts = 2u;
   option.binaryCheck = false;
   EXPECT_TRUE(group->detect(option, result));
-  EXPECT_EQ(result.contacts.size(), 2u);
+  EXPECT_EQ(result.getNumContacts(), 2u);
 
   group->registerShapeFrame(simpleFrame3.get());
-  result.contacts.clear();
+  result.clear();
   option.maxNumContacts = 1e+3;
   option.binaryCheck = true;
   EXPECT_TRUE(group->detect(option, result));
-  EXPECT_EQ(result.contacts.size(), 1u);
+  EXPECT_EQ(result.getNumContacts(), 1u);
 }
 
 //==============================================================================
