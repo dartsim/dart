@@ -42,7 +42,7 @@
 
 #include "dart/renderer/LoadOpengl.hpp"
 #include "dart/renderer/RenderInterface.hpp"
-#include "dart/gui/lodepng.hpp"
+#include "dart/gui/lodepng.h"
 
 namespace dart {
 namespace gui {

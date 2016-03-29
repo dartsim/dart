@@ -1,6 +1,6 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.hpp")
+file(GLOB hdrs "*.hpp" "*.h")
 
 include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 
