@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.h"
+#include "dart/dart.hpp"
 
-#include "apps/rigidLoop/MyWindow.h"
+#include "apps/rigidLoop/MyWindow.hpp"
 
 using namespace dart;
 using namespace math;

@@ -35,26 +35,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
 #include <queue>
 #include <string>
 #include <vector>
 
-#include "dart/common/Console.h"
-#include "dart/common/StlHelpers.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/ShapeNode.h"
-#include "dart/dynamics/EndEffector.h"
-#include "dart/dynamics/InverseKinematics.h"
-#include "dart/dynamics/Marker.h"
-#include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/StlHelpers.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/InverseKinematics.hpp"
+#include "dart/dynamics/Marker.hpp"
+#include "dart/dynamics/PointMass.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 
 namespace dart {
 namespace dynamics {

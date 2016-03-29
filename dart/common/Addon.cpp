@@ -38,8 +38,8 @@
 #include <string>
 #include <iostream>
 
-#include "dart/common/Addon.h"
-#include "dart/common/Console.h"
+#include "dart/common/Addon.hpp"
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace common {

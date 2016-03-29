@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletTypes.h"
+#include "dart/collision/bullet/BulletTypes.hpp"
 
 namespace dart {
 namespace collision {

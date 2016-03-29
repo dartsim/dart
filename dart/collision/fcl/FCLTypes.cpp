@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLTypes.h"
+#include "dart/collision/fcl/FCLTypes.hpp"
 
 namespace dart {
 namespace collision {

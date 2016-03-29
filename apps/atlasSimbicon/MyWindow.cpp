@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/atlasSimbicon/MyWindow.h"
+#include "apps/atlasSimbicon/MyWindow.hpp"
 
 //==============================================================================
 MyWindow::MyWindow(Controller* _controller)

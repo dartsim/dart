@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Signal.h"
+#include "dart/common/Signal.hpp"
 
 namespace dart {
 namespace common {

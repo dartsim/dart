@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/FileInfoWorld.h"
+#include "dart/utils/FileInfoWorld.hpp"
 
 #include <fstream>
 #include <string>
 
-#include "dart/simulation/Recording.h"
+#include "dart/simulation/Recording.hpp"
 
 namespace dart {
 namespace utils {

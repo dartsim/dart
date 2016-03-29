@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/osg/TrackballManipulator.h"
+#include "dart/gui/osg/TrackballManipulator.hpp"
 
 namespace dart {
 namespace gui {

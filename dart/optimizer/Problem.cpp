@@ -35,14 +35,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/Problem.h"
+#include "dart/optimizer/Problem.hpp"
 
 #include <algorithm>
 #include <limits>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/optimizer/Function.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/optimizer/Function.hpp"
 
 namespace dart {
 namespace optimizer {

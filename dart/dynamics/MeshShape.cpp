@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/MeshShape.hpp"
 
 #include <limits>
 #include <string>
@@ -44,12 +44,12 @@
 #include <assimp/postprocess.h>
 #include <assimp/cimport.h>
 
-#include "dart/config.h"
-#include "dart/renderer/RenderInterface.h"
-#include "dart/common/Console.h"
-#include "dart/dynamics/AssimpInputResourceAdaptor.h"
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/Uri.h"
+#include "dart/config.hpp"
+#include "dart/renderer/RenderInterface.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
+#include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
 
 #if !(ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
 // We define our own constructor and destructor for aiScene, because it seems to

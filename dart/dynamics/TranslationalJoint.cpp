@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/TranslationalJoint.h"
+#include "dart/dynamics/TranslationalJoint.hpp"
 
 #include <string>
 
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {

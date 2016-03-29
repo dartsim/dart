@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/Result.h"
+#include "dart/collision/Result.hpp"
 
 namespace dart {
 namespace collision {

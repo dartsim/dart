@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/Solver.h"
-#include "dart/optimizer/Problem.h"
+#include "dart/optimizer/Solver.hpp"
+#include "dart/optimizer/Problem.hpp"
 
 namespace dart {
 namespace optimizer {

@@ -41,19 +41,19 @@
 #include <fcl/shape/geometric_shapes.h>
 #include <fcl/narrowphase/narrowphase.h>
 
-#include "dart/config.h"
-#include "dart/common/common.h"
-#include "dart/math/math.h"
-#include "dart/collision/CollisionGroup.h"
-#include "dart/collision/fcl/FCLCollisionDetector.h"
-#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/config.hpp"
+#include "dart/common/common.hpp"
+#include "dart/math/math.hpp"
+#include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #if HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.h"
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 #endif
-#include "dart/dynamics/dynamics.h"
-#include "dart/simulation/simulation.h"
-#include "dart/utils/utils.h"
-#include "TestHelpers.h"
+#include "dart/dynamics/dynamics.hpp"
+#include "dart/simulation/simulation.hpp"
+#include "dart/utils/utils.hpp"
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace common;

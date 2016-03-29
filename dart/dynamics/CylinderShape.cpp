@@ -35,8 +35,8 @@
  */
 
 #include <cmath>
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/renderer/RenderInterface.h"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/renderer/RenderInterface.hpp"
 
 namespace dart {
 namespace dynamics {

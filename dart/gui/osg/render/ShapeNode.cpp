@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/osg/render/ShapeNode.h"
-#include "dart/gui/osg/ShapeFrameNode.h"
-#include "dart/dynamics/SimpleFrame.h"
+#include "dart/gui/osg/render/ShapeNode.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
 namespace gui {

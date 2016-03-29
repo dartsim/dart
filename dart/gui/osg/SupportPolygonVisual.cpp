@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/math/Helpers.h"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/math/Helpers.hpp"
 
-#include "SupportPolygonVisual.h"
+#include "SupportPolygonVisual.hpp"
 
 namespace dart {
 namespace gui {

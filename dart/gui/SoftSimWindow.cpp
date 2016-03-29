@@ -40,9 +40,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/SoftSimWindow.h"
+#include "dart/gui/SoftSimWindow.hpp"
 
-#include "dart/gui/LoadGlut.h"
+#include "dart/gui/LoadGlut.hpp"
 
 namespace dart {
 namespace gui {

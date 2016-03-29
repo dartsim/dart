@@ -40,17 +40,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/World.h"
+#include "dart/simulation/World.hpp"
 
 #include <iostream>
 #include <string>
 #include <vector>
 
-#include "dart/common/Console.h"
-#include "dart/integration/SemiImplicitEulerIntegrator.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/constraint/ConstraintSolver.h"
-#include "dart/collision/CollisionGroup.h"
+#include "dart/common/Console.hpp"
+#include "dart/integration/SemiImplicitEulerIntegrator.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/collision/CollisionGroup.hpp"
 
 namespace dart {
 namespace simulation {

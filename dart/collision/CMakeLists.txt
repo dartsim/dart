@@ -1,8 +1,8 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
-file(GLOB detail_hdrs "detail/*.h")
+file(GLOB detail_hdrs "detail/*.hpp")
 
 # Add subdirectories
 add_subdirectory(dart)
@@ -19,11 +19,11 @@ dart_get_filename_components(header_names "collision headers" ${hdrs})
 set(
   header_names
   ${header_names}
-  dart/dart.h
-  fcl/fcl.h
+  dart/dart.hpp
+  fcl/fcl.hpp
 )
 if(HAVE_BULLET_COLLISION)
-  set(header_names ${header_names} bullet/bullet.h)
+  set(header_names ${header_names} bullet/bullet.hpp)
 endif()
 dart_generate_include_header_list(
   collision_headers
@@ -32,13 +32,13 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/collision.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/collision.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/collision.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/collision.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/collision.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/collision.hpp
   DESTINATION include/dart/collision
   COMPONENT headers
 )

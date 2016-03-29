@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/GLFuncs.h"
+#include "dart/gui/GLFuncs.hpp"
 
 #include <cstdio>
 #include <iostream>
@@ -42,8 +42,8 @@
 
 #include <Eigen/Eigen>
 
-#include "dart/gui/LoadGlut.h"
-#include "dart/renderer/LoadOpengl.h"
+#include "dart/gui/LoadGlut.hpp"
+#include "dart/renderer/LoadOpengl.hpp"
 
 namespace dart {
 namespace gui {

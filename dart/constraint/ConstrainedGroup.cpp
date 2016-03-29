@@ -34,15 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/ConstrainedGroup.h"
+#include "dart/constraint/ConstrainedGroup.hpp"
 
 #include <algorithm>
 #include <iostream>
 #include <vector>
 
-#include "dart/common/Console.h"
-#include "dart/constraint/ConstraintBase.h"
-#include "dart/constraint/ConstraintSolver.h"
+#include "dart/common/Console.hpp"
+#include "dart/constraint/ConstraintBase.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 
 namespace dart {
 namespace constraint {

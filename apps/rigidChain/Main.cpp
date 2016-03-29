@@ -35,9 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.h"
+#include "dart/dart.hpp"
 
-#include "apps/rigidChain/MyWindow.h"
+#include "apps/rigidChain/MyWindow.hpp"
 
 int main(int argc, char* argv[]) {
   // create and initialize the world

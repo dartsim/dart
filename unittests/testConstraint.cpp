@@ -40,16 +40,16 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/collision/dart/DARTCollisionDetector.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/utils/SkelParser.hpp"
 
 //==============================================================================
 class ConstraintTest : public ::testing::Test

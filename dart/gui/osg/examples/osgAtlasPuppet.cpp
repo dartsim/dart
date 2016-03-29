@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.h>
-#include <dart/gui/osg/osg.h>
-#include <dart/utils/utils.h>
+#include <dart/dart.hpp>
+#include <dart/gui/osg/osg.hpp>
+#include <dart/utils/utils.hpp>
 
 using namespace dart::common;
 using namespace dart::dynamics;

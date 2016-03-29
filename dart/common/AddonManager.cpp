@@ -37,8 +37,8 @@
 #include <cassert>
 #include <iostream>
 
-#include "dart/common/Console.h"
-#include "dart/common/AddonManager.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/AddonManager.hpp"
 
 namespace dart {
 namespace common {

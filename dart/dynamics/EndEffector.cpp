@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/EndEffector.h"
-#include "dart/dynamics/BodyNode.h"
+#include "dart/common/Console.hpp"
+#include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
 namespace dynamics {

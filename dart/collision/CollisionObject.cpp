@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.h"
+#include "dart/collision/CollisionObject.hpp"
 
-#include "dart/collision/CollisionDetector.h"
-#include "dart/dynamics/ShapeFrame.h"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
 
 namespace dart {
 namespace collision {

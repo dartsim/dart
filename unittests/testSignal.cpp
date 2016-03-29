@@ -37,7 +37,7 @@
 #include <numeric>
 #include <gtest/gtest.h>
 
-#include "dart/dart.h"
+#include "dart/dart.hpp"
 
 using namespace std;
 using namespace Eigen;

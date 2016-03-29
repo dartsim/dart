@@ -1,6 +1,6 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 
 include_directories(SYSTEM ${FLANN_INCLUDE_DIRS})
 
@@ -17,13 +17,13 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/planning.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/planning.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/planning.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/planning.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.hpp
   DESTINATION include/dart/planning
   COMPONENT headers
 )

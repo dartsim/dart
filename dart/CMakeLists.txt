@@ -21,9 +21,9 @@ add_subdirectory(renderer)
 add_subdirectory(simulation)
 
 # Set header and source files
-get_filename_component(dart_h "dart.h" ABSOLUTE)
+get_filename_component(dart_hpp "dart.hpp" ABSOLUTE)
 set(dart_hdrs
-  ${dart_h}
+  ${dart_hpp}
   ${dart_common_hdrs}
   ${dart_math_hdrs}
   ${dart_integration_hdrs}
@@ -59,7 +59,7 @@ if(MSVC)
   )
 endif()
 
-install(FILES dart.h DESTINATION include/dart/ COMPONENT headers)
+install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 install(TARGETS dart EXPORT DARTTargets DESTINATION lib)
 
 # Coverage test files

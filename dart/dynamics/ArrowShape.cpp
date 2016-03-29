@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ArrowShape.h"
+#include "dart/dynamics/ArrowShape.hpp"
 
 namespace dart {
 namespace dynamics {

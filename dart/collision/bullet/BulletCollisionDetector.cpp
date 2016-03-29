@@ -34,24 +34,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletCollisionDetector.h"
+#include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
 #include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
 
-#include "dart/common/Console.h"
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionFilter.h"
-#include "dart/collision/bullet/BulletTypes.h"
-#include "dart/collision/bullet/BulletCollisionObject.h"
-#include "dart/collision/bullet/BulletCollisionGroup.h"
-#include "dart/dynamics/ShapeFrame.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SoftMeshShape.h"
+#include "dart/common/Console.hpp"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/bullet/BulletTypes.hpp"
+#include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/collision/bullet/BulletCollisionGroup.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 
 namespace dart {
 namespace collision {

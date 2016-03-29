@@ -35,9 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/Function.h"
+#include "dart/optimizer/Function.hpp"
 
-#include "dart/common/Console.h"
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace optimizer {

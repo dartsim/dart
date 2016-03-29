@@ -1,6 +1,6 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 
 include_directories(SYSTEM ${IPOPT_INCLUDE_DIRS})
 
@@ -17,13 +17,13 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/nlopt.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/nlopt.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/nlopt.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/nlopt.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/nlopt.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/nlopt.hpp
   DESTINATION include/dart/optimizer/nlopt
   COMPONENT headers
 )

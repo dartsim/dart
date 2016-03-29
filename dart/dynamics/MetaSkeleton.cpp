@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/MetaSkeleton.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/common/Console.hpp"
+#include "dart/dynamics/MetaSkeleton.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -42,9 +42,9 @@
 
 #include <iostream>
 
-#include "dart/dart.h"
+#include "dart/dart.hpp"
 
-#include "apps/softBodies/MyWindow.h"
+#include "apps/softBodies/MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {

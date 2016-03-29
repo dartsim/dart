@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Chain.h"
-#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/Chain.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -34,18 +34,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/SoftContactConstraint.h"
+#include "dart/constraint/SoftContactConstraint.hpp"
 
 #include <iostream>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/collision/CollisionObject.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/PointMass.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/lcpsolver/lcp.h"
 
 #define DART_ERROR_ALLOWANCE 0.0

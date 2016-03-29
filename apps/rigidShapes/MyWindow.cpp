@@ -40,7 +40,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "MyWindow.h"
+#include "MyWindow.hpp"
 
 using namespace std;
 using namespace Eigen;

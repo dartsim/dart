@@ -1,7 +1,7 @@
 # Search all header and source files
 file(GLOB srcs "*.cpp" "detail/*.cpp")
-file(GLOB hdrs "*.h")
-file(GLOB detail "detail/*.h")
+file(GLOB hdrs "*.hpp")
+file(GLOB detail "detail/*.hpp")
 
 set(dart_dynamics_hdrs "${hdrs};${detail}" PARENT_SCOPE)
 set(dart_dynamics_srcs ${srcs} PARENT_SCOPE)
@@ -15,13 +15,13 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/dynamics.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/dynamics.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/dynamics.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
   DESTINATION include/dart/dynamics
   COMPONENT headers
 )

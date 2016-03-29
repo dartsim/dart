@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ScrewJoint.h"
+#include "dart/dynamics/ScrewJoint.hpp"
 
 namespace dart {
 namespace dynamics {

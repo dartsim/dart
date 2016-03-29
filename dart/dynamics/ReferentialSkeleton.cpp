@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ReferentialSkeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/dynamics/ReferentialSkeleton.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 
 namespace dart {
 namespace dynamics {

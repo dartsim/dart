@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Timer.h"
+#include "dart/common/Timer.hpp"
 
 #include <ctime>
 #include <iostream>

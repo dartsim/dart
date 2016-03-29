@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/jointConstraints/MyWindow.h"
+#include "apps/jointConstraints/MyWindow.hpp"
 
 #include <iostream>
 
-#include "dart/dart.h"
-#include "dart/gui/gui.h"
+#include "dart/dart.hpp"
+#include "dart/gui/gui.hpp"
 
 using namespace dart;
 using namespace dynamics;

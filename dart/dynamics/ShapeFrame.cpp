@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ShapeFrame.h"
+#include "dart/dynamics/ShapeFrame.hpp"
 
-#include "dart/dynamics/ShapeNode.h"
-#include "dart/renderer/OpenGLRenderInterface.h"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/renderer/OpenGLRenderInterface.hpp"
 
 namespace dart {
 namespace dynamics {

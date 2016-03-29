@@ -39,18 +39,18 @@
 #include <osg/OperationThread>
 #include <osgDB/WriteFile>
 
-#include "dart/gui/osg/Viewer.h"
-#include "dart/gui/osg/TrackballManipulator.h"
-#include "dart/gui/osg/DefaultEventHandler.h"
-#include "dart/gui/osg/DragAndDrop.h"
-#include "dart/gui/osg/WorldNode.h"
-#include "dart/gui/osg/Utils.h"
+#include "dart/gui/osg/Viewer.hpp"
+#include "dart/gui/osg/TrackballManipulator.hpp"
+#include "dart/gui/osg/DefaultEventHandler.hpp"
+#include "dart/gui/osg/DragAndDrop.hpp"
+#include "dart/gui/osg/WorldNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
-#include "dart/simulation/World.h"
+#include "dart/simulation/World.hpp"
 
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
 namespace gui {

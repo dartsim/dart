@@ -35,9 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/integration/RK4Integrator.h"
+#include "dart/integration/RK4Integrator.hpp"
 
-#include "dart/math/MathTypes.h"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace integration {

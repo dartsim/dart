@@ -42,8 +42,8 @@ const int default_ik_iterations = 4500;
 const double default_force =  50.0; // N
 const int default_countdown = 100;  // Number of timesteps for applying force
 
-#include "dart/dart.h"
-#include "dart/gui/gui.h"
+#include "dart/dart.hpp"
+#include "dart/gui/gui.hpp"
 
 using namespace dart::common;
 using namespace dart::dynamics;

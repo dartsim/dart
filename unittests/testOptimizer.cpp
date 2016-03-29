@@ -41,23 +41,23 @@
 #include <sstream>
 #include <gtest/gtest.h>
 #include <Eigen/Dense>
-#include "TestHelpers.h"
-#include "dart/config.h"
-#include "dart/common/Console.h"
-#include "dart/optimizer/Function.h"
-#include "dart/optimizer/Problem.h"
-#include "dart/optimizer/GradientDescentSolver.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/InverseKinematics.h"
+#include "TestHelpers.hpp"
+#include "dart/config.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/optimizer/Function.hpp"
+#include "dart/optimizer/Problem.hpp"
+#include "dart/optimizer/GradientDescentSolver.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/InverseKinematics.hpp"
 #if HAVE_NLOPT
-  #include "dart/optimizer/nlopt/NloptSolver.h"
+  #include "dart/optimizer/nlopt/NloptSolver.hpp"
 #endif
 #if HAVE_IPOPT
-  #include "dart/optimizer/ipopt/IpoptSolver.h"
+  #include "dart/optimizer/ipopt/IpoptSolver.hpp"
 #endif
 #if HAVE_SNOPT
-  #include "dart/optimizer/snopt/SnoptSolver.h"
+  #include "dart/optimizer/snopt/SnoptSolver.hpp"
 #endif
 
 using namespace std;
