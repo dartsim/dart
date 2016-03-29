@@ -69,9 +69,6 @@ if(MSVC)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
-option(DART_BUILD_EXAMPLES "Build examples" ON)
-option(DART_BUILD_TUTORIALS "Build tutorials" ON)
-option(DART_BUILD_UNITTESTS "Build unit tests" ON)
 option(DART_COVERALLS "Turn on coveralls support" OFF)
 option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
 
@@ -223,9 +220,6 @@ message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
 message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 message(STATUS "ENABLE_OPENMP    : ${ENABLE_OPENMP}")
 message(STATUS "Build osgDart    : ${DART_BUILD_OSGDART}")
-message(STATUS "Build examples   : ${DART_BUILD_EXAMPLES}")
-message(STATUS "Build tutorials  : ${DART_BUILD_TUTORIALS}")
-message(STATUS "Build unit tests : ${DART_BUILD_UNITTESTS}")
 message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
 if(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELEASE")
@@ -275,24 +269,66 @@ install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 install(FILES package.xml DESTINATION share/${PROJECT_NAME})
 
 #===============================================================================
+# Helper Functions
+#===============================================================================
+
+set_property(GLOBAL PROPERTY DART_EXAMPLES)
+set_property(GLOBAL PROPERTY DART_TUTORIALS)
+set_property(GLOBAL PROPERTY DART_UNITTESTS)
+
+function(dart_add_example target_name)
+  set_property(GLOBAL APPEND PROPERTY DART_EXAMPLES "${target_name}")
+endfunction(dart_add_example)
+
+function(dart_add_tutorial target_name)
+  set_property(GLOBAL APPEND PROPERTY DART_TUTORIALS "${target_name}")
+endfunction(dart_add_tutorial)
+
+function(dart_add_unittest target_name)
+  set_property(GLOBAL APPEND PROPERTY DART_UNITTESTS "${target_name}")
+endfunction(dart_add_unittest)
+
+#===============================================================================
 # Add sub-directories
 #===============================================================================
+
 add_subdirectory(dart)
+add_subdirectory(apps EXCLUDE_FROM_ALL)
+add_subdirectory(tutorials EXCLUDE_FROM_ALL)
 
-# Unit tests
-if(DART_BUILD_UNITTESTS)
-  enable_testing()
-  add_subdirectory(unittests)
-endif(DART_BUILD_UNITTESTS)
+# Add a "tutorials" target to build tutorials.
+get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
+add_custom_target(tutorials DEPENDS ${tutorials})
 
-# Examples
-if(DART_BUILD_EXAMPLES)
-  add_subdirectory(apps)
-endif(DART_BUILD_EXAMPLES)
+message(STATUS "")
+message(STATUS "[ Tutorials ]")
+foreach(tutorial ${tutorials})
+  message(STATUS "Adding tutorial: ${tutorial}")
+endforeach(tutorial ${tutorials})
 
-if(DART_BUILD_TUTORIALS)
-  add_subdirectory(tutorials)
-endif()
+# Add an "examples" target to build examples.
+get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
+add_custom_target(examples DEPENDS ${examples})
+
+message(STATUS "")
+message(STATUS "[ Examples ]")
+
+foreach(example ${examples})
+  message(STATUS "Adding example: ${example}")
+endforeach(example ${examples})
+
+# Add a "tests" target to build unit tests.
+enable_testing()
+add_subdirectory(unittests EXCLUDE_FROM_ALL)
+
+get_property(unittests GLOBAL PROPERTY DART_UNITTESTS)
+add_custom_target(tests DEPENDS ${unittests})
+
+message(STATUS "")
+message(STATUS "[ Unit Tests ]")
+foreach(unittest ${unittests})
+  message(STATUS "Adding test: ${unittest}")
+endforeach(unittest ${unittests})
 
 #===============================================================================
 # Export targets

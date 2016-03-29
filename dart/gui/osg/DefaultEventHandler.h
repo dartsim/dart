@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_DEFAULTEVENTHANDLER_H
-#define OSGDART_DEFAULTEVENTHANDLER_H
+#ifndef DART_GUI_OSG_DEFAULTEVENTHANDLER_H
+#define DART_GUI_OSG_DEFAULTEVENTHANDLER_H
 
 #include <vector>
 #include <array>
@@ -199,7 +199,7 @@ protected:
   virtual void handleDestructionNotification(
       const dart::common::Subject* _subject) override;
 
-  /// osgDart::Viewer that this event handler is tied to
+  /// dart::gui::osg::Viewer that this event handler is tied to
   Viewer* mViewer;
 
   /// Set of MouseEventHandlers that are tied to this DefaultEventHandler
@@ -236,4 +236,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // OSGDART_DEFAULTEVENTHANDLER_H
+#endif // DART_GUI_OSG_DEFAULTEVENTHANDLER_H

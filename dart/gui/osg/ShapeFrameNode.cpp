@@ -156,9 +156,9 @@ void ShapeFrameNode::refreshShapeNode(
 static void warnAboutUnsuccessfulCast(const std::string& shapeType,
                                       const std::string& entityName)
 {
-  dtwarn << "[osgDart::EntityNode::createShapeNode] A Shape in '" << entityName
-         << "' claimed to be a '" << shapeType << "' but it failed to be "
-         << "dynamically cast to that type. "
+  dtwarn << "[dart::gui::osg::EntityNode::createShapeNode] A Shape in '"
+         << entityName << "' claimed to be a '" << shapeType
+         << "' but it failed to be dynamically cast to that type. "
          << "It will not be added to the OSG tree, "
          << "and therefore will not be rendered\n";
 }

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_VIEWER_H
-#define OSGDART_VIEWER_H
+#ifndef DART_GUI_OSG_VIEWER_H
+#define DART_GUI_OSG_VIEWER_H
 
 #include <map>
 #include <unordered_set>
@@ -119,7 +119,7 @@ class Viewer : public osgViewer::Viewer, public dart::common::Subject
 {
 public:
 
-  /// Constructor for osgDart::Viewer. This will automatically create the
+  /// Constructor for dart::gui::osg::Viewer. This will automatically create the
   /// default event handler.
   Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9,0.9,0.9,1.0));
 
@@ -157,7 +157,7 @@ public:
   /// Returns true if the Viewer is currently recording.
   bool isRecording() const;
 
-  /// Creates the default event handler for this osgDart::Viewer
+  /// Creates the default event handler for this dart::gui::osg::Viewer
   virtual void switchDefaultEventHandler(bool _on);
 
   /// Return a pointer to the default event handler
@@ -317,7 +317,7 @@ protected:
   /// Name for the next screen capture
   std::string mScreenCapName;
 
-  /// Default WorldNodeEventHandler for this osgDart::Viewer
+  /// Default WorldNodeEventHandler for this dart::gui::osg::Viewer
   ::osg::ref_ptr<DefaultEventHandler> mDefaultEventHandler;
 
   /// The root node of this Viewer
@@ -353,8 +353,8 @@ protected:
   /// True iff headlights were last set to be on
   bool mHeadlights;
 
-  /// Map of WorldNodes in this osgDart::Viewer. A WorldNode will map to true
-  /// iff it is currently active
+  /// Map of WorldNodes in this dart::gui::osg::Viewer. A WorldNode will map to
+  /// true iff it is currently active
   std::map<WorldNode*,bool> mWorldNodes;
 
   std::unordered_set<ViewerAttachment*> mAttachments;
@@ -384,4 +384,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // OSGDART_VIEWER_H
+#endif // DART_GUI_OSG_VIEWER_H

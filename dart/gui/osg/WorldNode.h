@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_WORLDNODE_H
-#define OSGDART_WORLDNODE_H
+#ifndef DART_GUI_OSG_WORLDNODE_H
+#define DART_GUI_OSG_WORLDNODE_H
 
 #include <osg/Group>
 #include <unordered_map>
@@ -138,9 +138,9 @@ protected:
   /// Destructor
   virtual ~WorldNode();
 
-  /// Called when this world gets added to an osgDart::Viewer. Override this
-  /// function to customize the way your WorldNode starts up in an
-  /// osgDart::Viewer. Default behavior does nothing.
+  /// Called when this world gets added to an dart::gui::osg::Viewer. Override
+  /// this function to customize the way your WorldNode starts up in an
+  /// dart::gui::osg::Viewer. Default behavior does nothing.
   virtual void setupViewer();
 
   /// Clear the utilization flags of each child node
@@ -183,4 +183,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // OSGDART_WORLDNODE_H
+#endif // DART_GUI_OSG_WORLDNODE_H

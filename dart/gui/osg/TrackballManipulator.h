@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_TRACKBALLMANIPULATOR_H
-#define OSGDART_TRACKBALLMANIPULATOR_H
+#ifndef DART_GUI_OSG_TRACKBALLMANIPULATOR_H
+#define DART_GUI_OSG_TRACKBALLMANIPULATOR_H
 
 #include <osgGA/OrbitManipulator>
 
@@ -77,11 +77,11 @@ public:
                                                const double dy) override;
 
   DART_META_Object( dart-gui-osg, TrackballManipulator )
-  // TODO(MXG): Consider applying the META macros to every osgDart Node
+  // TODO(MXG): Consider applying the META macros to every dart::gui::osg Node
 };
 
 } // namespace osg
 } // namespace gui
 } // namespace dart
 
-#endif // OSGDART_TRACKBALLMANIPULATOR_H
+#endif // DART_GUI_OSG_TRACKBALLMANIPULATOR_H

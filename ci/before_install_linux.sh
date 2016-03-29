@@ -13,6 +13,7 @@ libfcl-dev
 freeglut3-dev
 libxi-dev
 libxmu-dev
+libbullet-dev
 libflann-dev
 libnlopt-dev
 coinor-libipopt-dev

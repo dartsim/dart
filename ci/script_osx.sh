@@ -1,2 +1,2 @@
 make
-make test
+make all tutorials examples tests test

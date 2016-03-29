@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_DRAGANDDROP_H
-#define OSGDART_DRAGANDDROP_H
+#ifndef DART_GUI_OSG_DRAGANDDROP_H
+#define DART_GUI_OSG_DRAGANDDROP_H
 
 #include <functional>
 
@@ -59,7 +59,7 @@ class Viewer;
 class InteractiveFrame;
 
 /// DragAndDrop is a class that facilitates enabling various kinds of dart
-/// Entities to be dragged and dropped in an osgDart environment
+/// Entities to be dragged and dropped in an dart::gui::osg environment
 class DragAndDrop : public dart::common::Subject,
                     public dart::common::Observer
 {
@@ -364,4 +364,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // OSGDART_DRAGANDDROP_H
+#endif // DART_GUI_OSG_DRAGANDDROP_H

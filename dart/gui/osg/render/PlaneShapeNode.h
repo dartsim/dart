@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_RENDER_PLANESHAPENODE_H
-#define OSGDART_RENDER_PLANESHAPENODE_H
+#ifndef DART_GUI_OSG_RENDER_PLANESHAPENODE_H
+#define DART_GUI_OSG_RENDER_PLANESHAPENODE_H
 
 #include <osg/MatrixTransform>
 
@@ -78,4 +78,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // OSGDART_RENDER_PLANESHAPENODE_H
+#endif // DART_GUI_OSG_RENDER_PLANESHAPENODE_H
