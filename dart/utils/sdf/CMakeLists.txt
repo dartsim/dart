@@ -24,3 +24,7 @@ install(
   DESTINATION include/dart/utils/sdf
   COMPONENT headers
 )
+
+# Coverage test files
+set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"
+    CACHE INTERNAL "files for coverage tests")

@@ -20,18 +20,6 @@ add_subdirectory(math)
 add_subdirectory(renderer)
 add_subdirectory(simulation)
 
-if(FLANN_FOUND)
-  add_subdirectory(planning)
-endif()
-
-if(GLUT_FOUND)
-  add_subdirectory(gui)
-endif()
-
-if(TINYXML_FOUND AND TINYXML2_FOUND AND urdfdom_FOUND)
-  add_subdirectory(utils)
-endif()
-
 # Set header and source files
 get_filename_component(dart_h "dart.h" ABSOLUTE)
 set(dart_hdrs
@@ -74,9 +62,24 @@ endif()
 install(FILES dart.h DESTINATION include/dart/ COMPONENT headers)
 install(TARGETS dart EXPORT DARTTargets DESTINATION lib)
 
+# Coverage test files
+set(dart_coveralls_files "${dart_coveralls_files};${dart_hdrs};${dart_srcs}"
+    CACHE INTERNAL "Files for coverage tests" FORCE)
+
+if(FLANN_FOUND)
+  add_subdirectory(planning)
+endif()
+
+if(GLUT_FOUND)
+  add_subdirectory(gui)
+endif()
+
+if(TINYXML_FOUND AND TINYXML2_FOUND AND urdfdom_FOUND)
+  add_subdirectory(utils)
+endif()
+
 # Setup the coveralls target and tell it to gather
 # coverage data for all the lib sources.
 if(DART_COVERALLS)
-  coveralls_setup("${dart_hdrs};${dart_srcs}" ${DART_COVERALLS_UPLOAD})
+  coveralls_setup(${dart_coveralls_files} ${DART_COVERALLS_UPLOAD})
 endif()
-# TODO(JS): Collect all the headers and sources to pass it to coverage setup function

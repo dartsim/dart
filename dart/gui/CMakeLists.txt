@@ -39,3 +39,7 @@ install(
   COMPONENT headers
 )
 install(TARGETS dart-gui EXPORT DARTTargets DESTINATION lib)
+
+# Coverage test files
+set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"
+    CACHE INTERNAL "files for coverage tests")
