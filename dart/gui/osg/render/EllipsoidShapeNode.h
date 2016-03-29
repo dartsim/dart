@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OSGDART_RENDER_ELLIPSOIDSHAPENODE_H
-#define OSGDART_RENDER_ELLIPSOIDSHAPENODE_H
+#ifndef DART_GUI_OSG_RENDER_ELLIPSOIDSHAPENODE_H
+#define DART_GUI_OSG_RENDER_ELLIPSOIDSHAPENODE_H
 
 #include <osg/ShapeDrawable>
 #include <osg/MatrixTransform>
@@ -80,4 +80,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // OSGDART_RENDER_ELLIPSOIDSHAPENODE_H
+#endif // DART_GUI_OSG_RENDER_ELLIPSOIDSHAPENODE_H
