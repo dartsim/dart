@@ -34,9 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ShapeFrame.h"
+#include "dart/dynamics/ShapeFrame.hpp"
 
-#include "dart/renderer/OpenGLRenderInterface.h"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/renderer/OpenGLRenderInterface.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -313,10 +314,41 @@ size_t ShapeFrame::getVersion() const
 }
 
 //==============================================================================
+ShapeFrame* ShapeFrame::asShapeFrame()
+{
+  return this;
+}
+
+//==============================================================================
+const ShapeFrame* ShapeFrame::asShapeFrame() const
+{
+  return this;
+}
+
+//==============================================================================
+bool ShapeFrame::isShapeNode() const
+{
+  return mAmShapeNode;
+}
+
+//==============================================================================
+ShapeNode* ShapeFrame::asShapeNode()
+{
+  return nullptr;
+}
+
+//==============================================================================
+const ShapeNode* ShapeFrame::asShapeNode() const
+{
+  return nullptr;
+}
+
+//==============================================================================
 ShapeFrame::ShapeFrame(Frame* parent, const Properties& properties)
   : common::AddonManager(),
     Entity(ConstructFrame),
     Frame(parent, ""),
+    mAmShapeNode(false),
     mShapeUpdatedSignal(),
     mRelativeTransformUpdatedSignal(),
     onShapeUpdated(mShapeUpdatedSignal),
@@ -333,6 +365,7 @@ ShapeFrame::ShapeFrame(Frame* parent,
   : common::AddonManager(),
     Entity(ConstructFrame),
     Frame(parent, name),
+    mAmShapeNode(false),
     mShapeUpdatedSignal(),
     mRelativeTransformUpdatedSignal(),
     onShapeUpdated(mShapeUpdatedSignal),

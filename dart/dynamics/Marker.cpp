@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Marker.h"
+#include "dart/dynamics/Marker.hpp"
 
 #include <string>
 
-#include "dart/dynamics/BodyNode.h"
-#include "dart/renderer/RenderInterface.h"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/renderer/RenderInterface.hpp"
 
 namespace dart {
 namespace dynamics {

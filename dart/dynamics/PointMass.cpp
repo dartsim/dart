@@ -34,15 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PointMass.h"
+#include "dart/dynamics/PointMass.hpp"
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/renderer/RenderInterface.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/renderer/RenderInterface.hpp"
 
-#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/dynamics/SoftBodyNode.hpp"
 
 using namespace Eigen;
 

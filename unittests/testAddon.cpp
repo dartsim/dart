@@ -41,14 +41,14 @@
 
 #include <gtest/gtest.h>
 
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/common/Subject.h"
-#include "dart/common/sub_ptr.h"
-#include "dart/common/AddonManager.h"
-#include "dart/common/SpecializedForAddon.h"
+#include "dart/common/Subject.hpp"
+#include "dart/common/sub_ptr.hpp"
+#include "dart/common/AddonManager.hpp"
+#include "dart/common/SpecializedForAddon.hpp"
 
-#include "dart/dynamics/EulerJoint.h"
+#include "dart/dynamics/EulerJoint.hpp"
 
 using namespace dart::common;
 

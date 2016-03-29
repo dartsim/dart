@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/LineSegmentShape.h"
-#include "dart/common/Console.h"
-#include "dart/renderer/RenderInterface.h"
-#include "dart/math/Geometry.h"
+#include "dart/dynamics/LineSegmentShape.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/renderer/RenderInterface.hpp"
+#include "dart/math/Geometry.hpp"
 
 namespace dart {
 namespace dynamics {

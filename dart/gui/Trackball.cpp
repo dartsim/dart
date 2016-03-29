@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/Trackball.h"
+#include "dart/gui/Trackball.hpp"
 
-#include "dart/renderer/LoadOpengl.h"
+#include "dart/renderer/LoadOpengl.hpp"
 
 namespace dart {
 namespace gui {

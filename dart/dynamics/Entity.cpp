@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Entity.h"
+#include "dart/dynamics/Entity.hpp"
 
-#include "dart/common/Console.h"
-#include "dart/common/StlHelpers.h"
-#include "dart/dynamics/Frame.h"
-#include "dart/dynamics/Shape.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/StlHelpers.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/Shape.hpp"
 
-#include "dart/renderer/RenderInterface.h"
+#include "dart/renderer/RenderInterface.hpp"
 
 namespace dart {
 namespace dynamics {

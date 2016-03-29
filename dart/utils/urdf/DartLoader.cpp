@@ -1,4 +1,4 @@
-#include "DartLoader.h"
+#include "DartLoader.hpp"
 
 #include <map>
 #include <iostream>
@@ -7,21 +7,21 @@
 #include <urdf_parser/urdf_parser.h>
 #include <urdf_world/world.h>
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/PlanarJoint.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/urdf/urdf_world_parser.h"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/utils/urdf/urdf_world_parser.hpp"
 
 using ModelInterfacePtr = boost::shared_ptr<urdf::ModelInterface>;
 

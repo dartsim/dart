@@ -44,30 +44,30 @@
 #include <Eigen/StdVector>
 #include <tinyxml2.h>
 
-#include "dart/common/Console.h"
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/ResourceRetriever.h"
-#include "dart/common/Uri.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/ScrewJoint.h"
-#include "dart/dynamics/TranslationalJoint.h"
-#include "dart/dynamics/BallJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/EulerJoint.h"
-#include "dart/dynamics/UniversalJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/utils/XmlHelpers.h"
-#include "dart/utils/sdf/SdfParser.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/ScrewJoint.hpp"
+#include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/BallJoint.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/UniversalJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/utils/SkelParser.hpp"
+#include "dart/utils/XmlHelpers.hpp"
+#include "dart/utils/sdf/SdfParser.hpp"
 
 namespace dart {
 namespace utils {
@@ -246,6 +246,9 @@ dynamics::FreeJoint::Properties readFreeJoint(
     const Eigen::Isometry3d& parentModelFrame,
     const std::string& name);
 
+common::ResourceRetrieverPtr getRetriever(
+    const common::ResourceRetrieverPtr& retriever);
+
 } // anonymous namespace
 
 
@@ -253,15 +256,19 @@ dynamics::FreeJoint::Properties readFreeJoint(
 
 //==============================================================================
 simulation::WorldPtr readSdfFile(
-  const common::Uri& fileUri, const common::ResourceRetrieverPtr& retriever)
+  const common::Uri& fileUri,
+    const common::ResourceRetrieverPtr& nullOrRetriever)
 {
-  return readWorld(fileUri, retriever);
+  return readWorld(fileUri, nullOrRetriever);
 }
 
 //==============================================================================
-simulation::WorldPtr readWorld(const common::Uri& fileUri,
-                               const common::ResourceRetrieverPtr& retriever)
+simulation::WorldPtr readWorld(
+    const common::Uri& fileUri,
+    const common::ResourceRetrieverPtr& nullOrRetriever)
 {
+  const auto retriever = getRetriever(nullOrRetriever);
+
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument _dartFile;
@@ -312,8 +319,11 @@ simulation::WorldPtr readWorld(const common::Uri& fileUri,
 
 //==============================================================================
 dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& fileUri, const common::ResourceRetrieverPtr& retriever)
+    const common::Uri& fileUri,
+    const common::ResourceRetrieverPtr& nullOrRetriever)
 {
+  const auto retriever = getRetriever(nullOrRetriever);
+
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument _dartFile;
@@ -1472,7 +1482,17 @@ dynamics::FreeJoint::Properties readFreeJoint(
   return dynamics::FreeJoint::Properties();
 }
 
-} // anonymouse
+//==============================================================================
+common::ResourceRetrieverPtr getRetriever(
+  const common::ResourceRetrieverPtr& retriever)
+{
+  if(retriever)
+    return retriever;
+  else
+    return std::make_shared<common::LocalResourceRetriever>();
+}
+
+} // anonymous namespace
 
 } // namespace SdfParser
 

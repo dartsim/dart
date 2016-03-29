@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/SkelParser.h"
+#include "dart/utils/SkelParser.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -43,40 +43,40 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "dart/config.h"
-#include "dart/common/Console.h"
+#include "dart/config.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/collision/CollisionObject.hpp"
 #if HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.h"
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 #endif
-#include "dart/collision/dart/DARTCollisionDetector.h"
-#include "dart/collision/fcl/FCLCollisionDetector.h"
-#include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#include "dart/constraint/ConstraintSolver.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/ShapeNode.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SoftMeshShape.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/SingleDofJoint.h"
-#include "dart/dynamics/MultiDofJoint.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/ScrewJoint.h"
-#include "dart/dynamics/TranslationalJoint.h"
-#include "dart/dynamics/BallJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/EulerJoint.h"
-#include "dart/dynamics/UniversalJoint.h"
-#include "dart/dynamics/PlanarJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/Marker.h"
-#include "dart/utils/XmlHelpers.h"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/SingleDofJoint.hpp"
+#include "dart/dynamics/MultiDofJoint.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/ScrewJoint.hpp"
+#include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/BallJoint.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/UniversalJoint.hpp"
+#include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/Marker.hpp"
+#include "dart/utils/XmlHelpers.hpp"
 
 namespace dart {
 
@@ -715,21 +715,35 @@ simulation::WorldPtr readWorld(
     }
 
     // Collision detector
-    std::unique_ptr<collision::CollisionDetector> collision_detector;
+    std::shared_ptr<collision::CollisionDetector> collision_detector;
 
     if (hasElement(physicsElement, "collision_detector"))
     {
       std::string strCD = getValueString(physicsElement, "collision_detector");
 
       if (strCD == "fcl_mesh")
-        collision_detector.reset(new collision::FCLMeshCollisionDetector);
+      {
+        collision_detector = collision::FCLCollisionDetector::create();
+        auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
+              collision_detector);
+        cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+        cd->setContactPointComputationMethod(
+              collision::FCLCollisionDetector::DART);
+      }
       else if (strCD == "fcl")
-        collision_detector.reset(new collision::FCLCollisionDetector);
+      {
+        collision_detector = collision::FCLCollisionDetector::create();
+        auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
+              collision_detector);
+        cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
+        cd->setContactPointComputationMethod(
+              collision::FCLCollisionDetector::DART);
+      }
       else if (strCD == "dart")
-        collision_detector.reset(new collision::DARTCollisionDetector);
+        collision_detector = collision::DARTCollisionDetector::create();
 #if HAVE_BULLET_COLLISION
       else if (strCD == "bullet")
-        collision_detector.reset(new collision::BulletCollisionDetector);
+        collision_detector = collision::BulletCollisionDetector::create();
 #endif
       else
         dtwarn << "Unknown collision detector[" << strCD << "]. "
@@ -737,10 +751,16 @@ simulation::WorldPtr readWorld(
     }
 
     if (!collision_detector)
-      collision_detector.reset(new collision::FCLMeshCollisionDetector);
+    {
+      collision_detector = collision::FCLCollisionDetector::create();
+      auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
+            collision_detector);
+      cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+      cd->setContactPointComputationMethod(
+            collision::FCLCollisionDetector::DART);
+    }
 
-    newWorld->getConstraintSolver()->setCollisionDetector(
-      std::move(collision_detector));
+    newWorld->getConstraintSolver()->setCollisionDetector(collision_detector);
   }
 
   //--------------------------------------------------------------------------
@@ -2391,6 +2411,7 @@ JointPropPtr readFreeJoint(
       properties);
 }
 
+//==============================================================================
 common::ResourceRetrieverPtr getRetriever(
   const common::ResourceRetrieverPtr& _retriever)
 {

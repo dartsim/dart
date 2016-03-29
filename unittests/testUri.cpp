@@ -35,8 +35,8 @@
  */
 
 #include <gtest/gtest.h>
-#include "dart/common/Uri.h"
-#include "TestHelpers.h"
+#include "dart/common/Uri.hpp"
+#include "TestHelpers.hpp"
 
 using dart::common::Uri;
 

@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Inertia.h"
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
+#include "dart/dynamics/Inertia.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
 
 namespace dart {
 namespace dynamics {

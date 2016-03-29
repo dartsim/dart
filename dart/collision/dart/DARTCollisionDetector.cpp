@@ -34,139 +34,284 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 
-#include <vector>
-
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/collision/dart/DARTCollide.h"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/dart/DARTCollide.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/DARTCollisionGroup.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
 
 namespace dart {
 namespace collision {
 
-DARTCollisionDetector::DARTCollisionDetector()
-  : CollisionDetector() {
+namespace {
+
+bool checkPair(CollisionObject* o1, CollisionObject* o2,
+               const Option& option, Result& result);
+
+bool isClose(const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2,
+             double tol);
+
+void postProcess(CollisionObject* o1, CollisionObject* o2, const Option& option,
+                 Result& totalResult, const Result& pairResult);
+
+} // anonymous namespace
+
+
+
+//==============================================================================
+std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
+{
+  return std::shared_ptr<DARTCollisionDetector>(new DARTCollisionDetector());
 }
 
-DARTCollisionDetector::~DARTCollisionDetector() {
+//==============================================================================
+const std::string& DARTCollisionDetector::getTypeStatic()
+{
+  static const std::string& type("DART");
+  return type;
 }
 
-CollisionNode* DARTCollisionDetector::createCollisionNode(
-    dynamics::BodyNode* _bodyNode) {
-  return new CollisionNode(_bodyNode);
+//==============================================================================
+const std::string& DARTCollisionDetector::getType() const
+{
+  return getTypeStatic();
 }
 
-bool DARTCollisionDetector::detectCollision(bool /*_checkAllCollisions*/,
-                                            bool /*_calculateContactPoints*/) {
-  clearAllContacts();
+//==============================================================================
+std::shared_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup()
+{
+  return std::make_shared<DARTCollisionGroup>(shared_from_this());
+}
 
-  // Set all the body nodes are not in colliding
-  for (size_t i = 0; i < mCollisionNodes.size(); i++)
-    mCollisionNodes[i]->getBodyNode()->setColliding(false);
+//==============================================================================
+bool DARTCollisionDetector::detect(
+    CollisionGroup* group,
+    const Option& option, Result& result)
+{
+  result.clear();
 
-  std::vector<Contact> contacts;
+  assert(group);
+  assert(group->getCollisionDetector()->getType()
+         == DARTCollisionDetector::getTypeStatic());
 
-  for (size_t i = 0; i < mCollisionNodes.size(); i++) {
-    for (size_t j = i + 1; j < mCollisionNodes.size(); j++) {
-      CollisionNode* collNode1 = mCollisionNodes[i];
-      CollisionNode* collNode2 = mCollisionNodes[j];
-      dynamics::BodyNode* BodyNode1 = collNode1->getBodyNode();
-      dynamics::BodyNode* BodyNode2 = collNode2->getBodyNode();
+  auto objects = group->getCollisionObjects();
 
-      if (!isCollidable(collNode1, collNode2))
+  if (objects.empty())
+    return false;
+
+  auto done = false;
+  const auto& filter = option.collisionFilter;
+
+  for (auto i = 0u; i < objects.size() - 1; ++i)
+  {
+    auto collObj1 = objects[i];
+
+    for (auto j = i + 1u; j < objects.size(); ++j)
+    {
+      auto collObj2 = objects[j];
+
+      if (filter && !filter->needCollision(collObj1, collObj2))
         continue;
 
-      auto collShapeNodes1 = BodyNode1->getShapeNodesWith<dynamics::CollisionAddon>();
-      for (auto shapeNode1 : collShapeNodes1)
+      checkPair(collObj1, collObj2, option, result);
+
+      if ((option.binaryCheck && result.isCollision())
+          || (result.getNumContacts() >= option.maxNumContacts))
       {
-        auto collShapeNodes2 = BodyNode2->getShapeNodesWith<dynamics::CollisionAddon>();
-        for (auto shapeNode2 : collShapeNodes2)
-        {
-          int currContactNum = mContacts.size();
-
-          contacts.clear();
-          collide(shapeNode1->getShape(), shapeNode1->getWorldTransform(),
-                  shapeNode2->getShape(), shapeNode2->getWorldTransform(),
-                  &contacts);
-
-          size_t numContacts = contacts.size();
-
-          for (unsigned int m = 0; m < numContacts; ++m) {
-            Contact contactPair;
-            contactPair = contacts[m];
-            contactPair.bodyNode1 = BodyNode1;
-            contactPair.bodyNode2 = BodyNode2;
-            assert(contactPair.bodyNode1.lock() != nullptr);
-            assert(contactPair.bodyNode2.lock() != nullptr);
-
-            mContacts.push_back(contactPair);
-          }
-
-          std::vector<bool> markForDeletion(numContacts, false);
-          for (size_t m = 0; m < numContacts; m++) {
-            for (size_t n = m + 1; n < numContacts; n++) {
-              Eigen::Vector3d diff =
-                  mContacts[currContactNum + m].point -
-                  mContacts[currContactNum + n].point;
-              if (diff.dot(diff) < 1e-6) {
-                markForDeletion[m] = true;
-                break;
-              }
-            }
-          }
-
-          for (int m = numContacts - 1; m >= 0; m--)
-          {
-            if (markForDeletion[m])
-              mContacts.erase(mContacts.begin() + currContactNum + m);
-          }
-        }
+        done = true;
+        break;
       }
     }
+
+    if (done)
+      break;
   }
 
-  for (size_t i = 0; i < mContacts.size(); ++i)
-  {
-    // Set these two bodies are in colliding
-    mContacts[i].bodyNode1.lock()->setColliding(true);
-    mContacts[i].bodyNode2.lock()->setColliding(true);
-  }
-
-  return !mContacts.empty();
+  return result.isCollision();
 }
 
-bool DARTCollisionDetector::detectCollision(CollisionNode* _collNode1,
-                                            CollisionNode* _collNode2,
-                                            bool /*_calculateContactPoints*/) {
-  std::vector<Contact> contacts;
-  dynamics::BodyNode* BodyNode1 = _collNode1->getBodyNode();
-  dynamics::BodyNode* BodyNode2 = _collNode2->getBodyNode();
+//==============================================================================
+bool DARTCollisionDetector::detect(
+    CollisionGroup* group1,
+    CollisionGroup* group2,
+    const Option& option, Result& result)
+{
+  result.clear();
 
-  for (auto i = 0u; i < BodyNode1->getNumNodes<dynamics::ShapeNode>(); ++i)
+  assert(group1);
+  assert(group2);
+  assert(group1->getCollisionDetector()->getType()
+         == DARTCollisionDetector::getTypeStatic());
+  assert(group2->getCollisionDetector()->getType()
+         == DARTCollisionDetector::getTypeStatic());
+
+  auto objects1 = group1->getCollisionObjects();
+  auto objects2 = group2->getCollisionObjects();
+
+  if (objects1.empty() || objects2.empty())
+    return false;
+
+  auto done = false;
+  const auto& filter = option.collisionFilter;
+
+  for (auto i = 0u; i < objects1.size(); ++i)
   {
-    auto shapeNode1 = BodyNode1->getNode<dynamics::ShapeNode>(i);
+    auto collObj1 = objects1[i];
 
-    auto collisionAddon = shapeNode1->get<dynamics::CollisionAddon>();
-    if (!collisionAddon)
-      continue;
-
-    for (auto j = 0u; j < BodyNode2->getNumNodes<dynamics::ShapeNode>(); ++j)
+    for (auto j = 0u; j < objects2.size(); ++j)
     {
-      auto shapeNode2 = BodyNode2->getNode<dynamics::ShapeNode>(j);
+      auto collObj2 = objects2[j];
 
-      auto collisionAddon = shapeNode2->get<dynamics::CollisionAddon>();
-      if (!collisionAddon)
+      if (filter && !filter->needCollision(collObj1, collObj2))
         continue;
 
-      collide(shapeNode1->getShape(), shapeNode1->getWorldTransform(),
-              shapeNode2->getShape(), shapeNode2->getWorldTransform(),
-              &contacts);
+      checkPair(collObj1, collObj2, option, result);
+
+      if (result.getNumContacts() >= option.maxNumContacts)
+      {
+        done = true;
+        break;
+      }
     }
+
+    if (done)
+      break;
   }
 
-  return contacts.size() > 0 ? true : false;
+  return result.isCollision();
 }
 
-}  // namespace collision
-}  // namespace dart
+//==============================================================================
+DARTCollisionDetector::DARTCollisionDetector()
+{
+  mCollisionObjectManager.reset(new RefCountingCollisionObjectManager(this));
+}
+
+//==============================================================================
+void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
+{
+  if (!shapeFrame)
+    return;
+
+  const auto& shape = shapeFrame->getShape();
+
+  if (shape->getShapeType() == dynamics::Shape::BOX)
+    return;
+
+  if (shape->getShapeType() == dynamics::Shape::ELLIPSOID)
+  {
+    const auto& ellipsoid
+        = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
+    if (ellipsoid->isSphere())
+      return;
+  }
+
+  dterr << "[DARTCollisionDetector] Attempting to create shape type '"
+        << shapeFrame->getShape()->getShapeType() << "' that is not supported "
+        << "by DARTCollisionDetector. Currently, only BoxShape and "
+        << "EllipsoidShape (only when all the radii are equal) are "
+        << "supported. This shape will always get penetrated by other "
+        << "objects.\n";
+}
+
+//==============================================================================
+std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
+    const dynamics::ShapeFrame* shapeFrame)
+{
+  auto collObj = new DARTCollisionObject(this, shapeFrame);
+
+  warnUnsupportedShapeType(shapeFrame);
+
+  mDARTCollisionObjects.push_back(collObj);
+
+  return std::unique_ptr<CollisionObject>(collObj);
+}
+
+//==============================================================================
+void DARTCollisionDetector::notifyCollisionObjectDestorying(
+    CollisionObject* collObj)
+{
+  if (!collObj)
+    return;
+
+  auto casted = static_cast<DARTCollisionObject*>(collObj);
+  mDARTCollisionObjects.erase(
+        std::remove(mDARTCollisionObjects.begin(), mDARTCollisionObjects.end(),
+                    casted), mDARTCollisionObjects.end());
+}
+
+
+
+namespace {
+
+//==============================================================================
+bool checkPair(CollisionObject* o1, CollisionObject* o2,
+               const Option& option, Result& result)
+{
+  Result pairResult;
+
+  // Perform narrow-phase detection
+  auto colliding = collide(o1->getShape(), o1->getTransform(),
+                           o2->getShape(), o2->getTransform(),
+                           pairResult);
+
+  postProcess(o1, o2, option, result, pairResult);
+
+  return colliding != 0;
+}
+
+//==============================================================================
+bool isClose(const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2,
+             double tol)
+{
+  return (pos1 - pos2).norm() < tol;
+}
+
+//==============================================================================
+void postProcess(CollisionObject* o1, CollisionObject* o2,
+                 const Option& option,
+                 Result& totalResult, const Result& pairResult)
+{
+  if (!pairResult.isCollision())
+    return;
+
+  // Don't add repeated points
+  const auto tol = 3.0e-12;
+
+  for (auto pairContact : pairResult.getContacts())
+  {
+    auto foundClose = false;
+
+    for (auto totalContact : totalResult.getContacts())
+    {
+      if (isClose(pairContact.point, totalContact.point, tol))
+      {
+        foundClose = true;
+        break;
+      }
+    }
+
+    if (foundClose)
+      continue;
+
+    auto contact = pairContact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
+    totalResult.addContact(contact);
+
+    if (option.binaryCheck)
+      break;
+
+    if (totalResult.getNumContacts() >= option.maxNumContacts)
+      break;
+  }
+}
+
+} // anonymous namespace
+
+} // namespace collision
+} // namespace dart

@@ -35,8 +35,8 @@
  */
 
 #include <gtest/gtest.h>
-#include "dart/utils/CompositeResourceRetriever.h"
-#include "TestHelpers.h"
+#include "dart/utils/CompositeResourceRetriever.hpp"
+#include "TestHelpers.hpp"
 
 using dart::common::Uri;
 using dart::common::Resource;

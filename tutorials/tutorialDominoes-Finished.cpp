@@ -34,7 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.h"
+#include "dart/dart.hpp"
+#include "dart/gui/gui.hpp"
 
 const double default_domino_height = 0.3;
 const double default_domino_width = 0.4 * default_domino_height;
@@ -262,36 +263,19 @@ public:
 
     newDomino->setPositions(x);
 
-    mWorld->addSkeleton(newDomino);
-
-    // Compute collisions
-    dart::collision::CollisionDetector* detector =
-        mWorld->getConstraintSolver()->getCollisionDetector();
-    detector->detectCollision(true, true);
-
     // Look through the collisions to see if any dominoes are penetrating
     // something
-    bool dominoCollision = false;
-    size_t collisionCount = detector->getNumContacts();
-    for(size_t i = 0; i < collisionCount; ++i)
-    {
-      // If neither of the colliding BodyNodes belongs to the floor, then we
-      // know the new domino is in contact with something it shouldn't be
-      const dart::collision::Contact& contact = detector->getContact(i);
-      if(contact.bodyNode1.lock()->getSkeleton() != mFloor
-         && contact.bodyNode2.lock()->getSkeleton() != mFloor)
-      {
-        dominoCollision = true;
-        break;
-      }
-    }
+    auto collisionEngine = mWorld->getConstraintSolver()->getCollisionDetector();
+    auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
+    auto newGroup = collisionEngine->createCollisionGroup(newDomino.get());
 
-    if(dominoCollision)
-    {
-      // Remove the new domino, because it is penetrating an existing one
-      mWorld->removeSkeleton(newDomino);
-    }
-    else
+    dart::collision::Option option;
+    dart::collision::Result result;
+    bool dominoCollision
+        = collisionGroup->detect(newGroup.get(), option, result);
+
+    // If the new domino is not penetrating an existing one
+    if(!dominoCollision)
     {
       // Record the latest domino addition
       mAngles.push_back(angle);

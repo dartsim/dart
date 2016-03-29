@@ -34,22 +34,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/dynamics/SoftBodyNode.hpp"
 
 #include <map>
 #include <string>
 #include <vector>
 
-#include "dart/math/Helpers.h"
-#include "dart/common/Console.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/renderer/LoadOpengl.h"
-#include "dart/renderer/RenderInterface.h"
+#include "dart/math/Helpers.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/renderer/LoadOpengl.hpp"
+#include "dart/renderer/RenderInterface.hpp"
 
-#include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SoftMeshShape.h"
+#include "dart/dynamics/PointMass.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -68,9 +68,9 @@ foreach(test ${tests})
   dart_add_unittest(${base})
 
   if(MSVC)
-    target_link_libraries(${base} dart optimized gtest debug gtestd)
+    target_link_libraries(${base} dart dart-utils dart-utils-urdf optimized gtest debug gtestd)
   else()
-    target_link_libraries(${base} dart gtest)
+    target_link_libraries(${base} dart dart-utils dart-utils-urdf gtest)
   endif()
 
   set_target_properties(${base} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")

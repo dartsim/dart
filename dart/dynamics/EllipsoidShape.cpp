@@ -35,9 +35,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/EllipsoidShape.hpp"
 
-#include "dart/renderer/RenderInterface.h"
+#include "dart/renderer/RenderInterface.hpp"
 
 namespace dart {
 namespace dynamics {

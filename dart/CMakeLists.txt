@@ -19,16 +19,11 @@ add_subdirectory(lcpsolver)
 add_subdirectory(math)
 add_subdirectory(renderer)
 add_subdirectory(simulation)
-if(NOT BUILD_CORE_ONLY)
-  add_subdirectory(gui)
-  add_subdirectory(planning)
-  add_subdirectory(utils)
-endif()
 
 # Set header and source files
-get_filename_component(dart_core_h "dart-core.h" ABSOLUTE)
-set(dart_core_hdrs
-  ${dart_core_h}
+get_filename_component(dart_hpp "dart.hpp" ABSOLUTE)
+set(dart_hdrs
+  ${dart_hpp}
   ${dart_common_hdrs}
   ${dart_math_hdrs}
   ${dart_integration_hdrs}
@@ -40,7 +35,7 @@ set(dart_core_hdrs
   ${dart_renderer_hdrs}
   ${dart_simulation_hdrs}
 )
-set(dart_core_srcs
+set(dart_srcs
   ${dart_common_srcs}
   ${dart_math_srcs}
   ${dart_integration_srcs}
@@ -52,30 +47,10 @@ set(dart_core_srcs
   ${dart_renderer_srcs}
   ${dart_simulation_srcs}
 )
-if(NOT BUILD_CORE_ONLY)
-  get_filename_component(dart_h "dart.h" ABSOLUTE)
-  set(dart_hdrs
-    ${dart_h}
-    ${dart_gui_hdrs}
-    ${dart_planning_hdrs}
-    ${dart_utils_hdrs}
-  )
-  set(dart_srcs
-    ${dart_gui_srcs}
-    ${dart_planning_srcs}
-    ${dart_utils_srcs}
-  )
-endif()
-
-# Library: dart-core
-dart_add_library(dart-core ${dart_core_hdrs} ${dart_core_srcs})
-target_link_libraries(dart-core ${DART_CORE_DEPENDENCIES})
 
 # Library: dart
-if(NOT BUILD_CORE_ONLY)
-  dart_add_library(dart ${dart_hdrs} ${dart_srcs})
-  target_link_libraries(dart dart-core ${DART_DEPENDENCIES})
-endif()
+dart_add_library(dart ${dart_hdrs} ${dart_srcs})
+target_link_libraries(dart ${DART_DEPENDENCIES})
 
 if(MSVC)
   set_target_properties(
@@ -84,22 +59,27 @@ if(MSVC)
   )
 endif()
 
-#install(FILES ${dart_core_hdrs} DESTINATION include/dart/ COMPONENT headers)
-install(FILES dart-core.h DESTINATION include/dart/ COMPONENT headers)
-install(TARGETS dart-core EXPORT DARTCoreTargets DESTINATION lib)
-if(NOT BUILD_CORE_ONLY)
-#  install(FILES ${dart_hdrs} DESTINATION include/dart/ COMPONENT headers)
-  install(FILES dart.h DESTINATION include/dart/ COMPONENT headers)
-  install(TARGETS dart-core dart EXPORT DARTTargets DESTINATION lib)
+install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
+install(TARGETS dart EXPORT DARTTargets DESTINATION lib)
+
+# Coverage test files
+set(dart_coveralls_files "${dart_coveralls_files};${dart_hdrs};${dart_srcs}"
+    CACHE INTERNAL "Files for coverage tests" FORCE)
+
+if(FLANN_FOUND)
+  add_subdirectory(planning)
+endif()
+
+if(GLUT_FOUND)
+  add_subdirectory(gui)
+endif()
+
+if(TINYXML_FOUND AND TINYXML2_FOUND AND urdfdom_FOUND)
+  add_subdirectory(utils)
 endif()
 
 # Setup the coveralls target and tell it to gather
 # coverage data for all the lib sources.
 if(DART_COVERALLS)
-  if(BUILD_CORE_ONLY)
-    message(SEND_ERROR "'BUILD_CORE_ONLY' option is 'on'. This option should be 'off' when 'DART_COVERALLS' option is 'on'.")
-  endif()
-  coveralls_setup("${dart_core_hdrs};${dart_core_srcs};${dart_hdrs};${dart_srcs}" ${DART_COVERALLS_UPLOAD})
+  coveralls_setup(${dart_coveralls_files} ${DART_COVERALLS_UPLOAD})
 endif()
-
-

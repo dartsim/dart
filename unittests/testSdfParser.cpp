@@ -36,14 +36,14 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/PlanarJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/sdf/SdfParser.h"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/utils/sdf/SdfParser.hpp"
 
 using namespace dart;
 using namespace math;

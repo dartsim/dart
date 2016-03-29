@@ -37,8 +37,8 @@
 #include <cstring>
 #include <limits>
 #include <iostream>
-#include "dart/common/Console.h"
-#include "LocalResource.h"
+#include "dart/common/Console.hpp"
+#include "LocalResource.hpp"
 
 namespace dart {
 namespace common {

@@ -41,9 +41,9 @@
  * checking, sampling and etc.
  */
 
-#include "RRT.h"
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
+#include "RRT.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include <flann/flann.hpp>
 
 using namespace std;

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Subject.h"
-#include "dart/common/Observer.h"
+#include "dart/common/Subject.hpp"
+#include "dart/common/Observer.hpp"
 
 namespace dart {
 namespace common {

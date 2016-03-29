@@ -40,7 +40,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/mixedChain/MyWindow.h"
+#include "apps/mixedChain/MyWindow.hpp"
 
 #define FORCE_ON_RIGIDBODY 500.0;
 #define FORCE_ON_VERTEX 1.00;

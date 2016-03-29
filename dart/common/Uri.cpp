@@ -34,10 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/common/Uri.hpp"
+
 #include <cassert>
 #include <sstream>
-#include "dart/common/Console.h"
-#include "Uri.h"
+#include "dart/common/Console.hpp"
 
 // std::regex is only implemented in GCC 4.9 and above; i.e. libstdc++ 6.0.20
 // or above. In fact, it contains major bugs in GCC 4.8 [1]. There is no

@@ -36,7 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/VskParser.h"
+#include "dart/utils/VskParser.hpp"
 
 // Standard Library
 #include <map>
@@ -46,10 +46,10 @@
 #include <Eigen/Dense>
 
 // Local Files
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/Uri.h"
-#include "dart/dynamics/dynamics.h"
-#include "dart/utils/XmlHelpers.h"
+#include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/dynamics/dynamics.hpp"
+#include "dart/utils/XmlHelpers.hpp"
 
 #define SCALE_VSK 1.0e-3
 
@@ -155,6 +155,9 @@ void tokenize(const std::string& str,
               std::vector<std::string>& tokens,
               const std::string& delimiters = " ");
 
+common::ResourceRetrieverPtr getRetriever(
+    const common::ResourceRetrieverPtr& retriever);
+
 } // anonymous namespace
 
 //==============================================================================
@@ -183,8 +186,10 @@ VskParser::Options::Options(
 
 //==============================================================================
 dynamics::SkeletonPtr VskParser::readSkeleton(const common::Uri& fileUri,
-                                              const Options options)
+                                              Options options)
 {
+  options.retrieverOrNullptr = getRetriever(options.retrieverOrNullptr);
+
   // Load VSK file and create document
   tinyxml2::XMLDocument vskDocument;
   try
@@ -1014,6 +1019,16 @@ void tokenize(const std::string& str,
     // Find next "non-delimiter"
     pos = str.find_first_of(delimiters, lastPos);
   }
+}
+
+//==============================================================================
+common::ResourceRetrieverPtr getRetriever(
+  const common::ResourceRetrieverPtr& retriever)
+{
+  if(retriever)
+    return retriever;
+  else
+    return std::make_shared<common::LocalResourceRetriever>();
 }
 
 } // anonymous namespace

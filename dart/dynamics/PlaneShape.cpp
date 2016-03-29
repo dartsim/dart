@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PlaneShape.h"
+#include "dart/dynamics/PlaneShape.hpp"
 
-#include "dart/renderer/RenderInterface.h"
+#include "dart/renderer/RenderInterface.hpp"
 
 namespace dart {
 namespace dynamics {

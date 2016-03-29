@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SingleDofJoint.h"
+#include "dart/dynamics/SingleDofJoint.hpp"
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 
 #define SINGLEDOFJOINT_REPORT_DIM_MISMATCH( func, arg )                        \
   dterr << "[SingleDofJoint::" #func "] Size of " << #arg << "[" << arg .size()\
@@ -497,11 +497,8 @@ void SingleDofJoint::setVelocity(size_t _index, double _velocity)
 
   setVelocityStatic(_velocity);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == VELOCITY)
     mCommand = getVelocityStatic();
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -527,11 +524,8 @@ void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 
   setVelocityStatic(_velocities[0]);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == VELOCITY)
     mCommand = getVelocityStatic();
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -660,11 +654,8 @@ void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
 
   setAccelerationStatic(_acceleration);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommand = getAccelerationStatic();
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -690,11 +681,8 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 
   setAccelerationStatic(_accelerations[0]);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == ACCELERATION)
     mCommand = getAccelerationStatic();
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -818,11 +806,8 @@ void SingleDofJoint::setForce(size_t _index, double _force)
 
   mForce = _force;
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == FORCE)
     mCommand = mForce;
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -848,11 +833,8 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 
   mForce = _forces[0];
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == FORCE)
     mCommand = mForce;
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -866,11 +848,8 @@ void SingleDofJoint::resetForces()
 {
   mForce = 0.0;
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (mJointP.mActuatorType == FORCE)
     mCommand = mForce;
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================

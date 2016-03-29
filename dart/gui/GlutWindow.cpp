@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/GlutWindow.h"
+#include "dart/gui/GlutWindow.hpp"
 
 #ifdef _WIN32
   #include <sys/types.h>
@@ -50,10 +50,10 @@
 #include <iostream>
 #include <vector>
 
-#include "dart/common/Console.h"
-#include "dart/gui/LoadGlut.h"
-#include "dart/gui/GLFuncs.h"
-#include "dart/renderer/OpenGLRenderInterface.h"
+#include "dart/common/Console.hpp"
+#include "dart/gui/LoadGlut.hpp"
+#include "dart/gui/GLFuncs.hpp"
+#include "dart/renderer/OpenGLRenderInterface.hpp"
 
 namespace dart {
 namespace gui {

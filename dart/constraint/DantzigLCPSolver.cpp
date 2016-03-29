@@ -34,17 +34,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DantzigLCPSolver.h"
+#include "dart/constraint/DantzigLCPSolver.hpp"
 
 #ifndef NDEBUG
 #include <iomanip>
 #include <iostream>
 #endif
 
-#include "dart/common/Console.h"
-#include "dart/constraint/ConstraintBase.h"
-#include "dart/constraint/ConstrainedGroup.h"
-#include "dart/lcpsolver/Lemke.h"
+#include "dart/common/Console.hpp"
+#include "dart/constraint/ConstraintBase.hpp"
+#include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/lcpsolver/Lemke.hpp"
 #include "dart/lcpsolver/lcp.h"
 
 namespace dart {

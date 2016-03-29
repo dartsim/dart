@@ -39,20 +39,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/SimWindow.h"
+#include "dart/gui/SimWindow.hpp"
 
 #include <cstdio>
 #include <iostream>
 #include <string>
 
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/constraint/ConstraintSolver.h"
-#include "dart/collision/CollisionDetector.h"
-#include "dart/gui/LoadGlut.h"
-#include "dart/gui/GLFuncs.h"
-#include "dart/utils/FileInfoWorld.h"
-#include "dart/gui/GraphWindow.h"
+#include "dart/simulation/World.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/gui/LoadGlut.hpp"
+#include "dart/gui/GLFuncs.hpp"
+#include "dart/utils/FileInfoWorld.hpp"
+#include "dart/gui/GraphWindow.hpp"
 
 namespace dart {
 namespace gui {
@@ -147,11 +147,11 @@ void SimWindow::draw() {
     }
   } else {
     if (mShowMarkers) {
-      collision::CollisionDetector* cd =
-          mWorld->getConstraintSolver()->getCollisionDetector();
-      for (size_t k = 0; k < cd->getNumContacts(); k++) {
-        Eigen::Vector3d v = cd->getContact(k).point;
-        Eigen::Vector3d f = cd->getContact(k).force / 10.0;
+      const auto result =
+          mWorld->getConstraintSolver()->getLastCollisionResult();
+      for (const auto& contact : result.getContacts()) {
+        Eigen::Vector3d v = contact.point;
+        Eigen::Vector3d f = contact.force / 10.0;
         glBegin(GL_LINES);
         glVertex3f(v[0], v[1], v[2]);
         glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);

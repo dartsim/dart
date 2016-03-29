@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/SimpleFrame.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -147,11 +147,42 @@ void SimpleFrame::setRelativeTransform(
 }
 
 //==============================================================================
+void SimpleFrame::setRelativeTranslation(const Eigen::Vector3d& _newTranslation)
+{
+  mRelativeTf.translation() = _newTranslation;
+  notifyTransformUpdate();
+}
+
+//==============================================================================
+void SimpleFrame::setRelativeRotation(const Eigen::Matrix3d& _newRotation)
+{
+  mRelativeTf.linear() = _newRotation;
+  notifyTransformUpdate();
+}
+
+//==============================================================================
 void SimpleFrame::setTransform(const Eigen::Isometry3d& _newTransform,
                                const Frame* _withRespectTo)
 {
   setRelativeTransform(
         _withRespectTo->getTransform(getParentFrame()) * _newTransform);
+}
+
+//==============================================================================
+void SimpleFrame::setTranslation(const Eigen::Vector3d& _newTranslation,
+                                 const Frame* _withRespectTo)
+{
+  setRelativeTranslation(
+        _withRespectTo->getTransform(getParentFrame()) * _newTranslation);
+}
+
+//==============================================================================
+void SimpleFrame::setRotation(const Eigen::Matrix3d& _newRotation,
+                              const Frame* _withRespectTo)
+{
+  setRelativeRotation(
+        _withRespectTo->getTransform(getParentFrame()).linear()
+        * _newRotation);
 }
 
 //==============================================================================

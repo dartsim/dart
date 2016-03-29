@@ -1,4 +1,4 @@
-#include "Jitter.h"
+#include "Jitter.hpp"
 
 namespace dart {
 namespace gui {

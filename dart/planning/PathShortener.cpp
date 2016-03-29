@@ -1,8 +1,8 @@
-#include "PathShortener.h"
-#include "dart/simulation/World.h"
-#include "RRT.h"
-#include "dart/collision/CollisionDetector.h"
-#include "dart/dynamics/Skeleton.h"
+#include "PathShortener.hpp"
+#include "dart/simulation/World.hpp"
+#include "RRT.hpp"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include <ctime>
 #include <cstdio>
 

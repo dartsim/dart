@@ -41,8 +41,8 @@
  */
 
 #include <iostream>
-#include "dart/dart.h"
-#include "MyWindow.h"
+#include "dart/dart.hpp"
+#include "MyWindow.hpp"
 
 #include <fcl/config.h>
 
@@ -53,10 +53,7 @@ int main(int argc, char* argv[])
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(DART_DATA_PATH"skel/shapes.skel");
   assert(myWorld != NULL);
-#ifndef FCL_DART5
-  myWorld->getConstraintSolver()->setCollisionDetector(
-        dart::common::make_unique<dart::collision::FCLMeshCollisionDetector>());
-#endif
+
   // create a window and link it to the world
   MyWindow window;
   window.setWorld(myWorld);
