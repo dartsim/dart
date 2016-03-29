@@ -168,6 +168,7 @@ if(ASSIMP_FOUND)
   include(CheckCXXSourceCompiles)
   set(CMAKE_REQUIRED_INCLUDES ${ASSIMP_INCLUDE_DIRS})
   set(CMAKE_REQUIRED_LIBRARIES ${ASSIMP_LIBRARIES})
+  set(CMAKE_REQUIRED_QUIET TRUE)
 
   check_cxx_source_compiles(
   "
@@ -211,6 +212,7 @@ if(ASSIMP_FOUND)
 
   unset(CMAKE_REQUIRED_INCLUDES)
   unset(CMAKE_REQUIRED_LIBRARIES)
+  unset(CMAKE_REQUIRED_QUIET)
 
 else()
   message(SEND_ERROR "Looking for ASSIMP - NOT found, please install libassimp-dev (>= 3.0.0)")
