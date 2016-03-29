@@ -80,6 +80,8 @@ struct EmbeddedStateData
   }
 };
 
+struct SecondEmbeddedStateData { };
+
 struct EmbeddedPropertiesData
 {
   bool b;
@@ -106,6 +108,8 @@ struct EmbeddedPropertiesData
     return !(*this == other);
   }
 };
+
+struct SecondEmbeddedPropertiesData { };
 
 class EmbeddedStateComposite :
     public EmbedState<EmbeddedStateComposite, EmbeddedStateData>
@@ -157,6 +161,63 @@ public:
     mAspectProperties = properties;
   }
 
+};
+
+class InheritAndEmbedStateComposite :
+    public EmbedStateOnTopOf<
+        InheritAndEmbedStateComposite,
+        SecondEmbeddedStateData,
+        EmbeddedStateComposite>
+{
+public:
+
+  InheritAndEmbedStateComposite()
+  {
+    create<Aspect>();
+  }
+
+  void setAspectState(const AspectState& state) { mAspectState = state; }
+};
+
+class InheritAndEmbedPropertiesComposite :
+    public EmbedPropertiesOnTopOf<
+        InheritAndEmbedPropertiesComposite,
+        SecondEmbeddedPropertiesData,
+        EmbeddedPropertiesComposite>
+{
+public:
+
+  InheritAndEmbedPropertiesComposite()
+  {
+    create<Aspect>();
+  }
+
+  void setAspectProperties(const AspectProperties& properties)
+  {
+    mAspectProperties = properties;
+  }
+};
+
+class InheritAndEmbedStateAndPropertiesComposite :
+    public EmbedStateAndPropertiesOnTopOf<
+        InheritAndEmbedStateAndPropertiesComposite,
+        SecondEmbeddedStateData,
+        SecondEmbeddedPropertiesData,
+        EmbeddedStateAndPropertiesComposite>
+{
+public:
+
+  InheritAndEmbedStateAndPropertiesComposite()
+  {
+    create<Aspect>();
+  }
+
+  void setAspectState(const AspectState& state) { mAspectState = state; }
+
+  void setAspectProperties(const AspectProperties& properties)
+  {
+    mAspectProperties = properties;
+  }
 };
 
 // Testing the creation of an Aspect using the AspectWithState template class
@@ -788,6 +849,41 @@ TEST(Aspect, Embedded)
              sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getAspectProperties());
   EXPECT_EQ(&sp.getAspectProperties(),
              sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getAspectProperties());
+
+  sp.setAspectState(s.getAspectState());
+  sp.setAspectProperties(p.getAspectProperties());
+
+
+  // --------- Test Inheritance -----------
+  InheritAndEmbedStateComposite s_derived;
+  EXPECT_NE(s_derived.get<EmbeddedStateComposite::Aspect>()->getState(),
+            s.get<EmbeddedStateComposite::Aspect>()->getState());
+  s_derived.setCompositeState(s.getCompositeState());
+  EXPECT_EQ(s_derived.get<EmbeddedStateComposite::Aspect>()->getState(),
+            s.get<EmbeddedStateComposite::Aspect>()->getState());
+
+  InheritAndEmbedPropertiesComposite p_derived;
+  EXPECT_NE(p_derived.get<EmbeddedPropertiesComposite::Aspect>()->getProperties(),
+            p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties());
+  p_derived.setCompositeProperties(p.getCompositeProperties());
+  EXPECT_EQ(p_derived.get<EmbeddedPropertiesComposite::Aspect>()->getProperties(),
+            p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties());
+
+  InheritAndEmbedStateAndPropertiesComposite sp_derived;
+  EXPECT_NE(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState(),
+            sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState());
+  EXPECT_NE(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties(),
+            sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties());
+  sp_derived.setCompositeState(sp.getCompositeState());
+  EXPECT_EQ(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState(),
+            sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState());
+  EXPECT_NE(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties(),
+            sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties());
+  sp_derived.setCompositeProperties(sp.getCompositeProperties());
+  EXPECT_EQ(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState(),
+            sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState());
+  EXPECT_EQ(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties(),
+            sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties());
 }
 
 int main(int argc, char* argv[])

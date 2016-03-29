@@ -39,6 +39,7 @@
 
 #include "dart/common/detail/EmbeddedAspect.h"
 #include "dart/common/RequiresAspect.h"
+#include "dart/common/CompositeJoiner.h"
 
 namespace dart {
 namespace common {
@@ -107,6 +108,29 @@ protected:
 };
 
 //==============================================================================
+/// This is an alternative to EmbedState which allows your class to also inherit
+/// other Composite objects by listing them as the third (and later) template
+/// arguments.
+template <class DerivedT, typename StateDataT, typename... BaseComposites>
+class EmbedStateOnTopOf : public CompositeJoiner<
+    EmbedState<DerivedT, StateDataT>, BaseComposites...>
+{
+public:
+
+  using Impl = EmbedState<DerivedT, StateDataT>;
+  using Derived = typename Impl::Derived;
+  using AspectStateData = typename Impl::AspectStateData;
+  using AspectState = typename Impl::AspectState;
+  using Aspect = typename Impl::Aspect;
+  using Impl::getAspectState;
+
+protected:
+
+  using Impl::mAspectState;
+
+};
+
+//==============================================================================
 /// This is the implementation of a standard embedded-properties Aspect. Inherit
 /// the EmbedProperties (next class down in the header) to use this Aspect
 /// implementation.
@@ -167,6 +191,29 @@ protected:
 
   /// Aspect::Properties data, directly accessible to your derived class
   AspectProperties mAspectProperties;
+
+};
+
+//==============================================================================
+/// This is an alternative to EmbedProperties which allows your class to also
+/// inherit other Composite objects by listing them as the third (and later)
+/// template arguments.
+template <class DerivedT, typename PropertiesDataT, typename... CompositeBases>
+class EmbedPropertiesOnTopOf : public CompositeJoiner<
+    EmbedProperties<DerivedT, PropertiesDataT>, CompositeBases...>
+{
+public:
+
+  using Impl = EmbedProperties<DerivedT, PropertiesDataT>;
+  using Derived = typename Impl::Derived;
+  using AspectPropertiesData = typename Impl::AspectPropertiesData;
+  using AspectProperties = typename Impl::AspectProperties;
+  using Aspect = typename Impl::Aspect;
+  using Impl::getAspectProperties;
+
+protected:
+
+  using Impl::mAspectProperties;
 
 };
 
@@ -281,6 +328,36 @@ protected:
   AspectProperties mAspectProperties;
 
 };
+
+//==============================================================================
+/// This is an alternative to EmbedStateAndProperties which allows your class to
+/// also inherit other Composite objects by listing them as the fourth (and
+/// later) template arguments.
+template <class DerivedT, typename StateDataT, typename PropertiesDataT,
+          typename... CompositeBases>
+class EmbedStateAndPropertiesOnTopOf : public CompositeJoiner<
+    EmbedStateAndProperties<DerivedT, StateDataT, PropertiesDataT>,
+    CompositeBases...>
+{
+public:
+
+  using Impl = EmbedStateAndProperties<DerivedT, StateDataT, PropertiesDataT>;
+  using Derived = typename Impl::Derived;
+  using AspectStateData = typename Impl::AspectStateData;
+  using AspectState = typename Impl::AspectState;
+  using AspectPropertiesData = typename Impl::AspectPropertiesData;
+  using AspectProperties = typename Impl::AspectProperties;
+  using Aspect = typename Impl::Aspect;
+  using Impl::getAspectState;
+  using Impl::getAspectProperties;
+
+protected:
+
+  using Impl::mAspectState;
+  using Impl::mAspectProperties;
+
+};
+
 
 } // namespace common
 } // namespace dart
