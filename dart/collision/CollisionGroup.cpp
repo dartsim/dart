@@ -268,9 +268,9 @@ size_t CollisionGroup::getNumShapeFrames() const
 }
 
 //==============================================================================
-const dynamics::ShapeFrame*CollisionGroup::getShapeFrame(size_t index) const
+const dynamics::ShapeFrame* CollisionGroup::getShapeFrame(size_t index) const
 {
-  common::getVectorObjectIfAvailable(index, mShapeFrames);
+  return common::getVectorObjectIfAvailable(index, mShapeFrames);
 }
 
 //==============================================================================
