@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_FILEINFOWORLD_H_
-#define DART_UTILS_FILEINFOWORLD_H_
+#ifndef DART_UTILS_FILEINFOWORLD_HPP_
+#define DART_UTILS_FILEINFOWORLD_HPP_
 
 namespace dart {
 
@@ -76,4 +76,4 @@ protected:
 }  // namespace utils
 }  // namespace dart
 
-#endif  // DART_UTILS_FILEINFOWORLD_H_
+#endif  // DART_UTILS_FILEINFOWORLD_HPP_

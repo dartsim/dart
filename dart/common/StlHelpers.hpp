@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_STLHELPERS_H_
-#define DART_COMMON_STLHELPERS_H_
+#ifndef DART_COMMON_STLHELPERS_HPP_
+#define DART_COMMON_STLHELPERS_HPP_
 
 #include <cassert>
 #include <cstddef>
@@ -73,4 +73,4 @@ static T getVectorObjectIfAvailable(size_t index, const std::vector<T>& vec)
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_EMPTY_H_
+#endif // DART_COMMON_EMPTY_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_EXTENSIBLE_H_
-#define DART_COMMON_DETAIL_EXTENSIBLE_H_
+#ifndef DART_COMMON_DETAIL_EXTENSIBLE_HPP_
+#define DART_COMMON_DETAIL_EXTENSIBLE_HPP_
 
 #include "dart/common/Extensible.hpp"
 #include "dart/common/StlHelpers.hpp"
@@ -321,4 +321,4 @@ const std::vector<T>& ExtensibleVector<T>::getVector() const
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_EXTENSIBLE_H_
+#endif // DART_COMMON_DETAIL_EXTENSIBLE_HPP_

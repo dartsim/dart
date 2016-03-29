@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_H_
-#define DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_H_
+#ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
+#define DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_
 
 #include <assimp/cfileio.h>
 #include <assimp/IOStream.hpp>
@@ -127,4 +127,4 @@ aiFileIO createFileIO(Assimp::IOSystem* adaptor);
 } // namespace dynamics
 } // namespace dart
 
-#endif // ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_H_
+#endif // ifndef DART_DYNAMICS_ASSIMPINPUTRESOURCEADAPTOR_HPP_

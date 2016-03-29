@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SPECIALIZEDNODEMANAGER_H_
-#define DART_DYNAMICS_SPECIALIZEDNODEMANAGER_H_
+#ifndef DART_DYNAMICS_SPECIALIZEDNODEMANAGER_HPP_
+#define DART_DYNAMICS_SPECIALIZEDNODEMANAGER_HPP_
 
 #include "dart/common/Virtual.hpp"
 #include "dart/dynamics/detail/BasicNodeManager.hpp"
@@ -221,4 +221,4 @@ class SkeletonSpecializedFor<SpecNode1, OtherSpecNodes...> :
 
 #include "dart/dynamics/detail/SpecializedNodeManager.hpp"
 
-#endif // DART_DYNAMICS_SPECIALIZEDNODEMANAGER_H_
+#endif // DART_DYNAMICS_SPECIALIZEDNODEMANAGER_HPP_

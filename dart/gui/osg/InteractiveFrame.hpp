@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OSG_INTERACTIVEFRAME_H
-#define DART_GUI_OSG_INTERACTIVEFRAME_H
+#ifndef DART_GUI_OSG_INTERACTIVEFRAME_HPP_
+#define DART_GUI_OSG_INTERACTIVEFRAME_HPP_
 
 #include "dart/dynamics/SimpleFrame.hpp"
 
@@ -171,4 +171,4 @@ typedef std::shared_ptr<InteractiveFrame> InteractiveFramePtr;
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_OSG_INTERACTIVEFRAME_H
+#endif // DART_GUI_OSG_INTERACTIVEFRAME_HPP_

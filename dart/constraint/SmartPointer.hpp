@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_SMARTPOINTER_H_
-#define DART_CONSTRAINT_SMARTPOINTER_H_
+#ifndef DART_CONSTRAINT_SMARTPOINTER_HPP_
+#define DART_CONSTRAINT_SMARTPOINTER_HPP_
 
 #include "dart/common/SmartPointer.hpp"
 
@@ -61,4 +61,4 @@ DART_COMMON_MAKE_SHARED_WEAK(BalanceConstraint)
 } // namespace constraint
 } // namespace dart
 
-#endif // DART_CONSTRAINT_SMARTPOINTER_H_
+#endif // DART_CONSTRAINT_SMARTPOINTER_HPP_

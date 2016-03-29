@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OSG_RENDER_SHAPEGEODE_H
-#define DART_GUI_OSG_RENDER_SHAPEGEODE_H
+#ifndef DART_GUI_OSG_RENDER_SHAPEGEODE_HPP_
+#define DART_GUI_OSG_RENDER_SHAPEGEODE_HPP_
 
 #include <memory>
 #include <osg/Node>
@@ -127,4 +127,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_OSG_RENDER_SHAPEGEODE_H
+#endif // DART_GUI_OSG_RENDER_SHAPEGEODE_HPP_

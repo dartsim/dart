@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DETAIL_COLLISIONGROUP_H_
-#define DART_COLLISION_DETAIL_COLLISIONGROUP_H_
+#ifndef DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
+#define DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_
 
 #include "dart/collision/CollisionGroup.hpp"
 
@@ -63,4 +63,4 @@ void CollisionGroup::unregisterShapeFrames(
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_DETAIL_COLLISIONGROUP_H_
+#endif  // DART_COLLISION_DETAIL_COLLISIONGROUP_HPP_

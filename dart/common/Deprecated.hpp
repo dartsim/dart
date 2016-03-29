@@ -36,8 +36,8 @@
 
 #include "dart/config.hpp"
 
-#ifndef DART_COMMON_DEPRECATED_H_
-#define DART_COMMON_DEPRECATED_H_
+#ifndef DART_COMMON_DEPRECATED_HPP_
+#define DART_COMMON_DEPRECATED_HPP_
 
 //==============================================================================
 // Deprecated is used for backward compatibility between different minor
@@ -98,4 +98,4 @@
 
 #endif
 
-#endif  // DART_COMMON_DEPRECATED_H_
+#endif  // DART_COMMON_DEPRECATED_HPP_

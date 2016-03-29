@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONDETECTOR_H_
-#define DART_COLLISION_COLLISIONDETECTOR_H_
+#ifndef DART_COLLISION_COLLISIONDETECTOR_HPP_
+#define DART_COLLISION_COLLISIONDETECTOR_HPP_
 
 #include <vector>
 #include <map>
@@ -197,4 +197,4 @@ protected:
 
 #include "dart/collision/detail/CollisionDetector.hpp"
 
-#endif  // DART_COLLISION_COLLISIONDETECTOR_H_
+#endif  // DART_COLLISION_COLLISIONDETECTOR_HPP_

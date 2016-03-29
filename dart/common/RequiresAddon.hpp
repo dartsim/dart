@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_REQUIRESADDON_H_
-#define DART_COMMON_REQUIRESADDON_H_
+#ifndef DART_COMMON_REQUIRESADDON_HPP_
+#define DART_COMMON_REQUIRESADDON_HPP_
 
 #include "dart/common/SpecializedForAddon.hpp"
 
@@ -74,4 +74,4 @@ class RequiresAddon<ReqAddon1, OtherReqAddons...> :
 
 #include "dart/common/detail/RequiresAddon.hpp"
 
-#endif // DART_COMMON_REQUIRESADDON_H_
+#endif // DART_COMMON_REQUIRESADDON_HPP_

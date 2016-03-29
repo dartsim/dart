@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_IPOPT_IPOPTSOLVER_H_
-#define DART_OPTIMIZER_IPOPT_IPOPTSOLVER_H_
+#ifndef DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
+#define DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_
 
 //------------------------------------------------------------------------------
 // Workaround for bug:
@@ -220,4 +220,4 @@ private:
 }  // namespace optimizer
 }  // namespace dart
 
-#endif  // DART_OPTIMIZER_IPOPT_IPOPTSOLVER_H_
+#endif  // DART_OPTIMIZER_IPOPT_IPOPTSOLVER_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OSG_DRAGANDDROP_H
-#define DART_GUI_OSG_DRAGANDDROP_H
+#ifndef DART_GUI_OSG_DRAGANDDROP_HPP_
+#define DART_GUI_OSG_DRAGANDDROP_HPP_
 
 #include <functional>
 
@@ -364,4 +364,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_OSG_DRAGANDDROP_H
+#endif // DART_GUI_OSG_DRAGANDDROP_HPP_

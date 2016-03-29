@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GLFUNCS_H_
-#define DART_GUI_GLFUNCS_H_
+#ifndef DART_GUI_GLFUNCS_HPP_
+#define DART_GUI_GLFUNCS_HPP_
 
 #include <string>
 
@@ -72,4 +72,4 @@ void drawProgressBar(int _currFrame, int _totalFrame);
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_GLFUNCS_H_
+#endif  // DART_GUI_GLFUNCS_HPP_

@@ -35,8 +35,8 @@
  */
 
 
-#ifndef APPS_VEHICLE_MYWINDOW_H_
-#define APPS_VEHICLE_MYWINDOW_H_
+#ifndef APPS_VEHICLE_MYWINDOW_HPP_
+#define APPS_VEHICLE_MYWINDOW_HPP_
 
 #include "dart/dart.hpp"
 #include "dart/gui/gui.hpp"
@@ -73,4 +73,4 @@ private:
   double mD;
 };
 
-#endif  // APPS_VEHICLE_MYWINDOW_H_
+#endif  // APPS_VEHICLE_MYWINDOW_HPP_

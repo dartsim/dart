@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_ARROWSHAPE_H_
-#define DART_DYNAMICS_ARROWSHAPE_H_
+#ifndef DART_DYNAMICS_ARROWSHAPE_HPP_
+#define DART_DYNAMICS_ARROWSHAPE_HPP_
 
 #include "dart/dynamics/MeshShape.hpp"
 
@@ -112,4 +112,4 @@ protected:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_ARROWSHAPE_H_
+#endif // DART_DYNAMICS_ARROWSHAPE_HPP_

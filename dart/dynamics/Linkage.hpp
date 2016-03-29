@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_LINKAGE_H_
-#define DART_DYNAMICS_LINKAGE_H_
+#ifndef DART_DYNAMICS_LINKAGE_HPP_
+#define DART_DYNAMICS_LINKAGE_HPP_
 
 #include "ReferentialSkeleton.hpp"
 #include <unordered_set>
@@ -201,4 +201,4 @@ protected:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_LINKAGE_H_
+#endif // DART_DYNAMICS_LINKAGE_HPP_

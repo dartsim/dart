@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_WIN3D_H_
-#define DART_GUI_WIN3D_H_
+#ifndef DART_GUI_WIN3D_HPP_
+#define DART_GUI_WIN3D_HPP_
 
 #include <Eigen/Eigen>
 
@@ -81,4 +81,4 @@ protected:
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_WIN3D_H_
+#endif  // DART_GUI_WIN3D_HPP_

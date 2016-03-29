@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_LCPSOLVER_LEMKE_H_
-#define DART_LCPSOLVER_LEMKE_H_
+#ifndef DART_LCPSOLVER_LEMKE_HPP_
+#define DART_LCPSOLVER_LEMKE_HPP_
 
 #include <Eigen/Dense>
 
@@ -54,4 +54,4 @@ bool validate(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _z,
 }  // namespace lcpsolver
 }  // namespace dart
 
-#endif  // DART_LCPSOLVER_LEMKE_H_
+#endif  // DART_LCPSOLVER_LEMKE_HPP_

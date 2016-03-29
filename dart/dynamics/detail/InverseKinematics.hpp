@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_
-#define DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_
+#ifndef DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_
+#define DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_
 
 #include <type_traits>
 
@@ -84,4 +84,4 @@ void InverseKinematics::setDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_H_
+#endif // DART_DYNAMICS_DETAIL_INVERSEKINEMATICS_HPP_

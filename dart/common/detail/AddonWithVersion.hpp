@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_ADDONWITHVERSION_H_
-#define DART_COMMON_DETAIL_ADDONWITHVERSION_H_
+#ifndef DART_COMMON_DETAIL_ADDONWITHVERSION_HPP_
+#define DART_COMMON_DETAIL_ADDONWITHVERSION_HPP_
 
 #include "dart/common/Addon.hpp"
 #include "dart/common/StlHelpers.hpp"
@@ -346,4 +346,4 @@ void AddonWithVersionedProperties<
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_ADDONWITHVERSION_H_
+#endif // DART_COMMON_DETAIL_ADDONWITHVERSION_HPP_

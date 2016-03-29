@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_BASICNODEMANAGER_H_
-#define DART_DYNAMICS_DETAIL_BASICNODEMANAGER_H_
+#ifndef DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
+#define DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_
 
 #include <map>
 #include <typeindex>
@@ -360,4 +360,4 @@ const NodeType* BasicNodeManagerForSkeleton::getNode(
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_BASICNODEMANAGER_H_
+#endif // DART_DYNAMICS_DETAIL_BASICNODEMANAGER_HPP_

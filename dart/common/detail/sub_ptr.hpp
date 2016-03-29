@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_SUB_PTR_H_
-#define DART_COMMON_DETAIL_SUB_PTR_H_
+#ifndef DART_COMMON_DETAIL_SUB_PTR_HPP_
+#define DART_COMMON_DETAIL_SUB_PTR_HPP_
 
 //==============================================================================
 template <class T>
@@ -123,4 +123,4 @@ void sub_ptr<T>::handleDestructionNotification(const Subject* _subject)
     mSubject = nullptr;
 }
 
-#endif // DART_COMMON_DETAIL_SUB_PTR_H_
+#endif // DART_COMMON_DETAIL_SUB_PTR_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_MESH_COLLISIONSHAPES_H_
-#define DART_COLLISION_FCL_MESH_COLLISIONSHAPES_H_
+#ifndef DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
+#define DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 
 #include <cmath>
 
@@ -440,4 +440,4 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_MESH_COLLISIONSHAPES_H_
+#endif  // DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_

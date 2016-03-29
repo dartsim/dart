@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GLUTWINDOW_H_
-#define DART_GUI_GLUTWINDOW_H_
+#ifndef DART_GUI_GLUTWINDOW_HPP_
+#define DART_GUI_GLUTWINDOW_HPP_
 
 #include <vector>
 
@@ -101,4 +101,4 @@ protected:
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_GLUTWINDOW_H_
+#endif  // DART_GUI_GLUTWINDOW_HPP_

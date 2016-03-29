@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_UNIVERSALJOINT_H_
-#define DART_DYNAMICS_UNIVERSALJOINT_H_
+#ifndef DART_DYNAMICS_UNIVERSALJOINT_HPP_
+#define DART_DYNAMICS_UNIVERSALJOINT_HPP_
 
 #include "dart/dynamics/detail/UniversalJointProperties.hpp"
 
@@ -135,4 +135,4 @@ public:
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_UNIVERSALJOINT_H_
+#endif  // DART_DYNAMICS_UNIVERSALJOINT_HPP_

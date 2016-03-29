@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_HARNESSTEST_CONTROLLER_H_
-#define APPS_HARNESSTEST_CONTROLLER_H_
+#ifndef APPS_HARNESSTEST_CONTROLLER_HPP_
+#define APPS_HARNESSTEST_CONTROLLER_HPP_
 
 #include <vector>
 
@@ -80,4 +80,4 @@ protected:
   Eigen::VectorXd mConstrForces; // SPD utilizes the current info about contact forces
 };
 
-#endif  // APPS_HARNESSTEST_CONTROLLER_H_
+#endif  // APPS_HARNESSTEST_CONTROLLER_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_CONNECTIONBODY_H_
-#define DART_COMMON_DETAIL_CONNECTIONBODY_H_
+#ifndef DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
+#define DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
 
 #include <memory>
 
@@ -142,5 +142,5 @@ struct DefaultCombiner
 }  // namespace common
 }  // namespace dart
 
-#endif  // DART_COMMON_DETAIL_CONNECTIONBODY_H_
+#endif  // DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
 

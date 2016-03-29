@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_TRACKBALL_H_
-#define DART_GUI_TRACKBALL_H_
+#ifndef DART_GUI_TRACKBALL_HPP_
+#define DART_GUI_TRACKBALL_HPP_
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -117,4 +117,4 @@ private:
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_TRACKBALL_H_
+#endif  // DART_GUI_TRACKBALL_HPP_

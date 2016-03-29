@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_ADDON_H_
-#define DART_COMMON_ADDON_H_
+#ifndef DART_COMMON_ADDON_HPP_
+#define DART_COMMON_ADDON_HPP_
 
 #include <string>
 
@@ -249,4 +249,4 @@ protected:
 
 #include "dart/common/detail/Addon.hpp"
 
-#endif // DART_COMMON_ADDON_H_
+#endif // DART_COMMON_ADDON_HPP_

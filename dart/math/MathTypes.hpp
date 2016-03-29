@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_MATHTYPES_H_
-#define DART_MATH_MATHTYPES_H_
+#ifndef DART_MATH_MATHTYPES_HPP_
+#define DART_MATH_MATHTYPES_HPP_
 
 #include <limits>
 #include <map>
@@ -181,4 +181,4 @@ typedef Eigen::Matrix<double, 6, Eigen::Dynamic> Jacobian;
 }  // namespace math
 }  // namespace dart
 
-#endif  // DART_MATH_MATHTYPES_H_
+#endif  // DART_MATH_MATHTYPES_HPP_

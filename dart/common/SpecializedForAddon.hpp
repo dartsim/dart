@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SPECIALIZEDFORADDON_H_
-#define DART_COMMON_SPECIALIZEDFORADDON_H_
+#ifndef DART_COMMON_SPECIALIZEDFORADDON_HPP_
+#define DART_COMMON_SPECIALIZEDFORADDON_HPP_
 
 #include "dart/common/AddonManager.hpp"
 #include "dart/common/AddonManagerJoiner.hpp"
@@ -192,4 +192,4 @@ class SpecializedForAddon<SpecAddon1, OtherSpecAddons...> :
 
 #include "dart/common/detail/SpecializedForAddon.hpp"
 
-#endif // DART_COMMON_SPECIALIZEDFORADDON_H_
+#endif // DART_COMMON_SPECIALIZEDFORADDON_HPP_

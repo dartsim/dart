@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SKELETON_H_
-#define DART_DYNAMICS_SKELETON_H_
+#ifndef DART_DYNAMICS_SKELETON_HPP_
+#define DART_DYNAMICS_SKELETON_HPP_
 
 #include <mutex>
 #include "dart/common/NameManager.hpp"
@@ -1333,4 +1333,4 @@ public:
 
 #include "dart/dynamics/detail/Skeleton.hpp"
 
-#endif  // DART_DYNAMICS_SKELETON_H_
+#endif  // DART_DYNAMICS_SKELETON_HPP_

@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_BALANCE_CONTROLLER_H_
-#define APPS_BALANCE_CONTROLLER_H_
+#ifndef APPS_BALANCE_CONTROLLER_HPP_
+#define APPS_BALANCE_CONTROLLER_HPP_
 
 #include <vector>
 
@@ -75,4 +75,4 @@ protected:
   /// \brief SPD utilizes the current info about contact forces
 };
 
-#endif  // APPS_BALANCE_CONTROLLER_H_
+#endif  // APPS_BALANCE_CONTROLLER_HPP_

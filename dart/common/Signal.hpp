@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SIGNAL_H_
-#define DART_COMMON_SIGNAL_H_
+#ifndef DART_COMMON_SIGNAL_HPP_
+#define DART_COMMON_SIGNAL_HPP_
 
 #include <functional>
 #include <memory>
@@ -245,5 +245,5 @@ private:
 
 #include "dart/common/detail/Signal.hpp"
 
-#endif  // DART_COMMON_SIGNAL_H_
+#endif  // DART_COMMON_SIGNAL_HPP_
 

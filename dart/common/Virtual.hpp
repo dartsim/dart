@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_VIRTUAL_H_
-#define DART_COMMON_VIRTUAL_H_
+#ifndef DART_COMMON_VIRTUAL_HPP_
+#define DART_COMMON_VIRTUAL_HPP_
 
 namespace dart {
 namespace common {
@@ -48,4 +48,4 @@ class Virtual : public virtual T { };
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_VIRTUAL_H_
+#endif // DART_COMMON_VIRTUAL_HPP_

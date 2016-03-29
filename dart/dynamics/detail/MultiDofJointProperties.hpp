@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_MULTIDOFJOINTPROPERTIES_H_
-#define DART_DYNAMICS_DETAIL_MULTIDOFJOINTPROPERTIES_H_
+#ifndef DART_DYNAMICS_DETAIL_MULTIDOFJOINTPROPERTIES_HPP_
+#define DART_DYNAMICS_DETAIL_MULTIDOFJOINTPROPERTIES_HPP_
 
 #include "dart/dynamics/Joint.hpp"
 #include "dart/common/AddonWithVersion.hpp"
@@ -328,5 +328,5 @@ std::string& MultiDofJointAddon<DOF>::_getDofNameReference(size_t index)
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_MULTIDOFJOINTPROPERTIES_H_
+#endif // DART_DYNAMICS_DETAIL_MULTIDOFJOINTPROPERTIES_HPP_
 

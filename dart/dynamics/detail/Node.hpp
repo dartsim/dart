@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_NODE_H_
-#define DART_DYNAMICS_DETAIL_NODE_H_
+#ifndef DART_DYNAMICS_DETAIL_NODE_HPP_
+#define DART_DYNAMICS_DETAIL_NODE_HPP_
 
 #include <cassert>
 
@@ -338,4 +338,4 @@ void AccessoryNode<NodeType>::reattach()
   DART_SKEL_SPECIALIZED_NODE_TEMPLATE_IRREGULAR( SkelType, NodeName, NodeName ## s );
 
 
-#endif // DART_DYNAMICS_DETAIL_NODE_H_
+#endif // DART_DYNAMICS_DETAIL_NODE_HPP_

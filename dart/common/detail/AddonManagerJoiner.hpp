@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_ADDONMANAGERJOINER_H_
-#define DART_COMMON_DETAIL_ADDONMANAGERJOINER_H_
+#ifndef DART_COMMON_DETAIL_ADDONMANAGERJOINER_HPP_
+#define DART_COMMON_DETAIL_ADDONMANAGERJOINER_HPP_
 
 #include "dart/common/AddonManagerJoiner.hpp"
 #include "dart/common/detail/TemplateJoinerDispatchMacro.hpp"
@@ -122,5 +122,5 @@ AddonManagerJoiner<Base1, Base2, OtherBases...>::AddonManagerJoiner(
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_ADDONMANAGERJOINER_H_
+#endif // DART_COMMON_DETAIL_ADDONMANAGERJOINER_HPP_
 

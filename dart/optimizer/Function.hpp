@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_FUNCTION_H_
-#define DART_OPTIMIZER_FUNCTION_H_
+#ifndef DART_OPTIMIZER_FUNCTION_HPP_
+#define DART_OPTIMIZER_FUNCTION_HPP_
 
 #include <vector>
 #include <memory>
@@ -221,5 +221,5 @@ public:
 }  // namespace optimizer
 }  // namespace dart
 
-#endif  // DART_OPTIMIZER_FUNCTION_H_
+#endif  // DART_OPTIMIZER_FUNCTION_HPP_
 

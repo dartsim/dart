@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_NOOP_H_
-#define DART_COMMON_DETAIL_NOOP_H_
+#ifndef DART_COMMON_DETAIL_NOOP_HPP_
+#define DART_COMMON_DETAIL_NOOP_HPP_
 
 namespace dart {
 namespace common {
@@ -59,4 +59,4 @@ void NoOp(Args... /*args*/)
 #define DART_BLANK // leave blank
 
 
-#endif // DART_COMMON_DETAIL_NOOP_H_
+#endif // DART_COMMON_DETAIL_NOOP_HPP_

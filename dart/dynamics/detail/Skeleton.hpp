@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_SKELETON_H_
-#define DART_DYNAMICS_DETAIL_SKELETON_H_
+#ifndef DART_DYNAMICS_DETAIL_SKELETON_HPP_
+#define DART_DYNAMICS_DETAIL_SKELETON_HPP_
 
 #include "dart/dynamics/Skeleton.hpp"
 
@@ -93,4 +93,4 @@ std::pair<JointType*, NodeType*> Skeleton::createJointAndBodyNodePair(
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_SKELETON_H_
+#endif // DART_DYNAMICS_DETAIL_SKELETON_HPP_

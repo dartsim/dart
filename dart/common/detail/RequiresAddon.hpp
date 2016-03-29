@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_REQUIRESADDON_H_
-#define DART_COMMON_DETAIL_REQUIRESADDON_H_
+#ifndef DART_COMMON_DETAIL_REQUIRESADDON_HPP_
+#define DART_COMMON_DETAIL_REQUIRESADDON_HPP_
 
 #include "dart/common/RequiresAddon.hpp"
 
@@ -52,4 +52,4 @@ RequiresAddon<ReqAddon>::RequiresAddon()
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_REQUIRESADDON_H_
+#endif // DART_COMMON_DETAIL_REQUIRESADDON_HPP_

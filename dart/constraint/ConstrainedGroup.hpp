@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONSTRAINEDGROUP_H_
-#define DART_CONSTRAINT_CONSTRAINEDGROUP_H_
+#ifndef DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_
+#define DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_
 
 #include <vector>
 #include <memory>
@@ -115,5 +115,5 @@ private:
 }  // namespace constraint
 }  // namespace dart
 
-#endif  // DART_CONSTRAINT_CONSTRAINEDGROUP_H_
+#endif  // DART_CONSTRAINT_CONSTRAINEDGROUP_HPP_
 

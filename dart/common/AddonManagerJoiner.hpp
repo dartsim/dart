@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_ADDONMANAGERJOINER_H_
-#define DART_COMMON_ADDONMANAGERJOINER_H_
+#ifndef DART_COMMON_ADDONMANAGERJOINER_HPP_
+#define DART_COMMON_ADDONMANAGERJOINER_HPP_
 
 #include "dart/common/AddonManager.hpp"
 #include "dart/common/Empty.hpp"
@@ -153,5 +153,5 @@ public:
 
 #include "dart/common/detail/AddonManagerJoiner.hpp"
 
-#endif // DART_COMMON_ADDONMANAGERJOINER_H_
+#endif // DART_COMMON_ADDONMANAGERJOINER_HPP_
 

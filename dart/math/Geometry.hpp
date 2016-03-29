@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_GEOMETRY_H_
-#define DART_MATH_GEOMETRY_H_
+#ifndef DART_MATH_GEOMETRY_HPP_
+#define DART_MATH_GEOMETRY_HPP_
 
 #include <Eigen/Dense>
 
@@ -594,4 +594,4 @@ class BoundingBox {
 }  // namespace math
 }  // namespace dart
 
-#endif  // DART_MATH_GEOMETRY_H_
+#endif  // DART_MATH_GEOMETRY_HPP_

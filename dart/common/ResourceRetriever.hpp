@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_RESOURCERETRIEVER_H_
-#define DART_COMMON_RESOURCERETRIEVER_H_
+#ifndef DART_COMMON_RESOURCERETRIEVER_HPP_
+#define DART_COMMON_RESOURCERETRIEVER_HPP_
 
 #include <memory>
 #include <string>
@@ -71,4 +71,4 @@ using ResourceRetrieverPtr = std::shared_ptr<ResourceRetriever>;
 } // namespace common
 } // namespace dart
 
-#endif // ifndef DART_COMMON_RESOURCERETRIEVER_H_
+#endif // ifndef DART_COMMON_RESOURCERETRIEVER_HPP_

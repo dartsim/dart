@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_ADDONWITHVERSION_H_
-#define DART_COMMON_ADDONWITHVERSION_H_
+#ifndef DART_COMMON_ADDONWITHVERSION_HPP_
+#define DART_COMMON_ADDONWITHVERSION_HPP_
 
 #include "dart/common/detail/AddonWithVersion.hpp"
 
@@ -149,4 +149,4 @@ constexpr void (*AddonWithStateAndVersionedProperties<DerivedT, StateDataT,
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_ADDONWITHVERSION_H_
+#endif // DART_COMMON_ADDONWITHVERSION_HPP_

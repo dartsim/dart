@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_INTEGRATION_EULERINTEGRATOR_H_
-#define DART_INTEGRATION_EULERINTEGRATOR_H_
+#ifndef DART_INTEGRATION_EULERINTEGRATOR_HPP_
+#define DART_INTEGRATION_EULERINTEGRATOR_HPP_
 
 #include "dart/integration/Integrator.hpp"
 
@@ -66,4 +66,4 @@ public:
 }  // namespace integration
 }  // namespace dart
 
-#endif  // DART_INTEGRATION_EULERINTEGRATOR_H_
+#endif  // DART_INTEGRATION_EULERINTEGRATOR_HPP_

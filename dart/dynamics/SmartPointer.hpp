@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SMARTPOINTER_H_
-#define DART_DYNAMICS_SMARTPOINTER_H_
+#ifndef DART_DYNAMICS_SMARTPOINTER_HPP_
+#define DART_DYNAMICS_SMARTPOINTER_HPP_
 
 #include "dart/common/SmartPointer.hpp"
 #include "dart/dynamics/detail/BodyNodePtr.hpp"
@@ -187,4 +187,4 @@ DART_DYNAMICS_MAKE_IK_PTR(InverseKinematics)
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_SMARTPOINTER_H_
+#endif // DART_DYNAMICS_SMARTPOINTER_HPP_

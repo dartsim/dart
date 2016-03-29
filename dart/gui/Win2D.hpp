@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_WIN2D_H_
-#define DART_GUI_WIN2D_H_
+#ifndef DART_GUI_WIN2D_HPP_
+#define DART_GUI_WIN2D_HPP_
 
 #include "dart/gui/GlutWindow.hpp"
 
@@ -83,4 +83,4 @@ protected:
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_WIN2D_H_
+#endif  // DART_GUI_WIN2D_HPP_

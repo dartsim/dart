@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_NAMEMANAGER_H_
-#define DART_COMMON_NAMEMANAGER_H_
+#ifndef DART_COMMON_NAMEMANAGER_HPP_
+#define DART_COMMON_NAMEMANAGER_HPP_
 
 #include <map>
 #include <string>
@@ -184,4 +184,4 @@ protected:
 
 #include "dart/common/detail/NameManager.hpp"
 
-#endif // DART_COMMON_NAMEMANAGER_H_
+#endif // DART_COMMON_NAMEMANAGER_HPP_

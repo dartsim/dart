@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_TIMER_H_
-#define DART_COMMON_TIMER_H_
+#ifndef DART_COMMON_TIMER_HPP_
+#define DART_COMMON_TIMER_HPP_
 
 #include <string>
 
@@ -122,4 +122,4 @@ private:
 }  // namespace common
 }  // namespace dart
 
-#endif  // DART_COMMON_TIMER_H_
+#endif  // DART_COMMON_TIMER_HPP_

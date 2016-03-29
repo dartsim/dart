@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_EXTENSIBLE_H_
-#define DART_COMMON_EXTENSIBLE_H_
+#ifndef DART_COMMON_EXTENSIBLE_HPP_
+#define DART_COMMON_EXTENSIBLE_HPP_
 
 #include <memory>
 #include <vector>
@@ -214,4 +214,4 @@ private:
 
 #include "dart/common/detail/Extensible.hpp"
 
-#endif // DART_COMMON_EXTENSIBLE_H_
+#endif // DART_COMMON_EXTENSIBLE_HPP_

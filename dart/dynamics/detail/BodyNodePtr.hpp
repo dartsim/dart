@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_BODYNODEPTR_H_
-#define DART_DYNAMICS_DETAIL_BODYNODEPTR_H_
+#ifndef DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_
+#define DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_
 
 #include <memory>
 #include <mutex>
@@ -328,4 +328,4 @@ private:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_BODYNODEPTR_H_
+#endif // DART_DYNAMICS_DETAIL_BODYNODEPTR_HPP_

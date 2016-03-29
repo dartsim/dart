@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BRANCH_H_
-#define DART_DYNAMICS_BRANCH_H_
+#ifndef DART_DYNAMICS_BRANCH_HPP_
+#define DART_DYNAMICS_BRANCH_HPP_
 
 #include "dart/dynamics/Linkage.hpp"
 
@@ -94,4 +94,4 @@ protected:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_BRANCH_H_
+#endif // DART_DYNAMICS_BRANCH_HPP_

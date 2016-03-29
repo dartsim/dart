@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_HYBRIDDYNAMICS_MYWINDOW_H_
-#define APPS_HYBRIDDYNAMICS_MYWINDOW_H_
+#ifndef APPS_HYBRIDDYNAMICS_MYWINDOW_HPP_
+#define APPS_HYBRIDDYNAMICS_MYWINDOW_HPP_
 
 #include "dart/dart.hpp"
 #include "dart/gui/gui.hpp"
@@ -63,4 +63,4 @@ private:
   bool mHarnessOn;
 };
 
-#endif  // APPS_HYBRIDDYNAMICS_MYWINDOW_H_
+#endif  // APPS_HYBRIDDYNAMICS_MYWINDOW_HPP_

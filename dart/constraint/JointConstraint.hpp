@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_JOINTCONSTRAINT_H_
-#define DART_CONSTRAINT_JOINTCONSTRAINT_H_
+#ifndef DART_CONSTRAINT_JOINTCONSTRAINT_HPP_
+#define DART_CONSTRAINT_JOINTCONSTRAINT_HPP_
 
 #include "dart/constraint/ConstraintBase.hpp"
 
@@ -120,5 +120,5 @@ protected:
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_CONSTRAINT_H_
+#endif  // DART_CONSTRAINT_CONSTRAINT_HPP_
 

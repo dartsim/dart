@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_RENDERINTERFACE_H
-#define DART_RENDERER_RENDERINTERFACE_H
+#ifndef DART_RENDERER_RENDERINTERFACE_HPP_
+#define DART_RENDERER_RENDERINTERFACE_HPP_
 
 #include <vector>
 #include <assimp/scene.h>
@@ -117,4 +117,4 @@ public:
 } // namespace renderer
 } // namespace dart
 
-#endif // #ifndef DART_RENDERER_RENDERINTERFACE_H
+#endif // #ifndef DART_RENDERER_RENDERINTERFACE_HPP_

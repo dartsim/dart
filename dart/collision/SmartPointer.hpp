@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_SMARTPOINTER_H_
-#define DART_COLLISION_SMARTPOINTER_H_
+#ifndef DART_COLLISION_SMARTPOINTER_HPP_
+#define DART_COLLISION_SMARTPOINTER_HPP_
 
 #include "dart/config.hpp"
 #include "dart/common/SmartPointer.hpp"
@@ -57,4 +57,4 @@ DART_COMMON_MAKE_SHARED_WEAK(CollisionGroup)
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_SMARTPOINTER_H_
+#endif  // DART_COLLISION_SMARTPOINTER_HPP_

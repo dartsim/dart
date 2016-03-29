@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_ATLASROBOT_HUMANOID_H_
-#define APPS_ATLASROBOT_HUMANOID_H_
+#ifndef APPS_ATLASROBOT_HUMANOID_HPP_
+#define APPS_ATLASROBOT_HUMANOID_HPP_
 
 #include <vector>
 #include <string>
@@ -123,4 +123,4 @@ public:
 protected:
 };
 
-#endif  // APPS_ATLASROBOT_HUMANOID_H_
+#endif  // APPS_ATLASROBOT_HUMANOID_HPP_

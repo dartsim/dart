@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_SDFPARSER_H
-#define DART_UTILS_SDFPARSER_H
+#ifndef DART_UTILS_SDFPARSER_HPP_
+#define DART_UTILS_SDFPARSER_HPP_
 
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/ResourceRetriever.hpp"
@@ -65,4 +65,4 @@ dynamics::SkeletonPtr readSkeleton(
 } // namespace utils
 } // namespace dart
 
-#endif // #ifndef DART_UTILS_SDFPARSER_H
+#endif // #ifndef DART_UTILS_SDFPARSER_HPP_

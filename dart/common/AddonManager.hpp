@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_ADDONMANAGER_H_
-#define DART_COMMON_ADDONMANAGER_H_
+#ifndef DART_COMMON_ADDONMANAGER_HPP_
+#define DART_COMMON_ADDONMANAGER_HPP_
 
 #include <map>
 #include <unordered_set>
@@ -207,4 +207,4 @@ void createAddons(T* mgr);
 
 #include "dart/common/detail/AddonManager.hpp"
 
-#endif // DART_COMMON_ADDONMANAGER_H_
+#endif // DART_COMMON_ADDONMANAGER_HPP_

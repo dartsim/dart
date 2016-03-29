@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MULTIDOFJOINT_H_
-#define DART_DYNAMICS_MULTIDOFJOINT_H_
+#ifndef DART_DYNAMICS_MULTIDOFJOINT_HPP_
+#define DART_DYNAMICS_MULTIDOFJOINT_HPP_
 
 #include <string>
 #include <array>
@@ -792,4 +792,4 @@ private:
 
 #include "dart/dynamics/detail/MultiDofJoint.hpp"
 
-#endif  // DART_DYNAMICS_MULTIDOFJOINT_H_
+#endif  // DART_DYNAMICS_MULTIDOFJOINT_HPP_

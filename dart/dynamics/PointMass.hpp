@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_POINTMASS_H_
-#define DART_DYNAMICS_POINTMASS_H_
+#ifndef DART_DYNAMICS_POINTMASS_HPP_
+#define DART_DYNAMICS_POINTMASS_HPP_
 
 #include <vector>
 #include <Eigen/Dense>
@@ -689,4 +689,4 @@ protected:
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_POINTMASS_H_
+#endif  // DART_DYNAMICS_POINTMASS_HPP_

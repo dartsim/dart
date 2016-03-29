@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_BULLETTYPES_H_
-#define DART_COLLISION_BULLET_BULLETTYPES_H_
+#ifndef DART_COLLISION_BULLET_BULLETTYPES_HPP_
+#define DART_COLLISION_BULLET_BULLETTYPES_HPP_
 
 #include <Eigen/Dense>
 #include <btBulletCollisionCommon.h>
@@ -58,4 +58,4 @@ btTransform convertTransform(const Eigen::Isometry3d& _T);
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_BULLET_BULLETTYPES_H_
+#endif  // DART_COLLISION_BULLET_BULLETTYPES_HPP_
