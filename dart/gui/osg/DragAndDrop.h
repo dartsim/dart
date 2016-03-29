@@ -47,13 +47,13 @@
 #include "DefaultEventHandler.h"
 
 namespace dart {
+
 namespace dynamics {
 class SimpleFrame;
 } // namespace dynamics
-} // namespace dart
 
-namespace osgDart
-{
+namespace gui {
+namespace osg {
 
 class Viewer;
 class InteractiveFrame;
@@ -134,10 +134,10 @@ public:
   RotationOption getRotationOption() const;
 
   /// Set the modkey that will be used to toggle rotation for this DnD
-  void setRotationModKey(osgGA::GUIEventAdapter::ModKeyMask rotationModKey);
+  void setRotationModKey(::osgGA::GUIEventAdapter::ModKeyMask rotationModKey);
 
   /// Get the modkey that will be used to toggle rotation for this DnD
-  osgGA::GUIEventAdapter::ModKeyMask getRotationModKey() const;
+  ::osgGA::GUIEventAdapter::ModKeyMask getRotationModKey() const;
 
 protected:
 
@@ -174,7 +174,7 @@ protected:
   RotationOption mRotationOption;
 
   /// Modkey for rotation
-  osgGA::GUIEventAdapter::ModKeyMask mRotationModKey;
+  ::osgGA::GUIEventAdapter::ModKeyMask mRotationModKey;
 
 };
 
@@ -245,7 +245,7 @@ class InteractiveFrameDnD : public DragAndDrop
 public:
 
   /// Constructor
-  InteractiveFrameDnD(Viewer* viewer, osgDart::InteractiveFrame* frame);
+  InteractiveFrameDnD(Viewer* viewer, dart::gui::osg::InteractiveFrame* frame);
 
   /// Virtual destructor
   virtual ~InteractiveFrameDnD() = default;
@@ -314,16 +314,16 @@ public:
   bool isUsingWholeBody() const;
 
   /// Set the key that will preserve the orientation of the body
-  void setPreserveOrientationModKey(osgGA::GUIEventAdapter::ModKeyMask modkey);
+  void setPreserveOrientationModKey(::osgGA::GUIEventAdapter::ModKeyMask modkey);
 
   /// Get the key that will preserve the orientation of the body
-  osgGA::GUIEventAdapter::ModKeyMask getPreserveOrientationModKey() const;
+  ::osgGA::GUIEventAdapter::ModKeyMask getPreserveOrientationModKey() const;
 
   /// Set the key that will restrict which joints are used by the DnD
-  void setJointRestrictionModKey(osgGA::GUIEventAdapter::ModKeyMask modkey);
+  void setJointRestrictionModKey(::osgGA::GUIEventAdapter::ModKeyMask modkey);
 
   /// Get the key that will restrict which joints are used by the DnD
-  osgGA::GUIEventAdapter::ModKeyMask getJointRestrictionModKey() const;
+  ::osgGA::GUIEventAdapter::ModKeyMask getJointRestrictionModKey() const;
 
 protected:
 
@@ -351,16 +351,17 @@ protected:
   bool mUseWholeBody;
 
   /// Key for preserving orientation
-  osgGA::GUIEventAdapter::ModKeyMask mPreserveOrientationModKey;
+  ::osgGA::GUIEventAdapter::ModKeyMask mPreserveOrientationModKey;
 
   /// Key for restricting joint usage
-  osgGA::GUIEventAdapter::ModKeyMask mJointRestrictionModKey;
+  ::osgGA::GUIEventAdapter::ModKeyMask mJointRestrictionModKey;
 
   /// Currently unused, but this will change in the future
   size_t mAdditionalBodyNodes;
 };
 
-} // namespace osgDart
-
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_DRAGANDDROP_H

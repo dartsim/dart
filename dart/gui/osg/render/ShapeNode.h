@@ -38,23 +38,22 @@
 #define OSGDART_RENDER_SHAPEGEODE_H
 
 #include <memory>
-
-namespace osg {
-class Node;
-class Group;
-} // namespace osg
+#include <osg/Node>
 
 namespace dart {
+
 namespace dynamics {
 class Shape;
 class ShapeFrame;
 class SimpleFrame;
 class VisualAddon;
 } // namespace dynamics
-} // namespace dart
 
-namespace osgDart {
+namespace gui {
+namespace osg {
 
+class Node;
+class Group;
 class EntityNode;
 class ShapeFrameNode;
 
@@ -66,7 +65,7 @@ public:
 
   ShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
             ShapeFrameNode* parentNode,
-            osg::Node* node);
+            ::osg::Node* node);
 
   virtual ~ShapeNode();
 
@@ -80,10 +79,10 @@ public:
   const dart::dynamics::VisualAddon* getVisualAddon() const;
 
   /// Cast this ShapeNode into an osg::Node
-  osg::Node* getNode();
+  ::osg::Node* getNode();
 
   /// Cast this ShapeNode into an osg::Node
-  const osg::Node* getNode() const;
+  const ::osg::Node* getNode() const;
 
   /// Pointer to the parent EntityNode of this ShapeNode
   ShapeFrameNode* getParentShapeFrameNode();
@@ -114,7 +113,7 @@ protected:
   ShapeFrameNode* mParentShapeFrameNode;
 
   /// Should generally be equal to 'this'
-  osg::Node* mNode;
+  ::osg::Node* mNode;
 
   /// True iff this ShapeNode has been utilized on the latest update. If it has
   /// not, that is an indication that it is no longer being used and should be
@@ -124,6 +123,8 @@ protected:
 };
 
 } // namespace render
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_RENDER_SHAPEGEODE_H

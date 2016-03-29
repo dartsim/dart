@@ -42,18 +42,19 @@
 #include "dart/gui/osg/render/ShapeNode.h"
 
 namespace dart {
+
 namespace dynamics {
 class CylinderShape;
 } // namespace dynamics
-} // namespace dart
 
-namespace osgDart {
+namespace gui {
+namespace osg {
 namespace render {
 
 class CylinderShapeGeode;
 class CylinderShapeDrawable;
 
-class CylinderShapeNode : public ShapeNode, public osg::Group
+class CylinderShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
 
@@ -73,6 +74,8 @@ protected:
 };
 
 } // namespace render
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_RENDER_CYLINDERSHAPENODE_H

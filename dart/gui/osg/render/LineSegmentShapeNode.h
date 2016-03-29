@@ -42,18 +42,19 @@
 #include "dart/gui/osg/render/ShapeNode.h"
 
 namespace dart {
+
 namespace dynamics {
 class LineSegmentShape;
 } // namespace dynamics
-} // namespace dart
 
-namespace osgDart {
+namespace gui {
+namespace osg {
 namespace render {
 
 class LineSegmentShapeGeode;
 class LineSegmentShapeDrawable;
 
-class LineSegmentShapeNode : public ShapeNode, public osg::Group
+class LineSegmentShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
 
@@ -73,6 +74,8 @@ protected:
 };
 
 } // namespace render
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_RENDER_LINESEGMENTSHAPENODE_H

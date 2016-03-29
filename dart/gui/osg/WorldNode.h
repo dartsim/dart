@@ -53,12 +53,10 @@ namespace dynamics {
 class Frame;
 class Entity;
 class ShapeFrame;
-}
+} // namespace dynamics
 
-} // namespace dart
-
-namespace osgDart
-{
+namespace gui {
+namespace osg {
 
 class FrameNode;
 class ShapeFrameNode;
@@ -66,7 +64,7 @@ class EntityNode;
 class Viewer;
 
 /// WorldNode class encapsulates a World to be displayed in OpenSceneGraph
-class WorldNode : public osg::Group
+class WorldNode : public ::osg::Group
 {
 public:
 
@@ -181,6 +179,8 @@ protected:
 
 };
 
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_WORLDNODE_H

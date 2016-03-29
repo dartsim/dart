@@ -36,12 +36,13 @@
 
 #include "dart/gui/osg/TrackballManipulator.h"
 
-namespace osgDart
-{
+namespace dart {
+namespace gui {
+namespace osg {
 
 //==============================================================================
 TrackballManipulator::TrackballManipulator(int flags)
-  : osgGA::OrbitManipulator(flags)
+  : ::osgGA::OrbitManipulator(flags)
 {
   setVerticalAxisFixed(false);
   setAllowThrow(false);
@@ -49,9 +50,9 @@ TrackballManipulator::TrackballManipulator(int flags)
 
 //==============================================================================
 TrackballManipulator::TrackballManipulator(const TrackballManipulator& tm,
-                                           const osg::CopyOp& copyOp)
-  : osg::Object(tm, copyOp),
-    osgGA::OrbitManipulator(tm, copyOp)
+                                           const ::osg::CopyOp& copyOp)
+  : ::osg::Object(tm, copyOp),
+    ::osgGA::OrbitManipulator(tm, copyOp)
 {
   // Do nothing
 }
@@ -78,4 +79,6 @@ bool TrackballManipulator::performMovementRightMouseButton(
         eventTimeDelta, dx, dy);
 }
 
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart

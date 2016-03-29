@@ -134,7 +134,7 @@ protected:
   Eigen::VectorXd mWeights;
 };
 
-class TeleoperationWorld : public osgDart::WorldNode
+class TeleoperationWorld : public dart::gui::osg::WorldNode
 {
 public:
 
@@ -153,7 +153,7 @@ public:
   };
 
   TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
-    : osgDart::WorldNode(_world),
+    : dart::gui::osg::WorldNode(_world),
       mAtlas(_robot),
       iter(0),
       l_foot(_robot->getEndEffector("l_foot")),
@@ -263,11 +263,11 @@ protected:
   bool mAnyMovement;
 };
 
-class InputHandler : public osgGA::GUIEventHandler
+class InputHandler : public ::osgGA::GUIEventHandler
 {
 public:
 
-  InputHandler(osgDart::Viewer* viewer, TeleoperationWorld* teleop,
+  InputHandler(dart::gui::osg::Viewer* viewer, TeleoperationWorld* teleop,
                const SkeletonPtr& atlas, const WorldPtr& world)
     : mViewer(viewer),
       mTeleop(teleop),
@@ -315,15 +315,15 @@ public:
     mMoveComponents.resize(TeleoperationWorld::NUM_MOVE, false);
   }
 
-  virtual bool handle(const osgGA::GUIEventAdapter& ea,
-                      osgGA::GUIActionAdapter&) override
+  virtual bool handle(const ::osgGA::GUIEventAdapter& ea,
+                      ::osgGA::GUIActionAdapter&) override
   {
     if(nullptr == mAtlas)
     {
       return false;
     }
 
-    if( osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType() )
+    if( ::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType() )
     {
       if( ea.getKey() == 'p' )
       {
@@ -421,7 +421,7 @@ public:
       }
     }
 
-    if( osgGA::GUIEventAdapter::KEYUP == ea.getEventType() )
+    if( ::osgGA::GUIEventAdapter::KEYUP == ea.getEventType() )
     {
       if(ea.getKey() == mOptimizationKey)
       {
@@ -462,7 +462,7 @@ public:
 
 protected:
 
-  osgDart::Viewer* mViewer;
+  dart::gui::osg::Viewer* mViewer;
 
   TeleoperationWorld* mTeleop;
 
@@ -593,7 +593,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   l_hand->setDefaultRelativeTransform(tf_hand, true);
 
   // Create an interactive frame to use as the target for the left hand
-  osgDart::InteractiveFramePtr lh_target(new osgDart::InteractiveFrame(
+  dart::gui::osg::InteractiveFramePtr lh_target(new dart::gui::osg::InteractiveFrame(
                                            Frame::World(), "lh_target"));
 
   // Set the target of the left hand to the interactive frame. We pass true into
@@ -629,7 +629,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   r_hand->setDefaultRelativeTransform(tf_hand, true);
 
   // Create an interactive frame to use as the target for the right hand
-  osgDart::InteractiveFramePtr rh_target(new osgDart::InteractiveFrame(
+  dart::gui::osg::InteractiveFramePtr rh_target(new dart::gui::osg::InteractiveFrame(
                                            Frame::World(), "rh_target"));
 
   // Create the right hand's IK and set its target
@@ -679,7 +679,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   l_foot->setRelativeTransform(tf_foot);
 
   // Create an interactive frame to use as the target for the left foot
-  osgDart::InteractiveFramePtr lf_target(new osgDart::InteractiveFrame(
+  dart::gui::osg::InteractiveFramePtr lf_target(new dart::gui::osg::InteractiveFrame(
                                            Frame::World(), "lf_target"));
 
   // Create the left foot's IK and set its target
@@ -708,7 +708,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   r_foot->setRelativeTransform(tf_foot);
 
   // Create an interactive frame to use as the target for the right foot
-  osgDart::InteractiveFramePtr rf_target(new osgDart::InteractiveFrame(
+  dart::gui::osg::InteractiveFramePtr rf_target(new dart::gui::osg::InteractiveFrame(
                                            Frame::World(), "rf_target"));
 
   // Create the right foot's IK module and set its target
@@ -819,7 +819,7 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   // that some work much better for user interaction than others.
 }
 
-void enableDragAndDrops(osgDart::Viewer& viewer, const SkeletonPtr& atlas)
+void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& atlas)
 {
   // Turn on drag-and-drop for the whole Skeleton
   for(size_t i=0; i < atlas->getNumBodyNodes(); ++i)
@@ -832,7 +832,7 @@ void enableDragAndDrops(osgDart::Viewer& viewer, const SkeletonPtr& atlas)
       continue;
 
     // Check whether the target is an interactive frame, and add it if it is
-    if(const auto& frame = std::dynamic_pointer_cast<osgDart::InteractiveFrame>(
+    if(const auto& frame = std::dynamic_pointer_cast<dart::gui::osg::InteractiveFrame>(
          ee->getIK()->getTarget()))
       viewer.enableDragAndDrop(frame.get());
   }
@@ -854,9 +854,9 @@ int main()
 
   setupWholeBodySolver(atlas);
 
-  osg::ref_ptr<TeleoperationWorld> node = new TeleoperationWorld(world, atlas);
+  ::osg::ref_ptr<TeleoperationWorld> node = new TeleoperationWorld(world, atlas);
 
-  osgDart::Viewer viewer;
+  dart::gui::osg::Viewer viewer;
 
   // Prevent this World from simulating
   viewer.allowSimulation(false);
@@ -868,7 +868,7 @@ int main()
   enableDragAndDrops(viewer, atlas);
 
   // Attach a support polygon visualizer
-  viewer.addAttachment(new osgDart::SupportPolygonVisual(
+  viewer.addAttachment(new dart::gui::osg::SupportPolygonVisual(
                          atlas, display_elevation));
 
   // Print out instructions for the viewer
@@ -897,9 +897,9 @@ int main()
   viewer.setUpViewInWindow(0, 0, 1280, 960);
 
   // Set up the default viewing position
-  viewer.getCameraManipulator()->setHomePosition(osg::Vec3( 5.34,  3.00, 2.41),
-                                                 osg::Vec3( 0.00,  0.00, 1.00),
-                                                 osg::Vec3(-0.20, -0.08, 0.98));
+  viewer.getCameraManipulator()->setHomePosition(::osg::Vec3( 5.34,  3.00, 2.41),
+                                                 ::osg::Vec3( 0.00,  0.00, 1.00),
+                                                 ::osg::Vec3(-0.20, -0.08, 0.98));
 
   // Reset the camera manipulator so that it starts in the new viewing position
   viewer.setCameraManipulator(viewer.getCameraManipulator());

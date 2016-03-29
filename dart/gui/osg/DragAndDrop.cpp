@@ -49,7 +49,9 @@
 
 #include "dart/math/Helpers.h"
 
-namespace osgDart {
+namespace dart {
+namespace gui {
+namespace osg {
 
 DragAndDrop::DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity)
   : mViewer(viewer),
@@ -59,7 +61,7 @@ DragAndDrop::DragAndDrop(Viewer* viewer, dart::dynamics::Entity* entity)
     mAmObstructable(true),
     mAmMoving(false),
     mRotationOption(RotationOption::HOLD_MODKEY),
-    mRotationModKey(osgGA::GUIEventAdapter::MODKEY_CTRL)
+    mRotationModKey(::osgGA::GUIEventAdapter::MODKEY_CTRL)
 {
   addSubject(mEntity);
   addSubject(mViewer);
@@ -83,12 +85,12 @@ void DragAndDrop::update()
   if(nullptr == mEntity)
     return;
 
-  osgDart::MouseButtonEvent event =
+  osg::MouseButtonEvent event =
       mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if(mAmMoving)
   {
-    if(osgDart::BUTTON_RELEASE == event)
+    if(osg::BUTTON_RELEASE == event)
     {
       mAmMoving = false;
       release();
@@ -98,13 +100,13 @@ void DragAndDrop::update()
   }
   else // not moving
   {
-    if(osgDart::BUTTON_PUSH == event)
+    if(osg::BUTTON_PUSH == event)
     {
-      const std::vector<osgDart::PickInfo>& picks =
+      const std::vector<osg::PickInfo>& picks =
           mViewer->getDefaultEventHandler()->getButtonPicks(
-            osgDart::LEFT_MOUSE, osgDart::BUTTON_PUSH);
+            osg::LEFT_MOUSE, osg::BUTTON_PUSH);
 
-      for(const osgDart::PickInfo& pick : picks)
+      for(const osg::PickInfo& pick : picks)
       {
         if(pick.frame == mEntity)
         {
@@ -227,13 +229,13 @@ DragAndDrop::RotationOption DragAndDrop::getRotationOption() const
 
 //==============================================================================
 void DragAndDrop::setRotationModKey(
-    osgGA::GUIEventAdapter::ModKeyMask rotationModKey)
+    ::osgGA::GUIEventAdapter::ModKeyMask rotationModKey)
 {
   mRotationModKey = rotationModKey;
 }
 
 //==============================================================================
-osgGA::GUIEventAdapter::ModKeyMask DragAndDrop::getRotationModKey() const
+::osgGA::GUIEventAdapter::ModKeyMask DragAndDrop::getRotationModKey() const
 {
   return mRotationModKey;
 }
@@ -332,25 +334,25 @@ void SimpleFrameShapeDnD::update()
   if(nullptr == mFrame || nullptr == mShape)
     return;
 
-  osgDart::MouseButtonEvent event =
+  osg::MouseButtonEvent event =
       mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if(mAmMoving)
   {
-    if(osgDart::BUTTON_RELEASE == event)
+    if(osg::BUTTON_RELEASE == event)
       mAmMoving = false;
 
     move();
   }
   else
   {
-    if(osgDart::BUTTON_PUSH == event)
+    if(osg::BUTTON_PUSH == event)
     {
-      const std::vector<osgDart::PickInfo>& picks =
+      const std::vector<osg::PickInfo>& picks =
           mViewer->getDefaultEventHandler()->getButtonPicks(
-            osgDart::LEFT_MOUSE, osgDart::BUTTON_PUSH);
+            osg::LEFT_MOUSE, osg::BUTTON_PUSH);
 
-      for(const osgDart::PickInfo& pick : picks)
+      for(const osg::PickInfo& pick : picks)
       {
         if(pick.frame == mFrame && pick.shape.get() == mShape)
         {
@@ -507,12 +509,12 @@ public:
     if(nullptr == mEntity)
       return;
 
-    osgDart::MouseButtonEvent event =
+    osg::MouseButtonEvent event =
         mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
     if(mAmMoving)
     {
-      if(osgDart::BUTTON_RELEASE == event)
+      if(osg::BUTTON_RELEASE == event)
       {
         mAmMoving = false;
         release();
@@ -522,13 +524,13 @@ public:
     }
     else // not moving
     {
-      if(osgDart::BUTTON_PUSH == event)
+      if(osg::BUTTON_PUSH == event)
       {
-        const std::vector<osgDart::PickInfo>& picks =
+        const std::vector<osg::PickInfo>& picks =
             mViewer->getDefaultEventHandler()->getButtonPicks(
-              osgDart::LEFT_MOUSE, osgDart::BUTTON_PUSH);
+              osg::LEFT_MOUSE, osg::BUTTON_PUSH);
 
-        for(const osgDart::PickInfo& pick : picks)
+        for(const osg::PickInfo& pick : picks)
         {
           if(pick.frame->getParentFrame() == mEntity)
           {
@@ -671,8 +673,8 @@ BodyNodeDnD::BodyNodeDnD(Viewer* viewer, dart::dynamics::BodyNode* bn,
     mBodyNode(bn),
     mUseExternalIK(useExternalIK),
     mUseWholeBody(useWholeBody),
-    mPreserveOrientationModKey(osgGA::GUIEventAdapter::MODKEY_ALT),
-    mJointRestrictionModKey(osgGA::GUIEventAdapter::MODKEY_SHIFT)
+    mPreserveOrientationModKey(::osgGA::GUIEventAdapter::MODKEY_ALT),
+    mJointRestrictionModKey(::osgGA::GUIEventAdapter::MODKEY_SHIFT)
 {
   // Do nothing
 }
@@ -689,12 +691,12 @@ void BodyNodeDnD::update()
   if(nullptr == mEntity)
     return;
 
-  osgDart::MouseButtonEvent event =
+  osg::MouseButtonEvent event =
       mViewer->getDefaultEventHandler()->getButtonEvent(LEFT_MOUSE);
 
   if(mAmMoving)
   {
-    if(osgDart::BUTTON_RELEASE == event)
+    if(osg::BUTTON_RELEASE == event)
     {
       mAmMoving = false;
       release();
@@ -704,13 +706,13 @@ void BodyNodeDnD::update()
   }
   else // not moving
   {
-    if(osgDart::BUTTON_PUSH == event)
+    if(osg::BUTTON_PUSH == event)
     {
-      const std::vector<osgDart::PickInfo>& picks =
+      const std::vector<osg::PickInfo>& picks =
           mViewer->getDefaultEventHandler()->getButtonPicks(
-            osgDart::LEFT_MOUSE, osgDart::BUTTON_PUSH);
+            osg::LEFT_MOUSE, osg::BUTTON_PUSH);
 
-      for(const osgDart::PickInfo& pick : picks)
+      for(const osg::PickInfo& pick : picks)
       {
         if(pick.frame->getParentFrame() == mEntity)
         {
@@ -869,29 +871,30 @@ bool BodyNodeDnD::isUsingWholeBody() const
 
 //==============================================================================
 void BodyNodeDnD::setPreserveOrientationModKey(
-    osgGA::GUIEventAdapter::ModKeyMask modkey)
+    ::osgGA::GUIEventAdapter::ModKeyMask modkey)
 {
   mPreserveOrientationModKey = modkey;
 }
 
 //==============================================================================
-osgGA::GUIEventAdapter::ModKeyMask BodyNodeDnD::getPreserveOrientationModKey() const
+::osgGA::GUIEventAdapter::ModKeyMask BodyNodeDnD::getPreserveOrientationModKey() const
 {
   return mPreserveOrientationModKey;
 }
 
 //==============================================================================
 void BodyNodeDnD::setJointRestrictionModKey(
-    osgGA::GUIEventAdapter::ModKeyMask modkey)
+    ::osgGA::GUIEventAdapter::ModKeyMask modkey)
 {
   mJointRestrictionModKey = modkey;
 }
 
 //==============================================================================
-osgGA::GUIEventAdapter::ModKeyMask BodyNodeDnD::getJointRestrictionModKey() const
+::osgGA::GUIEventAdapter::ModKeyMask BodyNodeDnD::getJointRestrictionModKey() const
 {
   return mJointRestrictionModKey;
 }
 
-
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart

@@ -43,18 +43,19 @@
 #include "dart/gui/osg/render/ShapeNode.h"
 
 namespace dart {
+
 namespace dynamics {
 class EllipsoidShape;
 } // namespace dynamics
-} // namespace dart
 
-namespace osgDart {
+namespace gui {
+namespace osg {
 namespace render {
 
 class EllipsoidShapeGeode;
 class EllipsoidShapeDrawable;
 
-class EllipsoidShapeNode : public ShapeNode, public osg::MatrixTransform
+class EllipsoidShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 
@@ -75,6 +76,8 @@ protected:
 };
 
 } // namespace render
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_RENDER_ELLIPSOIDSHAPENODE_H

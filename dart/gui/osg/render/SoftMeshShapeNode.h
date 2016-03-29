@@ -42,18 +42,19 @@
 #include "dart/gui/osg/render/ShapeNode.h"
 
 namespace dart {
+
 namespace dynamics {
 class SoftMeshShape;
 } // namespace dynamics
-} // namespace dart
 
-namespace osgDart {
+namespace gui {
+namespace osg {
 namespace render {
 
 class SoftMeshShapeGeode;
 class SoftMeshShapeDrawable;
 
-class SoftMeshShapeNode : public ShapeNode, public osg::MatrixTransform
+class SoftMeshShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 
@@ -74,6 +75,8 @@ protected:
 };
 
 } // namespace render
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_RENDER_SOFTMESHSHAPENODE_H

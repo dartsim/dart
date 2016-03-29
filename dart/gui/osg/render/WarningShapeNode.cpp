@@ -41,7 +41,9 @@
 #include "dart/dynamics/Entity.h"
 #include "dart/common/Console.h"
 
-namespace osgDart {
+namespace dart {
+namespace gui {
+namespace osg {
 namespace render {
 
 WarningShapeNode::WarningShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
@@ -67,4 +69,6 @@ WarningShapeNode::~WarningShapeNode()
 }
 
 } // namespace render
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart

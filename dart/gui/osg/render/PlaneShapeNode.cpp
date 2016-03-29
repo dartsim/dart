@@ -43,10 +43,12 @@
 #include "dart/dynamics/PlaneShape.h"
 #include "dart/dynamics/SimpleFrame.h"
 
-namespace osgDart {
+namespace dart {
+namespace gui {
+namespace osg {
 namespace render {
 
-class PlaneShapeGeode : public ShapeNode, public osg::Geode
+class PlaneShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
 
@@ -67,7 +69,7 @@ protected:
 };
 
 //==============================================================================
-class PlaneShapeDrawable : public osg::ShapeDrawable
+class PlaneShapeDrawable : public ::osg::ShapeDrawable
 {
 public:
 
@@ -139,7 +141,7 @@ PlaneShapeGeode::PlaneShapeGeode(dart::dynamics::PlaneShape* shape,
     mPlaneShape(shape),
     mDrawable(nullptr)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, osg::StateAttribute::ON);
+  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   extractData();
 }
 
@@ -185,18 +187,18 @@ PlaneShapeDrawable::PlaneShapeDrawable(dart::dynamics::PlaneShape* shape,
 void PlaneShapeDrawable::refresh(bool firstTime)
 {
   if(mPlaneShape->getDataVariance() == dart::dynamics::Shape::STATIC)
-    setDataVariance(osg::Object::STATIC);
+    setDataVariance(::osg::Object::STATIC);
   else
-    setDataVariance(osg::Object::DYNAMIC);
+    setDataVariance(::osg::Object::DYNAMIC);
 
   if(mPlaneShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
     const Eigen::Vector3d& n = mPlaneShape->getNormal();
     const Eigen::Vector3d& p = mPlaneShape->getOffset()*n;
-    osg::ref_ptr<osg::InfinitePlane> osg_shape = new osg::InfinitePlane;
-    static_cast<osg::Plane&>(*osg_shape) =
-        osg::Plane(eigToOsgVec3(n), eigToOsgVec3(p));
+    ::osg::ref_ptr<::osg::InfinitePlane> osg_shape = new ::osg::InfinitePlane;
+    static_cast<::osg::Plane&>(*osg_shape) =
+        ::osg::Plane(eigToOsgVec3(n), eigToOsgVec3(p));
 
     setShape(osg_shape);
     dirtyDisplayList();
@@ -216,4 +218,6 @@ PlaneShapeDrawable::~PlaneShapeDrawable()
 }
 
 } // namespace render
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart

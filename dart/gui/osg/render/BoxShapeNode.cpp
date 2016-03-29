@@ -43,10 +43,12 @@
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/SimpleFrame.h"
 
-namespace osgDart {
+namespace dart {
+namespace gui {
+namespace osg {
 namespace render {
 
-class BoxShapeGeode : public ShapeNode, public osg::Geode
+class BoxShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
 
@@ -66,7 +68,7 @@ protected:
 };
 
 //==============================================================================
-class BoxShapeDrawable : public osg::ShapeDrawable
+class BoxShapeDrawable : public ::osg::ShapeDrawable
 {
 public:
 
@@ -135,7 +137,7 @@ BoxShapeGeode::BoxShapeGeode(
     mBoxShape(shape),
     mDrawable(nullptr)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, osg::StateAttribute::ON);
+  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
   extractData();
 }
 
@@ -179,15 +181,15 @@ BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape,
 void BoxShapeDrawable::refresh(bool firstTime)
 {
   if(mBoxShape->getDataVariance() == dart::dynamics::Shape::STATIC)
-    setDataVariance(osg::Object::STATIC);
+    setDataVariance(::osg::Object::STATIC);
   else
-    setDataVariance(osg::Object::DYNAMIC);
+    setDataVariance(::osg::Object::DYNAMIC);
 
   if(mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
      || firstTime)
   {
     const Eigen::Vector3d& d = mBoxShape->getSize();
-    osg::ref_ptr<osg::Box> osg_shape = new osg::Box(osg::Vec3(0,0,0),
+    ::osg::ref_ptr<::osg::Box> osg_shape = new ::osg::Box(::osg::Vec3(0,0,0),
                                                     d[0], d[1], d[2]);
     setShape(osg_shape);
     dirtyDisplayList();
@@ -207,4 +209,6 @@ BoxShapeDrawable::~BoxShapeDrawable()
 }
 
 } // namespace render
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart

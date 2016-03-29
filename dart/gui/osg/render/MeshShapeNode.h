@@ -48,19 +48,20 @@
 struct aiNode;
 
 namespace dart {
+
 namespace dynamics {
 class MeshShape;
 } // namespace dynamics
-} // namespace dart
 
-namespace osgDart {
+namespace gui {
+namespace osg {
 namespace render {
 
 class osgAiNode;
 class MeshShapeGeode;
 class MeshShapeGeometry;
 
-class MeshShapeNode : public ShapeNode, public osg::MatrixTransform
+class MeshShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 
@@ -70,7 +71,7 @@ public:
   void refresh();
   void extractData(bool firstTime);
 
-  osg::Material* getMaterial(size_t index) const;
+  ::osg::Material* getMaterial(size_t index) const;
 
 protected:
 
@@ -78,11 +79,13 @@ protected:
 
   std::shared_ptr<dart::dynamics::MeshShape> mMeshShape;
   osgAiNode* mRootAiNode;
-  std::vector< osg::ref_ptr<osg::Material> > mMaterials;
+  std::vector< ::osg::ref_ptr<::osg::Material> > mMaterials;
 
 };
 
 } // namespace render
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_RENDER_MESHSHAPENODE_H

@@ -703,7 +703,7 @@ protected:
 
 };
 
-class TeleoperationWorld : public osgDart::WorldNode
+class TeleoperationWorld : public dart::gui::osg::WorldNode
 {
 public:
 
@@ -722,7 +722,7 @@ public:
   };
 
   TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
-    : osgDart::WorldNode(_world),
+    : dart::gui::osg::WorldNode(_world),
       mHubo(_robot),
       iter(0),
       l_foot(_robot->getEndEffector("l_foot")),
@@ -840,11 +840,11 @@ protected:
   bool mAnyMovement;
 };
 
-class InputHandler : public osgGA::GUIEventHandler
+class InputHandler : public ::osgGA::GUIEventHandler
 {
 public:
 
-  InputHandler(osgDart::Viewer* viewer, TeleoperationWorld* teleop,
+  InputHandler(dart::gui::osg::Viewer* viewer, TeleoperationWorld* teleop,
                const SkeletonPtr& hubo, const WorldPtr& world)
     : mViewer(viewer),
       mTeleop(teleop),
@@ -881,17 +881,17 @@ public:
     mMoveComponents.resize(TeleoperationWorld::NUM_MOVE, false);
   }
 
-  virtual bool handle(const osgGA::GUIEventAdapter& ea,
-                      osgGA::GUIActionAdapter&) override
+  virtual bool handle(const ::osgGA::GUIEventAdapter& ea,
+                      ::osgGA::GUIActionAdapter&) override
   {
     if(nullptr == mHubo)
     {
       return false;
     }
 
-    if( osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType() )
+    if( ::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType() )
     {
-      if( ea.getKey() == osgGA::GUIEventAdapter::KEY_Tab )
+      if( ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Tab )
       {
         if(mViewer->isRecording())
           mViewer->pauseRecording();
@@ -963,7 +963,7 @@ public:
         return true;
       }
 
-      if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Shift_L)
+      if(ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L)
         mTeleop->mAmplifyMovement = true;
 
       switch(ea.getKey())
@@ -1000,7 +1000,7 @@ public:
       }
     }
 
-    if( osgGA::GUIEventAdapter::KEYUP == ea.getEventType() )
+    if( ::osgGA::GUIEventAdapter::KEYUP == ea.getEventType() )
     {
       if(ea.getKey() == mOptimizationKey)
       {
@@ -1013,7 +1013,7 @@ public:
         return true;
       }
 
-      if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Shift_L)
+      if(ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L)
         mTeleop->mAmplifyMovement = false;
 
       switch(ea.getKey())
@@ -1044,7 +1044,7 @@ public:
 
 protected:
 
-  osgDart::Viewer* mViewer;
+  dart::gui::osg::Viewer* mViewer;
 
   TeleoperationWorld* mTeleop;
 
@@ -1161,7 +1161,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       createEndEffector("l_hand");
   l_hand->setDefaultRelativeTransform(tf_hand, true);
 
-  osgDart::InteractiveFramePtr lh_target(new osgDart::InteractiveFrame(
+  dart::gui::osg::InteractiveFramePtr lh_target(new dart::gui::osg::InteractiveFrame(
                                            Frame::World(), "lh_target"));
 
   l_hand->getIK(true)->setTarget(lh_target);
@@ -1187,7 +1187,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       createEndEffector("r_hand");
   r_hand->setDefaultRelativeTransform(tf_hand, true);
 
-  osgDart::InteractiveFramePtr rh_target(new osgDart::InteractiveFrame(
+  dart::gui::osg::InteractiveFramePtr rh_target(new dart::gui::osg::InteractiveFrame(
                                            Frame::World(), "rh_target"));
 
   r_hand->getIK(true)->setTarget(rh_target);
@@ -1229,7 +1229,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       createEndEffector("l_foot");
   l_foot->setDefaultRelativeTransform(tf_foot, true);
 
-  osgDart::InteractiveFramePtr lf_target(new osgDart::InteractiveFrame(
+  dart::gui::osg::InteractiveFramePtr lf_target(new dart::gui::osg::InteractiveFrame(
                                            Frame::World(), "lf_target"));
 
   l_foot->getIK(true)->setTarget(lf_target);
@@ -1251,7 +1251,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
       createEndEffector("r_foot");
   r_foot->setDefaultRelativeTransform(tf_foot, true);
 
-  osgDart::InteractiveFramePtr rf_target(new osgDart::InteractiveFrame(
+  dart::gui::osg::InteractiveFramePtr rf_target(new dart::gui::osg::InteractiveFrame(
                                            Frame::World(), "rf_target"));
 
   r_foot->getIK(true)->setTarget(rf_target);
@@ -1281,7 +1281,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   EndEffector* l_peg = hubo->getBodyNode("Body_LWP")->createEndEffector("l_peg");
   l_peg->setDefaultRelativeTransform(tf_peg, true);
 
-  osgDart::InteractiveFramePtr lp_target(new osgDart::InteractiveFrame(
+  dart::gui::osg::InteractiveFramePtr lp_target(new dart::gui::osg::InteractiveFrame(
                                            Frame::World(), "lp_target"));
 
   l_peg->getIK(true)->setTarget(lp_target);
@@ -1298,7 +1298,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   EndEffector* r_peg = hubo->getBodyNode("Body_RWP")->createEndEffector("r_peg");
   r_peg->setDefaultRelativeTransform(tf_peg, true);
 
-  osgDart::InteractiveFramePtr rp_target(new osgDart::InteractiveFrame(
+  dart::gui::osg::InteractiveFramePtr rp_target(new dart::gui::osg::InteractiveFrame(
                                            Frame::World(), "rp_target"));
 
   r_peg->getIK(true)->setTarget(rp_target);
@@ -1319,7 +1319,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   r_foot->getIK()->getTarget()->setTransform(r_foot->getTransform());
 }
 
-void enableDragAndDrops(osgDart::Viewer& viewer, const SkeletonPtr& hubo)
+void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& hubo)
 {
   // Turn on drag-and-drop for the whole Skeleton
   for(size_t i=0; i < hubo->getNumBodyNodes(); ++i)
@@ -1332,7 +1332,7 @@ void enableDragAndDrops(osgDart::Viewer& viewer, const SkeletonPtr& hubo)
       continue;
 
     // Check whether the target is an interactive frame, and add it if it is
-    if(const auto& frame = std::dynamic_pointer_cast<osgDart::InteractiveFrame>(
+    if(const auto& frame = std::dynamic_pointer_cast<dart::gui::osg::InteractiveFrame>(
          ee->getIK()->getTarget()))
       viewer.enableDragAndDrop(frame.get());
   }
@@ -1396,9 +1396,9 @@ int main()
 
   setupWholeBodySolver(hubo);
 
-  osg::ref_ptr<TeleoperationWorld> node = new TeleoperationWorld(world, hubo);
+  ::osg::ref_ptr<TeleoperationWorld> node = new TeleoperationWorld(world, hubo);
 
-  osgDart::Viewer viewer;
+  dart::gui::osg::Viewer viewer;
   viewer.allowSimulation(false);
   viewer.addWorldNode(node);
 
@@ -1407,7 +1407,7 @@ int main()
   viewer.addEventHandler(new InputHandler(&viewer, node, hubo, world));
 
   double display_elevation = 0.05;
-  viewer.addAttachment(new osgDart::SupportPolygonVisual(
+  viewer.addAttachment(new dart::gui::osg::SupportPolygonVisual(
                          hubo, display_elevation));
 
   std::cout << viewer.getInstructions() << std::endl;
@@ -1431,9 +1431,9 @@ int main()
   viewer.setUpViewInWindow(0, 0, 1280, 960);
 
   // Set up the default viewing position
-  viewer.getCameraManipulator()->setHomePosition(osg::Vec3( 5.34,  3.00, 1.91),
-                                                 osg::Vec3( 0.00,  0.00, 0.50),
-                                                 osg::Vec3(-0.20, -0.08, 0.98));
+  viewer.getCameraManipulator()->setHomePosition(::osg::Vec3( 5.34,  3.00, 1.91),
+                                                 ::osg::Vec3( 0.00,  0.00, 0.50),
+                                                 ::osg::Vec3(-0.20, -0.08, 0.98));
 
   // Reset the camera manipulator so that it starts in the new viewing position
   viewer.setCameraManipulator(viewer.getCameraManipulator());

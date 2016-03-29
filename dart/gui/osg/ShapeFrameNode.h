@@ -48,10 +48,9 @@ class ShapeFrame;
 class Entity;
 class Shape;
 } // namespace dynamics
-} // namespace dart
 
-namespace osgDart
-{
+namespace gui {
+namespace osg {
 
 namespace render {
 class ShapeNode;
@@ -59,7 +58,7 @@ class ShapeNode;
 
 class WorldNode;
 
-class ShapeFrameNode : public osg::MatrixTransform
+class ShapeFrameNode : public ::osg::MatrixTransform
 {
 public:
 
@@ -114,6 +113,8 @@ protected:
 
 };
 
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_SHAPEFRAMENODE_H

@@ -38,12 +38,14 @@
 #include "dart/gui/osg/ShapeFrameNode.h"
 #include "dart/dynamics/SimpleFrame.h"
 
-namespace osgDart {
+namespace dart {
+namespace gui {
+namespace osg {
 namespace render {
 
 ShapeNode::ShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
                      ShapeFrameNode* parentNode,
-                     osg::Node* node)
+                     ::osg::Node* node)
   : mShape(shape),
     mParentShapeFrameNode(parentNode),
     mNode(node),
@@ -84,13 +86,13 @@ const dart::dynamics::VisualAddon* ShapeNode::getVisualAddon() const
 }
 
 //==============================================================================
-osg::Node* ShapeNode::getNode()
+::osg::Node* ShapeNode::getNode()
 {
   return mNode;
 }
 
 //==============================================================================
-const osg::Node* ShapeNode::getNode() const
+const ::osg::Node* ShapeNode::getNode() const
 {
   return mNode;
 }
@@ -120,4 +122,6 @@ void ShapeNode::clearUtilization()
 }
 
 } // namespace render
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart

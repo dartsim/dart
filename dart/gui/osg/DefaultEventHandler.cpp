@@ -49,8 +49,9 @@
 
 #include <iostream>
 
-namespace osgDart
-{
+namespace dart {
+namespace gui {
+namespace osg {
 
 DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   : mViewer(_viewer),
@@ -104,7 +105,7 @@ Eigen::Vector3d DefaultEventHandler::getDeltaCursor(
     ConstraintType _constraint,
     const Eigen::Vector3d& _constraintVector) const
 {
-  osg::Vec3d eye, center, up;
+  ::osg::Vec3d eye, center, up;
   mViewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
 
   Eigen::Vector3d near, far;
@@ -151,15 +152,15 @@ void DefaultEventHandler::getNearAndFarPointUnderCursor(Eigen::Vector3d& near,
                                                         Eigen::Vector3d& far,
                                                         double distance) const
 {
-  osg::Camera* C = mViewer->getCamera();
-  osg::Matrix VPW = C->getViewMatrix() * C->getProjectionMatrix()
+  ::osg::Camera* C = mViewer->getCamera();
+  ::osg::Matrix VPW = C->getViewMatrix() * C->getProjectionMatrix()
       * C->getViewport()->computeWindowMatrix();
-  osg::Matrix invVPW;
+  ::osg::Matrix invVPW;
   invVPW.invert(VPW);
 
   double x = getWindowCursorX(), y = getWindowCursorY();
-  osg::Vec3 osgNear = osg::Vec3(x,y,0.0) * invVPW;
-  osg::Vec3 osgFar = osg::Vec3(x,y,distance) * invVPW;
+  ::osg::Vec3 osgNear = ::osg::Vec3(x,y,0.0) * invVPW;
+  ::osg::Vec3 osgFar = ::osg::Vec3(x,y,distance) * invVPW;
 
   near = osgToEigVec3(osgNear);
   far = osgToEigVec3(osgFar);
@@ -215,17 +216,17 @@ void DefaultEventHandler::activateMovePicks()
 
 //==============================================================================
 void DefaultEventHandler::pick(std::vector<PickInfo>& infoVector,
-                               const osgGA::GUIEventAdapter& ea)
+                               const ::osgGA::GUIEventAdapter& ea)
 {
-  osgUtil::LineSegmentIntersector::Intersections hlist;
+  ::osgUtil::LineSegmentIntersector::Intersections hlist;
 
   infoVector.clear();
   if(mViewer->computeIntersections(ea, hlist))
   {
     infoVector.reserve(hlist.size());
-    for(const osgUtil::LineSegmentIntersector::Intersection& intersect : hlist)
+    for(const ::osgUtil::LineSegmentIntersector::Intersection& intersect : hlist)
     {
-      osg::Drawable* drawable = intersect.drawable;
+      ::osg::Drawable* drawable = intersect.drawable;
       render::ShapeNode* shape =
           dynamic_cast<render::ShapeNode*>(drawable->getParent(0));
       if(shape)
@@ -266,55 +267,55 @@ static bool wasActive(MouseButtonEvent event)
 //==============================================================================
 static void assignEventToButtons(
     MouseButtonEvent (&mLastButtonEvent)[NUM_MOUSE_BUTTONS],
-    const osgGA::GUIEventAdapter& ea)
+    const ::osgGA::GUIEventAdapter& ea)
 {
   MouseButtonEvent event = BUTTON_NOTHING;
-  if(ea.getEventType() == osgGA::GUIEventAdapter::PUSH)
+  if(ea.getEventType() == ::osgGA::GUIEventAdapter::PUSH)
     event = BUTTON_PUSH;
-  else if(ea.getEventType() == osgGA::GUIEventAdapter::DRAG)
+  else if(ea.getEventType() == ::osgGA::GUIEventAdapter::DRAG)
     event = BUTTON_DRAG;
-  else if(ea.getEventType() == osgGA::GUIEventAdapter::RELEASE)
+  else if(ea.getEventType() == ::osgGA::GUIEventAdapter::RELEASE)
     event = BUTTON_RELEASE;
 
   if(BUTTON_RELEASE == event)
   {
-    if( (ea.getButtonMask() & osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) == 0
+    if( (ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON) == 0
         && wasActive(mLastButtonEvent[LEFT_MOUSE]) )
       mLastButtonEvent[LEFT_MOUSE] = event;
 
-    if( (ea.getButtonMask() & osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON) == 0
+    if( (ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON) == 0
         && wasActive(mLastButtonEvent[RIGHT_MOUSE]) )
       mLastButtonEvent[RIGHT_MOUSE] = event;
 
-    if( (ea.getButtonMask() & osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON) == 0
+    if( (ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON) == 0
         && wasActive(mLastButtonEvent[MIDDLE_MOUSE]) )
       mLastButtonEvent[MIDDLE_MOUSE] = event;
   }
   else
   {
-    if(ea.getButtonMask() & osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
+    if(ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
       mLastButtonEvent[LEFT_MOUSE] = event;
 
-    if(ea.getButtonMask() & osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
+    if(ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
       mLastButtonEvent[RIGHT_MOUSE] = event;
 
-    if(ea.getButtonMask() & osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
+    if(ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
       mLastButtonEvent[MIDDLE_MOUSE] = event;
   }
 }
 
 //==============================================================================
-bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
-                                 osgGA::GUIActionAdapter&)
+bool DefaultEventHandler::handle(const ::osgGA::GUIEventAdapter& ea,
+                                 ::osgGA::GUIActionAdapter&)
 {
   mLastModKeyMask = ea.getModKeyMask();
 
   switch(ea.getEventType())
   {
-    case osgGA::GUIEventAdapter::PUSH:
-    case osgGA::GUIEventAdapter::DRAG:
-    case osgGA::GUIEventAdapter::RELEASE:
-    case osgGA::GUIEventAdapter::MOVE:
+    case ::osgGA::GUIEventAdapter::PUSH:
+    case ::osgGA::GUIEventAdapter::DRAG:
+    case ::osgGA::GUIEventAdapter::RELEASE:
+    case ::osgGA::GUIEventAdapter::MOVE:
       mLastCursorPosition[0] = ea.getX();
       mLastCursorPosition[1] = ea.getY();
 
@@ -326,7 +327,7 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
 
   switch(ea.getEventType())
   {
-    case osgGA::GUIEventAdapter::KEYDOWN:
+    case ::osgGA::GUIEventAdapter::KEYDOWN:
     {
       switch(ea.getKey())
       {
@@ -349,7 +350,7 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
       }
     }
 
-    case osgGA::GUIEventAdapter::MOVE:
+    case ::osgGA::GUIEventAdapter::MOVE:
     {
       if(!mSuppressMovePicks)
         pick(mMovePicks, ea);
@@ -358,9 +359,9 @@ bool DefaultEventHandler::handle(const osgGA::GUIEventAdapter& ea,
       break;
     }
 
-    case osgGA::GUIEventAdapter::PUSH:
-    case osgGA::GUIEventAdapter::DRAG:
-    case osgGA::GUIEventAdapter::RELEASE:
+    case ::osgGA::GUIEventAdapter::PUSH:
+    case ::osgGA::GUIEventAdapter::DRAG:
+    case ::osgGA::GUIEventAdapter::RELEASE:
 
       assignEventToButtons(mLastButtonEvent, ea);
       eventPick(ea);
@@ -387,40 +388,40 @@ void DefaultEventHandler::triggerMouseEventHandlers()
 }
 
 //==============================================================================
-void DefaultEventHandler::eventPick(const osgGA::GUIEventAdapter& ea)
+void DefaultEventHandler::eventPick(const ::osgGA::GUIEventAdapter& ea)
 {
   MouseButtonEvent mbe;
   switch(ea.getEventType())
   {
-    case osgGA::GUIEventAdapter::PUSH:
+    case ::osgGA::GUIEventAdapter::PUSH:
       mbe = BUTTON_PUSH;
       break;
-    case osgGA::GUIEventAdapter::DRAG:
+    case ::osgGA::GUIEventAdapter::DRAG:
       mbe = BUTTON_DRAG;
       break;
-    case osgGA::GUIEventAdapter::RELEASE:
+    case ::osgGA::GUIEventAdapter::RELEASE:
       mbe = BUTTON_RELEASE;
       break;
     default:
       return;
   }
 
-  if(   ( (ea.getButtonMask() & osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
+  if(   ( (ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
            && !mSuppressButtonPicks[LEFT_MOUSE][mbe])
-     || ( (ea.getButtonMask() & osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
+     || ( (ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
            && !mSuppressButtonPicks[RIGHT_MOUSE][mbe])
-     || ( (ea.getButtonMask() & osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
+     || ( (ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
            && !mSuppressButtonPicks[MIDDLE_MOUSE][mbe]))
   {
     pick(mTempPicks, ea);
 
-    if(ea.getButtonMask() & osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
+    if(ea.getButtonMask() & ::osgGA::GUIEventAdapter::LEFT_MOUSE_BUTTON)
       mButtonPicks[LEFT_MOUSE][mbe] = mTempPicks;
 
-    if(ea.getButtonMask() & osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
+    if(ea.getButtonMask() & ::osgGA::GUIEventAdapter::RIGHT_MOUSE_BUTTON)
       mButtonPicks[RIGHT_MOUSE][mbe] = mTempPicks;
 
-    if(ea.getButtonMask() & osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
+    if(ea.getButtonMask() & ::osgGA::GUIEventAdapter::MIDDLE_MOUSE_BUTTON)
       mButtonPicks[MIDDLE_MOUSE][mbe] = mTempPicks;
   }
 }
@@ -443,4 +444,6 @@ void DefaultEventHandler::handleDestructionNotification(
     mMouseEventHandlers.erase(it);
 }
 
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart

@@ -42,8 +42,9 @@
 
 #include "dart/gui/osg/DefaultEventHandler.h"
 
-namespace osgDart
-{
+namespace dart {
+namespace gui {
+namespace osg {
 
 class DefaultEventHandler;
 
@@ -72,6 +73,8 @@ protected:
 
 };
 
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_MOUSEEVENTHANDLER_H

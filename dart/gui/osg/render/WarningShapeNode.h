@@ -42,10 +42,12 @@
 
 #include "dart/gui/osg/render/ShapeNode.h"
 
-namespace osgDart {
+namespace dart {
+namespace gui {
+namespace osg {
 namespace render {
 
-class WarningShapeNode : public ShapeNode, public osg::Node
+class WarningShapeNode : public ShapeNode, public ::osg::Node
 {
 public:
 
@@ -61,6 +63,8 @@ protected:
 };
 
 } // namespace render
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_RENDER_WARNINGSHAPENODE_H

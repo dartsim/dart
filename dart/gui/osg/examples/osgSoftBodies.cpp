@@ -48,12 +48,12 @@ int main()
   dart::simulation::WorldPtr world =
       dart::utils::SkelParser::readWorld(DART_DATA_PATH"skel/softBodies.skel");
 
-  osg::ref_ptr<osgDart::WorldNode> node = new osgDart::WorldNode(world);
+  ::osg::ref_ptr<dart::gui::osg::WorldNode> node = new dart::gui::osg::WorldNode(world);
 
   node->simulate(true);
   node->setNumStepsPerCycle(15);
 
-  osgDart::Viewer viewer;
+  dart::gui::osg::Viewer viewer;
   viewer.addWorldNode(node);
 
   std::cout << viewer.getInstructions() << std::endl;

@@ -43,12 +43,12 @@ using namespace dart::common;
 using namespace dart::dynamics;
 using namespace dart::math;
 
-class OperationalSpaceControlWorld : public osgDart::WorldNode
+class OperationalSpaceControlWorld : public dart::gui::osg::WorldNode
 {
 public:
 
   OperationalSpaceControlWorld(dart::simulation::WorldPtr _world)
-    : osgDart::WorldNode(_world)
+    : dart::gui::osg::WorldNode(_world)
   {
     // Extract the relevant pointers
     mRobot = mWorld->getSkeleton(0);
@@ -111,7 +111,7 @@ public:
     mRobot->setForces(mForces);
   }
 
-  osgDart::DragAndDrop* dnd;
+  dart::gui::osg::DragAndDrop* dnd;
 
 protected:
 
@@ -139,11 +139,11 @@ protected:
   Eigen::VectorXd mForces;
 };
 
-class ConstraintEventHandler : public osgGA::GUIEventHandler
+class ConstraintEventHandler : public ::osgGA::GUIEventHandler
 {
 public:
 
-  ConstraintEventHandler(osgDart::DragAndDrop* dnd = nullptr)
+  ConstraintEventHandler(dart::gui::osg::DragAndDrop* dnd = nullptr)
     : mDnD(dnd)
   {
     clearConstraints();
@@ -157,8 +157,8 @@ public:
       mConstrained[i] = false;
   }
 
-  virtual bool handle(const osgGA::GUIEventAdapter& ea,
-                      osgGA::GUIActionAdapter&) override
+  virtual bool handle(const ::osgGA::GUIEventAdapter& ea,
+                      ::osgGA::GUIActionAdapter&) override
   {
     if(nullptr == mDnD)
     {
@@ -169,7 +169,7 @@ public:
     bool handled = false;
     switch(ea.getEventType())
     {
-      case osgGA::GUIEventAdapter::KEYDOWN:
+      case ::osgGA::GUIEventAdapter::KEYDOWN:
       {
         switch(ea.getKey())
         {
@@ -189,7 +189,7 @@ public:
         break;
       }
 
-      case osgGA::GUIEventAdapter::KEYUP:
+      case ::osgGA::GUIEventAdapter::KEYUP:
       {
         switch(ea.getKey())
         {
@@ -249,7 +249,7 @@ public:
 
   bool mConstrained[3];
 
-  dart::sub_ptr<osgDart::DragAndDrop> mDnD;
+  dart::sub_ptr<dart::gui::osg::DragAndDrop> mDnD;
 };
 
 int main()
@@ -292,12 +292,12 @@ int main()
   ground->getJoint(0)->setTransformFromParentBodyNode(ground_tf);
 
   // Create an instance of our customized WorldNode
-  osg::ref_ptr<OperationalSpaceControlWorld> node =
+  ::osg::ref_ptr<OperationalSpaceControlWorld> node =
       new OperationalSpaceControlWorld(world);
   node->setNumStepsPerCycle(10);
 
   // Create the Viewer instance
-  osgDart::Viewer viewer;
+  dart::gui::osg::Viewer viewer;
   viewer.addWorldNode(node);
   viewer.simulate(true);
 
@@ -310,9 +310,9 @@ int main()
   // Set up the window to be 640x480 pixels
   viewer.setUpViewInWindow(0, 0, 640, 480);
 
-  viewer.getCameraManipulator()->setHomePosition(osg::Vec3( 2.57,  3.14, 1.64),
-                                                 osg::Vec3( 0.00,  0.00, 0.00),
-                                                 osg::Vec3(-0.24, -0.25, 0.94));
+  viewer.getCameraManipulator()->setHomePosition(::osg::Vec3( 2.57,  3.14, 1.64),
+                                                 ::osg::Vec3( 0.00,  0.00, 0.00),
+                                                 ::osg::Vec3(-0.24, -0.25, 0.94));
   // We need to re-dirty the CameraManipulator by passing it into the viewer
   // again, so that the viewer knows to update its HomePosition setting
   viewer.setCameraManipulator(viewer.getCameraManipulator());

@@ -40,7 +40,9 @@
 #include "dart/dynamics/LineSegmentShape.h"
 #include "dart/common/Console.h"
 
-namespace osgDart {
+namespace dart {
+namespace gui {
+namespace osg {
 
 //==============================================================================
 InteractiveTool::InteractiveTool(InteractiveFrame* frame, double defaultAlpha,
@@ -607,5 +609,6 @@ void InteractiveFrame::deleteAllTools()
       delete mTools[i][j];
 }
 
-} // namespace osgDart
-
+} // namespace osg
+} // namespace gui
+} // namespace dart

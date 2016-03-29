@@ -49,15 +49,15 @@
 #include "dart/common/Observer.h"
 
 namespace dart {
+
 namespace dynamics {
 class Shape;
 class ShapeFrame;
 class Entity;
 } // dynamics
-} // dart
 
-namespace osgDart
-{
+namespace gui {
+namespace osg {
 
 struct PickInfo
 {
@@ -99,7 +99,7 @@ enum ConstraintType {
 
 class MouseEventHandler;
 
-class DefaultEventHandler : public osgGA::GUIEventHandler,
+class DefaultEventHandler : public ::osgGA::GUIEventHandler,
                             public virtual dart::common::Subject,
                             public virtual dart::common::Observer
 {
@@ -169,7 +169,7 @@ public:
   /// Detect picks
   /// TODO(MXG): Consider putting this functionality in a more accessible place
   void pick(std::vector<PickInfo>& infoVector,
-            const osgGA::GUIEventAdapter& ea);
+            const ::osgGA::GUIEventAdapter& ea);
 
   /// Add a MouseEventHandler that will get invoked whenever a mouse event
   /// occurs. You never need to worry about removing a MouseEventHandler from a
@@ -182,8 +182,8 @@ public:
   const std::set<MouseEventHandler*>& getMouseEventHandlers() const;
 
   /// Handle incoming user input
-  virtual bool handle(const osgGA::GUIEventAdapter& ea,
-                      osgGA::GUIActionAdapter&) override;
+  virtual bool handle(const ::osgGA::GUIEventAdapter& ea,
+                      ::osgGA::GUIActionAdapter&) override;
 
 protected:
 
@@ -191,7 +191,7 @@ protected:
   void triggerMouseEventHandlers();
 
   /// Gather current picks and assign them to the latest event
-  void eventPick(const osgGA::GUIEventAdapter& ea);
+  void eventPick(const ::osgGA::GUIEventAdapter& ea);
 
   /// Clear out the current button events
   void clearButtonEvents();
@@ -232,6 +232,8 @@ protected:
 
 };
 
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_DEFAULTEVENTHANDLER_H

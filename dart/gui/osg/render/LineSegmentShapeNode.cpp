@@ -46,10 +46,12 @@
 #include "dart/dynamics/LineSegmentShape.h"
 #include "dart/dynamics/SimpleFrame.h"
 
-namespace osgDart {
+namespace dart {
+namespace gui {
+namespace osg {
 namespace render {
 
-class LineSegmentShapeGeode : public ShapeNode, public osg::Geode
+class LineSegmentShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
 
@@ -66,12 +68,12 @@ protected:
   std::shared_ptr<dart::dynamics::LineSegmentShape> mLineSegmentShape;
   LineSegmentShapeDrawable* mDrawable;
 
-  osg::ref_ptr<osg::LineWidth> mLineWidth;
+  ::osg::ref_ptr<::osg::LineWidth> mLineWidth;
 
 };
 
 //==============================================================================
-class LineSegmentShapeDrawable : public osg::Geometry
+class LineSegmentShapeDrawable : public ::osg::Geometry
 {
 public:
 
@@ -87,8 +89,8 @@ protected:
   dart::dynamics::LineSegmentShape* mLineSegmentShape;
   dart::dynamics::VisualAddon* mVisualAddon;
 
-  osg::ref_ptr<osg::Vec3Array> mVertices;
-  osg::ref_ptr<osg::Vec4Array> mColors;
+  ::osg::ref_ptr<::osg::Vec3Array> mVertices;
+  ::osg::ref_ptr<::osg::Vec4Array> mColors;
 };
 
 //==============================================================================
@@ -143,10 +145,10 @@ LineSegmentShapeGeode::LineSegmentShapeGeode(
   : ShapeNode(shape, parent, this),
     mLineSegmentShape(shape),
     mDrawable(nullptr),
-    mLineWidth(new osg::LineWidth)
+    mLineWidth(new ::osg::LineWidth)
 {
-  getOrCreateStateSet()->setMode(GL_BLEND, osg::StateAttribute::ON);
-  getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+  getOrCreateStateSet()->setMode(GL_BLEND, ::osg::StateAttribute::ON);
+  getOrCreateStateSet()->setMode(GL_LIGHTING, ::osg::StateAttribute::OFF);
   extractData(true);
 }
 
@@ -190,8 +192,8 @@ LineSegmentShapeDrawable::LineSegmentShapeDrawable(
     dart::dynamics::VisualAddon* visualAddon)
   : mLineSegmentShape(shape),
     mVisualAddon(visualAddon),
-    mVertices(new osg::Vec3Array),
-    mColors(new osg::Vec4Array)
+    mVertices(new ::osg::Vec3Array),
+    mColors(new ::osg::Vec4Array)
 {
   refresh(true);
 }
@@ -200,9 +202,9 @@ LineSegmentShapeDrawable::LineSegmentShapeDrawable(
 void LineSegmentShapeDrawable::refresh(bool firstTime)
 {
   if(mLineSegmentShape->getDataVariance() == dart::dynamics::Shape::STATIC)
-    setDataVariance(osg::Object::STATIC);
+    setDataVariance(::osg::Object::STATIC);
   else
-    setDataVariance(osg::Object::DYNAMIC);
+    setDataVariance(::osg::Object::DYNAMIC);
 
   const std::vector<Eigen::Vector3d>& vertices =
       mLineSegmentShape->getVertices();
@@ -213,8 +215,8 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
   if(   mLineSegmentShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)
   {
-    osg::ref_ptr<osg::DrawElementsUInt> elements =
-        new osg::DrawElementsUInt(GL_LINES);
+    ::osg::ref_ptr<::osg::DrawElementsUInt> elements =
+        new ::osg::DrawElementsUInt(GL_LINES);
     elements->reserve(2*connections.size());
 
     for(size_t i=0; i < connections.size(); ++i)
@@ -248,7 +250,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
 
     (*mColors)[0] = eigToOsgVec4(mVisualAddon->getRGBA());
 
-    setColorArray(mColors, osg::Array::BIND_OVERALL);
+    setColorArray(mColors, ::osg::Array::BIND_OVERALL);
   }
 }
 
@@ -259,4 +261,6 @@ LineSegmentShapeDrawable::~LineSegmentShapeDrawable()
 }
 
 } // namespace render
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart

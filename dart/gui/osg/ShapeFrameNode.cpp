@@ -62,7 +62,9 @@
 #include "dart/dynamics/LineSegmentShape.h"
 #include "dart/dynamics/SimpleFrame.h"
 
-namespace osgDart {
+namespace dart {
+namespace gui {
+namespace osg {
 
 //==============================================================================
 ShapeFrameNode::ShapeFrameNode(
@@ -261,4 +263,6 @@ void ShapeFrameNode::createShapeNode(
   addChild(mShapeNode->getNode());
 }
 
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart

@@ -39,10 +39,21 @@
 
 #include <osgGA/OrbitManipulator>
 
-namespace osgDart
-{
+namespace dart {
+namespace gui {
+namespace osg {
 
-class OSGGA_EXPORT TrackballManipulator : public osgGA::OrbitManipulator
+#define DART_META_Object(library,name) \
+        virtual ::osg::Object* cloneType() const { return new name (); } \
+        virtual ::osg::Object* clone(const ::osg::CopyOp& copyop) const { return new name (*this,copyop); } \
+        virtual bool isSameKindAs(const ::osg::Object* obj) const { return dynamic_cast<const name *>(obj)!=NULL; } \
+        virtual const char* libraryName() const { return #library; }\
+        virtual const char* className() const { return #name; }
+// TODO(JS): Copied from osg/Object. Due to the namespace conflict between osg
+// and dart::gui::osg, we need to explicitly specify the root namespace osg as
+// ::osg
+
+class OSGGA_EXPORT TrackballManipulator : public ::osgGA::OrbitManipulator
 {
 public:
   /// Constructor
@@ -50,7 +61,7 @@ public:
 
   /// Copy-constructor
   TrackballManipulator(const TrackballManipulator& tm,
-                       const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY);
+                       const ::osg::CopyOp& copyOp = ::osg::CopyOp::SHALLOW_COPY);
 
   /// Destructor
   virtual ~TrackballManipulator();
@@ -65,10 +76,12 @@ public:
                                                const double dx,
                                                const double dy) override;
 
-  META_Object( osgDart, TrackballManipulator )
+  DART_META_Object( dart-gui-osg, TrackballManipulator )
   // TODO(MXG): Consider applying the META macros to every osgDart Node
 };
 
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_TRACKBALLMANIPULATOR_H

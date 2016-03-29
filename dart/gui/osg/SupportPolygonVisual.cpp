@@ -42,7 +42,9 @@
 
 #include "SupportPolygonVisual.h"
 
-namespace osgDart {
+namespace dart {
+namespace gui {
+namespace osg {
 
 //==============================================================================
 SupportPolygonVisual::SupportPolygonVisual(const dart::dynamics::SkeletonPtr& skeleton,
@@ -117,14 +119,14 @@ void SupportPolygonVisual::displayPolygon(bool display)
 //==============================================================================
 void SupportPolygonVisual::setPolygonColor(const Eigen::Vector4d& color)
 {
-  (*mPolygonColor)[0] = osg::Vec4(color[0], color[1], color[2], color[3]);
-  mPolygonGeom->setColorArray(mPolygonColor, osg::Array::BIND_OVERALL);
+  (*mPolygonColor)[0] = ::osg::Vec4(color[0], color[1], color[2], color[3]);
+  mPolygonGeom->setColorArray(mPolygonColor, ::osg::Array::BIND_OVERALL);
 }
 
 //==============================================================================
 Eigen::Vector4d SupportPolygonVisual::getPolygonColor() const
 {
-  const osg::Vec4& c = (*mPolygonColor)[0];
+  const ::osg::Vec4& c = (*mPolygonColor)[0];
   return Eigen::Vector4d(c[0], c[1], c[2], c[3]);
 }
 
@@ -254,7 +256,7 @@ void SupportPolygonVisual::refresh()
     {
       const Eigen::Vector3d& v = axes.first*poly[i][0] + axes.second*poly[i][1]
                                   + up*mElevation;
-      (*mVertices)[i] = osg::Vec3(v[0], v[1], v[2]);
+      (*mVertices)[i] = ::osg::Vec3(v[0], v[1], v[2]);
       (*mFaces)[i] = i;
     }
 
@@ -345,27 +347,27 @@ void SupportPolygonVisual::refresh()
 void SupportPolygonVisual::initialize()
 {
   mDisplayPolygon = true;
-  mPolygonGeode = new osg::Geode;
-  mPolygonGeode->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+  mPolygonGeode = new ::osg::Geode;
+  mPolygonGeode->getOrCreateStateSet()->setMode(GL_LIGHTING, ::osg::StateAttribute::OFF);
   addChild(mPolygonGeode);
 
-  mPolygonGeom = new osg::Geometry;
+  mPolygonGeom = new ::osg::Geometry;
   mPolygonGeode->addDrawable(mPolygonGeom);
 
-  mVertices = new osg::Vec3Array;
+  mVertices = new ::osg::Vec3Array;
   mPolygonGeom->setVertexArray(mVertices);
-  mPolygonGeom->setDataVariance(osg::Object::DYNAMIC);
+  mPolygonGeom->setDataVariance(::osg::Object::DYNAMIC);
 
-  osg::Vec4 color(0.1, 0.9, 0.1, 1.0);
-  mPolygonColor = new osg::Vec4Array;
+  ::osg::Vec4 color(0.1, 0.9, 0.1, 1.0);
+  mPolygonColor = new ::osg::Vec4Array;
   mPolygonColor->resize(1);
   (*mPolygonColor)[0] = color;
   mPolygonGeom->setColorArray(mPolygonColor);
-  mPolygonGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
+  mPolygonGeom->setColorBinding(::osg::Geometry::BIND_OVERALL);
 
-  mFaces = new osg::DrawElementsUShort(osg::PrimitiveSet::TRIANGLE_FAN, 0);
+  mFaces = new ::osg::DrawElementsUShort(::osg::PrimitiveSet::TRIANGLE_FAN, 0);
   mPolygonGeom->addPrimitiveSet(mFaces);
-  mPolygonGeom->setColorArray(mPolygonColor, osg::Array::BIND_OVERALL);
+  mPolygonGeom->setColorArray(mPolygonColor, ::osg::Array::BIND_OVERALL);
 
   mDisplayCentroid = true;
   mCentroid = std::make_shared<dart::dynamics::SimpleFrame>(
@@ -398,4 +400,6 @@ void SupportPolygonVisual::initialize()
   addChild(mComNode);
 }
 
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart

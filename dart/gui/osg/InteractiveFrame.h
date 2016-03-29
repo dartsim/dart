@@ -40,13 +40,13 @@
 #include "dart/dynamics/SimpleFrame.h"
 
 namespace dart {
+
 namespace dynamics {
 class MeshShape;
 } // namespace dynamics
-} // namespace dart
 
-namespace osgDart
-{
+namespace gui {
+namespace osg {
 
 class InteractiveFrame;
 
@@ -167,6 +167,8 @@ protected:
 
 typedef std::shared_ptr<InteractiveFrame> InteractiveFramePtr;
 
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_INTERACTIVEFRAME_H

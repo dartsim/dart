@@ -44,9 +44,9 @@
 
 //==============================================================================
 template<typename Scalar>
-osg::Matrix eigToOsgMatrix(const Eigen::Transform<Scalar,3,Eigen::Isometry>& tf)
+::osg::Matrix eigToOsgMatrix(const Eigen::Transform<Scalar,3,Eigen::Isometry>& tf)
 {
-  return osg::Matrix(
+  return ::osg::Matrix(
         tf(0, 0), tf(1, 0), tf(2, 0), tf(3, 0),
         tf(0, 1), tf(1, 1), tf(2, 1), tf(3, 1),
         tf(0, 2), tf(1, 2), tf(2, 2), tf(3, 2),
@@ -55,9 +55,9 @@ osg::Matrix eigToOsgMatrix(const Eigen::Transform<Scalar,3,Eigen::Isometry>& tf)
 
 //==============================================================================
 template<typename Derived>
-osg::Matrix eigToOsgMatrix(const Eigen::DenseBase<Derived>& M)
+::osg::Matrix eigToOsgMatrix(const Eigen::DenseBase<Derived>& M)
 {
-  return osg::Matrix(
+  return ::osg::Matrix(
         M(0, 0), M(1, 0), M(2, 0), M(3, 0),
         M(0, 1), M(1, 1), M(2, 1), M(3, 1),
         M(0, 2), M(1, 2), M(2, 2), M(3, 2),
@@ -66,26 +66,26 @@ osg::Matrix eigToOsgMatrix(const Eigen::DenseBase<Derived>& M)
 
 //==============================================================================
 template<typename Derived>
-osg::Vec3d eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec)
+::osg::Vec3d eigToOsgVec3(const Eigen::MatrixBase<Derived>& vec)
 {
-  return osg::Vec3d(vec[0], vec[1], vec[2]);
+  return ::osg::Vec3d(vec[0], vec[1], vec[2]);
 }
 
 //==============================================================================
-inline Eigen::Vector3d osgToEigVec3(const osg::Vec3d& vec)
+inline Eigen::Vector3d osgToEigVec3(const ::osg::Vec3d& vec)
 {
   return Eigen::Vector3d(vec[0], vec[1], vec[2]);
 }
 
 //==============================================================================
 template<typename Derived>
-osg::Vec4d eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec)
+::osg::Vec4d eigToOsgVec4(const Eigen::MatrixBase<Derived>& vec)
 {
-  return osg::Vec4d(vec[0], vec[1], vec[2], vec[3]);
+  return ::osg::Vec4d(vec[0], vec[1], vec[2], vec[3]);
 }
 
 //==============================================================================
-inline Eigen::Vector4d osgToEigVec4(const osg::Vec4d& vec)
+inline Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec)
 {
   return Eigen::Vector4d(vec[0], vec[1], vec[2], vec[3]);
 }

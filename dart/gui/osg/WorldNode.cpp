@@ -45,16 +45,17 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
 
-namespace osgDart
-{
+namespace dart {
+namespace gui {
+namespace osg {
 
-class WorldNodeCallback : public osg::NodeCallback
+class WorldNodeCallback : public ::osg::NodeCallback
 {
 public:
 
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  virtual void operator()(::osg::Node* node, ::osg::NodeVisitor* nv)
   {
-    osg::ref_ptr<WorldNode> currentNode = dynamic_cast<WorldNode*>(node);
+    ::osg::ref_ptr<WorldNode> currentNode = dynamic_cast<WorldNode*>(node);
 
     if(currentNode)
       currentNode->refresh();
@@ -276,10 +277,12 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
     return;
   }
 
-  osg::ref_ptr<ShapeFrameNode> node = new ShapeFrameNode(frame->asShapeFrame(),
+  ::osg::ref_ptr<ShapeFrameNode> node = new ShapeFrameNode(frame->asShapeFrame(),
                                                          this);
   it->second = node;
   addChild(node);
 }
 
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart

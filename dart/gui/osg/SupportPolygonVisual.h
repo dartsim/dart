@@ -44,7 +44,9 @@
 #include "dart/gui/osg/Viewer.h"
 #include "ShapeFrameNode.h"
 
-namespace osgDart {
+namespace dart {
+namespace gui {
+namespace osg {
 
 /// Attach this to a Viewer in order to visualize the support polygon of a
 /// Skeleton
@@ -175,27 +177,29 @@ protected:
   Eigen::Vector4d mInvalidColor;
 
   /// Color for the polygon
-  osg::ref_ptr<osg::Vec4Array> mPolygonColor;
+  ::osg::ref_ptr<::osg::Vec4Array> mPolygonColor;
 
   /// Geode to hold the polygon
-  osg::ref_ptr<osg::Geode> mPolygonGeode;
+  ::osg::ref_ptr<::osg::Geode> mPolygonGeode;
 
   /// Geometry to describe the polygon
-  osg::ref_ptr<osg::Geometry> mPolygonGeom;
+  ::osg::ref_ptr<::osg::Geometry> mPolygonGeom;
 
   /// Vertices of the polygon
-  osg::ref_ptr<osg::Vec3Array> mVertices;
+  ::osg::ref_ptr<::osg::Vec3Array> mVertices;
 
   /// Faces of the polygon
-  osg::ref_ptr<osg::DrawElementsUShort> mFaces;
+  ::osg::ref_ptr<::osg::DrawElementsUShort> mFaces;
 
   /// Node to render the centroid
-  osg::ref_ptr<ShapeFrameNode> mCentroidNode;
+  ::osg::ref_ptr<ShapeFrameNode> mCentroidNode;
 
   /// Node to render the COM
-  osg::ref_ptr<ShapeFrameNode> mComNode;
+  ::osg::ref_ptr<ShapeFrameNode> mComNode;
 };
 
-} // namespace osgDart
+} // namespace osg
+} // namespace gui
+} // namespace dart
 
 #endif // OSGDART_SUPPORTPOLYGONVISUAL_H
