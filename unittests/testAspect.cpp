@@ -79,7 +79,15 @@ protected:
 
 };
 
-class SomePropertiesComposite : public virtual dart::common::Composite
+class SomePropertiesComposite;
+class SomeEmbeddedPropertiesAspect : public dart::common::EmbeddedPropertiesAspect<
+    SomeEmbeddedPropertiesAspect, SomeProperties, SomePropertiesComposite>
+{
+public:
+
+};
+
+class SomePropertiesComposite : public dart::common::RequiresAspect<SomePropertiesComposite>
 {
 public:
 
@@ -93,6 +101,13 @@ protected:
 
 };
 
+class SomeStateAndPropertiesComposite;
+class SomeEmbeddedStateAndPropertiesAspect : public dart::common::EmbeddedStateAndPropertiesAspect<
+    SomeEmbeddedStateAndPropertiesAspect, SomeState, SomeProperties, SomeStateAndPropertiesComposite>
+{
+public:
+
+};
 
 
 

@@ -58,7 +58,7 @@ using EmbeddedStateAspect =
 template <class DerivedT,
           typename PropertiesT,
           class CompositeT,
-          void (*setEmbeddedProperties)(DerivedT, const PropertiesT&) =
+          void (*setEmbeddedProperties)(DerivedT*, const PropertiesT&) =
               &detail::DefaultSetEmbeddedProperties<DerivedT, PropertiesT>,
           const PropertiesT& (*getProperties)(const DerivedT*) =
               &detail::DefaultGetEmbeddedProperties<DerivedT, PropertiesT> >
@@ -68,7 +68,75 @@ using EmbeddedPropertiesAspect =
         PropertiesT, setEmbeddedProperties, getProperties>;
 
 //==============================================================================
+template <class DerivedT,
+          typename StateT,
+          typename PropertiesT,
+          class CompositeT,
+          void (*setEmbeddedState)(DerivedT*, const StateT&) =
+              &detail::DefaultSetEmbeddedState<DerivedT, StateT>,
+          const StateT& (*getEmbeddedState)(const DerivedT*) =
+              &detail::DefaultGetEmbeddedState<DerivedT, StateT>,
+          void (*setEmbeddedProperties)(DerivedT*, const PropertiesT&) =
+              &detail::DefaultSetEmbeddedProperties<DerivedT, PropertiesT>,
+          const PropertiesT& (*getEmbeddedProperties)(const DerivedT*) =
+              &detail::DefaultGetEmbeddedProperties<DerivedT, PropertiesT> >
+class EmbeddedStateAndPropertiesAspect :
+    public detail::EmbeddedPropertiesAspect<
+        EmbeddedStateAspect<DerivedT, StateT, CompositeT,
+                            setEmbeddedState, setEmbeddedProperties>,
+        DerivedT, PropertiesT, setEmbeddedProperties, getEmbeddedProperties>
+{
+public:
 
+  using Derived = DerivedT;
+  using State = StateT;
+  using Properties = PropertiesT;
+  using CompositeType = CompositeT;
+
+  using AspectStateImpl = EmbeddedStateAspect<
+      Derived, State, CompositeType, setEmbeddedState, getEmbeddedState>;
+
+  using AspectPropertiesImpl = detail::EmbeddedPropertiesAspect<
+      AspectStateImpl, Derived, Properties,
+      setEmbeddedProperties, getEmbeddedProperties>;
+
+  using AspectImpl = EmbeddedStateAndPropertiesAspect<
+      Derived, State, Properties, CompositeType,
+      setEmbeddedState, getEmbeddedState,
+      setEmbeddedProperties, getEmbeddedProperties>;
+
+  EmbeddedStateAndPropertiesAspect() = delete;
+  EmbeddedStateAndPropertiesAspect(
+      const EmbeddedStateAndPropertiesAspect&) = delete;
+
+  /// Construct using a State and Properties instance
+  EmbeddedStateAndPropertiesAspect(
+      common::Composite* comp,
+      const State& state = State(),
+      const Properties& properties = Properties())
+    : AspectPropertiesImpl(comp, properties, state)
+  {
+    // Do nothing
+  }
+
+  /// Construct using a Properties and State instance
+  EmbeddedStateAndPropertiesAspect(
+      common::Composite* comp,
+      const Properties& properties,
+      const State& state = State())
+    : AspectPropertiesImpl(comp, properties, state)
+  {
+    // Do nothing
+  }
+
+  // Documentation inherited
+  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  {
+    return make_unique<Derived>(
+          newComposite, this->getState(), this->getProperties());
+  }
+
+};
 
 } // namespace common
 } // namespace dart

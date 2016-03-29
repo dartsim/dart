@@ -179,9 +179,9 @@ protected:
 #define DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(ClassName)\
   ClassName (const ClassName &) = delete;\
   inline ClassName (dart::common::Composite* comp, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
-    : AspectImplementation(comp, state, properties) { }\
+    : AspectImpl(comp, state, properties) { }\
   inline ClassName (dart::common::Composite* comp, const PropertiesData& properties, const StateData state = StateData())\
-    : AspectImplementation(comp, properties, state) { }
+    : AspectImpl(comp, properties, state) { }
 
 //==============================================================================
 #define DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM( Type, Name, Update )\

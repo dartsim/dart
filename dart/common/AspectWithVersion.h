@@ -81,14 +81,14 @@ public:
   constexpr static void (*UpdateState)(Derived*) = updateState;
   constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 
-  using AspectStateImplementation = AspectWithState<
+  using AspectStateImpl = AspectWithState<
       Derived, StateData, CompositeType, updateState>;
 
-  using AspectPropertiesImplementation = detail::AspectWithVersionedProperties<
-      AspectStateImplementation,
+  using AspectPropertiesImpl = detail::AspectWithVersionedProperties<
+      AspectStateImpl,
       Derived, PropertiesData, CompositeType, updateProperties>;
 
-  using AspectImplementation = AspectWithStateAndVersionedProperties<
+  using AspectImpl = AspectWithStateAndVersionedProperties<
       DerivedT, StateDataT, PropertiesDataT, CompositeT,
       updateState, updateProperties>;
 
@@ -101,7 +101,7 @@ public:
       common::Composite* comp,
       const StateData& state = StateData(),
       const PropertiesData& properties = PropertiesData())
-    : AspectPropertiesImplementation(comp, properties, state)
+    : AspectPropertiesImpl(comp, properties, state)
   {
     // Do nothing
   }
@@ -111,9 +111,16 @@ public:
       common::Composite* comp,
       const PropertiesData& properties,
       const StateData& state = StateData())
-    : AspectPropertiesImplementation(comp, properties, state)
+    : AspectPropertiesImpl(comp, properties, state)
   {
     // Do nothing
+  }
+
+  // Documentation inherited
+  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  {
+    return make_unique<Derived>(
+          newComposite, this->getState(), this->getProperties());
   }
 
 };
