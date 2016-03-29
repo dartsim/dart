@@ -16,24 +16,6 @@ endif()
 set(dart_optimizer_hdrs ${hdrs} ${dart_optimizer_hdrs} PARENT_SCOPE)
 set(dart_optimizer_srcs ${srcs} ${dart_optimizer_srcs} PARENT_SCOPE)
 
-# Library
-#dart_add_library(dart_optimizer ${srcs} ${hdrs})
-#target_link_libraries(
-#  dart_optimizer
-#  dart_common
-#  dart_math
-#  ${DART_DEPENDENCIES}
-#)
-#if(HAVE_IPOPT)
-#  target_link_libraries(dart_optimizer dart_optimizer_ipopt)
-#endif()
-#if(HAVE_NLOPT)
-#  target_link_libraries(dart_optimizer dart_optimizer_nlopt)
-#endif()
-#if(HAVE_SNOPT)
-#  target_link_libraries(dart_optimizer dart_optimizer_snopt)
-#endif()
-
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer headers" ${hdrs})
 if(HAVE_IPOPT)
@@ -62,5 +44,3 @@ install(
   DESTINATION include/dart/optimizer
   COMPONENT headers
 )
-#install(TARGETS dart_optimizer EXPORT DARTTargets DESTINATION lib)
-

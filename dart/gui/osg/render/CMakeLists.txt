@@ -2,8 +2,8 @@
 file(GLOB hdrs "*.h")
 file(GLOB srcs "*.cpp")
 
-set(dart_gui_hdrs ${dart_gui_hdrs} ${hdrs} PARENT_SCOPE)
-set(dart_gui_srcs ${dart_gui_srcs} ${srcs} PARENT_SCOPE)
+set(dart_gui_osg_srcs ${dart_gui_osg_srcs} ${srcs} PARENT_SCOPE)
+set(dart_gui_osg_hdrs ${dart_gui_osg_hdrs} ${hdrs} PARENT_SCOPE)
 
 dart_get_filename_components(header_names "gui osg render headers" ${hdrs})
 dart_generate_include_header_list(

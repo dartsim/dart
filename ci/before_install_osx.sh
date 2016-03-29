@@ -20,7 +20,7 @@ ipopt
 ros/deps/urdfdom
 ros/deps/urdfdom_headers
 ros/deps/console_bridge
-ros/deps/gtest
+open-scene-graph
 '
 
 brew install $PACKAGES | grep -v '%$'

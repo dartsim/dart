@@ -2,12 +2,11 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
-set(dart_planning_hdrs ${hdrs} PARENT_SCOPE)
-set(dart_planning_srcs ${srcs} PARENT_SCOPE)
+include_directories(SYSTEM ${FLANN_INCLUDE_DIRS})
 
 # Library
-#dart_add_library(dart_planning ${srcs} ${hdrs})
-#target_link_libraries(dart_planning ${DART_DEPENDENCIES})
+dart_add_library(dart-planning ${srcs} ${hdrs})
+target_link_libraries(dart-planning dart ${FLANN_LIBRARIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "planning headers" ${hdrs})
@@ -28,5 +27,5 @@ install(
   DESTINATION include/dart/planning
   COMPONENT headers
 )
-#install(TARGETS dart_planning EXPORT DARTTargets DESTINATION lib)
+install(TARGETS dart-planning EXPORT DARTTargets DESTINATION lib)
 

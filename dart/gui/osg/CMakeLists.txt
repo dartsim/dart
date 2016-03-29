@@ -4,10 +4,14 @@ include_directories(SYSTEM ${OPENSCENEGRAPH_INCLUDE_DIRS})
 file(GLOB hdrs "*.h")
 file(GLOB srcs "*.cpp")
 
+set(dart_gui_osg_hdrs ${hdrs})
+set(dart_gui_osg_srcs ${srcs})
+
 add_subdirectory(render)
 
-set(dart_gui_hdrs ${dart_gui_hdrs} ${hdrs} PARENT_SCOPE)
-set(dart_gui_srcs ${dart_gui_srcs} ${srcs} PARENT_SCOPE)
+# Library
+dart_add_library(dart-gui-osg ${dart_gui_osg_srcs} ${dart_gui_osg_hdrs})
+target_link_libraries(dart-gui-osg dart-gui ${OPENSCENEGRAPH_LIBRARIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})
@@ -32,4 +36,4 @@ install(
   DESTINATION include/dart/gui/osg
   COMPONENT headers
 )
-#install(TARGETS osgDart EXPORT osgDartTargets DESTINATION lib)
+install(TARGETS dart-gui-osg EXPORT DARTTargets DESTINATION lib)

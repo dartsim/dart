@@ -39,6 +39,7 @@
 #define APPS_FORWARDSIM_MYWINDOW_H_
 
 #include "dart/dart.h"
+#include "dart/gui/gui.h"
 
 class MyWindow : public dart::gui::SimWindow {
 public:
