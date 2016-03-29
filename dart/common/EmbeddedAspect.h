@@ -55,7 +55,20 @@ class EmbeddedStateAspect : public detail::EmbeddedStateAspect<
     CompositeTrackingAspect<CompositeT>,
     EmbeddedStateAspect<CompositeT, StateT>, StateT>
 {
-  // Do nothing
+public:
+
+  using State = StateT;
+  using Base = CompositeTrackingAspect<CompositeT>;
+  using Derived = EmbeddedStateAspect<CompositeT, State>;
+  using Impl = detail::EmbeddedStateAspect<Base, Derived, State>;
+
+  template <typename... Args>
+  EmbeddedStateAspect(Args&&... args)
+    : Impl(std::forward<Args>(args)...)
+  {
+    // Do nothing
+  }
+
 };
 
 //==============================================================================
@@ -105,7 +118,20 @@ class EmbeddedPropertiesAspect : public detail::EmbeddedPropertiesAspect<
     CompositeTrackingAspect<CompositeT>,
     EmbeddedPropertiesAspect<CompositeT, PropertiesT>, PropertiesT>
 {
-  // Do nothing
+public:
+
+  using Properties = PropertiesT;
+  using Base = CompositeTrackingAspect<CompositeT>;
+  using Derived = EmbeddedPropertiesAspect<CompositeT, Properties>;
+  using Impl = detail::EmbeddedPropertiesAspect<Base, Derived, Properties>;
+
+  template <typename... Args>
+  EmbeddedPropertiesAspect(Args&&... args)
+    : Impl(std::forward<Args>(args)...)
+  {
+    // Do nothing
+  }
+
 };
 
 //==============================================================================

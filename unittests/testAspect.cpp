@@ -53,22 +53,83 @@
 
 using namespace dart::common;
 
-struct SomeStateData { };
-struct SomePropertiesData { };
+struct EmbeddedStateData
+{
+  double d;
+  int i;
+
+  EmbeddedStateData() : d(0.0), i(0)
+  {
+    // Do nothing
+  }
+
+  bool operator==(const EmbeddedStateData& other) const
+  {
+    if(other.d != d)
+      return false;
+
+    if(other.i != i)
+      return false;
+
+    return true;
+  }
+
+  bool operator!=(const EmbeddedStateData& other) const
+  {
+    return !(*this == other);
+  }
+};
+
+struct EmbeddedPropertiesData
+{
+  bool b;
+  float f;
+
+  EmbeddedPropertiesData() : b(false), f(0.0)
+  {
+    // Do nothing
+  }
+
+  bool operator==(const EmbeddedPropertiesData& other) const
+  {
+    if(other.b != b)
+      return false;
+
+    if(other.f != f)
+      return false;
+
+    return true;
+  }
+
+  bool operator!=(const EmbeddedPropertiesData& other) const
+  {
+    return !(*this == other);
+  }
+};
 
 class EmbeddedStateComposite :
-    public EmbedState<EmbeddedStateComposite, SomeStateData>
+    public EmbedState<EmbeddedStateComposite, EmbeddedStateData>
 {
 public:
+
+  EmbeddedStateComposite()
+  {
+    create<Aspect>();
+  }
 
   void setAspectState(const AspectState& state) { mAspectState = state; }
 
 };
 
 class EmbeddedPropertiesComposite :
-    public EmbedProperties<EmbeddedPropertiesComposite, SomePropertiesData>
+    public EmbedProperties<EmbeddedPropertiesComposite, EmbeddedPropertiesData>
 {
 public:
+
+  EmbeddedPropertiesComposite()
+  {
+    create<Aspect>();
+  }
 
   void setAspectProperties(const AspectProperties& properties)
   {
@@ -77,13 +138,17 @@ public:
 
 };
 
-
 class EmbeddedStateAndPropertiesComposite :
     public EmbedStateAndProperties<
         EmbeddedStateAndPropertiesComposite,
-        SomeStateData, SomePropertiesData>
+        EmbeddedStateData, EmbeddedPropertiesData>
 {
 public:
+
+  EmbeddedStateAndPropertiesComposite()
+  {
+    create<Aspect>();
+  }
 
   void setAspectState(const AspectState& state) { mAspectState = state; }
 
@@ -641,9 +706,88 @@ TEST(Aspect, Duplication)
 
 TEST(Aspect, Embedded)
 {
-  EmbeddedStateComposite s_comp;
-  EmbeddedPropertiesComposite p_comp;
-  EmbeddedStateAndPropertiesComposite sp_comp;
+  EmbeddedStateComposite s;
+  EmbeddedPropertiesComposite p;
+  EmbeddedStateAndPropertiesComposite sp;
+
+  // --------- Test Embedded State -----------
+  EmbeddedStateComposite::AspectState state = s.getAspectState();
+  EmbeddedStateComposite::AspectState a_state =
+      s.get<EmbeddedStateComposite::Aspect>()->getState();
+
+  EXPECT_TRUE(state == a_state);
+
+  state.d = 3.5;
+  state.i = 750;
+  s.setAspectState(state);
+
+  state = s.getAspectState();
+  a_state = s.get<EmbeddedStateComposite::Aspect>()->getState();
+  EXPECT_EQ(3.5, state.d);
+  EXPECT_EQ(750, state.i);
+  EXPECT_TRUE(state == a_state);
+
+  EXPECT_EQ(&s.get<EmbeddedStateComposite::Aspect>()->getState(),
+             s.get<EmbeddedStateComposite::Aspect>()->getAspectState());
+  EXPECT_EQ(&s.getAspectState(),
+             s.get<EmbeddedStateComposite::Aspect>()->getAspectState());
+
+  state.d = -4e-3;
+  state.i = -18;
+  s.get<EmbeddedStateComposite::Aspect>()->setAspectState(state);
+
+  state = s.getAspectState();
+  a_state = s.get<EmbeddedStateComposite::Aspect>()->getState();
+  EXPECT_EQ(-4e-3, state.d);
+  EXPECT_EQ(-18,   state.i);
+  EXPECT_TRUE(state == a_state);
+
+
+  // --------- Test Embedded Properties -----------
+  EmbeddedPropertiesComposite::AspectProperties prop = p.getAspectProperties();
+  EmbeddedPropertiesComposite::AspectProperties a_prop =
+      p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties();
+
+  EXPECT_TRUE(prop == a_prop);
+
+  prop.f = 7.5;
+  prop.b = true;
+  p.setAspectProperties(prop);
+
+  prop = p.getAspectProperties();
+  a_prop = p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties();
+  EXPECT_EQ(7.5,  prop.f);
+  EXPECT_EQ(true, prop.b);
+  EXPECT_TRUE(prop == a_prop);
+
+  // Make sure the pointers are consistent
+  EXPECT_EQ(&p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties(),
+             p.get<EmbeddedPropertiesComposite::Aspect>()->getAspectProperties());
+  EXPECT_EQ(&p.getAspectProperties(),
+             p.get<EmbeddedPropertiesComposite::Aspect>()->getAspectProperties());
+
+  prop.f = -7e5;
+  prop.b = false;
+  p.get<EmbeddedPropertiesComposite::Aspect>()->setAspectProperties(prop);
+
+  prop = p.getAspectProperties();
+  a_prop = p.get<EmbeddedPropertiesComposite::Aspect>()->getProperties();
+  EXPECT_EQ(-7e5,  prop.f);
+  EXPECT_EQ(false, prop.b);
+  EXPECT_TRUE(prop == a_prop);
+
+
+  // --------- Test Embedded State and Properties Combination -----------
+  // Make sure the pointers are consistent
+  EXPECT_EQ(&sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState(),
+             sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getAspectState());
+  EXPECT_EQ(&sp.getAspectState(),
+             sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getAspectState());
+
+  EXPECT_EQ(&sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties(),
+             sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getAspectProperties());
+  EXPECT_EQ(&sp.getAspectProperties(),
+             sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getAspectProperties());
 }
 
 int main(int argc, char* argv[])

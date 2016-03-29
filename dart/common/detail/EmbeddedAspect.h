@@ -94,7 +94,7 @@ public:
   /// Construct using a State instance
   EmbeddedStateAspect(Composite* comp, const State& state = State())
     : BaseT(comp),
-      mTemporaryState(make_unique(state))
+      mTemporaryState(make_unique<State>(state))
   {
     // Do nothing
   }
@@ -104,7 +104,7 @@ public:
   EmbeddedStateAspect(
       Composite* comp, const State& state, BaseArgs&&... args)
     : Base(comp, std::forward<BaseArgs>(args)...),
-      mTemporaryState(make_unique(state))
+      mTemporaryState(make_unique<State>(state))
   {
     // Do nothing
   }
@@ -120,13 +120,13 @@ public:
   {
     if(this->getComposite())
     {
-      SetEmbeddedState(this, state);
+      SetEmbeddedState(static_cast<Derived*>(this), state);
       return;
     }
 
     // If the correct type of Composite is not available, we store this on the
     // heap until this Aspect is moved.
-    mTemporaryState = make_unique(state);
+    mTemporaryState = make_unique<State>(state);
   }
 
   // Documentation inherited
@@ -140,13 +140,24 @@ public:
   {
     if(this->getComposite())
     {
-      return GetEmbeddedState(this);
+      return GetEmbeddedState(static_cast<const Derived*>(this));
     }
 
     if(!mTemporaryState)
-      mTemporaryState = make_unique<State>();
+    {
+      dterr << "[detail::EmbeddedStateAspect::getState] This Aspect is not in "
+            << "a Composite, but it also does not have a temporary State "
+            << "available. This should not happen! Please report this as a "
+            << "bug!\n";
+      assert(false);
+    }
 
     return *mTemporaryState;
+  }
+
+  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  {
+    return make_unique<Derived>(newComposite, this->getState());
   }
 
 protected:
@@ -156,9 +167,9 @@ protected:
   {
     Base::setComposite(newComposite);
     if(mTemporaryState)
-      SetEmbeddedState(this, *mTemporaryState);
+      SetEmbeddedState(static_cast<Derived*>(this), *mTemporaryState);
     else
-      SetEmbeddedState(this, State());
+      SetEmbeddedState(static_cast<Derived*>(this), State());
 
     mTemporaryState = nullptr;
   }
@@ -166,7 +177,8 @@ protected:
   /// Save the embedded State of this Composite before we remove the Aspect
   void loseComposite(Composite* oldComposite) override
   {
-    mTemporaryState = make_unique(GetEmbeddedState(this));
+    mTemporaryState = make_unique<State>(
+          GetEmbeddedState(static_cast<const Derived*>(this)));
     Base::loseComposite(oldComposite);
   }
 
@@ -200,7 +212,7 @@ public:
   EmbeddedPropertiesAspect(
       Composite* comp, const Properties& properties = Properties())
     : BaseT(comp),
-      mTemporaryProperties(make_unique(properties))
+      mTemporaryProperties(make_unique<Properties>(properties))
   {
     // Do nothing
   }
@@ -210,7 +222,7 @@ public:
   EmbeddedPropertiesAspect(
       Composite* comp, const Properties& properties, BaseArgs&&... args)
     : Base(comp, std::forward<BaseArgs>(args)...),
-      mTemporaryProperties(make_unique(properties))
+      mTemporaryProperties(make_unique<Properties>(properties))
   {
     // Do nothing
   }
@@ -226,13 +238,13 @@ public:
   {
     if(this->getComposite())
     {
-      SetEmbeddedProperties(this, properties);
+      SetEmbeddedProperties(static_cast<Derived*>(this), properties);
       return;
     }
 
     // If the correct type of Composite is not available, we store this on the
     // heap until this Aspect is moved.
-    mTemporaryProperties = make_unique(properties);
+    mTemporaryProperties = make_unique<Properties>(properties);
   }
 
   // Documentation inherited
@@ -246,13 +258,24 @@ public:
   {
     if(this->getComposite())
     {
-      return GetEmbeddedProperties(this);
+      return GetEmbeddedProperties(static_cast<const Derived*>(this));
     }
 
     if(!mTemporaryProperties)
-      mTemporaryProperties = make_unique<Properties>();
+    {
+      dterr << "[detail::EmbeddedPropertiesAspect::getProperties] This Aspect "
+            << "is not in a Composite, but it also does not have temporary "
+            << "Properties available. This should not happen! Please report "
+            << "this as a bug!\n";
+      assert(false);
+    }
 
     return *mTemporaryProperties;
+  }
+
+  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  {
+    return make_unique<Derived>(newComposite, this->getProperties());
   }
 
 protected:
@@ -262,9 +285,9 @@ protected:
   {
     Base::setComposite(newComposite);
     if(mTemporaryProperties)
-      SetEmbeddedProperties(this, *mTemporaryProperties);
+      SetEmbeddedProperties(static_cast<Derived*>(this), *mTemporaryProperties);
     else
-      SetEmbeddedProperties(this, Properties());
+      SetEmbeddedProperties(static_cast<Derived*>(this), Properties());
 
     // Release the temporary memory
     mTemporaryProperties = nullptr;
@@ -273,7 +296,8 @@ protected:
   /// Save the embedded Properties of this Composite before we remove the Aspect
   void loseComposite(Composite* oldComposite)
   {
-    mTemporaryProperties = make_unique(GetEmbeddedProperties(this));
+    mTemporaryProperties = make_unique<Properties>(
+          GetEmbeddedProperties(static_cast<Derived*>(this)));
     Base::loseComposite(oldComposite);
   }
 
