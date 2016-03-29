@@ -54,62 +54,45 @@
 using namespace dart::common;
 
 struct SomeStateData { };
-using SomeState = dart::common::Aspect::StateMixer<SomeStateData>;
 struct SomePropertiesData { };
-using SomeProperties = dart::common::Aspect::PropertiesMixer<SomePropertiesData>;
 
-class SomeStateComposite;
-class SomeEmbeddedStateAspect : public dart::common::EmbeddedStateAspect<
-    SomeEmbeddedStateAspect, SomeState, SomeStateComposite>
-{
-
-};
-
-class SomeStateComposite : public virtual dart::common::RequiresAspect<SomeStateComposite>
+class EmbeddedStateComposite :
+    public EmbedState<EmbeddedStateComposite, SomeStateData>
 {
 public:
 
-  void setAspectState(const SomeState& state) { mState = state; }
-
-  const SomeState& getAspectState() const { return mState; }
-
-protected:
-
-  SomeState mState;
+  void setAspectState(const AspectState& state) { mAspectState = state; }
 
 };
 
-class SomePropertiesComposite;
-class SomeEmbeddedPropertiesAspect : public dart::common::EmbeddedPropertiesAspect<
-    SomeEmbeddedPropertiesAspect, SomeProperties, SomePropertiesComposite>
+class EmbeddedPropertiesComposite :
+    public EmbedProperties<EmbeddedPropertiesComposite, SomePropertiesData>
 {
 public:
 
+  void setAspectProperties(const AspectProperties& properties)
+  {
+    mAspectProperties = properties;
+  }
+
 };
 
-class SomePropertiesComposite : public dart::common::RequiresAspect<SomePropertiesComposite>
+
+class EmbeddedStateAndPropertiesComposite :
+    public EmbedStateAndProperties<
+        EmbeddedStateAndPropertiesComposite,
+        SomeStateData, SomePropertiesData>
 {
 public:
 
-  void setAspectProperties(const SomeProperties& properties) { mProperties = properties; }
+  void setAspectState(const AspectState& state) { mAspectState = state; }
 
-  const SomeProperties& getAspectProperties() const { return mProperties; }
-
-protected:
-
-  SomeProperties mProperties;
-
-};
-
-class SomeStateAndPropertiesComposite;
-class SomeEmbeddedStateAndPropertiesAspect : public dart::common::EmbeddedStateAndPropertiesAspect<
-    SomeEmbeddedStateAndPropertiesAspect, SomeState, SomeProperties, SomeStateAndPropertiesComposite>
-{
-public:
+  void setAspectProperties(const AspectProperties& properties)
+  {
+    mAspectProperties = properties;
+  }
 
 };
-
-
 
 // Testing the creation of an Aspect using the AspectWithState template class
 class StateAspectTest : public dart::common::AspectWithState<
@@ -658,7 +641,9 @@ TEST(Aspect, Duplication)
 
 TEST(Aspect, Embedded)
 {
-  SomeStateComposite comp;
+  EmbeddedStateComposite s_comp;
+  EmbeddedPropertiesComposite p_comp;
+  EmbeddedStateAndPropertiesComposite sp_comp;
 }
 
 int main(int argc, char* argv[])

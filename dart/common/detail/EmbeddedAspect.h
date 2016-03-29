@@ -74,8 +74,10 @@ const PropertiesT& DefaultGetEmbeddedProperties(const AspectT* aspect)
 
 //==============================================================================
 template <class BaseT, class DerivedT, typename StateT,
-          void (*setEmbeddedState)(DerivedT*, const StateT&),
-          const StateT& (*getEmbeddedState)(const DerivedT*)>
+          void (*setEmbeddedState)(DerivedT*, const StateT&) =
+              &DefaultSetEmbeddedState<DerivedT, StateT>,
+          const StateT& (*getEmbeddedState)(const DerivedT*) =
+              &DefaultGetEmbeddedState<DerivedT, StateT> >
 class EmbeddedStateAspect : public BaseT
 {
 public:
@@ -264,6 +266,7 @@ protected:
     else
       SetEmbeddedProperties(this, Properties());
 
+    // Release the temporary memory
     mTemporaryProperties = nullptr;
   }
 
