@@ -165,7 +165,8 @@ public:
   MultiDofJointAddon(const MultiDofJointAddon&) = delete;
 
   MultiDofJointAddon(common::AddonManager* mgr,
-        const typename MultiDofJointAddon::PropertiesData& properties);
+        const typename MultiDofJointAddon::PropertiesData& properties =
+            typename MultiDofJointAddon::PropertiesData());
 
   constexpr static size_t NumDofs = DOF;
   using Vector = Eigen::Matrix<double, DOF, 1>;

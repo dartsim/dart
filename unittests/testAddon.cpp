@@ -573,6 +573,9 @@ TEST(Addon, Joints)
   EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
   universal->getUniversalJointAddon();
   EXPECT_TRUE(usedSpecializedAddonAccess); usedSpecializedAddonAccess = false;
+
+  // Regression test for issue #645
+  universal->getMultiDofJointAddon(true);
 }
 
 TEST(Addon, Duplication)

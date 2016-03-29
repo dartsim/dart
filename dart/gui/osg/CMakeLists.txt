@@ -23,9 +23,7 @@ configure_file(
   ${CMAKE_CURRENT_BINARY_DIR}/osg.h
 )
 
-if(${DART_BUILD_EXAMPLES})
-  add_subdirectory(examples)
-endif(${DART_BUILD_EXAMPLES})
+add_subdirectory(examples EXCLUDE_FROM_ALL)
 
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osg.h

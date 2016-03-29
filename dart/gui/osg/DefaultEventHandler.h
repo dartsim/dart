@@ -199,7 +199,7 @@ protected:
   virtual void handleDestructionNotification(
       const dart::common::Subject* _subject) override;
 
-  /// osgDart::Viewer that this event handler is tied to
+  /// dart::gui::osg::Viewer that this event handler is tied to
   Viewer* mViewer;
 
   /// Set of MouseEventHandlers that are tied to this DefaultEventHandler

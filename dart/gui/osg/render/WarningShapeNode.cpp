@@ -52,7 +52,7 @@ WarningShapeNode::WarningShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
 {
   dtwarn << "Shape type (" << shape->getShapeType()
          << ") found in Entity '" << parent->getName()
-         << "' is not currently supported by osgDart, "
+         << "' is not currently supported by dart::gui::osg, "
          << "and will not be rendered\n";
 }
 

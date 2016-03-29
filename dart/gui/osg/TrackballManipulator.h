@@ -77,7 +77,7 @@ public:
                                                const double dy) override;
 
   DART_META_Object( dart-gui-osg, TrackballManipulator )
-  // TODO(MXG): Consider applying the META macros to every osgDart Node
+  // TODO(MXG): Consider applying the META macros to every dart::gui::osg Node
 };
 
 } // namespace osg
