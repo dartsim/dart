@@ -108,7 +108,7 @@ public:
 protected:
 
   /// Constructor called by Skeleton class
-  UniversalJoint(const Properties& _properties);
+  UniversalJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

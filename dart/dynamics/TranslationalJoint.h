@@ -82,7 +82,7 @@ public:
 protected:
 
   /// Constructor called by Skeleton class
-  TranslationalJoint(const Properties& _properties);
+  TranslationalJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

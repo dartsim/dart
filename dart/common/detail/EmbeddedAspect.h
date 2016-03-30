@@ -91,6 +91,8 @@ public:
   EmbeddedStateAspect() = delete;
   EmbeddedStateAspect(const EmbeddedStateAspect&) = delete;
 
+  virtual ~EmbeddedStateAspect() = default;
+
   /// Construct using a State instance
   EmbeddedStateAspect(Composite* comp, const State& state = State())
     : BaseT(comp),
@@ -207,6 +209,8 @@ public:
 
   EmbeddedPropertiesAspect() = delete;
   EmbeddedPropertiesAspect(const EmbeddedPropertiesAspect&) = delete;
+
+  virtual ~EmbeddedPropertiesAspect() = default;
 
   /// Construct using a Properties instance
   EmbeddedPropertiesAspect(

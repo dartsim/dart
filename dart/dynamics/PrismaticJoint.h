@@ -98,7 +98,7 @@ public:
 protected:
 
   /// Constructor called by Skeleton class
-  PrismaticJoint(const Properties& _properties);
+  PrismaticJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

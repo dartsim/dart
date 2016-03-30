@@ -182,6 +182,8 @@ public:
   using AspectProperties = common::Aspect::PropertiesMixer<PropertiesDataT>;
   using Aspect = common::EmbeddedPropertiesAspect<Derived, AspectProperties>;
 
+  virtual ~EmbedProperties() = default;
+
   const AspectProperties& getAspectProperties() const
   {
     return mAspectProperties;
@@ -210,6 +212,8 @@ public:
   using AspectProperties = typename Impl::AspectProperties;
   using Aspect = typename Impl::Aspect;
   using Impl::getAspectProperties;
+
+  virtual ~EmbedPropertiesOnTopOf() = default;
 
 protected:
 
@@ -250,6 +254,8 @@ public:
   EmbeddedStateAndPropertiesAspect() = delete;
   EmbeddedStateAndPropertiesAspect(
       const EmbeddedStateAndPropertiesAspect&) = delete;
+
+  virtual ~EmbeddedStateAndPropertiesAspect() = default;
 
   /// Construct using a State and Properties instance
   EmbeddedStateAndPropertiesAspect(
@@ -309,6 +315,8 @@ public:
   using Aspect = common::EmbeddedStateAndPropertiesAspect<
       Derived, AspectState, AspectProperties>;
 
+  virtual ~EmbedStateAndProperties() = default;
+
   const AspectState& getAspectState() const
   {
     return mAspectState;
@@ -350,6 +358,8 @@ public:
   using Aspect = typename Impl::Aspect;
   using Impl::getAspectState;
   using Impl::getAspectProperties;
+
+  virtual ~EmbedStateAndPropertiesOnTopOf() = default;
 
 protected:
 

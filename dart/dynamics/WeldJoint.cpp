@@ -87,7 +87,7 @@ void WeldJoint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   Joint::setTransformFromParentBodyNode(_T);
 
-  mT = mJointP.mT_ParentBodyToJoint * mJointP.mT_ChildBodyToJoint.inverse();
+  mT = mAspectProperties.mT_ParentBodyToJoint * mAspectProperties.mT_ChildBodyToJoint.inverse();
 }
 
 //==============================================================================
@@ -95,16 +95,15 @@ void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
   Joint::setTransformFromChildBodyNode(_T);
 
-  mT = mJointP.mT_ParentBodyToJoint * mJointP.mT_ChildBodyToJoint.inverse();
+  mT = mAspectProperties.mT_ParentBodyToJoint * mAspectProperties.mT_ChildBodyToJoint.inverse();
 }
 
 //==============================================================================
-WeldJoint::WeldJoint(const Properties& _properties)
-  : ZeroDofJoint(_properties)
+WeldJoint::WeldJoint(const Properties& properties)
 {
-  // Inherited Joint Properties must be set in the final joint class or else we
+  // Inherited Aspects must be created in the final joint class or else we
   // get pure virtual function calls
-  ZeroDofJoint::setProperties(_properties);
+  createJointAspect(properties);
 }
 
 //==============================================================================

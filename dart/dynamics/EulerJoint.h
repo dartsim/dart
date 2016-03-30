@@ -153,7 +153,7 @@ public:
 protected:
 
   /// Constructor called by Skeleton class
-  EulerJoint(const Properties& _properties);
+  EulerJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

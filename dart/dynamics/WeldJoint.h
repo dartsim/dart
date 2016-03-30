@@ -85,7 +85,7 @@ public:
 protected:
 
   /// Constructor called by Skeleton class
-  WeldJoint(const Properties& _properties);
+  WeldJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

@@ -45,11 +45,19 @@ namespace common {
 
 /// Terminator for the variadic template
 template <class... OtherBases>
-class CompositeJoiner { };
+class CompositeJoiner
+{
+public:
+  virtual ~CompositeJoiner() = default;
+};
 
 /// Special case of only having 1 class: we do nothing but inherit it.
 template <class Base1>
-class CompositeJoiner<Base1> : public Base1 { };
+class CompositeJoiner<Base1> : public Base1
+{
+public:
+  virtual ~CompositeJoiner() = default;
+};
 
 /// CompositeJoiner allows classes that inherit from various
 /// SpecializedForAspect types to be inherited by a single derived class.
@@ -62,6 +70,8 @@ public:
 
   /// Default constructor
   CompositeJoiner() = default;
+
+  virtual ~CompositeJoiner() = default;
 
   /// This constructor allows one argument to be passed to the Base1 constructor
   /// and arbitrarily many arguments to be passed to the Base2 constructor.
@@ -146,6 +156,7 @@ public:
   template <typename... Args>
   CompositeJoiner(Args&&... args);
 
+  virtual ~CompositeJoiner() = default;
 };
 
 } // namespace common

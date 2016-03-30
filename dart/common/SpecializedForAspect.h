@@ -46,7 +46,11 @@ namespace common {
 
 /// Declaration of the variadic template
 template <class... OtherSpecAspects>
-class SpecializedForAspect { };
+class SpecializedForAspect
+{
+public:
+  virtual ~SpecializedForAspect() = default;
+};
 
 //==============================================================================
 /// SpecializedForAspect allows classes that inherit Composite to have
@@ -58,6 +62,8 @@ public:
 
   /// Default Constructor
   SpecializedForAspect();
+
+  virtual ~SpecializedForAspect() = default;
 
   /// Check if this Composite currently has a certain type of Aspect
   template <class T>
@@ -185,7 +191,11 @@ protected:
 template <class SpecAspect1, class... OtherSpecAspects>
 class SpecializedForAspect<SpecAspect1, OtherSpecAspects...> :
     public CompositeJoiner< Virtual< SpecializedForAspect<SpecAspect1> >,
-                               Virtual< SpecializedForAspect<OtherSpecAspects...> > > { };
+                               Virtual< SpecializedForAspect<OtherSpecAspects...> > >
+{
+public:
+  virtual ~SpecializedForAspect() = default;
+};
 
 } // namespace common
 } // namespace dart

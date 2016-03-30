@@ -142,14 +142,14 @@ double ScrewJoint::getPitch() const
 }
 
 //==============================================================================
-ScrewJoint::ScrewJoint(const Properties& _properties)
-  : detail::ScrewJointBase(_properties, common::NoArg)
+ScrewJoint::ScrewJoint(const Properties& properties)
+  : detail::ScrewJointBase(properties, common::NoArg)
 {
-  createScrewJointAspect(_properties);
-
-  // Inherited Joint Properties must be set in the final joint class or else we
-  // get pure virtual function calls
-  SingleDofJoint::setProperties(_properties);
+  // Inherited Aspects must be created in the final joint class in reverse order
+  // or else we get pure virtual function calls
+  createScrewJointAspect(properties);
+  createSingleDofJointAspect(properties);
+  createJointAspect(properties);
 }
 
 //==============================================================================
@@ -164,9 +164,9 @@ void ScrewJoint::updateLocalTransform() const
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = getAxis();
   S.tail<3>() = getAxis()*getPitch()/DART_2PI;
-  mT = mJointP.mT_ParentBodyToJoint
+  mT = mAspectProperties.mT_ParentBodyToJoint
        * math::expMap(S * getPositionStatic())
-       * mJointP.mT_ChildBodyToJoint.inverse();
+       * mAspectProperties.mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
 
@@ -178,7 +178,7 @@ void ScrewJoint::updateLocalJacobian(bool _mandatory) const
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
     S.head<3>() = getAxis();
     S.tail<3>() = getAxis()*getPitch()/DART_2PI;
-    mJacobian = math::AdT(mJointP.mT_ChildBodyToJoint, S);
+    mJacobian = math::AdT(mAspectProperties.mT_ChildBodyToJoint, S);
     assert(!math::isNan(mJacobian));
   }
 }

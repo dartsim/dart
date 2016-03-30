@@ -104,7 +104,7 @@ public:
 protected:
 
   /// Constructor called by Skeleton class
-  ScrewJoint(const Properties& _properties);
+  ScrewJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

@@ -567,10 +567,9 @@ double ZeroDofJoint::getPotentialEnergy() const
 }
 
 //==============================================================================
-ZeroDofJoint::ZeroDofJoint(const Properties& _properties)
-  : Joint(_properties)
+ZeroDofJoint::ZeroDofJoint()
 {
-  // Do nothing
+  // Do nothing. The Joint Aspect must be created by the most derived class.
 }
 
 //==============================================================================

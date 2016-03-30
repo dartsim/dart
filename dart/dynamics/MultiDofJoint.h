@@ -59,10 +59,13 @@ class Skeleton;
 /// class MultiDofJoint
 template<size_t DOF>
 class MultiDofJoint :
-    public Joint,
-    public virtual common::RequiresAspect< detail::MultiDofJointAspect<DOF> >
+    public common::CompositeJoiner<Joint,
+        common::Virtual<common::RequiresAspect<detail::MultiDofJointAspect<DOF>>> >
 {
 public:
+
+  using Base = common::CompositeJoiner<Joint,
+      common::Virtual<common::RequiresAspect<detail::MultiDofJointAspect<DOF>>> >;
 
   constexpr static size_t NumDofs = DOF;
   using Vector = Eigen::Matrix<double, DOF, 1>;
@@ -134,7 +137,7 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setCommand(size_t _index, double _command) override;
+  virtual void setCommand(size_t _index, double command) override;
 
   // Documentation inherited
   virtual double getCommand(size_t _index) const override;
@@ -418,7 +421,7 @@ public:
 protected:
 
   /// Constructor called by inheriting classes
-  MultiDofJoint(const Properties& _properties);
+  MultiDofJoint(const Properties& properties);
 
   // Docuemntation inherited
   void registerDofs() override;

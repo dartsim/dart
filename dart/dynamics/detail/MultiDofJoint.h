@@ -39,22 +39,23 @@
 
 #include "dart/dynamics/MultiDofJoint.h"
 
-#define MULTIDOFJOINT_REPORT_DIM_MISMATCH( func, arg )              \
-  dterr << "[MultiDofJoint::" #func "] Mismatch beteween size of "  \
-        << #arg " [" << arg .size() << "] and the number of "       \
-        << "DOFs [" << getNumDofs() << "] for Joint named ["        \
-        << getName() << "].\n";                                     \
+#define MULTIDOFJOINT_REPORT_DIM_MISMATCH( func, arg )\
+  dterr << "[MultiDofJoint::" #func "] Mismatch beteween size of "\
+        << #arg " [" << arg .size() << "] and the number of "\
+        << "DOFs [" << this->getNumDofs() << "] for Joint named ["\
+        << this->getName() << "].\n";\
   assert(false);
 
-#define MULTIDOFJOINT_REPORT_OUT_OF_RANGE( func, index )            \
-  dterr << "[MultiDofJoint::" << #func << "] The index [" << index  \
-        << "] is out of range for Joint named [" << getName()       \
-        << "] which has " << getNumDofs() << " DOFs.\n";            \
+#define MULTIDOFJOINT_REPORT_OUT_OF_RANGE( func, index )\
+  dterr << "[MultiDofJoint::" << #func << "] The index [" << index\
+        << "] is out of range for Joint named [" << this->getName()\
+        << "] which has " << this->getNumDofs() << " DOFs.\n";\
   assert(false);
 
-#define MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR( func ) \
-  dterr << "[MultiDofJoint::" # func "] Unsupported actuator type ("        \
-        << mJointP.mActuatorType << ") for Joint [" << getName() << "].\n"; \
+#define MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR( func )\
+  dterr << "[MultiDofJoint::" # func "] Unsupported actuator type ("\
+        << Joint::mAspectProperties.mActuatorType << ") for Joint ["\
+        << this->getName() << "].\n";\
   assert(false);
 
 namespace dart {
@@ -116,7 +117,7 @@ typename MultiDofJoint<DOF>::Properties
 MultiDofJoint<DOF>::getMultiDofJointProperties() const
 {
   return MultiDofJoint<DOF>::Properties(
-        mJointP, getMultiDofJointAspect()->getProperties());
+        Joint::mAspectProperties, getMultiDofJointAspect()->getProperties());
 }
 
 //==============================================================================
@@ -182,7 +183,7 @@ const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
   {
     dterr << "[MultiDofJoint::setDofName] Attempting to set the name of DOF "
           << "index " << _index << ", which is out of bounds for the Joint ["
-          << getName() << "]. We will set the name of DOF index 0 instead.\n";
+          << this->getName() << "]. We will set the name of DOF index 0 instead.\n";
     assert(false);
     _index = 0;
   }
@@ -192,8 +193,8 @@ const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
   if(_name == dofName)
     return dofName;
 
-  const SkeletonPtr& skel = mChildBodyNode?
-        mChildBodyNode->getSkeleton() : nullptr;
+  const SkeletonPtr& skel = this->mChildBodyNode?
+        this->mChildBodyNode->getSkeleton() : nullptr;
   if(skel)
   {
     dofName =
@@ -238,8 +239,8 @@ const std::string& MultiDofJoint<DOF>::getDofName(size_t _index) const
   if(DOF <= _index)
   {
     dterr << "[MultiDofJoint::getDofName] Requested name of DOF index ["
-          << _index << "] in Joint [" << getName() << "], but that is out of "
-          << "bounds (max " << DOF-1 << "). Returning name of DOF 0.\n";
+          << _index << "] in Joint [" << this->getName() << "], but that is "
+          << "out of bounds (max " << DOF-1 << "). Returning name of DOF 0.\n";
     assert(false);
     return getMultiDofJointAspect()->getDofName(0);
   }
@@ -282,53 +283,53 @@ size_t MultiDofJoint<DOF>::getIndexInTree(size_t _index) const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setCommand(size_t _index, double _command)
+void MultiDofJoint<DOF>::setCommand(size_t _index, double command)
 {
   if (_index >= getNumDofs())
   {
     MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setCommand, _index);
   }
 
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-      mCommands[_index] = math::clip(_command,
+    case Joint::FORCE:
+      mCommands[_index] = math::clip(command,
             getMultiDofJointAspect()->getForceLowerLimit(_index),
             getMultiDofJointAspect()->getForceUpperLimit(_index));
       break;
-    case PASSIVE:
-      if(0.0 != _command)
+    case Joint::PASSIVE:
+      if(0.0 != command)
       {
         dtwarn << "[MultiDofJoint::setCommand] Attempting to set a non-zero ("
-               << _command << ") command for a PASSIVE joint [" << getName()
-               << "].\n";
+               << command << ") command for a PASSIVE joint ["
+               << this->getName() << "].\n";
       }
-      mCommands[_index] = _command;
+      mCommands[_index] = command;
       break;
-    case SERVO:
-      mCommands[_index] = math::clip(_command,
+    case Joint::SERVO:
+      mCommands[_index] = math::clip(command,
             getMultiDofJointAspect()->getVelocityLowerLimit(_index),
             getMultiDofJointAspect()->getVelocityUpperLimit(_index));
       break;
-    case ACCELERATION:
-      mCommands[_index] = math::clip(_command,
+    case Joint::ACCELERATION:
+      mCommands[_index] = math::clip(command,
             getMultiDofJointAspect()->getAccelerationLowerLimit(_index),
             getMultiDofJointAspect()->getAccelerationUpperLimit(_index));
       break;
-    case VELOCITY:
-      mCommands[_index] = math::clip(_command,
+    case Joint::VELOCITY:
+      mCommands[_index] = math::clip(command,
             getMultiDofJointAspect()->getVelocityLowerLimit(_index),
             getMultiDofJointAspect()->getVelocityUpperLimit(_index));
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
-    case LOCKED:
-      if(0.0 != _command)
+    case Joint::LOCKED:
+      if(0.0 != command)
       {
         dtwarn << "[MultiDofJoint::setCommand] Attempting to set a non-zero ("
-               << _command << ") command for a LOCKED joint [" << getName()
+               << command << ") command for a LOCKED joint [" << this->getName()
                << "].\n";
       }
-      mCommands[_index] = _command;
+      mCommands[_index] = command;
       break;
     default:
       assert(false);
@@ -359,44 +360,44 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
     return;
   }
 
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
+    case Joint::FORCE:
       mCommands = math::clip(_commands,
             getMultiDofJointAspect()->getForceLowerLimits(),
             getMultiDofJointAspect()->getForceUpperLimits());
       break;
-    case PASSIVE:
+    case Joint::PASSIVE:
       if(Vector::Zero() != _commands)
       {
         dtwarn << "[MultiDofJoint::setCommands] Attempting to set a non-zero ("
                << _commands.transpose() << ") command for a PASSIVE joint ["
-               << getName() << "].\n";
+               << this->getName() << "].\n";
       }
       mCommands = _commands;
       break;
-    case SERVO:
+    case Joint::SERVO:
       mCommands = math::clip(_commands,
             getMultiDofJointAspect()->getVelocityLowerLimits(),
             getMultiDofJointAspect()->getVelocityUpperLimits());
       break;
-    case ACCELERATION:
+    case Joint::ACCELERATION:
       mCommands = math::clip(_commands,
             getMultiDofJointAspect()->getAccelerationLowerLimits(),
             getMultiDofJointAspect()->getAccelerationUpperLimits());
       break;
-    case VELOCITY:
+    case Joint::VELOCITY:
       mCommands = math::clip(_commands,
             getMultiDofJointAspect()->getVelocityLowerLimits(),
             getMultiDofJointAspect()->getVelocityUpperLimits());
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
-    case LOCKED:
+    case Joint::LOCKED:
       if(Vector::Zero() != _commands)
       {
         dtwarn << "[MultiDofJoint::setCommands] Attempting to set a non-zero ("
                << _commands.transpose() << ") command for a LOCKED joint ["
-               << getName() << "].\n";
+               << this->getName() << "].\n";
       }
       mCommands = _commands;
       break;
@@ -435,7 +436,7 @@ void MultiDofJoint<DOF>::setPosition(size_t _index, double _position)
 
   // Note: It would not make much sense to use setPositionsStatic() here
   mPositions[_index] = _position;
-  notifyPositionUpdate();
+  this->notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -618,11 +619,11 @@ void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
 
   // Note: It would not make much sense to use setVelocitiesStatic() here
   mVelocities[_index] = _velocity;
-  notifyVelocityUpdate();
+  this->notifyVelocityUpdate();
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == VELOCITY)
-    mCommands[_index] = getVelocitiesStatic()[_index];
+  if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
+    mCommands[_index] = this->getVelocitiesStatic()[_index];
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -653,8 +654,8 @@ void MultiDofJoint<DOF>::setVelocities(const Eigen::VectorXd& _velocities)
   setVelocitiesStatic(_velocities);
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == VELOCITY)
-    mCommands = getVelocitiesStatic();
+  if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
+    mCommands = this->getVelocitiesStatic();
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -799,11 +800,11 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
 
   // Note: It would not make much sense to use setAccelerationsStatic() here
   mAccelerations[_index] = _acceleration;
-  notifyAccelerationUpdate();
+  this->notifyAccelerationUpdate();
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == ACCELERATION)
-    mCommands[_index] = getAccelerationsStatic()[_index];
+  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
+    mCommands[_index] = this->getAccelerationsStatic()[_index];
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -834,8 +835,8 @@ void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
   setAccelerationsStatic(_accelerations);
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == ACCELERATION)
-    mCommands = getAccelerationsStatic();
+  if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
+    mCommands = this->getAccelerationsStatic();
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -916,7 +917,7 @@ void MultiDofJoint<DOF>::setPositionsStatic(const Vector& _positions)
     return;
 
   mPositions = _positions;
-  notifyPositionUpdate();
+  this->notifyPositionUpdate();
 }
 
 //==============================================================================
@@ -935,7 +936,7 @@ void MultiDofJoint<DOF>::setVelocitiesStatic(const Vector& _velocities)
     return;
 
   mVelocities = _velocities;
-  notifyVelocityUpdate();
+  this->notifyVelocityUpdate();
 }
 
 //==============================================================================
@@ -954,7 +955,7 @@ void MultiDofJoint<DOF>::setAccelerationsStatic(const Vector& _accels)
     return;
 
   mAccelerations = _accels;
-  notifyAccelerationUpdate();
+  this->notifyAccelerationUpdate();
 }
 
 //==============================================================================
@@ -978,7 +979,7 @@ void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
   mForces[_index] = _force;
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == FORCE)
+  if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
     mCommands[_index] = mForces[_index];
   // TODO: Remove at DART 5.1.
 #endif
@@ -1010,7 +1011,7 @@ void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
   mForces = _forces;
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == FORCE)
+  if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
     mCommands = mForces;
   // TODO: Remove at DART 5.1.
 #endif
@@ -1030,7 +1031,7 @@ void MultiDofJoint<DOF>::resetForces()
   mForces.setZero();
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == FORCE)
+  if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
     mCommands = mForces;
   // TODO: Remove at DART 5.1.
 #endif
@@ -1179,7 +1180,7 @@ Eigen::VectorXd MultiDofJoint<DOF>::getPositionDifferences(
   {
     dterr << "[MultiDofJoint::getPositionsDifference] q1's size [" << _q1.size()
           << "] or q2's size [" << _q2.size() << "] must both equal the dof ["
-          << getNumDofs() << "] for Joint [" << getName() << "].\n";
+          << this->getNumDofs() << "] for Joint [" << this->getName() << "].\n";
     assert(false);
     return Eigen::VectorXd::Zero(getNumDofs());
   }
@@ -1240,7 +1241,7 @@ void MultiDofJoint<DOF>::setRestPosition(size_t _index, double _q0)
            << "], is out of the limit range ["
            << getMultiDofJointAspect()->getPositionLowerLimit(_index) << ", "
            << getMultiDofJointAspect()->getPositionUpperLimit(_index)
-           << "] for index [" << _index << "] of Joint [" << getName()
+           << "] for index [" << _index << "] of Joint [" << this->getName()
            << "].\n";
     return;
   }
@@ -1335,18 +1336,18 @@ double MultiDofJoint<DOF>::getPotentialEnergy() const
 template <size_t DOF>
 Eigen::Vector6d MultiDofJoint<DOF>::getBodyConstraintWrench() const
 {
-  assert(mChildBodyNode);
-  return mChildBodyNode->getBodyForce() - getLocalJacobianStatic() * mForces;
+  assert(this->mChildBodyNode);
+  return this->mChildBodyNode->getBodyForce()
+          - this->getLocalJacobianStatic() * mForces;
 }
 
 //==============================================================================
 template <size_t DOF>
-MultiDofJoint<DOF>::MultiDofJoint(const Properties& _properties)
-  : Joint(_properties),
-    mCommands(Vector::Zero()),
-    mPositions(_properties.mInitialPositions),
+MultiDofJoint<DOF>::MultiDofJoint(const Properties& properties)
+  : mCommands(Vector::Zero()),
+    mPositions(properties.mInitialPositions),
     mPositionDeriv(Vector::Zero()),
-    mVelocities(_properties.mInitialVelocities),
+    mVelocities(properties.mInitialVelocities),
     mVelocitiesDeriv(Vector::Zero()),
     mAccelerations(Vector::Zero()),
     mAccelerationsDeriv(Vector::Zero()),
@@ -1362,17 +1363,17 @@ MultiDofJoint<DOF>::MultiDofJoint(const Properties& _properties)
     mTotalForce(Vector::Zero()),
     mTotalImpulse(Vector::Zero())
 {
-  createMultiDofJointAspect(_properties);
-
   for (size_t i = 0; i < DOF; ++i)
-    mDofs[i] = createDofPointer(i);
+    mDofs[i] = this->createDofPointer(i);
+
+  // Joint and MultiDofJoint Aspects must be created by the most derived class.
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::registerDofs()
 {
-  const SkeletonPtr& skel = mChildBodyNode->getSkeleton();
+  const SkeletonPtr& skel = this->mChildBodyNode->getSkeleton();
   for (size_t i = 0; i < DOF; ++i)
   {
     getMultiDofJointAspect()->mProperties.mDofNames[i] =
@@ -1392,10 +1393,10 @@ template <size_t DOF>
 const Eigen::Matrix<double, 6, DOF>&
 MultiDofJoint<DOF>::getLocalJacobianStatic() const
 {
-  if(mIsLocalJacobianDirty)
+  if(this->mIsLocalJacobianDirty)
   {
-    updateLocalJacobian(false);
-    mIsLocalJacobianDirty = false;
+    this->updateLocalJacobian(false);
+    this->mIsLocalJacobianDirty = false;
   }
   return mJacobian;
 }
@@ -1412,10 +1413,10 @@ math::Jacobian MultiDofJoint<DOF>::getLocalJacobian(
 template <size_t DOF>
 const math::Jacobian MultiDofJoint<DOF>::getLocalJacobianTimeDeriv() const
 {
-  if(mIsLocalJacobianTimeDerivDirty)
+  if(this->mIsLocalJacobianTimeDerivDirty)
   {
-    updateLocalJacobianTimeDeriv();
-    mIsLocalJacobianTimeDerivDirty = false;
+    this->updateLocalJacobianTimeDeriv();
+    this->mIsLocalJacobianTimeDerivDirty = false;
   }
   return mJacobianDeriv;
 }
@@ -1425,10 +1426,10 @@ template <size_t DOF>
 const Eigen::Matrix<double, 6, DOF>&
 MultiDofJoint<DOF>::getLocalJacobianTimeDerivStatic() const
 {
-  if(mIsLocalJacobianTimeDerivDirty)
+  if(this->mIsLocalJacobianTimeDerivDirty)
   {
-    updateLocalJacobianTimeDeriv();
-    mIsLocalJacobianTimeDerivDirty = false;
+    this->updateLocalJacobianTimeDeriv();
+    this->mIsLocalJacobianTimeDerivDirty = false;
   }
   return mJacobianDeriv;
 }
@@ -1455,22 +1456,25 @@ MultiDofJoint<DOF>::getInvProjArtInertiaImplicit() const
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateLocalSpatialVelocity() const
 {
-  mSpatialVelocity = getLocalJacobianStatic() * getVelocitiesStatic();
+  this->mSpatialVelocity =
+      this->getLocalJacobianStatic() * this->getVelocitiesStatic();
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateLocalSpatialAcceleration() const
 {
-  mSpatialAcceleration = getLocalPrimaryAcceleration()
-                    + getLocalJacobianTimeDerivStatic() * getVelocitiesStatic();
+  this->mSpatialAcceleration =
+      this->getLocalPrimaryAcceleration()
+      + this->getLocalJacobianTimeDerivStatic() * this->getVelocitiesStatic();
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateLocalPrimaryAcceleration() const
 {
-  mPrimaryAcceleration = getLocalJacobianStatic() * getAccelerationsStatic();
+  this->mPrimaryAcceleration =
+      this->getLocalJacobianStatic() * this->getAccelerationsStatic();
 }
 
 //==============================================================================
@@ -1526,19 +1530,19 @@ void MultiDofJoint<DOF>::addChildArtInertiaTo(
     Eigen::Matrix6d& _parentArtInertia,
     const Eigen::Matrix6d& _childArtInertia)
 {
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
+    case Joint::FORCE:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       addChildArtInertiaToDynamic(_parentArtInertia,
                                        _childArtInertia);
       break;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case Joint::ACCELERATION:
+    case Joint::VELOCITY:
+    case Joint::LOCKED:
       addChildArtInertiaToKinematic(_parentArtInertia,
-                                             _childArtInertia);
+                                    _childArtInertia);
       break;
     default:
       MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildArtInertiaTo);
@@ -1560,7 +1564,8 @@ void MultiDofJoint<DOF>::addChildArtInertiaToDynamic(
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(), PI);
+  _parentArtInertia += math::transformInertia(
+        this->getLocalTransform().inverse(), PI);
 }
 
 //==============================================================================
@@ -1571,8 +1576,8 @@ void MultiDofJoint<DOF>::addChildArtInertiaToKinematic(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(),
-                                              _childArtInertia);
+  _parentArtInertia += math::transformInertia(
+        this->getLocalTransform().inverse(), _childArtInertia);
 }
 
 //==============================================================================
@@ -1581,19 +1586,19 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitTo(
     Eigen::Matrix6d& _parentArtInertia,
     const Eigen::Matrix6d& _childArtInertia)
 {
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
+    case Joint::FORCE:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       addChildArtInertiaImplicitToDynamic(_parentArtInertia,
-                                                _childArtInertia);
+                                          _childArtInertia);
       break;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case Joint::ACCELERATION:
+    case Joint::VELOCITY:
+    case Joint::LOCKED:
       addChildArtInertiaImplicitToKinematic(_parentArtInertia,
-                                                _childArtInertia);
+                                            _childArtInertia);
       break;
     default:
       MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildArtInertiaImplicitTo);
@@ -1615,7 +1620,8 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitToDynamic(
 
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(), PI);
+  _parentArtInertia += math::transformInertia(
+        this->getLocalTransform().inverse(), PI);
 }
 
 //==============================================================================
@@ -1626,8 +1632,8 @@ void MultiDofJoint<DOF>::addChildArtInertiaImplicitToKinematic(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(),
-                                              _childArtInertia);
+  _parentArtInertia += math::transformInertia(
+        this->getLocalTransform().inverse(), _childArtInertia);
 }
 
 //==============================================================================
@@ -1635,16 +1641,16 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::updateInvProjArtInertia(
     const Eigen::Matrix6d& _artInertia)
 {
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
+    case Joint::FORCE:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       updateInvProjArtInertiaDynamic(_artInertia);
       break;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case Joint::ACCELERATION:
+    case Joint::VELOCITY:
+    case Joint::LOCKED:
       updateInvProjArtInertiaKinematic(_artInertia);
       break;
     default:
@@ -1686,16 +1692,16 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicit(
     const Eigen::Matrix6d& _artInertia,
     double _timeStep)
 {
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
+    case Joint::FORCE:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       updateInvProjArtInertiaImplicitDynamic(_artInertia, _timeStep);
       break;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case Joint::ACCELERATION:
+    case Joint::VELOCITY:
+    case Joint::LOCKED:
       updateInvProjArtInertiaImplicitKinematic(_artInertia, _timeStep);
       break;
     default:
@@ -1749,19 +1755,19 @@ void MultiDofJoint<DOF>::addChildBiasForceTo(
     const Eigen::Vector6d& _childBiasForce,
     const Eigen::Vector6d& _childPartialAcc)
 {
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
+    case Joint::FORCE:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       addChildBiasForceToDynamic(_parentBiasForce,
                                  _childArtInertia,
                                  _childBiasForce,
                                  _childPartialAcc);
       break;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case Joint::ACCELERATION:
+    case Joint::VELOCITY:
+    case Joint::LOCKED:
       addChildBiasForceToKinematic(_parentBiasForce,
                                    _childArtInertia,
                                    _childBiasForce,
@@ -1799,7 +1805,7 @@ void MultiDofJoint<DOF>::addChildBiasForceToDynamic(
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(getLocalTransform(), beta);
+  _parentBiasForce += math::dAdInvT(this->getLocalTransform(), beta);
 }
 
 //==============================================================================
@@ -1826,7 +1832,7 @@ void MultiDofJoint<DOF>::addChildBiasForceToKinematic(
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(getLocalTransform(), beta);
+  _parentBiasForce += math::dAdInvT(this->getLocalTransform(), beta);
 }
 
 //==============================================================================
@@ -1836,18 +1842,18 @@ void MultiDofJoint<DOF>::addChildBiasImpulseTo(
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasImpulse)
 {
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
+    case Joint::FORCE:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       addChildBiasImpulseToDynamic(_parentBiasImpulse,
                                    _childArtInertia,
                                    _childBiasImpulse);
       break;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case Joint::ACCELERATION:
+    case Joint::VELOCITY:
+    case Joint::LOCKED:
       addChildBiasImpulseToKinematic(_parentBiasImpulse,
                                      _childArtInertia,
                                      _childBiasImpulse);
@@ -1876,7 +1882,7 @@ void MultiDofJoint<DOF>::addChildBiasImpulseToDynamic(
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasImpulse += math::dAdInvT(getLocalTransform(), beta);
+  _parentBiasImpulse += math::dAdInvT(this->getLocalTransform(), beta);
 }
 
 //==============================================================================
@@ -1888,7 +1894,8 @@ void MultiDofJoint<DOF>::addChildBiasImpulseToKinematic(
 {
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasImpulse += math::dAdInvT(getLocalTransform(), _childBiasImpulse);
+  _parentBiasImpulse += math::dAdInvT(
+        this->getLocalTransform(), _childBiasImpulse);
 }
 
 //==============================================================================
@@ -1899,26 +1906,26 @@ void MultiDofJoint<DOF>::updateTotalForce(
 {
   assert(_timeStep > 0.0);
 
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
+    case Joint::FORCE:
       mForces = mCommands;
       updateTotalForceDynamic(_bodyForce, _timeStep);
       break;
-    case PASSIVE:
-    case SERVO:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       mForces.setZero();
       updateTotalForceDynamic(_bodyForce, _timeStep);
       break;
-    case ACCELERATION:
+    case Joint::ACCELERATION:
       setAccelerationsStatic(mCommands);
       updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
-    case VELOCITY:
+    case Joint::VELOCITY:
       setAccelerationsStatic( (mCommands - getVelocitiesStatic()) / _timeStep );
       updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
-    case LOCKED:
+    case Joint::LOCKED:
       setVelocitiesStatic(Eigen::Matrix<double, DOF, 1>::Zero());
       setAccelerationsStatic(Eigen::Matrix<double, DOF, 1>::Zero());
       updateTotalForceKinematic(_bodyForce, _timeStep);
@@ -1965,16 +1972,16 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::updateTotalImpulse(
     const Eigen::Vector6d& _bodyImpulse)
 {
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
+    case Joint::FORCE:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       updateTotalImpulseDynamic(_bodyImpulse);
       break;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case Joint::ACCELERATION:
+    case Joint::VELOCITY:
+    case Joint::LOCKED:
       updateTotalImpulseKinematic(_bodyImpulse);
       break;
     default:
@@ -2014,16 +2021,16 @@ void MultiDofJoint<DOF>::updateAcceleration(
     const Eigen::Matrix6d& _artInertia,
     const Eigen::Vector6d& _spatialAcc)
 {
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
+    case Joint::FORCE:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       updateAccelerationDynamic(_artInertia, _spatialAcc);
       break;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case Joint::ACCELERATION:
+    case Joint::VELOCITY:
+    case Joint::LOCKED:
       updateAccelerationKinematic(_artInertia, _spatialAcc);
       break;
     default:
@@ -2041,7 +2048,7 @@ void MultiDofJoint<DOF>::updateAccelerationDynamic(
   //
   setAccelerationsStatic( getInvProjArtInertiaImplicit()
         * (mTotalForce - getLocalJacobianStatic().transpose()
-           *_artInertia*math::AdInvT(getLocalTransform(), _spatialAcc)) );
+           *_artInertia*math::AdInvT(this->getLocalTransform(), _spatialAcc)) );
 
   // Verification
   assert(!math::isNan(getAccelerationsStatic()));
@@ -2062,16 +2069,16 @@ void MultiDofJoint<DOF>::updateVelocityChange(
     const Eigen::Matrix6d& _artInertia,
     const Eigen::Vector6d& _velocityChange)
 {
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
+    case Joint::FORCE:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       updateVelocityChangeDynamic(_artInertia, _velocityChange);
       break;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case Joint::ACCELERATION:
+    case Joint::VELOCITY:
+    case Joint::LOCKED:
       updateVelocityChangeKinematic(_artInertia, _velocityChange);
       break;
     default:
@@ -2090,7 +2097,7 @@ void MultiDofJoint<DOF>::updateVelocityChangeDynamic(
   mVelocityChanges
       = getInvProjArtInertia()
       * (mTotalImpulse - getLocalJacobianStatic().transpose()
-         *_artInertia*math::AdInvT(getLocalTransform(), _velocityChange));
+         *_artInertia*math::AdInvT(this->getLocalTransform(), _velocityChange));
 
   // Verification
   assert(!math::isNan(mVelocityChanges));
@@ -2141,15 +2148,15 @@ void MultiDofJoint<DOF>::updateForceFD(const Eigen::Vector6d& _bodyForce,
                                        bool _withDampingForces,
                                        bool _withSpringForces)
 {
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
+    case Joint::FORCE:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       break;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case Joint::ACCELERATION:
+    case Joint::VELOCITY:
+    case Joint::LOCKED:
       updateForceID(_bodyForce, _timeStep, _withDampingForces,
                     _withSpringForces);
       break;
@@ -2170,15 +2177,15 @@ void MultiDofJoint<DOF>::updateImpulseID(const Eigen::Vector6d& _bodyImpulse)
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 {
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
+    case Joint::FORCE:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       break;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case Joint::ACCELERATION:
+    case Joint::VELOCITY:
+    case Joint::LOCKED:
       updateImpulseID(_bodyImpulse);
       break;
     default:
@@ -2191,16 +2198,16 @@ void MultiDofJoint<DOF>::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateConstrainedTerms(double _timeStep)
 {
-  switch (mJointP.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
-    case FORCE:
-    case PASSIVE:
-    case SERVO:
+    case Joint::FORCE:
+    case Joint::PASSIVE:
+    case Joint::SERVO:
       updateConstrainedTermsDynamic(_timeStep);
       break;
-    case ACCELERATION:
-    case VELOCITY:
-    case LOCKED:
+    case Joint::ACCELERATION:
+    case Joint::VELOCITY:
+    case Joint::LOCKED:
       updateConstrainedTermsKinematic(_timeStep);
       break;
     default:
@@ -2247,7 +2254,7 @@ void MultiDofJoint<DOF>::addChildBiasForceForInvMassMatrix(
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(getLocalTransform(), beta);
+  _parentBiasForce += math::dAdInvT(this->getLocalTransform(), beta);
 }
 
 //==============================================================================
@@ -2267,7 +2274,7 @@ void MultiDofJoint<DOF>::addChildBiasForceForInvAugMassMatrix(
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(getLocalTransform(), beta);
+  _parentBiasForce += math::dAdInvT(this->getLocalTransform(), beta);
 }
 
 //==============================================================================
@@ -2292,7 +2299,7 @@ void MultiDofJoint<DOF>::getInvMassMatrixSegment(
   mInvMassMatrixSegment
       = getInvProjArtInertia()
       * (mInvM_a - getLocalJacobianStatic().transpose()
-         * _artInertia * math::AdInvT(getLocalTransform(), _spatialAcc));
+         * _artInertia * math::AdInvT(this->getLocalTransform(), _spatialAcc));
 
   // Verification
   assert(!math::isNan(mInvMassMatrixSegment));
@@ -2316,7 +2323,7 @@ void MultiDofJoint<DOF>::getInvAugMassMatrixSegment(
   mInvMassMatrixSegment
       = getInvProjArtInertiaImplicit()
       * (mInvM_a - getLocalJacobianStatic().transpose()
-         * _artInertia * math::AdInvT(getLocalTransform(), _spatialAcc));
+         * _artInertia * math::AdInvT(this->getLocalTransform(), _spatialAcc));
 
   // Verification
   assert(!math::isNan(mInvMassMatrixSegment));

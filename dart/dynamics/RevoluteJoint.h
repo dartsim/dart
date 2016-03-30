@@ -96,7 +96,7 @@ public:
 protected:
 
   /// Constructor called by Skeleton class
-  RevoluteJoint(const Properties& _properties);
+  RevoluteJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

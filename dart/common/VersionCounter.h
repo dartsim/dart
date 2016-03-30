@@ -52,6 +52,8 @@ public:
 
   /// Get the version number of this object
   virtual size_t getVersion() const = 0;
+
+  virtual ~VersionCounter() = default;
 };
 
 } // namespace common

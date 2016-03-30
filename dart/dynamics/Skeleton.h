@@ -193,7 +193,7 @@ public:
     BodyNodeExtendedProperties mBodyNodeProperties;
 
     /// Properties of all the Joints in this Skeleton
-    JointExtendedProperties mJointProperties;
+    JointExtendedProperties mAspectPropertiesroperties;
 
     /// A list of the name of the parent of each BodyNode in this Skeleton. This
     /// allows the layout of the Skeleton to be reconstructed.

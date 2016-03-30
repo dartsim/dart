@@ -45,9 +45,10 @@
 #include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
 #include "dart/common/VersionCounter.h"
-#include "dart/common/Composite.h"
+#include "dart/common/EmbeddedAspect.h"
 #include "dart/math/MathTypes.h"
 #include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/detail/Joint.h"
 
 namespace dart {
 namespace renderer {
@@ -65,117 +66,37 @@ class DegreeOfFreedom;
 /// class Joint
 class Joint : public virtual common::Subject,
               public virtual common::VersionCounter,
-              public virtual common::Composite
+              public common::EmbedProperties<Joint, detail::JointProperties>
 {
 public:
 
-  /// Actuator type
-  ///
-  /// The command is taken by setCommand() or setCommands(), and the meaning of
-  /// command is different depending on the actuator type. The default actuator
-  /// type is FORCE. (TODO: FreeJoint should be PASSIVE?)
-  ///
-  /// FORCE/PASSIVE/SERVO joints are dynamic joints while
-  /// ACCELERATION/VELOCITY/LOCKED joints are kinematic joints.
-  ///
-  /// Note the presence of joint damping force and joint spring force for all
-  /// the actuator types if the coefficients are non-zero. The default
-  /// coefficients are zero.
-  ///
-  /// \sa setActuatorType(), getActuatorType(),
-  /// setSpringStiffness(), setDampingCoefficient(),
-  enum ActuatorType
-  {
-    /// Command input is joint force, and the output is joint acceleration.
-    ///
-    /// If the command is zero, then it's identical to passive joint. The valid
-    /// joint constraints are position limit, velocity limit, and Coulomb
-    /// friction, and the invalid joint constraint is force limit.
-    FORCE,
+  using CompositeProperties = common::Composite::Properties;
+  using Properties = detail::JointProperties;
 
-    /// Passive joint doesn't take any command input, and the output is joint
-    /// acceleration.
-    ///
-    /// The valid joint constraints are position limit, velocity limit, and
-    /// Coulomb friction, and the invalid joint constraint is force limit.
-    PASSIVE,
+  typedef detail::ActuatorType ActuatorType;
+  static constexpr ActuatorType FORCE        = detail::FORCE;
+  static constexpr ActuatorType PASSIVE      = detail::PASSIVE;
+  static constexpr ActuatorType SERVO        = detail::SERVO;
+  static constexpr ActuatorType ACCELERATION = detail::ACCELERATION;
+  static constexpr ActuatorType VELOCITY     = detail::VELOCITY;
+  static constexpr ActuatorType LOCKED       = detail::LOCKED;
 
-    /// Command input is desired velocity, and the output is joint acceleration.
-    ///
-    /// The constraint solver will try to track the desired velocity within the
-    /// joint force limit. All the joint constarints are valid.
-    SERVO,
-
-    /// Command input is joint acceleration, and the output is joint force.
-    ///
-    /// The joint acceleration is always satisfied but it doesn't take the joint
-    /// force limit into account. All the joint constraints are invalid.
-    ACCELERATION,
-
-    /// Command input is joint velocity, and the output is joint force.
-    ///
-    /// The joint velocity is always satisfied but it doesn't take the joint
-    /// force limit into account. If you want to consider the joint force limit,
-    /// should use SERVO instead. All the joint constraints are invalid.
-    VELOCITY,
-
-    /// Locked joint always set the velocity and acceleration to zero so that
-    /// the joint dosen't move at all (locked), and the output is joint force.
-    /// force.
-    ///
-    /// All the joint constraints are invalid.
-    LOCKED
-  };
-
-  struct Properties
-  {
-    /// Joint name
-    std::string mName;
-
-    /// Transformation from parent BodyNode to this Joint
-    Eigen::Isometry3d mT_ParentBodyToJoint;
-
-    /// Transformation from child BodyNode to this Joint
-    Eigen::Isometry3d mT_ChildBodyToJoint;
-
-    /// True if the joint limits should be enforced in dynamic simulation
-    bool mIsPositionLimited;
-
-    /// Actuator type
-    ActuatorType mActuatorType;
-
-    /// Constructor
-    Properties(const std::string& _name = "Joint",
-               const Eigen::Isometry3d& _T_ParentBodyToJoint =
-                                   Eigen::Isometry3d::Identity(),
-               const Eigen::Isometry3d& _T_ChildBodyToJoint =
-                                   Eigen::Isometry3d::Identity(),
-               bool _isPositionLimited = false,
-               ActuatorType _actuatorType = DefaultActuatorType);
-
-    virtual ~Properties() = default;
-
-  public:
-    // To get byte-aligned Eigen vectors
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
-
-  using AspectProperties = common::Composite::Properties;
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, JointAspect);
 
   struct ExtendedProperties : Properties
   {
     /// Composed constructor
     ExtendedProperties(
         const Properties& standardProperties = Properties(),
-        const AspectProperties& aspectProperties = AspectProperties());
+        const CompositeProperties& aspectProperties = CompositeProperties());
 
     /// Composed move constructor
     ExtendedProperties(
         Properties&& standardProperties,
-        AspectProperties&& aspectProperties);
+        CompositeProperties&& aspectProperties);
 
     /// Properties of all the Aspects attached to this Joint
-    AspectProperties mAspectProperties;
+    CompositeProperties mAspectProperties;
   };
 
   /// Default actuator type
@@ -187,7 +108,10 @@ public:
   virtual ~Joint();
 
   /// Set the Properties of this Joint
-  void setProperties(const Properties& _properties);
+  void setProperties(const Properties& properties);
+
+  /// Set the AspectProperties of this Joint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this Joint
   const Properties& getJointProperties() const;
@@ -737,7 +661,7 @@ public:
 protected:
 
   /// Constructor called by inheriting class
-  Joint(const Properties& _properties);
+  Joint();
 
   /// Create a clone of this Joint. This may only be called by the Skeleton
   /// class.
@@ -937,9 +861,6 @@ protected:
   /// \}
 
 protected:
-
-  /// Properties of this Joint
-  Properties mJointP;
 
   /// Child BodyNode pointer that this Joint belongs to
   BodyNode* mChildBodyNode;

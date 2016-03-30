@@ -129,14 +129,14 @@ const Eigen::Vector3d& PrismaticJoint::getAxis() const
 }
 
 //==============================================================================
-PrismaticJoint::PrismaticJoint(const Properties& _properties)
-  : detail::PrismaticJointBase(_properties, common::NoArg)
+PrismaticJoint::PrismaticJoint(const Properties& properties)
+  : detail::PrismaticJointBase(properties, common::NoArg)
 {
-  createPrismaticJointAspect(_properties);
-
-  // Inherited Joint Properties must be set in the final joint class or else we
-  // get pure virtual function calls
-  SingleDofJoint::setProperties(_properties);
+  // Inherited Aspects must be created in the final joint class in reverse order
+  // or else we get pure virtual function calls
+  createPrismaticJointAspect(properties);
+  createSingleDofJointAspect(properties);
+  createJointAspect(properties);
 }
 
 //==============================================================================
@@ -148,9 +148,9 @@ Joint* PrismaticJoint::clone() const
 //==============================================================================
 void PrismaticJoint::updateLocalTransform() const
 {
-  mT = mJointP.mT_ParentBodyToJoint
+  mT = mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(getAxis() * getPositionStatic())
-       * mJointP.mT_ChildBodyToJoint.inverse();
+       * mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -161,7 +161,7 @@ void PrismaticJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
-    mJacobian = math::AdTLinear(mJointP.mT_ChildBodyToJoint, getAxis());
+    mJacobian = math::AdTLinear(mAspectProperties.mT_ChildBodyToJoint, getAxis());
 
     // Verification
     assert(!math::isNan(mJacobian));

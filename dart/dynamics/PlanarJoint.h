@@ -137,7 +137,7 @@ public:
 protected:
 
   /// Constructor called by Skeleton class
-  PlanarJoint(const Properties& _properties);
+  PlanarJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

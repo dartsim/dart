@@ -190,7 +190,7 @@ Skeleton::ExtendedProperties::ExtendedProperties(
     const std::vector<std::string>& parentNames,
     const AspectProperties& aspectProperties)
   : mBodyNodeProperties(bodyNodeProperties),
-    mJointProperties(jointProperties),
+    mAspectPropertiesroperties(jointProperties),
     mParentBodyNodeNames(parentNames),
     mAspectProperties(aspectProperties)
 {
@@ -444,13 +444,13 @@ const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode* _newNode)
 const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint,
                                                     bool _updateDofNames)
 {
-  _newJoint->mJointP.mName =
+  _newJoint->mAspectProperties.mName =
       mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(), _newJoint);
 
   if(_updateDofNames)
     _newJoint->updateDegreeOfFreedomNames();
 
-  return _newJoint->mJointP.mName;
+  return _newJoint->mAspectProperties.mName;
 }
 
 //==============================================================================

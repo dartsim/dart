@@ -55,7 +55,7 @@
 
 #define SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR( func )                  \
   dterr << "[SingleDofJoint::" # func "] Unsupported actuator type ("       \
-        << mJointP.mActuatorType << ") for Joint [" << getName() << "].\n"; \
+        << mAspectProperties.mActuatorType << ") for Joint [" << getName() << "].\n"; \
   assert(false);
 
 namespace dart {
@@ -83,7 +83,7 @@ void SingleDofJoint::setProperties(const UniqueProperties& _properties)
 //==============================================================================
 SingleDofJoint::Properties SingleDofJoint::getSingleDofJointProperties() const
 {
-  return Properties(mJointP, getSingleDofJointAspect()->getProperties());
+  return Properties(mAspectProperties, getSingleDofJointAspect()->getProperties());
 }
 
 //==============================================================================
@@ -239,7 +239,7 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
     return;
   }
 
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
       mCommand = math::clip(_command,
@@ -498,7 +498,7 @@ void SingleDofJoint::setVelocity(size_t _index, double _velocity)
   setVelocityStatic(_velocity);
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == VELOCITY)
+  if (mAspectProperties.mActuatorType == VELOCITY)
     mCommand = getVelocityStatic();
   // TODO: Remove at DART 5.1.
 #endif
@@ -528,7 +528,7 @@ void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
   setVelocityStatic(_velocities[0]);
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == VELOCITY)
+  if (mAspectProperties.mActuatorType == VELOCITY)
     mCommand = getVelocityStatic();
   // TODO: Remove at DART 5.1.
 #endif
@@ -661,7 +661,7 @@ void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
   setAccelerationStatic(_acceleration);
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == ACCELERATION)
+  if (mAspectProperties.mActuatorType == ACCELERATION)
     mCommand = getAccelerationStatic();
   // TODO: Remove at DART 5.1.
 #endif
@@ -691,7 +691,7 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
   setAccelerationStatic(_accelerations[0]);
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == ACCELERATION)
+  if (mAspectProperties.mActuatorType == ACCELERATION)
     mCommand = getAccelerationStatic();
   // TODO: Remove at DART 5.1.
 #endif
@@ -819,7 +819,7 @@ void SingleDofJoint::setForce(size_t _index, double _force)
   mForce = _force;
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == FORCE)
+  if (mAspectProperties.mActuatorType == FORCE)
     mCommand = mForce;
   // TODO: Remove at DART 5.1.
 #endif
@@ -849,7 +849,7 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
   mForce = _forces[0];
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == FORCE)
+  if (mAspectProperties.mActuatorType == FORCE)
     mCommand = mForce;
   // TODO: Remove at DART 5.1.
 #endif
@@ -867,7 +867,7 @@ void SingleDofJoint::resetForces()
   mForce = 0.0;
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mJointP.mActuatorType == FORCE)
+  if (mAspectProperties.mActuatorType == FORCE)
     mCommand = mForce;
   // TODO: Remove at DART 5.1.
 #endif
@@ -1144,13 +1144,12 @@ double SingleDofJoint::getPotentialEnergy() const
 }
 
 //==============================================================================
-SingleDofJoint::SingleDofJoint(const Properties& _properties)
-  : detail::SingleDofJointBase(_properties, common::NoArg),
-    mDof(createDofPointer(0)),
+SingleDofJoint::SingleDofJoint(const Properties& properties)
+  : mDof(createDofPointer(0)),
     mCommand(0.0),
-    mPosition(_properties.mInitialPosition),
+    mPosition(properties.mInitialPosition),
     mPositionDeriv(0.0),
-    mVelocity(_properties.mInitialVelocity),
+    mVelocity(properties.mInitialVelocity),
     mVelocityDeriv(0.0),
     mAcceleration(0.0),
     mAccelerationDeriv(0.0),
@@ -1168,7 +1167,8 @@ SingleDofJoint::SingleDofJoint(const Properties& _properties)
     mInvM_a(0.0),
     mInvMassMatrixSegment(0.0)
 {
-  createSingleDofJointAspect(_properties);
+  // Do nothing. Joint and SingleDofJoint Aspects must be created by the most
+  // derived class.
 }
 
 //==============================================================================
@@ -1185,7 +1185,7 @@ void SingleDofJoint::updateDegreeOfFreedomNames()
 {
   // Same name as the joint it belongs to.
   if (!mDof->isNamePreserved())
-    mDof->setName(mJointP.mName, false);
+    mDof->setName(mAspectProperties.mName, false);
 }
 
 //==============================================================================
@@ -1317,7 +1317,7 @@ void SingleDofJoint::addVelocityChangeTo(Eigen::Vector6d& _velocityChange)
 void SingleDofJoint::addChildArtInertiaTo(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1366,7 +1366,7 @@ void SingleDofJoint::addChildArtInertiaToKinematic(
 void SingleDofJoint::addChildArtInertiaImplicitTo(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1415,7 +1415,7 @@ void SingleDofJoint::addChildArtInertiaImplicitToKinematic(
 void SingleDofJoint::updateInvProjArtInertia(
     const Eigen::Matrix6d& _artInertia)
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1460,7 +1460,7 @@ void SingleDofJoint::updateInvProjArtInertiaImplicit(
     const Eigen::Matrix6d& _artInertia,
     double _timeStep)
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1513,7 +1513,7 @@ void SingleDofJoint::addChildBiasForceTo(
     const Eigen::Vector6d& _childBiasForce,
     const Eigen::Vector6d& _childPartialAcc)
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1584,7 +1584,7 @@ void SingleDofJoint::addChildBiasImpulseTo(
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasImpulse)
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1643,7 +1643,7 @@ void SingleDofJoint::updateTotalForce(const Eigen::Vector6d& _bodyForce,
 {
   assert(_timeStep > 0.0);
 
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
       mForce = mCommand;
@@ -1703,7 +1703,7 @@ void SingleDofJoint::updateTotalForceKinematic(
 //==============================================================================
 void SingleDofJoint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1745,7 +1745,7 @@ void SingleDofJoint::resetTotalImpulses()
 void SingleDofJoint::updateAcceleration(const Eigen::Matrix6d& _artInertia,
                                         const Eigen::Vector6d& _spatialAcc)
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1789,7 +1789,7 @@ void SingleDofJoint::updateVelocityChange(
     const Eigen::Matrix6d& _artInertia,
     const Eigen::Vector6d& _velocityChange)
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1864,7 +1864,7 @@ void SingleDofJoint::updateForceFD(const Eigen::Vector6d& _bodyForce,
                                    bool _withDampingForces,
                                    bool _withSpringForces)
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1891,7 +1891,7 @@ void SingleDofJoint::updateImpulseID(const Eigen::Vector6d& _bodyImpulse)
 //==============================================================================
 void SingleDofJoint::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1911,7 +1911,7 @@ void SingleDofJoint::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 //==============================================================================
 void SingleDofJoint::updateConstrainedTerms(double _timeStep)
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:

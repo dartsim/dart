@@ -50,14 +50,24 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-const Joint::ActuatorType Joint::DefaultActuatorType = Joint::FORCE;
+const Joint::ActuatorType Joint::DefaultActuatorType = detail::DefaultActuatorType;
+// These declarations are needed for linking to work
+constexpr Joint::ActuatorType Joint::FORCE;
+constexpr Joint::ActuatorType Joint::PASSIVE;
+constexpr Joint::ActuatorType Joint::SERVO;
+constexpr Joint::ActuatorType Joint::ACCELERATION;
+constexpr Joint::ActuatorType Joint::VELOCITY;
+constexpr Joint::ActuatorType Joint::LOCKED;
+
+namespace detail {
 
 //==============================================================================
-Joint::Properties::Properties(const std::string& _name,
-                              const Eigen::Isometry3d& _T_ParentBodyToJoint,
-                              const Eigen::Isometry3d& _T_ChildBodyToJoint,
-                              bool _isPositionLimited,
-                              ActuatorType _actuatorType)
+JointProperties::JointProperties(
+    const std::string& _name,
+    const Eigen::Isometry3d& _T_ParentBodyToJoint,
+    const Eigen::Isometry3d& _T_ChildBodyToJoint,
+    bool _isPositionLimited,
+    ActuatorType _actuatorType)
   : mName(_name),
     mT_ParentBodyToJoint(_T_ParentBodyToJoint),
     mT_ChildBodyToJoint(_T_ChildBodyToJoint),
@@ -67,10 +77,12 @@ Joint::Properties::Properties(const std::string& _name,
   // Do nothing
 }
 
+} // namespace detail
+
 //==============================================================================
 Joint::ExtendedProperties::ExtendedProperties(
     const Properties& standardProperties,
-    const AspectProperties& aspectProperties)
+    const CompositeProperties& aspectProperties)
   : Properties(standardProperties),
     mAspectProperties(aspectProperties)
 {
@@ -80,7 +92,7 @@ Joint::ExtendedProperties::ExtendedProperties(
 //==============================================================================
 Joint::ExtendedProperties::ExtendedProperties(
     Properties&& standardProperties,
-    AspectProperties&& aspectProperties)
+    CompositeProperties&& aspectProperties)
   : Properties(std::move(standardProperties)),
     mAspectProperties(std::move(aspectProperties))
 {
@@ -94,19 +106,25 @@ Joint::~Joint()
 }
 
 //==============================================================================
-void Joint::setProperties(const Properties& _properties)
+void Joint::setProperties(const Properties& properties)
 {
-  setName(_properties.mName);
-  setTransformFromParentBodyNode(_properties.mT_ParentBodyToJoint);
-  setTransformFromChildBodyNode(_properties.mT_ChildBodyToJoint);
-  setPositionLimitEnforced(_properties.mIsPositionLimited);
-  setActuatorType(_properties.mActuatorType);
+  setAspectProperties(properties);
+}
+
+//==============================================================================
+void Joint::setAspectProperties(const AspectProperties& properties)
+{
+  setName(properties.mName);
+  setTransformFromParentBodyNode(properties.mT_ParentBodyToJoint);
+  setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
+  setPositionLimitEnforced(properties.mIsPositionLimited);
+  setActuatorType(properties.mActuatorType);
 }
 
 //==============================================================================
 const Joint::Properties& Joint::getJointProperties() const
 {
-  return mJointP;
+  return mAspectProperties;
 }
 
 //==============================================================================
@@ -137,37 +155,37 @@ Joint& Joint::operator=(const Joint& _otherJoint)
 //==============================================================================
 const std::string& Joint::setName(const std::string& _name, bool _renameDofs)
 {
-  if (mJointP.mName == _name)
+  if (mAspectProperties.mName == _name)
   {
     if (_renameDofs)
       updateDegreeOfFreedomNames();
-    return mJointP.mName;
+    return mAspectProperties.mName;
   }
 
   const SkeletonPtr& skel = mChildBodyNode?
         mChildBodyNode->getSkeleton() : nullptr;
   if (skel)
   {
-    skel->mNameMgrForJoints.removeName(mJointP.mName);
-    mJointP.mName = _name;
+    skel->mNameMgrForJoints.removeName(mAspectProperties.mName);
+    mAspectProperties.mName = _name;
 
     skel->addEntryToJointNameMgr(this, _renameDofs);
   }
   else
   {
-    mJointP.mName = _name;
+    mAspectProperties.mName = _name;
 
     if (_renameDofs)
       updateDegreeOfFreedomNames();
   }
 
-  return mJointP.mName;
+  return mAspectProperties.mName;
 }
 
 //==============================================================================
 const std::string& Joint::getName() const
 {
-  return mJointP.mName;
+  return mAspectProperties.mName;
 }
 
 //==============================================================================
@@ -191,19 +209,19 @@ size_t Joint::getVersion() const
 //==============================================================================
 void Joint::setActuatorType(Joint::ActuatorType _actuatorType)
 {
-  mJointP.mActuatorType = _actuatorType;
+  mAspectProperties.mActuatorType = _actuatorType;
 }
 
 //==============================================================================
 Joint::ActuatorType Joint::getActuatorType() const
 {
-  return mJointP.mActuatorType;
+  return mAspectProperties.mActuatorType;
 }
 
 //==============================================================================
 bool Joint::isKinematic() const
 {
-  switch (mJointP.mActuatorType)
+  switch (mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -317,7 +335,7 @@ const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
 //==============================================================================
 void Joint::setPositionLimitEnforced(bool _isPositionLimited)
 {
-  mJointP.mIsPositionLimited = _isPositionLimited;
+  mAspectProperties.mIsPositionLimited = _isPositionLimited;
 }
 
 //==============================================================================
@@ -329,7 +347,7 @@ void Joint::setPositionLimited(bool _isPositionLimited)
 //==============================================================================
 bool Joint::isPositionLimitEnforced() const
 {
-  return mJointP.mIsPositionLimited;
+  return mAspectProperties.mIsPositionLimited;
 }
 
 //==============================================================================
@@ -410,7 +428,7 @@ bool Joint::checkSanity(bool _printWarnings) const
 void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
-  mJointP.mT_ParentBodyToJoint = _T;
+  mAspectProperties.mT_ParentBodyToJoint = _T;
   notifyPositionUpdate();
 }
 
@@ -418,7 +436,7 @@ void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
-  mJointP.mT_ChildBodyToJoint = _T;
+  mAspectProperties.mT_ChildBodyToJoint = _T;
   updateLocalJacobian();
   notifyPositionUpdate();
 }
@@ -426,13 +444,13 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 //==============================================================================
 const Eigen::Isometry3d& Joint::getTransformFromParentBodyNode() const
 {
-  return mJointP.mT_ParentBodyToJoint;
+  return mAspectProperties.mT_ParentBodyToJoint;
 }
 
 //==============================================================================
 const Eigen::Isometry3d& Joint::getTransformFromChildBodyNode() const
 {
-  return mJointP.mT_ChildBodyToJoint;
+  return mAspectProperties.mT_ChildBodyToJoint;
 }
 
 //==============================================================================
@@ -442,9 +460,8 @@ void Joint::applyGLTransform(renderer::RenderInterface* _ri)
 }
 
 //==============================================================================
-Joint::Joint(const Properties& _properties)
-  : mJointP(_properties),
-    mChildBodyNode(nullptr),
+Joint::Joint()
+  : mChildBodyNode(nullptr),
     mT(Eigen::Isometry3d::Identity()),
     mSpatialVelocity(Eigen::Vector6d::Zero()),
     mSpatialAcceleration(Eigen::Vector6d::Zero()),
@@ -456,7 +473,7 @@ Joint::Joint(const Properties& _properties)
     mIsLocalJacobianDirty(true),
     mIsLocalJacobianTimeDerivDirty(true)
 {
-  // Do nothing
+  // Do nothing. The Joint::Aspect must be created by a derived class.
 }
 
 //==============================================================================

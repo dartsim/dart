@@ -130,15 +130,14 @@ const Eigen::Vector3d& RevoluteJoint::getAxis() const
 }
 
 //==============================================================================
-RevoluteJoint::RevoluteJoint(const Properties& _properties)
-  : detail::RevoluteJointBase(_properties, common::NoArg)
-//  : detail::RevoluteJointBase(common::NextArgs, _properties)
+RevoluteJoint::RevoluteJoint(const Properties& properties)
+  : detail::RevoluteJointBase(properties, common::NoArg)
 {
-  createRevoluteJointAspect(_properties);
-
-  // Inherited Joint Properties must be set in the final joint class or else we
-  // get pure virtual function calls
-  SingleDofJoint::setProperties(_properties);
+  // Inherited Aspects must be created in the final joint class in reverse order
+  // or else we get pure virtual function calls
+  createRevoluteJointAspect(properties);
+  createSingleDofJointAspect(properties);
+  createJointAspect(properties);
 }
 
 //==============================================================================
@@ -150,9 +149,9 @@ Joint* RevoluteJoint::clone() const
 //==============================================================================
 void RevoluteJoint::updateLocalTransform() const
 {
-  mT = mJointP.mT_ParentBodyToJoint
+  mT = mAspectProperties.mT_ParentBodyToJoint
        * math::expAngular(getAxis() * getPositionStatic())
-       * mJointP.mT_ChildBodyToJoint.inverse();
+       * mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -163,7 +162,7 @@ void RevoluteJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
-    mJacobian = math::AdTAngular(mJointP.mT_ChildBodyToJoint, getAxis());
+    mJacobian = math::AdTAngular(mAspectProperties.mT_ChildBodyToJoint, getAxis());
 
     // Verification
     assert(!math::isNan(mJacobian));

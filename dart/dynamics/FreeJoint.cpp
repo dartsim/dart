@@ -167,9 +167,9 @@ void FreeJoint::setSpatialMotion(const Eigen::Isometry3d* newTransform,
 void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform)
 {
   setPositionsStatic(convertToPositions(
-    mJointP.mT_ParentBodyToJoint.inverse() *
+    mAspectProperties.mT_ParentBodyToJoint.inverse() *
     newTransform *
-    mJointP.mT_ChildBodyToJoint));
+    mAspectProperties.mT_ChildBodyToJoint));
 }
 
 //==============================================================================
@@ -525,13 +525,16 @@ Eigen::Vector6d FreeJoint::getPositionDifferencesStatic(
 }
 
 //==============================================================================
-FreeJoint::FreeJoint(const Properties& _properties)
-  : MultiDofJoint<6>(_properties),
+FreeJoint::FreeJoint(const Properties& properties)
+  : MultiDofJoint<6>(properties),
     mQ(Eigen::Isometry3d::Identity())
 {
   mJacobianDeriv = Eigen::Matrix6d::Zero();
 
-  setProperties(_properties);
+  // Inherited Aspects must be created in the final joint class in reverse order
+  // or else we get pure virtual function calls
+  createMultiDofJointAspect(properties);
+  createJointAspect(properties);
 }
 
 //==============================================================================
@@ -573,17 +576,17 @@ void FreeJoint::integratePositions(double _dt)
 void FreeJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(mJointP.mName + "_rot_x", false);
+    mDofs[0]->setName(mAspectProperties.mName + "_rot_x", false);
   if(!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(mJointP.mName + "_rot_y", false);
+    mDofs[1]->setName(mAspectProperties.mName + "_rot_y", false);
   if(!mDofs[2]->isNamePreserved())
-    mDofs[2]->setName(mJointP.mName + "_rot_z", false);
+    mDofs[2]->setName(mAspectProperties.mName + "_rot_z", false);
   if(!mDofs[3]->isNamePreserved())
-    mDofs[3]->setName(mJointP.mName + "_pos_x", false);
+    mDofs[3]->setName(mAspectProperties.mName + "_pos_x", false);
   if(!mDofs[4]->isNamePreserved())
-    mDofs[4]->setName(mJointP.mName + "_pos_y", false);
+    mDofs[4]->setName(mAspectProperties.mName + "_pos_y", false);
   if(!mDofs[5]->isNamePreserved())
-    mDofs[5]->setName(mJointP.mName + "_pos_z", false);
+    mDofs[5]->setName(mAspectProperties.mName + "_pos_z", false);
 }
 
 //==============================================================================
@@ -591,8 +594,8 @@ void FreeJoint::updateLocalTransform() const
 {
   mQ = convertToTransform(getPositionsStatic());
 
-  mT = mJointP.mT_ParentBodyToJoint * mQ
-      * mJointP.mT_ChildBodyToJoint.inverse();
+  mT = mAspectProperties.mT_ParentBodyToJoint * mQ
+      * mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
@@ -601,7 +604,7 @@ void FreeJoint::updateLocalTransform() const
 void FreeJoint::updateLocalJacobian(bool _mandatory) const
 {
   if (_mandatory)
-    mJacobian = math::getAdTMatrix(mJointP.mT_ChildBodyToJoint);
+    mJacobian = math::getAdTMatrix(mAspectProperties.mT_ChildBodyToJoint);
 }
 
 //==============================================================================

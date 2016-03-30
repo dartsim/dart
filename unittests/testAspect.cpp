@@ -116,9 +116,9 @@ class EmbeddedStateComposite :
 {
 public:
 
-  EmbeddedStateComposite()
+  EmbeddedStateComposite(const EmbeddedStateData& state = EmbeddedStateData())
   {
-    create<Aspect>();
+    create<Aspect>(state);
   }
 
   void setAspectState(const AspectState& state) { mAspectState = state; }
@@ -130,9 +130,10 @@ class EmbeddedPropertiesComposite :
 {
 public:
 
-  EmbeddedPropertiesComposite()
+  EmbeddedPropertiesComposite(
+      const EmbeddedPropertiesData& properties = EmbeddedPropertiesData())
   {
-    create<Aspect>();
+    create<Aspect>(properties);
   }
 
   void setAspectProperties(const AspectProperties& properties)
@@ -884,6 +885,11 @@ TEST(Aspect, Embedded)
             sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getState());
   EXPECT_EQ(sp_derived.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties(),
             sp.get<EmbeddedStateAndPropertiesComposite::Aspect>()->getProperties());
+
+
+  // --------- Test Construction -----------
+  EmbeddedStateComposite s_constructed(state);
+  EXPECT_EQ(s_constructed.get<EmbeddedStateComposite::Aspect>()->getState(), state);
 }
 
 int main(int argc, char* argv[])
