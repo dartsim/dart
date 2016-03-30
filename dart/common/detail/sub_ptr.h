@@ -37,17 +37,23 @@
 #ifndef DART_COMMON_DETAIL_SUB_PTR_H_
 #define DART_COMMON_DETAIL_SUB_PTR_H_
 
+#include "dart/common/sub_ptr.h"
+
+namespace dart {
+namespace common {
+
 //==============================================================================
 template <class T>
 sub_ptr<T>::sub_ptr()
-  : mSubject(nullptr)
+  : mT(nullptr),
+    mSubjectBase(nullptr)
 {
   // Do nothing
 }
 
 //==============================================================================
 template <class T>
-sub_ptr<T>::sub_ptr(T* _ptr) : mSubject(nullptr)
+sub_ptr<T>::sub_ptr(T* _ptr) : mT(nullptr), mSubjectBase(nullptr)
 {
   set(_ptr);
 }
@@ -72,55 +78,62 @@ sub_ptr<T>& sub_ptr<T>::operator =(T* _ptr)
 template <class T>
 sub_ptr<T>::operator T*() const
 {
-  return mSubject;
+  return mT;
 }
 
 //==============================================================================
 template <class T>
 T& sub_ptr<T>::operator*() const
 {
-  return *mSubject;
+  return *mT;
 }
 
 //==============================================================================
 template <class T>
 T* sub_ptr<T>::operator->() const
 {
-  return mSubject;
+  return mT;
 }
 
 //==============================================================================
 template <class T>
 T* sub_ptr<T>::get() const
 {
-  return mSubject;
+  return mT;
 }
 
 //==============================================================================
 template <class T>
 void sub_ptr<T>::set(T* _ptr)
 {
-  if(mSubject == _ptr)
+  if(mT == _ptr)
     return;
 
-  removeSubject(mSubject);
-  mSubject = _ptr;
-  addSubject(mSubject);
+  removeSubject(mSubjectBase);
+  mSubjectBase = dynamic_cast<Subject*>(_ptr);
+  mT = _ptr;
+  addSubject(mSubjectBase);
 }
 
 //==============================================================================
 template <class T>
 bool sub_ptr<T>::valid()
 {
-  return mSubject != nullptr;
+  return mT != nullptr;
 }
 
 //==============================================================================
 template <class T>
 void sub_ptr<T>::handleDestructionNotification(const Subject* _subject)
 {
-  if(_subject == mSubject)
-    mSubject = nullptr;
+  if(_subject == mSubjectBase)
+  {
+    mT = nullptr;
+    mSubjectBase = nullptr;
+  }
 }
+
+} // namespace common
+} // namespace dart
 
 #endif // DART_COMMON_DETAIL_SUB_PTR_H_
