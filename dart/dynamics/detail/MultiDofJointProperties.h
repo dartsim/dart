@@ -155,52 +155,6 @@ public:
 };
 
 //==============================================================================
-template <size_t DOF>
-class MultiDofJointAspect final :
-    public common::AspectWithVersionedProperties<
-        MultiDofJointAspect<DOF>, MultiDofJointUniqueProperties<DOF>, MultiDofJoint<DOF>,
-        common::detail::NoOp<MultiDofJointAspect<DOF>*> >
-{
-public:
-  MultiDofJointAspect(const MultiDofJointAspect&) = delete;
-
-  MultiDofJointAspect(common::Composite* comp,
-        const typename MultiDofJointAspect::PropertiesData& properties =
-            typename MultiDofJointAspect::PropertiesData());
-
-  constexpr static size_t NumDofs = DOF;
-  using Vector = Eigen::Matrix<double, DOF, 1>;
-  using BoolArray = std::array<bool, DOF>;
-  using StringArray = std::array<std::string, DOF>;
-
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, PositionLowerLimit)
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, PositionUpperLimit)
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, InitialPosition)
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, VelocityLowerLimit)
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, VelocityUpperLimit)
-  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ASPECT(double, Vector, InitialVelocity, InitialVelocities)
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, AccelerationLowerLimit)
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, AccelerationUpperLimit)
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, ForceLowerLimit)
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, ForceUpperLimit)
-  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ASPECT(double, Vector, SpringStiffness, SpringStiffnesses)
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, RestPosition)
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, DampingCoefficient)
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(double, Vector, Friction)
-  DART_COMMON_SET_GET_MULTIDOF_ASPECT(bool, BoolArray, PreserveDofName)
-
-  const std::string& setDofName(size_t index, const std::string& name, bool preserveName);
-  DART_COMMON_GET_ASPECT_PROPERTY_ARRAY(MultiDofJointAspect, std::string, StringArray, DofName, DofNames, DOF)
-
-  friend class MultiDofJoint<DOF>;
-
-private:
-  /// Used by the MultiDofJoint class to get a mutable reference to one of the
-  /// DOF names. Only the MultiDofJoint class should ever use this function.
-  std::string& _getDofNameReference(size_t index);
-};
-
-//==============================================================================
 //
 // These namespace-level definitions are required to enable ODR-use of static
 // constexpr member variables.
@@ -284,44 +238,9 @@ MultiDofJointProperties<DOF>::MultiDofJointProperties(
   // Do nothing
 }
 
-//==============================================================================
-//
-// These namespace-level definitions are required to enable ODR-use of static
-// constexpr member variables.
-//
-// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
-//
-template <size_t DOF>
-constexpr size_t MultiDofJointAspect<DOF>::NumDofs;
-
-//==============================================================================
-template <size_t DOF>
-MultiDofJointAspect<DOF>::MultiDofJointAspect(common::Composite* comp,
-    const typename MultiDofJointAspect::PropertiesData& properties)
-  : common::AspectWithVersionedProperties<
-        typename MultiDofJointAspect<DOF>::Derived,
-        typename MultiDofJointAspect<DOF>::PropertiesData,
-        typename MultiDofJointAspect<DOF>::CompositeType,
-        &common::detail::NoOp<typename MultiDofJointAspect<DOF>::Derived*> >(
-      comp, properties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-template <size_t DOF>
-const std::string& MultiDofJointAspect<DOF>::setDofName(
-    size_t index, const std::string& name, bool preserveName)
-{
-  return this->getManager()->setDofName(index, name, preserveName);
-}
-
-//==============================================================================
-template <size_t DOF>
-std::string& MultiDofJointAspect<DOF>::_getDofNameReference(size_t index)
-{
-  return this->mProperties.mDofNames[index];
-}
+template <class Derived, size_t DOF>
+using MultiDofJointBase = common::EmbedPropertiesOnTopOf<
+    Derived, MultiDofJointUniqueProperties<DOF>, Joint>;
 
 } // namespace detail
 } // namespace dynamics

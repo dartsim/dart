@@ -58,6 +58,12 @@
         << this->getName() << "].\n";\
   assert(false);
 
+#define MULTIDOFJOINT_SET_IF_DIFFERENT( mField, value )\
+  if( value == Base::mAspectProperties. mField )\
+    return;\
+  Base::mAspectProperties. mField = value;\
+  Joint::incrementVersion();
+
 namespace dart {
 namespace dynamics {
 
@@ -91,23 +97,30 @@ void MultiDofJoint<DOF>::setProperties(const Properties& _properties)
 template <size_t DOF>
 void MultiDofJoint<DOF>::setProperties(const UniqueProperties& _properties)
 {
+  setAspectProperties(_properties);
+}
+
+//==============================================================================
+template <size_t DOF>
+void MultiDofJoint<DOF>::setAspectProperties(const AspectProperties& properties)
+{
   for(size_t i=0; i<DOF; ++i)
   {
-    setDofName(i, _properties.mDofNames[i], _properties.mPreserveDofNames[i]);
-    setPositionLowerLimit(i, _properties.mPositionLowerLimits[i]);
-    setPositionUpperLimit(i, _properties.mPositionUpperLimits[i]);
-    setInitialPosition(i, _properties.mInitialPositions[i]);
-    setVelocityLowerLimit(i, _properties.mVelocityLowerLimits[i]);
-    setVelocityUpperLimit(i, _properties.mVelocityUpperLimits[i]);
-    setInitialVelocity(i, _properties.mInitialVelocities[i]);
-    setAccelerationLowerLimit(i, _properties.mAccelerationLowerLimits[i]);
-    setAccelerationUpperLimit(i, _properties.mAccelerationUpperLimits[i]);
-    setForceLowerLimit(i, _properties.mForceLowerLimits[i]);
-    setForceUpperLimit(i, _properties.mForceUpperLimits[i]);
-    setSpringStiffness(i, _properties.mSpringStiffnesses[i]);
-    setRestPosition(i, _properties.mRestPositions[i]);
-    setDampingCoefficient(i, _properties.mDampingCoefficients[i]);
-    setCoulombFriction(i, _properties.mFrictions[i]);
+    setDofName(i, properties.mDofNames[i], properties.mPreserveDofNames[i]);
+    setPositionLowerLimit(i, properties.mPositionLowerLimits[i]);
+    setPositionUpperLimit(i, properties.mPositionUpperLimits[i]);
+    setInitialPosition(i, properties.mInitialPositions[i]);
+    setVelocityLowerLimit(i, properties.mVelocityLowerLimits[i]);
+    setVelocityUpperLimit(i, properties.mVelocityUpperLimits[i]);
+    setInitialVelocity(i, properties.mInitialVelocities[i]);
+    setAccelerationLowerLimit(i, properties.mAccelerationLowerLimits[i]);
+    setAccelerationUpperLimit(i, properties.mAccelerationUpperLimits[i]);
+    setForceLowerLimit(i, properties.mForceLowerLimits[i]);
+    setForceUpperLimit(i, properties.mForceUpperLimits[i]);
+    setSpringStiffness(i, properties.mSpringStiffnesses[i]);
+    setRestPosition(i, properties.mRestPositions[i]);
+    setDampingCoefficient(i, properties.mDampingCoefficients[i]);
+    setCoulombFriction(i, properties.mFrictions[i]);
   }
 }
 
@@ -117,7 +130,7 @@ typename MultiDofJoint<DOF>::Properties
 MultiDofJoint<DOF>::getMultiDofJointProperties() const
 {
   return MultiDofJoint<DOF>::Properties(
-        Joint::mAspectProperties, getMultiDofJointAspect()->getProperties());
+        Joint::mAspectProperties, Base::mAspectProperties);
 }
 
 //==============================================================================
@@ -189,7 +202,7 @@ const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
   }
 
   preserveDofName(_index, _preserveName);
-  std::string& dofName = getMultiDofJointAspect()->_getDofNameReference(_index);
+  std::string& dofName = Base::mAspectProperties.mDofNames[_index];
   if(_name == dofName)
     return dofName;
 
@@ -216,7 +229,7 @@ void MultiDofJoint<DOF>::preserveDofName(size_t _index, bool _preserve)
     return;
   }
 
-  getMultiDofJointAspect()->setPreserveDofName(_index, _preserve);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mPreserveDofNames[_index], _preserve );
 }
 
 //==============================================================================
@@ -229,7 +242,7 @@ bool MultiDofJoint<DOF>::isDofNamePreserved(size_t _index) const
     _index = 0;
   }
 
-  return getMultiDofJointAspect()->getPreserveDofName(_index);
+  return Base::mAspectProperties.mPreserveDofNames[_index];
 }
 
 //==============================================================================
@@ -242,10 +255,10 @@ const std::string& MultiDofJoint<DOF>::getDofName(size_t _index) const
           << _index << "] in Joint [" << this->getName() << "], but that is "
           << "out of bounds (max " << DOF-1 << "). Returning name of DOF 0.\n";
     assert(false);
-    return getMultiDofJointAspect()->getDofName(0);
+    return Base::mAspectProperties.mDofNames[0];
   }
 
-  return getMultiDofJointAspect()->getDofName(_index);
+  return Base::mAspectProperties.mDofNames[_index];
 }
 
 //==============================================================================
@@ -294,8 +307,8 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double command)
   {
     case Joint::FORCE:
       mCommands[_index] = math::clip(command,
-            getMultiDofJointAspect()->getForceLowerLimit(_index),
-            getMultiDofJointAspect()->getForceUpperLimit(_index));
+            Base::mAspectProperties.mForceLowerLimits[_index],
+            Base::mAspectProperties.mForceUpperLimits[_index]);
       break;
     case Joint::PASSIVE:
       if(0.0 != command)
@@ -308,18 +321,18 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double command)
       break;
     case Joint::SERVO:
       mCommands[_index] = math::clip(command,
-            getMultiDofJointAspect()->getVelocityLowerLimit(_index),
-            getMultiDofJointAspect()->getVelocityUpperLimit(_index));
+            Base::mAspectProperties.mVelocityLowerLimits[_index],
+            Base::mAspectProperties.mVelocityUpperLimits[_index]);
       break;
     case Joint::ACCELERATION:
       mCommands[_index] = math::clip(command,
-            getMultiDofJointAspect()->getAccelerationLowerLimit(_index),
-            getMultiDofJointAspect()->getAccelerationUpperLimit(_index));
+            Base::mAspectProperties.mAccelerationLowerLimits[_index],
+            Base::mAspectProperties.mAccelerationUpperLimits[_index]);
       break;
     case Joint::VELOCITY:
       mCommands[_index] = math::clip(command,
-            getMultiDofJointAspect()->getVelocityLowerLimit(_index),
-            getMultiDofJointAspect()->getVelocityUpperLimit(_index));
+            Base::mAspectProperties.mVelocityLowerLimits[_index],
+            Base::mAspectProperties.mVelocityUpperLimits[_index]);
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case Joint::LOCKED:
@@ -364,8 +377,8 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
   {
     case Joint::FORCE:
       mCommands = math::clip(_commands,
-            getMultiDofJointAspect()->getForceLowerLimits(),
-            getMultiDofJointAspect()->getForceUpperLimits());
+            Base::mAspectProperties.mForceLowerLimits,
+            Base::mAspectProperties.mForceUpperLimits);
       break;
     case Joint::PASSIVE:
       if(Vector::Zero() != _commands)
@@ -378,18 +391,18 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
       break;
     case Joint::SERVO:
       mCommands = math::clip(_commands,
-            getMultiDofJointAspect()->getVelocityLowerLimits(),
-            getMultiDofJointAspect()->getVelocityUpperLimits());
+            Base::mAspectProperties.mVelocityLowerLimits,
+            Base::mAspectProperties.mVelocityUpperLimits);
       break;
     case Joint::ACCELERATION:
       mCommands = math::clip(_commands,
-            getMultiDofJointAspect()->getAccelerationLowerLimits(),
-            getMultiDofJointAspect()->getAccelerationUpperLimits());
+            Base::mAspectProperties.mAccelerationLowerLimits,
+            Base::mAspectProperties.mAccelerationUpperLimits);
       break;
     case Joint::VELOCITY:
       mCommands = math::clip(_commands,
-            getMultiDofJointAspect()->getVelocityLowerLimits(),
-            getMultiDofJointAspect()->getVelocityUpperLimits());
+            Base::mAspectProperties.mVelocityLowerLimits,
+            Base::mAspectProperties.mVelocityUpperLimits);
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case Joint::LOCKED:
@@ -482,7 +495,7 @@ void MultiDofJoint<DOF>::setPositionLowerLimit(size_t _index, double _position)
     return;
   }
 
-  getMultiDofJointAspect()->setPositionLowerLimit(_index, _position);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mPositionLowerLimits[_index], _position );
 }
 
 //==============================================================================
@@ -495,7 +508,7 @@ double MultiDofJoint<DOF>::getPositionLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getPositionLowerLimit(_index);
+  return Base::mAspectProperties.mPositionLowerLimits[_index];
 }
 
 //==============================================================================
@@ -508,7 +521,7 @@ void MultiDofJoint<DOF>::setPositionUpperLimit(size_t _index, double _position)
     return;
   }
 
-  getMultiDofJointAspect()->setPositionUpperLimit(_index, _position);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mPositionUpperLimits[_index], _position );
 }
 
 //==============================================================================
@@ -521,14 +534,14 @@ void MultiDofJoint<DOF>::resetPosition(size_t _index)
     return;
   }
 
-  setPosition(_index, getMultiDofJointAspect()->getInitialPosition(_index));
+  setPosition(_index, Base::mAspectProperties.mInitialPositions[_index]);
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::resetPositions()
 {
-  setPositionsStatic(getMultiDofJointAspect()->getInitialPositions());
+  setPositionsStatic(Base::mAspectProperties.mInitialPositions);
 }
 
 //==============================================================================
@@ -541,7 +554,7 @@ void MultiDofJoint<DOF>::setInitialPosition(size_t _index, double _initial)
     return;
   }
 
-  getMultiDofJointAspect()->setInitialPosition(_index, _initial);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mInitialPositions[_index], _initial );
 }
 
 //==============================================================================
@@ -554,7 +567,7 @@ double MultiDofJoint<DOF>::getInitialPosition(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getInitialPosition(_index);
+  return Base::mAspectProperties.mInitialPositions[_index];
 }
 
 //==============================================================================
@@ -567,14 +580,14 @@ void MultiDofJoint<DOF>::setInitialPositions(const Eigen::VectorXd& _initial)
     return;
   }
 
-  getMultiDofJointAspect()->setInitialPositions(_initial);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mInitialPositions, _initial);
 }
 
 //==============================================================================
 template <size_t DOF>
 Eigen::VectorXd MultiDofJoint<DOF>::getInitialPositions() const
 {
-  return getMultiDofJointAspect()->getInitialPositions();
+  return Base::mAspectProperties.mInitialPositions;
 }
 
 //==============================================================================
@@ -587,7 +600,7 @@ double MultiDofJoint<DOF>::getPositionUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getPositionUpperLimit(_index);
+  return Base::mAspectProperties.mPositionUpperLimits[_index];
 }
 
 //==============================================================================
@@ -600,8 +613,8 @@ bool MultiDofJoint<DOF>::hasPositionLimit(size_t _index) const
     return true;
   }
 
-  return std::isfinite(getMultiDofJointAspect()->getPositionUpperLimit(_index))
-      || std::isfinite(getMultiDofJointAspect()->getPositionLowerLimit(_index));
+  return std::isfinite(Base::mAspectProperties.mPositionUpperLimits[_index])
+      || std::isfinite(Base::mAspectProperties.mPositionLowerLimits[_index]);
 }
 
 //==============================================================================
@@ -677,7 +690,7 @@ void MultiDofJoint<DOF>::setVelocityLowerLimit(size_t _index, double _velocity)
     return;
   }
 
-  getMultiDofJointAspect()->setVelocityLowerLimit(_index, _velocity);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mVelocityLowerLimits[_index], _velocity );
 }
 
 //==============================================================================
@@ -690,7 +703,7 @@ double MultiDofJoint<DOF>::getVelocityLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getVelocityLowerLimit(_index);
+  return Base::mAspectProperties.mVelocityLowerLimits[_index];
 }
 
 //==============================================================================
@@ -703,7 +716,7 @@ void MultiDofJoint<DOF>::setVelocityUpperLimit(size_t _index, double _velocity)
     return;
   }
 
-  getMultiDofJointAspect()->setVelocityUpperLimit(_index, _velocity);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mVelocityUpperLimits[_index], _velocity );
 }
 
 //==============================================================================
@@ -716,7 +729,7 @@ double MultiDofJoint<DOF>::getVelocityUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getVelocityUpperLimit(_index);
+  return Base::mAspectProperties.mVelocityUpperLimits[_index];
 }
 
 //==============================================================================
@@ -729,14 +742,14 @@ void MultiDofJoint<DOF>::resetVelocity(size_t _index)
     return;
   }
 
-  setVelocity(_index, getMultiDofJointAspect()->getInitialVelocity(_index));
+  setVelocity(_index, Base::mAspectProperties.mInitialVelocities[_index]);
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::resetVelocities()
 {
-  setVelocitiesStatic(getMultiDofJointAspect()->getInitialVelocities());
+  setVelocitiesStatic(Base::mAspectProperties.mInitialVelocities);
 }
 
 //==============================================================================
@@ -749,7 +762,7 @@ void MultiDofJoint<DOF>::setInitialVelocity(size_t _index, double _initial)
     return;
   }
 
-  getMultiDofJointAspect()->setInitialVelocity(_index, _initial);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mInitialVelocities[_index], _initial );
 }
 
 //==============================================================================
@@ -762,7 +775,7 @@ double MultiDofJoint<DOF>::getInitialVelocity(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getInitialVelocity(_index);
+  return Base::mAspectProperties.mInitialVelocities[_index];
 }
 
 //==============================================================================
@@ -775,14 +788,14 @@ void MultiDofJoint<DOF>::setInitialVelocities(const Eigen::VectorXd& _initial)
     return;
   }
 
-  getMultiDofJointAspect()->setInitialVelocities(_initial);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mInitialVelocities, _initial );
 }
 
 //==============================================================================
 template <size_t DOF>
 Eigen::VectorXd MultiDofJoint<DOF>::getInitialVelocities() const
 {
-  return getMultiDofJointAspect()->getInitialVelocities();
+  return Base::mAspectProperties.mInitialVelocities;
 }
 
 //==============================================================================
@@ -866,7 +879,8 @@ void MultiDofJoint<DOF>::setAccelerationLowerLimit(size_t _index,
     return;
   }
 
-  getMultiDofJointAspect()->setAccelerationLowerLimit(_index, _acceleration);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mAccelerationLowerLimits[_index],
+                                  _acceleration );
 }
 
 //==============================================================================
@@ -879,7 +893,7 @@ double MultiDofJoint<DOF>::getAccelerationLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getAccelerationLowerLimit(_index);
+  return Base::mAspectProperties.mAccelerationLowerLimits[_index];
 }
 
 //==============================================================================
@@ -893,7 +907,8 @@ void MultiDofJoint<DOF>::setAccelerationUpperLimit(size_t _index,
     return;
   }
 
-  getMultiDofJointAspect()->setAccelerationUpperLimit(_index, _acceleration);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mAccelerationUpperLimits[_index],
+                                  _acceleration);
 }
 
 //==============================================================================
@@ -906,7 +921,7 @@ double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getAccelerationUpperLimit(_index);
+  return Base::mAspectProperties.mAccelerationUpperLimits[_index];
 }
 
 //==============================================================================
@@ -1047,7 +1062,7 @@ void MultiDofJoint<DOF>::setForceLowerLimit(size_t _index, double _force)
     return;
   }
 
-  getMultiDofJointAspect()->setForceLowerLimit(_index, _force);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mForceLowerLimits[_index], _force );
 }
 
 //==============================================================================
@@ -1060,7 +1075,7 @@ double MultiDofJoint<DOF>::getForceLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getForceLowerLimit(_index);
+  return Base::mAspectProperties.mForceLowerLimits[_index];
 }
 
 //==============================================================================
@@ -1073,7 +1088,7 @@ void MultiDofJoint<DOF>::setForceUpperLimit(size_t _index, double _force)
     return;
   }
 
-  getMultiDofJointAspect()->setForceUpperLimit(_index, _force);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mForceUpperLimits[_index], _force );
 }
 
 //==============================================================================
@@ -1086,7 +1101,7 @@ double MultiDofJoint<DOF>::getForceUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getForceUpperLimit(_index);
+  return Base::mAspectProperties.mForceUpperLimits[_index];
 }
 
 //==============================================================================
@@ -1208,7 +1223,7 @@ void MultiDofJoint<DOF>::setSpringStiffness(size_t _index, double _k)
 
   assert(_k >= 0.0);
 
-  getMultiDofJointAspect()->setSpringStiffness(_index, _k);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mSpringStiffnesses[_index], _k );
 }
 
 //==============================================================================
@@ -1221,7 +1236,7 @@ double MultiDofJoint<DOF>::getSpringStiffness(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getSpringStiffness(_index);
+  return Base::mAspectProperties.mSpringStiffnesses[_index];
 }
 
 //==============================================================================
@@ -1234,19 +1249,19 @@ void MultiDofJoint<DOF>::setRestPosition(size_t _index, double _q0)
     return;
   }
 
-  if (getMultiDofJointAspect()->getPositionLowerLimit(_index) > _q0
-      || getMultiDofJointAspect()->getPositionUpperLimit(_index) < _q0)
+  if (Base::mAspectProperties.mPositionLowerLimits[_index] > _q0
+      || Base::mAspectProperties.mPositionUpperLimits[_index] < _q0)
   {
     dtwarn << "[MultiDofJoint::setRestPosition] Value of _q0 [" << _q0
            << "], is out of the limit range ["
-           << getMultiDofJointAspect()->getPositionLowerLimit(_index) << ", "
-           << getMultiDofJointAspect()->getPositionUpperLimit(_index)
+           << Base::mAspectProperties.mPositionLowerLimits[_index] << ", "
+           << Base::mAspectProperties.mPositionUpperLimits[_index]
            << "] for index [" << _index << "] of Joint [" << this->getName()
            << "].\n";
     return;
   }
 
-  getMultiDofJointAspect()->setRestPosition(_index, _q0);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mRestPositions[_index], _q0 );
 }
 
 //==============================================================================
@@ -1259,7 +1274,7 @@ double MultiDofJoint<DOF>::getRestPosition(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getRestPosition(_index);
+  return Base::mAspectProperties.mRestPositions[_index];
 }
 
 //==============================================================================
@@ -1274,7 +1289,7 @@ void MultiDofJoint<DOF>::setDampingCoefficient(size_t _index, double _d)
 
   assert(_d >= 0.0);
 
-  getMultiDofJointAspect()->setDampingCoefficient(_index, _d);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mDampingCoefficients[_index], _d );
 }
 
 //==============================================================================
@@ -1287,7 +1302,7 @@ double MultiDofJoint<DOF>::getDampingCoefficient(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getDampingCoefficient(_index);
+  return Base::mAspectProperties.mDampingCoefficients[_index];
 }
 
 //==============================================================================
@@ -1302,7 +1317,7 @@ void MultiDofJoint<DOF>::setCoulombFriction(size_t _index, double _friction)
 
   assert(_friction >= 0.0);
 
-  getMultiDofJointAspect()->setFriction(_index, _friction);
+  MULTIDOFJOINT_SET_IF_DIFFERENT( mFrictions[_index], _friction );
 }
 
 //==============================================================================
@@ -1315,7 +1330,7 @@ double MultiDofJoint<DOF>::getCoulombFriction(size_t _index) const
     return 0.0;
   }
 
-  return getMultiDofJointAspect()->getFriction(_index);
+  return Base::mAspectProperties.mFrictions[_index];
 }
 
 //==============================================================================
@@ -1324,9 +1339,9 @@ double MultiDofJoint<DOF>::getPotentialEnergy() const
 {
   // Spring energy
   Eigen::VectorXd displacement =
-      getPositionsStatic() - getMultiDofJointAspect()->getRestPositions();
+      getPositionsStatic() - Base::mAspectProperties.mRestPositions;
   double pe = 0.5 * displacement.dot(
-        getMultiDofJointAspect()->getSpringStiffnesses().asDiagonal()
+        Base::mAspectProperties.mSpringStiffnesses.asDiagonal()
         * displacement);
 
   return pe;
@@ -1376,7 +1391,7 @@ void MultiDofJoint<DOF>::registerDofs()
   const SkeletonPtr& skel = this->mChildBodyNode->getSkeleton();
   for (size_t i = 0; i < DOF; ++i)
   {
-    getMultiDofJointAspect()->mProperties.mDofNames[i] =
+    Base::mAspectProperties.mDofNames[i] =
         skel->mNameMgrForDofs.issueNewNameAndAdd(mDofs[i]->getName(), mDofs[i]);
   }
 }
@@ -1725,8 +1740,8 @@ void MultiDofJoint<DOF>::updateInvProjArtInertiaImplicitDynamic(
   // Add additional inertia for implicit damping and spring force
   for (size_t i = 0; i < DOF; ++i)
   {
-    projAI(i, i) += _timeStep * getMultiDofJointAspect()->getDampingCoefficient(i)
-        + _timeStep * _timeStep * getMultiDofJointAspect()->getSpringStiffness(i);
+    projAI(i, i) += _timeStep * Base::mAspectProperties.mDampingCoefficients[i]
+        + _timeStep * _timeStep * Base::mAspectProperties.mSpringStiffnesses[i];
   }
 
   // Inversion of projected articulated inertia
@@ -1944,13 +1959,13 @@ void MultiDofJoint<DOF>::updateTotalForceDynamic(
 {
   // Spring force
   const Eigen::Matrix<double, DOF, 1> springForce
-      = (-getMultiDofJointAspect()->getSpringStiffnesses()).asDiagonal()
-        *(getPositionsStatic() - getMultiDofJointAspect()->getRestPositions()
+      = (-Base::mAspectProperties.mSpringStiffnesses).asDiagonal()
+        *(getPositionsStatic() - Base::mAspectProperties.mRestPositions
           + getVelocitiesStatic()*_timeStep);
 
   // Damping force
   const Eigen::Matrix<double, DOF, 1> dampingForce
-      = (-getMultiDofJointAspect()->getDampingCoefficients()).asDiagonal()*
+      = (-Base::mAspectProperties.mDampingCoefficients).asDiagonal()*
         getVelocitiesStatic();
 
   //
@@ -2125,7 +2140,7 @@ void MultiDofJoint<DOF>::updateForceID(const Eigen::Vector6d& _bodyForce,
   if (_withDampingForces)
   {
     const Eigen::Matrix<double, DOF, 1> dampingForces
-        = (-getMultiDofJointAspect()->getDampingCoefficients()).asDiagonal()
+        = (-Base::mAspectProperties.mDampingCoefficients).asDiagonal()
           *getVelocitiesStatic();
     mForces -= dampingForces;
   }
@@ -2134,8 +2149,8 @@ void MultiDofJoint<DOF>::updateForceID(const Eigen::Vector6d& _bodyForce,
   if (_withSpringForces)
   {
     const Eigen::Matrix<double, DOF, 1> springForces
-        = (-getMultiDofJointAspect()->getSpringStiffnesses()).asDiagonal()
-          *(getPositionsStatic() - getMultiDofJointAspect()->getRestPositions()
+        = (-Base::mAspectProperties.mSpringStiffnesses).asDiagonal()
+          *(getPositionsStatic() - Base::mAspectProperties.mRestPositions
             + getVelocitiesStatic()*_timeStep);
     mForces -= springForces;
   }

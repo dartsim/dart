@@ -58,21 +58,16 @@ class Skeleton;
 
 /// class MultiDofJoint
 template<size_t DOF>
-class MultiDofJoint :
-    public common::CompositeJoiner<Joint,
-        common::Virtual<common::RequiresAspect<detail::MultiDofJointAspect<DOF>>> >
+class MultiDofJoint : public detail::MultiDofJointBase< MultiDofJoint<DOF>, DOF >
 {
 public:
 
-  using Base = common::CompositeJoiner<Joint,
-      common::Virtual<common::RequiresAspect<detail::MultiDofJointAspect<DOF>>> >;
-
   constexpr static size_t NumDofs = DOF;
   using Vector = Eigen::Matrix<double, DOF, 1>;
-
+  using Base = detail::MultiDofJointBase<MultiDofJoint<DOF>, DOF>;
   using UniqueProperties = detail::MultiDofJointUniqueProperties<DOF>;
   using Properties = detail::MultiDofJointProperties<DOF>;
-  using Aspect = detail::MultiDofJointAspect<DOF>;
+  using AspectProperties = typename Base::AspectProperties;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR( typename MultiDofJoint<DOF>::Aspect, MultiDofJointAspect )
 
@@ -86,6 +81,9 @@ public:
 
   /// Set the Properties of this MultiDofJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this MultiDofJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this MultiDofJoint
   Properties getMultiDofJointProperties() const;
