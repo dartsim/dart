@@ -50,8 +50,6 @@ public:
   friend class Skeleton;
   using UniqueProperties = detail::PrismaticJointUniqueProperties;
   using Properties = detail::PrismaticJointProperties;
-  using Aspect = detail::PrismaticJointAspect;
-  using Base = detail::PrismaticJointBase;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, PrismaticJointAspect)
 
@@ -65,6 +63,9 @@ public:
 
   /// Set the Properties of this PrismaticJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this PrismaticJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this PrismaticJoint
   Properties getPrismaticJointProperties() const;
@@ -92,8 +93,6 @@ public:
 
   ///
   const Eigen::Vector3d& getAxis() const;
-
-  template<class AspectType> friend void detail::JointPropertyUpdate(AspectType*);
 
 protected:
 

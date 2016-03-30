@@ -96,7 +96,7 @@ public:
         CompositeProperties&& aspectProperties);
 
     /// Properties of all the Aspects attached to this Joint
-    CompositeProperties mAspectProperties;
+    CompositeProperties mCompositeProperties;
   };
 
   /// Default actuator type

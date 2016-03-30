@@ -50,7 +50,6 @@ public:
   friend class Skeleton;
   using UniqueProperties = detail::ScrewJointUniqueProperties;
   using Properties = detail::ScrewJointProperties;
-  using Aspect = detail::ScrewJointAspect;
   using Base = detail::ScrewJointBase;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, ScrewJointAspect)
@@ -65,6 +64,9 @@ public:
 
   /// Set the Properties of this ScrewJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this ScrewJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this ScrewJoint
   Properties getScrewJointProperties() const;

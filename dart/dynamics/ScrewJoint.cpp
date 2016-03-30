@@ -62,15 +62,20 @@ void ScrewJoint::setProperties(const Properties& _properties)
 //==============================================================================
 void ScrewJoint::setProperties(const UniqueProperties& _properties)
 {
-  setAxis(_properties.mAxis);
-  setPitch(_properties.mPitch);
+  setAspectProperties(_properties);
+}
+
+//==============================================================================
+void ScrewJoint::setAspectProperties(const AspectProperties& properties)
+{
+  setAxis(properties.mAxis);
+  setPitch(properties.mPitch);
 }
 
 //==============================================================================
 ScrewJoint::Properties ScrewJoint::getScrewJointProperties() const
 {
-  return Properties(getSingleDofJointProperties(),
-                    getScrewJointAspect()->getProperties());
+  return Properties(getSingleDofJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -120,30 +125,40 @@ bool ScrewJoint::isCyclic(size_t /*_index*/) const
 //==============================================================================
 void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  getScrewJointAspect()->setAxis(_axis);
+  if(_axis == mAspectProperties.mAxis)
+    return;
+
+  mAspectProperties.mAxis = _axis.normalized();
+  Joint::notifyPositionUpdate();
+  Joint::incrementVersion();
 }
 
 //==============================================================================
 const Eigen::Vector3d& ScrewJoint::getAxis() const
 {
-  return getScrewJointAspect()->getAxis();
+  return mAspectProperties.mAxis;
 }
 
 //==============================================================================
 void ScrewJoint::setPitch(double _pitch)
 {
-  getScrewJointAspect()->setPitch(_pitch);
+  if(_pitch == mAspectProperties.mPitch)
+    return;
+
+  mAspectProperties.mPitch = _pitch;
+  Joint::notifyPositionUpdate();
+  Joint::incrementVersion();
 }
 
 //==============================================================================
 double ScrewJoint::getPitch() const
 {
-  return getScrewJointAspect()->getPitch();
+  return mAspectProperties.mPitch;
 }
 
 //==============================================================================
 ScrewJoint::ScrewJoint(const Properties& properties)
-  : detail::ScrewJointBase(properties, common::NoArg)
+  : detail::ScrewJointBase(common::NoArg, properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
@@ -164,9 +179,9 @@ void ScrewJoint::updateLocalTransform() const
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = getAxis();
   S.tail<3>() = getAxis()*getPitch()/DART_2PI;
-  mT = mAspectProperties.mT_ParentBodyToJoint
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * math::expMap(S * getPositionStatic())
-       * mAspectProperties.mT_ChildBodyToJoint.inverse();
+       * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
 
@@ -178,7 +193,7 @@ void ScrewJoint::updateLocalJacobian(bool _mandatory) const
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
     S.head<3>() = getAxis();
     S.tail<3>() = getAxis()*getPitch()/DART_2PI;
-    mJacobian = math::AdT(mAspectProperties.mT_ChildBodyToJoint, S);
+    mJacobian = math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint, S);
     assert(!math::isNan(mJacobian));
   }
 }

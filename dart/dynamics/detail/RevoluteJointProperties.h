@@ -76,21 +76,8 @@ struct RevoluteJointProperties :
 };
 
 //==============================================================================
-class RevoluteJointAspect final :
-    public common::AspectWithVersionedProperties<
-        RevoluteJointAspect, RevoluteJointUniqueProperties, RevoluteJoint,
-        detail::JointPropertyUpdate<RevoluteJointAspect> >
-{
-public:
-  DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( RevoluteJointAspect )
-
-  void setAxis(const Eigen::Vector3d& _axis);
-  const Eigen::Vector3d& getAxis() const;
-};
-
-//==============================================================================
-using RevoluteJointBase = common::CompositeJoiner<
-    SingleDofJoint, common::RequiresAspect<RevoluteJointAspect> >;
+using RevoluteJointBase = common::EmbedPropertiesOnTopOf<
+    RevoluteJoint, RevoluteJointUniqueProperties, SingleDofJoint>;
 
 } // namespace detail
 

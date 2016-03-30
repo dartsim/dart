@@ -50,7 +50,6 @@ public:
   friend class Skeleton;
   using UniqueProperties = detail::RevoluteJointUniqueProperties;
   using Properties = detail::RevoluteJointProperties;
-  using Aspect = detail::RevoluteJointAspect;
   using Base = detail::RevoluteJointBase;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, RevoluteJointAspect)
@@ -65,6 +64,9 @@ public:
 
   /// Set the Properties of this RevoluteJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this RevoluteJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this RevoluteJoint
   Properties getRevoluteJointProperties() const;
@@ -111,8 +113,6 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const override;
 
 public:
-
-  template<class AspectType> friend void detail::JointPropertyUpdate(AspectType*);
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

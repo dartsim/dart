@@ -84,7 +84,7 @@ Joint::ExtendedProperties::ExtendedProperties(
     const Properties& standardProperties,
     const CompositeProperties& aspectProperties)
   : Properties(standardProperties),
-    mAspectProperties(aspectProperties)
+    mCompositeProperties(aspectProperties)
 {
   // Do nothing
 }
@@ -94,7 +94,7 @@ Joint::ExtendedProperties::ExtendedProperties(
     Properties&& standardProperties,
     CompositeProperties&& aspectProperties)
   : Properties(std::move(standardProperties)),
-    mAspectProperties(std::move(aspectProperties))
+    mCompositeProperties(std::move(aspectProperties))
 {
   // Do nothing
 }

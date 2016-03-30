@@ -111,19 +111,19 @@ bool TranslationalJoint::isCyclic(size_t /*_index*/) const
 void TranslationalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(mAspectProperties.mName + "_x", false);
+    mDofs[0]->setName(Joint::mAspectProperties.mName + "_x", false);
   if(!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(mAspectProperties.mName + "_y", false);
+    mDofs[1]->setName(Joint::mAspectProperties.mName + "_y", false);
   if(!mDofs[2]->isNamePreserved())
-    mDofs[2]->setName(mAspectProperties.mName + "_z", false);
+    mDofs[2]->setName(Joint::mAspectProperties.mName + "_z", false);
 }
 
 //==============================================================================
 void TranslationalJoint::updateLocalTransform() const
 {
-  mT = mAspectProperties.mT_ParentBodyToJoint
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(getPositionsStatic())
-       * mAspectProperties.mT_ChildBodyToJoint.inverse();
+       * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -134,7 +134,7 @@ void TranslationalJoint::updateLocalJacobian(bool _mandatory) const
 {
   if (_mandatory)
   {
-    mJacobian.bottomRows<3>() = mAspectProperties.mT_ChildBodyToJoint.linear();
+    mJacobian.bottomRows<3>() = Joint::mAspectProperties.mT_ChildBodyToJoint.linear();
 
     // Verification
     assert(mJacobian.topRows<3>() == Eigen::Matrix3d::Zero());

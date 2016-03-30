@@ -76,21 +76,8 @@ struct PrismaticJointProperties :
 };
 
 //==============================================================================
-class PrismaticJointAspect final :
-    public common::AspectWithVersionedProperties<
-        PrismaticJointAspect, PrismaticJointUniqueProperties, PrismaticJoint,
-        detail::JointPropertyUpdate<PrismaticJointAspect> >
-{
-public:
-  DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( PrismaticJointAspect )
-
-  void setAxis(const Eigen::Vector3d& _axis);
-  const Eigen::Vector3d& getAxis() const;
-};
-
-//==============================================================================
-using PrismaticJointBase = common::CompositeJoiner<
-    SingleDofJoint, common::RequiresAspect<PrismaticJointAspect> >;
+using PrismaticJointBase = common::EmbedPropertiesOnTopOf<
+    PrismaticJoint, PrismaticJointUniqueProperties, SingleDofJoint>;
 
 } // namespace detail
 } // namespace dynamics

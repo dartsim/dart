@@ -146,9 +146,9 @@ Eigen::Matrix<double, 6, 2> UniversalJoint::getLocalJacobianStatic(
 {
   Eigen::Matrix<double, 6, 2> J;
   J.col(0) = math::AdTAngular(
-               mAspectProperties.mT_ChildBodyToJoint
+               Joint::mAspectProperties.mT_ChildBodyToJoint
                * math::expAngular(-getAxis2() * _positions[1]), getAxis1());
-  J.col(1) = math::AdTAngular(mAspectProperties.mT_ChildBodyToJoint, getAxis2());
+  J.col(1) = math::AdTAngular(Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis2());
   assert(!math::isNan(J));
   return J;
 }
@@ -174,19 +174,19 @@ Joint* UniversalJoint::clone() const
 void UniversalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(mAspectProperties.mName + "_1", false);
+    mDofs[0]->setName(Joint::mAspectProperties.mName + "_1", false);
   if(!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(mAspectProperties.mName + "_2", false);
+    mDofs[1]->setName(Joint::mAspectProperties.mName + "_2", false);
 }
 
 //==============================================================================
 void UniversalJoint::updateLocalTransform() const
 {
   const Eigen::Vector2d& positions = getPositionsStatic();
-  mT = mAspectProperties.mT_ParentBodyToJoint
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::AngleAxisd(positions[0], getAxis1())
        * Eigen::AngleAxisd(positions[1], getAxis2())
-       * mAspectProperties.mT_ChildBodyToJoint.inverse();
+       * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
 
@@ -206,7 +206,7 @@ void UniversalJoint::updateLocalJacobianTimeDeriv() const
         -getAxis2() * getPositionsStatic()[1]);
 
   Eigen::Vector6d tmpV2
-      = math::AdTAngular(mAspectProperties.mT_ChildBodyToJoint * tmpT, getAxis1());
+      = math::AdTAngular(Joint::mAspectProperties.mT_ChildBodyToJoint * tmpT, getAxis1());
 
   mJacobianDeriv.col(0) = -math::ad(tmpV1, tmpV2);
 

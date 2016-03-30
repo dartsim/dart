@@ -56,7 +56,6 @@ public:
 
   using UniqueProperties = detail::SingleDofJointUniqueProperties;
   using Properties = detail::SingleDofJointProperties;
-  using Aspect = detail::SingleDofJointAspect;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, SingleDofJointAspect)
 
@@ -68,6 +67,9 @@ public:
 
   /// Set the Properties of this SingleDofJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this SingleDofJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this SingleDofJoint
   Properties getSingleDofJointProperties() const;
@@ -396,8 +398,6 @@ public:
 
   // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
-
-  template<class AspectType> friend void detail::JointPropertyUpdate(AspectType*);
 
 protected:
 

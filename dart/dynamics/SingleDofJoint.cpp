@@ -55,8 +55,14 @@
 
 #define SINGLEDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR( func )                  \
   dterr << "[SingleDofJoint::" # func "] Unsupported actuator type ("       \
-        << mAspectProperties.mActuatorType << ") for Joint [" << getName() << "].\n"; \
+        << Joint::mAspectProperties.mActuatorType << ") for Joint [" << getName() << "].\n"; \
   assert(false);
+
+#define SINGLEDOFJOINT_SET_IF_DIFFERENT( mField, value )\
+  if( value == mAspectProperties. mField )\
+    return;\
+  mAspectProperties. mField = value;\
+  Joint::incrementVersion();
 
 namespace dart {
 namespace dynamics {
@@ -77,13 +83,33 @@ void SingleDofJoint::setProperties(const Properties& _properties)
 //==============================================================================
 void SingleDofJoint::setProperties(const UniqueProperties& _properties)
 {
-  getSingleDofJointAspect()->setProperties(_properties);
+  setAspectProperties(_properties);
+}
+
+//==============================================================================
+void SingleDofJoint::setAspectProperties(const AspectProperties& properties)
+{
+  setDofName(0, properties.mDofName, properties.mPreserveDofName);
+  setPositionLowerLimit(0, properties.mPositionLowerLimit);
+  setPositionUpperLimit(0, properties.mPositionUpperLimit);
+  setInitialPosition(0, properties.mInitialPosition);
+  setVelocityLowerLimit(0, properties.mVelocityLowerLimit);
+  setVelocityUpperLimit(0, properties.mVelocityUpperLimit);
+  setInitialVelocity(0, properties.mInitialVelocity);
+  setAccelerationLowerLimit(0, properties.mAccelerationLowerLimit);
+  setAccelerationUpperLimit(0, properties.mAccelerationUpperLimit);
+  setForceLowerLimit(0, properties.mForceLowerLimit);
+  setForceUpperLimit(0, properties.mForceUpperLimit);
+  setSpringStiffness(0, properties.mSpringStiffness);
+  setRestPosition(0, properties.mRestPosition);
+  setDampingCoefficient(0, properties.mDampingCoefficient);
+  setCoulombFriction(0, properties.mFriction);
 }
 
 //==============================================================================
 SingleDofJoint::Properties SingleDofJoint::getSingleDofJointProperties() const
 {
-  return Properties(mAspectProperties, getSingleDofJointAspect()->getProperties());
+  return Properties(Joint::mAspectProperties, mAspectProperties);
 }
 
 //==============================================================================
@@ -177,20 +203,20 @@ const std::string& SingleDofJoint::setDofName(size_t _index,
 
   preserveDofName(0, _preserveName);
 
-  if(_name == getSingleDofJointAspect()->mProperties.mDofName)
-    return getSingleDofJointAspect()->mProperties.mDofName;
+  if(_name == mAspectProperties.mDofName)
+    return mAspectProperties.mDofName;
 
   const SkeletonPtr& skel = getSkeleton();
   if(skel)
   {
-    getSingleDofJointAspect()->mProperties.mDofName =
+    mAspectProperties.mDofName =
         skel->mNameMgrForDofs.changeObjectName(mDof, _name);
-    skel->incrementVersion();
+    Joint::incrementVersion();
   }
   else
-    getSingleDofJointAspect()->mProperties.mDofName = _name;
+    mAspectProperties.mDofName = _name;
 
-  return getSingleDofJointAspect()->mProperties.mDofName;
+  return mAspectProperties.mDofName;
 }
 
 //==============================================================================
@@ -202,7 +228,7 @@ void SingleDofJoint::preserveDofName(size_t _index, bool _preserve)
     return;
   }
 
-  getSingleDofJointAspect()->setPreserveDofName(_preserve);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mPreserveDofName, _preserve);
 }
 
 //==============================================================================
@@ -213,7 +239,7 @@ bool SingleDofJoint::isDofNamePreserved(size_t _index) const
     SINGLEDOFJOINT_REPORT_OUT_OF_RANGE( isDofNamePreserved, _index );
   }
 
-  return getSingleDofJointAspect()->getPreserveDofName();
+  return mAspectProperties.mPreserveDofName;
 }
 
 //==============================================================================
@@ -227,7 +253,7 @@ const std::string& SingleDofJoint::getDofName(size_t _index) const
     assert(false);
   }
 
-  return getSingleDofJointAspect()->getDofName();
+  return mAspectProperties.mDofName;
 }
 
 //==============================================================================
@@ -239,12 +265,12 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
     return;
   }
 
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
       mCommand = math::clip(_command,
-                            getSingleDofJointAspect()->getForceLowerLimit(),
-                            getSingleDofJointAspect()->getForceUpperLimit());
+                            mAspectProperties.mForceLowerLimit,
+                            mAspectProperties.mForceUpperLimit);
       break;
     case PASSIVE:
       if(_command != 0.0)
@@ -257,18 +283,18 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
       break;
     case SERVO:
       mCommand = math::clip(_command,
-                            getSingleDofJointAspect()->getVelocityLowerLimit(),
-                            getSingleDofJointAspect()->getVelocityUpperLimit());
+                            mAspectProperties.mVelocityLowerLimit,
+                            mAspectProperties.mVelocityUpperLimit);
       break;
     case ACCELERATION:
       mCommand = math::clip(_command,
-                            getSingleDofJointAspect()->getAccelerationLowerLimit(),
-                            getSingleDofJointAspect()->getAccelerationUpperLimit());
+                            mAspectProperties.mAccelerationLowerLimit,
+                            mAspectProperties.mAccelerationUpperLimit);
       break;
     case VELOCITY:
       mCommand = math::clip(_command,
-                            getSingleDofJointAspect()->getVelocityLowerLimit(),
-                            getSingleDofJointAspect()->getVelocityUpperLimit());
+                            mAspectProperties.mVelocityLowerLimit,
+                            mAspectProperties.mVelocityUpperLimit);
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case LOCKED:
@@ -373,7 +399,7 @@ void SingleDofJoint::setPositionLowerLimit(size_t _index, double _position)
     return;
   }
 
-  getSingleDofJointAspect()->setPositionLowerLimit(_position);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT(mPositionLowerLimit, _position)
 }
 
 //==============================================================================
@@ -385,7 +411,7 @@ double SingleDofJoint::getPositionLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getPositionLowerLimit();
+  return mAspectProperties.mPositionLowerLimit;
 }
 
 //==============================================================================
@@ -397,7 +423,7 @@ void SingleDofJoint::setPositionUpperLimit(size_t _index, double _position)
     return;
   }
 
-  getSingleDofJointAspect()->setPositionUpperLimit(_position);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mPositionUpperLimit, _position )
 }
 
 //==============================================================================
@@ -409,7 +435,7 @@ double SingleDofJoint::getPositionUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getPositionUpperLimit();
+  return mAspectProperties.mPositionUpperLimit;
 }
 
 //==============================================================================
@@ -421,8 +447,8 @@ bool SingleDofJoint::hasPositionLimit(size_t _index) const
     return true;
   }
 
-  return std::isfinite(getSingleDofJointAspect()->getPositionLowerLimit())
-      || std::isfinite(getSingleDofJointAspect()->getPositionUpperLimit());
+  return std::isfinite(mAspectProperties.mPositionLowerLimit)
+      || std::isfinite(mAspectProperties.mPositionUpperLimit);
 }
 
 //==============================================================================
@@ -434,13 +460,13 @@ void SingleDofJoint::resetPosition(size_t _index)
     return;
   }
 
-  setPositionStatic(getSingleDofJointAspect()->getInitialPosition());
+  setPositionStatic(mAspectProperties.mInitialPosition);
 }
 
 //==============================================================================
 void SingleDofJoint::resetPositions()
 {
-  setPositionStatic(getSingleDofJointAspect()->getInitialPosition());
+  setPositionStatic(mAspectProperties.mInitialPosition);
 }
 
 //==============================================================================
@@ -452,7 +478,7 @@ void SingleDofJoint::setInitialPosition(size_t _index, double _initial)
     return;
   }
 
-  getSingleDofJointAspect()->setInitialPosition(_initial);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mInitialPosition, _initial);
 }
 
 //==============================================================================
@@ -464,7 +490,7 @@ double SingleDofJoint::getInitialPosition(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getInitialPosition();
+  return mAspectProperties.mInitialPosition;
 }
 
 //==============================================================================
@@ -483,7 +509,7 @@ void SingleDofJoint::setInitialPositions(const Eigen::VectorXd& _initial)
 Eigen::VectorXd SingleDofJoint::getInitialPositions() const
 {
   return Eigen::Matrix<double, 1, 1>::Constant(
-        getSingleDofJointAspect()->getInitialPosition());
+        mAspectProperties.mInitialPosition);
 }
 
 //==============================================================================
@@ -498,7 +524,7 @@ void SingleDofJoint::setVelocity(size_t _index, double _velocity)
   setVelocityStatic(_velocity);
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mAspectProperties.mActuatorType == VELOCITY)
+  if (Joint::mAspectProperties.mActuatorType == VELOCITY)
     mCommand = getVelocityStatic();
   // TODO: Remove at DART 5.1.
 #endif
@@ -528,7 +554,7 @@ void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
   setVelocityStatic(_velocities[0]);
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mAspectProperties.mActuatorType == VELOCITY)
+  if (Joint::mAspectProperties.mActuatorType == VELOCITY)
     mCommand = getVelocityStatic();
   // TODO: Remove at DART 5.1.
 #endif
@@ -549,7 +575,7 @@ void SingleDofJoint::setVelocityLowerLimit(size_t _index, double _velocity)
     return;
   }
 
-  getSingleDofJointAspect()->setVelocityLowerLimit(_velocity);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mVelocityLowerLimit, _velocity);
 }
 
 //==============================================================================
@@ -561,7 +587,7 @@ double SingleDofJoint::getVelocityLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getVelocityLowerLimit();
+  return mAspectProperties.mVelocityLowerLimit;
 }
 
 //==============================================================================
@@ -573,7 +599,7 @@ void SingleDofJoint::setVelocityUpperLimit(size_t _index, double _velocity)
     return;
   }
 
-  getSingleDofJointAspect()->setVelocityUpperLimit(_velocity);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mVelocityUpperLimit, _velocity);
 }
 
 //==============================================================================
@@ -585,7 +611,7 @@ double SingleDofJoint::getVelocityUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getVelocityUpperLimit();
+  return mAspectProperties.mVelocityUpperLimit;
 }
 
 //==============================================================================
@@ -597,13 +623,13 @@ void SingleDofJoint::resetVelocity(size_t _index)
     return;
   }
 
-  setVelocityStatic(getSingleDofJointAspect()->getInitialVelocity());
+  setVelocityStatic(mAspectProperties.mInitialVelocity);
 }
 
 //==============================================================================
 void SingleDofJoint::resetVelocities()
 {
-  setVelocityStatic(getSingleDofJointAspect()->getInitialVelocity());
+  setVelocityStatic(mAspectProperties.mInitialVelocity);
 }
 
 //==============================================================================
@@ -615,7 +641,7 @@ void SingleDofJoint::setInitialVelocity(size_t _index, double _initial)
     return;
   }
 
-  getSingleDofJointAspect()->setInitialVelocity(_initial);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mInitialVelocity, _initial );
 }
 
 //==============================================================================
@@ -627,7 +653,7 @@ double SingleDofJoint::getInitialVelocity(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getInitialVelocity();
+  return mAspectProperties.mInitialVelocity;
 }
 
 //==============================================================================
@@ -646,7 +672,7 @@ void SingleDofJoint::setInitialVelocities(const Eigen::VectorXd& _initial)
 Eigen::VectorXd SingleDofJoint::getInitialVelocities() const
 {
   return Eigen::Matrix<double, 1, 1>::Constant(
-        getSingleDofJointAspect()->getInitialVelocity());
+        mAspectProperties.mInitialVelocity);
 }
 
 //==============================================================================
@@ -661,7 +687,7 @@ void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
   setAccelerationStatic(_acceleration);
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mAspectProperties.mActuatorType == ACCELERATION)
+  if (Joint::mAspectProperties.mActuatorType == ACCELERATION)
     mCommand = getAccelerationStatic();
   // TODO: Remove at DART 5.1.
 #endif
@@ -691,7 +717,7 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
   setAccelerationStatic(_accelerations[0]);
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mAspectProperties.mActuatorType == ACCELERATION)
+  if (Joint::mAspectProperties.mActuatorType == ACCELERATION)
     mCommand = getAccelerationStatic();
   // TODO: Remove at DART 5.1.
 #endif
@@ -719,7 +745,7 @@ void SingleDofJoint::setAccelerationLowerLimit(size_t _index,
     return;
   }
 
-  getSingleDofJointAspect()->setAccelerationLowerLimit(_acceleration);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mAccelerationLowerLimit, _acceleration);
 }
 
 //==============================================================================
@@ -731,7 +757,7 @@ double SingleDofJoint::getAccelerationLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getAccelerationLowerLimit();
+  return mAspectProperties.mAccelerationLowerLimit;
 }
 
 //==============================================================================
@@ -744,7 +770,7 @@ void SingleDofJoint::setAccelerationUpperLimit(size_t _index,
     return;
   }
 
-  getSingleDofJointAspect()->setAccelerationUpperLimit(_acceleration);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mAccelerationUpperLimit, _acceleration);
 }
 
 //==============================================================================
@@ -756,7 +782,7 @@ double SingleDofJoint::getAccelerationUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getAccelerationUpperLimit();
+  return mAspectProperties.mAccelerationUpperLimit;
 }
 
 //==============================================================================
@@ -819,7 +845,7 @@ void SingleDofJoint::setForce(size_t _index, double _force)
   mForce = _force;
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mAspectProperties.mActuatorType == FORCE)
+  if (Joint::mAspectProperties.mActuatorType == FORCE)
     mCommand = mForce;
   // TODO: Remove at DART 5.1.
 #endif
@@ -849,7 +875,7 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
   mForce = _forces[0];
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mAspectProperties.mActuatorType == FORCE)
+  if (Joint::mAspectProperties.mActuatorType == FORCE)
     mCommand = mForce;
   // TODO: Remove at DART 5.1.
 #endif
@@ -867,7 +893,7 @@ void SingleDofJoint::resetForces()
   mForce = 0.0;
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
-  if (mAspectProperties.mActuatorType == FORCE)
+  if (Joint::mAspectProperties.mActuatorType == FORCE)
     mCommand = mForce;
   // TODO: Remove at DART 5.1.
 #endif
@@ -882,7 +908,7 @@ void SingleDofJoint::setForceLowerLimit(size_t _index, double _force)
     return;
   }
 
-  getSingleDofJointAspect()->setForceLowerLimit(_force);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mForceLowerLimit, _force );
 }
 
 //==============================================================================
@@ -894,7 +920,7 @@ double SingleDofJoint::getForceLowerLimit(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getForceLowerLimit();
+  return mAspectProperties.mForceLowerLimit;
 }
 
 //==============================================================================
@@ -906,7 +932,7 @@ void SingleDofJoint::setForceUpperLimit(size_t _index, double _force)
     return;
   }
 
-  getSingleDofJointAspect()->setForceUpperLimit(_force);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mForceUpperLimit, _force);
 }
 
 //==============================================================================
@@ -918,7 +944,7 @@ double SingleDofJoint::getForceUpperLimit(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getForceUpperLimit();
+  return mAspectProperties.mForceUpperLimit;
 }
 
 //==============================================================================
@@ -1029,7 +1055,7 @@ void SingleDofJoint::setSpringStiffness(size_t _index, double _k)
 
   assert(_k >= 0.0);
 
-  getSingleDofJointAspect()->setSpringStiffness(_k);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mSpringStiffness, _k);
 }
 
 //==============================================================================
@@ -1041,7 +1067,7 @@ double SingleDofJoint::getSpringStiffness(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getSpringStiffness();
+  return mAspectProperties.mSpringStiffness;
 }
 
 //==============================================================================
@@ -1053,19 +1079,19 @@ void SingleDofJoint::setRestPosition(size_t _index, double _q0)
     return;
   }
 
-  if (getSingleDofJointAspect()->getPositionLowerLimit() > _q0
-      || getSingleDofJointAspect()->getPositionUpperLimit() < _q0)
+  if (mAspectProperties.mPositionLowerLimit > _q0
+      || mAspectProperties.mPositionUpperLimit < _q0)
   {
     dtwarn << "[SingleDofJoint::setRestPosition] Value of _q0 [" << _q0
            << "] is out of the limit range ["
-           << getSingleDofJointAspect()->getPositionLowerLimit() << ", "
-           << getSingleDofJointAspect()->getPositionUpperLimit()
+           << mAspectProperties.mPositionLowerLimit << ", "
+           << mAspectProperties.mPositionUpperLimit
            << "] for index [" << _index << "] of Joint ["
            << getName() << "].\n";
     return;
   }
 
-  getSingleDofJointAspect()->setRestPosition(_q0);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mRestPosition, _q0);
 }
 
 //==============================================================================
@@ -1077,7 +1103,7 @@ double SingleDofJoint::getRestPosition(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getRestPosition();
+  return mAspectProperties.mRestPosition;
 }
 
 //==============================================================================
@@ -1091,7 +1117,7 @@ void SingleDofJoint::setDampingCoefficient(size_t _index, double _d)
 
   assert(_d >= 0.0);
 
-  getSingleDofJointAspect()->setDampingCoefficient(_d);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mDampingCoefficient, _d);
 }
 
 //==============================================================================
@@ -1103,7 +1129,7 @@ double SingleDofJoint::getDampingCoefficient(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getDampingCoefficient();
+  return mAspectProperties.mDampingCoefficient;
 }
 
 //==============================================================================
@@ -1117,7 +1143,7 @@ void SingleDofJoint::setCoulombFriction(size_t _index, double _friction)
 
   assert(_friction >= 0.0);
 
-  getSingleDofJointAspect()->setFriction(_friction);
+  SINGLEDOFJOINT_SET_IF_DIFFERENT( mFriction, _friction);
 }
 
 //==============================================================================
@@ -1129,16 +1155,16 @@ double SingleDofJoint::getCoulombFriction(size_t _index) const
     return 0.0;
   }
 
-  return getSingleDofJointAspect()->getFriction();
+  return mAspectProperties.mFriction;
 }
 
 //==============================================================================
 double SingleDofJoint::getPotentialEnergy() const
 {
   // Spring energy
-  double pe = 0.5 * getSingleDofJointAspect()->getSpringStiffness()
-       * (getPositionStatic() - getSingleDofJointAspect()->getRestPosition())
-       * (getPositionStatic() - getSingleDofJointAspect()->getRestPosition());
+  double pe = 0.5 * mAspectProperties.mSpringStiffness
+       * (getPositionStatic() - mAspectProperties.mRestPosition)
+       * (getPositionStatic() - mAspectProperties.mRestPosition);
 
   return pe;
 }
@@ -1176,7 +1202,7 @@ void SingleDofJoint::registerDofs()
 {
   SkeletonPtr skel = getSkeleton();
   if(skel)
-    getSingleDofJointAspect()->mProperties.mDofName =
+    mAspectProperties.mDofName =
         skel->mNameMgrForDofs.issueNewNameAndAdd(mDof->getName(), mDof);
 }
 
@@ -1185,7 +1211,7 @@ void SingleDofJoint::updateDegreeOfFreedomNames()
 {
   // Same name as the joint it belongs to.
   if (!mDof->isNamePreserved())
-    mDof->setName(mAspectProperties.mName, false);
+    mDof->setName(Joint::mAspectProperties.mName, false);
 }
 
 //==============================================================================
@@ -1317,7 +1343,7 @@ void SingleDofJoint::addVelocityChangeTo(Eigen::Vector6d& _velocityChange)
 void SingleDofJoint::addChildArtInertiaTo(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1366,7 +1392,7 @@ void SingleDofJoint::addChildArtInertiaToKinematic(
 void SingleDofJoint::addChildArtInertiaImplicitTo(
     Eigen::Matrix6d& _parentArtInertia, const Eigen::Matrix6d& _childArtInertia)
 {
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1415,7 +1441,7 @@ void SingleDofJoint::addChildArtInertiaImplicitToKinematic(
 void SingleDofJoint::updateInvProjArtInertia(
     const Eigen::Matrix6d& _artInertia)
 {
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1460,7 +1486,7 @@ void SingleDofJoint::updateInvProjArtInertiaImplicit(
     const Eigen::Matrix6d& _artInertia,
     double _timeStep)
 {
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1488,8 +1514,8 @@ void SingleDofJoint::updateInvProjArtInertiaImplicitDynamic(
   double projAI = Jacobian.dot(_artInertia * Jacobian);
 
   // Add additional inertia for implicit damping and spring force
-  projAI += _timeStep * getSingleDofJointAspect()->getDampingCoefficient()
-      + _timeStep * _timeStep * getSingleDofJointAspect()->getSpringStiffness();
+  projAI += _timeStep * mAspectProperties.mDampingCoefficient
+      + _timeStep * _timeStep * mAspectProperties.mSpringStiffness;
 
   // Inversion of the projected articulated inertia for implicit damping and
   // spring force
@@ -1513,7 +1539,7 @@ void SingleDofJoint::addChildBiasForceTo(
     const Eigen::Vector6d& _childBiasForce,
     const Eigen::Vector6d& _childPartialAcc)
 {
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1584,7 +1610,7 @@ void SingleDofJoint::addChildBiasImpulseTo(
     const Eigen::Matrix6d& _childArtInertia,
     const Eigen::Vector6d& _childBiasImpulse)
 {
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1643,7 +1669,7 @@ void SingleDofJoint::updateTotalForce(const Eigen::Vector6d& _bodyForce,
 {
   assert(_timeStep > 0.0);
 
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
       mForce = mCommand;
@@ -1681,12 +1707,12 @@ void SingleDofJoint::updateTotalForceDynamic(
   const double nextPosition =
       getPositionStatic() + _timeStep*getVelocityStatic();
   const double springForce =
-     -getSingleDofJointAspect()->getSpringStiffness()
-      * (nextPosition - getSingleDofJointAspect()->getRestPosition());
+     -mAspectProperties.mSpringStiffness
+      * (nextPosition - mAspectProperties.mRestPosition);
 
   // Damping force
   const double dampingForce =
-      -getSingleDofJointAspect()->getDampingCoefficient() * getVelocityStatic();
+      -mAspectProperties.mDampingCoefficient * getVelocityStatic();
 
   // Compute alpha
   mTotalForce = mForce + springForce + dampingForce
@@ -1703,7 +1729,7 @@ void SingleDofJoint::updateTotalForceKinematic(
 //==============================================================================
 void SingleDofJoint::updateTotalImpulse(const Eigen::Vector6d& _bodyImpulse)
 {
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1745,7 +1771,7 @@ void SingleDofJoint::resetTotalImpulses()
 void SingleDofJoint::updateAcceleration(const Eigen::Matrix6d& _artInertia,
                                         const Eigen::Vector6d& _spatialAcc)
 {
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1789,7 +1815,7 @@ void SingleDofJoint::updateVelocityChange(
     const Eigen::Matrix6d& _artInertia,
     const Eigen::Vector6d& _velocityChange)
 {
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1842,7 +1868,7 @@ void SingleDofJoint::updateForceID(const Eigen::Vector6d& _bodyForce,
   if (_withDampingForces)
   {
     const double dampingForce =
-        -getSingleDofJointAspect()->getDampingCoefficient() * getVelocityStatic();
+        -mAspectProperties.mDampingCoefficient * getVelocityStatic();
     mForce -= dampingForce;
   }
 
@@ -1852,8 +1878,8 @@ void SingleDofJoint::updateForceID(const Eigen::Vector6d& _bodyForce,
     const double nextPosition = getPositionStatic()
                               + _timeStep*getVelocityStatic();
     const double springForce =
-       -getSingleDofJointAspect()->getSpringStiffness()
-        *(nextPosition - getSingleDofJointAspect()->getRestPosition());
+       -mAspectProperties.mSpringStiffness
+        *(nextPosition - mAspectProperties.mRestPosition);
     mForce -= springForce;
   }
 }
@@ -1864,7 +1890,7 @@ void SingleDofJoint::updateForceFD(const Eigen::Vector6d& _bodyForce,
                                    bool _withDampingForces,
                                    bool _withSpringForces)
 {
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1891,7 +1917,7 @@ void SingleDofJoint::updateImpulseID(const Eigen::Vector6d& _bodyImpulse)
 //==============================================================================
 void SingleDofJoint::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 {
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:
@@ -1911,7 +1937,7 @@ void SingleDofJoint::updateImpulseFD(const Eigen::Vector6d& _bodyImpulse)
 //==============================================================================
 void SingleDofJoint::updateConstrainedTerms(double _timeStep)
 {
-  switch (mAspectProperties.mActuatorType)
+  switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
     case PASSIVE:

@@ -80,23 +80,8 @@ struct ScrewJointProperties : SingleDofJoint::Properties,
 };
 
 //==============================================================================
-class ScrewJointAspect final :
-    public common::AspectWithVersionedProperties<
-        ScrewJointAspect, ScrewJointUniqueProperties, ScrewJoint,
-        detail::JointPropertyUpdate<ScrewJointAspect> >
-{
-public:
-  DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( ScrewJointAspect )
-
-  void setAxis(const Eigen::Vector3d& _axis);
-  const Eigen::Vector3d& getAxis() const;
-
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, Pitch)
-};
-
-//==============================================================================
-using ScrewJointBase = common::CompositeJoiner<
-    SingleDofJoint, common::RequiresAspect<ScrewJointAspect> >;
+using ScrewJointBase = common::EmbedPropertiesOnTopOf<
+    ScrewJoint, ScrewJointUniqueProperties, SingleDofJoint>;
 
 } // namespace detail
 } // namespace dynamics

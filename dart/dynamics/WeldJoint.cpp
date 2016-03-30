@@ -87,7 +87,7 @@ void WeldJoint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   Joint::setTransformFromParentBodyNode(_T);
 
-  mT = mAspectProperties.mT_ParentBodyToJoint * mAspectProperties.mT_ChildBodyToJoint.inverse();
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 }
 
 //==============================================================================
@@ -95,7 +95,7 @@ void WeldJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
   Joint::setTransformFromChildBodyNode(_T);
 
-  mT = mAspectProperties.mT_ParentBodyToJoint * mAspectProperties.mT_ChildBodyToJoint.inverse();
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 }
 
 //==============================================================================

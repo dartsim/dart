@@ -145,11 +145,11 @@ void BallJoint::integratePositions(double _dt)
 void BallJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(mAspectProperties.mName + "_x", false);
+    mDofs[0]->setName(Joint::mAspectProperties.mName + "_x", false);
   if(!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(mAspectProperties.mName + "_y", false);
+    mDofs[1]->setName(Joint::mAspectProperties.mName + "_y", false);
   if(!mDofs[2]->isNamePreserved())
-    mDofs[2]->setName(mAspectProperties.mName + "_z", false);
+    mDofs[2]->setName(Joint::mAspectProperties.mName + "_z", false);
 }
 
 //==============================================================================
@@ -157,8 +157,8 @@ void BallJoint::updateLocalTransform() const
 {
   mR.linear() = convertToRotation(getPositionsStatic());
 
-  mT = mAspectProperties.mT_ParentBodyToJoint * mR
-      * mAspectProperties.mT_ChildBodyToJoint.inverse();
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint * mR
+      * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
@@ -167,7 +167,7 @@ void BallJoint::updateLocalTransform() const
 void BallJoint::updateLocalJacobian(bool _mandatory) const
 {
   if (_mandatory)
-    mJacobian = math::getAdTMatrix(mAspectProperties.mT_ChildBodyToJoint).leftCols<3>();
+    mJacobian = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint).leftCols<3>();
 }
 
 //==============================================================================

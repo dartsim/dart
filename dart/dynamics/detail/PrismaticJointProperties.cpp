@@ -58,19 +58,6 @@ PrismaticJointProperties::PrismaticJointProperties(
   // Do nothing
 }
 
-//==============================================================================
-void PrismaticJointAspect::setAxis(const Eigen::Vector3d& _axis)
-{
-  mProperties.mAxis = _axis.normalized();
-  notifyPropertiesUpdate();
-}
-
-//==============================================================================
-const Eigen::Vector3d& PrismaticJointAspect::getAxis() const
-{
-  return mProperties.mAxis;
-}
-
 } // namespace detail
 } // namespace dynamics
 } // namespace dart

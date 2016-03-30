@@ -167,9 +167,9 @@ void FreeJoint::setSpatialMotion(const Eigen::Isometry3d* newTransform,
 void FreeJoint::setRelativeTransform(const Eigen::Isometry3d& newTransform)
 {
   setPositionsStatic(convertToPositions(
-    mAspectProperties.mT_ParentBodyToJoint.inverse() *
+    Joint::mAspectProperties.mT_ParentBodyToJoint.inverse() *
     newTransform *
-    mAspectProperties.mT_ChildBodyToJoint));
+    Joint::mAspectProperties.mT_ChildBodyToJoint));
 }
 
 //==============================================================================
@@ -576,17 +576,17 @@ void FreeJoint::integratePositions(double _dt)
 void FreeJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(mAspectProperties.mName + "_rot_x", false);
+    mDofs[0]->setName(Joint::mAspectProperties.mName + "_rot_x", false);
   if(!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(mAspectProperties.mName + "_rot_y", false);
+    mDofs[1]->setName(Joint::mAspectProperties.mName + "_rot_y", false);
   if(!mDofs[2]->isNamePreserved())
-    mDofs[2]->setName(mAspectProperties.mName + "_rot_z", false);
+    mDofs[2]->setName(Joint::mAspectProperties.mName + "_rot_z", false);
   if(!mDofs[3]->isNamePreserved())
-    mDofs[3]->setName(mAspectProperties.mName + "_pos_x", false);
+    mDofs[3]->setName(Joint::mAspectProperties.mName + "_pos_x", false);
   if(!mDofs[4]->isNamePreserved())
-    mDofs[4]->setName(mAspectProperties.mName + "_pos_y", false);
+    mDofs[4]->setName(Joint::mAspectProperties.mName + "_pos_y", false);
   if(!mDofs[5]->isNamePreserved())
-    mDofs[5]->setName(mAspectProperties.mName + "_pos_z", false);
+    mDofs[5]->setName(Joint::mAspectProperties.mName + "_pos_z", false);
 }
 
 //==============================================================================
@@ -594,8 +594,8 @@ void FreeJoint::updateLocalTransform() const
 {
   mQ = convertToTransform(getPositionsStatic());
 
-  mT = mAspectProperties.mT_ParentBodyToJoint * mQ
-      * mAspectProperties.mT_ChildBodyToJoint.inverse();
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint * mQ
+      * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   assert(math::verifyTransform(mT));
 }
@@ -604,7 +604,7 @@ void FreeJoint::updateLocalTransform() const
 void FreeJoint::updateLocalJacobian(bool _mandatory) const
 {
   if (_mandatory)
-    mJacobian = math::getAdTMatrix(mAspectProperties.mT_ChildBodyToJoint);
+    mJacobian = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
 }
 
 //==============================================================================

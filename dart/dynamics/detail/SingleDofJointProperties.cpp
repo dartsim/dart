@@ -86,13 +86,6 @@ SingleDofJointProperties::SingleDofJointProperties(
   // Do nothing
 }
 
-//==============================================================================
-const std::string& SingleDofJointAspect::setDofName(
-    const std::string& name, bool preserveName)
-{
-  return getComposite()->setDofName(0, name, preserveName);
-}
-
 } // namespace detail
 } // namespace dynamics
 } // namespace dart

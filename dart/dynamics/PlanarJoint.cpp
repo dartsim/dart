@@ -193,11 +193,11 @@ Eigen::Matrix<double, 6, 3> PlanarJoint::getLocalJacobianStatic(
   J.block<3, 1>(0, 2) = getPlanarJointAspect()->getRotAxis();
 
   J.leftCols<2>()
-      = math::AdTJacFixed(mAspectProperties.mT_ChildBodyToJoint
+      = math::AdTJacFixed(Joint::mAspectProperties.mT_ChildBodyToJoint
                           * math::expAngular(getPlanarJointAspect()->getRotAxis()
                                              * -_positions[2]),
                           J.leftCols<2>());
-  J.col(2) = math::AdTJac(mAspectProperties.mT_ChildBodyToJoint, J.col(2));
+  J.col(2) = math::AdTJac(Joint::mAspectProperties.mT_ChildBodyToJoint, J.col(2));
 
   // Verification
   assert(!math::isNan(J));
@@ -245,7 +245,7 @@ void PlanarJoint::updateDegreeOfFreedomNames()
       affixes.push_back("_2");
       break;
     default:
-      dterr << "Unsupported plane type in PlanarJoint named '" << mAspectProperties.mName
+      dterr << "Unsupported plane type in PlanarJoint named '" << Joint::mAspectProperties.mName
             << "' (" << static_cast<int>(getPlanarJointAspect()->getPlaneType())
             << ")\n";
   }
@@ -255,7 +255,7 @@ void PlanarJoint::updateDegreeOfFreedomNames()
     for (size_t i = 0; i < 2; ++i)
     {
       if (!mDofs[i]->isNamePreserved())
-        mDofs[i]->setName(mAspectProperties.mName + affixes[i], false);
+        mDofs[i]->setName(Joint::mAspectProperties.mName + affixes[i], false);
     }
   }
 }
@@ -264,11 +264,11 @@ void PlanarJoint::updateDegreeOfFreedomNames()
 void PlanarJoint::updateLocalTransform() const
 {
   const Eigen::Vector3d& positions = getPositionsStatic();
-  mT = mAspectProperties.mT_ParentBodyToJoint
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(getPlanarJointAspect()->getTransAxis1() * positions[0])
        * Eigen::Translation3d(getPlanarJointAspect()->getTransAxis2() * positions[1])
        * math::expAngular    (getPlanarJointAspect()->getRotAxis()    * positions[2])
-       * mAspectProperties.mT_ChildBodyToJoint.inverse();
+       * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -292,14 +292,14 @@ void PlanarJoint::updateLocalJacobianTimeDeriv() const
   const Eigen::Vector3d& velocities = getVelocitiesStatic();
   mJacobianDeriv.col(0)
       = -math::ad(Jacobian.col(2) * velocities[2],
-                  math::AdT(mAspectProperties.mT_ChildBodyToJoint
+                  math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint
                             * math::expAngular(getPlanarJointAspect()->getRotAxis()
                                                * -getPositionsStatic()[2]),
                             J.col(0)));
 
   mJacobianDeriv.col(1)
       = -math::ad(Jacobian.col(2) * velocities[2],
-                  math::AdT(mAspectProperties.mT_ChildBodyToJoint
+                  math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint
                             * math::expAngular(getPlanarJointAspect()->getRotAxis()
                                                * -getPositionsStatic()[2]),
                             J.col(1)));

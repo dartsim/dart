@@ -63,14 +63,19 @@ void RevoluteJoint::setProperties(const Properties& _properties)
 //==============================================================================
 void RevoluteJoint::setProperties(const UniqueProperties& _properties)
 {
-  setAxis(_properties.mAxis);
+  setAspectProperties(_properties);
+}
+
+//==============================================================================
+void RevoluteJoint::setAspectProperties(const AspectProperties& properties)
+{
+  setAxis(properties.mAxis);
 }
 
 //==============================================================================
 RevoluteJoint::Properties RevoluteJoint::getRevoluteJointProperties() const
 {
-  return Properties(getSingleDofJointProperties(),
-                    getRevoluteJointAspect()->getProperties());
+  return Properties(getSingleDofJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -120,18 +125,23 @@ const std::string& RevoluteJoint::getStaticType()
 //==============================================================================
 void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  getRevoluteJointAspect()->setAxis(_axis);
+  if(_axis == mAspectProperties.mAxis)
+    return;
+
+  mAspectProperties.mAxis = _axis.normalized();
+  Joint::notifyPositionUpdate();
+  Joint::incrementVersion();
 }
 
 //==============================================================================
 const Eigen::Vector3d& RevoluteJoint::getAxis() const
 {
-  return getRevoluteJointAspect()->getAxis();
+  return mAspectProperties.mAxis;
 }
 
 //==============================================================================
 RevoluteJoint::RevoluteJoint(const Properties& properties)
-  : detail::RevoluteJointBase(properties, common::NoArg)
+  : detail::RevoluteJointBase(common::NoArg, properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
@@ -149,9 +159,9 @@ Joint* RevoluteJoint::clone() const
 //==============================================================================
 void RevoluteJoint::updateLocalTransform() const
 {
-  mT = mAspectProperties.mT_ParentBodyToJoint
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * math::expAngular(getAxis() * getPositionStatic())
-       * mAspectProperties.mT_ChildBodyToJoint.inverse();
+       * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -162,7 +172,8 @@ void RevoluteJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
-    mJacobian = math::AdTAngular(mAspectProperties.mT_ChildBodyToJoint, getAxis());
+    mJacobian = math::AdTAngular(
+          Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis());
 
     // Verification
     assert(!math::isNan(mJacobian));

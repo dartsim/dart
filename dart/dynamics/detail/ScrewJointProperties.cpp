@@ -59,19 +59,6 @@ ScrewJointProperties::ScrewJointProperties(
   // Do nothing
 }
 
-//==============================================================================
-void ScrewJointAspect::setAxis(const Eigen::Vector3d& _axis)
-{
-  mProperties.mAxis = _axis.normalized();
-  notifyPropertiesUpdate();
-}
-
-//==============================================================================
-const Eigen::Vector3d& ScrewJointAspect::getAxis() const
-{
-  return mProperties.mAxis;
-}
-
 } // namespace detail
 } // namespace dynamics
 } // namespace dart

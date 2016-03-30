@@ -70,6 +70,8 @@ public:
     // Do nothing
   }
 
+  virtual ~EmbeddedStateAspect() = default;
+
 };
 
 //==============================================================================
@@ -94,6 +96,12 @@ public:
   using AspectStateData = StateDataT;
   using AspectState = common::Aspect::StateMixer<StateDataT>;
   using Aspect = common::EmbeddedStateAspect<Derived, AspectState>;
+  using Base = common::RequiresAspect<Aspect>;
+
+  // Inherit constructor
+  using Base::RequiresAspect;
+
+  virtual ~EmbedState() = default;
 
   const AspectState& getAspectState() const
   {
@@ -122,7 +130,13 @@ public:
   using AspectStateData = typename Impl::AspectStateData;
   using AspectState = typename Impl::AspectState;
   using Aspect = typename Impl::Aspect;
+  using Base = CompositeJoiner<Impl, BaseComposites...>;
   using Impl::getAspectState;
+
+  // Inherit constructor
+  using Base::CompositeJoiner;
+
+  virtual ~EmbedStateOnTopOf() = default;
 
 protected:
 
@@ -156,6 +170,8 @@ public:
     // Do nothing
   }
 
+  virtual ~EmbeddedPropertiesAspect() = default;
+
 };
 
 //==============================================================================
@@ -181,6 +197,10 @@ public:
   using AspectPropertiesData = PropertiesDataT;
   using AspectProperties = common::Aspect::PropertiesMixer<PropertiesDataT>;
   using Aspect = common::EmbeddedPropertiesAspect<Derived, AspectProperties>;
+  using Base = common::RequiresAspect<Aspect>;
+
+  // Inherit constructor
+  using Base::RequiresAspect;
 
   virtual ~EmbedProperties() = default;
 
@@ -206,12 +226,16 @@ class EmbedPropertiesOnTopOf : public CompositeJoiner<
 {
 public:
 
+  using Base = CompositeJoiner<EmbedProperties<DerivedT, PropertiesDataT>, CompositeBases...>;
   using Impl = EmbedProperties<DerivedT, PropertiesDataT>;
   using Derived = typename Impl::Derived;
   using AspectPropertiesData = typename Impl::AspectPropertiesData;
   using AspectProperties = typename Impl::AspectProperties;
   using Aspect = typename Impl::Aspect;
   using Impl::getAspectProperties;
+
+  // Inherit constructor
+  using Base::CompositeJoiner;
 
   virtual ~EmbedPropertiesOnTopOf() = default;
 
@@ -314,6 +338,10 @@ public:
   using AspectProperties = common::Aspect::PropertiesMixer<PropertiesDataT>;
   using Aspect = common::EmbeddedStateAndPropertiesAspect<
       Derived, AspectState, AspectProperties>;
+  using Base = common::RequiresAspect<Aspect>;
+
+  // Inherit constructor
+  using Base::RequiresAspect;
 
   virtual ~EmbedStateAndProperties() = default;
 
@@ -358,6 +386,10 @@ public:
   using Aspect = typename Impl::Aspect;
   using Impl::getAspectState;
   using Impl::getAspectProperties;
+  using Base = CompositeJoiner<Impl, CompositeBases...>;
+
+  // Inherit constructor
+  using Base::CompositeJoiner;
 
   virtual ~EmbedStateAndPropertiesOnTopOf() = default;
 
@@ -367,7 +399,6 @@ protected:
   using Impl::mAspectProperties;
 
 };
-
 
 } // namespace common
 } // namespace dart
