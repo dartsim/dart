@@ -130,6 +130,7 @@ void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 
   mAspectProperties.mAxis = _axis.normalized();
   Joint::notifyPositionUpdate();
+  updateLocalJacobian();
   Joint::incrementVersion();
 }
 
@@ -147,6 +148,7 @@ void ScrewJoint::setPitch(double _pitch)
 
   mAspectProperties.mPitch = _pitch;
   Joint::notifyPositionUpdate();
+  updateLocalJacobian();
   Joint::incrementVersion();
 }
 

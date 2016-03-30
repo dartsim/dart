@@ -397,6 +397,16 @@ public:
   virtual double getPotentialEnergy() const override;
 
   // Documentation inherited
+  const math::Jacobian getLocalJacobian() const override;
+
+  // Documentation inherited
+  math::Jacobian getLocalJacobian(
+      const Eigen::VectorXd& _positions) const override;
+
+  // Documentation inherited
+  const math::Jacobian getLocalJacobianTimeDeriv() const override;
+
+  // Documentation inherited
   virtual Eigen::Vector6d getBodyConstraintWrench() const override;
 
 protected:
@@ -426,18 +436,8 @@ protected:
   // Documentation inherited
   void updateLocalPrimaryAcceleration() const override;
 
-  // Documentation inherited
-  const math::Jacobian getLocalJacobian() const override;
-
   /// Fixed-size version of getLocalJacobian()
   const Eigen::Vector6d& getLocalJacobianStatic() const;
-
-  // Documentation inherited
-  math::Jacobian getLocalJacobian(
-      const Eigen::VectorXd& _positions) const override;
-
-  // Documentation inherited
-  const math::Jacobian getLocalJacobianTimeDeriv() const override;
 
   /// Fixed-size version of getLocalJacobianTimeDeriv()
   const Eigen::Vector6d& getLocalJacobianTimeDerivStatic() const;

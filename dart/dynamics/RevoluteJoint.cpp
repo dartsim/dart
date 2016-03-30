@@ -130,6 +130,7 @@ void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 
   mAspectProperties.mAxis = _axis.normalized();
   Joint::notifyPositionUpdate();
+  updateLocalJacobian();
   Joint::incrementVersion();
 }
 
