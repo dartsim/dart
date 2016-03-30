@@ -56,7 +56,6 @@ public:
   using PlaneType = detail::PlaneType;
   using UniqueProperties = detail::PlanarJointUniqueProperties;
   using Properties = detail::PlanarJointProperties;
-  using Aspect = detail::PlanarJointAspect;
   using Base = detail::PlanarJointBase;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, PlanarJointAspect)
@@ -71,6 +70,9 @@ public:
 
   /// Set the Properties of this PlanarJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this PlanarJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this PlanarJoint
   Properties getPlanarJointProperties() const;

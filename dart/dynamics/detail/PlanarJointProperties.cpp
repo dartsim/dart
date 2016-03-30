@@ -91,8 +91,8 @@ PlanarJointUniqueProperties::PlanarJointUniqueProperties(
 //==============================================================================
 void PlanarJointUniqueProperties::setXYPlane()
 {
-  mPlaneType = PlaneType::XY;
-  mRotAxis   = Eigen::Vector3d::UnitZ();
+  mPlaneType  = PlaneType::XY;
+  mRotAxis    = Eigen::Vector3d::UnitZ();
   mTransAxis1 = Eigen::Vector3d::UnitX();
   mTransAxis2 = Eigen::Vector3d::UnitY();
 }
@@ -100,8 +100,8 @@ void PlanarJointUniqueProperties::setXYPlane()
 //==============================================================================
 void PlanarJointUniqueProperties::setYZPlane()
 {
-  mPlaneType = PlaneType::YZ;
-  mRotAxis   = Eigen::Vector3d::UnitX();
+  mPlaneType  = PlaneType::YZ;
+  mRotAxis    = Eigen::Vector3d::UnitX();
   mTransAxis1 = Eigen::Vector3d::UnitY();
   mTransAxis2 = Eigen::Vector3d::UnitZ();
 }
@@ -109,8 +109,8 @@ void PlanarJointUniqueProperties::setYZPlane()
 //==============================================================================
 void PlanarJointUniqueProperties::setZXPlane()
 {
-  mPlaneType = PlaneType::ZX;
-  mRotAxis   = Eigen::Vector3d::UnitY();
+  mPlaneType  = PlaneType::ZX;
+  mRotAxis    = Eigen::Vector3d::UnitY();
   mTransAxis1 = Eigen::Vector3d::UnitZ();
   mTransAxis2 = Eigen::Vector3d::UnitX();
 }
@@ -147,35 +147,6 @@ PlanarJointProperties::PlanarJointProperties(
     PlanarJointUniqueProperties(_planarProperties)
 {
   // Do nothing
-}
-
-//==============================================================================
-void PlanarJointAspect::setXYPlane()
-{
-  mProperties.setXYPlane();
-  notifyPropertiesUpdate();
-}
-
-//==============================================================================
-void PlanarJointAspect::setYZPlane()
-{
-  mProperties.setYZPlane();
-  notifyPropertiesUpdate();
-}
-
-//==============================================================================
-void PlanarJointAspect::setZXPlane()
-{
-  mProperties.setZXPlane();
-  notifyPropertiesUpdate();
-}
-
-//==============================================================================
-void PlanarJointAspect::setArbitraryPlane(const Eigen::Vector3d& _axis1,
-                                         const Eigen::Vector3d& _axis2)
-{
-  mProperties.setArbitraryPlane(_axis1, _axis2);
-  notifyPropertiesUpdate();
 }
 
 } // namespace detail

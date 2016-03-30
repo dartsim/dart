@@ -61,15 +61,20 @@ void UniversalJoint::setProperties(const Properties& _properties)
 //==============================================================================
 void UniversalJoint::setProperties(const UniqueProperties& _properties)
 {
-  setAxis1(_properties.mAxis[0]);
-  setAxis2(_properties.mAxis[1]);
+  setAspectProperties(_properties);
+}
+
+//==============================================================================
+void UniversalJoint::setAspectProperties(const AspectProperties& properties)
+{
+  setAxis1(properties.mAxis[0]);
+  setAxis2(properties.mAxis[1]);
 }
 
 //==============================================================================
 UniversalJoint::Properties UniversalJoint::getUniversalJointProperties() const
 {
-  return Properties(getMultiDofJointProperties(),
-                    getUniversalJointAspect()->getProperties());
+  return Properties(getMultiDofJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -119,25 +124,29 @@ bool UniversalJoint::isCyclic(size_t _index) const
 //==============================================================================
 void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 {
-  getUniversalJointAspect()->setAxis1(_axis);
+  mAspectProperties.mAxis[0] = _axis;
+  Joint::notifyPositionUpdate();
+  Joint::incrementVersion();
 }
 
 //==============================================================================
 void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
 {
-  getUniversalJointAspect()->setAxis2(_axis);
+  mAspectProperties.mAxis[1] = _axis;
+  Joint::notifyPositionUpdate();
+  Joint::incrementVersion();
 }
 
 //==============================================================================
 const Eigen::Vector3d& UniversalJoint::getAxis1() const
 {
-  return getUniversalJointAspect()->getAxis1();
+  return mAspectProperties.mAxis[0];
 }
 
 //==============================================================================
 const Eigen::Vector3d& UniversalJoint::getAxis2() const
 {
-  return getUniversalJointAspect()->getAxis2();
+  return mAspectProperties.mAxis[1];
 }
 
 //==============================================================================
@@ -155,7 +164,7 @@ Eigen::Matrix<double, 6, 2> UniversalJoint::getLocalJacobianStatic(
 
 //==============================================================================
 UniversalJoint::UniversalJoint(const Properties& properties)
-  : detail::UniversalJointBase(properties, common::NoArg)
+  : detail::UniversalJointBase(common::NoArg, properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls

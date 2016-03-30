@@ -123,29 +123,8 @@ struct PlanarJointProperties :
 };
 
 //==============================================================================
-class PlanarJointAspect final :
-    public common::AspectWithVersionedProperties<
-        PlanarJointAspect, PlanarJointUniqueProperties, PlanarJoint,
-        detail::JointPropertyUpdate<PlanarJointAspect> >
-{
-public:
-  DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( PlanarJointAspect )
-
-  void setXYPlane();
-  void setYZPlane();
-  void setZXPlane();
-  void setArbitraryPlane(const Eigen::Vector3d& _axis1,
-                         const Eigen::Vector3d& _axis2);
-
-  DART_COMMON_GET_ASPECT_PROPERTY( PlaneType, PlaneType )
-  DART_COMMON_GET_ASPECT_PROPERTY( Eigen::Vector3d, TransAxis1 )
-  DART_COMMON_GET_ASPECT_PROPERTY( Eigen::Vector3d, TransAxis2 )
-  DART_COMMON_GET_ASPECT_PROPERTY( Eigen::Vector3d, RotAxis )
-};
-
-//==============================================================================
-using PlanarJointBase = common::CompositeJoiner<
-    MultiDofJoint<3>, common::RequiresAspect<PlanarJointAspect> >;
+using PlanarJointBase = common::EmbedPropertiesOnTopOf<
+    PlanarJoint, PlanarJointUniqueProperties, MultiDofJoint<3> >;
 
 } // namespace detail
 } // namespace dynamics

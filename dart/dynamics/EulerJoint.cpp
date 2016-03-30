@@ -63,7 +63,13 @@ void EulerJoint::setProperties(const Properties& _properties)
 //==============================================================================
 void EulerJoint::setProperties(const UniqueProperties& _properties)
 {
-  getEulerJointAspect()->setProperties(_properties);
+  setAspectProperties(_properties);
+}
+
+//==============================================================================
+void EulerJoint::setAspectProperties(const AspectProperties& properties)
+{
+  setAxisOrder(properties.mAxisOrder, false);
 }
 
 //==============================================================================
@@ -119,16 +125,19 @@ bool EulerJoint::isCyclic(size_t _index) const
 //==============================================================================
 void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
 {
-  getEulerJointAspect()->setAxisOrder(_order);
+  mAspectProperties.mAxisOrder = _order;
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  // The EulerJoint::Aspect will take care of notifying a position update
+
+  Joint::notifyPositionUpdate();
+  updateLocalJacobian(true);
+  Joint::incrementVersion();
 }
 
 //==============================================================================
 EulerJoint::AxisOrder EulerJoint::getAxisOrder() const
 {
-  return getEulerJointAspect()->getAxisOrder();
+  return mAspectProperties.mAxisOrder;
 }
 
 //==============================================================================
@@ -281,7 +290,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
 
 //==============================================================================
 EulerJoint::EulerJoint(const Properties& properties)
-  : detail::EulerJointBase(properties, common::NoArg)
+  : detail::EulerJointBase(common::NoArg, properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls

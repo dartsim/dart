@@ -58,32 +58,6 @@ UniversalJointProperties::UniversalJointProperties(
   // Do nothing
 }
 
-//==============================================================================
-void UniversalJointAspect::setAxis1(const Eigen::Vector3d& _axis)
-{
-  mProperties.mAxis[0] = _axis.normalized();
-  notifyPropertiesUpdate();
-}
-
-//==============================================================================
-const Eigen::Vector3d& UniversalJointAspect::getAxis1() const
-{
-  return mProperties.mAxis[0];
-}
-
-//==============================================================================
-void UniversalJointAspect::setAxis2(const Eigen::Vector3d& _axis)
-{
-  mProperties.mAxis[1] = _axis.normalized();
-  notifyPropertiesUpdate();
-}
-
-//==============================================================================
-const Eigen::Vector3d& UniversalJointAspect::getAxis2() const
-{
-  return mProperties.mAxis[1];
-}
-
 } // namespace detail
 } // namespace dynamics
 } // namespace dart

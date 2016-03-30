@@ -51,7 +51,6 @@ public:
   using AxisOrder = detail::AxisOrder;
   using UniqueProperties = detail::EulerJointUniqueProperties;
   using Properties = detail::EulerJointProperties;
-  using Aspect = detail::EulerJointAspect;
   using Base = detail::EulerJointBase;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, EulerJointAspect)
@@ -66,6 +65,9 @@ public:
 
   /// Set the Properties of this EulerJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this EulerJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this EulerJoint
   Properties getEulerJointProperties() const;

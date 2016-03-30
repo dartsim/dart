@@ -50,7 +50,6 @@ public:
   friend class Skeleton;
   using UniqueProperties = detail::UniversalJointUniqueProperties;
   using Properties = detail::UniversalJointProperties;
-  using Aspect = detail::UniversalJointAspect;
   using Base = detail::UniversalJointBase;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, UniversalJointAspect)
@@ -65,6 +64,9 @@ public:
 
   /// Set the Properties of this UniversalJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this UniversalJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this UniversalJoint
   Properties getUniversalJointProperties() const;

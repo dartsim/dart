@@ -77,22 +77,8 @@ struct UniversalJointProperties :
 };
 
 //==============================================================================
-class UniversalJointAspect final :
-    public common::AspectWithVersionedProperties<
-        UniversalJointAspect, UniversalJointUniqueProperties, UniversalJoint,
-        detail::JointPropertyUpdate<UniversalJointAspect> >
-{
-public:
-  DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( UniversalJointAspect )
-  void setAxis1(const Eigen::Vector3d& _axis);
-  const Eigen::Vector3d& getAxis1() const;
-  void setAxis2(const Eigen::Vector3d& _axis);
-  const Eigen::Vector3d& getAxis2() const;
-};
-
-//==============================================================================
-using UniversalJointBase = common::CompositeJoiner<
-    MultiDofJoint<2>, common::RequiresAspect<UniversalJointAspect> >;
+using UniversalJointBase = common::EmbedPropertiesOnTopOf<
+    UniversalJoint, UniversalJointUniqueProperties, MultiDofJoint<2> >;
 
 } // namespace detail
 } // namespace dynamics
