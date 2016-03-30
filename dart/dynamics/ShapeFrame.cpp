@@ -284,6 +284,8 @@ void ShapeFrame::draw(renderer::RenderInterface* ri,
                      const Eigen::Vector4d& color,
                      bool useDefaultColor) const
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
+
   auto visualAddon = getVisualAddon();
 
   if (!visualAddon || visualAddon->isHidden())
@@ -298,6 +300,8 @@ void ShapeFrame::draw(renderer::RenderInterface* ri,
     mShapeFrameP.mShape->draw(ri, color);
 
   ri->popMatrix();
+
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

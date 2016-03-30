@@ -170,13 +170,13 @@ public:
     }
   }
 
-  void drawSkels() override
+  void drawWorld() const override
   {
     // Make sure lighting is turned on and that polygons get filled in
     glEnable(GL_LIGHTING);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    SimWindow::drawSkels();
+    SimWindow::drawWorld();
   }
 
   void displayTimer(int _val) override

@@ -953,11 +953,15 @@ public:
   //----------------------------------------------------------------------------
 
   /// Draw this skeleton
+  DEPRECATED(6.0)
   void draw(renderer::RenderInterface* _ri = nullptr,
             const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
             bool _useDefaultColor = true) const;
+  // TODO(JS): Once this function is removed (e.g., at KIDO 7 or later), the
+  // dependency of renderer namespace can be removed from dynamics namespace.
 
   /// Draw markers in this skeleton
+  DEPRECATED(6.0)
   void drawMarkers(renderer::RenderInterface* _ri = nullptr,
                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                    bool _useDefaultColor = true) const;

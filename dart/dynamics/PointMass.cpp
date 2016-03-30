@@ -124,8 +124,7 @@ PointMass::PointMass(SoftBodyNode* _softBodyNode)
     mImpAlpha(Eigen::Vector3d::Zero()),
     mImpBeta(Eigen::Vector3d::Zero()),
     mImpF(Eigen::Vector3d::Zero()),
-    mNotifier(_softBodyNode->mNotifier),
-    mShape(new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01)))
+    mNotifier(_softBodyNode->mNotifier)
 {
   assert(mParentSoftBodyNode != nullptr);
   mNotifier->notifyTransformUpdate();
@@ -134,7 +133,7 @@ PointMass::PointMass(SoftBodyNode* _softBodyNode)
 //==============================================================================
 PointMass::~PointMass()
 {
-  delete mShape;
+  // Do nothing
 }
 
 //==============================================================================
@@ -1020,34 +1019,39 @@ void PointMass::aggregateExternalForces(VectorXd& /*_Fext*/)
 
 //==============================================================================
 void PointMass::draw(renderer::RenderInterface* _ri,
-                     const Eigen::Vector4d& /*_color*/,
-                     bool /*_useDefaultColor*/) const
+                     const Eigen::Vector4d& _color,
+                     bool _useDefaultColor) const
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
+
   if (_ri == nullptr)
     return;
 
-  _ri->pushMatrix();
-
-  // render the self geometry
-  //  mParentJoint->applyGLTransform(_ri);
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+
+  // render point at the current position
+  _ri->pushMatrix();
   T.translation() = getLocalPosition();
   _ri->transform(T);
-  Eigen::Vector4d color1;
-  color1 << 0.8, 0.3, 0.3, 1.0;
-  mShape->draw(_ri, color1);
+  if (_useDefaultColor)
+    _ri->setPenColor(Eigen::Vector4d(0.8, 0.3, 0.3, 1.0));
+  else
+    _ri->setPenColor(_color);
+  _ri->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
   _ri->popMatrix();
 
-  //  _ri->pushName((unsigned)mID);
+  // render point at the resting position
   _ri->pushMatrix();
   T.translation() = getRestingPosition();
   _ri->transform(T);
-  Eigen::Vector4d color2;
-  color2 << 0.3, 0.8, 0.3, 1.0;
-  mShape->draw(_ri, color2);
+  if (_useDefaultColor)
+    _ri->setPenColor(Eigen::Vector4d(0.3, 0.8, 0.3, 1.0));
+  else
+    _ri->setPenColor(_color);
+  _ri->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
   _ri->popMatrix();
-  //  _ri->popName();
 
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

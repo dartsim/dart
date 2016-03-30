@@ -141,7 +141,7 @@ public:
   /// Notify that the color (rgba) of this shape has updated
   virtual void notifyColorUpdate(const Eigen::Vector4d& color);
 
-  /// \brief
+  DEPRECATED(6.0)
   virtual void draw(
       renderer::RenderInterface* _ri = nullptr,
       const Eigen::Vector4d& _color = Eigen::Vector4d::Ones()) const = 0;

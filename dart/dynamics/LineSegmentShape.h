@@ -101,6 +101,7 @@ public:
   const Eigen::aligned_vector<Eigen::Vector2i>& getConnections() const;
 
   // Documentation inherited
+  DEPRECATED(6.0)
   virtual void draw(renderer::RenderInterface* _ri,
                     const Eigen::Vector4d& _color) const override;
 

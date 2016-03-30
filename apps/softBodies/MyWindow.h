@@ -62,7 +62,7 @@ public:
   virtual void keyboard(unsigned char key, int x, int y);
 
   /// \brief
-  virtual void drawSkels();
+  virtual void drawWorld() const;
 
 private:
   /// \brief

@@ -39,7 +39,8 @@
 
 #include <list>
 #include <vector>
-#include "RenderInterface.h"
+#include "dart/common/Deprecated.h"
+#include "dart/renderer/RenderInterface.h"
 #include "dart/renderer/LoadOpengl.h"
 
 namespace dart {
@@ -80,20 +81,21 @@ public:
     virtual void transform(const Eigen::Isometry3d& _transform) override; //glMultMatrix
     virtual void scale(const Eigen::Vector3d& _scale) override; //glScale
 
-    void compileList(dynamics::Skeleton* _skel);
-    void compileList(dynamics::BodyNode* _node);
-    void compileList(dynamics::Shape* _shape);
+    DEPRECATED(6.0) void compileList(dynamics::Skeleton* _skel);
+    DEPRECATED(6.0) void compileList(dynamics::BodyNode* _node);
+    DEPRECATED(6.0) void compileList(dynamics::Shape* _shape);
     GLuint compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh);
 
-    virtual void draw(dynamics::Skeleton* _skel, bool _vizCol = false, bool _colMesh = false);
-    virtual void draw(dynamics::BodyNode* _node, bool _vizCol = false, bool _colMesh = false);
-    virtual void draw(dynamics::Shape* _shape);
-    virtual void draw(dynamics::ShapeFrame* shapeFrame);
+    DEPRECATED(6.0) virtual void draw(dynamics::Skeleton* _skel, bool _vizCol = false, bool _colMesh = false);
+    DEPRECATED(6.0) virtual void draw(dynamics::BodyNode* _node, bool _vizCol = false, bool _colMesh = false);
+    DEPRECATED(6.0) virtual void draw(dynamics::Shape* _shape);
+    DEPRECATED(6.0) virtual void draw(dynamics::ShapeFrame* shapeFrame);
 
     virtual void drawEllipsoid(const Eigen::Vector3d& _size) override;
     virtual void drawCube(const Eigen::Vector3d& _size) override;
     virtual void drawCylinder(double _radius, double _height) override;
     virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) override;
+    virtual void drawSoftMesh(const aiMesh* mesh);
     virtual void drawList(GLuint index) override;
     virtual void drawLineSegments(const std::vector<Eigen::Vector3d>& _vertices,
                                   const Eigen::aligned_vector<Eigen::Vector2i>& _connections) override;

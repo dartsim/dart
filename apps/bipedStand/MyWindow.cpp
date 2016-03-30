@@ -62,9 +62,9 @@ void MyWindow::timeStepping() {
   }
 }
 
-void MyWindow::drawSkels() {
-  for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
-    mWorld->getSkeleton(i)->draw(mRI);
+void MyWindow::drawWorld() {
+
+  SimWindow::drawWorld();
 
   // draw arrow
   if (mImpulseDuration > 0) {

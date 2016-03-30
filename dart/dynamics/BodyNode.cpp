@@ -1379,6 +1379,8 @@ void BodyNode::draw(renderer::RenderInterface* ri,
                     const Eigen::Vector4d& color,
                     bool useDefaultColor, int /*depth*/) const
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
+
   if (nullptr == ri)
     return;
 
@@ -1401,6 +1403,8 @@ void BodyNode::draw(renderer::RenderInterface* ri,
     entity->draw(ri, color, useDefaultColor);
 
   ri->popMatrix();
+
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
@@ -1408,6 +1412,8 @@ void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
                            const Eigen::Vector4d& _color,
                            bool _useDefaultColor) const
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
+
   if (!_ri)
     return;
 
@@ -1423,6 +1429,8 @@ void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
     mChildBodyNodes[i]->drawMarkers(_ri, _color, _useDefaultColor);
 
   _ri->popMatrix();
+
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

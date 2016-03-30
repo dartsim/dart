@@ -126,6 +126,7 @@ public:
   virtual const std::string& getName() const;
 
   /// Render this Entity
+  DEPRECATED(6.0)
   virtual void draw(renderer::RenderInterface* ri = nullptr,
                     const Eigen::Vector4d& color = Eigen::Vector4d::Ones(),
                     bool useDefaultColor = true,

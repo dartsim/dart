@@ -443,6 +443,8 @@ bool Frame::isWorld() const
 void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
                  bool _useDefaultColor, int _depth) const
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
+
   if(nullptr == _ri)
     return;
 
@@ -461,6 +463,8 @@ void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
     entity->draw(_ri, _color, _useDefaultColor);
 
   _ri->popMatrix();
+
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

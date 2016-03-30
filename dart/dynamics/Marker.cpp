@@ -197,6 +197,12 @@ Marker::ConstraintType Marker::getConstraintType() const
 }
 
 //==============================================================================
+const Eigen::Vector4d& Marker::getColor() const
+{
+  return mProperties.mColor;
+}
+
+//==============================================================================
 Marker::Marker(const Properties& properties, BodyNode* parent)
   : mProperties(properties),
     mBodyNode(parent),

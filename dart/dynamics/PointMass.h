@@ -509,7 +509,7 @@ protected:
   Eigen::Vector3d mCg_F;
 
   //---------------------------- Rendering -------------------------------------
-  ///
+  DEPRECATED(6.0)
   virtual void draw(renderer::RenderInterface* _ri = nullptr,
                     const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
                     bool _useDefaultColor = true) const;
@@ -646,9 +646,6 @@ protected:
   Eigen::Vector3d mImpF;
 
   PointMassNotifier* mNotifier;
-
-private:
-  EllipsoidShape* mShape;
 
 public:
   // To get byte-aligned Eigen vectors

@@ -256,6 +256,12 @@ const PointMass* SoftBodyNode::getPointMass(size_t _idx) const
 }
 
 //==============================================================================
+const std::vector<PointMass*>& SoftBodyNode::getPointMasses() const
+{
+  return mPointMasses;
+}
+
+//==============================================================================
 SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
                            Joint* _parentJoint,
                            const Properties& _properties)
@@ -1143,6 +1149,8 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
                         bool _useDefaultColor,
                         int /*_depth*/) const
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
+
   if (_ri == nullptr)
     return;
 
@@ -1213,6 +1221,8 @@ void SoftBodyNode::draw(renderer::RenderInterface* _ri,
     entity->draw(_ri, _color, _useDefaultColor);
 
   _ri->popMatrix();
+
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

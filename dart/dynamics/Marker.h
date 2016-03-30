@@ -90,6 +90,7 @@ public:
   virtual ~Marker();
 
   /// Render this marker
+  DEPRECATED(6.0)
   void draw(renderer::RenderInterface* ri = nullptr,
             bool offset = true,
             const Eigen::Vector4d& color = Color::White(1.0),
@@ -136,6 +137,9 @@ public:
 
   /// Get constraint type. which will be useful for inverse kinematics
   ConstraintType getConstraintType() const;
+
+  /// Return color of this Marker
+  const Eigen::Vector4d& getColor() const;
 
   friend class Skeleton;
   friend class BodyNode;

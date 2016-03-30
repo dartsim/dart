@@ -66,10 +66,14 @@ public:
   /// \brief
   virtual void timeStepping();
 
-  /// \brief
+  virtual void drawWorld() const;
+
+  virtual void drawSkeletons() const;
+
+  DEPRECATED(6.0)
   virtual void drawSkels();
 
-  /// \brief
+  DEPRECATED(6.0)
   virtual void drawEntities();
 
   /// \brief
@@ -94,6 +98,42 @@ public:
 //  void setSimulatingFlag(int _flag) { mSimulating = _flag; }
 
 protected:
+
+  virtual void drawSkeleton(
+      const dynamics::Skeleton* skeleton,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      bool useDefaultColor = true) const;
+
+  virtual void drawEntity(
+      const dynamics::Entity* entity,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      bool useDefaultColor = true) const;
+
+  virtual void drawBodyNode(
+      const dynamics::BodyNode* bodyNode,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      bool useDefaultColor = true,
+      bool recursive = false) const;
+
+  virtual void drawShapeFrame(
+      const dynamics::ShapeFrame* shapeFrame,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      bool useDefaultColor = true) const;
+
+  virtual void drawShape(
+      const dynamics::Shape* shape,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5)) const;
+
+  virtual void drawPointMasses(
+      const std::vector<dynamics::PointMass*> pointMasses,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      bool useDefaultColor = true) const;
+
+  virtual void drawMarker(
+      const dynamics::Marker* marker,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      bool useDefaultColor = true) const;
+
   /// \brief
   simulation::WorldPtr mWorld;
 
@@ -106,7 +146,10 @@ protected:
   /// \brief
   bool mSimulating;
 
-  /// \brief
+  /// If true, render point masses of soft bodies
+  bool mShowPointMasses;
+
+  /// If true, render markers
   bool mShowMarkers;
 
   /// \brief Array of graph windows

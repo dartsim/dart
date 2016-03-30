@@ -377,31 +377,70 @@ void OpenGLRenderInterface::recursiveRender(const struct aiScene *sc, const stru
     glPopMatrix();
 }
 
-void OpenGLRenderInterface::drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) {
-    if(_mesh) {
-        glPushMatrix();
-        glScaled(_scale(0), _scale(1), _scale(2));
-        recursiveRender(_mesh, _mesh->mRootNode);
-        glPopMatrix();
+//==============================================================================
+void OpenGLRenderInterface::drawMesh(
+    const Eigen::Vector3d& scale, const aiScene* mesh)
+{
+  if (!mesh)
+    return;
+
+  glPushMatrix();
+
+  glScaled(scale[0], scale[1], scale[2]);
+  recursiveRender(mesh, mesh->mRootNode);
+
+  glPopMatrix();
+}
+
+//==============================================================================
+void OpenGLRenderInterface::drawSoftMesh(const aiMesh* mesh)
+{
+  glEnable(GL_LIGHTING);
+  glEnable(GL_AUTO_NORMAL);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+  for (auto i = 0u; i < mesh->mNumFaces; ++i)
+  {
+    glBegin(GL_TRIANGLES);
+
+    const auto& face = &mesh->mFaces[i];
+    assert(3u == face->mNumIndices);
+
+    for (auto j = 0u; j < 3; ++j)
+    {
+      auto index = face->mIndices[j];
+      glNormal3fv(&mesh->mVertices[index].x);
+      glVertex3fv(&mesh->mVertices[index].x);
     }
+
+    glEnd();
+  }
 }
 
 void OpenGLRenderInterface::drawList(GLuint index) {
     glCallList(index);
 }
 
-void OpenGLRenderInterface::compileList(dynamics::Skeleton* _skel) {
-    if(_skel == 0)
-        return;
+//==============================================================================
+void OpenGLRenderInterface::compileList(dynamics::Skeleton* _skel)
+{
+  DART_SUPPRESS_DEPRECATED_BEGIN
 
-    for (size_t i = 0; i < _skel->getNumBodyNodes(); i++) {
-        compileList(_skel->getBodyNode(i));
-    }
+      if(_skel == 0)
+      return;
+
+  for (size_t i = 0; i < _skel->getNumBodyNodes(); i++) {
+    compileList(_skel->getBodyNode(i));
+  }
+
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
 void OpenGLRenderInterface::compileList(dynamics::BodyNode* node)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
+
   if(node == 0)
     return;
 
@@ -417,8 +456,11 @@ void OpenGLRenderInterface::compileList(dynamics::BodyNode* node)
     auto shapeNode = node->getNode<dynamics::ShapeNode>(i);
     compileList(shapeNode->getShape().get());
   }
+
+  DART_SUPPRESS_DEPRECATED_END
 }
 
+//==============================================================================
 //FIXME: Use polymorphism instead of switch statements
 void OpenGLRenderInterface::compileList(dynamics::Shape* _shape) {
     if(_shape == 0)
@@ -470,19 +512,27 @@ GLuint OpenGLRenderInterface::compileList(const Eigen::Vector3d& _scale, const a
     return index;
 }
 
-void OpenGLRenderInterface::draw(dynamics::Skeleton* _skel, bool _vizCol, bool _colMesh) {
-    if(_skel == 0)
-        return;
+//==============================================================================
+void OpenGLRenderInterface::draw(dynamics::Skeleton* _skel, bool _vizCol,
+                                 bool _colMesh)
+{
+  DART_SUPPRESS_DEPRECATED_BEGIN
 
-    for (size_t i = 0; i < _skel->getNumBodyNodes(); i++) {
-        draw(_skel->getBodyNode(i), _vizCol, _colMesh);
-    }
+  if(_skel == 0)
+    return;
+
+  for (size_t i = 0; i < _skel->getNumBodyNodes(); i++)
+    draw(_skel->getBodyNode(i), _vizCol, _colMesh);
+
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
 void OpenGLRenderInterface::draw(dynamics::BodyNode* node,
                                  bool vizCol, bool colMesh)
 {
+  DART_SUPPRESS_DEPRECATED_BEGIN
+
   if(node == 0)
     return;
   
@@ -527,6 +577,8 @@ void OpenGLRenderInterface::draw(dynamics::BodyNode* node,
   glEnable( GL_TEXTURE_2D );
   glDisable(GL_COLOR_MATERIAL);
   glPopMatrix();
+
+  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

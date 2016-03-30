@@ -58,6 +58,7 @@ public:
   const Eigen::Vector3d& getSize() const;
 
   // Documentation inherited.
+  DEPRECATED(6.0)
   void draw(
       renderer::RenderInterface* ri = nullptr,
       const Eigen::Vector4d& col = Eigen::Vector4d::Ones()) const override;
