@@ -84,10 +84,10 @@ public:
 protected:
 
   /// Constructor
-  BulletCollisionDetector();
+  BulletCollisionDetector() = default;
 
   // Documentation inherited
-  std::unique_ptr<CollisionObject> createCollisionObject(
+  CollisionObject* createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
 
   // Documentation inherited

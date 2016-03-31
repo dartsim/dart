@@ -241,14 +241,7 @@ bool BulletCollisionDetector::detect(
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollisionDetector()
-{
-  mCollisionObjectManager.reset(new NaiveCollisionObjectManager(this));
-}
-
-//==============================================================================
-std::unique_ptr<CollisionObject>
-BulletCollisionDetector::createCollisionObject(
+CollisionObject* BulletCollisionDetector::createCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
   auto pack = claimBulletCollisionGeometry(shapeFrame->getShape());
@@ -258,7 +251,7 @@ BulletCollisionDetector::createCollisionObject(
 
   mBulletCollisionObjectMap[object] = collObj;
 
-  return std::unique_ptr<CollisionObject>(collObj);
+  return collObj;
 }
 
 //==============================================================================

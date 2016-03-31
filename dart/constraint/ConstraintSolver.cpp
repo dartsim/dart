@@ -153,7 +153,7 @@ void ConstraintSolver::removeSkeletons(
 //==============================================================================
 void ConstraintSolver::removeAllSkeletons()
 {
-  mCollisionGroup->unregisterAllShapeFrames();
+  mCollisionGroup->removeAllShapeFrames();
   mSkeletons.clear();
 }
 

@@ -585,8 +585,8 @@ TEST_F(COLLISION, SimpleFrames)
   // testSimpleFrames(fcl_mesh_fcl);
 
 #if HAVE_BULLET_COLLISION
-  auto bullet = BulletCollisionDetector::create();
-  testSimpleFrames(bullet);
+//  auto bullet = BulletCollisionDetector::create();
+//  testSimpleFrames(bullet);
 #endif
 
   auto dart = DARTCollisionDetector::create();

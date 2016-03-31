@@ -144,7 +144,7 @@ void CollisionGroup::removeShapeFramesOf(
   {
     if (this == otherGroup)
     {
-      unregisterAllShapeFrames();
+      removeAllShapeFrames();
       return;
     }
 

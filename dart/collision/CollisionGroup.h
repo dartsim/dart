@@ -160,8 +160,8 @@ public:
   /// template function template<typename...> removeShapeFramesOf().
   void removeShapeFramesOf();
 
-  /// Unregister all the ShapeFrames in this CollisionGroup
-  void unregisterAllShapeFrames();
+  /// Remove all the ShapeFrames in this CollisionGroup
+  void removeAllShapeFrames();
 
   /// Return true if this CollisionGroup contains shapeFrame
   bool hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const;
@@ -186,7 +186,7 @@ public:
   bool detect(CollisionGroup* group, const Option& option, Result& result);
 
   /// Return all the CollisionObjects in this CollisionGroup
-  const std::vector<CollisionObject*>& getCollisionObjects();
+  const std::vector<std::shared_ptr<CollisionObject> >& getCollisionObjects();
 
 protected:
 
@@ -229,7 +229,7 @@ private:
   std::vector<const dynamics::ShapeFrame*> mShapeFrames;
 
   /// CollisionObjects associated with the registered ShapeFrames
-  std::vector<CollisionObject*> mCollisionObjects;
+  std::vector<std::shared_ptr<CollisionObject>> mCollisionObjects;
 
 };
 

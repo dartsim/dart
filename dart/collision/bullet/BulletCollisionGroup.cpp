@@ -61,7 +61,7 @@ BulletCollisionGroup::BulletCollisionGroup(
 //==============================================================================
 BulletCollisionGroup::~BulletCollisionGroup()
 {
-  unregisterAllShapeFrames();
+  // Do nothing
 }
 
 //==============================================================================
@@ -111,7 +111,7 @@ void BulletCollisionGroup::notifyCollisionObjectRemoved(
 void BulletCollisionGroup::notifyAllCollisionObjectsRemoved()
 {
   for (const auto& collisionObject : getCollisionObjects())
-    notifyCollisionObjectRemoved(collisionObject);
+    notifyCollisionObjectRemoved(collisionObject.get());
 
   initializeEngineData();
 }

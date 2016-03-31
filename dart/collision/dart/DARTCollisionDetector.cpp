@@ -115,10 +115,10 @@ bool DARTCollisionDetector::detect(
     {
       auto collObj2 = objects[j];
 
-      if (filter && !filter->needCollision(collObj1, collObj2))
+      if (filter && !filter->needCollision(collObj1.get(), collObj2.get()))
         continue;
 
-      checkPair(collObj1, collObj2, option, result);
+      checkPair(collObj1.get(), collObj2.get(), option, result);
 
       if ((option.binaryCheck && result.isCollision())
           || (result.getNumContacts() >= option.maxNumContacts))
@@ -167,10 +167,10 @@ bool DARTCollisionDetector::detect(
     {
       auto collObj2 = objects2[j];
 
-      if (filter && !filter->needCollision(collObj1, collObj2))
+      if (filter && !filter->needCollision(collObj1.get(), collObj2.get()))
         continue;
 
-      checkPair(collObj1, collObj2, option, result);
+      checkPair(collObj1.get(), collObj2.get(), option, result);
 
       if (result.getNumContacts() >= option.maxNumContacts)
       {
@@ -184,12 +184,6 @@ bool DARTCollisionDetector::detect(
   }
 
   return result.isCollision();
-}
-
-//==============================================================================
-DARTCollisionDetector::DARTCollisionDetector()
-{
-  mCollisionObjectManager.reset(new RefCountingCollisionObjectManager(this));
 }
 
 //==============================================================================
@@ -220,7 +214,7 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
 }
 
 //==============================================================================
-std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
+CollisionObject* DARTCollisionDetector::createCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
   auto collObj = new DARTCollisionObject(this, shapeFrame);
@@ -229,7 +223,7 @@ std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
 
   mDARTCollisionObjects.push_back(collObj);
 
-  return std::unique_ptr<CollisionObject>(collObj);
+  return collObj;
 }
 
 //==============================================================================

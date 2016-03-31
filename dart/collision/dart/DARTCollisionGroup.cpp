@@ -52,7 +52,7 @@ DARTCollisionGroup::DARTCollisionGroup(
 //==============================================================================
 DARTCollisionGroup::~DARTCollisionGroup()
 {
-  unregisterAllShapeFrames();
+  // Do nothing
 }
 
 //==============================================================================

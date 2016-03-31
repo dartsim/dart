@@ -54,7 +54,7 @@ FCLCollisionGroup::FCLCollisionGroup(
 //==============================================================================
 FCLCollisionGroup::~FCLCollisionGroup()
 {
-  unregisterAllShapeFrames();
+  // Do nothing
 }
 
 //==============================================================================

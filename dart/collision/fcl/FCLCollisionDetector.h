@@ -110,7 +110,7 @@ protected:
   FCLCollisionDetector();
 
   // Documentation inherited
-  std::unique_ptr<CollisionObject> createCollisionObject(
+  CollisionObject* createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
 
   // Documentation inherited

@@ -56,8 +56,7 @@ CollisionGroup::CollisionGroup(const CollisionDetectorPtr& collisionDetector)
 //==============================================================================
 CollisionGroup::~CollisionGroup()
 {
-  assert(mShapeFrames.empty());
-  assert(mCollisionObjects.empty());
+  // Do nothing
 }
 
 //==============================================================================
@@ -83,7 +82,7 @@ void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 
   auto collObj = mCollisionDetector->claimCollisionObject(shapeFrame);
 
-  notifyCollisionObjectAdded(collObj);
+  notifyCollisionObjectAdded(collObj.get());
 
   mShapeFrames.push_back(shapeFrame);
   mCollisionObjects.push_back(collObj);
@@ -104,8 +103,7 @@ void CollisionGroup::addShapeFramesOf()
 }
 
 //==============================================================================
-void CollisionGroup::removeShapeFrame(
-    const dynamics::ShapeFrame* shapeFrame)
+void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 {
   if (!shapeFrame)
     return;
@@ -120,9 +118,7 @@ void CollisionGroup::removeShapeFrame(
 
   const size_t index = search - mShapeFrames.begin();
 
-  notifyCollisionObjectRemoved(mCollisionObjects[index]);
-
-  mCollisionDetector->reclaimCollisionObject(mCollisionObjects[index]);
+  notifyCollisionObjectRemoved(mCollisionObjects[index].get());
 
   mShapeFrames.erase(search);
   mCollisionObjects.erase(mCollisionObjects.begin() + index);
@@ -143,12 +139,9 @@ void CollisionGroup::removeShapeFramesOf()
 }
 
 //==============================================================================
-void CollisionGroup::unregisterAllShapeFrames()
+void CollisionGroup::removeAllShapeFrames()
 {
   notifyAllCollisionObjectsRemoved();
-
-  for (const auto& object : mCollisionObjects)
-    mCollisionDetector->reclaimCollisionObject(object);
 
   mShapeFrames.clear();
   mCollisionObjects.clear();
@@ -197,7 +190,8 @@ bool CollisionGroup::detect(
 }
 
 //==============================================================================
-const std::vector<CollisionObject*>& CollisionGroup::getCollisionObjects()
+const std::vector<std::shared_ptr<CollisionObject>>&
+CollisionGroup::getCollisionObjects()
 {
   return mCollisionObjects;
 }

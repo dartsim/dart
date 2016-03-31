@@ -61,6 +61,9 @@ public:
   friend class CollisionObject;
   friend class CollisionGroup;
 
+  /// Destructor
+  virtual ~CollisionDetector();
+
   /// Return collision detection engine type in std::string
   virtual const std::string& getType() const = 0;
 
@@ -101,25 +104,16 @@ public:
 
 protected:
 
-  // We define following collision object managers outside of this class for
-  // better code readability.
-  class CollisionObjectManager;
-  class NaiveCollisionObjectManager;
-  class RefCountingCollisionObjectManager;
-
   /// Constructor
-  CollisionDetector() = default;
+  CollisionDetector();
 
   /// Claim CollisionObject associated with shapeFrame. New CollisionObject
   /// will be created if it hasn't created yet for shapeFrame.
-  CollisionObject* claimCollisionObject(const dynamics::ShapeFrame* shapeFrame);
-
-  /// Reclaim a CollisionObject. The CollisionObject will be destroyed if no
-  /// CollisionGroup holds it.
-  void reclaimCollisionObject(const CollisionObject* collObj);
+  std::shared_ptr<CollisionObject> claimCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame);
 
   /// Create CollisionObject
-  virtual std::unique_ptr<CollisionObject> createCollisionObject(
+  virtual CollisionObject* createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) = 0;
 
   /// Notify that a CollisionObject will be destroyed so that the collision
@@ -128,84 +122,26 @@ protected:
 
 protected:
 
-  std::unique_ptr<CollisionObjectManager> mCollisionObjectManager;
-
-};
-
-class CollisionDetector::CollisionObjectManager
-{
-public:
-
-  /// Constructor
-  CollisionObjectManager(CollisionDetector* cd);
-
-  /// Return CollisionObject associated with shapeFrame. New CollisionObject
-  /// will be created if it hasn't created yet for shapeFrame.
-  virtual CollisionObject* claimCollisionObject(
-      const dynamics::ShapeFrame* shapeFrame) = 0;
-
-  /// Reclaim CollisionObject associated with shapeFrame. The CollisionObject
-  /// will be destroyed if no CollisionGroup holds it.
-  virtual void reclaimCollisionObject(const CollisionObject* shapeFrame) = 0;
-
-protected:
-
-  CollisionDetector* mCollisionDetector;
-
-};
-
-class CollisionDetector::NaiveCollisionObjectManager :
-    public CollisionDetector::CollisionObjectManager
-{
-public:
-
-  /// Constructor
-  NaiveCollisionObjectManager(CollisionDetector* cd);
-
-  /// Destructor
-  virtual ~NaiveCollisionObjectManager();
-
-  // Documentation inherited
-  CollisionObject* claimCollisionObject(
-      const dynamics::ShapeFrame* shapeFrame) override;
-
-  // Documentation inherited
-  void reclaimCollisionObject(const CollisionObject* shapeFrame) override;
-
-protected:
-
-  std::vector<std::unique_ptr<CollisionObject>> mCollisionObjects;
-
-};
-
-class CollisionDetector::RefCountingCollisionObjectManager :
-    public CollisionDetector::CollisionObjectManager
-{
-public:
-
-  /// Constructor
-  RefCountingCollisionObjectManager(CollisionDetector* cd);
-
-  /// Destructor
-  virtual ~RefCountingCollisionObjectManager();
-
-  // Documentation inherited
-  CollisionObject* claimCollisionObject(
-      const dynamics::ShapeFrame* shapeFrame) override;
-
-  // Documentation inherited
-  void reclaimCollisionObject(const CollisionObject* shapeFrame) override;
-
-protected:
-
-  using CollisionObjectMapValue
-      = std::pair<std::unique_ptr<CollisionObject>, size_t>;
   using CollisionObjectMap
-      = std::map<const dynamics::ShapeFrame*, CollisionObjectMapValue>;
-  using CollisionObjectPair
-      = std::pair<const dynamics::ShapeFrame*, CollisionObjectMapValue>;
+      = std::map<const dynamics::ShapeFrame*, std::weak_ptr<CollisionObject>>;
 
   CollisionObjectMap mCollisionObjectMap;
+
+private:
+
+  /// Reclaim a CollisionObject associated with given ShapeFrame.
+  void reclaimCollisionObject(const dynamics::ShapeFrame* shapeFrame);
+
+  struct CollisionObjectDeletor final
+  {
+    CollisionDetector* mCollisionDetector;
+
+    CollisionObjectDeletor(CollisionDetector* cd);
+
+    void operator()(CollisionObject* object) const;
+  };
+
+  CollisionObjectDeletor mCollisionObjectDeleter;
 
 };
 
