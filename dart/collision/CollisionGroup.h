@@ -76,8 +76,7 @@ public:
   /// Add a ShapeFrame, and also add ShapeFrames of other various objects.
   ///
   /// The other various objects can be any of ShapeFrame,
-  /// std::vector<ShapeFrame>, CollisionGroup, BodyNode, Skeleton, and
-  /// CollisionGroup.
+  /// std::vector<ShapeFrame>, CollisionGroup, BodyNode, and Skeleton.
   ///
   /// Note that this function adds only the ShapeFrames of each object at the
   /// moment of this function is called. The aftwerward changes of the objects
@@ -124,8 +123,7 @@ public:
   /// Remove a ShapeFrame, and also remove ShapeFrames of other various objects.
   ///
   /// The other various objects can be any of ShapeFrame,
-  /// std::vector<ShapeFrame>, CollisionGroup, BodyNode, Skeleton, and
-  /// CollisionGroup.
+  /// std::vector<ShapeFrame>, CollisionGroup, BodyNode, and Skeleton.
   ///
   /// Note that this function removes only the ShapeFrames of each object at the
   /// moment of this function is called. The aftwerward changes of the objects

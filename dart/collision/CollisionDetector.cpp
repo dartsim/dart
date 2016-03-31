@@ -49,6 +49,13 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
+std::shared_ptr<CollisionGroup>
+CollisionDetector::createCollisionGroupAsSharedPtr()
+{
+  return std::shared_ptr<CollisionGroup>(createCollisionGroup().release());
+}
+
+//==============================================================================
 CollisionObject* CollisionDetector::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {

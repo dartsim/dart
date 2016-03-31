@@ -65,14 +65,31 @@ public:
   virtual const std::string& getType() const = 0;
 
   /// Create a collision group
-  virtual std::shared_ptr<CollisionGroup> createCollisionGroup() = 0;
+  virtual std::unique_ptr<CollisionGroup> createCollisionGroup() = 0;
+
+  /// Helper function that creates and returns CollisionGroup as shared_ptr.
+  ///
+  /// Internally, this function creates shared_ptr from unique_ptr returned from
+  /// createCollisionGroup() so the performance would be slighly worse than
+  /// using std::make_unique.
+  std::shared_ptr<CollisionGroup> createCollisionGroupAsSharedPtr();
 
   /// Create a collision group from any objects that are supported by
-  /// CollisionGroup::addShapeFramesOf(). Currently, the supporting objects
-  /// are ShapeFrame, std::vector<ShapeFrame>, CollisionGroup, BodyNode, and
-  /// Skeleton.
+  /// CollisionGroup::addShapeFramesOf().
+  ///
+  /// The objects can be any of ShapeFrame, std::vector<ShapeFrame>,
+  /// CollisionGroup, BodyNode, and Skeleton.
+  ///
+  /// Note that this function adds only the ShapeFrames of each object at the
+  /// moment of this function is called. The aftwerward changes of the objects
+  /// does not affect on this CollisionGroup.
   template <typename... Args>
-  std::shared_ptr<CollisionGroup> createCollisionGroup(const Args&... args);
+  std::unique_ptr<CollisionGroup> createCollisionGroup(const Args&... args);
+
+  /// Helper function that creates and returns CollisionGroup as shared_ptr.
+  template <typename... Args>
+  std::shared_ptr<CollisionGroup> createCollisionGroupAsSharedPtr(
+      const Args&... args);
 
   /// Perform collision detection for group.
   virtual bool detect(CollisionGroup* group,

@@ -745,9 +745,10 @@ const std::string& FCLCollisionDetector::getType() const
 }
 
 //==============================================================================
-std::shared_ptr<CollisionGroup> FCLCollisionDetector::createCollisionGroup()
+std::unique_ptr<CollisionGroup>
+FCLCollisionDetector::createCollisionGroup()
 {
-  return std::make_shared<FCLCollisionGroup>(shared_from_this());
+  return common::make_unique<FCLCollisionGroup>(shared_from_this());
 }
 
 //==============================================================================

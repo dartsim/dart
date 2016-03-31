@@ -166,9 +166,10 @@ const std::string& BulletCollisionDetector::getType() const
 }
 
 //==============================================================================
-std::shared_ptr<CollisionGroup> BulletCollisionDetector::createCollisionGroup()
+std::unique_ptr<CollisionGroup>
+BulletCollisionDetector::createCollisionGroup()
 {
-  return std::make_shared<BulletCollisionGroup>(shared_from_this());
+  return common::make_unique<BulletCollisionGroup>(shared_from_this());
 }
 
 //==============================================================================

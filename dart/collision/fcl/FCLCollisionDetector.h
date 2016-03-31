@@ -63,7 +63,7 @@ public:
   const std::string& getType() const override;
 
   // Documentation inherited
-  std::shared_ptr<CollisionGroup> createCollisionGroup() override;
+  std::unique_ptr<CollisionGroup> createCollisionGroup() override;
 
   // Documentation inherited
   bool detect(CollisionGroup* group,

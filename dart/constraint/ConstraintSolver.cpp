@@ -233,7 +233,7 @@ void ConstraintSolver::setCollisionDetector(
   for (const auto& skeleton : mSkeletons)
     newCollisionGroup->addShapeFramesOf(skeleton.get());
 
-  mCollisionGroup = newCollisionGroup;
+  mCollisionGroup = std::move(newCollisionGroup);
 }
 
 //==============================================================================
