@@ -75,7 +75,7 @@ protected:
   void notifyAllCollisionObjectsRemoved() override;
 
   // Documentation inherited
-  void updateEngineData() override;
+  void updateCollisionGroupEngineData() override;
 
   /// Return Bullet collision world
   btCollisionWorld* getBulletCollisionWorld() const;

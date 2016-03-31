@@ -765,7 +765,7 @@ bool FCLCollisionDetector::detect(
     return false;
   }
 
-  group->update();
+  group->updateEngineData();
 
   auto castedData = static_cast<FCLCollisionGroup*>(group);
   auto broadPhaseAlg = castedData->getFCLCollisionManager();
@@ -800,8 +800,8 @@ bool FCLCollisionDetector::detect(
       return false;
   }
 
-  group1->update();
-  group2->update();
+  group1->updateEngineData();
+  group2->updateEngineData();
 
   auto casted1 = static_cast<FCLCollisionGroup*>(group1);
   auto casted2 = static_cast<FCLCollisionGroup*>(group2);

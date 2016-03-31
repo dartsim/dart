@@ -186,7 +186,7 @@ bool BulletCollisionDetector::detect(
     return false;
   }
 
-  group->update();
+  group->updateEngineData();
 
   auto castedData = static_cast<BulletCollisionGroup*>(group);
   auto bulletCollisionWorld = castedData->getBulletCollisionWorld();
@@ -224,8 +224,8 @@ bool BulletCollisionDetector::detect(
   }
 
   auto group = common::make_unique<BulletCollisionGroup>(shared_from_this());
-  group->registerShapeFrames(group1, group2);
-  group->update();
+  group->addShapeFramesOf(group1, group2);
+  group->updateEngineData();
 
   auto bulletCollisionWorld = group->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();

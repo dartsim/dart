@@ -61,13 +61,19 @@ CollisionGroup::~CollisionGroup()
 }
 
 //==============================================================================
-CollisionDetector* CollisionGroup::getCollisionDetector() const
+CollisionDetector* CollisionGroup::getCollisionDetector()
 {
   return mCollisionDetector.get();
 }
 
 //==============================================================================
-void CollisionGroup::registerShapeFrame(const dynamics::ShapeFrame* shapeFrame)
+const CollisionDetector* CollisionGroup::getCollisionDetector() const
+{
+  return mCollisionDetector.get();
+}
+
+//==============================================================================
+void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 {
   if (!shapeFrame)
     return;
@@ -84,69 +90,21 @@ void CollisionGroup::registerShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 }
 
 //==============================================================================
-void CollisionGroup::registerShapeFrames(
+void CollisionGroup::addShapeFrames(
     const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
 {
   for (const auto& shapeFrame : shapeFrames)
-    registerShapeFrame(shapeFrame);
+    addShapeFrame(shapeFrame);
 }
 
 //==============================================================================
-void CollisionGroup::registerShapeFrames()
+void CollisionGroup::addShapeFramesOf()
 {
   // Do nothing
 }
 
 //==============================================================================
-void CollisionGroup::registerShapeFramesOf(
-    const dynamics::ShapeFrame* shapeFrame)
-{
-  registerShapeFrame(shapeFrame);
-}
-
-//==============================================================================
-void CollisionGroup::registerShapeFramesOf(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
-{
-  registerShapeFrames(shapeFrames);
-}
-
-//==============================================================================
-void CollisionGroup::registerShapeFramesOf(const CollisionGroup* other)
-{
-  assert(other);
-
-  if (other && this != other)
-  {
-    for (const auto& shapeFrame : other->mShapeFrames)
-      registerShapeFrame(shapeFrame);
-  }
-}
-
-//==============================================================================
-void CollisionGroup::registerShapeFramesOf(const dynamics::BodyNode* bodyNode)
-{
-  assert(bodyNode);
-
-  auto collisionShapeNodes
-      = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
-
-  for (auto& shapeNode : collisionShapeNodes)
-    registerShapeFrame(shapeNode);
-}
-
-//==============================================================================
-void CollisionGroup::registerShapeFramesOf(const dynamics::Skeleton* skel)
-{
-  assert(skel);
-
-  auto numBodyNodes = skel->getNumBodyNodes();
-  for (auto i = 0u; i < numBodyNodes; ++i)
-    registerShapeFramesOf(skel->getBodyNode(i));
-}
-
-//==============================================================================
-void CollisionGroup::unregisterShapeFrame(
+void CollisionGroup::removeShapeFrame(
     const dynamics::ShapeFrame* shapeFrame)
 {
   if (!shapeFrame)
@@ -171,72 +129,17 @@ void CollisionGroup::unregisterShapeFrame(
 }
 
 //==============================================================================
-void CollisionGroup::unregisterShapeFrames(
+void CollisionGroup::removeShapeFrames(
     const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
 {
   for (const auto& shapeFrame : shapeFrames)
-    unregisterShapeFrame(shapeFrame);
+    removeShapeFrame(shapeFrame);
 }
 
 //==============================================================================
-void CollisionGroup::unregisterShapeFramesOf()
+void CollisionGroup::removeShapeFramesOf()
 {
   // Do nothing
-}
-
-//==============================================================================
-void CollisionGroup::unregisterShapeFramesOf(
-    const dynamics::ShapeFrame* shapeFrame)
-{
-  unregisterShapeFrame(shapeFrame);
-}
-
-//==============================================================================
-void CollisionGroup::unregisterShapeFramesOf(
-    const std::vector<const dynamics::ShapeFrame*>& shapeFrames)
-{
-  unregisterShapeFrames(shapeFrames);
-}
-
-//==============================================================================
-void CollisionGroup::unregisterShapeFramesOf(const CollisionGroup* other)
-{
-  assert(other);
-
-  if (other)
-  {
-    if (this == other)
-    {
-      unregisterAllShapeFrames();
-      return;
-    }
-
-    for (const auto& shapeFrame : other->mShapeFrames)
-      unregisterShapeFrame(shapeFrame);
-  }
-}
-
-//==============================================================================
-void CollisionGroup::unregisterShapeFramesOf(
-    const dynamics::BodyNode* bodyNode)
-{
-  assert(bodyNode);
-
-  auto collisionShapeNodes
-      = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
-
-  for (auto& shapeNode : collisionShapeNodes)
-    unregisterShapeFrame(shapeNode);
-}
-
-//==============================================================================
-void CollisionGroup::unregisterShapeFramesOf(const dynamics::Skeleton* skel)
-{
-  assert(skel);
-
-  auto numBodyNodes = skel->getNumBodyNodes();
-  for (auto i = 0u; i < numBodyNodes; ++i)
-    unregisterShapeFramesOf(skel->getBodyNode(i));
 }
 
 //==============================================================================
@@ -274,19 +177,10 @@ const dynamics::ShapeFrame* CollisionGroup::getShapeFrame(size_t index) const
 }
 
 //==============================================================================
-const std::vector<const dynamics::ShapeFrame*>
+const std::vector<const dynamics::ShapeFrame*>&
 CollisionGroup::getShapeFrames() const
 {
   return mShapeFrames;
-}
-
-//==============================================================================
-void CollisionGroup::update()
-{
-  for (auto& object : mCollisionObjects)
-    object->updateEngineData();
-
-  updateEngineData();
 }
 
 //==============================================================================
@@ -306,6 +200,15 @@ bool CollisionGroup::detect(
 const std::vector<CollisionObject*>& CollisionGroup::getCollisionObjects()
 {
   return mCollisionObjects;
+}
+
+//==============================================================================
+void CollisionGroup::updateEngineData()
+{
+  for (auto& object : mCollisionObjects)
+    object->updateEngineData();
+
+  updateCollisionGroupEngineData();
 }
 
 }  // namespace collision

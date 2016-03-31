@@ -99,7 +99,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   if (!containSkeleton(skeleton))
   {
     auto group = mCollisionDetector->createCollisionGroup(skeleton.get());
-    mCollisionGroup->registerShapeFramesOf(group.get());
+    mCollisionGroup->addShapeFramesOf(group.get());
 
     mSkeletons.push_back(skeleton);
     mConstrainedGroups.reserve(mSkeletons.size());
@@ -128,7 +128,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
   if (containSkeleton(skeleton))
   {
     auto group = mCollisionDetector->createCollisionGroup(skeleton.get());
-    mCollisionGroup->unregisterShapeFramesOf(group.get());
+    mCollisionGroup->removeShapeFramesOf(group.get());
 
     mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), skeleton),
                      mSkeletons.end());
@@ -231,7 +231,7 @@ void ConstraintSolver::setCollisionDetector(
   auto newCollisionGroup = mCollisionDetector->createCollisionGroup();
 
   for (const auto& skeleton : mSkeletons)
-    newCollisionGroup->registerShapeFramesOf(skeleton.get());
+    newCollisionGroup->addShapeFramesOf(skeleton.get());
 
   mCollisionGroup = newCollisionGroup;
 }

@@ -48,7 +48,7 @@ FCLCollisionGroup::FCLCollisionGroup(
   : CollisionGroup(collisionDetector),
     mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
 {
-  assert(mCollisionDetector);
+  // Do nothing
 }
 
 //==============================================================================
@@ -105,7 +105,7 @@ void FCLCollisionGroup::notifyAllCollisionObjectsRemoved()
 }
 
 //==============================================================================
-void FCLCollisionGroup::updateEngineData()
+void FCLCollisionGroup::updateCollisionGroupEngineData()
 {
   mBroadPhaseAlg->update();
 }

@@ -55,7 +55,7 @@ BulletCollisionGroup::BulletCollisionGroup(
                            mBulletProadphaseAlg.get(),
                            mBulletCollisionConfiguration.get()))
 {
-  assert(mCollisionDetector);
+  // Do nothing
 }
 
 //==============================================================================
@@ -117,7 +117,7 @@ void BulletCollisionGroup::notifyAllCollisionObjectsRemoved()
 }
 
 //==============================================================================
-void BulletCollisionGroup::updateEngineData()
+void BulletCollisionGroup::updateCollisionGroupEngineData()
 {
   mBulletCollisionWorld->updateAabbs();
 }

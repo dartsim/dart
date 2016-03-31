@@ -39,25 +39,150 @@
 
 #include "dart/collision/CollisionGroup.h"
 
+#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/Skeleton.h"
+
 namespace dart {
 namespace collision {
 
 //==============================================================================
-template <typename First, typename... Others>
-void CollisionGroup::registerShapeFrames(
-    const First* first, const Others*... others)
+template <typename... Others>
+void CollisionGroup::addShapeFramesOf(
+    const dynamics::ShapeFrame* shapeFrame, const Others*... others)
 {
-  registerShapeFramesOf(first);
-  registerShapeFrames(others...);
+  addShapeFrame(shapeFrame);
+
+  addShapeFramesOf(others...);
 }
 
 //==============================================================================
-template <typename First, typename... Others>
-void CollisionGroup::unregisterShapeFrames(
-    const First* first, const Others*... others)
+template <typename... Others>
+void CollisionGroup::addShapeFramesOf(
+    const std::vector<const dynamics::ShapeFrame*>& shapeFrames,
+    const Others*... others)
 {
-  unregisterShapeFramesOf(first);
-  unregisterShapeFrames(others...);
+  addShapeFrames(shapeFrames);
+
+  addShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::addShapeFramesOf(
+    const CollisionGroup* otherGroup, const Others*... others)
+{
+  assert(otherGroup);
+
+  if (otherGroup && this != otherGroup)
+  {
+    for (const auto& shapeFrame : otherGroup->mShapeFrames)
+      addShapeFrame(shapeFrame);
+  }
+
+  addShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::addShapeFramesOf(
+    const dynamics::BodyNode* bodyNode, const Others*... others)
+{
+  assert(bodyNode);
+
+  auto collisionShapeNodes
+      = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+
+  for (auto& shapeNode : collisionShapeNodes)
+    addShapeFrame(shapeNode);
+
+  addShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::addShapeFramesOf(
+    const dynamics::Skeleton* skel, const Others*... others)
+{
+  assert(skel);
+
+  auto numBodyNodes = skel->getNumBodyNodes();
+  for (auto i = 0u; i < numBodyNodes; ++i)
+    addShapeFramesOf(skel->getBodyNode(i));
+
+  addShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::removeShapeFramesOf(
+    const dynamics::ShapeFrame* shapeFrame, const Others*... others)
+{
+  removeShapeFrame(shapeFrame);
+
+  removeShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::removeShapeFramesOf(
+    const std::vector<const dynamics::ShapeFrame*>& shapeFrames,
+    const Others*... others)
+{
+  removeShapeFrames(shapeFrames);
+
+  removeShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::removeShapeFramesOf(
+    const CollisionGroup* otherGroup, const Others*... others)
+{
+  assert(otherGroup);
+
+  if (otherGroup)
+  {
+    if (this == otherGroup)
+    {
+      unregisterAllShapeFrames();
+      return;
+    }
+
+    for (const auto& shapeFrame : otherGroup->mShapeFrames)
+      removeShapeFrame(shapeFrame);
+  }
+
+  removeShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::removeShapeFramesOf(
+    const dynamics::BodyNode* bodyNode, const Others*... others)
+{
+  assert(bodyNode);
+
+  auto collisionShapeNodes
+      = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+
+  for (auto& shapeNode : collisionShapeNodes)
+    removeShapeFrame(shapeNode);
+
+  removeShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::removeShapeFramesOf(
+    const dynamics::Skeleton* skel, const Others*... others)
+{
+  assert(skel);
+
+  auto numBodyNodes = skel->getNumBodyNodes();
+  for (auto i = 0u; i < numBodyNodes; ++i)
+    removeShapeFramesOf(skel->getBodyNode(i));
+
+  removeShapeFramesOf(others...);
 }
 
 }  // namespace collision

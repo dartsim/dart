@@ -80,7 +80,7 @@ protected:
   void notifyAllCollisionObjectsRemoved() override;
 
   // Documentation inherited
-  void updateEngineData() override;
+  void updateCollisionGroupEngineData() override;
 
   /// Return FCL collision manager that is also a broad-phase algorithm
   FCLCollisionManager* getFCLCollisionManager();

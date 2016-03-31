@@ -51,7 +51,7 @@ std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
 {
   auto group = createCollisionGroup();
 
-  group->registerShapeFrames(args...);
+  group->addShapeFramesOf(args...);
 
   return group;
 }

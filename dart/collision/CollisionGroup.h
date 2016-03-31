@@ -50,6 +50,9 @@ class CollisionGroup
 {
 public:
 
+  friend class FCLCollisionDetector;
+  friend class BulletCollisionDetector;
+
   /// Constructor
   CollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
@@ -57,77 +60,107 @@ public:
   virtual ~CollisionGroup();
 
   /// Return collision detection engine associated with this CollisionGroup
-  CollisionDetector* getCollisionDetector() const;
+  CollisionDetector* getCollisionDetector();
 
-  /// Register a ShapeFrame to this CollisionGroup
-  void registerShapeFrame(const dynamics::ShapeFrame* shapeFrame);
+  /// Return (const) collision detection engine associated with this
+  /// CollisionGroup
+  const CollisionDetector* getCollisionDetector() const;
 
-  /// Register ShapeFrames to this CollisionGroup
-  void registerShapeFrames(
+  /// Add a ShapeFrame to this CollisionGroup
+  void addShapeFrame(const dynamics::ShapeFrame* shapeFrame);
+
+  /// Add ShapeFrames to this CollisionGroup
+  void addShapeFrames(
       const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
 
-  /// Register all the ShapeFrames in the other CollisionGroups to this
-  /// CollisionGroup
-  template <typename First, typename... Others>
-  void registerShapeFrames(const First* first, const Others*... others);
+  /// Add a ShapeFrame, and also add ShapeFrames of other various objects.
+  ///
+  /// The other various objects can be any of ShapeFrame,
+  /// std::vector<ShapeFrame>, CollisionGroup, BodyNode, Skeleton, and
+  /// CollisionGroup.
+  ///
+  /// Note that this function adds only the ShapeFrames of each object at the
+  /// moment of this function is called. The aftwerward changes of the objects
+  /// does not affect on this CollisionGroup.
+  template <typename... Others>
+  void addShapeFramesOf(const dynamics::ShapeFrame* shapeFrame,
+                        const Others*... others);
 
-  /// Do nothing. This function is for terminating the variadic template
-  /// function template<typename...> registerShapeFrames().
-  void registerShapeFrames();
+  /// Add ShapeFrames, and also add ShapeFrames of other various objects.
+  template <typename... Others>
+  void addShapeFramesOf(
+      const std::vector<const dynamics::ShapeFrame*>& shapeFrames,
+      const Others*... others);
 
-  /// As as registerShapeFrame()
-  void registerShapeFramesOf(const dynamics::ShapeFrame* shapeFrame);
+  /// Add ShapeFrames of other CollisionGroup, and also add another ShapeFrames
+  /// of other various objects.
+  template <typename... Others>
+  void addShapeFramesOf(const CollisionGroup* otherGroup,
+                        const Others*... others);
 
-  /// As as registerShapeFrames()
-  void registerShapeFramesOf(
+  /// Add ShapeFrames of BodyNode, and also add another ShapeFrames of other
+  /// various objects.
+  template <typename... Others>
+  void addShapeFramesOf(const dynamics::BodyNode* bodyNode,
+                        const Others*... others);
+
+  /// Add ShapeFrames of Skeleton, and also add another ShapeFrames of other
+  /// various objects.
+  template <typename... Others>
+  void addShapeFramesOf(const dynamics::Skeleton* skeleton,
+                        const Others*... others);
+
+  /// Do nothing. This function is for terminating the recursive variadic
+  /// template function template<typename...> addShapeFramesOf().
+  void addShapeFramesOf();
+
+  /// Remove a ShapeFrame from this CollisionGroup
+  void removeShapeFrame(const dynamics::ShapeFrame* shapeFrame);
+
+  /// Remove ShapeFrames from this CollisionGroup
+  void removeShapeFrames(
       const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
 
-  /// Register all the ShapeFrames in the other CollisionGroup to this
-  /// CollisionGroup
-  void registerShapeFramesOf(const CollisionGroup* other);
+  /// Remove a ShapeFrame, and also remove ShapeFrames of other various objects.
+  ///
+  /// The other various objects can be any of ShapeFrame,
+  /// std::vector<ShapeFrame>, CollisionGroup, BodyNode, Skeleton, and
+  /// CollisionGroup.
+  ///
+  /// Note that this function removes only the ShapeFrames of each object at the
+  /// moment of this function is called. The aftwerward changes of the objects
+  /// does not affect on this CollisionGroup.
+  template <typename... Others>
+  void removeShapeFramesOf(const dynamics::ShapeFrame* shapeFrame,
+                           const Others*... others);
 
-  /// Register all the BodyNode's ShapeFrames having CollisionAddon to this
-  /// CollisionGroup
-  void registerShapeFramesOf(const dynamics::BodyNode* bodyNode);
+  /// Remove ShapeFrames, and also remove ShapeFrames of other various objects.
+  template <typename... Others>
+  void removeShapeFramesOf(
+      const std::vector<const dynamics::ShapeFrame*>& shapeFrames,
+      const Others*... others);
 
-  /// Register all the Skeleton's ShapeFrames having CollisionAddon to this
-  /// CollisionGroup
-  void registerShapeFramesOf(const dynamics::Skeleton* skeleton);
+  /// Remove ShapeFrames of other CollisionGroup, and also remove another
+  /// ShapeFrames of other various objects.
+  template <typename... Others>
+  void removeShapeFramesOf(const CollisionGroup* otherGroup,
+                           const Others*... others);
 
-  /// Unregister a ShapeFrame from this CollisionGroup
-  void unregisterShapeFrame(const dynamics::ShapeFrame* shapeFrame);
+  /// Remove ShapeFrames of BodyNode, and also remove another ShapeFrames of
+  /// other various objects.
+  template <typename... Others>
+  void removeShapeFramesOf(const dynamics::BodyNode* bodyNode,
+                           const Others*... others);
 
-  /// Unregister ShapeFrames from this CollisionGroup
-  void unregisterShapeFrames(
-      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
+  /// Remove ShapeFrames of Skeleton, and also remove another ShapeFrames of
+  /// other various objects.
+  template <typename... Others>
+  void removeShapeFramesOf(const dynamics::Skeleton* skeleton,
+                           const Others*... others);
 
-  /// Unregister all the ShapeFrames in the other CollisionGroups from this
-  /// CollisionGroup
-  template <typename First, typename... Others>
-  void unregisterShapeFrames(const First* first, const Others*... others);
-
-  /// Do nothing. This function is for terminating the variadic template
-  /// function template<typename...> unregisterShapeFrames().
-  void unregisterShapeFramesOf();
-
-  /// As as unregisterShapeFrame()
-  void unregisterShapeFramesOf(const dynamics::ShapeFrame* shapeFrame);
-
-  /// As as unregisterShapeFrames()
-  void unregisterShapeFramesOf(
-      const std::vector<const dynamics::ShapeFrame*>& shapeFrames);
-
-  /// Unregister all the ShapeFrames in the other CollisionGroup from this
-  /// CollisionGroup
-  void unregisterShapeFramesOf(const CollisionGroup* other);
-
-  /// Unregister all the BodyNode's ShapeFrames having CollisionAddon from this
-  /// CollisionGroup
-  void unregisterShapeFramesOf(const dynamics::BodyNode* bodyNode);
-
-  /// Unregister all the Skeleton's ShapeFrames having CollisionAddon from this
-  /// CollisionGroup
-  void unregisterShapeFramesOf(const dynamics::Skeleton* skeleton);
+  /// Do nothing. This function is for terminating the recursive variadic
+  /// template function template<typename...> removeShapeFramesOf().
+  void removeShapeFramesOf();
 
   /// Unregister all the ShapeFrames in this CollisionGroup
   void unregisterAllShapeFrames();
@@ -143,11 +176,7 @@ public:
   const dynamics::ShapeFrame* getShapeFrame(size_t index) const;
 
   /// Return all the ShapeFrames registered to this CollisionGroup
-  const std::vector<const dynamics::ShapeFrame*> getShapeFrames() const;
-
-  /// Update engine data. This function should be called before the collision
-  /// detection is performed by the engine in most cases.
-  void update();
+  const std::vector<const dynamics::ShapeFrame*>& getShapeFrames() const;
 
   /// Perform collision detection within this CollisionGroup.
   bool detect(const Option& option, Result& result);
@@ -162,6 +191,10 @@ public:
   const std::vector<CollisionObject*>& getCollisionObjects();
 
 protected:
+
+  /// Update engine data. This function should be called before the collision
+  /// detection is performed by the engine in most cases.
+  void updateEngineData();
 
   /// Initialize the collision detection engine data such as broadphase
   /// algorithm. This function will be called whenever ShapeFrame is either
@@ -187,9 +220,9 @@ protected:
 
   /// Update the collision detection engine data such as broadphase algorithm.
   /// This function will be called ahead of every collision checking.
-  virtual void updateEngineData() = 0;
+  virtual void updateCollisionGroupEngineData() = 0;
 
-protected:
+private:
 
   /// Collision detector
   CollisionDetectorPtr mCollisionDetector;

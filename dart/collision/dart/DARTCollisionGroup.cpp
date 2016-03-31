@@ -46,7 +46,7 @@ DARTCollisionGroup::DARTCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
   : CollisionGroup(collisionDetector)
 {
-  assert(mCollisionDetector);
+  // Do nothing
 }
 
 //==============================================================================
@@ -88,7 +88,7 @@ void DARTCollisionGroup::notifyAllCollisionObjectsRemoved()
 }
 
 //==============================================================================
-void DARTCollisionGroup::updateEngineData()
+void DARTCollisionGroup::updateCollisionGroupEngineData()
 {
   // Do nothing
 }

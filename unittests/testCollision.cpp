@@ -731,7 +731,7 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(group->detect(option, result));
   EXPECT_EQ(result.getNumContacts(), 2u);
 
-  group->registerShapeFrame(simpleFrame3.get());
+  group->addShapeFrame(simpleFrame3.get());
   result.clear();
   option.maxNumContacts = 1e+3;
   option.binaryCheck = true;

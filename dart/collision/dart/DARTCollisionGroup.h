@@ -73,7 +73,7 @@ protected:
   void notifyAllCollisionObjectsRemoved() override;
 
   // Documentation inherited
-  void updateEngineData() override;
+  void updateCollisionGroupEngineData() override;
 
 };
 
