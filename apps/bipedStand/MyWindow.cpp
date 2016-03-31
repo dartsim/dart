@@ -62,7 +62,7 @@ void MyWindow::timeStepping() {
   }
 }
 
-void MyWindow::drawWorld() {
+void MyWindow::drawWorld() const {
 
   SimWindow::drawWorld();
 

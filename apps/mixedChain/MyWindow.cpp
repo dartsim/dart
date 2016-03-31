@@ -77,7 +77,7 @@ void MyWindow::timeStepping()
   mForceOnVertex /= 2.0;
 }
 
-void MyWindow::drawWorld()
+void MyWindow::drawWorld() const
 {
   glEnable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

@@ -81,7 +81,7 @@ void MyWindow::timeStepping()
 }
 
 //==============================================================================
-void MyWindow::drawWorld()
+void MyWindow::drawWorld() const
 {
   // Draw the target position
   if (mRI)
