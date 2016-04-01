@@ -50,16 +50,16 @@ class SoftBodyNode : public detail::SoftBodyNodeBase
 {
 public:
 
-  friend class Skeleton;
-  friend class PointMass;
-  friend class PointMassNotifier;
-  friend void detail::SoftBodyNodeStateUpdate(SoftBodyAspect* aspect);
-  friend void detail::SoftBodyNodePropertiesUpdate(SoftBodyAspect* aspect);
-
   using UniqueProperties = detail::SoftBodyNodeUniqueProperties;
   using Properties = detail::SoftBodyNodeProperties;
   using Aspect = detail::SoftBodyAspect;
   using Base = detail::SoftBodyNodeBase;
+
+  friend class Skeleton;
+  friend class PointMass;
+  friend class PointMassNotifier;
+  friend void detail::SoftBodyNodeStateUpdate(Aspect* aspect);
+  friend void detail::SoftBodyNodePropertiesUpdate(Aspect* aspect);
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(detail::SoftBodyAspect, SoftBodyAspect)
 

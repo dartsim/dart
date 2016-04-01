@@ -72,6 +72,8 @@ public:
 
   using CompositeProperties = common::Composite::Properties;
   using Properties = detail::JointProperties;
+  using Aspect = common::EmbedProperties<Joint, Properties>::Aspect;
+  using AspectProperties = Aspect::Properties;
 
   typedef detail::ActuatorType ActuatorType;
   static constexpr ActuatorType FORCE        = detail::FORCE;
@@ -81,7 +83,7 @@ public:
   static constexpr ActuatorType VELOCITY     = detail::VELOCITY;
   static constexpr ActuatorType LOCKED       = detail::LOCKED;
 
-  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, JointAspect);
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, JointAspect)
 
   struct ExtendedProperties : Properties
   {

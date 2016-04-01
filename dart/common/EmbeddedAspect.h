@@ -99,8 +99,13 @@ public:
   using AspectStateData = typename Aspect::StateData;
   using Base = common::RequiresAspect<Aspect>;
 
-  // Inherit constructor
-  using Base::RequiresAspect;
+  // Forwarding constructor
+  template <typename... Args>
+  EmbedState(Args&&... args)
+    : Base(std::forward<Args>(args)...)
+  {
+    // Do nothing
+  }
 
   virtual ~EmbedState() = default;
 
@@ -134,8 +139,13 @@ public:
   using Base = CompositeJoiner<Impl, BaseComposites...>;
   using Impl::getAspectState;
 
-  // Inherit constructor
-  using Base::CompositeJoiner;
+  // Forwarding constructor
+  template <typename... Args>
+  EmbedStateOnTopOf(Args&&... args)
+    : Base(std::forward<Args>(args)...)
+  {
+    // Do nothing
+  }
 
   virtual ~EmbedStateOnTopOf() = default;
 
@@ -165,6 +175,7 @@ public:
   using Properties = typename Impl::Properties;
   using PropertiesData = typename Impl::PropertiesData;
 
+  // Forwarding constructor
   template <typename... Args>
   EmbeddedPropertiesAspect(Args&&... args)
     : Impl(std::forward<Args>(args)...)
@@ -200,8 +211,13 @@ public:
   using AspectPropertiesData = typename Aspect::PropertiesData;
   using Base = common::RequiresAspect<Aspect>;
 
-  // Inherit constructor
-  using Base::RequiresAspect;
+  // Forwarding constructor
+  template <typename... Args>
+  EmbedProperties(Args&&... args)
+    : Base(std::forward<Args>(args)...)
+  {
+    // Do nothing
+  }
 
   virtual ~EmbedProperties() = default;
 
@@ -235,8 +251,13 @@ public:
   using Base = CompositeJoiner<Impl, CompositeBases...>;
   using Impl::getAspectProperties;
 
-  // Inherit constructor
-  using Base::CompositeJoiner;
+  // Forwarding constructor
+  template <typename... Args>
+  EmbedPropertiesOnTopOf(Args&&... args)
+    : Base(std::forward<Args>(args)...)
+  {
+    // Do nothing
+  }
 
   virtual ~EmbedPropertiesOnTopOf() = default;
 
@@ -377,8 +398,13 @@ public:
   using AspectPropertiesData = typename Aspect::PropertiesData;
   using Base = common::RequiresAspect<Aspect>;
 
-  // Inherit constructor
-  using Base::RequiresAspect;
+  // Forwarding constructor
+  template <typename... Args>
+  EmbedStateAndProperties(Args&&... args)
+    : Base(std::forward<Args>(args)...)
+  {
+    // Do nothing
+  }
 
   virtual ~EmbedStateAndProperties() = default;
 
@@ -425,8 +451,13 @@ public:
   using Impl::getAspectProperties;
   using Base = CompositeJoiner<Impl, CompositeBases...>;
 
-  // Inherit constructor
-  using Base::CompositeJoiner;
+  // Forwarding constructor
+  template <typename... Args>
+  EmbedStateAndPropertiesOnTopOf(Args&&... args)
+    : Base(std::forward<Args>(args)...)
+  {
+    // Do nothing
+  }
 
   virtual ~EmbedStateAndPropertiesOnTopOf() = default;
 

@@ -398,7 +398,7 @@ protected:
   }
 
   /// Save the embedded Properties of this Composite before we remove the Aspect
-  void loseComposite(Composite* oldComposite)
+  void loseComposite(Composite* oldComposite) override
   {
     mTemporaryProperties = make_unique<Properties>(
           GetEmbeddedProperties(static_cast<Derived*>(this)));
