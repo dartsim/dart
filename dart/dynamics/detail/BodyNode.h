@@ -178,7 +178,7 @@ ShapeNode* BodyNode::createShapeNodeWith(
 }
 
 //==============================================================================
-template <class Aspect>
+template <class AspectT>
 size_t BodyNode::getNumShapeNodesWith() const
 {
   auto count = 0u;
@@ -186,7 +186,7 @@ size_t BodyNode::getNumShapeNodesWith() const
 
   for (auto i = 0u; i < numShapeNode; ++i)
   {
-    if (getShapeNode(i)->has<Aspect>())
+    if (getShapeNode(i)->has<AspectT>())
       ++count;
   }
 
@@ -194,7 +194,7 @@ size_t BodyNode::getNumShapeNodesWith() const
 }
 
 //==============================================================================
-template <class Aspect>
+template <class AspectT>
 const std::vector<ShapeNode*> BodyNode::getShapeNodesWith()
 {
   std::vector<ShapeNode*> shapeNodes;
@@ -205,7 +205,7 @@ const std::vector<ShapeNode*> BodyNode::getShapeNodesWith()
   {
     auto shapeNode = getShapeNode(i);
 
-    if (shapeNode->has<Aspect>())
+    if (shapeNode->has<AspectT>())
       shapeNodes.push_back(shapeNode);
   }
 
@@ -213,7 +213,7 @@ const std::vector<ShapeNode*> BodyNode::getShapeNodesWith()
 }
 
 //==============================================================================
-template <class Aspect>
+template <class AspectT>
 const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
 {
   std::vector<const ShapeNode*> shapeNodes;
@@ -224,7 +224,7 @@ const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
   {
     const auto shapeNode = getShapeNode(i);
 
-    if (shapeNode->has<Aspect>())
+    if (shapeNode->has<AspectT>())
       shapeNodes.push_back(shapeNode);
   }
 
@@ -232,10 +232,10 @@ const std::vector<const ShapeNode*> BodyNode::getShapeNodesWith() const
 }
 
 //==============================================================================
-template <class Aspect>
+template <class AspectT>
 void BodyNode::removeAllShapeNodesWith()
 {
-  auto shapeNodes = getShapeNodesWith<Aspect>();
+  auto shapeNodes = getShapeNodesWith<AspectT>();
   for (auto shapeNode : shapeNodes)
     shapeNode->remove();
 }

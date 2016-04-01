@@ -50,6 +50,7 @@
 #include "dart/common/EmbeddedAspect.h"
 
 #include "dart/dynamics/EulerJoint.h"
+#include "dart/dynamics/BoxShape.h"
 
 using namespace dart::common;
 
@@ -745,6 +746,24 @@ TEST(Aspect, Joints)
 
   // Regression test for issue #645
   universal->getMultiDofJointAspect(true);
+}
+
+TEST(Aspect, BodyNodes)
+{
+  SkeletonPtr skel = Skeleton::create();
+
+  BodyNode* bn =
+      skel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>().second;
+
+  bn->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(
+        std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+
+  EXPECT_EQ(bn->getNumShapeNodesWith<dart::dynamics::VisualAspect>(), 1u);
+  EXPECT_EQ(bn->getNumShapeNodesWith<dart::dynamics::CollisionAspect>(), 1u);
+  EXPECT_EQ(bn->getNumShapeNodesWith<dart::dynamics::DynamicsAspect>(), 1u);
 }
 
 TEST(Aspect, Duplication)
