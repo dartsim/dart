@@ -41,6 +41,22 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
+SingleDofJointState::SingleDofJointState(
+    double position,
+    double velocity,
+    double acceleration,
+    double force,
+    double command)
+  : mPosition(position),
+    mVelocity(velocity),
+    mAcceleration(acceleration),
+    mForce(force),
+    mCommand(command)
+{
+  // Do nothing
+}
+
+//==============================================================================
 SingleDofJointUniqueProperties::SingleDofJointUniqueProperties(
     double _positionLowerLimit,
     double _positionUpperLimit,

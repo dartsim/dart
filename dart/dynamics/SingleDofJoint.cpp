@@ -87,6 +87,19 @@ void SingleDofJoint::setProperties(const UniqueProperties& _properties)
 }
 
 //==============================================================================
+void SingleDofJoint::setAspectState(const AspectState& state)
+{
+  setPositionStatic(state.mPosition);
+  setVelocityStatic(state.mVelocity);
+  setAccelerationStatic(state.mAcceleration);
+  setForce(0, state.mForce);
+
+  // We call Command last so that it does not get overwritten due to actuator
+  // type interference.
+  setCommand(0, state.mCommand);
+}
+
+//==============================================================================
 void SingleDofJoint::setAspectProperties(const AspectProperties& properties)
 {
   setDofName(0, properties.mDofName, properties.mPreserveDofName);
@@ -268,7 +281,7 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
   switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
-      mCommand = math::clip(_command,
+      mAspectState.mCommand = math::clip(_command,
                             mAspectProperties.mForceLowerLimit,
                             mAspectProperties.mForceUpperLimit);
       break;
@@ -279,20 +292,20 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
                << _command << ") command for a PASSIVE joint [" << getName()
                << "].\n";
       }
-      mCommand = _command;
+      mAspectState.mCommand = _command;
       break;
     case SERVO:
-      mCommand = math::clip(_command,
+      mAspectState.mCommand = math::clip(_command,
                             mAspectProperties.mVelocityLowerLimit,
                             mAspectProperties.mVelocityUpperLimit);
       break;
     case ACCELERATION:
-      mCommand = math::clip(_command,
+      mAspectState.mCommand = math::clip(_command,
                             mAspectProperties.mAccelerationLowerLimit,
                             mAspectProperties.mAccelerationUpperLimit);
       break;
     case VELOCITY:
-      mCommand = math::clip(_command,
+      mAspectState.mCommand = math::clip(_command,
                             mAspectProperties.mVelocityLowerLimit,
                             mAspectProperties.mVelocityUpperLimit);
       // TODO: This possibly makes the acceleration to exceed the limits.
@@ -304,7 +317,7 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
                << _command << ") command for a LOCKED joint [" << getName()
                << "].\n";
       }
-      mCommand = _command;
+      mAspectState.mCommand = _command;
       break;
     default:
       assert(false);
@@ -321,7 +334,7 @@ double SingleDofJoint::getCommand(size_t _index) const
     return 0.0;
   }
 
-  return mCommand;
+  return mAspectState.mCommand;
 }
 
 //==============================================================================
@@ -339,13 +352,13 @@ void SingleDofJoint::setCommands(const Eigen::VectorXd& _commands)
 //==============================================================================
 Eigen::VectorXd SingleDofJoint::getCommands() const
 {
-  return Eigen::Matrix<double, 1, 1>::Constant(mCommand);
+  return Eigen::Matrix<double, 1, 1>::Constant(mAspectState.mCommand);
 }
 
 //==============================================================================
 void SingleDofJoint::resetCommands()
 {
-  mCommand = 0.0;
+  mAspectState.mCommand = 0.0;
 }
 
 //==============================================================================
@@ -525,7 +538,7 @@ void SingleDofJoint::setVelocity(size_t _index, double _velocity)
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == VELOCITY)
-    mCommand = getVelocityStatic();
+    mAspectState.mCommand = getVelocityStatic();
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -555,7 +568,7 @@ void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == VELOCITY)
-    mCommand = getVelocityStatic();
+    mAspectState.mCommand = getVelocityStatic();
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -688,7 +701,7 @@ void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == ACCELERATION)
-    mCommand = getAccelerationStatic();
+    mAspectState.mCommand = getAccelerationStatic();
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -718,7 +731,7 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == ACCELERATION)
-    mCommand = getAccelerationStatic();
+    mAspectState.mCommand = getAccelerationStatic();
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -788,49 +801,49 @@ double SingleDofJoint::getAccelerationUpperLimit(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setPositionStatic(const double& _position)
 {
-  if(mPosition == _position)
+  if(mAspectState.mPosition == _position)
     return;
 
-  mPosition = _position;
+  mAspectState.mPosition = _position;
   notifyPositionUpdate();
 }
 
 //==============================================================================
 const double& SingleDofJoint::getPositionStatic() const
 {
-  return mPosition;
+  return mAspectState.mPosition;
 }
 
 //==============================================================================
 void SingleDofJoint::setVelocityStatic(const double& _velocity)
 {
-  if(mVelocity == _velocity)
+  if(mAspectState.mVelocity == _velocity)
     return;
 
-  mVelocity = _velocity;
+  mAspectState.mVelocity = _velocity;
   notifyVelocityUpdate();
 }
 
 //==============================================================================
 const double& SingleDofJoint::getVelocityStatic() const
 {
-  return mVelocity;
+  return mAspectState.mVelocity;
 }
 
 //==============================================================================
 void SingleDofJoint::setAccelerationStatic(const double& _acceleration)
 {
-  if(mAcceleration == _acceleration)
+  if(mAspectState.mAcceleration == _acceleration)
     return;
 
-  mAcceleration = _acceleration;
+  mAspectState.mAcceleration = _acceleration;
   notifyAccelerationUpdate();
 }
 
 //==============================================================================
 const double& SingleDofJoint::getAccelerationStatic() const
 {
-  return mAcceleration;
+  return mAspectState.mAcceleration;
 }
 
 //==============================================================================
@@ -842,11 +855,11 @@ void SingleDofJoint::setForce(size_t _index, double _force)
     return;
   }
 
-  mForce = _force;
+  mAspectState.mForce = _force;
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == FORCE)
-    mCommand = mForce;
+    mAspectState.mCommand = mAspectState.mForce;
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -860,7 +873,7 @@ double SingleDofJoint::getForce(size_t _index)
     return 0.0;
   }
 
-  return mForce;
+  return mAspectState.mForce;
 }
 
 //==============================================================================
@@ -872,11 +885,11 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
     return;
   }
 
-  mForce = _forces[0];
+  mAspectState.mForce = _forces[0];
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == FORCE)
-    mCommand = mForce;
+    mAspectState.mCommand = mAspectState.mForce;
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -884,17 +897,17 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 //==============================================================================
 Eigen::VectorXd SingleDofJoint::getForces() const
 {
-  return Eigen::Matrix<double, 1, 1>::Constant(mForce);
+  return Eigen::Matrix<double, 1, 1>::Constant(mAspectState.mForce);
 }
 
 //==============================================================================
 void SingleDofJoint::resetForces()
 {
-  mForce = 0.0;
+  mAspectState.mForce = 0.0;
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == FORCE)
-    mCommand = mForce;
+    mAspectState.mCommand = mAspectState.mForce;
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -1172,15 +1185,6 @@ double SingleDofJoint::getPotentialEnergy() const
 //==============================================================================
 SingleDofJoint::SingleDofJoint(const Properties& properties)
   : mDof(createDofPointer(0)),
-    mCommand(0.0),
-    mPosition(properties.mInitialPosition),
-    mPositionDeriv(0.0),
-    mVelocity(properties.mInitialVelocity),
-    mVelocityDeriv(0.0),
-    mAcceleration(0.0),
-    mAccelerationDeriv(0.0),
-    mForce(0.0),
-    mForceDeriv(0.0),
     mVelocityChange(0.0),
     mImpulse(0.0),
     mConstraintImpulse(0.0),
@@ -1193,8 +1197,8 @@ SingleDofJoint::SingleDofJoint(const Properties& properties)
     mInvM_a(0.0),
     mInvMassMatrixSegment(0.0)
 {
-  // Do nothing. Joint and SingleDofJoint Aspects must be created by the most
-  // derived class.
+  mAspectState.mPosition = properties.mInitialPosition;
+  mAspectState.mVelocity = properties.mInitialVelocity;
 }
 
 //==============================================================================
@@ -1237,7 +1241,8 @@ void SingleDofJoint::updateLocalPrimaryAcceleration() const
 Eigen::Vector6d SingleDofJoint::getBodyConstraintWrench() const
 {
   assert(mChildBodyNode);
-  return mChildBodyNode->getBodyForce() - getLocalJacobianStatic() * mForce;
+  return mChildBodyNode->getBodyForce()
+      - getLocalJacobianStatic() * mAspectState.mForce;
 }
 
 //==============================================================================
@@ -1672,20 +1677,20 @@ void SingleDofJoint::updateTotalForce(const Eigen::Vector6d& _bodyForce,
   switch (Joint::mAspectProperties.mActuatorType)
   {
     case FORCE:
-      mForce = mCommand;
+      mAspectState.mForce = mAspectState.mCommand;
       updateTotalForceDynamic(_bodyForce, _timeStep);
       break;
     case PASSIVE:
     case SERVO:
-      mForce = 0.0;
+      mAspectState.mForce = 0.0;
       updateTotalForceDynamic(_bodyForce, _timeStep);
       break;
     case ACCELERATION:
-      setAccelerationStatic(mCommand);
+      setAccelerationStatic(mAspectState.mCommand);
       updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
     case VELOCITY:
-      setAccelerationStatic( (mCommand - getVelocityStatic()) / _timeStep );
+      setAccelerationStatic( (mAspectState.mCommand - getVelocityStatic()) / _timeStep );
       updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
     case LOCKED:
@@ -1715,7 +1720,7 @@ void SingleDofJoint::updateTotalForceDynamic(
       -mAspectProperties.mDampingCoefficient * getVelocityStatic();
 
   // Compute alpha
-  mTotalForce = mForce + springForce + dampingForce
+  mTotalForce = mAspectState.mForce + springForce + dampingForce
                 - getLocalJacobianStatic().dot(_bodyForce);
 }
 
@@ -1862,14 +1867,14 @@ void SingleDofJoint::updateForceID(const Eigen::Vector6d& _bodyForce,
                                    bool _withDampingForces,
                                    bool _withSpringForces)
 {
-  mForce = getLocalJacobianStatic().dot(_bodyForce);
+  mAspectState.mForce = getLocalJacobianStatic().dot(_bodyForce);
 
   // Damping force
   if (_withDampingForces)
   {
     const double dampingForce =
         -mAspectProperties.mDampingCoefficient * getVelocityStatic();
-    mForce -= dampingForce;
+    mAspectState.mForce -= dampingForce;
   }
 
   // Spring force
@@ -1880,7 +1885,7 @@ void SingleDofJoint::updateForceID(const Eigen::Vector6d& _bodyForce,
     const double springForce =
        -mAspectProperties.mSpringStiffness
         *(nextPosition - mAspectProperties.mRestPosition);
-    mForce -= springForce;
+    mAspectState.mForce -= springForce;
   }
 }
 
@@ -1962,13 +1967,13 @@ void SingleDofJoint::updateConstrainedTermsDynamic(double _timeStep)
 
   setVelocityStatic(getVelocityStatic() + mVelocityChange);
   setAccelerationStatic(getAccelerationStatic() + mVelocityChange*invTimeStep);
-  mForce        += mConstraintImpulse*invTimeStep;
+  mAspectState.mForce += mConstraintImpulse*invTimeStep;
 }
 
 //==============================================================================
 void SingleDofJoint::updateConstrainedTermsKinematic(double _timeStep)
 {
-  mForce += mImpulse / _timeStep;
+  mAspectState.mForce += mImpulse / _timeStep;
 }
 
 //==============================================================================
@@ -2014,7 +2019,7 @@ void SingleDofJoint::updateTotalForceForInvMassMatrix(
     const Eigen::Vector6d& _bodyForce)
 {
   // Compute alpha
-  mInvM_a = mForce - getLocalJacobianStatic().dot(_bodyForce);
+  mInvM_a = mAspectState.mForce - getLocalJacobianStatic().dot(_bodyForce);
 }
 
 //==============================================================================

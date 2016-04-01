@@ -70,6 +70,21 @@ static T getVectorObjectIfAvailable(size_t index, const std::vector<T>& vec)
   return nullptr;
 }
 
+//==============================================================================
+/// static_if_else allows the compiler to choose between two different possible
+/// types at runtime based on a runtime boolean.
+template <bool B, typename T_if, typename T_else>
+struct static_if_else
+{
+  using type = T_else;
+};
+
+template <typename T_if, typename T_else>
+struct static_if_else<true, T_if, T_else>
+{
+  using type = T_if;
+};
+
 } // namespace common
 } // namespace dart
 

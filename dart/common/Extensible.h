@@ -85,6 +85,8 @@ class ExtensibleMixer : public T, public Mixin
 {
 public:
 
+  using Data = Mixin;
+
   /// Default constructor. Uses the default constructor of Mixin
   ExtensibleMixer();
 

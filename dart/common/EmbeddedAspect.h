@@ -51,17 +51,18 @@ namespace common {
 ///
 /// For more control over how your embedded-state Aspect is implemented, you can
 /// use the detail::EmbeddedStateAspect class.
-template <class CompositeT, typename StateT>
+template <class CompositeT, typename StateDataT>
 class EmbeddedStateAspect : public detail::EmbeddedStateAspect<
     CompositeTrackingAspect<CompositeT>,
-    EmbeddedStateAspect<CompositeT, StateT>, StateT>
+    EmbeddedStateAspect<CompositeT, StateDataT>, StateDataT>
 {
 public:
 
-  using State = StateT;
   using Base = CompositeTrackingAspect<CompositeT>;
-  using Derived = EmbeddedStateAspect<CompositeT, State>;
-  using Impl = detail::EmbeddedStateAspect<Base, Derived, State>;
+  using Derived = EmbeddedStateAspect<CompositeT, StateDataT>;
+  using Impl = detail::EmbeddedStateAspect<Base, Derived, StateDataT>;
+  using State = typename Impl::State;
+  using StateData = typename Impl::StateData;
 
   template <typename... Args>
   EmbeddedStateAspect(Args&&... args)
@@ -88,14 +89,14 @@ public:
 /// To embed both state and properties information, use EmbedStateAndProperties.
 template <class DerivedT, typename StateDataT>
 class EmbedState : public virtual common::RequiresAspect<
-    common::EmbeddedStateAspect<DerivedT, common::Aspect::StateMixer<StateDataT>> >
+    common::EmbeddedStateAspect<DerivedT, StateDataT> >
 {
 public:
 
   using Derived = DerivedT;
-  using AspectStateData = StateDataT;
-  using AspectState = common::Aspect::StateMixer<StateDataT>;
-  using Aspect = common::EmbeddedStateAspect<Derived, AspectState>;
+  using Aspect = common::EmbeddedStateAspect<Derived, StateDataT>;
+  using AspectState = typename Aspect::State;
+  using AspectStateData = typename Aspect::StateData;
   using Base = common::RequiresAspect<Aspect>;
 
   // Inherit constructor
@@ -151,17 +152,18 @@ protected:
 ///
 /// For more control over how your embedded-properties Aspect is implemented,
 /// you can use the detail::EmbeddedPropertiesAspect class.
-template <class CompositeT, typename PropertiesT>
+template <class CompositeT, typename PropertiesDataT>
 class EmbeddedPropertiesAspect : public detail::EmbeddedPropertiesAspect<
     CompositeTrackingAspect<CompositeT>,
-    EmbeddedPropertiesAspect<CompositeT, PropertiesT>, PropertiesT>
+    EmbeddedPropertiesAspect<CompositeT, PropertiesDataT>, PropertiesDataT>
 {
 public:
 
-  using Properties = PropertiesT;
   using Base = CompositeTrackingAspect<CompositeT>;
-  using Derived = EmbeddedPropertiesAspect<CompositeT, Properties>;
-  using Impl = detail::EmbeddedPropertiesAspect<Base, Derived, Properties>;
+  using Derived = EmbeddedPropertiesAspect<CompositeT, PropertiesDataT>;
+  using Impl = detail::EmbeddedPropertiesAspect<Base, Derived, PropertiesDataT>;
+  using Properties = typename Impl::Properties;
+  using PropertiesData = typename Impl::PropertiesData;
 
   template <typename... Args>
   EmbeddedPropertiesAspect(Args&&... args)
@@ -188,15 +190,14 @@ public:
 /// To embed both state and properties information, use EmbedStateAndProperties.
 template <class DerivedT, typename PropertiesDataT>
 class EmbedProperties : public virtual common::RequiresAspect<
-    common::EmbeddedPropertiesAspect<
-        DerivedT, common::Aspect::PropertiesMixer<PropertiesDataT>> >
+    common::EmbeddedPropertiesAspect<DerivedT, PropertiesDataT> >
 {
 public:
 
   using Derived = DerivedT;
-  using AspectPropertiesData = PropertiesDataT;
-  using AspectProperties = common::Aspect::PropertiesMixer<PropertiesDataT>;
-  using Aspect = common::EmbeddedPropertiesAspect<Derived, AspectProperties>;
+  using Aspect = common::EmbeddedPropertiesAspect<Derived, PropertiesDataT>;
+  using AspectProperties = typename Aspect::Properties;
+  using AspectPropertiesData = typename Aspect::PropertiesData;
   using Base = common::RequiresAspect<Aspect>;
 
   // Inherit constructor
@@ -226,12 +227,12 @@ class EmbedPropertiesOnTopOf : public CompositeJoiner<
 {
 public:
 
-  using Base = CompositeJoiner<EmbedProperties<DerivedT, PropertiesDataT>, CompositeBases...>;
   using Impl = EmbedProperties<DerivedT, PropertiesDataT>;
   using Derived = typename Impl::Derived;
   using AspectPropertiesData = typename Impl::AspectPropertiesData;
   using AspectProperties = typename Impl::AspectProperties;
   using Aspect = typename Impl::Aspect;
+  using Base = CompositeJoiner<Impl, CompositeBases...>;
   using Impl::getAspectProperties;
 
   // Inherit constructor
@@ -249,31 +250,41 @@ protected:
 /// This is the implementation of a standard combination of embedded-state and
 /// embedded-properties Aspect. Inherit the EmbedStateAndProperties (next class
 /// down in the header) to use this Aspect implementation.
-template <class CompositeT, typename StateT, typename PropertiesT>
+//
+// Dev Note: We achieve "multiple inheritance" without the diamond of death
+// issue by specifying detail::EmbeddedStateAspect as the base class of
+// detail::EmbeddedPropertiesAspect. This allows their implementations to stack
+// on top of each other without the conflict that would arise from both of them
+// inheriting from common::Aspect.
+template <class CompositeT, typename StateDataT, typename PropertiesDataT>
 class EmbeddedStateAndPropertiesAspect :
     public detail::EmbeddedPropertiesAspect<
         detail::EmbeddedStateAspect<
             CompositeTrackingAspect<CompositeT>,
-            EmbeddedStateAndPropertiesAspect<CompositeT, StateT, PropertiesT>,
-            StateT>,
-        EmbeddedStateAndPropertiesAspect<CompositeT, StateT, PropertiesT>,
-        PropertiesT>
+            EmbeddedStateAndPropertiesAspect<CompositeT, StateDataT, PropertiesDataT>,
+            StateDataT>,
+        EmbeddedStateAndPropertiesAspect<CompositeT, StateDataT, PropertiesDataT>,
+        PropertiesDataT>
 {
 public:
 
-  using Derived = EmbeddedStateAndPropertiesAspect;
-  using State = StateT;
-  using Properties = PropertiesT;
-  using CompositeType = CompositeT;
+  using Derived = EmbeddedStateAndPropertiesAspect<CompositeT, StateDataT, PropertiesDataT>;
 
   using AspectStateImpl = detail::EmbeddedStateAspect<
-      CompositeTrackingAspect<CompositeT>, Derived, State>;
+      CompositeTrackingAspect<CompositeT>, Derived, StateDataT>;
 
   using AspectPropertiesImpl = detail::EmbeddedPropertiesAspect<
-      AspectStateImpl, Derived, Properties>;
+      AspectStateImpl, Derived, PropertiesDataT>;
 
-  using AspectImpl = EmbeddedStateAndPropertiesAspect<
-      CompositeType, State, Properties>;
+  using AspectImpl = Derived;
+
+  using State = typename AspectStateImpl::State;
+  using StateData = typename AspectStateImpl::StateData;
+
+  using Properties = typename AspectPropertiesImpl::Properties;
+  using PropertiesData = typename AspectPropertiesImpl::PropertiesData;
+
+  using CompositeType = CompositeT;
 
   EmbeddedStateAndPropertiesAspect() = delete;
   EmbeddedStateAndPropertiesAspect(
@@ -281,11 +292,37 @@ public:
 
   virtual ~EmbeddedStateAndPropertiesAspect() = default;
 
+  /// Construct using nothing. The object will remain unaffected.
+  EmbeddedStateAndPropertiesAspect(
+      common::Composite* comp)
+    : AspectPropertiesImpl(comp)
+  {
+    // Do nothing
+  }
+
+  /// Construct using a State. The object's Properties will remain unaffected.
+  EmbeddedStateAndPropertiesAspect(
+      common::Composite* comp,
+      const StateData& state)
+    : AspectPropertiesImpl(comp, state)
+  {
+    // Do nothing
+  }
+
+  /// Construct using Properties. The object's State will remain unaffected.
+  EmbeddedStateAndPropertiesAspect(
+      common::Composite* comp,
+      const PropertiesData& properties)
+    : AspectPropertiesImpl(comp, properties)
+  {
+    // Do nothing
+  }
+
   /// Construct using a State and Properties instance
   EmbeddedStateAndPropertiesAspect(
       common::Composite* comp,
-      const State& state = State(),
-      const Properties& properties = Properties())
+      const StateData& state,
+      const PropertiesData& properties)
     : AspectPropertiesImpl(comp, properties, state)
   {
     // Do nothing
@@ -294,8 +331,8 @@ public:
   /// Construct using a Properties and State instance
   EmbeddedStateAndPropertiesAspect(
       common::Composite* comp,
-      const Properties& properties,
-      const State& state = State())
+      const PropertiesData& properties,
+      const StateData& state)
     : AspectPropertiesImpl(comp, properties, state)
   {
     // Do nothing
@@ -325,19 +362,19 @@ public:
 template <class DerivedT, typename StateDataT, typename PropertiesDataT>
 class EmbedStateAndProperties : public virtual common::RequiresAspect<
     common::EmbeddedStateAndPropertiesAspect<
-        DerivedT,
-        common::Aspect::StateMixer<StateDataT>,
-        common::Aspect::PropertiesMixer<PropertiesDataT>> >
+        DerivedT, StateDataT, PropertiesDataT> >
 {
 public:
 
   using Derived = DerivedT;
-  using AspectStateData = StateDataT;
-  using AspectState = common::Aspect::StateMixer<StateDataT>;
-  using AspectPropertiesData = PropertiesDataT;
-  using AspectProperties = common::Aspect::PropertiesMixer<PropertiesDataT>;
   using Aspect = common::EmbeddedStateAndPropertiesAspect<
-      Derived, AspectState, AspectProperties>;
+      DerivedT, StateDataT, PropertiesDataT>;
+
+  using AspectState = typename Aspect::State;
+  using AspectStateData = typename Aspect::StateData;
+
+  using AspectProperties = typename Aspect::Properties;
+  using AspectPropertiesData = typename Aspect::PropertiesData;
   using Base = common::RequiresAspect<Aspect>;
 
   // Inherit constructor

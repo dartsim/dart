@@ -105,8 +105,6 @@ public:
   Eigen::Matrix<double, 6, 2> getLocalJacobianStatic(
       const Eigen::Vector2d& _positions) const override;
 
-  template<class AspectType> friend void detail::JointPropertyUpdate(AspectType*);
-
 protected:
 
   /// Constructor called by Skeleton class

@@ -172,10 +172,6 @@ protected:
     : AspectWithVersionedProperties< Base, Derived, PropertiesData, CompositeType, UpdatePropertiesMacro>(comp, properties) { }
 
 //==============================================================================
-#define DART_COMMON_JOINT_ASPECT_CONSTRUCTOR( ClassName )\
-  DART_COMMON_ASPECT_PROPERTY_CONSTRUCTOR( ClassName, &detail::JointPropertyUpdate )
-
-//==============================================================================
 #define DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(ClassName)\
   ClassName (const ClassName &) = delete;\
   inline ClassName (dart::common::Composite* comp, const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
@@ -201,59 +197,6 @@ protected:
 #define DART_COMMON_SET_GET_ASPECT_PROPERTY( Type, Name )\
   DART_COMMON_SET_ASPECT_PROPERTY( Type, Name )\
   DART_COMMON_GET_ASPECT_PROPERTY( Type, Name )
-
-//==============================================================================
-#define DART_COMMON_SET_ASPECT_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
-  void set ## SingleName (size_t index, const SingleType & value)\
-  {\
-    if( index >= Size )\
-    {\
-      dterr << "[" #Class << "::set" #SingleName << "] Invalid index (" << index << "). "\
-            << "The specified index must be less than " #Size << "!\n";\
-      assert(false); return;\
-    }\
-    this->mProperties.m ## PluralName [index] = value;\
-    this->notifyPropertiesUpdate();\
-  }\
-  void set ## PluralName (const VectorType & vec)\
-  {\
-    this->mProperties.m ## PluralName = vec;\
-    this->notifyPropertiesUpdate();\
-  }
-
-//==============================================================================
-#define DART_COMMON_GET_ASPECT_PROPERTY_ARRAY(Class, SingleType, VectorType, SingleName, PluralName, Size)\
-  inline const SingleType& get ## SingleName (size_t index) const\
-  {\
-    if(index >= Size)\
-    {\
-      dterr << "[" #Class << "::get" #SingleName << "] Invalid index (" << index << "). "\
-            << "The specified index must be less than " #Size << "!\n";\
-      assert(false); index = 0;\
-    }\
-    return this->mProperties.m ## PluralName [index];\
-  }\
-  inline const VectorType& get ## PluralName () const\
-  {\
-    return this->mProperties.m ## PluralName;\
-  }
-
-//==============================================================================
-#define DART_COMMON_IRREGULAR_SET_GET_ASPECT_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
-  DART_COMMON_SET_ASPECT_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )\
-  DART_COMMON_GET_ASPECT_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, PluralName, Size )
-
-//==============================================================================
-#define DART_COMMON_SET_GET_ASPECT_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, Size )\
-  DART_COMMON_IRREGULAR_SET_GET_ASPECT_PROPERTY_ARRAY( Class, SingleType, VectorType, SingleName, SingleName ## s, Size )
-
-//==============================================================================
-#define DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ASPECT( SingleType, VectorType, SingleName, PluralName )\
-  DART_COMMON_IRREGULAR_SET_GET_ASPECT_PROPERTY_ARRAY( MultiDofJointAspect, SingleType, VectorType, SingleName, PluralName, DOF )
-
-//==============================================================================
-#define DART_COMMON_SET_GET_MULTIDOF_ASPECT( SingleType, VectorType, SingleName )\
-  DART_COMMON_IRREGULAR_SET_GET_MULTIDOF_ASPECT( SingleType, VectorType, SingleName, SingleName ## s )
 
 #include "dart/common/detail/Aspect.h"
 

@@ -46,6 +46,7 @@
 
 #include "dart/config.h"
 #include "dart/common/Signal.h"
+#include "dart/common/EmbeddedAspect.h"
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/Node.h"
 #include "dart/dynamics/Frame.h"
@@ -80,7 +81,7 @@ class Marker;
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
 class BodyNode :
-    public virtual common::Composite,
+    public common::EmbedProperties<BodyNode, detail::BodyNodeUniqueProperties>,
     public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector>,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
@@ -98,7 +99,7 @@ public:
   using NodePropertiesVector = common::ExtensibleVector< std::unique_ptr<Node::Properties> >;
   using NodePropertiesMap = std::map< std::type_index, std::unique_ptr<NodePropertiesVector> >;
   using NodeProperties = common::ExtensibleMapHolder<NodePropertiesMap>;
-  using AspectProperties = common::Composite::Properties;
+  using CompositeProperties = common::Composite::Properties;
 
   using UniqueProperties = detail::BodyNodeUniqueProperties;
   using Properties = detail::BodyNodeProperties;
@@ -116,13 +117,16 @@ public:
   void setProperties(const NodeProperties& _properties);
 
   /// Same as setCompositeProperties()
-  void setProperties(const AspectProperties& _properties);
+  void setProperties(const CompositeProperties& _properties);
 
   /// Set the Properties of this BodyNode
   void setProperties(const Properties& _properties);
 
   /// Set the UniqueProperties of this BodyNode
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this BodyNode
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this BodyNode
   Properties getBodyNodeProperties() const;
@@ -1043,9 +1047,6 @@ protected:
 
   /// Counts the number of nodes globally.
   static size_t msBodyNodeCount;
-
-  /// BodyNode-specific properties
-  UniqueProperties mBodyP;
 
   /// Whether the node is currently in collision with another node.
   bool mIsColliding;

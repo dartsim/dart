@@ -118,7 +118,7 @@ public:
 
   EmbeddedStateComposite(const EmbeddedStateData& state = EmbeddedStateData())
   {
-    create<Aspect>(state);
+    create<Aspect>(static_cast<const Aspect::StateData&>(state));
   }
 
   void setAspectState(const AspectState& state) { mAspectState = state; }

@@ -917,17 +917,6 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-namespace detail {
-
-template <class AspectType>
-void JointPropertyUpdate(AspectType* aspect)
-{
-  aspect->getComposite()->notifyPositionUpdate();
-  aspect->getComposite()->updateLocalJacobian();
-}
-
-} // namespace detail
-
 }  // namespace dynamics
 }  // namespace dart
 

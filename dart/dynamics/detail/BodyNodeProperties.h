@@ -104,25 +104,25 @@ struct BodyNodeExtendedProperties : BodyNodeProperties
   using NodePropertiesVector = common::ExtensibleVector< std::unique_ptr<Node::Properties> >;
   using NodePropertiesMap = std::map< std::type_index, std::unique_ptr<NodePropertiesVector> >;
   using NodeProperties = common::ExtensibleMapHolder<NodePropertiesMap>;
-  using AspectProperties = common::Composite::Properties;
+  using CompositeProperties = common::Composite::Properties;
 
   /// Composed constructor
   BodyNodeExtendedProperties(
       const BodyNodeProperties& standardProperties = Properties(),
       const NodeProperties& nodeProperties = NodeProperties(),
-      const AspectProperties& aspectProperties = AspectProperties());
+      const CompositeProperties& aspectProperties = CompositeProperties());
 
   /// Composed move constructor
   BodyNodeExtendedProperties(
       BodyNodeProperties&& standardProperties,
       NodeProperties&& nodeProperties,
-      AspectProperties&& aspectProperties);
+      CompositeProperties&& aspectProperties);
 
   /// Properties of all the Nodes attached to this BodyNode
   NodeProperties mNodeProperties;
 
   /// Properties of all the Aspects attached to this BodyNode
-  AspectProperties mAspectProperties;
+  CompositeProperties mCompositeProperties;
 };
 
 } // namespace detail

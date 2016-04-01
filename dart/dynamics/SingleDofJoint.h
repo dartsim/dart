@@ -68,6 +68,9 @@ public:
   /// Set the Properties of this SingleDofJoint
   void setProperties(const UniqueProperties& _properties);
 
+  /// Set the AspectState of this SingleDofJoint
+  void setAspectState(const AspectState& state);
+
   /// Set the AspectProperties of this SingleDofJoint
   void setAspectProperties(const AspectProperties& properties);
 
@@ -586,49 +589,6 @@ protected:
 
   /// \brief DegreeOfFreedom pointer
   DegreeOfFreedom* mDof;
-
-  /// Command
-  double mCommand;
-
-  //----------------------------------------------------------------------------
-  // Configuration
-  //----------------------------------------------------------------------------
-
-  /// Position
-  double mPosition;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  double mPositionDeriv;
-
-  //----------------------------------------------------------------------------
-  // Velocity
-  //----------------------------------------------------------------------------
-
-  /// Generalized velocity
-  double mVelocity;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  double mVelocityDeriv;
-
-  //----------------------------------------------------------------------------
-  // Acceleration
-  //----------------------------------------------------------------------------
-
-  /// Generalized acceleration
-  double mAcceleration;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  double mAccelerationDeriv;
-
-  //----------------------------------------------------------------------------
-  // Force
-  //----------------------------------------------------------------------------
-
-  /// Generalized force
-  double mForce;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  double mForceDeriv;
 
   //----------------------------------------------------------------------------
   // Impulse

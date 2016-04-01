@@ -73,7 +73,8 @@ const PropertiesT& DefaultGetEmbeddedProperties(const AspectT* aspect)
 }
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename StateT,
+template <class BaseT, class DerivedT, typename StateDataT,
+          typename StateT = common::Aspect::StateMixer<StateDataT>,
           void (*setEmbeddedState)(DerivedT*, const StateT&) =
               &DefaultSetEmbeddedState<DerivedT, StateT>,
           const StateT& (*getEmbeddedState)(const DerivedT*) =
@@ -85,28 +86,56 @@ public:
   using Base = BaseT;
   using Derived = DerivedT;
   using State = StateT;
+  using StateData = StateDataT;
   constexpr static void (*SetEmbeddedState)(Derived*, const State&) = setEmbeddedState;
   constexpr static const State& (*GetEmbeddedState)(const Derived*) = getEmbeddedState;
+
+  enum Delegate_t { Delegate };
 
   EmbeddedStateAspect() = delete;
   EmbeddedStateAspect(const EmbeddedStateAspect&) = delete;
 
   virtual ~EmbeddedStateAspect() = default;
 
-  /// Construct using a State instance
-  EmbeddedStateAspect(Composite* comp, const State& state = State())
-    : BaseT(comp),
-      mTemporaryState(make_unique<State>(state))
+  /// Used to identify constructor arguments that can be used as a State
+  template <typename T>
+  struct ConvertIfState
+  {
+    using type = typename static_if_else<
+        std::is_base_of<StateData, T>::value,
+        StateData, T>::type;
+  };
+
+  /// Construct this Aspect without affecting the State.
+  EmbeddedStateAspect(Composite* comp)
+    : Base(comp)
   {
     // Do nothing
   }
 
-  /// Construct this Aspect and pass args into the constructor of the Base class
-  template <typename... BaseArgs>
+  /// Construct this Aspect. If the first argument contains StateData, then it
+  /// will be used by this Aspect. Otherwise, all arguments will be forwarded to
+  /// the Base class.
+  //
+  // Dev Note: The complex construction pattern used here allows us to satisfy
+  // three simultaneous design constraints:
+  //   1. We can identify when the user has passed in relevant State information
+  //      and capture that information. The type can be of **any** class type
+  //      that inherits StateData.
+  //   2. We can ignore any non-State information that the user has passed in,
+  //      and move that information along to the Base class.
+  //   3. We can handle arbitrary numbers of arguments of any type to pass along
+  //      to the Base class.
+  // If anyone can come up with a cleaner way of accomplishing all three of
+  // these constraints, I would gladly replace this implementation. -(MXG)
+  template <typename T, typename... RemainingArgs>
   EmbeddedStateAspect(
-      Composite* comp, const State& state, BaseArgs&&... args)
-    : Base(comp, std::forward<BaseArgs>(args)...),
-      mTemporaryState(make_unique<State>(state))
+      Composite* comp, const T& arg1,
+      RemainingArgs&&... remainingArgs)
+    : EmbeddedStateAspect(
+        Delegate, comp,
+        static_cast<const typename ConvertIfState<T>::type&>(arg1),
+        std::forward<RemainingArgs>(remainingArgs)...)
   {
     // Do nothing
   }
@@ -157,6 +186,7 @@ public:
     return *mTemporaryState;
   }
 
+  // Documentation inherited
   std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
   {
     return make_unique<Derived>(newComposite, this->getState());
@@ -164,14 +194,34 @@ public:
 
 protected:
 
+  /// Construct this Aspect using the StateData, and pass the remaining
+  /// arguments into the constructor of the Base class.
+  template <typename... RemainingArgs>
+  EmbeddedStateAspect(
+      Delegate_t, Composite* comp, const StateData& state,
+      RemainingArgs&&... remainingArgs)
+    : Base(comp, std::forward<RemainingArgs>(remainingArgs)...),
+      mTemporaryState(make_unique<State>(state))
+  {
+    // Do nothing
+  }
+
+  /// Construct this Aspect without affecting the State, and pass all the
+  /// arguments into the constructor of the Base class.
+  template <typename... BaseArgs>
+  EmbeddedStateAspect(
+      Delegate_t, Composite* comp, BaseArgs&&... args)
+    : Base(comp, std::forward<BaseArgs>(args)...)
+  {
+    // Do nothing
+  }
+
   /// Pass the temporary State of this Aspect into the new Composite
   void setComposite(Composite* newComposite) override
   {
     Base::setComposite(newComposite);
     if(mTemporaryState)
       SetEmbeddedState(static_cast<Derived*>(this), *mTemporaryState);
-    else
-      SetEmbeddedState(static_cast<Derived*>(this), State());
 
     mTemporaryState = nullptr;
   }
@@ -192,18 +242,24 @@ protected:
 };
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesT,
+template <class BaseT, class DerivedT, typename PropertiesDataT,
+          typename PropertiesT = common::Aspect::PropertiesMixer<PropertiesDataT>,
           void (*setEmbeddedProperties)(DerivedT*, const PropertiesT&) =
               &DefaultSetEmbeddedProperties<DerivedT, PropertiesT>,
           const PropertiesT& (*getEmbeddedProperties)(const DerivedT*) =
               &DefaultGetEmbeddedProperties<DerivedT, PropertiesT> >
 class EmbeddedPropertiesAspect : public BaseT
 {
+protected:
+
+  enum Delegate_t { Delegate };
+
 public:
 
   using Base = BaseT;
   using Derived = DerivedT;
   using Properties = PropertiesT;
+  using PropertiesData = PropertiesDataT;
   constexpr static void (*SetEmbeddedProperties)(Derived*, const Properties&) = setEmbeddedProperties;
   constexpr static const Properties& (*GetEmbeddedProperties)(const Derived*) = getEmbeddedProperties;
 
@@ -212,21 +268,45 @@ public:
 
   virtual ~EmbeddedPropertiesAspect() = default;
 
-  /// Construct using a Properties instance
-  EmbeddedPropertiesAspect(
-      Composite* comp, const Properties& properties = Properties())
-    : BaseT(comp),
-      mTemporaryProperties(make_unique<Properties>(properties))
+  /// Used to identify constructor arguments that can be used as Properties
+  template <typename T>
+  struct ConvertIfProperties
+  {
+    using type = typename static_if_else<
+        std::is_base_of<PropertiesData, T>::value,
+        PropertiesData, T>::type;
+  };
+
+  /// Construct this Aspect without affecting the Properties.
+  EmbeddedPropertiesAspect(Composite* comp)
+    : Base(comp)
   {
     // Do nothing
   }
 
-  /// Construct this Aspect and pass args into the constructor of the Base class
-  template <typename... BaseArgs>
+  /// Construct this Aspect. If the first argument contains PropertiesData, then
+  /// it will be used by this Aspect. Otherwise, all arguments will be forwarded
+  /// to the Base class.
+  //
+  // Dev Note: The complex construction pattern used here allows us to satisfy
+  // three simultaneous design constraints:
+  //   1. We can identify when the user has passed in relevant Properties
+  //      information and capture that information. The type can be of **any**
+  //      class type that inherits PropertiesData.
+  //   2. We can ignore any non-Properties information that the user has passed
+  //      in, and move that information along to the Base class.
+  //   3. We can handle arbitrary numbers of arguments of any type to pass along
+  //      to the Base class.
+  // If anyone can come up with a cleaner way of accomplishing all three of
+  // these constraints, I would gladly replace this implementation. -(MXG)
+  template <typename T, typename... RemainingArgs>
   EmbeddedPropertiesAspect(
-      Composite* comp, const Properties& properties, BaseArgs&&... args)
-    : Base(comp, std::forward<BaseArgs>(args)...),
-      mTemporaryProperties(make_unique<Properties>(properties))
+      Composite* comp, const T& arg1,
+      RemainingArgs&&... remainingArgs)
+    : EmbeddedPropertiesAspect(
+        Delegate, comp,
+        static_cast<const typename ConvertIfProperties<T>::type&>(arg1),
+        std::forward<RemainingArgs>(remainingArgs)...)
   {
     // Do nothing
   }
@@ -284,14 +364,34 @@ public:
 
 protected:
 
+  /// Construct this Aspect using the PropertiesData, and pass the remaining
+  /// arguments into the constructor of the Base class.
+  template <typename... RemainingArgs>
+  EmbeddedPropertiesAspect(
+      Delegate_t, Composite* comp, const PropertiesData& properties,
+      RemainingArgs&&... remainingArgs)
+    : Base(comp, std::forward<RemainingArgs>(remainingArgs)...),
+      mTemporaryProperties(make_unique<Properties>(properties))
+  {
+    // Do nothing
+  }
+
+  /// Construct this Aspect without affecting the Properties, and pass all the
+  /// arguments into the constructor of the Base class.
+  template <typename... BaseArgs>
+  EmbeddedPropertiesAspect(
+      Delegate_t, Composite* comp, BaseArgs&&... args)
+    : Base(comp, std::forward<BaseArgs>(args)...)
+  {
+    // Do nothing
+  }
+
   /// Pass the temporary Properties of this Aspect into the new Composite
   void setComposite(Composite* newComposite) override
   {
     Base::setComposite(newComposite);
     if(mTemporaryProperties)
       SetEmbeddedProperties(static_cast<Derived*>(this), *mTemporaryProperties);
-    else
-      SetEmbeddedProperties(static_cast<Derived*>(this), Properties());
 
     // Release the temporary memory
     mTemporaryProperties = nullptr;
@@ -320,35 +420,39 @@ protected:
 //
 // See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
 //
-template <class BaseT, class DerivedT, typename StateT,
+template <class BaseT, class DerivedT, typename StateDataT,
+          typename StateT,
           void (*setEmbeddedState)(DerivedT*, const StateT&),
           const StateT& (*getEmbeddedState)(const DerivedT*)>
 constexpr void (*EmbeddedStateAspect<
-    BaseT, DerivedT, StateT, setEmbeddedState,
+    BaseT, DerivedT, StateDataT, StateT, setEmbeddedState,
     getEmbeddedState>::SetEmbeddedState)(DerivedT*, const StateT&);
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename StateT,
+template <class BaseT, class DerivedT, typename StateDataT,
+          typename StateT,
           void (*setEmbeddedState)(DerivedT*, const StateT&),
           const StateT& (*getEmbeddedState)(const DerivedT*)>
 constexpr const StateT& (*EmbeddedStateAspect<
-    BaseT, DerivedT, StateT, setEmbeddedState,
+    BaseT, DerivedT, StateDataT, StateT, setEmbeddedState,
     getEmbeddedState>::GetEmbeddedState)(const DerivedT*);
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesT,
+template <class BaseT, class DerivedT, typename PropertiesDataT,
+          typename PropertiesT,
           void (*setEmbeddedProperties)(DerivedT*, const PropertiesT&),
           const PropertiesT& (*getEmbeddedProperties)(const DerivedT*)>
 constexpr void (*EmbeddedPropertiesAspect<
-    BaseT, DerivedT, PropertiesT, setEmbeddedProperties,
+    BaseT, DerivedT, PropertiesDataT, PropertiesT, setEmbeddedProperties,
     getEmbeddedProperties>::SetEmbeddedProperties)(DerivedT*, const PropertiesT&);
 
 //==============================================================================
-template <class BaseT, class DerivedT, typename PropertiesT,
+template <class BaseT, class DerivedT, typename PropertiesDataT,
+          typename PropertiesT,
           void (*setEmbeddedProperties)(DerivedT*, const PropertiesT&),
           const PropertiesT& (*getEmbeddedProperties)(const DerivedT*)>
 constexpr const PropertiesT& (*EmbeddedPropertiesAspect<
-    BaseT, DerivedT, PropertiesT, setEmbeddedProperties,
+    BaseT, DerivedT, PropertiesDataT, PropertiesT, setEmbeddedProperties,
     getEmbeddedProperties>::GetEmbeddedProperties)(const DerivedT*);
 
 } // namespace detail

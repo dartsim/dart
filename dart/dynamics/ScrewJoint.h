@@ -101,8 +101,6 @@ public:
   ///
   double getPitch() const;
 
-  template<class AspectType> friend void detail::JointPropertyUpdate(AspectType*);
-
 protected:
 
   /// Constructor called by Skeleton class

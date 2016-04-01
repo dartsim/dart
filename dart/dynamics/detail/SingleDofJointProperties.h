@@ -50,6 +50,32 @@ class SingleDofJoint;
 
 namespace detail {
 
+//==============================================================================
+struct SingleDofJointState
+{
+  /// Position
+  double mPosition;
+
+  /// Generalized velocity
+  double mVelocity;
+
+  /// Generalized acceleration
+  double mAcceleration;
+
+  /// Generalized force
+  double mForce;
+
+  /// Command
+  double mCommand;
+
+  SingleDofJointState(double position = 0.0,
+                      double velocity = 0.0,
+                      double acceleration = 0.0,
+                      double force = 0.0,
+                      double command = 0.0);
+};
+
+//==============================================================================
 struct SingleDofJointUniqueProperties
 {
   /// Lower limit of position
@@ -136,8 +162,8 @@ struct SingleDofJointProperties :
 };
 
 //==============================================================================
-using SingleDofJointBase = common::EmbedPropertiesOnTopOf<
-    SingleDofJoint, SingleDofJointUniqueProperties, Joint>;
+using SingleDofJointBase = common::EmbedStateAndPropertiesOnTopOf<
+    SingleDofJoint, SingleDofJointState, SingleDofJointUniqueProperties, Joint>;
 
 } // namespace detail
 } // namespace dynamics
