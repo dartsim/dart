@@ -49,6 +49,10 @@ using namespace Eigen;
 namespace dart {
 namespace dynamics {
 
+#define RETURN_FALSE_IF_OTHER_IS_EQUAL( X )\
+  if( other. X != X )\
+    return false;
+
 //==============================================================================
 PointMass::State::State(
     const Vector3d& positions,
@@ -61,6 +65,17 @@ PointMass::State::State(
     mForces(forces)
 {
   // Do nothing
+}
+
+//==============================================================================
+bool PointMass::State::operator ==(const PointMass::State& other) const
+{
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mPositions);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mVelocities);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mAccelerations);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mForces);
+
+  return true;
 }
 
 //==============================================================================
@@ -101,6 +116,31 @@ void PointMass::Properties::setRestingPosition(const Vector3d &_x)
 void PointMass::Properties::setMass(double _mass)
 {
   mMass = _mass;
+}
+
+//==============================================================================
+bool PointMass::Properties::operator ==(const PointMass::Properties& other) const
+{
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mX0);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mMass);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mConnectedPointMassIndices);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mPositionLowerLimits);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mPositionUpperLimits);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mVelocityLowerLimits);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mVelocityUpperLimits);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mAccelerationLowerLimits);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mAccelerationUpperLimits);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mForceLowerLimits);
+  RETURN_FALSE_IF_OTHER_IS_EQUAL(mForceUpperLimits);
+
+  // Nothing was inequal, so we return true
+  return true;
+}
+
+//==============================================================================
+bool PointMass::Properties::operator !=(const PointMass::Properties& other) const
+{
+  return !(other == *this);
 }
 
 //==============================================================================
@@ -150,13 +190,13 @@ PointMass::~PointMass()
 //==============================================================================
 PointMass::State& PointMass::getState()
 {
-  return mParentSoftBodyNode->getPointState(mIndex);
+  return mParentSoftBodyNode->mAspectState.mPointStates[mIndex];
 }
 
 //==============================================================================
 const PointMass::State& PointMass::getState() const
 {
-  return mParentSoftBodyNode->getPointState(mIndex);
+  return mParentSoftBodyNode->mAspectState.mPointStates[mIndex];
 }
 
 //==============================================================================
@@ -169,13 +209,18 @@ size_t PointMass::getIndexInSoftBodyNode() const
 void PointMass::setMass(double _mass)
 {
   assert(0.0 < _mass);
-  mParentSoftBodyNode->getSoftPropertiesAndInc().mPointProps[mIndex].mMass = _mass;
+  double& mMass = mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex].mMass;
+  if(_mass == mMass)
+    return;
+
+  mMass = _mass;
+  mParentSoftBodyNode->incrementVersion();
 }
 
 //==============================================================================
 double PointMass::getMass() const
 {
-  return mParentSoftBodyNode->getSoftProperties().mPointProps[mIndex].mMass;
+  return mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex].mMass;
 }
 
 //==============================================================================
@@ -211,14 +256,15 @@ void PointMass::addConnectedPointMass(PointMass* _pointMass)
 {
   assert(_pointMass != nullptr);
 
-  mParentSoftBodyNode->getSoftPropertiesAndInc().mPointProps[mIndex].
+  mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex].
       mConnectedPointMassIndices.push_back(_pointMass->mIndex);
+  mParentSoftBodyNode->incrementVersion();
 }
 
 //==============================================================================
 size_t PointMass::getNumConnectedPointMasses() const
 {
-  return mParentSoftBodyNode->getSoftProperties().mPointProps[mIndex].
+  return mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex].
       mConnectedPointMassIndices.size();
 }
 
@@ -228,7 +274,7 @@ PointMass* PointMass::getConnectedPointMass(size_t _idx)
   assert(_idx < getNumConnectedPointMasses());
 
   return mParentSoftBodyNode->mPointMasses[
-      mParentSoftBodyNode->getSoftProperties().mPointProps[mIndex].
+      mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex].
       mConnectedPointMassIndices[_idx]];
 }
 
@@ -554,14 +600,21 @@ void PointMass::clearConstraintImpulse()
 //==============================================================================
 void PointMass::setRestingPosition(const Eigen::Vector3d& _p)
 {
-  mParentSoftBodyNode->getSoftPropertiesAndInc().mPointProps[mIndex].mX0 = _p;
+
+  Eigen::Vector3d& mRest =
+      mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex].mX0;
+  if(_p == mRest)
+    return;
+
+  mRest = _p;
+  mParentSoftBodyNode->incrementVersion();
   mNotifier->notifyTransformUpdate();
 }
 
 //==============================================================================
 const Eigen::Vector3d& PointMass::getRestingPosition() const
 {
-  return mParentSoftBodyNode->getSoftProperties().mPointProps[mIndex].mX0;
+  return mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex].mX0;
 }
 
 //==============================================================================

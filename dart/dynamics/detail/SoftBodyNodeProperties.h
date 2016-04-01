@@ -118,46 +118,9 @@ struct SoftBodyNodeProperties
 };
 
 //==============================================================================
-void SoftBodyNodeStateUpdate(SoftBodyAspect* aspect);
-
-//==============================================================================
-void SoftBodyNodePropertiesUpdate(SoftBodyAspect* aspect);
-
-//==============================================================================
-class SoftBodyAspect final :
-    public common::AspectWithStateAndVersionedProperties<
-        SoftBodyAspect, SoftBodyNodeUniqueState, SoftBodyNodeUniqueProperties,
-        SoftBodyNode, &SoftBodyNodeStateUpdate, &SoftBodyNodePropertiesUpdate >
-{
-public:
-
-  friend class dart::dynamics::SoftBodyNode;
-
-  DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(SoftBodyAspect)
-
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, Kv)
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, Ke)
-  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, DampCoeff)
-
-protected:
-
-  /// Get a direct reference to the State of this Aspect
-  inline StateData& _getState() { return mState; }
-
-  /// Get a direct reference to the State of this Aspect
-  inline const StateData& _getState() const { return mState; }
-
-  /// Get a direct reference to the Properties of this Aspect
-  inline PropertiesData& _getProperties() { return mProperties; }
-
-  /// Get a direct const reference to the Properties of this Aspect
-  inline const PropertiesData& _getProperties() const { return mProperties; }
-
-};
-
-//==============================================================================
-using SoftBodyNodeBase = common::CompositeJoiner<
-    BodyNode, common::RequiresAspect<SoftBodyAspect> >;
+using SoftBodyNodeBase = common::EmbedStateAndPropertiesOnTopOf<
+    SoftBodyNode, SoftBodyNodeUniqueState, SoftBodyNodeUniqueProperties,
+    BodyNode>;
 
 } // namespace detail
 } // namespace dynamics

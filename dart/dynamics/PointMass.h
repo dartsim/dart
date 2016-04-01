@@ -81,6 +81,8 @@ public:
           const Eigen::Vector3d& velocities = Eigen::Vector3d::Zero(),
           const Eigen::Vector3d& accelerations = Eigen::Vector3d::Zero(),
           const Eigen::Vector3d& forces = Eigen::Vector3d::Zero());
+
+    bool operator==(const State& other) const;
   };
 
   /// Properties for each PointMass
@@ -142,6 +144,10 @@ public:
     void setRestingPosition(const Eigen::Vector3d& _x);
 
     void setMass(double _mass);
+
+    bool operator==(const Properties& other) const;
+
+    bool operator!=(const Properties& other) const;
   };
 
   //--------------------------------------------------------------------------

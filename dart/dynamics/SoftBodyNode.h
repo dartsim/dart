@@ -52,16 +52,13 @@ public:
 
   using UniqueProperties = detail::SoftBodyNodeUniqueProperties;
   using Properties = detail::SoftBodyNodeProperties;
-  using Aspect = detail::SoftBodyAspect;
   using Base = detail::SoftBodyNodeBase;
 
   friend class Skeleton;
   friend class PointMass;
   friend class PointMassNotifier;
-  friend void detail::SoftBodyNodeStateUpdate(Aspect* aspect);
-  friend void detail::SoftBodyNodePropertiesUpdate(Aspect* aspect);
 
-  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(detail::SoftBodyAspect, SoftBodyAspect)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, SoftBodyAspect)
 
   /// \brief
   virtual ~SoftBodyNode();
@@ -71,6 +68,12 @@ public:
 
   /// Set the Properties of this SoftBodyNode
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectState of this SoftBodyNode
+  void setAspectState(const AspectState& state);
+
+  /// Set the AspectProperties of this SoftBodyNode
+  void setAspectProperties(const AspectProperties& properties);
 
   using SkeletonRefCountingBase::getSkeleton;
 
@@ -295,16 +298,6 @@ protected:
                     bool _useDefaultColor = true, int _depth = 0) const override;
 
 protected:
-
-  /// Get a reference to the State of a PointMass
-  PointMass::State& getPointState(size_t index);
-
-  /// Get a reference to the UniqueProperties of this SoftBodyNode and increment
-  /// its version.
-  UniqueProperties& getSoftPropertiesAndInc();
-
-  /// Get a reference to the UniqueProperties of this SoftBodyNode
-  const UniqueProperties& getSoftProperties() const;
 
   /// \brief List of point masses composing deformable mesh.
   std::vector<PointMass*> mPointMasses;

@@ -72,8 +72,6 @@ public:
 
   using CompositeProperties = common::Composite::Properties;
   using Properties = detail::JointProperties;
-  using Aspect = common::EmbedProperties<Joint, Properties>::Aspect;
-  using AspectProperties = Aspect::Properties;
 
   typedef detail::ActuatorType ActuatorType;
   static constexpr ActuatorType FORCE        = detail::FORCE;
