@@ -583,7 +583,7 @@ void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
 
   // External force
   if (_withExternalForces)
-    mF -= mFext;
+    mF -= BodyNode::mAspectState.mFext;
 
   // Verification
   assert(!math::isNan(mF));
@@ -707,7 +707,7 @@ void SoftBodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
 
   // Set bias force
   const Eigen::Vector6d& V = getSpatialVelocity();
-  mBiasForce = -math::dad(V, mI * V) - mFext - mFgravity;
+  mBiasForce = -math::dad(V, mI * V) - BodyNode::mAspectState.mFext - mFgravity;
 
   // Verifycation
   assert(!math::isNan(mBiasForce));
@@ -1163,7 +1163,7 @@ void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
     mPointMasses.at(i)->aggregateExternalForces(_Fext);
 
   //----------------------- SoftBodyNode Part ----------------------------------
-  mFext_F = mFext;
+  mFext_F = BodyNode::mAspectState.mFext;
 
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)

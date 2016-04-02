@@ -117,6 +117,16 @@ size_t BodyNode::msBodyNodeCount = 0;
 namespace detail {
 
 //==============================================================================
+BodyNodeState::BodyNodeState(
+    bool isColliding,
+    const Eigen::Vector6d& Fext)
+  : mIsColliding(isColliding),
+    mFext(Fext)
+{
+  // Do nothing
+}
+
+//==============================================================================
 BodyNodeUniqueProperties::BodyNodeUniqueProperties(
     const Inertia& _inertia,
     bool _isCollidable, double _frictionCoeff,
@@ -247,6 +257,17 @@ void BodyNode::setProperties(const Properties& _properties)
 void BodyNode::setProperties(const UniqueProperties& _properties)
 {
   setAspectProperties(_properties);
+}
+
+//==============================================================================
+void BodyNode::setAspectState(const AspectState& state)
+{
+  setColliding(state.mIsColliding);
+  if(mAspectState.mFext != state.mFext)
+  {
+    mAspectState.mFext = state.mFext;
+    SKEL_SET_FLAGS(mExternalForces);
+  }
 }
 
 //==============================================================================
@@ -1110,13 +1131,13 @@ const Eigen::Vector6d& BodyNode::getBodyVelocityChange() const
 //==============================================================================
 void BodyNode::setColliding(bool _isColliding)
 {
-  mIsColliding = _isColliding;
+  mAspectState.mIsColliding = _isColliding;
 }
 
 //==============================================================================
 bool BodyNode::isColliding()
 {
-  return mIsColliding;
+  return mAspectState.mIsColliding;
 }
 
 //==============================================================================
@@ -1139,7 +1160,7 @@ void BodyNode::addExtForce(const Eigen::Vector3d& _force,
   else
     F.tail<3>() = W.linear().transpose() * _force;
 
-  mFext += math::dAdInvT(T, F);
+  mAspectState.mFext += math::dAdInvT(T, F);
 
   SKEL_SET_FLAGS(mExternalForces);
 }
@@ -1163,7 +1184,7 @@ void BodyNode::setExtForce(const Eigen::Vector3d& _force,
   else
     F.tail<3>() = W.linear().transpose() * _force;
 
-  mFext = math::dAdInvT(T, F);
+  mAspectState.mFext = math::dAdInvT(T, F);
 
   SKEL_SET_FLAGS(mExternalForces);
 }
@@ -1172,9 +1193,9 @@ void BodyNode::setExtForce(const Eigen::Vector3d& _force,
 void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
 {
   if (_isLocal)
-    mFext.head<3>() += _torque;
+    mAspectState.mFext.head<3>() += _torque;
   else
-    mFext.head<3>() += getWorldTransform().linear().transpose() * _torque;
+    mAspectState.mFext.head<3>() += getWorldTransform().linear().transpose() * _torque;
 
   SKEL_SET_FLAGS(mExternalForces);
 }
@@ -1183,9 +1204,9 @@ void BodyNode::addExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
 void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
 {
   if (_isLocal)
-    mFext.head<3>() = _torque;
+    mAspectState.mFext.head<3>() = _torque;
   else
-    mFext.head<3>() = getWorldTransform().linear().transpose() * _torque;
+    mAspectState.mFext.head<3>() = getWorldTransform().linear().transpose() * _torque;
 
   SKEL_SET_FLAGS(mExternalForces);
 }
@@ -1197,13 +1218,11 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     Frame(Frame::World(), ""), // Name gets set later by setProperties
     TemplatedJacobianNode<BodyNode>(this),
     mID(BodyNode::msBodyNodeCount++),
-    mIsColliding(false),
     mParentJoint(_parentJoint),
     mParentBodyNode(nullptr),
     mPartialAcceleration(Eigen::Vector6d::Zero()),
     mIsPartialAccelerationDirty(true),
     mF(Eigen::Vector6d::Zero()),
-    mFext(Eigen::Vector6d::Zero()),
     mFgravity(Eigen::Vector6d::Zero()),
     mArtInertia(Eigen::Matrix6d::Identity()),
     mArtInertiaImplicit(Eigen::Matrix6d::Identity()),
@@ -1585,7 +1604,7 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
 
   // External force
   if (_withExternalForces)
-    mF -= mFext;
+    mF -= mAspectState.mFext;
 
   // Verification
   assert(!math::isNan(mF));
@@ -1655,7 +1674,7 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
 
   // Set bias force
   const Eigen::Vector6d& V = getSpatialVelocity();
-  mBiasForce = -math::dad(V, mI * V) - mFext - mFgravity;
+  mBiasForce = -math::dad(V, mI * V) - mAspectState.mFext - mFgravity;
 
   // Verification
   assert(!math::isNan(mBiasForce));
@@ -1814,7 +1833,7 @@ void BodyNode::updateConstrainedTerms(double _timeStep)
 //==============================================================================
 void BodyNode::clearExternalForces()
 {
-  mFext.setZero();
+  mAspectState.mFext.setZero();
   SKEL_SET_FLAGS(mExternalForces);
 }
 
@@ -1827,13 +1846,13 @@ void BodyNode::clearInternalForces()
 //==============================================================================
 const Eigen::Vector6d& BodyNode::getExternalForceLocal() const
 {
-  return mFext;
+  return mAspectState.mFext;
 }
 
 //==============================================================================
 Eigen::Vector6d BodyNode::getExternalForceGlobal() const
 {
-  return math::dAdInvT(getWorldTransform(), mFext);
+  return math::dAdInvT(getWorldTransform(), mAspectState.mFext);
 }
 
 //==============================================================================
@@ -2039,7 +2058,7 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
 //==============================================================================
 void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
 {
-  mFext_F = mFext;
+  mFext_F = mAspectState.mFext;
 
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)

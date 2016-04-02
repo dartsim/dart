@@ -51,6 +51,19 @@ const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
 namespace detail {
 
 //==============================================================================
+struct BodyNodeState
+{
+  /// Whether the node is currently in collision with another node.
+  bool mIsColliding;
+
+  /// External spatial force
+  Eigen::Vector6d mFext;
+
+  BodyNodeState(bool isColliding = false,
+                const Eigen::Vector6d& Fext = Eigen::Vector6d::Zero());
+};
+
+//==============================================================================
 struct BodyNodeUniqueProperties
 {
   /// Inertia information for the BodyNode

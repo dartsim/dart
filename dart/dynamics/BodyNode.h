@@ -81,7 +81,8 @@ class Marker;
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
 class BodyNode :
-    public common::EmbedProperties<BodyNode, detail::BodyNodeUniqueProperties>,
+    public common::EmbedStateAndProperties<
+        BodyNode, detail::BodyNodeState, detail::BodyNodeUniqueProperties>,
     public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector>,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
@@ -124,6 +125,9 @@ public:
 
   /// Set the UniqueProperties of this BodyNode
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectState of this BodyNode
+  void setAspectState(const AspectState& state);
 
   /// Set the AspectProperties of this BodyNode
   void setAspectProperties(const AspectProperties& properties);
@@ -1048,9 +1052,6 @@ protected:
   /// Counts the number of nodes globally.
   static size_t msBodyNodeCount;
 
-  /// Whether the node is currently in collision with another node.
-  bool mIsColliding;
-
   //--------------------------------------------------------------------------
   // Structural Properties
   //--------------------------------------------------------------------------
@@ -1126,9 +1127,6 @@ protected:
   /// Transmitted wrench from parent to the bodynode expressed in body-fixed
   /// frame
   Eigen::Vector6d mF;
-
-  /// External spatial force
-  Eigen::Vector6d mFext;
 
   /// Spatial gravity force
   Eigen::Vector6d mFgravity;
