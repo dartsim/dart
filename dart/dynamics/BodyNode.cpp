@@ -128,10 +128,12 @@ BodyNodeState::BodyNodeState(
 
 //==============================================================================
 BodyNodeUniqueProperties::BodyNodeUniqueProperties(
+    const std::string& name,
     const Inertia& _inertia,
     bool _isCollidable, double _frictionCoeff,
     double _restitutionCoeff, bool _gravityMode)
-  : mInertia(_inertia),
+  : mName(name),
+    mInertia(_inertia),
     mIsCollidable(_isCollidable),
     mFrictionCoeff(_frictionCoeff),
     mRestitutionCoeff(_restitutionCoeff),
@@ -141,23 +143,13 @@ BodyNodeUniqueProperties::BodyNodeUniqueProperties(
 }
 
 //==============================================================================
-BodyNodeProperties::BodyNodeProperties(
-    const Entity::Properties& _entityProperties,
-    const BodyNodeUniqueProperties& _bodyNodeProperties)
-  : Entity::Properties(_entityProperties),
-    BodyNodeUniqueProperties(_bodyNodeProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
 BodyNodeExtendedProperties::BodyNodeExtendedProperties(
     const BodyNodeProperties& standardProperties,
     const NodeProperties& nodeProperties,
-    const CompositeProperties& aspectProperties)
+    const CompositeProperties& compositeProperties)
   : BodyNodeProperties(standardProperties),
     mNodeProperties(nodeProperties),
-    mCompositeProperties(aspectProperties)
+    mCompositeProperties(compositeProperties)
 {
   // Do nothing
 }
@@ -247,13 +239,6 @@ void BodyNode::setProperties(const CompositeProperties& _properties)
 }
 
 //==============================================================================
-void BodyNode::setProperties(const Properties& _properties)
-{
-  Entity::setProperties(static_cast<const Entity::Properties&>(_properties));
-  setProperties(static_cast<const UniqueProperties&>(_properties));
-}
-
-//==============================================================================
 void BodyNode::setProperties(const UniqueProperties& _properties)
 {
   setAspectProperties(_properties);
@@ -273,11 +258,13 @@ void BodyNode::setAspectState(const AspectState& state)
 //==============================================================================
 void BodyNode::setAspectProperties(const AspectProperties& properties)
 {
+  setName(properties.mName);
   setInertia(properties.mInertia);
   setGravityMode(properties.mGravityMode);
   setFrictionCoeff(properties.mFrictionCoeff);
   setRestitutionCoeff(properties.mRestitutionCoeff);
 
+  // TODO(MXG): Make Markers into Nodes before DART 6.0
   mAspectProperties.mMarkerProperties = properties.mMarkerProperties;
   // Remove current markers
   for(Marker* marker : mMarkers)
@@ -292,7 +279,7 @@ void BodyNode::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 BodyNode::Properties BodyNode::getBodyNodeProperties() const
 {
-  return BodyNode::Properties(mEntityP, mAspectProperties);
+  return mAspectProperties;
 }
 
 //==============================================================================
@@ -393,19 +380,21 @@ void BodyNode::matchNodes(const BodyNode* otherBodyNode)
 const std::string& BodyNode::setName(const std::string& _name)
 {
   // If it already has the requested name, do nothing
-  if(mEntityP.mName == _name)
-    return mEntityP.mName;
+  if(mAspectProperties.mName == _name)
+    return mAspectProperties.mName;
+
+  const std::string oldName = mAspectProperties.mName;
 
   // If the BodyNode belongs to a Skeleton, consult the Skeleton's NameManager
   const SkeletonPtr& skel = getSkeleton();
   if(skel)
   {
-    skel->mNameMgrForBodyNodes.removeName(mEntityP.mName);
+    skel->mNameMgrForBodyNodes.removeName(mAspectProperties.mName);
     SoftBodyNode* softnode = dynamic_cast<SoftBodyNode*>(this);
     if(softnode)
-      skel->mNameMgrForSoftBodyNodes.removeName(mEntityP.mName);
+      skel->mNameMgrForSoftBodyNodes.removeName(mAspectProperties.mName);
 
-    mEntityP.mName = _name;
+    mAspectProperties.mName = _name;
     skel->addEntryToBodyNodeNameMgr(this);
 
     if(softnode)
@@ -413,12 +402,21 @@ const std::string& BodyNode::setName(const std::string& _name)
   }
   else
   {
-    mEntityP.mName = _name;
+    mAspectProperties.mName = _name;
   }
+
+  incrementVersion();
+  Entity::mNameChangedSignal.raise(this, oldName, mAspectProperties.mName);
 
   // Return the final name (which might have been altered by the Skeleton's
   // NameManager)
-  return mEntityP.mName;
+  return mAspectProperties.mName;
+}
+
+//==============================================================================
+const std::string& BodyNode::getName() const
+{
+  return mAspectProperties.mName;
 }
 
 //==============================================================================
@@ -431,6 +429,8 @@ void BodyNode::setGravityMode(bool _gravityMode)
 
   SKEL_SET_FLAGS(mGravityForces);
   SKEL_SET_FLAGS(mCoriolisAndGravityForces);
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -504,12 +504,17 @@ const Eigen::Matrix6d& BodyNode::getSpatialInertia() const
 //==============================================================================
 void BodyNode::setInertia(const Inertia& _inertia)
 {
+  if(_inertia == mAspectProperties.mInertia)
+    return;
+
   mAspectProperties.mInertia = _inertia;
 
   notifyArticulatedInertiaUpdate();
   const SkeletonPtr& skel = getSkeleton();
   if(skel)
     skel->updateTotalMass();
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -601,9 +606,14 @@ Eigen::Vector6d BodyNode::getCOMSpatialAcceleration(const Frame* _relativeTo,
 //==============================================================================
 void BodyNode::setFrictionCoeff(double _coeff)
 {
+  if(mAspectProperties.mFrictionCoeff == _coeff)
+    return;
+
   assert(0.0 <= _coeff
          && "Coefficient of friction should be non-negative value.");
   mAspectProperties.mFrictionCoeff = _coeff;
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -615,9 +625,14 @@ double BodyNode::getFrictionCoeff() const
 //==============================================================================
 void BodyNode::setRestitutionCoeff(double _coeff)
 {
+  if(_coeff == mAspectProperties.mRestitutionCoeff)
+    return;
+
   assert(0.0 <= _coeff && _coeff <= 1.0
          && "Coefficient of restitution should be in range of [0, 1].");
   mAspectProperties.mRestitutionCoeff = _coeff;
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -1215,7 +1230,7 @@ void BodyNode::setExtTorque(const Eigen::Vector3d& _torque, bool _isLocal)
 BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
                    const Properties& _properties)
   : Entity(ConstructFrame),
-    Frame(Frame::World(), ""), // Name gets set later by setProperties
+    Frame(Frame::World()),
     TemplatedJacobianNode<BodyNode>(this),
     mID(BodyNode::msBodyNodeCount++),
     mParentJoint(_parentJoint),

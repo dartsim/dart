@@ -97,9 +97,9 @@ public:
   using StructuralChangeSignal
       = common::Signal<void(const BodyNode*)>;
 
-  using NodePropertiesVector = common::ExtensibleVector< std::unique_ptr<Node::Properties> >;
+  using NodePropertiesVector = common::CloneableVector< std::unique_ptr<Node::Properties> >;
   using NodePropertiesMap = std::map< std::type_index, std::unique_ptr<NodePropertiesVector> >;
-  using NodeProperties = common::ExtensibleMapHolder<NodePropertiesMap>;
+  using NodeProperties = common::CloneableMap<NodePropertiesMap>;
   using CompositeProperties = common::Composite::Properties;
 
   using UniqueProperties = detail::BodyNodeUniqueProperties;
@@ -119,9 +119,6 @@ public:
 
   /// Same as setCompositeProperties()
   void setProperties(const CompositeProperties& _properties);
-
-  /// Set the Properties of this BodyNode
-  void setProperties(const Properties& _properties);
 
   /// Set the UniqueProperties of this BodyNode
   void setProperties(const UniqueProperties& _properties);
@@ -161,6 +158,9 @@ public:
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name) override;
+
+  // Documentation inherited
+  const std::string& getName() const override;
 
   /// Set whether gravity affects this body
   /// \param[in] _gravityMode True to enable gravity

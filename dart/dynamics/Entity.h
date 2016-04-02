@@ -81,21 +81,8 @@ public:
                             const std::string& _oldName,
                             const std::string& _newName)>;
 
-  // TODO(MXG): Deprecate this with class the next major version-up, and move
-  // mName into the properties of inheriting classes.
-  struct Properties
-  {
-    /// Name of the Entity
-    std::string mName;
-
-    /// Constructor
-    Properties(const std::string& _name = "");
-
-    virtual ~Properties() = default;
-  };
-
   /// Constructor for typical usage
-  explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
+  explicit Entity(Frame* _refFrame, bool _quiet);
 
   /// Default constructor, delegates to Entity(ConstructAbstract_t)
   Entity();
@@ -105,28 +92,13 @@ public:
   /// Destructor
   virtual ~Entity();
 
-  /// Set the Properties of this Entity
-  void setProperties(const Properties& _properties);
-
-  /// Get the Properties of this Entity
-  const Properties& getEntityProperties() const;
-
-  /// Copy the Properties of another Entity
-  void copy(const Entity& _otherEntity);
-
-  /// Copy the Properties of another Entity
-  void copy(const Entity* _otherEntity);
-
-  /// Same as copy(const Entity&)
-  Entity& operator=(const Entity& _otherEntity);
-
   /// Set name. Some implementations of Entity may make alterations to the name
   /// that gets passed in. The final name that this entity will use gets passed
   /// back in the return of this function.
-  virtual const std::string& setName(const std::string& _name);
+  virtual const std::string& setName(const std::string& _name) = 0;
 
   /// Return the name of this Entity
-  virtual const std::string& getName() const;
+  virtual const std::string& getName() const = 0;
 
   /// Render this Entity
   virtual void draw(renderer::RenderInterface* ri = nullptr,
@@ -194,9 +166,6 @@ protected:
   virtual void changeParentFrame(Frame* _newParentFrame);
 
 protected:
-
-  /// Properties of this Entity
-  Properties mEntityP;
 
   /// Parent frame of this Entity
   Frame* mParentFrame;

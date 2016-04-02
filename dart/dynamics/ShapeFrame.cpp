@@ -199,84 +199,46 @@ ShapeFrame::UniqueProperties::UniqueProperties(ShapePtr&& shape)
 }
 
 //==============================================================================
-ShapeFrame::Properties::Properties(
-    const Entity::Properties& entityProperties,
-    const UniqueProperties& shapeFrameProperties,
-    const ShapeFrame::AspectProperties& aspectProperties)
-  : Entity::Properties(entityProperties),
-    UniqueProperties(shapeFrameProperties),
-    mAspectProperties(aspectProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void ShapeFrame::setProperties(const ShapeFrame::AspectProperties& properties)
-{
-  setCompositeProperties(properties);
-}
-
-//==============================================================================
-void ShapeFrame::setProperties(const Properties& properties)
-{
-  Entity::setProperties(static_cast<const Entity::Properties&>(properties));
-  setProperties(static_cast<const UniqueProperties&>(properties));
-  setProperties(properties.mAspectProperties);
-}
-
-//==============================================================================
 void ShapeFrame::setProperties(const ShapeFrame::UniqueProperties& properties)
+{
+  setAspectProperties(properties);
+}
+
+//==============================================================================
+void ShapeFrame::setAspectProperties(const AspectProperties& properties)
 {
   setShape(properties.mShape);
 }
 
 //==============================================================================
-const ShapeFrame::Properties ShapeFrame::getShapeFrameProperties() const
+const ShapeFrame::AspectProperties& ShapeFrame::getAspectProperties() const
 {
-  return Properties(getEntityProperties(), mShapeFrameP, getCompositeProperties());
-}
-
-//==============================================================================
-void ShapeFrame::copy(const ShapeFrame& other)
-{
-  if (this == &other)
-    return;
-
-  setProperties(other.getShapeFrameProperties());
-}
-
-//==============================================================================
-void ShapeFrame::copy(const ShapeFrame* other)
-{
-  if (nullptr == other)
-    return;
-
-  copy(*other);
+  return mAspectProperties;
 }
 
 //==============================================================================
 void ShapeFrame::setShape(const ShapePtr& shape)
 {
-  if (shape == mShapeFrameP.mShape)
+  if (shape == ShapeFrame::mAspectProperties.mShape)
     return;
 
-  ShapePtr oldShape = mShapeFrameP.mShape;
+  ShapePtr oldShape = ShapeFrame::mAspectProperties.mShape;
 
-  mShapeFrameP.mShape = shape;
+  ShapeFrame::mAspectProperties.mShape = shape;
 
-  mShapeUpdatedSignal.raise(this, oldShape, mShapeFrameP.mShape);
+  mShapeUpdatedSignal.raise(this, oldShape, ShapeFrame::mAspectProperties.mShape);
 }
 
 //==============================================================================
 ShapePtr ShapeFrame::getShape()
 {
-  return mShapeFrameP.mShape;
+  return ShapeFrame::mAspectProperties.mShape;
 }
 
 //==============================================================================
 ConstShapePtr ShapeFrame::getShape() const
 {
-  return mShapeFrameP.mShape;
+  return ShapeFrame::mAspectProperties.mShape;
 }
 
 //==============================================================================
@@ -293,9 +255,9 @@ void ShapeFrame::draw(renderer::RenderInterface* ri,
   ri->transform(getRelativeTransform());
 
   if (useDefaultColor)
-    mShapeFrameP.mShape->draw(ri, visualAspect->getRGBA());
+    ShapeFrame::mAspectProperties.mShape->draw(ri, visualAspect->getRGBA());
   else
-    mShapeFrameP.mShape->draw(ri, color);
+    ShapeFrame::mAspectProperties.mShape->draw(ri, color);
 
   ri->popMatrix();
 }
@@ -303,20 +265,20 @@ void ShapeFrame::draw(renderer::RenderInterface* ri,
 //==============================================================================
 size_t ShapeFrame::incrementVersion()
 {
-  return ++mShapeFrameP.mVersion;
+  return ++ShapeFrame::mAspectProperties.mVersion;
 }
 
 //==============================================================================
 size_t ShapeFrame::getVersion() const
 {
-  return mShapeFrameP.mVersion;
+  return ShapeFrame::mAspectProperties.mVersion;
 }
 
 //==============================================================================
 ShapeFrame::ShapeFrame(Frame* parent, const Properties& properties)
   : common::Composite(),
     Entity(ConstructFrame),
-    Frame(parent, ""),
+    Frame(parent),
     mShapeUpdatedSignal(),
     mRelativeTransformUpdatedSignal(),
     onShapeUpdated(mShapeUpdatedSignal),
@@ -328,22 +290,16 @@ ShapeFrame::ShapeFrame(Frame* parent, const Properties& properties)
 
 //==============================================================================
 ShapeFrame::ShapeFrame(Frame* parent,
-                       const std::string& name,
                        const ShapePtr& shape)
   : common::Composite(),
     Entity(ConstructFrame),
-    Frame(parent, name),
+    Frame(parent),
     mShapeUpdatedSignal(),
     mRelativeTransformUpdatedSignal(),
     onShapeUpdated(mShapeUpdatedSignal),
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {
   mAmShapeFrame = true;
-  setName(name);
-  // TODO: As setName() is a virtual function, it is not safe to call this
-  // function in a constructor especially of abstract class. This line should be
-  // removed once Entity class is changed to abstract interface class.
-
   setShape(shape);
 }
 

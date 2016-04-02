@@ -61,6 +61,9 @@ public:
   /// Virtual destructor
   virtual ~JacobianNode();
 
+  using Node::setName;
+  using Node::getName;
+
   /// Get a pointer to an IK module for this JacobianNode. If _createIfNull is
   /// true, then the IK module will be generated if one does not already exist.
   const std::shared_ptr<InverseKinematics>& getIK(bool _createIfNull = false);
@@ -86,12 +89,6 @@ public:
   //----------------------------------------------------------------------------
   /// \{ \name Structural Properties
   //----------------------------------------------------------------------------
-
-  // Documentation inherited
-  const std::string& setName(const std::string& _name) override = 0;
-
-  // Documentation inherited
-  const std::string& getName() const override final;
 
   /// Return true if _genCoordIndex-th generalized coordinate
   virtual bool dependsOn(size_t _genCoordIndex) const = 0;

@@ -45,24 +45,24 @@ namespace dynamics {
 SimpleFrame::SimpleFrame(Frame* _refFrame, const std::string& _name,
                          const Eigen::Isometry3d& _relativeTransform)
   : Entity(ConstructFrame),
-    Frame(_refFrame, _name),
+    Frame(_refFrame),
     Detachable(),
-    ShapeFrame(_refFrame, _name),
+    ShapeFrame(_refFrame),
     mRelativeTf(_relativeTransform),
     mRelativeVelocity(Eigen::Vector6d::Zero()),
     mRelativeAcceleration(Eigen::Vector6d::Zero()),
     mPartialAcceleration(Eigen::Vector6d::Zero())
 {
-  // Do nothing
+  setName(_name);
 }
 
 //==============================================================================
 SimpleFrame::SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame)
   : Entity(ConstructFrame),
     common::Composite(),
-    Frame(_refFrame, ""),
+    Frame(_refFrame),
     Detachable(),
-    ShapeFrame(_refFrame, ""),
+    ShapeFrame(_refFrame),
     mRelativeTf(Eigen::Isometry3d::Identity()),
     mRelativeVelocity(Eigen::Vector6d::Zero()),
     mRelativeAcceleration(Eigen::Vector6d::Zero()),
@@ -76,6 +76,27 @@ SimpleFrame::SimpleFrame(const SimpleFrame& _otherFrame, Frame* _refFrame)
 SimpleFrame::~SimpleFrame()
 {
   // Do nothing
+}
+
+//==============================================================================
+const std::string& SimpleFrame::setName(const std::string& _name)
+{
+  if(_name == mName)
+    return mName;
+
+  std::string oldName = mName;
+  mName = _name;
+
+  incrementVersion();
+  Entity::mNameChangedSignal.raise(this, oldName, mName);
+
+  return mName;
+}
+
+//==============================================================================
+const std::string& SimpleFrame::getName() const
+{
+  return mName;
 }
 
 //==============================================================================
@@ -116,7 +137,7 @@ void SimpleFrame::copy(const Frame* _otherFrame, Frame* _refFrame,
   {
     const auto shapeFrame = dynamic_cast<const ShapeFrame*>(_otherFrame);
     if(shapeFrame)
-      setProperties(shapeFrame->getShapeFrameProperties());
+      setCompositeProperties(shapeFrame->getCompositeProperties());
 
     const auto simpleFrame = dynamic_cast<const SimpleFrame*>(_otherFrame);
     if(simpleFrame)

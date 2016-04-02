@@ -232,8 +232,6 @@ public:
                             const Eigen::Isometry3d& oldTransform,
                             const Eigen::Isometry3d& newTransform)>;
 
-  using AspectProperties = common::Composite::Properties;
-
   struct UniqueProperties
   {
     /// Shape pointer
@@ -250,43 +248,19 @@ public:
     virtual ~UniqueProperties() = default;
   };
 
-  /// Composition of Entity and ShapeFrame properties
-  struct Properties : Entity::Properties, UniqueProperties
-  {
-    /// Composed constructor
-    Properties(const Entity::Properties& entityProperties
-                   = Entity::Properties("ShapeFrame"),
-               const UniqueProperties& shapeFrameProperties
-                   = UniqueProperties(),
-               const AspectProperties& aspectProperties
-                   = AspectProperties());
-
-    virtual ~Properties() = default;
-
-    /// Properties of all the Aspects attached to this ShapeFrame
-    AspectProperties mAspectProperties;
-  };
+  using AspectProperties = UniqueProperties;
+  using Properties = UniqueProperties;
 
   /// Destructor
   virtual ~ShapeFrame() = default;
 
-  /// Same as setAspectProperties()
-  void setProperties(const AspectProperties& properties);
-
-  /// Set the Properties of this ShapeFrame
-  void setProperties(const Properties& properties);
-
   /// Set the UniqueProperties of this ShapeFrame
   void setProperties(const UniqueProperties& properties);
 
-  /// Get the Properties of this ShapeFrame
-  const Properties getShapeFrameProperties() const;
+  /// Set the AspectProperties of this ShapeFrame
+  void setAspectProperties(const AspectProperties& properties);
 
-  /// Copy the properties of another ShapeFrame
-  void copy(const ShapeFrame& other);
-
-  /// Copy the properties of another ShapeFrame
-  void copy(const ShapeFrame* other);
+  const AspectProperties& getAspectProperties() const;
 
   /// Set shape
   void setShape(const ShapePtr& shape);
@@ -317,15 +291,13 @@ public:
 protected:
 
   /// Constructor
-  ShapeFrame(Frame* parent, const Properties& properties = Properties());
+  ShapeFrame(Frame* parent, const Properties& properties);
 
   /// Constructor
-  ShapeFrame(Frame* parent,
-             const std::string& name,
-             const ShapePtr& shape = nullptr);
+  ShapeFrame(Frame* parent, const ShapePtr& shape = nullptr);
 
   /// ShapeFrame properties
-  Properties mShapeFrameP;
+  Properties mAspectProperties;
 
   /// Shape updated signal
   ShapeUpdatedSignal mShapeUpdatedSignal;

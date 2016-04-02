@@ -68,6 +68,12 @@ public:
   /// Destructor
   virtual ~SimpleFrame();
 
+  // Documentation inherited
+  const std::string& setName(const std::string& _name) override;
+
+  // Documentation inherited
+  const std::string& getName() const override;
+
   /// Create a new SimpleFrame with the same world transform, velocity, and
   /// acceleration as this one. _refFrame will be used as the reference Frame
   /// of the new SimpleFrame.
@@ -111,7 +117,7 @@ public:
                     const Frame* _withRespectTo = Frame::World());
 
   // Documentation inherited
-  const Eigen::Isometry3d& getRelativeTransform() const;
+  const Eigen::Isometry3d& getRelativeTransform() const override;
 
   //--------------------------------------------------------------------------
   // Velocity
@@ -136,7 +142,7 @@ public:
                                   const Frame* _inCoordinatesOf);
 
   // Documentation inherited
-  virtual const Eigen::Vector6d& getRelativeSpatialVelocity() const;
+  virtual const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
 
   //--------------------------------------------------------------------------
   // Acceleration
@@ -157,13 +163,13 @@ public:
       const Frame* _inCoordinatesOf);
 
   // Documentation inherited
-  virtual const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
+  virtual const Eigen::Vector6d& getRelativeSpatialAcceleration() const override;
 
   // Documentation inherited
-  virtual const Eigen::Vector6d& getPrimaryRelativeAcceleration() const;
+  virtual const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override;
 
   // Documentation inherited
-  virtual const Eigen::Vector6d& getPartialAcceleration() const;
+  virtual const Eigen::Vector6d& getPartialAcceleration() const override;
 
   //--------------------------------------------------------------------------
   // Classic Method
@@ -189,6 +195,9 @@ public:
       const Eigen::Vector3d& _angularAcceleration = Eigen::Vector3d::Zero());
 
 protected:
+
+  /// Name of this SimpleFrame
+  std::string mName;
 
   /// Relative transform of the SimpleFrame
   Eigen::Isometry3d mRelativeTf;

@@ -72,10 +72,13 @@ public:
                             const Eigen::Isometry3d& oldTransform,
                             const Eigen::Isometry3d& newTransform)>;
 
-  using AspectProperties = common::Composite::Properties;
+  using CompositeProperties = common::Composite::Properties;
 
   struct UniqueProperties
   {
+    /// Name of ShapeNode
+    std::string mName;
+
     /// The current relative transform of the Shape in the ShapeNode
     Eigen::Isometry3d mRelativeTransform;
     // TODO(JS): Consider moving this to a FixedFrame::State
@@ -84,6 +87,7 @@ public:
 
     /// Composed constructor
     UniqueProperties(
+        const std::string& name = "",
         const Eigen::Isometry3d& relativeTransform
             = Eigen::Isometry3d::Identity());
   };
@@ -96,16 +100,16 @@ public:
             = ShapeFrame::Properties(),
         const ShapeNode::UniqueProperties& shapeNodeProperties
             = ShapeNode::UniqueProperties(),
-        const AspectProperties& aspectProperties = AspectProperties());
+        const CompositeProperties& compositeProperties = CompositeProperties());
 
     /// Composed move constructor
     Properties(
         ShapeFrame::Properties&& shapeFrameProperties,
         ShapeNode::UniqueProperties&& shapeNodeProperties,
-        AspectProperties&& aspectProperties);
+        CompositeProperties&& compositeProperties);
 
     /// The properties of the ShapeNode's Aspects
-    AspectProperties mAspectProperties;
+    CompositeProperties mCompositeProperties;
   };
 
   /// Destructor
@@ -132,6 +136,9 @@ public:
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name) override;
+
+  // Documentation inherited
+  const std::string& getName() const override;
 
   // Documentation inherited
   size_t incrementVersion() override;

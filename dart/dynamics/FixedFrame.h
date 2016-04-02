@@ -50,9 +50,10 @@ class FixedFrame : public virtual Frame
 {
 public:
   /// Constructor
-  explicit FixedFrame(Frame* _refFrame, const std::string& _name,
-                      const Eigen::Isometry3d& _relativeTransform =
-                                        Eigen::Isometry3d::Identity());
+  explicit FixedFrame(
+      Frame* _refFrame,
+      const Eigen::Isometry3d& _relativeTransform =
+          Eigen::Isometry3d::Identity());
 
   /// Destructor
   virtual ~FixedFrame();
@@ -74,6 +75,7 @@ public:
 
 protected:
   /// Relative Transform of this Frame
+  DEPRECATED(6.0)
   Eigen::Isometry3d mRelativeTf;
 
   /// Used for Relative Velocity and Relative Acceleration of this Frame

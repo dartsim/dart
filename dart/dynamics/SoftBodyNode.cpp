@@ -231,14 +231,14 @@ const PointMass* SoftBodyNode::getPointMass(size_t _idx) const
 SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
                            Joint* _parentJoint,
                            const Properties& _properties)
-  : Entity(Frame::World(), "", false),
-    Frame(Frame::World(), ""),
+  : Entity(Frame::World(), false),
+    Frame(Frame::World()),
     Base(common::NoArg,
          std::make_tuple(_parentBodyNode, _parentJoint, _properties)),
     mSoftShapeNode(nullptr)
 {
   createSoftBodyAspect();
-  mNotifier = new PointMassNotifier(this, "PointMassNotifier");
+  mNotifier = new PointMassNotifier(this, getName()+"_PointMassNotifier");
   ShapeNode* softNode = createShapeNodeWith<
       VisualAspect, CollisionAspect, DynamicsAspect>(
         std::make_shared<SoftMeshShape>(this), getName()+"_SoftMeshShape");

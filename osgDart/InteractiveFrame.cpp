@@ -46,7 +46,7 @@ namespace osgDart {
 InteractiveTool::InteractiveTool(InteractiveFrame* frame, double defaultAlpha,
                                  const std::string& name)
   : Entity(ConstructFrame),
-    Frame(frame, name),
+    Frame(frame),
     SimpleFrame(frame, name),
     mDefaultAlpha(defaultAlpha),
     mEnabled(true),
@@ -158,8 +158,8 @@ InteractiveFrame::InteractiveFrame(
     const std::string& name,
     const Eigen::Isometry3d& relativeTransform,
     double size_scale, double thickness_scale)
-  : Entity(referenceFrame, name, false),
-    Frame(referenceFrame, name),
+  : Entity(referenceFrame, false),
+    Frame(referenceFrame),
     SimpleFrame(referenceFrame, name, relativeTransform)
 {
   for(size_t i=0; i<3; ++i)

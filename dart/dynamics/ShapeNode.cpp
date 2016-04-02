@@ -42,8 +42,10 @@ namespace dynamics {
 
 //==============================================================================
 ShapeNode::UniqueProperties::UniqueProperties(
+    const std::string& name,
     const Eigen::Isometry3d& relativeTransform)
-  : mRelativeTransform(relativeTransform)
+  : mName(name),
+    mRelativeTransform(relativeTransform)
 {
   // Do nothing
 }
@@ -52,10 +54,10 @@ ShapeNode::UniqueProperties::UniqueProperties(
 ShapeNode::Properties::Properties(
     const ShapeFrame::Properties& shapeFrameProperties,
     const ShapeNode::UniqueProperties& shapeNodeProperties,
-    const ShapeNode::AspectProperties& aspectProperties)
+    const CompositeProperties& compositeProperties)
   : ShapeFrame::Properties(shapeFrameProperties),
     ShapeNode::UniqueProperties(shapeNodeProperties),
-    mAspectProperties(aspectProperties)
+    mCompositeProperties(compositeProperties)
 {
   // Do nothing
 }
@@ -64,10 +66,10 @@ ShapeNode::Properties::Properties(
 ShapeNode::Properties::Properties(
     ShapeFrame::Properties&& shapeFrameProperties,
     ShapeNode::UniqueProperties&& shapeNodeProperties,
-    ShapeNode::AspectProperties&& aspectProperties)
+    CompositeProperties&& compositeProperties)
   : ShapeFrame::Properties(std::move(shapeFrameProperties)),
     ShapeNode::UniqueProperties(std::move(shapeNodeProperties)),
-    mAspectProperties(std::move(aspectProperties))
+    mCompositeProperties(std::move(compositeProperties))
 {
   // Do nothing
 }
@@ -78,19 +80,22 @@ void ShapeNode::setProperties(const Properties& properties)
   ShapeFrame::setProperties(
         static_cast<const ShapeFrame::Properties&>(properties));
   setProperties(static_cast<const ShapeNode::UniqueProperties&>(properties));
-  setCompositeProperties(properties.mAspectProperties);
+  setCompositeProperties(properties.mCompositeProperties);
 }
 
 //==============================================================================
 void ShapeNode::setProperties(const ShapeNode::UniqueProperties& properties)
 {
+  if(!properties.mName.empty())
+    setName(properties.mName);
+
   setRelativeTransform(properties.mRelativeTransform);
 }
 
 //==============================================================================
 const ShapeNode::Properties ShapeNode::getShapeNodeProperties() const
 {
-  return Properties(getShapeFrameProperties(), mShapeNodeP,
+  return Properties(getAspectProperties(), mShapeNodeP,
                     getCompositeProperties());
 }
 
@@ -123,34 +128,48 @@ ShapeNode& ShapeNode::operator=(const ShapeNode& other)
 const std::string& ShapeNode::setName(const std::string& name)
 {
   // If it already has the requested name, do nothing
-  if(mEntityP.mName == name && !name.empty())
-    return mEntityP.mName;
+  if(mShapeNodeP.mName == name && !name.empty())
+    return mShapeNodeP.mName;
 
-  mEntityP.mName = registerNameChange(name);
+  const std::string oldName = mShapeNodeP.mName;
+
+  mShapeNodeP.mName = registerNameChange(name);
+
+  incrementVersion();
+  Entity::mNameChangedSignal.raise(this, oldName, mShapeNodeP.mName);
 
   // Return the resulting name, after it has been checked for uniqueness
-  return mEntityP.mName;
+  return mShapeNodeP.mName;
+}
+
+//==============================================================================
+const std::string& ShapeNode::getName() const
+{
+  return mShapeNodeP.mName;
 }
 
 //==============================================================================
 size_t ShapeNode::incrementVersion()
 {
-  ++mShapeFrameP.mVersion;
+  ++ShapeFrame::mAspectProperties.mVersion;
   if(const SkeletonPtr& skel = getSkeleton())
     skel->incrementVersion();
 
-  return mShapeFrameP.mVersion;
+  return ShapeFrame::mAspectProperties.mVersion;
 }
 
 //==============================================================================
 size_t ShapeNode::getVersion() const
 {
-  return mShapeFrameP.mVersion;
+  return ShapeFrame::mAspectProperties.mVersion;
 }
 
 //==============================================================================
 void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
 {
+  if(transform.matrix() == mRelativeTf.matrix())
+    return;
+
   const Eigen::Isometry3d oldTransform = mRelativeTf;
 
   mRelativeTf = transform;
@@ -159,6 +178,7 @@ void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
   notifyJacobianUpdate();
   notifyJacobianDerivUpdate();
 
+  incrementVersion();
   mRelativeTransformUpdatedSignal.raise(this, oldTransform,
                                         mShapeNodeP.mRelativeTransform);
 }
@@ -316,8 +336,8 @@ const math::Jacobian& ShapeNode::getJacobianClassicDeriv() const
 //==============================================================================
 ShapeNode::ShapeNode(BodyNode* bodyNode, const Properties& properties)
   : Entity(ConstructFrame),
-    Frame(bodyNode, ""),
-    FixedFrame(bodyNode, ""),
+    Frame(bodyNode),
+    FixedFrame(bodyNode),
     ShapeFrame(bodyNode),
     TemplatedJacobianNode<ShapeNode>(bodyNode),
     mShapeUpdatedSignal(ShapeUpdatedSignal()),
@@ -333,8 +353,8 @@ ShapeNode::ShapeNode(BodyNode* bodyNode,
                      const ShapePtr& shape,
                      const std::string& name)
   : Entity(ConstructFrame),
-    Frame(bodyNode, ""),
-    FixedFrame(bodyNode, ""),
+    Frame(bodyNode),
+    FixedFrame(bodyNode),
     ShapeFrame(bodyNode),
     TemplatedJacobianNode<ShapeNode>(bodyNode),
     mShapeUpdatedSignal(ShapeUpdatedSignal()),

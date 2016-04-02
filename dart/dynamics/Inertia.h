@@ -123,6 +123,9 @@ public:
   bool verify(bool _printWarnings = true,
               double _tolerance = 1e-8) const;
 
+  /// Check for equality
+  bool operator==(const Inertia& other) const;
+
 protected:
 
   /// Compute the spatial tensor based on the inertial parameters

@@ -1135,7 +1135,7 @@ void PointMass::draw(renderer::RenderInterface* _ri,
 //==============================================================================
 PointMassNotifier::PointMassNotifier(SoftBodyNode* _parentSoftBody,
                                      const std::string& _name)
-  : Entity(_parentSoftBody, _name, false),
+  : Entity(_parentSoftBody, false),
     mNeedPartialAccelerationUpdate(true),
     mParentSoftBodyNode(_parentSoftBody)
 {
@@ -1198,6 +1198,27 @@ void PointMassNotifier::notifyVelocityUpdate()
 void PointMassNotifier::notifyAccelerationUpdate()
 {
   mNeedAccelerationUpdate = true;
+}
+
+//==============================================================================
+const std::string& PointMassNotifier::setName(const std::string& _name)
+{
+  if(_name == mName)
+    return mName;
+
+  const std::string oldName = mName;
+
+  mName = _name;
+
+  Entity::mNameChangedSignal.raise(this, oldName, mName);
+
+  return mName;
+}
+
+//==============================================================================
+const std::string& PointMassNotifier::getName() const
+{
+  return mName;
 }
 
 }  // namespace dynamics

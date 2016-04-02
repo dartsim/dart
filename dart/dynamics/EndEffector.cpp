@@ -87,12 +87,10 @@ EndEffector::UniqueProperties::UniqueProperties(
 
 //==============================================================================
 EndEffector::PropertiesData::PropertiesData(
-    const Entity::Properties& _entityProperties,
     const UniqueProperties& _effectorProperties,
-    const common::Composite::Properties& _aspectProperties)
-  : Entity::Properties(_entityProperties),
-    UniqueProperties(_effectorProperties),
-    mAspectProperties(_aspectProperties)
+    const common::Composite::Properties& _compositeProperties)
+  : UniqueProperties(_effectorProperties),
+    mCompositeProperties(_compositeProperties)
 {
   // Do nothing
 }
@@ -120,23 +118,22 @@ EndEffector::StateData EndEffector::getEndEffectorState() const
 //==============================================================================
 void EndEffector::setProperties(const PropertiesData& _properties, bool _useNow)
 {
-  Entity::setProperties(_properties);
   setProperties(static_cast<const UniqueProperties&>(_properties), _useNow);
-  setCompositeProperties(_properties.mAspectProperties);
+  setCompositeProperties(_properties.mCompositeProperties);
 }
 
 //==============================================================================
 void EndEffector::setProperties(const UniqueProperties& _properties,
                                 bool _useNow)
 {
+  setName(_properties.mName);
   setDefaultRelativeTransform(_properties.mDefaultTransform, _useNow);
 }
 
 //==============================================================================
 EndEffector::PropertiesData EndEffector::getEndEffectorProperties() const
 {
-  return PropertiesData(getEntityProperties(), mEndEffectorP,
-                        getCompositeProperties());
+  return PropertiesData(mEndEffectorP, getCompositeProperties());
 }
 
 //==============================================================================
@@ -169,13 +166,24 @@ EndEffector& EndEffector::operator=(const EndEffector& _otherEndEffector)
 const std::string& EndEffector::setName(const std::string& _name)
 {
   // If it already has the requested name, do nothing
-  if(mEntityP.mName == _name && !_name.empty())
-    return mEntityP.mName;
+  if(mEndEffectorP.mName == _name && !_name.empty())
+    return mEndEffectorP.mName;
 
-  mEntityP.mName = registerNameChange(_name);
+  const std::string oldName = mEndEffectorP.mName;
+
+  mEndEffectorP.mName = registerNameChange(_name);
+
+  incrementVersion();
+  Entity::mNameChangedSignal.raise(this, oldName, mEndEffectorP.mName);
 
   // Return the resulting name, after it has been checked for uniqueness
-  return mEntityP.mName;
+  return mEndEffectorP.mName;
+}
+
+//==============================================================================
+const std::string& EndEffector::getName() const
+{
+  return mEndEffectorP.mName;
 }
 
 //==============================================================================
@@ -229,9 +237,8 @@ void EndEffector::copyNodePropertiesTo(
     EndEffector::Properties* properties =
         static_cast<EndEffector::Properties*>(outputProperties.get());
 
-    static_cast<Entity::Properties&>(*properties) = getEntityProperties();
     static_cast<UniqueProperties&>(*properties) = mEndEffectorP;
-    copyCompositePropertiesTo(properties->mAspectProperties);
+    copyCompositePropertiesTo(properties->mCompositeProperties);
   }
   else
   {
@@ -382,8 +389,8 @@ void EndEffector::notifyVelocityUpdate()
 //==============================================================================
 EndEffector::EndEffector(BodyNode* _parent, const PropertiesData& _properties)
   : Entity(ConstructFrame),
-    Frame(_parent, ""),
-    FixedFrame(_parent, "", _properties.mDefaultTransform),
+    Frame(_parent),
+    FixedFrame(_parent, _properties.mDefaultTransform),
     TemplatedJacobianNode<EndEffector>(_parent)
 {
   setProperties(_properties);

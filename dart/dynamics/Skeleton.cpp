@@ -434,10 +434,10 @@ const std::string& Skeleton::getName() const
 //==============================================================================
 const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode* _newNode)
 {
-  _newNode->mEntityP.mName =
+  _newNode->BodyNode::mAspectProperties.mName =
       mNameMgrForBodyNodes.issueNewNameAndAdd(_newNode->getName(), _newNode);
 
-  return _newNode->mEntityP.mName;
+  return _newNode->BodyNode::mAspectProperties.mName;
 }
 
 //==============================================================================

@@ -126,10 +126,13 @@ public:
     common::Composite::State mAspectStates;
   };
 
-  using State = Node::StateMixer<StateData>;
+  using State = Node::MakeState<StateData>;
 
   struct UniqueProperties
   {
+    /// Name of this EndEffector
+    std::string mName;
+
     /// The relative transform will be set to this whenever
     /// resetRelativeTransform() is called
     Eigen::Isometry3d mDefaultTransform;
@@ -140,19 +143,18 @@ public:
             Eigen::Isometry3d::Identity());
   };
 
-  struct PropertiesData : Entity::Properties, UniqueProperties
+  struct PropertiesData : UniqueProperties
   {
     PropertiesData(
-        const Entity::Properties& _entityProperties = Entity::Properties(),
         const UniqueProperties& _effectorProperties = UniqueProperties(),
-        const common::Composite::Properties& _aspectProperties =
+        const common::Composite::Properties& _compositeProperties =
             common::Composite::Properties());
 
     /// The properties of the EndEffector's Aspects
-    common::Composite::Properties mAspectProperties;
+    common::Composite::Properties mCompositeProperties;
   };
 
-  using Properties = Node::PropertiesMixer<PropertiesData>;
+  using Properties = Node::MakeProperties<PropertiesData>;
 
   /// Destructor
   virtual ~EndEffector() = default;
@@ -193,6 +195,9 @@ public:
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name) override;
+
+  // Documentation inherited
+  const std::string& getName() const override;
 
   // Documentation inherited
   void setNodeState(const Node::State& otherState) override final;

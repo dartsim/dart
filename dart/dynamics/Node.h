@@ -40,7 +40,7 @@
 #include <memory>
 
 #include "dart/common/Subject.h"
-#include "dart/common/Extensible.h"
+#include "dart/common/Cloneable.h"
 #include "dart/common/VersionCounter.h"
 
 #include "dart/dynamics/SmartPointer.h"
@@ -103,12 +103,12 @@ public:
   /// get stored in BodyNode::ExtendedProperties. Typically Properties are
   /// values that only change rarely if ever, whereas State contains values that
   /// might change as often as every time step.
-  class State : public common::Extensible<State> { };
+  class State : public common::Cloneable<State> { };
 
-  /// Use the StateMixer class to easily create a State extension from an
+  /// Use the MakeState class to easily create a State extension from an
   /// existing class or struct
   template <class Mixin>
-  using StateMixer = common::ExtensibleMixer<State, Mixin>;
+  using MakeState = common::MakeCloneable<State, Mixin>;
 
   /// If your Node has a Properties class, then that Properties class should
   /// inherit this Node::Properties class. This allows us to safely serialize,
@@ -122,12 +122,12 @@ public:
   /// get stored in BodyNode::ExtendedProperties. Typically Properties are
   /// values that only change rarely if ever, whereas State contains values that
   /// might change as often as every time step.
-  class Properties : public common::Extensible<Properties> { };
+  class Properties : public common::Cloneable<Properties> { };
 
-  /// Use the PropertiesMixer class to easily create a Properties extension
+  /// Use the MakeProperties class to easily create a Properties extension
   /// from an existing class or struct.
   template <class Mixin>
-  using PropertiesMixer = common::ExtensibleMixer<Properties, Mixin>;
+  using MakeProperties = common::MakeCloneable<Properties, Mixin>;
 
   /// Virtual destructor
   virtual ~Node() = default;

@@ -66,6 +66,9 @@ struct BodyNodeState
 //==============================================================================
 struct BodyNodeUniqueProperties
 {
+  /// Name of the Entity
+  std::string mName;
+
   /// Inertia information for the BodyNode
   Inertia mInertia;
 
@@ -86,6 +89,7 @@ struct BodyNodeUniqueProperties
 
   /// Constructor
   BodyNodeUniqueProperties(
+      const std::string& name = "BodyNode",
       const Inertia& _inertia = Inertia(),
       bool _isCollidable = true,
       double _frictionCoeff = DART_DEFAULT_FRICTION_COEFF,
@@ -98,32 +102,20 @@ struct BodyNodeUniqueProperties
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-//==============================================================================
-struct BodyNodeProperties : Entity::Properties, BodyNodeUniqueProperties
-{
-  /// Composed constructor
-  BodyNodeProperties(
-      const Entity::Properties& _entityProperties =
-          Entity::Properties("BodyNode"),
-      const BodyNodeUniqueProperties& _bodyNodeProperties =
-          BodyNodeUniqueProperties());
-
-  virtual ~BodyNodeProperties() = default;
-};
+using BodyNodeProperties = BodyNodeUniqueProperties;
 
 //==============================================================================
 struct BodyNodeExtendedProperties : BodyNodeProperties
 {
-  using NodePropertiesVector = common::ExtensibleVector< std::unique_ptr<Node::Properties> >;
+  using NodePropertiesVector = common::CloneableVector< std::unique_ptr<Node::Properties> >;
   using NodePropertiesMap = std::map< std::type_index, std::unique_ptr<NodePropertiesVector> >;
-  using NodeProperties = common::ExtensibleMapHolder<NodePropertiesMap>;
+  using NodeProperties = common::CloneableMap<NodePropertiesMap>;
   using CompositeProperties = common::Composite::Properties;
 
   /// Composed constructor
-  BodyNodeExtendedProperties(
-      const BodyNodeProperties& standardProperties = Properties(),
+  BodyNodeExtendedProperties(const BodyNodeProperties& standardProperties = BodyNodeProperties(),
       const NodeProperties& nodeProperties = NodeProperties(),
-      const CompositeProperties& aspectProperties = CompositeProperties());
+      const CompositeProperties& compositeProperties = CompositeProperties());
 
   /// Composed move constructor
   BodyNodeExtendedProperties(

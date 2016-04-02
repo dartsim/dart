@@ -83,12 +83,6 @@ void JacobianNode::clearIK()
 }
 
 //==============================================================================
-const std::string& JacobianNode::getName() const
-{
-  return mEntityP.mName;
-}
-
-//==============================================================================
 JacobianNode::JacobianNode(BodyNode* bn)
   : Entity(Entity::ConstructAbstract),
     Frame(Frame::ConstructAbstract),
