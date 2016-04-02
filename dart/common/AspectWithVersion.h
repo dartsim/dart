@@ -76,8 +76,8 @@ public:
   using StateData = StateDataT;
   using PropertiesData = PropertiesDataT;
   using CompositeType = CompositeT;
-  using State = common::Aspect::StateMixer<StateData>;
-  using Properties = common::Aspect::PropertiesMixer<PropertiesData>;
+  using State = common::Aspect::MakeState<StateData>;
+  using Properties = common::Aspect::MakeProperties<PropertiesData>;
   constexpr static void (*UpdateState)(Derived*) = updateState;
   constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 

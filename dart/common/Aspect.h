@@ -39,7 +39,7 @@
 
 #include <string>
 
-#include "dart/common/Extensible.h"
+#include "dart/common/Cloneable.h"
 #include "dart/common/detail/NoOp.h"
 
 namespace dart {
@@ -65,12 +65,12 @@ public:
   /// stored in Composite::Properties. Typically Properties are values that
   /// only change rarely if ever, whereas State contains values that might
   /// change as often as every time step.
-  class State : public Extensible<State> { };
+  class State : public Cloneable<State> { };
 
-  /// Use the StateMixer class to easily create a State extension from an
+  /// Use the MakeState class to easily create a State extension from an
   /// existing class or struct.
   template <class Mixin>
-  using StateMixer = ExtensibleMixer<State, Mixin>;
+  using MakeState = MakeCloneable<State, Mixin>;
 
   /// If your Aspect has Properties, then that Properties class should inherit this
   /// Aspect::Properties class. This allows us to safely serialize, store, and
@@ -84,12 +84,12 @@ public:
   /// stored in Composite::Properties. Typically Properties are values that
   /// only change rarely if ever, whereas State contains values that might
   /// change as often as every time step.
-  class Properties : public Extensible<Properties> { };
+  class Properties : public Cloneable<Properties> { };
 
-  /// Use the PropertiesMixer class to easily create a Properties extension
+  /// Use the MakeProperties class to easily create a Properties extension
   /// from an existing class or struct.
   template <class Mixin>
-  using PropertiesMixer = ExtensibleMixer<Properties, Mixin>;
+  using MakeProperties = MakeCloneable<Properties, Mixin>;
 
   /// Virtual destructor
   virtual ~Aspect() = default;

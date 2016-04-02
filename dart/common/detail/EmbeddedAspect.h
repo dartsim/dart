@@ -74,7 +74,7 @@ const PropertiesT& DefaultGetEmbeddedProperties(const AspectT* aspect)
 
 //==============================================================================
 template <class BaseT, class DerivedT, typename StateDataT,
-          typename StateT = common::Aspect::StateMixer<StateDataT>,
+          typename StateT = common::Aspect::MakeState<StateDataT>,
           void (*setEmbeddedState)(DerivedT*, const StateT&) =
               &DefaultSetEmbeddedState<DerivedT, StateT>,
           const StateT& (*getEmbeddedState)(const DerivedT*) =
@@ -243,7 +243,7 @@ protected:
 
 //==============================================================================
 template <class BaseT, class DerivedT, typename PropertiesDataT,
-          typename PropertiesT = common::Aspect::PropertiesMixer<PropertiesDataT>,
+          typename PropertiesT = common::Aspect::MakeProperties<PropertiesDataT>,
           void (*setEmbeddedProperties)(DerivedT*, const PropertiesT&) =
               &DefaultSetEmbeddedProperties<DerivedT, PropertiesT>,
           const PropertiesT& (*getEmbeddedProperties)(const DerivedT*) =

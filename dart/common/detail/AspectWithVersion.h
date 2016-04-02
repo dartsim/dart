@@ -58,7 +58,7 @@ public:
   using Derived = DerivedT;
   using StateData = StateDataT;
   using CompositeType = CompositeT;
-  using State = Aspect::StateMixer<StateData>;
+  using State = Aspect::MakeState<StateData>;
   constexpr static void (*UpdateState)(Derived*) = updateState;
 
   using AspectImplementation = AspectWithState<
@@ -116,7 +116,7 @@ public:
   using Derived = DerivedT;
   using PropertiesData = PropertiesDataT;
   using CompositeType = CompositeT;
-  using Properties = Aspect::PropertiesMixer<PropertiesData>;
+  using Properties = Aspect::MakeProperties<PropertiesData>;
   constexpr static void (*UpdateProperties)(Derived*) = updateProperties;
 
   using AspectImplementation = AspectWithVersionedProperties<

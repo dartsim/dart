@@ -62,10 +62,10 @@ class Composite
 public:
 
   using StateMap = std::map< std::type_index, std::unique_ptr<Aspect::State> >;
-  using State = ExtensibleMapHolder<StateMap>;
+  using State = CloneableMap<StateMap>;
 
   using PropertiesMap = std::map< std::type_index, std::unique_ptr<Aspect::Properties> >;
-  using Properties = ExtensibleMapHolder<PropertiesMap>;
+  using Properties = CloneableMap<PropertiesMap>;
 
   using AspectMap = std::map< std::type_index, std::unique_ptr<Aspect> >;
   using RequiredAspectSet = std::unordered_set<std::type_index>;
