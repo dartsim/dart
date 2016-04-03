@@ -69,11 +69,11 @@ void MyWindow::timeStepping() {
   mWorld->step();
 }
 
-void MyWindow::drawSkels() {
+void MyWindow::drawWorld() const {
   glEnable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-  SimWindow::drawSkels();
+  SimWindow::drawWorld();
 }
 
 void MyWindow::keyboard(unsigned char _key, int _x, int _y) {

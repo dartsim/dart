@@ -50,12 +50,6 @@
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
-namespace renderer {
-class RenderInterface;
-}  // namespace renderer
-}  // namespace dart
-
-namespace dart {
 namespace dynamics {
 
 class BodyNode;
@@ -718,13 +712,6 @@ public:
   void notifyAccelerationUpdate();
 
   /// \}
-
-  //----------------------------------------------------------------------------
-  // Rendering
-  //----------------------------------------------------------------------------
-
-  ///
-  void applyGLTransform(renderer::RenderInterface* _ri);
 
   //----------------------------------------------------------------------------
   // Friendship

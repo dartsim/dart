@@ -62,11 +62,6 @@ public:
   /// \brief
   void setHeight(double _height);
 
-  // Documentation inherited.
-  void draw(
-      renderer::RenderInterface* _ri = nullptr,
-      const Eigen::Vector4d& _color = Eigen::Vector4d::Ones()) const override;
-
   /// \brief Compute volume from given properties
   static double computeVolume(double radius, double height);
 

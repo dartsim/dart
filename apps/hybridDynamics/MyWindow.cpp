@@ -73,12 +73,12 @@ void MyWindow::timeStepping()
 }
 
 //==============================================================================
-void MyWindow::drawSkels()
+void MyWindow::drawWorld() const
 {
   glEnable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-  SimWindow::drawSkels();
+  SimWindow::drawWorld();
 }
 
 //==============================================================================

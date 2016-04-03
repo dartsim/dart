@@ -51,7 +51,6 @@
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/SoftMeshShape.h"
-#include "dart/renderer/LoadOpengl.h"
 #include "dart/collision/fcl_mesh/CollisionShapes.h"
 #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
 
@@ -430,41 +429,6 @@ int FCLMeshCollisionNode::evalContactPosition(
   *_contactPosition1 = Eigen::Vector3d(contact1[0], contact1[1], contact1[2]);
   *_contactPosition2 = Eigen::Vector3d(contact2[0], contact2[1], contact2[2]);
   return testRes;
-}
-
-//==============================================================================
-void FCLMeshCollisionNode::drawCollisionSkeletonNode(bool _bTrans)
-{
-  evalRT();
-  double M[16];
-  for (int i = 0; i < 4; i++)
-    for (int j = 0; j < 4; j++)
-      M[j * 4 + i] = mWorldTrans(i, j);
-//  fcl::Vec3f v1, v2, v3;
-  glPushMatrix();
-  if (_bTrans)
-    glMultMatrixd(M);
-  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-  glBegin(GL_TRIANGLES);
-  for (size_t i = 0; i < mMeshes.size(); i++)
-  {
-    for (int j = 0; j < mMeshes[i]->num_tris; j++)
-    {
-      fcl::Triangle tri = mMeshes[i]->tri_indices[j];
-      glVertex3f(mMeshes[i]->vertices[tri[0]][0],
-                 mMeshes[i]->vertices[tri[0]][1],
-                 mMeshes[i]->vertices[tri[0]][2]);
-      glVertex3f(mMeshes[i]->vertices[tri[1]][0],
-                 mMeshes[i]->vertices[tri[1]][1],
-                 mMeshes[i]->vertices[tri[1]][2]);
-      glVertex3f(mMeshes[i]->vertices[tri[2]][0],
-                 mMeshes[i]->vertices[tri[2]][1],
-                 mMeshes[i]->vertices[tri[2]][2]);
-    }
-  }
-  glEnd();
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-  glPopMatrix();
 }
 
 //==============================================================================

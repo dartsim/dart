@@ -235,16 +235,6 @@ public:
   /// Returns true if this Frame is the World Frame
   bool isWorld() const;
 
-  //--------------------------------------------------------------------------
-  // Rendering
-  //--------------------------------------------------------------------------
-
-  // Render this Frame as well as any Entities it contains
-  void draw(
-      renderer::RenderInterface *_ri = nullptr,
-      const Eigen::Vector4d &_color = Eigen::Vector4d::Ones(),
-      bool _useDefaultColor = true, int _depth = 0) const override;
-
   /// Notify this Frame and all its children that its pose has changed
   virtual void notifyTransformUpdate() override;
 
