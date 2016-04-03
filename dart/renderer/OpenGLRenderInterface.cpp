@@ -421,26 +421,35 @@ void OpenGLRenderInterface::drawList(GLuint index) {
     glCallList(index);
 }
 
+void OpenGLRenderInterface::drawLineSegments(
+    const std::vector<Eigen::Vector3d>& _vertices,
+    const Eigen::aligned_vector<Eigen::Vector2i>& _connections)
+{
+  glBegin(GL_LINES);
+  for(const Eigen::Vector2i& c : _connections)
+  {
+    const Eigen::Vector3d& v1 = _vertices[c[0]];
+    const Eigen::Vector3d& v2 = _vertices[c[1]];
+    glVertex3f(v1[0], v1[1], v1[2]);
+    glVertex3f(v2[0], v2[1], v2[2]);
+  }
+  glEnd();
+}
+
 //==============================================================================
 void OpenGLRenderInterface::compileList(dynamics::Skeleton* _skel)
 {
-  DART_SUPPRESS_DEPRECATED_BEGIN
-
-      if(_skel == 0)
-      return;
+  if(_skel == 0)
+    return;
 
   for (size_t i = 0; i < _skel->getNumBodyNodes(); i++) {
     compileList(_skel->getBodyNode(i));
   }
-
-  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
 void OpenGLRenderInterface::compileList(dynamics::BodyNode* node)
 {
-  DART_SUPPRESS_DEPRECATED_BEGIN
-
   if(node == 0)
     return;
 
@@ -456,8 +465,6 @@ void OpenGLRenderInterface::compileList(dynamics::BodyNode* node)
     auto shapeNode = node->getNode<dynamics::ShapeNode>(i);
     compileList(shapeNode->getShape().get());
   }
-
-  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
@@ -510,249 +517,6 @@ GLuint OpenGLRenderInterface::compileList(const Eigen::Vector3d& _scale, const a
     glEndList();
 
     return index;
-}
-
-//==============================================================================
-void OpenGLRenderInterface::draw(dynamics::Skeleton* _skel, bool _vizCol,
-                                 bool _colMesh)
-{
-  DART_SUPPRESS_DEPRECATED_BEGIN
-
-  if(_skel == 0)
-    return;
-
-  for (size_t i = 0; i < _skel->getNumBodyNodes(); i++)
-    draw(_skel->getBodyNode(i), _vizCol, _colMesh);
-
-  DART_SUPPRESS_DEPRECATED_END
-}
-
-//==============================================================================
-void OpenGLRenderInterface::draw(dynamics::BodyNode* node,
-                                 bool vizCol, bool colMesh)
-{
-  DART_SUPPRESS_DEPRECATED_BEGIN
-
-  if(node == 0)
-    return;
-  
-  // Get world transform
-  Eigen::Isometry3d pose;
-  pose = node->getTransform();
-  
-  // GL calls
-  if(vizCol && node->isColliding())
-  {
-    glDisable(GL_TEXTURE_2D);
-    glEnable(GL_COLOR_MATERIAL);
-    glColor3f(1.0f, .1f, .1f);
-  }
-  
-  glPushMatrix();
-  glMultMatrixd(pose.data());
-
-  for (auto childFrame : node->getChildFrames())
-  {
-    auto shapeFrame = dynamic_cast<dynamics::ShapeFrame*>(childFrame);
-
-    if (!shapeFrame)
-      continue;
-
-    if (shapeFrame->hasVisualAddon())
-      draw(shapeFrame->getShape().get());
-    else if (colMesh && shapeFrame->hasCollisionAddon())
-      draw(shapeFrame->getShape().get());
-  }
-
-  for (auto i = 0u; i < node->getNumNodes<dynamics::ShapeNode>(); ++i)
-  {
-    auto shapeNode = node->getNode<dynamics::ShapeNode>(i);
-    if (shapeNode->hasVisualAddon())
-      draw(shapeNode->getShape().get());
-    else if (colMesh && shapeNode->hasCollisionAddon())
-      draw(shapeNode->getShape().get());
-  }
-  
-  glColor3f(1.0f,1.0f,1.0f);
-  glEnable( GL_TEXTURE_2D );
-  glDisable(GL_COLOR_MATERIAL);
-  glPopMatrix();
-
-  DART_SUPPRESS_DEPRECATED_END
-}
-
-//==============================================================================
-void OpenGLRenderInterface::draw(dynamics::Shape* shape)
-{
-  //FIXME: Refactor this to use polymorphism.
-
-  if(nullptr == shape)
-    return;
-
-  glPushMatrix();
-
-  glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
-  glEnable ( GL_COLOR_MATERIAL );
-
-  switch(shape->getShapeType())
-  {
-    case dynamics::Shape::BOX:
-    {
-      //FIXME: We are not in a glut instance
-      dynamics::BoxShape* box = static_cast<dynamics::BoxShape*>(shape);
-      drawCube(box->getSize());
-      break;
-    }
-    case dynamics::Shape::CYLINDER:
-    {
-      //FIXME: We are not in a glut instance
-      dynamics::CylinderShape* cylinder = static_cast<dynamics::CylinderShape*>(shape);
-      drawCylinder(cylinder->getRadius(), cylinder->getHeight());
-      break;
-    }
-    case dynamics::Shape::ELLIPSOID:
-    {
-      //FIXME: We are not in a glut instance
-      dynamics::EllipsoidShape* ellipsoid = static_cast<dynamics::EllipsoidShape*>(shape);
-      drawEllipsoid(ellipsoid->getSize());
-      break;
-    }
-    case dynamics::Shape::PLANE:
-    {
-      dterr << "PLANE shape is not supported yet." << std::endl;
-      break;
-    }
-    case dynamics::Shape::MESH:
-    {
-      glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
-
-      dynamics::MeshShape* mesh = static_cast<dynamics::MeshShape*>(shape);
-
-      if(!mesh)
-        break;
-      else if(mesh->getDisplayList())
-        drawList(mesh->getDisplayList());
-      else
-        drawMesh(mesh->getScale(), mesh->getMesh());
-
-      break;
-    }
-    case dynamics::Shape::SOFT_MESH:
-    {
-      // Do nothing
-      break;
-    }
-    case dynamics::Shape::LINE_SEGMENT:
-    {
-      dynamics::LineSegmentShape* lineSegments =
-          static_cast<dynamics::LineSegmentShape*>(shape);
-      drawLineSegments(lineSegments->getVertices(),
-                       lineSegments->getConnections());
-    }
-  }
-
-  glDisable(GL_COLOR_MATERIAL);
-  glPopMatrix();
-}
-
-//==============================================================================
-void OpenGLRenderInterface::draw(dynamics::ShapeFrame* shapeFrame)
-{
-  if(nullptr == shapeFrame)
-    return;
-
-  auto shape = shapeFrame->getShape().get();
-
-  Eigen::Isometry3d pose = shapeFrame->getRelativeTransform();
-  auto visualAddon = shapeFrame->get<dynamics::VisualAddon>();
-
-  Eigen::Vector3d color = Eigen::Vector3d::Random();
-  if (visualAddon)
-    color = visualAddon->getColor();
-
-  glPushMatrix();
-
-  glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
-  glEnable ( GL_COLOR_MATERIAL );
-
-  glColor3d(color[0], color[1], color[2]);
-
-  glMultMatrixd(pose.data());
-
-  switch(shape->getShapeType())
-  {
-    case dynamics::Shape::BOX:
-    {
-      //FIXME: We are not in a glut instance
-      dynamics::BoxShape* box = static_cast<dynamics::BoxShape*>(shape);
-      drawCube(box->getSize());
-      break;
-    }
-    case dynamics::Shape::CYLINDER:
-    {
-      //FIXME: We are not in a glut instance
-      dynamics::CylinderShape* cylinder = static_cast<dynamics::CylinderShape*>(shape);
-      drawCylinder(cylinder->getRadius(), cylinder->getHeight());
-      break;
-    }
-    case dynamics::Shape::ELLIPSOID:
-    {
-      //FIXME: We are not in a glut instance
-      dynamics::EllipsoidShape* ellipsoid = static_cast<dynamics::EllipsoidShape*>(shape);
-      drawEllipsoid(ellipsoid->getSize());
-      break;
-    }
-    case dynamics::Shape::PLANE:
-    {
-      dterr << "PLANE shape is not supported yet." << std::endl;
-      break;
-    }
-    case dynamics::Shape::MESH:
-    {
-      glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
-
-      dynamics::MeshShape* mesh = static_cast<dynamics::MeshShape*>(shape);
-
-      if(!mesh)
-        break;
-      else if(mesh->getDisplayList())
-        drawList(mesh->getDisplayList());
-      else
-        drawMesh(mesh->getScale(), mesh->getMesh());
-
-      break;
-    }
-    case dynamics::Shape::SOFT_MESH:
-    {
-      // Do nothing
-      break;
-    }
-    case dynamics::Shape::LINE_SEGMENT:
-    {
-      dynamics::LineSegmentShape* lineSegments =
-          static_cast<dynamics::LineSegmentShape*>(shape);
-      drawLineSegments(lineSegments->getVertices(),
-                       lineSegments->getConnections());
-    }
-  }
-
-  glDisable(GL_COLOR_MATERIAL);
-  glPopMatrix();
-}
-
-void OpenGLRenderInterface::drawLineSegments(
-    const std::vector<Eigen::Vector3d>& _vertices,
-    const Eigen::aligned_vector<Eigen::Vector2i>& _connections)
-{
-  glBegin(GL_LINES);
-  for(const Eigen::Vector2i& c : _connections)
-  {
-    const Eigen::Vector3d& v1 = _vertices[c[0]];
-    const Eigen::Vector3d& v2 = _vertices[c[1]];
-    glVertex3f(v1[0], v1[1], v1[2]);
-    glVertex3f(v2[0], v2[1], v2[2]);
-  }
-  glEnd();
 }
 
 void OpenGLRenderInterface::setPenColor(const Eigen::Vector4d& _col) {

@@ -36,8 +36,6 @@
 
 #include "dart/dynamics/ShapeFrame.h"
 
-#include "dart/renderer/OpenGLRenderInterface.h"
-
 namespace dart {
 namespace dynamics {
 
@@ -277,31 +275,6 @@ ShapePtr ShapeFrame::getShape()
 ConstShapePtr ShapeFrame::getShape() const
 {
   return mShapeFrameP.mShape;
-}
-
-//==============================================================================
-void ShapeFrame::draw(renderer::RenderInterface* ri,
-                     const Eigen::Vector4d& color,
-                     bool useDefaultColor) const
-{
-  DART_SUPPRESS_DEPRECATED_BEGIN
-
-  auto visualAddon = getVisualAddon();
-
-  if (!visualAddon || visualAddon->isHidden())
-    return;
-
-  ri->pushMatrix();
-  ri->transform(getRelativeTransform());
-
-  if (useDefaultColor)
-    mShapeFrameP.mShape->draw(ri, visualAddon->getRGBA());
-  else
-    mShapeFrameP.mShape->draw(ri, color);
-
-  ri->popMatrix();
-
-  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

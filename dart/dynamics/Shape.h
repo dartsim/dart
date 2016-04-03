@@ -49,12 +49,6 @@
 #include "dart/common/Deprecated.h"
 
 namespace dart {
-namespace renderer {
-class RenderInterface;
-}  // namespace renderer
-}  // namespace dart
-
-namespace dart {
 namespace dynamics {
 /// \brief
 class Shape : public virtual common::Subject
@@ -140,11 +134,6 @@ public:
 
   /// Notify that the color (rgba) of this shape has updated
   virtual void notifyColorUpdate(const Eigen::Vector4d& color);
-
-  DEPRECATED(6.0)
-  virtual void draw(
-      renderer::RenderInterface* _ri = nullptr,
-      const Eigen::Vector4d& _color = Eigen::Vector4d::Ones()) const = 0;
 
 protected:
 

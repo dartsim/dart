@@ -56,12 +56,6 @@
 #include "dart/dynamics/Skeleton.h"
 
 namespace dart {
-namespace renderer {
-class RenderInterface;
-}  // namespace renderer
-}  // namespace dart
-
-namespace dart {
 namespace dynamics {
 
 class GenCoord;
@@ -814,23 +808,6 @@ public:
   /// Return angular momentum.
   Eigen::Vector3d getAngularMomentum(
       const Eigen::Vector3d& _pivot = Eigen::Vector3d::Zero());
-
-  //----------------------------------------------------------------------------
-  // Rendering
-  //----------------------------------------------------------------------------
-
-  /// Render the markers
-  DEPRECATED(6.0)
-  void draw(renderer::RenderInterface* ri = nullptr,
-            const Eigen::Vector4d& color = Eigen::Vector4d::Ones(),
-            bool useDefaultColor = true,
-            int depth = 0) const override;
-
-  /// Render the markers
-  DEPRECATED(6.0)
-  void drawMarkers(renderer::RenderInterface* _ri = nullptr,
-                   const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-                   bool _useDefaultColor = true) const;
 
   //----------------------------------------------------------------------------
   // Notifications

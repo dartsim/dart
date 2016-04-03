@@ -115,12 +115,8 @@ void SimWindow::drawSkels()
 //==============================================================================
 void SimWindow::drawEntities()
 {
-  DART_SUPPRESS_DEPRECATED_BEGIN
-
   for (size_t i = 0; i < mWorld->getNumSimpleFrames(); ++i)
-    mWorld->getSimpleFrame(i)->draw(mRI);
-
-  DART_SUPPRESS_DEPRECATED_END
+    drawShapeFrame(mWorld->getSimpleFrame(i).get());
 }
 
 void SimWindow::displayTimer(int _val) {

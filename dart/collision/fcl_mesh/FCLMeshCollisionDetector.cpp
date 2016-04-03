@@ -42,7 +42,6 @@
 
 #include <fcl/collision.h>
 
-#include "dart/renderer/LoadOpengl.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/SoftBodyNode.h"
@@ -138,16 +137,6 @@ bool FCLMeshCollisionDetector::detectCollision(CollisionNode* _node1,
         collisionNode2,
         _calculateContactPoints ? &mContacts : nullptr,
         mNumMaxContacts);
-}
-
-//==============================================================================
-void FCLMeshCollisionDetector::draw()
-{
-  for (size_t i = 0; i < mCollisionNodes.size(); i++)
-  {
-    static_cast<FCLMeshCollisionNode*>(
-        mCollisionNodes[i])->drawCollisionSkeletonNode();
-  }
 }
 
 }  // namespace collision

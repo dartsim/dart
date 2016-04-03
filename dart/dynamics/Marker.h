@@ -42,12 +42,6 @@
 #include "dart/math/Helpers.h"
 
 namespace dart {
-namespace renderer {
-class RenderInterface;
-}  // namespace renderer
-}  // namespace dart
-
-namespace dart {
 namespace dynamics {
 
 class BodyNode;
@@ -88,13 +82,6 @@ public:
 
   /// Destructor
   virtual ~Marker();
-
-  /// Render this marker
-  DEPRECATED(6.0)
-  void draw(renderer::RenderInterface* ri = nullptr,
-            bool offset = true,
-            const Eigen::Vector4d& color = Color::White(1.0),
-            bool useDefaultColor = true) const;
 
   /// Get the BodyNode this Marker belongs to
   BodyNode* getBodyNode();

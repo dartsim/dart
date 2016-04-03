@@ -40,8 +40,6 @@
 #include "dart/math/Geometry.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/EllipsoidShape.h"
-#include "dart/renderer/RenderInterface.h"
-
 #include "dart/dynamics/SoftBodyNode.h"
 
 using namespace Eigen;
@@ -1015,43 +1013,6 @@ void PointMass::aggregateExternalForces(VectorXd& /*_Fext*/)
   // TODO(JS): Not implemented
 //  int iStart = mIndexInSkeleton[0];
 //  _Fext->segment<3>(iStart) = mFext;
-}
-
-//==============================================================================
-void PointMass::draw(renderer::RenderInterface* _ri,
-                     const Eigen::Vector4d& _color,
-                     bool _useDefaultColor) const
-{
-  DART_SUPPRESS_DEPRECATED_BEGIN
-
-  if (_ri == nullptr)
-    return;
-
-  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-
-  // render point at the current position
-  _ri->pushMatrix();
-  T.translation() = getLocalPosition();
-  _ri->transform(T);
-  if (_useDefaultColor)
-    _ri->setPenColor(Eigen::Vector4d(0.8, 0.3, 0.3, 1.0));
-  else
-    _ri->setPenColor(_color);
-  _ri->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
-  _ri->popMatrix();
-
-  // render point at the resting position
-  _ri->pushMatrix();
-  T.translation() = getRestingPosition();
-  _ri->transform(T);
-  if (_useDefaultColor)
-    _ri->setPenColor(Eigen::Vector4d(0.3, 0.8, 0.3, 1.0));
-  else
-    _ri->setPenColor(_color);
-  _ri->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
-  _ri->popMatrix();
-
-  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

@@ -42,12 +42,6 @@
 #include "dart/dynamics/Entity.h"
 
 namespace dart {
-namespace renderer {
-class RenderInterface;
-}  // namespace renderer
-}  // namespace dart
-
-namespace dart {
 namespace dynamics {
 
 class EllipsoidShape;
@@ -507,12 +501,6 @@ protected:
 
   ///
   Eigen::Vector3d mCg_F;
-
-  //---------------------------- Rendering -------------------------------------
-  DEPRECATED(6.0)
-  virtual void draw(renderer::RenderInterface* _ri = nullptr,
-                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-                    bool _useDefaultColor = true) const;
 
 protected:
   // TODO(JS): Need?

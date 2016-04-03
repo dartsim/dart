@@ -40,14 +40,11 @@
 #include <string>
 #include <vector>
 
-#include "dart/math/Helpers.h"
 #include "dart/common/Console.h"
+#include "dart/math/Helpers.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/renderer/LoadOpengl.h"
-#include "dart/renderer/RenderInterface.h"
-
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftMeshShape.h"
 
@@ -1141,88 +1138,6 @@ void SoftBodyNode::clearInternalForces()
 
   for (size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses[i]->resetForces();
-}
-
-//==============================================================================
-void SoftBodyNode::draw(renderer::RenderInterface* _ri,
-                        const Eigen::Vector4d& _color,
-                        bool _useDefaultColor,
-                        int /*_depth*/) const
-{
-  DART_SUPPRESS_DEPRECATED_BEGIN
-
-  if (_ri == nullptr)
-    return;
-
-  _ri->pushMatrix();
-
-  // render the self geometry
-//  mParentJoint->applyGLTransform(_ri);
-  _ri->transform(getRelativeTransform());
-
-  _ri->pushName((unsigned)mID);
-
-  auto shapeNodes = getShapeNodesWith<VisualAddon>();
-  for (auto shapeNode : shapeNodes)
-    shapeNode->draw(_ri, _color, _useDefaultColor);
-
-  // vertex
-//  if (_showPointMasses)
-//  {
-//    for (size_t i = 0; i < mPointMasses.size(); ++i)
-//    {
-//      _ri->pushMatrix();
-//      mPointMasses[i]->draw(_ri, _color, _useDefaultColor);
-//      _ri->popMatrix();
-//    }
-//  }
-
-  // edges (mesh)
-//  Eigen::Vector4d fleshColor = _color;
-//  fleshColor[3] = 0.5;
-//  _ri->setPenColor(fleshColor);
-//  if (_showMeshs)
-  {
-    _ri->setPenColor(mSoftShapeNode.lock()->get<VisualAddon>()->getRGBA());
-    glEnable(GL_LIGHTING);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-    Eigen::Vector3d pos;
-    Eigen::Vector3d pos_normalized;
-    for (size_t i = 0; i < mSoftP.mFaces.size(); ++i)
-    {
-      glEnable(GL_AUTO_NORMAL);
-      glBegin(GL_TRIANGLES);
-
-      pos = mPointMasses[mSoftP.mFaces[i](0)]->getLocalPosition();
-      pos_normalized = pos.normalized();
-      glNormal3f(pos_normalized(0), pos_normalized(1), pos_normalized(2));
-      glVertex3f(pos(0), pos(1), pos(2));
-      pos = mPointMasses[mSoftP.mFaces[i](1)]->getLocalPosition();
-      pos_normalized = pos.normalized();
-      glNormal3f(pos_normalized(0), pos_normalized(1), pos_normalized(2));
-      glVertex3f(pos(0), pos(1), pos(2));
-      pos = mPointMasses[mSoftP.mFaces[i](2)]->getLocalPosition();
-      pos_normalized = pos.normalized();
-      glNormal3f(pos_normalized(0), pos_normalized(1), pos_normalized(2));
-      glVertex3f(pos(0), pos(1), pos(2));
-      glEnd();
-    }
-  }
-
-  _ri->popName();
-
-  // render the subtree
-//  for (unsigned int i = 0; i < mChildBodyNodes.size(); i++)
-//  {
-//    getChildBodyNode(i)->draw(_ri, _color, _useDefaultColor);
-//  }
-  for(Entity* entity : mChildEntities)
-    entity->draw(_ri, _color, _useDefaultColor);
-
-  _ri->popMatrix();
-
-  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

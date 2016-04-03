@@ -340,15 +340,6 @@ protected:
 
   virtual void clearInternalForces() override;
 
-  //--------------------------------------------------------------------------
-  // Rendering
-  //--------------------------------------------------------------------------
-  /// \brief Render the entire subtree rooted at this body node.
-  DEPRECATED(6.0)
-  virtual void draw(renderer::RenderInterface* _ri = nullptr,
-                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-                    bool _useDefaultColor = true, int _depth = 0) const override;
-
 protected:
   /// \brief List of point masses composing deformable mesh.
   std::vector<PointMass*> mPointMasses;

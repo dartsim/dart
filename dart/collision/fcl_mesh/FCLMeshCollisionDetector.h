@@ -69,9 +69,6 @@ public:
   // Documentation inherited
   virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
                                bool _calculateContactPoints);
-
-  ///
-  void draw();
 };
 
 }  // namespace collision

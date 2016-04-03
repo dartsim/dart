@@ -35,9 +35,9 @@
  */
 
 #include "dart/dynamics/Frame.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/renderer/RenderInterface.h"
+
 #include "dart/common/Console.h"
+#include "dart/dynamics/Shape.h"
 
 namespace dart {
 namespace dynamics {
@@ -437,34 +437,6 @@ bool Frame::isShapeFrame() const
 bool Frame::isWorld() const
 {
   return mAmWorld;
-}
-
-//==============================================================================
-void Frame::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
-                 bool _useDefaultColor, int _depth) const
-{
-  DART_SUPPRESS_DEPRECATED_BEGIN
-
-  if(nullptr == _ri)
-    return;
-
-  _ri->pushMatrix();
-
-  // Use the relative transform of this Frame. We assume that we are being
-  // called from the parent Frame's renderer.
-  // TODO(MXG): This can cause trouble if the draw function is originally called
-  // on an Entity or Frame which is not a child of the World Frame
-  _ri->transform(getRelativeTransform());
-
-  Entity::draw(_ri, _color, _useDefaultColor, _depth);
-
-  // render the subtree
-  for(Entity* entity : mChildEntities)
-    entity->draw(_ri, _color, _useDefaultColor);
-
-  _ri->popMatrix();
-
-  DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================

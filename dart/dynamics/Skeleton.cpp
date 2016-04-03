@@ -1788,30 +1788,6 @@ const Eigen::VectorXd& Skeleton::getConstraintForces() const
 //}
 
 //==============================================================================
-void Skeleton::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
-                    bool _useDefaultColor) const
-{
-  DART_SUPPRESS_DEPRECATED_BEGIN
-
-  for(size_t i=0; i<getNumTrees(); ++i)
-    getRootBodyNode(i)->draw(_ri, _color, _useDefaultColor);
-
-  DART_SUPPRESS_DEPRECATED_END
-}
-
-//==============================================================================
-void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
-                           const Eigen::Vector4d& _color,
-                           bool _useDefaultColor) const
-{
-  DART_SUPPRESS_DEPRECATED_BEGIN
-
-  getRootBodyNode()->drawMarkers(_ri, _color, _useDefaultColor);
-
-  DART_SUPPRESS_DEPRECATED_END
-}
-
-//==============================================================================
 Skeleton::Skeleton(const Properties& _properties)
   : mSkeletonP(""),
     mTotalMass(0.0),
