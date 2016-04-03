@@ -37,7 +37,6 @@ script:
   - if [ $BUILD_CORE_ONLY = OFF ]; then make all tutorials examples tests; fi
 
 after_success:
-  - sudo ldconfig --verbose > /dev/null # So the test executeables can detect libtinyxml2
   - if [ $BUILD_CORE_ONLY = OFF ]; then make test; fi
   - if [ $COVERALLS = ON ]; then make coveralls; fi
 
