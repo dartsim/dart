@@ -54,26 +54,36 @@ public:
 
   static std::shared_ptr<FCLCollisionDetector> create();
 
-  /// FCL's primitive shape support is still not complete. FCL 0.4.0 fixed lots
-  /// of the bugs, but it still returns single contact point per shape pair
-  /// except for box-box collision. For this reason, we recommend using mesh for
-  /// primitive shapes until FCL fully support primitive shapes.
+  /// Whether to use analytic collision checking for primitive shapes.
+  ///
+  /// PRIMITIVE: Use FCL's analytic collision checking for primitive shapes.
+  /// MESH: Don't use it. Instead, use approximate mesh shapes for the primitive
+  /// shapes. The contact result is probably less accurate than the analytic
+  /// result.
+  ///
+  /// Warning: FCL's primitive shape support is not complete. FCL 0.4.0 improved
+  /// the support alot, but it still returns single contact point for a shape
+  /// pair except for box-box collision. For this reason, we recommend using
+  /// MESH until FCL fully supports primitive shapes.
   enum PrimitiveShape
   {
-    MESH = 0,
-    PRIMITIVE
+    PRIMITIVE = 0,
+    MESH
   };
-  // TODO(JS): Update comment
 
-  /// FCL's contact computation is still (at least until 0.4.0) not correct for
-  /// mesh collision. We recommend using DART's contact point computation
-  /// instead until it's fixed in FCL.
+  /// Whether to use FCL's contact point computation.
+  ///
+  /// FCL: Use FCL's contact point computation.
+  /// DART: Use DART's own contact point computation
+  ///
+  /// Warning: FCL's contact computation is not correct. See:
+  /// https://github.com/flexible-collision-library/fcl/issues/106
+  /// We recommend using DART until it's fixed in FCL.
   enum ContactPointComputationMethod
   {
-    DART = 0,
-    FCL
+    FCL = 0,
+    DART
   };
-  // TODO(JS): Update comment
 
   /// Constructor
   virtual ~FCLCollisionDetector();
@@ -154,6 +164,8 @@ private:
       const dynamics::ConstShapePtr& shape,
       FCLCollisionDetector::PrimitiveShape type,
       const FCLCollisionGeometryDeleter& deleter);
+
+private:
 
   using ShapeMap = std::map<dynamics::ConstShapePtr,
                             boost::weak_ptr<fcl::CollisionGeometry>>;

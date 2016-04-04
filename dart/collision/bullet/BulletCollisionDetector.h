@@ -98,6 +98,8 @@ private:
   btCollisionShape* createBulletCollisionShape(
       const dynamics::ConstShapePtr& shape);
 
+private:
+
   std::map<dynamics::ConstShapePtr,
            std::pair<btCollisionShape*, size_t>> mShapeMap;
 

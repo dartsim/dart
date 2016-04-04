@@ -123,6 +123,8 @@ protected:
   /// Notify that a CollisionObject is destroying. Do nothing by default.
   virtual void notifyCollisionObjectDestorying(CollisionObject* object);
 
+protected:
+
   std::unique_ptr<CollisionObjectManager> mCollisionObjectManager;
 
 };
