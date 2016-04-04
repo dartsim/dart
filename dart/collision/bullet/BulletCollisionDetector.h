@@ -78,41 +78,28 @@ public:
 protected:
 
   /// Constructor
-  BulletCollisionDetector() = default;
+  BulletCollisionDetector();
 
   // Documentation inherited
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
 
-  std::shared_ptr<btCollisionShape> claimBulletCollisionGeometry(
-      const dynamics::ConstShapePtr& shape);
+  // Documentation inherited
+  void notifyCollisionObjectDestorying(CollisionObject* object) override;
 
 private:
 
-  /// This deleter is responsible for deleting fcl::CollisionGeometry and
-  /// removing it from mShapeMap when it is not shared by any CollisionObjects.
-  class BulletCollisionShapeDeleter final
-  {
-  public:
+  btCollisionShape* claimBulletCollisionShape(
+      const dynamics::ConstShapePtr& shape);
 
-    BulletCollisionShapeDeleter(BulletCollisionDetector* cd,
-                                const dynamics::ConstShapePtr& shape);
+  void reclaimBulletCollisionShape(
+      const dynamics::ConstShapePtr& shape);
 
-    void operator()(btCollisionShape* bulletCollisionShape) const;
+  btCollisionShape* createBulletCollisionShape(
+      const dynamics::ConstShapePtr& shape);
 
-  private:
-
-    BulletCollisionDetector* mBulletCollisionDetector;
-
-    dynamics::ConstShapePtr mShape;
-
-  };
-
-  std::shared_ptr<btCollisionShape> createBulletCollisionShape(
-      const dynamics::ConstShapePtr& shape,
-      const BulletCollisionShapeDeleter& deleter);
-
-  std::map<dynamics::ConstShapePtr, std::weak_ptr<btCollisionShape>> mShapeMap;
+  std::map<dynamics::ConstShapePtr,
+           std::pair<btCollisionShape*, size_t>> mShapeMap;
 
 };
 

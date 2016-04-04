@@ -104,6 +104,10 @@ public:
 
 protected:
 
+  class CollisionObjectManager;
+  class NoneSharingCollisionObjectManager;
+  class SharingCollisionObjectManager;
+
   /// Constructor
   CollisionDetector();
 
@@ -116,15 +120,84 @@ protected:
   virtual std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) = 0;
 
+  /// Notify that a CollisionObject is destroying. Do nothing by default.
+  virtual void notifyCollisionObjectDestorying(CollisionObject* object);
+
+  std::unique_ptr<CollisionObjectManager> mCollisionObjectManager;
+
+};
+
+class CollisionDetector::CollisionObjectManager
+{
+public:
+
+  /// Constructor
+  CollisionObjectManager(CollisionDetector* cd);
+
+  /// Claim CollisionObject associated with shapeFrame. New CollisionObject
+  /// will be created if it hasn't created yet for shapeFrame.
+  virtual std::shared_ptr<CollisionObject> claimCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) = 0;
+
+protected:
+
+  CollisionDetector* mCollisionDetector;
+
+};
+
+class CollisionDetector::NoneSharingCollisionObjectManager final :
+    public CollisionDetector::CollisionObjectManager
+{
+public:
+
+  /// Constructor
+  NoneSharingCollisionObjectManager(CollisionDetector* cd);
+
+  // Documentation inherited
+  std::shared_ptr<CollisionObject> claimCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame);
+
 private:
-\
+
   /// This deleter is responsible for deleting CollisionObject and removing it
   /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
   struct CollisionObjectDeleter final
   {
-    CollisionDetector* mCollisionDetector;
+    NoneSharingCollisionObjectManager* mCollisionObjectManager;
 
-    CollisionObjectDeleter(CollisionDetector* cd);
+    CollisionObjectDeleter(NoneSharingCollisionObjectManager* mgr);
+
+    void operator()(CollisionObject* object) const;
+  };
+
+  const CollisionObjectDeleter mCollisionObjectDeleter;
+
+};
+
+class CollisionDetector::SharingCollisionObjectManager final :
+    public CollisionDetector::CollisionObjectManager
+{
+public:
+
+  /// Constructor
+  SharingCollisionObjectManager(CollisionDetector* cd);
+
+  /// Destructor
+  virtual ~SharingCollisionObjectManager();
+
+  // Documentation inherited
+  std::shared_ptr<CollisionObject> claimCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame);
+
+private:
+
+  /// This deleter is responsible for deleting CollisionObject and removing it
+  /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
+  struct CollisionObjectDeleter final
+  {
+    SharingCollisionObjectManager* mCollisionObjectManager;
+
+    CollisionObjectDeleter(SharingCollisionObjectManager* mgr);
 
     void operator()(CollisionObject* object) const;
   };

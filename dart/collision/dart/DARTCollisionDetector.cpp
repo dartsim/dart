@@ -187,6 +187,13 @@ bool DARTCollisionDetector::detect(
 }
 
 //==============================================================================
+DARTCollisionDetector::DARTCollisionDetector()
+  : CollisionDetector()
+{
+  mCollisionObjectManager.reset(new SharingCollisionObjectManager(this));
+}
+
+//==============================================================================
 void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
 {
   if (!shapeFrame)

@@ -239,43 +239,84 @@ bool BulletCollisionDetector::detect(
 }
 
 //==============================================================================
-std::unique_ptr<CollisionObject> BulletCollisionDetector::createCollisionObject(
-    const dynamics::ShapeFrame* shapeFrame)
+BulletCollisionDetector::BulletCollisionDetector()
+  : CollisionDetector()
 {
-  auto bulletCollShape = claimBulletCollisionGeometry(shapeFrame->getShape());
-
-  return std::unique_ptr<BulletCollisionObject>(
-        new BulletCollisionObject(this, shapeFrame, bulletCollShape.get()));
+  mCollisionObjectManager.reset(new NoneSharingCollisionObjectManager(this));
 }
 
 //==============================================================================
-std::shared_ptr<btCollisionShape>
-BulletCollisionDetector::claimBulletCollisionGeometry(
+std::unique_ptr<CollisionObject> BulletCollisionDetector::createCollisionObject(
+    const dynamics::ShapeFrame* shapeFrame)
+{
+  auto bulletCollShape = claimBulletCollisionShape(shapeFrame->getShape());
+
+  return std::unique_ptr<BulletCollisionObject>(
+        new BulletCollisionObject(this, shapeFrame, bulletCollShape));
+}
+
+//==============================================================================
+void BulletCollisionDetector::notifyCollisionObjectDestorying(
+    CollisionObject* object)
+{
+  reclaimBulletCollisionShape(object->getShape());
+}
+
+//==============================================================================
+btCollisionShape* BulletCollisionDetector::claimBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
   const auto search = mShapeMap.find(shape);
 
   if (mShapeMap.end() != search)
   {
-    const auto& bulletCollShape = search->second;
-    assert(bulletCollShape.lock());
-    // Ensure all the collision shape in the map should be alive pointers.
+    auto& bulletCollShapeAndCount = search->second;
 
-    return bulletCollShape.lock();
+    auto& bulletCollShape = bulletCollShapeAndCount.first;
+    auto& count = bulletCollShapeAndCount.second;
+    assert(0u != count);
+
+    count++;
+
+    return bulletCollShape;
   }
 
-  auto newBulletCollisionShape = createBulletCollisionShape(
-        shape, BulletCollisionShapeDeleter(this, shape));
-  mShapeMap[shape] = newBulletCollisionShape;
+  auto newBulletCollisionShape = createBulletCollisionShape(shape);
+  mShapeMap[shape] = std::make_pair(newBulletCollisionShape, 1u);
 
   return newBulletCollisionShape;
 }
 
 //==============================================================================
-std::shared_ptr<btCollisionShape>
-BulletCollisionDetector::createBulletCollisionShape(
-    const dynamics::ConstShapePtr& shape,
-    const BulletCollisionShapeDeleter& deleter)
+void BulletCollisionDetector::reclaimBulletCollisionShape(
+    const dynamics::ConstShapePtr& shape)
+{
+  auto search = mShapeMap.find(shape);
+
+  assert(mShapeMap.end() != search);
+
+  auto& bulletCollShapeAndCount = search->second;
+
+  auto& bulletCollShape = bulletCollShapeAndCount.first;
+  auto& count = bulletCollShapeAndCount.second;
+
+  count--;
+
+  if (0u == count)
+  {
+    auto userPointer = bulletCollShape->getUserPointer();
+    if (userPointer)
+      delete static_cast<btTriangleMesh*>(userPointer);
+
+    delete bulletCollShape;
+
+    mShapeMap.erase(search);
+  }
+}
+
+//==============================================================================
+btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
+    const dynamics::ConstShapePtr& shape)
 {
   using dynamics::Shape;
   using dynamics::BoxShape;
@@ -381,34 +422,7 @@ BulletCollisionDetector::createBulletCollisionShape(
     }
   }
 
-  if (bulletCollisionShape)
-    return std::shared_ptr<btCollisionShape>(bulletCollisionShape, deleter);
-  else
-    return std::shared_ptr<btCollisionShape>();
-}
-
-//==============================================================================
-BulletCollisionDetector::
-BulletCollisionShapeDeleter::BulletCollisionShapeDeleter(
-    BulletCollisionDetector* cd, const dynamics::ConstShapePtr& shape)
-  : mBulletCollisionDetector(cd),
-    mShape(shape)
-{
-  assert(cd);
-  assert(shape);
-}
-
-//==============================================================================
-void BulletCollisionDetector::BulletCollisionShapeDeleter::operator()(
-    btCollisionShape* bulletCollisionShape) const
-{
-  mBulletCollisionDetector->mShapeMap.erase(mShape);
-
-  auto userPointer = bulletCollisionShape->getUserPointer();
-  if (userPointer)
-    delete static_cast<btTriangleMesh*>(userPointer);
-
-  delete bulletCollisionShape;
+  return bulletCollisionShape;
 }
 
 

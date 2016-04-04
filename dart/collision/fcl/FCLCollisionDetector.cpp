@@ -724,10 +724,11 @@ FCLCollisionDetector::getContactPointComputationMethod() const
 
 //==============================================================================
 FCLCollisionDetector::FCLCollisionDetector()
-  : mPrimitiveShapeType(MESH),
+  : CollisionDetector(),
+    mPrimitiveShapeType(MESH),
     mContactPointComputationMethod(DART)
 {
-  // Do nothing
+  mCollisionObjectManager.reset(new SharingCollisionObjectManager(this));
 }
 
 //==============================================================================
