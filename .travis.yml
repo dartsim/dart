@@ -34,7 +34,8 @@ install:
 script:
   - mkdir build && cd build
   - cmake -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_COVERALLS=$COVERALLS ..
-  - if [ $BUILD_CORE_ONLY = OFF ]; then make all tutorials examples tests; fi
+  - make all
+  - if [ $BUILD_CORE_ONLY = OFF ]; then make tutorials examples tests; fi
 
 after_success:
   - if [ $BUILD_CORE_ONLY = OFF ]; then make test; fi
