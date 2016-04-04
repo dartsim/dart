@@ -74,15 +74,8 @@ protected:
   DARTCollisionDetector() = default;
 
   // Documentation inherited
-  CollisionObject* createCollisionObject(
+  std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
-
-  // Documentation inherited
-  void notifyCollisionObjectDestorying(CollisionObject* collObj) override;
-
-protected:
-
-  std::vector<DARTCollisionObject*> mDARTCollisionObjects;
 
 };
 

@@ -53,12 +53,6 @@ public:
 
   friend class CollisionDetector;
 
-  struct BulletCollsionShapePack
-  {
-    std::shared_ptr<btCollisionShape> collisionShape;
-    std::shared_ptr<btTriangleMesh> triMesh;
-  };
-
   static std::shared_ptr<BulletCollisionDetector> create();
 
   /// Constructor
@@ -87,29 +81,38 @@ protected:
   BulletCollisionDetector() = default;
 
   // Documentation inherited
-  CollisionObject* createCollisionObject(
+  std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
 
-  // Documentation inherited
-  void notifyCollisionObjectDestorying(CollisionObject* collObj) override;
-
-  BulletCollsionShapePack claimBulletCollisionGeometry(
+  std::shared_ptr<btCollisionShape> claimBulletCollisionGeometry(
       const dynamics::ConstShapePtr& shape);
 
-  // Documentation inherited
-  void reclaimBulletCollisionGeometry(const dynamics::ConstShapePtr& shape);
+private:
 
-  BulletCollsionShapePack createBulletCollisionShapePack(
-      const dynamics::ConstShapePtr& shape);
+  /// This deleter is responsible for deleting fcl::CollisionGeometry and
+  /// removing it from mShapeMap when it is not shared by any CollisionObjects.
+  class BulletCollisionShapeDeleter final
+  {
+  public:
 
-protected:
+    BulletCollisionShapeDeleter(BulletCollisionDetector* cd,
+                                const dynamics::ConstShapePtr& shape);
 
-  using ShapeMapValue = std::pair<BulletCollsionShapePack, size_t>;
+    void operator()(btCollisionShape* bulletCollisionShape) const;
 
-  std::map<dynamics::ConstShapePtr, ShapeMapValue> mShapeMap;
+  private:
 
-  std::map<btCollisionObject*,
-           BulletCollisionObject*> mBulletCollisionObjectMap;
+    BulletCollisionDetector* mBulletCollisionDetector;
+
+    dynamics::ConstShapePtr mShape;
+
+  };
+
+  std::shared_ptr<btCollisionShape> createBulletCollisionShape(
+      const dynamics::ConstShapePtr& shape,
+      const BulletCollisionShapeDeleter& deleter);
+
+  std::map<dynamics::ConstShapePtr, std::weak_ptr<btCollisionShape>> mShapeMap;
 
 };
 

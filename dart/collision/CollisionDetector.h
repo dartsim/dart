@@ -113,35 +113,28 @@ protected:
       const dynamics::ShapeFrame* shapeFrame);
 
   /// Create CollisionObject
-  virtual CollisionObject* createCollisionObject(
+  virtual std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) = 0;
 
-  /// Notify that a CollisionObject will be destroyed so that the collision
-  /// detection engine do some relevant work.
-  virtual void notifyCollisionObjectDestorying(CollisionObject* collObj) = 0;
-
-protected:
-
-  using CollisionObjectMap
-      = std::map<const dynamics::ShapeFrame*, std::weak_ptr<CollisionObject>>;
-
-  CollisionObjectMap mCollisionObjectMap;
-
 private:
-
-  /// Reclaim a CollisionObject associated with given ShapeFrame.
-  void reclaimCollisionObject(const dynamics::ShapeFrame* shapeFrame);
-
-  struct CollisionObjectDeletor final
+\
+  /// This deleter is responsible for deleting CollisionObject and removing it
+  /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
+  struct CollisionObjectDeleter final
   {
     CollisionDetector* mCollisionDetector;
 
-    CollisionObjectDeletor(CollisionDetector* cd);
+    CollisionObjectDeleter(CollisionDetector* cd);
 
     void operator()(CollisionObject* object) const;
   };
 
-  CollisionObjectDeletor mCollisionObjectDeleter;
+  const CollisionObjectDeleter mCollisionObjectDeleter;
+
+  using CollisionObjectMap = std::map<const dynamics::ShapeFrame*,
+                                      std::weak_ptr<CollisionObject>>;
+
+  CollisionObjectMap mCollisionObjectMap;
 
 };
 

@@ -72,33 +72,28 @@ CollisionDetector::~CollisionDetector()
 std::shared_ptr<CollisionObject> CollisionDetector::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
-  auto search = mCollisionObjectMap.find(shapeFrame);
+  const auto search = mCollisionObjectMap.find(shapeFrame);
 
   if (mCollisionObjectMap.end() != search)
   {
     const auto& collObj = search->second;
     assert(collObj.lock());
+    // Ensure all the collision object in the map should be alive pointers.
 
     return collObj.lock();
   }
 
-  auto newObject = std::shared_ptr<CollisionObject>(
-        createCollisionObject(shapeFrame), mCollisionObjectDeleter);
+  auto uniqueObject = createCollisionObject(shapeFrame);
+  auto sharedObject = std::shared_ptr<CollisionObject>(
+        uniqueObject.release(), mCollisionObjectDeleter);
 
-  mCollisionObjectMap[shapeFrame] = newObject;
+  mCollisionObjectMap[shapeFrame] = sharedObject;
 
-  return newObject;
+  return sharedObject;
 }
 
 //==============================================================================
-void CollisionDetector::reclaimCollisionObject(
-    const dynamics::ShapeFrame* shapeFrame)
-{
-  mCollisionObjectMap.erase(shapeFrame);
-}
-
-//==============================================================================
-CollisionDetector::CollisionObjectDeletor::CollisionObjectDeletor(
+CollisionDetector::CollisionObjectDeleter::CollisionObjectDeleter(
     CollisionDetector* cd)
   : mCollisionDetector(cd)
 {
@@ -106,11 +101,10 @@ CollisionDetector::CollisionObjectDeletor::CollisionObjectDeletor(
 }
 
 //==============================================================================
-void CollisionDetector::CollisionObjectDeletor::operator()(
+void CollisionDetector::CollisionObjectDeleter::operator()(
     CollisionObject* object) const
 {
-  mCollisionDetector->notifyCollisionObjectDestorying(object);
-  mCollisionDetector->reclaimCollisionObject(object->getShapeFrame());
+  mCollisionDetector->mCollisionObjectMap.erase(object->getShapeFrame());
 
   delete object;
 }

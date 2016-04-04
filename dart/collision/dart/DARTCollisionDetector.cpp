@@ -214,30 +214,15 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
 }
 
 //==============================================================================
-CollisionObject* DARTCollisionDetector::createCollisionObject(
+std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
-  auto collObj = new DARTCollisionObject(this, shapeFrame);
-
   warnUnsupportedShapeType(shapeFrame);
 
-  mDARTCollisionObjects.push_back(collObj);
-
-  return collObj;
+  return std::unique_ptr<DARTCollisionObject>(
+        new DARTCollisionObject(this, shapeFrame));
 }
 
-//==============================================================================
-void DARTCollisionDetector::notifyCollisionObjectDestorying(
-    CollisionObject* collObj)
-{
-  if (!collObj)
-    return;
-
-  auto casted = static_cast<DARTCollisionObject*>(collObj);
-  mDARTCollisionObjects.erase(
-        std::remove(mDARTCollisionObjects.begin(), mDARTCollisionObjects.end(),
-                    casted), mDARTCollisionObjects.end());
-}
 
 
 

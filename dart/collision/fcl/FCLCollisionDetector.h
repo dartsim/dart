@@ -40,6 +40,7 @@
 
 #include <vector>
 #include <fcl/collision_object.h>
+#include <boost/weak_ptr.hpp> // This should be removed once we migrate to fcl 0.5
 #include "dart/collision/CollisionDetector.h"
 
 namespace dart {
@@ -52,6 +53,27 @@ class FCLCollisionDetector : public CollisionDetector
 public:
 
   static std::shared_ptr<FCLCollisionDetector> create();
+
+  /// FCL's primitive shape support is still not complete. FCL 0.4.0 fixed lots
+  /// of the bugs, but it still returns single contact point per shape pair
+  /// except for box-box collision. For this reason, we recommend using mesh for
+  /// primitive shapes until FCL fully support primitive shapes.
+  enum PrimitiveShape
+  {
+    MESH = 0,
+    PRIMITIVE
+  };
+  // TODO(JS): Update comment
+
+  /// FCL's contact computation is still (at least until 0.4.0) not correct for
+  /// mesh collision. We recommend using DART's contact point computation
+  /// instead until it's fixed in FCL.
+  enum ContactPointComputationMethod
+  {
+    DART = 0,
+    FCL
+  };
+  // TODO(JS): Update comment
 
   /// Constructor
   virtual ~FCLCollisionDetector();
@@ -73,36 +95,17 @@ public:
   bool detect(CollisionGroup* group1, CollisionGroup* group2,
               const Option& option, Result& result) override;
 
-  /// FCL's primitive shape support is still not complete. FCL 0.4.0 fixed lots
-  /// of the bugs, but it still returns single contact point per shape pair
-  /// except for box-box collision. For this reason, we recommend using mesh for
-  /// primitive shapes until FCL fully support primitive shapes.
-  enum PrimitiveShape_t
-  {
-    MESH = 0,
-    PRIMITIVE
-  };
-
   /// Set primitive shape type
-  void setPrimitiveShapeType(PrimitiveShape_t type);
+  void setPrimitiveShapeType(PrimitiveShape type);
 
   /// Get primitive shape type
-  PrimitiveShape_t getPrimitiveShapeType() const;
-
-  /// FCL's contact computation is still (at least until 0.4.0) not correct for
-  /// mesh collision. We recommend using DART's contact point computation
-  /// instead until it's fixed in FCL.
-  enum ContactPointComputationMethod_t
-  {
-    DART = 0,
-    FCL
-  };
+  PrimitiveShape getPrimitiveShapeType() const;
 
   /// Set contact point computation method
-  void setContactPointComputationMethod(ContactPointComputationMethod_t method);
+  void setContactPointComputationMethod(ContactPointComputationMethod method);
 
   /// Get contact point computation method
-  ContactPointComputationMethod_t getContactPointComputationMethod() const;
+  ContactPointComputationMethod getContactPointComputationMethod() const;
 
 protected:
 
@@ -110,31 +113,55 @@ protected:
   FCLCollisionDetector();
 
   // Documentation inherited
-  CollisionObject* createCollisionObject(
+  std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
 
-  // Documentation inherited
-  void notifyCollisionObjectDestorying(CollisionObject* collObj) override;
-
-  ///
+  /// Return fcl::CollisionGeometry associated with give Shape. New
+  /// fcl::CollisionGeome will be created if it hasn't created yet.
   boost::shared_ptr<fcl::CollisionGeometry> claimFCLCollisionGeometry(
       const dynamics::ConstShapePtr& shape);
 
-  ///
-  void reclaimFCLCollisionGeometry(const dynamics::ConstShapePtr& shape);
-
 protected:
 
-  using ShapeMapValue
-      = std::pair<boost::shared_ptr<fcl::CollisionGeometry>, size_t>;
+  PrimitiveShape mPrimitiveShapeType;
 
-  std::map<dynamics::ConstShapePtr, ShapeMapValue> mShapeMap;
+  ContactPointComputationMethod mContactPointComputationMethod;
 
-  std::map<fcl::CollisionObject*, FCLCollisionObject*> mFCLCollisionObjectMap;
+private:
 
-  PrimitiveShape_t mPrimitiveShapeType;
+  /// This deleter is responsible for deleting fcl::CollisionGeometry and
+  /// removing it from mShapeMap when it is not shared by any CollisionObjects.
+  class FCLCollisionGeometryDeleter final
+  {
+  public:
 
-  ContactPointComputationMethod_t mContactPointComputationMethod;
+    FCLCollisionGeometryDeleter(FCLCollisionDetector* cd,
+                                const dynamics::ConstShapePtr& shape);
+
+    void operator()(fcl::CollisionGeometry* geom) const;
+
+  private:
+
+    FCLCollisionDetector* mFCLCollisionDetector;
+
+    dynamics::ConstShapePtr mShape;
+
+  };
+
+  /// Create fcl::CollisionGeometry with the custom deleter
+  /// FCLCollisionGeometryDeleter
+  boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
+      const dynamics::ConstShapePtr& shape,
+      FCLCollisionDetector::PrimitiveShape type,
+      const FCLCollisionGeometryDeleter& deleter);
+
+  using ShapeMap = std::map<dynamics::ConstShapePtr,
+                            boost::weak_ptr<fcl::CollisionGeometry>>;
+  // TODO(JS): FCL replaced all the use of boost in version 0.5. Once we migrate
+  // to 0.5 or greater, this also should be changed to
+  // std::weak_ptr<fcl::CollisionGeometry>
+
+  ShapeMap mShapeMap;
 
 };
 

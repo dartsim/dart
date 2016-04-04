@@ -55,6 +55,7 @@ public:
 
   /// Constructor
   CollisionGroup(const CollisionDetectorPtr& collisionDetector);
+  // CollisionGroup also can be created from CollisionDetector::create()
 
   /// Destructor
   virtual ~CollisionGroup();
@@ -224,12 +225,18 @@ private:
 
   /// Collision detector
   CollisionDetectorPtr mCollisionDetector;
+  // CollisionGroup shares the ownership of CollisionDetector with other
+  // CollisionGroups created from the same CollisionDetector so that the
+  // CollisionDetector doesn't get destroyed as long as at least one
+  // CollisionGroup is alive.
 
-  /// ShapeFrames registered to this CollisionGroup
+  /// ShapeFrames added to this CollisionGroup
   std::vector<const dynamics::ShapeFrame*> mShapeFrames;
 
-  /// CollisionObjects associated with the registered ShapeFrames
+  /// CollisionObjects associated with the added ShapeFrames
   std::vector<std::shared_ptr<CollisionObject>> mCollisionObjects;
+  // CollisionGroup also shares the ownership of CollisionObjects across other
+  // CollisionGroups for the same reason with above.
 
 };
 
