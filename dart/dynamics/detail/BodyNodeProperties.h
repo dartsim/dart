@@ -42,6 +42,7 @@
 #include "dart/dynamics/Node.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/common/ProxyAspect.h"
+#include "dart/common/EmbeddedAspect.h"
 
 namespace dart {
 namespace dynamics {
@@ -169,6 +170,11 @@ using NodeVectorProxyAspectProperties = common::ProxyCloneable<
 //==============================================================================
 using NodeVectorProxyAspect = common::ProxyStateAndPropertiesAspect<BodyNode,
     NodeVectorProxyAspectState, NodeVectorProxyAspectProperties>;
+
+//==============================================================================
+using BodyNodeAspects = common::EmbedStateAndPropertiesOnTopOf<
+    BodyNode, BodyNodeState, BodyNodeUniqueProperties,
+    common::RequiresAspect<NodeVectorProxyAspect> >;
 
 } // namespace detail
 } // namespace dynamics

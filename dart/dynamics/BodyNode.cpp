@@ -57,6 +57,77 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+template <class DataType, std::unique_ptr<DataType> (Node::*getData)() const,
+          typename VectorType = common::CloneableVector< std::unique_ptr<DataType> >,
+          typename DataMap = std::map< std::type_index, std::unique_ptr<VectorType> > >
+static void extractDataFromNodeTypeMap(
+    DataMap& dataMap, const BodyNode::NodeMap& nodeMap)
+{
+  for(const auto& node_it : nodeMap)
+  {
+    const std::vector<Node*>& nodes = node_it.second;
+
+    std::pair<typename DataMap::iterator, bool> insertion =
+        dataMap.insert(typename DataMap::value_type(
+                         node_it.first, nullptr));
+
+    typename DataMap::iterator& it = insertion.first;
+
+    std::unique_ptr<VectorType>& data = it->second;
+    if(!data)
+      data = common::make_unique<VectorType>();
+
+    data->getVector().resize(nodes.size());
+
+    for(size_t i=0; i < nodes.size(); ++i)
+    {
+      std::unique_ptr<DataType>& datum = data->getVector()[i];
+      datum = (nodes[i]->*getData)();
+    }
+  }
+}
+
+//==============================================================================
+template <class DataType, void (Node::*setData)(const DataType&),
+          typename VectorType = common::CloneableVector< std::unique_ptr<DataType> >,
+          typename DataMap = std::map< std::type_index, std::unique_ptr<VectorType> > >
+static void setNodesFromDataTypeMap(
+    BodyNode::NodeMap& nodeMap, const DataMap& dataMap)
+{
+  typename BodyNode::NodeMap::iterator node_it = nodeMap.begin();
+  typename DataMap::const_iterator data_it = dataMap.begin();
+
+  while( nodeMap.end() != node_it && dataMap.end() != data_it)
+  {
+    if( node_it->first == data_it->first )
+    {
+      const std::vector<Node*>& node_vec = node_it->second;
+      const std::vector< std::unique_ptr<DataType> >& data_vec =
+          data_it->second->getVector();
+
+      // TODO(MXG): Should we report if the dimensions are mismatched?
+      std::size_t stop = std::min(node_vec.size(), data_vec.size());
+      for(std::size_t i=0; i < stop; ++i)
+      {
+        if(data_vec[i])
+          (node_vec[i]->*setData)(*data_vec[i]);
+      }
+
+      ++node_it;
+      ++data_it;
+    }
+    else if( node_it->first < data_it->first )
+    {
+      ++node_it;
+    }
+    else
+    {
+      ++data_it;
+    }
+  }
+}
+
+//==============================================================================
 SkeletonRefCountingBase::SkeletonRefCountingBase()
   : mReferenceCount(0),
     mLockedSkeleton(std::make_shared<MutexedWeakSkeletonPtr>())
@@ -119,7 +190,26 @@ namespace detail {
 //==============================================================================
 void setAllNodeStates(BodyNode* bodyNode, const AllNodeStates& states)
 {
-//  bodyNode->setProperties(states);
+  bodyNode->setAllNodeStates(states);
+}
+
+//==============================================================================
+AllNodeStates getAllNodeStates(const BodyNode* bodyNode)
+{
+  return bodyNode->getAllNodeStates();
+}
+
+//==============================================================================
+void setAllNodeProperties(BodyNode* bodyNode,
+                          const AllNodeProperties& properties)
+{
+  bodyNode->setAllNodeProperties(properties);
+}
+
+//==============================================================================
+AllNodeProperties getAllNodeProperties(const BodyNode* bodyNode)
+{
+  return bodyNode->getAllNodeProperties();
 }
 
 //==============================================================================
@@ -202,51 +292,24 @@ void BodyNode::setProperties(const ExtendedProperties& _properties)
 //==============================================================================
 void BodyNode::setAllNodeStates(const AllNodeStates& states)
 {
-//  const NodeStateMap& stateMap = states.getMap();
+  setNodesFromDataTypeMap<Node::State, &Node::setNodeState>(
+        mNodeMap, states.getMap());
+}
 
-//  NodeMap::iterator node_it = mNodeMap.begin();
-//  NodeStateMap::const_iterator state_it = stateMap.begin();
-
-//  while( mNodeMap.end() != node_it && stateMap.end() != )
+//==============================================================================
+BodyNode::AllNodeStates BodyNode::getAllNodeStates() const
+{
+  detail::NodeStateMap nodeStates;
+  extractDataFromNodeTypeMap<Node::State, &Node::getNodeState>(
+        nodeStates, mNodeMap);
+  return nodeStates;
 }
 
 //==============================================================================
 void BodyNode::setAllNodeProperties(const AllNodeProperties& properties)
 {
-  const NodePropertiesMap& propertiesMap = properties.getMap();
-
-  NodeMap::iterator node_it = mNodeMap.begin();
-  NodePropertiesMap::const_iterator prop_it = propertiesMap.begin();
-
-  while( mNodeMap.end() != node_it && propertiesMap.end() != prop_it )
-  {
-    if( node_it->first == prop_it->first )
-    {
-      if( prop_it->second )
-      {
-        const std::vector<Node*>& node_vec = node_it->second;
-        const std::vector< std::unique_ptr<Node::Properties> >& prop_vec =
-            prop_it->second->getVector();
-        size_t stop = std::min(node_vec.size(), prop_vec.size());
-        for(size_t i=0; i < stop; ++i)
-        {
-          if(prop_vec[i])
-            node_vec[i]->setNodeProperties(*prop_vec[i]);
-        }
-      }
-
-      ++node_it;
-      ++prop_it;
-    }
-    else if( node_it->first < prop_it->first )
-    {
-      ++node_it;
-    }
-    else
-    {
-      ++prop_it;
-    }
-  }
+  setNodesFromDataTypeMap<Node::Properties, &Node::setNodeProperties>(
+        mNodeMap, properties.getMap());
 }
 
 //==============================================================================
@@ -255,22 +318,8 @@ BodyNode::AllNodeProperties BodyNode::getAllNodeProperties() const
   // TODO(MXG): Make a version of this function that will fill in a
   // NodeProperties instance instead of creating a new one
   detail::NodePropertiesMap nodeProperties;
-
-  for(const auto& entry : mNodeMap)
-  {
-    const std::vector<Node*>& nodes = entry.second;
-    std::vector< std::unique_ptr<Node::Properties> > vec;
-    for(size_t i=0; i < nodes.size(); ++i)
-    {
-      std::unique_ptr<Node::Properties> prop = nodes[i]->getNodeProperties();
-      if(prop)
-        vec.push_back(std::move(prop));
-    }
-
-    nodeProperties[entry.first] = common::make_unique<
-        detail::NodeTypePropertiesVector>(std::move(vec));
-  }
-
+  extractDataFromNodeTypeMap<Node::Properties, &Node::getNodeProperties>(
+        nodeProperties, mNodeMap);
   return nodeProperties;
 }
 
@@ -1287,10 +1336,13 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
 
   if(_parentBodyNode)
     _parentBodyNode->addChildBodyNode(this);
+
+  create<Aspect>();
+  create<detail::NodeVectorProxyAspect>();
 }
 
 //==============================================================================
-BodyNode::BodyNode(const std::tuple<BodyNode *, Joint *, Properties>& args)
+BodyNode::BodyNode(const std::tuple<BodyNode*, Joint*, Properties>& args)
   : BodyNode(std::get<0>(args), std::get<1>(args), std::get<2>(args))
 {
   // The initializer list is delegating the construction

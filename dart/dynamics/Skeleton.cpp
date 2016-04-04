@@ -87,9 +87,90 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
+/// Templated function for passing each entry in a std::vector<Data> into each
+/// member of an array of Objects belonging to some Owner class.
+///
+/// The ObjectBase argument should be the base class of Object in which the
+/// setData function is defined. In many cases, ObjectBase may be the same as
+/// Object, but it is not always.
+//
+// TODO(MXG): Consider putting this in an accessible header if it might be
+// useful in other places.
+template <class Owner, class Object, class ObjectBase, class Data,
+          size_t (Owner::*getNumObjects)() const,
+          Object* (Owner::*getObject)(size_t),
+          void (ObjectBase::*setData)(const Data&)>
+void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
+{
+  if(!owner)
+  {
+    dterr << "[setAllMemberObjectData] Attempting to set ["
+          << typeid(Data).name() << "] of every [" << typeid(Object).name()
+          << "] in a nullptr [" << typeid(Owner).name() << "]. Please report "
+          << "this as a bug!\n";
+    assert(false);
+    return;
+  }
+
+  size_t numObjects = (owner->*getNumObjects)();
+
+  if(data.size() != numObjects)
+  {
+    dtwarn << "[setAllMemberObjectData] Mismatch between the number of ["
+           << typeid(Object).name() << "] member objects (" << numObjects
+           << ") in the [" << typeid(Owner).name() << "] named ["
+           << owner->getName() << "] (" << owner << ") and the number of ["
+           << typeid(Object).name() << "] which is (" << data.size()
+           << ") while setting [" << typeid(Data).name() << "]\n"
+           << " -- We will set (" << std::min(numObjects, data.size())
+           << ") of them.\n";
+    numObjects = std::min(numObjects, data.size());
+  }
+
+  for(size_t i=0; i < numObjects; ++i)
+    ((owner->*getObject)(i)->*setData)(data[i]);
+}
+
+//==============================================================================
+/// Templated function for aggregating a std::vector<Data> out of each member of
+/// an array of Objects belonging to some Owner class.
+///
+/// The ObjectBase argument should be the base class of Object in which the
+/// getData function is defined. In many cases, ObjectBase may be the same as
+/// Object, but it is not always.
+//
+// TODO(MXG): Consider putting this in an accessible header if it might be
+// useful in other places.
+template <class Owner, class Object, class ObjectBase, class Data,
+          size_t (Owner::*getNumObjects)() const,
+          const Object* (Owner::*getObject)(size_t) const,
+          Data (ObjectBase::*getData)() const>
+std::vector<Data> getAllMemberObjectData(const Owner* owner)
+{
+  if(!owner)
+  {
+    dterr << "[getAllMemberObjectData] Attempting to get the ["
+          << typeid(Data).name() << "] from every [" << typeid(Object).name()
+          << "] in a nullptr [" << typeid(Owner).name() << "]. Please report "
+          << "this as a bug!\n";
+    assert(false);
+    return std::vector<Data>();
+  }
+
+  const size_t numObjects = (owner->*getNumObjects)();
+  std::vector<Data> data;
+  data.reserve(numObjects);
+
+  for(size_t i=0; i < numObjects; ++i)
+    data.push_back(((owner->*getObject)(i)->*getData)());
+
+  return data;
+}
+
+//==============================================================================
 void setAllBodyNodeStates(Skeleton* skel, const BodyNodeStateVector& states)
 {
-  common::setAllMemberObjectData<
+  setAllMemberObjectData<
       Skeleton, BodyNode, common::Composite, common::Composite::State,
       &Skeleton::getNumBodyNodes, &Skeleton::getBodyNode,
       &common::Composite::setCompositeState>(skel, states);
@@ -98,7 +179,7 @@ void setAllBodyNodeStates(Skeleton* skel, const BodyNodeStateVector& states)
 //==============================================================================
 BodyNodeStateVector getAllBodyNodeStates(const Skeleton* skel)
 {
-  return common::getAllMemberObjectData<
+  return getAllMemberObjectData<
       Skeleton, BodyNode, common::Composite, common::Composite::State,
       &Skeleton::getNumBodyNodes, &Skeleton::getBodyNode,
       &common::Composite::getCompositeState>(skel);
@@ -108,7 +189,7 @@ BodyNodeStateVector getAllBodyNodeStates(const Skeleton* skel)
 void setAllBodyNodeProperties(
     Skeleton* skel, const BodyNodePropertiesVector& properties)
 {
-  common::setAllMemberObjectData<
+  setAllMemberObjectData<
       Skeleton, BodyNode, common::Composite, common::Composite::Properties,
       &Skeleton::getNumBodyNodes, &Skeleton::getBodyNode,
       &common::Composite::setCompositeProperties>(skel, properties);
@@ -117,7 +198,7 @@ void setAllBodyNodeProperties(
 //==============================================================================
 BodyNodePropertiesVector getAllBodyNodeProperties(const Skeleton* skel)
 {
-  return common::getAllMemberObjectData<
+  return getAllMemberObjectData<
       Skeleton, BodyNode, common::Composite, common::Composite::Properties,
       &Skeleton::getNumBodyNodes, &Skeleton::getBodyNode,
       &common::Composite::getCompositeProperties>(skel);
@@ -126,7 +207,7 @@ BodyNodePropertiesVector getAllBodyNodeProperties(const Skeleton* skel)
 //==============================================================================
 void setAllJointStates(Skeleton* skel, const BodyNodeStateVector& states)
 {
-  common::setAllMemberObjectData<
+  setAllMemberObjectData<
       Skeleton, Joint, common::Composite, common::Composite::State,
       &Skeleton::getNumJoints, &Skeleton::getJoint,
       &common::Composite::setCompositeState>(skel, states);
@@ -135,7 +216,7 @@ void setAllJointStates(Skeleton* skel, const BodyNodeStateVector& states)
 //==============================================================================
 BodyNodeStateVector getAllJointStates(const Skeleton* skel)
 {
-  return common::getAllMemberObjectData<
+  return getAllMemberObjectData<
       Skeleton, Joint, common::Composite, common::Composite::State,
       &Skeleton::getNumJoints, &Skeleton::getJoint,
       &common::Composite::getCompositeState>(skel);
@@ -145,7 +226,7 @@ BodyNodeStateVector getAllJointStates(const Skeleton* skel)
 void setAllJointProperties(
     Skeleton* skel, const BodyNodePropertiesVector& properties)
 {
-  common::setAllMemberObjectData<
+  setAllMemberObjectData<
       Skeleton, Joint, common::Composite, common::Composite::Properties,
       &Skeleton::getNumJoints, &Skeleton::getJoint,
       &common::Composite::setCompositeProperties>(skel, properties);
@@ -154,7 +235,7 @@ void setAllJointProperties(
 //==============================================================================
 BodyNodePropertiesVector getAllJointProperties(const Skeleton* skel)
 {
-  return common::getAllMemberObjectData<
+  return getAllMemberObjectData<
       Skeleton, Joint, common::Composite, common::Composite::Properties,
       &Skeleton::getNumJoints, &Skeleton::getJoint,
       &common::Composite::getCompositeProperties>(skel);

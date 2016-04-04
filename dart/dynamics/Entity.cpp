@@ -266,7 +266,7 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
 }
 
 //==============================================================================
-Detachable::Detachable(Frame* _refFrame, const std::string& _name, bool _quiet)
+Detachable::Detachable(Frame* _refFrame, bool _quiet)
   : Entity(_refFrame, _quiet)
 {
   // Do nothing

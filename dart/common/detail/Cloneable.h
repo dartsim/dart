@@ -498,6 +498,21 @@ CloneableVector<T>::CloneableVector(std::vector<T>&& regularVector)
 
 //==============================================================================
 template <typename T>
+CloneableVector<T>::CloneableVector(const CloneableVector& other)
+{
+  copy(other);
+}
+
+//==============================================================================
+template <typename T>
+CloneableVector<T>& CloneableVector<T>::operator =(const CloneableVector& other)
+{
+  copy(other);
+  return this;
+}
+
+//==============================================================================
+template <typename T>
 std::unique_ptr< CloneableVector<T> > CloneableVector<T>::clone() const
 {
   std::vector<T> clonedVector;
@@ -525,6 +540,13 @@ void CloneableVector<T>::copy(const CloneableVector<T>& anotherVector)
     else
       mVector[i] = nullptr;
   }
+}
+
+//==============================================================================
+template <typename T>
+std::vector<T>& CloneableVector<T>::getVector()
+{
+  return mVector;
 }
 
 //==============================================================================

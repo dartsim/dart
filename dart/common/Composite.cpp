@@ -44,15 +44,24 @@ namespace dart {
 namespace common {
 
 //==============================================================================
+/// Type maps are std::map containers which map an object's Type Info to some
+/// instance or trait of that type. For example, an ObjectMap will map an
+/// object's type to a std::unique_ptr of an instance of that object. a StateMap
+/// will map an Object's type to a std::unique_ptr of a State instance for that
+/// Object. Type maps are used for the dart::common::Aspect class.
+///
+/// This function will move data from an Object instance into a container where
+/// the data is sorted by the Object type that it belongs to. If the DataMap
+/// that is being filled with data already has an instance of the data for a
+/// particular Object type, it will perform a copy instead of a clone to improve
+/// performance.
 template <typename ObjectType, class DataType,
           const DataType* (ObjectType::*getData)() const,
           typename ObjectMap = std::map< std::type_index, std::unique_ptr<ObjectType> >,
           typename DataMap = std::map< std::type_index, std::unique_ptr<DataType> > >
-void extractTypeMapData(DataMap& dataMap, const ObjectMap& objectMap)
+static void extractDataFromObjectTypeMap(
+    DataMap& dataMap, const ObjectMap& objectMap)
 {
-  // TODO(MXG): Consider placing this function in a header so it can be utilized
-  // by anything that needs to transfer data between maps of extensibles
-
   // This method allows us to avoid dynamic allocation (cloning) whenever possible.
   for(const auto& object : objectMap)
   {
@@ -62,16 +71,16 @@ void extractTypeMapData(DataMap& dataMap, const ObjectMap& objectMap)
     const DataType* data = (object.second.get()->*getData)();
     if(data)
     {
-      // Attempt to insert a nullptr to see whether this entry exists while also
-      // creating an itertor to it if it did not already exist. This allows us
-      // to search for a spot in the map once, instead of searching the map to
-      // see if the entry already exists and then searching the map again in
-      // order to insert the entry if it didn't already exist.
+      // Attempt to insert a nullptr to see whether this data exists while also
+      // creating an iterator to it if it did not already exist. This allows us
+      // to search for a spot in the data map once, instead of searching the map
+      // to see if the data entry already exists and then searching the map
+      // again in order to insert the entry if it didn't already exist.
       std::pair<typename DataMap::iterator, bool> insertion =
           dataMap.insert(typename DataMap::value_type(object.first, nullptr));
 
       typename DataMap::iterator& it = insertion.first;
-      bool existed = !insertion.second;
+      const bool existed = !insertion.second;
 
       if(existed)
       {
@@ -97,11 +106,21 @@ void extractTypeMapData(DataMap& dataMap, const ObjectMap& objectMap)
 }
 
 //==============================================================================
+/// Type maps are std::map containers which map an object's Type Info to some
+/// instance or trait of that type. For example, an ObjectMap will map an
+/// object's type to a std::unique_ptr of an instance of that object. a StateMap
+/// will map an Object's type to a std::unique_ptr of a State instance for that
+/// Object. Type maps are used for the dart::common::Aspect class.
+///
+/// This function will take a type map of Data and pass its contents into the
+/// Objects contained in an ObjectMap for each corresponding Object type which
+/// is available.
 template <typename ObjectType, class DataType,
           void (ObjectType::*setData)(const DataType&),
           typename ObjectMap = std::map< std::type_index, std::unique_ptr<ObjectType> >,
           typename DataMap = std::map< std::type_index, std::unique_ptr<DataType> > >
-void setObjectDataFromMap(ObjectMap& objectMap, const DataMap& dataMap)
+static void setObjectsFromDataTypeMap(
+    ObjectMap& objectMap, const DataMap& dataMap)
 {
   typename ObjectMap::iterator objects = objectMap.begin();
   typename DataMap::const_iterator data = dataMap.begin();
@@ -128,11 +147,10 @@ void setObjectDataFromMap(ObjectMap& objectMap, const DataMap& dataMap)
   }
 }
 
-
 //==============================================================================
 void Composite::setCompositeState(const State& newStates)
 {
-  setObjectDataFromMap<Aspect, Aspect::State, &Aspect::setAspectState>(
+  setObjectsFromDataTypeMap<Aspect, Aspect::State, &Aspect::setAspectState>(
         mAspectMap, newStates.getMap());
 }
 
@@ -149,14 +167,14 @@ Composite::State Composite::getCompositeState() const
 void Composite::copyCompositeStateTo(State& outgoingStates) const
 {
   StateMap& states = outgoingStates.getMap();
-  extractTypeMapData<Aspect, Aspect::State, &Aspect::getAspectState>(
+  extractDataFromObjectTypeMap<Aspect, Aspect::State, &Aspect::getAspectState>(
         states, mAspectMap);
 }
 
 //==============================================================================
 void Composite::setCompositeProperties(const Properties& newProperties)
 {
-  setObjectDataFromMap<
+  setObjectsFromDataTypeMap<
       Aspect, Aspect::Properties, &Aspect::setAspectProperties>(
         mAspectMap, newProperties.getMap());
 }
@@ -175,7 +193,7 @@ void Composite::copyCompositePropertiesTo(
     Properties& outgoingProperties) const
 {
   PropertiesMap& properties = outgoingProperties.getMap();
-  extractTypeMapData<Aspect, Aspect::Properties, &Aspect::getAspectProperties>(
+  extractDataFromObjectTypeMap<Aspect, Aspect::Properties, &Aspect::getAspectProperties>(
         properties, mAspectMap);
 }
 

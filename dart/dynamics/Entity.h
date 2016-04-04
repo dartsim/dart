@@ -228,7 +228,7 @@ class Detachable : public virtual Entity
 {
 public:
   /// Constructor
-  explicit Detachable(Frame* _refFrame, const std::string& _name, bool _quiet);
+  explicit Detachable(Frame* _refFrame, bool _quiet);
 
   /// Allows the user to change the parent Frame of this Entity
   virtual void setParentFrame(Frame* _newParentFrame);

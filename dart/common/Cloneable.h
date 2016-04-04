@@ -277,17 +277,20 @@ public:
   /// Construct from a regular vector using move semantics
   CloneableVector(std::vector<T>&& regularVector);
 
-  /// Do not copy this class directly, use clone() or copy() instead
-  CloneableVector(const CloneableVector& doNotCopy) = delete;
+  /// Construct this vector empty and then perform copy(other)
+  CloneableVector(const CloneableVector& other);
 
-  /// Do not copy this class directly, use clone() or copy() instead
-  CloneableVector& operator=(const CloneableVector& doNotCopy) = delete;
+  /// Call copy(other) on this vector
+  CloneableVector& operator=(const CloneableVector& other);
 
   /// Create a copy of this CloneableVector's contents
   std::unique_ptr< CloneableVector<T> > clone() const;
 
   /// Copy the contents of another extensible vector into this one.
   void copy(const CloneableVector<T>& anotherVector);
+
+  /// Get a reference to the std::vector that this class is wrapping
+  std::vector<T>& getVector();
 
   /// Get a reference to the std::vector that this class is wrapping
   const std::vector<T>& getVector() const;
