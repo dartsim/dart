@@ -35,10 +35,7 @@ script:
   - mkdir build && cd build
   - cmake -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_COVERALLS=$COVERALLS ..
   - make all
-  - if [ $BUILD_CORE_ONLY = OFF ]; then make tutorials examples tests; fi
-
-after_success:
-  - if [ $BUILD_CORE_ONLY = OFF ]; then make test; fi
+  - if [ $BUILD_CORE_ONLY = OFF ]; then make tutorials examples tests test; fi
   - if [ $COVERALLS = ON ]; then make coveralls; fi
 
 after_failure: 
