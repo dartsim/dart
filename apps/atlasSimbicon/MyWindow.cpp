@@ -81,7 +81,7 @@ void MyWindow::drawSkels()
 //  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
   for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
-    mWorld->getSkeleton(i)->draw(mRI);
+    drawSkeleton(mWorld->getSkeleton(i).get());
 
   // draw arrow
   if (mImpulseDuration > 0)

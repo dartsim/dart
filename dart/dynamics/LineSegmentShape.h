@@ -100,10 +100,6 @@ public:
   /// Get all the connections
   const Eigen::aligned_vector<Eigen::Vector2i>& getConnections() const;
 
-  // Documentation inherited
-  virtual void draw(renderer::RenderInterface* _ri,
-                    const Eigen::Vector4d& _color) const override;
-
   /// The returned inertia matrix will be like a very thin cylinder. The _mass
   /// will be evenly distributed across all lines.
   virtual Eigen::Matrix3d computeInertia(double mass) const override;

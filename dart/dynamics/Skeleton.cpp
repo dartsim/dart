@@ -1788,22 +1788,6 @@ const Eigen::VectorXd& Skeleton::getConstraintForces() const
 //}
 
 //==============================================================================
-void Skeleton::draw(renderer::RenderInterface* _ri, const Eigen::Vector4d& _color,
-                    bool _useDefaultColor) const
-{
-  for(size_t i=0; i<getNumTrees(); ++i)
-    getRootBodyNode(i)->draw(_ri, _color, _useDefaultColor);
-}
-
-//==============================================================================
-void Skeleton::drawMarkers(renderer::RenderInterface* _ri,
-                           const Eigen::Vector4d& _color,
-                           bool _useDefaultColor) const
-{
-  getRootBodyNode()->drawMarkers(_ri, _color, _useDefaultColor);
-}
-
-//==============================================================================
 Skeleton::Skeleton(const Properties& _properties)
   : mSkeletonP(""),
     mTotalMass(0.0),

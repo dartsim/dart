@@ -126,11 +126,6 @@ public:
   /// \brief
   void setDisplayList(int _index);
 
-  // Documentation inherited.
-  void draw(
-      renderer::RenderInterface* _ri = nullptr,
-      const Eigen::Vector4d& _col = Eigen::Vector4d::Ones()) const override;
-
   /// \brief
   static const aiScene* loadMesh(const std::string& _fileName);
 

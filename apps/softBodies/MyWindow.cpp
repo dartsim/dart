@@ -76,13 +76,13 @@ void MyWindow::timeStepping()
   mForceOnVertex /= 2.0;
 }
 
-void MyWindow::drawSkels()
+void MyWindow::drawWorld() const
 {
   glEnable(GL_LIGHTING);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   Eigen::Vector4d color;
   color << 0.5, 0.8, 0.6, 1.0;
-  mWorld->getSkeleton(0)->draw(mRI, color, false);
+  drawSkeleton(mWorld->getSkeleton(0).get(), color, false);
 
   // draw arrow
   if (mImpulseDuration > 0)
@@ -98,7 +98,7 @@ void MyWindow::drawSkels()
     dart::gui::drawArrow3D(start, mForceOnRigidBody, len, 0.025, 0.05);
   }
 
-  SimWindow::drawSkels();
+  SimWindow::drawWorld();
 }
 
 void MyWindow::keyboard(unsigned char key, int x, int y)

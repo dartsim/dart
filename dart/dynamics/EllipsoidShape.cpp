@@ -37,8 +37,6 @@
 
 #include "dart/dynamics/EllipsoidShape.h"
 
-#include "dart/renderer/RenderInterface.h"
-
 namespace dart {
 namespace dynamics {
 
@@ -62,17 +60,6 @@ void EllipsoidShape::setSize(const Eigen::Vector3d& _size) {
 
 const Eigen::Vector3d&EllipsoidShape::getSize() const {
   return mSize;
-}
-
-//==============================================================================
-void EllipsoidShape::draw(renderer::RenderInterface* ri,
-                          const Eigen::Vector4d& col) const
-{
-  if (!ri)
-    return;
-
-  ri->setPenColor(col);
-  ri->drawEllipsoid(mBoundingBox.computeFullExtents());
 }
 
 //==============================================================================

@@ -41,8 +41,6 @@
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Shape.h"
 
-#include "dart/renderer/RenderInterface.h"
-
 namespace dart {
 namespace dynamics {
 
@@ -140,15 +138,6 @@ const std::string& Entity::setName(const std::string& _name)
 const std::string& Entity::getName() const
 {
   return mEntityP.mName;
-}
-
-//==============================================================================
-void Entity::draw(renderer::RenderInterface* /*_ri*/,
-                  const Eigen::Vector4d& /*_color*/,
-                  bool /*_useDefaultColor*/,
-                  int /*depth*/) const
-{
-  // Do nothing
 }
 
 //==============================================================================

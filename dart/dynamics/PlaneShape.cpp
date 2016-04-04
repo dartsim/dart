@@ -36,8 +36,6 @@
 
 #include "dart/dynamics/PlaneShape.h"
 
-#include "dart/renderer/RenderInterface.h"
-
 namespace dart {
 namespace dynamics {
 
@@ -56,18 +54,6 @@ PlaneShape::PlaneShape(const Eigen::Vector3d& _normal,
     mNormal(_normal.normalized()),
     mOffset(mNormal.dot(_point))
 {
-}
-
-//==============================================================================
-void PlaneShape::draw(renderer::RenderInterface* ri,
-                      const Eigen::Vector4d& color) const
-{
-  if (!ri)
-    return;
-
-  ri->setPenColor(color);
-  // TODO(JS): Not implemented yet
-  // _ri->drawPlane(...);
 }
 
 //==============================================================================
