@@ -96,11 +96,13 @@ public:
 
   using StructuralChangeSignal
       = common::Signal<void(const BodyNode*)>;
-
-  using NodePropertiesVector = common::CloneableVector< std::unique_ptr<Node::Properties> >;
-  using NodePropertiesMap = std::map< std::type_index, std::unique_ptr<NodePropertiesVector> >;
-  using NodeProperties = common::CloneableMap<NodePropertiesMap>;
   using CompositeProperties = common::Composite::Properties;
+
+  using AllNodeStates = detail::AllNodeStates;
+  using NodeStateMap = detail::NodeStateMap;
+
+  using AllNodeProperties = detail::AllNodeProperties;
+  using NodePropertiesMap = detail::NodePropertiesMap;
 
   using UniqueProperties = detail::BodyNodeUniqueProperties;
   using Properties = detail::BodyNodeProperties;
@@ -114,8 +116,17 @@ public:
   /// Set the ExtendedProperties of this BodyNode
   void setProperties(const ExtendedProperties& _properties);
 
-  /// Set the Properties of the attached Nodes
-  void setProperties(const NodeProperties& _properties);
+  /// Set the Node::State of all Nodes attached to this BodyNode
+  void setAllNodeStates(const AllNodeStates& states);
+
+  /// Get the Node::State of all Nodes attached to this BodyNode
+  AllNodeStates getAllNodeStates() const;
+
+  /// Set the Node::Properties of all Nodes attached to this BodyNode
+  void setAllNodeProperties(const AllNodeProperties& properties);
+
+  /// Get the Node::Properties of all Nodes attached to this BodyNode
+  AllNodeProperties getAllNodeProperties() const;
 
   /// Same as setCompositeProperties()
   void setProperties(const CompositeProperties& _properties);
@@ -131,9 +142,6 @@ public:
 
   /// Get the Properties of this BodyNode
   Properties getBodyNodeProperties() const;
-
-  /// Get the the Properties of the Nodes attached to this BodyNode
-  NodeProperties getAttachedNodeProperties() const;
 
   /// The the full extended Properties of this BodyNode, including the
   /// Properties of its Aspects, its attached Nodes, and the BodyNode itself.

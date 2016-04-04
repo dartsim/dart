@@ -130,25 +130,26 @@ public:
 };
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
 class ProxyCloneable : public Base
 {
 public:
 
   using Data = DataT;
+  using Owner = OwnerT;
 
   /// Default constructor. Constructs a default version of Data.
   ProxyCloneable();
 
   /// Constructor that ties this instance to an Owner.
-  ProxyCloneable(Owner* owner);
+  ProxyCloneable(OwnerT* owner);
 
   /// Constructor that ties this instance to an Owner and then sets its data
   /// using the remaining arguments.
   template <typename... Args>
-  ProxyCloneable(Owner* owner, Args&&... args);
+  ProxyCloneable(OwnerT* owner, Args&&... args);
 
   /// Templated constructor. Uses whichever Data constructor is able to match
   /// the arguments.
@@ -188,6 +189,12 @@ public:
   /// Get the Data of this ProxyCloneable
   Data get() const;
 
+  /// Get the Owner of this ProxyCloneable
+  OwnerT* getOwner();
+
+  /// Get the Owner of this ProxyCloneable
+  const OwnerT* getOwner() const;
+
   // Documentation inherited
   std::unique_ptr<Base> clone() const override final;
 
@@ -197,7 +204,7 @@ public:
 protected:
 
   /// The ProxyCloneable will not store any data in mData if it has an Owner.
-  Owner* mOwner;
+  OwnerT* mOwner;
 
   /// The ProxyCloneable will hold data in this field if it does not have an
   /// owner

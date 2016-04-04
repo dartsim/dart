@@ -117,6 +117,12 @@ size_t BodyNode::msBodyNodeCount = 0;
 namespace detail {
 
 //==============================================================================
+void setAllNodeStates(BodyNode* bodyNode, const AllNodeStates& states)
+{
+//  bodyNode->setProperties(states);
+}
+
+//==============================================================================
 BodyNodeState::BodyNodeState(
     bool isColliding,
     const Eigen::Vector6d& Fext)
@@ -188,15 +194,26 @@ void BodyNode::setProperties(const ExtendedProperties& _properties)
 {
   setProperties(static_cast<const Properties&>(_properties));
 
-  setProperties(_properties.mNodeProperties);
+  setAllNodeProperties(_properties.mNodeProperties);
 
   setProperties(_properties.mCompositeProperties);
 }
 
 //==============================================================================
-void BodyNode::setProperties(const NodeProperties& _properties)
+void BodyNode::setAllNodeStates(const AllNodeStates& states)
 {
-  const NodePropertiesMap& propertiesMap = _properties.getMap();
+//  const NodeStateMap& stateMap = states.getMap();
+
+//  NodeMap::iterator node_it = mNodeMap.begin();
+//  NodeStateMap::const_iterator state_it = stateMap.begin();
+
+//  while( mNodeMap.end() != node_it && stateMap.end() != )
+}
+
+//==============================================================================
+void BodyNode::setAllNodeProperties(const AllNodeProperties& properties)
+{
+  const NodePropertiesMap& propertiesMap = properties.getMap();
 
   NodeMap::iterator node_it = mNodeMap.begin();
   NodePropertiesMap::const_iterator prop_it = propertiesMap.begin();
@@ -230,6 +247,31 @@ void BodyNode::setProperties(const NodeProperties& _properties)
       ++prop_it;
     }
   }
+}
+
+//==============================================================================
+BodyNode::AllNodeProperties BodyNode::getAllNodeProperties() const
+{
+  // TODO(MXG): Make a version of this function that will fill in a
+  // NodeProperties instance instead of creating a new one
+  detail::NodePropertiesMap nodeProperties;
+
+  for(const auto& entry : mNodeMap)
+  {
+    const std::vector<Node*>& nodes = entry.second;
+    std::vector< std::unique_ptr<Node::Properties> > vec;
+    for(size_t i=0; i < nodes.size(); ++i)
+    {
+      std::unique_ptr<Node::Properties> prop = nodes[i]->getNodeProperties();
+      if(prop)
+        vec.push_back(std::move(prop));
+    }
+
+    nodeProperties[entry.first] = common::make_unique<
+        detail::NodeTypePropertiesVector>(std::move(vec));
+  }
+
+  return nodeProperties;
 }
 
 //==============================================================================
@@ -283,35 +325,10 @@ BodyNode::Properties BodyNode::getBodyNodeProperties() const
 }
 
 //==============================================================================
-BodyNode::NodeProperties BodyNode::getAttachedNodeProperties() const
-{
-  // TODO(MXG): Make a version of this function that will fill in a
-  // NodeProperties instance instead of creating a new one
-  NodePropertiesMap nodeProperties;
-
-  for(const auto& entry : mNodeMap)
-  {
-    const std::vector<Node*>& nodes = entry.second;
-    std::vector< std::unique_ptr<Node::Properties> > vec;
-    for(size_t i=0; i < nodes.size(); ++i)
-    {
-      std::unique_ptr<Node::Properties> prop = nodes[i]->getNodeProperties();
-      if(prop)
-        vec.push_back(std::move(prop));
-    }
-
-    nodeProperties[entry.first] = common::make_unique<NodePropertiesVector>(
-        std::move(vec));
-  }
-
-  return nodeProperties;
-}
-
-//==============================================================================
 BodyNode::ExtendedProperties BodyNode::getExtendedProperties() const
 {
   return ExtendedProperties(getBodyNodeProperties(),
-                            getAttachedNodeProperties(),
+                            getAllNodeProperties(),
                             getCompositeProperties());
 }
 

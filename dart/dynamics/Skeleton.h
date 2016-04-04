@@ -49,6 +49,7 @@
 #include "dart/dynamics/EndEffector.h"
 #include "dart/dynamics/detail/BodyNodeProperties.h"
 #include "dart/dynamics/SpecializedNodeManager.h"
+#include "dart/dynamics/detail/SkeletonAspect.h"
 
 namespace dart {
 namespace renderer {
@@ -62,9 +63,10 @@ namespace dynamics {
 /// class Skeleton
 class Skeleton :
     public virtual common::VersionCounter,
-    public virtual common::Composite,
     public MetaSkeleton,
-    public virtual SkeletonSpecializedFor<ShapeNode, EndEffector>
+    public common::CompositeJoiner<
+        SkeletonSpecializedFor<ShapeNode, EndEffector>,
+        detail::SkeletonProxyAspects>
 {
 public:
 

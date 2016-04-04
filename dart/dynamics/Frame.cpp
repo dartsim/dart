@@ -653,6 +653,8 @@ const std::string& WorldFrame::setName(const std::string& name)
 {
   dterr << "[WorldFrame::setName] attempting to change name of World frame to ["
         << name << "], but this is not allowed!\n";
+  static const std::string worldName = "World";
+  return worldName;
 }
 
 //==============================================================================

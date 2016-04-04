@@ -141,10 +141,10 @@ void MakeCloneable<Base, Mixin>::copy(const Base& other)
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-ProxyCloneable<Base, Owner, DataT, setData, getData>::ProxyCloneable()
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+ProxyCloneable<Base, OwnerT, DataT, setData, getData>::ProxyCloneable()
   : mOwner(nullptr),
     mData(make_unique<Data>())
 {
@@ -152,34 +152,34 @@ ProxyCloneable<Base, Owner, DataT, setData, getData>::ProxyCloneable()
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-ProxyCloneable<Base, Owner, DataT, setData, getData>::ProxyCloneable(
-    Owner* owner)
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+ProxyCloneable<Base, OwnerT, DataT, setData, getData>::ProxyCloneable(
+    OwnerT* owner)
   : mOwner(owner)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
 template <typename... Args>
-ProxyCloneable<Base, Owner, DataT, setData, getData>::ProxyCloneable(
-    Owner* owner, Args&&... args)
+ProxyCloneable<Base, OwnerT, DataT, setData, getData>::ProxyCloneable(
+    OwnerT* owner, Args&&... args)
   : mOwner(owner)
 {
   set(Data(std::forward<Args>(args)...));
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
 template <typename... Args>
-ProxyCloneable<Base, Owner, DataT, setData, getData>::ProxyCloneable(
+ProxyCloneable<Base, OwnerT, DataT, setData, getData>::ProxyCloneable(
     Args&&... args)
   : mOwner(nullptr),
     mData(make_unique<Data>(std::forward<Args>(args)...))
@@ -188,10 +188,10 @@ ProxyCloneable<Base, Owner, DataT, setData, getData>::ProxyCloneable(
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-ProxyCloneable<Base, Owner, DataT, setData, getData>::ProxyCloneable(
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+ProxyCloneable<Base, OwnerT, DataT, setData, getData>::ProxyCloneable(
     const ProxyCloneable& other)
   : mOwner(nullptr),
     mData(nullptr)
@@ -200,10 +200,10 @@ ProxyCloneable<Base, Owner, DataT, setData, getData>::ProxyCloneable(
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-ProxyCloneable<Base, Owner, DataT, setData, getData>::ProxyCloneable(
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+ProxyCloneable<Base, OwnerT, DataT, setData, getData>::ProxyCloneable(
     ProxyCloneable&& other)
   : mOwner(nullptr)
 {
@@ -211,50 +211,54 @@ ProxyCloneable<Base, Owner, DataT, setData, getData>::ProxyCloneable(
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-auto ProxyCloneable<Base, Owner, DataT, setData, getData>::operator =(
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+auto ProxyCloneable<Base, OwnerT, DataT, setData, getData>::operator =(
     const Data& data) -> ProxyCloneable&
 {
   set(data);
+  return *this;
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-auto ProxyCloneable<Base, Owner, DataT, setData, getData>::operator =(
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+auto ProxyCloneable<Base, OwnerT, DataT, setData, getData>::operator =(
     Data&& data) -> ProxyCloneable&
 {
   set(data);
+  return *this;
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-auto ProxyCloneable<Base, Owner, DataT, setData, getData>::operator =(
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+auto ProxyCloneable<Base, OwnerT, DataT, setData, getData>::operator =(
     const ProxyCloneable& other) -> ProxyCloneable&
 {
   set(other);
+  return *this;
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-auto ProxyCloneable<Base, Owner, DataT, setData, getData>::operator =(
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+auto ProxyCloneable<Base, OwnerT, DataT, setData, getData>::operator =(
     ProxyCloneable&& other) -> ProxyCloneable&
 {
   set(other);
+  return *this;
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-void ProxyCloneable<Base, Owner, DataT, setData, getData>::set(
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+void ProxyCloneable<Base, OwnerT, DataT, setData, getData>::set(
     const Data& data)
 {
   if(mOwner)
@@ -267,10 +271,10 @@ void ProxyCloneable<Base, Owner, DataT, setData, getData>::set(
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-void ProxyCloneable<Base, Owner, DataT, setData, getData>::set(
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+void ProxyCloneable<Base, OwnerT, DataT, setData, getData>::set(
     Data&& data)
 {
   if(mOwner)
@@ -283,30 +287,30 @@ void ProxyCloneable<Base, Owner, DataT, setData, getData>::set(
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-void ProxyCloneable<Base, Owner, DataT, setData, getData>::set(
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+void ProxyCloneable<Base, OwnerT, DataT, setData, getData>::set(
     const ProxyCloneable& other)
 {
   set(other.get());
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-void ProxyCloneable<Base, Owner, DataT, setData, getData>::set(
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+void ProxyCloneable<Base, OwnerT, DataT, setData, getData>::set(
     ProxyCloneable&& other)
 {
   set(other.get());
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-auto ProxyCloneable<Base, Owner, DataT, setData, getData>::get() const -> Data
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+auto ProxyCloneable<Base, OwnerT, DataT, setData, getData>::get() const -> Data
 {
   if(mOwner)
     return (*getData)(mOwner);
@@ -315,20 +319,38 @@ auto ProxyCloneable<Base, Owner, DataT, setData, getData>::get() const -> Data
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+OwnerT* ProxyCloneable<Base, OwnerT, DataT, setData, getData>::getOwner()
+{
+  return mOwner;
+}
+
+//==============================================================================
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+const OwnerT* ProxyCloneable<Base, OwnerT, DataT, setData, getData>::getOwner() const
+{
+  return mOwner;
+}
+
+//==============================================================================
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
 std::unique_ptr<Base> ProxyCloneable<
-    Base, Owner, DataT, setData, getData>::clone() const
+    Base, OwnerT, DataT, setData, getData>::clone() const
 {
   return make_unique<ProxyCloneable>(get());
 }
 
 //==============================================================================
-template <class Base, class Owner, class DataT,
-          void (*setData)(Owner*, const DataT&),
-          DataT (*getData)(const Owner*)>
-void ProxyCloneable<Base, Owner, DataT, setData, getData>::copy(
+template <class Base, class OwnerT, class DataT,
+          void (*setData)(OwnerT*, const DataT&),
+          DataT (*getData)(const OwnerT*)>
+void ProxyCloneable<Base, OwnerT, DataT, setData, getData>::copy(
     const Base& other)
 {
   set(static_cast<const ProxyCloneable&>(other));

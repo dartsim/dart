@@ -56,9 +56,6 @@
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftBodyNode.h"
 
-namespace dart {
-namespace dynamics {
-
 #define SET_ALL_FLAGS( X ) for(auto& cache : mTreeCache) cache.mDirty. X = true;\
                            mSkelCache.mDirty. X = true;
 
@@ -82,6 +79,88 @@ namespace dynamics {
     else if(nonzero_size == INVALID_INDEX)                                      \
       nonzero_size = V .size();                                                 \
   }
+
+
+namespace dart {
+namespace dynamics {
+
+namespace detail {
+
+//==============================================================================
+void setAllBodyNodeStates(Skeleton* skel, const BodyNodeStateVector& states)
+{
+  common::setAllMemberObjectData<
+      Skeleton, BodyNode, common::Composite, common::Composite::State,
+      &Skeleton::getNumBodyNodes, &Skeleton::getBodyNode,
+      &common::Composite::setCompositeState>(skel, states);
+}
+
+//==============================================================================
+BodyNodeStateVector getAllBodyNodeStates(const Skeleton* skel)
+{
+  return common::getAllMemberObjectData<
+      Skeleton, BodyNode, common::Composite, common::Composite::State,
+      &Skeleton::getNumBodyNodes, &Skeleton::getBodyNode,
+      &common::Composite::getCompositeState>(skel);
+}
+
+//==============================================================================
+void setAllBodyNodeProperties(
+    Skeleton* skel, const BodyNodePropertiesVector& properties)
+{
+  common::setAllMemberObjectData<
+      Skeleton, BodyNode, common::Composite, common::Composite::Properties,
+      &Skeleton::getNumBodyNodes, &Skeleton::getBodyNode,
+      &common::Composite::setCompositeProperties>(skel, properties);
+}
+
+//==============================================================================
+BodyNodePropertiesVector getAllBodyNodeProperties(const Skeleton* skel)
+{
+  return common::getAllMemberObjectData<
+      Skeleton, BodyNode, common::Composite, common::Composite::Properties,
+      &Skeleton::getNumBodyNodes, &Skeleton::getBodyNode,
+      &common::Composite::getCompositeProperties>(skel);
+}
+
+//==============================================================================
+void setAllJointStates(Skeleton* skel, const BodyNodeStateVector& states)
+{
+  common::setAllMemberObjectData<
+      Skeleton, Joint, common::Composite, common::Composite::State,
+      &Skeleton::getNumJoints, &Skeleton::getJoint,
+      &common::Composite::setCompositeState>(skel, states);
+}
+
+//==============================================================================
+BodyNodeStateVector getAllJointStates(const Skeleton* skel)
+{
+  return common::getAllMemberObjectData<
+      Skeleton, Joint, common::Composite, common::Composite::State,
+      &Skeleton::getNumJoints, &Skeleton::getJoint,
+      &common::Composite::getCompositeState>(skel);
+}
+
+//==============================================================================
+void setAllJointProperties(
+    Skeleton* skel, const BodyNodePropertiesVector& properties)
+{
+  common::setAllMemberObjectData<
+      Skeleton, Joint, common::Composite, common::Composite::Properties,
+      &Skeleton::getNumJoints, &Skeleton::getJoint,
+      &common::Composite::setCompositeProperties>(skel, properties);
+}
+
+//==============================================================================
+BodyNodePropertiesVector getAllJointProperties(const Skeleton* skel)
+{
+  return common::getAllMemberObjectData<
+      Skeleton, Joint, common::Composite, common::Composite::Properties,
+      &Skeleton::getNumJoints, &Skeleton::getJoint,
+      &common::Composite::getCompositeProperties>(skel);
+}
+
+} // namespace detail
 
 //==============================================================================
 Skeleton::Configuration::Configuration(
@@ -1810,6 +1889,8 @@ Skeleton::Skeleton(const Properties& _properties)
     mIsImpulseApplied(false),
     mUnionSize(1)
 {
+  Composite::create<detail::BodyNodeVectorProxyAspect>();
+  Composite::create<detail::JointVectorProxyAspect>();
   setProperties(_properties);
 }
 

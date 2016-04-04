@@ -146,7 +146,7 @@ public:
     setState(static_cast<const State&>(state));
   }
 
-  // Documentation inherited
+  /// Set the State of this Aspect
   void setState(const State& state)
   {
     if(this->getComposite())
@@ -166,7 +166,7 @@ public:
     return &getState();
   }
 
-  // Documentation inherited
+  /// Get the State of this Aspect
   const State& getState() const
   {
     if(this->getComposite())

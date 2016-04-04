@@ -44,49 +44,22 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-void Composite::setCompositeState(const State& newStates)
-{
-  const StateMap& stateMap = newStates.getMap();
-
-  AspectMap::iterator aspects = mAspectMap.begin();
-  StateMap::const_iterator states = stateMap.begin();
-
-  while( mAspectMap.end() != aspects && stateMap.end() != states )
-  {
-    if( aspects->first == states->first )
-    {
-      Aspect* aspect = aspects->second.get();
-      if(aspect && states->second)
-        aspect->setAspectState(*states->second);
-
-      ++aspects;
-      ++states;
-    }
-    else if( aspects->first < states->first )
-    {
-      ++aspects;
-    }
-    else
-    {
-      ++states;
-    }
-  }
-}
-
-//==============================================================================
-template <typename MapType, class DataType, const DataType* (Aspect::*getData)() const>
-void extractMapData(MapType& outgoingMap, const Composite::AspectMap& aspectMap)
+template <typename ObjectType, class DataType,
+          const DataType* (ObjectType::*getData)() const,
+          typename ObjectMap = std::map< std::type_index, std::unique_ptr<ObjectType> >,
+          typename DataMap = std::map< std::type_index, std::unique_ptr<DataType> > >
+void extractTypeMapData(DataMap& dataMap, const ObjectMap& objectMap)
 {
   // TODO(MXG): Consider placing this function in a header so it can be utilized
   // by anything that needs to transfer data between maps of extensibles
 
   // This method allows us to avoid dynamic allocation (cloning) whenever possible.
-  for(const auto& aspect : aspectMap)
+  for(const auto& object : objectMap)
   {
-    if(nullptr == aspect.second)
+    if(nullptr == object.second)
       continue;
 
-    const DataType* data = (aspect.second.get()->*getData)();
+    const DataType* data = (object.second.get()->*getData)();
     if(data)
     {
       // Attempt to insert a nullptr to see whether this entry exists while also
@@ -94,10 +67,10 @@ void extractMapData(MapType& outgoingMap, const Composite::AspectMap& aspectMap)
       // to search for a spot in the map once, instead of searching the map to
       // see if the entry already exists and then searching the map again in
       // order to insert the entry if it didn't already exist.
-      std::pair<typename MapType::iterator, bool> insertion =
-          outgoingMap.insert(typename MapType::value_type(aspect.first, nullptr));
+      std::pair<typename DataMap::iterator, bool> insertion =
+          dataMap.insert(typename DataMap::value_type(object.first, nullptr));
 
-      typename MapType::iterator& it = insertion.first;
+      typename DataMap::iterator& it = insertion.first;
       bool existed = !insertion.second;
 
       if(existed)
@@ -124,6 +97,46 @@ void extractMapData(MapType& outgoingMap, const Composite::AspectMap& aspectMap)
 }
 
 //==============================================================================
+template <typename ObjectType, class DataType,
+          void (ObjectType::*setData)(const DataType&),
+          typename ObjectMap = std::map< std::type_index, std::unique_ptr<ObjectType> >,
+          typename DataMap = std::map< std::type_index, std::unique_ptr<DataType> > >
+void setObjectDataFromMap(ObjectMap& objectMap, const DataMap& dataMap)
+{
+  typename ObjectMap::iterator objects = objectMap.begin();
+  typename DataMap::const_iterator data = dataMap.begin();
+
+  while( objectMap.end() != objects && dataMap.end() != data )
+  {
+    if( objects->first == data->first )
+    {
+      ObjectType* object = objects->second.get();
+      if(object && data->second)
+        (object->*setData)(*data->second);
+
+      ++objects;
+      ++data;
+    }
+    else if( objects->first < data->first )
+    {
+      ++objects;
+    }
+    else
+    {
+      ++data;
+    }
+  }
+}
+
+
+//==============================================================================
+void Composite::setCompositeState(const State& newStates)
+{
+  setObjectDataFromMap<Aspect, Aspect::State, &Aspect::setAspectState>(
+        mAspectMap, newStates.getMap());
+}
+
+//==============================================================================
 Composite::State Composite::getCompositeState() const
 {
   State states;
@@ -136,37 +149,16 @@ Composite::State Composite::getCompositeState() const
 void Composite::copyCompositeStateTo(State& outgoingStates) const
 {
   StateMap& states = outgoingStates.getMap();
-  extractMapData<StateMap, Aspect::State, &Aspect::getAspectState>(states, mAspectMap);
+  extractTypeMapData<Aspect, Aspect::State, &Aspect::getAspectState>(
+        states, mAspectMap);
 }
 
 //==============================================================================
 void Composite::setCompositeProperties(const Properties& newProperties)
 {
-  const PropertiesMap& propertiesMap = newProperties.getMap();
-
-  AspectMap::iterator aspects = mAspectMap.begin();
-  PropertiesMap::const_iterator props = propertiesMap.begin();
-
-  while( mAspectMap.end() != aspects && propertiesMap.end() != props )
-  {
-    if( aspects->first == props->first )
-    {
-      Aspect* aspect = aspects->second.get();
-      if(aspect)
-        aspect->setAspectProperties(*props->second);
-
-      ++aspects;
-      ++props;
-    }
-    else if( aspects->first < props->first )
-    {
-      ++aspects;
-    }
-    else
-    {
-      ++props;
-    }
-  }
+  setObjectDataFromMap<
+      Aspect, Aspect::Properties, &Aspect::setAspectProperties>(
+        mAspectMap, newProperties.getMap());
 }
 
 //==============================================================================
@@ -183,7 +175,7 @@ void Composite::copyCompositePropertiesTo(
     Properties& outgoingProperties) const
 {
   PropertiesMap& properties = outgoingProperties.getMap();
-  extractMapData<PropertiesMap, Aspect::Properties, &Aspect::getAspectProperties>(
+  extractTypeMapData<Aspect, Aspect::Properties, &Aspect::getAspectProperties>(
         properties, mAspectMap);
 }
 
