@@ -56,29 +56,35 @@ void DARTCollisionGroup::initializeEngineData()
 }
 
 //==============================================================================
-void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* /*object*/)
+void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
-  // Do nothing
+  if (std::find(mCollisionObjects.begin(), mCollisionObjects.end(), object)
+      == mCollisionObjects.end())
+  {
+    mCollisionObjects.push_back(object);
+  }
 }
 
 //==============================================================================
 void DARTCollisionGroup::addCollisionObjectsToEngine(
-    const std::vector<CollisionObject*>& /*collObjects*/)
+    const std::vector<CollisionObject*>& collObjects)
 {
-  // Do nothing
+  for (auto collObject : collObjects)
+    addCollisionObjectToEngine(collObject);
 }
 
 //==============================================================================
 void DARTCollisionGroup::removeCollisionObjectFromEngine(
-    CollisionObject* /*object*/)
+    CollisionObject* object)
 {
-  // Do nothing
+  mCollisionObjects.erase(
+      std::remove(mCollisionObjects.begin(), mCollisionObjects.end(), object));
 }
 
 //==============================================================================
 void DARTCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
-  // Do nothing
+  mCollisionObjects.clear();
 }
 
 //==============================================================================

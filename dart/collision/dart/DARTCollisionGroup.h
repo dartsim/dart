@@ -48,6 +48,8 @@ class DARTCollisionGroup : public CollisionGroup
 {
 public:
 
+  friend class DARTCollisionDetector;
+
   /// Constructor
   DARTCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
@@ -74,6 +76,11 @@ protected:
 
   // Documentation inherited
   void updateCollisionGroupEngineData() override;
+
+protected:
+
+  /// CollisionObjects added to this DARTCollisionGroup
+  std::vector<CollisionObject*> mCollisionObjects;
 
 };
 

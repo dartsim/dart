@@ -37,6 +37,7 @@
 #ifndef DART_COLLISION_COLLISIONGROUP_H_
 #define DART_COLLISION_COLLISIONGROUP_H_
 
+#include <map>
 #include <vector>
 #include "dart/collision/SmartPointer.h"
 #include "dart/collision/Option.h"
@@ -170,13 +171,6 @@ public:
   /// Return number of ShapeFrames added to this CollisionGroup
   size_t getNumShapeFrames() const;
 
-  /// Return index-th ShapeFrames added to this CollisionGroup. Return nullptr
-  /// if the index is out of the range.
-  const dynamics::ShapeFrame* getShapeFrame(size_t index) const;
-
-  /// Return all the ShapeFrames added to this CollisionGroup
-  const std::vector<const dynamics::ShapeFrame*>& getShapeFrames() const;
-
   /// Perform collision detection within this CollisionGroup.
   bool detect(const Option& option, Result& result);
 
@@ -185,9 +179,6 @@ public:
   /// Return false if the engine type of the other CollisionGroup is different
   /// from this CollisionObject engine.
   bool detect(CollisionGroup* group, const Option& option, Result& result);
-
-  /// Return all the CollisionObjects in this CollisionGroup
-  const std::vector<std::shared_ptr<CollisionObject> >& getCollisionObjects();
 
 protected:
 
@@ -217,7 +208,7 @@ protected:
   /// This function will be called ahead of every collision checking.
   virtual void updateCollisionGroupEngineData() = 0;
 
-private:
+protected:
 
   /// Collision detector
   CollisionDetectorPtr mCollisionDetector;
@@ -226,11 +217,8 @@ private:
   // CollisionDetector doesn't get destroyed as long as at least one
   // CollisionGroup is alive.
 
-  /// ShapeFrames added to this CollisionGroup
-  std::vector<const dynamics::ShapeFrame*> mShapeFrames;
-
-  /// CollisionObjects associated with the added ShapeFrames
-  std::vector<std::shared_ptr<CollisionObject>> mCollisionObjects;
+  /// ShapeFrames and CollisionOjbects added to this CollisionGroup
+  std::map<const dynamics::ShapeFrame*, CollisionObjectPtr> mShapeFrameMap;
   // CollisionGroup also shares the ownership of CollisionObjects across other
   // CollisionGroups for the same reason with above.
 

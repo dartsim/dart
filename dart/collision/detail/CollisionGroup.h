@@ -75,8 +75,8 @@ void CollisionGroup::addShapeFramesOf(
 
   if (otherGroup && this != otherGroup)
   {
-    for (const auto& shapeFrame : otherGroup->mShapeFrames)
-      addShapeFrame(shapeFrame);
+    for (const auto& pair : otherGroup->mShapeFrameMap)
+      addShapeFrame(pair.first);
   }
 
   addShapeFramesOf(others...);
@@ -148,8 +148,8 @@ void CollisionGroup::removeShapeFramesOf(
       return;
     }
 
-    for (const auto& shapeFrame : otherGroup->mShapeFrames)
-      removeShapeFrame(shapeFrame);
+    for (const auto& pair : otherGroup->mShapeFrameMap)
+      removeShapeFrame(pair.first);
   }
 
   removeShapeFramesOf(others...);

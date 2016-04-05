@@ -104,7 +104,8 @@ bool DARTCollisionDetector::detect(
     return false;
   }
 
-  auto objects = group->getCollisionObjects();
+  auto casted = static_cast<DARTCollisionGroup*>(group);
+  const auto& objects = casted->mCollisionObjects;
 
   if (objects.empty())
     return false;
@@ -120,10 +121,10 @@ bool DARTCollisionDetector::detect(
     {
       auto collObj2 = objects[j];
 
-      if (filter && !filter->needCollision(collObj1.get(), collObj2.get()))
+      if (filter && !filter->needCollision(collObj1, collObj2))
         continue;
 
-      checkPair(collObj1.get(), collObj2.get(), option, result);
+      checkPair(collObj1, collObj2, option, result);
 
       if ((option.binaryCheck && result.isCollision())
           || (result.getNumContacts() >= option.maxNumContacts))
@@ -158,8 +159,11 @@ bool DARTCollisionDetector::detect(
     return false;
   }
 
-  auto objects1 = group1->getCollisionObjects();
-  auto objects2 = group2->getCollisionObjects();
+  auto casted1 = static_cast<DARTCollisionGroup*>(group1);
+  auto casted2 = static_cast<DARTCollisionGroup*>(group2);
+
+  const auto& objects1 = casted1->mCollisionObjects;
+  const auto& objects2 = casted2->mCollisionObjects;
 
   if (objects1.empty() || objects2.empty())
     return false;
@@ -175,10 +179,10 @@ bool DARTCollisionDetector::detect(
     {
       auto collObj2 = objects2[j];
 
-      if (filter && !filter->needCollision(collObj1.get(), collObj2.get()))
+      if (filter && !filter->needCollision(collObj1, collObj2))
         continue;
 
-      checkPair(collObj1.get(), collObj2.get(), option, result);
+      checkPair(collObj1, collObj2, option, result);
 
       if (result.getNumContacts() >= option.maxNumContacts)
       {

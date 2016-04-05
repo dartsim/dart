@@ -78,8 +78,7 @@ void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 
   addCollisionObjectToEngine(collObj.get());
 
-  mShapeFrames.push_back(shapeFrame);
-  mCollisionObjects.push_back(collObj);
+  mShapeFrameMap[shapeFrame] = collObj;
 }
 
 //==============================================================================
@@ -102,18 +101,14 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
   if (!shapeFrame)
     return;
 
-  const auto search
-      = std::find(mShapeFrames.begin(), mShapeFrames.end(), shapeFrame);
+  const auto search = mShapeFrameMap.find(shapeFrame);
 
-  if (mShapeFrames.end() == search)
+  if (mShapeFrameMap.end() == search)
     return;
 
-  const size_t index = search - mShapeFrames.begin();
+  removeCollisionObjectFromEngine(search->second.get());
 
-  removeCollisionObjectFromEngine(mCollisionObjects[index].get());
-
-  mShapeFrames.erase(search);
-  mCollisionObjects.erase(mCollisionObjects.begin() + index);
+  mShapeFrameMap.erase(search);
 }
 
 //==============================================================================
@@ -135,37 +130,20 @@ void CollisionGroup::removeAllShapeFrames()
 {
   removeAllCollisionObjectsFromEngine();
 
-  mShapeFrames.clear();
-  mCollisionObjects.clear();
+  mShapeFrameMap.clear();
 }
 
 //==============================================================================
 bool CollisionGroup::hasShapeFrame(
     const dynamics::ShapeFrame* shapeFrame) const
 {
-  return std::find_if(
-        mShapeFrames.begin(), mShapeFrames.end(),
-        [&](const dynamics::ShapeFrame* it) { return it == shapeFrame; })
-      != mShapeFrames.end();
+  return mShapeFrameMap.find(shapeFrame) != mShapeFrameMap.end();
 }
 
 //==============================================================================
 size_t CollisionGroup::getNumShapeFrames() const
 {
-  return mShapeFrames.size();
-}
-
-//==============================================================================
-const dynamics::ShapeFrame* CollisionGroup::getShapeFrame(size_t index) const
-{
-  return common::getVectorObjectIfAvailable(index, mShapeFrames);
-}
-
-//==============================================================================
-const std::vector<const dynamics::ShapeFrame*>&
-CollisionGroup::getShapeFrames() const
-{
-  return mShapeFrames;
+  return mShapeFrameMap.size();
 }
 
 //==============================================================================
@@ -182,17 +160,10 @@ bool CollisionGroup::detect(
 }
 
 //==============================================================================
-const std::vector<std::shared_ptr<CollisionObject>>&
-CollisionGroup::getCollisionObjects()
-{
-  return mCollisionObjects;
-}
-
-//==============================================================================
 void CollisionGroup::updateEngineData()
 {
-  for (auto& object : mCollisionObjects)
-    object->updateEngineData();
+  for (auto& pair : mShapeFrameMap)
+    pair.second->updateEngineData();
 
   updateCollisionGroupEngineData();
 }
