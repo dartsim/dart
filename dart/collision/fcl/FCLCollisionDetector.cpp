@@ -612,12 +612,12 @@ bool FCLCollisionDetector::detect(
 {
   result.clear();
 
-  if (!group)
-    return false;
-
-  if (group->getCollisionDetector()->getType()
-      != FCLCollisionDetector::getTypeStatic())
+  if (this != group->getCollisionDetector().get())
   {
+    dterr << "[FCLCollisionDetector::detect] Attempting to check collision "
+          << "for a collision group that is created from a different collision "
+          << "detector instance.\n";
+
     return false;
   }
 
@@ -641,19 +641,14 @@ bool FCLCollisionDetector::detect(
 {
   result.clear();
 
-  if (!group1 || !group2)
+  if ((this != group1->getCollisionDetector().get())
+      || (this != group2->getCollisionDetector().get()))
+  {
+    dterr << "[FCLCollisionDetector::detect] Attempting to check collision "
+          << "for a collision group that is created from a different collision "
+          << "detector instance.\n";
+
     return false;
-
-  if (group1->getCollisionDetector()->getType()
-      != FCLCollisionDetector::getTypeStatic())
-  {
-      return false;
-  }
-
-  if (group2->getCollisionDetector()->getType()
-      != FCLCollisionDetector::getTypeStatic())
-  {
-      return false;
   }
 
   group1->updateEngineData();

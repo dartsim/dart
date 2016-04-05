@@ -52,19 +52,13 @@ FCLCollisionGroup::FCLCollisionGroup(
 }
 
 //==============================================================================
-FCLCollisionGroup::~FCLCollisionGroup()
-{
-  // Do nothing
-}
-
-//==============================================================================
 void FCLCollisionGroup::initializeEngineData()
 {
   mBroadPhaseAlg->setup();
 }
 
 //==============================================================================
-void FCLCollisionGroup::notifyCollisionObjectAdded(CollisionObject* object)
+void FCLCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
   auto casted = static_cast<FCLCollisionObject*>(object);
   mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
@@ -73,7 +67,7 @@ void FCLCollisionGroup::notifyCollisionObjectAdded(CollisionObject* object)
 }
 
 //==============================================================================
-void FCLCollisionGroup::notifyCollisionObjectsAdded(
+void FCLCollisionGroup::addCollisionObjectsToEngine(
     const std::vector<CollisionObject*>& collObjects)
 {
   for (auto collObj : collObjects)
@@ -87,7 +81,7 @@ void FCLCollisionGroup::notifyCollisionObjectsAdded(
 }
 
 //==============================================================================
-void FCLCollisionGroup::notifyCollisionObjectRemoved(CollisionObject* object)
+void FCLCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 {
   auto casted = static_cast<FCLCollisionObject*>(object);
 
@@ -97,7 +91,7 @@ void FCLCollisionGroup::notifyCollisionObjectRemoved(CollisionObject* object)
 }
 
 //==============================================================================
-void FCLCollisionGroup::notifyAllCollisionObjectsRemoved()
+void FCLCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
   mBroadPhaseAlg->clear();
 

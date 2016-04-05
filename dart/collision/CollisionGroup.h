@@ -58,14 +58,14 @@ public:
   // CollisionGroup also can be created from CollisionDetector::create()
 
   /// Destructor
-  virtual ~CollisionGroup();
+  virtual ~CollisionGroup() = default;
 
   /// Return collision detection engine associated with this CollisionGroup
-  CollisionDetector* getCollisionDetector();
+  CollisionDetectorPtr getCollisionDetector();
 
   /// Return (const) collision detection engine associated with this
   /// CollisionGroup
-  const CollisionDetector* getCollisionDetector() const;
+  ConstCollisionDetectorPtr getCollisionDetector() const;
 
   /// Add a ShapeFrame to this CollisionGroup
   void addShapeFrame(const dynamics::ShapeFrame* shapeFrame);
@@ -170,11 +170,11 @@ public:
   /// Return number of ShapeFrames added to this CollisionGroup
   size_t getNumShapeFrames() const;
 
-  /// Return index-th ShapeFrames registered to this CollisionGroup. Return
-  /// nullptr if the index is out of the range.
+  /// Return index-th ShapeFrames added to this CollisionGroup. Return nullptr
+  /// if the index is out of the range.
   const dynamics::ShapeFrame* getShapeFrame(size_t index) const;
 
-  /// Return all the ShapeFrames registered to this CollisionGroup
+  /// Return all the ShapeFrames added to this CollisionGroup
   const std::vector<const dynamics::ShapeFrame*>& getShapeFrames() const;
 
   /// Perform collision detection within this CollisionGroup.
@@ -200,22 +200,18 @@ protected:
   /// added to or removed from this CollisionGroup.
   virtual void initializeEngineData() = 0;
 
-  /// Notify that a CollisionObject is added so that the collision detection
-  /// engine do some relevant work
-  virtual void notifyCollisionObjectAdded(CollisionObject* object) = 0;
+  /// Add CollisionObject to the collision detection engine
+  virtual void addCollisionObjectToEngine(CollisionObject* object) = 0;
 
-  /// Notify that CollisionObjects are added so that the collision detection
-  /// engine do some relevant work
-  virtual void notifyCollisionObjectsAdded(
+  /// Add CollisionObjects to the collision detection engine
+  virtual void addCollisionObjectsToEngine(
       const std::vector<CollisionObject*>& collObjects) = 0;
 
-  /// Notify that a CollisionObject is removed so that the collision detection
-  /// engine do some relevant work
-  virtual void notifyCollisionObjectRemoved(CollisionObject* object) = 0;
+  /// Remove CollisionObject from the collision detection engine
+  virtual void removeCollisionObjectFromEngine(CollisionObject* object) = 0;
 
-  /// Notify that all the CollisionObjects are remove so that the collision
-  /// detection engine do some relevant work
-  virtual void notifyAllCollisionObjectsRemoved() = 0;
+  /// Remove all the CollisionObjects from the collision detection engine
+  virtual void removeAllCollisionObjectsFromEngine() = 0;
 
   /// Update the collision detection engine data such as broadphase algorithm.
   /// This function will be called ahead of every collision checking.

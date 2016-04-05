@@ -62,7 +62,7 @@ public:
   friend class CollisionGroup;
 
   /// Destructor
-  virtual ~CollisionDetector();
+  virtual ~CollisionDetector() = default;
 
   /// Return collision detection engine type in std::string
   virtual const std::string& getType() const = 0;
@@ -109,7 +109,7 @@ protected:
   class SharingCollisionObjectManager;
 
   /// Constructor
-  CollisionDetector();
+  CollisionDetector() = default;
 
   /// Claim CollisionObject associated with shapeFrame. New CollisionObject
   /// will be created if it hasn't created yet for shapeFrame.

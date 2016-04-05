@@ -50,39 +50,33 @@ DARTCollisionGroup::DARTCollisionGroup(
 }
 
 //==============================================================================
-DARTCollisionGroup::~DARTCollisionGroup()
-{
-  // Do nothing
-}
-
-//==============================================================================
 void DARTCollisionGroup::initializeEngineData()
 {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionGroup::notifyCollisionObjectAdded(CollisionObject* /*object*/)
+void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* /*object*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionGroup::notifyCollisionObjectsAdded(
+void DARTCollisionGroup::addCollisionObjectsToEngine(
     const std::vector<CollisionObject*>& /*collObjects*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionGroup::notifyCollisionObjectRemoved(
+void DARTCollisionGroup::removeCollisionObjectFromEngine(
     CollisionObject* /*object*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void DARTCollisionGroup::notifyAllCollisionObjectsRemoved()
+void DARTCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
   // Do nothing
 }

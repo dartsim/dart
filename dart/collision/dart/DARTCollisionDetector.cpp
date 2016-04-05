@@ -95,9 +95,14 @@ bool DARTCollisionDetector::detect(
 {
   result.clear();
 
-  assert(group);
-  assert(group->getCollisionDetector()->getType()
-         == DARTCollisionDetector::getTypeStatic());
+  if (this != group->getCollisionDetector().get())
+  {
+    dterr << "[DARTCollisionDetector::detect] Attempting to check collision "
+          << "for a collision group that is created from a different collision "
+          << "detector instance.\n";
+
+    return false;
+  }
 
   auto objects = group->getCollisionObjects();
 
@@ -143,12 +148,15 @@ bool DARTCollisionDetector::detect(
 {
   result.clear();
 
-  assert(group1);
-  assert(group2);
-  assert(group1->getCollisionDetector()->getType()
-         == DARTCollisionDetector::getTypeStatic());
-  assert(group2->getCollisionDetector()->getType()
-         == DARTCollisionDetector::getTypeStatic());
+  if ((this != group1->getCollisionDetector().get())
+      || (this != group2->getCollisionDetector().get()))
+  {
+    dterr << "[DARTCollisionDetector::detect] Attempting to check collision "
+          << "for a collision group that is created from a different collision "
+          << "detector instance.\n";
+
+    return false;
+  }
 
   auto objects1 = group1->getCollisionObjects();
   auto objects2 = group2->getCollisionObjects();

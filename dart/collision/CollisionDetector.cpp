@@ -56,18 +56,6 @@ CollisionDetector::createCollisionGroupAsSharedPtr()
 }
 
 //==============================================================================
-CollisionDetector::CollisionDetector()
-{
-  // Do nothing
-}
-
-//==============================================================================
-CollisionDetector::~CollisionDetector()
-{
-  // Do nothing
-}
-
-//==============================================================================
 std::shared_ptr<CollisionObject> CollisionDetector::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {

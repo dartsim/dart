@@ -176,12 +176,12 @@ bool BulletCollisionDetector::detect(
 {
   result.clear();
 
-  if (!group)
-    return false;
-
-  if (group->getCollisionDetector()->getType()
-      != BulletCollisionDetector::getTypeStatic())
+  if (this != group->getCollisionDetector().get())
   {
+    dterr << "[BulletCollisionDetector::detect] Attempting to check collision "
+          << "for a collision group that is created from a different collision "
+          << "detector instance.\n";
+
     return false;
   }
 
@@ -207,18 +207,13 @@ bool BulletCollisionDetector::detect(
 {
   result.clear();
 
-  if (!group1 || !group2)
-    return false;
-
-  if (group1->getCollisionDetector()->getType()
-      != BulletCollisionDetector::getTypeStatic())
+  if ((this != group1->getCollisionDetector().get())
+      || (this != group2->getCollisionDetector().get()))
   {
-    return false;
-  }
+    dterr << "[BulletCollisionDetector::detect] Attempting to check collision "
+          << "for a collision group that is created from a different collision "
+          << "detector instance.\n";
 
-  if (group2->getCollisionDetector()->getType()
-      != BulletCollisionDetector::getTypeStatic())
-  {
     return false;
   }
 

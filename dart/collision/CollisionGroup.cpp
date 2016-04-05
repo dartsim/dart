@@ -54,21 +54,15 @@ CollisionGroup::CollisionGroup(const CollisionDetectorPtr& collisionDetector)
 }
 
 //==============================================================================
-CollisionGroup::~CollisionGroup()
+CollisionDetectorPtr CollisionGroup::getCollisionDetector()
 {
-  // Do nothing
+  return mCollisionDetector;
 }
 
 //==============================================================================
-CollisionDetector* CollisionGroup::getCollisionDetector()
+ConstCollisionDetectorPtr CollisionGroup::getCollisionDetector() const
 {
-  return mCollisionDetector.get();
-}
-
-//==============================================================================
-const CollisionDetector* CollisionGroup::getCollisionDetector() const
-{
-  return mCollisionDetector.get();
+  return mCollisionDetector;
 }
 
 //==============================================================================
@@ -82,7 +76,7 @@ void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 
   auto collObj = mCollisionDetector->claimCollisionObject(shapeFrame);
 
-  notifyCollisionObjectAdded(collObj.get());
+  addCollisionObjectToEngine(collObj.get());
 
   mShapeFrames.push_back(shapeFrame);
   mCollisionObjects.push_back(collObj);
@@ -109,16 +103,14 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
     return;
 
   const auto search
-      = std::find_if(mShapeFrames.begin(), mShapeFrames.end(),
-                     [&](const dynamics::ShapeFrame* it)
-                     { return it == shapeFrame; });
+      = std::find(mShapeFrames.begin(), mShapeFrames.end(), shapeFrame);
 
   if (mShapeFrames.end() == search)
     return;
 
   const size_t index = search - mShapeFrames.begin();
 
-  notifyCollisionObjectRemoved(mCollisionObjects[index].get());
+  removeCollisionObjectFromEngine(mCollisionObjects[index].get());
 
   mShapeFrames.erase(search);
   mCollisionObjects.erase(mCollisionObjects.begin() + index);
@@ -141,7 +133,7 @@ void CollisionGroup::removeShapeFramesOf()
 //==============================================================================
 void CollisionGroup::removeAllShapeFrames()
 {
-  notifyAllCollisionObjectsRemoved();
+  removeAllCollisionObjectsFromEngine();
 
   mShapeFrames.clear();
   mCollisionObjects.clear();
