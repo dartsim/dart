@@ -39,17 +39,27 @@
 namespace dart {
 namespace dynamics {
 
+namespace detail {
+
+//==============================================================================
+FixedFrameProperties::FixedFrameProperties(const Eigen::Isometry3d& relativeTf)
+  : mRelativeTf(relativeTf)
+{
+  // Do nothing
+}
+
+} // namespace detail
+
 //==============================================================================
 const Eigen::Vector6d FixedFrame::mZero = Eigen::Vector6d::Zero();
 
 //==============================================================================
-FixedFrame::FixedFrame(Frame* _refFrame,
-                       const Eigen::Isometry3d& _relativeTransform)
-  : Entity(_refFrame, false),
-    Frame(_refFrame),
-    mRelativeTf(_relativeTransform)
+FixedFrame::FixedFrame(Frame* refFrame,
+                       const Eigen::Isometry3d& relativeTransform)
+  : Entity(refFrame, false),
+    Frame(refFrame)
 {
-  // Do nothing
+  create<Aspect>(AspectProperties(relativeTransform));
 }
 
 //==============================================================================
@@ -59,9 +69,26 @@ FixedFrame::~FixedFrame()
 }
 
 //==============================================================================
+void FixedFrame::setAspectProperties(const AspectProperties& properties)
+{
+  setRelativeTransform(properties.mRelativeTf);
+}
+
+//==============================================================================
+void FixedFrame::setRelativeTransform(const Eigen::Isometry3d& transform)
+{
+  if(transform.matrix() == mAspectProperties.mRelativeTf.matrix())
+    return;
+
+  mAspectProperties.mRelativeTf = transform;
+  notifyTransformUpdate();
+  incrementVersion();
+}
+
+//==============================================================================
 const Eigen::Isometry3d& FixedFrame::getRelativeTransform() const
 {
-  return mRelativeTf;
+  return mAspectProperties.mRelativeTf;
 }
 
 //==============================================================================

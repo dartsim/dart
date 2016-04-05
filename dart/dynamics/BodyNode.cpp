@@ -223,7 +223,7 @@ BodyNodeState::BodyNodeState(
 }
 
 //==============================================================================
-BodyNodeUniqueProperties::BodyNodeUniqueProperties(
+BodyNodeAspectProperties::BodyNodeAspectProperties(
     const std::string& name,
     const Inertia& _inertia,
     bool _isCollidable, double _frictionCoeff,
@@ -236,29 +236,6 @@ BodyNodeUniqueProperties::BodyNodeUniqueProperties(
     mGravityMode(_gravityMode)
 {
   // Do nothing
-}
-
-//==============================================================================
-BodyNodeExtendedProperties::BodyNodeExtendedProperties(
-    const BodyNodeProperties& standardProperties,
-    const NodeProperties& nodeProperties,
-    const CompositeProperties& compositeProperties)
-  : BodyNodeProperties(standardProperties),
-    mNodeProperties(nodeProperties),
-    mCompositeProperties(compositeProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-BodyNodeExtendedProperties::BodyNodeExtendedProperties(
-    BodyNodeProperties&& standardProperties,
-    NodeProperties&& nodeProperties,
-    CompositeProperties&& aspectProperties)
-  : BodyNodeProperties(std::move(standardProperties))
-{
-  mNodeProperties = std::move(nodeProperties);
-  mCompositeProperties = std::move(aspectProperties);
 }
 
 } // namespace detail
@@ -277,16 +254,6 @@ BodyNode::~BodyNode()
   }
 
   delete mParentJoint;
-}
-
-//==============================================================================
-void BodyNode::setProperties(const ExtendedProperties& _properties)
-{
-  setProperties(static_cast<const Properties&>(_properties));
-
-  setAllNodeProperties(_properties.mNodeProperties);
-
-  setProperties(_properties.mCompositeProperties);
 }
 
 //==============================================================================
@@ -330,7 +297,7 @@ void BodyNode::setProperties(const CompositeProperties& _properties)
 }
 
 //==============================================================================
-void BodyNode::setProperties(const UniqueProperties& _properties)
+void BodyNode::setProperties(const AspectProperties& _properties)
 {
   setAspectProperties(_properties);
 }
@@ -374,35 +341,27 @@ BodyNode::Properties BodyNode::getBodyNodeProperties() const
 }
 
 //==============================================================================
-BodyNode::ExtendedProperties BodyNode::getExtendedProperties() const
+void BodyNode::copy(const BodyNode& otherBodyNode)
 {
-  return ExtendedProperties(getBodyNodeProperties(),
-                            getAllNodeProperties(),
-                            getCompositeProperties());
-}
-
-//==============================================================================
-void BodyNode::copy(const BodyNode& _otherBodyNode)
-{
-  if(this == &_otherBodyNode)
+  if(this == &otherBodyNode)
     return;
 
-  setProperties(_otherBodyNode.getExtendedProperties());
+  setCompositeProperties(otherBodyNode.getCompositeProperties());
 }
 
 //==============================================================================
-void BodyNode::copy(const BodyNode* _otherBodyNode)
+void BodyNode::copy(const BodyNode* otherBodyNode)
 {
-  if(nullptr == _otherBodyNode)
+  if(nullptr == otherBodyNode)
     return;
 
-  copy(*_otherBodyNode);
+  copy(*otherBodyNode);
 }
 
 //==============================================================================
-BodyNode& BodyNode::operator=(const BodyNode& _otherBodyNode)
+BodyNode& BodyNode::operator=(const BodyNode& otherBodyNode)
 {
-  copy(_otherBodyNode);
+  copy(otherBodyNode);
   return *this;
 }
 
@@ -792,7 +751,7 @@ bool BodyNode::moveTo(const SkeletonPtr& _newSkeleton, BodyNode* _newParent)
 SkeletonPtr BodyNode::split(const std::string& _skeletonName)
 {
   const SkeletonPtr& skel =
-      Skeleton::create(getSkeleton()->getSkeletonProperties());
+      Skeleton::create(getSkeleton()->getAspectProperties());
   skel->setName(_skeletonName);
   moveTo(skel, nullptr);
   return skel;
@@ -830,7 +789,7 @@ SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
                              bool _recursive) const
 {
   const SkeletonPtr& skel =
-      Skeleton::create(getSkeleton()->getSkeletonProperties());
+      Skeleton::create(getSkeleton()->getAspectProperties());
   skel->setName(_skeletonName);
   copyTo(skel, nullptr, _recursive);
   return skel;
@@ -1337,8 +1296,8 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
   if(_parentBodyNode)
     _parentBodyNode->addChildBodyNode(this);
 
-  create<Aspect>();
-  create<detail::NodeVectorProxyAspect>();
+  createAspect<Aspect>();
+  createAspect<detail::NodeVectorProxyAspect>();
 }
 
 //==============================================================================
@@ -1381,6 +1340,9 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
   {
     mReferenceSkeleton = mSkeleton.lock();
   }
+
+  setVersionDependentObject(mSkeleton.lock().get());
+  mParentJoint->setVersionDependentObject(mSkeleton.lock().get());
 
   // Put the scope around this so that 'lock' releases the mutex immediately
   // after we're done with it

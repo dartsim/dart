@@ -103,17 +103,13 @@ public:
   using AllNodeProperties = detail::AllNodeProperties;
   using NodePropertiesMap = detail::NodePropertiesMap;
 
-  using UniqueProperties = detail::BodyNodeUniqueProperties;
+  using AspectProperties = detail::BodyNodeAspectProperties;
   using Properties = detail::BodyNodeProperties;
-  using ExtendedProperties = detail::BodyNodeExtendedProperties;
 
   BodyNode(const BodyNode&) = delete;
 
   /// Destructor
   virtual ~BodyNode();
-
-  /// Set the ExtendedProperties of this BodyNode
-  void setProperties(const ExtendedProperties& _properties);
 
   /// Set the Node::State of all Nodes attached to this BodyNode
   void setAllNodeStates(const AllNodeStates& states);
@@ -131,7 +127,7 @@ public:
   void setProperties(const CompositeProperties& _properties);
 
   /// Set the UniqueProperties of this BodyNode
-  void setProperties(const UniqueProperties& _properties);
+  void setProperties(const AspectProperties& _properties);
 
   /// Set the AspectState of this BodyNode
   void setAspectState(const AspectState& state);
@@ -142,15 +138,11 @@ public:
   /// Get the Properties of this BodyNode
   Properties getBodyNodeProperties() const;
 
-  /// The the full extended Properties of this BodyNode, including the
-  /// Properties of its Aspects, its attached Nodes, and the BodyNode itself.
-  ExtendedProperties getExtendedProperties() const;
+  /// Copy the Properties of another BodyNode
+  void copy(const BodyNode& otherBodyNode);
 
   /// Copy the Properties of another BodyNode
-  void copy(const BodyNode& _otherBodyNode);
-
-  /// Copy the Properties of another BodyNode
-  void copy(const BodyNode* _otherBodyNode);
+  void copy(const BodyNode* otherBodyNode);
 
   /// Same as copy(const BodyNode&)
   BodyNode& operator=(const BodyNode& _otherBodyNode);

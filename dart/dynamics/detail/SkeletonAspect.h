@@ -39,7 +39,9 @@
 
 #include "dart/common/Composite.h"
 #include "dart/common/ProxyAspect.h"
+#include "dart/common/EmbeddedAspect.h"
 #include "dart/common/RequiresAspect.h"
+#include <Eigen/Core>
 
 namespace dart {
 namespace dynamics {
@@ -47,6 +49,46 @@ namespace dynamics {
 class Skeleton;
 
 namespace detail {
+
+//==============================================================================
+/// The Properties of this Skeleton which are independent of the components
+/// within the Skeleton, such as its BodyNodes and Joints. This does not
+/// include any Properties of the Skeleton's Aspects.
+struct SkeletonAspectProperties
+{
+  /// Name of the Skeleton
+  std::string mName;
+
+  /// If the skeleton is not mobile, its dynamic effect is equivalent
+  /// to having infinite mass. If the configuration of an immobile skeleton is
+  /// manually changed, the collision results might not be correct.
+  bool mIsMobile;
+
+  /// Gravity vector.
+  Eigen::Vector3d mGravity;
+
+  /// Time step for implicit joint damping force.
+  double mTimeStep;
+
+  /// True if self collision check is enabled. Use mEnabledAdjacentBodyCheck
+  /// to disable collision checks between adjacent bodies.
+  bool mEnabledSelfCollisionCheck;
+
+  /// True if self collision check is enabled, including adjacent bodies.
+  /// Note: If mEnabledSelfCollisionCheck is false, then this value will be
+  /// ignored.
+  bool mEnabledAdjacentBodyCheck;
+
+  /// Default constructor
+  SkeletonAspectProperties(
+      const std::string& _name = "Skeleton",
+      bool _isMobile = true,
+      const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81),
+      double _timeStep = 0.001,
+      bool _enabledSelfCollisionCheck = false,
+      bool _enableAdjacentBodyCheck = false,
+      size_t _version = 0);
+};
 
 //==============================================================================
 using BodyNodeStateVector = std::vector<common::Composite::State>;
@@ -111,6 +153,10 @@ using JointVectorProxyAspect = common::ProxyStateAndPropertiesAspect<Skeleton,
 //==============================================================================
 using SkeletonProxyAspects = common::RequiresAspect<
     BodyNodeVectorProxyAspect, JointVectorProxyAspect>;
+
+//==============================================================================
+using SkeletonAspectBase = common::EmbedPropertiesOnTopOf<
+    Skeleton, SkeletonAspectProperties, SkeletonProxyAspects>;
 
 } // namespace detail
 } // namespace dynamics

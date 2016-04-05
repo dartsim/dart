@@ -64,11 +64,14 @@ namespace dynamics {
 class Skeleton :
     public virtual common::VersionCounter,
     public MetaSkeleton,
-    public common::CompositeJoiner<
-        SkeletonSpecializedFor<ShapeNode, EndEffector>,
-        detail::SkeletonProxyAspects>
+    public SkeletonSpecializedFor<ShapeNode, EndEffector>,
+    public detail::SkeletonAspectBase
 {
 public:
+
+  using AspectPropertiesData = detail::SkeletonAspectProperties;
+  using AspectProperties = common::Aspect::MakeProperties<AspectPropertiesData>;
+  using Properties = common::Composite::Properties;
 
   enum ConfigFlag_t
   {
@@ -129,91 +132,6 @@ public:
     bool operator!=(const Configuration& other) const;
   };
 
-
-
-  struct State
-  {
-
-  };
-
-  /// The Properties of this Skeleton which are independent of the components
-  /// within the Skeleton, such as its BodyNodes and Joints. This does not
-  /// include any Properties of the Skeleton's Aspects.
-  struct Properties
-  {
-    /// Name of the Skeleton
-    std::string mName;
-
-    /// If the skeleton is not mobile, its dynamic effect is equivalent
-    /// to having infinite mass. If the configuration of an immobile skeleton is
-    /// manually changed, the collision results might not be correct.
-    bool mIsMobile;
-
-    /// Gravity vector.
-    Eigen::Vector3d mGravity;
-
-    /// Time step for implicit joint damping force.
-    double mTimeStep;
-
-    /// True if self collision check is enabled. Use mEnabledAdjacentBodyCheck
-    /// to disable collision checks between adjacent bodies.
-    bool mEnabledSelfCollisionCheck;
-
-    /// True if self collision check is enabled, including adjacent bodies.
-    /// Note: If mEnabledSelfCollisionCheck is false, then this value will be
-    /// ignored.
-    bool mEnabledAdjacentBodyCheck;
-
-    /// Version number of the Skeleton. This will get incremented each time any
-    /// Property of the Skeleton or a component within the Skeleton is changed.
-    /// If you create a custom Aspect or Node, you must increment the Skeleton
-    /// version number each time one of its Properties is changed, or else the
-    /// machinery used to record Skeletons and Worlds might fail to capture its
-    /// Property changes.
-    size_t mVersion;
-
-    /// Default constructor
-    Properties(
-        const std::string& _name = "Skeleton",
-        bool _isMobile = true,
-        const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81),
-        double _timeStep = 0.001,
-        bool _enabledSelfCollisionCheck = false,
-        bool _enableAdjacentBodyCheck = false,
-        size_t _version = 0);
-  };
-
-  using BodyNodeExtendedProperties = std::vector<detail::BodyNodeExtendedProperties>;
-  using JointExtendedProperties = std::vector<Joint::ExtendedProperties>;
-  using AspectProperties = common::Composite::Properties;
-
-  /// The Properties of this Skeleton and everything within the Skeleton,
-  /// including Aspects and Nodes that are attached to the
-  struct ExtendedProperties : Properties
-  {
-    /// Properties of all the BodyNodes in this Skeleton
-    BodyNodeExtendedProperties mBodyNodeProperties;
-
-    /// Properties of all the Joints in this Skeleton
-    JointExtendedProperties mAspectPropertiesroperties;
-
-    /// A list of the name of the parent of each BodyNode in this Skeleton. This
-    /// allows the layout of the Skeleton to be reconstructed.
-    std::vector<std::string> mParentBodyNodeNames;
-
-    /// Properties of any Aspects that are attached directly to this Skeleton
-    /// object (does NOT include Aspects that are attached to BodyNodes or Joints
-    /// within this Skeleton).
-    AspectProperties mAspectProperties;
-
-    /// Default constructor
-    ExtendedProperties(
-        const BodyNodeExtendedProperties& bodyNodeProperties = BodyNodeExtendedProperties(),
-        const JointExtendedProperties& jointProperties = JointExtendedProperties(),
-        const std::vector<std::string>& parentNames = std::vector<std::string>(),
-        const AspectProperties& aspectProperties = AspectProperties());
-  };
-
   //----------------------------------------------------------------------------
   /// \{ \name Constructor and Destructor
   //----------------------------------------------------------------------------
@@ -222,7 +140,7 @@ public:
   static SkeletonPtr create(const std::string& _name="Skeleton");
 
   /// Create a new Skeleton inside of a shared_ptr
-  static SkeletonPtr create(const Properties& _properties);
+  static SkeletonPtr create(const AspectPropertiesData& properties);
 
   /// Get the shared_ptr that manages this Skeleton
   SkeletonPtr getPtr();
@@ -281,11 +199,21 @@ public:
   /// \{ \name Properties
   //----------------------------------------------------------------------------
 
+  /// Set all properties of this Skeleton
+  void setProperties(const Properties& properties);
+
+  /// Get all properties of this Skeleton
+  Properties getProperties() const;
+
   /// Set the Properties of this Skeleton
-  void setProperties(const Properties& _properties);
+  void setProperties(const AspectProperties& properties);
 
   /// Get the Properties of this Skeleton
-  const Properties& getSkeletonProperties() const;
+  DEPRECATED(6.0)
+  const AspectProperties& getSkeletonProperties() const;
+
+  /// Set the AspectProperties of this Skeleton
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Set name.
   const std::string& setName(const std::string& _name) override;
@@ -327,13 +255,6 @@ public:
 
   /// Get 3-dim gravitational acceleration.
   const Eigen::Vector3d& getGravity() const;
-
-  /// Increment the version number of this Skeleton and return the resulting
-  /// (new) version number.
-  size_t incrementVersion() override;
-
-  /// Get the current version number of this Skeleton
-  size_t getVersion() const override;
 
   /// \}
 
@@ -988,7 +909,7 @@ protected:
   struct DataCache;
 
   /// Constructor called by create()
-  Skeleton(const Properties& _properties);
+  Skeleton(const AspectPropertiesData& _properties);
 
   /// Setup this Skeleton with its shared_ptr
   void setPtr(const SkeletonPtr& _ptr);
@@ -1159,9 +1080,6 @@ protected:
   const std::string& addEntryToMarkerNameMgr(Marker* _newMarker);
 
 protected:
-
-  /// Properties of this Skeleton
-  Properties mSkeletonP;
 
   /// The resource-managing pointer to this Skeleton
   std::weak_ptr<Skeleton> mPtr;

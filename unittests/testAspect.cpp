@@ -175,7 +175,7 @@ public:
 
   InheritAndEmbedStateComposite()
   {
-    create<Aspect>();
+    createAspect<Aspect>();
   }
 
   void setAspectState(const AspectState& state) { mAspectState = state; }
@@ -191,7 +191,7 @@ public:
 
   InheritAndEmbedPropertiesComposite()
   {
-    create<Aspect>();
+    createAspect<Aspect>();
   }
 
   void setAspectProperties(const AspectProperties& properties)
@@ -211,7 +211,7 @@ public:
 
   InheritAndEmbedStateAndPropertiesComposite()
   {
-    create<Aspect>();
+    createAspect<Aspect>();
   }
 
   void setAspectState(const AspectState& state) { mAspectState = state; }
@@ -402,12 +402,12 @@ TEST(Aspect, Generic)
 
   EXPECT_TRUE( mgr.get<GenericAspect>() == nullptr );
 
-  sub_ptr<GenericAspect> aspect = mgr.create<GenericAspect>();
+  sub_ptr<GenericAspect> aspect = mgr.createAspect<GenericAspect>();
   GenericAspect* rawAspect = aspect;
   EXPECT_FALSE( nullptr == aspect );
   EXPECT_TRUE( mgr.get<GenericAspect>() == aspect );
 
-  GenericAspect* newAspect = mgr.create<GenericAspect>();
+  GenericAspect* newAspect = mgr.createAspect<GenericAspect>();
   EXPECT_FALSE( nullptr == newAspect );
   EXPECT_TRUE( nullptr == aspect );
   EXPECT_FALSE( rawAspect == newAspect );
@@ -474,12 +474,12 @@ TEST(Aspect, Releasing)
     EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
     EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
 
-    sub_ptr<GenericAspect> aspect = sender.create<GenericAspect>();
+    sub_ptr<GenericAspect> aspect = sender.createAspect<GenericAspect>();
 
     EXPECT_TRUE( sender.get<GenericAspect>() == aspect );
     EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
 
-    receiver.set<GenericAspect>(sender.release<GenericAspect>());
+    receiver.set<GenericAspect>(sender.releaseAspect<GenericAspect>());
 
     EXPECT_FALSE( nullptr == aspect );
 
@@ -493,7 +493,7 @@ TEST(Aspect, Releasing)
     EXPECT_TRUE( sender.get<GenericAspect>() == aspect );
     EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
 
-    sender.release<GenericAspect>();
+    sender.releaseAspect<GenericAspect>();
 
     EXPECT_TRUE( nullptr == aspect );
     EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
@@ -505,13 +505,13 @@ TEST(Aspect, Releasing)
     EXPECT_TRUE( sender.get<SpecializedAspect>() == nullptr );
 //    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
 
-    sub_ptr<SpecializedAspect> spec = sender.create<SpecializedAspect>();
+    sub_ptr<SpecializedAspect> spec = sender.createAspect<SpecializedAspect>();
 
     EXPECT_TRUE( sender.get<SpecializedAspect>() == spec );
 //    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
 
 //    receiver.setSpecializedAspect(sender.release<SpecializedAspect>());
-    receiver.set<SpecializedAspect>(sender.release<SpecializedAspect>());
+    receiver.set<SpecializedAspect>(sender.releaseAspect<SpecializedAspect>());
 
     EXPECT_FALSE( nullptr == spec );
 
@@ -526,7 +526,7 @@ TEST(Aspect, Releasing)
     EXPECT_TRUE( sender.get<SpecializedAspect>() == spec );
 //    EXPECT_TRUE( receiver.getSpecializedAspect() == nullptr );
 
-    sender.release<SpecializedAspect>();
+    sender.releaseAspect<SpecializedAspect>();
 
     EXPECT_TRUE( nullptr == spec );
     EXPECT_TRUE( sender.get<SpecializedAspect>() == nullptr );
@@ -539,7 +539,7 @@ TEST(Aspect, Releasing)
     // The set() methods being used in this block of code will make clones of
     // the aspects that are being passed in instead of transferring their
     // ownership like the previous blocks of code were.
-    sub_ptr<GenericAspect> aspect = sender.create<GenericAspect>();
+    sub_ptr<GenericAspect> aspect = sender.createAspect<GenericAspect>();
 
     // This should create a copy of the GenericAspect without taking the aspect
     // away from 'sender'
@@ -608,16 +608,16 @@ void makePropertiesDifferent(AspectT* aspect, const AspectT* differentFrom)
 TEST(Aspect, StateAndProperties)
 {
   Composite mgr1;
-  mgr1.create<DoubleAspect>();
-  mgr1.create<FloatAspect>();
-  mgr1.create<CharAspect>();
-  mgr1.create<IntAspect>();
+  mgr1.createAspect<DoubleAspect>();
+  mgr1.createAspect<FloatAspect>();
+  mgr1.createAspect<CharAspect>();
+  mgr1.createAspect<IntAspect>();
 
   Composite mgr2;
-  mgr2.create<DoubleAspect>();
-  mgr2.create<FloatAspect>();
+  mgr2.createAspect<DoubleAspect>();
+  mgr2.createAspect<FloatAspect>();
 
-  mgr1.create<StateAspectTest>();
+  mgr1.createAspect<StateAspectTest>();
 
   // ---- Test state transfer ----
 
@@ -685,14 +685,14 @@ TEST(Aspect, Construction)
 {
   Composite mgr;
 
-  mgr.create<DoubleAspect>();
+  mgr.createAspect<DoubleAspect>();
 
   double s = dart::math::random(0, 100);
-  mgr.create<DoubleAspect>(s);
+  mgr.createAspect<DoubleAspect>(s);
   EXPECT_EQ(mgr.get<DoubleAspect>()->mState.val, s);
 
   double p = dart::math::random(0, 100);
-  mgr.create<DoubleAspect>(dart::math::random(0, 100), p);
+  mgr.createAspect<DoubleAspect>(dart::math::random(0, 100), p);
   EXPECT_EQ(mgr.get<DoubleAspect>()->mProperties.val, p);
 }
 
@@ -770,12 +770,12 @@ TEST(Aspect, Duplication)
 {
   Composite mgr1, mgr2;
 
-  mgr1.create<DoubleAspect>();
-  mgr1.create<IntAspect>();
-  mgr1.create<FloatAspect>();
-  mgr1.create<CharAspect>();
+  mgr1.createAspect<DoubleAspect>();
+  mgr1.createAspect<IntAspect>();
+  mgr1.createAspect<FloatAspect>();
+  mgr1.createAspect<CharAspect>();
 
-  mgr2.create<DoubleAspect>();
+  mgr2.createAspect<DoubleAspect>();
 
   mgr2.duplicateAspects(&mgr1);
 

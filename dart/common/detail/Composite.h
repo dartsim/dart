@@ -40,7 +40,7 @@
 #include "dart/common/Composite.h"
 
 #define DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE( Func, T, ReturnType )\
-  if(requires< T >())\
+  if(requiresAspect< T >())\
   {\
     dterr << "[Composite::" #Func << "] Illegal request to remove required "\
           << "Aspect [" << typeid(T).name() << "]!\n";\
@@ -92,7 +92,7 @@ void Composite::set(std::unique_ptr<T>&& aspect)
 
 //==============================================================================
 template <class T, typename ...Args>
-T* Composite::create(Args&&... args)
+T* Composite::createAspect(Args&&... args)
 {
   T* aspect = new T(this, std::forward<Args>(args)...);
   mAspectMap[typeid(T)] = std::unique_ptr<T>(aspect);
@@ -103,10 +103,10 @@ T* Composite::create(Args&&... args)
 
 //==============================================================================
 template <class T>
-void Composite::erase()
+void Composite::eraseAspect()
 {
   AspectMap::iterator it = mAspectMap.find( typeid(T) );
-  DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(erase, T, DART_BLANK)
+  DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(eraseAspect, T, DART_BLANK)
   if(mAspectMap.end() != it)
   {
     removeFromComposite(it->second.get());
@@ -116,11 +116,11 @@ void Composite::erase()
 
 //==============================================================================
 template <class T>
-std::unique_ptr<T> Composite::release()
+std::unique_ptr<T> Composite::releaseAspect()
 {
   std::unique_ptr<T> extraction = nullptr;
   AspectMap::iterator it = mAspectMap.find( typeid(T) );
-  DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(release, T, nullptr)
+  DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(releaseAspect, T, nullptr)
   if(mAspectMap.end() != it)
   {
     removeFromComposite(it->second.get());
@@ -139,7 +139,7 @@ constexpr bool Composite::isSpecializedFor()
 
 //==============================================================================
 template <class T>
-bool Composite::requires() const
+bool Composite::requiresAspect() const
 {
   return (mRequiredAspects.find(typeid(T)) != mRequiredAspects.end());
 }
@@ -155,7 +155,7 @@ void createAspects(T* /*mgr*/)
 template <class T, class NextAspect, class... Aspects>
 void createAspects(T* mgr)
 {
-  mgr->template create<NextAspect>();
+  mgr->template createAspect<NextAspect>();
 
   createAspects<T, Aspects...>(mgr);
 }
@@ -204,17 +204,17 @@ void createAspects(T* mgr)
   template <typename ...Args>\
   inline TypeName * create ## AspectName (Args&&... args)\
   {\
-    return this->template create<TypeName>(std::forward<Args>(args)...);\
+    return this->template createAspect<TypeName>(std::forward<Args>(args)...);\
   }\
 \
   inline void erase ## AspectName ()\
   {\
-    this->template erase<TypeName>();\
+    this->template eraseAspect<TypeName>();\
   }\
 \
   inline std::unique_ptr< TypeName > release ## AspectName ()\
   {\
-    return this->template release<TypeName>();\
+    return this->template releaseAspect<TypeName>();\
   }
 
 //==============================================================================

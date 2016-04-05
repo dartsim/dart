@@ -48,15 +48,22 @@
 namespace dart {
 namespace dynamics {
 
+namespace detail {
+
+using ShapeNodeCompositeBase = common::CompositeJoiner<
+    common::Virtual<FixedFrame>, ShapeFrame>;
+
+} // namespace detail
+
 class VisualAspect;
 class CollisionAspect;
 class DynamicsAspect;
 class ShapeFrame;
 
-class ShapeNode : public virtual FixedFrame,
-                  public ShapeFrame,
-                  public AccessoryNode<ShapeNode>,
-                  public TemplatedJacobianNode<ShapeNode>
+class ShapeNode :
+    public detail::ShapeNodeCompositeBase,
+    public AccessoryNode<ShapeNode>,
+    public TemplatedJacobianNode<ShapeNode>
 {
 public:
 
@@ -140,14 +147,8 @@ public:
   // Documentation inherited
   const std::string& getName() const override;
 
-  // Documentation inherited
-  size_t incrementVersion() override;
-
-  // Documentation inherited
-  size_t getVersion() const override;
-
   /// Set transformation of this shape node relative to the parent frame
-  void setRelativeTransform(const Eigen::Isometry3d& transform);
+  void setRelativeTransform(const Eigen::Isometry3d& transform) override;
 
   /// Set rotation of this shape node relative to the parent frame
   void setRelativeRotation(const Eigen::Matrix3d& rotation);
@@ -266,6 +267,7 @@ protected:
 protected:
 
   /// Properties of this ShapeNode
+  DEPRECATED(6.0)
   UniqueProperties mShapeNodeP;
 
   /// Cached Jacobian of this ShapeNode

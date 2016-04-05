@@ -181,14 +181,6 @@ public:
   /// Return the Skeleton that this Node is attached to
   virtual std::shared_ptr<const Skeleton> getSkeleton() const;
 
-  /// Increment the version of this Node (by default, this will increment the
-  /// version number of the Skeleton).
-  size_t incrementVersion() override;
-
-  /// Get the version of this Node (by default, this will get the version
-  /// number of the Skeleton).
-  size_t getVersion() const override;
-
 private:
 
   std::shared_ptr<NodeDestructor> getOrCreateDestructor();

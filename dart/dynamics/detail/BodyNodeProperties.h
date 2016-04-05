@@ -68,7 +68,7 @@ struct BodyNodeState
 };
 
 //==============================================================================
-struct BodyNodeUniqueProperties
+struct BodyNodeAspectProperties
 {
   /// Name of the Entity
   std::string mName;
@@ -92,7 +92,7 @@ struct BodyNodeUniqueProperties
   std::vector<Marker::Properties> mMarkerProperties;
 
   /// Constructor
-  BodyNodeUniqueProperties(
+  BodyNodeAspectProperties(
       const std::string& name = "BodyNode",
       const Inertia& _inertia = Inertia(),
       bool _isCollidable = true,
@@ -100,39 +100,13 @@ struct BodyNodeUniqueProperties
       double _restitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF,
       bool _gravityMode = true);
 
-  virtual ~BodyNodeUniqueProperties() = default;
+  virtual ~BodyNodeAspectProperties() = default;
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-using BodyNodeProperties = BodyNodeUniqueProperties;
-
-//==============================================================================
-struct BodyNodeExtendedProperties : BodyNodeProperties
-{
-  using NodePropertiesVector = common::CloneableVector< std::unique_ptr<Node::Properties> >;
-  using NodePropertiesMap = std::map< std::type_index, std::unique_ptr<NodePropertiesVector> >;
-  using NodeProperties = common::CloneableMap<NodePropertiesMap>;
-  using CompositeProperties = common::Composite::Properties;
-
-  /// Composed constructor
-  BodyNodeExtendedProperties(const BodyNodeProperties& standardProperties = BodyNodeProperties(),
-      const NodeProperties& nodeProperties = NodeProperties(),
-      const CompositeProperties& compositeProperties = CompositeProperties());
-
-  /// Composed move constructor
-  BodyNodeExtendedProperties(
-      BodyNodeProperties&& standardProperties,
-      NodeProperties&& nodeProperties,
-      CompositeProperties&& aspectProperties);
-
-  /// Properties of all the Nodes attached to this BodyNode
-  NodeProperties mNodeProperties;
-
-  /// Properties of all the Aspects attached to this BodyNode
-  CompositeProperties mCompositeProperties;
-};
+using BodyNodeProperties = BodyNodeAspectProperties;
 
 //==============================================================================
 using NodeTypeStateVector = common::CloneableVector< std::unique_ptr<Node::State> >;
@@ -173,7 +147,7 @@ using NodeVectorProxyAspect = common::ProxyStateAndPropertiesAspect<BodyNode,
 
 //==============================================================================
 using BodyNodeAspects = common::EmbedStateAndPropertiesOnTopOf<
-    BodyNode, BodyNodeState, BodyNodeUniqueProperties,
+    BodyNode, BodyNodeState, BodyNodeAspectProperties,
     common::RequiresAspect<NodeVectorProxyAspect> >;
 
 } // namespace detail

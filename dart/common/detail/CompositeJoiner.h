@@ -82,8 +82,8 @@ DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(T*, CompositeJoiner, get, (), ())
 DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(const T*, CompositeJoiner, get, () const, ())
 DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, CompositeJoiner, set, (const T* aspect), (aspect))
 DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, CompositeJoiner, set, (std::unique_ptr<T>&& aspect), (std::move(aspect)))
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, CompositeJoiner, erase, (), ())
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(std::unique_ptr<T>, CompositeJoiner, release, (), ())
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, CompositeJoiner, eraseAspect, (), ())
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(std::unique_ptr<T>, CompositeJoiner, releaseAspect, (), ())
 
 //==============================================================================
 // Because this function requires a comma inside of its template argument list,
@@ -91,12 +91,12 @@ DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(std::unique_ptr<T>, CompositeJoin
 // implement it explicitly.
 template <class Base1, class Base2>
 template <class T, typename ...Args>
-T* CompositeJoiner<Base1, Base2>::create(Args&&... args)
+T* CompositeJoiner<Base1, Base2>::createAspect(Args&&... args)
 {
   if(Base1::template isSpecializedFor<T>())
-    return Base1::template create<T, Args...>(std::forward<Args>(args)...);
+    return Base1::template createAspect<T, Args...>(std::forward<Args>(args)...);
 
-  return Base2::template create<T, Args...>(std::forward<Args>(args)...);
+  return Base2::template createAspect<T, Args...>(std::forward<Args>(args)...);
 }
 
 //==============================================================================

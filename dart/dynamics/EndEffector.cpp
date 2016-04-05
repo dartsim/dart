@@ -68,16 +68,6 @@ bool Support::isActive() const
 }
 
 //==============================================================================
-EndEffector::StateData::StateData(
-    const Eigen::Isometry3d& relativeTransform,
-    const common::Composite::State& aspectStates)
-  : mRelativeTransform(relativeTransform),
-    mAspectStates(aspectStates)
-{
-  // Do nothing
-}
-
-//==============================================================================
 EndEffector::UniqueProperties::UniqueProperties(
     const Eigen::Isometry3d& _defaultTransform)
   : mDefaultTransform(_defaultTransform)
@@ -93,26 +83,6 @@ EndEffector::PropertiesData::PropertiesData(
     mCompositeProperties(_compositeProperties)
 {
   // Do nothing
-}
-
-//==============================================================================
-void EndEffector::setState(const StateData& _state)
-{
-  setRelativeTransform(_state.mRelativeTransform);
-  setCompositeState(_state.mAspectStates);
-}
-
-//==============================================================================
-void EndEffector::setState(StateData&& _state)
-{
-  setRelativeTransform(_state.mRelativeTransform);
-  setCompositeState(std::move(_state.mAspectStates));
-}
-
-//==============================================================================
-EndEffector::StateData EndEffector::getEndEffectorState() const
-{
-  return StateData(mRelativeTf, getCompositeState());
 }
 
 //==============================================================================
@@ -137,13 +107,13 @@ EndEffector::PropertiesData EndEffector::getEndEffectorProperties() const
 }
 
 //==============================================================================
-void EndEffector::copy(const EndEffector& _otherEndEffector)
+void EndEffector::copy(const EndEffector& otherEndEffector)
 {
-  if(this == &_otherEndEffector)
+  if(this == &otherEndEffector)
     return;
 
-  setState(_otherEndEffector.getEndEffectorState());
-  setProperties(_otherEndEffector.getEndEffectorProperties());
+  setCompositeState(otherEndEffector.getCompositeState());
+  setCompositeProperties(otherEndEffector.getCompositeProperties());
 }
 
 //==============================================================================
@@ -187,35 +157,6 @@ const std::string& EndEffector::getName() const
 }
 
 //==============================================================================
-void EndEffector::setNodeState(const Node::State& otherState)
-{
-  setState(static_cast<const State&>(otherState));
-}
-
-//==============================================================================
-std::unique_ptr<Node::State> EndEffector::getNodeState() const
-{
-  return common::make_unique<EndEffector::State>(getEndEffectorState());
-}
-
-//==============================================================================
-void EndEffector::copyNodeStateTo(std::unique_ptr<Node::State>& outputState) const
-{
-  if(outputState)
-  {
-    EndEffector::State* state =
-        static_cast<EndEffector::State*>(outputState.get());
-
-    state->mRelativeTransform = mRelativeTf;
-    copyCompositeStateTo(state->mAspectStates);
-  }
-  else
-  {
-    outputState = getNodeState();
-  }
-}
-
-//==============================================================================
 void EndEffector::setNodeProperties(const Node::Properties& otherProperties)
 {
   setProperties(static_cast<const Properties&>(otherProperties));
@@ -247,10 +188,13 @@ void EndEffector::copyNodePropertiesTo(
 }
 
 //==============================================================================
-void EndEffector::setRelativeTransform(const Eigen::Isometry3d& _newRelativeTf)
+void EndEffector::setRelativeTransform(const Eigen::Isometry3d& newRelativeTf)
 {
-  mRelativeTf = _newRelativeTf;
-  notifyTransformUpdate();
+  if(newRelativeTf.matrix() ==
+     FixedFrame::mAspectProperties.mRelativeTf.matrix())
+    return;
+
+  FixedFrame::setRelativeTransform(newRelativeTf);
   notifyJacobianUpdate();
   notifyJacobianDerivUpdate();
 }

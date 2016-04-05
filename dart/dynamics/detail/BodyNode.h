@@ -72,7 +72,7 @@ template <class JointType>
 SkeletonPtr BodyNode::split(const std::string& _skeletonName,
       const typename JointType::Properties& _joint)
 {
-  SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
+  SkeletonPtr skel = Skeleton::create(getSkeleton()->getAspectProperties());
   skel->setName(_skeletonName);
   moveTo<JointType>(skel, nullptr, _joint);
   return skel;
@@ -117,7 +117,7 @@ template <class JointType>
 SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
     const typename JointType::Properties& _joint, bool _recursive) const
 {
-  SkeletonPtr skel = Skeleton::create(getSkeleton()->getSkeletonProperties());
+  SkeletonPtr skel = Skeleton::create(getSkeleton()->getAspectProperties());
   skel->setName(_skeletonName);
   copyTo<JointType>(skel, nullptr, _joint, _recursive);
   return skel;

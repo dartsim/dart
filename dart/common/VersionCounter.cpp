@@ -34,38 +34,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_VERSIONCOUNTER_H_
-#define DART_COMMON_VERSIONCOUNTER_H_
+#include "dart/common/VersionCounter.h"
+#include "dart/common/Console.h"
 
-#include <cstddef>
+#include <iostream>
+#include <cassert>
 
 namespace dart {
 namespace common {
 
-/// VersionCounter is an interface for objects that count their versions
-class VersionCounter
+//==============================================================================
+size_t VersionCounter::incrementVersion()
 {
-public:
+  ++mVersion;
+  if(mDependent)
+    mDependent->incrementVersion();
 
-  /// Increment the version for this object
-  virtual size_t incrementVersion();
+  return mVersion;
+}
 
-  /// Get the version number of this object
-  virtual size_t getVersion() const;
+//==============================================================================
+size_t VersionCounter::getVersion() const
+{
+  return mVersion;
+}
 
-  virtual ~VersionCounter() = default;
+//==============================================================================
+void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
+{
+  VersionCounter* next = dependent;
+  do
+  {
+    if(next == this)
+    {
+      dterr << "[VersionCounter::setVersionDependentObject] Attempting to "
+            << "create a circular version dependency with the following loop:\n";
+      next = dependent;
+      while(next != this)
+      {
+        std::cerr << " -- " << next << "\n";
+        next = next->mDependent;
+      }
+      std::cerr << " -- " << this << "\n";
+      assert(false);
+      return;
+    }
 
-protected:
+  } while( (next = next->mDependent) );
 
-  void setVersionDependentObject(VersionCounter* dependent);
-
-  size_t mVersion;
-
-private:
-  VersionCounter* mDependent;
-};
+  mDependent = dependent;
+}
 
 } // namespace common
 } // namespace dart
-
-#endif // DART_COMMON_VERSIONCOUNTER_H_

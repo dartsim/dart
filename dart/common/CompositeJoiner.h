@@ -116,15 +116,15 @@ public:
 
   // Documentation inherited
   template <class T, typename ...Args>
-  T* create(Args&&... args);
+  T* createAspect(Args&&... args);
 
   // Documentation inherited
   template <class T>
-  void erase();
+  void eraseAspect();
 
   // Documentation inherited
   template <class T>
-  std::unique_ptr<T> release();
+  std::unique_ptr<T> releaseAspect();
 
   // Documentation inherited
   template <class T>

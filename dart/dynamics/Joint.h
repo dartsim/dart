@@ -137,12 +137,6 @@ public:
   /// Get joint name
   const std::string& getName() const;
 
-  /// Increments Skeleton version number
-  size_t incrementVersion() override;
-
-  /// Gets the Skeleton version number
-  size_t getVersion() const override;
-
   /// Gets a string representing the joint type
   virtual const std::string& getType() const = 0;
 

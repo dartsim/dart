@@ -237,8 +237,6 @@ public:
     /// Shape pointer
     ShapePtr mShape;
 
-    size_t mVersion;
-
     /// Composed constructor
     UniqueProperties(const ShapePtr& shape = nullptr);
 
@@ -281,12 +279,6 @@ public:
   virtual void draw(renderer::RenderInterface* ri = nullptr,
                     const Eigen::Vector4d& color = Eigen::Vector4d::Ones(),
                     bool useDefaultColor = true) const;
-
-  // Documentation inherited
-  size_t incrementVersion() override;
-
-  // Documentation inherited
-  size_t getVersion() const override;
 
 protected:
 

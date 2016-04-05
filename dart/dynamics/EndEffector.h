@@ -100,8 +100,8 @@ public:
 };
 
 class EndEffector final :
-    public virtual common::SpecializedForAspect<Support>,
-    public FixedFrame,
+    public common::CompositeJoiner<
+        common::SpecializedForAspect<Support>, common::Virtual<FixedFrame> >,
     public AccessoryNode<EndEffector>,
     public TemplatedJacobianNode<EndEffector>
 {
@@ -109,24 +109,6 @@ public:
 
   friend class Skeleton;
   friend class BodyNode;
-
-  struct StateData
-  {
-    StateData(const Eigen::Isometry3d& relativeTransform =
-                  Eigen::Isometry3d::Identity(),
-              const common::Composite::State& aspectStates =
-                  common::Composite::State());
-
-    /// The current relative transform of the EndEffector
-    // TODO(MXG): Consider moving this to a FixedFrame::State struct and then
-    // inheriting that struct
-    Eigen::Isometry3d mRelativeTransform;
-
-    /// The current states of the EndEffector's Aspects
-    common::Composite::State mAspectStates;
-  };
-
-  using State = Node::MakeState<StateData>;
 
   struct UniqueProperties
   {
@@ -164,13 +146,13 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set the State of this EndEffector.
-  void setState(const StateData& _state);
+//  void setState(const StateData& _state);
 
   /// Set the State of this EndEffector using move semantics
-  void setState(StateData&& _state);
+//  void setState(StateData&& _state);
 
   /// Get the State of this EndEffector
-  StateData getEndEffectorState() const;
+//  StateData getEndEffectorState() const;
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
   /// Transform will be set to the new default transform.
@@ -200,15 +182,6 @@ public:
   const std::string& getName() const override;
 
   // Documentation inherited
-  void setNodeState(const Node::State& otherState) override final;
-
-  // Documentation inherited
-  std::unique_ptr<Node::State> getNodeState() const override final;
-
-  // Documentation inherited
-  void copyNodeStateTo(std::unique_ptr<Node::State>& outputState) const override final;
-
-  // Documentation inherited
   void setNodeProperties(const Node::Properties& otherProperties) override final;
 
   // Documentation inherited
@@ -219,7 +192,7 @@ public:
       std::unique_ptr<Node::Properties>& outputProperties) const override final;
 
   /// Set the current relative transform of this EndEffector
-  void setRelativeTransform(const Eigen::Isometry3d& _newRelativeTf);
+  void setRelativeTransform(const Eigen::Isometry3d& newRelativeTf) override;
 
   /// Set the default relative transform of this EndEffector. The relative
   /// transform of this EndEffector will be set to _newDefaultTf the next time

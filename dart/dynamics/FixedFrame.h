@@ -37,26 +37,46 @@
 #ifndef DART_DYNAMICS_FIXEDFRAME_H_
 #define DART_DYNAMICS_FIXEDFRAME_H_
 
-#include "Frame.h"
+#include "dart/dynamics/Frame.h"
+#include "dart/common/EmbeddedAspect.h"
+#include "dart/common/VersionCounter.h"
 
 namespace dart {
 namespace dynamics {
+
+namespace detail {
+struct FixedFrameProperties
+{
+  Eigen::Isometry3d mRelativeTf;
+
+  FixedFrameProperties(
+      const Eigen::Isometry3d& relativeTf = Eigen::Isometry3d::Identity());
+};
+} // namespace detail
 
 /// The FixedFrame class represents a Frame with zero relative velocity and
 /// zero relative acceleration. It does not move within its parent Frame after
 /// its relative transform is set. However, classes that inherit the FixedFrame
 /// class may alter its relative transform or change what its parent Frame is.
-class FixedFrame : public virtual Frame
+class FixedFrame :
+    public virtual Frame,
+    public virtual common::VersionCounter,
+    public common::EmbedProperties<FixedFrame, detail::FixedFrameProperties>
 {
 public:
   /// Constructor
-  explicit FixedFrame(
-      Frame* _refFrame,
-      const Eigen::Isometry3d& _relativeTransform =
+  explicit FixedFrame(Frame* refFrame,
+      const Eigen::Isometry3d& relativeTransform =
           Eigen::Isometry3d::Identity());
 
   /// Destructor
   virtual ~FixedFrame();
+
+  /// Set the AspectProperties of this FixedFrame
+  void setAspectProperties(const AspectProperties& properties);
+
+  /// Set the relative transform of this FixedFrame
+  virtual void setRelativeTransform(const Eigen::Isometry3d& transform);
 
   // Documentation inherited
   const Eigen::Isometry3d& getRelativeTransform() const override;
@@ -74,9 +94,6 @@ public:
   const Eigen::Vector6d& getPartialAcceleration() const override;
 
 protected:
-  /// Relative Transform of this Frame
-  DEPRECATED(6.0)
-  Eigen::Isometry3d mRelativeTf;
 
   /// Used for Relative Velocity and Relative Acceleration of this Frame
   static const Eigen::Vector6d mZero;

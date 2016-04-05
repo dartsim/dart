@@ -184,16 +184,14 @@ DynamicsAspect::DynamicsAspect(
 
 //==============================================================================
 ShapeFrame::UniqueProperties::UniqueProperties(const ShapePtr& shape)
-  : mShape(shape),
-    mVersion(0)
+  : mShape(shape)
 {
   // Do nothing
 }
 
 //==============================================================================
 ShapeFrame::UniqueProperties::UniqueProperties(ShapePtr&& shape)
-  : mShape(std::move(shape)),
-    mVersion(0)
+  : mShape(std::move(shape))
 {
   // Do nothing
 }
@@ -260,18 +258,6 @@ void ShapeFrame::draw(renderer::RenderInterface* ri,
     ShapeFrame::mAspectProperties.mShape->draw(ri, color);
 
   ri->popMatrix();
-}
-
-//==============================================================================
-size_t ShapeFrame::incrementVersion()
-{
-  return ++ShapeFrame::mAspectProperties.mVersion;
-}
-
-//==============================================================================
-size_t ShapeFrame::getVersion() const
-{
-  return ShapeFrame::mAspectProperties.mVersion;
 }
 
 //==============================================================================

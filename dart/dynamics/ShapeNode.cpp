@@ -95,7 +95,7 @@ void ShapeNode::setProperties(const ShapeNode::UniqueProperties& properties)
 //==============================================================================
 const ShapeNode::Properties ShapeNode::getShapeNodeProperties() const
 {
-  return Properties(getAspectProperties(), mShapeNodeP,
+  return Properties(ShapeFrame::getAspectProperties(), mShapeNodeP,
                     getCompositeProperties());
 }
 
@@ -149,38 +149,19 @@ const std::string& ShapeNode::getName() const
 }
 
 //==============================================================================
-size_t ShapeNode::incrementVersion()
-{
-  ++ShapeFrame::mAspectProperties.mVersion;
-  if(const SkeletonPtr& skel = getSkeleton())
-    skel->incrementVersion();
-
-  return ShapeFrame::mAspectProperties.mVersion;
-}
-
-//==============================================================================
-size_t ShapeNode::getVersion() const
-{
-  return ShapeFrame::mAspectProperties.mVersion;
-}
-
-//==============================================================================
 void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
 {
-  if(transform.matrix() == mRelativeTf.matrix())
+  if(transform.matrix() == FixedFrame::mAspectProperties.mRelativeTf.matrix())
     return;
 
-  const Eigen::Isometry3d oldTransform = mRelativeTf;
+  const Eigen::Isometry3d oldTransform = getRelativeTransform();
 
-  mRelativeTf = transform;
-  mShapeNodeP.mRelativeTransform = transform;
-  notifyTransformUpdate();
+  FixedFrame::setRelativeTransform(transform);
   notifyJacobianUpdate();
   notifyJacobianDerivUpdate();
 
-  incrementVersion();
-  mRelativeTransformUpdatedSignal.raise(this, oldTransform,
-                                        mShapeNodeP.mRelativeTransform);
+  mRelativeTransformUpdatedSignal.raise(
+        this, oldTransform, getRelativeTransform());
 }
 
 //==============================================================================
@@ -338,7 +319,7 @@ ShapeNode::ShapeNode(BodyNode* bodyNode, const Properties& properties)
   : Entity(ConstructFrame),
     Frame(bodyNode),
     FixedFrame(bodyNode),
-    ShapeFrame(bodyNode),
+    detail::ShapeNodeCompositeBase(common::NoArg, bodyNode),
     TemplatedJacobianNode<ShapeNode>(bodyNode),
     mShapeUpdatedSignal(ShapeUpdatedSignal()),
     mRelativeTransformUpdatedSignal(RelativeTransformUpdatedSignal()),
@@ -355,7 +336,7 @@ ShapeNode::ShapeNode(BodyNode* bodyNode,
   : Entity(ConstructFrame),
     Frame(bodyNode),
     FixedFrame(bodyNode),
-    ShapeFrame(bodyNode),
+    detail::ShapeNodeCompositeBase(common::NoArg, bodyNode),
     TemplatedJacobianNode<ShapeNode>(bodyNode),
     mShapeUpdatedSignal(ShapeUpdatedSignal()),
     mRelativeTransformUpdatedSignal(RelativeTransformUpdatedSignal()),

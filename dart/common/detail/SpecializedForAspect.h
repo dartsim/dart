@@ -244,7 +244,7 @@ template <class SpecAspect>
 template <class T, typename ...Args>
 T* SpecializedForAspect<SpecAspect>::_create(type<T>, Args&&... args)
 {
-  return Composite::create<T>(std::forward<Args>(args)...);
+  return Composite::createAspect<T>(std::forward<Args>(args)...);
 }
 
 //==============================================================================
@@ -269,7 +269,7 @@ template <class SpecAspect>
 template <class T>
 void SpecializedForAspect<SpecAspect>::_erase(type<T>)
 {
-  Composite::erase<T>();
+  Composite::eraseAspect<T>();
 }
 
 //==============================================================================
@@ -291,7 +291,7 @@ template <class SpecAspect>
 template <class T>
 std::unique_ptr<T> SpecializedForAspect<SpecAspect>::_release(type<T>)
 {
-  return Composite::release<T>();
+  return Composite::releaseAspect<T>();
 }
 
 //==============================================================================

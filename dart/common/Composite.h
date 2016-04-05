@@ -115,17 +115,17 @@ public:
 
   /// Construct an Aspect inside of this Composite
   template <class T, typename ...Args>
-  T* create(Args&&... args);
+  T* createAspect(Args&&... args);
 
   /// Remove an Aspect from this Composite.
   template <class T>
-  void erase();
+  void eraseAspect();
 
   /// Remove an Aspect from this Composite, but return its unique_ptr instead
   /// of letting it be deleted. This allows you to safely use move semantics to
   /// transfer an Aspect between two Composites.
   template <class T>
-  std::unique_ptr<T> release();
+  std::unique_ptr<T> releaseAspect();
 
   /// Check if this Composite is specialized for a specific type of Aspect.
   ///
@@ -135,7 +135,7 @@ public:
 
   /// Check if this Composite requires this specific type of Aspect
   template <class T>
-  bool requires() const;
+  bool requiresAspect() const;
 
   /// Set the states of the aspects in this Composite based on the given
   /// Composite::State. The states of any Aspect types that do not exist
