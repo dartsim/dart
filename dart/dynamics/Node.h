@@ -42,6 +42,7 @@
 #include "dart/common/Subject.h"
 #include "dart/common/Cloneable.h"
 #include "dart/common/VersionCounter.h"
+#include "dart/common/EmbeddedAspect.h"
 
 #include "dart/dynamics/SmartPointer.h"
 
@@ -51,6 +52,7 @@ namespace dynamics {
 class BodyNode;
 class Node;
 
+//==============================================================================
 class NodeDestructor final
 {
 public:
@@ -73,6 +75,7 @@ private:
 
 };
 
+//==============================================================================
 /// The Node class is a base class for BodyNode and any object that attaches to
 /// a BodyNode. This base class handles ownership and reference counting for the
 /// classes that inherit it.
@@ -228,6 +231,7 @@ protected:
   size_t mIndexInTree;
 };
 
+//==============================================================================
 /// AccessoryNode provides an interface for Nodes to get their index within the
 /// list of Nodes, as well as detach and reattach. This uses CRTP to get around
 /// the diamond of death problem.

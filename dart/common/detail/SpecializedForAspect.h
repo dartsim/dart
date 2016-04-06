@@ -100,25 +100,25 @@ void SpecializedForAspect<SpecAspect>::set(std::unique_ptr<T>&& aspect)
 //==============================================================================
 template <class SpecAspect>
 template <class T, typename ...Args>
-T* SpecializedForAspect<SpecAspect>::create(Args&&... args)
+T* SpecializedForAspect<SpecAspect>::createAspect(Args&&... args)
 {
-  return _create(type<T>(), std::forward<Args>(args)...);
+  return _createAspect(type<T>(), std::forward<Args>(args)...);
 }
 
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-void SpecializedForAspect<SpecAspect>::erase()
+void SpecializedForAspect<SpecAspect>::eraseAspect()
 {
-  _erase(type<T>());
+  _eraseAspect(type<T>());
 }
 
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-std::unique_ptr<T> SpecializedForAspect<SpecAspect>::release()
+std::unique_ptr<T> SpecializedForAspect<SpecAspect>::releaseAspect()
 {
-  return _release(type<T>());
+  return _releaseAspect(type<T>());
 }
 
 //==============================================================================
@@ -242,7 +242,7 @@ void SpecializedForAspect<SpecAspect>::_set(
 //==============================================================================
 template <class SpecAspect>
 template <class T, typename ...Args>
-T* SpecializedForAspect<SpecAspect>::_create(type<T>, Args&&... args)
+T* SpecializedForAspect<SpecAspect>::_createAspect(type<T>, Args&&... args)
 {
   return Composite::createAspect<T>(std::forward<Args>(args)...);
 }
@@ -250,7 +250,7 @@ T* SpecializedForAspect<SpecAspect>::_create(type<T>, Args&&... args)
 //==============================================================================
 template <class SpecAspect>
 template <typename ...Args>
-SpecAspect* SpecializedForAspect<SpecAspect>::_create(
+SpecAspect* SpecializedForAspect<SpecAspect>::_createAspect(
     type<SpecAspect>, Args&&... args)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
@@ -267,14 +267,14 @@ SpecAspect* SpecializedForAspect<SpecAspect>::_create(
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-void SpecializedForAspect<SpecAspect>::_erase(type<T>)
+void SpecializedForAspect<SpecAspect>::_eraseAspect(type<T>)
 {
   Composite::eraseAspect<T>();
 }
 
 //==============================================================================
 template <class SpecAspect>
-void SpecializedForAspect<SpecAspect>::_erase(type<SpecAspect>)
+void SpecializedForAspect<SpecAspect>::_eraseAspect(type<SpecAspect>)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;
@@ -289,14 +289,14 @@ void SpecializedForAspect<SpecAspect>::_erase(type<SpecAspect>)
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-std::unique_ptr<T> SpecializedForAspect<SpecAspect>::_release(type<T>)
+std::unique_ptr<T> SpecializedForAspect<SpecAspect>::_releaseAspect(type<T>)
 {
   return Composite::releaseAspect<T>();
 }
 
 //==============================================================================
 template <class SpecAspect>
-std::unique_ptr<SpecAspect> SpecializedForAspect<SpecAspect>::_release(
+std::unique_ptr<SpecAspect> SpecializedForAspect<SpecAspect>::_releaseAspect(
     type<SpecAspect>)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS

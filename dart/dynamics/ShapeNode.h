@@ -40,18 +40,21 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Signal.h"
-#include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/ShapeFrame.h"
-#include "dart/dynamics/Node.h"
-#include "dart/dynamics/TemplatedJacobianNode.h"
+#include "dart/dynamics/FixedJacobianNode.h"
+#include "dart/dynamics/CompositeNode.h"
 
 namespace dart {
 namespace dynamics {
 
 namespace detail {
 
-using ShapeNodeCompositeBase = common::CompositeJoiner<
-    common::Virtual<FixedFrame>, ShapeFrame>;
+using ShapeNodeCompositeBase = CompositeNode<
+    common::CompositeJoiner<
+        FixedJacobianNode,
+        ShapeFrame
+    >
+>;
 
 } // namespace detail
 
@@ -60,10 +63,7 @@ class CollisionAspect;
 class DynamicsAspect;
 class ShapeFrame;
 
-class ShapeNode :
-    public detail::ShapeNodeCompositeBase,
-    public AccessoryNode<ShapeNode>,
-    public TemplatedJacobianNode<ShapeNode>
+class ShapeNode : public detail::ShapeNodeCompositeBase
 {
 public:
 
@@ -140,13 +140,6 @@ public:
   /// Same as copy(const ShapeNode&)
   ShapeNode& operator=(const ShapeNode& other);
 
-  /// Set name. If the name is already taken, this will return an altered
-  /// version which will be used by the Skeleton
-  const std::string& setName(const std::string& _name) override;
-
-  // Documentation inherited
-  const std::string& getName() const override;
-
   /// Set transformation of this shape node relative to the parent frame
   void setRelativeTransform(const Eigen::Isometry3d& transform) override;
 
@@ -168,72 +161,6 @@ public:
   /// Same as getRelativeTranslation()
   Eigen::Vector3d getOffset() const;
 
-  // Documentation inherited
-  std::shared_ptr<Skeleton> getSkeleton() override;
-
-  // Documentation inherited
-  std::shared_ptr<const Skeleton> getSkeleton() const override;
-
-  // Documentation inherited
-  bool dependsOn(size_t genCoordIndex) const override;
-
-  // Documentation inherited
-  size_t getNumDependentGenCoords() const override;
-
-  // Documentation inherited
-  size_t getDependentGenCoordIndex(size_t arrayIndex) const override;
-
-  // Documentation inherited
-  const std::vector<size_t>& getDependentGenCoordIndices() const override;
-
-  // Documentation inherited
-  size_t getNumDependentDofs() const override;
-
-  // Documentation inherited
-  DegreeOfFreedom* getDependentDof(size_t index) override;
-
-  // Documentation inherited
-  const DegreeOfFreedom* getDependentDof(size_t index) const override;
-
-  // Documentation inherited
-  const std::vector<DegreeOfFreedom*>& getDependentDofs() override;
-
-  // Documentation inherited
-  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const override;
-
-  // Documentation inherited
-  const std::vector<const DegreeOfFreedom*> getChainDofs() const override;
-
-  //----------------------------------------------------------------------------
-  /// \{ \name Jacobian Functions
-  //----------------------------------------------------------------------------
-
-  // Documentation inherited
-  const math::Jacobian& getJacobian() const override final;
-
-  // Prevent the inherited getJacobian functions from being shadowed
-  using TemplatedJacobianNode<ShapeNode>::getJacobian;
-
-  // Documentation inherited
-  const math::Jacobian& getWorldJacobian() const override final;
-
-  // Prevent the inherited getWorldJacobian functions from being shadowed
-  using TemplatedJacobianNode<ShapeNode>::getWorldJacobian;
-
-  // Documentation inherited
-  const math::Jacobian& getJacobianSpatialDeriv() const override final;
-
-  // Prevent the inherited getJacobianSpatialDeriv functions from being shadowed
-  using TemplatedJacobianNode<ShapeNode>::getJacobianSpatialDeriv;
-
-  // Documentation inherited
-  const math::Jacobian& getJacobianClassicDeriv() const override final;
-
-  // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
-  using TemplatedJacobianNode<ShapeNode>::getJacobianClassicDeriv;
-
-  /// \}
-
 protected:
 
   /// Constructor used by the Skeleton class
@@ -247,48 +174,11 @@ protected:
   /// class.
   Node* cloneNode(BodyNode* parent) const override;
 
-  /// Update the Jacobian of this ShapeNode. getJacobian() calls this function
-  /// if mIsShapeNodeJacobianDirty is true.
-  void updateShapeNodeJacobian() const;
-
-  /// Update the World Jacobian cache.
-  void updateWorldJacobian() const;
-
-  /// Update the spatial time derivative of the ShapeNode Jacobian.
-  /// getJacobianSpatialDeriv() calls this function if
-  /// mIsShapeNodeJacobianSpatialDerivDirty is true.
-  void updateShapeNodeJacobianSpatialDeriv() const;
-
-  /// Update the classic time derivative of the ShapeNode Jacobian.
-  /// getJacobianClassicDeriv() calls this function if
-  /// mIsWorldJacobianClassicDerivDirty is true.
-  void updateWorldJacobianClassicDeriv() const;
-
 protected:
 
   /// Properties of this ShapeNode
   DEPRECATED(6.0)
   UniqueProperties mShapeNodeP;
-
-  /// Cached Jacobian of this ShapeNode
-  ///
-  /// Do not use directly! Use getJacobian() to access this quantity
-  mutable math::Jacobian mShapeNodeJacobian;
-
-  /// Cached World Jacobian of this ShapeNode
-  ///
-  /// Do not use directly! Use getWorldJacobian() to access this quantity
-  mutable math::Jacobian mWorldJacobian;
-
-  /// Spatial time derivative of ShapeNode Jacobian
-  ///
-  /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
-  mutable math::Jacobian mShapeNodeJacobianSpatialDeriv;
-
-  /// Classic time derivative of the ShapeNode Jacobian
-  ///
-  /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
-  mutable math::Jacobian mWorldJacobianClassicDeriv;
 
   /// Shape updated signal
   ShapeUpdatedSignal mShapeUpdatedSignal;

@@ -34,64 +34,68 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/VersionCounter.h"
-#include "dart/common/Console.h"
+#ifndef DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_H_
+#define DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_H_
 
-#include <iostream>
-#include <cassert>
+#include "dart/dynamics/Node.h"
 
 namespace dart {
-namespace common {
+namespace dynamics {
+
+template <class Base>
+class EntityNode;
+
+namespace detail {
 
 //==============================================================================
-VersionCounter::VersionCounter()
-  : mVersion(0),
-    mDependent(nullptr)
+struct EntityNodeProperties
 {
-  // Do nothing
-}
+  std::string mName;
+};
 
 //==============================================================================
-size_t VersionCounter::incrementVersion()
-{
-  ++mVersion;
-  if(mDependent)
-    mDependent->incrementVersion();
-
-  return mVersion;
-}
+template <class Base>
+using EntityNodeAspectBase =
+    common::EmbedProperties<EntityNode<Base>, EntityNodeProperties>;
 
 //==============================================================================
-size_t VersionCounter::getVersion() const
+template <class Base, bool isCompositeBase>
+class EntityNodeBase : public Base, public EntityNodeAspectBase<Base>
 {
-  return mVersion;
-}
+public:
 
-//==============================================================================
-void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
-{
-  VersionCounter* next = dependent;
-  do
+  /// Forwarding constructor
+  template <typename... Args>
+  EntityNodeBase(Args&&... args)
+    : Base(std::forward<Args>(args)...)
   {
-    if(next == this)
-    {
-      dterr << "[VersionCounter::setVersionDependentObject] Attempting to "
-            << "create a circular version dependency with the following loop:\n";
-      next = dependent;
-      while(next != this)
-      {
-        std::cerr << " -- " << next << "\n";
-        next = next->mDependent;
-      }
-      std::cerr << " -- " << this << "\n";
-      assert(false);
-      return;
-    }
+    // Do nothing
+  }
 
-  } while( (next = next->mDependent) );
+  virtual ~EntityNodeBase() = default;
+};
 
-  mDependent = dependent;
-}
+//==============================================================================
+template <class Base>
+class EntityNodeBase<Base, true> : public common::CompositeJoiner<
+    EntityNodeAspectBase<Base>, Base >
+{
+public:
 
-} // namespace common
+  /// Forwarding constructor
+  template <typename... Args>
+  EntityNodeBase(Args&&... args)
+    : common::CompositeJoiner<Base, EntityNodeAspectBase<Base>>(
+        common::NoArg, std::forward<Args>(args)...)
+  {
+    // Do nothing
+  }
+
+  virtual ~EntityNodeBase() = default;
+};
+
+} // namespace detail
 } // namespace dart
+} // namespace dynamics
+
+#endif // DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_H_

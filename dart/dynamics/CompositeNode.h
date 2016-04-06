@@ -34,64 +34,90 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/VersionCounter.h"
-#include "dart/common/Console.h"
+#ifndef DART_DYNAMICS_COMPOSITENODE_H_
+#define DART_DYNAMICS_COMPOSITENODE_H_
 
-#include <iostream>
-#include <cassert>
+#include "dart/common/Composite.h"
+#include "dart/dynamics/Node.h"
 
 namespace dart {
-namespace common {
+namespace dynamics {
 
 //==============================================================================
-VersionCounter::VersionCounter()
-  : mVersion(0),
-    mDependent(nullptr)
+template <class Base>
+class CompositeStateNode : public Base
 {
-  // Do nothing
-}
+public:
 
-//==============================================================================
-size_t VersionCounter::incrementVersion()
-{
-  ++mVersion;
-  if(mDependent)
-    mDependent->incrementVersion();
+  using State = Node::MakeState<common::Composite::State>;
 
-  return mVersion;
-}
-
-//==============================================================================
-size_t VersionCounter::getVersion() const
-{
-  return mVersion;
-}
-
-//==============================================================================
-void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
-{
-  VersionCounter* next = dependent;
-  do
+  /// Forwarding constructor
+  template <typename... Args>
+  CompositeStateNode(Args&&... args)
+    : Base(std::forward<Args>(args)...)
   {
-    if(next == this)
-    {
-      dterr << "[VersionCounter::setVersionDependentObject] Attempting to "
-            << "create a circular version dependency with the following loop:\n";
-      next = dependent;
-      while(next != this)
-      {
-        std::cerr << " -- " << next << "\n";
-        next = next->mDependent;
-      }
-      std::cerr << " -- " << this << "\n";
-      assert(false);
-      return;
-    }
+    // Do nothing
+  }
 
-  } while( (next = next->mDependent) );
+  // Documentation inherited from Node
+  void setNodeState(const Node::State& otherState) override final;
 
-  mDependent = dependent;
-}
+  // Documentation inherited from Node
+  std::unique_ptr<Node::State> getNodeState() const override final;
 
-} // namespace common
+  // Documentation inherited from Node
+  void copyNodeStateTo(
+      std::unique_ptr<Node::State>& outputState) const override final;
+};
+
+//==============================================================================
+template <class Base>
+class CompositePropertiesNode : public Base
+{
+public:
+
+  using Properties = Node::MakeProperties<common::Composite::Properties>;
+
+  /// Forwarding constructor
+  template <typename... Args>
+  CompositePropertiesNode(Args&&... args)
+    : Base(std::forward<Args>(args)...)
+  {
+    // Do nothing
+  }
+
+  // Documentation inherited from Node
+  void setNodeProperties(
+      const Node::Properties& otherProperties) override final;
+
+  // Documentation inherited from Node
+  std::unique_ptr<Node::Properties> getNodeProperties() const override final;
+
+  // Documentation inherited from Node
+  void copyNodePropertiesTo(
+      std::unique_ptr<Node::Properties>& outputProperties) const override final;
+};
+
+//==============================================================================
+template <class Base>
+class CompositeNode : public CompositePropertiesNode<CompositeStateNode<Base> >
+{
+public:
+
+  /// Forwarding constructor
+  template <typename... Args>
+  CompositeNode(Args&&... args)
+    : CompositePropertiesNode<CompositeStateNode<Base>>(
+        std::forward<Args>(args)...)
+  {
+    // Do nothing
+  }
+
+};
+
+} // namespace dynamics
 } // namespace dart
+
+#include "dart/dynamics/detail/CompositeNode.h"
+
+#endif // DART_DYNAMICS_COMPOSITENODE_H_

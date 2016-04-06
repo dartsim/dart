@@ -34,64 +34,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/VersionCounter.h"
-#include "dart/common/Console.h"
+#ifndef DART_DYNAMICS_DETAIL_COMPOSITENODE_H_
+#define DART_DYNAMICS_DETAIL_COMPOSITENODE_H_
 
-#include <iostream>
-#include <cassert>
+#include "dart/dynamics/CompositeNode.h"
 
 namespace dart {
-namespace common {
+namespace dynamics {
 
 //==============================================================================
-VersionCounter::VersionCounter()
-  : mVersion(0),
-    mDependent(nullptr)
+template <class Base>
+void CompositeStateNode<Base>::setNodeState(const Node::State& otherState)
 {
-  // Do nothing
+  common::Composite::setCompositeState(static_cast<const State&>(otherState));
 }
 
 //==============================================================================
-size_t VersionCounter::incrementVersion()
+template <class Base>
+std::unique_ptr<Node::State> CompositeStateNode<Base>::getNodeState() const
 {
-  ++mVersion;
-  if(mDependent)
-    mDependent->incrementVersion();
-
-  return mVersion;
+  return common::make_unique<State>(common::Composite::getCompositeState());
 }
 
 //==============================================================================
-size_t VersionCounter::getVersion() const
+template <class Base>
+void CompositeStateNode<Base>::copyNodeStateTo(
+    std::unique_ptr<Node::State>& outputState) const
 {
-  return mVersion;
+  common::Composite::copyCompositeStateTo(static_cast<State&>(*outputState));
 }
 
 //==============================================================================
-void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
+template <class Base>
+void CompositePropertiesNode<Base>::setNodeProperties(
+    const Node::Properties& otherProperties)
 {
-  VersionCounter* next = dependent;
-  do
-  {
-    if(next == this)
-    {
-      dterr << "[VersionCounter::setVersionDependentObject] Attempting to "
-            << "create a circular version dependency with the following loop:\n";
-      next = dependent;
-      while(next != this)
-      {
-        std::cerr << " -- " << next << "\n";
-        next = next->mDependent;
-      }
-      std::cerr << " -- " << this << "\n";
-      assert(false);
-      return;
-    }
-
-  } while( (next = next->mDependent) );
-
-  mDependent = dependent;
+  common::Composite::setCompositeProperties(
+        static_cast<const Properties&>(otherProperties));
 }
 
-} // namespace common
+//==============================================================================
+template <class Base>
+std::unique_ptr<Node::Properties>
+CompositePropertiesNode<Base>::getNodeProperties() const
+{
+  return common::make_unique<Properties>(
+        common::Composite::getCompositeProperties());
+}
+
+//==============================================================================
+template <class Base>
+void CompositePropertiesNode<Base>::copyNodePropertiesTo(
+    std::unique_ptr<Node::Properties>& outputProperties) const
+{
+  common::Composite::copyCompositePropertiesTo(
+        static_cast<Properties&>(*outputProperties));
+}
+
+} // namespace dynamics
 } // namespace dart
+
+#endif // DART_DYNAMICS_DETAIL_COMPOSITENODE_H_

@@ -95,6 +95,12 @@ public:
 
 protected:
 
+  /// Default constructor -- calls the Abstract constructor
+  FixedFrame();
+
+  /// Abstract constructor
+  explicit FixedFrame(ConstructAbstract_t);
+
   /// Used for Relative Velocity and Relative Acceleration of this Frame
   static const Eigen::Vector6d mZero;
 };

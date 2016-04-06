@@ -125,30 +125,6 @@ ShapeNode& ShapeNode::operator=(const ShapeNode& other)
 }
 
 //==============================================================================
-const std::string& ShapeNode::setName(const std::string& name)
-{
-  // If it already has the requested name, do nothing
-  if(mShapeNodeP.mName == name && !name.empty())
-    return mShapeNodeP.mName;
-
-  const std::string oldName = mShapeNodeP.mName;
-
-  mShapeNodeP.mName = registerNameChange(name);
-
-  incrementVersion();
-  Entity::mNameChangedSignal.raise(this, oldName, mShapeNodeP.mName);
-
-  // Return the resulting name, after it has been checked for uniqueness
-  return mShapeNodeP.mName;
-}
-
-//==============================================================================
-const std::string& ShapeNode::getName() const
-{
-  return mShapeNodeP.mName;
-}
-
-//==============================================================================
 void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
 {
   if(transform.matrix() == FixedFrame::mAspectProperties.mRelativeTf.matrix())
@@ -207,120 +183,12 @@ Eigen::Vector3d ShapeNode::getOffset() const
 }
 
 //==============================================================================
-std::shared_ptr<Skeleton> ShapeNode::getSkeleton()
-{
-  return mBodyNode->getSkeleton();
-}
-
-//==============================================================================
-std::shared_ptr<const Skeleton> ShapeNode::getSkeleton() const
-{
-  return mBodyNode->getSkeleton();
-}
-
-//==============================================================================
-bool ShapeNode::dependsOn(size_t genCoordIndex) const
-{
-  return mBodyNode->dependsOn(genCoordIndex);
-}
-
-//==============================================================================
-size_t ShapeNode::getNumDependentGenCoords() const
-{
-  return mBodyNode->getNumDependentGenCoords();
-}
-
-//==============================================================================
-size_t ShapeNode::getDependentGenCoordIndex(size_t arrayIndex) const
-{
-  return mBodyNode->getDependentGenCoordIndex(arrayIndex);
-}
-
-//==============================================================================
-const std::vector<size_t>& ShapeNode::getDependentGenCoordIndices() const
-{
-  return mBodyNode->getDependentGenCoordIndices();
-}
-
-//==============================================================================
-size_t ShapeNode::getNumDependentDofs() const
-{
-  return mBodyNode->getNumDependentDofs();
-}
-
-//==============================================================================
-DegreeOfFreedom* ShapeNode::getDependentDof(size_t index)
-{
-  return mBodyNode->getDependentDof(index);
-}
-
-//==============================================================================
-const DegreeOfFreedom* ShapeNode::getDependentDof(size_t index) const
-{
-  return mBodyNode->getDependentDof(index);
-}
-
-//==============================================================================
-const std::vector<DegreeOfFreedom*>& ShapeNode::getDependentDofs()
-{
-  return mBodyNode->getDependentDofs();
-}
-
-//==============================================================================
-const std::vector<const DegreeOfFreedom*>& ShapeNode::getDependentDofs() const
-{
-  return static_cast<const BodyNode*>(mBodyNode)->getDependentDofs();
-}
-
-//==============================================================================
-const std::vector<const DegreeOfFreedom*> ShapeNode::getChainDofs() const
-{
-  return mBodyNode->getChainDofs();
-}
-
-//==============================================================================
-const math::Jacobian& ShapeNode::getJacobian() const
-{
-  if (mIsBodyJacobianDirty)
-    updateShapeNodeJacobian();
-
-  return mShapeNodeJacobian;
-}
-
-//==============================================================================
-const math::Jacobian& ShapeNode::getWorldJacobian() const
-{
-  if(mIsWorldJacobianDirty)
-    updateWorldJacobian();
-
-  return mWorldJacobian;
-}
-
-//==============================================================================
-const math::Jacobian& ShapeNode::getJacobianSpatialDeriv() const
-{
-  if(mIsBodyJacobianSpatialDerivDirty)
-    updateShapeNodeJacobianSpatialDeriv();
-
-  return mShapeNodeJacobianSpatialDeriv;
-}
-
-//==============================================================================
-const math::Jacobian& ShapeNode::getJacobianClassicDeriv() const
-{
-  if(mIsWorldJacobianClassicDerivDirty)
-    updateWorldJacobianClassicDeriv();
-
-  return mWorldJacobianClassicDeriv;
-}
-
-//==============================================================================
 ShapeNode::ShapeNode(BodyNode* bodyNode, const Properties& properties)
   : Entity(ConstructFrame),
     Frame(bodyNode),
     FixedFrame(bodyNode),
-    detail::ShapeNodeCompositeBase(common::NoArg, bodyNode),
-    TemplatedJacobianNode<ShapeNode>(bodyNode),
+    detail::ShapeNodeCompositeBase(
+      std::make_tuple(bodyNode, properties.mRelativeTransform), bodyNode),
     mShapeUpdatedSignal(ShapeUpdatedSignal()),
     mRelativeTransformUpdatedSignal(RelativeTransformUpdatedSignal()),
     onShapeUpdated(mShapeUpdatedSignal),
@@ -336,13 +204,14 @@ ShapeNode::ShapeNode(BodyNode* bodyNode,
   : Entity(ConstructFrame),
     Frame(bodyNode),
     FixedFrame(bodyNode),
-    detail::ShapeNodeCompositeBase(common::NoArg, bodyNode),
-    TemplatedJacobianNode<ShapeNode>(bodyNode),
+    detail::ShapeNodeCompositeBase(
+      std::make_tuple(bodyNode, Eigen::Isometry3d::Identity()), bodyNode),
     mShapeUpdatedSignal(ShapeUpdatedSignal()),
     mRelativeTransformUpdatedSignal(RelativeTransformUpdatedSignal()),
     onShapeUpdated(mShapeUpdatedSignal),
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {
+  // TODO(MXG): Consider changing this to a delegating constructor instead
   Properties prop;
   prop.mShape = shape;
   prop.mName = name;
@@ -362,53 +231,6 @@ Node* ShapeNode::cloneNode(BodyNode* parent) const
     shapeNode->mIK = mIK->clone(shapeNode);
 
   return shapeNode;
-}
-
-//==============================================================================
-void ShapeNode::updateShapeNodeJacobian() const
-{
-  mShapeNodeJacobian = math::AdInvTJac(getRelativeTransform(),
-                                       mBodyNode->getJacobian());
-  mIsBodyJacobianDirty = false;
-}
-
-//==============================================================================
-void ShapeNode::updateWorldJacobian() const
-{
-  mWorldJacobian = math::AdRJac(getWorldTransform(), getJacobian());
-
-  mIsWorldJacobianDirty = false;
-}
-
-//==============================================================================
-void ShapeNode::updateShapeNodeJacobianSpatialDeriv() const
-{
-  mShapeNodeJacobianSpatialDeriv =
-      math::AdInvTJac(getRelativeTransform(),
-                      mBodyNode->getJacobianSpatialDeriv());
-
-  mIsBodyJacobianSpatialDerivDirty = false;
-}
-
-//==============================================================================
-void ShapeNode::updateWorldJacobianClassicDeriv() const
-{
-  const math::Jacobian& dJ_parent = mBodyNode->getJacobianClassicDeriv();
-  const math::Jacobian& J_parent = mBodyNode->getWorldJacobian();
-
-  const Eigen::Vector3d& v_local =
-      getLinearVelocity(mBodyNode, Frame::World());
-
-  const Eigen::Vector3d& w_parent = mBodyNode->getAngularVelocity();
-  const Eigen::Vector3d& p = (getWorldTransform().translation()
-                  - mBodyNode->getWorldTransform().translation()).eval();
-
-  mWorldJacobianClassicDeriv = dJ_parent;
-  mWorldJacobianClassicDeriv.bottomRows<3>().noalias() +=
-      J_parent.topRows<3>().colwise().cross(v_local + w_parent.cross(p))
-      + dJ_parent.topRows<3>().colwise().cross(p);
-
-  mIsWorldJacobianClassicDerivDirty = false;
 }
 
 } // namespace dynamics

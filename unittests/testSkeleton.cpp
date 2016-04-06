@@ -581,7 +581,7 @@ TEST(Skeleton, NodePersistence)
     EndEffector* manip = skel->getBodyNode(0)->createEndEffector("manip");
 
     // Test both methods of adding a Support to an EndEffector
-    manip->create<Support>();
+    manip->createAspect<Support>();
     manip->createSupport();
 
     EXPECT_EQ(skel->getEndEffector("manip"), manip);

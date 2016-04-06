@@ -34,64 +34,52 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/VersionCounter.h"
-#include "dart/common/Console.h"
+#ifndef DART_DYNAMICS_DETAIL_ENTITYNODE_H_
+#define DART_DYNAMICS_DETAIL_ENTITYNODE_H_
 
-#include <iostream>
-#include <cassert>
+#include "dart/dynamics/EntityNode.h"
 
 namespace dart {
-namespace common {
+namespace dynamics {
 
 //==============================================================================
-VersionCounter::VersionCounter()
-  : mVersion(0),
-    mDependent(nullptr)
+template <class Base>
+void EntityNode<Base>::setAspectProperties(
+    const typename NameAspect::Properties& properties)
 {
-  // Do nothing
+  setName(properties.mName);
 }
 
 //==============================================================================
-size_t VersionCounter::incrementVersion()
+template <class Base>
+const std::string& EntityNode<Base>::setName(const std::string& newName)
 {
-  ++mVersion;
-  if(mDependent)
-    mDependent->incrementVersion();
+  using NameImpl = detail::EntityNodeAspectBase<Base>;
 
-  return mVersion;
+  if(NameImpl::mAspectProperties.mName == newName && !newName.empty())
+    return NameImpl::mAspectProperties.mName;
+
+  const std::string oldName = NameImpl::mAspectProperties.mName;
+
+  NameImpl::mAspectProperties.mName = Node::registerNameChange(newName);
+
+  Node::incrementVersion();
+  Entity::mNameChangedSignal.raise(
+        this, oldName, NameImpl::mAspectProperties.mName);
+
+  return NameImpl::mAspectProperties.mName;
 }
 
 //==============================================================================
-size_t VersionCounter::getVersion() const
+template <class Base>
+const std::string& EntityNode<Base>::getName() const
 {
-  return mVersion;
+  using NameImpl = detail::EntityNodeAspectBase<Base>;
+  return NameImpl::mAspectProperties.mName;
 }
 
-//==============================================================================
-void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
-{
-  VersionCounter* next = dependent;
-  do
-  {
-    if(next == this)
-    {
-      dterr << "[VersionCounter::setVersionDependentObject] Attempting to "
-            << "create a circular version dependency with the following loop:\n";
-      next = dependent;
-      while(next != this)
-      {
-        std::cerr << " -- " << next << "\n";
-        next = next->mDependent;
-      }
-      std::cerr << " -- " << this << "\n";
-      assert(false);
-      return;
-    }
-
-  } while( (next = next->mDependent) );
-
-  mDependent = dependent;
-}
-
-} // namespace common
+} // namespace dynamics
 } // namespace dart
+
+
+#endif // DART_DYNAMICS_DETAIL_ENTITYNODE_H_

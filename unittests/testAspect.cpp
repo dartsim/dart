@@ -119,7 +119,7 @@ public:
 
   EmbeddedStateComposite(const EmbeddedStateData& state = EmbeddedStateData())
   {
-    create<Aspect>(static_cast<const Aspect::StateData&>(state));
+    createAspect<Aspect>(static_cast<const Aspect::StateData&>(state));
   }
 
   void setAspectState(const AspectState& state) { mAspectState = state; }
@@ -134,7 +134,7 @@ public:
   EmbeddedPropertiesComposite(
       const EmbeddedPropertiesData& properties = EmbeddedPropertiesData())
   {
-    create<Aspect>(properties);
+    createAspect<Aspect>(properties);
   }
 
   void setAspectProperties(const AspectProperties& properties)
@@ -153,7 +153,7 @@ public:
 
   EmbeddedStateAndPropertiesComposite()
   {
-    create<Aspect>();
+    createAspect<Aspect>();
   }
 
   void setAspectState(const AspectState& state) { mAspectState = state; }
@@ -424,11 +424,11 @@ TEST(Aspect, Specialized)
   EXPECT_TRUE( mgr.get<GenericAspect>() == nullptr );
   EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
-  sub_ptr<SpecializedAspect> spec = mgr.create<SpecializedAspect>();
+  sub_ptr<SpecializedAspect> spec = mgr.createAspect<SpecializedAspect>();
   EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
   SpecializedAspect* rawSpec = spec;
 
-  sub_ptr<GenericAspect> generic = mgr.create<GenericAspect>();
+  sub_ptr<GenericAspect> generic = mgr.createAspect<GenericAspect>();
   EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
   GenericAspect* rawGeneric = generic;
 
@@ -440,10 +440,10 @@ TEST(Aspect, Specialized)
   EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
 //  SpecializedAspect* newSpec = mgr.createSpecializedAspect();
-  SpecializedAspect* newSpec = mgr.create<SpecializedAspect>();
+  SpecializedAspect* newSpec = mgr.createAspect<SpecializedAspect>();
   EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
-  GenericAspect* newGeneric = mgr.create<GenericAspect>();
+  GenericAspect* newGeneric = mgr.createAspect<GenericAspect>();
   EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
   EXPECT_TRUE( nullptr == spec );
@@ -486,7 +486,7 @@ TEST(Aspect, Releasing)
     EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
     EXPECT_TRUE( receiver.get<GenericAspect>() == aspect );
 
-    sender.set<GenericAspect>(receiver.release<GenericAspect>());
+    sender.set<GenericAspect>(receiver.releaseAspect<GenericAspect>());
 
     EXPECT_FALSE( nullptr == aspect );
 
@@ -519,7 +519,7 @@ TEST(Aspect, Releasing)
 //    EXPECT_TRUE( receiver.getSpecializedAspect() == spec );
 
 //    sender.set<SpecializedAspect>(receiver.releaseSpecializedAspect());
-    sender.set<SpecializedAspect>(receiver.release<SpecializedAspect>());
+    sender.set<SpecializedAspect>(receiver.releaseAspect<SpecializedAspect>());
 
     EXPECT_FALSE( nullptr == spec );
 
@@ -563,7 +563,7 @@ TEST(Aspect, Releasing)
     sub_ptr<GenericAspect> aspect2 = sender.get<GenericAspect>();
     EXPECT_FALSE( nullptr == aspect2 );
 
-    sender.set<GenericAspect>(receiver.release<GenericAspect>());
+    sender.set<GenericAspect>(receiver.releaseAspect<GenericAspect>());
     EXPECT_TRUE( nullptr == aspect2 );
     EXPECT_FALSE( nullptr == rec_aspect );
     EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );

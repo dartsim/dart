@@ -361,7 +361,7 @@ template <typename MapType>
 CloneableMap<MapType>::CloneableMap(
     const CloneableMap& otherHolder)
 {
-  *this = otherHolder;
+  copy(otherHolder);
 }
 
 //==============================================================================
@@ -376,7 +376,7 @@ CloneableMap<MapType>::CloneableMap(
 template <typename MapType>
 CloneableMap<MapType>::CloneableMap(const MapType& otherMap)
 {
-  *this = otherMap;
+  copy(otherMap);
 }
 
 //==============================================================================
@@ -391,8 +391,7 @@ template <typename MapType>
 CloneableMap<MapType>& CloneableMap<MapType>::operator=(
     const CloneableMap& otherHolder)
 {
-  *this = otherHolder.getMap();
-
+  copy(otherHolder);
   return *this;
 }
 
@@ -410,6 +409,31 @@ CloneableMap<MapType>& CloneableMap<MapType>::operator=(
 template <typename MapType>
 CloneableMap<MapType>& CloneableMap<MapType>::operator=(
     const MapType& otherMap)
+{
+  copy(otherMap);
+  return *this;
+}
+
+//==============================================================================
+template <typename MapType>
+CloneableMap<MapType>& CloneableMap<MapType>::operator=(
+    MapType&& otherHolder)
+{
+  mMap = std::move(otherHolder);
+
+  return *this;
+}
+
+//==============================================================================
+template <typename MapType>
+void CloneableMap<MapType>::copy(const CloneableMap& otherMap)
+{
+  copy(otherMap.getMap());
+}
+
+//==============================================================================
+template <typename MapType>
+void CloneableMap<MapType>::copy(const MapType& otherMap)
 {
   typename MapType::iterator receiver = mMap.begin();
   typename MapType::const_iterator sender = otherMap.begin();
@@ -453,18 +477,6 @@ CloneableMap<MapType>& CloneableMap<MapType>::operator=(
   {
     mMap.erase(receiver++);
   }
-
-  return *this;
-}
-
-//==============================================================================
-template <typename MapType>
-CloneableMap<MapType>& CloneableMap<MapType>::operator=(
-    MapType&& otherHolder)
-{
-  mMap = std::move(otherHolder);
-
-  return *this;
 }
 
 //==============================================================================

@@ -245,6 +245,7 @@ BodyNode::~BodyNode()
 {
   // Delete all Nodes
   mNodeMap.clear();
+  mNodeDestructors.clear();
 
   // Release markers
   for (std::vector<Marker*>::const_iterator it = mMarkers.begin();

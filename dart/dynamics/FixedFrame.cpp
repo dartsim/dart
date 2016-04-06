@@ -59,7 +59,7 @@ FixedFrame::FixedFrame(Frame* refFrame,
   : Entity(refFrame, false),
     Frame(refFrame)
 {
-  create<Aspect>(AspectProperties(relativeTransform));
+  createAspect<Aspect>(AspectProperties(relativeTransform));
 }
 
 //==============================================================================
@@ -113,6 +113,21 @@ const Eigen::Vector6d& FixedFrame::getPrimaryRelativeAcceleration() const
 const Eigen::Vector6d& FixedFrame::getPartialAcceleration() const
 {
   return mZero;
+}
+
+//==============================================================================
+FixedFrame::FixedFrame()
+  : FixedFrame(ConstructAbstract)
+{
+  // Delegates to the abstract constructor
+}
+
+//==============================================================================
+FixedFrame::FixedFrame(ConstructAbstract_t)
+{
+  dterr << "[FixedFrame::FixedFrame] Attempting to construct a pure abstract "
+        << "FixedFrame object. This is not allowed!\n";
+  assert(false);
 }
 
 } // namespace dynamics

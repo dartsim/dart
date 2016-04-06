@@ -165,7 +165,8 @@ Node::Node(BodyNode* _bn)
     return;
   }
 
-  setVersionDependentObject(mBodyNode);
+  if(mBodyNode != this)
+    setVersionDependentObject(mBodyNode);
 }
 
 //==============================================================================

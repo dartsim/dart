@@ -217,7 +217,7 @@ protected:
 /// Aspect::State and Aspect::Properties to be handled in a semantically
 /// palatable way.
 template <typename MapType>
-class CloneableMap final
+class CloneableMap
 {
 public:
 
@@ -248,6 +248,12 @@ public:
   /// Map-based move assignment operator
   CloneableMap& operator=(MapType&& otherMap);
 
+  /// Copy the contents of another cloneable map into this one.
+  void copy(const CloneableMap& otherMap);
+
+  /// Copy the contents of a map into this one.
+  void copy(const MapType& otherMap);
+
   /// Get the map that is being held
   MapType& getMap();
 
@@ -264,7 +270,7 @@ private:
 /// The CloneableVector type wraps a std::vector of an Cloneable type allowing
 /// it to be handled by an CloneableMapHolder
 template <typename T>
-class CloneableVector final
+class CloneableVector
 {
 public:
 

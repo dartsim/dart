@@ -47,6 +47,9 @@ class VersionCounter
 {
 public:
 
+  /// Default constructor
+  VersionCounter();
+
   /// Increment the version for this object
   virtual size_t incrementVersion();
 

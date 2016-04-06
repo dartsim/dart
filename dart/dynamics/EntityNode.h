@@ -34,64 +34,49 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/VersionCounter.h"
-#include "dart/common/Console.h"
+#ifndef DART_DYNAMICS_ENTITYNODE_H_
+#define DART_DYNAMICS_ENTITYNODE_H_
 
-#include <iostream>
-#include <cassert>
+#include "dart/dynamics/detail/EntityNodeAspect.h"
 
 namespace dart {
-namespace common {
+namespace dynamics {
 
 //==============================================================================
-VersionCounter::VersionCounter()
-  : mVersion(0),
-    mDependent(nullptr)
+template <class Base>
+class EntityNode : public detail::EntityNodeBase<
+    Base, std::is_base_of<common::Composite, Base>::value >
 {
-  // Do nothing
-}
+public:
 
-//==============================================================================
-size_t VersionCounter::incrementVersion()
-{
-  ++mVersion;
-  if(mDependent)
-    mDependent->incrementVersion();
+  using NameAspect = typename detail::EntityNodeAspectBase<Base>::Aspect;
 
-  return mVersion;
-}
-
-//==============================================================================
-size_t VersionCounter::getVersion() const
-{
-  return mVersion;
-}
-
-//==============================================================================
-void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
-{
-  VersionCounter* next = dependent;
-  do
+  /// Forwarding constructor
+  template <typename... Args>
+  EntityNode(Args&&... args)
+    : detail::EntityNodeBase<
+          Base, std::is_base_of<common::Composite, Base>::value>(
+        std::forward<Args>(args)...)
   {
-    if(next == this)
-    {
-      dterr << "[VersionCounter::setVersionDependentObject] Attempting to "
-            << "create a circular version dependency with the following loop:\n";
-      next = dependent;
-      while(next != this)
-      {
-        std::cerr << " -- " << next << "\n";
-        next = next->mDependent;
-      }
-      std::cerr << " -- " << this << "\n";
-      assert(false);
-      return;
-    }
+    this->template createAspect<NameAspect>();
+  }
 
-  } while( (next = next->mDependent) );
+  virtual ~EntityNode() = default;
 
-  mDependent = dependent;
-}
+  /// Set the AspectProperties of this EntityNode
+  void setAspectProperties(const typename NameAspect::Properties& properties);
 
-} // namespace common
+  // Documentation inherited from Node
+  const std::string& setName(const std::string& newName) override;
+
+  // Documentation inherited from Node
+  const std::string& getName() const override;
+
+};
+
+} // namespace dynamics
 } // namespace dart
+
+#include "dart/dynamics/detail/EntityNode.h"
+
+#endif // DART_DYNAMICS_ENTITYNODE_H_

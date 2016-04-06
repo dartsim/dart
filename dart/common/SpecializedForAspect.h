@@ -91,17 +91,17 @@ public:
 
   /// Construct an Aspect inside of this Composite
   template <class T, typename ...Args>
-  T* create(Args&&... args);
+  T* createAspect(Args&&... args);
 
   /// Remove an Aspect from this Composite
   template <class T>
-  void erase();
+  void eraseAspect();
 
   /// Remove an Aspect from this Composite, but return its unique_ptr instead
   /// of letting it be deleted. This allows you to safely use move semantics to
   /// transfer an Aspect between two Composites.
   template <class T>
-  std::unique_ptr<T> release();
+  std::unique_ptr<T> releaseAspect();
 
   /// Check if this Composite is specialized for a specific type of Aspect
   template <class T>
@@ -152,25 +152,25 @@ protected:
 
   /// Redirect to Composite::create()
   template <class T, typename ...Args>
-  T* _create(type<T>, Args&&... args);
+  T* _createAspect(type<T>, Args&&... args);
 
   /// Specialized implementation of create()
   template <typename ...Args>
-  SpecAspect* _create(type<SpecAspect>, Args&&... args);
+  SpecAspect* _createAspect(type<SpecAspect>, Args&&... args);
 
   /// Redirect to Composite::erase()
   template <class T>
-  void _erase(type<T>);
+  void _eraseAspect(type<T>);
 
   /// Specialized implementation of erase()
-  void _erase(type<SpecAspect>);
+  void _eraseAspect(type<SpecAspect>);
 
   /// Redirect to Composite::release()
   template <class T>
-  std::unique_ptr<T> _release(type<T>);
+  std::unique_ptr<T> _releaseAspect(type<T>);
 
   /// Specialized implementation of release()
-  std::unique_ptr<SpecAspect> _release(type<SpecAspect>);
+  std::unique_ptr<SpecAspect> _releaseAspect(type<SpecAspect>);
 
   /// Return false
   template <class T>

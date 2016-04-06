@@ -40,8 +40,8 @@
 #include "dart/common/Aspect.h"
 #include "dart/common/SpecializedForAspect.h"
 #include "dart/common/AspectWithVersion.h"
-#include "dart/dynamics/FixedFrame.h"
-#include "dart/dynamics/TemplatedJacobianNode.h"
+#include "dart/dynamics/FixedJacobianNode.h"
+#include "dart/dynamics/CompositeNode.h"
 
 namespace dart {
 namespace dynamics {
@@ -49,11 +49,11 @@ namespace dynamics {
 class BodyNode;
 class Skeleton;
 class EndEffector;
-
 class Support;
-namespace detail
-{
 
+namespace detail {
+
+//==============================================================================
 struct SupportStateData
 {
   inline SupportStateData(bool active = false) : mActive(active) { }
@@ -61,6 +61,7 @@ struct SupportStateData
   bool mActive;
 };
 
+//==============================================================================
 struct SupportPropertiesData
 {
   math::SupportGeometry mGeometry;
@@ -68,8 +69,16 @@ struct SupportPropertiesData
 
 void SupportUpdate(Support* support);
 
+using EndEffectorCompositeBase = CompositeNode<
+    common::CompositeJoiner<
+        FixedJacobianNode,
+        common::SpecializedForAspect<Support>
+    >
+>;
+
 } // namespace detail
 
+//==============================================================================
 class Support final :
     public common::AspectWithStateAndVersionedProperties<
         Support,
@@ -99,11 +108,8 @@ public:
 
 };
 
-class EndEffector final :
-    public common::CompositeJoiner<
-        common::SpecializedForAspect<Support>, common::Virtual<FixedFrame> >,
-    public AccessoryNode<EndEffector>,
-    public TemplatedJacobianNode<EndEffector>
+//==============================================================================
+class EndEffector final : public detail::EndEffectorCompositeBase
 {
 public:
 
@@ -145,15 +151,6 @@ public:
   /// \{ \name Structural Properties
   //----------------------------------------------------------------------------
 
-  /// Set the State of this EndEffector.
-//  void setState(const StateData& _state);
-
-  /// Set the State of this EndEffector using move semantics
-//  void setState(StateData&& _state);
-
-  /// Get the State of this EndEffector
-//  StateData getEndEffectorState() const;
-
   /// Set the Properties of this EndEffector. If _useNow is true, the current
   /// Transform will be set to the new default transform.
   void setProperties(const PropertiesData& _properties, bool _useNow=false);
@@ -174,26 +171,6 @@ public:
   /// Copy the State and Properties of another EndEffector
   EndEffector& operator=(const EndEffector& _otherEndEffector);
 
-  /// Set name. If the name is already taken, this will return an altered
-  /// version which will be used by the Skeleton
-  const std::string& setName(const std::string& _name) override;
-
-  // Documentation inherited
-  const std::string& getName() const override;
-
-  // Documentation inherited
-  void setNodeProperties(const Node::Properties& otherProperties) override final;
-
-  // Documentation inherited
-  std::unique_ptr<Node::Properties> getNodeProperties() const override final;
-
-  // Documentation inherited
-  void copyNodePropertiesTo(
-      std::unique_ptr<Node::Properties>& outputProperties) const override final;
-
-  /// Set the current relative transform of this EndEffector
-  void setRelativeTransform(const Eigen::Isometry3d& newRelativeTf) override;
-
   /// Set the default relative transform of this EndEffector. The relative
   /// transform of this EndEffector will be set to _newDefaultTf the next time
   /// resetRelativeTransform() is called. If _useNow is set to true, then
@@ -208,68 +185,6 @@ public:
 
   DART_BAKE_SPECIALIZED_ASPECT(Support)
 
-  // Documentation inherited
-  bool dependsOn(size_t _genCoordIndex) const override;
-
-  // Documentation inherited
-  size_t getNumDependentGenCoords() const override;
-
-  // Documentation inherited
-  size_t getDependentGenCoordIndex(size_t _arrayIndex) const override;
-
-  // Documentation inherited
-  const std::vector<size_t>& getDependentGenCoordIndices() const override;
-
-  // Documentation inherited
-  size_t getNumDependentDofs() const override;
-
-  // Documentation inherited
-  DegreeOfFreedom* getDependentDof(size_t _index) override;
-
-  // Documentation inherited
-  const DegreeOfFreedom* getDependentDof(size_t _index) const override;
-
-  // Documentation inherited
-  const std::vector<DegreeOfFreedom*>& getDependentDofs() override;
-
-  // Documentation inherited
-  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const override;
-
-  // Documentation inherited
-  const std::vector<const DegreeOfFreedom*> getChainDofs() const override;
-
-  /// \}
-
-  //----------------------------------------------------------------------------
-  /// \{ \name Jacobian Functions
-  //----------------------------------------------------------------------------
-
-  // Documentation inherited
-  const math::Jacobian& getJacobian() const override final;
-
-  // Prevent the inherited getJacobian functions from being shadowed
-  using TemplatedJacobianNode<EndEffector>::getJacobian;
-
-  // Documentation inherited
-  const math::Jacobian& getWorldJacobian() const override final;
-
-  // Prevent the inherited getWorldJacobian functions from being shadowed
-  using TemplatedJacobianNode<EndEffector>::getWorldJacobian;
-
-  // Documentation inherited
-  const math::Jacobian& getJacobianSpatialDeriv() const override final;
-
-  // Prevent the inherited getJacobianSpatialDeriv functions from being shadowed
-  using TemplatedJacobianNode<EndEffector>::getJacobianSpatialDeriv;
-
-  // Documentation inherited
-  const math::Jacobian& getJacobianClassicDeriv() const override final;
-
-  // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
-  using TemplatedJacobianNode<EndEffector>::getJacobianClassicDeriv;
-
-  /// \}
-
   //----------------------------------------------------------------------------
   /// \{ \name Notifications
   //----------------------------------------------------------------------------
@@ -277,57 +192,21 @@ public:
   // Documentation inherited
   virtual void notifyTransformUpdate() override;
 
-  // Documentation inherited
-  virtual void notifyVelocityUpdate() override;
+  /// \}
 
 protected:
 
   /// Constructor used by the Skeleton class
-  explicit EndEffector(BodyNode* _parent, const PropertiesData& _properties);
+  explicit EndEffector(BodyNode* parent, const PropertiesData& properties);
 
   /// Create a clone of this BodyNode. This may only be called by the Skeleton
   /// class.
   virtual Node* cloneNode(BodyNode* _parent) const override;
 
-  /// Update the Jacobian of this EndEffector. getJacobian() calls this function
-  /// if mIsEffectorJacobianDirty is true.
-  void updateEffectorJacobian() const;
-
-  /// Update the World Jacobian cache.
-  void updateWorldJacobian() const;
-
-  /// Update the spatial time derivative of the end effector Jacobian.
-  /// getJacobianSpatialDeriv() calls this function if
-  /// mIsEffectorJacobianSpatialDerivDirty is true.
-  void updateEffectorJacobianSpatialDeriv() const;
-
-  /// Update the classic time derivative of the end effector Jacobian.
-  /// getJacobianClassicDeriv() calls this function if
-  /// mIsWorldJacobianClassicDerivDirty is true.
-  void updateWorldJacobianClassicDeriv() const;
 
   /// Properties of this EndEffector
+  DEPRECATED(6.0)
   UniqueProperties mEndEffectorP;
-
-  /// Cached Jacobian of this EndEffector
-  ///
-  /// Do not use directly! Use getJacobian() to access this quantity
-  mutable math::Jacobian mEffectorJacobian;
-
-  /// Cached World Jacobian of this EndEffector
-  ///
-  /// Do not use directly! Use getWorldJacobian() to access this quantity
-  mutable math::Jacobian mWorldJacobian;
-
-  /// Spatial time derivative of end effector Jacobian
-  ///
-  /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
-  mutable math::Jacobian mEffectorJacobianSpatialDeriv;
-
-  /// Classic time derivative of the end effector Jacobian
-  ///
-  /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
-  mutable math::Jacobian mWorldJacobianClassicDeriv;
 };
 
 } // namespace dynamics
