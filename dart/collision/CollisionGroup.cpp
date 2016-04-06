@@ -78,7 +78,7 @@ void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 
   addCollisionObjectToEngine(collObj.get());
 
-  mShapeFrameMap[shapeFrame] = collObj;
+  mShapeFrameMap.push_back(std::make_pair(shapeFrame, collObj));
 }
 
 //==============================================================================
@@ -101,7 +101,11 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
   if (!shapeFrame)
     return;
 
-  const auto search = mShapeFrameMap.find(shapeFrame);
+  const auto search
+      = std::find_if(mShapeFrameMap.begin(), mShapeFrameMap.end(),
+                     [&](const std::pair<const dynamics::ShapeFrame*,
+                                         CollisionObjectPtr>& pair)
+                     { return pair.first == shapeFrame; });
 
   if (mShapeFrameMap.end() == search)
     return;
@@ -137,7 +141,11 @@ void CollisionGroup::removeAllShapeFrames()
 bool CollisionGroup::hasShapeFrame(
     const dynamics::ShapeFrame* shapeFrame) const
 {
-  return mShapeFrameMap.find(shapeFrame) != mShapeFrameMap.end();
+  return std::find_if(mShapeFrameMap.begin(), mShapeFrameMap.end(),
+                      [&](const std::pair<const dynamics::ShapeFrame*,
+                                          CollisionObjectPtr>& pair)
+                      { return pair.first == shapeFrame; })
+      != mShapeFrameMap.end();
 }
 
 //==============================================================================

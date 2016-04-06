@@ -218,9 +218,20 @@ protected:
   // CollisionGroup is alive.
 
   /// ShapeFrames and CollisionOjbects added to this CollisionGroup
-  std::map<const dynamics::ShapeFrame*, CollisionObjectPtr> mShapeFrameMap;
+  std::vector<std::pair<const dynamics::ShapeFrame*,
+                        CollisionObjectPtr>> mShapeFrameMap;
   // CollisionGroup also shares the ownership of CollisionObjects across other
   // CollisionGroups for the same reason with above.
+  //
+  // Dev note: This was supposed to be std::map rather than std::vector for
+  // better search performance. The reason we use std::vector is to get
+  // deterministic contact results regardless of the order of CollisionObjects
+  // in this container for FCLCollisionDetector.
+  //
+  // fcl's collision result is dependent on the order of objects in the broad
+  // phase classes. If we use std::map, the orders of element between the
+  // original and copy are not guranteed to be the same as we copy std::map
+  // (e.g., by world cloning).
 
 };
 
