@@ -166,7 +166,7 @@ Composite::State Composite::getCompositeState() const
 //==============================================================================
 void Composite::copyCompositeStateTo(State& outgoingStates) const
 {
-  StateMap& states = outgoingStates.getMap();
+  auto& states = outgoingStates.getMap();
   extractDataFromObjectTypeMap<Aspect, Aspect::State, &Aspect::getAspectState>(
         states, mAspectMap);
 }
@@ -192,7 +192,7 @@ Composite::Properties Composite::getCompositeProperties() const
 void Composite::copyCompositePropertiesTo(
     Properties& outgoingProperties) const
 {
-  PropertiesMap& properties = outgoingProperties.getMap();
+  auto& properties = outgoingProperties.getMap();
   extractDataFromObjectTypeMap<Aspect, Aspect::Properties, &Aspect::getAspectProperties>(
         properties, mAspectMap);
 }

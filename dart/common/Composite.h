@@ -37,12 +37,7 @@
 #ifndef DART_COMMON_COMPOSITE_H_
 #define DART_COMMON_COMPOSITE_H_
 
-#include <map>
-#include <unordered_set>
-#include <typeinfo>
-#include <typeindex>
-
-#include "dart/common/Aspect.h"
+#include "dart/common/detail/CompositeStateAndProperties.h"
 
 namespace dart {
 namespace common {
@@ -61,11 +56,8 @@ class Composite
 {
 public:
 
-  using StateMap = std::map< std::type_index, std::unique_ptr<Aspect::State> >;
-  using State = CloneableMap<StateMap>;
-
-  using PropertiesMap = std::map< std::type_index, std::unique_ptr<Aspect::Properties> >;
-  using Properties = CloneableMap<PropertiesMap>;
+  using State = detail::CompositeState;
+  using Properties = detail::CompositeProperties;
 
   using AspectMap = std::map< std::type_index, std::unique_ptr<Aspect> >;
   using RequiredAspectSet = std::unordered_set<std::type_index>;
