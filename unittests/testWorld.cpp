@@ -44,6 +44,7 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/RevoluteJoint.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/collision/collision.h"
 #include "dart/simulation/World.h"
 
 using namespace dart;
@@ -260,8 +261,63 @@ TEST(World, Cloning)
 }
 
 //==============================================================================
+TEST(World, ValidatingClones)
+{
+  // Create a list of skel files to test with
+  std::vector<std::string> fileList;
+  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+
+  std::vector<dart::simulation::WorldPtr> worlds;
+  for(size_t i=0; i<fileList.size(); ++i)
+  {
+    worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
+
+    // Set non default collision detector
+#if HAVE_BULLET_COLLISION
+    worlds.back()->getConstraintSolver()->setCollisionDetector(
+        common::make_unique<collision::BulletCollisionDetector>());
+#else
+    worlds.back()->getConstraintSolver()->setCollisionDetector(
+        common::make_unique<collision::DARTCollisionDetector>());
+#endif
+  }
+
+  for(size_t i=0; i<worlds.size(); ++i)
+  {
+    dart::simulation::WorldPtr original = worlds[i];
+    std::vector<dart::simulation::WorldPtr> clones;
+    clones.push_back(original);
+    for(size_t j=1; j<5; ++j)
+    {
+      clones.push_back(clones[j-1]->clone());
+
+      EXPECT_EQ(original->getConstraintSolver()->getCollisionDetector(),
+                clones.back()->getConstraintSolver()->getCollisionDetector());
+    }
+  }
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
