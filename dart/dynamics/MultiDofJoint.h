@@ -67,6 +67,7 @@ public:
   using Base = detail::MultiDofJointBase<MultiDofJoint<DOF>, DOF>;
   using UniqueProperties = detail::MultiDofJointUniqueProperties<DOF>;
   using Properties = detail::MultiDofJointProperties<DOF>;
+  using AspectState = typename Base::AspectState;
   using AspectProperties = typename Base::AspectProperties;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR( typename MultiDofJoint<DOF>::Aspect, MultiDofJointAspect )
@@ -81,6 +82,9 @@ public:
 
   /// Set the Properties of this MultiDofJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectState of this MultiDofJoint
+  void setAspectState(const AspectState& state);
 
   /// Set the AspectProperties of this MultiDofJoint
   void setAspectProperties(const AspectProperties& properties);
@@ -598,49 +602,6 @@ protected:
 
   /// Array of DegreeOfFreedom objects
   std::array<DegreeOfFreedom*, DOF> mDofs;
-
-  /// Command
-  Vector mCommands;
-
-  //----------------------------------------------------------------------------
-  // Configuration
-  //----------------------------------------------------------------------------
-
-  /// Position
-  Vector mPositions;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  Vector mPositionDeriv;
-
-  //----------------------------------------------------------------------------
-  // Velocity
-  //----------------------------------------------------------------------------
-
-  /// Generalized velocity
-  Vector mVelocities;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  Vector mVelocitiesDeriv;
-
-  //----------------------------------------------------------------------------
-  // Acceleration
-  //----------------------------------------------------------------------------
-
-  /// Generalized acceleration
-  Vector mAccelerations;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  Vector mAccelerationsDeriv;
-
-  //----------------------------------------------------------------------------
-  // Force
-  //----------------------------------------------------------------------------
-
-  /// Generalized force
-  Vector mForces;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  Vector mForcesDeriv;
 
   //----------------------------------------------------------------------------
   // Impulse

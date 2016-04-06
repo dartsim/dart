@@ -48,6 +48,37 @@ template <size_t DOF> class MultiDofJoint;
 
 namespace detail {
 
+//==============================================================================
+template <size_t DOF>
+struct MultiDofJointState
+{
+  constexpr static size_t NumDofs = DOF;
+  using Vector = Eigen::Matrix<double, DOF, 1>;
+
+  /// Position
+  Vector mPositions;
+
+  /// Generalized velocity
+  Vector mVelocities;
+
+  /// Generalized acceleration
+  Vector mAccelerations;
+
+  /// Generalized force
+  Vector mForces;
+
+  /// Command
+  Vector mCommands;
+
+  MultiDofJointState(
+      const Vector& positions = Vector::Zero(),
+      const Vector& velocities = Vector::Zero(),
+      const Vector& accelerations = Vector::Zero(),
+      const Vector& forces = Vector::Zero(),
+      const Vector& commands = Vector::Zero());
+};
+
+//==============================================================================
 template <size_t DOF>
 struct MultiDofJointUniqueProperties
 {
@@ -162,7 +193,27 @@ public:
 // See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
 //
 template <size_t DOF>
+constexpr size_t MultiDofJointState<DOF>::NumDofs;
+
+template <size_t DOF>
 constexpr size_t MultiDofJointUniqueProperties<DOF>::NumDofs;
+
+//==============================================================================
+template <size_t DOF>
+MultiDofJointState<DOF>::MultiDofJointState(
+    const Vector& positions,
+    const Vector& velocities,
+    const Vector& accelerations,
+    const Vector& forces,
+    const Vector& commands)
+  : mPositions(positions),
+    mVelocities(velocities),
+    mAccelerations(accelerations),
+    mForces(forces),
+    mCommands(commands)
+{
+  // Do nothing
+}
 
 //==============================================================================
 template <size_t DOF>
@@ -239,8 +290,8 @@ MultiDofJointProperties<DOF>::MultiDofJointProperties(
 }
 
 template <class Derived, size_t DOF>
-using MultiDofJointBase = common::EmbedPropertiesOnTopOf<
-    Derived, MultiDofJointUniqueProperties<DOF>, Joint>;
+using MultiDofJointBase = common::EmbedStateAndPropertiesOnTopOf<
+    Derived, MultiDofJointState<DOF>, MultiDofJointUniqueProperties<DOF>, Joint>;
 
 } // namespace detail
 } // namespace dynamics

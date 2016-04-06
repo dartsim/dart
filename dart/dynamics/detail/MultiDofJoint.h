@@ -102,6 +102,17 @@ void MultiDofJoint<DOF>::setProperties(const UniqueProperties& _properties)
 
 //==============================================================================
 template <size_t DOF>
+void MultiDofJoint<DOF>::setAspectState(const AspectState& state)
+{
+  setCommands(state.mCommands);
+  setPositionsStatic(state.mPositions);
+  setVelocitiesStatic(state.mVelocities);
+  setAccelerationsStatic(state.mAccelerations);
+  setForces(state.mForces);
+}
+
+//==============================================================================
+template <size_t DOF>
 void MultiDofJoint<DOF>::setAspectProperties(const AspectProperties& properties)
 {
   for(size_t i=0; i<DOF; ++i)
@@ -306,7 +317,7 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double command)
   switch (Joint::mAspectProperties.mActuatorType)
   {
     case Joint::FORCE:
-      mCommands[_index] = math::clip(command,
+      this->mAspectState.mCommands[_index] = math::clip(command,
             Base::mAspectProperties.mForceLowerLimits[_index],
             Base::mAspectProperties.mForceUpperLimits[_index]);
       break;
@@ -317,20 +328,20 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double command)
                << command << ") command for a PASSIVE joint ["
                << this->getName() << "].\n";
       }
-      mCommands[_index] = command;
+      this->mAspectState.mCommands[_index] = command;
       break;
     case Joint::SERVO:
-      mCommands[_index] = math::clip(command,
+      this->mAspectState.mCommands[_index] = math::clip(command,
             Base::mAspectProperties.mVelocityLowerLimits[_index],
             Base::mAspectProperties.mVelocityUpperLimits[_index]);
       break;
     case Joint::ACCELERATION:
-      mCommands[_index] = math::clip(command,
+      this->mAspectState.mCommands[_index] = math::clip(command,
             Base::mAspectProperties.mAccelerationLowerLimits[_index],
             Base::mAspectProperties.mAccelerationUpperLimits[_index]);
       break;
     case Joint::VELOCITY:
-      mCommands[_index] = math::clip(command,
+      this->mAspectState.mCommands[_index] = math::clip(command,
             Base::mAspectProperties.mVelocityLowerLimits[_index],
             Base::mAspectProperties.mVelocityUpperLimits[_index]);
       // TODO: This possibly makes the acceleration to exceed the limits.
@@ -342,7 +353,7 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double command)
                << command << ") command for a LOCKED joint [" << this->getName()
                << "].\n";
       }
-      mCommands[_index] = command;
+      this->mAspectState.mCommands[_index] = command;
       break;
     default:
       assert(false);
@@ -360,7 +371,7 @@ double MultiDofJoint<DOF>::getCommand(size_t _index) const
     return 0.0;
   }
 
-  return mCommands[_index];
+  return this->mAspectState.mCommands[_index];
 }
 
 //==============================================================================
@@ -376,7 +387,7 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
   switch (Joint::mAspectProperties.mActuatorType)
   {
     case Joint::FORCE:
-      mCommands = math::clip(_commands,
+      this->mAspectState.mCommands = math::clip(_commands,
             Base::mAspectProperties.mForceLowerLimits,
             Base::mAspectProperties.mForceUpperLimits);
       break;
@@ -387,20 +398,20 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
                << _commands.transpose() << ") command for a PASSIVE joint ["
                << this->getName() << "].\n";
       }
-      mCommands = _commands;
+      this->mAspectState.mCommands = _commands;
       break;
     case Joint::SERVO:
-      mCommands = math::clip(_commands,
+      this->mAspectState.mCommands = math::clip(_commands,
             Base::mAspectProperties.mVelocityLowerLimits,
             Base::mAspectProperties.mVelocityUpperLimits);
       break;
     case Joint::ACCELERATION:
-      mCommands = math::clip(_commands,
+      this->mAspectState.mCommands = math::clip(_commands,
             Base::mAspectProperties.mAccelerationLowerLimits,
             Base::mAspectProperties.mAccelerationUpperLimits);
       break;
     case Joint::VELOCITY:
-      mCommands = math::clip(_commands,
+      this->mAspectState.mCommands = math::clip(_commands,
             Base::mAspectProperties.mVelocityLowerLimits,
             Base::mAspectProperties.mVelocityUpperLimits);
       // TODO: This possibly makes the acceleration to exceed the limits.
@@ -412,7 +423,7 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
                << _commands.transpose() << ") command for a LOCKED joint ["
                << this->getName() << "].\n";
       }
-      mCommands = _commands;
+      this->mAspectState.mCommands = _commands;
       break;
     default:
       assert(false);
@@ -424,14 +435,14 @@ void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
 template <size_t DOF>
 Eigen::VectorXd MultiDofJoint<DOF>::getCommands() const
 {
-  return mCommands;
+  return this->mAspectState.mCommands;
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::resetCommands()
 {
-  mCommands.setZero();
+  this->mAspectState.mCommands.setZero();
 }
 
 //==============================================================================
@@ -444,11 +455,11 @@ void MultiDofJoint<DOF>::setPosition(size_t _index, double _position)
     return;
   }
 
-  if(mPositions[_index] == _position)
+  if(this->mAspectState.mPositions[_index] == _position)
     return;
 
   // Note: It would not make much sense to use setPositionsStatic() here
-  mPositions[_index] = _position;
+  this->mAspectState.mPositions[_index] = _position;
   this->notifyPositionUpdate();
 }
 
@@ -627,16 +638,16 @@ void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
     return;
   }
 
-  if(mVelocities[_index] == _velocity)
+  if(this->mAspectState.mVelocities[_index] == _velocity)
     return;
 
   // Note: It would not make much sense to use setVelocitiesStatic() here
-  mVelocities[_index] = _velocity;
+  this->mAspectState.mVelocities[_index] = _velocity;
   this->notifyVelocityUpdate();
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
-    mCommands[_index] = this->getVelocitiesStatic()[_index];
+    this->mAspectState.mCommands[_index] = this->getVelocitiesStatic()[_index];
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -668,7 +679,7 @@ void MultiDofJoint<DOF>::setVelocities(const Eigen::VectorXd& _velocities)
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
-    mCommands = this->getVelocitiesStatic();
+    this->mAspectState.mCommands = this->getVelocitiesStatic();
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -808,16 +819,16 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
     return;
   }
 
-  if(mAccelerations[_index] == _acceleration)
+  if(this->mAspectState.mAccelerations[_index] == _acceleration)
     return;
 
   // Note: It would not make much sense to use setAccelerationsStatic() here
-  mAccelerations[_index] = _acceleration;
+  this->mAspectState.mAccelerations[_index] = _acceleration;
   this->notifyAccelerationUpdate();
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
-    mCommands[_index] = this->getAccelerationsStatic()[_index];
+    this->mAspectState.mCommands[_index] = this->getAccelerationsStatic()[_index];
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -849,7 +860,7 @@ void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
-    mCommands = this->getAccelerationsStatic();
+    this->mAspectState.mCommands = this->getAccelerationsStatic();
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -928,10 +939,10 @@ double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t _index) const
 template <size_t DOF>
 void MultiDofJoint<DOF>::setPositionsStatic(const Vector& _positions)
 {
-  if(mPositions == _positions)
+  if(this->mAspectState.mPositions == _positions)
     return;
 
-  mPositions = _positions;
+  this->mAspectState.mPositions = _positions;
   this->notifyPositionUpdate();
 }
 
@@ -940,17 +951,17 @@ template <size_t DOF>
 const typename MultiDofJoint<DOF>::Vector&
 MultiDofJoint<DOF>::getPositionsStatic() const
 {
-  return mPositions;
+  return this->mAspectState.mPositions;
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::setVelocitiesStatic(const Vector& _velocities)
 {
-  if(mVelocities == _velocities)
+  if(this->mAspectState.mVelocities == _velocities)
     return;
 
-  mVelocities = _velocities;
+  this->mAspectState.mVelocities = _velocities;
   this->notifyVelocityUpdate();
 }
 
@@ -959,17 +970,17 @@ template <size_t DOF>
 const typename MultiDofJoint<DOF>::Vector&
 MultiDofJoint<DOF>::getVelocitiesStatic() const
 {
-  return mVelocities;
+  return this->mAspectState.mVelocities;
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::setAccelerationsStatic(const Vector& _accels)
 {
-  if(mAccelerations == _accels)
+  if(this->mAspectState.mAccelerations == _accels)
     return;
 
-  mAccelerations = _accels;
+  this->mAspectState.mAccelerations = _accels;
   this->notifyAccelerationUpdate();
 }
 
@@ -978,7 +989,7 @@ template <size_t DOF>
 const typename MultiDofJoint<DOF>::Vector&
 MultiDofJoint<DOF>::getAccelerationsStatic() const
 {
-  return mAccelerations;
+  return this->mAspectState.mAccelerations;
 }
 
 //==============================================================================
@@ -991,11 +1002,11 @@ void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
     return;
   }
 
-  mForces[_index] = _force;
+  this->mAspectState.mForces[_index] = _force;
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
-    mCommands[_index] = mForces[_index];
+    this->mAspectState.mCommands[_index] = this->mAspectState.mForces[_index];
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -1010,7 +1021,7 @@ double MultiDofJoint<DOF>::getForce(size_t _index)
     return 0.0;
   }
 
-  return mForces[_index];
+  return this->mAspectState.mForces[_index];
 }
 
 //==============================================================================
@@ -1023,11 +1034,11 @@ void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
     return;
   }
 
-  mForces = _forces;
+  this->mAspectState.mForces = _forces;
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
-    mCommands = mForces;
+    this->mAspectState.mCommands = this->mAspectState.mForces;
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -1036,18 +1047,18 @@ void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
 template <size_t DOF>
 Eigen::VectorXd MultiDofJoint<DOF>::getForces() const
 {
-  return mForces;
+  return this->mAspectState.mForces;
 }
 
 //==============================================================================
 template <size_t DOF>
 void MultiDofJoint<DOF>::resetForces()
 {
-  mForces.setZero();
+  this->mAspectState.mForces.setZero();
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
-    mCommands = mForces;
+    this->mAspectState.mCommands = this->mAspectState.mForces;
   // TODO: Remove at DART 5.1.
 #endif
 }
@@ -1353,22 +1364,13 @@ Eigen::Vector6d MultiDofJoint<DOF>::getBodyConstraintWrench() const
 {
   assert(this->mChildBodyNode);
   return this->mChildBodyNode->getBodyForce()
-          - this->getLocalJacobianStatic() * mForces;
+          - this->getLocalJacobianStatic() * this->mAspectState.mForces;
 }
 
 //==============================================================================
 template <size_t DOF>
 MultiDofJoint<DOF>::MultiDofJoint(const Properties& properties)
-  : mCommands(Vector::Zero()),
-    mPositions(properties.mInitialPositions),
-    mPositionDeriv(Vector::Zero()),
-    mVelocities(properties.mInitialVelocities),
-    mVelocitiesDeriv(Vector::Zero()),
-    mAccelerations(Vector::Zero()),
-    mAccelerationsDeriv(Vector::Zero()),
-    mForces(Vector::Zero()),
-    mForcesDeriv(Vector::Zero()),
-    mVelocityChanges(Vector::Zero()),
+  : mVelocityChanges(Vector::Zero()),
     mImpulses(Vector::Zero()),
     mConstraintImpulses(Vector::Zero()),
     mJacobian(Eigen::Matrix<double, 6, DOF>::Zero()),
@@ -1382,6 +1384,8 @@ MultiDofJoint<DOF>::MultiDofJoint(const Properties& properties)
     mDofs[i] = this->createDofPointer(i);
 
   // Joint and MultiDofJoint Aspects must be created by the most derived class.
+  this->mAspectState.mPositions = properties.mInitialPositions;
+  this->mAspectState.mVelocities = properties.mInitialVelocities;
 }
 
 //==============================================================================
@@ -1924,20 +1928,20 @@ void MultiDofJoint<DOF>::updateTotalForce(
   switch (Joint::mAspectProperties.mActuatorType)
   {
     case Joint::FORCE:
-      mForces = mCommands;
+      this->mAspectState.mForces = this->mAspectState.mCommands;
       updateTotalForceDynamic(_bodyForce, _timeStep);
       break;
     case Joint::PASSIVE:
     case Joint::SERVO:
-      mForces.setZero();
+      this->mAspectState.mForces.setZero();
       updateTotalForceDynamic(_bodyForce, _timeStep);
       break;
     case Joint::ACCELERATION:
-      setAccelerationsStatic(mCommands);
+      setAccelerationsStatic(this->mAspectState.mCommands);
       updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
     case Joint::VELOCITY:
-      setAccelerationsStatic( (mCommands - getVelocitiesStatic()) / _timeStep );
+      setAccelerationsStatic( (this->mAspectState.mCommands - getVelocitiesStatic()) / _timeStep );
       updateTotalForceKinematic(_bodyForce, _timeStep);
       break;
     case Joint::LOCKED:
@@ -1969,7 +1973,7 @@ void MultiDofJoint<DOF>::updateTotalForceDynamic(
         getVelocitiesStatic();
 
   //
-  mTotalForce = mForces + springForce + dampingForce;
+  mTotalForce = this->mAspectState.mForces + springForce + dampingForce;
   mTotalForce.noalias() -= getLocalJacobianStatic().transpose()*_bodyForce;
 }
 
@@ -2134,7 +2138,7 @@ void MultiDofJoint<DOF>::updateForceID(const Eigen::Vector6d& _bodyForce,
                                        bool _withDampingForces,
                                        bool _withSpringForces)
 {
-  mForces = getLocalJacobianStatic().transpose()*_bodyForce;
+  this->mAspectState.mForces = getLocalJacobianStatic().transpose()*_bodyForce;
 
   // Damping force
   if (_withDampingForces)
@@ -2142,7 +2146,7 @@ void MultiDofJoint<DOF>::updateForceID(const Eigen::Vector6d& _bodyForce,
     const Eigen::Matrix<double, DOF, 1> dampingForces
         = (-Base::mAspectProperties.mDampingCoefficients).asDiagonal()
           *getVelocitiesStatic();
-    mForces -= dampingForces;
+    this->mAspectState.mForces -= dampingForces;
   }
 
   // Spring force
@@ -2152,7 +2156,7 @@ void MultiDofJoint<DOF>::updateForceID(const Eigen::Vector6d& _bodyForce,
         = (-Base::mAspectProperties.mSpringStiffnesses).asDiagonal()
           *(getPositionsStatic() - Base::mAspectProperties.mRestPositions
             + getVelocitiesStatic()*_timeStep);
-    mForces -= springForces;
+    this->mAspectState.mForces -= springForces;
   }
 }
 
@@ -2240,7 +2244,7 @@ void MultiDofJoint<DOF>::updateConstrainedTermsDynamic(double _timeStep)
   setVelocitiesStatic(getVelocitiesStatic() + mVelocityChanges);
   setAccelerationsStatic(getAccelerationsStatic()
                          + mVelocityChanges*invTimeStep);
-  mForces.noalias() += mImpulses*invTimeStep;
+  this->mAspectState.mForces.noalias() += mImpulses*invTimeStep;
   // Note: As long as this is only called from BodyNode::updateConstrainedTerms
 }
 
@@ -2249,7 +2253,7 @@ template <size_t DOF>
 void MultiDofJoint<DOF>::updateConstrainedTermsKinematic(
     double _timeStep)
 {
-  mForces.noalias() += mImpulses / _timeStep;
+  this->mAspectState.mForces.noalias() += mImpulses / _timeStep;
 }
 
 //==============================================================================
@@ -2298,7 +2302,7 @@ void MultiDofJoint<DOF>::updateTotalForceForInvMassMatrix(
     const Eigen::Vector6d& _bodyForce)
 {
   // Compute alpha
-  mInvM_a = mForces;
+  mInvM_a = this->mAspectState.mForces;
   mInvM_a.noalias() -= getLocalJacobianStatic().transpose() * _bodyForce;
 }
 
