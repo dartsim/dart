@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_SCREWJOINT_H_
 #define DART_DYNAMICS_SCREWJOINT_H_
 
-#include "dart/dynamics/detail/ScrewJointProperties.h"
+#include "dart/dynamics/detail/ScrewJointAspect.h"
 
 namespace dart {
 namespace dynamics {

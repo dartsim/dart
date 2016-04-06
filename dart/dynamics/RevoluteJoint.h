@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_REVOLUTEJOINT_H_
 #define DART_DYNAMICS_REVOLUTEJOINT_H_
 
-#include "dart/dynamics/detail/RevoluteJointProperties.h"
+#include "dart/dynamics/detail/RevoluteJointAspect.h"
 
 namespace dart {
 namespace dynamics {

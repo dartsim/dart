@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_EULERJOINT_H_
 #define DART_DYNAMICS_EULERJOINT_H_
 
-#include "dart/dynamics/detail/EulerJointProperties.h"
+#include "dart/dynamics/detail/EulerJointAspect.h"
 
 namespace dart {
 namespace dynamics {

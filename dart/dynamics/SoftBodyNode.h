@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_SOFTBODYNODE_H_
 #define DART_DYNAMICS_SOFTBODYNODE_H_
 
-#include "dart/dynamics/detail/SoftBodyNodeProperties.h"
+#include "dart/dynamics/detail/SoftBodyNodeAspect.h"
 
 namespace dart {
 namespace dynamics {

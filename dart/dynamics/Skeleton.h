@@ -47,7 +47,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/ShapeNode.h"
 #include "dart/dynamics/EndEffector.h"
-#include "dart/dynamics/detail/BodyNodeProperties.h"
+#include "dart/dynamics/detail/BodyNodeAspect.h"
 #include "dart/dynamics/SpecializedNodeManager.h"
 #include "dart/dynamics/detail/SkeletonAspect.h"
 

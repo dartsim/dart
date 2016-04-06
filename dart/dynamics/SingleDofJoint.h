@@ -40,7 +40,7 @@
 #include <string>
 
 #include "dart/dynamics/Joint.h"
-#include "dart/dynamics/detail/SingleDofJointProperties.h"
+#include "dart/dynamics/detail/SingleDofJointAspect.h"
 
 namespace dart {
 namespace dynamics {

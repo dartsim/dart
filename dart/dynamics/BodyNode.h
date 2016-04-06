@@ -53,7 +53,7 @@
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
 #include "dart/dynamics/SpecializedNodeManager.h"
-#include "dart/dynamics/detail/BodyNodeProperties.h"
+#include "dart/dynamics/detail/BodyNodeAspect.h"
 #include "dart/dynamics/Skeleton.h"
 
 namespace dart {

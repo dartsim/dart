@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_PRISMATICJOINT_H_
 #define DART_DYNAMICS_PRISMATICJOINT_H_
 
-#include "dart/dynamics/detail/PrismaticJointProperties.h"
+#include "dart/dynamics/detail/PrismaticJointAspect.h"
 
 namespace dart {
 namespace dynamics {

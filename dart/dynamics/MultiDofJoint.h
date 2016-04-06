@@ -48,7 +48,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/common/RequiresAspect.h"
-#include "dart/dynamics/detail/MultiDofJointProperties.h"
+#include "dart/dynamics/detail/MultiDofJointAspect.h"
 
 namespace dart {
 namespace dynamics {
