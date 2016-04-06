@@ -97,10 +97,22 @@ struct DynamicsAspectProperties
 
   /// Constructor
   DynamicsAspectProperties(const double frictionCoeff = 1.0,
-                          const double restitutionCoeff = 0.0);
+                           const double restitutionCoeff = 0.0);
 
   /// Destructor
   virtual ~DynamicsAspectProperties() = default;
+};
+
+struct ShapeFrameProperties
+{
+  /// Pointer to a shape
+  ShapePtr mShape;
+
+  /// Constructor
+  ShapeFrameProperties(const ShapePtr& shape = nullptr);
+
+  /// Virtual destructor
+  virtual ~ShapeFrameProperties() = default;
 };
 
 } // namespace detail
@@ -214,8 +226,10 @@ public:
 
 class ShapeFrame :
     public virtual common::VersionCounter,
-    public common::SpecializedForAspect<
-        VisualAspect, CollisionAspect, DynamicsAspect>,
+    public common::EmbedPropertiesOnTopOf<
+        ShapeFrame, detail::ShapeFrameProperties,
+        common::SpecializedForAspect<
+            VisualAspect, CollisionAspect, DynamicsAspect> >,
     public virtual Frame
 {
 public:
@@ -232,21 +246,7 @@ public:
                             const Eigen::Isometry3d& oldTransform,
                             const Eigen::Isometry3d& newTransform)>;
 
-  struct UniqueProperties
-  {
-    /// Shape pointer
-    ShapePtr mShape;
-
-    /// Composed constructor
-    UniqueProperties(const ShapePtr& shape = nullptr);
-
-    /// Composed move constructor
-    UniqueProperties(ShapePtr&& shape);
-
-    virtual ~UniqueProperties() = default;
-  };
-
-  using AspectProperties = UniqueProperties;
+  using UniqueProperties = AspectProperties;
   using Properties = UniqueProperties;
 
   /// Destructor
@@ -287,9 +287,6 @@ protected:
 
   /// Constructor
   ShapeFrame(Frame* parent, const ShapePtr& shape = nullptr);
-
-  /// ShapeFrame properties
-  Properties mAspectProperties;
 
   /// Shape updated signal
   ShapeUpdatedSignal mShapeUpdatedSignal;

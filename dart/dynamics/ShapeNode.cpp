@@ -41,35 +41,15 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-ShapeNode::UniqueProperties::UniqueProperties(
-    const std::string& name,
-    const Eigen::Isometry3d& relativeTransform)
-  : mName(name),
-    mRelativeTransform(relativeTransform)
-{
-  // Do nothing
-}
-
-//==============================================================================
 ShapeNode::Properties::Properties(
-    const ShapeFrame::Properties& shapeFrameProperties,
-    const ShapeNode::UniqueProperties& shapeNodeProperties,
+    const ShapeFrame::AspectProperties& shapeFrameProperties,
+    const FixedFrame::AspectProperties& fixedFrameProperties,
+    const NameAspect::Properties& name,
     const CompositeProperties& compositeProperties)
-  : ShapeFrame::Properties(shapeFrameProperties),
-    ShapeNode::UniqueProperties(shapeNodeProperties),
+  : ShapeFrame::AspectProperties(shapeFrameProperties),
+    FixedFrame::AspectProperties(fixedFrameProperties),
+    NameAspect::Properties(name),
     mCompositeProperties(compositeProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-ShapeNode::Properties::Properties(
-    ShapeFrame::Properties&& shapeFrameProperties,
-    ShapeNode::UniqueProperties&& shapeNodeProperties,
-    CompositeProperties&& compositeProperties)
-  : ShapeFrame::Properties(std::move(shapeFrameProperties)),
-    ShapeNode::UniqueProperties(std::move(shapeNodeProperties)),
-    mCompositeProperties(std::move(compositeProperties))
 {
   // Do nothing
 }
@@ -77,25 +57,19 @@ ShapeNode::Properties::Properties(
 //==============================================================================
 void ShapeNode::setProperties(const Properties& properties)
 {
-  ShapeFrame::setProperties(
-        static_cast<const ShapeFrame::Properties&>(properties));
-  setProperties(static_cast<const ShapeNode::UniqueProperties&>(properties));
   setCompositeProperties(properties.mCompositeProperties);
-}
-
-//==============================================================================
-void ShapeNode::setProperties(const ShapeNode::UniqueProperties& properties)
-{
-  if(!properties.mName.empty())
-    setName(properties.mName);
-
-  setRelativeTransform(properties.mRelativeTransform);
+  ShapeFrame::setAspectProperties(properties);
+  FixedFrame::setAspectProperties(
+        static_cast<const FixedFrame::AspectProperties&>(properties));
+  get<NameAspect>()->setProperties(properties);
 }
 
 //==============================================================================
 const ShapeNode::Properties ShapeNode::getShapeNodeProperties() const
 {
-  return Properties(ShapeFrame::getAspectProperties(), mShapeNodeP,
+  return Properties(ShapeFrame::getAspectProperties(),
+                    FixedFrame::getAspectProperties(),
+                    getName(),
                     getCompositeProperties());
 }
 
@@ -188,11 +162,7 @@ ShapeNode::ShapeNode(BodyNode* bodyNode, const Properties& properties)
     Frame(bodyNode),
     FixedFrame(bodyNode),
     detail::ShapeNodeCompositeBase(
-      std::make_tuple(bodyNode, properties.mRelativeTransform), bodyNode),
-    mShapeUpdatedSignal(ShapeUpdatedSignal()),
-    mRelativeTransformUpdatedSignal(RelativeTransformUpdatedSignal()),
-    onShapeUpdated(mShapeUpdatedSignal),
-    onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
+      std::make_tuple(bodyNode, properties.mRelativeTf), bodyNode)
 {
   setProperties(properties);
 }
@@ -205,11 +175,7 @@ ShapeNode::ShapeNode(BodyNode* bodyNode,
     Frame(bodyNode),
     FixedFrame(bodyNode),
     detail::ShapeNodeCompositeBase(
-      std::make_tuple(bodyNode, Eigen::Isometry3d::Identity()), bodyNode),
-    mShapeUpdatedSignal(ShapeUpdatedSignal()),
-    mRelativeTransformUpdatedSignal(RelativeTransformUpdatedSignal()),
-    onShapeUpdated(mShapeUpdatedSignal),
-    onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
+      std::make_tuple(bodyNode, Eigen::Isometry3d::Identity()), bodyNode)
 {
   // TODO(MXG): Consider changing this to a delegating constructor instead
   Properties prop;

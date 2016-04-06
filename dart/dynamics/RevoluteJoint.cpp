@@ -142,7 +142,7 @@ const Eigen::Vector3d& RevoluteJoint::getAxis() const
 
 //==============================================================================
 RevoluteJoint::RevoluteJoint(const Properties& properties)
-  : detail::RevoluteJointBase(common::NoArg, properties)
+  : detail::RevoluteJointBase(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls

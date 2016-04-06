@@ -71,6 +71,13 @@ DynamicsAspectProperties::DynamicsAspectProperties(
   // Do nothing
 }
 
+//==============================================================================
+ShapeFrameProperties::ShapeFrameProperties(const ShapePtr& shape)
+  : mShape(shape)
+{
+  // Do nothing
+}
+
 } // namespace detail
 
 //==============================================================================
@@ -178,20 +185,6 @@ DynamicsAspect::DynamicsAspect(
     common::Composite* comp,
     const PropertiesData& properties)
   : BaseClass(comp, properties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-ShapeFrame::UniqueProperties::UniqueProperties(const ShapePtr& shape)
-  : mShape(shape)
-{
-  // Do nothing
-}
-
-//==============================================================================
-ShapeFrame::UniqueProperties::UniqueProperties(ShapePtr&& shape)
-  : mShape(std::move(shape))
 {
   // Do nothing
 }

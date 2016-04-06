@@ -164,7 +164,7 @@ Eigen::Matrix<double, 6, 2> UniversalJoint::getLocalJacobianStatic(
 
 //==============================================================================
 UniversalJoint::UniversalJoint(const Properties& properties)
-  : detail::UniversalJointBase(common::NoArg, properties)
+  : detail::UniversalJointBase(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls

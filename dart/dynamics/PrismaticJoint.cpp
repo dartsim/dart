@@ -141,7 +141,7 @@ const Eigen::Vector3d& PrismaticJoint::getAxis() const
 
 //==============================================================================
 PrismaticJoint::PrismaticJoint(const Properties& properties)
-  : detail::PrismaticJointBase(common::NoArg, properties)
+  : detail::PrismaticJointBase(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls

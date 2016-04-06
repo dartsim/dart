@@ -233,8 +233,7 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
                            const Properties& _properties)
   : Entity(Frame::World(), false),
     Frame(Frame::World()),
-    Base(common::NoArg,
-         std::make_tuple(_parentBodyNode, _parentJoint, _properties)),
+    Base(std::make_tuple(_parentBodyNode, _parentJoint, _properties)),
     mSoftShapeNode(nullptr)
 {
   createSoftBodyAspect();

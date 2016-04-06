@@ -160,7 +160,7 @@ double ScrewJoint::getPitch() const
 
 //==============================================================================
 ScrewJoint::ScrewJoint(const Properties& properties)
-  : detail::ScrewJointBase(common::NoArg, properties)
+  : detail::ScrewJointBase(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls

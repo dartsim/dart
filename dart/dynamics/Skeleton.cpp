@@ -174,8 +174,7 @@ SkeletonAspectProperties::SkeletonAspectProperties(
     const Eigen::Vector3d& _gravity,
     double _timeStep,
     bool _enabledSelfCollisionCheck,
-    bool _enableAdjacentBodyCheck,
-    size_t _version)
+    bool _enableAdjacentBodyCheck)
   : mName(_name),
     mIsMobile(_isMobile),
     mGravity(_gravity),

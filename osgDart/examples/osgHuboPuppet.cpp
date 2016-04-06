@@ -1391,6 +1391,8 @@ int main()
   setupEndEffectors(hubo);
 
   Eigen::VectorXd positions = hubo->getPositions();
+  // We make a clone to test whether the cloned version behaves the exact same
+  // as the original version.
   hubo = hubo->clone("hubo_copy");
   hubo->setPositions(positions);
 
@@ -1418,7 +1420,7 @@ int main()
   std::cout << "Alt + Click:   Try to translate a body without changing its orientation\n"
             << "Ctrl + Click:  Try to rotate a body without changing its translation\n"
             << "Shift + Click: Move a body using only its parent joint\n"
-            << "1 -> 4:        Toggle the interactive target of an EndEffector\n"
+            << "1 -> 6:        Toggle the interactive target of an EndEffector\n"
             << "W A S D:       Move the robot around the scene\n"
             << "Q E:           Rotate the robot counter-clockwise and clockwise\n"
             << "F Z:           Shift the robot's elevation up and down\n"

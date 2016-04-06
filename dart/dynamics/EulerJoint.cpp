@@ -290,7 +290,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
 
 //==============================================================================
 EulerJoint::EulerJoint(const Properties& properties)
-  : detail::EulerJointBase(common::NoArg, properties)
+  : detail::EulerJointBase(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls

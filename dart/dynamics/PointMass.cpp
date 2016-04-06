@@ -1139,7 +1139,7 @@ PointMassNotifier::PointMassNotifier(SoftBodyNode* _parentSoftBody,
     mNeedPartialAccelerationUpdate(true),
     mParentSoftBodyNode(_parentSoftBody)
 {
-  // Do nothing
+  setName(_name);
 }
 
 //==============================================================================

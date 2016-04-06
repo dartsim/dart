@@ -43,6 +43,14 @@ namespace dynamics {
 
 namespace detail {
 
+//==============================================================================
+EndEffectorProperties::EndEffectorProperties(const Eigen::Isometry3d& defaultTf)
+  : mDefaultTransform(defaultTf)
+{
+  // Do nothing
+}
+
+//==============================================================================
 void SupportUpdate(Support* support)
 {
   if(EndEffector* ee = support->getComposite())
@@ -68,42 +76,49 @@ bool Support::isActive() const
 }
 
 //==============================================================================
-EndEffector::UniqueProperties::UniqueProperties(
-    const Eigen::Isometry3d& _defaultTransform)
-  : mDefaultTransform(_defaultTransform)
+EndEffector::Properties::Properties(
+    const FixedFrame::AspectProperties& fixedFrameProperties,
+    const UniqueProperties& effectorProperties,
+    const NameAspect::Properties& name,
+    const common::Composite::Properties& compositeProperties)
+  : FixedFrame::AspectProperties(fixedFrameProperties),
+    UniqueProperties(effectorProperties),
+    NameAspect::Properties(name),
+    mCompositeProperties(compositeProperties)
 {
   // Do nothing
 }
 
 //==============================================================================
-EndEffector::PropertiesData::PropertiesData(
-    const UniqueProperties& _effectorProperties,
-    const common::Composite::Properties& _compositeProperties)
-  : UniqueProperties(_effectorProperties),
-    mCompositeProperties(_compositeProperties)
+void EndEffector::setProperties(const Properties& properties)
 {
-  // Do nothing
+  FixedFrame::setAspectProperties(properties);
+  setAspectProperties(properties);
+  get<NameAspect>()->setProperties(properties);
+  setCompositeProperties(properties.mCompositeProperties);
 }
 
 //==============================================================================
-void EndEffector::setProperties(const PropertiesData& _properties, bool _useNow)
+void EndEffector::setProperties(const UniqueProperties& properties,
+                                bool useNow)
 {
-  setProperties(static_cast<const UniqueProperties&>(_properties), _useNow);
-  setCompositeProperties(_properties.mCompositeProperties);
+  setDefaultRelativeTransform(properties.mDefaultTransform, useNow);
 }
 
 //==============================================================================
-void EndEffector::setProperties(const UniqueProperties& _properties,
-                                bool _useNow)
+void EndEffector::setAspectProperties(const AspectProperties& properties)
 {
-  setName(_properties.mName);
-  setDefaultRelativeTransform(_properties.mDefaultTransform, _useNow);
+  setDefaultRelativeTransform(properties.mDefaultTransform);
 }
 
 //==============================================================================
-EndEffector::PropertiesData EndEffector::getEndEffectorProperties() const
+EndEffector::Properties EndEffector::getEndEffectorProperties() const
 {
-  return PropertiesData(mEndEffectorP, getCompositeProperties());
+  return Properties(
+        FixedFrame::getAspectProperties(),
+        getAspectProperties(),
+        get<NameAspect>()->getProperties(),
+        getCompositeProperties());
 }
 
 //==============================================================================
@@ -136,7 +151,7 @@ EndEffector& EndEffector::operator=(const EndEffector& _otherEndEffector)
 void EndEffector::setDefaultRelativeTransform(
     const Eigen::Isometry3d& _newDefaultTf, bool _useNow)
 {
-  mEndEffectorP.mDefaultTransform = _newDefaultTf;
+  mAspectProperties.mDefaultTransform = _newDefaultTf;
 
   if(_useNow)
     resetRelativeTransform();
@@ -145,7 +160,7 @@ void EndEffector::setDefaultRelativeTransform(
 //==============================================================================
 void EndEffector::resetRelativeTransform()
 {
-  setRelativeTransform(mEndEffectorP.mDefaultTransform);
+  setRelativeTransform(mAspectProperties.mDefaultTransform);
 }
 
 //==============================================================================
@@ -162,11 +177,13 @@ void EndEffector::notifyTransformUpdate()
 }
 
 //==============================================================================
-EndEffector::EndEffector(BodyNode* parent, const PropertiesData& properties)
+EndEffector::EndEffector(BodyNode* parent, const Properties& properties)
   : Entity(ConstructFrame),
     Frame(parent),
     FixedFrame(parent, properties.mDefaultTransform),
-    detail::EndEffectorCompositeBase(
+    common::EmbedPropertiesOnTopOf<
+        EndEffector, detail::EndEffectorProperties,
+        detail::EndEffectorCompositeBase>(
       std::make_tuple(parent, properties.mDefaultTransform), common::NoArg)
 {
   setProperties(properties);
@@ -175,7 +192,7 @@ EndEffector::EndEffector(BodyNode* parent, const PropertiesData& properties)
 //==============================================================================
 Node* EndEffector::cloneNode(BodyNode* _parent) const
 {
-  EndEffector* ee = new EndEffector(_parent, PropertiesData());
+  EndEffector* ee = new EndEffector(_parent, Properties());
   ee->duplicateAspects(this);
 
   ee->copy(this);

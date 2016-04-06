@@ -34,75 +34,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_H_
-#define DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_H_
-
-#include "dart/dynamics/Node.h"
+#include "dart/dynamics/detail/EntityNodeAspect.h"
 
 namespace dart {
 namespace dynamics {
-
-template <class Base>
-class EntityNode;
-
 namespace detail {
 
 //==============================================================================
-struct EntityNodeProperties
+EntityNodeProperties::EntityNodeProperties(const std::string& name)
+  : mName(name)
 {
-  /// Name of the Entity/Node
-  std::string mName;
-
-  /// Default constructor
-  EntityNodeProperties(const std::string& name = "");
-
-  /// Implicit conversion to a string
-  operator const std::string&() const;
-};
+  // Do nothing
+}
 
 //==============================================================================
-template <class Base>
-using EntityNodeAspectBase =
-    common::EmbedProperties<EntityNode<Base>, EntityNodeProperties>;
-
-//==============================================================================
-template <class Base, bool isCompositeBase>
-class EntityNodeBase : public Base, public EntityNodeAspectBase<Base>
+EntityNodeProperties::operator const std::string&() const
 {
-public:
-
-  /// Forwarding constructor
-  template <typename... Args>
-  EntityNodeBase(Args&&... args)
-    : Base(std::forward<Args>(args)...)
-  {
-    // Do nothing
-  }
-
-  virtual ~EntityNodeBase() = default;
-};
-
-//==============================================================================
-template <class Base>
-class EntityNodeBase<Base, true> : public common::CompositeJoiner<
-    EntityNodeAspectBase<Base>, Base >
-{
-public:
-
-  /// Forwarding constructor
-  template <typename... Args>
-  EntityNodeBase(Args&&... args)
-    : common::CompositeJoiner<Base, EntityNodeAspectBase<Base>>(
-        common::NoArg, std::forward<Args>(args)...)
-  {
-    // Do nothing
-  }
-
-  virtual ~EntityNodeBase() = default;
-};
+  return mName;
+}
 
 } // namespace detail
-} // namespace dart
 } // namespace dynamics
-
-#endif // DART_DYNAMICS_DETAIL_ENTITYNODEASPECT_H_
+} // namespace dart

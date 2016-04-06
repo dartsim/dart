@@ -81,39 +81,19 @@ public:
 
   using CompositeProperties = common::Composite::Properties;
 
-  struct UniqueProperties
-  {
-    /// Name of ShapeNode
-    std::string mName;
-
-    /// The current relative transform of the Shape in the ShapeNode
-    Eigen::Isometry3d mRelativeTransform;
-    // TODO(JS): Consider moving this to a FixedFrame::State
-    // (or FixedFrame::Properties) struct and the inheriting that struct.
-    // Endeffector has similar issue.
-
-    /// Composed constructor
-    UniqueProperties(
-        const std::string& name = "",
-        const Eigen::Isometry3d& relativeTransform
-            = Eigen::Isometry3d::Identity());
-  };
-
-  struct Properties : ShapeFrame::Properties, UniqueProperties
+  struct Properties :
+      ShapeFrame::AspectProperties,
+      FixedFrame::AspectProperties,
+      NameAspect::Properties
   {
     /// Composed constructor
     Properties(
-        const ShapeFrame::Properties& shapeFrameProperties
-            = ShapeFrame::Properties(),
-        const ShapeNode::UniqueProperties& shapeNodeProperties
-            = ShapeNode::UniqueProperties(),
+        const ShapeFrame::AspectProperties& shapeFrameProperties
+            = ShapeFrame::AspectProperties(),
+        const FixedFrame::AspectProperties& fixedFrameProperties
+            = FixedFrame::AspectProperties(),
+        const NameAspect::Properties& name = "ShapeNode",
         const CompositeProperties& compositeProperties = CompositeProperties());
-
-    /// Composed move constructor
-    Properties(
-        ShapeFrame::Properties&& shapeFrameProperties,
-        ShapeNode::UniqueProperties&& shapeNodeProperties,
-        CompositeProperties&& compositeProperties);
 
     /// The properties of the ShapeNode's Aspects
     CompositeProperties mCompositeProperties;
@@ -124,9 +104,6 @@ public:
 
   /// Set the Properties of this ShapeNode
   void setProperties(const Properties& properties);
-
-  /// Set the Properties of this ShapeNode
-  void setProperties(const UniqueProperties& properties);
 
   /// Get the Properties of this ShapeNode
   const Properties getShapeNodeProperties() const;
@@ -173,27 +150,6 @@ protected:
   /// Create a clone of this ShapeNode. This may only be called by the Skeleton
   /// class.
   Node* cloneNode(BodyNode* parent) const override;
-
-protected:
-
-  /// Properties of this ShapeNode
-  DEPRECATED(6.0)
-  UniqueProperties mShapeNodeP;
-
-  /// Shape updated signal
-  ShapeUpdatedSignal mShapeUpdatedSignal;
-
-  /// Relative transformation updated signal
-  RelativeTransformUpdatedSignal mRelativeTransformUpdatedSignal;
-
-public:
-
-  /// Slot register for shape updated signal
-  common::SlotRegister<ShapeUpdatedSignal> onShapeUpdated;
-
-  /// Slot register for relative transformation updated signal
-  common::SlotRegister<RelativeTransformUpdatedSignal>
-      onRelativeTransformUpdated;
 
 };
 

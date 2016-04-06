@@ -54,6 +54,15 @@ class Support;
 namespace detail {
 
 //==============================================================================
+struct EndEffectorProperties
+{
+  Eigen::Isometry3d mDefaultTransform;
+
+  EndEffectorProperties(
+      const Eigen::Isometry3d& defaultTf = Eigen::Isometry3d::Identity());
+};
+
+//==============================================================================
 struct SupportStateData
 {
   inline SupportStateData(bool active = false) : mActive(active) { }
@@ -89,7 +98,6 @@ class Support final :
 {
 public:
 
-//  DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS( Support, &detail::SupportUpdate, &detail::SupportUpdate )
   DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(Support)
 
   /// Set/Get the support geometry for this EndEffector. The SupportGeometry
@@ -109,40 +117,34 @@ public:
 };
 
 //==============================================================================
-class EndEffector final : public detail::EndEffectorCompositeBase
+class EndEffector final :
+    public common::EmbedPropertiesOnTopOf<
+        EndEffector, detail::EndEffectorProperties,
+        detail::EndEffectorCompositeBase>
 {
 public:
 
   friend class Skeleton;
   friend class BodyNode;
 
-  struct UniqueProperties
+  using UniqueProperties = detail::EndEffectorProperties;
+
+  struct Properties :
+      FixedFrame::AspectProperties,
+      UniqueProperties,
+      NameAspect::Properties
   {
-    /// Name of this EndEffector
-    std::string mName;
-
-    /// The relative transform will be set to this whenever
-    /// resetRelativeTransform() is called
-    Eigen::Isometry3d mDefaultTransform;
-
-    /// Default constructor
-    UniqueProperties(
-        const Eigen::Isometry3d& _defaultTransform =
-            Eigen::Isometry3d::Identity());
-  };
-
-  struct PropertiesData : UniqueProperties
-  {
-    PropertiesData(
-        const UniqueProperties& _effectorProperties = UniqueProperties(),
-        const common::Composite::Properties& _compositeProperties =
+    Properties(
+        const FixedFrame::AspectProperties& fixedFrameProperties
+            = FixedFrame::AspectProperties(),
+        const UniqueProperties& effectorProperties = UniqueProperties(),
+        const NameAspect::Properties& name = "EndEffector",
+        const common::Composite::Properties& compositeProperties =
             common::Composite::Properties());
 
     /// The properties of the EndEffector's Aspects
     common::Composite::Properties mCompositeProperties;
   };
-
-  using Properties = Node::MakeProperties<PropertiesData>;
 
   /// Destructor
   virtual ~EndEffector() = default;
@@ -153,14 +155,17 @@ public:
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
   /// Transform will be set to the new default transform.
-  void setProperties(const PropertiesData& _properties, bool _useNow=false);
+  void setProperties(const Properties& _properties);
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
   /// Transform will be set to the new default transform.
-  void setProperties(const UniqueProperties& _properties, bool _useNow=false);
+  void setProperties(const UniqueProperties& properties, bool useNow=false);
+
+  /// Set the AspectProperties of this EndEffector
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this EndEffector
-  PropertiesData getEndEffectorProperties() const;
+  Properties getEndEffectorProperties() const;
 
   /// Copy the State and Properties of another EndEffector
   void copy(const EndEffector& _otherEndEffector);
@@ -176,7 +181,7 @@ public:
   /// resetRelativeTransform() is called. If _useNow is set to true, then
   /// resetRelativeTransform() will be called at the end of this function.
   void setDefaultRelativeTransform(const Eigen::Isometry3d& _newDefaultTf,
-                                   bool _useNow);
+                                   bool _useNow = false);
 
   /// Set the current relative transform of this EndEffector to the default
   /// relative transform of this EndEffector. The default relative transform can
@@ -197,16 +202,12 @@ public:
 protected:
 
   /// Constructor used by the Skeleton class
-  explicit EndEffector(BodyNode* parent, const PropertiesData& properties);
+  explicit EndEffector(BodyNode* parent, const Properties& properties);
 
   /// Create a clone of this BodyNode. This may only be called by the Skeleton
   /// class.
   virtual Node* cloneNode(BodyNode* _parent) const override;
 
-
-  /// Properties of this EndEffector
-  DEPRECATED(6.0)
-  UniqueProperties mEndEffectorP;
 };
 
 } // namespace dynamics

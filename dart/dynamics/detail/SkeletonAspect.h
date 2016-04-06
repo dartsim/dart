@@ -86,8 +86,7 @@ struct SkeletonAspectProperties
       const Eigen::Vector3d& _gravity = Eigen::Vector3d(0.0, 0.0, -9.81),
       double _timeStep = 0.001,
       bool _enabledSelfCollisionCheck = false,
-      bool _enableAdjacentBodyCheck = false,
-      size_t _version = 0);
+      bool _enableAdjacentBodyCheck = false);
 };
 
 //==============================================================================

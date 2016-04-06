@@ -215,7 +215,7 @@ Eigen::Matrix<double, 6, 3> PlanarJoint::getLocalJacobianStatic(
 
 //==============================================================================
 PlanarJoint::PlanarJoint(const Properties& properties)
-  : detail::PlanarJointBase(common::NoArg, properties)
+  : detail::PlanarJointBase(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls

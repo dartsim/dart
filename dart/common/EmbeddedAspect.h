@@ -142,7 +142,7 @@ public:
   // Forwarding constructor
   template <typename... Args>
   EmbedStateOnTopOf(Args&&... args)
-    : Base(std::forward<Args>(args)...)
+    : Base(NoArg, std::forward<Args>(args)...)
   {
     // Do nothing
   }
@@ -254,7 +254,7 @@ public:
   // Forwarding constructor
   template <typename... Args>
   EmbedPropertiesOnTopOf(Args&&... args)
-    : Base(std::forward<Args>(args)...)
+    : Base(NoArg, std::forward<Args>(args)...)
   {
     // Do nothing
   }
@@ -454,7 +454,7 @@ public:
   // Forwarding constructor
   template <typename... Args>
   EmbedStateAndPropertiesOnTopOf(Args&&... args)
-    : Base(std::forward<Args>(args)...)
+    : Base(NoArg, std::forward<Args>(args)...)
   {
     // Do nothing
   }
