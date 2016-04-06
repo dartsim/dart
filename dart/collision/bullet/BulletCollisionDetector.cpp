@@ -135,6 +135,26 @@ BulletCollisionDetector::~BulletCollisionDetector()
 }
 
 //==============================================================================
+std::unique_ptr<CollisionDetector>
+BulletCollisionDetector::cloneWithoutCollisionObjects()
+{
+  return common::make_unique<BulletCollisionDetector>();
+}
+
+//==============================================================================
+const std::string& BulletCollisionDetector::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& BulletCollisionDetector::getStaticType()
+{
+  static const std::string type = "bullet";
+  return type;
+}
+
+//==============================================================================
 CollisionNode* BulletCollisionDetector::createCollisionNode(
     dynamics::BodyNode* _bodyNode)
 {

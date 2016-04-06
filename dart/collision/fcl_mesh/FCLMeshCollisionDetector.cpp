@@ -64,6 +64,26 @@ FCLMeshCollisionDetector::~FCLMeshCollisionDetector()
 }
 
 //==============================================================================
+std::unique_ptr<CollisionDetector>
+FCLMeshCollisionDetector::cloneWithoutCollisionObjects()
+{
+  return common::make_unique<FCLMeshCollisionDetector>();
+}
+
+//==============================================================================
+const std::string& FCLMeshCollisionDetector::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& FCLMeshCollisionDetector::getStaticType()
+{
+  static const std::string type = "fcl_mesh";
+  return type;
+}
+
+//==============================================================================
 CollisionNode*FCLMeshCollisionDetector::createCollisionNode(
     dynamics::BodyNode* _bodyNode)
 {

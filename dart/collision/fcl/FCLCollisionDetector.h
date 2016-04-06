@@ -60,6 +60,15 @@ public:
   virtual ~FCLCollisionDetector();
 
   // Documentation inherited
+  std::unique_ptr<CollisionDetector> cloneWithoutCollisionObjects() override;
+
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Get collision detector type for this class
+  static const std::string& getStaticType();
+
+  // Documentation inherited
   virtual bool detectCollision(bool _checkAllCollisions,
                                bool _calculateContactPoints) override;
 

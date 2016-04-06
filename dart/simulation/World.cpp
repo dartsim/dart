@@ -91,6 +91,10 @@ WorldPtr World::clone() const
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
 
+  auto cd = getConstraintSolver()->getCollisionDetector();
+  worldClone->getConstraintSolver()->setCollisionDetector(
+      cd->cloneWithoutCollisionObjects());
+
   // Clone and add each Skeleton
   for(size_t i=0; i<mSkeletons.size(); ++i)
   {

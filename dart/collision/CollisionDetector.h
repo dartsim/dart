@@ -104,6 +104,13 @@ public:
   /// \brief Destructor
   virtual ~CollisionDetector();
 
+  /// \brief Create a clone of this CollisionDetector. All the properties will
+  /// be copied over, but not collision objects.
+  virtual std::unique_ptr<CollisionDetector> cloneWithoutCollisionObjects() = 0;
+
+  /// \brief Return an unique string representing the collision detector type
+  virtual const std::string& getType() const = 0;
+
   /// \brief Add skeleton
   virtual void addSkeleton(const dynamics::SkeletonPtr& _skeleton);
 

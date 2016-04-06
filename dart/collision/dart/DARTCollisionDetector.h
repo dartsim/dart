@@ -52,6 +52,15 @@ public:
   virtual ~DARTCollisionDetector();
 
   // Documentation inherited
+  std::unique_ptr<CollisionDetector> cloneWithoutCollisionObjects() override;
+
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  /// Get collision detector type for this class
+  static const std::string& getStaticType();
+
+  // Documentation inherited
   virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
 
   // Documentation inherited

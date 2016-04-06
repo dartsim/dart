@@ -52,6 +52,26 @@ DARTCollisionDetector::DARTCollisionDetector()
 DARTCollisionDetector::~DARTCollisionDetector() {
 }
 
+//==============================================================================
+std::unique_ptr<CollisionDetector>
+DARTCollisionDetector::cloneWithoutCollisionObjects()
+{
+  return common::make_unique<DARTCollisionDetector>();
+}
+
+//==============================================================================
+const std::string& DARTCollisionDetector::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& DARTCollisionDetector::getStaticType()
+{
+  static const std::string type = "dart";
+  return type;
+}
+
 CollisionNode* DARTCollisionDetector::createCollisionNode(
     dynamics::BodyNode* _bodyNode) {
   return new CollisionNode(_bodyNode);

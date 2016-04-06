@@ -309,8 +309,15 @@ TEST(World, ValidatingClones)
     {
       clones.push_back(clones[j-1]->clone());
 
-      EXPECT_EQ(original->getConstraintSolver()->getCollisionDetector(),
-                clones.back()->getConstraintSolver()->getCollisionDetector());
+      auto originalCD
+          = original->getConstraintSolver()->getCollisionDetector();
+      auto cloneCD
+          = clones.back()->getConstraintSolver()->getCollisionDetector();
+
+      std::string originalCDType = originalCD->getType();
+      std::string cloneCDType = cloneCD->getType();
+
+      EXPECT_EQ(originalCDType, cloneCDType);
     }
   }
 }
