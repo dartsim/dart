@@ -123,7 +123,7 @@ struct FCLCollisionCallbackData
   const Option& mOption;
 
   /// Collision result of DART
-  Result* mResult;
+  Result& mResult;
 
   FCLCollisionDetector::PrimitiveShape mPrimitiveShapeType;
 
@@ -136,7 +136,7 @@ struct FCLCollisionCallbackData
   /// Constructor
   FCLCollisionCallbackData(
       const Option& option,
-      Result* result = nullptr,
+      Result& result,
       FCLCollisionDetector::PrimitiveShape type
           = FCLCollisionDetector::MESH,
       FCLCollisionDetector::ContactPointComputationMethod method
@@ -627,7 +627,7 @@ bool FCLCollisionDetector::detect(
   auto broadPhaseAlg = castedData->getFCLCollisionManager();
 
   FCLCollisionCallbackData collData(
-        option, &result, mPrimitiveShapeType,
+        option, result, mPrimitiveShapeType,
         mContactPointComputationMethod);
   broadPhaseAlg->collide(&collData, collisionCallback);
 
@@ -661,7 +661,7 @@ bool FCLCollisionDetector::detect(
   auto broadPhaseAlg2 = casted2->getFCLCollisionManager();
 
   FCLCollisionCallbackData collData(
-        &option, &result, mPrimitiveShapeType,
+        option, result, mPrimitiveShapeType,
         mContactPointComputationMethod);
   broadPhaseAlg1->collide(broadPhaseAlg2, &collData, collisionCallback);
 
@@ -938,7 +938,7 @@ bool collisionCallback(
 
   const auto& fclRequest = collData->mFclRequest;
   auto& fclResult = collData->mFclResult;
-  auto& result = *(collData->mResult);
+  auto& result = collData->mResult;
   const auto& option = collData->mOption;
   auto filter = option.collisionFilter;
 
