@@ -260,7 +260,7 @@ public:
   /// Get the map that is being held
   const MapType& getMap() const;
 
-private:
+protected:
 
   /// A map containing the collection of States for the Aspect
   MapType mMap;
