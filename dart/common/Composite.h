@@ -62,6 +62,12 @@ public:
   using AspectMap = std::map< std::type_index, std::unique_ptr<Aspect> >;
   using RequiredAspectSet = std::unordered_set<std::type_index>;
 
+  template <typename... Data>
+  using MakeState = detail::MakeCompositeState<Data...>;
+
+  template <typename... Data>
+  using MakeProperties = detail::MakeCompositeProperties<Data...>;
+
   /// Virtual destructor
   virtual ~Composite() = default;
 

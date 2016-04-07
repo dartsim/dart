@@ -50,27 +50,33 @@ namespace detail {
 
 //==============================================================================
 template <class AspectT>
+struct GetAspect
+{
+  using Type = typename static_if_else<
+      std::is_base_of<Aspect, AspectT>::value,
+      AspectT, typename AspectT::Aspect>::type;
+};
+
+//==============================================================================
+template <class AspectT>
 struct GetState
 {
-  using Type = typename AspectT::State;
+  using Type = typename GetAspect<AspectT>::Type::State;
 };
 
 //==============================================================================
 template <class AspectT>
 struct GetProperties
 {
-  using Type = typename AspectT::Properties;
+  using Type = typename GetAspect<AspectT>::Type::Properties;
 };
 
 //==============================================================================
 using CompositeStateMap = std::map< std::type_index, std::unique_ptr<Aspect::State> >;
-using CompositeState = CloneableMap<CompositeStateMap>;
-
 using CompositePropertiesMap = std::map< std::type_index, std::unique_ptr<Aspect::Properties> >;
-using CompositeProperties = CloneableMap<CompositePropertiesMap>;
 
 //==============================================================================
-template <typename MapType, template <class> GetData>
+template <typename MapType, template <class> class GetData>
 class CompositeData : public CloneableMap<MapType>
 {
 public:
@@ -83,15 +89,178 @@ public:
     // Do nothing
   }
 
-  template <class AspectT, typename... Args>
-  GetState<AspectT>::Type& make(Args&&... args)
-  {
-    using Data = GetState<AspectT>::Type;
-    std::unique_ptr<Data> data = make_unique<Data>(std::forward<Args>(args)...);
+  virtual ~CompositeData() = default;
 
+  /// Create (or replace) a piece of data in this
+  template <class AspectT, typename... Args>
+  typename GetData<AspectT>::Type& create(Args&&... args)
+  {
+    using Data = typename GetData<AspectT>::Type;
+    using AspectType = typename GetAspect<AspectT>::Type;
+    using DataType = typename GetData<Aspect>::Type;
+
+    std::unique_ptr<DataType>& data = this->mMap[typeid(AspectType)]
+        = make_unique<Data>(std::forward<Args>(args)...);
+    return static_cast<Data&>(*data);
+  }
+
+  template <class AspectT>
+  typename GetData<AspectT>::Type* get()
+  {
+    using Data = typename GetData<AspectT>::Type;
+    using AspectType = typename GetAspect<AspectT>::Type;
+
+    typename MapType::iterator it = this->mMap.find(typeid(AspectType));
+    if(this->mMap.end() == it)
+      return nullptr;
+
+    return static_cast<Data*>(it->second.get());
+  }
+
+  template <class AspectT>
+  const typename GetData<AspectT>::Type* get() const
+  {
+    return const_cast<CompositeData<MapType, GetData>*>(this)->get<AspectT>();
+  }
+
+  template <class AspectT, typename... Args>
+  typename GetData<AspectT>::Type& getOrCreate(Args&&... args)
+  {
+    using Data = typename GetData<AspectT>::Type;
+    using AspectType = typename GetAspect<AspectT>::Type;
+
+    auto& it = this->mMap.insert(
+          std::make_pair<std::type_index, std::unique_ptr<Data>>(
+            typeid(AspectType), nullptr));
+
+    const bool exists = !it.second;
+    if(!exists)
+      it.first = make_unique<Data>(std::forward<Args>(args)...);
+
+    return static_cast<Data&>(*it.first);
   }
 
 };
+
+//==============================================================================
+using CompositeState = CompositeData<CompositeStateMap, GetState>;
+using CompositeProperties = CompositeData<CompositePropertiesMap, GetProperties>;
+
+//==============================================================================
+template <class CompositeType, template<class> class GetData, typename... Args>
+class ComposeData
+{
+public:
+  virtual ~ComposeData() = default;
+
+  void setFrom(const CompositeType&)
+  {
+    // Do nothing
+  }
+
+protected:
+
+  void _addData(CompositeType&) const
+  {
+    // Do nothing
+  }
+};
+
+//==============================================================================
+template <class CompositeType, template<class> class GetData, class AspectT,
+          typename... Remainder>
+struct ComposeData<CompositeType, GetData, AspectT, Remainder...> :
+    public GetData<AspectT>::Type,
+    public ComposeData<CompositeType, GetData, Remainder...>
+{
+public:
+
+  enum Delegate_t { Delegate };
+
+  using Base = typename GetData<AspectT>::Type;
+  using AspectType = typename GetAspect<AspectT>::Type;
+
+  template <typename Arg>
+  struct ConvertIfData
+  {
+    using Type = typename static_if_else<
+        std::is_base_of<typename Base::Data, Arg>::value,
+        typename Base::Data, Arg>::type;
+  };
+
+  ComposeData() = default;
+
+  virtual ~ComposeData() = default;
+
+  template <typename... Args>
+  ComposeData(Args&&... args)
+    : ComposeData<CompositeType, GetData, Remainder...>(std::forward<Args>(args)...)
+  {
+    // Do nothing
+  }
+
+  operator CompositeType() const
+  {
+    CompositeType composite;
+    _addData(composite);
+
+    return composite;
+  }
+
+  void setFrom(const CompositeType& composite)
+  {
+    const Base* data = composite.template get<AspectType>();
+    if(data)
+      static_cast<Base&>(*this) = *data;
+
+    ComposeData<CompositeType, GetData, Remainder...>::setFrom(composite);
+  }
+
+  ComposeData& operator =(const CompositeType& composite)
+  {
+    setFrom(composite);
+    return *this;
+  }
+
+protected:
+
+  void _addData(CompositeType& composite) const
+  {
+    composite.template create<AspectType>(static_cast<const Base&>(*this));
+    ComposeData<CompositeType, GetData, Remainder...>::_addData(composite);
+  }
+
+  void _findData()
+  {
+    // Do nothing
+  }
+
+  template <typename Arg1, typename... Args>
+  void _findData(Arg1 arg1, Args&&... args)
+  {
+    _useIfData(static_cast<const typename ConvertIfData<Arg1>::Type&>(arg1));
+    _findData(std::forward<Args>(args)...);
+  }
+
+  template <typename Arg>
+  void _useIfData(Arg)
+  {
+    // Do nothing
+  }
+
+  void _useIfData(const typename Base::Data& data)
+  {
+    static_cast<Base&>(*this) = data;
+  }
+};
+
+//==============================================================================
+template <typename... Data>
+using MakeCompositeState = ComposeData<CompositeState, GetState, Data...>;
+
+template <typename... Data>
+using MakeCompositeProperties =
+    ComposeData<CompositeProperties, GetProperties, Data...>;
 
 } // namespace detail
 } // namespace common

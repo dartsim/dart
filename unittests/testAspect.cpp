@@ -280,51 +280,19 @@ class StatefulAspect : public Aspect, public Subject
 {
 public:
 
-  class State : public Aspect::State
+  struct Data
   {
-  public:
-
-    State() : val(static_cast<T>(dart::math::random(0, 100))) { }
-
-    State(const State& other) : val(other.val) { }
-
-    State(const T& otherVal) : val(otherVal) { }
-
     T val;
 
-    std::unique_ptr<Aspect::State> clone() const override
+    Data(const T& someVal = 0)
+      : val(someVal)
     {
-      return dart::common::make_unique<State>(*this);
-    }
-
-    void copy(const Aspect::State& anotherState) override
-    {
-      val = static_cast<const State&>(anotherState).val;
+      // Do nothing
     }
   };
 
-  class Properties : public Aspect::Properties
-  {
-  public:
-
-    Properties() : val(static_cast<T>(dart::math::random(0, 100))) { }
-
-    Properties(const Properties& other) : val(other.val) { }
-
-    Properties(const T& otherVal) : val(otherVal) { }
-
-    T val;
-
-    std::unique_ptr<Aspect::Properties> clone() const override
-    {
-      return dart::common::make_unique<Properties>(*this);
-    }
-
-    void copy(const Aspect::Properties& otherProperties) override
-    {
-      val = static_cast<const Properties&>(otherProperties).val;
-    }
-  };
+  using State = Aspect::MakeState<Data>;
+  using Properties = Aspect::MakeProperties<Data>;
 
   StatefulAspect(Composite* mgr)
     : Aspect(mgr)
@@ -783,6 +751,29 @@ TEST(Aspect, Duplication)
   EXPECT_FALSE(mgr2.get<IntAspect>() == nullptr);
   EXPECT_FALSE(mgr2.get<FloatAspect>() == nullptr);
   EXPECT_FALSE(mgr2.get<CharAspect>() == nullptr);
+
+  Composite::MakeState<DoubleAspect, IntAspect, FloatAspect> state;
+  state.DoubleAspect::State::val = 1e-6;
+  state.FloatAspect::State::val = 1.5;
+  state.IntAspect::State::val = 456;
+
+  mgr1.setCompositeState(state);
+
+  EXPECT_EQ(mgr1.get<DoubleAspect>()->mState.val, 1e-6);
+  EXPECT_EQ(mgr1.get<FloatAspect>()->mState.val, 1.5);
+  EXPECT_EQ(mgr1.get<IntAspect>()->mState.val, 456);
+
+  state = mgr2.getCompositeState();
+
+  EXPECT_EQ(state.DoubleAspect::State::val, 0);
+  EXPECT_EQ(state.FloatAspect::State::val, 0);
+  EXPECT_EQ(state.IntAspect::State::val, 0);
+
+  state = mgr1.getCompositeState();
+
+  EXPECT_EQ(state.DoubleAspect::State::val, 1e-6);
+  EXPECT_EQ(state.FloatAspect::State::val, 1.5);
+  EXPECT_EQ(state.IntAspect::State::val, 456);
 }
 
 TEST(Aspect, Embedded)
