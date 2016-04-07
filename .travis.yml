@@ -31,9 +31,8 @@ install:
 
 script:
   - mkdir build && cd build
-  - cmake -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_COVERALLS=$COVERALLS ..
-  - make all
-  - if [ $BUILD_CORE_ONLY = OFF ]; then make tutorials examples tests test; fi
+  - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_COVERALLS=$COVERALLS ..
+  - make all tutorials examples tests test
   - if [ $COVERALLS = ON ]; then make coveralls; fi
 
 after_failure: 
