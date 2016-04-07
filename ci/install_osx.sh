@@ -7,7 +7,7 @@ PACKAGES='
 git
 cmake
 assimp
-fcl03
+fcl
 bullet
 flann
 boost

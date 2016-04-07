@@ -44,7 +44,6 @@
 #include "dart/common/Console.h"
 #include "dart/common/StlHelpers.h"
 #include "dart/math/Helpers.h"
-#include "dart/renderer/RenderInterface.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/Skeleton.h"
@@ -1372,57 +1371,6 @@ void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
   if(find(mNonBodyNodeEntities.begin(), mNonBodyNodeEntities.end(),
           _oldChildEntity) != mNonBodyNodeEntities.end())
     mNonBodyNodeEntities.erase(_oldChildEntity);
-}
-
-//==============================================================================
-void BodyNode::draw(renderer::RenderInterface* ri,
-                    const Eigen::Vector4d& color,
-                    bool useDefaultColor, int /*depth*/) const
-{
-  if (nullptr == ri)
-    return;
-
-  ri->pushMatrix();
-
-  // Use the relative transform of this Frame. We assume that we are being
-  // called from the parent Frame's renderer.
-  // TODO(MXG): This can cause trouble if the draw function is originally called
-  // on an Entity or Frame which is not a child of the World Frame
-  ri->transform(getRelativeTransform());
-
-  // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
-  auto shapeNodes = getShapeNodesWith<VisualAddon>();
-  for (auto shapeNode : shapeNodes)
-    shapeNode->draw(ri, color, useDefaultColor);
-  // _ri.popName();
-
-  // render the subtree
-  for(Entity* entity : mChildEntities)
-    entity->draw(ri, color, useDefaultColor);
-
-  ri->popMatrix();
-}
-
-//==============================================================================
-void BodyNode::drawMarkers(renderer::RenderInterface* _ri,
-                           const Eigen::Vector4d& _color,
-                           bool _useDefaultColor) const
-{
-  if (!_ri)
-    return;
-
-  _ri->pushMatrix();
-
-  mParentJoint->applyGLTransform(_ri);
-
-  // render the corresponding mMarkerss
-  for (size_t i = 0; i < mMarkers.size(); i++)
-    mMarkers[i]->draw(_ri, true, _color, _useDefaultColor);
-
-  for (size_t i = 0; i < mChildBodyNodes.size(); i++)
-    mChildBodyNodes[i]->drawMarkers(_ri, _color, _useDefaultColor);
-
-  _ri->popMatrix();
 }
 
 //==============================================================================

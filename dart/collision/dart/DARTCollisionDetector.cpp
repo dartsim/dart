@@ -82,9 +82,10 @@ const std::string& DARTCollisionDetector::getType() const
 }
 
 //==============================================================================
-std::shared_ptr<CollisionGroup> DARTCollisionDetector::createCollisionGroup()
+std::unique_ptr<CollisionGroup>
+DARTCollisionDetector::createCollisionGroup()
 {
-  return std::make_shared<DARTCollisionGroup>(shared_from_this());
+  return common::make_unique<DARTCollisionGroup>(shared_from_this());
 }
 
 //==============================================================================
@@ -94,11 +95,17 @@ bool DARTCollisionDetector::detect(
 {
   result.clear();
 
-  assert(group);
-  assert(group->getCollisionDetector()->getType()
-         == DARTCollisionDetector::getTypeStatic());
+  if (this != group->getCollisionDetector().get())
+  {
+    dterr << "[DARTCollisionDetector::detect] Attempting to check collision "
+          << "for a collision group that is created from a different collision "
+          << "detector instance.\n";
 
-  auto objects = group->getCollisionObjects();
+    return false;
+  }
+
+  auto casted = static_cast<DARTCollisionGroup*>(group);
+  const auto& objects = casted->mCollisionObjects;
 
   if (objects.empty())
     return false;
@@ -142,15 +149,21 @@ bool DARTCollisionDetector::detect(
 {
   result.clear();
 
-  assert(group1);
-  assert(group2);
-  assert(group1->getCollisionDetector()->getType()
-         == DARTCollisionDetector::getTypeStatic());
-  assert(group2->getCollisionDetector()->getType()
-         == DARTCollisionDetector::getTypeStatic());
+  if ((this != group1->getCollisionDetector().get())
+      || (this != group2->getCollisionDetector().get()))
+  {
+    dterr << "[DARTCollisionDetector::detect] Attempting to check collision "
+          << "for a collision group that is created from a different collision "
+          << "detector instance.\n";
 
-  auto objects1 = group1->getCollisionObjects();
-  auto objects2 = group2->getCollisionObjects();
+    return false;
+  }
+
+  auto casted1 = static_cast<DARTCollisionGroup*>(group1);
+  auto casted2 = static_cast<DARTCollisionGroup*>(group2);
+
+  const auto& objects1 = casted1->mCollisionObjects;
+  const auto& objects2 = casted2->mCollisionObjects;
 
   if (objects1.empty() || objects2.empty())
     return false;
@@ -187,8 +200,9 @@ bool DARTCollisionDetector::detect(
 
 //==============================================================================
 DARTCollisionDetector::DARTCollisionDetector()
+  : CollisionDetector()
 {
-  mCollisionObjectManager.reset(new RefCountingCollisionObjectManager(this));
+  mCollisionObjectManager.reset(new SharingCollisionObjectManager(this));
 }
 
 //==============================================================================
@@ -222,27 +236,12 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
 std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
-  auto collObj = new DARTCollisionObject(this, shapeFrame);
-
   warnUnsupportedShapeType(shapeFrame);
 
-  mDARTCollisionObjects.push_back(collObj);
-
-  return std::unique_ptr<CollisionObject>(collObj);
+  return std::unique_ptr<DARTCollisionObject>(
+        new DARTCollisionObject(this, shapeFrame));
 }
 
-//==============================================================================
-void DARTCollisionDetector::notifyCollisionObjectDestorying(
-    CollisionObject* collObj)
-{
-  if (!collObj)
-    return;
-
-  auto casted = static_cast<DARTCollisionObject*>(collObj);
-  mDARTCollisionObjects.erase(
-        std::remove(mDARTCollisionObjects.begin(), mDARTCollisionObjects.end(),
-                    casted), mDARTCollisionObjects.end());
-}
 
 
 

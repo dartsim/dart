@@ -36,7 +36,6 @@
 
 #include "dart/dynamics/LineSegmentShape.h"
 #include "dart/common/Console.h"
-#include "dart/renderer/RenderInterface.h"
 #include "dart/math/Geometry.h"
 
 namespace dart {
@@ -274,17 +273,6 @@ const Eigen::aligned_vector<Eigen::Vector2i>&
 LineSegmentShape::getConnections() const
 {
   return mConnections;
-}
-
-//==============================================================================
-void LineSegmentShape::draw(renderer::RenderInterface* _ri,
-                            const Eigen::Vector4d& _color) const
-{
-  if(!_ri)
-    return;
-
-  _ri->setPenColor(_color);
-  _ri->drawLineSegments(mVertices, mConnections);
 }
 
 //==============================================================================

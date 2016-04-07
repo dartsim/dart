@@ -48,11 +48,13 @@ class DARTCollisionGroup : public CollisionGroup
 {
 public:
 
+  friend class DARTCollisionDetector;
+
   /// Constructor
   DARTCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
   /// Destructor
-  virtual ~DARTCollisionGroup();
+  virtual ~DARTCollisionGroup() = default;
 
 protected:
 
@@ -60,20 +62,25 @@ protected:
   void initializeEngineData() override;
 
   // Documentation inherited
-  void notifyCollisionObjectAdded(CollisionObject* object) override;
+  void addCollisionObjectToEngine(CollisionObject* object) override;
 
   // Documentation inherited
-  void notifyCollisionObjectsAdded(
+  void addCollisionObjectsToEngine(
       const std::vector<CollisionObject*>& collObjects) override;
 
   // Documentation inherited
-  void notifyCollisionObjectRemoved(CollisionObject* object) override;
+  void removeCollisionObjectFromEngine(CollisionObject* object) override;
 
   // Documentation inherited
-  void notifyAllCollisionObjectsRemoved() override;
+  void removeAllCollisionObjectsFromEngine() override;
 
   // Documentation inherited
-  void updateEngineData() override;
+  void updateCollisionGroupEngineData() override;
+
+protected:
+
+  /// CollisionObjects added to this DARTCollisionGroup
+  std::vector<CollisionObject*> mCollisionObjects;
 
 };
 

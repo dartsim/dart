@@ -125,15 +125,13 @@ Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
 void convertContacts(
     btCollisionWorld* collWorld, const Option& option, Result& result);
 
-BulletCollisionDetector::BulletCollsionShapePack
+btCollisionShape*
 createBulletEllipsoidMesh(float sizeX, float sizeY, float sizeZ);
 
-BulletCollisionDetector::BulletCollsionShapePack
-createBulletCollisionShapePackFromAssimpScene(
+btCollisionShape* createBulletCollisionShapeFromAssimpScene(
     const Eigen::Vector3d& scale, const aiScene* scene);
 
-BulletCollisionDetector::BulletCollsionShapePack
-createBulletCollisionShapePackFromAssimpMesh(const aiMesh* mesh);
+btCollisionShape* createBulletCollisionShapeFromAssimpMesh(const aiMesh* mesh);
 
 } // anonymous namespace
 
@@ -166,9 +164,10 @@ const std::string& BulletCollisionDetector::getType() const
 }
 
 //==============================================================================
-std::shared_ptr<CollisionGroup> BulletCollisionDetector::createCollisionGroup()
+std::unique_ptr<CollisionGroup>
+BulletCollisionDetector::createCollisionGroup()
 {
-  return std::make_shared<BulletCollisionGroup>(shared_from_this());
+  return common::make_unique<BulletCollisionGroup>(shared_from_this());
 }
 
 //==============================================================================
@@ -177,16 +176,16 @@ bool BulletCollisionDetector::detect(
 {
   result.clear();
 
-  if (!group)
-    return false;
-
-  if (group->getCollisionDetector()->getType()
-      != BulletCollisionDetector::getTypeStatic())
+  if (this != group->getCollisionDetector().get())
   {
+    dterr << "[BulletCollisionDetector::detect] Attempting to check collision "
+          << "for a collision group that is created from a different collision "
+          << "detector instance.\n";
+
     return false;
   }
 
-  group->update();
+  group->updateEngineData();
 
   auto castedData = static_cast<BulletCollisionGroup*>(group);
   auto bulletCollisionWorld = castedData->getBulletCollisionWorld();
@@ -208,24 +207,19 @@ bool BulletCollisionDetector::detect(
 {
   result.clear();
 
-  if (!group1 || !group2)
-    return false;
-
-  if (group1->getCollisionDetector()->getType()
-      != BulletCollisionDetector::getTypeStatic())
+  if ((this != group1->getCollisionDetector().get())
+      || (this != group2->getCollisionDetector().get()))
   {
-    return false;
-  }
+    dterr << "[BulletCollisionDetector::detect] Attempting to check collision "
+          << "for a collision group that is created from a different collision "
+          << "detector instance.\n";
 
-  if (group2->getCollisionDetector()->getType()
-      != BulletCollisionDetector::getTypeStatic())
-  {
     return false;
   }
 
   auto group = common::make_unique<BulletCollisionGroup>(shared_from_this());
-  group->registerShapeFrames(group1, group2);
-  group->update();
+  group->addShapeFramesOf(group1, group2);
+  group->updateEngineData();
 
   auto bulletCollisionWorld = group->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
@@ -241,84 +235,82 @@ bool BulletCollisionDetector::detect(
 
 //==============================================================================
 BulletCollisionDetector::BulletCollisionDetector()
+  : CollisionDetector()
 {
-  mCollisionObjectManager.reset(new NaiveCollisionObjectManager(this));
+  mCollisionObjectManager.reset(new NoneSharingCollisionObjectManager(this));
 }
 
 //==============================================================================
-std::unique_ptr<CollisionObject>
-BulletCollisionDetector::createCollisionObject(
+std::unique_ptr<CollisionObject> BulletCollisionDetector::createCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
-  auto pack = claimBulletCollisionGeometry(shapeFrame->getShape());
-  auto collObj = new BulletCollisionObject(this, shapeFrame,
-                                           pack.collisionShape.get());
-  auto object = collObj->getBulletCollisionObject();
+  auto bulletCollShape = claimBulletCollisionShape(shapeFrame->getShape());
 
-  mBulletCollisionObjectMap[object] = collObj;
-
-  return std::unique_ptr<CollisionObject>(collObj);
+  return std::unique_ptr<BulletCollisionObject>(
+        new BulletCollisionObject(this, shapeFrame, bulletCollShape));
 }
 
 //==============================================================================
 void BulletCollisionDetector::notifyCollisionObjectDestorying(
-    CollisionObject* collObj)
+    CollisionObject* object)
 {
-  if (!collObj)
-    return;
-
-  reclaimBulletCollisionGeometry(collObj->getShape());
-
-  auto casted = static_cast<BulletCollisionObject*>(collObj);
-  mBulletCollisionObjectMap.erase(casted->getBulletCollisionObject());
+  reclaimBulletCollisionShape(object->getShape());
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollsionShapePack
-BulletCollisionDetector::claimBulletCollisionGeometry(
+btCollisionShape* BulletCollisionDetector::claimBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
-  BulletCollsionShapePack pack;
+  const auto search = mShapeMap.find(shape);
 
-  auto findResult = mShapeMap.find(shape);
-  if (mShapeMap.end() != findResult)
+  if (mShapeMap.end() != search)
   {
-    auto& packAndCount = findResult->second;
+    auto& bulletCollShapeAndCount = search->second;
 
-    pack = packAndCount.first;
-
-    auto& count = packAndCount.second;
+    auto& bulletCollShape = bulletCollShapeAndCount.first;
+    auto& count = bulletCollShapeAndCount.second;
     assert(0u != count);
+
     count++;
-  }
-  else
-  {
-    pack = createBulletCollisionShapePack(shape);
-    mShapeMap[shape] = std::make_pair(pack, 1u);
+
+    return bulletCollShape;
   }
 
-  return pack;
+  auto newBulletCollisionShape = createBulletCollisionShape(shape);
+  mShapeMap[shape] = std::make_pair(newBulletCollisionShape, 1u);
+
+  return newBulletCollisionShape;
 }
 
 //==============================================================================
-void BulletCollisionDetector::reclaimBulletCollisionGeometry(
+void BulletCollisionDetector::reclaimBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
-  auto findResult = mShapeMap.find(shape);
-  assert(mShapeMap.end() != findResult);
+  auto search = mShapeMap.find(shape);
 
-  ShapeMapValue& pair = findResult->second;
-  pair.second--;
+  assert(mShapeMap.end() != search);
 
-  if (0u == pair.second)
+  auto& bulletCollShapeAndCount = search->second;
+
+  auto& bulletCollShape = bulletCollShapeAndCount.first;
+  auto& count = bulletCollShapeAndCount.second;
+
+  count--;
+
+  if (0u == count)
   {
-    mShapeMap.erase(findResult);
+    auto userPointer = bulletCollShape->getUserPointer();
+    if (userPointer)
+      delete static_cast<btTriangleMesh*>(userPointer);
+
+    delete bulletCollShape;
+
+    mShapeMap.erase(search);
   }
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollsionShapePack
-BulletCollisionDetector::createBulletCollisionShapePack(
+btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
   using dynamics::Shape;
@@ -329,9 +321,7 @@ BulletCollisionDetector::createBulletCollisionShapePack(
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
 
-  BulletCollsionShapePack pack;
-
-  auto& bulletCollisionShape = pack.collisionShape;
+  btCollisionShape* bulletCollisionShape = nullptr;
 
   switch (shape->getShapeType())
   {
@@ -342,7 +332,7 @@ BulletCollisionDetector::createBulletCollisionShapePack(
       const auto box = static_cast<const BoxShape*>(shape.get());
       const Eigen::Vector3d& size = box->getSize();
 
-      bulletCollisionShape.reset(new btBoxShape(convertVector3(size*0.5)));
+      bulletCollisionShape = new btBoxShape(convertVector3(size*0.5));
 
       break;
     }
@@ -354,9 +344,14 @@ BulletCollisionDetector::createBulletCollisionShapePack(
       const Eigen::Vector3d& size = ellipsoid->getSize();
 
       if (ellipsoid->isSphere())
-        bulletCollisionShape.reset(new btSphereShape(size[0] * 0.5));
+      {
+        bulletCollisionShape = new btSphereShape(size[0] * 0.5);
+      }
       else
-        pack = createBulletEllipsoidMesh(size[0], size[1], size[2]);
+      {
+        bulletCollisionShape = createBulletEllipsoidMesh(
+              size[0], size[1], size[2]);
+      }
 
       break;
     }
@@ -369,7 +364,7 @@ BulletCollisionDetector::createBulletCollisionShapePack(
       const auto height = cylinder->getHeight();
       const auto size = btVector3(radius, radius, height * 0.5);
 
-      bulletCollisionShape.reset(new btCylinderShapeZ(size));
+      bulletCollisionShape = new btCylinderShapeZ(size);
 
       break;
     }
@@ -381,8 +376,8 @@ BulletCollisionDetector::createBulletCollisionShapePack(
       const Eigen::Vector3d normal = plane->getNormal();
       const double offset = plane->getOffset();
 
-      bulletCollisionShape.reset(new btStaticPlaneShape(
-            convertVector3(normal), offset));
+      bulletCollisionShape = new btStaticPlaneShape(
+            convertVector3(normal), offset);
 
       break;
     }
@@ -394,7 +389,8 @@ BulletCollisionDetector::createBulletCollisionShapePack(
       const auto scale = shapeMesh->getScale();
       const auto mesh = shapeMesh->getMesh();
 
-      pack = createBulletCollisionShapePackFromAssimpScene(scale, mesh);
+      bulletCollisionShape = createBulletCollisionShapeFromAssimpScene(
+            scale, mesh);
 
       break;
     }
@@ -405,7 +401,7 @@ BulletCollisionDetector::createBulletCollisionShapePack(
       const auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
       const auto mesh = softMeshShape->getAssimpMesh();
 
-      pack = createBulletCollisionShapePackFromAssimpMesh(mesh);
+      bulletCollisionShape = createBulletCollisionShapeFromAssimpMesh(mesh);
 
       break;
     }
@@ -415,13 +411,13 @@ BulletCollisionDetector::createBulletCollisionShapePack(
             << "Attempting to create unsupported shape type '"
             << shape->getShapeType() << "'.\n";
 
-      bulletCollisionShape.reset(new btSphereShape(0.1));
+      bulletCollisionShape = new btSphereShape(0.1);
 
       break;
     }
   }
 
-  return pack;
+  return bulletCollisionShape;
 }
 
 
@@ -490,7 +486,7 @@ void convertContacts(
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollsionShapePack createBulletEllipsoidMesh(
+btCollisionShape* createBulletEllipsoidMesh(
     float sizeX, float sizeY, float sizeZ)
 {
   float v[59][3] =
@@ -672,8 +668,7 @@ BulletCollisionDetector::BulletCollsionShapePack createBulletEllipsoidMesh(
     {56, 49, 58}
   };
 
-  BulletCollisionDetector::BulletCollsionShapePack pack;
-  pack.triMesh.reset(new btTriangleMesh());
+  auto triMesh = new btTriangleMesh();
 
   for (auto i = 0u; i < 112; ++i)
   {
@@ -691,24 +686,20 @@ BulletCollisionDetector::BulletCollsionShapePack createBulletEllipsoidMesh(
     vertices[1] = btVector3(p1[0] * sizeX, p1[1] * sizeY, p1[2] * sizeZ);
     vertices[2] = btVector3(p2[0] * sizeX, p2[1] * sizeY, p2[2] * sizeZ);
 
-    pack.triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
+    triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
   }
 
-  auto gimpactMeshShape = new btGImpactMeshShape(pack.triMesh.get());
+  auto gimpactMeshShape = new btGImpactMeshShape(triMesh);
   gimpactMeshShape->updateBound();
 
-  pack.collisionShape.reset(gimpactMeshShape);
-
-  return pack;
+  return gimpactMeshShape;
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollsionShapePack
-createBulletCollisionShapePackFromAssimpScene(
+btCollisionShape* createBulletCollisionShapeFromAssimpScene(
     const Eigen::Vector3d& scale, const aiScene* scene)
 {
-  BulletCollisionDetector::BulletCollsionShapePack pack;
-  pack.triMesh.reset(new btTriangleMesh());
+  auto triMesh = new btTriangleMesh();
 
   for (auto i = 0u; i < scene->mNumMeshes; ++i)
   {
@@ -723,24 +714,21 @@ createBulletCollisionShapePackFromAssimpScene(
                                 vertex.y * scale[1],
                                 vertex.z * scale[2]);
       }
-      pack.triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
+      triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
     }
   }
 
-  auto gimpactMeshShape = new btGImpactMeshShape(pack.triMesh.get());
+  auto gimpactMeshShape = new btGImpactMeshShape(triMesh);
   gimpactMeshShape->updateBound();
+  gimpactMeshShape->setUserPointer(triMesh);
 
-  pack.collisionShape.reset(gimpactMeshShape);
-
-  return pack;
+  return gimpactMeshShape;
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollsionShapePack
-createBulletCollisionShapePackFromAssimpMesh(const aiMesh* mesh)
+btCollisionShape* createBulletCollisionShapeFromAssimpMesh(const aiMesh* mesh)
 {
-  BulletCollisionDetector::BulletCollsionShapePack pack;
-  pack.triMesh.reset(new btTriangleMesh());
+  auto triMesh = new btTriangleMesh();
 
   for (auto i = 0u; i < mesh->mNumFaces; ++i)
   {
@@ -750,15 +738,13 @@ createBulletCollisionShapePackFromAssimpMesh(const aiMesh* mesh)
       const aiVector3D& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
       vertices[j] = btVector3(vertex.x, vertex.y, vertex.z);
     }
-    pack.triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
+    triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
   }
 
-  auto gimpactMeshShape = new btGImpactMeshShape(pack.triMesh.get());
+  auto gimpactMeshShape = new btGImpactMeshShape(triMesh);
   gimpactMeshShape->updateBound();
 
-  pack.collisionShape.reset(gimpactMeshShape);
-
-  return pack;
+  return gimpactMeshShape;
 }
 
 } // anonymous namespace

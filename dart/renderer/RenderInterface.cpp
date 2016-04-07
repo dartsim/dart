@@ -114,6 +114,11 @@ void RenderInterface::drawMesh(const Eigen::Vector3d& /*_scale*/, const aiScene*
 {
 }
 
+void RenderInterface::drawSoftMesh(const aiMesh* /*mesh*/)
+{
+  // Do nothing
+}
+
 void RenderInterface::drawList(unsigned int /*indeX*/)
 {
 }

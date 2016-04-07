@@ -42,12 +42,6 @@
 #include "dart/math/Helpers.h"
 
 namespace dart {
-namespace renderer {
-class RenderInterface;
-}  // namespace renderer
-}  // namespace dart
-
-namespace dart {
 namespace dynamics {
 
 class BodyNode;
@@ -88,12 +82,6 @@ public:
 
   /// Destructor
   virtual ~Marker();
-
-  /// Render this marker
-  void draw(renderer::RenderInterface* ri = nullptr,
-            bool offset = true,
-            const Eigen::Vector4d& color = Color::White(1.0),
-            bool useDefaultColor = true) const;
 
   /// Get the BodyNode this Marker belongs to
   BodyNode* getBodyNode();
@@ -136,6 +124,9 @@ public:
 
   /// Get constraint type. which will be useful for inverse kinematics
   ConstraintType getConstraintType() const;
+
+  /// Return color of this Marker
+  const Eigen::Vector4d& getColor() const;
 
   friend class Skeleton;
   friend class BodyNode;

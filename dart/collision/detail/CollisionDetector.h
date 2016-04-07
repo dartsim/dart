@@ -46,14 +46,23 @@ namespace collision {
 
 //==============================================================================
 template <typename... Args>
-std::shared_ptr<CollisionGroup> CollisionDetector::createCollisionGroup(
-    const Args&... args)
+std::unique_ptr<CollisionGroup>
+CollisionDetector::createCollisionGroup(const Args&... args)
 {
   auto group = createCollisionGroup();
 
-  group->registerShapeFrames(args...);
+  group->addShapeFramesOf(args...);
 
   return group;
+}
+
+//==============================================================================
+template <typename... Args>
+std::shared_ptr<CollisionGroup>
+CollisionDetector::createCollisionGroupAsSharedPtr(const Args&... args)
+{
+  return std::shared_ptr<CollisionGroup>(
+        createCollisionGroup(args...).release());
 }
 
 }  // namespace collision

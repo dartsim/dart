@@ -49,10 +49,10 @@
 
 #include "dart/dart.h"
 
-class MyWindow : public dart::gui::Win3D {
+class MyWindow : public dart::gui::SimWindow {
 public:
   /// \brief The constructor - set the position of the skeleton
-  explicit MyWindow(dart::dynamics::SkeletonPtr _skel): Win3D(), skel(_skel) {
+  explicit MyWindow(dart::dynamics::SkeletonPtr _skel): SimWindow(), skel(_skel) {
     mTrans[1] = 200.f;
     mZoom = 0.3;
   }

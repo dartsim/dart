@@ -47,9 +47,6 @@ namespace collision {
 /// Contact information
 struct Contact
 {
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   /// Contact point w.r.t. the world frame
   Eigen::Vector3d point;
 
