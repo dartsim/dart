@@ -53,12 +53,6 @@ public:
 
   friend class CollisionDetector;
 
-  struct BulletCollsionShapePack
-  {
-    std::shared_ptr<btCollisionShape> collisionShape;
-    std::shared_ptr<btTriangleMesh> triMesh;
-  };
-
   static std::shared_ptr<BulletCollisionDetector> create();
 
   /// Constructor
@@ -71,7 +65,7 @@ public:
   const std::string& getType() const override;
 
   // Documentation inherited
-  std::shared_ptr<CollisionGroup> createCollisionGroup() override;
+  std::unique_ptr<CollisionGroup> createCollisionGroup() override;
 
   // Documentation inherited
   bool detect(CollisionGroup* group,
@@ -91,25 +85,23 @@ protected:
       const dynamics::ShapeFrame* shapeFrame) override;
 
   // Documentation inherited
-  void notifyCollisionObjectDestorying(CollisionObject* collObj) override;
+  void notifyCollisionObjectDestorying(CollisionObject* object) override;
 
-  BulletCollsionShapePack claimBulletCollisionGeometry(
+private:
+
+  btCollisionShape* claimBulletCollisionShape(
       const dynamics::ConstShapePtr& shape);
 
-  // Documentation inherited
-  void reclaimBulletCollisionGeometry(const dynamics::ConstShapePtr& shape);
-
-  BulletCollsionShapePack createBulletCollisionShapePack(
+  void reclaimBulletCollisionShape(
       const dynamics::ConstShapePtr& shape);
 
-protected:
+  btCollisionShape* createBulletCollisionShape(
+      const dynamics::ConstShapePtr& shape);
 
-  using ShapeMapValue = std::pair<BulletCollsionShapePack, size_t>;
+private:
 
-  std::map<dynamics::ConstShapePtr, ShapeMapValue> mShapeMap;
-
-  std::map<btCollisionObject*,
-           BulletCollisionObject*> mBulletCollisionObjectMap;
+  std::map<dynamics::ConstShapePtr,
+           std::pair<btCollisionShape*, size_t>> mShapeMap;
 
 };
 

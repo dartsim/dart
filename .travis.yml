@@ -1,15 +1,21 @@
 language: cpp
+
 os:
   - linux
   - osx
+
 sudo: required
+
 dist: trusty
+
 compiler:
   - gcc
   - clang
+
 env:
   - BUILD_TYPE=Debug   COVERALLS=OFF
   - BUILD_TYPE=Release COVERALLS=OFF
+
 matrix:
   include:
     - os: linux
@@ -18,17 +24,19 @@ matrix:
   exclude:
     - os: osx
       compiler: gcc
-before_install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then 'ci/before_install_linux.sh' ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx"   ]; then 'ci/before_install_osx.sh'   ; fi
-install: 
-  - mkdir build
-  - cd build 
-  - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_COVERALLS=$COVERALLS ..
+
+install:
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then 'ci/install_linux.sh' ; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx"   ]; then 'ci/install_osx.sh'   ; fi
+
 script:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then '../ci/script_linux.sh' ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx"   ]; then '../ci/script_osx.sh'   ; fi
-after_failure:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then '../ci/after_failure_linux.sh' ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx"   ]; then '../ci/after_failure_osx.sh'   ; fi
+  - mkdir build && cd build
+  - cmake -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_COVERALLS=$COVERALLS ..
+  - make all
+  - if [ $BUILD_CORE_ONLY = OFF ]; then make tutorials examples tests test; fi
+  - if [ $COVERALLS = ON ]; then make coveralls; fi
+
+after_failure: 
+  - cat Testing/Temporary/LastTest.log
+  - cat Testing/Temporary/LastTestsFailed.log
 

@@ -48,12 +48,6 @@
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
-namespace renderer {
-class RenderInterface;
-} // namespace renderer
-} // namespace dart
-
-namespace dart {
 namespace dynamics {
 
 class Frame;
@@ -124,12 +118,6 @@ public:
 
   /// Return the name of this Entity
   virtual const std::string& getName() const;
-
-  /// Render this Entity
-  virtual void draw(renderer::RenderInterface* ri = nullptr,
-                    const Eigen::Vector4d& color = Eigen::Vector4d::Ones(),
-                    bool useDefaultColor = true,
-                    int depth = 0) const;
 
   /// Get the parent (reference) frame of this Entity
   Frame* getParentFrame();

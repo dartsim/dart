@@ -43,12 +43,6 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-CollisionObject::~CollisionObject()
-{
-  // Do nothing
-}
-
-//==============================================================================
 CollisionDetector* CollisionObject::getCollisionDetector()
 {
   return mCollisionDetector;

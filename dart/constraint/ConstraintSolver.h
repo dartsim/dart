@@ -173,7 +173,7 @@ private:
   std::shared_ptr<collision::CollisionDetector> mCollisionDetector;
 
   /// Collision group
-  std::shared_ptr<collision::CollisionGroup> mCollisionGroup;
+  std::unique_ptr<collision::CollisionGroup> mCollisionGroup;
 
   /// Last collision checking result
   collision::Option mCollisionOption;

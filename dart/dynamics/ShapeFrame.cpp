@@ -36,9 +36,6 @@
 
 #include "dart/dynamics/ShapeFrame.h"
 
-#include "dart/dynamics/ShapeNode.h"
-#include "dart/renderer/OpenGLRenderInterface.h"
-
 namespace dart {
 namespace dynamics {
 
@@ -165,7 +162,7 @@ CollisionAddon::CollisionAddon(
     const PropertiesData& properties)
   : AddonImplementation(mgr, properties)
 {
-//  mIsShapeNode = dynamic_cast<ShapeNode*>(mgr);
+  // Do nothing
 }
 
 //==============================================================================
@@ -278,27 +275,6 @@ ShapePtr ShapeFrame::getShape()
 ConstShapePtr ShapeFrame::getShape() const
 {
   return mShapeFrameP.mShape;
-}
-
-//==============================================================================
-void ShapeFrame::draw(renderer::RenderInterface* ri,
-                     const Eigen::Vector4d& color,
-                     bool useDefaultColor) const
-{
-  auto visualAddon = getVisualAddon();
-
-  if (!visualAddon || visualAddon->isHidden())
-    return;
-
-  ri->pushMatrix();
-  ri->transform(getRelativeTransform());
-
-  if (useDefaultColor)
-    mShapeFrameP.mShape->draw(ri, visualAddon->getRGBA());
-  else
-    mShapeFrameP.mShape->draw(ri, color);
-
-  ri->popMatrix();
 }
 
 //==============================================================================

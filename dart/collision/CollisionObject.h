@@ -52,7 +52,7 @@ public:
   friend class CollisionGroup;
 
   /// Destructor
-  virtual ~CollisionObject();
+  virtual ~CollisionObject() = default;
 
   /// Return collision detection engine associated with this CollisionObject
   CollisionDetector* getCollisionDetector();

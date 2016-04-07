@@ -54,7 +54,7 @@ public:
   virtual void timeStepping();
 
   /// \brief
-  virtual void drawSkels();
+  virtual void drawWorld() const override;
 
   /// \brief
   virtual void keyboard(unsigned char _key, int _x, int _y);

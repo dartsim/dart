@@ -58,7 +58,7 @@ public:
   const std::string& getType() const override;
 
   // Documentation inherited
-  std::shared_ptr<CollisionGroup> createCollisionGroup() override;
+  std::unique_ptr<CollisionGroup> createCollisionGroup() override;
 
   // Documentation inherited
   bool detect(CollisionGroup* group,
@@ -76,13 +76,6 @@ protected:
   // Documentation inherited
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
-
-  // Documentation inherited
-  void notifyCollisionObjectDestorying(CollisionObject* collObj) override;
-
-protected:
-
-  std::vector<DARTCollisionObject*> mDARTCollisionObjects;
 
 };
 

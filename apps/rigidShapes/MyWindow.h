@@ -63,7 +63,7 @@ public:
   virtual void keyboard(unsigned char key, int x, int y) override;
 
   // Documentation inherited
-  virtual void drawSkels() override;
+  virtual void drawWorld() const override;
 
   /// Spawn a box into the world
   void spawnBox(

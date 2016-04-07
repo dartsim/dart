@@ -56,7 +56,7 @@ public:
   virtual void timeStepping();
 
   // Documentation inherited
-  virtual void drawSkels();
+  virtual void drawWorld() const override;
 
   // Documentation inherited
   virtual void keyboard(unsigned char _key, int _x, int _y);

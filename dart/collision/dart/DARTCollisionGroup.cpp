@@ -46,13 +46,7 @@ DARTCollisionGroup::DARTCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
   : CollisionGroup(collisionDetector)
 {
-  assert(mCollisionDetector);
-}
-
-//==============================================================================
-DARTCollisionGroup::~DARTCollisionGroup()
-{
-  unregisterAllShapeFrames();
+  // Do nothing
 }
 
 //==============================================================================
@@ -62,33 +56,39 @@ void DARTCollisionGroup::initializeEngineData()
 }
 
 //==============================================================================
-void DARTCollisionGroup::notifyCollisionObjectAdded(CollisionObject* /*object*/)
+void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
-  // Do nothing
+  if (std::find(mCollisionObjects.begin(), mCollisionObjects.end(), object)
+      == mCollisionObjects.end())
+  {
+    mCollisionObjects.push_back(object);
+  }
 }
 
 //==============================================================================
-void DARTCollisionGroup::notifyCollisionObjectsAdded(
-    const std::vector<CollisionObject*>& /*collObjects*/)
+void DARTCollisionGroup::addCollisionObjectsToEngine(
+    const std::vector<CollisionObject*>& collObjects)
 {
-  // Do nothing
+  for (auto collObject : collObjects)
+    addCollisionObjectToEngine(collObject);
 }
 
 //==============================================================================
-void DARTCollisionGroup::notifyCollisionObjectRemoved(
-    CollisionObject* /*object*/)
+void DARTCollisionGroup::removeCollisionObjectFromEngine(
+    CollisionObject* object)
 {
-  // Do nothing
+  mCollisionObjects.erase(
+      std::remove(mCollisionObjects.begin(), mCollisionObjects.end(), object));
 }
 
 //==============================================================================
-void DARTCollisionGroup::notifyAllCollisionObjectsRemoved()
+void DARTCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
-  // Do nothing
+  mCollisionObjects.clear();
 }
 
 //==============================================================================
-void DARTCollisionGroup::updateEngineData()
+void DARTCollisionGroup::updateCollisionGroupEngineData()
 {
   // Do nothing
 }

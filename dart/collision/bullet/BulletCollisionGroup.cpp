@@ -55,13 +55,7 @@ BulletCollisionGroup::BulletCollisionGroup(
                            mBulletProadphaseAlg.get(),
                            mBulletCollisionConfiguration.get()))
 {
-  assert(mCollisionDetector);
-}
-
-//==============================================================================
-BulletCollisionGroup::~BulletCollisionGroup()
-{
-  unregisterAllShapeFrames();
+  // Do nothing
 }
 
 //==============================================================================
@@ -71,7 +65,7 @@ void BulletCollisionGroup::initializeEngineData()
 }
 
 //==============================================================================
-void BulletCollisionGroup::notifyCollisionObjectAdded(CollisionObject* object)
+void BulletCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
 {
   auto casted = static_cast<BulletCollisionObject*>(object);
 
@@ -81,7 +75,7 @@ void BulletCollisionGroup::notifyCollisionObjectAdded(CollisionObject* object)
 }
 
 //==============================================================================
-void BulletCollisionGroup::notifyCollisionObjectsAdded(
+void BulletCollisionGroup::addCollisionObjectsToEngine(
     const std::vector<CollisionObject*>& collObjects)
 {
   for (auto collObj : collObjects)
@@ -96,7 +90,7 @@ void BulletCollisionGroup::notifyCollisionObjectsAdded(
 }
 
 //==============================================================================
-void BulletCollisionGroup::notifyCollisionObjectRemoved(
+void BulletCollisionGroup::removeCollisionObjectFromEngine(
     CollisionObject* object)
 {
   auto casted = static_cast<BulletCollisionObject*>(object);
@@ -108,16 +102,16 @@ void BulletCollisionGroup::notifyCollisionObjectRemoved(
 }
 
 //==============================================================================
-void BulletCollisionGroup::notifyAllCollisionObjectsRemoved()
+void BulletCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
-  for (const auto& collisionObject : getCollisionObjects())
-    notifyCollisionObjectRemoved(collisionObject);
+  for (const auto& pair : mShapeFrameMap)
+    removeCollisionObjectFromEngine(pair.second.get());
 
   initializeEngineData();
 }
 
 //==============================================================================
-void BulletCollisionGroup::updateEngineData()
+void BulletCollisionGroup::updateCollisionGroupEngineData()
 {
   mBulletCollisionWorld->updateAabbs();
 }

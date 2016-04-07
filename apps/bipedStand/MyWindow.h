@@ -53,7 +53,7 @@ public:
   virtual ~MyWindow();
 
   virtual void timeStepping();
-  virtual void drawSkels();
+  virtual void drawWorld() const override;
   virtual void keyboard(unsigned char _key, int _x, int _y);
 
   void setController(Controller* _controller);
