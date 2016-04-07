@@ -95,12 +95,12 @@ public:
       const Args&... args);
 
   /// Perform collision detection for group.
-  virtual bool detect(CollisionGroup* group,
-                      const Option& option, Result& result) = 0;
+  virtual bool collide(CollisionGroup* group,
+                       const Option& option, Result& result) = 0;
 
   /// Perform collision detection for group1-group2.
-  virtual bool detect(CollisionGroup* group1, CollisionGroup* group2,
-                      const Option& option, Result& result) = 0;
+  virtual bool collide(CollisionGroup* group1, CollisionGroup* group2,
+                       const Option& option, Result& result) = 0;
 
 protected:
 

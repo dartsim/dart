@@ -607,7 +607,7 @@ FCLCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-bool FCLCollisionDetector::detect(
+bool FCLCollisionDetector::collide(
     CollisionGroup* group, const Option& option, Result& result)
 {
   result.clear();
@@ -635,7 +635,7 @@ bool FCLCollisionDetector::detect(
 }
 
 //==============================================================================
-bool FCLCollisionDetector::detect(
+bool FCLCollisionDetector::collide(
     CollisionGroup* group1, CollisionGroup* group2,
     const Option& option, Result& result)
 {

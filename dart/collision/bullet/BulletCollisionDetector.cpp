@@ -171,7 +171,7 @@ BulletCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-bool BulletCollisionDetector::detect(
+bool BulletCollisionDetector::collide(
     CollisionGroup* group, const Option& option, Result& result)
 {
   result.clear();
@@ -192,6 +192,8 @@ bool BulletCollisionDetector::detect(
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
   auto filterCallback = new BulletOverlapFilterCallback(option, result);
 
+  bulletCollisionWorld->getPairCache()->processAllOverlappingPairs();
+
   bulletPairCache->setOverlapFilterCallback(filterCallback);
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
@@ -201,7 +203,7 @@ bool BulletCollisionDetector::detect(
 }
 
 //==============================================================================
-bool BulletCollisionDetector::detect(
+bool BulletCollisionDetector::collide(
     CollisionGroup* group1, CollisionGroup* group2,
     const Option& option, Result& result)
 {

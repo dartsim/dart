@@ -89,7 +89,7 @@ DARTCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-bool DARTCollisionDetector::detect(
+bool DARTCollisionDetector::collide(
     CollisionGroup* group,
     const Option& option, Result& result)
 {
@@ -142,7 +142,7 @@ bool DARTCollisionDetector::detect(
 }
 
 //==============================================================================
-bool DARTCollisionDetector::detect(
+bool DARTCollisionDetector::collide(
     CollisionGroup* group1,
     CollisionGroup* group2,
     const Option& option, Result& result)
