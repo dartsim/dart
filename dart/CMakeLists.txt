@@ -81,5 +81,5 @@ endif()
 # Setup the coveralls target and tell it to gather
 # coverage data for all the lib sources.
 if(DART_COVERALLS)
-  coveralls_setup(${dart_coveralls_files} ${DART_COVERALLS_UPLOAD})
+  coveralls_setup("${dart_coveralls_files}" ${DART_COVERALLS_UPLOAD})
 endif()
