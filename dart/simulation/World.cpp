@@ -499,7 +499,7 @@ bool World::checkCollision(bool checkAllCollisions)
 
   collision::Result result;
 
-  return mConstraintSolver->getCollisionGroup()->detect(option, result);
+  return mConstraintSolver->getCollisionGroup()->collide(option, result);
 }
 
 //==============================================================================

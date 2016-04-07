@@ -192,8 +192,6 @@ bool BulletCollisionDetector::collide(
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
   auto filterCallback = new BulletOverlapFilterCallback(option, result);
 
-  bulletCollisionWorld->getPairCache()->processAllOverlappingPairs();
-
   bulletPairCache->setOverlapFilterCallback(filterCallback);
   bulletCollisionWorld->performDiscreteCollisionDetection();
 

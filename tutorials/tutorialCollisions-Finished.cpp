@@ -219,7 +219,7 @@ protected:
 
     dart::collision::Option option;
     dart::collision::Result result;
-    bool collision = collisionGroup->detect(newGroup.get(), option, result);
+    bool collision = collisionGroup->collide(newGroup.get(), option, result);
 
     // If the new object is not in collision
     if(!collision)
