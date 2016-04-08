@@ -34,6 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+// Must be included before any Bullet headers.
+#include "dart/config.h"
+
 #include "dart/collision/bullet/BulletCollisionNode.h"
 
 #include <iostream>
