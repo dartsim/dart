@@ -275,11 +275,6 @@ public:
 
   DART_BAKE_SPECIALIZED_ASPECT(DynamicsAspect)
 
-  /// Render this Entity
-  virtual void draw(renderer::RenderInterface* ri = nullptr,
-                    const Eigen::Vector4d& color = Eigen::Vector4d::Ones(),
-                    bool useDefaultColor = true) const;
-
 protected:
 
   /// Constructor

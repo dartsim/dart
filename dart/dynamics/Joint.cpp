@@ -41,7 +41,6 @@
 
 #include "dart/common/Console.h"
 #include "dart/math/Helpers.h"
-#include "dart/renderer/RenderInterface.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/Skeleton.h"
@@ -433,12 +432,6 @@ const Eigen::Isometry3d& Joint::getTransformFromParentBodyNode() const
 const Eigen::Isometry3d& Joint::getTransformFromChildBodyNode() const
 {
   return mAspectProperties.mT_ChildBodyToJoint;
-}
-
-//==============================================================================
-void Joint::applyGLTransform(renderer::RenderInterface* _ri)
-{
-  _ri->transform(getLocalTransform());
 }
 
 //==============================================================================

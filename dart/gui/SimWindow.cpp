@@ -47,12 +47,20 @@
 
 #include "dart/simulation/World.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/CylinderShape.h"
+#include "dart/dynamics/PlaneShape.h"
+#include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/SoftMeshShape.h"
+#include "dart/dynamics/LineSegmentShape.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/gui/LoadGlut.h"
 #include "dart/gui/GLFuncs.h"
-#include "dart/utils/FileInfoWorld.h"
 #include "dart/gui/GraphWindow.h"
+#include "dart/utils/FileInfoWorld.h"
 
 namespace dart {
 namespace gui {
@@ -67,6 +75,7 @@ SimWindow::SimWindow()
   mPlay = false;
   mSimulating = false;
   mPlayFrame = 0;
+  mShowPointMasses = false;
   mShowMarkers = true;
   mPersp = 45.f;
   mTrans[1] = 300.f;
@@ -82,21 +91,32 @@ void SimWindow::timeStepping() {
 }
 
 //==============================================================================
-void SimWindow::drawSkels()
+void SimWindow::drawWorld() const
 {
-  for (size_t i = 0; i < mWorld->getNumSkeletons(); ++i)
-  {
-    mWorld->getSkeleton(i)->draw(mRI);
+  drawSkeletons();
 
-    if (mShowMarkers)
-      mWorld->getSkeleton(i)->drawMarkers(mRI);
-  }
+  for (auto i = 0u; i < mWorld->getNumSimpleFrames(); ++i)
+    drawShapeFrame(mWorld->getSimpleFrame(i).get());
 }
 
+//==============================================================================
+void SimWindow::drawSkeletons() const
+{
+  for (auto i = 0u; i < mWorld->getNumSkeletons(); ++i)
+    drawSkeleton(mWorld->getSkeleton(i).get());
+}
+
+//==============================================================================
+void SimWindow::drawSkels()
+{
+  drawSkeletons();
+}
+
+//==============================================================================
 void SimWindow::drawEntities()
 {
   for (size_t i = 0; i < mWorld->getNumSimpleFrames(); ++i)
-    mWorld->getSimpleFrame(i)->draw(mRI);
+    drawShapeFrame(mWorld->getSimpleFrame(i).get());
 }
 
 void SimWindow::displayTimer(int _val) {
@@ -164,8 +184,8 @@ void SimWindow::draw() {
       }
     }
   }
-  drawSkels();
-  drawEntities();
+
+  drawWorld();
 
   // display the frame count in 2D text
   char buff[64];
@@ -248,6 +268,279 @@ void SimWindow::plot(Eigen::VectorXd& _data) {
   figure->setData(_data);
   figure->initWindow(480, 240, "figure");
   mGraphWindows.push_back(figure);
+}
+
+//==============================================================================
+void SimWindow::drawSkeleton(const dynamics::Skeleton* skeleton,
+                             const Eigen::Vector4d& color,
+                             bool useDefaultColor) const
+{
+  if (!skeleton)
+    return;
+
+  for (auto i = 0u; i < skeleton->getNumTrees(); ++i)
+    drawBodyNode(skeleton->getRootBodyNode(i), color, useDefaultColor, true);
+}
+
+//==============================================================================
+void SimWindow::drawEntity(const dynamics::Entity* entity,
+                           const Eigen::Vector4d& color,
+                           bool useDefaultColor) const
+{
+  if (!entity)
+    return;
+
+  const auto& bodyNode = dynamic_cast<const dynamics::BodyNode*>(entity);
+  if (bodyNode)
+  {
+    drawBodyNode(bodyNode, color, useDefaultColor, true);
+    return;
+  }
+
+  const auto& shapeFrame = dynamic_cast<const dynamics::ShapeFrame*>(entity);
+  if (shapeFrame)
+  {
+    drawShapeFrame(shapeFrame, color, useDefaultColor);
+    return;
+  }
+}
+
+//==============================================================================
+void SimWindow::drawBodyNode(const dynamics::BodyNode* bodyNode,
+                             const Eigen::Vector4d& color,
+                             bool useDefaultColor,
+                             bool recursive) const
+{
+  if (!bodyNode)
+    return;
+
+  if (!mRI)
+    return;
+
+  mRI->pushMatrix();
+
+  // Use the relative transform of this Frame. We assume that we are being
+  // called from the parent Frame's renderer.
+  // TODO(MXG): This can cause trouble if the draw function is originally called
+  // on an Entity or Frame which is not a child of the World Frame
+  mRI->transform(bodyNode->getRelativeTransform());
+
+  // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
+  auto shapeNodes = bodyNode->getShapeNodesWith<dynamics::VisualAspect>();
+  for (const auto& shapeNode : shapeNodes)
+    drawShapeFrame(shapeNode, color, useDefaultColor);
+  // _ri.popName();
+
+  if (mShowPointMasses)
+  {
+    const auto& softBodyNode
+        = dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode);
+    if (softBodyNode)
+      drawPointMasses(softBodyNode->getPointMasses(), color);
+  }
+
+  if (mShowMarkers)
+  {
+    for (auto i = 0u; i < bodyNode->getNumMarkers(); ++i)
+      drawMarker(bodyNode->getMarker(i));
+  }
+
+  // render the subtree
+  if (recursive)
+  {
+    for (const auto& entity : bodyNode->getChildEntities())
+      drawEntity(entity, color, useDefaultColor);
+  }
+
+  mRI->popMatrix();
+}
+
+//==============================================================================
+void SimWindow::drawShapeFrame(const dynamics::ShapeFrame* shapeFrame,
+                               const Eigen::Vector4d& color,
+                               bool useDefaultColor) const
+{
+  if (!shapeFrame)
+    return;
+
+  if (!mRI)
+    return;
+
+  const auto& visualAddon = shapeFrame->getVisualAspect();
+
+  if (!visualAddon || visualAddon->isHidden())
+    return;
+
+  mRI->pushMatrix();
+  mRI->transform(shapeFrame->getRelativeTransform());
+
+  if (useDefaultColor)
+    drawShape(shapeFrame->getShape().get(), visualAddon->getRGBA());
+  else
+    drawShape(shapeFrame->getShape().get(), color);
+
+  mRI->popMatrix();
+}
+
+//==============================================================================
+void SimWindow::drawShape(const dynamics::Shape* shape,
+                          const Eigen::Vector4d& color) const
+{
+  if (!shape)
+    return;
+
+  if (!mRI)
+    return;
+
+  glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+  glEnable(GL_COLOR_MATERIAL);
+
+  mRI->setPenColor(color);
+
+  using dynamics::Shape;
+  using dynamics::BoxShape;
+  using dynamics::EllipsoidShape;
+  using dynamics::CylinderShape;
+  using dynamics::PlaneShape;
+  using dynamics::MeshShape;
+  using dynamics::SoftMeshShape;
+  using dynamics::LineSegmentShape;
+
+  switch (shape->getShapeType())
+  {
+    case Shape::BOX:
+    {
+      const auto& box = static_cast<const BoxShape*>(shape);
+      mRI->drawCube(box->getSize());
+
+      break;
+    }
+    case Shape::ELLIPSOID:
+    {
+      const auto& ellipsoid = static_cast<const EllipsoidShape*>(shape);
+      mRI->drawEllipsoid(ellipsoid->getSize());
+
+      break;
+    }
+    case Shape::CYLINDER:
+    {
+      const auto& cylinder = static_cast<const CylinderShape*>(shape);
+      mRI->drawCylinder(cylinder->getRadius(), cylinder->getHeight());
+
+      break;
+    }
+    case Shape::MESH:
+    {
+      const auto& mesh = static_cast<const MeshShape*>(shape);
+
+      glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
+
+      if (mesh->getDisplayList())
+        mRI->drawList(mesh->getDisplayList());
+      else
+        mRI->drawMesh(mesh->getScale(), mesh->getMesh());
+
+      break;
+    }
+    case Shape::SOFT_MESH:
+    {
+      const auto& softMesh = static_cast<const SoftMeshShape*>(shape);
+      mRI->drawSoftMesh(softMesh->getAssimpMesh());
+
+      break;
+    }
+    case Shape::LINE_SEGMENT:
+    {
+      const auto& lineSegmentShape
+          = static_cast<const LineSegmentShape*>(shape);
+      mRI->drawLineSegments(lineSegmentShape->getVertices(),
+                            lineSegmentShape->getConnections());
+
+      break;
+    }
+    default:
+    {
+      dterr << "[SimWindow::drawShape] Attempting to draw unsupported shape "
+            << "type '" << shape->getShapeType() << "'.\n";
+      break;
+    }
+  }
+
+  glDisable(GL_COLOR_MATERIAL);
+}
+
+//==============================================================================
+void SimWindow::drawPointMasses(
+    const std::vector<dynamics::PointMass*> pointMasses,
+    const Eigen::Vector4d& color,
+    bool useDefaultColor) const
+{
+  if (!mRI)
+    return;
+
+  for (const auto& pointMass : pointMasses)
+  {
+    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+
+    // render point at the current position
+    mRI->pushMatrix();
+    T.translation() = pointMass->getLocalPosition();
+    mRI->transform(T);
+    if (useDefaultColor)
+      mRI->setPenColor(Eigen::Vector4d(0.8, 0.3, 0.3, 1.0));
+    else
+      mRI->setPenColor(color);
+    mRI->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
+    mRI->popMatrix();
+
+    // render point at the resting position
+    mRI->pushMatrix();
+    T.translation() = pointMass->getRestingPosition();
+    mRI->transform(T);
+    if (useDefaultColor)
+      mRI->setPenColor(Eigen::Vector4d(0.8, 0.3, 0.3, 1.0));
+    else
+      mRI->setPenColor(color);
+    mRI->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
+    mRI->popMatrix();
+  }
+}
+
+//==============================================================================
+void SimWindow::drawMarker(const dynamics::Marker* marker,
+                           const Eigen::Vector4d& color,
+                           bool useDefaultColor) const
+{
+  if (!marker)
+    return;
+
+  if (!mRI)
+    return;
+
+  mRI->pushName(marker->getID());
+
+  if (marker->getConstraintType() == dynamics::Marker::HARD)
+  {
+    mRI->setPenColor(Color::Red(1.0));
+  }
+  else if (marker->getConstraintType() == dynamics::Marker::SOFT)
+  {
+    mRI->setPenColor(Color::Green(1.0));
+  }
+  else
+  {
+    if (useDefaultColor)
+      mRI->setPenColor(marker->getColor());
+    else
+      mRI->setPenColor(color);
+  }
+
+  mRI->pushMatrix();
+  mRI->translate(marker->getLocalPosition());
+  mRI->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
+  mRI->popMatrix();
+
+  mRI->popName();
 }
 
 }  // namespace gui

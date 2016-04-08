@@ -37,7 +37,6 @@
 
 #include <cmath>
 #include "dart/dynamics/BoxShape.h"
-#include "dart/renderer/RenderInterface.h"
 
 namespace dart {
 namespace dynamics {
@@ -87,17 +86,6 @@ void BoxShape::setSize(const Eigen::Vector3d& _size) {
 
 const Eigen::Vector3d& BoxShape::getSize() const {
   return mSize;
-}
-
-//==============================================================================
-void BoxShape::draw(renderer::RenderInterface* _ri,
-                    const Eigen::Vector4d& _color) const
-{
-  if (!_ri)
-    return;
-
-  _ri->setPenColor(_color);
-  _ri->drawCube(mBoundingBox.computeFullExtents());
 }
 
 //==============================================================================

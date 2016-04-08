@@ -81,7 +81,7 @@ void MyWindow::timeStepping()
 }
 
 //==============================================================================
-void MyWindow::drawSkels()
+void MyWindow::drawWorld() const
 {
   // Draw the target position
   if (mRI)
@@ -93,8 +93,8 @@ void MyWindow::drawSkels()
     mRI->popMatrix();
   }
 
-  // Draw skeletons
-  SimWindow::drawSkels();
+  // Draw world
+  SimWindow::drawWorld();
 }
 
 //==============================================================================

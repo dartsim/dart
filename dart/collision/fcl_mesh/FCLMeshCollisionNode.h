@@ -102,9 +102,6 @@ public:
                                  Eigen::Vector3d* _contactPosition1,
                                  Eigen::Vector3d* _contactPosition2);
 
-  ///
-  void drawCollisionSkeletonNode(bool _bTrans = true);
-
 private:
   ///
   static int FFtest(

@@ -41,8 +41,6 @@
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/Shape.h"
 
-#include "dart/renderer/RenderInterface.h"
-
 namespace dart {
 namespace dynamics {
 
@@ -82,15 +80,6 @@ Entity::Entity()
 Entity::~Entity()
 {
   changeParentFrame(nullptr);
-}
-
-//==============================================================================
-void Entity::draw(renderer::RenderInterface* /*_ri*/,
-                  const Eigen::Vector4d& /*_color*/,
-                  bool /*_useDefaultColor*/,
-                  int /*depth*/) const
-{
-  // Do nothing
 }
 
 //==============================================================================

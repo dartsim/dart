@@ -52,12 +52,6 @@
 #include "dart/dynamics/detail/SkeletonAspect.h"
 
 namespace dart {
-namespace renderer {
-class RenderInterface;
-}  // namespace renderer
-}  // namespace dart
-
-namespace dart {
 namespace dynamics {
 
 /// class Skeleton
@@ -883,20 +877,6 @@ public:
       const Frame* _inCoordinatesOf = Frame::World()) const override;
 
   /// \}
-
-  //----------------------------------------------------------------------------
-  // Rendering
-  //----------------------------------------------------------------------------
-
-  /// Draw this skeleton
-  void draw(renderer::RenderInterface* _ri = nullptr,
-            const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-            bool _useDefaultColor = true) const;
-
-  /// Draw markers in this skeleton
-  void drawMarkers(renderer::RenderInterface* _ri = nullptr,
-                   const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-                   bool _useDefaultColor = true) const;
 
   //----------------------------------------------------------------------------
   // Friendship

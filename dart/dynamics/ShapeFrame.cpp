@@ -36,8 +36,6 @@
 
 #include "dart/dynamics/ShapeFrame.h"
 
-#include "dart/renderer/OpenGLRenderInterface.h"
-
 namespace dart {
 namespace dynamics {
 
@@ -230,27 +228,6 @@ ShapePtr ShapeFrame::getShape()
 ConstShapePtr ShapeFrame::getShape() const
 {
   return ShapeFrame::mAspectProperties.mShape;
-}
-
-//==============================================================================
-void ShapeFrame::draw(renderer::RenderInterface* ri,
-                     const Eigen::Vector4d& color,
-                     bool useDefaultColor) const
-{
-  auto visualAspect = getVisualAspect();
-
-  if (!visualAspect || visualAspect->isHidden())
-    return;
-
-  ri->pushMatrix();
-  ri->transform(getRelativeTransform());
-
-  if (useDefaultColor)
-    ShapeFrame::mAspectProperties.mShape->draw(ri, visualAspect->getRGBA());
-  else
-    ShapeFrame::mAspectProperties.mShape->draw(ri, color);
-
-  ri->popMatrix();
 }
 
 //==============================================================================

@@ -131,6 +131,9 @@ public:
   /// \brief
   const PointMass* getPointMass(size_t _idx) const;
 
+  /// Return all the point masses in this SoftBodyNode
+  const std::vector<PointMass*>& getPointMasses() const;
+
   /// \brief
   void connectPointMasses(size_t _idx1, size_t _idx2);
 
@@ -288,14 +291,6 @@ protected:
   virtual void clearExternalForces() override;
 
   virtual void clearInternalForces() override;
-
-  //--------------------------------------------------------------------------
-  // Rendering
-  //--------------------------------------------------------------------------
-  /// \brief Render the entire subtree rooted at this body node.
-  virtual void draw(renderer::RenderInterface* _ri = nullptr,
-                    const Eigen::Vector4d& _color = Eigen::Vector4d::Ones(),
-                    bool _useDefaultColor = true, int _depth = 0) const override;
 
 protected:
 

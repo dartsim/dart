@@ -88,7 +88,8 @@ void VersionCounter::setVersionDependentObject(VersionCounter* dependent)
       return;
     }
 
-  } while( (next = next->mDependent) );
+    next = next->mDependent;
+  } while(next);
 
   mDependent = dependent;
 }

@@ -39,7 +39,6 @@
 #include <string>
 
 #include "dart/dynamics/BodyNode.h"
-#include "dart/renderer/RenderInterface.h"
 
 namespace dart {
 namespace dynamics {
@@ -74,48 +73,6 @@ Marker::Marker(const std::string& name,
 Marker::~Marker()
 {
   // Do nothing
-}
-
-//==============================================================================
-void Marker::draw(renderer::RenderInterface* ri,
-                  bool offset,
-                  const Eigen::Vector4d& color,
-                  bool useDefaultColor) const
-{
-  if (!ri)
-    return;
-
-  ri->pushName(getID());
-
-  if (mProperties.mType == HARD)
-  {
-    ri->setPenColor(Color::Red(1.0));
-  }
-  else if (mProperties.mType == SOFT)
-  {
-    ri->setPenColor(Color::Green(1.0));
-  }
-  else
-  {
-    if (useDefaultColor)
-      ri->setPenColor(mProperties.mColor);
-    else
-      ri->setPenColor(color);
-  }
-
-  if (offset)
-  {
-    ri->pushMatrix();
-    ri->translate(mProperties.mOffset);
-    ri->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
-    ri->popMatrix();
-  }
-  else
-  {
-    ri->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
-  }
-
-  ri->popName();
 }
 
 //==============================================================================
@@ -194,6 +151,12 @@ void Marker::setConstraintType(Marker::ConstraintType type)
 Marker::ConstraintType Marker::getConstraintType() const
 {
   return mProperties.mType;
+}
+
+//==============================================================================
+const Eigen::Vector4d& Marker::getColor() const
+{
+  return mProperties.mColor;
 }
 
 //==============================================================================

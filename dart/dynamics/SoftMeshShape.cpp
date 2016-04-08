@@ -79,12 +79,6 @@ Eigen::Matrix3d SoftMeshShape::computeInertia(double /*mass*/) const
   return Eigen::Matrix3d::Zero();
 }
 
-void SoftMeshShape::draw(renderer::RenderInterface* /*ri*/,
-                         const Eigen::Vector4d& /*col*/) const
-{
-  // TODO(JS): Not implemented.
-}
-
 void SoftMeshShape::updateVolume()
 {
   // TODO(JS): Not implemented.

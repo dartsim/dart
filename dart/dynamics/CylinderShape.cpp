@@ -36,7 +36,6 @@
 
 #include <cmath>
 #include "dart/dynamics/CylinderShape.h"
-#include "dart/renderer/RenderInterface.h"
 
 namespace dart {
 namespace dynamics {
@@ -71,17 +70,6 @@ void CylinderShape::setHeight(double _height) {
   mHeight = _height;
   _updateBoundingBoxDim();
   updateVolume();
-}
-
-//==============================================================================
-void CylinderShape::draw(renderer::RenderInterface* ri,
-                         const Eigen::Vector4d& color) const
-{
-  if (!ri)
-    return;
-
-  ri->setPenColor(color);
-  ri->drawCylinder(mRadius, mHeight);
 }
 
 //==============================================================================
