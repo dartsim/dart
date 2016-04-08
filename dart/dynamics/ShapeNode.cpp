@@ -41,36 +41,15 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-ShapeNode::Properties::Properties(
-    const ShapeFrame::AspectProperties& shapeFrameProperties,
-    const FixedFrame::AspectProperties& fixedFrameProperties,
-    const NameAspect::Properties& name,
-    const CompositeProperties& compositeProperties)
-  : ShapeFrame::AspectProperties(shapeFrameProperties),
-    FixedFrame::AspectProperties(fixedFrameProperties),
-    NameAspect::Properties(name),
-    mCompositeProperties(compositeProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
 void ShapeNode::setProperties(const Properties& properties)
 {
-  setCompositeProperties(properties.mCompositeProperties);
-  ShapeFrame::setAspectProperties(properties);
-  FixedFrame::setAspectProperties(
-        static_cast<const FixedFrame::AspectProperties&>(properties));
-  get<NameAspect>()->setProperties(properties);
+  setCompositeProperties(properties);
 }
 
 //==============================================================================
 const ShapeNode::Properties ShapeNode::getShapeNodeProperties() const
 {
-  return Properties(ShapeFrame::getAspectProperties(),
-                    FixedFrame::getAspectProperties(),
-                    getName(),
-                    getCompositeProperties());
+  return getCompositeProperties();
 }
 
 //==============================================================================
@@ -157,12 +136,13 @@ Eigen::Vector3d ShapeNode::getOffset() const
 }
 
 //==============================================================================
-ShapeNode::ShapeNode(BodyNode* bodyNode, const Properties& properties)
+ShapeNode::ShapeNode(BodyNode* bodyNode, const BasicProperties& properties)
   : Entity(ConstructFrame),
     Frame(bodyNode),
     FixedFrame(bodyNode),
     detail::ShapeNodeCompositeBase(
-      std::make_tuple(bodyNode, properties.mRelativeTf), bodyNode)
+      std::make_tuple(bodyNode, properties.mRelativeTf),
+      bodyNode, properties)
 {
   setProperties(properties);
 }
@@ -175,14 +155,11 @@ ShapeNode::ShapeNode(BodyNode* bodyNode,
     Frame(bodyNode),
     FixedFrame(bodyNode),
     detail::ShapeNodeCompositeBase(
-      std::make_tuple(bodyNode, Eigen::Isometry3d::Identity()), bodyNode)
+      std::make_tuple(bodyNode, Eigen::Isometry3d::Identity()),
+      std::make_tuple(bodyNode, ShapeFrame::Properties(shape)))
 {
   // TODO(MXG): Consider changing this to a delegating constructor instead
-  Properties prop;
-  prop.mShape = shape;
-  prop.mName = name;
-
-  setProperties(prop);
+  setName(name);
 }
 
 //==============================================================================

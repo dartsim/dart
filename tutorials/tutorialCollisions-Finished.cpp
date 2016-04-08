@@ -372,7 +372,7 @@ BodyNode* addRigidBody(const SkeletonPtr& chain, const std::string& name,
 
   // Create the Joint and Body pair
   BodyNode* bn = chain->createJointAndBodyNodePair<JointType>(
-        parent, properties, BodyNode::Properties(name)).second;
+        parent, properties, BodyNode::AspectProperties(name)).second;
 
   // Make the shape based on the requested Shape type
   ShapePtr shape;
@@ -484,7 +484,7 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
   soft_properties.mDampCoeff = default_soft_damping;
 
   // Create the Joint and Body pair
-  SoftBodyNode::Properties body_properties(BodyNode::Properties(name),
+  SoftBodyNode::Properties body_properties(BodyNode::AspectProperties(name),
                                            soft_properties);
   SoftBodyNode* bn = chain->createJointAndBodyNodePair<JointType, SoftBodyNode>(
         parent, joint_properties, body_properties).second;

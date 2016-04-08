@@ -52,7 +52,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
   SkeletonPtr robot = Skeleton::create();
 
   // Create the first link
-  BodyNode::Properties node(std::string("link1"));
+  BodyNode::Properties node(BodyNode::AspectProperties("link1"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim1));
 
@@ -62,7 +62,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
         shape);
 
   // Create the second link
-  node = BodyNode::Properties(std::string("link2"));
+  node = BodyNode::Properties(BodyNode::AspectProperties("link2"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
   shape = std::shared_ptr<Shape>(new BoxShape(dim2));
 

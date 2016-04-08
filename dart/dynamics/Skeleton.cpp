@@ -519,6 +519,18 @@ Skeleton::Configuration Skeleton::getConfiguration(
 }
 
 //==============================================================================
+void Skeleton::setState(const State& state)
+{
+  setCompositeState(state);
+}
+
+//==============================================================================
+Skeleton::State Skeleton::getState() const
+{
+  return getCompositeState();
+}
+
+//==============================================================================
 void Skeleton::setProperties(const Properties& properties)
 {
   setCompositeProperties(properties);
@@ -1318,41 +1330,6 @@ DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, ShapeNode )
 
 //==============================================================================
 DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, EndEffector )
-
-//==============================================================================
-void Skeleton::setState(const Eigen::VectorXd& _state)
-{
-  assert(_state.size() % 2 == 0);
-
-  size_t index = 0;
-  size_t halfSize = _state.size() / 2;
-  Joint* joint;
-
-  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-  {
-    joint = mSkelCache.mBodyNodes[i]->getParentJoint();
-
-    const size_t dof = joint->getNumDofs();
-
-    if (dof)
-    {
-      joint->setPositions(_state.segment(index, dof));
-      joint->setVelocities(_state.segment(index + halfSize, dof));
-
-      index += dof;
-    }
-  }
-}
-
-//==============================================================================
-Eigen::VectorXd Skeleton::getState() const
-{
-  Eigen::VectorXd state(2 * getNumDofs());
-
-  state << getPositions(), getVelocities();
-
-  return state;
-}
 
 //==============================================================================
 void Skeleton::integratePositions(double _dt)

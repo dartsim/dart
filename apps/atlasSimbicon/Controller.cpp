@@ -73,7 +73,8 @@ Controller::Controller(SkeletonPtr _atlasRobot,
 //  harnessLeftFoot();
 //  harnessRightFoot();
 
-  mInitialState = mAtlasRobot->getState();
+  mInitialState = mAtlasRobot->getConfiguration(
+        Skeleton::CONFIG_POSITIONS | Skeleton::CONFIG_VELOCITIES);
 }
 
 //==============================================================================
@@ -303,7 +304,7 @@ void Controller::unharnessRightFoot()
 //==============================================================================
 void Controller::resetRobot()
 {
-  mAtlasRobot->setState(mInitialState);
+  mAtlasRobot->setConfiguration(mInitialState);
 
   dtmsg << "Robot is reset." << std::endl;
 }

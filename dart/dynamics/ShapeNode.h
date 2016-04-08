@@ -79,25 +79,13 @@ public:
                             const Eigen::Isometry3d& oldTransform,
                             const Eigen::Isometry3d& newTransform)>;
 
-  using CompositeProperties = common::Composite::Properties;
+  using BasicProperties = common::Composite::MakeProperties<
+      NameAspect,
+      FixedFrame,
+      ShapeFrame>;
 
-  struct Properties :
-      ShapeFrame::AspectProperties,
-      FixedFrame::AspectProperties,
-      NameAspect::Properties
-  {
-    /// Composed constructor
-    Properties(
-        const ShapeFrame::AspectProperties& shapeFrameProperties
-            = ShapeFrame::AspectProperties(),
-        const FixedFrame::AspectProperties& fixedFrameProperties
-            = FixedFrame::AspectProperties(),
-        const NameAspect::Properties& name = "ShapeNode",
-        const CompositeProperties& compositeProperties = CompositeProperties());
+  using Properties = common::Composite::Properties;
 
-    /// The properties of the ShapeNode's Aspects
-    CompositeProperties mCompositeProperties;
-  };
 
   /// Destructor
   virtual ~ShapeNode() = default;
@@ -141,7 +129,7 @@ public:
 protected:
 
   /// Constructor used by the Skeleton class
-  ShapeNode(BodyNode* bodyNode, const Properties& properties);
+  ShapeNode(BodyNode* bodyNode, const BasicProperties& properties);
 
   /// Constructor used by the Skeleton class
   ShapeNode(BodyNode* bodyNode, const ShapePtr& shape,

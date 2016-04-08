@@ -338,7 +338,7 @@ void BodyNode::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 BodyNode::Properties BodyNode::getBodyNodeProperties() const
 {
-  return mAspectProperties;
+  return getCompositeProperties();
 }
 
 //==============================================================================
@@ -895,7 +895,7 @@ const Joint* BodyNode::getChildJoint(size_t _index) const
 //==============================================================================
 ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape)
 {
-  ShapeNode::Properties properties;
+  ShapeNode::BasicProperties properties;
   properties.mShape = shape;
 
   return createShapeNode(properties, true);
@@ -905,7 +905,7 @@ ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape)
 ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
                                      const std::string& name)
 {
-  ShapeNode::Properties properties;
+  ShapeNode::BasicProperties properties;
   properties.mShape = shape;
   properties.mName = name;
 
@@ -973,7 +973,7 @@ void BodyNode::removeAllShapeNodes()
 //==============================================================================
 EndEffector* BodyNode::createEndEffector(const std::string& _name)
 {
-  EndEffector::Properties properties;
+  EndEffector::BasicProperties properties;
   properties.mName = _name;
 
   return createNode<EndEffector>(properties);

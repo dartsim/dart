@@ -104,7 +104,7 @@ public:
   using NodePropertiesMap = detail::NodePropertiesMap;
 
   using AspectProperties = detail::BodyNodeAspectProperties;
-  using Properties = detail::BodyNodeProperties;
+  using Properties = common::Composite::MakeProperties<BodyNode>;
 
   BodyNode(const BodyNode&) = delete;
 

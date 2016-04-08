@@ -587,7 +587,7 @@ TEST(Aspect, StateAndProperties)
 
   mgr1.createAspect<StateAspectTest>();
 
-  // ---- Test state transfer ----
+  // ---- Test State Transfer ----
 
   mgr2.setCompositeState(mgr1.getCompositeState());
 
@@ -618,7 +618,7 @@ TEST(Aspect, StateAndProperties)
   EXPECT_TRUE( nullptr == mgr2.get<IntAspect>() );
 
 
-  // ---- Test property transfer ----
+  // ---- Test Property Transfer ----
 
   mgr2.setCompositeProperties(mgr1.getCompositeProperties());
 
@@ -647,6 +647,39 @@ TEST(Aspect, StateAndProperties)
 
   EXPECT_TRUE( nullptr == mgr2.get<CharAspect>() );
   EXPECT_TRUE( nullptr == mgr2.get<IntAspect>() );
+
+
+  // ---- Test Data Containers ----
+  Composite::MakeState<DoubleAspect, IntAspect, FloatAspect> state(
+        mgr1.getCompositeState());
+
+  EXPECT_EQ(mgr1.get<DoubleAspect>()->mState.val,
+            state.DoubleAspect::State::val);
+  EXPECT_EQ(mgr1.get<FloatAspect>()->mState.val,
+            state.FloatAspect::State::val);
+  EXPECT_EQ(mgr1.get<IntAspect>()->mState.val,
+            state.IntAspect::State::val);
+
+
+  Composite::MakeProperties<DoubleAspect, CharAspect, FloatAspect> properties(
+        mgr2.getCompositeProperties());
+
+  EXPECT_EQ(mgr1.get<DoubleAspect>()->mProperties.val,
+            properties.DoubleAspect::Properties::val);
+  EXPECT_EQ(mgr1.get<CharAspect>()->mProperties.val,
+            properties.CharAspect::Properties::val);
+  EXPECT_EQ(mgr1.get<FloatAspect>()->mProperties.val,
+            properties.FloatAspect::Properties::val);
+
+
+  DoubleAspect::State doubleState(2.5);
+  FloatAspect::State floatState(4.7);
+  IntAspect::State intState(7);
+  CharAspect::State charState('h');
+
+  // The constructor arguments should match the type order
+  Composite::MakeState<DoubleAspect, IntAspect, CharAspect, FloatAspect>(
+        doubleState, intState, charState, floatState);
 }
 
 TEST(Aspect, Construction)

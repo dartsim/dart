@@ -263,6 +263,7 @@ ShapeFrame::ShapeFrame(Frame* parent, const Properties& properties)
     onShapeUpdated(mShapeUpdatedSignal),
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {
+  createAspect<Aspect>();
   mAmShapeFrame = true;
   setProperties(properties);
 }
@@ -278,8 +279,16 @@ ShapeFrame::ShapeFrame(Frame* parent,
     onShapeUpdated(mShapeUpdatedSignal),
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {
+  createAspect<Aspect>();
   mAmShapeFrame = true;
   setShape(shape);
+}
+
+//==============================================================================
+ShapeFrame::ShapeFrame(const std::tuple<Frame*, Properties>& args)
+  : ShapeFrame(std::get<0>(args), std::get<1>(args))
+{
+  // Delegating constructor
 }
 
 } // namespace dynamics

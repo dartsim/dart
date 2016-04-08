@@ -129,22 +129,12 @@ public:
 
   using UniqueProperties = detail::EndEffectorProperties;
 
-  struct Properties :
-      FixedFrame::AspectProperties,
-      UniqueProperties,
-      NameAspect::Properties
-  {
-    Properties(
-        const FixedFrame::AspectProperties& fixedFrameProperties
-            = FixedFrame::AspectProperties(),
-        const UniqueProperties& effectorProperties = UniqueProperties(),
-        const NameAspect::Properties& name = "EndEffector",
-        const common::Composite::Properties& compositeProperties =
-            common::Composite::Properties());
+  using BasicProperties = common::Composite::MakeProperties<
+      NameAspect,
+      FixedFrame,
+      EndEffector>;
 
-    /// The properties of the EndEffector's Aspects
-    common::Composite::Properties mCompositeProperties;
-  };
+  using Properties = common::Composite::Properties;
 
   /// Destructor
   virtual ~EndEffector() = default;
@@ -155,7 +145,7 @@ public:
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
   /// Transform will be set to the new default transform.
-  void setProperties(const Properties& _properties);
+  void setProperties(const BasicProperties& _properties);
 
   /// Set the Properties of this EndEffector. If _useNow is true, the current
   /// Transform will be set to the new default transform.
@@ -202,7 +192,7 @@ public:
 protected:
 
   /// Constructor used by the Skeleton class
-  explicit EndEffector(BodyNode* parent, const Properties& properties);
+  explicit EndEffector(BodyNode* parent, const BasicProperties& properties);
 
   /// Create a clone of this BodyNode. This may only be called by the Skeleton
   /// class.

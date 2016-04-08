@@ -76,26 +76,9 @@ bool Support::isActive() const
 }
 
 //==============================================================================
-EndEffector::Properties::Properties(
-    const FixedFrame::AspectProperties& fixedFrameProperties,
-    const UniqueProperties& effectorProperties,
-    const NameAspect::Properties& name,
-    const common::Composite::Properties& compositeProperties)
-  : FixedFrame::AspectProperties(fixedFrameProperties),
-    UniqueProperties(effectorProperties),
-    NameAspect::Properties(name),
-    mCompositeProperties(compositeProperties)
+void EndEffector::setProperties(const BasicProperties& properties)
 {
-  // Do nothing
-}
-
-//==============================================================================
-void EndEffector::setProperties(const Properties& properties)
-{
-  FixedFrame::setAspectProperties(properties);
-  setAspectProperties(properties);
-  get<NameAspect>()->setProperties(properties);
-  setCompositeProperties(properties.mCompositeProperties);
+  setCompositeProperties(properties);
 }
 
 //==============================================================================
@@ -114,11 +97,7 @@ void EndEffector::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 EndEffector::Properties EndEffector::getEndEffectorProperties() const
 {
-  return Properties(
-        FixedFrame::getAspectProperties(),
-        getAspectProperties(),
-        get<NameAspect>()->getProperties(),
-        getCompositeProperties());
+  return getCompositeProperties();
 }
 
 //==============================================================================
@@ -177,7 +156,7 @@ void EndEffector::notifyTransformUpdate()
 }
 
 //==============================================================================
-EndEffector::EndEffector(BodyNode* parent, const Properties& properties)
+EndEffector::EndEffector(BodyNode* parent, const BasicProperties& properties)
   : Entity(ConstructFrame),
     Frame(parent),
     FixedFrame(parent, properties.mDefaultTransform),

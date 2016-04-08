@@ -71,6 +71,8 @@ public:
 
   using AspectPropertiesData = detail::SkeletonAspectProperties;
   using AspectProperties = common::Aspect::MakeProperties<AspectPropertiesData>;
+
+  using State = common::Composite::State;
   using Properties = common::Composite::Properties;
 
   enum ConfigFlag_t
@@ -194,6 +196,20 @@ public:
   /// Get the configuration of the specified indices in this Skeleton
   Configuration getConfiguration(const std::vector<size_t>& indices,
                                  int flags = CONFIG_ALL) const;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name State
+  //----------------------------------------------------------------------------
+
+  /// Set the State of this Skeleton [alias for setCompositeState(~)]
+  void setState(const State& state);
+
+  /// Get the State of this Skeleton [alias for getCompositeState()]
+  State getState() const;
+
+  /// \}
 
   //----------------------------------------------------------------------------
   /// \{ \name Properties
@@ -470,16 +486,6 @@ public:
   /// spaces are vector spaces, this function always returns _dq2 - _dq1.
   Eigen::VectorXd getVelocityDifferences(
       const Eigen::VectorXd& _dq2, const Eigen::VectorXd& _dq1) const;
-
-  //----------------------------------------------------------------------------
-  // State
-  //----------------------------------------------------------------------------
-
-  /// Set the state of this skeleton described in generalized coordinates
-  void setState(const Eigen::VectorXd& _state);
-
-  /// Get the state of this skeleton described in generalized coordinates
-  Eigen::VectorXd getState() const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Support Polygon

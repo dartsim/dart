@@ -288,6 +288,9 @@ protected:
   /// Constructor
   ShapeFrame(Frame* parent, const ShapePtr& shape = nullptr);
 
+  /// Delegating constructor
+  ShapeFrame(const std::tuple<Frame*, Properties>& args);
+
   /// Shape updated signal
   ShapeUpdatedSignal mShapeUpdatedSignal;
 

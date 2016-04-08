@@ -107,7 +107,7 @@ bool equals(const Eigen::DenseBase<MATRIX>& _expected,
 void addEndEffector(SkeletonPtr robot, BodyNode* parent_node, Vector3d dim)
 {
   // Create the end-effector node with a random dimension
-  BodyNode::Properties node(std::string("ee"));
+  BodyNode::Properties node(BodyNode::AspectProperties("ee"));
   std::shared_ptr<Shape> shape(new BoxShape(Vector3d(0.2, 0.2, 0.2)));
 
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
@@ -167,7 +167,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
   Vector3d dimEE = dim1;
 
   // Create the first link
-  BodyNode::Properties node(std::string("link1"));
+  BodyNode::Properties node(BodyNode::AspectProperties("link1"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim1));
 
@@ -186,7 +186,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
   if(stopAfter > 1)
   {
     // Create the second link
-    node = BodyNode::Properties(std::string("link2"));
+    node = BodyNode::Properties(BodyNode::AspectProperties("link2"));
     node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
     shape = std::shared_ptr<Shape>(new BoxShape(dim2));
 
@@ -212,7 +212,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
   if(stopAfter > 2)
   {
     // Create the third link
-    node = BodyNode::Properties(std::string("link3"));
+    node = BodyNode::Properties(BodyNode::AspectProperties("link3"));
     node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim3(2)/2.0));
     shape = std::shared_ptr<Shape>(new BoxShape(dim3));
     std::pair<Joint*, BodyNode*> pair3 = add1DofJoint(
@@ -265,7 +265,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
   robot->disableSelfCollision();
 
   // Create the first link, the joint with the ground and its shape
-  BodyNode::Properties node(std::string("link1"));
+  BodyNode::Properties node(BodyNode::AspectProperties("link1"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim));
 
@@ -289,7 +289,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
     ssLink << "link" << i;
     ssJoint << "joint" << i;
 
-    node = BodyNode::Properties(ssLink.str());
+    node = BodyNode::Properties(BodyNode::AspectProperties(ssLink.str()));
     node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
     shape = std::shared_ptr<Shape>(new BoxShape(dim));
 
@@ -332,7 +332,7 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
   robot->disableSelfCollision();
 
   // Create the first link, the joint with the ground and its shape
-  BodyNode::Properties node(std::string("link1"));
+  BodyNode::Properties node(BodyNode::AspectProperties("link1"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim));
 
@@ -359,7 +359,7 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
     ssLink << "link" << i;
     ssJoint << "joint" << i;
 
-    node = BodyNode::Properties(ssLink.str());
+    node = BodyNode::Properties(BodyNode::AspectProperties(ssLink.str()));
     node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
     shape = std::shared_ptr<Shape>(new BoxShape(dim));
 
@@ -399,7 +399,7 @@ SkeletonPtr createGround(
     T.linear() = eulerXYZToMatrix(_orientation);
     Joint::Properties joint("joint1", T);
 
-    BodyNode::Properties node(std::string("link"));
+    BodyNode::Properties node(BodyNode::AspectProperties(std::string("link")));
     std::shared_ptr<Shape> shape(new BoxShape(_size));
     node.mInertia.setMass(mass);
 
@@ -423,7 +423,7 @@ SkeletonPtr createObject(
 
   MultiDofJoint<6>::Properties joint(std::string("joint1"));
 
-  BodyNode::Properties node(std::string("link1"));
+  BodyNode::Properties node(BodyNode::AspectProperties(std::string("link1")));
   node.mInertia.setMass(mass);
 
   SkeletonPtr skeleton = Skeleton::create();

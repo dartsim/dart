@@ -106,8 +106,6 @@ struct BodyNodeAspectProperties
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-using BodyNodeProperties = BodyNodeAspectProperties;
-
 //==============================================================================
 using NodeTypeStateVector = common::CloneableVector< std::unique_ptr<Node::State> >;
 using NodeStateMap = std::map< std::type_index, std::unique_ptr<NodeTypeStateVector> >;

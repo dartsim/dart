@@ -301,7 +301,7 @@ BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
   properties.mDampingCoefficients = Eigen::Vector3d::Constant(default_damping);
 
   BodyNodePtr bn = pendulum->createJointAndBodyNodePair<BallJoint>(
-        nullptr, properties, BodyNode::Properties(name)).second;
+        nullptr, properties, BodyNode::AspectProperties(name)).second;
 
   // Make a shape for the Joint
   const double& R = default_width;
@@ -331,7 +331,7 @@ BodyNode* addBody(const SkeletonPtr& pendulum, BodyNode* parent,
 
   // Create a new BodyNode, attached to its parent by a RevoluteJoint
   BodyNodePtr bn = pendulum->createJointAndBodyNodePair<RevoluteJoint>(
-        parent, properties, BodyNode::Properties(name)).second;
+        parent, properties, BodyNode::AspectProperties(name)).second;
 
   // Make a shape for the Joint
   const double R = default_width / 2.0;

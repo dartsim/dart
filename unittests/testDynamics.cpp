@@ -1250,10 +1250,14 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       }
 
       // Set random states
-      VectorXd x = skel->getState();
-      for (int k = 0; k < x.size(); ++k)
-        x[k] = random(lb, ub);
-      skel->setState(x);
+      Skeleton::Configuration x = skel->getConfiguration(
+            Skeleton::CONFIG_POSITIONS | Skeleton::CONFIG_VELOCITIES);
+      for (int k = 0; k < skel->getNumDofs(); ++k)
+      {
+        x.mPositions[k] = random(lb, ub);
+        x.mVelocities[k] = random(lb, ub);
+      }
+      skel->setConfiguration(x);
 
       //------------------------ Mass Matrix Test ----------------------------
       // Get matrices

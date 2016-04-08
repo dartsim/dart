@@ -147,10 +147,18 @@ using CompositeState = CompositeData<CompositeStateMap, GetState>;
 using CompositeProperties = CompositeData<CompositePropertiesMap, GetProperties>;
 
 //==============================================================================
-template <class CompositeType, template<class> class GetData, typename... Args>
+template <class CompositeType, template<class> class GetData, typename... Aspects>
 class ComposeData
 {
 public:
+
+  ComposeData() = default;
+
+  ComposeData(const CompositeType&)
+  {
+    // Do nothing
+  }
+
   virtual ~ComposeData() = default;
 
   void setFrom(const CompositeType&)
@@ -178,6 +186,7 @@ public:
   enum Delegate_t { Delegate };
 
   using Base = typename GetData<AspectT>::Type;
+  using Data = typename Base::Data;
   using AspectType = typename GetAspect<AspectT>::Type;
 
   template <typename Arg>
@@ -188,15 +197,51 @@ public:
         typename Base::Data, Arg>::type;
   };
 
+  template <typename Arg>
+  struct ConvertIfComposite
+  {
+    using Type = typename static_if_else<
+        std::is_base_of<CompositeType, Arg>::value,
+        CompositeType, Arg>::type;
+  };
+
   ComposeData() = default;
 
   virtual ~ComposeData() = default;
 
-  template <typename... Args>
-  ComposeData(Args&&... args)
-    : ComposeData<CompositeType, GetData, Remainder...>(std::forward<Args>(args)...)
+  template <typename Arg1, typename... Args>
+  ComposeData(const Arg1& arg1, const Args&... args)
+    : ComposeData(
+        Delegate,
+        static_cast<const typename ConvertIfData<Arg1>::Type&>(arg1),
+        args...)
   {
-    // Do nothing
+    // This constructor delegates
+  }
+
+  /// Grab relevant data out of a composite object
+  ComposeData(const CompositeType& composite)
+    : ComposeData<CompositeType, GetData, Remainder...>(composite)
+  {
+    _setBaseFrom(composite);
+  }
+
+  template <typename... Aspects>
+  ComposeData(const ComposeData<CompositeType, GetData, Aspects...>& composite)
+    : ComposeData(static_cast<const CompositeType&>(composite))
+  {
+    // This is a delegating constructor. If we get passed another ComposeData
+    // object, then we convert it into a composite to ensure that we grab all
+    // of its aspects.
+  }
+
+  // Dev Note: We must not use the argument 'composite' as a temporary, or else
+  // it will get deleted when it reaches the last base constructor, preventing
+  // any higher level constructors from calling _setBaseFrom(~) on it.
+  ComposeData(CompositeType&& composite)
+    : ComposeData(static_cast<const CompositeType&>(composite))
+  {
+    // This is a delegating constructor
   }
 
   operator CompositeType() const
@@ -209,10 +254,7 @@ public:
 
   void setFrom(const CompositeType& composite)
   {
-    const Base* data = composite.template get<AspectType>();
-    if(data)
-      static_cast<Base&>(*this) = *data;
-
+    _setBaseFrom(composite);
     ComposeData<CompositeType, GetData, Remainder...>::setFrom(composite);
   }
 
@@ -222,7 +264,39 @@ public:
     return *this;
   }
 
+  /// Grab any relevant data and copy it into this composite. Note that there
+  /// will be NO compilation error, even if there is no relevant data in any of
+  /// the arguments that get passed in. It will simply ignore all the arguments
+  /// silently.
+  template <typename... Args>
+  void copy(const Args&... args)
+  {
+    _findData(args...);
+  }
+
 protected:
+
+  template <typename... Args>
+  ComposeData(Delegate_t, const Args&... args)
+    : ComposeData<CompositeType, GetData, Remainder...>(args...)
+  {
+    // Pass all the arguments along to the next base class
+  }
+
+  template <typename... Args>
+  ComposeData(Delegate_t, const Data& arg1, const Args&... args)
+    : Base(arg1),
+      ComposeData<CompositeType, GetData, Remainder...>(args...)
+  {
+    // Peel off the first argument and then pass along the rest
+  }
+
+  void _setBaseFrom(const CompositeType& composite)
+  {
+    const Base* data = composite.template get<AspectType>();
+    if(data)
+      static_cast<Base&>(*this) = *data;
+  }
 
   void _addData(CompositeType& composite) const
   {
@@ -236,27 +310,32 @@ protected:
   }
 
   template <typename Arg1, typename... Args>
-  void _findData(Arg1 arg1, Args&&... args)
+  void _findData(const Arg1& arg1, const Args&... args)
   {
-    _useIfData(static_cast<const typename ConvertIfData<Arg1>::Type&>(arg1));
-    _findData(std::forward<Args>(args)...);
+    _attemptToUse(static_cast<const typename ConvertIfData<Arg1>::Type&>(arg1));
+    _findData(args...);
   }
 
   template <typename Arg>
-  void _useIfData(Arg)
+  void _attemptToUse(const Arg&)
   {
     // Do nothing
   }
 
-  void _useIfData(const typename Base::Data& data)
+  void _attemptToUse(const typename Base::Data& data)
   {
     static_cast<Base&>(*this) = data;
+  }
+
+  void _attemptToUse(const CompositeType& composite)
+  {
+    _setBaseFrom(composite);
   }
 };
 
 //==============================================================================
-template <typename... Data>
-using MakeCompositeState = ComposeData<CompositeState, GetState, Data...>;
+template <typename... Aspects>
+using MakeCompositeState = ComposeData<CompositeState, GetState, Aspects...>;
 
 template <typename... Data>
 using MakeCompositeProperties =

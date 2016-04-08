@@ -37,7 +37,7 @@
 #ifndef DART_COMMON_COMPOSITE_H_
 #define DART_COMMON_COMPOSITE_H_
 
-#include "dart/common/detail/CompositeStateAndProperties.h"
+#include "dart/common/detail/CompositeData.h"
 
 namespace dart {
 namespace common {
@@ -62,11 +62,11 @@ public:
   using AspectMap = std::map< std::type_index, std::unique_ptr<Aspect> >;
   using RequiredAspectSet = std::unordered_set<std::type_index>;
 
-  template <typename... Data>
-  using MakeState = detail::MakeCompositeState<Data...>;
+  template <typename... Aspects>
+  using MakeState = detail::MakeCompositeState<Aspects...>;
 
-  template <typename... Data>
-  using MakeProperties = detail::MakeCompositeProperties<Data...>;
+  template <typename... Aspects>
+  using MakeProperties = detail::MakeCompositeProperties<Aspects...>;
 
   /// Virtual destructor
   virtual ~Composite() = default;

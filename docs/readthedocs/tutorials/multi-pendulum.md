@@ -38,8 +38,8 @@ World. In the function ``makeRootBody``, we create a pair of a
 empty pendulum skeleton.
 
 ```cpp
-BodyNodePtr bn =
-    pendulum->createJointAndBodyNodePair<BallJoint>(nullptr, properties, BodyNode::Properties(name)).second;
+BodyNodePtr bn = pendulum->createJointAndBodyNodePair<BallJoint>(
+      nullptr, properties, BodyNode::AspectProperties(name)).second;
 ```
 
 Note that the first parameters is a nullptr, which indicates that
@@ -50,8 +50,8 @@ the first parameter. In fact, this is how we add more BodyNodes to
 the pendulum in the function ``addBody``:
 
 ```cpp
-BodyNodePtr bn =
-    pendulum->createJointAndBodyNodePair<RevoluteJoint>(parent, properties, BodyNode::Properties(name)).second;
+BodyNodePtr bn = pendulum->createJointAndBodyNodePair<RevoluteJoint>(
+      parent, properties, BodyNode::AspectProperties(name)).second;
 ```
 The simplest way to set up a simulation program in DART is to use
 ``SimWindow`` class. A SimWindow owns an instance of ``World``  and

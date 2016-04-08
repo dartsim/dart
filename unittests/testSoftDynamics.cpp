@@ -311,10 +311,13 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       }
 
       // Set random states
-      VectorXd x = softSkel->getState();
-      for (int k = 0; k < x.size(); ++k)
-        x[k] = random(lb, ub);
-      softSkel->setState(x);
+      Skeleton::Configuration x = softSkel->getConfiguration();
+      for (int k = 0; k < softSkel->getNumDofs(); ++k)
+      {
+        x.mPositions[k] = random(lb, ub);
+        x.mVelocities[k] = random(lb, ub);
+      }
+      softSkel->setConfiguration(x);
 
       //------------------------ Mass Matrix Test ----------------------------
       // Get matrices
