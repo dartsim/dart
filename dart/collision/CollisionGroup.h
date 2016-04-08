@@ -172,13 +172,13 @@ public:
   size_t getNumShapeFrames() const;
 
   /// Perform collision detection within this CollisionGroup.
-  bool collide(const Option& option, Result& result);
+  bool collide(const CollisionOption& option, CollisionResult& result);
 
   /// Perform collision detection with other CollisionGroup.
   ///
   /// Return false if the engine type of the other CollisionGroup is different
   /// from this CollisionObject engine.
-  bool collide(CollisionGroup* group, const Option& option, Result& result);
+  bool collide(CollisionGroup* group, const CollisionOption& option, CollisionResult& result);
 
 protected:
 

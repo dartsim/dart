@@ -541,8 +541,8 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
             + group2->getNumShapeFrames()
             + group3->getNumShapeFrames());
 
-  collision::Option option;
-  collision::Result result;
+  collision::CollisionOption option;
+  collision::CollisionResult result;
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
@@ -633,8 +633,8 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
             group1->getNumShapeFrames()
             + group2->getNumShapeFrames());
 
-  collision::Option option;
-  collision::Result result;
+  collision::CollisionOption option;
+  collision::CollisionResult result;
 
   EXPECT_TRUE(group1->collide(group2.get(), option, result));
 
@@ -716,8 +716,8 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
   EXPECT_EQ(group->getNumShapeFrames(), 2u);
 
-  collision::Option option;
-  collision::Result result;
+  collision::CollisionOption option;
+  collision::CollisionResult result;
 
   result.clear();
   option.maxNumContacts = 1000u;
@@ -787,8 +787,8 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   auto boxShapeNode1 = boxBodyNode1->getShapeNodesWith<CollisionAddon>()[0];
   auto boxShapeNode2 = boxBodyNode2->getShapeNodesWith<CollisionAddon>()[0];
 
-  collision::Option option;
-  collision::Result result;
+  collision::CollisionOption option;
+  collision::CollisionResult result;
 
   auto skeletonGroup1 = cd->createCollisionGroup(boxSkeleton1.get());
   auto skeletonGroup2 = cd->createCollisionGroup(boxSkeleton2.get());

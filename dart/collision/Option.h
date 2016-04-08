@@ -45,7 +45,7 @@ namespace collision {
 
 class CollisionFilter;
 
-struct Option
+struct CollisionOption
 {
   /// Flag whether compute contact information such as point, normal, and
   /// penetration depth. If this flag is set to false, the Engine returns only
@@ -63,7 +63,7 @@ struct Option
   std::shared_ptr<CollisionFilter> collisionFilter;
 
   /// Constructor
-  Option(bool enableContact = true,
+  CollisionOption(bool enableContact = true,
          bool binaryCheck = false,
          size_t maxNumContacts = 100,
          const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);

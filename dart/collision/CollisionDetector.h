@@ -96,11 +96,11 @@ public:
 
   /// Perform collision detection for group.
   virtual bool collide(CollisionGroup* group,
-                       const Option& option, Result& result) = 0;
+                       const CollisionOption& option, CollisionResult& result) = 0;
 
   /// Perform collision detection for group1-group2.
   virtual bool collide(CollisionGroup* group1, CollisionGroup* group2,
-                       const Option& option, Result& result) = 0;
+                       const CollisionOption& option, CollisionResult& result) = 0;
 
 protected:
 

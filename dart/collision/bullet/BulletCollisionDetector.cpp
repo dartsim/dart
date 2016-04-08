@@ -60,7 +60,7 @@ namespace {
 
 struct BulletOverlapFilterCallback : public btOverlapFilterCallback
 {
-  BulletOverlapFilterCallback(const Option& option, const Result& result)
+  BulletOverlapFilterCallback(const CollisionOption& option, const CollisionResult& result)
     : mOption(option),
       mResult(result),
       mDone(false)
@@ -111,8 +111,8 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
     return collide;
   }
 
-  const Option& mOption;
-  const Result& mResult;
+  const CollisionOption& mOption;
+  const CollisionResult& mResult;
 
   /// Whether the collision iteration can stop
   mutable bool mDone;
@@ -123,7 +123,7 @@ Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
                        const BulletCollisionObject::UserData* userData2);
 
 void convertContacts(
-    btCollisionWorld* collWorld, const Option& option, Result& result);
+    btCollisionWorld* collWorld, const CollisionOption& option, CollisionResult& result);
 
 btCollisionShape*
 createBulletEllipsoidMesh(float sizeX, float sizeY, float sizeZ);
@@ -172,7 +172,7 @@ BulletCollisionDetector::createCollisionGroup()
 
 //==============================================================================
 bool BulletCollisionDetector::collide(
-    CollisionGroup* group, const Option& option, Result& result)
+    CollisionGroup* group, const CollisionOption& option, CollisionResult& result)
 {
   result.clear();
 
@@ -203,7 +203,7 @@ bool BulletCollisionDetector::collide(
 //==============================================================================
 bool BulletCollisionDetector::collide(
     CollisionGroup* group1, CollisionGroup* group2,
-    const Option& option, Result& result)
+    const CollisionOption& option, CollisionResult& result)
 {
   result.clear();
 
@@ -445,7 +445,7 @@ Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
 
 //==============================================================================
 void convertContacts(
-    btCollisionWorld* collWorld, const Option& option, Result& result)
+    btCollisionWorld* collWorld, const CollisionOption& option, CollisionResult& result)
 {
   assert(collWorld);
 

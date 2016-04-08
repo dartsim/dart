@@ -68,7 +68,7 @@ ConstraintSolver::ConstraintSolver(double timeStep)
   : mCollisionDetector(collision::FCLCollisionDetector::create()),
     mCollisionGroup(mCollisionDetector->createCollisionGroup()),
     mCollisionOption(
-      collision::Option(
+      collision::CollisionOption(
         true, false, 100, std::make_shared<collision::BodyNodeCollisionFilter>())),
     mTimeStep(timeStep),
     mLCPSolver(new DantzigLCPSolver(mTimeStep))
@@ -262,13 +262,13 @@ const collision::CollisionGroup* ConstraintSolver::getCollisionGroup() const
 }
 
 //==============================================================================
-collision::Result& ConstraintSolver::getLastCollisionResult()
+collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
 {
   return mCollisionResult;
 }
 
 //==============================================================================
-const collision::Result& ConstraintSolver::getLastCollisionResult() const
+const collision::CollisionResult& ConstraintSolver::getLastCollisionResult() const
 {
   return mCollisionResult;
 }
