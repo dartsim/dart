@@ -342,10 +342,11 @@ else()
   set(HAVE_SHARK FALSE)
 endif()
 
-# BulletCollision. Force CONFIG mode to find the BulletConfig.cmake file
-# distributed with Bullet, instead of the FindBullet.cmake module distributed
-# with CMake.
-find_package(Bullet COMPONENTS BulletMath BulletCollision CONFIG QUIET)
+# BulletCollision. Force MODULE mode to use the FindBullet.cmake file
+# distributed with CMake. Otherwise, we may end up using  the
+# BulletConfig.cmake file distributed with Bullet, which uses relative paths
+# and may break transitive dependencies.
+find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
 
 if(BULLET_FOUND)
   # Test whether Bullet was built with double precision. If so, we need to
@@ -355,7 +356,7 @@ if(BULLET_FOUND)
   include(CheckCXXSourceCompiles)
   set(CMAKE_REQUIRED_FLAGS "")
   set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
-  set(CMAKE_REQUIRED_INCLUDES "${BULLET_ROOT_DIR}/${BULLET_INCLUDE_DIR}")
+  set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
   set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
   check_cxx_source_compiles(
     "
@@ -433,7 +434,6 @@ include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
 include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 if(HAVE_BULLET_COLLISION)
   include_directories(SYSTEM ${BULLET_INCLUDE_DIRS})
-  add_definitions(${BULLET_CFLAGS})
 endif()
 
 if(NOT BUILD_CORE_ONLY)
@@ -460,9 +460,6 @@ include_directories("${CMAKE_BINARY_DIR}")
 link_directories("${CMAKE_BINARY_DIR}/lib")
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 link_directories(${Boost_LIBRARY_DIRS})
-if(HAVE_BULLET_COLLISION)
-  link_directories("${BULLET_LIBRARY_DIRS}")
-endif()
 
 #===============================================================================
 # Check for non-case-sensitive filesystems
