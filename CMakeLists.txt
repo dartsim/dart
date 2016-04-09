@@ -342,10 +342,9 @@ else()
   set(HAVE_SHARK FALSE)
 endif()
 
-# BulletCollision. Force MODULE mode to use the FindBullet.cmake file
-# distributed with CMake. Otherwise, we may end up using  the
-# BulletConfig.cmake file distributed with Bullet, which uses relative paths
-# and may break transitive dependencies.
+# Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
+# CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
+# with Bullet, which uses relative paths and may break transitive dependencies.
 find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
 
 if(BULLET_FOUND)
@@ -372,14 +371,14 @@ if(BULLET_FOUND)
   )
 
   if(BT_USE_DOUBLE_PRECISION)
-    message(STATUS "Looking for Bullet found (double precision)")
+    message(STATUS "Looking for Bullet - found (double precision)")
   else()
-    message(STATUS "Looking for Bullet found (single precision)")
+    message(STATUS "Looking for Bullet - found (single precision)")
   endif()
 
   set(HAVE_BULLET_COLLISION TRUE)
 else()
-  message(STATUS "Looking for BulletCollision - NOT found, please install libbullet-dev")
+  message(STATUS "Looking for Bullet - NOT found, please install libbullet-dev")
   set(HAVE_BULLET_COLLISION FALSE)
 endif()
 
