@@ -73,6 +73,9 @@ struct VisualAspectProperties
 
   /// Destructor
   virtual ~VisualAspectProperties() = default;
+
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 struct CollisionAspectProperties

@@ -37,6 +37,8 @@
 #ifndef DART_COMMON_DETAIL_COMPOSITESTATEANDPROPERTIES_H_
 #define DART_COMMON_DETAIL_COMPOSITESTATEANDPROPERTIES_H_
 
+#include <Eigen/Core>
+
 #include <map>
 #include <unordered_set>
 #include <typeinfo>
@@ -331,6 +333,10 @@ protected:
   {
     _setBaseFrom(composite);
   }
+
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================

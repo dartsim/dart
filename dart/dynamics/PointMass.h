@@ -77,6 +77,8 @@ public:
           const Eigen::Vector3d& forces = Eigen::Vector3d::Zero());
 
     bool operator==(const State& other) const;
+
+    virtual ~State() = default;
   };
 
   /// Properties for each PointMass
@@ -142,6 +144,8 @@ public:
     bool operator==(const Properties& other) const;
 
     bool operator!=(const Properties& other) const;
+
+    virtual ~Properties() = default;
   };
 
   //--------------------------------------------------------------------------
