@@ -48,7 +48,7 @@
 #include "dart/common/EmbeddedAspect.h"
 #include "dart/math/MathTypes.h"
 #include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/detail/Joint.h"
+#include "dart/dynamics/detail/JointAspect.h"
 
 namespace dart {
 namespace dynamics {
