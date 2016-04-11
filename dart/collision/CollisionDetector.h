@@ -121,7 +121,7 @@ protected:
       const dynamics::ShapeFrame* shapeFrame) = 0;
 
   /// Notify that a CollisionObject is destroying. Do nothing by default.
-  virtual void notifyCollisionObjectDestorying(CollisionObject* object);
+  virtual void notifyCollisionObjectDestroying(CollisionObject* object);
 
 protected:
 

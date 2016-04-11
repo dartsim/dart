@@ -66,7 +66,7 @@ std::shared_ptr<CollisionObject> CollisionDetector::claimCollisionObject(
 }
 
 //==============================================================================
-void CollisionDetector::notifyCollisionObjectDestorying(
+void CollisionDetector::notifyCollisionObjectDestroying(
     CollisionObject* /*object*/)
 {
   // Do nothing
@@ -116,7 +116,7 @@ void
 CollisionDetector::NoneSharingCollisionObjectManager
 ::CollisionObjectDeleter::operator()(CollisionObject* object) const
 {
-  mCollisionObjectManager->mCollisionDetector->notifyCollisionObjectDestorying(
+  mCollisionObjectManager->mCollisionDetector->notifyCollisionObjectDestroying(
         object);
 
   delete object;
@@ -178,7 +178,7 @@ void
 CollisionDetector::SharingCollisionObjectManager
 ::CollisionObjectDeleter::operator()(CollisionObject* object) const
 {
-  mCollisionObjectManager->mCollisionDetector->notifyCollisionObjectDestorying(
+  mCollisionObjectManager->mCollisionDetector->notifyCollisionObjectDestroying(
         object);
   mCollisionObjectManager->mCollisionObjectMap.erase(object->getShapeFrame());
 
