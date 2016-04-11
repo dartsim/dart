@@ -126,9 +126,9 @@ std::pair<Joint*, BodyNode*> add1DofJoint(SkeletonPtr skel,
     BodyNode* parent, const BodyNode::Properties& node,
     const std::string& name, double val, double min, double max, int type)
 {
-  SingleDofJoint::Properties properties(name);
-  properties.mPositionLowerLimit = min;
-  properties.mPositionUpperLimit = max;
+  GeometricJoint<RealSpace>::Properties properties(name);
+  properties.mPositionLowerLimits[0] = min;
+  properties.mPositionUpperLimits[0] = max;
   std::pair<Joint*, BodyNode*> newComponent;
   if(DOF_X == type)
     newComponent = skel->createJointAndBodyNodePair<PrismaticJoint>(parent,

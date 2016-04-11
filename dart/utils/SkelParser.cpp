@@ -62,8 +62,6 @@
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/dynamics/Joint.h"
-#include "dart/dynamics/SingleDofJoint.h"
-#include "dart/dynamics/MultiDofJoint.h"
 #include "dart/dynamics/WeldJoint.h"
 #include "dart/dynamics/PrismaticJoint.h"
 #include "dart/dynamics/RevoluteJoint.h"
@@ -79,30 +77,6 @@
 #include "dart/utils/XmlHelpers.h"
 
 namespace dart {
-
-namespace dynamics {
-class BodyNode;
-class Shape;
-class Skeleton;
-class Joint;
-class WeldJoint;
-class PrismaticJoint;
-class RevoluteJoint;
-class ScrewJoint;
-class UniversalJoint;
-class BallJoint;
-class EulerXYZJoint;
-class EulerJoint;
-class TranslationalJoint;
-class PlanarJoint;
-class FreeJoint;
-class Marker;
-} // namespace dynamics
-
-namespace simulation {
-class World;
-} // namespace simulation
-
 namespace utils {
 
 namespace {
@@ -1566,44 +1540,6 @@ struct DofProxy
 
   bool* preserveName;
   std::string* name;
-
-  DofProxy(dynamics::SingleDofJoint::Properties& properties,
-           SkelJoint& joint, size_t _index,
-           const std::string& jointName)
-    : index(_index),
-      valid(true),
-
-      lowerPosition(&properties.mPositionLowerLimit),
-      upperPosition(&properties.mPositionUpperLimit),
-      initalPosition(&properties.mInitialPosition),
-
-      lowerVelocity(&properties.mVelocityLowerLimit),
-      upperVelocity(&properties.mVelocityUpperLimit),
-      initialVelocity(&properties.mInitialVelocity),
-
-      lowerAcceleration(&properties.mAccelerationLowerLimit),
-      upperAcceleration(&properties.mAccelerationUpperLimit),
-      initialAcceleration(&joint.acceleration.data()[0]),
-
-      lowerForce(&properties.mForceLowerLimit),
-      upperForce(&properties.mForceUpperLimit),
-      initialForce(&joint.force.data()[0]),
-
-      springStiffness(&properties.mSpringStiffness),
-      restPosition(&properties.mRestPosition),
-      dampingCoefficient(&properties.mDampingCoefficient),
-      friction(&properties.mFriction),
-
-      preserveName(&properties.mPreserveDofName),
-      name(&properties.mDofName)
-  {
-    if(index > 0)
-    {
-      dterr << "[SkelParser] Joint named [" << jointName << "] has a dof "
-            << "element (" << index << ") which is out of bounds (max 0)\n";
-      valid = false;
-    }
-  }
 
   template <typename PropertyType>
   DofProxy(PropertyType& properties,
