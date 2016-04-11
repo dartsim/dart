@@ -42,12 +42,12 @@
 
 #include "dart/config.h"
 #include "dart/common/Console.h"
-#include "dart/common/RequiresAspect.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/common/RequiresAspect.h"
 #include "dart/dynamics/detail/MultiDofJointAspect.h"
 
 namespace dart {
