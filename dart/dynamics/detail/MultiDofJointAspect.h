@@ -76,6 +76,11 @@ struct MultiDofJointState
       const Vector& accelerations = Vector::Zero(),
       const Vector& forces = Vector::Zero(),
       const Vector& commands = Vector::Zero());
+
+  virtual ~MultiDofJointState() = default;
+
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================
@@ -164,7 +169,6 @@ struct MultiDofJointUniqueProperties
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
 };
 
 //==============================================================================

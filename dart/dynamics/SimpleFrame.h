@@ -211,6 +211,10 @@ protected:
   /// Partial Acceleration of this Frame
   mutable Eigen::Vector6d mPartialAcceleration;
 
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 };
 
 } // namespace dart

@@ -736,6 +736,10 @@ private:
   void updateConstrainedTermsKinematic(double _timeStep);
 
   /// \}
+
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

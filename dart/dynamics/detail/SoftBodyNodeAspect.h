@@ -61,6 +61,8 @@ struct SoftBodyNodeUniqueState
 {
   /// Array of States for PointMasses
   std::vector<PointMass::State> mPointStates;
+
+  virtual ~SoftBodyNodeUniqueState() = default;
 };
 
 //==============================================================================

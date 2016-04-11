@@ -87,6 +87,8 @@ struct SkeletonAspectProperties
       double _timeStep = 0.001,
       bool _enabledSelfCollisionCheck = false,
       bool _enableAdjacentBodyCheck = false);
+
+  virtual ~SkeletonAspectProperties() = default;
 };
 
 //==============================================================================
