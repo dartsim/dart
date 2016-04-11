@@ -40,13 +40,14 @@
 
 #include "dart/math/Helpers.h"
 #include "dart/math/Geometry.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-BallJoint::Properties::Properties(const MultiDofJoint<3>::Properties& _properties)
-  : MultiDofJoint<3>::Properties(_properties)
+BallJoint::Properties::Properties(const BaseClass::Properties& properties)
+  : BaseClass::Properties(properties)
 {
   // Do nothing
 }
@@ -80,7 +81,7 @@ bool BallJoint::isCyclic(size_t _index) const
 //==============================================================================
 BallJoint::Properties BallJoint::getBallJointProperties() const
 {
-  return getMultiDofJointProperties();
+  return getGeometricJointProperties();
 }
 
 //==============================================================================
@@ -98,14 +99,14 @@ Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
 
 //==============================================================================
 BallJoint::BallJoint(const Properties& properties)
-  : MultiDofJoint<3>(properties),
+  : BaseClass(properties),
     mR(Eigen::Isometry3d::Identity())
 {
   mJacobianDeriv = Eigen::Matrix<double, 6, 3>::Zero();
 
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
-  createMultiDofJointAspect(properties);
+  createGeometricJointAspect(properties);
   createJointAspect(properties);
 }
 
@@ -116,7 +117,7 @@ Joint* BallJoint::clone() const
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> BallJoint::getLocalJacobianStatic(
+const Eigen::Matrix<double, 6, 3> BallJoint::getLocalJacobianStatic(
     const Eigen::Vector3d& /*positions*/) const
 {
   return mJacobian;
@@ -167,7 +168,10 @@ void BallJoint::updateLocalTransform() const
 void BallJoint::updateLocalJacobian(bool _mandatory) const
 {
   if (_mandatory)
-    mJacobian = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint).leftCols<3>();
+  {
+    mJacobian = math::getAdTMatrix(
+          Joint::mAspectProperties.mT_ChildBodyToJoint).leftCols<3>();
+  }
 }
 
 //==============================================================================

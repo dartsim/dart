@@ -39,22 +39,24 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/MultiDofJoint.h"
+#include "dart/dynamics/GeometricJoint.h"
 
 namespace dart {
 namespace dynamics {
 
 /// class BallJoint
-class BallJoint : public MultiDofJoint<3>
+class BallJoint : public GeometricJoint<math::SO3Space>
 {
 public:
 
   friend class Skeleton;
 
-  struct Properties : MultiDofJoint<3>::Properties
+  using BaseClass = GeometricJoint<math::SO3Space>;
+
+  struct Properties : BaseClass::Properties
   {
-    Properties(const MultiDofJoint<3>::Properties& _properties =
-                                                MultiDofJoint<3>::Properties());
+    Properties(const BaseClass::Properties& properties
+               = BaseClass::Properties());
     virtual ~Properties() = default;
   };
 
@@ -92,7 +94,7 @@ public:
   static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
 
   // Documentation inherited
-  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+  const Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 
   // Documentation inherited
@@ -107,7 +109,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using MultiDofJoint::getLocalJacobianStatic;
+  using BaseClass::getLocalJacobianStatic;
 
   // Documentation inherited
   void integratePositions(double _dt) override;

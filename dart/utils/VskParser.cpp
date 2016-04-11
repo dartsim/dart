@@ -955,9 +955,9 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
     Eigen::Matrix3d totalMoi = Eigen::Matrix3d::Zero();
     auto numShapeNodes = bodyNode->getNumNodes<dynamics::ShapeNode>();
 
-    for (auto i = 0u; i < numShapeNodes; ++i)
+    for (auto j = 0u; j < numShapeNodes; ++j)
     {
-      auto shapeNode = bodyNode->getNode<dynamics::ShapeNode>(i);
+      auto shapeNode = bodyNode->getNode<dynamics::ShapeNode>(j);
       auto shape     = shapeNode->getShape();
       const double             mass    = density * shape->getVolume();
       const Eigen::Isometry3d& localTf = shapeNode->getRelativeTransform();
@@ -982,8 +982,13 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
       dtwarn << "[VskParser::generateShapes] A BodyNode '"
              << bodyNode->getName() << "' of Skelelton '"
              << bodyNode->getSkeleton()->getName()
-             << "' has zero mass or zero inertia. Set sufficient mass and "
-             << "inertia properties for meaningful dynamic simulation.\n";
+             << "' has zero mass or zero inertia. Setting unit mass and unit "
+             << "inertia to prevent segfaults during dynamic simulation. Set "
+             << "proper mass and inertia properties for meaningful dynamic "
+             << "simulation.\n";
+
+      totalMass = 1.0;
+      totalMoi = Eigen::Matrix3d::Identity();
     }
 
     const dynamics::Inertia inertia(totalMass, Eigen::Vector3d::Zero(),

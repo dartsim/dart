@@ -369,7 +369,7 @@ protected:
   virtual const math::Jacobian getLocalJacobian() const override;
 
   // Documentation inherited
-  math::Jacobian getLocalJacobian(
+  const math::Jacobian getLocalJacobian(
       const Eigen::VectorXd& _positions) const override;
 
   // Documentation inherited

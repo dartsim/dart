@@ -1263,7 +1263,7 @@ const Eigen::Vector6d& SingleDofJoint::getLocalJacobianStatic() const
 }
 
 //==============================================================================
-math::Jacobian SingleDofJoint::getLocalJacobian(
+const math::Jacobian SingleDofJoint::getLocalJacobian(
     const Eigen::VectorXd& /*_positions*/) const
 {
   // The Jacobian is always constant w.r.t. the generalized coordinates.

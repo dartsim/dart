@@ -568,7 +568,7 @@ public:
 
   /// Get generalized Jacobian from parent body node to child body node
   /// w.r.t. local generalized coordinate
-  virtual math::Jacobian getLocalJacobian(
+  virtual const math::Jacobian getLocalJacobian(
       const Eigen::VectorXd& _positions) const = 0;
 
   /// Get time derivative of generalized Jacobian from parent body node

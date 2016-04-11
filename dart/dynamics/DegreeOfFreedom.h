@@ -50,8 +50,6 @@ namespace dynamics {
 class Skeleton;
 class Joint;
 class BodyNode;
-class SingleDofJoint;
-template<size_t> class MultiDofJoint;
 
 /// DegreeOfFreedom class is a proxy class for accessing single degrees of
 /// freedom (aka generalized coordinates) of the Skeleton.
@@ -62,6 +60,7 @@ public:
   friend class Joint;
   friend class SingleDofJoint;
   template<size_t> friend class MultiDofJoint;
+  template<class> friend class GeometricJoint;
   friend class Skeleton;
 
   DegreeOfFreedom(const DegreeOfFreedom&) = delete;

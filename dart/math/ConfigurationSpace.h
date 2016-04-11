@@ -144,4 +144,6 @@ typename SpaceT::Vector integrateVelocity(
 } // namespace math
 } // namespace dart
 
+#include "dart/math/detail/ConfigurationSpace.h"
+
 #endif // DART_MATH_CONFIGURATIONSPACE_H_

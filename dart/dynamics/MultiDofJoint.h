@@ -42,12 +42,12 @@
 
 #include "dart/config.h"
 #include "dart/common/Console.h"
+#include "dart/common/RequiresAspect.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/common/RequiresAspect.h"
 #include "dart/dynamics/detail/MultiDofJointAspect.h"
 
 namespace dart {
@@ -439,7 +439,7 @@ protected:
   const Eigen::Matrix<double, 6, DOF>& getLocalJacobianStatic() const;
 
   // Documentation inherited
-  math::Jacobian getLocalJacobian(
+  const math::Jacobian getLocalJacobian(
       const Eigen::VectorXd& _positions) const override;
 
   /// Fixed-size version of getLocalJacobian()

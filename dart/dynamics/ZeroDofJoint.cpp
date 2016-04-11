@@ -598,7 +598,7 @@ const math::Jacobian ZeroDofJoint::getLocalJacobian() const
 }
 
 //==============================================================================
-math::Jacobian ZeroDofJoint::getLocalJacobian(
+const math::Jacobian ZeroDofJoint::getLocalJacobian(
     const Eigen::VectorXd& /*_positions*/) const
 {
   return Eigen::Matrix<double, 6, 0>();

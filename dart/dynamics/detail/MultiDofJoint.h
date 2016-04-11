@@ -58,7 +58,7 @@
         << this->getName() << "].\n";\
   assert(false);
 
-#define MULTIDOFJOINT_SET_IF_DIFFERENT( mField, value )\
+#define GEOMETRICJOINT_SET_IF_DIFFERENT( mField, value )\
   if( value == Base::mAspectProperties. mField )\
     return;\
   Base::mAspectProperties. mField = value;\
@@ -175,45 +175,45 @@ MultiDofJoint<DOF>& MultiDofJoint<DOF>::operator=(
 
 //==============================================================================
 template <size_t DOF>
-DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index)
+DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t index)
 {
-  if (_index < DOF)
-    return mDofs[_index];
+  if (index < DOF)
+    return mDofs[index];
 
-  MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getDof, _index);
+  MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getDof, index);
 
   return nullptr;
 }
 
 //==============================================================================
 template <size_t DOF>
-const DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t _index) const
+const DegreeOfFreedom* MultiDofJoint<DOF>::getDof(size_t index) const
 {
-  if (_index < DOF)
-    return mDofs[_index];
+  if (index < DOF)
+    return mDofs[index];
 
-  MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getDof, _index);
+  MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getDof, index);
 
   return nullptr;
 }
 
 //==============================================================================
 template <size_t DOF>
-const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
+const std::string& MultiDofJoint<DOF>::setDofName(size_t index,
                                                   const std::string& _name,
                                                   bool _preserveName)
 {
-  if(DOF <= _index)
+  if(DOF <= index)
   {
     dterr << "[MultiDofJoint::setDofName] Attempting to set the name of DOF "
-          << "index " << _index << ", which is out of bounds for the Joint ["
+          << "index " << index << ", which is out of bounds for the Joint ["
           << this->getName() << "]. We will set the name of DOF index 0 instead.\n";
     assert(false);
-    _index = 0;
+    index = 0;
   }
 
-  preserveDofName(_index, _preserveName);
-  std::string& dofName = Base::mAspectProperties.mDofNames[_index];
+  preserveDofName(index, _preserveName);
+  std::string& dofName = Base::mAspectProperties.mDofNames[index];
   if(_name == dofName)
     return dofName;
 
@@ -222,7 +222,7 @@ const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
   if(skel)
   {
     dofName =
-        skel->mNameMgrForDofs.changeObjectName(mDofs[_index], _name);
+        skel->mNameMgrForDofs.changeObjectName(mDofs[index], _name);
   }
   else
     dofName = _name;
@@ -232,44 +232,44 @@ const std::string& MultiDofJoint<DOF>::setDofName(size_t _index,
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::preserveDofName(size_t _index, bool _preserve)
+void MultiDofJoint<DOF>::preserveDofName(size_t index, bool _preserve)
 {
-  if (DOF <= _index)
+  if (DOF <= index)
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(preserveDofName, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(preserveDofName, index);
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mPreserveDofNames[_index], _preserve );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mPreserveDofNames[index], _preserve );
 }
 
 //==============================================================================
 template <size_t DOF>
-bool MultiDofJoint<DOF>::isDofNamePreserved(size_t _index) const
+bool MultiDofJoint<DOF>::isDofNamePreserved(size_t index) const
 {
-  if(DOF <= _index)
+  if(DOF <= index)
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(isDofNamePreserved, _index);
-    _index = 0;
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(isDofNamePreserved, index);
+    index = 0;
   }
 
-  return Base::mAspectProperties.mPreserveDofNames[_index];
+  return Base::mAspectProperties.mPreserveDofNames[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-const std::string& MultiDofJoint<DOF>::getDofName(size_t _index) const
+const std::string& MultiDofJoint<DOF>::getDofName(size_t index) const
 {
-  if(DOF <= _index)
+  if(DOF <= index)
   {
     dterr << "[MultiDofJoint::getDofName] Requested name of DOF index ["
-          << _index << "] in Joint [" << this->getName() << "], but that is "
+          << index << "] in Joint [" << this->getName() << "], but that is "
           << "out of bounds (max " << DOF-1 << "). Returning name of DOF 0.\n";
     assert(false);
     return Base::mAspectProperties.mDofNames[0];
   }
 
-  return Base::mAspectProperties.mDofNames[_index];
+  return Base::mAspectProperties.mDofNames[index];
 }
 
 //==============================================================================
@@ -281,45 +281,45 @@ size_t MultiDofJoint<DOF>::getNumDofs() const
 
 //==============================================================================
 template <size_t DOF>
-size_t MultiDofJoint<DOF>::getIndexInSkeleton(size_t _index) const
+size_t MultiDofJoint<DOF>::getIndexInSkeleton(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getIndexInSkeleton, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getIndexInSkeleton, index);
     return 0;
   }
 
-  return mDofs[_index]->mIndexInSkeleton;
+  return mDofs[index]->mIndexInSkeleton;
 }
 
 //==============================================================================
 template <size_t DOF>
-size_t MultiDofJoint<DOF>::getIndexInTree(size_t _index) const
+size_t MultiDofJoint<DOF>::getIndexInTree(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getIndexInTree, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getIndexInTree, index);
     return 0;
   }
 
-  return mDofs[_index]->mIndexInTree;
+  return mDofs[index]->mIndexInTree;
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setCommand(size_t _index, double command)
+void MultiDofJoint<DOF>::setCommand(size_t index, double command)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setCommand, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setCommand, index);
   }
 
   switch (Joint::mAspectProperties.mActuatorType)
   {
     case Joint::FORCE:
-      this->mAspectState.mCommands[_index] = math::clip(command,
-            Base::mAspectProperties.mForceLowerLimits[_index],
-            Base::mAspectProperties.mForceUpperLimits[_index]);
+      this->mAspectState.mCommands[index] = math::clip(command,
+            Base::mAspectProperties.mForceLowerLimits[index],
+            Base::mAspectProperties.mForceUpperLimits[index]);
       break;
     case Joint::PASSIVE:
       if(0.0 != command)
@@ -328,22 +328,22 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double command)
                << command << ") command for a PASSIVE joint ["
                << this->getName() << "].\n";
       }
-      this->mAspectState.mCommands[_index] = command;
+      this->mAspectState.mCommands[index] = command;
       break;
     case Joint::SERVO:
-      this->mAspectState.mCommands[_index] = math::clip(command,
-            Base::mAspectProperties.mVelocityLowerLimits[_index],
-            Base::mAspectProperties.mVelocityUpperLimits[_index]);
+      this->mAspectState.mCommands[index] = math::clip(command,
+            Base::mAspectProperties.mVelocityLowerLimits[index],
+            Base::mAspectProperties.mVelocityUpperLimits[index]);
       break;
     case Joint::ACCELERATION:
-      this->mAspectState.mCommands[_index] = math::clip(command,
-            Base::mAspectProperties.mAccelerationLowerLimits[_index],
-            Base::mAspectProperties.mAccelerationUpperLimits[_index]);
+      this->mAspectState.mCommands[index] = math::clip(command,
+            Base::mAspectProperties.mAccelerationLowerLimits[index],
+            Base::mAspectProperties.mAccelerationUpperLimits[index]);
       break;
     case Joint::VELOCITY:
-      this->mAspectState.mCommands[_index] = math::clip(command,
-            Base::mAspectProperties.mVelocityLowerLimits[_index],
-            Base::mAspectProperties.mVelocityUpperLimits[_index]);
+      this->mAspectState.mCommands[index] = math::clip(command,
+            Base::mAspectProperties.mVelocityLowerLimits[index],
+            Base::mAspectProperties.mVelocityUpperLimits[index]);
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case Joint::LOCKED:
@@ -353,7 +353,7 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double command)
                << command << ") command for a LOCKED joint [" << this->getName()
                << "].\n";
       }
-      this->mAspectState.mCommands[_index] = command;
+      this->mAspectState.mCommands[index] = command;
       break;
     default:
       assert(false);
@@ -363,67 +363,67 @@ void MultiDofJoint<DOF>::setCommand(size_t _index, double command)
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getCommand(size_t _index) const
+double MultiDofJoint<DOF>::getCommand(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getCommand, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getCommand, index);
     return 0.0;
   }
 
-  return this->mAspectState.mCommands[_index];
+  return this->mAspectState.mCommands[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& _commands)
+void MultiDofJoint<DOF>::setCommands(const Eigen::VectorXd& commands)
 {
-  if (static_cast<size_t>(_commands.size()) != getNumDofs())
+  if (static_cast<size_t>(commands.size()) != getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setCommands, _commands);
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setCommands, commands);
     return;
   }
 
   switch (Joint::mAspectProperties.mActuatorType)
   {
     case Joint::FORCE:
-      this->mAspectState.mCommands = math::clip(_commands,
+      this->mAspectState.mCommands = math::clip(commands,
             Base::mAspectProperties.mForceLowerLimits,
             Base::mAspectProperties.mForceUpperLimits);
       break;
     case Joint::PASSIVE:
-      if(Vector::Zero() != _commands)
+      if(Vector::Zero() != commands)
       {
         dtwarn << "[MultiDofJoint::setCommands] Attempting to set a non-zero ("
-               << _commands.transpose() << ") command for a PASSIVE joint ["
+               << commands.transpose() << ") command for a PASSIVE joint ["
                << this->getName() << "].\n";
       }
-      this->mAspectState.mCommands = _commands;
+      this->mAspectState.mCommands = commands;
       break;
     case Joint::SERVO:
-      this->mAspectState.mCommands = math::clip(_commands,
+      this->mAspectState.mCommands = math::clip(commands,
             Base::mAspectProperties.mVelocityLowerLimits,
             Base::mAspectProperties.mVelocityUpperLimits);
       break;
     case Joint::ACCELERATION:
-      this->mAspectState.mCommands = math::clip(_commands,
+      this->mAspectState.mCommands = math::clip(commands,
             Base::mAspectProperties.mAccelerationLowerLimits,
             Base::mAspectProperties.mAccelerationUpperLimits);
       break;
     case Joint::VELOCITY:
-      this->mAspectState.mCommands = math::clip(_commands,
+      this->mAspectState.mCommands = math::clip(commands,
             Base::mAspectProperties.mVelocityLowerLimits,
             Base::mAspectProperties.mVelocityUpperLimits);
       // TODO: This possibly makes the acceleration to exceed the limits.
       break;
     case Joint::LOCKED:
-      if(Vector::Zero() != _commands)
+      if(Vector::Zero() != commands)
       {
         dtwarn << "[MultiDofJoint::setCommands] Attempting to set a non-zero ("
-               << _commands.transpose() << ") command for a LOCKED joint ["
+               << commands.transpose() << ") command for a LOCKED joint ["
                << this->getName() << "].\n";
       }
-      this->mAspectState.mCommands = _commands;
+      this->mAspectState.mCommands = commands;
       break;
     default:
       assert(false);
@@ -447,46 +447,46 @@ void MultiDofJoint<DOF>::resetCommands()
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setPosition(size_t _index, double _position)
+void MultiDofJoint<DOF>::setPosition(size_t index, double position)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setPosition, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setPosition, index);
     return;
   }
 
-  if(this->mAspectState.mPositions[_index] == _position)
+  if(this->mAspectState.mPositions[index] == position)
     return;
 
   // Note: It would not make much sense to use setPositionsStatic() here
-  this->mAspectState.mPositions[_index] = _position;
+  this->mAspectState.mPositions[index] = position;
   this->notifyPositionUpdate();
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getPosition(size_t _index) const
+double MultiDofJoint<DOF>::getPosition(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getPosition, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getPosition, index);
     return 0.0;
   }
 
-  return getPositionsStatic()[_index];
+  return getPositionsStatic()[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setPositions(const Eigen::VectorXd& _positions)
+void MultiDofJoint<DOF>::setPositions(const Eigen::VectorXd& positions)
 {
-  if (static_cast<size_t>(_positions.size()) != getNumDofs())
+  if (static_cast<size_t>(positions.size()) != getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setPositions, _positions);
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setPositions, positions);
     return;
   }
 
-  setPositionsStatic(_positions);
+  setPositionsStatic(positions);
 }
 
 //==============================================================================
@@ -498,54 +498,54 @@ Eigen::VectorXd MultiDofJoint<DOF>::getPositions() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setPositionLowerLimit(size_t _index, double _position)
+void MultiDofJoint<DOF>::setPositionLowerLimit(size_t index, double position)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setPositionLowerLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setPositionLowerLimit, index);
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mPositionLowerLimits[_index], _position );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mPositionLowerLimits[index], position );
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getPositionLowerLimit(size_t _index) const
+double MultiDofJoint<DOF>::getPositionLowerLimit(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getPositionLowerLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getPositionLowerLimit, index);
     return 0.0;
   }
 
-  return Base::mAspectProperties.mPositionLowerLimits[_index];
+  return Base::mAspectProperties.mPositionLowerLimits[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setPositionUpperLimit(size_t _index, double _position)
+void MultiDofJoint<DOF>::setPositionUpperLimit(size_t index, double position)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setPositionUpperLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setPositionUpperLimit, index);
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mPositionUpperLimits[_index], _position );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mPositionUpperLimits[index], position );
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::resetPosition(size_t _index)
+void MultiDofJoint<DOF>::resetPosition(size_t index)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(resetPosition, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(resetPosition, index);
     return;
   }
 
-  setPosition(_index, Base::mAspectProperties.mInitialPositions[_index]);
+  setPosition(index, Base::mAspectProperties.mInitialPositions[index]);
 }
 
 //==============================================================================
@@ -557,41 +557,41 @@ void MultiDofJoint<DOF>::resetPositions()
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setInitialPosition(size_t _index, double _initial)
+void MultiDofJoint<DOF>::setInitialPosition(size_t index, double initial)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setInitialPosition, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setInitialPosition, index);
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mInitialPositions[_index], _initial );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mInitialPositions[index], initial );
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getInitialPosition(size_t _index) const
+double MultiDofJoint<DOF>::getInitialPosition(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getInitialPosition, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getInitialPosition, index);
     return 0.0;
   }
 
-  return Base::mAspectProperties.mInitialPositions[_index];
+  return Base::mAspectProperties.mInitialPositions[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setInitialPositions(const Eigen::VectorXd& _initial)
+void MultiDofJoint<DOF>::setInitialPositions(const Eigen::VectorXd& initial)
 {
-  if ( static_cast<size_t>(_initial.size()) != getNumDofs() )
+  if ( static_cast<size_t>(initial.size()) != getNumDofs() )
   {
-    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setInitialPositions, _initial);
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setInitialPositions, initial);
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mInitialPositions, _initial);
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mInitialPositions, initial);
 }
 
 //==============================================================================
@@ -603,79 +603,79 @@ Eigen::VectorXd MultiDofJoint<DOF>::getInitialPositions() const
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getPositionUpperLimit(size_t _index) const
+double MultiDofJoint<DOF>::getPositionUpperLimit(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getPositionUpperLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getPositionUpperLimit, index);
     return 0.0;
   }
 
-  return Base::mAspectProperties.mPositionUpperLimits[_index];
+  return Base::mAspectProperties.mPositionUpperLimits[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-bool MultiDofJoint<DOF>::hasPositionLimit(size_t _index) const
+bool MultiDofJoint<DOF>::hasPositionLimit(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(hasPositionLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(hasPositionLimit, index);
     return true;
   }
 
-  return std::isfinite(Base::mAspectProperties.mPositionUpperLimits[_index])
-      || std::isfinite(Base::mAspectProperties.mPositionLowerLimits[_index]);
+  return std::isfinite(Base::mAspectProperties.mPositionUpperLimits[index])
+      || std::isfinite(Base::mAspectProperties.mPositionLowerLimits[index]);
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
+void MultiDofJoint<DOF>::setVelocity(size_t index, double velocity)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setVelocity, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setVelocity, index);
     return;
   }
 
-  if(this->mAspectState.mVelocities[_index] == _velocity)
+  if(this->mAspectState.mVelocities[index] == velocity)
     return;
 
   // Note: It would not make much sense to use setVelocitiesStatic() here
-  this->mAspectState.mVelocities[_index] = _velocity;
+  this->mAspectState.mVelocities[index] = velocity;
   this->notifyVelocityUpdate();
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
-    this->mAspectState.mCommands[_index] = this->getVelocitiesStatic()[_index];
+    this->mAspectState.mCommands[index] = this->getVelocitiesStatic()[index];
   // TODO: Remove at DART 5.1.
 #endif
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getVelocity(size_t _index) const
+double MultiDofJoint<DOF>::getVelocity(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getVelocity, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getVelocity, index);
     return 0.0;
   }
 
-  return getVelocitiesStatic()[_index];
+  return getVelocitiesStatic()[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setVelocities(const Eigen::VectorXd& _velocities)
+void MultiDofJoint<DOF>::setVelocities(const Eigen::VectorXd& velocities)
 {
-  if (static_cast<size_t>(_velocities.size()) != getNumDofs())
+  if (static_cast<size_t>(velocities.size()) != getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setVelocities, _velocities);
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setVelocities, velocities);
     return;
   }
 
-  setVelocitiesStatic(_velocities);
+  setVelocitiesStatic(velocities);
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
@@ -693,67 +693,67 @@ Eigen::VectorXd MultiDofJoint<DOF>::getVelocities() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setVelocityLowerLimit(size_t _index, double _velocity)
+void MultiDofJoint<DOF>::setVelocityLowerLimit(size_t index, double velocity)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( setVelocityLowerLimit, _index );
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( setVelocityLowerLimit, index );
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mVelocityLowerLimits[_index], _velocity );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mVelocityLowerLimits[index], velocity );
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getVelocityLowerLimit(size_t _index) const
+double MultiDofJoint<DOF>::getVelocityLowerLimit(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( getVelocityLowerLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( getVelocityLowerLimit, index);
     return 0.0;
   }
 
-  return Base::mAspectProperties.mVelocityLowerLimits[_index];
+  return Base::mAspectProperties.mVelocityLowerLimits[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setVelocityUpperLimit(size_t _index, double _velocity)
+void MultiDofJoint<DOF>::setVelocityUpperLimit(size_t index, double velocity)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( setVelocityUpperLimit, _index );
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( setVelocityUpperLimit, index );
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mVelocityUpperLimits[_index], _velocity );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mVelocityUpperLimits[index], velocity );
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getVelocityUpperLimit(size_t _index) const
+double MultiDofJoint<DOF>::getVelocityUpperLimit(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( getVelocityUpperLimit, _index );
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( getVelocityUpperLimit, index );
     return 0.0;
   }
 
-  return Base::mAspectProperties.mVelocityUpperLimits[_index];
+  return Base::mAspectProperties.mVelocityUpperLimits[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::resetVelocity(size_t _index)
+void MultiDofJoint<DOF>::resetVelocity(size_t index)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( resetVelocity, _index );
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( resetVelocity, index );
     return;
   }
 
-  setVelocity(_index, Base::mAspectProperties.mInitialVelocities[_index]);
+  setVelocity(index, Base::mAspectProperties.mInitialVelocities[index]);
 }
 
 //==============================================================================
@@ -765,41 +765,41 @@ void MultiDofJoint<DOF>::resetVelocities()
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setInitialVelocity(size_t _index, double _initial)
+void MultiDofJoint<DOF>::setInitialVelocity(size_t index, double initial)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( setInitialVelocity, _index );
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( setInitialVelocity, index );
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mInitialVelocities[_index], _initial );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mInitialVelocities[index], initial );
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getInitialVelocity(size_t _index) const
+double MultiDofJoint<DOF>::getInitialVelocity(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( getInitialVelocity, _index );
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( getInitialVelocity, index );
     return 0.0;
   }
 
-  return Base::mAspectProperties.mInitialVelocities[_index];
+  return Base::mAspectProperties.mInitialVelocities[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setInitialVelocities(const Eigen::VectorXd& _initial)
+void MultiDofJoint<DOF>::setInitialVelocities(const Eigen::VectorXd& initial)
 {
-  if ( static_cast<size_t>(_initial.size()) != getNumDofs() )
+  if ( static_cast<size_t>(initial.size()) != getNumDofs() )
   {
-    MULTIDOFJOINT_REPORT_DIM_MISMATCH( setInitialVelocities, _initial );
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH( setInitialVelocities, initial );
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mInitialVelocities, _initial );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mInitialVelocities, initial );
 }
 
 //==============================================================================
@@ -811,52 +811,52 @@ Eigen::VectorXd MultiDofJoint<DOF>::getInitialVelocities() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
+void MultiDofJoint<DOF>::setAcceleration(size_t index, double acceleration)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( setAcceleration, _index );
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( setAcceleration, index );
     return;
   }
 
-  if(this->mAspectState.mAccelerations[_index] == _acceleration)
+  if(this->mAspectState.mAccelerations[index] == acceleration)
     return;
 
   // Note: It would not make much sense to use setAccelerationsStatic() here
-  this->mAspectState.mAccelerations[_index] = _acceleration;
+  this->mAspectState.mAccelerations[index] = acceleration;
   this->notifyAccelerationUpdate();
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
-    this->mAspectState.mCommands[_index] = this->getAccelerationsStatic()[_index];
+    this->mAspectState.mCommands[index] = this->getAccelerationsStatic()[index];
   // TODO: Remove at DART 5.1.
 #endif
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getAcceleration(size_t _index) const
+double MultiDofJoint<DOF>::getAcceleration(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( getAcceleration, _index );
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE( getAcceleration, index );
     return 0.0;
   }
 
-  return getAccelerationsStatic()[_index];
+  return getAccelerationsStatic()[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
+void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& accelerations)
 {
-  if (static_cast<size_t>(_accelerations.size()) != getNumDofs())
+  if (static_cast<size_t>(accelerations.size()) != getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_DIM_MISMATCH( setAccelerations, _accelerations );
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH( setAccelerations, accelerations );
     return;
   }
 
-  setAccelerationsStatic(_accelerations);
+  setAccelerationsStatic(accelerations);
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
@@ -881,68 +881,68 @@ void MultiDofJoint<DOF>::resetAccelerations()
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setAccelerationLowerLimit(size_t _index,
-                                                   double _acceleration)
+void MultiDofJoint<DOF>::setAccelerationLowerLimit(size_t index,
+                                                   double acceleration)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setAccelerationLowerLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setAccelerationLowerLimit, index);
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mAccelerationLowerLimits[_index],
-                                  _acceleration );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mAccelerationLowerLimits[index],
+                                  acceleration );
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getAccelerationLowerLimit(size_t _index) const
+double MultiDofJoint<DOF>::getAccelerationLowerLimit(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getAccelerationLowerLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getAccelerationLowerLimit, index);
     return 0.0;
   }
 
-  return Base::mAspectProperties.mAccelerationLowerLimits[_index];
+  return Base::mAspectProperties.mAccelerationLowerLimits[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setAccelerationUpperLimit(size_t _index,
-                                                   double _acceleration)
+void MultiDofJoint<DOF>::setAccelerationUpperLimit(size_t index,
+                                                   double acceleration)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setAccelerationUpperLimit, _index)
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setAccelerationUpperLimit, index)
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mAccelerationUpperLimits[_index],
-                                  _acceleration);
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mAccelerationUpperLimits[index],
+                                  acceleration);
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t _index) const
+double MultiDofJoint<DOF>::getAccelerationUpperLimit(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getAccelerationUpperLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getAccelerationUpperLimit, index);
     return 0.0;
   }
 
-  return Base::mAspectProperties.mAccelerationUpperLimits[_index];
+  return Base::mAspectProperties.mAccelerationUpperLimits[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setPositionsStatic(const Vector& _positions)
+void MultiDofJoint<DOF>::setPositionsStatic(const Vector& positions)
 {
-  if(this->mAspectState.mPositions == _positions)
+  if(this->mAspectState.mPositions == positions)
     return;
 
-  this->mAspectState.mPositions = _positions;
+  this->mAspectState.mPositions = positions;
   this->notifyPositionUpdate();
 }
 
@@ -956,12 +956,12 @@ MultiDofJoint<DOF>::getPositionsStatic() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setVelocitiesStatic(const Vector& _velocities)
+void MultiDofJoint<DOF>::setVelocitiesStatic(const Vector& velocities)
 {
-  if(this->mAspectState.mVelocities == _velocities)
+  if(this->mAspectState.mVelocities == velocities)
     return;
 
-  this->mAspectState.mVelocities = _velocities;
+  this->mAspectState.mVelocities = velocities;
   this->notifyVelocityUpdate();
 }
 
@@ -994,47 +994,47 @@ MultiDofJoint<DOF>::getAccelerationsStatic() const
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
+void MultiDofJoint<DOF>::setForce(size_t index, double force)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setForce, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setForce, index);
     return;
   }
 
-  this->mAspectState.mForces[_index] = _force;
+  this->mAspectState.mForces[index] = force;
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
-    this->mAspectState.mCommands[_index] = this->mAspectState.mForces[_index];
+    this->mAspectState.mCommands[index] = this->mAspectState.mForces[index];
   // TODO: Remove at DART 5.1.
 #endif
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getForce(size_t _index)
+double MultiDofJoint<DOF>::getForce(size_t index)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getForce, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getForce, index);
     return 0.0;
   }
 
-  return this->mAspectState.mForces[_index];
+  return this->mAspectState.mForces[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
+void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& forces)
 {
-  if (static_cast<size_t>(_forces.size()) != getNumDofs())
+  if (static_cast<size_t>(forces.size()) != getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setForces, _forces);
+    MULTIDOFJOINT_REPORT_DIM_MISMATCH(setForces, forces);
     return;
   }
 
-  this->mAspectState.mForces = _forces;
+  this->mAspectState.mForces = forces;
 
 #if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
@@ -1065,81 +1065,81 @@ void MultiDofJoint<DOF>::resetForces()
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setForceLowerLimit(size_t _index, double _force)
+void MultiDofJoint<DOF>::setForceLowerLimit(size_t index, double force)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setForceLowerLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setForceLowerLimit, index);
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mForceLowerLimits[_index], _force );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mForceLowerLimits[index], force );
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getForceLowerLimit(size_t _index) const
+double MultiDofJoint<DOF>::getForceLowerLimit(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getForceLowerLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getForceLowerLimit, index);
     return 0.0;
   }
 
-  return Base::mAspectProperties.mForceLowerLimits[_index];
+  return Base::mAspectProperties.mForceLowerLimits[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setForceUpperLimit(size_t _index, double _force)
+void MultiDofJoint<DOF>::setForceUpperLimit(size_t index, double force)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setForceUpperLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setForceUpperLimit, index);
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mForceUpperLimits[_index], _force );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mForceUpperLimits[index], force );
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getForceUpperLimit(size_t _index) const
+double MultiDofJoint<DOF>::getForceUpperLimit(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getForceUpperLimit, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getForceUpperLimit, index);
     return 0.0;
   }
 
-  return Base::mAspectProperties.mForceUpperLimits[_index];
+  return Base::mAspectProperties.mForceUpperLimits[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setVelocityChange(size_t _index,
-                                           double _velocityChange)
+void MultiDofJoint<DOF>::setVelocityChange(size_t index,
+                                           double velocityChange)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setVelocityChange, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setVelocityChange, index);
     return;
   }
 
-  mVelocityChanges[_index] = _velocityChange;
+  mVelocityChanges[index] = velocityChange;
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getVelocityChange(size_t _index) const
+double MultiDofJoint<DOF>::getVelocityChange(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getVelocityChange, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getVelocityChange, index);
     return 0.0;
   }
 
-  return mVelocityChanges[_index];
+  return mVelocityChanges[index];
 }
 
 //==============================================================================
@@ -1151,28 +1151,28 @@ void MultiDofJoint<DOF>::resetVelocityChanges()
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setConstraintImpulse(size_t _index, double _impulse)
+void MultiDofJoint<DOF>::setConstraintImpulse(size_t index, double _impulse)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setConstraintImpulse, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setConstraintImpulse, index);
     return;
   }
 
-  mConstraintImpulses[_index] = _impulse;
+  mConstraintImpulses[index] = _impulse;
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getConstraintImpulse(size_t _index) const
+double MultiDofJoint<DOF>::getConstraintImpulse(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getConstraintImpulse, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getConstraintImpulse, index);
     return 0.0;
   }
 
-  return mConstraintImpulses[_index];
+  return mConstraintImpulses[index];
 }
 
 //==============================================================================
@@ -1224,124 +1224,124 @@ Eigen::Matrix<double, DOF, 1> MultiDofJoint<DOF>::getPositionDifferencesStatic(
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setSpringStiffness(size_t _index, double _k)
+void MultiDofJoint<DOF>::setSpringStiffness(size_t index, double _k)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setSpringStiffness, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setSpringStiffness, index);
     return;
   }
 
   assert(_k >= 0.0);
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mSpringStiffnesses[_index], _k );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mSpringStiffnesses[index], _k );
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getSpringStiffness(size_t _index) const
+double MultiDofJoint<DOF>::getSpringStiffness(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getSpringStiffness, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getSpringStiffness, index);
     return 0.0;
   }
 
-  return Base::mAspectProperties.mSpringStiffnesses[_index];
+  return Base::mAspectProperties.mSpringStiffnesses[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setRestPosition(size_t _index, double _q0)
+void MultiDofJoint<DOF>::setRestPosition(size_t index, double _q0)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setRestPosition, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setRestPosition, index);
     return;
   }
 
-  if (Base::mAspectProperties.mPositionLowerLimits[_index] > _q0
-      || Base::mAspectProperties.mPositionUpperLimits[_index] < _q0)
+  if (Base::mAspectProperties.mPositionLowerLimits[index] > _q0
+      || Base::mAspectProperties.mPositionUpperLimits[index] < _q0)
   {
     dtwarn << "[MultiDofJoint::setRestPosition] Value of _q0 [" << _q0
            << "], is out of the limit range ["
-           << Base::mAspectProperties.mPositionLowerLimits[_index] << ", "
-           << Base::mAspectProperties.mPositionUpperLimits[_index]
-           << "] for index [" << _index << "] of Joint [" << this->getName()
+           << Base::mAspectProperties.mPositionLowerLimits[index] << ", "
+           << Base::mAspectProperties.mPositionUpperLimits[index]
+           << "] for index [" << index << "] of Joint [" << this->getName()
            << "].\n";
     return;
   }
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mRestPositions[_index], _q0 );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mRestPositions[index], _q0 );
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getRestPosition(size_t _index) const
+double MultiDofJoint<DOF>::getRestPosition(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getRestPosition, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getRestPosition, index);
     return 0.0;
   }
 
-  return Base::mAspectProperties.mRestPositions[_index];
+  return Base::mAspectProperties.mRestPositions[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setDampingCoefficient(size_t _index, double _d)
+void MultiDofJoint<DOF>::setDampingCoefficient(size_t index, double _d)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setDampingCoefficient, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setDampingCoefficient, index);
     return;
   }
 
   assert(_d >= 0.0);
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mDampingCoefficients[_index], _d );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mDampingCoefficients[index], _d );
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getDampingCoefficient(size_t _index) const
+double MultiDofJoint<DOF>::getDampingCoefficient(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getDampingCoefficient, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getDampingCoefficient, index);
     return 0.0;
   }
 
-  return Base::mAspectProperties.mDampingCoefficients[_index];
+  return Base::mAspectProperties.mDampingCoefficients[index];
 }
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::setCoulombFriction(size_t _index, double _friction)
+void MultiDofJoint<DOF>::setCoulombFriction(size_t index, double friction)
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setCoulombFriction, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(setCoulombFriction, index);
     return;
   }
 
-  assert(_friction >= 0.0);
+  assert(friction >= 0.0);
 
-  MULTIDOFJOINT_SET_IF_DIFFERENT( mFrictions[_index], _friction );
+  GEOMETRICJOINT_SET_IF_DIFFERENT( mFrictions[index], friction );
 }
 
 //==============================================================================
 template <size_t DOF>
-double MultiDofJoint<DOF>::getCoulombFriction(size_t _index) const
+double MultiDofJoint<DOF>::getCoulombFriction(size_t index) const
 {
-  if (_index >= getNumDofs())
+  if (index >= getNumDofs())
   {
-    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getCoulombFriction, _index);
+    MULTIDOFJOINT_REPORT_OUT_OF_RANGE(getCoulombFriction, index);
     return 0.0;
   }
 
-  return Base::mAspectProperties.mFrictions[_index];
+  return Base::mAspectProperties.mFrictions[index];
 }
 
 //==============================================================================
@@ -1422,10 +1422,10 @@ MultiDofJoint<DOF>::getLocalJacobianStatic() const
 
 //==============================================================================
 template <size_t DOF>
-math::Jacobian MultiDofJoint<DOF>::getLocalJacobian(
-    const Eigen::VectorXd& _positions) const
+const math::Jacobian MultiDofJoint<DOF>::getLocalJacobian(
+    const Eigen::VectorXd& positions) const
 {
-  return getLocalJacobianStatic(_positions);
+  return getLocalJacobianStatic(positions);
 }
 
 //==============================================================================
@@ -1534,13 +1534,13 @@ void MultiDofJoint<DOF>::addAccelerationTo(Eigen::Vector6d& _acc)
 
 //==============================================================================
 template <size_t DOF>
-void MultiDofJoint<DOF>::addVelocityChangeTo(Eigen::Vector6d& _velocityChange)
+void MultiDofJoint<DOF>::addVelocityChangeTo(Eigen::Vector6d& velocityChange)
 {
-  // Add joint velocity change to _velocityChange
-  _velocityChange.noalias() += getLocalJacobianStatic() * mVelocityChanges;
+  // Add joint velocity change to velocityChange
+  velocityChange.noalias() += getLocalJacobianStatic() * mVelocityChanges;
 
   // Verification
-  assert(!math::isNan(_velocityChange));
+  assert(!math::isNan(velocityChange));
 }
 
 //==============================================================================
@@ -2086,19 +2086,19 @@ void MultiDofJoint<DOF>::updateAccelerationKinematic(
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateVelocityChange(
     const Eigen::Matrix6d& _artInertia,
-    const Eigen::Vector6d& _velocityChange)
+    const Eigen::Vector6d& velocityChange)
 {
   switch (Joint::mAspectProperties.mActuatorType)
   {
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
-      updateVelocityChangeDynamic(_artInertia, _velocityChange);
+      updateVelocityChangeDynamic(_artInertia, velocityChange);
       break;
     case Joint::ACCELERATION:
     case Joint::VELOCITY:
     case Joint::LOCKED:
-      updateVelocityChangeKinematic(_artInertia, _velocityChange);
+      updateVelocityChangeKinematic(_artInertia, velocityChange);
       break;
     default:
       MULTIDOFJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateVelocityChange);
@@ -2110,13 +2110,13 @@ void MultiDofJoint<DOF>::updateVelocityChange(
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateVelocityChangeDynamic(
     const Eigen::Matrix6d& _artInertia,
-    const Eigen::Vector6d& _velocityChange)
+    const Eigen::Vector6d& velocityChange)
 {
   //
   mVelocityChanges
       = getInvProjArtInertia()
       * (mTotalImpulse - getLocalJacobianStatic().transpose()
-         *_artInertia*math::AdInvT(this->getLocalTransform(), _velocityChange));
+         *_artInertia*math::AdInvT(this->getLocalTransform(), velocityChange));
 
   // Verification
   assert(!math::isNan(mVelocityChanges));
@@ -2126,7 +2126,7 @@ void MultiDofJoint<DOF>::updateVelocityChangeDynamic(
 template <size_t DOF>
 void MultiDofJoint<DOF>::updateVelocityChangeKinematic(
     const Eigen::Matrix6d& /*_artInertia*/,
-    const Eigen::Vector6d& /*_velocityChange*/)
+    const Eigen::Vector6d& /*velocityChange*/)
 {
   // Do nothing
 }
