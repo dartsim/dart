@@ -50,10 +50,10 @@ PrismaticJointUniqueProperties::PrismaticJointUniqueProperties(
 
 //==============================================================================
 PrismaticJointProperties::PrismaticJointProperties(
-    const GeometricJoint<math::RealSpace>::Properties& _singleDofProperties,
-    const PrismaticJointUniqueProperties& _prismaticProperties)
-  : GeometricJoint<math::RealSpace>::Properties(_singleDofProperties),
-    PrismaticJointUniqueProperties(_prismaticProperties)
+    const GeometricJoint<math::RealSpace>::Properties& geometricJointProperties,
+    const PrismaticJointUniqueProperties& prismaticProperties)
+  : GeometricJoint<math::RealSpace>::Properties(geometricJointProperties),
+    PrismaticJointUniqueProperties(prismaticProperties)
 {
   // Do nothing
 }

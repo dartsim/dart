@@ -83,10 +83,10 @@ public:
   /// Set the Properties of this GeometricJoint
   void setProperties(const UniqueProperties& properties);
 
-  /// Set the AspectState of this MultiDofJoint
+  /// Set the AspectState of this GeometricJoint
   void setAspectState(const AspectState& state);
 
-  /// Set the AspectProperties of this MultiDofJoint
+  /// Set the AspectProperties of this GeometricJoint
   void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this GeometricJoint

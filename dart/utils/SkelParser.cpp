@@ -1510,8 +1510,8 @@ void setDofLimitAttributes(tinyxml2::XMLElement* _dofElement,
 }
 
 //==============================================================================
-// This structure exists to allow a common interface for setting values in both
-// SingleDofJoint::Properties and MultiDofJoint::Properties
+// This structure exists to allow a common interface for setting values in
+// GeometricJoint::Properties
 struct DofProxy
 {
   size_t index;

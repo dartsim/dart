@@ -68,9 +68,9 @@ struct UniversalJointProperties :
     UniversalJointUniqueProperties
 {
   UniversalJointProperties(
-      const GeometricJoint<math::RealVector2Space>::Properties& _multiDofProperties =
+      const GeometricJoint<math::RealVector2Space>::Properties& geometricJointProperties =
           GeometricJoint<math::RealVector2Space>::Properties(),
-      const UniversalJointUniqueProperties& _universalProperties =
+      const UniversalJointUniqueProperties& universalProperties =
           UniversalJointUniqueProperties());
 
   virtual ~UniversalJointProperties() = default;

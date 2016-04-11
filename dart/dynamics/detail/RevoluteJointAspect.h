@@ -67,9 +67,9 @@ struct RevoluteJointProperties :
     RevoluteJointUniqueProperties
 {
   RevoluteJointProperties(
-      const GeometricJoint<math::RealSpace>::Properties& _singleDofJointProperties =
+      const GeometricJoint<math::RealSpace>::Properties& geometricJointProperties =
           GeometricJoint<math::RealSpace>::Properties(),
-      const RevoluteJointUniqueProperties& _revoluteProperties =
+      const RevoluteJointUniqueProperties& revoluteProperties =
           RevoluteJointUniqueProperties());
 
   virtual ~RevoluteJointProperties() = default;

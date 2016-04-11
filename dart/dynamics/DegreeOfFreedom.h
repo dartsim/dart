@@ -58,8 +58,6 @@ class DegreeOfFreedom : public virtual common::Subject
 public:
 
   friend class Joint;
-  friend class SingleDofJoint;
-  template<size_t> friend class MultiDofJoint;
   template<class> friend class GeometricJoint;
   friend class Skeleton;
 
@@ -77,9 +75,9 @@ public:
   ///
   /// DegreeOfFreedom's name will be automatically given by the joint it belongs
   /// to. Below is the naming policy:
-  ///   - SingleDofJoint \n
+  ///   - GeometricJoint<RealSpace> \n
   ///       Same name as the joint it belongs to.
-  ///   - MultiDofJoint \n
+  ///   - GeometricJoint<[multi_dof_joint_space]> \n
   ///       "[Joint_name]+[affix]" is used. The affix is determined according
   ///       to the role they play in the joint. For example, suppose there's a
   ///       TranslationalJoint named "trans_joint". Then the each dof to be

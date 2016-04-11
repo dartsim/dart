@@ -438,7 +438,7 @@ void GeometricJoint<ConfigSpaceT>::setCommands(
     case Joint::LOCKED:
       if(Vector::Zero() != commands)
       {
-        dtwarn << "[MultiDofJoint::setCommands] Attempting to set a non-zero ("
+        dtwarn << "[GeometricJoint::setCommands] Attempting to set a non-zero ("
                << commands.transpose() << ") command for a LOCKED joint ["
                << this->getName() << "].\n";
       }

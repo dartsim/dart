@@ -71,9 +71,9 @@ struct ScrewJointProperties : GeometricJoint<math::RealSpace>::Properties,
                     ScrewJointUniqueProperties
 {
   ScrewJointProperties(
-      const GeometricJoint<math::RealSpace>::Properties& _singleDofProperties =
+      const GeometricJoint<math::RealSpace>::Properties& geometricJointProperties =
           GeometricJoint<math::RealSpace>::Properties(),
-      const ScrewJointUniqueProperties& _screwProperties =
+      const ScrewJointUniqueProperties& screwProperties =
           ScrewJointUniqueProperties());
 
   virtual ~ScrewJointProperties() = default;

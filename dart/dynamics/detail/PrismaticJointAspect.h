@@ -67,9 +67,9 @@ struct PrismaticJointProperties :
     PrismaticJointUniqueProperties
 {
   PrismaticJointProperties(
-      const GeometricJoint<math::RealSpace>::Properties& _singleDofProperties =
+      const GeometricJoint<math::RealSpace>::Properties& geometricJointProperties =
           GeometricJoint<math::RealSpace>::Properties(),
-      const PrismaticJointUniqueProperties& _prismaticProperties =
+      const PrismaticJointUniqueProperties& prismaticProperties =
           PrismaticJointUniqueProperties());
 
   virtual ~PrismaticJointProperties() = default;
