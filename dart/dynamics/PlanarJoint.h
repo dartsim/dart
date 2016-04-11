@@ -56,7 +56,7 @@ public:
   using PlaneType = detail::PlaneType;
   using UniqueProperties = detail::PlanarJointUniqueProperties;
   using Properties = detail::PlanarJointProperties;
-  using Base = detail::PlanarJointBase;
+  using BaseClass = GeometricJoint<math::RealVector3Space>;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, PlanarJointAspect)
 
@@ -131,7 +131,7 @@ public:
   const Eigen::Vector3d& getTranslationalAxis2() const;
 
   // Documentation inherited
-  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+  const Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 
 protected:
@@ -142,7 +142,7 @@ protected:
   // Documentation inherited
   virtual Joint* clone() const override;
 
-  using MultiDofJoint::getLocalJacobianStatic;
+  using BaseClass::getLocalJacobianStatic;
 
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when the Plane type is changed.

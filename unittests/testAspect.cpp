@@ -705,28 +705,28 @@ TEST(Aspect, Joints)
 
   dart::dynamics::EulerJoint* euler =
       skel->createJointAndBodyNodePair<dart::dynamics::EulerJoint>().first;
-  euler->getMultiDofJointAspect();
+  euler->getGeometricJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   euler->getEulerJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::PlanarJoint* planar =
       skel->createJointAndBodyNodePair<dart::dynamics::PlanarJoint>().first;
-  planar->getMultiDofJointAspect();
+  planar->getGeometricJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   planar->getPlanarJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::PrismaticJoint* prismatic =
       skel->createJointAndBodyNodePair<dart::dynamics::PrismaticJoint>().first;
-  prismatic->getSingleDofJointAspect();
+  prismatic->getGeometricJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   prismatic->getPrismaticJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::RevoluteJoint* revolute =
       skel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>().first;
-  revolute->getSingleDofJointAspect();
+  revolute->getGeometricJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   revolute->getRevoluteJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;

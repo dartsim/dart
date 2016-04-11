@@ -81,6 +81,23 @@ struct mapToEuclideanPointImpl
 
 //==============================================================================
 template <>
+struct mapToEuclideanPointImpl<SE2Space>
+{
+  static typename SE2Space::EuclideanPoint run(
+      const typename SE2Space::Point& point)
+  {
+    Eigen::Vector3d x;
+
+//    x.head<3>() = math::logMap(point.linear());
+    // TODO(JS): implement
+    x.tail<2>() = point.translation();
+
+    return x;
+  }
+};
+
+//==============================================================================
+template <>
 struct mapToEuclideanPointImpl<SO3Space>
 {
   static typename SO3Space::EuclideanPoint run(
@@ -114,6 +131,23 @@ struct mapToManifoldPointImpl
       const typename SpaceT::EuclideanPoint& point)
   {
     return point;
+  }
+};
+
+//==============================================================================
+template <>
+struct mapToManifoldPointImpl<SE2Space>
+{
+  static typename SE2Space::Point run(
+      const typename SE2Space::EuclideanPoint& point)
+  {
+    Eigen::Isometry2d tf(Eigen::Isometry2d::Identity());
+
+//    tf.linear() = math::expMapRot(point.head<1>());
+    // TODO(JS): implement
+    tf.translation() = point.tail<2>();
+
+    return tf;
   }
 };
 
@@ -154,6 +188,19 @@ struct integratePositionImpl
       double dt)
   {
     return pos + dt * vel;
+  }
+};
+
+//==============================================================================
+template <>
+struct integratePositionImpl<SE2Space>
+{
+  static typename SE2Space::Point run(
+      const typename SE2Space::Point& pos,
+      const typename SE2Space::Vector& vel,
+      double dt)
+  {
+    return pos * mapToManifoldPoint<SE2Space>(vel * dt);
   }
 };
 

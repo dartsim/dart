@@ -40,14 +40,14 @@
 
 #include "dart/math/Helpers.h"
 #include "dart/math/Geometry.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-FreeJoint::Properties::Properties(
-    const MultiDofJoint<6>::Properties& _properties)
-  : MultiDofJoint<6>::Properties(_properties)
+FreeJoint::Properties::Properties(const BaseClass::Properties& properties)
+  : BaseClass::Properties(properties)
 {
   // Do nothing
 }
@@ -61,7 +61,7 @@ FreeJoint::~FreeJoint()
 //==============================================================================
 FreeJoint::Properties FreeJoint::getFreeJointProperties() const
 {
-  return getMultiDofJointProperties();
+  return getGeometricJointProperties();
 }
 
 //==============================================================================
@@ -507,7 +507,7 @@ void FreeJoint::setAngularAcceleration(
 }
 
 //==============================================================================
-Eigen::Matrix6d FreeJoint::getLocalJacobianStatic(
+const Eigen::Matrix6d FreeJoint::getLocalJacobianStatic(
     const Eigen::Vector6d& /*positions*/) const
 {
   return mJacobian;
@@ -526,14 +526,14 @@ Eigen::Vector6d FreeJoint::getPositionDifferencesStatic(
 
 //==============================================================================
 FreeJoint::FreeJoint(const Properties& properties)
-  : MultiDofJoint<6>(properties),
+  : BaseClass(properties),
     mQ(Eigen::Isometry3d::Identity())
 {
   mJacobianDeriv = Eigen::Matrix6d::Zero();
 
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
-  createMultiDofJointAspect(properties);
+  createGeometricJointAspect(properties);
   createJointAspect(properties);
 }
 

@@ -55,8 +55,8 @@ EulerJoint::~EulerJoint()
 //==============================================================================
 void EulerJoint::setProperties(const Properties& _properties)
 {
-  MultiDofJoint<3>::setProperties(
-        static_cast<const MultiDofJoint<3>::Properties&>(_properties));
+  BaseClass::setProperties(
+        static_cast<const BaseClass::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -75,7 +75,8 @@ void EulerJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 EulerJoint::Properties EulerJoint::getEulerJointProperties() const
 {
-  return EulerJoint::Properties(getMultiDofJointProperties(), getEulerJointAspect()->getProperties());
+  return EulerJoint::Properties(getGeometricJointProperties(),
+                                getEulerJointAspect()->getProperties());
 }
 
 //==============================================================================
@@ -181,7 +182,7 @@ Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d& _positions)
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
+const Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
     const Eigen::Vector3d& _positions) const
 {
   Eigen::Matrix<double, 6, 3> J;
@@ -295,7 +296,7 @@ EulerJoint::EulerJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createEulerJointAspect(properties);
-  createMultiDofJointAspect(properties);
+  createGeometricJointAspect(properties);
   createJointAspect(properties);
 }
 

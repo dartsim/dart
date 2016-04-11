@@ -41,7 +41,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/SingleDofJoint.h"
+#include "dart/dynamics/GeometricJoint.h"
 
 namespace dart {
 namespace dynamics {
@@ -63,12 +63,12 @@ struct PrismaticJointUniqueProperties
 
 //==============================================================================
 struct PrismaticJointProperties :
-    SingleDofJoint::Properties,
+    GeometricJoint<math::RealSpace>::Properties,
     PrismaticJointUniqueProperties
 {
   PrismaticJointProperties(
-      const SingleDofJoint::Properties& _singleDofProperties =
-          SingleDofJoint::Properties(),
+      const GeometricJoint<math::RealSpace>::Properties& _singleDofProperties =
+          GeometricJoint<math::RealSpace>::Properties(),
       const PrismaticJointUniqueProperties& _prismaticProperties =
           PrismaticJointUniqueProperties());
 
@@ -77,7 +77,7 @@ struct PrismaticJointProperties :
 
 //==============================================================================
 using PrismaticJointBase = common::EmbedPropertiesOnTopOf<
-    PrismaticJoint, PrismaticJointUniqueProperties, SingleDofJoint>;
+    PrismaticJoint, PrismaticJointUniqueProperties, GeometricJoint<math::RealSpace> >;
 
 } // namespace detail
 } // namespace dynamics

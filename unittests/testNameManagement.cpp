@@ -50,7 +50,7 @@ TEST(NameManagement, Skeleton)
 
   std::pair<Joint*, BodyNode*> pair;
   pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
-        nullptr, SingleDofJoint::Properties(std::string("joint")));
+        nullptr, GeometricJoint<RealSpace>::Properties(std::string("joint")));
   Joint* joint1 = pair.first;
   BodyNode* body1 = pair.second;
 
@@ -60,7 +60,7 @@ TEST(NameManagement, Skeleton)
   BodyNode* body2 = pair.second;
 
   pair = skel->createJointAndBodyNodePair<FreeJoint>(
-        body2, MultiDofJoint<6>::Properties(std::string("joint")));
+        body2, GeometricJoint<SE3Space>::Properties(std::string("joint")));
   Joint* joint3 = pair.first;
   BodyNode* body3 = pair.second;
 

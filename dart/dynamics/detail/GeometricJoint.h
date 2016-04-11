@@ -43,6 +43,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/math/ConfigurationSpace.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/DegreeOfFreedom.h"
 
 #define GEOMETRICJOINT_REPORT_DIM_MISMATCH( func, arg )\
   {\

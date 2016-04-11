@@ -41,22 +41,24 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/MultiDofJoint.h"
+#include "dart/dynamics/GeometricJoint.h"
 
 namespace dart {
 namespace dynamics {
 
 /// class FreeJoint
-class FreeJoint : public MultiDofJoint<6>
+class FreeJoint : public GeometricJoint<math::SE3Space>
 {
 public:
 
   friend class Skeleton;
 
-  struct Properties : MultiDofJoint<6>::Properties
+  using BaseClass = GeometricJoint<math::SE3Space>;
+
+  struct Properties : BaseClass::Properties
   {
-    Properties(const MultiDofJoint<6>::Properties& _properties =
-                                                MultiDofJoint<6>::Properties());
+    Properties(const BaseClass::Properties& properties
+               = BaseClass::Properties());
 
     virtual ~Properties() = default;
   };
@@ -261,7 +263,7 @@ public:
                               const Frame* inCoordinatesOf = Frame::World());
 
   // Documentation inherited
-  Eigen::Matrix6d getLocalJacobianStatic(
+  const Eigen::Matrix6d getLocalJacobianStatic(
       const Eigen::Vector6d& _positions) const override;
 
   // Documentation inherited
@@ -276,7 +278,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using MultiDofJoint::getLocalJacobianStatic;
+  using BaseClass::getLocalJacobianStatic;
 
   // Documentation inherited
   void integratePositions(double _dt) override;

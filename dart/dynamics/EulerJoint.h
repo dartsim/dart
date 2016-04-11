@@ -51,7 +51,7 @@ public:
   using AxisOrder = detail::AxisOrder;
   using UniqueProperties = detail::EulerJointUniqueProperties;
   using Properties = detail::EulerJointProperties;
-  using Base = detail::EulerJointBase;
+  using BaseClass = detail::EulerJointBase;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, EulerJointAspect)
 
@@ -147,7 +147,7 @@ public:
   Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions) const;
 
   // Documentation inherited
-  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+  const Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 
 protected:
@@ -158,7 +158,7 @@ protected:
   // Documentation inherited
   virtual Joint* clone() const override;
 
-  using MultiDofJoint::getLocalJacobianStatic;
+  using BaseClass::getLocalJacobianStatic;
 
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when axis order is changed.

@@ -205,7 +205,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     std::pair<dynamics::Joint*, dynamics::BodyNode*> pair =
         skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
           nullptr, dynamics::FreeJoint::Properties(
-            dynamics::MultiDofJoint<6>::Properties(
+            dynamics::GeometricJoint<math::SE3Space>::Properties(
             dynamics::Joint::Properties("rootJoint"))),
           rootProperties);
     rootNode = pair.second;
@@ -297,15 +297,15 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   basicProperties.mT_ParentBodyToJoint =
       toEigen(_jt->parent_to_joint_origin_transform);
 
-  dynamics::SingleDofJoint::UniqueProperties singleDof;
+  dynamics::GeometricJoint<math::RealSpace>::UniqueProperties singleDof;
   if(_jt->limits)
   {
-    singleDof.mPositionLowerLimit = _jt->limits->lower;
-    singleDof.mPositionUpperLimit = _jt->limits->upper;
-    singleDof.mVelocityLowerLimit = -_jt->limits->velocity;
-    singleDof.mVelocityUpperLimit =  _jt->limits->velocity;
-    singleDof.mForceLowerLimit = -_jt->limits->effort;
-    singleDof.mForceUpperLimit =  _jt->limits->effort;
+    singleDof.mPositionLowerLimits[0] = _jt->limits->lower;
+    singleDof.mPositionUpperLimits[0] = _jt->limits->upper;
+    singleDof.mVelocityLowerLimits[0] = -_jt->limits->velocity;
+    singleDof.mVelocityUpperLimits[0] =  _jt->limits->velocity;
+    singleDof.mForceLowerLimits[0] = -_jt->limits->effort;
+    singleDof.mForceUpperLimits[0] =  _jt->limits->effort;
 
     // If the zero position is out of our limits, we should change the initial
     // position instead of assuming zero.
@@ -313,23 +313,23 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     {
       if(std::isfinite(_jt->limits->lower)
          && std::isfinite(_jt->limits->upper))
-        singleDof.mInitialPosition =
+        singleDof.mInitialPositions[0] =
             (_jt->limits->lower + _jt->limits->upper) / 2.0;
       else if(std::isfinite(_jt->limits->lower))
-        singleDof.mInitialPosition = _jt->limits->lower;
+        singleDof.mInitialPositions[0] = _jt->limits->lower;
       else if(std::isfinite(_jt->limits->upper))
-        singleDof.mInitialPosition = _jt->limits->upper;
+        singleDof.mInitialPositions[0] = _jt->limits->upper;
 
       // Any other case means that the limits are both +inf, both -inf, or
       // either of them is NaN. This should generate warnings elsewhere.
 
       // Apply the same logic to mRestPosition.
-      singleDof.mRestPosition = singleDof.mInitialPosition;
+      singleDof.mRestPositions = singleDof.mInitialPositions;
     }
   }
 
   if(_jt->dynamics)
-    singleDof.mDampingCoefficient = _jt->dynamics->damping;
+    singleDof.mDampingCoefficients[0] = _jt->dynamics->damping;
 
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
   switch(_jt->type)
@@ -338,7 +338,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::CONTINUOUS:
     {
       dynamics::RevoluteJoint::Properties properties(
-            dynamics::SingleDofJoint::Properties(basicProperties, singleDof),
+            dynamics::GeometricJoint<math::RealSpace>::Properties(basicProperties, singleDof),
             toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
@@ -349,7 +349,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::PRISMATIC:
     {
       dynamics::PrismaticJoint::Properties properties(
-            dynamics::SingleDofJoint::Properties(basicProperties, singleDof),
+            dynamics::GeometricJoint<math::RealSpace>::Properties(basicProperties, singleDof),
             toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
@@ -365,7 +365,8 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     }
     case urdf::Joint::FLOATING:
     {
-      dynamics::MultiDofJoint<6>::Properties properties(basicProperties);
+      dynamics::GeometricJoint<math::SE3Space>::Properties properties(
+            basicProperties);
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
             _parent, properties, _body);

@@ -679,11 +679,11 @@ bool readJointHinge(const tinyxml2::XMLElement* jointEle,
   properties.mT_ParentBodyToJoint = tfFromParent;
   properties.mT_ChildBodyToJoint = Eigen::Isometry3d::Identity();
   properties.mAxis = axis;
-  properties.mDampingCoefficient = vskData.options.jointDampingCoefficient;
-  properties.mPositionLowerLimit = vskData.options.jointPositionLowerLimit;
-  properties.mPositionUpperLimit = vskData.options.jointPositionUpperLimit;
+  properties.mDampingCoefficients[0] = vskData.options.jointDampingCoefficient;
+  properties.mPositionLowerLimits[0] = vskData.options.jointPositionLowerLimit;
+  properties.mPositionUpperLimits[0] = vskData.options.jointPositionUpperLimit;
   properties.mIsPositionLimited = true;
-  properties.mFriction = vskData.options.jointFriction;
+  properties.mFrictions[0] = vskData.options.jointFriction;
 
   jointProperties
       = Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(

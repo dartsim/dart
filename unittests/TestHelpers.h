@@ -421,7 +421,7 @@ SkeletonPtr createObject(
 {
   double mass = 1.0;
 
-  MultiDofJoint<6>::Properties joint(std::string("joint1"));
+  GeometricJoint<SE3Space>::Properties joint(std::string("joint1"));
 
   BodyNode::Properties node(BodyNode::AspectProperties(std::string("link1")));
   node.mInertia.setMass(mass);

@@ -1917,7 +1917,7 @@ JointPropPtr readRevoluteJoint(
     assert(0);
   }
 
-  readJointDynamicsAndLimit<dynamics::SingleDofJoint::Properties>(
+  readJointDynamicsAndLimit<dynamics::GeometricJoint<math::RealSpace>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   //--------------------------------------------------------------------------
@@ -1928,7 +1928,7 @@ JointPropPtr readRevoluteJoint(
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
     _joint.position = ipos;
-    properties.mInitialPosition = ipos[0];
+    properties.mInitialPositions[0] = ipos[0];
   }
 
   //--------------------------------------------------------------------------
@@ -1939,10 +1939,10 @@ JointPropPtr readRevoluteJoint(
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
     _joint.velocity = ivel;
-    properties.mInitialVelocity = ivel[0];
+    properties.mInitialVelocities[0] = ivel[0];
   }
 
-  readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
+  readAllDegreesOfFreedom<dynamics::GeometricJoint<math::RealSpace>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   return Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
@@ -1976,7 +1976,7 @@ JointPropPtr readPrismaticJoint(
     assert(0);
   }
 
-  readJointDynamicsAndLimit<dynamics::SingleDofJoint::Properties>(
+  readJointDynamicsAndLimit<dynamics::GeometricJoint<math::RealSpace>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   //--------------------------------------------------------------------------
@@ -1987,7 +1987,7 @@ JointPropPtr readPrismaticJoint(
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
     _joint.position = ipos;
-    properties.mInitialPosition = ipos[0];
+    properties.mInitialPositions[0] = ipos[0];
   }
 
   //--------------------------------------------------------------------------
@@ -1998,10 +1998,10 @@ JointPropPtr readPrismaticJoint(
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
     _joint.velocity = ivel;
-    properties.mInitialVelocity = ivel[0];
+    properties.mInitialVelocities[0] = ivel[0];
   }
 
-  readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
+  readAllDegreesOfFreedom<dynamics::GeometricJoint<math::RealSpace>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   return Eigen::make_aligned_shared<dynamics::PrismaticJoint::Properties>(

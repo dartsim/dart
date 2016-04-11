@@ -54,8 +54,8 @@ PrismaticJoint::~PrismaticJoint()
 //==============================================================================
 void PrismaticJoint::setProperties(const Properties& _properties)
 {
-  SingleDofJoint::setProperties(
-        static_cast<const SingleDofJoint::Properties&>(_properties));
+  GeometricJoint<math::RealSpace>::setProperties(
+        static_cast<const GeometricJoint<math::RealSpace>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -74,7 +74,7 @@ void PrismaticJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 PrismaticJoint::Properties PrismaticJoint::getPrismaticJointProperties() const
 {
-  return Properties(getSingleDofJointProperties(), mAspectProperties);
+  return Properties(getGeometricJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -140,13 +140,28 @@ const Eigen::Vector3d& PrismaticJoint::getAxis() const
 }
 
 //==============================================================================
+const GeometricJoint<math::RealSpace>::JacobianMatrix
+PrismaticJoint::getLocalJacobianStatic(
+    const GeometricJoint<math::RealSpace>::Vector& /*positions*/) const
+{
+  GeometricJoint<math::RealSpace>::JacobianMatrix jacobian
+      = math::AdTLinear(Joint::mAspectProperties.mT_ChildBodyToJoint,
+                        getAxis());
+
+  // Verification
+  assert(!math::isNan(jacobian));
+
+  return jacobian;
+}
+
+//==============================================================================
 PrismaticJoint::PrismaticJoint(const Properties& properties)
   : detail::PrismaticJointBase(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createPrismaticJointAspect(properties);
-  createSingleDofJointAspect(properties);
+  createGeometricJointAspect(properties);
   createJointAspect(properties);
 }
 
@@ -157,10 +172,18 @@ Joint* PrismaticJoint::clone() const
 }
 
 //==============================================================================
+void PrismaticJoint::updateDegreeOfFreedomNames()
+{
+  // Same name as the joint it belongs to.
+  if (!mDofs[0]->isNamePreserved())
+    mDofs[0]->setName(Joint::mAspectProperties.mName, false);
+}
+
+//==============================================================================
 void PrismaticJoint::updateLocalTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
-       * Eigen::Translation3d(getAxis() * getPositionStatic())
+       * Eigen::Translation3d(getAxis() * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -171,12 +194,7 @@ void PrismaticJoint::updateLocalTransform() const
 void PrismaticJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
-  {
-    mJacobian = math::AdTLinear(Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis());
-
-    // Verification
-    assert(!math::isNan(mJacobian));
-  }
+    mJacobian = getLocalJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================

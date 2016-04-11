@@ -95,6 +95,10 @@ public:
   ///
   const Eigen::Vector3d& getAxis() const;
 
+  // Documentation inherited
+  const GeometricJoint<math::RealSpace>::JacobianMatrix getLocalJacobianStatic(
+      const GeometricJoint<math::RealSpace>::Vector& positions) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -102,6 +106,9 @@ protected:
 
   // Documentation inherited
   virtual Joint* clone() const override;
+
+  // Documentation inherited
+  void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited
   virtual void updateLocalTransform() const override;

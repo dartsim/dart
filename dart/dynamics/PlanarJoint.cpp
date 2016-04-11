@@ -55,8 +55,8 @@ PlanarJoint::~PlanarJoint()
 //==============================================================================
 void PlanarJoint::setProperties(const Properties& _properties)
 {
-  MultiDofJoint<3>::setProperties(
-        static_cast<const MultiDofJoint<3>::Properties&>(_properties));
+  BaseClass::setProperties(
+        static_cast<const BaseClass::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -78,7 +78,7 @@ void PlanarJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 PlanarJoint::Properties PlanarJoint::getPlanarJointProperties() const
 {
-  return Properties(getMultiDofJointProperties(), mAspectProperties);
+  return Properties(getGeometricJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -192,7 +192,7 @@ const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> PlanarJoint::getLocalJacobianStatic(
+const Eigen::Matrix<double, 6, 3> PlanarJoint::getLocalJacobianStatic(
     const Eigen::Vector3d& _positions) const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
@@ -220,7 +220,7 @@ PlanarJoint::PlanarJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createPlanarJointAspect(properties);
-  createMultiDofJointAspect(properties);
+  createGeometricJointAspect(properties);
   createJointAspect(properties);
 }
 
