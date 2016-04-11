@@ -733,20 +733,20 @@ TEST(Aspect, Joints)
 
   dart::dynamics::ScrewJoint* screw =
       skel->createJointAndBodyNodePair<dart::dynamics::ScrewJoint>().first;
-  screw->getSingleDofJointAspect();
+  screw->getGeometricJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   screw->getScrewJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::UniversalJoint* universal =
       skel->createJointAndBodyNodePair<dart::dynamics::UniversalJoint>().first;
-  universal->getMultiDofJointAspect();
+  universal->getGeometricJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   universal->getUniversalJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   // Regression test for issue #645
-  universal->getMultiDofJointAspect(true);
+  universal->getGeometricJointAspect(true);
 }
 
 TEST(Aspect, BodyNodes)

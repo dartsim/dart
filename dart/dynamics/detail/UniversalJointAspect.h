@@ -41,7 +41,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/MultiDofJoint.h"
+#include "dart/dynamics/GeometricJoint.h"
 
 namespace dart {
 namespace dynamics {
@@ -64,12 +64,12 @@ struct UniversalJointUniqueProperties
 
 //==============================================================================
 struct UniversalJointProperties :
-    MultiDofJoint<2>::Properties,
+    GeometricJoint<math::RealVector2Space>::Properties,
     UniversalJointUniqueProperties
 {
   UniversalJointProperties(
-      const MultiDofJoint<2>::Properties& _multiDofProperties =
-          MultiDofJoint<2>::Properties(),
+      const GeometricJoint<math::RealVector2Space>::Properties& _multiDofProperties =
+          GeometricJoint<math::RealVector2Space>::Properties(),
       const UniversalJointUniqueProperties& _universalProperties =
           UniversalJointUniqueProperties());
 
@@ -78,7 +78,7 @@ struct UniversalJointProperties :
 
 //==============================================================================
 using UniversalJointBase = common::EmbedPropertiesOnTopOf<
-    UniversalJoint, UniversalJointUniqueProperties, MultiDofJoint<2> >;
+    UniversalJoint, UniversalJointUniqueProperties,  GeometricJoint<math::RealVector2Space> >;
 
 } // namespace detail
 } // namespace dynamics

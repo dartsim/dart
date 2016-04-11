@@ -54,8 +54,8 @@ ScrewJoint::~ScrewJoint()
 //==============================================================================
 void ScrewJoint::setProperties(const Properties& _properties)
 {
-  SingleDofJoint::setProperties(
-        static_cast<const SingleDofJoint::Properties&>(_properties));
+  GeometricJoint<math::RealSpace>::setProperties(
+        static_cast<const GeometricJoint<math::RealSpace>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -75,7 +75,7 @@ void ScrewJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 ScrewJoint::Properties ScrewJoint::getScrewJointProperties() const
 {
-  return Properties(getSingleDofJointProperties(), mAspectProperties);
+  return Properties(getGeometricJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -159,13 +159,30 @@ double ScrewJoint::getPitch() const
 }
 
 //==============================================================================
+const GeometricJoint<math::RealSpace>::JacobianMatrix
+ScrewJoint::getLocalJacobianStatic(
+    const GeometricJoint<math::RealSpace>::Vector& /*positions*/) const
+{
+  Eigen::Vector6d S = Eigen::Vector6d::Zero();
+  S.head<3>() = getAxis();
+  S.tail<3>() = getAxis() * getPitch() / DART_2PI;
+
+  GeometricJoint<math::RealSpace>::JacobianMatrix jacobian
+      = math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint, S);
+
+  assert(!math::isNan(jacobian));
+
+  return jacobian;
+}
+
+//==============================================================================
 ScrewJoint::ScrewJoint(const Properties& properties)
   : detail::ScrewJointBase(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createScrewJointAspect(properties);
-  createSingleDofJointAspect(properties);
+  createGeometricJointAspect(properties);
   createJointAspect(properties);
 }
 
@@ -176,13 +193,21 @@ Joint* ScrewJoint::clone() const
 }
 
 //==============================================================================
+void ScrewJoint::updateDegreeOfFreedomNames()
+{
+  // Same name as the joint it belongs to.
+  if (!mDofs[0]->isNamePreserved())
+    mDofs[0]->setName(Joint::mAspectProperties.mName, false);
+}
+
+//==============================================================================
 void ScrewJoint::updateLocalTransform() const
 {
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = getAxis();
   S.tail<3>() = getAxis()*getPitch()/DART_2PI;
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
-       * math::expMap(S * getPositionStatic())
+       * math::expMap(S * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
@@ -191,13 +216,7 @@ void ScrewJoint::updateLocalTransform() const
 void ScrewJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
-  {
-    Eigen::Vector6d S = Eigen::Vector6d::Zero();
-    S.head<3>() = getAxis();
-    S.tail<3>() = getAxis()*getPitch()/DART_2PI;
-    mJacobian = math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint, S);
-    assert(!math::isNan(mJacobian));
-  }
+    mJacobian = getLocalJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================

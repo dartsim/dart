@@ -53,8 +53,9 @@ UniversalJoint::~UniversalJoint()
 //==============================================================================
 void UniversalJoint::setProperties(const Properties& _properties)
 {
-  MultiDofJoint<2>::setProperties(
-        static_cast<const MultiDofJoint<2>::Properties&>(_properties));
+  GeometricJoint<math::RealVector2Space>::setProperties(
+        static_cast<const GeometricJoint<math::RealVector2Space>::Properties&>(
+          _properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -74,7 +75,7 @@ void UniversalJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 UniversalJoint::Properties UniversalJoint::getUniversalJointProperties() const
 {
-  return Properties(getMultiDofJointProperties(), mAspectProperties);
+  return Properties(getGeometricJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -150,7 +151,7 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 2> UniversalJoint::getLocalJacobianStatic(
+const Eigen::Matrix<double, 6, 2> UniversalJoint::getLocalJacobianStatic(
     const Eigen::Vector2d& _positions) const
 {
   Eigen::Matrix<double, 6, 2> J;
@@ -169,7 +170,7 @@ UniversalJoint::UniversalJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createUniversalJointAspect(properties);
-  createMultiDofJointAspect(properties);
+  createGeometricJointAspect(properties);
   createJointAspect(properties);
 }
 

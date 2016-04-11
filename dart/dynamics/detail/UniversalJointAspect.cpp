@@ -50,9 +50,9 @@ UniversalJointUniqueProperties::UniversalJointUniqueProperties(
 
 //==============================================================================
 UniversalJointProperties::UniversalJointProperties(
-    const MultiDofJoint<2>::Properties& _multiDofProperties,
+    const GeometricJoint<math::RealVector2Space>::Properties& _multiDofProperties,
     const UniversalJointUniqueProperties& _universalProperties)
-  : MultiDofJoint<2>::Properties(_multiDofProperties),
+  : GeometricJoint<math::RealVector2Space>::Properties(_multiDofProperties),
     UniversalJointUniqueProperties(_universalProperties)
 {
   // Do nothing

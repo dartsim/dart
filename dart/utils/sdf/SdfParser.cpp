@@ -1375,11 +1375,11 @@ dynamics::ScrewJoint::Properties readScrewJoint(
 
     readAxisElement(axisElement, _parentModelFrame,
                     newScrewJoint.mAxis,
-                    newScrewJoint.mPositionLowerLimit,
-                    newScrewJoint.mPositionUpperLimit,
-                    newScrewJoint.mInitialPosition,
-                    newScrewJoint.mRestPosition,
-                    newScrewJoint.mDampingCoefficient);
+                    newScrewJoint.mPositionLowerLimits[0],
+                    newScrewJoint.mPositionUpperLimits[0],
+                    newScrewJoint.mInitialPositions[0],
+                    newScrewJoint.mRestPositions[0],
+                    newScrewJoint.mDampingCoefficients[0]);
   }
   else
   {

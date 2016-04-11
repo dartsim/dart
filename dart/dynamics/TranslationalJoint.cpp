@@ -46,8 +46,8 @@ namespace dynamics {
 
 //==============================================================================
 TranslationalJoint::Properties::Properties(
-    const MultiDofJoint<3>::Properties& _properties)
-  : MultiDofJoint<3>::Properties(_properties)
+    const BaseClass::Properties& _properties)
+  : BaseClass::Properties(_properties)
 {
   // Do nothing
 }
@@ -59,7 +59,7 @@ TranslationalJoint::~TranslationalJoint()
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> TranslationalJoint::getLocalJacobianStatic(
+const Eigen::Matrix<double, 6, 3> TranslationalJoint::getLocalJacobianStatic(
     const Eigen::Vector3d& /*_positions*/) const
 {
   // The Jacobian is always constant w.r.t. the generalized coordinates.
@@ -67,18 +67,19 @@ Eigen::Matrix<double, 6, 3> TranslationalJoint::getLocalJacobianStatic(
 }
 
 //==============================================================================
-TranslationalJoint::Properties TranslationalJoint::getTranslationalJointProperties() const
+TranslationalJoint::Properties
+TranslationalJoint::getTranslationalJointProperties() const
 {
-  return getMultiDofJointProperties();
+  return getGeometricJointProperties();
 }
 
 //==============================================================================
 TranslationalJoint::TranslationalJoint(const Properties& properties)
-  : MultiDofJoint<3>(properties)
+  : BaseClass(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
-  createMultiDofJointAspect(properties);
+  createGeometricJointAspect(properties);
   createJointAspect(properties);
 }
 

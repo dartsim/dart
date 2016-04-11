@@ -55,7 +55,7 @@ TEST(NameManagement, Skeleton)
   BodyNode* body1 = pair.second;
 
   pair = skel->createJointAndBodyNodePair<TranslationalJoint>(
-        body1, MultiDofJoint<3>::Properties(std::string("joint")));
+        body1, GeometricJoint<RealVector3Space>::Properties(std::string("joint")));
   Joint* joint2 = pair.first;
   BodyNode* body2 = pair.second;
 

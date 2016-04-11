@@ -1442,16 +1442,6 @@ GeometricJoint<ConfigSpaceT>::getLocalJacobianTimeDerivStatic() const
 
 //==============================================================================
 template <class ConfigSpaceT>
-Eigen::Vector6d
-GeometricJoint<ConfigSpaceT>::getBodyConstraintWrench() const
-{
-  assert(this->mChildBodyNode);
-  return this->mChildBodyNode->getBodyForce()
-      - this->getLocalJacobianStatic() * this->mAspectState.mForces;
-}
-
-//==============================================================================
-template <class ConfigSpaceT>
 GeometricJoint<ConfigSpaceT>::GeometricJoint(
     const Properties& properties)
   : mVelocityChanges(Vector::Zero()),
@@ -1483,6 +1473,16 @@ void GeometricJoint<ConfigSpaceT>::registerDofs()
         = skel->mNameMgrForDofs.issueNewNameAndAdd(mDofs[i]->getName(),
                                                    mDofs[i]);
   }
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+Eigen::Vector6d
+GeometricJoint<ConfigSpaceT>::getBodyConstraintWrench() const
+{
+  assert(this->mChildBodyNode);
+  return this->mChildBodyNode->getBodyForce()
+      - this->getLocalJacobianStatic() * this->mAspectState.mForces;
 }
 
 //==============================================================================

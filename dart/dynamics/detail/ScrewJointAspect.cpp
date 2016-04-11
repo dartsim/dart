@@ -51,9 +51,9 @@ ScrewJointUniqueProperties::ScrewJointUniqueProperties(
 
 //==============================================================================
 ScrewJointProperties::ScrewJointProperties(
-    const SingleDofJoint::Properties& _singleDofProperties,
+    const GeometricJoint<math::RealSpace>::Properties& _singleDofProperties,
     const ScrewJointUniqueProperties& _screwProperties)
-  : SingleDofJoint::Properties(_singleDofProperties),
+  : GeometricJoint<math::RealSpace>::Properties(_singleDofProperties),
     ScrewJointUniqueProperties(_screwProperties)
 {
   // Do nothing

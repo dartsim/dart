@@ -444,15 +444,8 @@ public:
   // Documentation inherited
   Eigen::Vector6d getBodyConstraintWrench() const override;
 
-protected:
-
-  GeometricJoint(const Properties& properties);
-
-  // Documentation inherited
-  void registerDofs() override;
-
   //----------------------------------------------------------------------------
-  /// \{ \name Recursive dynamics routines
+  /// \{ \name Jacobians
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -474,6 +467,19 @@ protected:
 
   /// Fixed-size version of getLocalJacobianTimeDeriv()
   const JacobianMatrix& getLocalJacobianTimeDerivStatic() const;
+
+  /// \}
+
+protected:
+
+  GeometricJoint(const Properties& properties);
+
+  // Documentation inherited
+  void registerDofs() override;
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Recursive dynamics routines
+  //----------------------------------------------------------------------------
 
   /// Get the inverse of the projected articulated inertia
   const Matrix& getInvProjArtInertia() const;
