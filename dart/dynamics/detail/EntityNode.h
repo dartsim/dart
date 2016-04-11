@@ -39,6 +39,8 @@
 
 #include "dart/dynamics/EntityNode.h"
 
+#include "dart/dynamics/Entity.h"
+
 namespace dart {
 namespace dynamics {
 

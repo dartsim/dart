@@ -179,6 +179,9 @@ public:
   /// setting
   bool isHidden() const;
 
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 };
 
 class CollisionAspect final :
