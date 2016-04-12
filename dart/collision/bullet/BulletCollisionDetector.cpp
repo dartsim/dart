@@ -34,6 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+// Must be included before any Bullet headers.
+#include "dart/config.h"
+
 #include "dart/collision/bullet/BulletCollisionDetector.h"
 
 #include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
@@ -251,7 +254,7 @@ std::unique_ptr<CollisionObject> BulletCollisionDetector::createCollisionObject(
 }
 
 //==============================================================================
-void BulletCollisionDetector::notifyCollisionObjectDestorying(
+void BulletCollisionDetector::notifyCollisionObjectDestroying(
     CollisionObject* object)
 {
   reclaimBulletCollisionShape(object->getShape());
