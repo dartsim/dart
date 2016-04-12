@@ -621,10 +621,10 @@ bool FCLCollisionDetector::collide(
     return false;
   }
 
-  group->updateEngineData();
+  auto casted = static_cast<FCLCollisionGroup*>(group);
+  casted->updateEngineData();
 
-  auto castedData = static_cast<FCLCollisionGroup*>(group);
-  auto broadPhaseAlg = castedData->getFCLCollisionManager();
+  auto broadPhaseAlg = casted->getFCLCollisionManager();
 
   FCLCollisionCallbackData collData(
         option, result, mPrimitiveShapeType,
@@ -651,11 +651,10 @@ bool FCLCollisionDetector::collide(
     return false;
   }
 
-  group1->updateEngineData();
-  group2->updateEngineData();
-
   auto casted1 = static_cast<FCLCollisionGroup*>(group1);
   auto casted2 = static_cast<FCLCollisionGroup*>(group2);
+  casted1->updateEngineData();
+  casted2->updateEngineData();
 
   auto broadPhaseAlg1 = casted1->getFCLCollisionManager();
   auto broadPhaseAlg2 = casted2->getFCLCollisionManager();

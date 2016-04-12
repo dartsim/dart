@@ -188,9 +188,9 @@ bool BulletCollisionDetector::collide(
     return false;
   }
 
-  group->updateEngineData();
-
   auto castedData = static_cast<BulletCollisionGroup*>(group);
+  castedData->updateEngineData();
+
   auto bulletCollisionWorld = castedData->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
   auto filterCallback = new BulletOverlapFilterCallback(option, result);
