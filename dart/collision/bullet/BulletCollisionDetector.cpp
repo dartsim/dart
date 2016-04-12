@@ -240,7 +240,7 @@ bool BulletCollisionDetector::collide(
 BulletCollisionDetector::BulletCollisionDetector()
   : CollisionDetector()
 {
-  mCollisionObjectManager.reset(new NoneSharingCollisionObjectManager(this));
+  mCollisionObjectManager.reset(new ManagerForUnsharableCollisionObjects(this));
 }
 
 //==============================================================================

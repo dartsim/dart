@@ -95,18 +95,20 @@ public:
       const Args&... args);
 
   /// Perform collision detection for group.
-  virtual bool collide(CollisionGroup* group,
-                       const CollisionOption& option, CollisionResult& result) = 0;
+  virtual bool collide(
+      CollisionGroup* group,
+      const CollisionOption& option, CollisionResult& result) = 0;
 
   /// Perform collision detection for group1-group2.
-  virtual bool collide(CollisionGroup* group1, CollisionGroup* group2,
-                       const CollisionOption& option, CollisionResult& result) = 0;
+  virtual bool collide(
+      CollisionGroup* group1, CollisionGroup* group2,
+      const CollisionOption& option, CollisionResult& result) = 0;
 
 protected:
 
   class CollisionObjectManager;
-  class NoneSharingCollisionObjectManager;
-  class SharingCollisionObjectManager;
+  class ManagerForUnsharableCollisionObjects;
+  class ManagerForSharableCollisionObjects;
 
   /// Constructor
   CollisionDetector() = default;
@@ -129,6 +131,7 @@ protected:
 
 };
 
+//==============================================================================
 class CollisionDetector::CollisionObjectManager
 {
 public:
@@ -147,13 +150,14 @@ protected:
 
 };
 
-class CollisionDetector::NoneSharingCollisionObjectManager final :
+//==============================================================================
+class CollisionDetector::ManagerForUnsharableCollisionObjects final :
     public CollisionDetector::CollisionObjectManager
 {
 public:
 
   /// Constructor
-  NoneSharingCollisionObjectManager(CollisionDetector* cd);
+  ManagerForUnsharableCollisionObjects(CollisionDetector* cd);
 
   // Documentation inherited
   std::shared_ptr<CollisionObject> claimCollisionObject(
@@ -165,9 +169,9 @@ private:
   /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
   struct CollisionObjectDeleter final
   {
-    NoneSharingCollisionObjectManager* mCollisionObjectManager;
+    ManagerForUnsharableCollisionObjects* mCollisionObjectManager;
 
-    CollisionObjectDeleter(NoneSharingCollisionObjectManager* mgr);
+    CollisionObjectDeleter(ManagerForUnsharableCollisionObjects* mgr);
 
     void operator()(CollisionObject* object) const;
   };
@@ -176,16 +180,17 @@ private:
 
 };
 
-class CollisionDetector::SharingCollisionObjectManager final :
+//==============================================================================
+class CollisionDetector::ManagerForSharableCollisionObjects final :
     public CollisionDetector::CollisionObjectManager
 {
 public:
 
   /// Constructor
-  SharingCollisionObjectManager(CollisionDetector* cd);
+  ManagerForSharableCollisionObjects(CollisionDetector* cd);
 
   /// Destructor
-  virtual ~SharingCollisionObjectManager();
+  virtual ~ManagerForSharableCollisionObjects();
 
   // Documentation inherited
   std::shared_ptr<CollisionObject> claimCollisionObject(
@@ -197,9 +202,9 @@ private:
   /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
   struct CollisionObjectDeleter final
   {
-    SharingCollisionObjectManager* mCollisionObjectManager;
+    ManagerForSharableCollisionObjects* mCollisionObjectManager;
 
-    CollisionObjectDeleter(SharingCollisionObjectManager* mgr);
+    CollisionObjectDeleter(ManagerForSharableCollisionObjects* mgr);
 
     void operator()(CollisionObject* object) const;
   };

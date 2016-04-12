@@ -202,7 +202,7 @@ bool DARTCollisionDetector::collide(
 DARTCollisionDetector::DARTCollisionDetector()
   : CollisionDetector()
 {
-  mCollisionObjectManager.reset(new SharingCollisionObjectManager(this));
+  mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
 
 //==============================================================================

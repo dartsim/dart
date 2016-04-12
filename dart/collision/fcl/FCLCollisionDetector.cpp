@@ -723,7 +723,7 @@ FCLCollisionDetector::FCLCollisionDetector()
     mPrimitiveShapeType(MESH),
     mContactPointComputationMethod(DART)
 {
-  mCollisionObjectManager.reset(new SharingCollisionObjectManager(this));
+  mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
 
 //==============================================================================

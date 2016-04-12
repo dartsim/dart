@@ -60,7 +60,7 @@ std::shared_ptr<CollisionObject> CollisionDetector::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
   if (!mCollisionObjectManager)
-    mCollisionObjectManager.reset(new NoneSharingCollisionObjectManager(this));
+    mCollisionObjectManager.reset(new ManagerForUnsharableCollisionObjects(this));
 
   return mCollisionObjectManager->claimCollisionObject(shapeFrame);
 }
@@ -82,7 +82,7 @@ CollisionDetector::CollisionObjectManager::CollisionObjectManager(
 
 //==============================================================================
 CollisionDetector::
-NoneSharingCollisionObjectManager::NoneSharingCollisionObjectManager(
+ManagerForUnsharableCollisionObjects::ManagerForUnsharableCollisionObjects(
     CollisionDetector* cd)
   : CollisionDetector::CollisionObjectManager(cd),
     mCollisionObjectDeleter(this)
@@ -92,7 +92,7 @@ NoneSharingCollisionObjectManager::NoneSharingCollisionObjectManager(
 
 //==============================================================================
 std::shared_ptr<CollisionObject>
-CollisionDetector::NoneSharingCollisionObjectManager::claimCollisionObject(
+CollisionDetector::ManagerForUnsharableCollisionObjects::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
   auto uniqueObject = mCollisionDetector->createCollisionObject(shapeFrame);
@@ -103,9 +103,9 @@ CollisionDetector::NoneSharingCollisionObjectManager::claimCollisionObject(
 }
 
 //==============================================================================
-CollisionDetector::NoneSharingCollisionObjectManager::
+CollisionDetector::ManagerForUnsharableCollisionObjects::
 CollisionObjectDeleter::CollisionObjectDeleter(
-    NoneSharingCollisionObjectManager* mgr)
+    ManagerForUnsharableCollisionObjects* mgr)
   : mCollisionObjectManager(mgr)
 {
   assert(mgr);
@@ -113,7 +113,7 @@ CollisionObjectDeleter::CollisionObjectDeleter(
 
 //==============================================================================
 void
-CollisionDetector::NoneSharingCollisionObjectManager
+CollisionDetector::ManagerForUnsharableCollisionObjects
 ::CollisionObjectDeleter::operator()(CollisionObject* object) const
 {
   mCollisionObjectManager->mCollisionDetector->notifyCollisionObjectDestroying(
@@ -124,7 +124,7 @@ CollisionDetector::NoneSharingCollisionObjectManager
 
 //==============================================================================
 CollisionDetector::
-SharingCollisionObjectManager::SharingCollisionObjectManager(
+ManagerForSharableCollisionObjects::ManagerForSharableCollisionObjects(
     CollisionDetector* cd)
   : CollisionDetector::CollisionObjectManager(cd),
     mCollisionObjectDeleter(this)
@@ -134,14 +134,14 @@ SharingCollisionObjectManager::SharingCollisionObjectManager(
 
 //==============================================================================
 CollisionDetector::
-SharingCollisionObjectManager::~SharingCollisionObjectManager()
+ManagerForSharableCollisionObjects::~ManagerForSharableCollisionObjects()
 {
   assert(mCollisionObjectMap.empty());
 }
 
 //==============================================================================
 std::shared_ptr<CollisionObject>
-CollisionDetector::SharingCollisionObjectManager::claimCollisionObject(
+CollisionDetector::ManagerForSharableCollisionObjects::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
   const auto search = mCollisionObjectMap.find(shapeFrame);
@@ -165,9 +165,9 @@ CollisionDetector::SharingCollisionObjectManager::claimCollisionObject(
 }
 
 //==============================================================================
-CollisionDetector::SharingCollisionObjectManager::
+CollisionDetector::ManagerForSharableCollisionObjects::
 CollisionObjectDeleter::CollisionObjectDeleter(
-    SharingCollisionObjectManager* mgr)
+    ManagerForSharableCollisionObjects* mgr)
   : mCollisionObjectManager(mgr)
 {
   assert(mgr);
@@ -175,7 +175,7 @@ CollisionObjectDeleter::CollisionObjectDeleter(
 
 //==============================================================================
 void
-CollisionDetector::SharingCollisionObjectManager
+CollisionDetector::ManagerForSharableCollisionObjects
 ::CollisionObjectDeleter::operator()(CollisionObject* object) const
 {
   mCollisionObjectManager->mCollisionDetector->notifyCollisionObjectDestroying(
