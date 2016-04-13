@@ -2,7 +2,7 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
-include_directories(SYSTEM ${IPOPT_INCLUDE_DIRS})
+include_directories(SYSTEM ${NLOPT_INCLUDE_DIRS})
 
 # Library
 dart_add_library(dart-optimizer-nlopt ${srcs} ${hdrs})
