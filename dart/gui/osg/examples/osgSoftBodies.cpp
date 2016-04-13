@@ -43,12 +43,12 @@
 
 using namespace dart::dynamics;
 
-class RecordingWorld : public osgDart::WorldNode
+class RecordingWorld : public dart::gui::osg::WorldNode
 {
 public:
 
   RecordingWorld(const dart::simulation::WorldPtr& world)
-    : osgDart::WorldNode(world)
+    : dart::gui::osg::WorldNode(world)
   {
     grabTimeSlice();
     mCurrentIndex = 0;
