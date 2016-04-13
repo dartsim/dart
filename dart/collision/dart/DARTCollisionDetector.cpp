@@ -69,10 +69,10 @@ std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
 }
 
 //==============================================================================
-std::unique_ptr<CollisionDetector>
+std::shared_ptr<CollisionDetector>
 DARTCollisionDetector::cloneWithoutCollisionObjects()
 {
-  return std::unique_ptr<CollisionDetector>(new DARTCollisionDetector());
+  return DARTCollisionDetector::create();
 }
 
 //==============================================================================

@@ -66,7 +66,7 @@ public:
 
   /// \brief Create a clone of this CollisionDetector. All the properties will
   /// be copied over, but not collision objects.
-  virtual std::unique_ptr<CollisionDetector> cloneWithoutCollisionObjects() = 0;
+  virtual std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects() = 0;
 
   /// Return collision detection engine type as a std::string
   virtual const std::string& getType() const = 0;

@@ -52,7 +52,7 @@ public:
   static std::shared_ptr<DARTCollisionDetector> create();
 
   // Documentation inherited
-  std::unique_ptr<CollisionDetector> cloneWithoutCollisionObjects() override;
+  std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects() override;
 
   // Documentation inherited
   const std::string& getType() const override;
