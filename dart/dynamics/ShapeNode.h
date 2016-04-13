@@ -126,6 +126,12 @@ public:
   /// Same as getRelativeTranslation()
   Eigen::Vector3d getOffset() const;
 
+  // Documentation inherited
+  ShapeNode* asShapeNode() override;
+
+  // Documentation inherited
+  const ShapeNode* asShapeNode() const override;
+
 protected:
 
   /// Constructor used by the Skeleton class

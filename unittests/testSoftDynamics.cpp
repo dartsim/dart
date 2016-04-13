@@ -312,7 +312,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       // Set random states
       Skeleton::Configuration x = softSkel->getConfiguration();
-      for (int k = 0; k < softSkel->getNumDofs(); ++k)
+      for (size_t k = 0u; k < softSkel->getNumDofs(); ++k)
       {
         x.mPositions[k] = random(lb, ub);
         x.mVelocities[k] = random(lb, ub);

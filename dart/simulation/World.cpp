@@ -50,6 +50,7 @@
 #include "dart/integration/SemiImplicitEulerIntegrator.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/constraint/ConstraintSolver.h"
+#include "dart/collision/CollisionGroup.h"
 
 namespace dart {
 namespace simulation {
@@ -274,7 +275,7 @@ size_t World::getNumSkeletons() const
 }
 
 //==============================================================================
-std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
+std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
   if(nullptr == _skeleton)
   {
@@ -315,7 +316,7 @@ std::string World::addSkeleton(dynamics::SkeletonPtr _skeleton)
 }
 
 //==============================================================================
-void World::removeSkeleton(dynamics::SkeletonPtr _skeleton)
+void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
 {
   assert(_skeleton != nullptr && "Attempted to remove nullptr Skeleton from world");
 
@@ -411,7 +412,7 @@ size_t World::getNumSimpleFrames() const
 }
 
 //==============================================================================
-std::string World::addSimpleFrame(dynamics::SimpleFramePtr _frame)
+std::string World::addSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 {
   assert(_frame != nullptr && "Attempted to add nullptr SimpleFrame to world");
 
@@ -443,7 +444,7 @@ std::string World::addSimpleFrame(dynamics::SimpleFramePtr _frame)
 }
 
 //==============================================================================
-void World::removeSimpleFrame(dynamics::SimpleFramePtr _frame)
+void World::removeSimpleFrame(const dynamics::SimpleFramePtr& _frame)
 {
   assert(_frame != nullptr && "Attempted to remove nullptr SimpleFrame from world");
 
@@ -488,10 +489,17 @@ std::set<dynamics::SimpleFramePtr> World::removeAllSimpleFrames()
 }
 
 //==============================================================================
-bool World::checkCollision(bool _checkAllCollisions)
+bool World::checkCollision(bool checkAllCollisions)
 {
-  return mConstraintSolver->getCollisionDetector()->detectCollision(
-        _checkAllCollisions, false);
+  collision::CollisionOption option;
+  if (checkAllCollisions)
+    option.enableContact = true;
+  else
+    option.enableContact = false;
+
+  collision::CollisionResult result;
+
+  return mConstraintSolver->getCollisionGroup()->collide(option, result);
 }
 
 //==============================================================================
@@ -503,22 +511,24 @@ constraint::ConstraintSolver* World::getConstraintSolver() const
 //==============================================================================
 void World::bake()
 {
-  collision::CollisionDetector* cd
-      = getConstraintSolver()->getCollisionDetector();
-  int nContacts = cd->getNumContacts();
-  int nSkeletons = getNumSkeletons();
+  const auto collisionResult = getConstraintSolver()->getLastCollisionResult();
+  const auto nContacts = static_cast<int>(collisionResult.getNumContacts());
+  const auto nSkeletons = getNumSkeletons();
+
   Eigen::VectorXd state(getIndex(nSkeletons) + 6 * nContacts);
-  for (size_t i = 0; i < getNumSkeletons(); i++)
+  for (auto i = 0u; i < getNumSkeletons(); ++i)
   {
     state.segment(getIndex(i), getSkeleton(i)->getNumDofs())
         = getSkeleton(i)->getPositions();
   }
-  for (int i = 0; i < nContacts; i++)
+
+  for (auto i = 0; i < nContacts; ++i)
   {
-    int begin = getIndex(nSkeletons) + i * 6;
-    state.segment(begin, 3)     = cd->getContact(i).point;
-    state.segment(begin + 3, 3) = cd->getContact(i).force;
+    auto begin = getIndex(nSkeletons) + i * 6;
+    state.segment(begin, 3)     = collisionResult.getContact(i).point;
+    state.segment(begin + 3, 3) = collisionResult.getContact(i).force;
   }
+
   mRecording->addState(state);
 }
 
@@ -530,7 +540,7 @@ Recording* World::getRecording()
 
 //==============================================================================
 void World::handleSkeletonNameChange(
-    dynamics::ConstMetaSkeletonPtr _skeleton)
+    const dynamics::ConstMetaSkeletonPtr& _skeleton)
 {
   if(nullptr == _skeleton)
   {

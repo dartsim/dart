@@ -53,37 +53,37 @@ class Shape;
 namespace dart {
 namespace collision {
 
-int collide(dart::dynamics::ConstShapePtr _shape0, const Eigen::Isometry3d& _T0,
-            dart::dynamics::ConstShapePtr _shape1, const Eigen::Isometry3d& _T1,
-            std::vector<Contact>* _result);
+int collide(dart::dynamics::ConstShapePtr shape0, const Eigen::Isometry3d& T0,
+            dart::dynamics::ConstShapePtr shape1, const Eigen::Isometry3d& T1,
+            CollisionResult& result);
 
 int collideBoxBox(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
                   const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
-                  std::vector<Contact>* result);
+                  CollisionResult& result);
 
 int collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
                      const double& r1, const Eigen::Isometry3d& T1,
-                     std::vector<Contact>* result);
+                     CollisionResult& result);
 
 int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
                      const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
-                     std::vector<Contact>* result);
+                     CollisionResult& result);
 
-int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
-                        const double& _r1, const Eigen::Isometry3d& c1,
-                        std::vector<Contact>* result);
+int collideSphereSphere(const double& r0, const Eigen::Isometry3d& c0,
+                        const double& r1, const Eigen::Isometry3d& c1,
+                        CollisionResult& result);
 
 int collideCylinderSphere(
     const double& cyl_rad, const double& half_height,
     const Eigen::Isometry3d& T0,
     const double& sphere_rad, const Eigen::Isometry3d& T1,
-    std::vector<Contact>* result);
+    CollisionResult& result);
 
 int collideCylinderPlane(
     const double& cyl_rad, const double& half_height,
     const Eigen::Isometry3d& T0,
     const Eigen::Vector3d& plane_normal, const Eigen::Isometry3d& T1,
-    std::vector<Contact>* result);
+    CollisionResult& result);
 
 }  // namespace collision
 }  // namespace dart

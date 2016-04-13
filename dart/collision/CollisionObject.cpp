@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Chen Tang <ctang40@gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,44 +34,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
-#define DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
+#include "dart/collision/CollisionObject.h"
 
 #include "dart/collision/CollisionDetector.h"
+#include "dart/dynamics/ShapeFrame.h"
 
 namespace dart {
-
-namespace dynamics {
-class SoftBodyNode;
-class PointMass;
-}  // namespace dynamics
-
 namespace collision {
 
-///
-class FCLMeshCollisionDetector : public CollisionDetector
+//==============================================================================
+CollisionDetector* CollisionObject::getCollisionDetector()
 {
-public:
-  /// Constructor
-  FCLMeshCollisionDetector();
+  return mCollisionDetector;
+}
 
-  /// Destructor
-  virtual ~FCLMeshCollisionDetector();
+//==============================================================================
+const CollisionDetector* CollisionObject::getCollisionDetector() const
+{
+  return mCollisionDetector;
+}
 
-  // Documentation inherited
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
+//==============================================================================
+const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
+{
+  return mShapeFrame;
+}
 
-  // Documentation inherited
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints);
+//==============================================================================
+dynamics::ConstShapePtr CollisionObject::getShape() const
+{
+  return mShapeFrame->getShape();
+}
 
-  // Documentation inherited
-  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                               bool _calculateContactPoints);
-};
+//==============================================================================
+const Eigen::Isometry3d& CollisionObject::getTransform() const
+{
+  return mShapeFrame->getWorldTransform();
+}
+
+//==============================================================================
+CollisionObject::CollisionObject(
+    CollisionDetector* collisionDetector,
+    const dynamics::ShapeFrame* shapeFrame)
+  : mCollisionDetector(collisionDetector),
+    mShapeFrame(shapeFrame)
+{
+  assert(mCollisionDetector);
+  assert(mShapeFrame);
+}
 
 }  // namespace collision
 }  // namespace dart
-
-#endif  // DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
-

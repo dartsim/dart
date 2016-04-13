@@ -155,6 +155,9 @@ void tokenize(const std::string& str,
               std::vector<std::string>& tokens,
               const std::string& delimiters = " ");
 
+common::ResourceRetrieverPtr getRetriever(
+    const common::ResourceRetrieverPtr& retriever);
+
 } // anonymous namespace
 
 //==============================================================================
@@ -183,8 +186,10 @@ VskParser::Options::Options(
 
 //==============================================================================
 dynamics::SkeletonPtr VskParser::readSkeleton(const common::Uri& fileUri,
-                                              const Options options)
+                                              Options options)
 {
+  options.retrieverOrNullptr = getRetriever(options.retrieverOrNullptr);
+
   // Load VSK file and create document
   tinyxml2::XMLDocument vskDocument;
   try
@@ -1014,6 +1019,16 @@ void tokenize(const std::string& str,
     // Find next "non-delimiter"
     pos = str.find_first_of(delimiters, lastPos);
   }
+}
+
+//==============================================================================
+common::ResourceRetrieverPtr getRetriever(
+  const common::ResourceRetrieverPtr& retriever)
+{
+  if(retriever)
+    return retriever;
+  else
+    return std::make_shared<common::LocalResourceRetriever>();
 }
 
 } // anonymous namespace

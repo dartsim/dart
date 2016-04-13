@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,65 +34,70 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONNODE_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONNODE_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_
+#define DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_
 
-#include <vector>
+#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 
-#include <assimp/scene.h>
-#include <Eigen/Dense>
-#include <fcl/collision.h>
-#include <fcl/BVH/BVH_model.h>
-
-#include "dart/collision/CollisionNode.h"
-#include "dart/dynamics/Shape.h"
-
-namespace dart {
-namespace dynamics {
-class BodyNode;
-class Shape;
-class ShapeNode;
-}  // namespace dynamics
-}  // namespace dart
+#include "dart/collision/CollisionGroup.h"
 
 namespace dart {
 namespace collision {
 
-/// FCLCollisionNode
-class FCLCollisionNode : public CollisionNode
+class CollisionObject;
+class FCLCollisionObjectUserData;
+
+class FCLCollisionGroup : public CollisionGroup
 {
 public:
 
-  struct FCLUserData
-  {
-    FCLCollisionNode* fclCollNode;
-    dynamics::WeakShapeNodePtr shapeNode;
+  friend class FCLCollisionDetector;
 
-    FCLUserData(FCLCollisionNode* fclCollNode,
-                const dynamics::WeakShapeNodePtr& shape);
-  };
+  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
 
   /// Constructor
-  explicit FCLCollisionNode(dynamics::BodyNode* _bodyNode);
+  FCLCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
   /// Destructor
-  virtual ~FCLCollisionNode();
+  virtual ~FCLCollisionGroup() = default;
 
-  /// Get number of collision objects
-  size_t getNumCollisionObjects() const;
+protected:
 
-  /// Get FCL collision object given index
-  fcl::CollisionObject* getCollisionObject(size_t _idx) const;
+  using CollisionGroup::updateEngineData;
 
-  /// Update transformation and AABB of all the fcl collision objects.
-  void updateFCLCollisionObjects();
+  // Documentation inherited
+  void initializeEngineData() override;
 
-private:
-  /// Array of FCL collision object that continas geometry and transform
-  std::vector<fcl::CollisionObject*> mCollisionObjects;
+  // Documentation inherited
+  void addCollisionObjectToEngine(CollisionObject* object) override;
+
+  // Documentation inherited
+  void addCollisionObjectsToEngine(
+      const std::vector<CollisionObject*>& collObjects) override;
+
+  // Documentation inherited
+  void removeCollisionObjectFromEngine(CollisionObject* object) override;
+
+  // Documentation inherited
+  void removeAllCollisionObjectsFromEngine() override;
+
+  // Documentation inherited
+  void updateCollisionGroupEngineData() override;
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  FCLCollisionManager* getFCLCollisionManager();
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  const FCLCollisionManager* getFCLCollisionManager() const;
+
+protected:
+
+  /// FCL broad-phase algorithm
+  std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
+
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONNODE_H_
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_

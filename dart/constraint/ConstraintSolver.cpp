@@ -37,17 +37,18 @@
 #include "dart/constraint/ConstraintSolver.h"
 
 #include "dart/common/Console.h"
+#include "dart/collision/CollisionObject.h"
+#include "dart/collision/CollisionGroup.h"
+#include "dart/collision/CollisionFilter.h"
+#include "dart/collision/fcl/FCLCollisionDetector.h"
+#include "dart/collision/dart/DARTCollisionDetector.h"
+#if HAVE_BULLET_COLLISION
+  #include "dart/collision/bullet/BulletCollisionDetector.h"
+#endif
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
-
-#if DART_USE_FCLMESHCOLLISIONDETECTOR
-  #include "dart/collision/fcl_mesh/FCLMeshCollisionDetector.h"
-#else
-  #include "dart/collision/fcl/FCLCollisionDetector.h"
-#endif
-
 #include "dart/constraint/ConstrainedGroup.h"
 #include "dart/constraint/ContactConstraint.h"
 #include "dart/constraint/SoftContactConstraint.h"
@@ -63,125 +64,96 @@ namespace constraint {
 using namespace dynamics;
 
 //==============================================================================
-ConstraintSolver::ConstraintSolver(double _timeStep)
-#if DART_USE_FCLMESHCOLLISIONDETECTOR
-  : mCollisionDetector(new collision::FCLMeshCollisionDetector),
-#else
-  : mCollisionDetector(new collision::FCLCollisionDetector),
-#endif
-    mTimeStep(_timeStep),
+ConstraintSolver::ConstraintSolver(double timeStep)
+  : mCollisionDetector(collision::FCLCollisionDetector::create()),
+    mCollisionGroup(mCollisionDetector->createCollisionGroup()),
+    mCollisionOption(
+      collision::CollisionOption(
+        true, false, 100, std::make_shared<collision::BodyNodeCollisionFilter>())),
+    mTimeStep(timeStep),
     mLCPSolver(new DantzigLCPSolver(mTimeStep))
 {
-  assert(_timeStep > 0.0);
+  assert(timeStep > 0.0);
+
+  auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
+        mCollisionDetector);
+
+  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+  // TODO(JS): Consider using FCL's primitive shapes once FCL addresses
+  // incorrect contact point computation.
+  // (see: https://github.com/flexible-collision-library/fcl/issues/106)
 }
 
 //==============================================================================
 ConstraintSolver::~ConstraintSolver()
 {
+  // Do nothing
 }
 
 //==============================================================================
-void ConstraintSolver::addSkeleton(const SkeletonPtr& _skeleton)
+void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
 {
-  assert(_skeleton != nullptr
+  assert(skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
-  if (containSkeleton(_skeleton) == false)
+  if (!containSkeleton(skeleton))
   {
-    mSkeletons.push_back(_skeleton);
-    mCollisionDetector->addSkeleton(_skeleton);
+    auto group = mCollisionDetector->createCollisionGroup(skeleton.get());
+    mCollisionGroup->addShapeFramesOf(group.get());
+
+    mSkeletons.push_back(skeleton);
     mConstrainedGroups.reserve(mSkeletons.size());
   }
   else
   {
-    dtwarn << "Skeleton [" << _skeleton->getName()
-           << "] is already in ConstraintSolver." << std::endl;
+    dtwarn << "[ConstraintSolver::addSkeleton] Attempting to add "
+           << "skeleton '" << skeleton->getName()
+           << "', which already exists in the ConstraintSolver.\n";
   }
 }
 
 //==============================================================================
-void ConstraintSolver::addSkeletons(const std::vector<SkeletonPtr>& _skeletons)
+void ConstraintSolver::addSkeletons(const std::vector<SkeletonPtr>& skeletons)
 {
-  size_t numAddedSkeletons = 0;
-
-  for (std::vector<SkeletonPtr>::const_iterator it = _skeletons.begin();
-       it != _skeletons.end(); ++it)
-  {
-    assert(*it != nullptr
-        && "Null pointer skeleton is now allowed to add to ConstraintSover.");
-
-    if (containSkeleton(*it) == false)
-    {
-      mSkeletons.push_back(*it);
-      mCollisionDetector->addSkeleton(*it);
-
-      ++numAddedSkeletons;
-    }
-    else
-    {
-      dtwarn << "Skeleton [" << (*it)->getName()
-             << "] is already in ConstraintSolver." << std::endl;
-    }
-  }
-
-  mConstrainedGroups.reserve(mSkeletons.size());
+  for (const auto skeleton : skeletons)
+    addSkeleton(skeleton);
 }
 
 //==============================================================================
-void ConstraintSolver::removeSkeleton(
-    const SkeletonPtr& _skeleton)
+void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
 {
-  assert(_skeleton != nullptr
+  assert(skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
-  if (containSkeleton(_skeleton))
+  if (containSkeleton(skeleton))
   {
-    mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
+    auto group = mCollisionDetector->createCollisionGroup(skeleton.get());
+    mCollisionGroup->removeShapeFramesOf(group.get());
+
+    mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), skeleton),
                      mSkeletons.end());
-    mCollisionDetector->removeSkeleton(_skeleton);
     mConstrainedGroups.reserve(mSkeletons.size());
   }
   else
   {
-    dtwarn << "Skeleton [" << _skeleton->getName()
-           << "] is not in ConstraintSolver." << std::endl;
+    dtwarn << "[ConstraintSolver::removeSkeleton] Attempting to remove "
+           << "skeleton '" << skeleton->getName()
+           << "', which doesn't exist in the ConstraintSolver.\n";
   }
 }
 
 //==============================================================================
 void ConstraintSolver::removeSkeletons(
-    const std::vector<SkeletonPtr>& _skeletons)
+    const std::vector<SkeletonPtr>& skeletons)
 {
-  size_t numRemovedSkeletons = 0;
-
-  for (std::vector<SkeletonPtr>::const_iterator it = _skeletons.begin();
-       it != _skeletons.end(); ++it)
-  {
-    assert(*it != nullptr
-        && "Null pointer skeleton is now allowed to add to ConstraintSover.");
-
-    if (containSkeleton(*it))
-    {
-      mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), *it),
-                       mSkeletons.end());
-      mCollisionDetector->removeSkeleton(*it);
-
-      ++numRemovedSkeletons;
-    }
-    else
-    {
-      dtwarn << "Skeleton [" << (*it)->getName()
-             << "] is not in ConstraintSolver." << std::endl;
-    }
-  }
-
-  mConstrainedGroups.reserve(mSkeletons.size());
+  for (const auto skeleton : skeletons)
+    removeSkeleton(skeleton);
 }
 
 //==============================================================================
 void ConstraintSolver::removeAllSkeletons()
 {
-  mCollisionDetector->removeAllSkeletons();
+  mCollisionGroup->removeAllShapeFrames();
   mSkeletons.clear();
 }
 
@@ -241,30 +213,64 @@ double ConstraintSolver::getTimeStep() const
 
 //==============================================================================
 void ConstraintSolver::setCollisionDetector(
-    collision::CollisionDetector* _collisionDetector)
+    collision::CollisionDetector* collisionDetector)
 {
   setCollisionDetector(
-    std::unique_ptr<collision::CollisionDetector>(_collisionDetector));
+    std::unique_ptr<collision::CollisionDetector>(collisionDetector));
 }
 
 //==============================================================================
 void ConstraintSolver::setCollisionDetector(
-  std::unique_ptr<collision::CollisionDetector> _collisionDetector)
+  const std::shared_ptr<collision::CollisionDetector>& collisionDetector)
 {
-  assert(_collisionDetector && "Invalid collision detector.");
+  assert(collisionDetector && "Invalid collision detector.");
 
   // Change the collision detector of the constraint solver to new one
-  mCollisionDetector = std::move(_collisionDetector);
+  mCollisionDetector = collisionDetector;
 
-  // Add skeletons in the constraint solver to new collision detector
-  for (size_t i = 0; i < mSkeletons.size(); ++i)
-    mCollisionDetector->addSkeleton(mSkeletons[i]);
+  auto newCollisionGroup = mCollisionDetector->createCollisionGroup();
+
+  for (const auto& skeleton : mSkeletons)
+    newCollisionGroup->addShapeFramesOf(skeleton.get());
+
+  mCollisionGroup = std::move(newCollisionGroup);
 }
 
 //==============================================================================
-collision::CollisionDetector* ConstraintSolver::getCollisionDetector() const
+collision::CollisionDetector* ConstraintSolver::getCollisionDetector()
 {
   return mCollisionDetector.get();
+}
+
+//==============================================================================
+const collision::CollisionDetector*
+ConstraintSolver::getCollisionDetector() const
+{
+  return mCollisionDetector.get();
+}
+
+//==============================================================================
+collision::CollisionGroup* ConstraintSolver::getCollisionGroup()
+{
+  return mCollisionGroup.get();
+}
+
+//==============================================================================
+const collision::CollisionGroup* ConstraintSolver::getCollisionGroup() const
+{
+  return mCollisionGroup.get();
+}
+
+//==============================================================================
+collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
+{
+  return mCollisionResult;
+}
+
+//==============================================================================
+const collision::CollisionResult& ConstraintSolver::getLastCollisionResult() const
+{
+  return mCollisionResult;
 }
 
 //==============================================================================
@@ -373,8 +379,9 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   // Update automatic constraints: contact constraints
   //----------------------------------------------------------------------------
-  mCollisionDetector->clearAllContacts();
-  mCollisionDetector->detectCollision(true, true);
+  mCollisionResult.clear();
+
+  mCollisionGroup->collide(mCollisionOption, mCollisionResult);
 
   // Destroy previous contact constraints
   mContactConstraints.clear();
@@ -383,9 +390,9 @@ void ConstraintSolver::updateConstraints()
   mSoftContactConstraints.clear();
 
   // Create new contact constraints
-  for (size_t i = 0; i < mCollisionDetector->getNumContacts(); ++i)
+  for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
   {
-    collision::Contact& ct = mCollisionDetector->getContact(i);
+    auto& ct = mCollisionResult.getContact(i);
 
     if (isSoftContact(ct))
     {
@@ -560,13 +567,23 @@ void ConstraintSolver::solveConstrainedGroups()
 }
 
 //==============================================================================
-bool ConstraintSolver::isSoftContact(const collision::Contact& _contact) const
+bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
 {
-  if (dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode1.lock().get())
-      || dynamic_cast<dynamics::SoftBodyNode*>(_contact.bodyNode2.lock().get()))
-    return true;
+  auto shapeNode1 = contact.collisionObject1->getShapeFrame()->asShapeNode();
+  auto shapeNode2 = contact.collisionObject2->getShapeFrame()->asShapeNode();
+  assert(shapeNode1);
+  assert(shapeNode2);
 
-  return false;
+  auto bodyNode1 = shapeNode1->getBodyNodePtr().get();
+  auto bodyNode2 = shapeNode2->getBodyNodePtr().get();
+
+  auto bodyNode1IsSoft =
+      dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode1) != nullptr;
+
+  auto bodyNode2IsSoft =
+      dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode2) != nullptr;
+
+  return bodyNode1IsSoft || bodyNode2IsSoft;
 }
 
 }  // namespace constraint

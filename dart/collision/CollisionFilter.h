@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,68 +34,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONNODE_H_
-#define DART_COLLISION_BULLET_BULLETCOLLISIONNODE_H_
-
-#include <vector>
-
-#include <assimp/scene.h>
-#include <btBulletCollisionCommon.h>
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/collision/CollisionNode.h"
+#ifndef DART_COLLISION_COLLISIONFILTER_H_
+#define DART_COLLISION_COLLISIONFILTER_H_
 
 namespace dart {
+
 namespace dynamics {
 class BodyNode;
-class ShapeNode;
 }  // namespace dynamics
-}  // namespace dart
 
-namespace dart {
 namespace collision {
 
-class BulletCollisionDetector;
+class CollisionObject;
 
-/// @brief class BulletCollisionNode
-class BulletCollisionNode : public CollisionNode
+struct CollisionFilter
 {
-public:
-
-    struct BulletUserData
-    {
-      dynamics::WeakShapeNodePtr shapeNode;
-      BulletCollisionNode* btCollNode;
-      BulletCollisionDetector* btCollDet;
-    };
-
-    /// @brief Constructor
-    explicit BulletCollisionNode(dynamics::BodyNode* bodyNode);
-
-    /// @brief Destructor
-    virtual ~BulletCollisionNode();
-
-    /// @brief Update transformation of all the bullet collision objects.
-    void updateBulletCollisionObjects();
-
-    /// @brief Get number of bullet collision objects
-    int getNumBulletCollisionObjects() const;
-
-    /// @brief Get bullet collision object whose index is _i
-    btCollisionObject* getBulletCollisionObject(int _i);
-
-private:
-    /// @brief Bullet collision objects
-    std::vector<btCollisionObject*> mbtCollsionObjects;
+  virtual bool needCollision(const CollisionObject* object1,
+                             const CollisionObject* object2) const = 0;
 };
 
-/// @brief Create Bullet mesh from assimp3 mesh
-btConvexTriangleMeshShape* _createMesh(const Eigen::Vector3d& _scale,
-                                       const aiScene* _mesh);
+struct BodyNodeCollisionFilter : CollisionFilter
+{
+  bool needCollision(const CollisionObject* object1,
+                     const CollisionObject* object2) const override;
+
+  bool areAdjacentBodies(const dynamics::BodyNode* bodyNode1,
+                         const dynamics::BodyNode* bodyNode2) const;
+};
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONNODE_H_
+#endif  // DART_COLLISION_COLLISIONFILTER_H_

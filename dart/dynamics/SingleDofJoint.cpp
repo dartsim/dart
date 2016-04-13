@@ -536,11 +536,8 @@ void SingleDofJoint::setVelocity(size_t _index, double _velocity)
 
   setVelocityStatic(_velocity);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == VELOCITY)
     mAspectState.mCommand = getVelocityStatic();
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -566,11 +563,8 @@ void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 
   setVelocityStatic(_velocities[0]);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == VELOCITY)
     mAspectState.mCommand = getVelocityStatic();
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -699,11 +693,8 @@ void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
 
   setAccelerationStatic(_acceleration);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == ACCELERATION)
     mAspectState.mCommand = getAccelerationStatic();
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -729,11 +720,8 @@ void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 
   setAccelerationStatic(_accelerations[0]);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == ACCELERATION)
     mAspectState.mCommand = getAccelerationStatic();
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -857,11 +845,8 @@ void SingleDofJoint::setForce(size_t _index, double _force)
 
   mAspectState.mForce = _force;
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == FORCE)
     mAspectState.mCommand = mAspectState.mForce;
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -887,11 +872,8 @@ void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 
   mAspectState.mForce = _forces[0];
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == FORCE)
     mAspectState.mCommand = mAspectState.mForce;
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -905,11 +887,8 @@ void SingleDofJoint::resetForces()
 {
   mAspectState.mForce = 0.0;
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == FORCE)
     mAspectState.mCommand = mAspectState.mForce;
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================

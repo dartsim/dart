@@ -1252,7 +1252,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       // Set random states
       Skeleton::Configuration x = skel->getConfiguration(
             Skeleton::CONFIG_POSITIONS | Skeleton::CONFIG_VELOCITIES);
-      for (int k = 0; k < skel->getNumDofs(); ++k)
+      for (size_t k = 0u; k < skel->getNumDofs(); ++k)
       {
         x.mPositions[k] = random(lb, ub);
         x.mVelocities[k] = random(lb, ub);

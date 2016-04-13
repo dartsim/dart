@@ -419,7 +419,7 @@ got_answer:
 // fields.
 int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
             const dVector3 p2, const dMatrix3 R2, const dVector3 side2,
-            std::vector<Contact>& result)
+            CollisionResult& result)
 {
   const double fudge_factor = 1.05;
   dVector3 p,pp,normalC = {0.0, 0.0, 0.0, 0.0};
@@ -586,7 +586,7 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
       contact.point = point_vec;
       contact.normal = normal;
       contact.penetrationDepth = penetration;
-      result.push_back(contact);
+      result.addContact(contact);
     }
     return 1;
   }
@@ -767,7 +767,7 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
       contact.point = point_vec;
       contact.normal = normal;
       contact.penetrationDepth = dep[j];
-      result.push_back(contact);
+      result.addContact(contact);
     }
   }
   else {
@@ -794,7 +794,7 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
       contact.point = point_vec;
       contact.normal = normal;
       contact.penetrationDepth = dep[iret[j]];
-      result.push_back(contact);
+      result.addContact(contact);
     }
   }
   return cnum;
@@ -802,7 +802,7 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
 
 int collideBoxBox(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
                   const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
-                  std::vector<Contact>* result)
+                  CollisionResult& result)
 {
   dVector3 halfSize0;
   dVector3 halfSize1;
@@ -821,12 +821,12 @@ int collideBoxBox(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
   convVector(T0.translation(), p0);
   convVector(T1.translation(), p1);
 
-  return dBoxBox(p1, R1, halfSize1, p0, R0, halfSize0, *result);
+  return dBoxBox(p1, R1, halfSize1, p0, R0, halfSize0, result);
 }
 
 int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
                      const double& r1, const Eigen::Isometry3d& T1,
-                     std::vector<Contact>* result)
+                     CollisionResult& result)
 {
   Eigen::Vector3d halfSize = 0.5 * size0;
   bool inside_box = true;
@@ -877,7 +877,7 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
     contact.point = c0;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
-    result->push_back(contact);
+    result.addContact(contact);
     return 1;
   }
 
@@ -900,7 +900,7 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
     contact.point = contactpt;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
-    result->push_back(contact);
+    result.addContact(contact);
   }
   else
   {
@@ -928,14 +928,14 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
     contact.point = contactpt;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
-    result->push_back(contact);
+    result.addContact(contact);
   }
   return 1;
 }
 
 int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
                      const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
-                     std::vector<Contact>* result)
+                     CollisionResult& result)
 {
   Eigen::Vector3d size = 0.5 * size1;
   bool inside_box = true;
@@ -984,7 +984,7 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
     contact.point = c0;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
-    result->push_back(contact);
+    result.addContact(contact);
     return 1;
   }
 
@@ -1007,7 +1007,7 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
     contact.point = contactpt;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
-    result->push_back(contact);}
+    result.addContact(contact);}
   else
   {
     double min = size[0] - std::abs(p[0]);
@@ -1033,14 +1033,14 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
     contact.point = contactpt;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
-    result->push_back(contact);
+    result.addContact(contact);
   }
   return 1;
 }
 
 int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
                         const double& _r1, const Eigen::Isometry3d& c1,
-                        std::vector<Contact>* result)
+                        CollisionResult& result)
 {
   double r0 = _r0;
   double r1 = _r1;
@@ -1068,7 +1068,7 @@ int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
     contact.point = point;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
-    result->push_back(contact);
+    result.addContact(contact);
     return 1;
   }
 
@@ -1080,14 +1080,14 @@ int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
   contact.point = point;
   contact.normal = normal;
   contact.penetrationDepth = penetration;
-  result->push_back(contact);
+  result.addContact(contact);
   return 1;
 
 }
 
 int collideCylinderSphere(const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
                           const double& sphere_rad, const Eigen::Isometry3d& T1,
-                          std::vector<Contact>* result)
+                          CollisionResult& result)
 {
   Eigen::Vector3d center = T0.inverse() * T1.translation();
 
@@ -1099,7 +1099,7 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
     contact.penetrationDepth = 0.5 * (half_height + sphere_rad - math::sign(center[2]) * center[2]);
     contact.point = T0 * Eigen::Vector3d(center[0], center[1], half_height - contact.penetrationDepth);
     contact.normal = T0.linear() * Eigen::Vector3d(0.0, 0.0, math::sign(center[2]));
-    result->push_back(contact);
+    result.addContact(contact);
     return 1;
   }
   else
@@ -1123,7 +1123,7 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
           contact.point = point;
           contact.normal = normal;
           contact.penetrationDepth = penetration;
-          result->push_back(contact);
+          result.addContact(contact);
           return 1;
         }
       }
@@ -1139,7 +1139,7 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
         contact.point = point;
         contact.normal = normal;
         contact.penetrationDepth = penetration;
-        result->push_back(contact);
+        result.addContact(contact);
         return 1;
       }
     }
@@ -1149,7 +1149,7 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
 
 int collideCylinderPlane(const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
                          const Eigen::Vector3d& plane_normal, const Eigen::Isometry3d& T1,
-                         std::vector<Contact>* result)
+                         CollisionResult& result)
 {
   Eigen::Vector3d normal = T1.linear() * plane_normal;
   Eigen::Vector3d Rx = T0.linear().rightCols(1);
@@ -1209,140 +1209,76 @@ int collideCylinderPlane(const double& cyl_rad, const double& half_height, const
     contact.point = point;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
-    result->push_back(contact);
+    result.addContact(contact);
     return 1;
   }
 
   return 0;
 }
 
-int collide(dynamics::ConstShapePtr _shape0, const Eigen::Isometry3d& _T0,
-            dynamics::ConstShapePtr _shape1, const Eigen::Isometry3d& _T1,
-            std::vector<Contact>* _result)
+//==============================================================================
+int collide(dynamics::ConstShapePtr shape0, const Eigen::Isometry3d& T0,
+            dynamics::ConstShapePtr shape1, const Eigen::Isometry3d& T1,
+            CollisionResult& result)
 {
-  dynamics::Shape::ShapeType LeftType = _shape0->getShapeType();
-  dynamics::Shape::ShapeType RightType = _shape1->getShapeType();
+  dynamics::Shape::ShapeType LeftType = shape0->getShapeType();
+  dynamics::Shape::ShapeType RightType = shape1->getShapeType();
 
   switch(LeftType)
   {
     case dynamics::Shape::BOX:
     {
-      const dynamics::BoxShape* box0 = static_cast<const dynamics::BoxShape*>(_shape0.get());
+      const dynamics::BoxShape* box0 = static_cast<const dynamics::BoxShape*>(shape0.get());
 
       switch(RightType)
       {
         case dynamics::Shape::BOX:
         {
-          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(_shape1.get());
-          return collideBoxBox(box0->getSize(), _T0,
-                               box1->getSize(), _T1, _result);
+          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(shape1.get());
+          return collideBoxBox(box0->getSize(), T0,
+                               box1->getSize(), T1, result);
         }
         case dynamics::Shape::ELLIPSOID:
         {
-          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape1.get());
-          return collideBoxSphere(box0->getSize(), _T0,
-                                  ellipsoid1->getSize()[0] * 0.5, _T1,
-              _result);
-        }
-        case dynamics::Shape::CYLINDER:
-        {
-          //----------------------------------------------------------
-          // NOT SUPPORT CYLINDER
-          //----------------------------------------------------------
-          const dynamics::CylinderShape* cylinder1 = static_cast<const dynamics::CylinderShape*>(_shape1.get());
-
-          Eigen::Vector3d dimTemp(cylinder1->getRadius() * sqrt(2.0),
-                                  cylinder1->getRadius() * sqrt(2.0),
-                                  cylinder1->getHeight());
-          return collideBoxBox(box0->getSize(), _T0, dimTemp, _T1, _result);
+          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
+          return collideBoxSphere(box0->getSize(), T0,
+                                  ellipsoid1->getSize()[0] * 0.5, T1,
+              result);
         }
         default:
+        {
           return false;
 
           break;
+        }
       }
 
       break;
     }
     case dynamics::Shape::ELLIPSOID:
     {
-      const dynamics::EllipsoidShape* ellipsoid0 = static_cast<const dynamics::EllipsoidShape*>(_shape0.get());
+      const dynamics::EllipsoidShape* ellipsoid0 = static_cast<const dynamics::EllipsoidShape*>(shape0.get());
 
       switch(RightType)
       {
         case dynamics::Shape::BOX:
         {
-          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(_shape1.get());
-          return collideSphereBox(ellipsoid0->getSize()[0] * 0.5, _T0,
-                                  box1->getSize(), _T1,
-                                  _result);
+          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(shape1.get());
+          return collideSphereBox(ellipsoid0->getSize()[0] * 0.5, T0,
+                                  box1->getSize(), T1,
+                                  result);
         }
         case dynamics::Shape::ELLIPSOID:
         {
-          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape1.get());
-          return collideSphereSphere(ellipsoid0->getSize()[0] * 0.5, _T0,
-                                     ellipsoid1->getSize()[0] * 0.5, _T1,
-                                     _result);
-        }
-        case dynamics::Shape::CYLINDER:
-        {
-          //----------------------------------------------------------
-          // NOT SUPPORT CYLINDER
-          //----------------------------------------------------------
-          const dynamics::CylinderShape* cylinder1 = static_cast<const dynamics::CylinderShape*>(_shape1.get());
-
-          Eigen::Vector3d dimTemp1(cylinder1->getRadius() * sqrt(2.0),
-                                   cylinder1->getRadius() * sqrt(2.0),
-                                   cylinder1->getHeight());
-          return collideSphereBox(
-                ellipsoid0->getSize()[0] * 0.5, _T0, dimTemp1, _T1, _result);
+          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
+          return collideSphereSphere(ellipsoid0->getSize()[0] * 0.5, T0,
+                                     ellipsoid1->getSize()[0] * 0.5, T1,
+                                     result);
         }
         default:
           return false;
 
           break;
-      }
-
-      break;
-    }
-    case dynamics::Shape::CYLINDER:
-    {
-      //----------------------------------------------------------
-      // NOT SUPPORT CYLINDER
-      //----------------------------------------------------------
-      const dynamics::CylinderShape* cylinder0 = static_cast<const dynamics::CylinderShape*>(_shape0.get());
-
-      Eigen::Vector3d dimTemp0(cylinder0->getRadius() * sqrt(2.0),
-                               cylinder0->getRadius() * sqrt(2.0),
-                               cylinder0->getHeight());
-      switch(RightType)
-      {
-        case dynamics::Shape::BOX:
-        {
-          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(_shape1.get());
-          return collideBoxBox(dimTemp0, _T0, box1->getSize(), _T1, _result);
-        }
-        case dynamics::Shape::ELLIPSOID:
-        {
-          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(_shape1.get());
-          return collideBoxSphere(dimTemp0, _T0, ellipsoid1->getSize()[0] * 0.5, _T1, _result);
-        }
-        case dynamics::Shape::CYLINDER:
-        {
-          //----------------------------------------------------------
-          // NOT SUPPORT CYLINDER
-          //----------------------------------------------------------
-          const dynamics::CylinderShape* cylinder1 = static_cast<const dynamics::CylinderShape*>(_shape1.get());
-
-          Eigen::Vector3d dimTemp1(cylinder1->getRadius() * sqrt(2.0),
-                                   cylinder1->getRadius() * sqrt(2.0),
-                                   cylinder1->getHeight());
-          return collideBoxBox(dimTemp0, _T0, dimTemp1, _T1, _result);
-        }
-        default:
-        {
-          return false;
-        }
       }
 
       break;

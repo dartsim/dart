@@ -645,11 +645,8 @@ void MultiDofJoint<DOF>::setVelocity(size_t _index, double _velocity)
   this->mAspectState.mVelocities[_index] = _velocity;
   this->notifyVelocityUpdate();
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
     this->mAspectState.mCommands[_index] = this->getVelocitiesStatic()[_index];
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -677,11 +674,8 @@ void MultiDofJoint<DOF>::setVelocities(const Eigen::VectorXd& _velocities)
 
   setVelocitiesStatic(_velocities);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
     this->mAspectState.mCommands = this->getVelocitiesStatic();
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -826,11 +820,8 @@ void MultiDofJoint<DOF>::setAcceleration(size_t _index, double _acceleration)
   this->mAspectState.mAccelerations[_index] = _acceleration;
   this->notifyAccelerationUpdate();
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
     this->mAspectState.mCommands[_index] = this->getAccelerationsStatic()[_index];
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -858,11 +849,8 @@ void MultiDofJoint<DOF>::setAccelerations(const Eigen::VectorXd& _accelerations)
 
   setAccelerationsStatic(_accelerations);
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
     this->mAspectState.mCommands = this->getAccelerationsStatic();
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -1004,11 +992,8 @@ void MultiDofJoint<DOF>::setForce(size_t _index, double _force)
 
   this->mAspectState.mForces[_index] = _force;
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
     this->mAspectState.mCommands[_index] = this->mAspectState.mForces[_index];
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -1036,11 +1021,8 @@ void MultiDofJoint<DOF>::setForces(const Eigen::VectorXd& _forces)
 
   this->mAspectState.mForces = _forces;
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
     this->mAspectState.mCommands = this->mAspectState.mForces;
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
@@ -1056,11 +1038,8 @@ void MultiDofJoint<DOF>::resetForces()
 {
   this->mAspectState.mForces.setZero();
 
-#if DART_MAJOR_MINOR_VERSION_AT_MOST(5,1)
   if (Joint::mAspectProperties.mActuatorType == Joint::FORCE)
     this->mAspectState.mCommands = this->mAspectState.mForces;
-  // TODO: Remove at DART 5.1.
-#endif
 }
 
 //==============================================================================
