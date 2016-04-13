@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,65 +34,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONNODE_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONNODE_H_
+#include "dart/collision/CollisionObject.h"
 
-#include <vector>
-
-#include <assimp/scene.h>
-#include <Eigen/Dense>
-#include <fcl/collision.h>
-#include <fcl/BVH/BVH_model.h>
-
-#include "dart/collision/CollisionNode.h"
-#include "dart/dynamics/Shape.h"
-
-namespace dart {
-namespace dynamics {
-class BodyNode;
-class Shape;
-class ShapeNode;
-}  // namespace dynamics
-}  // namespace dart
+#include "dart/collision/CollisionDetector.h"
+#include "dart/dynamics/ShapeFrame.h"
 
 namespace dart {
 namespace collision {
 
-/// FCLCollisionNode
-class FCLCollisionNode : public CollisionNode
+//==============================================================================
+CollisionDetector* CollisionObject::getCollisionDetector()
 {
-public:
+  return mCollisionDetector;
+}
 
-  struct FCLUserData
-  {
-    FCLCollisionNode* fclCollNode;
-    dynamics::WeakShapeNodePtr shapeNode;
+//==============================================================================
+const CollisionDetector* CollisionObject::getCollisionDetector() const
+{
+  return mCollisionDetector;
+}
 
-    FCLUserData(FCLCollisionNode* fclCollNode,
-                const dynamics::WeakShapeNodePtr& shape);
-  };
+//==============================================================================
+const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
+{
+  return mShapeFrame;
+}
 
-  /// Constructor
-  explicit FCLCollisionNode(dynamics::BodyNode* _bodyNode);
+//==============================================================================
+dynamics::ConstShapePtr CollisionObject::getShape() const
+{
+  return mShapeFrame->getShape();
+}
 
-  /// Destructor
-  virtual ~FCLCollisionNode();
+//==============================================================================
+const Eigen::Isometry3d& CollisionObject::getTransform() const
+{
+  return mShapeFrame->getWorldTransform();
+}
 
-  /// Get number of collision objects
-  size_t getNumCollisionObjects() const;
-
-  /// Get FCL collision object given index
-  fcl::CollisionObject* getCollisionObject(size_t _idx) const;
-
-  /// Update transformation and AABB of all the fcl collision objects.
-  void updateFCLCollisionObjects();
-
-private:
-  /// Array of FCL collision object that continas geometry and transform
-  std::vector<fcl::CollisionObject*> mCollisionObjects;
-};
+//==============================================================================
+CollisionObject::CollisionObject(
+    CollisionDetector* collisionDetector,
+    const dynamics::ShapeFrame* shapeFrame)
+  : mCollisionDetector(collisionDetector),
+    mShapeFrame(shapeFrame)
+{
+  assert(mCollisionDetector);
+  assert(mShapeFrame);
+}
 
 }  // namespace collision
 }  // namespace dart
-
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONNODE_H_

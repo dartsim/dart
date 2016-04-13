@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>,
- *            Tobias Kunz <tobias@gatech.edu>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,28 +34,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionNode.h"
+#include "dart/collision/Option.h"
 
 namespace dart {
 namespace collision {
 
-CollisionNode::CollisionNode(dynamics::BodyNode* _bodyNode)
-  : mBodyNode(_bodyNode), mIndex(0) {
-}
-
-CollisionNode::~CollisionNode() {
-}
-
-dynamics::BodyNode*CollisionNode::getBodyNode() const {
-  return mBodyNode;
-}
-
-void CollisionNode::setIndex(size_t _idx) {
-  mIndex = _idx;
-}
-
-size_t CollisionNode::getIndex() const {
-  return mIndex;
+//==============================================================================
+CollisionOption::CollisionOption(
+    bool enableContact,
+    bool binaryCheck,
+    size_t maxNumContacts,
+    const std::shared_ptr<CollisionFilter>& collisionFilter)
+  : enableContact(enableContact),
+    binaryCheck(binaryCheck),
+    maxNumContacts(maxNumContacts),
+    collisionFilter(collisionFilter)
+{
+  // Do nothing
 }
 
 }  // namespace collision

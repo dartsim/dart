@@ -42,6 +42,15 @@
 #include <fcl/math/matrix_3f.h>
 #include <fcl/math/transform.h>
 
+#define FCL_VERSION_AT_LEAST(x,y,z) \
+  (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \
+  (FCL_MINOR_VERSION > y || (FCL_MINOR_VERSION >= y && \
+  FCL_PATCH_VERSION >= z))))
+
+#define FCL_MAJOR_MINOR_VERSION_AT_MOST(x,y) \
+  (FCL_MAJOR_VERSION < x || (FCL_MAJOR_VERSION <= x && \
+  (FCL_MINOR_VERSION < y || (FCL_MINOR_VERSION <= y))))
+
 namespace dart {
 namespace collision {
 

@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>,
- *            Tobias Kunz <tobias@gatech.edu>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,47 +34,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONNODE_H_
-#define DART_COLLISION_COLLISIONNODE_H_
+#ifndef DART_COLLISION_OPTION_H_
+#define DART_COLLISION_OPTION_H_
 
 #include <cstddef>
-
-namespace dart {
-namespace dynamics {
-class BodyNode;
-}  // namespace dynamics
-}  // namespace dart
+#include <memory>
 
 namespace dart {
 namespace collision {
 
-/// \brief
-class CollisionNode {
-public:
-  /// \brief Default constructor
-  explicit CollisionNode(dynamics::BodyNode* _bodyNode);
+class CollisionFilter;
 
-  /// \brief Default destructor
-  virtual ~CollisionNode();
+struct CollisionOption
+{
+  /// Flag whether compute contact information such as point, normal, and
+  /// penetration depth. If this flag is set to false, the Engine returns only
+  /// simple information whether there is a collision of not.
+  bool enableContact;
 
-  /// \brief
-  dynamics::BodyNode* getBodyNode() const;
+  /// If true, the collision checking will terminate as soon as the first
+  /// contact is found.
+  bool binaryCheck;
 
-  /// \brief
-  void setIndex(size_t _idx);
+  /// Maximum number of contacts to detect
+  size_t maxNumContacts;
 
-  /// \brief
-  size_t getIndex() const;
+  /// CollisionFilter
+  std::shared_ptr<CollisionFilter> collisionFilter;
 
-protected:
-  /// \brief
-  dynamics::BodyNode* mBodyNode;
-
-  /// \brief
-  size_t mIndex;
+  /// Constructor
+  CollisionOption(bool enableContact = true,
+         bool binaryCheck = false,
+         size_t maxNumContacts = 100,
+         const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_COLLISIONNODE_H_
+#endif  // DART_COLLISION_OPTION_H_

@@ -226,6 +226,12 @@ public:
 
   /// \}
 
+  // Documentation inherited
+  ShapeNode* asShapeNode() override;
+
+  // Documentation inherited
+  const ShapeNode* asShapeNode() const override;
+
 protected:
 
   /// Constructor used by the Skeleton class

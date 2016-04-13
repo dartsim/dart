@@ -309,6 +309,23 @@ public:
   // Documentation inherited
   size_t getVersion() const override;
 
+  // Documentation inherited
+  ShapeFrame* asShapeFrame() override;
+
+  // Documentation inherited
+  const ShapeFrame* asShapeFrame() const override;
+
+  /// Returns true if this Frame is a ShapeNode
+  bool isShapeNode() const;
+
+  /// Convert 'this' into a ShapeNode pointer if ShapeFrame is a ShapeNode,
+  /// otherwise return nullptr
+  virtual ShapeNode* asShapeNode();
+
+  /// Convert 'const this' into a ShapeNode pointer if ShapeFrame is a ShapeNode,
+  /// otherwise return nullptr
+  virtual const ShapeNode* asShapeNode() const;
+
 protected:
 
   /// Constructor
@@ -321,6 +338,9 @@ protected:
 
   /// ShapeFrame properties
   Properties mShapeFrameP;
+
+  /// Contains whether or not this is a ShapeNode
+  bool mAmShapeNode;
 
   /// Shape updated signal
   ShapeUpdatedSignal mShapeUpdatedSignal;

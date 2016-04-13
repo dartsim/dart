@@ -104,11 +104,29 @@ public:
   /// Set the relative transform of this SimpleFrame
   void setRelativeTransform(const Eigen::Isometry3d& _newRelTransform);
 
+  /// Set the relative translation of this SimpleFrame
+  void setRelativeTranslation(const Eigen::Vector3d& _newTranslation);
+
+  /// Set the relative rotation of this SimpleFrame
+  void setRelativeRotation(const Eigen::Matrix3d& _newRotation);
+
   /// Set the transform of this SimpleFrame so that its transform with respect
   /// to Frame _withRespectTo is equal to _newTransform. Note that the parent
   /// Frame of this SimpleFrame will not be changed.
   void setTransform(const Eigen::Isometry3d& _newTransform,
                     const Frame* _withRespectTo = Frame::World());
+
+  /// Set the translation of this SimpleFrame so that its translation with
+  /// respect to Frame _withRespectTo is equal to _newTranslation. Note that the
+  /// parent Frame of this SimpleFrame will not be changed.
+  void setTranslation(const Eigen::Vector3d& _newTranslation,
+                      const Frame* _withRespectTo = Frame::World());
+
+  /// Set the rotation of this SimpleFrame so that its rotation with respect
+  /// to Frame _withRespectTo is equal to _newRotation. Note that the parent
+  /// Frame of this SimpleFrame will not be changed.
+  void setRotation(const Eigen::Matrix3d& _newRotation,
+                   const Frame* _withRespectTo = Frame::World());
 
   // Documentation inherited
   const Eigen::Isometry3d& getRelativeTransform() const;

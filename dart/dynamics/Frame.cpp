@@ -434,6 +434,18 @@ bool Frame::isShapeFrame() const
 }
 
 //==============================================================================
+ShapeFrame* Frame::asShapeFrame()
+{
+  return nullptr;
+}
+
+//==============================================================================
+const ShapeFrame* Frame::asShapeFrame() const
+{
+  return nullptr;
+}
+
+//==============================================================================
 bool Frame::isWorld() const
 {
   return mAmWorld;

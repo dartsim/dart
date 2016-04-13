@@ -136,10 +136,10 @@ public:
   size_t getNumSkeletons() const;
 
   /// Add a skeleton to this world
-  std::string addSkeleton(dynamics::SkeletonPtr _skeleton);
+  std::string addSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
   /// Remove a skeleton from this world
-  void removeSkeleton(dynamics::SkeletonPtr _skeleton);
+  void removeSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
   /// Remove all the skeletons in this world, and return a set of shared
   /// pointers to them, in case you want to recycle them
@@ -158,10 +158,10 @@ public:
   size_t getNumSimpleFrames() const;
 
   /// Add an Entity to this world
-  std::string addSimpleFrame(dynamics::SimpleFramePtr _frame);
+  std::string addSimpleFrame(const dynamics::SimpleFramePtr& _frame);
 
   /// Remove a SimpleFrame from this world
-  void removeSimpleFrame(dynamics::SimpleFramePtr _frame);
+  void removeSimpleFrame(const dynamics::SimpleFramePtr& _frame);
 
   /// Remove all SimpleFrames in this world, and return a set of shared
   /// pointers to them, in case you want to recycle them
@@ -214,7 +214,8 @@ public:
 protected:
 
   /// Register when a Skeleton's name is changed
-  void handleSkeletonNameChange(dynamics::ConstMetaSkeletonPtr _skeleton);
+  void handleSkeletonNameChange(
+      const dynamics::ConstMetaSkeletonPtr& _skeleton);
 
   /// Register when a SimpleFrame's name is changed
   void handleSimpleFrameNameChange(const dynamics::Entity* _entity);

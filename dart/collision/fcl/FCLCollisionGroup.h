@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Chen Tang <ctang40@gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,53 +34,70 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
-#define DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_
+#define DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_
 
-#include "dart/collision/CollisionDetector.h"
+#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
+
+#include "dart/collision/CollisionGroup.h"
 
 namespace dart {
-
-namespace dynamics {
-class SoftBodyNode;
-class PointMass;
-}  // namespace dynamics
-
 namespace collision {
 
-///
-class FCLMeshCollisionDetector : public CollisionDetector
+class CollisionObject;
+class FCLCollisionObjectUserData;
+
+class FCLCollisionGroup : public CollisionGroup
 {
 public:
+
+  friend class FCLCollisionDetector;
+
+  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
+
   /// Constructor
-  FCLMeshCollisionDetector();
+  FCLCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
   /// Destructor
-  virtual ~FCLMeshCollisionDetector();
+  virtual ~FCLCollisionGroup() = default;
+
+protected:
+
+  using CollisionGroup::updateEngineData;
 
   // Documentation inherited
-  std::unique_ptr<CollisionDetector> cloneWithoutCollisionObjects() override;
+  void initializeEngineData() override;
 
   // Documentation inherited
-  const std::string& getType() const override;
-
-  /// Get collision detector type for this class
-  static const std::string& getStaticType();
+  void addCollisionObjectToEngine(CollisionObject* object) override;
 
   // Documentation inherited
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
+  void addCollisionObjectsToEngine(
+      const std::vector<CollisionObject*>& collObjects) override;
 
   // Documentation inherited
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints);
+  void removeCollisionObjectFromEngine(CollisionObject* object) override;
 
   // Documentation inherited
-  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                               bool _calculateContactPoints);
+  void removeAllCollisionObjectsFromEngine() override;
+
+  // Documentation inherited
+  void updateCollisionGroupEngineData() override;
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  FCLCollisionManager* getFCLCollisionManager();
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  const FCLCollisionManager* getFCLCollisionManager() const;
+
+protected:
+
+  /// FCL broad-phase algorithm
+  std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
+
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
-
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_

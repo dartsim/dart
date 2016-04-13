@@ -267,9 +267,7 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
     return;
   }
 
-  dart::dynamics::ShapeFrame* shapeFrame =
-      dynamic_cast<dart::dynamics::ShapeFrame*>(frame);
-  if(!shapeFrame)
+  if(!frame->isShapeFrame())
   {
     dtwarn << "[WorldNode::refreshShapeFrameNode] Frame named ["
            << frame->getName() << "] (" << frame << ") claims to be a "
@@ -278,7 +276,8 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
     return;
   }
 
-  osg::ref_ptr<ShapeFrameNode> node = new ShapeFrameNode(shapeFrame, this);
+  osg::ref_ptr<ShapeFrameNode> node = new ShapeFrameNode(frame->asShapeFrame(),
+                                                         this);
   it->second = node;
   addChild(node);
 }

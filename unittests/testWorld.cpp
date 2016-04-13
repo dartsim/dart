@@ -293,10 +293,10 @@ TEST(World, ValidatingClones)
     // Set non default collision detector
 #if HAVE_BULLET_COLLISION
     worlds.back()->getConstraintSolver()->setCollisionDetector(
-        common::make_unique<collision::BulletCollisionDetector>());
+        collision::BulletCollisionDetector::create());
 #else
     worlds.back()->getConstraintSolver()->setCollisionDetector(
-        common::make_unique<collision::DARTCollisionDetector>());
+        collision::DARTCollisionDetector::create());
 #endif
   }
 

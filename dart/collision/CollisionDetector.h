@@ -43,176 +43,188 @@
 
 #include <Eigen/Dense>
 
-#include "dart/collision/CollisionNode.h"
+#include "dart/collision/Contact.h"
+#include "dart/collision/Option.h"
+#include "dart/collision/Result.h"
+#include "dart/collision/SmartPointer.h"
 #include "dart/dynamics/SmartPointer.h"
 
 namespace dart {
 namespace collision {
 
-/// Contact information
-struct Contact {
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+class CollisionObject;
 
-  /// Contact point w.r.t. the world frame
-  Eigen::Vector3d point;
-
-  /// Contact normal vector from bodyNode2 to bodyNode1 w.r.t. the world frame
-  Eigen::Vector3d normal;
-
-  /// Contact force acting on bodyNode1 w.r.t. the world frame
-  ///
-  /// The contact force acting on bodyNode2 is -force, which is the opposite
-  /// direction of the force.
-  Eigen::Vector3d force;
-
-  /// First colliding body node
-  dynamics::WeakBodyNodePtr bodyNode1;
-
-  /// Second colliding body node
-  dynamics::WeakBodyNodePtr bodyNode2;
-
-  /// First colliding shape of the first body node
-  dynamics::ShapePtr shape1;
-
-  /// Second colliding shape of the first body node
-  dynamics::ShapePtr shape2;
-
-  /// Penetration depth
-  double penetrationDepth;
-
-  // TODO(JS): triID1 will be deprecated when we don't use fcl_mesh
-  /// \brief
-  int triID1;
-
-  // TODO(JS): triID2 will be deprecated when we don't use fcl_mesh
-  /// \brief
-  int triID2;
-
-  // TODO(JS): userData is an experimental variable.
-  /// \brief User data.
-  void* userData;
-};
-
-/// \brief class CollisionDetector
-class CollisionDetector
+class CollisionDetector : public std::enable_shared_from_this<CollisionDetector>
 {
 public:
-  /// \brief Constructor
-  CollisionDetector();
 
-  /// \brief Destructor
-  virtual ~CollisionDetector();
+  friend class CollisionObject;
+  friend class CollisionGroup;
+
+  /// Destructor
+  virtual ~CollisionDetector() = default;
 
   /// \brief Create a clone of this CollisionDetector. All the properties will
   /// be copied over, but not collision objects.
   virtual std::unique_ptr<CollisionDetector> cloneWithoutCollisionObjects() = 0;
 
-  /// \brief Return an unique string representing the collision detector type
+  /// Return collision detection engine type as a std::string
   virtual const std::string& getType() const = 0;
 
-  /// \brief Add skeleton
-  virtual void addSkeleton(const dynamics::SkeletonPtr& _skeleton);
+  /// Create a collision group
+  virtual std::unique_ptr<CollisionGroup> createCollisionGroup() = 0;
 
-  /// \brief Remove skeleton
-  virtual void removeSkeleton(const dynamics::SkeletonPtr& _skeleton);
+  /// Helper function that creates and returns CollisionGroup as a shared_ptr.
+  ///
+  /// Internally, this function creates a shared_ptr from unique_ptr returned
+  /// from createCollisionGroup() so the performance would be slighly worse than
+  /// using std::make_unique.
+  std::shared_ptr<CollisionGroup> createCollisionGroupAsSharedPtr();
 
-  /// \brief Remove all skeletons
-  virtual void removeAllSkeletons();
+  /// Create a collision group from any objects that are supported by
+  /// CollisionGroup::addShapeFramesOf().
+  ///
+  /// The objects can be any of ShapeFrame, std::vector<ShapeFrame>,
+  /// CollisionGroup, BodyNode, and Skeleton.
+  ///
+  /// Note that this function adds only the ShapeFrames of each object at the
+  /// moment that this function is called. Any later addition to or removal of
+  /// the ShapeFrames that are attached to these objects will NOT be noticed.
+  template <typename... Args>
+  std::unique_ptr<CollisionGroup> createCollisionGroup(const Args&... args);
 
-  // TODO(JS): Change accessibility to private
-  /// \brief
-  virtual void addCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
-                                        bool _isRecursive = false);
+  /// Helper function that creates and returns CollisionGroup as shared_ptr.
+  template <typename... Args>
+  std::shared_ptr<CollisionGroup> createCollisionGroupAsSharedPtr(
+      const Args&... args);
 
-  // TODO(JS): Change accessibility to private
-  /// \brief
-  virtual void removeCollisionSkeletonNode(dynamics::BodyNode* _bodyNode,
-                                           bool _isRecursive = false);
+  /// Perform collision detection for group.
+  virtual bool collide(
+      CollisionGroup* group,
+      const CollisionOption& option, CollisionResult& result) = 0;
 
-  /// \brief
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode) = 0;
-
-  /// \brief
-  void enablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
-
-  /// \brief
-  void disablePair(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2);
-
-  /// Return true if there exists at least one contact
-  /// \param[in] _checkAllCollision True to detect every collisions
-  /// \param[in] _calculateContactPoints True to get contact points
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints) = 0;
-
-  /// Return true if there exists contacts between two bodies
-  /// \param[in] _calculateContactPoints True to get contact points
-  bool detectCollision(dynamics::BodyNode* _node1, dynamics::BodyNode* _node2,
-                       bool _calculateContactPoints);
-
-  /// \brief
-  size_t getNumContacts();
-
-  /// \brief
-  Contact& getContact(int _idx);
-
-  /// \brief
-  void clearAllContacts();
-
-  /// \brief
-  int getNumMaxContacts() const;
-
-  /// \brief
-  void setNumMaxContacs(int _num);
-
-  /// \brief
-  bool isCollidable(const CollisionNode* _node1, const CollisionNode* _node2);
+  /// Perform collision detection for group1-group2.
+  virtual bool collide(
+      CollisionGroup* group1, CollisionGroup* group2,
+      const CollisionOption& option, CollisionResult& result) = 0;
 
 protected:
-  /// \brief
-  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                               bool _calculateContactPoints) = 0;
 
-  /// \brief
-  std::vector<Contact> mContacts;
+  class CollisionObjectManager;
+  class ManagerForUnsharableCollisionObjects;
+  class ManagerForSharableCollisionObjects;
 
-  /// \brief
-  std::vector<CollisionNode*> mCollisionNodes;
+  /// Constructor
+  CollisionDetector() = default;
 
-  /// \brief
-  int mNumMaxContacts;
+  /// Claim CollisionObject associated with shapeFrame. New CollisionObject
+  /// will be created if it hasn't created yet for shapeFrame.
+  std::shared_ptr<CollisionObject> claimCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame);
 
-  /// \brief Skeleton array
-  std::vector<dynamics::SkeletonPtr> mSkeletons;
+  /// Create CollisionObject
+  virtual std::unique_ptr<CollisionObject> createCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) = 0;
+
+  /// Notify that a CollisionObject is destroying. Do nothing by default.
+  virtual void notifyCollisionObjectDestroying(CollisionObject* object);
+
+protected:
+
+  std::unique_ptr<CollisionObjectManager> mCollisionObjectManager;
+
+};
+
+//==============================================================================
+class CollisionDetector::CollisionObjectManager
+{
+public:
+
+  /// Constructor
+  CollisionObjectManager(CollisionDetector* cd);
+
+  /// Claim CollisionObject associated with shapeFrame. New CollisionObject
+  /// will be created if it hasn't created yet for shapeFrame.
+  virtual std::shared_ptr<CollisionObject> claimCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) = 0;
+
+protected:
+
+  CollisionDetector* mCollisionDetector;
+
+};
+
+//==============================================================================
+class CollisionDetector::ManagerForUnsharableCollisionObjects final :
+    public CollisionDetector::CollisionObjectManager
+{
+public:
+
+  /// Constructor
+  ManagerForUnsharableCollisionObjects(CollisionDetector* cd);
+
+  // Documentation inherited
+  std::shared_ptr<CollisionObject> claimCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame);
 
 private:
-  /// \brief Return true if _skeleton is contained
-  bool containSkeleton(const dynamics::SkeletonPtr& _skeleton);
 
-  /// \brief
-  bool getPairCollidable(const CollisionNode* _node1,
-                         const CollisionNode* _node2);
+  /// This deleter is responsible for deleting CollisionObject and removing it
+  /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
+  struct CollisionObjectDeleter final
+  {
+    ManagerForUnsharableCollisionObjects* mCollisionObjectManager;
 
-  /// \brief
-  void setPairCollidable(const CollisionNode* _node1,
-                         const CollisionNode* _node2,
-                         bool _val);
+    CollisionObjectDeleter(ManagerForUnsharableCollisionObjects* mgr);
 
-  /// \brief Return true if _bodyNode1 and _bodyNode2 are adjacent bodies
-  bool isAdjacentBodies(const dynamics::BodyNode* _bodyNode1,
-                        const dynamics::BodyNode* _bodyNode2) const;
+    void operator()(CollisionObject* object) const;
+  };
 
-  /// \brief
-  CollisionNode* getCollisionNode(const dynamics::BodyNode* _bodyNode);
+  const CollisionObjectDeleter mCollisionObjectDeleter;
 
-  /// \brief
-  std::map<const dynamics::BodyNode*, CollisionNode*> mBodyCollisionMap;
+};
 
-  /// \brief
-  std::vector<std::vector<bool> > mCollidablePairs;
+//==============================================================================
+class CollisionDetector::ManagerForSharableCollisionObjects final :
+    public CollisionDetector::CollisionObjectManager
+{
+public:
+
+  /// Constructor
+  ManagerForSharableCollisionObjects(CollisionDetector* cd);
+
+  /// Destructor
+  virtual ~ManagerForSharableCollisionObjects();
+
+  // Documentation inherited
+  std::shared_ptr<CollisionObject> claimCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame);
+
+private:
+
+  /// This deleter is responsible for deleting CollisionObject and removing it
+  /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
+  struct CollisionObjectDeleter final
+  {
+    ManagerForSharableCollisionObjects* mCollisionObjectManager;
+
+    CollisionObjectDeleter(ManagerForSharableCollisionObjects* mgr);
+
+    void operator()(CollisionObject* object) const;
+  };
+
+  const CollisionObjectDeleter mCollisionObjectDeleter;
+
+  using CollisionObjectMap = std::map<const dynamics::ShapeFrame*,
+                                      std::weak_ptr<CollisionObject>>;
+
+  CollisionObjectMap mCollisionObjectMap;
+
 };
 
 }  // namespace collision
 }  // namespace dart
+
+#include "dart/collision/detail/CollisionDetector.h"
 
 #endif  // DART_COLLISION_COLLISIONDETECTOR_H_
