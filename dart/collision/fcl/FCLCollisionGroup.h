@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,71 +34,70 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONNODE_H_
-#define DART_COLLISION_BULLET_BULLETCOLLISIONNODE_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_
+#define DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_
 
-// Must be included before any Bullet headers.
-#include "dart/config.h"
+#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 
-#include <vector>
-
-#include <assimp/scene.h>
-#include <btBulletCollisionCommon.h>
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/collision/CollisionNode.h"
-
-namespace dart {
-namespace dynamics {
-class BodyNode;
-class ShapeNode;
-}  // namespace dynamics
-}  // namespace dart
+#include "dart/collision/CollisionGroup.h"
 
 namespace dart {
 namespace collision {
 
-class BulletCollisionDetector;
+class CollisionObject;
+class FCLCollisionObjectUserData;
 
-/// @brief class BulletCollisionNode
-class BulletCollisionNode : public CollisionNode
+class FCLCollisionGroup : public CollisionGroup
 {
 public:
 
-    struct BulletUserData
-    {
-      dynamics::WeakShapeNodePtr shapeNode;
-      BulletCollisionNode* btCollNode;
-      BulletCollisionDetector* btCollDet;
-    };
+  friend class FCLCollisionDetector;
 
-    /// @brief Constructor
-    explicit BulletCollisionNode(dynamics::BodyNode* bodyNode);
+  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
 
-    /// @brief Destructor
-    virtual ~BulletCollisionNode();
+  /// Constructor
+  FCLCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
-    /// @brief Update transformation of all the bullet collision objects.
-    void updateBulletCollisionObjects();
+  /// Destructor
+  virtual ~FCLCollisionGroup() = default;
 
-    /// @brief Get number of bullet collision objects
-    int getNumBulletCollisionObjects() const;
+protected:
 
-    /// @brief Get bullet collision object whose index is _i
-    btCollisionObject* getBulletCollisionObject(int _i);
+  using CollisionGroup::updateEngineData;
 
-private:
-    /// @brief Bullet collision objects
-    std::vector<btCollisionObject*> mbtCollsionObjects;
+  // Documentation inherited
+  void initializeEngineData() override;
+
+  // Documentation inherited
+  void addCollisionObjectToEngine(CollisionObject* object) override;
+
+  // Documentation inherited
+  void addCollisionObjectsToEngine(
+      const std::vector<CollisionObject*>& collObjects) override;
+
+  // Documentation inherited
+  void removeCollisionObjectFromEngine(CollisionObject* object) override;
+
+  // Documentation inherited
+  void removeAllCollisionObjectsFromEngine() override;
+
+  // Documentation inherited
+  void updateCollisionGroupEngineData() override;
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  FCLCollisionManager* getFCLCollisionManager();
+
+  /// Return FCL collision manager that is also a broad-phase algorithm
+  const FCLCollisionManager* getFCLCollisionManager() const;
+
+protected:
+
+  /// FCL broad-phase algorithm
+  std::unique_ptr<FCLCollisionManager> mBroadPhaseAlg;
+
 };
-
-/// @brief Create Bullet mesh from assimp3 mesh
-btConvexTriangleMeshShape* _createMesh(const Eigen::Vector3d& _scale,
-                                       const aiScene* _mesh);
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONNODE_H_
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_

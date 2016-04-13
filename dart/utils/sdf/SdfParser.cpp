@@ -256,9 +256,10 @@ common::ResourceRetrieverPtr getRetriever(
 
 //==============================================================================
 simulation::WorldPtr readSdfFile(
-  const common::Uri& fileUri, const common::ResourceRetrieverPtr& retriever)
+  const common::Uri& fileUri,
+    const common::ResourceRetrieverPtr& nullOrRetriever)
 {
-  return readWorld(fileUri, retriever);
+  return readWorld(fileUri, nullOrRetriever);
 }
 
 //==============================================================================
@@ -1491,7 +1492,7 @@ common::ResourceRetrieverPtr getRetriever(
     return std::make_shared<common::LocalResourceRetriever>();
 }
 
-} // anonymouse
+} // anonymous namespace
 
 } // namespace SdfParser
 

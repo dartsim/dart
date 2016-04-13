@@ -167,11 +167,11 @@ void SimWindow::draw() {
     }
   } else {
     if (mShowMarkers) {
-      collision::CollisionDetector* cd =
-          mWorld->getConstraintSolver()->getCollisionDetector();
-      for (size_t k = 0; k < cd->getNumContacts(); k++) {
-        Eigen::Vector3d v = cd->getContact(k).point;
-        Eigen::Vector3d f = cd->getContact(k).force / 10.0;
+      const auto result =
+          mWorld->getConstraintSolver()->getLastCollisionResult();
+      for (const auto& contact : result.getContacts()) {
+        Eigen::Vector3d v = contact.point;
+        Eigen::Vector3d f = contact.force / 10.0;
         glBegin(GL_LINES);
         glVertex3f(v[0], v[1], v[2]);
         glVertex3f(v[0] + f[0], v[1] + f[1], v[2] + f[2]);

@@ -232,6 +232,14 @@ public:
   /// Returns true if this Frame is a ShapeFrame
   bool isShapeFrame() const;
 
+  /// Convert 'this' into a ShapeFrame pointer if Frame is a ShapeFrame,
+  /// otherwise return nullptr
+  virtual ShapeFrame* asShapeFrame();
+
+  /// Convert 'const this' into a ShapeFrame pointer if Frame is a ShapeFrame,
+  /// otherwise return nullptr
+  virtual const ShapeFrame* asShapeFrame() const;
+
   /// Returns true if this Frame is the World Frame
   bool isWorld() const;
 

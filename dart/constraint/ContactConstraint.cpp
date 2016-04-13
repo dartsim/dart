@@ -42,6 +42,7 @@
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/collision/CollisionObject.h"
 #include "dart/lcpsolver/lcp.h"
 
 #define DART_ERROR_ALLOWANCE 0.0
@@ -69,6 +70,8 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
                                      double _timeStep)
   : ConstraintBase(),
     mTimeStep(_timeStep),
+    mBodyNode1(const_cast<dynamics::ShapeFrame*>(_contact.collisionObject1->getShapeFrame())->asShapeNode()->getBodyNodePtr().get()),
+    mBodyNode2(const_cast<dynamics::ShapeFrame*>(_contact.collisionObject2->getShapeFrame())->asShapeNode()->getBodyNodePtr().get()),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
     mIsFrictionOn(true),
     mAppliedImpulseIndex(-1),
@@ -77,10 +80,6 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
 {
   // TODO(JS): Assumed single contact
   mContacts.push_back(&_contact);
-
-  // TODO(JS):
-  mBodyNode1 = _contact.bodyNode1.lock();
-  mBodyNode2 = _contact.bodyNode2.lock();
 
   //----------------------------------------------
   // Bounce
@@ -661,13 +660,13 @@ void ContactConstraint::applyImpulse(double* _lambda)
 
     for (size_t i = 0; i < mContacts.size(); ++i)
     {
-//      std::cout << "_lambda1: " << _lambda[_idx] << std::endl;
-//      std::cout << "_lambda2: " << _lambda[_idx + 1] << std::endl;
-//      std::cout << "_lambda3: " << _lambda[_idx + 2] << std::endl;
+//      std::cout << "_lambda1: " << _lambda[index] << std::endl;
+//      std::cout << "_lambda2: " << _lambda[index + 1] << std::endl;
+//      std::cout << "_lambda3: " << _lambda[index + 2] << std::endl;
 
-//      std::cout << "imp1: " << mJacobians2[i * 3 + 0] * _lambda[_idx] << std::endl;
-//      std::cout << "imp2: " << mJacobians2[i * 3 + 1] * _lambda[_idx + 1] << std::endl;
-//      std::cout << "imp3: " << mJacobians2[i * 3 + 2] * _lambda[_idx + 2] << std::endl;
+//      std::cout << "imp1: " << mJacobians2[i * 3 + 0] * _lambda[index] << std::endl;
+//      std::cout << "imp2: " << mJacobians2[i * 3 + 1] * _lambda[index + 1] << std::endl;
+//      std::cout << "imp3: " << mJacobians2[i * 3 + 2] * _lambda[index + 2] << std::endl;
 
       assert(!math::isNan(_lambda[index]));
 
@@ -749,7 +748,7 @@ void ContactConstraint::getRelVelocity(double* _relVel)
     if (mBodyNode2->isReactive())
       _relVel[i] -= mJacobians2[i].dot(mBodyNode2->getSpatialVelocity());
 
-//    std::cout << "_relVel[i + _idx]: " << _relVel[i + _idx] << std::endl;
+//    std::cout << "_relVel[i]: " << _relVel[i] << std::endl;
   }
 }
 

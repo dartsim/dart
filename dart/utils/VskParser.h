@@ -100,7 +100,7 @@ namespace VskParser
 
   /// Read Skeleton from VSK file
   dynamics::SkeletonPtr readSkeleton(const common::Uri& fileUri,
-                                     const Options options = Options());
+                                     Options options = Options());
 
 } // namespace VskParser
 

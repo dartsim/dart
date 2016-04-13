@@ -34,35 +34,49 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef  DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_
-#define  DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_
+#ifndef DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_
+#define DART_COLLISION_DART_DARTCOLLISIONDETECTOR_H_
 
+#include <vector>
 #include "dart/collision/CollisionDetector.h"
 
 namespace dart {
 namespace collision {
 
-/// \brief
-class DARTCollisionDetector : public CollisionDetector {
+class DARTCollisionObject;
+
+class DARTCollisionDetector : public CollisionDetector
+{
 public:
-  /// \brief Default constructor
-  DARTCollisionDetector();
 
-  /// \brief Default destructor
-  virtual ~DARTCollisionDetector();
+  static std::shared_ptr<DARTCollisionDetector> create();
 
-  // Documentation inherited
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
+  /// Return engine type "DART"
+  static const std::string& getTypeStatic();
 
   // Documentation inherited
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints);
+  const std::string& getType() const override;
+
+  // Documentation inherited
+  std::unique_ptr<CollisionGroup> createCollisionGroup() override;
+
+  // Documentation inherited
+  bool collide(CollisionGroup* group,
+               const CollisionOption& option, CollisionResult& result) override;
+
+  // Documentation inherited
+  bool collide(CollisionGroup* group1, CollisionGroup* group2,
+               const CollisionOption& option, CollisionResult& result) override;
 
 protected:
+
+  /// Constructor
+  DARTCollisionDetector();
+
   // Documentation inherited
-  virtual bool detectCollision(CollisionNode* _collNode1,
-                               CollisionNode* _collNode2,
-                               bool _calculateContactPoints);
+  std::unique_ptr<CollisionObject> createCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) override;
+
 };
 
 }  // namespace collision

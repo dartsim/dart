@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Chen Tang <ctang40@gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,44 +34,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
-#define DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
-
-#include "dart/collision/CollisionDetector.h"
+#include "dart/collision/Option.h"
 
 namespace dart {
-
-namespace dynamics {
-class SoftBodyNode;
-class PointMass;
-}  // namespace dynamics
-
 namespace collision {
 
-///
-class FCLMeshCollisionDetector : public CollisionDetector
+//==============================================================================
+CollisionOption::CollisionOption(
+    bool enableContact,
+    bool binaryCheck,
+    size_t maxNumContacts,
+    const std::shared_ptr<CollisionFilter>& collisionFilter)
+  : enableContact(enableContact),
+    binaryCheck(binaryCheck),
+    maxNumContacts(maxNumContacts),
+    collisionFilter(collisionFilter)
 {
-public:
-  /// Constructor
-  FCLMeshCollisionDetector();
-
-  /// Destructor
-  virtual ~FCLMeshCollisionDetector();
-
-  // Documentation inherited
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
-
-  // Documentation inherited
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints);
-
-  // Documentation inherited
-  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                               bool _calculateContactPoints);
-};
+  // Do nothing
+}
 
 }  // namespace collision
 }  // namespace dart
-
-#endif  // DART_COLLISION_FCL_MESH_FCLMESHCOLLISIONDETECTOR_H_
-

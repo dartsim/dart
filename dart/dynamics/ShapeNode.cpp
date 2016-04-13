@@ -314,6 +314,18 @@ const math::Jacobian& ShapeNode::getJacobianClassicDeriv() const
 }
 
 //==============================================================================
+ShapeNode* ShapeNode::asShapeNode()
+{
+  return this;
+}
+
+//==============================================================================
+const ShapeNode* ShapeNode::asShapeNode() const
+{
+  return this;
+}
+
+//==============================================================================
 ShapeNode::ShapeNode(BodyNode* bodyNode, const Properties& properties)
   : Entity(ConstructFrame),
     Frame(bodyNode, ""),

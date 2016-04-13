@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>,
- *            Tobias Kunz <tobias@gatech.edu>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -35,29 +34,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionNode.h"
+#ifndef DART_COLLISION_COLLISIONFILTER_H_
+#define DART_COLLISION_COLLISIONFILTER_H_
 
 namespace dart {
+
+namespace dynamics {
+class BodyNode;
+}  // namespace dynamics
+
 namespace collision {
 
-CollisionNode::CollisionNode(dynamics::BodyNode* _bodyNode)
-  : mBodyNode(_bodyNode), mIndex(0) {
-}
+class CollisionObject;
 
-CollisionNode::~CollisionNode() {
-}
+struct CollisionFilter
+{
+  virtual bool needCollision(const CollisionObject* object1,
+                             const CollisionObject* object2) const = 0;
+};
 
-dynamics::BodyNode*CollisionNode::getBodyNode() const {
-  return mBodyNode;
-}
+struct BodyNodeCollisionFilter : CollisionFilter
+{
+  bool needCollision(const CollisionObject* object1,
+                     const CollisionObject* object2) const override;
 
-void CollisionNode::setIndex(size_t _idx) {
-  mIndex = _idx;
-}
-
-size_t CollisionNode::getIndex() const {
-  return mIndex;
-}
+  bool areAdjacentBodies(const dynamics::BodyNode* bodyNode1,
+                         const dynamics::BodyNode* bodyNode2) const;
+};
 
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_COLLISIONFILTER_H_

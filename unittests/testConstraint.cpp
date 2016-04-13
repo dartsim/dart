@@ -126,7 +126,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   world->setGravity(Vector3d(0.0, -10.00, 0.0));
   world->setTimeStep(0.001);
   world->getConstraintSolver()->setCollisionDetector(
-        dart::common::make_unique<DARTCollisionDetector>());
+        DARTCollisionDetector::create());
 
   SkeletonPtr sphereSkel = createSphere(0.05, Vector3d(0.0, 1.0, 0.0));
   BodyNode* sphere = sphereSkel->getBodyNode(0);
@@ -157,9 +157,6 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
 
   EXPECT_EQ((int)world->getNumSkeletons(), 2);
 
-  ConstraintSolver* cs = world->getConstraintSolver();
-  CollisionDetector* cd = cs->getCollisionDetector();
-
   // Lower and upper bound of configuration for system
   // double lb = -1.5 * DART_PI;
   // double ub =  1.5 * DART_PI;
@@ -173,8 +170,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
 //    std::cout << "pos1:" << pos1.transpose() << std::endl;
 //    std::cout << "vel1:" << vel1.transpose() << std::endl;
 
-    cd->detectCollision(true, true);
-    if (cd->getNumContacts() == 0)
+    if (!world->checkCollision())
     {
       world->step();
       continue;
@@ -192,9 +188,10 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
 
     world->step();
 
-    for (size_t j = 0; j < cd->getNumContacts(); ++j)
+    const auto& result = world->getConstraintSolver()->getLastCollisionResult();
+
+    for (const auto& contact : result.getContacts())
     {
-      Contact contact = cd->getContact(j);
       Vector3d pos1 = sphere->getTransform().inverse() * contact.point;
       Vector3d vel1 = sphere->getLinearVelocity(pos1);
 

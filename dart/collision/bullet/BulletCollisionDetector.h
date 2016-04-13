@@ -41,44 +41,71 @@
 #include "dart/config.h"
 
 #include <vector>
-#include <map>
-
+#include <assimp/scene.h>
 #include <btBulletCollisionCommon.h>
-#include <Eigen/Dense>
-
 #include "dart/collision/CollisionDetector.h"
-#include "dart/collision/bullet/BulletTypes.h"
 
 namespace dart {
 namespace collision {
 
-class BulletCollisionNode;
+class BulletCollisionObject;
 
-/// @brief class BulletCollisionDetector
 class BulletCollisionDetector : public CollisionDetector
 {
 public:
-  /// @brief Constructor
-  BulletCollisionDetector();
 
-  /// @brief Destructor
+  friend class CollisionDetector;
+
+  static std::shared_ptr<BulletCollisionDetector> create();
+
+  /// Constructor
   virtual ~BulletCollisionDetector();
 
-  /// \copydoc CollisionDetector::createCollisionNode
-  virtual CollisionNode* createCollisionNode(dynamics::BodyNode* _bodyNode);
+  /// Return engine type "Bullet"
+  static const std::string& getTypeStatic();
 
-  /// \copydoc CollisionDetector::detectCollision
-  virtual bool detectCollision(bool _checkAllCollisions,
-                               bool _calculateContactPoints);
+  // Documentation inherited
+  const std::string& getType() const override;
+
+  // Documentation inherited
+  std::unique_ptr<CollisionGroup> createCollisionGroup() override;
+
+  // Documentation inherited
+  bool collide(CollisionGroup* group,
+               const CollisionOption& option, CollisionResult& result) override;
+
+  // Documentation inherited
+  bool collide(CollisionGroup* group1, CollisionGroup* group2,
+               const CollisionOption& option, CollisionResult& result) override;
 
 protected:
-  // TODO(JS): Not implemented yet.
-  /// \copydoc CollisionDetector::detectCollision
-  virtual bool detectCollision(CollisionNode* _node1, CollisionNode* _node2,
-                               bool _calculateContactPoints);
 
-  /// @brief Bullet collision world
-  btCollisionWorld* mBulletCollisionWorld;
+  /// Constructor
+  BulletCollisionDetector();
+
+  // Documentation inherited
+  std::unique_ptr<CollisionObject> createCollisionObject(
+      const dynamics::ShapeFrame* shapeFrame) override;
+
+  // Documentation inherited
+  void notifyCollisionObjectDestroying(CollisionObject* object) override;
+
+private:
+
+  btCollisionShape* claimBulletCollisionShape(
+      const dynamics::ConstShapePtr& shape);
+
+  void reclaimBulletCollisionShape(
+      const dynamics::ConstShapePtr& shape);
+
+  btCollisionShape* createBulletCollisionShape(
+      const dynamics::ConstShapePtr& shape);
+
+private:
+
+  std::map<dynamics::ConstShapePtr,
+           std::pair<btCollisionShape*, size_t>> mShapeMap;
+
 };
 
 }  // namespace collision
