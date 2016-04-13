@@ -307,7 +307,7 @@ if(DART_BUILD_GUI_OSG)
   find_package(OpenSceneGraph 3.0 QUIET
     COMPONENTS osg osgViewer osgManipulator osgGA osgDB)
   if(OPENSCENEGRAPH_FOUND)
-    message(STATUS "Looking for OpenSceneGraph -- ${OPENSCENEGRAPH_VERSION} found")
+    message(STATUS "Looking for OpenSceneGraph - ${OPENSCENEGRAPH_VERSION} found")
     set(HAVE_OPENSCENEGRAPH TRUE)
   else(OPENSCENEGRAPH_FOUND)
     # dart-gui-osg requires both OSG and OpenThreads. This section attempts to
