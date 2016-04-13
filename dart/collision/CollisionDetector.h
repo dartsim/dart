@@ -64,16 +64,16 @@ public:
   /// Destructor
   virtual ~CollisionDetector() = default;
 
-  /// Return collision detection engine type in std::string
+  /// Return collision detection engine type as a std::string
   virtual const std::string& getType() const = 0;
 
   /// Create a collision group
   virtual std::unique_ptr<CollisionGroup> createCollisionGroup() = 0;
 
-  /// Helper function that creates and returns CollisionGroup as shared_ptr.
+  /// Helper function that creates and returns CollisionGroup as a shared_ptr.
   ///
-  /// Internally, this function creates shared_ptr from unique_ptr returned from
-  /// createCollisionGroup() so the performance would be slighly worse than
+  /// Internally, this function creates a shared_ptr from unique_ptr returned
+  /// from createCollisionGroup() so the performance would be slighly worse than
   /// using std::make_unique.
   std::shared_ptr<CollisionGroup> createCollisionGroupAsSharedPtr();
 
@@ -84,8 +84,8 @@ public:
   /// CollisionGroup, BodyNode, and Skeleton.
   ///
   /// Note that this function adds only the ShapeFrames of each object at the
-  /// moment of this function is called. The aftwerward changes of the objects
-  /// does not affect on this CollisionGroup.
+  /// moment that this function is called. Any later addition to or removal of
+  /// the ShapeFrames that are attached to these objects will NOT be noticed.
   template <typename... Args>
   std::unique_ptr<CollisionGroup> createCollisionGroup(const Args&... args);
 

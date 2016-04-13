@@ -702,7 +702,7 @@ void FCLCollisionDetector::setContactPointComputationMethod(
            << "it's buggy (see https://github.com/flexible-collision-library/"
            << "fcl/issues/106) at least until 0.4.0. It's recommended to use "
            << "DART's implementation for the contact point computation by "
-           << "settting "
+           << "setting "
            << "FCLCollisionDetector::setContactPointComputationMethod(DART).\n";
   }
 
