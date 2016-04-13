@@ -70,7 +70,7 @@ if(MSVC)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
-option(DART_BUILD_OSGDART "Build osgDart library" ON)
+option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 option(DART_COVERALLS "Turn on coveralls support" OFF)
 option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
 
@@ -291,7 +291,17 @@ if(NOT BUILD_CORE_ONLY)
                           optimized console_bridge      debug console_bridged)
   endif()
 
-  # OpenSceneGraph
+endif()
+
+#-----------------------
+# Optional dependencies
+#-----------------------
+message(STATUS "")
+message(STATUS "[ Optional dependencies ]")
+
+# OpenSceneGraph
+if(DART_BUILD_GUI_OSG)
+
   find_package(OpenSceneGraph 3.0 QUIET
     COMPONENTS osg osgViewer osgManipulator osgGA osgDB)
   if(OPENSCENEGRAPH_FOUND)
@@ -316,13 +326,12 @@ if(NOT BUILD_CORE_ONLY)
     set(HAVE_OPENSCENEGRAPH FALSE)
   endif(OPENSCENEGRAPH_FOUND)
 
-endif()
+else()
 
-#-----------------------
-# Optional dependencies
-#-----------------------
-message(STATUS "")
-message(STATUS "[ Optional dependencies ]")
+  message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
+  set(HAVE_OPENSCENEGRAPH FALSE)
+
+endif(DART_BUILD_GUI_OSG)
 
 # OpenMP
 if(ENABLE_OPENMP)
@@ -536,7 +545,7 @@ message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
 message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 message(STATUS "ENABLE_OPENMP    : ${ENABLE_OPENMP}")
 message(STATUS "Build core only  : ${BUILD_CORE_ONLY}")
-message(STATUS "Build osgDart    : ${DART_BUILD_OSGDART}")
+message(STATUS "Build gui::osg   : ${DART_BUILD_GUI_OSG}")
 message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
 if(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELEASE")
