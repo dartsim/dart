@@ -56,5 +56,12 @@ install(
   DESTINATION include/dart/collision
   COMPONENT headers
 )
+
+install(
+  FILES ${detail_hdrs}
+  DESTINATION include/dart/collision/detail
+  COMPONENT headers
+)
+
 #install(TARGETS dart_collision EXPORT DARTCoreTargets DESTINATION lib)
 #install(TARGETS dart_collision EXPORT DARTTargets DESTINATION lib)

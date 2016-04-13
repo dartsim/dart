@@ -75,14 +75,14 @@ bool collisionCallback(fcl::CollisionObject* o1,
 void postProcessFCL(const fcl::CollisionResult& fclResult,
                     fcl::CollisionObject* o1,
                     fcl::CollisionObject* o2,
-                    const Option& option,
-                    Result& result);
+                    const CollisionOption& option,
+                    CollisionResult& result);
 
 void postProcessDART(const fcl::CollisionResult& fclResult,
                      fcl::CollisionObject* o1,
                      fcl::CollisionObject* o2,
-                     const Option& option,
-                     Result& result);
+                     const CollisionOption& option,
+                     CollisionResult& result);
 
 int evalContactPosition(const fcl::Contact& fclContact,
     const fcl::BVHModel<fcl::OBBRSS>* mesh1,
@@ -103,7 +103,7 @@ int FFtest(
 
 double triArea(fcl::Vec3f& p1, fcl::Vec3f& p2, fcl::Vec3f& p3);
 
-void convertOption(const Option& fclOption, fcl::CollisionRequest& request);
+void convertOption(const CollisionOption& fclOption, fcl::CollisionRequest& request);
 
 Contact convertContact(const fcl::Contact& fclContact,
                        fcl::CollisionObject* o1,
@@ -120,10 +120,10 @@ struct FCLCollisionCallbackData
   fcl::CollisionResult mFclResult;
 
   /// Collision option of DART
-  const Option& mOption;
+  const CollisionOption& mOption;
 
   /// Collision result of DART
-  Result& mResult;
+  CollisionResult& mResult;
 
   FCLCollisionDetector::PrimitiveShape mPrimitiveShapeType;
 
@@ -135,8 +135,8 @@ struct FCLCollisionCallbackData
 
   /// Constructor
   FCLCollisionCallbackData(
-      const Option& option,
-      Result& result,
+      const CollisionOption& option,
+      CollisionResult& result,
       FCLCollisionDetector::PrimitiveShape type
           = FCLCollisionDetector::MESH,
       FCLCollisionDetector::ContactPointComputationMethod method
@@ -607,8 +607,8 @@ FCLCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-bool FCLCollisionDetector::detect(
-    CollisionGroup* group, const Option& option, Result& result)
+bool FCLCollisionDetector::collide(
+    CollisionGroup* group, const CollisionOption& option, CollisionResult& result)
 {
   result.clear();
 
@@ -621,10 +621,10 @@ bool FCLCollisionDetector::detect(
     return false;
   }
 
-  group->updateEngineData();
+  auto casted = static_cast<FCLCollisionGroup*>(group);
+  casted->updateEngineData();
 
-  auto castedData = static_cast<FCLCollisionGroup*>(group);
-  auto broadPhaseAlg = castedData->getFCLCollisionManager();
+  auto broadPhaseAlg = casted->getFCLCollisionManager();
 
   FCLCollisionCallbackData collData(
         option, result, mPrimitiveShapeType,
@@ -635,9 +635,9 @@ bool FCLCollisionDetector::detect(
 }
 
 //==============================================================================
-bool FCLCollisionDetector::detect(
+bool FCLCollisionDetector::collide(
     CollisionGroup* group1, CollisionGroup* group2,
-    const Option& option, Result& result)
+    const CollisionOption& option, CollisionResult& result)
 {
   result.clear();
 
@@ -651,11 +651,10 @@ bool FCLCollisionDetector::detect(
     return false;
   }
 
-  group1->updateEngineData();
-  group2->updateEngineData();
-
   auto casted1 = static_cast<FCLCollisionGroup*>(group1);
   auto casted2 = static_cast<FCLCollisionGroup*>(group2);
+  casted1->updateEngineData();
+  casted2->updateEngineData();
 
   auto broadPhaseAlg1 = casted1->getFCLCollisionManager();
   auto broadPhaseAlg2 = casted2->getFCLCollisionManager();
@@ -703,7 +702,7 @@ void FCLCollisionDetector::setContactPointComputationMethod(
            << "it's buggy (see https://github.com/flexible-collision-library/"
            << "fcl/issues/106) at least until 0.4.0. It's recommended to use "
            << "DART's implementation for the contact point computation by "
-           << "settting "
+           << "setting "
            << "FCLCollisionDetector::setContactPointComputationMethod(DART).\n";
   }
 
@@ -723,7 +722,7 @@ FCLCollisionDetector::FCLCollisionDetector()
     mPrimitiveShapeType(MESH),
     mContactPointComputationMethod(DART)
 {
-  mCollisionObjectManager.reset(new SharingCollisionObjectManager(this));
+  mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
 
 //==============================================================================
@@ -991,8 +990,8 @@ bool collisionCallback(
 void postProcessFCL(const fcl::CollisionResult& fclResult,
                     fcl::CollisionObject* o1,
                     fcl::CollisionObject* o2,
-                    const Option& option,
-                    Result& result)
+                    const CollisionOption& option,
+                    CollisionResult& result)
 {
   auto numContacts = fclResult.numContacts();
 
@@ -1083,8 +1082,8 @@ void postProcessFCL(const fcl::CollisionResult& fclResult,
 void postProcessDART(const fcl::CollisionResult& fclResult,
                      fcl::CollisionObject* o1,
                      fcl::CollisionObject* o2,
-                     const Option& option,
-                     Result& result)
+                     const CollisionOption& option,
+                     CollisionResult& result)
 {
   auto initNumContacts = fclResult.numContacts();
 
@@ -1333,7 +1332,7 @@ bool isColinear(const Eigen::Vector3d& pos1,
 }
 
 //==============================================================================
-void convertOption(const Option& fclOption, fcl::CollisionRequest& request)
+void convertOption(const CollisionOption& fclOption, fcl::CollisionRequest& request)
 {
   request.num_max_contacts = fclOption.maxNumContacts;
   request.enable_contact   = fclOption.enableContact;

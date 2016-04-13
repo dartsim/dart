@@ -217,9 +217,9 @@ protected:
     auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
     auto newGroup = collisionEngine->createCollisionGroup(object.get());
 
-    dart::collision::Option option;
-    dart::collision::Result result;
-    bool collision = collisionGroup->detect(newGroup.get(), option, result);
+    dart::collision::CollisionOption option;
+    dart::collision::CollisionResult result;
+    bool collision = collisionGroup->collide(newGroup.get(), option, result);
 
     // If the new object is not in collision
     if(!collision)

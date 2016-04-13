@@ -40,19 +40,19 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-void Result::addContact(const Contact& contact)
+void CollisionResult::addContact(const Contact& contact)
 {
   mContacts.push_back(contact);
 }
 
 //==============================================================================
-size_t Result::getNumContacts() const
+size_t CollisionResult::getNumContacts() const
 {
   return mContacts.size();
 }
 
 //==============================================================================
-Contact& Result::getContact(size_t index)
+Contact& CollisionResult::getContact(size_t index)
 {
   assert(index < mContacts.size());
 
@@ -60,7 +60,7 @@ Contact& Result::getContact(size_t index)
 }
 
 //==============================================================================
-const Contact& Result::getContact(size_t index) const
+const Contact& CollisionResult::getContact(size_t index) const
 {
   assert(index < mContacts.size());
 
@@ -68,19 +68,19 @@ const Contact& Result::getContact(size_t index) const
 }
 
 //==============================================================================
-const std::vector<Contact>& Result::getContacts() const
+const std::vector<Contact>& CollisionResult::getContacts() const
 {
   return mContacts;
 }
 
 //==============================================================================
-bool Result::isCollision() const
+bool CollisionResult::isCollision() const
 {
   return !mContacts.empty();
 }
 
 //==============================================================================
-void Result::clear()
+void CollisionResult::clear()
 {
   mContacts.clear();
 }

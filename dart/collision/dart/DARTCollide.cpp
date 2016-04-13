@@ -419,7 +419,7 @@ got_answer:
 // fields.
 int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
             const dVector3 p2, const dMatrix3 R2, const dVector3 side2,
-            Result& result)
+            CollisionResult& result)
 {
   const double fudge_factor = 1.05;
   dVector3 p,pp,normalC = {0.0, 0.0, 0.0, 0.0};
@@ -802,7 +802,7 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
 
 int collideBoxBox(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
                   const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
-                  Result& result)
+                  CollisionResult& result)
 {
   dVector3 halfSize0;
   dVector3 halfSize1;
@@ -826,7 +826,7 @@ int collideBoxBox(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
 
 int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
                      const double& r1, const Eigen::Isometry3d& T1,
-                     Result& result)
+                     CollisionResult& result)
 {
   Eigen::Vector3d halfSize = 0.5 * size0;
   bool inside_box = true;
@@ -935,7 +935,7 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
 
 int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
                      const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
-                     Result& result)
+                     CollisionResult& result)
 {
   Eigen::Vector3d size = 0.5 * size1;
   bool inside_box = true;
@@ -1040,7 +1040,7 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
 
 int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
                         const double& _r1, const Eigen::Isometry3d& c1,
-                        Result& result)
+                        CollisionResult& result)
 {
   double r0 = _r0;
   double r1 = _r1;
@@ -1087,7 +1087,7 @@ int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
 
 int collideCylinderSphere(const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
                           const double& sphere_rad, const Eigen::Isometry3d& T1,
-                          Result& result)
+                          CollisionResult& result)
 {
   Eigen::Vector3d center = T0.inverse() * T1.translation();
 
@@ -1149,7 +1149,7 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
 
 int collideCylinderPlane(const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
                          const Eigen::Vector3d& plane_normal, const Eigen::Isometry3d& T1,
-                         Result& result)
+                         CollisionResult& result)
 {
   Eigen::Vector3d normal = T1.linear() * plane_normal;
   Eigen::Vector3d Rx = T0.linear().rightCols(1);
@@ -1219,7 +1219,7 @@ int collideCylinderPlane(const double& cyl_rad, const double& half_height, const
 //==============================================================================
 int collide(dynamics::ConstShapePtr shape0, const Eigen::Isometry3d& T0,
             dynamics::ConstShapePtr shape1, const Eigen::Isometry3d& T1,
-            Result& result)
+            CollisionResult& result)
 {
   dynamics::Shape::ShapeType LeftType = shape0->getShapeType();
   dynamics::Shape::ShapeType RightType = shape1->getShapeType();

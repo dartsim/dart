@@ -155,16 +155,16 @@ size_t CollisionGroup::getNumShapeFrames() const
 }
 
 //==============================================================================
-bool CollisionGroup::detect(const Option& option, Result& result)
+bool CollisionGroup::collide(const CollisionOption& option, CollisionResult& result)
 {
-  return mCollisionDetector->detect(this, option, result);
+  return mCollisionDetector->collide(this, option, result);
 }
 
 //==============================================================================
-bool CollisionGroup::detect(
-    CollisionGroup* other, const Option& option, Result& result)
+bool CollisionGroup::collide(
+    CollisionGroup* other, const CollisionOption& option, CollisionResult& result)
 {
-  return mCollisionDetector->detect(this, other, option, result);
+  return mCollisionDetector->collide(this, other, option, result);
 }
 
 //==============================================================================

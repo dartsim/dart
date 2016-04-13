@@ -63,6 +63,8 @@ public:
 
 protected:
 
+  using CollisionGroup::updateEngineData;
+
   // Documentation inherited
   void initializeEngineData() override;
 

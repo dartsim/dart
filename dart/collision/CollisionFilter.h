@@ -58,8 +58,8 @@ struct BodyNodeCollisionFilter : CollisionFilter
   bool needCollision(const CollisionObject* object1,
                      const CollisionObject* object2) const override;
 
-  bool isAdjacentBodies(const dynamics::BodyNode* bodyNode1,
-                        const dynamics::BodyNode* bodyNode2) const;
+  bool areAdjacentBodies(const dynamics::BodyNode* bodyNode1,
+                         const dynamics::BodyNode* bodyNode2) const;
 };
 
 }  // namespace collision
