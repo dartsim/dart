@@ -13,16 +13,14 @@ compiler:
   - clang
 
 env:
-  - BUILD_CORE_ONLY=OFF BUILD_TYPE=Debug   COVERALLS=OFF
-  - BUILD_CORE_ONLY=OFF BUILD_TYPE=Release COVERALLS=OFF
-  - BUILD_CORE_ONLY=ON  BUILD_TYPE=Debug   COVERALLS=OFF
-  - BUILD_CORE_ONLY=ON  BUILD_TYPE=Release COVERALLS=OFF
+  - BUILD_TYPE=Debug   COVERALLS=OFF
+  - BUILD_TYPE=Release COVERALLS=OFF
 
 matrix:
   include:
     - os: linux
       compiler: gcc
-      env: BUILD_CORE_ONLY=OFF BUILD_TYPE=Debug COVERALLS=ON COVERALLS_REPO_TOKEN=FKh1HgwfV5uzNrYxIT6ZWjcFqybYZSUym
+      env: BUILD_TYPE=Debug COVERALLS=ON COVERALLS_REPO_TOKEN=FKh1HgwfV5uzNrYxIT6ZWjcFqybYZSUym
   exclude:
     - os: osx
       compiler: gcc
@@ -33,10 +31,9 @@ install:
 
 script:
   - mkdir build && cd build
-  - cmake -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_COVERALLS=$COVERALLS ..
-  - make all
-  - if [ $BUILD_CORE_ONLY = OFF ]; then make tutorials examples tests test; fi
-  - if [ $COVERALLS = ON ]; then make coveralls; fi
+  - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_COVERALLS=$COVERALLS ..
+  - make -j4 all tutorials examples tests test
+  - if [ $COVERALLS = ON ]; then make -j4 coveralls; fi
 
 after_failure: 
   - cat Testing/Temporary/LastTest.log

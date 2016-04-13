@@ -35,6 +35,7 @@
  */
 
 #include "dart/dart.h"
+#include "dart/gui/gui.h"
 
 using namespace dart::dynamics;
 
