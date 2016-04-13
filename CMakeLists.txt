@@ -310,9 +310,9 @@ if(DART_BUILD_GUI_OSG)
     message(STATUS "Looking for OpenSceneGraph -- ${OPENSCENEGRAPH_VERSION} found")
     set(HAVE_OPENSCENEGRAPH TRUE)
   else(OPENSCENEGRAPH_FOUND)
-    # kido-gui-osg requires both OSG and OpenThreads. This section attempts to
+    # dart-gui-osg requires both OSG and OpenThreads. This section attempts to
     # identify which of those are missing from the building machine and offer
-    # advice to the user for getting osgKido to build.
+    # advice to the user for getting dart-gui-osg to build.
     find_package(OpenThreads QUIET)
     if(OPENTHREADS_FOUND)
       set(warning_msg "Could NOT find OpenSceneGraph")
@@ -323,7 +323,7 @@ if(DART_BUILD_GUI_OSG)
         set(warning_msg "Could NOT find OpenSceneGraph nor OpenThreads")
       endif(OSG_LIBRARY)
     endif(OPENTHREADS_FOUND)
-    message(WARNING "${warning_msg} -- we will skip kido-gui-osg\n"
+    message(WARNING "${warning_msg} -- we will skip dart-gui-osg\n"
             "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
     set(HAVE_OPENSCENEGRAPH FALSE)
   endif(OPENSCENEGRAPH_FOUND)
