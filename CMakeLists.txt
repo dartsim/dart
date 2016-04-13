@@ -70,7 +70,7 @@ if(MSVC)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
-option(DART_BUILD_OSGDART "Build osgDart library" ON)
+option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 option(DART_COVERALLS "Turn on coveralls support" OFF)
 option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
 
@@ -301,6 +301,40 @@ endif()
 message(STATUS "")
 message(STATUS "[ Optional dependencies ]")
 
+# OpenSceneGraph
+if(DART_BUILD_GUI_OSG)
+
+  find_package(OpenSceneGraph 3.0 QUIET
+    COMPONENTS osg osgViewer osgManipulator osgGA osgDB)
+  if(OPENSCENEGRAPH_FOUND)
+    message(STATUS "Looking for OpenSceneGraph - ${OPENSCENEGRAPH_VERSION} found")
+    set(HAVE_OPENSCENEGRAPH TRUE)
+  else(OPENSCENEGRAPH_FOUND)
+    # dart-gui-osg requires both OSG and OpenThreads. This section attempts to
+    # identify which of those are missing from the building machine and offer
+    # advice to the user for getting dart-gui-osg to build.
+    find_package(OpenThreads QUIET)
+    if(OPENTHREADS_FOUND)
+      set(warning_msg "Could NOT find OpenSceneGraph")
+    else(OPENTHREADS_FOUND)
+      if(OSG_LIBRARY)
+        set(warning_msg "Could NOT find OpenThreads")
+      else(OSG_LIBRARY)
+        set(warning_msg "Could NOT find OpenSceneGraph nor OpenThreads")
+      endif(OSG_LIBRARY)
+    endif(OPENTHREADS_FOUND)
+    message(WARNING "${warning_msg} -- we will skip dart-gui-osg\n"
+            "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
+    set(HAVE_OPENSCENEGRAPH FALSE)
+  endif(OPENSCENEGRAPH_FOUND)
+
+else()
+
+  message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
+  set(HAVE_OPENSCENEGRAPH FALSE)
+
+endif(DART_BUILD_GUI_OSG)
+
 # OpenMP
 if(ENABLE_OPENMP)
   find_package(OpenMP QUIET)
@@ -418,6 +452,11 @@ if(NOT BUILD_CORE_ONLY)
                         ${TINYXML_LIBRARIES}
                         ${TINYXML2_LIBRARIES}
   )
+
+  if(HAVE_BULLET_COLLISION)
+    set(DART_DEPENDENCIES ${DART_DEPENDENCIES} ${OPENSCENEGRAPH_LIBRARIES})
+  endif()
+
 endif()
 
 #===============================================================================
@@ -532,7 +571,7 @@ message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
 message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 message(STATUS "ENABLE_OPENMP    : ${ENABLE_OPENMP}")
 message(STATUS "Build core only  : ${BUILD_CORE_ONLY}")
-message(STATUS "Build osgDart    : ${DART_BUILD_OSGDART}")
+message(STATUS "Build gui::osg   : ${DART_BUILD_GUI_OSG}")
 message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
 if(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELEASE")
@@ -617,9 +656,6 @@ endfunction(dart_add_unittest)
 add_subdirectory(dart)
 
 if(NOT BUILD_CORE_ONLY)
-  if(DART_BUILD_OSGDART)
-    add_subdirectory(osgDart)
-  endif(DART_BUILD_OSGDART)
 
   add_subdirectory(apps EXCLUDE_FROM_ALL)
   add_subdirectory(tutorials EXCLUDE_FROM_ALL)
