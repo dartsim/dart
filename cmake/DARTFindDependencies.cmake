@@ -1,4 +1,3 @@
-
 # If you add a dependency, please add the corresponding rosdep key as a
 # dependency in package.xml.
 
@@ -54,9 +53,10 @@ if(ASSIMP_FOUND)
 
   # Check for missing symbols in ASSIMP (see #451)
   include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_DEFINITIONS "")
+  set(CMAKE_REQUIRED_FLAGS "")
   set(CMAKE_REQUIRED_INCLUDES ${ASSIMP_INCLUDE_DIRS})
   set(CMAKE_REQUIRED_LIBRARIES ${ASSIMP_LIBRARIES})
-  set(CMAKE_REQUIRED_QUIET TRUE)
 
   check_cxx_source_compiles(
   "
@@ -100,7 +100,6 @@ if(ASSIMP_FOUND)
 
   unset(CMAKE_REQUIRED_INCLUDES)
   unset(CMAKE_REQUIRED_LIBRARIES)
-  unset(CMAKE_REQUIRED_QUIET)
 
 else()
   message(SEND_ERROR "Looking for ASSIMP - NOT found, please install libassimp-dev (>= 3.0.0)")
@@ -129,89 +128,102 @@ else()
   message(SEND_ERROR "Please install system boost version ${DART_MIN_BOOST_VERSION} or higher.")
 endif()
 
+if(NOT BUILD_CORE_ONLY)
+
+  # GLUT
+  if(WIN32 AND NOT CYGWIN)
+    set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
+    set(GLUT_LIBRARIES glut32)
+  else()
+    find_package(GLUT QUIET)
+    if(GLUT_FOUND)
+      message(STATUS "Looking for GLUT - found")
+      set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
+    else()
+      message(SEND_ERROR "Looking for GLUT - NOT found, Please install freeglut3-dev")
+    endif()
+  endif()
+
+  # FLANN
+  find_package(FLANN 1.8.4 QUIET)
+  if(FLANN_FOUND)
+    message(STATUS "Looking for FLANN - ${FLANN_VERSION} found")
+  else()
+    message(SEND_ERROR "Looking for FLANN - NOT found, please install libflann-dev (>= 1.8.4)")
+  endif()
+
+  # TINYXML
+  find_package(TINYXML 2.6.2 QUIET)
+  if(TINYXML_FOUND)
+    message(STATUS "Looking for TINYXML - ${TINYXML_VERSION} found")
+  else()
+    message(SEND_ERROR "Looking for TINYXML - NOT found, please install libtinyxml-dev (>= 2.6.2)")
+  endif()
+
+  # TINYXML2
+  find_package(TINYXML2 QUIET)
+  if(TINYXML2_FOUND)
+    message(STATUS "Looking for TINYXML2 - ${TINYXML2_VERSION} found")
+  else()
+    message(SEND_ERROR "Looking for TINYXML2 - NOT found, please install libtinyxml2-dev (>= 1.0.1)")
+  endif()
+
+  # urdfdom
+  find_package(urdfdom QUIET)
+  if(urdfdom_FOUND)
+    message(STATUS "Looking for urdfdom - found")
+  else()
+    message(SEND_ERROR "Looking for urdfdom - NOT found, please install liburdfdom-dev")
+  endif()
+  if(MSVC)
+    set(urdfdom_LIBRARIES optimized urdfdom_sensor      debug urdfdom_sensord
+                          optimized urdfdom_model_state debug urdfdom_model_stated
+                          optimized urdfdom_model       debug urdfdom_modeld
+                          optimized urdfdom_world       debug urdfdom_worldd
+                          optimized console_bridge      debug console_bridged)
+  endif()
+
+endif()
+
 #-----------------------
 # Optional dependencies
 #-----------------------
 message(STATUS "")
 message(STATUS "[ Optional dependencies ]")
 
-# FLANN
-find_package(FLANN 1.8.4 QUIET)
-if(FLANN_FOUND)
-  message(STATUS "Looking for FLANN - ${FLANN_VERSION} found")
-else()
-  message(SEND_ERROR "Looking for FLANN - NOT found, please install libflann-dev (>= 1.8.4)")
-endif()
-
-# TINYXML
-find_package(TINYXML 2.6.2 QUIET)
-if(TINYXML_FOUND)
-  message(STATUS "Looking for TINYXML - ${TINYXML_VERSION} found")
-else()
-  message(SEND_ERROR "Looking for TINYXML - NOT found, please install libtinyxml-dev (>= 2.6.2)")
-endif()
-
-# TINYXML2
-find_package(TINYXML2 QUIET)
-if(TINYXML2_FOUND)
-  message(STATUS "Looking for TINYXML2 - ${TINYXML2_VERSION} found")
-else()
-  message(SEND_ERROR "Looking for TINYXML2 - NOT found, please install libtinyxml2-dev (>= 1.0.1)")
-endif()
-
-# urdfdom
-find_package(urdfdom QUIET)
-if(urdfdom_FOUND)
-  message(STATUS "Looking for urdfdom - found")
-else()
-  message(SEND_ERROR "Looking for urdfdom - NOT found, please install liburdfdom-dev")
-endif()
-if(MSVC)
-  set(urdfdom_LIBRARIES optimized urdfdom_sensor      debug urdfdom_sensord
-                        optimized urdfdom_model_state debug urdfdom_model_stated
-                        optimized urdfdom_model       debug urdfdom_modeld
-                        optimized urdfdom_world       debug urdfdom_worldd
-                        optimized console_bridge      debug console_bridged)
-endif()
-
-# GLUT
-if(WIN32 AND NOT CYGWIN)
-  set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
-  set(GLUT_LIBRARIES glut32)
-else()
-  find_package(GLUT QUIET)
-  if(GLUT_FOUND)
-    message(STATUS "Looking for GLUT - found")
-    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
-  else()
-    message(SEND_ERROR "Looking for GLUT - NOT found, Please install freeglut3-dev")
-  endif()
-endif()
-
 # OpenSceneGraph
-find_package(OpenSceneGraph 3.0 QUIET
-  COMPONENTS osg osgViewer osgManipulator osgGA osgDB)
-if(OPENSCENEGRAPH_FOUND)
-  message(STATUS "Looking for OpenSceneGraph -- ${OPENSCENEGRAPH_VERSION} found")
-  set(HAVE_OPENSCENEGRAPH TRUE)
-else(OPENSCENEGRAPH_FOUND)
-  # kido-gui-osg requires both OSG and OpenThreads. This section attempts to
-  # identify which of those are missing from the building machine and offer
-  # advice to the user for getting osgKido to build.
-  find_package(OpenThreads QUIET)
-  if(OPENTHREADS_FOUND)
-    set(warning_msg "Could NOT find OpenSceneGraph")
-  else(OPENTHREADS_FOUND)
-    if(OSG_LIBRARY)
-      set(warning_msg "Could NOT find OpenThreads")
-    else(OSG_LIBRARY)
-      set(warning_msg "Could NOT find OpenSceneGraph nor OpenThreads")
-    endif(OSG_LIBRARY)
-  endif(OPENTHREADS_FOUND)
-  message(WARNING "${warning_msg} -- we will skip kido-gui-osg\n"
-          "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
+if(DART_BUILD_GUI_OSG)
+
+  find_package(OpenSceneGraph 3.0 QUIET
+    COMPONENTS osg osgViewer osgManipulator osgGA osgDB)
+  if(OPENSCENEGRAPH_FOUND)
+    message(STATUS "Looking for OpenSceneGraph - ${OPENSCENEGRAPH_VERSION} found")
+    set(HAVE_OPENSCENEGRAPH TRUE)
+  else(OPENSCENEGRAPH_FOUND)
+    # dart-gui-osg requires both OSG and OpenThreads. This section attempts to
+    # identify which of those are missing from the building machine and offer
+    # advice to the user for getting dart-gui-osg to build.
+    find_package(OpenThreads QUIET)
+    if(OPENTHREADS_FOUND)
+      set(warning_msg "Could NOT find OpenSceneGraph")
+    else(OPENTHREADS_FOUND)
+      if(OSG_LIBRARY)
+        set(warning_msg "Could NOT find OpenThreads")
+      else(OSG_LIBRARY)
+        set(warning_msg "Could NOT find OpenSceneGraph nor OpenThreads")
+      endif(OSG_LIBRARY)
+    endif(OPENTHREADS_FOUND)
+    message(WARNING "${warning_msg} -- we will skip dart-gui-osg\n"
+            "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
+    set(HAVE_OPENSCENEGRAPH FALSE)
+  endif(OPENSCENEGRAPH_FOUND)
+
+else()
+
+  message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
   set(HAVE_OPENSCENEGRAPH FALSE)
-endif(OPENSCENEGRAPH_FOUND)
+
+endif(DART_BUILD_GUI_OSG)
 
 # OpenMP
 if(ENABLE_OPENMP)
@@ -254,15 +266,43 @@ else()
   set(HAVE_SHARK FALSE)
 endif()
 
-# BulletCollision
-find_package(Bullet COMPONENTS BulletMath BulletCollision QUIET)
+# Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
+# CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
+# with Bullet, which uses relative paths and may break transitive dependencies.
+find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
 
 if(BULLET_FOUND)
-  message(STATUS "Looking for BulletCollision - ${BULLET_VERSION} found")
+  # Test whether Bullet was built with double precision. If so, we need to
+  # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
+  # any Bullet headers. This is a workaround for the fact that Bullet does not
+  # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
+  include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_FLAGS "")
+  set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
+  set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
+  set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
+  check_cxx_source_compiles(
+    "
+    #include <btBulletCollisionCommon.h>
+    int main()
+    {
+      btVector3 v(0., 0., 1.);
+      btStaticPlaneShape planeShape(v, 0.);
+      return 0;
+    }
+    "
+    BT_USE_DOUBLE_PRECISION
+  )
+
+  if(BT_USE_DOUBLE_PRECISION)
+    message(STATUS "Looking for Bullet - found (double precision)")
+  else()
+    message(STATUS "Looking for Bullet - found (single precision)")
+  endif()
+
   set(HAVE_BULLET_COLLISION TRUE)
-  add_definitions(-DHAVE_BULLET_COLLISION)
 else()
-  message(STATUS "Looking for BulletCollision - NOT found, please install libbullet-dev")
+  message(STATUS "Looking for Bullet - NOT found, please install libbullet-dev")
   set(HAVE_BULLET_COLLISION FALSE)
 endif()
 

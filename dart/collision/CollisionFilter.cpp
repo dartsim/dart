@@ -72,7 +72,7 @@ bool BodyNodeCollisionFilter::needCollision(
 
     if (!skeleton->isEnabledAdjacentBodyCheck())
     {
-      if (isAdjacentBodies(bodyNode1, bodyNode2))
+      if (areAdjacentBodies(bodyNode1, bodyNode2))
         return false;
     }
   }
@@ -81,7 +81,7 @@ bool BodyNodeCollisionFilter::needCollision(
 }
 
 //==============================================================================
-bool BodyNodeCollisionFilter::isAdjacentBodies(
+bool BodyNodeCollisionFilter::areAdjacentBodies(
     const dynamics::BodyNode* bodyNode1,
     const dynamics::BodyNode* bodyNode2) const
 {

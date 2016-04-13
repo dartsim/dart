@@ -128,10 +128,10 @@ public:
   const collision::CollisionGroup* getCollisionGroup() const;
 
   /// Return the last collision checking result
-  collision::Result& getLastCollisionResult();
+  collision::CollisionResult& getLastCollisionResult();
 
   /// Return the last collision checking result
-  const collision::Result& getLastCollisionResult() const;
+  const collision::CollisionResult& getLastCollisionResult() const;
 
   /// Set LCP solver
   void setLCPSolver(std::unique_ptr<LCPSolver> _lcpSolver);
@@ -176,10 +176,10 @@ private:
   std::unique_ptr<collision::CollisionGroup> mCollisionGroup;
 
   /// Last collision checking result
-  collision::Option mCollisionOption;
+  collision::CollisionOption mCollisionOption;
 
   /// Last collision checking result
-  collision::Result mCollisionResult;
+  collision::CollisionResult mCollisionResult;
 
   /// Time step
   double mTimeStep;

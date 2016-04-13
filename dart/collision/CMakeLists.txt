@@ -42,3 +42,9 @@ install(
   DESTINATION include/dart/collision
   COMPONENT headers
 )
+
+install(
+  FILES ${detail_hdrs}
+  DESTINATION include/dart/collision/detail
+  COMPONENT headers
+)
