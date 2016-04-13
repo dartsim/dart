@@ -268,10 +268,10 @@ public:
     auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
     auto newGroup = collisionEngine->createCollisionGroup(newDomino.get());
 
-    dart::collision::Option option;
-    dart::collision::Result result;
+    dart::collision::CollisionOption option;
+    dart::collision::CollisionResult result;
     bool dominoCollision
-        = collisionGroup->detect(newGroup.get(), option, result);
+        = collisionGroup->collide(newGroup.get(), option, result);
 
     // If the new domino is not penetrating an existing one
     if(!dominoCollision)

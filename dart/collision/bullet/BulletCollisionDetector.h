@@ -37,6 +37,9 @@
 #ifndef DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_H_
 #define DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_H_
 
+// Must be included before any Bullet headers.
+#include "dart/config.h"
+
 #include <vector>
 #include <assimp/scene.h>
 #include <btBulletCollisionCommon.h>
@@ -68,12 +71,12 @@ public:
   std::unique_ptr<CollisionGroup> createCollisionGroup() override;
 
   // Documentation inherited
-  bool detect(CollisionGroup* group,
-              const Option& option, Result& result) override;
+  bool collide(CollisionGroup* group,
+               const CollisionOption& option, CollisionResult& result) override;
 
   // Documentation inherited
-  bool detect(CollisionGroup* group1, CollisionGroup* group2,
-              const Option& option, Result& result) override;
+  bool collide(CollisionGroup* group1, CollisionGroup* group2,
+               const CollisionOption& option, CollisionResult& result) override;
 
 protected:
 
@@ -85,7 +88,7 @@ protected:
       const dynamics::ShapeFrame* shapeFrame) override;
 
   // Documentation inherited
-  void notifyCollisionObjectDestorying(CollisionObject* object) override;
+  void notifyCollisionObjectDestroying(CollisionObject* object) override;
 
 private:
 

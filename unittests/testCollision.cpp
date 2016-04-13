@@ -541,24 +541,24 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
             + group2->getNumShapeFrames()
             + group3->getNumShapeFrames());
 
-  collision::Option option;
-  collision::Result result;
+  collision::CollisionOption option;
+  collision::CollisionResult result;
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
   simpleFrame3->setTranslation(Eigen::Vector3d(2.2, 0.0, 0.0));
-  EXPECT_FALSE(group1->detect(option, result));
-  EXPECT_FALSE(group2->detect(option, result));
-  EXPECT_FALSE(group3->detect(option, result));
-  EXPECT_FALSE(groupAll->detect(option, result));
+  EXPECT_FALSE(group1->collide(option, result));
+  EXPECT_FALSE(group2->collide(option, result));
+  EXPECT_FALSE(group3->collide(option, result));
+  EXPECT_FALSE(groupAll->collide(option, result));
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
   simpleFrame3->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
-  EXPECT_TRUE(group1->detect(group2.get(), option, result));
-  EXPECT_TRUE(group1->detect(group2.get(), option, result));
-  EXPECT_TRUE(group2->detect(group3.get(), option, result));
-  EXPECT_TRUE(groupAll->detect(option, result));
+  EXPECT_TRUE(group1->collide(group2.get(), option, result));
+  EXPECT_TRUE(group1->collide(group2.get(), option, result));
+  EXPECT_TRUE(group2->collide(group3.get(), option, result));
+  EXPECT_TRUE(groupAll->collide(option, result));
 }
 
 //==============================================================================
@@ -633,10 +633,10 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
             group1->getNumShapeFrames()
             + group2->getNumShapeFrames());
 
-  collision::Option option;
-  collision::Result result;
+  collision::CollisionOption option;
+  collision::CollisionResult result;
 
-  EXPECT_TRUE(group1->detect(group2.get(), option, result));
+  EXPECT_TRUE(group1->collide(group2.get(), option, result));
 
   Eigen::Vector3d min = Eigen::Vector3d(-0.25, 0.25, 0.0);
   Eigen::Vector3d max = Eigen::Vector3d(0.25, 0.5, 0.0);
@@ -716,26 +716,26 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
   EXPECT_EQ(group->getNumShapeFrames(), 2u);
 
-  collision::Option option;
-  collision::Result result;
+  collision::CollisionOption option;
+  collision::CollisionResult result;
 
   result.clear();
   option.maxNumContacts = 1000u;
   option.binaryCheck = false;
-  EXPECT_TRUE(group->detect(option, result));
+  EXPECT_TRUE(group->collide(option, result));
   EXPECT_EQ(result.getNumContacts(), 4u);
 
   result.clear();
   option.maxNumContacts = 2u;
   option.binaryCheck = false;
-  EXPECT_TRUE(group->detect(option, result));
+  EXPECT_TRUE(group->collide(option, result));
   EXPECT_EQ(result.getNumContacts(), 2u);
 
   group->addShapeFrame(simpleFrame3.get());
   result.clear();
   option.maxNumContacts = 1e+3;
   option.binaryCheck = true;
-  EXPECT_TRUE(group->detect(option, result));
+  EXPECT_TRUE(group->collide(option, result));
   EXPECT_EQ(result.getNumContacts(), 1u);
 }
 
@@ -787,8 +787,8 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   auto boxShapeNode1 = boxBodyNode1->getShapeNodesWith<CollisionAddon>()[0];
   auto boxShapeNode2 = boxBodyNode2->getShapeNodesWith<CollisionAddon>()[0];
 
-  collision::Option option;
-  collision::Result result;
+  collision::CollisionOption option;
+  collision::CollisionResult result;
 
   auto skeletonGroup1 = cd->createCollisionGroup(boxSkeleton1.get());
   auto skeletonGroup2 = cd->createCollisionGroup(boxSkeleton2.get());
@@ -799,9 +799,9 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   auto shapeNodeGroup1 = cd->createCollisionGroup(boxShapeNode1);
   auto shapeNodeGroup2 = cd->createCollisionGroup(boxShapeNode2);
 
-  EXPECT_TRUE(skeletonGroup1->detect(skeletonGroup2.get(), option, result));
-  EXPECT_TRUE(bodyNodeGroup1->detect(bodyNodeGroup2.get(), option, result));
-  EXPECT_TRUE(shapeNodeGroup1->detect(shapeNodeGroup2.get(), option, result));
+  EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get(), option, result));
+  EXPECT_TRUE(bodyNodeGroup1->collide(bodyNodeGroup2.get(), option, result));
+  EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get(), option, result));
 }
 
 //==============================================================================

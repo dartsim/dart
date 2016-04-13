@@ -51,9 +51,6 @@ class CollisionGroup
 {
 public:
 
-  friend class FCLCollisionDetector;
-  friend class BulletCollisionDetector;
-
   /// Constructor
   CollisionGroup(const CollisionDetectorPtr& collisionDetector);
   // CollisionGroup also can be created from CollisionDetector::create()
@@ -172,13 +169,14 @@ public:
   size_t getNumShapeFrames() const;
 
   /// Perform collision detection within this CollisionGroup.
-  bool detect(const Option& option, Result& result);
+  bool collide(const CollisionOption& option, CollisionResult& result);
 
   /// Perform collision detection with other CollisionGroup.
   ///
   /// Return false if the engine type of the other CollisionGroup is different
   /// from this CollisionObject engine.
-  bool detect(CollisionGroup* group, const Option& option, Result& result);
+  bool collide(CollisionGroup* group,
+               const CollisionOption& option, CollisionResult& result);
 
 protected:
 

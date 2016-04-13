@@ -64,16 +64,16 @@ public:
   /// Destructor
   virtual ~CollisionDetector() = default;
 
-  /// Return collision detection engine type in std::string
+  /// Return collision detection engine type as a std::string
   virtual const std::string& getType() const = 0;
 
   /// Create a collision group
   virtual std::unique_ptr<CollisionGroup> createCollisionGroup() = 0;
 
-  /// Helper function that creates and returns CollisionGroup as shared_ptr.
+  /// Helper function that creates and returns CollisionGroup as a shared_ptr.
   ///
-  /// Internally, this function creates shared_ptr from unique_ptr returned from
-  /// createCollisionGroup() so the performance would be slighly worse than
+  /// Internally, this function creates a shared_ptr from unique_ptr returned
+  /// from createCollisionGroup() so the performance would be slighly worse than
   /// using std::make_unique.
   std::shared_ptr<CollisionGroup> createCollisionGroupAsSharedPtr();
 
@@ -84,8 +84,8 @@ public:
   /// CollisionGroup, BodyNode, and Skeleton.
   ///
   /// Note that this function adds only the ShapeFrames of each object at the
-  /// moment of this function is called. The aftwerward changes of the objects
-  /// does not affect on this CollisionGroup.
+  /// moment that this function is called. Any later addition to or removal of
+  /// the ShapeFrames that are attached to these objects will NOT be noticed.
   template <typename... Args>
   std::unique_ptr<CollisionGroup> createCollisionGroup(const Args&... args);
 
@@ -95,18 +95,20 @@ public:
       const Args&... args);
 
   /// Perform collision detection for group.
-  virtual bool detect(CollisionGroup* group,
-                      const Option& option, Result& result) = 0;
+  virtual bool collide(
+      CollisionGroup* group,
+      const CollisionOption& option, CollisionResult& result) = 0;
 
   /// Perform collision detection for group1-group2.
-  virtual bool detect(CollisionGroup* group1, CollisionGroup* group2,
-                      const Option& option, Result& result) = 0;
+  virtual bool collide(
+      CollisionGroup* group1, CollisionGroup* group2,
+      const CollisionOption& option, CollisionResult& result) = 0;
 
 protected:
 
   class CollisionObjectManager;
-  class NoneSharingCollisionObjectManager;
-  class SharingCollisionObjectManager;
+  class ManagerForUnsharableCollisionObjects;
+  class ManagerForSharableCollisionObjects;
 
   /// Constructor
   CollisionDetector() = default;
@@ -121,7 +123,7 @@ protected:
       const dynamics::ShapeFrame* shapeFrame) = 0;
 
   /// Notify that a CollisionObject is destroying. Do nothing by default.
-  virtual void notifyCollisionObjectDestorying(CollisionObject* object);
+  virtual void notifyCollisionObjectDestroying(CollisionObject* object);
 
 protected:
 
@@ -129,6 +131,7 @@ protected:
 
 };
 
+//==============================================================================
 class CollisionDetector::CollisionObjectManager
 {
 public:
@@ -147,13 +150,14 @@ protected:
 
 };
 
-class CollisionDetector::NoneSharingCollisionObjectManager final :
+//==============================================================================
+class CollisionDetector::ManagerForUnsharableCollisionObjects final :
     public CollisionDetector::CollisionObjectManager
 {
 public:
 
   /// Constructor
-  NoneSharingCollisionObjectManager(CollisionDetector* cd);
+  ManagerForUnsharableCollisionObjects(CollisionDetector* cd);
 
   // Documentation inherited
   std::shared_ptr<CollisionObject> claimCollisionObject(
@@ -165,9 +169,9 @@ private:
   /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
   struct CollisionObjectDeleter final
   {
-    NoneSharingCollisionObjectManager* mCollisionObjectManager;
+    ManagerForUnsharableCollisionObjects* mCollisionObjectManager;
 
-    CollisionObjectDeleter(NoneSharingCollisionObjectManager* mgr);
+    CollisionObjectDeleter(ManagerForUnsharableCollisionObjects* mgr);
 
     void operator()(CollisionObject* object) const;
   };
@@ -176,16 +180,17 @@ private:
 
 };
 
-class CollisionDetector::SharingCollisionObjectManager final :
+//==============================================================================
+class CollisionDetector::ManagerForSharableCollisionObjects final :
     public CollisionDetector::CollisionObjectManager
 {
 public:
 
   /// Constructor
-  SharingCollisionObjectManager(CollisionDetector* cd);
+  ManagerForSharableCollisionObjects(CollisionDetector* cd);
 
   /// Destructor
-  virtual ~SharingCollisionObjectManager();
+  virtual ~ManagerForSharableCollisionObjects();
 
   // Documentation inherited
   std::shared_ptr<CollisionObject> claimCollisionObject(
@@ -197,9 +202,9 @@ private:
   /// from mCollisionObjectMap when it is not shared by any CollisionGroups.
   struct CollisionObjectDeleter final
   {
-    SharingCollisionObjectManager* mCollisionObjectManager;
+    ManagerForSharableCollisionObjects* mCollisionObjectManager;
 
-    CollisionObjectDeleter(SharingCollisionObjectManager* mgr);
+    CollisionObjectDeleter(ManagerForSharableCollisionObjects* mgr);
 
     void operator()(CollisionObject* object) const;
   };

@@ -40,7 +40,7 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-Option::Option(
+CollisionOption::CollisionOption(
     bool enableContact,
     bool binaryCheck,
     size_t maxNumContacts,

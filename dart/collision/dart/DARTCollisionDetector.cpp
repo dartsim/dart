@@ -50,13 +50,13 @@ namespace collision {
 namespace {
 
 bool checkPair(CollisionObject* o1, CollisionObject* o2,
-               const Option& option, Result& result);
+               const CollisionOption& option, CollisionResult& result);
 
 bool isClose(const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2,
              double tol);
 
-void postProcess(CollisionObject* o1, CollisionObject* o2, const Option& option,
-                 Result& totalResult, const Result& pairResult);
+void postProcess(CollisionObject* o1, CollisionObject* o2, const CollisionOption& option,
+                 CollisionResult& totalResult, const CollisionResult& pairResult);
 
 } // anonymous namespace
 
@@ -89,9 +89,9 @@ DARTCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-bool DARTCollisionDetector::detect(
+bool DARTCollisionDetector::collide(
     CollisionGroup* group,
-    const Option& option, Result& result)
+    const CollisionOption& option, CollisionResult& result)
 {
   result.clear();
 
@@ -142,10 +142,10 @@ bool DARTCollisionDetector::detect(
 }
 
 //==============================================================================
-bool DARTCollisionDetector::detect(
+bool DARTCollisionDetector::collide(
     CollisionGroup* group1,
     CollisionGroup* group2,
-    const Option& option, Result& result)
+    const CollisionOption& option, CollisionResult& result)
 {
   result.clear();
 
@@ -202,7 +202,7 @@ bool DARTCollisionDetector::detect(
 DARTCollisionDetector::DARTCollisionDetector()
   : CollisionDetector()
 {
-  mCollisionObjectManager.reset(new SharingCollisionObjectManager(this));
+  mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
 
 //==============================================================================
@@ -249,9 +249,9 @@ namespace {
 
 //==============================================================================
 bool checkPair(CollisionObject* o1, CollisionObject* o2,
-               const Option& option, Result& result)
+               const CollisionOption& option, CollisionResult& result)
 {
-  Result pairResult;
+  CollisionResult pairResult;
 
   // Perform narrow-phase detection
   auto colliding = collide(o1->getShape(), o1->getTransform(),
@@ -272,8 +272,8 @@ bool isClose(const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2,
 
 //==============================================================================
 void postProcess(CollisionObject* o1, CollisionObject* o2,
-                 const Option& option,
-                 Result& totalResult, const Result& pairResult)
+                 const CollisionOption& option,
+                 CollisionResult& totalResult, const CollisionResult& pairResult)
 {
   if (!pairResult.isCollision())
     return;
