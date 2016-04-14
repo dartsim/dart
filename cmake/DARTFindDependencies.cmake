@@ -24,24 +24,9 @@ else()
 endif()
 
 # FCL
-# TODO: We need to increate the minimum required fcl version to 0.4.0 for DART
-# 5.0 once fcl 0.4.0 is released.
 find_package(FCL 0.2.9 QUIET)
 if(FCL_FOUND)
   message(STATUS "Looking for FCL - ${FCL_VERSION} found")
-  if(FCL_VERSION)
-    if("${FCL_VERSION}" VERSION_LESS "0.4.0")
-      message(WARNING
-        "Found FCL version ${FCL_VERSION}, which is older than 0.4.0. FCL"
-        " versions predating 0.4.0 return incorrect contacts for"
-        " primitive-primitive collsions. You should use FCLMeshCollisionDetector"
-        " instead of FCLCollisionDetector if you need accurate contacts."
-      )
-      set(DART_USE_FCLMESHCOLLISIONDETECTOR TRUE)
-    else()
-      set(DART_USE_FCLMESHCOLLISIONDETECTOR FALSE)
-    endif()
-  endif()
 else()
   message(SEND_ERROR "Looking for FCL - NOT found, please install libfcl-dev (>= 0.2.9)")
 endif()
