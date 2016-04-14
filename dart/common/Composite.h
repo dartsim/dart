@@ -137,7 +137,7 @@ public:
 
   /// Set the states of the aspects in this Composite based on the given
   /// Composite::State. The states of any Aspect types that do not exist
-  /// within this manager will be ignored.
+  /// within this composite will be ignored.
   void setCompositeState(const State& newStates);
 
   /// Get the states of the aspects inside of this Composite
@@ -148,7 +148,7 @@ public:
 
   /// Set the properties of the aspects in this Composite based on the given
   /// Composite::Properties. The properties of any Aspect types that do not
-  /// exist within this manager will be ignored.
+  /// exist within this composite will be ignored.
   void setCompositeProperties(const Properties& newProperties);
 
   /// Get the properties of the aspects inside of this Composite
@@ -188,7 +188,7 @@ protected:
   AspectMap mAspectMap;
 
   /// A set containing type information for Aspects which are not allowed to
-  /// leave this manager.
+  /// leave this composite.
   RequiredAspectSet mRequiredAspects;
 };
 

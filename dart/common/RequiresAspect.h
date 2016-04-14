@@ -45,7 +45,7 @@ namespace common {
 //==============================================================================
 /// RequiresAspect allows classes that inherit Composite to know which Aspects
 /// are required for their operation. This guarantees that there is no way for
-/// a required Aspect do not get unexpectedly removed from their manager.
+/// a required Aspect do not get unexpectedly removed from their composite.
 ///
 /// Required Aspects are also automatically specialized for.
 template <class... OtherRequiredAspects>

@@ -94,7 +94,7 @@ public:
   /// Virtual destructor
   virtual ~Aspect() = default;
 
-  /// Clone this Aspect into a new manager
+  /// Clone this Aspect into a new composite
   virtual std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const = 0;
 
   /// Set the State of this Aspect. By default, this does nothing.
@@ -118,7 +118,7 @@ protected:
   /// We require the Composite argument in this constructor to make it clear
   /// to extensions that they must have a Composite argument in their
   /// constructors.
-  Aspect(Composite* manager);
+  Aspect(Composite* composite);
 
   /// This function will be triggered (1) after the Aspect has been created
   /// [transfer will be false] and (2) after the Aspect has been transferred

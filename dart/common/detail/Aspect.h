@@ -76,9 +76,9 @@ void CompositeTrackingAspect<CompositeType>::setComposite(Composite* newComposit
   if(nullptr == mComposite)
   {
     dterr << "[" << typeid(*this).name() << "::setComposite] Attempting to use a "
-          << "[" << typeid(newComposite).name() << "] type manager, but this "
+          << "[" << typeid(*newComposite).name() << "] type composite, but this "
           << "Aspect is only designed to be attached to a ["
-          << typeid(CompositeType).name() << "] type manager. This may cause "
+          << typeid(CompositeType).name() << "] type composite. This may cause "
           << "undefined behavior!\n";
     assert(false);
   }

@@ -246,15 +246,15 @@ class GenericAspect : public Aspect, public Subject
 {
 public:
 
-  GenericAspect(Composite* manager)
-    : Aspect(manager)
+  GenericAspect(Composite* composite)
+    : Aspect(composite)
   {
     // Do nothing
   }
 
-  std::unique_ptr<Aspect> cloneAspect(Composite* newManager) const override final
+  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override final
   {
-    return dart::common::make_unique<GenericAspect>(newManager);
+    return dart::common::make_unique<GenericAspect>(newComposite);
   }
 
 };
@@ -263,15 +263,15 @@ class SpecializedAspect : public Aspect, public Subject
 {
 public:
 
-  SpecializedAspect(Composite* manager)
-    : Aspect(manager)
+  SpecializedAspect(Composite* composite)
+    : Aspect(composite)
   {
     // Do nothing
   }
 
-  std::unique_ptr<Aspect> cloneAspect(Composite* newManager) const override final
+  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override final
   {
-    return dart::common::make_unique<SpecializedAspect>(newManager);
+    return dart::common::make_unique<SpecializedAspect>(newComposite);
   }
 };
 
@@ -320,9 +320,9 @@ public:
     // Do nothing
   }
 
-  std::unique_ptr<Aspect> cloneAspect(Composite* newManager) const override final
+  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override final
   {
-    return dart::common::make_unique<StatefulAspect>(newManager, *this);
+    return dart::common::make_unique<StatefulAspect>(newComposite, *this);
   }
 
   void setAspectState(const Aspect::State& otherState) override
@@ -362,7 +362,7 @@ typedef StatefulAspect<float>  FloatAspect;
 typedef StatefulAspect<char>   CharAspect;
 typedef StatefulAspect<int>    IntAspect;
 
-class CustomSpecializedManager : public SpecializedForAspect<SpecializedAspect> { };
+class CustomSpecializedComposite : public SpecializedForAspect<SpecializedAspect> { };
 
 TEST(Aspect, Generic)
 {
@@ -384,7 +384,7 @@ TEST(Aspect, Generic)
 TEST(Aspect, Specialized)
 {
   usedSpecializedAspectAccess = false;
-  CustomSpecializedManager mgr;
+  CustomSpecializedComposite mgr;
 
   EXPECT_TRUE( mgr.get<SpecializedAspect>() == nullptr );
   EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
@@ -435,7 +435,7 @@ TEST(Aspect, Specialized)
 TEST(Aspect, Releasing)
 {
   Composite sender;
-  CustomSpecializedManager receiver;
+  CustomSpecializedComposite receiver;
 
   // ---- Test generic releases ----
   {

@@ -69,9 +69,9 @@ const Aspect::Properties* Aspect::getAspectProperties() const
 }
 
 //==============================================================================
-Aspect::Aspect(Composite* manager)
+Aspect::Aspect(Composite* composite)
 {
-  if(nullptr == manager)
+  if(nullptr == composite)
   {
     dterr << "[Aspect::constructor] You are not allowed to construct an Aspect "
           << "outside of an Composite!\n";
