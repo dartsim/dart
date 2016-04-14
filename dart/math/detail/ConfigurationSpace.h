@@ -70,7 +70,7 @@ struct inverseImpl<MatrixType, Size, Range<(0 <= Size && Size <= 4)>>
 
 //==============================================================================
 template <typename SpaceT>
-struct mapToEuclideanPointImpl
+struct toEuclideanPointImpl
 {
   static typename SpaceT::EuclideanPoint run(
       const typename SpaceT::Point& point)
@@ -81,24 +81,7 @@ struct mapToEuclideanPointImpl
 
 //==============================================================================
 template <>
-struct mapToEuclideanPointImpl<SE2Space>
-{
-  static typename SE2Space::EuclideanPoint run(
-      const typename SE2Space::Point& point)
-  {
-    Eigen::Vector3d x;
-
-//    x.head<3>() = math::logMap(point.linear());
-    // TODO(JS): implement
-    x.tail<2>() = point.translation();
-
-    return x;
-  }
-};
-
-//==============================================================================
-template <>
-struct mapToEuclideanPointImpl<SO3Space>
+struct toEuclideanPointImpl<SO3Space>
 {
   static typename SO3Space::EuclideanPoint run(
       const typename SO3Space::Point& point)
@@ -109,7 +92,7 @@ struct mapToEuclideanPointImpl<SO3Space>
 
 //==============================================================================
 template <>
-struct mapToEuclideanPointImpl<SE3Space>
+struct toEuclideanPointImpl<SE3Space>
 {
   static typename SE3Space::EuclideanPoint run(
       const typename SE3Space::Point& point)
@@ -125,7 +108,7 @@ struct mapToEuclideanPointImpl<SE3Space>
 
 //==============================================================================
 template <typename SpaceT>
-struct mapToManifoldPointImpl
+struct toManifoldPointImpl
 {
   static typename SpaceT::Point run(
       const typename SpaceT::EuclideanPoint& point)
@@ -136,24 +119,7 @@ struct mapToManifoldPointImpl
 
 //==============================================================================
 template <>
-struct mapToManifoldPointImpl<SE2Space>
-{
-  static typename SE2Space::Point run(
-      const typename SE2Space::EuclideanPoint& point)
-  {
-    Eigen::Isometry2d tf(Eigen::Isometry2d::Identity());
-
-//    tf.linear() = math::expMapRot(point.head<1>());
-    // TODO(JS): implement
-    tf.translation() = point.tail<2>();
-
-    return tf;
-  }
-};
-
-//==============================================================================
-template <>
-struct mapToManifoldPointImpl<SO3Space>
+struct toManifoldPointImpl<SO3Space>
 {
   static typename SO3Space::Point run(
       const typename SO3Space::EuclideanPoint& point)
@@ -164,7 +130,7 @@ struct mapToManifoldPointImpl<SO3Space>
 
 //==============================================================================
 template <>
-struct mapToManifoldPointImpl<SE3Space>
+struct toManifoldPointImpl<SE3Space>
 {
   static typename SE3Space::Point run(
       const typename SE3Space::EuclideanPoint& point)
@@ -193,19 +159,6 @@ struct integratePositionImpl
 
 //==============================================================================
 template <>
-struct integratePositionImpl<SE2Space>
-{
-  static typename SE2Space::Point run(
-      const typename SE2Space::Point& pos,
-      const typename SE2Space::Vector& vel,
-      double dt)
-  {
-    return pos * mapToManifoldPoint<SE2Space>(vel * dt);
-  }
-};
-
-//==============================================================================
-template <>
 struct integratePositionImpl<SO3Space>
 {
   static typename SO3Space::Point run(
@@ -213,7 +166,7 @@ struct integratePositionImpl<SO3Space>
       const typename SO3Space::Vector& vel,
       double dt)
   {
-    return pos * mapToManifoldPoint<SO3Space>(vel * dt);
+    return pos * toManifoldPoint<SO3Space>(vel * dt);
   }
 };
 
@@ -226,7 +179,7 @@ struct integratePositionImpl<SE3Space>
       const typename SE3Space::Vector& vel,
       double dt)
   {
-    return pos * mapToManifoldPoint<SE3Space>(vel * dt);
+    return pos * toManifoldPoint<SE3Space>(vel * dt);
   }
 };
 
@@ -249,17 +202,17 @@ typename SpaceT::Matrix inverse(const typename SpaceT::Matrix& mat)
 //==============================================================================
 template <typename SpaceT>
 typename SpaceT::EuclideanPoint
-mapToEuclideanPoint(const typename SpaceT::Point& point)
+toEuclideanPoint(const typename SpaceT::Point& point)
 {
-  return detail::mapToEuclideanPointImpl<SpaceT>::run(point);
+  return detail::toEuclideanPointImpl<SpaceT>::run(point);
 }
 
 //==============================================================================
 template <typename SpaceT>
 typename SpaceT::Point
-mapToManifoldPoint(const typename SpaceT::EuclideanPoint& point)
+toManifoldPoint(const typename SpaceT::EuclideanPoint& point)
 {
-  return detail::mapToManifoldPointImpl<SpaceT>::run(point);
+  return detail::toManifoldPointImpl<SpaceT>::run(point);
 }
 
 //==============================================================================

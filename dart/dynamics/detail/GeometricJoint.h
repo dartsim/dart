@@ -1207,10 +1207,10 @@ template <class ConfigSpaceT>
 void GeometricJoint<ConfigSpaceT>::integratePositions(double dt)
 {
   const Point& point = math::integratePosition<ConfigSpaceT>(
-        math::mapToManifoldPoint<ConfigSpaceT>(getPositionsStatic()),
+        math::toManifoldPoint<ConfigSpaceT>(getPositionsStatic()),
         getVelocitiesStatic(), dt);
 
-  setPositionsStatic(math::mapToEuclideanPoint<ConfigSpaceT>(point));
+  setPositionsStatic(math::toEuclideanPoint<ConfigSpaceT>(point));
 }
 
 //==============================================================================

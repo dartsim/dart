@@ -44,6 +44,7 @@
 namespace dart {
 namespace math {
 
+//==============================================================================
 template <std::size_t Dimension>
 struct RealVectorSpace
 {
@@ -59,39 +60,11 @@ struct RealVectorSpace
   using JacobianMatrix = Eigen::Matrix<double, 6, NumDofs>;
 };
 
-using NullSpace = RealVectorSpace<0u>;
 using RealSpace = RealVectorSpace<1u>;
 using RealVector2Space = RealVectorSpace<2u>;
 using RealVector3Space = RealVectorSpace<3u>;
 
-struct SO2Space
-{
-  enum : std::size_t { NumDofs = 1u };
-  enum : int { NumDofsEigen = 1 };
-
-  using TangentSpace = RealVectorSpace<NumDofs>;
-
-  using Point          = Eigen::Matrix2d;
-  using EuclideanPoint = Eigen::Matrix<double, NumDofs, 1>;
-  using Vector         = Eigen::Matrix<double, NumDofs, 1>;
-  using Matrix         = Eigen::Matrix<double, NumDofs, NumDofs>;
-  using JacobianMatrix = Eigen::Matrix<double, 6, NumDofs>;
-};
-
-struct SE2Space
-{
-  enum : std::size_t { NumDofs = 3u };
-  enum : int { NumDofsEigen = 3 };
-
-  using TangentSpace = RealVectorSpace<NumDofs>;
-
-  using Point          = Eigen::Isometry2d;
-  using EuclideanPoint = Eigen::Matrix<double, NumDofs, 1>;
-  using Vector         = Eigen::Matrix<double, NumDofs, 1>;
-  using Matrix         = Eigen::Matrix<double, NumDofs, NumDofs>;
-  using JacobianMatrix = Eigen::Matrix<double, 6, NumDofs>;
-};
-
+//==============================================================================
 struct SO3Space
 {
   enum : std::size_t { NumDofs = 3u };
@@ -106,6 +79,7 @@ struct SO3Space
   using JacobianMatrix = Eigen::Matrix<double, 6, NumDofs>;
 };
 
+//==============================================================================
 struct SE3Space
 {
   enum : std::size_t { NumDofs = 6u };
@@ -120,23 +94,31 @@ struct SE3Space
   using JacobianMatrix = Eigen::Matrix6d;
 };
 
+struct MapsToManifoldPoint {};
+
+
+//==============================================================================
 template <typename SpaceT>
 typename SpaceT::Matrix inverse(const typename SpaceT::Matrix& mat);
 
+//==============================================================================
 template <typename SpaceT>
 typename SpaceT::EuclideanPoint
-mapToEuclideanPoint(const typename SpaceT::Point& point);
+toEuclideanPoint(const typename SpaceT::Point& point);
 
+//==============================================================================
 template <typename SpaceT>
 typename SpaceT::Point
-mapToManifoldPoint(const typename SpaceT::EuclideanPoint& point);
+toManifoldPoint(const typename SpaceT::EuclideanPoint& point);
 
+//==============================================================================
 template <typename SpaceT>
 typename SpaceT::Point integratePosition(
     const typename SpaceT::Point& pos,
     const typename SpaceT::Vector& vel,
     double dt);
 
+//==============================================================================
 template <typename SpaceT>
 typename SpaceT::Vector integrateVelocity(
     const typename SpaceT::Vector& vel,
