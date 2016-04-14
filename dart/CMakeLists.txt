@@ -17,7 +17,6 @@ add_subdirectory(optimizer)
 add_subdirectory(integration)
 add_subdirectory(lcpsolver)
 add_subdirectory(math)
-add_subdirectory(renderer)
 add_subdirectory(simulation)
 
 # Set header and source files
@@ -32,7 +31,6 @@ set(dart_hdrs
   ${dart_optimizer_hdrs}
   ${dart_collision_hdrs}
   ${dart_constraint_hdrs}
-  ${dart_renderer_hdrs}
   ${dart_simulation_hdrs}
 )
 set(dart_srcs
@@ -44,7 +42,6 @@ set(dart_srcs
   ${dart_optimizer_srcs}
   ${dart_collision_srcs}
   ${dart_constraint_srcs}
-  ${dart_renderer_srcs}
   ${dart_simulation_srcs}
 )
 
@@ -71,6 +68,7 @@ if(FLANN_FOUND)
 endif()
 
 if(GLUT_FOUND)
+  add_subdirectory(renderer)
   add_subdirectory(gui)
 endif()
 

@@ -117,8 +117,6 @@ include_directories(SYSTEM ${CCD_INCLUDE_DIRS})
 include_directories(SYSTEM ${FCL_INCLUDE_DIRS})
 include_directories(SYSTEM ${ASSIMP_INCLUDE_DIRS})
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
-include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 if(HAVE_BULLET_COLLISION)
   include_directories(SYSTEM ${BULLET_INCLUDE_DIRS})
 endif()
@@ -138,7 +136,6 @@ set(DART_DEPENDENCIES ${CCD_LIBRARIES}
                       ${FCL_LIBRARIES}
                       ${ASSIMP_LIBRARIES}
                       ${Boost_LIBRARIES}
-                      ${OPENGL_LIBRARIES} # TODO(JS): Should be removed once draw functions are removed from classes in dynamics namespace
 )
 
 if(HAVE_BULLET_COLLISION)
