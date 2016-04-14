@@ -154,16 +154,23 @@ BulletCollisionDetector::~BulletCollisionDetector()
 }
 
 //==============================================================================
-const std::string& BulletCollisionDetector::getTypeStatic()
+std::shared_ptr<CollisionDetector>
+BulletCollisionDetector::cloneWithoutCollisionObjects()
 {
-  static const std::string& type("Bullet");
-  return type;
+  return BulletCollisionDetector::create();
 }
 
 //==============================================================================
 const std::string& BulletCollisionDetector::getType() const
 {
-  return getTypeStatic();
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& BulletCollisionDetector::getStaticType()
+{
+  static const std::string type = "bullet";
+  return type;
 }
 
 //==============================================================================

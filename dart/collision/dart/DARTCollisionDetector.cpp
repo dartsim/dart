@@ -69,16 +69,23 @@ std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
 }
 
 //==============================================================================
-const std::string& DARTCollisionDetector::getTypeStatic()
+std::shared_ptr<CollisionDetector>
+DARTCollisionDetector::cloneWithoutCollisionObjects()
 {
-  static const std::string& type("DART");
-  return type;
+  return DARTCollisionDetector::create();
 }
 
 //==============================================================================
 const std::string& DARTCollisionDetector::getType() const
 {
-  return getTypeStatic();
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& DARTCollisionDetector::getStaticType()
+{
+  static const std::string type = "dart";
+  return type;
 }
 
 //==============================================================================
