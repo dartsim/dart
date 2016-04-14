@@ -43,5 +43,4 @@
 #include "dart/constraint/constraint.h"
 #include "dart/optimizer/optimizer.h"
 #include "dart/dynamics/dynamics.h"
-#include "dart/renderer/renderer.h"
 #include "dart/simulation/simulation.h"

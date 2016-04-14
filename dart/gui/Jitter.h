@@ -53,7 +53,7 @@ accwindow() routine.
 #ifndef DART_GUI_JITTER_H_
 #define DART_GUI_JITTER_H_
 
-#include "dart/renderer/LoadOpengl.h"
+#include "dart/gui/LoadOpengl.h"
 
 namespace dart {
 namespace gui {

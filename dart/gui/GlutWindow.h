@@ -40,8 +40,8 @@
 
 #include <vector>
 
-#include "dart/renderer/LoadOpengl.h"
-#include "dart/renderer/RenderInterface.h"
+#include "dart/gui/LoadOpengl.h"
+#include "dart/gui/RenderInterface.h"
 #include "dart/gui/lodepng.h"
 
 namespace dart {
@@ -93,7 +93,7 @@ protected:
   bool mMouseDrag;
   bool mCapture;
   double mBackground[4];
-  renderer::RenderInterface* mRI;
+  gui::RenderInterface* mRI;
   std::vector<unsigned char> mScreenshotTemp;
   std::vector<unsigned char> mScreenshotTemp2;
 };

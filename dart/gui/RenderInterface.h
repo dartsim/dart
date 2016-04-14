@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_RENDERINTERFACE_H
-#define DART_RENDERER_RENDERINTERFACE_H
+#ifndef DART_GUI_RENDERINTERFACE_H_
+#define DART_GUI_RENDERINTERFACE_H_
 
 #include <vector>
 #include <assimp/scene.h>
@@ -44,7 +44,7 @@
 #include "dart/math/MathTypes.h"
 
 namespace dart {
-namespace renderer {
+namespace gui {
 
 enum DecoBufferType {
     BT_Front,
@@ -115,7 +115,7 @@ public:
     virtual void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels);
 };
 
-} // namespace renderer
+} // namespace gui
 } // namespace dart
 
-#endif // #ifndef DART_RENDERER_RENDERINTERFACE_H
+#endif // #ifndef DART_GUI_RENDERINTERFACE_H_

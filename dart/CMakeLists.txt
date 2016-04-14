@@ -68,7 +68,6 @@ if(FLANN_FOUND)
 endif()
 
 if(GLUT_FOUND)
-  add_subdirectory(renderer)
   add_subdirectory(gui)
 endif()
 

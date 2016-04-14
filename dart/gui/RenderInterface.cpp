@@ -37,7 +37,7 @@
 #include "RenderInterface.h"
 
 namespace dart {
-namespace renderer {
+namespace gui {
 
 void RenderInterface::initialize()
 {
@@ -164,5 +164,5 @@ void RenderInterface::readFrameBuffer(DecoBufferType /*_buffType*/, DecoColorCha
 
 }
 
-} // namespace renderer
+} // namespace gui
 } // namespace dart

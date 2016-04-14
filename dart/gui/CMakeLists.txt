@@ -10,8 +10,8 @@ if(HAVE_OPENSCENEGRAPH)
   add_subdirectory(osg)
 endif(HAVE_OPENSCENEGRAPH)
 
-set(dart_gui_hdrs ${dart_gui_hdrs} ${hdrs} ${dart_renderer_hdrs})
-set(dart_gui_srcs ${dart_gui_srcs} ${srcs} ${dart_renderer_srcs})
+set(dart_gui_hdrs ${dart_gui_hdrs} ${hdrs})
+set(dart_gui_srcs ${dart_gui_srcs} ${srcs})
 
 # Library
 dart_add_library(dart-gui ${srcs} ${hdrs})
