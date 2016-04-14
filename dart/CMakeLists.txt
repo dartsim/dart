@@ -47,7 +47,13 @@ set(dart_srcs
 
 # Library: dart
 dart_add_library(dart ${dart_hdrs} ${dart_srcs})
-target_link_libraries(dart ${DART_DEPENDENCIES})
+target_link_libraries(dart ${CCD_LIBRARIES}
+                           ${FCL_LIBRARIES}
+                           ${ASSIMP_LIBRARIES}
+                           ${Boost_LIBRARIES})
+if(HAVE_BULLET_COLLISION)
+  target_link_libraries(dart ${BULLET_LIBRARIES})
+endif()
 
 if(MSVC)
   set_target_properties(

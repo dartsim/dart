@@ -123,26 +123,6 @@ endif()
 include_directories("${CMAKE_BINARY_DIR}")
 
 #===============================================================================
-# Link directories
-#===============================================================================
-link_directories("${CMAKE_BINARY_DIR}/lib")
-link_directories("${CMAKE_INSTALL_PREFIX}/lib")
-link_directories(${Boost_LIBRARY_DIRS})
-
-#===============================================================================
-# DART dependency variable settings
-#===============================================================================
-set(DART_DEPENDENCIES ${CCD_LIBRARIES}
-                      ${FCL_LIBRARIES}
-                      ${ASSIMP_LIBRARIES}
-                      ${Boost_LIBRARIES}
-)
-
-if(HAVE_BULLET_COLLISION)
-  set(DART_DEPENDENCIES ${DART_DEPENDENCIES} ${BULLET_LIBRARIES})
-endif()
-
-#===============================================================================
 # Check for non-case-sensitive filesystems
 #===============================================================================
 execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/case_sensitive_filesystem
