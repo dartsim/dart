@@ -76,6 +76,55 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
 }
 
 //==============================================================================
+TEST(SdfParser, ParsingSDFFiles)
+{
+  const auto numSteps = 10u;
+
+  // Create a list of sdf files to test with where the sdf files contains World
+  std::vector<std::string> worldFiles;
+  worldFiles.push_back(DART_DATA_PATH"sdf/benchmark.world");
+  worldFiles.push_back(DART_DATA_PATH"sdf/double_pendulum.world");
+  worldFiles.push_back(DART_DATA_PATH"sdf/double_pendulum_with_base.world");
+  worldFiles.push_back(DART_DATA_PATH"sdf/empty.world");
+  worldFiles.push_back(DART_DATA_PATH"sdf/ground.world");
+  worldFiles.push_back(DART_DATA_PATH"sdf/test/single_bodynode_skeleton.world");
+
+  std::vector<WorldPtr> worlds;
+  for (const auto& worldFile : worldFiles)
+    worlds.push_back(SdfParser::readWorld(worldFile));
+
+  for (auto world : worlds)
+  {
+    EXPECT_TRUE(nullptr != world);
+
+    for (auto i = 0u; i < numSteps; ++i)
+      world->step();
+  }
+
+  // Create another list of sdf files to test with where the sdf files contains
+  // Skeleton
+  std::vector<std::string> skeletonFiles;
+  skeletonFiles.push_back(DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.sdf");
+  skeletonFiles.push_back(DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
+
+  auto world = std::make_shared<World>();
+  std::vector<SkeletonPtr> skeletons;
+  for (const auto& skeletonFile : skeletonFiles)
+    skeletons.push_back(SdfParser::readSkeleton(skeletonFile));
+
+  for (auto skeleton : skeletons)
+  {
+    EXPECT_TRUE(nullptr != skeleton);
+
+    world->addSkeleton(skeleton);
+    for (auto i = 0u; i < numSteps; ++i)
+      world->step();
+
+    world->removeAllSkeletons();
+  }
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

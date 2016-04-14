@@ -179,6 +179,9 @@ public:
   /// setting
   bool isHidden() const;
 
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 };
 
 class CollisionAspect final :
@@ -278,6 +281,23 @@ public:
 
   DART_BAKE_SPECIALIZED_ASPECT(DynamicsAspect)
 
+  // Documentation inherited
+  ShapeFrame* asShapeFrame() override;
+
+  // Documentation inherited
+  const ShapeFrame* asShapeFrame() const override;
+
+  /// Returns true if this Frame is a ShapeNode
+  bool isShapeNode() const;
+
+  /// Convert 'this' into a ShapeNode pointer if ShapeFrame is a ShapeNode,
+  /// otherwise return nullptr
+  virtual ShapeNode* asShapeNode();
+
+  /// Convert 'const this' into a ShapeNode pointer if ShapeFrame is a ShapeNode,
+  /// otherwise return nullptr
+  virtual const ShapeNode* asShapeNode() const;
+
 protected:
 
   /// Constructor
@@ -288,6 +308,9 @@ protected:
 
   /// Delegating constructor
   ShapeFrame(const std::tuple<Frame*, Properties>& args);
+
+  /// Contains whether or not this is a ShapeNode
+  bool mAmShapeNode;
 
   /// Shape updated signal
   ShapeUpdatedSignal mShapeUpdatedSignal;

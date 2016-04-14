@@ -169,7 +169,7 @@ CollisionAspect::CollisionAspect(
     const PropertiesData& properties)
   : AspectImplementation(comp, properties)
 {
-//  mIsShapeNode = dynamic_cast<ShapeNode*>(comp);
+  // Do nothing
 }
 
 //==============================================================================
@@ -231,10 +231,41 @@ ConstShapePtr ShapeFrame::getShape() const
 }
 
 //==============================================================================
+ShapeFrame* ShapeFrame::asShapeFrame()
+{
+  return this;
+}
+
+//==============================================================================
+const ShapeFrame* ShapeFrame::asShapeFrame() const
+{
+  return this;
+}
+
+//==============================================================================
+bool ShapeFrame::isShapeNode() const
+{
+  return mAmShapeNode;
+}
+
+//==============================================================================
+ShapeNode* ShapeFrame::asShapeNode()
+{
+  return nullptr;
+}
+
+//==============================================================================
+const ShapeNode* ShapeFrame::asShapeNode() const
+{
+  return nullptr;
+}
+
+//==============================================================================
 ShapeFrame::ShapeFrame(Frame* parent, const Properties& properties)
   : common::Composite(),
     Entity(ConstructFrame),
     Frame(parent),
+    mAmShapeNode(false),
     mShapeUpdatedSignal(),
     mRelativeTransformUpdatedSignal(),
     onShapeUpdated(mShapeUpdatedSignal),
@@ -251,6 +282,7 @@ ShapeFrame::ShapeFrame(Frame* parent,
   : common::Composite(),
     Entity(ConstructFrame),
     Frame(parent),
+    mAmShapeNode(false),
     mShapeUpdatedSignal(),
     mRelativeTransformUpdatedSignal(),
     onShapeUpdated(mShapeUpdatedSignal),

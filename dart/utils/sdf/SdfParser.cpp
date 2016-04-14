@@ -246,6 +246,9 @@ dynamics::FreeJoint::Properties readFreeJoint(
     const Eigen::Isometry3d& parentModelFrame,
     const std::string& name);
 
+common::ResourceRetrieverPtr getRetriever(
+    const common::ResourceRetrieverPtr& retriever);
+
 } // anonymous namespace
 
 
@@ -253,15 +256,19 @@ dynamics::FreeJoint::Properties readFreeJoint(
 
 //==============================================================================
 simulation::WorldPtr readSdfFile(
-  const common::Uri& fileUri, const common::ResourceRetrieverPtr& retriever)
+  const common::Uri& fileUri,
+    const common::ResourceRetrieverPtr& nullOrRetriever)
 {
-  return readWorld(fileUri, retriever);
+  return readWorld(fileUri, nullOrRetriever);
 }
 
 //==============================================================================
-simulation::WorldPtr readWorld(const common::Uri& fileUri,
-                               const common::ResourceRetrieverPtr& retriever)
+simulation::WorldPtr readWorld(
+    const common::Uri& fileUri,
+    const common::ResourceRetrieverPtr& nullOrRetriever)
 {
+  const auto retriever = getRetriever(nullOrRetriever);
+
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument _dartFile;
@@ -312,8 +319,11 @@ simulation::WorldPtr readWorld(const common::Uri& fileUri,
 
 //==============================================================================
 dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& fileUri, const common::ResourceRetrieverPtr& retriever)
+    const common::Uri& fileUri,
+    const common::ResourceRetrieverPtr& nullOrRetriever)
 {
+  const auto retriever = getRetriever(nullOrRetriever);
+
   //--------------------------------------------------------------------------
   // Load xml and create Document
   tinyxml2::XMLDocument _dartFile;
@@ -1472,7 +1482,17 @@ dynamics::FreeJoint::Properties readFreeJoint(
   return dynamics::FreeJoint::Properties();
 }
 
-} // anonymouse
+//==============================================================================
+common::ResourceRetrieverPtr getRetriever(
+  const common::ResourceRetrieverPtr& retriever)
+{
+  if(retriever)
+    return retriever;
+  else
+    return std::make_shared<common::LocalResourceRetriever>();
+}
+
+} // anonymous namespace
 
 } // namespace SdfParser
 

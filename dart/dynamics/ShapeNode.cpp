@@ -136,6 +136,18 @@ Eigen::Vector3d ShapeNode::getOffset() const
 }
 
 //==============================================================================
+ShapeNode* ShapeNode::asShapeNode()
+{
+  return this;
+}
+
+//==============================================================================
+const ShapeNode* ShapeNode::asShapeNode() const
+{
+  return this;
+}
+
+//==============================================================================
 ShapeNode::ShapeNode(BodyNode* bodyNode, const BasicProperties& properties)
   : Entity(ConstructFrame),
     Frame(bodyNode),
@@ -145,6 +157,7 @@ ShapeNode::ShapeNode(BodyNode* bodyNode, const BasicProperties& properties)
       bodyNode, properties)
 {
   setProperties(properties);
+  mAmShapeNode = true;
 }
 
 //==============================================================================
@@ -160,6 +173,7 @@ ShapeNode::ShapeNode(BodyNode* bodyNode,
 {
   // TODO(MXG): Consider changing this to a delegating constructor instead
   setName(name);
+  mAmShapeNode = true;
 }
 
 //==============================================================================

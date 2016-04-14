@@ -210,32 +210,25 @@ protected:
 
     // Add the object to the world
     object->setName(object->getName()+std::to_string(mSkelCount++));
-    mWorld->addSkeleton(object);
-
-    // Compute collisions
-    dart::collision::CollisionDetector* detector =
-        mWorld->getConstraintSolver()->getCollisionDetector();
-    detector->detectCollision(true, true);
 
     // Look through the collisions to see if the new object would start in
     // collision with something
-    bool collision = false;
-    size_t collisionCount = detector->getNumContacts();
-    for(size_t i = 0; i < collisionCount; ++i)
-    {
-      const dart::collision::Contact& contact = detector->getContact(i);
-      if(contact.bodyNode1.lock()->getSkeleton() == object
-         || contact.bodyNode2.lock()->getSkeleton() == object)
-      {
-        collision = true;
-        break;
-      }
-    }
+    auto collisionEngine = mWorld->getConstraintSolver()->getCollisionDetector();
+    auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
+    auto newGroup = collisionEngine->createCollisionGroup(object.get());
 
-    // Refuse to add the object if it is in collision
-    if(collision)
+    dart::collision::CollisionOption option;
+    dart::collision::CollisionResult result;
+    bool collision = collisionGroup->collide(newGroup.get(), option, result);
+
+    // If the new object is not in collision
+    if(!collision)
     {
-      mWorld->removeSkeleton(object);
+      mWorld->addSkeleton(object);
+    }
+    else
+    {
+      // or refuse to add the object if it is in collision
       std::cout << "The new object spawned in a collision. "
                 << "It will not be added to the world." << std::endl;
       return false;

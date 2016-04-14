@@ -311,7 +311,7 @@ int main(int argc, char* argv[])
 
 #if HAVE_BULLET_COLLISION
   world->getConstraintSolver()->setCollisionDetector(
-      dart::common::make_unique<dart::collision::BulletCollisionDetector>());
+      dart::collision::BulletCollisionDetector::create());
 #endif
   
   world->addSkeleton(floor);

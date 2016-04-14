@@ -50,6 +50,7 @@ namespace dart {
 
 namespace dynamics {
 class Skeleton;
+class ShapeNodeCollisionObject;
 }  // namespace dynamics
 
 namespace constraint {
@@ -62,7 +63,7 @@ class ConstraintSolver
 {
 public:
   /// Constructor
-  explicit ConstraintSolver(double _timeStep);
+  explicit ConstraintSolver(double timeStep);
 
   /// Copy constructor
   // TODO: implement copy constructor since this class contains a pointer to
@@ -73,16 +74,16 @@ public:
   virtual ~ConstraintSolver();
 
   /// Add single skeleton
-  void addSkeleton(const dynamics::SkeletonPtr& _skeleton);
+  void addSkeleton(const dynamics::SkeletonPtr& skeleton);
 
   /// Add mutiple skeletons
-  void addSkeletons(const std::vector<dynamics::SkeletonPtr>& _skeletons);
+  void addSkeletons(const std::vector<dynamics::SkeletonPtr>& skeletons);
 
   /// Remove single skeleton
-  void removeSkeleton(const dynamics::SkeletonPtr& _skeleton);
+  void removeSkeleton(const dynamics::SkeletonPtr& skeleton);
 
   /// Remove multiple skeletons
-  void removeSkeletons(const std::vector<dynamics::SkeletonPtr>& _skeletons);
+  void removeSkeletons(const std::vector<dynamics::SkeletonPtr>& skeletons);
 
   /// Remove all skeletons in this constraint solver
   void removeAllSkeletons();
@@ -103,17 +104,34 @@ public:
   double getTimeStep() const;
 
   /// Set collision detector. This function acquires ownership of the
-  /// CollisionDetector passed as an argument. This method is deprecated in favor
-  /// of the overload that accepts a std::unique_ptr.
+  /// CollisionDetector passed as an argument. This method is deprecated in
+  /// favor of the overload that accepts a std::shared_ptr.
   DEPRECATED(7.1)
-  void setCollisionDetector(collision::CollisionDetector* _collisionDetector);
+  void setCollisionDetector(collision::CollisionDetector* collisionDetector);
 
   /// Set collision detector
   void setCollisionDetector(
-    std::unique_ptr<collision::CollisionDetector> _collisionDetector);
+      const std::shared_ptr<collision::CollisionDetector>& collisionDetector);
 
   /// Get collision detector
-  collision::CollisionDetector* getCollisionDetector() const;
+  collision::CollisionDetector* getCollisionDetector();
+
+  /// Get collision detector
+  const collision::CollisionDetector* getCollisionDetector() const;
+
+  /// Return collision group of collision objects that are added to this
+  /// ConstraintSolver
+  collision::CollisionGroup* getCollisionGroup();
+
+  /// Return (const) collision group of collision objects that are added to this
+  /// ConstraintSolver
+  const collision::CollisionGroup* getCollisionGroup() const;
+
+  /// Return the last collision checking result
+  collision::CollisionResult& getLastCollisionResult();
+
+  /// Return the last collision checking result
+  const collision::CollisionResult& getLastCollisionResult() const;
 
   /// Set LCP solver
   void setLCPSolver(std::unique_ptr<LCPSolver> _lcpSolver);
@@ -149,8 +167,19 @@ private:
   /// Return true if at least one of colliding body is soft body
   bool isSoftContact(const collision::Contact& _contact) const;
 
+  using CollisionDetector = collision::CollisionDetector;
+
   /// Collision detector
-  std::unique_ptr<collision::CollisionDetector> mCollisionDetector;
+  std::shared_ptr<collision::CollisionDetector> mCollisionDetector;
+
+  /// Collision group
+  std::unique_ptr<collision::CollisionGroup> mCollisionGroup;
+
+  /// Last collision checking result
+  collision::CollisionOption mCollisionOption;
+
+  /// Last collision checking result
+  collision::CollisionResult mCollisionResult;
 
   /// Time step
   double mTimeStep;
