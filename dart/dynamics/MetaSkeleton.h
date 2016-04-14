@@ -537,6 +537,9 @@ public:
   /// Get the potential energy of this MetaSkeleton
   virtual double getPotentialEnergy() const = 0;
 
+  /// Clear collision flags of the BodyNodes in this MetaSkeleton
+  virtual void clearCollidingBodies() = 0;
+
   /// \}
 
   //----------------------------------------------------------------------------
