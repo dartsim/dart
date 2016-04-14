@@ -128,61 +128,57 @@ else()
   message(SEND_ERROR "Please install system boost version ${DART_MIN_BOOST_VERSION} or higher.")
 endif()
 
-if(NOT BUILD_CORE_ONLY)
-
-  # GLUT
-  if(WIN32 AND NOT CYGWIN)
-    set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
-    set(GLUT_LIBRARIES glut32)
+# GLUT
+if(WIN32 AND NOT CYGWIN)
+  set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
+  set(GLUT_LIBRARIES glut32)
+else()
+  find_package(GLUT QUIET)
+  if(GLUT_FOUND)
+    message(STATUS "Looking for GLUT - found")
+    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
   else()
-    find_package(GLUT QUIET)
-    if(GLUT_FOUND)
-      message(STATUS "Looking for GLUT - found")
-      set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
-    else()
-      message(SEND_ERROR "Looking for GLUT - NOT found, Please install freeglut3-dev")
-    endif()
+    message(SEND_ERROR "Looking for GLUT - NOT found, Please install freeglut3-dev")
   endif()
+endif()
 
-  # FLANN
-  find_package(FLANN 1.8.4 QUIET)
-  if(FLANN_FOUND)
-    message(STATUS "Looking for FLANN - ${FLANN_VERSION} found")
-  else()
-    message(SEND_ERROR "Looking for FLANN - NOT found, please install libflann-dev (>= 1.8.4)")
-  endif()
+# FLANN
+find_package(FLANN 1.8.4 QUIET)
+if(FLANN_FOUND)
+  message(STATUS "Looking for FLANN - ${FLANN_VERSION} found")
+else()
+  message(SEND_ERROR "Looking for FLANN - NOT found, please install libflann-dev (>= 1.8.4)")
+endif()
 
-  # TINYXML
-  find_package(TINYXML 2.6.2 QUIET)
-  if(TINYXML_FOUND)
-    message(STATUS "Looking for TINYXML - ${TINYXML_VERSION} found")
-  else()
-    message(SEND_ERROR "Looking for TINYXML - NOT found, please install libtinyxml-dev (>= 2.6.2)")
-  endif()
+# TINYXML
+find_package(TINYXML 2.6.2 QUIET)
+if(TINYXML_FOUND)
+  message(STATUS "Looking for TINYXML - ${TINYXML_VERSION} found")
+else()
+  message(SEND_ERROR "Looking for TINYXML - NOT found, please install libtinyxml-dev (>= 2.6.2)")
+endif()
 
-  # TINYXML2
-  find_package(TINYXML2 QUIET)
-  if(TINYXML2_FOUND)
-    message(STATUS "Looking for TINYXML2 - ${TINYXML2_VERSION} found")
-  else()
-    message(SEND_ERROR "Looking for TINYXML2 - NOT found, please install libtinyxml2-dev (>= 1.0.1)")
-  endif()
+# TINYXML2
+find_package(TINYXML2 QUIET)
+if(TINYXML2_FOUND)
+  message(STATUS "Looking for TINYXML2 - ${TINYXML2_VERSION} found")
+else()
+  message(SEND_ERROR "Looking for TINYXML2 - NOT found, please install libtinyxml2-dev (>= 1.0.1)")
+endif()
 
-  # urdfdom
-  find_package(urdfdom QUIET)
-  if(urdfdom_FOUND)
-    message(STATUS "Looking for urdfdom - found")
-  else()
-    message(SEND_ERROR "Looking for urdfdom - NOT found, please install liburdfdom-dev")
-  endif()
-  if(MSVC)
-    set(urdfdom_LIBRARIES optimized urdfdom_sensor      debug urdfdom_sensord
-                          optimized urdfdom_model_state debug urdfdom_model_stated
-                          optimized urdfdom_model       debug urdfdom_modeld
-                          optimized urdfdom_world       debug urdfdom_worldd
-                          optimized console_bridge      debug console_bridged)
-  endif()
-
+# urdfdom
+find_package(urdfdom QUIET)
+if(urdfdom_FOUND)
+  message(STATUS "Looking for urdfdom - found")
+else()
+  message(SEND_ERROR "Looking for urdfdom - NOT found, please install liburdfdom-dev")
+endif()
+if(MSVC)
+  set(urdfdom_LIBRARIES optimized urdfdom_sensor      debug urdfdom_sensord
+                        optimized urdfdom_model_state debug urdfdom_model_stated
+                        optimized urdfdom_model       debug urdfdom_modeld
+                        optimized urdfdom_world       debug urdfdom_worldd
+                        optimized console_bridge      debug console_bridged)
 endif()
 
 #-----------------------
