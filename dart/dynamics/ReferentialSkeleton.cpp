@@ -786,6 +786,17 @@ double ReferentialSkeleton::getPotentialEnergy() const
 }
 
 //==============================================================================
+void ReferentialSkeleton::clearCollidingBodies()
+{
+  for(size_t i = 0; i < this->getNumBodyNodes(); i++)
+  {
+    auto bd = this->getBodyNode(i);
+    if(bd)
+      bd->setColliding(false);
+  }
+}
+
+//==============================================================================
 Eigen::Vector3d ReferentialSkeleton::getCOM(const Frame* _withRespectTo) const
 {
   Eigen::Vector3d com = Eigen::Vector3d::Zero();

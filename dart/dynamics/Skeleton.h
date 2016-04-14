@@ -878,6 +878,9 @@ public:
   // Documentation inherited
   double getPotentialEnergy() const override;
 
+  // Documentation inherited
+  void clearCollidingBodies() override;
+
   /// \}
 
   //----------------------------------------------------------------------------
