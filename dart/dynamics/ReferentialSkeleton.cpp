@@ -36,6 +36,7 @@
 
 #include "dart/dynamics/ReferentialSkeleton.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 
@@ -788,11 +789,19 @@ double ReferentialSkeleton::getPotentialEnergy() const
 //==============================================================================
 void ReferentialSkeleton::clearCollidingBodies()
 {
-  for(size_t i = 0; i < this->getNumBodyNodes(); i++)
+  for (auto i = 0u; i < getNumBodyNodes(); ++i)
   {
-    auto bd = this->getBodyNode(i);
-    if(bd)
-      bd->setColliding(false);
+    auto bodyNode = getBodyNode(i);
+    bodyNode->setColliding(false);
+
+    auto softBodyNode = bodyNode->asSoftBodyNode();
+    if (softBodyNode)
+    {
+      auto& pointMasses = softBodyNode->getPointMasses();
+
+      for (auto pointMass : pointMasses)
+        pointMass->setColliding(false);
+    }
   }
 }
 

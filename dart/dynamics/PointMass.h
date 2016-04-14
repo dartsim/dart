@@ -156,11 +156,13 @@ public:
   const PointMass* getConnectedPointMass(size_t _idx) const;
 
 
-  /// Set whether this point mass is colliding with others.
+  /// Set whether this point mass is colliding with other objects. Note that
+  /// this status is set by the constraint solver during dynamics simulation but
+  /// not by collision detector.
   /// \param[in] True if this point mass is colliding.
   void setColliding(bool _isColliding);
 
-  /// Get whether this point mass is colliding with others.
+  /// Return whether this point mass is set to be colliding with other objects.
   /// \return True if this point mass is colliding.
   bool isColliding();
 

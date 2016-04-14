@@ -398,8 +398,13 @@ void ConstraintSolver::updateConstraints()
     auto& ct = mCollisionResult.getContact(i);
 
     // Set colliding bodies
-    const_cast<dynamics::ShapeFrame*>(ct.collisionObject1->getShapeFrame())->asShapeNode()->getBodyNodePtr()->setColliding(true);
-    const_cast<dynamics::ShapeFrame*>(ct.collisionObject2->getShapeFrame())->asShapeNode()->getBodyNodePtr()->setColliding(true);
+    auto shapeFrame1 = const_cast<dynamics::ShapeFrame*>(
+          ct.collisionObject1->getShapeFrame());
+    auto shapeFrame2 = const_cast<dynamics::ShapeFrame*>(
+          ct.collisionObject2->getShapeFrame());
+
+    shapeFrame1->asShapeNode()->getBodyNodePtr()->setColliding(true);
+    shapeFrame2->asShapeNode()->getBodyNodePtr()->setColliding(true);
 
     if (isSoftContact(ct))
     {

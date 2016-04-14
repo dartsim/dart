@@ -3616,11 +3616,19 @@ double Skeleton::getPotentialEnergy() const
 //==============================================================================
 void Skeleton::clearCollidingBodies()
 {
-  for(size_t i = 0; i < this->getNumBodyNodes(); i++)
+  for (auto i = 0u; i < getNumBodyNodes(); ++i)
   {
-    auto bd = this->getBodyNode(i);
-    if(bd)
-      bd->setColliding(false);
+    auto bodyNode = getBodyNode(i);
+    bodyNode->setColliding(false);
+
+    auto softBodyNode = bodyNode->asSoftBodyNode();
+    if (softBodyNode)
+    {
+      auto& pointMasses = softBodyNode->getPointMasses();
+
+      for (auto pointMass : pointMasses)
+        pointMass->setColliding(false);
+    }
   }
 }
 
