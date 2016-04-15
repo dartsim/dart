@@ -39,12 +39,12 @@
 #include <iostream>
 
 #include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/collision/CollisionObject.h"
 #include "dart/lcpsolver/lcp.h"
 
+#define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP     0.01
 #define DART_MAX_ERV 1e-3
@@ -809,7 +809,7 @@ Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
   // Each basis and its opposite belong in the matrix, so we iterate half as
   // many times
   T.col(0) = tangent;
-  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(DART_PI_HALF, _n)) * tangent;
+  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(math::constantsd::half_pi(), _n)) * tangent;
   return T;
 }
 

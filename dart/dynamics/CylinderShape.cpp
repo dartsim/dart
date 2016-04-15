@@ -34,8 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cmath>
 #include "dart/dynamics/CylinderShape.h"
+
+#include <cmath>
+#include "dart/math/Helpers.h"
 
 namespace dart {
 namespace dynamics {
@@ -75,7 +77,7 @@ void CylinderShape::setHeight(double _height) {
 //==============================================================================
 double CylinderShape::computeVolume(double radius, double height)
 {
-  return DART_PI * std::pow(radius, 2) * height;
+  return math::constantsd::pi() * std::pow(radius, 2) * height;
 }
 
 //==============================================================================

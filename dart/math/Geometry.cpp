@@ -35,6 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/math/Geometry.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -43,8 +45,9 @@
 #include <vector>
 
 #include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
 #include "dart/math/Helpers.h"
+
+#define DART_EPSILON 1e-6
 
 namespace dart {
 namespace math {
@@ -88,7 +91,7 @@ Eigen::Vector3d matrixToEulerXYX(const Eigen::Matrix3d& _R) {
       return Eigen::Vector3d(x0, y, x1);
     } else {
       // Not a unique solution:  x1_angle - x0_angle = atan2(-r12,r11)
-      double y  = DART_PI;
+      double y  = constantsd::pi();
       double x0 = -atan2(-_R(1, 2), _R(1, 1));
       double x1 = 0.0;
       // return EA_NOT_UNIQUE_DIF;
@@ -115,14 +118,14 @@ Eigen::Vector3d matrixToEulerXYZ(const Eigen::Matrix3d& _R) {
 
   if (_R(0, 2) > (1.0-DART_EPSILON)) {
     z = atan2(_R(1, 0), _R(1, 1));
-    y = DART_PI_HALF;
+    y = constantsd::half_pi();
     x = 0.0;
     return Eigen::Vector3d(x, y, z);
   }
 
   if (_R(0, 2) < -(1.0-DART_EPSILON)) {
     z = atan2(_R(1, 0), _R(1, 1));
-    y = -DART_PI_HALF;
+    y = -constantsd::half_pi();
     x = 0.0;
     return Eigen::Vector3d(x, y, z);
   }
@@ -140,14 +143,14 @@ Eigen::Vector3d matrixToEulerZYX(const Eigen::Matrix3d& _R) {
 
   if (_R(2, 0) > (1.0-DART_EPSILON)) {
     x = atan2(_R(0, 1), _R(0, 2));
-    y = -DART_PI_HALF;
+    y = -constantsd::half_pi();
     z = 0.0;
     return Eigen::Vector3d(z, y, x);
   }
 
   if (_R(2, 0) < -(1.0-DART_EPSILON)) {
     x = atan2(_R(0, 1), _R(0, 2));
-    y = DART_PI_HALF;
+    y = constantsd::half_pi();
     z = 0.0;
     return Eigen::Vector3d(z, y, x);
   }
@@ -165,14 +168,14 @@ Eigen::Vector3d matrixToEulerXZY(const Eigen::Matrix3d& _R) {
 
   if (_R(0, 1) > (1.0-DART_EPSILON)) {
     y = atan2(_R(1, 2), _R(1, 0));
-    z = -DART_PI_HALF;
+    z = -constantsd::half_pi();
     x = 0.0;
     return Eigen::Vector3d(x, z, y);
   }
 
   if (_R(0, 1) < -(1.0-DART_EPSILON)) {
     y = atan2(_R(1, 2), _R(1, 0));
-    z = DART_PI_HALF;
+    z = constantsd::half_pi();
     x = 0.0;
     return Eigen::Vector3d(x, z, y);
   }
@@ -190,14 +193,14 @@ Eigen::Vector3d matrixToEulerYZX(const Eigen::Matrix3d& _R) {
 
   if (_R(1, 0) > (1.0 - DART_EPSILON)) {
     x = -atan2(_R(0, 2), _R(0, 1));
-    z = DART_PI_HALF;
+    z = constantsd::half_pi();
     y = 0.0;
     return Eigen::Vector3d(y, z, x);
   }
 
   if (_R(1, 0) < -(1.0 - DART_EPSILON)) {
     x = -atan2(_R(0, 2), _R(0, 1));
-    z = -DART_PI_HALF;
+    z = -constantsd::half_pi();
     y = 0.0;
     return Eigen::Vector3d(y, z, x);
   }
@@ -215,14 +218,14 @@ Eigen::Vector3d matrixToEulerZXY(const Eigen::Matrix3d& _R) {
 
   if (_R(2, 1) > (1.0-DART_EPSILON)) {
     y = atan2(_R(0, 2), _R(0, 0));
-    x = DART_PI_HALF;
+    x = constantsd::half_pi();
     z = 0.0;
     return Eigen::Vector3d(z, x, y);
   }
 
   if (_R(2, 1) < -(1.0-DART_EPSILON)) {
     y = atan2(_R(0, 2), _R(0, 0));
-    x = -DART_PI_HALF;
+    x = -constantsd::half_pi();
     z = 0.0;
     return Eigen::Vector3d(z, x, y);
   }
@@ -240,14 +243,14 @@ Eigen::Vector3d matrixToEulerYXZ(const Eigen::Matrix3d& _R) {
 
   if (_R(1, 2) > (1.0-DART_EPSILON)) {
     z = -atan2(_R(0, 1), _R(0, 0));
-    x = -DART_PI_HALF;
+    x = -constantsd::half_pi();
     y = 0.0;
     return Eigen::Vector3d(y, x, z);
   }
 
   if (_R(1, 2) < -(1.0-DART_EPSILON)) {
     z = -atan2(_R(0, 1), _R(0, 0));
-    x = DART_PI_HALF;
+    x = constantsd::half_pi();
     y = 0.0;
     return Eigen::Vector3d(y, x, z);
   }
@@ -525,8 +528,8 @@ Eigen::Vector3d logMap(const Eigen::Matrix3d& _R) {
 //        std::max(
 //          std::min(0.5 * (_R(0, 0) + _R(1, 1) + _R(2, 2) - 1.0), 1.0), -1.0));
 
-//  if (theta > DART_PI - DART_EPSILON) {
-//    double delta = 0.5 + 0.125*(DART_PI - theta)*(DART_PI - theta);
+//  if (theta > constantsd::pi() - DART_EPSILON) {
+//    double delta = 0.5 + 0.125*(constantsd::pi() - theta)*(constantsd::pi() - theta);
 
 //    return Eigen::Vector3d(
 //          _R(2, 1) > _R(1, 2) ? theta*sqrt(1.0 + (_R(0, 0) - 1.0)*delta) :
@@ -541,7 +544,7 @@ Eigen::Vector3d logMap(const Eigen::Matrix3d& _R) {
 //    if (theta > DART_EPSILON)
 //      alpha = 0.5*theta / sin(theta);
 //    else
-//      alpha = 0.5 + DART_1_12*theta*theta;
+//      alpha = 0.5 + constantsd::one_div_12()*theta*theta;
 
 //    return Eigen::Vector3d(alpha*(_R(2, 1) - _R(1, 2)),
 //                           alpha*(_R(0, 2) - _R(2, 0)),
@@ -566,12 +569,12 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T) {
   double gamma;
   Eigen::Vector6d ret;
 
-  if (theta > DART_PI - DART_EPSILON) {
+  if (theta > constantsd::pi() - DART_EPSILON) {
     const double c1 = 0.10132118364234;  // 1 / pi^2
     const double c2 = 0.01507440267955;  // 1 / 4 / pi - 2 / pi^3
     const double c3 = 0.00546765085347;  // 3 / pi^4 - 1 / 4 / pi^2
 
-    double phi = DART_PI - theta;
+    double phi = constantsd::pi() - theta;
     double delta = 0.5 + 0.125*phi*phi;
 
     double w[] = { _T(2, 1) > _T(1, 2)
@@ -584,7 +587,7 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T) {
                    ? theta*sqrt(1.0 + (_T(2, 2) - 1.0)*delta)
                    : -theta*sqrt(1.0 + (_T(2, 2) - 1.0)*delta) };
 
-    beta = 0.25*theta*(DART_PI - theta);
+    beta = 0.25*theta*(constantsd::pi() - theta);
     gamma = (w[0]*_T(0, 3) + w[1]*_T(1, 3) + w[2]*_T(2, 3))
             * (c1 -  c2*phi + c3*phi*phi);
 
@@ -601,9 +604,9 @@ Eigen::Vector6d logMap(const Eigen::Isometry3d& _T) {
       beta = (1.0 + cos(theta))*alpha;
       gamma = (1.0 - beta) / theta / theta;
     } else {
-      alpha = 0.5 + DART_1_12*theta*theta;
-      beta = 1.0 - DART_1_12*theta*theta;
-      gamma = DART_1_12 + DART_1_720*theta*theta;
+      alpha = 0.5 + 1.0/12.0*theta*theta;
+      beta = 1.0 - 1.0/12.0*theta*theta;
+      gamma = 1.0/12.0 + 1.0/720.0*theta*theta;
     }
 
     double w[] = { alpha*(_T(2, 1) - _T(1, 2)),
