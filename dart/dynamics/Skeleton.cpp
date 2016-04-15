@@ -236,6 +236,13 @@ void Skeleton::addBodyNode(BodyNode* _body)
 {
   assert(_body && _body->getParentJoint());
 
+  if(std::find(mBodyNodes.begin(), mBodyNodes.end(), _body)
+     != mBodyNodes.end())
+  {
+    // To help with #671, we prevent BodyNodes from having duplicate entries
+    return;
+  }
+
   mBodyNodes.push_back(_body);
   addEntryToBodyNodeNameMgr(_body);
   addMarkersOfBodyNode(_body);
@@ -428,7 +435,21 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
   for (size_t i = 0; i < mBodyNodes.size(); ++i)
   {
     if (mBodyNodes[i]->getParentBodyNode() == NULL)
+    {
+      if(std::find(rootBodyNodes.begin(), rootBodyNodes.end(), mBodyNodes[i])
+         != rootBodyNodes.end())
+      {
+        // Avoid duplicate BodyNodes
+        dtmsg << "[Skeleton::init] The root BodyNode named ["
+              << mBodyNodes[i]->getName() << "] (" << mBodyNodes[i] << ") "
+              << "appears twice while initializing the Skeleton named ["
+              << getName() << "] (" << this << "). The second appearance will "
+              << "be ignored.\n";
+        continue;
+      }
+
       rootBodyNodes.push_back(mBodyNodes[i]);
+    }
   }
 
   // Rearrange the list of body nodes with BFS (Breadth First Search)
@@ -442,9 +463,29 @@ void Skeleton::init(double _timeStep, const Eigen::Vector3d& _gravity)
     {
       BodyNode* itBodyNode = queue.front();
       queue.pop();
+
+      if(std::find(mBodyNodes.begin(), mBodyNodes.end(), itBodyNode)
+         != mBodyNodes.end())
+      {
+        // Addressing issue #671
+        const BodyNode* parent = itBodyNode->getParentBodyNode();
+        dtwarn << "[Skeleton::init] The BodyNode named ["
+               << itBodyNode->getName() << "] (" << itBodyNode << ") is being "
+               << "claimed by multiple parents. This is not allowed! It will "
+               << "only use [" << parent->getName() << "] (" << parent << ") "
+               << "as its parent!\n";
+        continue;
+      }
+
       mBodyNodes.push_back(itBodyNode);
       for (size_t j = 0; j < itBodyNode->getNumChildBodyNodes(); ++j)
-        queue.push(itBodyNode->getChildBodyNode(j));
+      {
+        BodyNode* child = itBodyNode->getChildBodyNode(j);
+        queue.push(child);
+
+        // Addressing issue #671
+        child->mParentBodyNode = itBodyNode;
+      }
     }
   }
 

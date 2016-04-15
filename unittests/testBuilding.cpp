@@ -131,6 +131,39 @@ TEST(BUILDING, BASIC)
 }
 
 /******************************************************************************/
+TEST(BUILDING, DUPLICATION)
+{
+  BodyNode* body1 = new BodyNode;
+  BodyNode* body2 = new BodyNode;
+  BodyNode* child = new BodyNode;
+
+  RevoluteJoint* joint1 = new RevoluteJoint;
+  RevoluteJoint* joint2 = new RevoluteJoint;
+  RevoluteJoint* joint3 = new RevoluteJoint;
+
+  body1->setParentJoint(joint1);
+  body2->setParentJoint(joint2);
+  child->setParentJoint(joint3);
+
+  body1->addChildBodyNode(child);
+  body2->addChildBodyNode(child);
+
+  Skeleton* skel = new Skeleton;
+  skel->addBodyNode(body1);
+  skel->addBodyNode(body1);
+  skel->addBodyNode(body2);
+  skel->addBodyNode(child);
+
+  skel->init();
+
+  // Because of how the init queue works, it will use the last BodyNode in the
+  // list of Skeleton::mBodyNodes which claims it as its child.
+  EXPECT_EQ(child->getParentBodyNode(), body2);
+
+  delete skel;
+}
+
+/******************************************************************************/
 int main(int argc, char* argv[])
 {
 	::testing::InitGoogleTest(&argc, argv);
