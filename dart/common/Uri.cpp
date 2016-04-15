@@ -63,7 +63,7 @@ using boost::ssub_match;
 #include <regex>
 
 using std::regex;
-using std::regex_constantsd::match_continuous;
+using std::regex_constants::match_continuous;
 using std::regex_match;
 using std::regex_search;
 using std::smatch;
