@@ -1300,14 +1300,8 @@ TEST(MATH, PerformanceComparisonOfAdTJac)
 }
 
 //==============================================================================
-TEST(MATH, PerformanceComparisonOfAdTJac11)
-{
-  std::cout << "1/3 = " << double(std::ratio<1, 3>::den) << std::endl;
-}
-
-//==============================================================================
 int main(int argc, char* argv[])
 {
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
