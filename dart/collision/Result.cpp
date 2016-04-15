@@ -81,14 +81,14 @@ const std::vector<Contact>& CollisionResult::getContacts() const
 }
 
 //==============================================================================
-const std::unordered_set<const dynamics::BodyNode*>
+const std::unordered_set<const dynamics::BodyNode*>&
 CollisionResult::getCollidingBodyNodes() const
 {
   return mCollidingBodyNodes;
 }
 
 //==============================================================================
-const std::unordered_set<const dynamics::ShapeFrame*>
+const std::unordered_set<const dynamics::ShapeFrame*>&
 CollisionResult::getCollidingShapeFrames() const
 {
   return mCollidingShapeFrames;
@@ -143,9 +143,7 @@ void CollisionResult::addObject(CollisionObject* object)
 
   if(frame->isShapeNode())
   {
-    const dynamics::ShapeNode* node =
-        dynamic_cast<const dynamics::ShapeNode*>(frame);
-
+    const dynamics::ShapeNode* node = frame->asShapeNode();
     mCollidingBodyNodes.insert(node->getBodyNodePtr());
   }
 }

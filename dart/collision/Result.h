@@ -72,11 +72,11 @@ public:
   const std::vector<Contact>& getContacts() const;
 
   /// Return the set of BodyNodes that are in collision
-  const std::unordered_set<const dynamics::BodyNode*>
+  const std::unordered_set<const dynamics::BodyNode*>&
   getCollidingBodyNodes() const;
 
   /// Return the set of ShapeFrames that are in collision
-  const std::unordered_set<const dynamics::ShapeFrame*>
+  const std::unordered_set<const dynamics::ShapeFrame*>&
   getCollidingShapeFrames() const;
 
   /// Returns true if the given BodyNode is in collision
