@@ -323,7 +323,10 @@ public:
   virtual ShapeNode* asShapeNode();
 
   /// Convert 'const this' into a ShapeNode pointer if ShapeFrame is a ShapeNode,
-  /// otherwise return nullptr
+  /// otherwise return nullptr.
+  ///
+  /// This should be preferred over performing a dynamic_cast when you want to
+  /// cast a ShapeFrame into a ShapeNode, because this method costs less.
   virtual const ShapeNode* asShapeNode() const;
 
 protected:
