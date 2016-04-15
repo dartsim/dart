@@ -18,7 +18,7 @@ configure_file(
 )
 
 install(
-  FILES ${dart_gui_osg_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/render.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/render.h
   DESTINATION include/dart/gui/osg/render
   COMPONENT headers
 )

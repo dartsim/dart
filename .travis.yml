@@ -13,14 +13,10 @@ compiler:
   - clang
 
 env:
-  - BUILD_TYPE=Debug   COVERALLS=OFF
+  - BUILD_TYPE=Debug   COVERALLS=ON COVERALLS_REPO_TOKEN=FKh1HgwfV5uzNrYxIT6ZWjcFqybYZSUym
   - BUILD_TYPE=Release COVERALLS=OFF
 
 matrix:
-  include:
-    - os: linux
-      compiler: gcc
-      env: BUILD_TYPE=Debug COVERALLS=ON COVERALLS_REPO_TOKEN=FKh1HgwfV5uzNrYxIT6ZWjcFqybYZSUym
   exclude:
     - os: osx
       compiler: gcc
@@ -33,7 +29,7 @@ script:
   - mkdir build && cd build
   - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_COVERALLS=$COVERALLS ..
   - make -j4 all tutorials examples tests test
-  - if [ $COVERALLS = ON ]; then make -j4 coveralls; fi
+  - if [ $COVERALLS = ON ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then make -j4 coveralls; fi
 
 after_failure: 
   - cat Testing/Temporary/LastTest.log

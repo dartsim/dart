@@ -257,6 +257,18 @@ BodyNode::~BodyNode()
 }
 
 //==============================================================================
+SoftBodyNode* BodyNode::asSoftBodyNode()
+{
+  return nullptr;
+}
+
+//==============================================================================
+const SoftBodyNode* BodyNode::asSoftBodyNode() const
+{
+  return nullptr;
+}
+
+//==============================================================================
 void BodyNode::setAllNodeStates(const AllNodeStates& states)
 {
   setNodesFromDataTypeMap<Node::State, &Node::setNodeState>(

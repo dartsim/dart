@@ -3741,6 +3741,25 @@ double Skeleton::getPotentialEnergy() const
 }
 
 //==============================================================================
+void Skeleton::clearCollidingBodies()
+{
+  for (auto i = 0u; i < getNumBodyNodes(); ++i)
+  {
+    auto bodyNode = getBodyNode(i);
+    bodyNode->setColliding(false);
+
+    auto softBodyNode = bodyNode->asSoftBodyNode();
+    if (softBodyNode)
+    {
+      auto& pointMasses = softBodyNode->getPointMasses();
+
+      for (auto pointMass : pointMasses)
+        pointMass->setColliding(false);
+    }
+  }
+}
+
+//==============================================================================
 Eigen::Vector3d Skeleton::getCOM(const Frame* _withRespectTo) const
 {
   Eigen::Vector3d com = Eigen::Vector3d::Zero();

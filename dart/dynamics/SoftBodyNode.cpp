@@ -134,6 +134,18 @@ SoftBodyNode::~SoftBodyNode()
 }
 
 //==============================================================================
+SoftBodyNode* SoftBodyNode::asSoftBodyNode()
+{
+  return this;
+}
+
+//==============================================================================
+const SoftBodyNode* SoftBodyNode::asSoftBodyNode() const
+{
+  return this;
+}
+
+//==============================================================================
 void SoftBodyNode::setProperties(const Properties& _properties)
 {
   BodyNode::setProperties(

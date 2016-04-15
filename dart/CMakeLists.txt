@@ -17,7 +17,6 @@ add_subdirectory(optimizer)
 add_subdirectory(integration)
 add_subdirectory(lcpsolver)
 add_subdirectory(math)
-add_subdirectory(renderer)
 add_subdirectory(simulation)
 
 # Set header and source files
@@ -32,7 +31,6 @@ set(dart_hdrs
   ${dart_optimizer_hdrs}
   ${dart_collision_hdrs}
   ${dart_constraint_hdrs}
-  ${dart_renderer_hdrs}
   ${dart_simulation_hdrs}
 )
 set(dart_srcs
@@ -44,13 +42,18 @@ set(dart_srcs
   ${dart_optimizer_srcs}
   ${dart_collision_srcs}
   ${dart_constraint_srcs}
-  ${dart_renderer_srcs}
   ${dart_simulation_srcs}
 )
 
 # Library: dart
 dart_add_library(dart ${dart_hdrs} ${dart_srcs})
-target_link_libraries(dart ${DART_DEPENDENCIES})
+target_link_libraries(dart ${CCD_LIBRARIES}
+                           ${FCL_LIBRARIES}
+                           ${ASSIMP_LIBRARIES}
+                           ${Boost_LIBRARIES})
+if(HAVE_BULLET_COLLISION)
+  target_link_libraries(dart ${BULLET_LIBRARIES})
+endif()
 
 if(MSVC)
   set_target_properties(
@@ -70,7 +73,7 @@ if(FLANN_FOUND)
   add_subdirectory(planning)
 endif()
 
-if(GLUT_FOUND)
+if(OPENGL_FOUND AND GLUT_FOUND)
   add_subdirectory(gui)
 endif()
 

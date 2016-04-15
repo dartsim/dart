@@ -2,6 +2,7 @@
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
+include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
 include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 
 # Add subdirectories
@@ -14,7 +15,7 @@ set(dart_gui_srcs ${dart_gui_srcs} ${srcs})
 
 # Library
 dart_add_library(dart-gui ${srcs} ${hdrs})
-target_link_libraries(dart-gui dart-utils ${GLUT_LIBRARY})
+target_link_libraries(dart-gui dart-utils ${GLUT_LIBRARY} ${OPENGL_LIBRARIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})
