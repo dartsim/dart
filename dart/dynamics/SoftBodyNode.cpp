@@ -45,8 +45,6 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/renderer/LoadOpengl.h"
-#include "dart/renderer/RenderInterface.h"
 
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftMeshShape.h"
