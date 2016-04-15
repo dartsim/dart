@@ -3,6 +3,7 @@
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
+ *            Michael X. Grey <mxgrey@gatech.edu>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -38,6 +39,22 @@
 
 namespace dart {
 namespace collision {
+
+//==============================================================================
+Contact::Contact()
+  : point(Eigen::Vector3d::Zero()),
+    normal(Eigen::Vector3d::Zero()),
+    force(Eigen::Vector3d::Zero()),
+    collisionObject1(nullptr),
+    collisionObject2(nullptr),
+    penetrationDepth(0),
+    triID1(0),
+    triID2(0),
+    userData(nullptr)
+{
+  // TODO(MXG): Consider using NaN instead of zero for uninitialized quantities
+  // Do nothing
+}
 
 }  // namespace collision
 }  // namespace dart

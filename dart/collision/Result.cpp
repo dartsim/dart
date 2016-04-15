@@ -35,6 +35,11 @@
  */
 
 #include "dart/collision/Result.h"
+#include "dart/collision/CollisionObject.h"
+
+#include "dart/dynamics/ShapeFrame.h"
+#include "dart/dynamics/ShapeNode.h"
+#include "dart/dynamics/BodyNode.h"
 
 namespace dart {
 namespace collision {
@@ -43,6 +48,8 @@ namespace collision {
 void CollisionResult::addContact(const Contact& contact)
 {
   mContacts.push_back(contact);
+  addObject(contact.collisionObject1);
+  addObject(contact.collisionObject2);
 }
 
 //==============================================================================
@@ -74,15 +81,73 @@ const std::vector<Contact>& CollisionResult::getContacts() const
 }
 
 //==============================================================================
+const std::unordered_set<const dynamics::BodyNode*>
+CollisionResult::getCollidingBodyNodes() const
+{
+  return mCollidingBodyNodes;
+}
+
+//==============================================================================
+const std::unordered_set<const dynamics::ShapeFrame*>
+CollisionResult::getCollidingShapeFrames() const
+{
+  return mCollidingShapeFrames;
+}
+
+//==============================================================================
+bool CollisionResult::inCollision(const dynamics::BodyNode* bn) const
+{
+  return (mCollidingBodyNodes.find(bn) != mCollidingBodyNodes.end());
+}
+
+//==============================================================================
+bool CollisionResult::inCollision(const dynamics::ShapeFrame* frame) const
+{
+  return (mCollidingShapeFrames.find(frame) != mCollidingShapeFrames.end());
+}
+
+//==============================================================================
 bool CollisionResult::isCollision() const
 {
   return !mContacts.empty();
 }
 
 //==============================================================================
+CollisionResult::operator bool() const
+{
+  return isCollision();
+}
+
+//==============================================================================
 void CollisionResult::clear()
 {
   mContacts.clear();
+  mCollidingShapeFrames.clear();
+  mCollidingBodyNodes.clear();
+}
+
+//==============================================================================
+void CollisionResult::addObject(CollisionObject* object)
+{
+  if(!object)
+  {
+    dterr << "[CollisionResult::addObject] Attempting to add a collision with "
+          << "a nullptr object to a CollisionResult instance. This is not "
+          << "allowed. Please report this as a bug!";
+    assert(false);
+    return;
+  }
+
+  const dynamics::ShapeFrame* frame = object->getShapeFrame();
+  mCollidingShapeFrames.insert(frame);
+
+  if(frame->isShapeNode())
+  {
+    const dynamics::ShapeNode* node =
+        dynamic_cast<const dynamics::ShapeNode*>(frame);
+
+    mCollidingBodyNodes.insert(node->getBodyNodePtr());
+  }
 }
 
 }  // namespace collision
