@@ -24,7 +24,7 @@ project(dart)
 
 set(DART_MAJOR_VERSION "4")
 set(DART_MINOR_VERSION "3")
-set(DART_PATCH_VERSION "5")
+set(DART_PATCH_VERSION "6")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "flann, ccd, fcl")
