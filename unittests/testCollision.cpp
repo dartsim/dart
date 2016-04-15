@@ -811,9 +811,19 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_FALSE(boxBodyNode1->isColliding());
   EXPECT_FALSE(boxBodyNode2->isColliding());
 
+  const collision::CollisionResult& result1 = world->getLastCollisionResult();
+  EXPECT_FALSE(result1.inCollision(boxBodyNode1));
+  EXPECT_FALSE(result1.inCollision(boxBodyNode2));
+
   world->step();
   EXPECT_TRUE(boxBodyNode1->isColliding());
   EXPECT_TRUE(boxBodyNode2->isColliding());
+
+  const collision::CollisionResult& result2 = world->getLastCollisionResult();
+  EXPECT_TRUE(result2.inCollision(boxBodyNode1));
+  EXPECT_TRUE(result2.inCollision(boxBodyNode2));
+
+  std::cout << "Num body nodes: " << result2.getCollidingBodyNodes().size() << std::endl;
 }
 
 //==============================================================================

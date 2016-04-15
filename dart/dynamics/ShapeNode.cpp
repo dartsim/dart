@@ -337,6 +337,7 @@ ShapeNode::ShapeNode(BodyNode* bodyNode, const Properties& properties)
     onShapeUpdated(mShapeUpdatedSignal),
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {
+  mAmShapeNode = true;
   setProperties(properties);
 }
 
@@ -354,6 +355,7 @@ ShapeNode::ShapeNode(BodyNode* bodyNode,
     onShapeUpdated(mShapeUpdatedSignal),
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {
+  mAmShapeNode = true;
   Properties prop;
   prop.mShape = shape;
   prop.mName = name;
