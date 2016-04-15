@@ -1041,6 +1041,10 @@ protected:
   /// Counts the number of nodes globally.
   static size_t msBodyNodeCount;
 
+  /// Whether the node is currently in collision with another node.
+  DEPRECATED(6.0)
+  bool mIsColliding;
+
   //--------------------------------------------------------------------------
   // Structural Properties
   //--------------------------------------------------------------------------
