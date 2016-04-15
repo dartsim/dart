@@ -95,7 +95,7 @@ public:
 
   /// Remove an Aspect from this Composite
   template <class T>
-  void eraseAspect();
+  void removeAspect();
 
   /// Remove an Aspect from this Composite, but return its unique_ptr instead
   /// of letting it be deleted. This allows you to safely use move semantics to
@@ -108,6 +108,8 @@ public:
   static constexpr bool isSpecializedFor();
 
 protected:
+
+  template <class T> struct type { };
 
   /// Redirect to Composite::has()
   template <class T>
@@ -160,10 +162,10 @@ protected:
 
   /// Redirect to Composite::erase()
   template <class T>
-  void _eraseAspect(type<T>);
+  void _removeAspect(type<T>);
 
   /// Specialized implementation of erase()
-  void _eraseAspect(type<SpecAspect>);
+  void _removeAspect(type<SpecAspect>);
 
   /// Redirect to Composite::release()
   template <class T>

@@ -82,7 +82,7 @@ DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(T*, CompositeJoiner, get, (), ())
 DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(const T*, CompositeJoiner, get, () const, ())
 DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, CompositeJoiner, set, (const T* aspect), (aspect))
 DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, CompositeJoiner, set, (std::unique_ptr<T>&& aspect), (std::move(aspect)))
-DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, CompositeJoiner, eraseAspect, (), ())
+DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(void, CompositeJoiner, removeAspect, (), ())
 DETAIL_DART_COMMON_TEMPLATEJOINERDISPATCH_IMPL(std::unique_ptr<T>, CompositeJoiner, releaseAspect, (), ())
 
 //==============================================================================

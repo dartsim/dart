@@ -117,7 +117,7 @@ public:
 
   /// Remove an Aspect from this Composite.
   template <class T>
-  void eraseAspect();
+  void removeAspect();
 
   /// Remove an Aspect from this Composite, but return its unique_ptr instead
   /// of letting it be deleted. This allows you to safely use move semantics to
@@ -167,8 +167,6 @@ public:
   void matchAspects(const Composite* otherComposite);
 
 protected:
-
-  template <class T> struct type { };
 
   /// Add this Aspect to the Composite. This allows derived Composite types to
   /// call the protected Aspect::setComposite function.
