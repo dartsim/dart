@@ -507,6 +507,12 @@ bool World::checkCollision(bool checkAllCollisions)
 }
 
 //==============================================================================
+const collision::CollisionResult& World::getLastCollisionResult() const
+{
+  return mConstraintSolver->getLastCollisionResult();
+}
+
+//==============================================================================
 constraint::ConstraintSolver* World::getConstraintSolver() const
 {
   return mConstraintSolver;

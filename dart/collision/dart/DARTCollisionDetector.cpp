@@ -261,9 +261,7 @@ bool checkPair(CollisionObject* o1, CollisionObject* o2,
   CollisionResult pairResult;
 
   // Perform narrow-phase detection
-  auto colliding = collide(o1->getShape(), o1->getTransform(),
-                           o2->getShape(), o2->getTransform(),
-                           pairResult);
+  auto colliding = collide(o1, o2, pairResult);
 
   postProcess(o1, o2, option, result, pairResult);
 

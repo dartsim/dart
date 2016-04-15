@@ -538,6 +538,7 @@ public:
   virtual double getPotentialEnergy() const = 0;
 
   /// Clear collision flags of the BodyNodes in this MetaSkeleton
+  DEPRECATED(6.0)
   virtual void clearCollidingBodies() = 0;
 
   /// \}

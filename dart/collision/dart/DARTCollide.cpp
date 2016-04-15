@@ -35,6 +35,7 @@
  */
 
 #include "dart/collision/dart/DARTCollide.h"
+#include "dart/collision/CollisionObject.h"
 
 #include <memory>
 
@@ -417,7 +418,8 @@ got_answer:
 // `contact' and `skip' are the contact array information provided to the
 // collision functions. this function only fills in the position and depth
 // fields.
-int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
+int dBoxBox(CollisionObject* o1, CollisionObject* o2,
+            const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
             const dVector3 p2, const dMatrix3 R2, const dVector3 side2,
             CollisionResult& result)
 {
@@ -583,6 +585,8 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
       penetration = -s;
 
       Contact contact;
+      contact.collisionObject1 = o1;
+      contact.collisionObject2 = o2;
       contact.point = point_vec;
       contact.normal = normal;
       contact.penetrationDepth = penetration;
@@ -764,6 +768,8 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
       point_vec << point[j*3+0] + pa[0], point[j*3+1] + pa[1], point[j*3+2] + pa[2];
 
       Contact contact;
+      contact.collisionObject1 = o1;
+      contact.collisionObject2 = o2;
       contact.point = point_vec;
       contact.normal = normal;
       contact.penetrationDepth = dep[j];
@@ -791,6 +797,8 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
       point_vec << point[iret[j]*3+0] + pa[0], point[iret[j]*3+1] + pa[1], point[iret[j]*3+2] + pa[2];
 
       Contact contact;
+      contact.collisionObject1 = o1;
+      contact.collisionObject2 = o2;
       contact.point = point_vec;
       contact.normal = normal;
       contact.penetrationDepth = dep[iret[j]];
@@ -800,7 +808,8 @@ int dBoxBox(const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
   return cnum;
 }
 
-int collideBoxBox(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
+int collideBoxBox(CollisionObject* o1, CollisionObject* o2,
+                  const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
                   const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
                   CollisionResult& result)
 {
@@ -821,10 +830,11 @@ int collideBoxBox(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
   convVector(T0.translation(), p0);
   convVector(T1.translation(), p1);
 
-  return dBoxBox(p1, R1, halfSize1, p0, R0, halfSize0, result);
+  return dBoxBox(o1, o2, p1, R1, halfSize1, p0, R0, halfSize0, result);
 }
 
-int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
+int	collideBoxSphere(CollisionObject* o1, CollisionObject* o2,
+                     const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
                      const double& r1, const Eigen::Isometry3d& T1,
                      CollisionResult& result)
 {
@@ -874,6 +884,8 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
     penetration = min + r1;
 
     Contact contact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
     contact.point = c0;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
@@ -897,6 +909,8 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
     normal *= (1.0/mag);
 
     Contact contact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
     contact.point = contactpt;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
@@ -925,6 +939,8 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
     normal = T0.linear() * normal;
 
     Contact contact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
     contact.point = contactpt;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
@@ -933,7 +949,8 @@ int	collideBoxSphere(const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
   return 1;
 }
 
-int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
+int collideSphereBox(CollisionObject* o1, CollisionObject* o2,
+                     const double& r0, const Eigen::Isometry3d& T0,
                      const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
                      CollisionResult& result)
 {
@@ -981,6 +998,8 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
     penetration = min + r0;
 
     Contact contact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
     contact.point = c0;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
@@ -1004,10 +1023,13 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
     normal *= (1.0/mag);
 
     Contact contact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
     contact.point = contactpt;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
-    result.addContact(contact);}
+    result.addContact(contact);
+  }
   else
   {
     double min = size[0] - std::abs(p[0]);
@@ -1030,6 +1052,8 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
     normal = T1.linear() * normal;
 
     Contact contact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
     contact.point = contactpt;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
@@ -1038,7 +1062,7 @@ int collideSphereBox(const double& r0, const Eigen::Isometry3d& T0,
   return 1;
 }
 
-int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
+int collideSphereSphere(CollisionObject* o1, CollisionObject* o2, const double& _r0, const Eigen::Isometry3d& c0,
                         const double& _r1, const Eigen::Isometry3d& c1,
                         CollisionResult& result)
 {
@@ -1065,6 +1089,8 @@ int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
     penetration = rsum;
 
     Contact contact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
     contact.point = point;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
@@ -1077,6 +1103,8 @@ int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
   penetration = rsum - normal_sqr;
 
   Contact contact;
+  contact.collisionObject1 = o1;
+  contact.collisionObject2 = o2;
   contact.point = point;
   contact.normal = normal;
   contact.penetrationDepth = penetration;
@@ -1085,7 +1113,7 @@ int collideSphereSphere(const double& _r0, const Eigen::Isometry3d& c0,
 
 }
 
-int collideCylinderSphere(const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
+int collideCylinderSphere(CollisionObject* o1, CollisionObject* o2, const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
                           const double& sphere_rad, const Eigen::Isometry3d& T1,
                           CollisionResult& result)
 {
@@ -1096,6 +1124,8 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
   if ( dist < cyl_rad && std::abs(center[2]) < half_height + sphere_rad )
   {
     Contact contact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
     contact.penetrationDepth = 0.5 * (half_height + sphere_rad - math::sign(center[2]) * center[2]);
     contact.point = T0 * Eigen::Vector3d(center[0], center[1], half_height - contact.penetrationDepth);
     contact.normal = T0.linear() * Eigen::Vector3d(0.0, 0.0, math::sign(center[2]));
@@ -1120,6 +1150,8 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
         if (penetration > 0.0)
         {
           Contact contact;
+          contact.collisionObject1 = o1;
+          contact.collisionObject2 = o2;
           contact.point = point;
           contact.normal = normal;
           contact.penetrationDepth = penetration;
@@ -1136,6 +1168,8 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
         point = T0 * point;
 
         Contact contact;
+        contact.collisionObject1 = o1;
+        contact.collisionObject2 = o2;
         contact.point = point;
         contact.normal = normal;
         contact.penetrationDepth = penetration;
@@ -1147,7 +1181,7 @@ int collideCylinderSphere(const double& cyl_rad, const double& half_height, cons
   return 0;
 }
 
-int collideCylinderPlane(const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
+int collideCylinderPlane(CollisionObject* o1, CollisionObject* o2, const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
                          const Eigen::Vector3d& plane_normal, const Eigen::Isometry3d& T1,
                          CollisionResult& result)
 {
@@ -1206,6 +1240,8 @@ int collideCylinderPlane(const double& cyl_rad, const double& half_height, const
   if (penetration > 0.0)
   {
     Contact contact;
+    contact.collisionObject1 = o1;
+    contact.collisionObject2 = o2;
     contact.point = point;
     contact.normal = normal;
     contact.penetrationDepth = penetration;
@@ -1217,10 +1253,13 @@ int collideCylinderPlane(const double& cyl_rad, const double& half_height, const
 }
 
 //==============================================================================
-int collide(dynamics::ConstShapePtr shape0, const Eigen::Isometry3d& T0,
-            dynamics::ConstShapePtr shape1, const Eigen::Isometry3d& T1,
-            CollisionResult& result)
+int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 {
+  const dynamics::ConstShapePtr& shape0 = o1->getShape();
+  const dynamics::ConstShapePtr& shape1 = o2->getShape();
+  const Eigen::Isometry3d& T0 = o1->getTransform();
+  const Eigen::Isometry3d& T1 = o2->getTransform();
+
   dynamics::Shape::ShapeType LeftType = shape0->getShapeType();
   dynamics::Shape::ShapeType RightType = shape1->getShapeType();
 
@@ -1235,13 +1274,15 @@ int collide(dynamics::ConstShapePtr shape0, const Eigen::Isometry3d& T0,
         case dynamics::Shape::BOX:
         {
           const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(shape1.get());
-          return collideBoxBox(box0->getSize(), T0,
+          return collideBoxBox(o1, o2,
+                               box0->getSize(), T0,
                                box1->getSize(), T1, result);
         }
         case dynamics::Shape::ELLIPSOID:
         {
           const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
-          return collideBoxSphere(box0->getSize(), T0,
+          return collideBoxSphere(o1, o2,
+                                  box0->getSize(), T0,
                                   ellipsoid1->getSize()[0] * 0.5, T1,
               result);
         }
@@ -1264,14 +1305,16 @@ int collide(dynamics::ConstShapePtr shape0, const Eigen::Isometry3d& T0,
         case dynamics::Shape::BOX:
         {
           const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(shape1.get());
-          return collideSphereBox(ellipsoid0->getSize()[0] * 0.5, T0,
+          return collideSphereBox(o1, o2,
+                                  ellipsoid0->getSize()[0] * 0.5, T0,
                                   box1->getSize(), T1,
                                   result);
         }
         case dynamics::Shape::ELLIPSOID:
         {
           const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
-          return collideSphereSphere(ellipsoid0->getSize()[0] * 0.5, T0,
+          return collideSphereSphere(o1, o2,
+                                     ellipsoid0->getSize()[0] * 0.5, T0,
                                      ellipsoid1->getSize()[0] * 0.5, T1,
                                      result);
         }
@@ -1288,6 +1331,8 @@ int collide(dynamics::ConstShapePtr shape0, const Eigen::Isometry3d& T0,
 
       break;
   }
+
+  return false;
 }
 
 } // namespace collision
