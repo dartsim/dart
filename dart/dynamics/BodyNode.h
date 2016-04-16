@@ -1042,7 +1042,7 @@ protected:
   static size_t msBodyNodeCount;
 
   /// Whether the node is currently in collision with another node.
-  DEPRECATED(6.0)
+  /// \deprecated DEPRECATED(6.0) See #670 for more detail.
   bool mIsColliding;
 
   //--------------------------------------------------------------------------

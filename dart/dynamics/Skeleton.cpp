@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "dart/common/Console.h"
+#include "dart/common/Deprecated.h"
 #include "dart/common/StlHelpers.h"
 #include "dart/math/Geometry.h"
 #include "dart/math/Helpers.h"
@@ -3746,7 +3747,9 @@ void Skeleton::clearCollidingBodies()
   for (auto i = 0u; i < getNumBodyNodes(); ++i)
   {
     auto bodyNode = getBodyNode(i);
+DART_SUPPRESS_DEPRECATED_BEGIN
     bodyNode->setColliding(false);
+DART_SUPPRESS_DEPRECATED_END
 
     auto softBodyNode = bodyNode->asSoftBodyNode();
     if (softBodyNode)
