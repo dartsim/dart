@@ -334,6 +334,8 @@ void Controller::_buildStateMachines()
 //==============================================================================
 StateMachine* Controller::_createStandingStateMachine()
 {
+  using namespace dart::math::suffixes;
+
   StateMachine* standing = new StateMachine("standing");
 
   State* standingState0 = new State(mAtlasRobot, "0");
@@ -344,16 +346,16 @@ StateMachine* Controller::_createStandingStateMachine()
 
   standingState0->setNextState(standingState0);
 
-  standingState0->setDesiredJointPosition( "back_bky", toRadian( 15.00)); // angle b/w pelvis and torso
-  standingState0->setDesiredJointPosition("l_leg_hpy", toRadian(-10.00));
-  standingState0->setDesiredJointPosition("r_leg_hpy", toRadian(-10.00));
-  standingState0->setDesiredJointPosition("l_leg_kny", toRadian( 30.00)); // left knee
-  standingState0->setDesiredJointPosition("r_leg_kny", toRadian( 30.00)); // right knee
-  standingState0->setDesiredJointPosition("l_leg_aky", toRadian(-16.80)); // left ankle
-  standingState0->setDesiredJointPosition("r_leg_aky", toRadian(-16.80)); // right ankle
+  standingState0->setDesiredJointPosition( "back_bky",  15.00_deg); // angle b/w pelvis and torso
+  standingState0->setDesiredJointPosition("l_leg_hpy", -10.00_deg);
+  standingState0->setDesiredJointPosition("r_leg_hpy", -10.00_deg);
+  standingState0->setDesiredJointPosition("l_leg_kny",  30.00_deg); // left knee
+  standingState0->setDesiredJointPosition("r_leg_kny",  30.00_deg); // right knee
+  standingState0->setDesiredJointPosition("l_leg_aky", -16.80_deg); // left ankle
+  standingState0->setDesiredJointPosition("r_leg_aky", -16.80_deg); // right ankle
 
-  standingState0->setDesiredJointPosition("l_arm_shx", toRadian(-90.0)); // right ankle
-  standingState0->setDesiredJointPosition("r_arm_shx", toRadian(+90.0)); // right ankle
+  standingState0->setDesiredJointPosition("l_arm_shx", -90.0_deg); // right ankle
+  standingState0->setDesiredJointPosition("r_arm_shx", +90.0_deg); // right ankle
 
 
 
@@ -367,10 +369,12 @@ StateMachine* Controller::_createStandingStateMachine()
 //==============================================================================
 StateMachine* Controller::_createWalkingInPlaceStateMachine()
 {
+  using namespace dart::math::suffixes;
+
   const double cd = 0.5;
   const double cv = 0.2;
 
-  const double pelvis = toRadian(-4.75);  // angle b/w pelvis and torso
+  const double pelvis = -4.75_deg;  // angle b/w pelvis and torso
 
   const double swh02  =  0.50;  // swing hip
   const double swk02  = -1.10;  // swing knee
@@ -413,14 +417,14 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state3->setStanceFootToRightFoot();
 
   // Set global desired pelvis angle
-  state0->setDesiredPelvisGlobalAngleOnSagital(toRadian(0.0));
-  state1->setDesiredPelvisGlobalAngleOnSagital(toRadian(0.0));
-  state2->setDesiredPelvisGlobalAngleOnSagital(toRadian(0.0));
-  state3->setDesiredPelvisGlobalAngleOnSagital(toRadian(0.0));
-  state0->setDesiredPelvisGlobalAngleOnCoronal(toRadian(0.0));
-  state1->setDesiredPelvisGlobalAngleOnCoronal(toRadian(0.0));
-  state2->setDesiredPelvisGlobalAngleOnCoronal(toRadian(0.0));
-  state3->setDesiredPelvisGlobalAngleOnCoronal(toRadian(0.0));
+  state0->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state1->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state2->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state3->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state0->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
+  state1->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
+  state2->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
+  state3->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
 
   // Set desired joint position
   //-- State 0
@@ -434,10 +438,10 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state0->setDesiredJointPosition("l_leg_kny", -stk02); // left knee
   state0->setDesiredJointPosition("l_leg_aky", -sta02); // left ankle
   //---- arm
-  state0->setDesiredJointPosition("l_arm_shy", toRadian(-20.00)); // left arm
-  state0->setDesiredJointPosition("r_arm_shy", toRadian(+10.00)); // right arm
-  state0->setDesiredJointPosition("l_arm_shx", toRadian(-80.00)); // left arm
-  state0->setDesiredJointPosition("r_arm_shx", toRadian(+80.00)); // right arm
+  state0->setDesiredJointPosition("l_arm_shy", -20.00_deg); // left arm
+  state0->setDesiredJointPosition("r_arm_shy", +10.00_deg); // right arm
+  state0->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
+  state0->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
   state0->setFeedbackCoronalCOMDistance(mCoronalLeftHip,  -cd); // coronal left hip
   state0->setFeedbackCoronalCOMVelocity(mCoronalLeftHip,  -cv); // coronal left hip
@@ -459,10 +463,10 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state1->setDesiredJointPosition("r_leg_kny", -stk13); // right knee
   state1->setDesiredJointPosition("r_leg_aky", -sta13); // right ankle
   //---- arm
-  state1->setDesiredJointPosition("l_arm_shy", toRadian(+10.00)); // left arm
-  state1->setDesiredJointPosition("r_arm_shy", toRadian(-20.00)); // right arm
-  state1->setDesiredJointPosition("l_arm_shx", toRadian(-80.00)); // left arm
-  state1->setDesiredJointPosition("r_arm_shx", toRadian(+80.00)); // right arm
+  state1->setDesiredJointPosition("l_arm_shy", +10.00_deg); // left arm
+  state1->setDesiredJointPosition("r_arm_shy", -20.00_deg); // right arm
+  state1->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
+  state1->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
   state1->setFeedbackCoronalCOMDistance(mCoronalLeftHip,  -cd);  // coronal left hip
   state1->setFeedbackCoronalCOMVelocity(mCoronalLeftHip,  -cv);  // coronal left hip
@@ -484,10 +488,10 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state2->setDesiredJointPosition("r_leg_kny", -stk02); // right knee
   state2->setDesiredJointPosition("r_leg_aky", -sta02); // right ankle
   //---- arm
-  state2->setDesiredJointPosition("l_arm_shy", toRadian(+10.00)); // left arm
-  state2->setDesiredJointPosition("r_arm_shy", toRadian(-20.00)); // right arm
-  state2->setDesiredJointPosition("l_arm_shx", toRadian(-80.00)); // left arm
-  state2->setDesiredJointPosition("r_arm_shx", toRadian(+80.00)); // right arm
+  state2->setDesiredJointPosition("l_arm_shy", +10.00_deg); // left arm
+  state2->setDesiredJointPosition("r_arm_shy", -20.00_deg); // right arm
+  state2->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
+  state2->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
   state2->setFeedbackCoronalCOMDistance(mCoronalLeftHip,  -cd);  // coronal left hip
   state2->setFeedbackCoronalCOMVelocity(mCoronalLeftHip,  -cv);  // coronal left hip
@@ -509,10 +513,10 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state3->setDesiredJointPosition("l_leg_kny", -stk13); // left knee
   state3->setDesiredJointPosition("l_leg_aky", -sta13); // left ankle
   //---- arm
-  state3->setDesiredJointPosition("l_arm_shy", toRadian(-20.00)); // left arm
-  state3->setDesiredJointPosition("r_arm_shy", toRadian(+10.00)); // right arm
-  state3->setDesiredJointPosition("l_arm_shx", toRadian(-80.00)); // left arm
-  state3->setDesiredJointPosition("r_arm_shx", toRadian(+80.00)); // right arm
+  state3->setDesiredJointPosition("l_arm_shy", -20.00_deg); // left arm
+  state3->setDesiredJointPosition("r_arm_shy", +10.00_deg); // right arm
+  state3->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
+  state3->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
   state3->setFeedbackCoronalCOMDistance(mCoronalLeftHip,  -cd);  // coronal left hip
   state3->setFeedbackCoronalCOMVelocity(mCoronalLeftHip,  -cv);  // coronal left hip
@@ -536,10 +540,12 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
 //==============================================================================
 StateMachine* Controller::_createWalkingStateMachine()
 {
+  using namespace dart::math::suffixes;
+
   const double cd = 0.5;
   const double cv = 0.2;
 
-  const double pelvis = toRadian(-10.0);  // angle b/w pelvis and torso
+  const double pelvis = -10.0_deg;  // angle b/w pelvis and torso
 
   const double swh02  =  0.50;  // swing hip
   const double swk02  = -1.10;  // swing knee
@@ -582,14 +588,14 @@ StateMachine* Controller::_createWalkingStateMachine()
   state3->setStanceFootToRightFoot();
 
   // Set global desired pelvis angle
-  state0->setDesiredPelvisGlobalAngleOnSagital(toRadian(0.0));
-  state1->setDesiredPelvisGlobalAngleOnSagital(toRadian(0.0));
-  state2->setDesiredPelvisGlobalAngleOnSagital(toRadian(0.0));
-  state3->setDesiredPelvisGlobalAngleOnSagital(toRadian(0.0));
-  state0->setDesiredPelvisGlobalAngleOnCoronal(toRadian(0.0));
-  state1->setDesiredPelvisGlobalAngleOnCoronal(toRadian(0.0));
-  state2->setDesiredPelvisGlobalAngleOnCoronal(toRadian(0.0));
-  state3->setDesiredPelvisGlobalAngleOnCoronal(toRadian(0.0));
+  state0->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state1->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state2->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state3->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state0->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
+  state1->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
+  state2->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
+  state3->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
 
   // Set desired joint position
   //-- State 0
@@ -603,10 +609,10 @@ StateMachine* Controller::_createWalkingStateMachine()
   state0->setDesiredJointPosition("l_leg_kny", -stk02); // left knee
   state0->setDesiredJointPosition("l_leg_aky", -sta02); // left ankle
   //---- arm
-  state0->setDesiredJointPosition("l_arm_shy", toRadian(-20.00)); // left arm
-  state0->setDesiredJointPosition("r_arm_shy", toRadian(+10.00)); // right arm
-  state0->setDesiredJointPosition("l_arm_shx", toRadian(-80.00)); // left arm
-  state0->setDesiredJointPosition("r_arm_shx", toRadian(+80.00)); // right arm
+  state0->setDesiredJointPosition("l_arm_shy", -20.00_deg); // left arm
+  state0->setDesiredJointPosition("r_arm_shy", +10.00_deg); // right arm
+  state0->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
+  state0->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
   state0->setFeedbackCoronalCOMDistance(mCoronalLeftHip,  -cd);  // coronal left hip
   state0->setFeedbackCoronalCOMVelocity(mCoronalLeftHip,  -cv);  // coronal left hip
@@ -628,10 +634,10 @@ StateMachine* Controller::_createWalkingStateMachine()
   state1->setDesiredJointPosition("r_leg_kny", -stk13); // right knee
   state1->setDesiredJointPosition("r_leg_aky", -sta13); // right ankle
   //---- arm
-  state1->setDesiredJointPosition("l_arm_shy", toRadian(+10.00)); // left arm
-  state1->setDesiredJointPosition("r_arm_shy", toRadian(-20.00)); // right arm
-  state1->setDesiredJointPosition("l_arm_shx", toRadian(-80.00)); // left arm
-  state1->setDesiredJointPosition("r_arm_shx", toRadian(+80.00)); // right arm
+  state1->setDesiredJointPosition("l_arm_shy", +10.00_deg); // left arm
+  state1->setDesiredJointPosition("r_arm_shy", -20.00_deg); // right arm
+  state1->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
+  state1->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
   state1->setFeedbackCoronalCOMDistance(mCoronalLeftHip,  -cd);  // coronal left hip
   state1->setFeedbackCoronalCOMVelocity(mCoronalLeftHip,  -cv);  // coronal left hip
@@ -653,10 +659,10 @@ StateMachine* Controller::_createWalkingStateMachine()
   state2->setDesiredJointPosition("r_leg_kny", -stk02); // right knee
   state2->setDesiredJointPosition("r_leg_aky", -sta02); // right ankle
   //---- arm
-  state2->setDesiredJointPosition("l_arm_shy", toRadian(+10.00)); // left arm
-  state2->setDesiredJointPosition("r_arm_shy", toRadian(-20.00)); // right arm
-  state2->setDesiredJointPosition("l_arm_shx", toRadian(-80.00)); // left arm
-  state2->setDesiredJointPosition("r_arm_shx", toRadian(+80.00)); // right arm
+  state2->setDesiredJointPosition("l_arm_shy", +10.00_deg); // left arm
+  state2->setDesiredJointPosition("r_arm_shy", -20.00_deg); // right arm
+  state2->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
+  state2->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
   state2->setFeedbackCoronalCOMDistance(mCoronalLeftHip,  -cd);  // coronal left hip
   state2->setFeedbackCoronalCOMVelocity(mCoronalLeftHip,  -cv);  // coronal left hip
@@ -678,10 +684,10 @@ StateMachine* Controller::_createWalkingStateMachine()
   state3->setDesiredJointPosition("l_leg_kny", -stk13); // left knee
   state3->setDesiredJointPosition("l_leg_aky", -sta13); // left ankle
   //---- arm
-  state3->setDesiredJointPosition("l_arm_shy", toRadian(-20.00)); // left arm
-  state3->setDesiredJointPosition("r_arm_shy", toRadian(+10.00)); // right arm
-  state3->setDesiredJointPosition("l_arm_shx", toRadian(-80.00)); // left arm
-  state3->setDesiredJointPosition("r_arm_shx", toRadian(+80.00)); // right arm
+  state3->setDesiredJointPosition("l_arm_shy", -20.00_deg); // left arm
+  state3->setDesiredJointPosition("r_arm_shy", +10.00_deg); // right arm
+  state3->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
+  state3->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
   state3->setFeedbackCoronalCOMDistance(mCoronalLeftHip,  -cd);  // coronal left hip
   state3->setFeedbackCoronalCOMVelocity(mCoronalLeftHip,  -cv);  // coronal left hip
@@ -705,10 +711,12 @@ StateMachine* Controller::_createWalkingStateMachine()
 //==============================================================================
 StateMachine* Controller::_createRunningStateMachine()
 {
+  using namespace dart::math::suffixes;
+
   const double cd = 0.5;
   const double cv = 0.2;
 
-  const double pelvis   = toRadian(-10.0);  // angle b/w pelvis and torso
+  const double pelvis   = -10.0_deg;  // angle b/w pelvis and torso
 
   const double swh01 =  0.50;  // swing hip
   const double swk01 = -1.10;  // swing knee
@@ -735,10 +743,10 @@ StateMachine* Controller::_createRunningStateMachine()
   state1->setStanceFootToRightFoot();
 
   // Set global desired pelvis angle
-  state0->setDesiredPelvisGlobalAngleOnSagital(toRadian(0.0));
-  state1->setDesiredPelvisGlobalAngleOnSagital(toRadian(0.0));
-  state0->setDesiredPelvisGlobalAngleOnCoronal(toRadian(0.0));
-  state1->setDesiredPelvisGlobalAngleOnCoronal(toRadian(0.0));
+  state0->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state1->setDesiredPelvisGlobalAngleOnSagital(0.0_deg);
+  state0->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
+  state1->setDesiredPelvisGlobalAngleOnCoronal(0.0_deg);
 
   // Set desired joint position
   //-- State 0
@@ -752,10 +760,10 @@ StateMachine* Controller::_createRunningStateMachine()
   state0->setDesiredJointPosition("l_leg_kny", -stk01); // left knee
   state0->setDesiredJointPosition("l_leg_aky", -sta01); // left ankle
   //---- arm
-  state0->setDesiredJointPosition("l_arm_shy", toRadian(-45.00)); // left arm
-  state0->setDesiredJointPosition("r_arm_shy", toRadian(+15.00)); // right arm
-  state0->setDesiredJointPosition("l_arm_shx", toRadian(-80.00)); // left arm
-  state0->setDesiredJointPosition("r_arm_shx", toRadian(+80.00)); // right arm
+  state0->setDesiredJointPosition("l_arm_shy", -45.00_deg); // left arm
+  state0->setDesiredJointPosition("r_arm_shy", +15.00_deg); // right arm
+  state0->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
+  state0->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
 //  state0->setDesiredJointPosition(23, DART_RADIAN * +90.00); // left arm
 //  state0->setDesiredJointPosition(24, DART_RADIAN * +90.00); // right arm
 //  state0->setDesiredJointPosition(27, DART_RADIAN * +90.00); // left arm
@@ -781,10 +789,10 @@ StateMachine* Controller::_createRunningStateMachine()
   state1->setDesiredJointPosition("r_leg_kny", -stk01); // right knee
   state1->setDesiredJointPosition("r_leg_aky", -sta01); // right ankle
   //---- arm
-  state1->setDesiredJointPosition("l_arm_shy", toRadian(+15.00)); // left arm
-  state1->setDesiredJointPosition("r_arm_shy", toRadian(-45.00)); // right arm
-  state1->setDesiredJointPosition("l_arm_shx", toRadian(-80.00)); // left arm
-  state1->setDesiredJointPosition("r_arm_shx", toRadian(+80.00)); // right arm
+  state1->setDesiredJointPosition("l_arm_shy", +15.00_deg); // left arm
+  state1->setDesiredJointPosition("r_arm_shy", -45.00_deg); // right arm
+  state1->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
+  state1->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
 //  state1->setDesiredJointPosition(23, DART_RADIAN * +90.00); // left arm
 //  state1->setDesiredJointPosition(24, DART_RADIAN * +90.00); // right arm
 //  state1->setDesiredJointPosition(27, DART_RADIAN * +90.00); // left arm

@@ -78,6 +78,8 @@ void MyWindow::drawWorld() const {
 
 void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
 
+  using namespace dart::math::suffixes;
+
   switch (_key) {
     case ' ':  // use space key to play or stop the motion
       mSimulating = !mSimulating;
@@ -113,23 +115,23 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       mShowMarkers = !mShowMarkers;
       break;
     case 'w':  // move forward
-      mBackWheelVelocity = dart::math::toRadian(-420.0);
+      mBackWheelVelocity = -420.0_deg;
       break;
     case 's':  // stop
-      mBackWheelVelocity = dart::math::toRadian(0.0);
+      mBackWheelVelocity = 0.0_deg;
       break;
     case 'x':  // move backward
-      mBackWheelVelocity = dart::math::toRadian(+420.0);
+      mBackWheelVelocity = +420.0_deg;
       break;
     case 'a':  // rotate steering wheels to left
-      mSteeringWheelAngle += dart::math::toRadian(+10);
-      if (mSteeringWheelAngle > dart::math::toRadian(30.0))
-        mSteeringWheelAngle = dart::math::toRadian(30.0);
+//      mSteeringWheelAngle += +10_deg;
+      if (mSteeringWheelAngle > 30.0_deg)
+        mSteeringWheelAngle = 30.0_deg;
       break;
     case 'd':  // rotate steering wheels to right
-      mSteeringWheelAngle += dart::math::toRadian(-10);
-      if (mSteeringWheelAngle < dart::math::toRadian(-30.0))
-        mSteeringWheelAngle = dart::math::toRadian(-30.0);
+//      mSteeringWheelAngle += -10_deg;
+      if (mSteeringWheelAngle < -30.0_deg)
+        mSteeringWheelAngle = -30.0_deg;
       break;
     default:
       Win3D::keyboard(_key, _x, _y);

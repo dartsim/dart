@@ -627,6 +627,8 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
 //==============================================================================
 SkeletonPtr createPendulum(Joint::ActuatorType actType)
 {
+  using namespace dart::math::suffixes;
+
   Vector3d dim(1, 1, 1);
   Vector3d offset(0, 0, 2);
 
@@ -646,7 +648,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
   EXPECT_NE(joint, nullptr);
 
   joint->setActuatorType(actType);
-  joint->setPosition(0, toRadian(90.0));
+  joint->setPosition(0, 90.0_deg);
   joint->setDampingCoefficient(0, 0.0);
   joint->setSpringStiffness(0, 0.0);
   joint->setPositionLimitEnforced(true);
@@ -658,11 +660,13 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
 //==============================================================================
 void testServoMotor()
 {
+  using namespace dart::math::suffixes;
+
   size_t numPendulums = 7;
   double timestep = 1e-3;
   double tol = 1e-9;
-  double posUpperLimit = toRadian(90.0);
-  double posLowerLimit = toRadian(45.0);
+  double posUpperLimit = 90.0_deg;
+  double posLowerLimit = 45.0_deg;
   double sufficient_force   = 1e+5;
   double insufficient_force = 1e-1;
 

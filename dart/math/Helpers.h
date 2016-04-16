@@ -298,6 +298,22 @@ inline Eigen::VectorXd randomVectorXd(size_t size, double limit)
   return randomVectorXd(size, -std::abs(limit), std::abs(limit));
 }
 
+namespace suffixes {
+
+//==============================================================================
+constexpr double operator"" _rad(long double angle)
+{
+  return angle;
+}
+
+//==============================================================================
+constexpr double operator"" _deg(long double angle)
+{
+  return toRadian(angle);
+}
+
+}  // namespace suffixes
+
 }  // namespace math
 
 namespace Color
