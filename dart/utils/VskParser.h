@@ -91,8 +91,8 @@ namespace VskParser
                 = Eigen::Vector3d::Constant(0.05),
             double thicknessRatio = 0.35,
             double density = 1e+3,
-            double jointPositionLowerLimit = -DART_PI,
-            double jointPositionUpperLimit = +DART_PI,
+            double jointPositionLowerLimit = -math::constantsd::pi(),
+            double jointPositionUpperLimit = +math::constantsd::pi(),
             double jointDampingCoefficient = 0.1,
             double jointFriction = 0.0,
             bool removeEndBodyNodes = false);

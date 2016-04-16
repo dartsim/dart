@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_EXTENSIBLE_H_
-#define DART_COMMON_EXTENSIBLE_H_
+#ifndef DART_COMMON_CLONEABLE_H_
+#define DART_COMMON_CLONEABLE_H_
 
 #include <memory>
 #include <vector>
@@ -292,7 +292,7 @@ public:
   /// Create a copy of this CloneableVector's contents
   std::unique_ptr< CloneableVector<T> > clone() const;
 
-  /// Copy the contents of another extensible vector into this one.
+  /// Copy the contents of another cloneable vector into this one.
   void copy(const CloneableVector<T>& anotherVector);
 
   /// Get a reference to the std::vector that this class is wrapping
@@ -312,4 +312,4 @@ private:
 
 #include "dart/common/detail/Cloneable.h"
 
-#endif // DART_COMMON_EXTENSIBLE_H_
+#endif // DART_COMMON_CLONEABLE_H_

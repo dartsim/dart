@@ -339,12 +339,12 @@ TEST(SkelParser, DofAttributes)
 
   // Test for no dof elements being specified
   Joint* joint0 = skel1->getJoint("joint0");
-  EXPECT_EQ(joint0->getDof(0)->getPositionLowerLimit(), -DART_DBL_INF);
-  EXPECT_EQ(joint0->getDof(0)->getPositionUpperLimit(),  DART_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getPositionLowerLimit(), -constantsd::inf());
+  EXPECT_EQ(joint0->getDof(0)->getPositionUpperLimit(),  constantsd::inf());
   EXPECT_EQ(joint0->getDof(0)->getPosition(), 0);
 
-  EXPECT_EQ(joint0->getDof(0)->getVelocityLowerLimit(), -DART_DBL_INF);
-  EXPECT_EQ(joint0->getDof(0)->getVelocityUpperLimit(),  DART_DBL_INF);
+  EXPECT_EQ(joint0->getDof(0)->getVelocityLowerLimit(), -constantsd::inf());
+  EXPECT_EQ(joint0->getDof(0)->getVelocityUpperLimit(),  constantsd::inf());
   EXPECT_EQ(joint0->getDof(0)->getVelocity(), 0);
 
   EXPECT_EQ(joint0->getDof(0)->getName(), joint0->getName());

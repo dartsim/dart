@@ -92,6 +92,10 @@ WorldPtr World::clone() const
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);
 
+  auto cd = getConstraintSolver()->getCollisionDetector();
+  worldClone->getConstraintSolver()->setCollisionDetector(
+      cd->cloneWithoutCollisionObjects());
+
   // Clone and add each Skeleton
   for(size_t i=0; i<mSkeletons.size(); ++i)
   {
@@ -500,6 +504,12 @@ bool World::checkCollision(bool checkAllCollisions)
   collision::CollisionResult result;
 
   return mConstraintSolver->getCollisionGroup()->collide(option, result);
+}
+
+//==============================================================================
+const collision::CollisionResult& World::getLastCollisionResult() const
+{
+  return mConstraintSolver->getLastCollisionResult();
 }
 
 //==============================================================================

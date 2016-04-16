@@ -39,12 +39,10 @@
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
-#include <boost/math/special_functions/fpclassify.hpp>
 
 #include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
+#include "dart/math/Constants.h"
 #include "dart/dynamics/Joint.h"
-
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"
@@ -72,7 +70,7 @@ bool equals(const DenseBase<MATRIX>& A, const DenseBase<MATRIX>& B,
   {
     for (size_t j = 0; j < n1; j++)
     {
-      if (boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
+      if (std::isnan(A(i,j)) ^ std::isnan(B(i,j)))
         return false;
       else if (std::abs(A(i,j) - B(i,j)) > tol)
         return false;
@@ -256,8 +254,8 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 #endif
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * DART_PI;
-  double ub =  1.5 * DART_PI;
+  double lb = -1.5 * constantsd::pi();
+  double ub =  1.5 * constantsd::pi();
 
   // Lower and upper bound of joint damping and stiffness
   double lbD =  0.0;

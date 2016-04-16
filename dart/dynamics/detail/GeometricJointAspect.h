@@ -37,6 +37,7 @@
 #ifndef DART_DYNAMICS_DETAIL_GEOMETRICJOINTASPECT_H_
 #define DART_DYNAMICS_DETAIL_GEOMETRICJOINTASPECT_H_
 
+#include "dart/math/Helpers.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/common/AspectWithVersion.h"
 
@@ -145,14 +146,14 @@ struct GeometricJointUniqueProperties
 
   /// Default constructor
   GeometricJointUniqueProperties(
-      const EuclideanPoint& positionLowerLimits = EuclideanPoint::Constant(-DART_DBL_INF),
-      const EuclideanPoint& positionUpperLimits = EuclideanPoint::Constant( DART_DBL_INF),
-      const Vector& velocityLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& velocityUpperLimits = Vector::Constant( DART_DBL_INF),
-      const Vector& accelerationLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& accelerationUpperLimits = Vector::Constant( DART_DBL_INF),
-      const Vector& forceLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& forceUpperLimits = Vector::Constant( DART_DBL_INF),
+      const EuclideanPoint& positionLowerLimits = EuclideanPoint::Constant(-math::constantsd::inf()),
+      const EuclideanPoint& positionUpperLimits = EuclideanPoint::Constant( math::constantsd::inf()),
+      const Vector& velocityLowerLimits = Vector::Constant(-math::constantsd::inf()),
+      const Vector& velocityUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& accelerationLowerLimits = Vector::Constant(-math::constantsd::inf()),
+      const Vector& accelerationUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& forceLowerLimits = Vector::Constant(-math::constantsd::inf()),
+      const Vector& forceUpperLimits = Vector::Constant( math::constantsd::inf()),
       const Vector& springStiffness = Vector::Zero(),
       const EuclideanPoint& restPosition = EuclideanPoint::Zero(),
       const Vector& dampingCoefficient = Vector::Zero(),

@@ -1341,6 +1341,8 @@ void readJoint(tinyxml2::XMLElement* _jointElement,
     joint.properties = readPrismaticJoint(_jointElement, joint, name);
   else if (joint.type == std::string("revolute"))
     joint.properties = readRevoluteJoint(_jointElement, joint, name);
+  else if (joint.type == std::string("screw"))
+    joint.properties = readScrewJoint(_jointElement, joint, name);
   else if (joint.type == std::string("universal"))
     joint.properties = readUniversalJoint(_jointElement, joint, name);
   else if (joint.type == std::string("ball"))

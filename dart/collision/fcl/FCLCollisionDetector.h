@@ -88,11 +88,14 @@ public:
   /// Constructor
   virtual ~FCLCollisionDetector();
 
-  /// Return engine type "FCL"
-  static const std::string& getTypeStatic();
+  // Documentation inherited
+  std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects() override;
 
   // Documentation inherited
   const std::string& getType() const override;
+
+  /// Get collision detector type for this class
+  static const std::string& getStaticType();
 
   // Documentation inherited
   std::unique_ptr<CollisionGroup> createCollisionGroup() override;

@@ -103,10 +103,10 @@ T* Composite::createAspect(Args&&... args)
 
 //==============================================================================
 template <class T>
-void Composite::eraseAspect()
+void Composite::removeAspect()
 {
   AspectMap::iterator it = mAspectMap.find( typeid(T) );
-  DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(eraseAspect, T, DART_BLANK)
+  DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE(removeAspect, T, DART_BLANK)
   if(mAspectMap.end() != it)
   {
     removeFromComposite(it->second.get());
@@ -209,7 +209,7 @@ void createAspects(T* mgr)
 \
   inline void erase ## AspectName ()\
   {\
-    this->template eraseAspect<TypeName>();\
+    this->template removeAspect<TypeName>();\
   }\
 \
   inline std::unique_ptr< TypeName > release ## AspectName ()\

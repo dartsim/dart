@@ -108,9 +108,9 @@ T* SpecializedForAspect<SpecAspect>::createAspect(Args&&... args)
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-void SpecializedForAspect<SpecAspect>::eraseAspect()
+void SpecializedForAspect<SpecAspect>::removeAspect()
 {
-  _eraseAspect(type<T>());
+  _removeAspect(type<T>());
 }
 
 //==============================================================================
@@ -267,14 +267,14 @@ SpecAspect* SpecializedForAspect<SpecAspect>::_createAspect(
 //==============================================================================
 template <class SpecAspect>
 template <class T>
-void SpecializedForAspect<SpecAspect>::_eraseAspect(type<T>)
+void SpecializedForAspect<SpecAspect>::_removeAspect(type<T>)
 {
-  Composite::eraseAspect<T>();
+  Composite::removeAspect<T>();
 }
 
 //==============================================================================
 template <class SpecAspect>
-void SpecializedForAspect<SpecAspect>::_eraseAspect(type<SpecAspect>)
+void SpecializedForAspect<SpecAspect>::_removeAspect(type<SpecAspect>)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
   usedSpecializedAspectAccess = true;

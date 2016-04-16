@@ -163,9 +163,11 @@ const GeometricJoint<math::RealSpace>::JacobianMatrix
 ScrewJoint::getLocalJacobianStatic(
     const GeometricJoint<math::RealSpace>::Vector& /*positions*/) const
 {
+  using namespace dart::math::suffixes;
+
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = getAxis();
-  S.tail<3>() = getAxis() * getPitch() / DART_2PI;
+  S.tail<3>() = getAxis() * getPitch() * 0.5_pi;
 
   GeometricJoint<math::RealSpace>::JacobianMatrix jacobian
       = math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint, S);
@@ -203,13 +205,14 @@ void ScrewJoint::updateDegreeOfFreedomNames()
 //==============================================================================
 void ScrewJoint::updateLocalTransform() const
 {
+  using namespace dart::math::suffixes;
+
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = getAxis();
-  S.tail<3>() = getAxis()*getPitch()/DART_2PI;
+  S.tail<3>() = getAxis()*getPitch()*0.5_pi;
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * math::expMap(S * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
-  assert(math::verifyTransform(mT));
 }
 
 //==============================================================================

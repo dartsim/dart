@@ -120,7 +120,7 @@ public:
 
   // Documentation inherited
   template <class T>
-  void eraseAspect();
+  void removeAspect();
 
   // Documentation inherited
   template <class T>

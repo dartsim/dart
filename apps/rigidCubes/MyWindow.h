@@ -39,6 +39,7 @@
 #define APPS_CUBES_MYWINDOW_H_
 
 #include "dart/dart.h"
+#include "dart/gui/gui.h"
 
 /// \brief
 class MyWindow : public dart::gui::SimWindow {

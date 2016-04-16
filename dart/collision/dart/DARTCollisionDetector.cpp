@@ -69,16 +69,23 @@ std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
 }
 
 //==============================================================================
-const std::string& DARTCollisionDetector::getTypeStatic()
+std::shared_ptr<CollisionDetector>
+DARTCollisionDetector::cloneWithoutCollisionObjects()
 {
-  static const std::string& type("DART");
-  return type;
+  return DARTCollisionDetector::create();
 }
 
 //==============================================================================
 const std::string& DARTCollisionDetector::getType() const
 {
-  return getTypeStatic();
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& DARTCollisionDetector::getStaticType()
+{
+  static const std::string type = "dart";
+  return type;
 }
 
 //==============================================================================
@@ -254,9 +261,7 @@ bool checkPair(CollisionObject* o1, CollisionObject* o2,
   CollisionResult pairResult;
 
   // Perform narrow-phase detection
-  auto colliding = collide(o1->getShape(), o1->getTransform(),
-                           o2->getShape(), o2->getTransform(),
-                           pairResult);
+  auto colliding = collide(o1, o2, pairResult);
 
   postProcess(o1, o2, option, result, pairResult);
 

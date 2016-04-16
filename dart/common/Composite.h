@@ -117,7 +117,7 @@ public:
 
   /// Remove an Aspect from this Composite.
   template <class T>
-  void eraseAspect();
+  void removeAspect();
 
   /// Remove an Aspect from this Composite, but return its unique_ptr instead
   /// of letting it be deleted. This allows you to safely use move semantics to
@@ -137,7 +137,7 @@ public:
 
   /// Set the states of the aspects in this Composite based on the given
   /// Composite::State. The states of any Aspect types that do not exist
-  /// within this manager will be ignored.
+  /// within this composite will be ignored.
   void setCompositeState(const State& newStates);
 
   /// Get the states of the aspects inside of this Composite
@@ -148,7 +148,7 @@ public:
 
   /// Set the properties of the aspects in this Composite based on the given
   /// Composite::Properties. The properties of any Aspect types that do not
-  /// exist within this manager will be ignored.
+  /// exist within this composite will be ignored.
   void setCompositeProperties(const Properties& newProperties);
 
   /// Get the properties of the aspects inside of this Composite
@@ -168,8 +168,6 @@ public:
 
 protected:
 
-  template <class T> struct type { };
-
   /// Add this Aspect to the Composite. This allows derived Composite types to
   /// call the protected Aspect::setComposite function.
   void addToComposite(Aspect* aspect);
@@ -188,7 +186,7 @@ protected:
   AspectMap mAspectMap;
 
   /// A set containing type information for Aspects which are not allowed to
-  /// leave this manager.
+  /// leave this composite.
   RequiredAspectSet mRequiredAspects;
 };
 
