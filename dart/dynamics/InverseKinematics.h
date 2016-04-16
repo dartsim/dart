@@ -116,13 +116,24 @@ public:
   ///       initial_guess <- random_configuration  // within the bounds
   /// \endcode
   ///
-  /// By default, the max_attempts is 1 and the list of seed is empty, which can
-  /// be specified by acceccing optimizer::GradientDescentSolver calling
-  /// InverseKinematics::getSolver().
+  /// By default, the max_attempts is 1, but this can be changed by calling
+  /// InverseKinematics::getSolver() and casting the SolverPtr to an
+  /// optimizer::GradientDescentSolver (unless you have changed the Solver type)
+  /// and then calling GradientDescentSolver::setMaxAttempts(size_t).
+  ///
+  /// By default, the list of seeds is empty, but they can be added by calling
+  /// InverseKinematics::getProblem() and then using
+  /// Problem::addSeed(Eigen::VectorXd).
   ///
   /// By default, the Skeleton itself will retain the solved joint positions.
   /// If you pass in false for _applySolution, then the joint positions will be
   /// returned to their original positions after the problem is solved.
+  ///
+  /// Calling this function will automatically call Position::setLowerBounds(~)
+  /// and Position::setUpperBounds(~) with the lower/upper position bounds of
+  /// the corresponding Degrees Of Freedom. Problem::setDimension(~) will be
+  /// taken care of automatically, and Problem::setInitialGuess(~) will be
+  /// called with the current positions of the Degrees Of Freedom.
   bool solve(bool _applySolution = true);
 
   /// Same as solve(bool), but the positions vector will be filled with the
