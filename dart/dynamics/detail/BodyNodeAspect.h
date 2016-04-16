@@ -56,15 +56,10 @@ namespace detail {
 
 //==============================================================================
 struct BodyNodeState
-{
-  /// Whether the node is currently in collision with another node.
-  bool mIsColliding;
-
-  /// External spatial force
+{/// External spatial force
   Eigen::Vector6d mFext;
 
-  BodyNodeState(bool isColliding = false,
-                const Eigen::Vector6d& Fext = Eigen::Vector6d::Zero());
+  BodyNodeState(const Eigen::Vector6d& Fext = Eigen::Vector6d::Zero());
 
   virtual ~BodyNodeState() = default;
 

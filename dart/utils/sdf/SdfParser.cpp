@@ -58,10 +58,8 @@
 #include "dart/dynamics/PrismaticJoint.h"
 #include "dart/dynamics/RevoluteJoint.h"
 #include "dart/dynamics/ScrewJoint.h"
-#include "dart/dynamics/TranslationalJoint.h"
 #include "dart/dynamics/BallJoint.h"
 #include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/EulerJoint.h"
 #include "dart/dynamics/UniversalJoint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/simulation/World.h"
@@ -228,21 +226,6 @@ dynamics::UniversalJoint::Properties readUniversalJoint(
 
 dynamics::BallJoint::Properties readBallJoint(
     tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
-
-dart::dynamics::EulerJoint* readEulerJoint(
-        tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
-
-dart::dynamics::TranslationalJoint::Properties readTranslationalJoint(
-        tinyxml2::XMLElement* jointElement,
-    const Eigen::Isometry3d& parentModelFrame,
-    const std::string& name);
-
-dynamics::FreeJoint::Properties readFreeJoint(
-        tinyxml2::XMLElement* jointElement,
     const Eigen::Isometry3d& parentModelFrame,
     const std::string& name);
 
@@ -1184,6 +1167,10 @@ SDFJoint readJoint(tinyxml2::XMLElement* _jointElement,
   Eigen::Isometry3d parentModelFrame =
       (childWorld * childToJoint).inverse() * _skeletonFrame;
 
+  if (type == std::string("fixed"))
+    newJoint.properties =
+        Eigen::make_aligned_shared<dynamics::WeldJoint::Properties>(
+          readWeldJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("prismatic"))
     newJoint.properties =
         Eigen::make_aligned_shared<dynamics::PrismaticJoint::Properties>(
@@ -1464,22 +1451,6 @@ dynamics::BallJoint::Properties readBallJoint(
     const std::string&)
 {
   return dynamics::BallJoint::Properties();
-}
-
-dynamics::TranslationalJoint::Properties readTranslationalJoint(
-    tinyxml2::XMLElement* /*_jointElement*/,
-    const Eigen::Isometry3d&,
-    const std::string&)
-{
-  return dynamics::TranslationalJoint::Properties();
-}
-
-dynamics::FreeJoint::Properties readFreeJoint(
-    tinyxml2::XMLElement* /*_jointElement*/,
-    const Eigen::Isometry3d&,
-    const std::string&)
-{
-  return dynamics::FreeJoint::Properties();
 }
 
 //==============================================================================

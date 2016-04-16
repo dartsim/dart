@@ -44,6 +44,7 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/RevoluteJoint.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/collision/collision.h"
 #include "dart/simulation/World.h"
 
 using namespace dart;
@@ -255,6 +256,68 @@ TEST(World, Cloning)
         EXPECT_TRUE( equals(skel->getAccelerations(), clone->getAccelerations(), 0));
         EXPECT_TRUE( equals(skel->getForces(), clone->getForces(), 0));
       }
+    }
+  }
+}
+
+//==============================================================================
+TEST(World, ValidatingClones)
+{
+  // Create a list of skel files to test with
+  std::vector<std::string> fileList;
+  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+
+  std::vector<dart::simulation::WorldPtr> worlds;
+  for(size_t i=0; i<fileList.size(); ++i)
+  {
+    worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
+
+    // Set non default collision detector
+#if HAVE_BULLET_COLLISION
+    worlds.back()->getConstraintSolver()->setCollisionDetector(
+        collision::BulletCollisionDetector::create());
+#else
+    worlds.back()->getConstraintSolver()->setCollisionDetector(
+        collision::DARTCollisionDetector::create());
+#endif
+  }
+
+  for(size_t i=0; i<worlds.size(); ++i)
+  {
+    dart::simulation::WorldPtr original = worlds[i];
+    std::vector<dart::simulation::WorldPtr> clones;
+    clones.push_back(original);
+    for(size_t j=1; j<5; ++j)
+    {
+      clones.push_back(clones[j-1]->clone());
+
+      auto originalCD
+          = original->getConstraintSolver()->getCollisionDetector();
+      auto cloneCD
+          = clones.back()->getConstraintSolver()->getCollisionDetector();
+
+      std::string originalCDType = originalCD->getType();
+      std::string cloneCDType = cloneCD->getType();
+
+      EXPECT_EQ(originalCDType, cloneCDType);
     }
   }
 }

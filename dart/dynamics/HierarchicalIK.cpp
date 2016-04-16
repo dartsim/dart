@@ -39,6 +39,7 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/EndEffector.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/optimizer/GradientDescentSolver.h"
 
 namespace dart {
 namespace dynamics {

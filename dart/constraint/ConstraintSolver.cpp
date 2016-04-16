@@ -291,7 +291,12 @@ LCPSolver* ConstraintSolver::getLCPSolver() const
 void ConstraintSolver::solve()
 {
   for (size_t i = 0; i < mSkeletons.size(); ++i)
+  {
     mSkeletons[i]->clearConstraintImpulses();
+DART_SUPPRESS_DEPRECATED_BEGIN
+    mSkeletons[i]->clearCollidingBodies();
+DART_SUPPRESS_DEPRECATED_END
+  }
 
   // Update constraints and collect active constraints
   updateConstraints();
@@ -393,6 +398,17 @@ void ConstraintSolver::updateConstraints()
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
   {
     auto& ct = mCollisionResult.getContact(i);
+
+    // Set colliding bodies
+    auto shapeFrame1 = const_cast<dynamics::ShapeFrame*>(
+          ct.collisionObject1->getShapeFrame());
+    auto shapeFrame2 = const_cast<dynamics::ShapeFrame*>(
+          ct.collisionObject2->getShapeFrame());
+
+DART_SUPPRESS_DEPRECATED_BEGIN
+    shapeFrame1->asShapeNode()->getBodyNodePtr()->setColliding(true);
+    shapeFrame2->asShapeNode()->getBodyNodePtr()->setColliding(true);
+DART_SUPPRESS_DEPRECATED_END
 
     if (isSoftContact(ct))
     {

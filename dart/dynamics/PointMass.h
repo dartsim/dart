@@ -39,6 +39,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
+#include "dart/math/Helpers.h"
 #include "dart/dynamics/Entity.h"
 
 namespace dart {
@@ -121,21 +122,21 @@ public:
                double _mass = 0.0005,
                const std::vector<size_t>& _connections = std::vector<size_t>(),
                const Eigen::Vector3d& _positionLowerLimits =
-                                      Eigen::Vector3d::Constant(-DART_DBL_INF),
+                                      Eigen::Vector3d::Constant(-math::constantsd::inf()),
                const Eigen::Vector3d& _positionUpperLimits =
-                                      Eigen::Vector3d::Constant( DART_DBL_INF),
+                                      Eigen::Vector3d::Constant( math::constantsd::inf()),
                const Eigen::Vector3d& _velocityLowerLimits =
-                                      Eigen::Vector3d::Constant(-DART_DBL_INF),
+                                      Eigen::Vector3d::Constant(-math::constantsd::inf()),
                const Eigen::Vector3d& _velocityUpperLimits =
-                                      Eigen::Vector3d::Constant( DART_DBL_INF),
+                                      Eigen::Vector3d::Constant( math::constantsd::inf()),
                const Eigen::Vector3d& _accelerationLowerLimits =
-                                      Eigen::Vector3d::Constant(-DART_DBL_INF),
+                                      Eigen::Vector3d::Constant(-math::constantsd::inf()),
                const Eigen::Vector3d& _accelerationUpperLimits =
-                                      Eigen::Vector3d::Constant( DART_DBL_INF),
+                                      Eigen::Vector3d::Constant( math::constantsd::inf()),
                const Eigen::Vector3d& _forceLowerLimits =
-                                      Eigen::Vector3d::Constant(-DART_DBL_INF),
+                                      Eigen::Vector3d::Constant(-math::constantsd::inf()),
                const Eigen::Vector3d& _forceUpperLimits =
-                                      Eigen::Vector3d::Constant( DART_DBL_INF));
+                                      Eigen::Vector3d::Constant( math::constantsd::inf()));
 
     void setRestingPosition(const Eigen::Vector3d& _x);
 
@@ -195,11 +196,13 @@ public:
   const PointMass* getConnectedPointMass(size_t _idx) const;
 
 
-  /// Set whether this point mass is colliding with others.
+  /// Set whether this point mass is colliding with other objects. Note that
+  /// this status is set by the constraint solver during dynamics simulation but
+  /// not by collision detector.
   /// \param[in] True if this point mass is colliding.
   void setColliding(bool _isColliding);
 
-  /// Get whether this point mass is colliding with others.
+  /// Return whether this point mass is set to be colliding with other objects.
   /// \return True if this point mass is colliding.
   bool isColliding();
 

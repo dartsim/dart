@@ -212,11 +212,8 @@ AllNodeProperties getAllNodeProperties(const BodyNode* bodyNode)
 }
 
 //==============================================================================
-BodyNodeState::BodyNodeState(
-    bool isColliding,
-    const Eigen::Vector6d& Fext)
-  : mIsColliding(isColliding),
-    mFext(Fext)
+BodyNodeState::BodyNodeState(const Eigen::Vector6d& Fext)
+  : mFext(Fext)
 {
   // Do nothing
 }
@@ -254,6 +251,18 @@ BodyNode::~BodyNode()
   }
 
   delete mParentJoint;
+}
+
+//==============================================================================
+SoftBodyNode* BodyNode::asSoftBodyNode()
+{
+  return nullptr;
+}
+
+//==============================================================================
+const SoftBodyNode* BodyNode::asSoftBodyNode() const
+{
+  return nullptr;
 }
 
 //==============================================================================
@@ -305,7 +314,6 @@ void BodyNode::setProperties(const AspectProperties& _properties)
 //==============================================================================
 void BodyNode::setAspectState(const AspectState& state)
 {
-  setColliding(state.mIsColliding);
   if(mAspectState.mFext != state.mFext)
   {
     mAspectState.mFext = state.mFext;
@@ -1171,13 +1179,13 @@ const Eigen::Vector6d& BodyNode::getBodyVelocityChange() const
 //==============================================================================
 void BodyNode::setColliding(bool _isColliding)
 {
-  mAspectState.mIsColliding = _isColliding;
+  mIsColliding = _isColliding;
 }
 
 //==============================================================================
 bool BodyNode::isColliding()
 {
-  return mAspectState.mIsColliding;
+  return mIsColliding;
 }
 
 //==============================================================================
@@ -1258,6 +1266,7 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     Frame(Frame::World()),
     TemplatedJacobianNode<BodyNode>(this),
     mID(BodyNode::msBodyNodeCount++),
+    mIsColliding(false),
     mParentJoint(_parentJoint),
     mParentBodyNode(nullptr),
     mPartialAcceleration(Eigen::Vector6d::Zero()),

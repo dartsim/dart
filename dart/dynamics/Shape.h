@@ -46,7 +46,6 @@
 #include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
 #include "dart/dynamics/SmartPointer.h"
-#include "dart/common/Deprecated.h"
 
 namespace dart {
 namespace dynamics {

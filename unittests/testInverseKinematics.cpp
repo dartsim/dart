@@ -67,7 +67,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
   shape = std::shared_ptr<Shape>(new BoxShape(dim2));
 
   std::pair<Joint*, BodyNode*> pair2 = add1DofJoint(
-        robot, parent_node, node, "joint2", 0.0, -DART_PI, DART_PI, type2);
+        robot, parent_node, node, "joint2", 0.0, -constantsd::pi(), constantsd::pi(), type2);
   pair2.second->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
         shape);
 
@@ -171,7 +171,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
 
 //    // Get desiredT2 by rotating the revolute joint with random angle out of
 //    // the joint limit range
-//    joint2->setPosition(0, math::random(DART_RADIAN * 15.5, DART_PI));
+//    joint2->setPosition(0, math::random(DART_RADIAN * 15.5, constantsd::pi()));
 //    robot->setConfigs(robot->getPositions(), true, false, false);
 //    Isometry3d desiredT2 = body2->getWorldTransform();
 

@@ -40,6 +40,7 @@
 #include "dart/common/RequiresAspect.h"
 
 #include "dart/common/AspectWithVersion.h"
+#include "dart/math/Helpers.h"
 #include "dart/dynamics/Joint.h"
 
 namespace dart {
@@ -127,14 +128,14 @@ struct SingleDofJointUniqueProperties
   std::string mDofName;
 
   /// Constructor
-  SingleDofJointUniqueProperties(double _positionLowerLimit = -DART_DBL_INF,
-                   double _positionUpperLimit =  DART_DBL_INF,
-                   double _velocityLowerLimit = -DART_DBL_INF,
-                   double _velocityUpperLimit =  DART_DBL_INF,
-                   double _accelerationLowerLimit = -DART_DBL_INF,
-                   double _accelerationUpperLimit =  DART_DBL_INF,
-                   double _forceLowerLimit = -DART_DBL_INF,
-                   double _forceUpperLimit =  DART_DBL_INF,
+  SingleDofJointUniqueProperties(double _positionLowerLimit = -math::constantsd::inf(),
+                   double _positionUpperLimit =  math::constantsd::inf(),
+                   double _velocityLowerLimit = -math::constantsd::inf(),
+                   double _velocityUpperLimit =  math::constantsd::inf(),
+                   double _accelerationLowerLimit = -math::constantsd::inf(),
+                   double _accelerationUpperLimit =  math::constantsd::inf(),
+                   double _forceLowerLimit = -math::constantsd::inf(),
+                   double _forceUpperLimit =  math::constantsd::inf(),
                    double _springStiffness = 0.0,
                    double _restPosition = 0.0,
                    double _dampingCoefficient = 0.0,

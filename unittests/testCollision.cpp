@@ -802,6 +802,30 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get(), option, result));
   EXPECT_TRUE(bodyNodeGroup1->collide(bodyNodeGroup2.get(), option, result));
   EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get(), option, result));
+
+  // Regression test for #666
+  auto world = common::make_unique<World>();
+  world->getConstraintSolver()->setCollisionDetector(cd);
+  world->addSkeleton(boxSkeleton1);
+  world->addSkeleton(boxSkeleton2);
+DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_FALSE(boxBodyNode1->isColliding());
+  EXPECT_FALSE(boxBodyNode2->isColliding());
+DART_SUPPRESS_DEPRECATED_END
+
+  const collision::CollisionResult& result1 = world->getLastCollisionResult();
+  EXPECT_FALSE(result1.inCollision(boxBodyNode1));
+  EXPECT_FALSE(result1.inCollision(boxBodyNode2));
+
+  world->step();
+DART_SUPPRESS_DEPRECATED_BEGIN
+  EXPECT_TRUE(boxBodyNode1->isColliding());
+  EXPECT_TRUE(boxBodyNode2->isColliding());
+DART_SUPPRESS_DEPRECATED_END
+
+  const collision::CollisionResult& result2 = world->getLastCollisionResult();
+  EXPECT_TRUE(result2.inCollision(boxBodyNode1));
+  EXPECT_TRUE(result2.inCollision(boxBodyNode2));
 }
 
 //==============================================================================
@@ -891,12 +915,12 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
   {
     const double time = world->getTime();
 
-    joint1->setCommand(0, -0.5 * DART_PI * std::cos(time));
-    joint2->setCommand(0, -0.5 * DART_PI * std::cos(time));
-    joint3->setCommand(0, -0.5 * DART_PI * std::cos(time));
-    joint4->setCommand(0, -0.5 * DART_PI * std::cos(time));
-    joint5->setCommand(0, -0.5 * DART_PI * std::sin(time));
-    joint6->setCommand(0, -0.5 * DART_PI * std::sin(time));  // ignored
+    joint1->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));
+    joint2->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));
+    joint3->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));
+    joint4->setCommand(0, -0.5 * constantsd::pi() * std::cos(time));
+    joint5->setCommand(0, -0.5 * constantsd::pi() * std::sin(time));
+    joint6->setCommand(0, -0.5 * constantsd::pi() * std::sin(time));  // ignored
 
     world->step(false);
 

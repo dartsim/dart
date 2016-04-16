@@ -47,7 +47,6 @@
 #include "dart/common/Subject.h"
 #include "dart/math/Geometry.h"
 #include "dart/optimizer/Solver.h"
-#include "dart/optimizer/GradientDescentSolver.h"
 #include "dart/optimizer/Problem.h"
 #include "dart/optimizer/Function.h"
 #include "dart/dynamics/SmartPointer.h"
@@ -67,7 +66,9 @@ const double DefaultIKLinearWeight = 1.0;
 /// The InverseKinematics class provides a convenient way of setting up an IK
 /// optimization problem. It generates constraint functions based on the
 /// specified InverseKinematics::ErrorMethod and
-/// InverseKinematics::GradientMethod.
+/// InverseKinematics::GradientMethod. The optimization problem is then solved
+/// by any classes derived from optimizer::Solver class. The default solver is
+/// optimizer::GradientDescentSolver.
 ///
 /// It also provides a convenient way of specifying a configuration space
 /// objective and a null space objective. It is also possible to fully customize
@@ -91,10 +92,48 @@ public:
   /// Virtual destructor
   virtual ~InverseKinematics();
 
-  /// Solve the IK Problem. By default, the Skeleton itself will retain the
-  /// solved joint positions. If you pass in false for _applySolution, then the
-  /// joint positions will be returned to their original positions after the
-  /// problem is solved.
+  /// Solve the IK Problem.
+  ///
+  /// The initial guess for the IK optimization problem is the current joint
+  /// positions of the target system. If the iterative solver fails to find a
+  /// successive solution, it attempts more to solve the problem with other seed
+  /// configurations or random configurations if enough seed is not provided.
+  ///
+  /// Here is the pseudocode as described above:
+  ///
+  /// \code
+  /// attempts <- 0
+  /// initial_guess <- current_joint_positions
+  /// while attempts <= max_attempts:
+  ///   result <- solve(initial_guess)
+  ///   if result = success:
+  ///     return
+  ///   else:
+  ///     attempts <- attempts + 1
+  ///     if attempts <= num_seed:
+  ///       initial_guess <- seed[attempts - 1]
+  ///     else:
+  ///       initial_guess <- random_configuration  // within the bounds
+  /// \endcode
+  ///
+  /// By default, the max_attempts is 1, but this can be changed by calling
+  /// InverseKinematics::getSolver() and casting the SolverPtr to an
+  /// optimizer::GradientDescentSolver (unless you have changed the Solver type)
+  /// and then calling GradientDescentSolver::setMaxAttempts(size_t).
+  ///
+  /// By default, the list of seeds is empty, but they can be added by calling
+  /// InverseKinematics::getProblem() and then using
+  /// Problem::addSeed(Eigen::VectorXd).
+  ///
+  /// By default, the Skeleton itself will retain the solved joint positions.
+  /// If you pass in false for _applySolution, then the joint positions will be
+  /// returned to their original positions after the problem is solved.
+  ///
+  /// Calling this function will automatically call Position::setLowerBounds(~)
+  /// and Position::setUpperBounds(~) with the lower/upper position bounds of
+  /// the corresponding Degrees Of Freedom. Problem::setDimension(~) will be
+  /// taken care of automatically, and Problem::setInitialGuess(~) will be
+  /// called with the current positions of the Degrees Of Freedom.
   bool solve(bool _applySolution = true);
 
   /// Same as solve(bool), but the positions vector will be filled with the

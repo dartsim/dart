@@ -47,6 +47,9 @@ namespace collision {
 /// Contact information
 struct Contact
 {
+  /// Default constructor
+  Contact();
+
   /// Contact point w.r.t. the world frame
   Eigen::Vector3d point;
 

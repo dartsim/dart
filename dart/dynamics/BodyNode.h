@@ -105,6 +105,14 @@ public:
   /// Destructor
   virtual ~BodyNode();
 
+  /// Convert 'this' into a SoftBodyNode pointer if this BodyNode is a
+  /// SoftBodyNode, otherwise return nullptr
+  virtual SoftBodyNode* asSoftBodyNode();
+
+  /// Convert 'const this' into a SoftBodyNode pointer if this BodyNode is a
+  /// SoftBodyNode, otherwise return nullptr
+  virtual const SoftBodyNode* asSoftBodyNode() const;
+
   /// Set the Node::State of all Nodes attached to this BodyNode
   void setAllNodeStates(const AllNodeStates& states);
 
@@ -706,13 +714,16 @@ public:
   /// Return the velocity change due to the constraint impulse
   const Eigen::Vector6d& getBodyVelocityChange() const;
 
-  /// Set whether this body node is colliding with others. This is called by
-  /// collision detector.
+  /// Set whether this body node is colliding with other objects. Note that
+  /// this status is set by the constraint solver during dynamics simulation but
+  /// not by collision detector.
   /// \param[in] True if this body node is colliding.
+  DEPRECATED(6.0)
   void setColliding(bool _isColliding);
 
-  /// Return whether this body node is colliding with others
+  /// Return whether this body node is set to be colliding with other objects.
   /// \return True if this body node is colliding.
+  DEPRECATED(6.0)
   bool isColliding();
 
   /// Add applying linear Cartesian forces to this node
@@ -1029,6 +1040,10 @@ protected:
 
   /// Counts the number of nodes globally.
   static size_t msBodyNodeCount;
+
+  /// Whether the node is currently in collision with another node.
+  /// \deprecated DEPRECATED(6.0) See #670 for more detail.
+  bool mIsColliding;
 
   //--------------------------------------------------------------------------
   // Structural Properties

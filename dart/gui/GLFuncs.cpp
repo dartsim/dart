@@ -42,8 +42,8 @@
 
 #include <Eigen/Eigen>
 
+#include "dart/gui/LoadOpengl.h"
 #include "dart/gui/LoadGlut.h"
-#include "dart/renderer/LoadOpengl.h"
 
 namespace dart {
 namespace gui {
