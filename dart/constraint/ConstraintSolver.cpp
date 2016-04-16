@@ -293,7 +293,9 @@ void ConstraintSolver::solve()
   for (size_t i = 0; i < mSkeletons.size(); ++i)
   {
     mSkeletons[i]->clearConstraintImpulses();
+DART_SUPPRESS_DEPRECATED_BEGIN
     mSkeletons[i]->clearCollidingBodies();
+DART_SUPPRESS_DEPRECATED_END
   }
 
   // Update constraints and collect active constraints
@@ -403,8 +405,10 @@ void ConstraintSolver::updateConstraints()
     auto shapeFrame2 = const_cast<dynamics::ShapeFrame*>(
           ct.collisionObject2->getShapeFrame());
 
+DART_SUPPRESS_DEPRECATED_BEGIN
     shapeFrame1->asShapeNode()->getBodyNodePtr()->setColliding(true);
     shapeFrame2->asShapeNode()->getBodyNodePtr()->setColliding(true);
+DART_SUPPRESS_DEPRECATED_END
 
     if (isSoftContact(ct))
     {

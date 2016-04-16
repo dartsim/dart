@@ -35,6 +35,8 @@
  */
 
 #include "dart/dynamics/ReferentialSkeleton.h"
+
+#include "dart/common/Deprecated.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/Joint.h"
@@ -792,7 +794,9 @@ void ReferentialSkeleton::clearCollidingBodies()
   for (auto i = 0u; i < getNumBodyNodes(); ++i)
   {
     auto bodyNode = getBodyNode(i);
+DART_SUPPRESS_DEPRECATED_BEGIN
     bodyNode->setColliding(false);
+DART_SUPPRESS_DEPRECATED_END
 
     auto softBodyNode = bodyNode->asSoftBodyNode();
     if (softBodyNode)
