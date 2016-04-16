@@ -786,6 +786,8 @@ void ContactConstraint::updateFirstFrictionalDirection()
 Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
     const Eigen::Vector3d& _n)
 {
+  using namespace math::suffixes;
+
   // TODO(JS): Use mNumFrictionConeBases
   // Check if the number of bases is even number.
 //  bool isEvenNumBases = mNumFrictionConeBases % 2 ? true : false;
@@ -809,7 +811,7 @@ Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
   // Each basis and its opposite belong in the matrix, so we iterate half as
   // many times
   T.col(0) = tangent;
-  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(math::constantsd::half_pi(), _n)) * tangent;
+  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(0.5_pi, _n)) * tangent;
   return T;
 }
 

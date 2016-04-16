@@ -2441,6 +2441,8 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
     double _edgeStiffness,
     double _dampingCoeff)
 {
+  using namespace dart::math::suffixes;
+
   SoftBodyNode::UniqueProperties properties(_vertexStiffness,
                                             _edgeStiffness,
                                             _dampingCoeff);
@@ -2460,8 +2462,8 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
         PointMass::Properties(Eigen::Vector3d(0.0, 0.0, 0.5 * _size(2)), mass));
 
   // middle
-  float drho = (math::constantsd::pi() / _nStacks);
-  float dtheta = (math::constantsd::two_pi() / _nSlices);
+  float drho = 1_pi / _nStacks;
+  float dtheta = 2_pi / _nSlices;
   for (size_t i = 1; i < _nStacks; i++)
   {
     float rho = i * drho;
@@ -2622,6 +2624,8 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
     double _edgeStiffness,
     double _dampingCoeff)
 {
+  using namespace dart::math::suffixes;
+
   SoftBodyNode::UniqueProperties properties(_vertexStiffness,
                                             _edgeStiffness,
                                             _dampingCoeff);
@@ -2639,7 +2643,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
 
   // Resting positions for each point mass
   float dradius = _radius / static_cast<float>(_nRings);
-  float dtheta = math::constantsd::two_pi() / static_cast<float>(_nSlices);
+  float dtheta = 2_pi / static_cast<float>(_nSlices);
 
   // -- top
   properties.addPointMass(PointMass::Properties(
