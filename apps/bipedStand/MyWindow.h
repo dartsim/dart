@@ -43,6 +43,7 @@
 #include <Eigen/Dense>
 
 #include "dart/dart.h"
+#include "dart/gui/gui.h"
 
 #include "apps/bipedStand/Controller.h"
 

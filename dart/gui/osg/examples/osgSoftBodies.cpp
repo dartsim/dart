@@ -35,11 +35,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.h"
-
-#include "dart/gui/osg/osg.h"
-
 #include <osgViewer/Viewer>
+
+#include <dart/dart.h>
+#include <dart/gui/osg/osg.h>
+#include <dart/utils/utils.h>
 
 int main()
 {

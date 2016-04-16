@@ -63,14 +63,13 @@ foreach(test ${tests})
   get_filename_component(base ${test} NAME_WE)
   list(APPEND all_tests ${base})
 
-  link_directories(${DARTExt_LIBRARY_DIRS})
   add_executable(${base} ${test})
   dart_add_unittest(${base})
 
   if(MSVC)
-    target_link_libraries(${base} dart optimized gtest debug gtestd)
+    target_link_libraries(${base} dart dart-utils dart-utils-urdf optimized gtest debug gtestd)
   else()
-    target_link_libraries(${base} dart gtest)
+    target_link_libraries(${base} dart dart-utils dart-utils-urdf gtest)
   endif()
 
   set_target_properties(${base} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests")

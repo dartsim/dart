@@ -47,8 +47,8 @@
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/LineSegmentShape.h"
-#include "dart/renderer/LoadOpengl.h"
-#include "dart/renderer/OpenGLRenderInterface.h"
+#include "dart/gui/LoadOpengl.h"
+#include "dart/gui/OpenGLRenderInterface.h"
 
 // Code taken from glut/lib/glut_shapes.c
 static GLUquadricObj *quadObj;
@@ -65,7 +65,7 @@ static void initQuadObj(void)
 //glut/lib/glut_shapes.c
 
 namespace dart {
-namespace renderer {
+namespace gui {
 
 void OpenGLRenderInterface::initialize() {
     glMatrixMode(GL_MODELVIEW);
@@ -539,5 +539,5 @@ void OpenGLRenderInterface::saveToImage(const char* /*_filename*/, DecoBufferTyp
 
 }
 
-} // namespace renderer
+} // namespace gui
 } // namespace dart

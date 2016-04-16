@@ -34,14 +34,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_RENDERER_OPENGLRENDERINTERFACE_H
-#define DART_RENDERER_OPENGLRENDERINTERFACE_H
+#ifndef DART_GUI_OPENGLRENDERINTERFACE_H_
+#define DART_GUI_OPENGLRENDERINTERFACE_H_
 
 #include <list>
 #include <vector>
 #include "dart/common/Deprecated.h"
-#include "dart/renderer/RenderInterface.h"
-#include "dart/renderer/LoadOpengl.h"
+#include "dart/gui/RenderInterface.h"
+#include "dart/gui/LoadOpengl.h"
 
 namespace dart {
 
@@ -52,7 +52,7 @@ class Shape;
 class ShapeFrame;
 }
 
-namespace renderer {
+namespace gui {
 class OpenGLRenderInterface : public RenderInterface {
 
 public:
@@ -115,7 +115,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-} // namespace renderer
+} // namespace gui
 } // namespace dart
 
-#endif // #ifndef DART_RENDERER_OPENGLRENDERINTERFACE_H
+#endif // #ifndef DART_GUI_OPENGLRENDERINTERFACE_H_

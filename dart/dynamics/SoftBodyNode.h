@@ -121,6 +121,12 @@ public:
   /// \brief
   virtual ~SoftBodyNode();
 
+  // Documentation inherited
+  SoftBodyNode* asSoftBodyNode() override;
+
+  // Documentation inherited
+  const SoftBodyNode* asSoftBodyNode() const override;
+
   /// Set the Properties of this SoftBodyNode
   void setProperties(const Properties& _properties);
 

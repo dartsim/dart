@@ -181,6 +181,18 @@ BodyNode::~BodyNode()
 }
 
 //==============================================================================
+SoftBodyNode* BodyNode::asSoftBodyNode()
+{
+  return nullptr;
+}
+
+//==============================================================================
+const SoftBodyNode* BodyNode::asSoftBodyNode() const
+{
+  return nullptr;
+}
+
+//==============================================================================
 void BodyNode::setProperties(const ExtendedProperties& _properties)
 {
   setProperties(static_cast<const Properties&>(_properties));

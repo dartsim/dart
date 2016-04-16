@@ -36,7 +36,7 @@
 
 #include "dart/gui/Trackball.h"
 
-#include "dart/renderer/LoadOpengl.h"
+#include "dart/gui/LoadOpengl.h"
 
 namespace dart {
 namespace gui {

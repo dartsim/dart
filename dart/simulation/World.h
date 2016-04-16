@@ -70,6 +70,10 @@ namespace constraint {
 class ConstraintSolver;
 }  // namespace constraint
 
+namespace collision {
+class CollisionResult;
+} // namespace collision
+
 namespace simulation {
 
 /// class World
@@ -173,6 +177,8 @@ public:
 
   /// Return whether there is any collision between bodies
   bool checkCollision(bool _checkAllCollisions = false);
+
+  const collision::CollisionResult& getLastCollisionResult() const;
 
   //--------------------------------------------------------------------------
   // Simulation

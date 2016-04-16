@@ -38,6 +38,7 @@
 #define APPS_OPERATIONALSPACECONTROL_MYWINDOW_H_
 
 #include "dart/dart.h"
+#include "dart/gui/gui.h"
 
 #include "Controller.h"
 

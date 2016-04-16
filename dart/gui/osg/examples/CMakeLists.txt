@@ -5,7 +5,7 @@ foreach(example ${dart_gui_osg_examples_src})
   get_filename_component(example_base ${example} NAME_WE)
 
   add_executable(${example_base} ${example})
-  target_link_libraries(${example_base} dart)
+  target_link_libraries(${example_base} dart dart-gui-osg dart-utils-urdf)
 
   dart_add_example(${example_base})
 endforeach(example)

@@ -1,4 +1,4 @@
-usr/include/dart/dart-core.h
+usr/include/dart/dart.h
 usr/include/dart/config.h
 usr/include/dart/collision/*
 usr/include/dart/common/*
@@ -7,10 +7,9 @@ usr/include/dart/dynamics/*
 usr/include/dart/integration/*
 usr/include/dart/lcpsolver/*
 usr/include/dart/math/*
-usr/include/dart/optimizer/*
-usr/include/dart/renderer/*
+usr/include/dart/optimizer/*.*
 usr/include/dart/simulation/*
-usr/share/dartcore/DARTCoreConfig.cmake
-usr/share/dartcore/DARTCoreConfigVersion.cmake
-usr/share/dartcore/DARTCoreTargets*.cmake
-usr/lib/libdart-core.so
+usr/share/dart/DARTConfig.cmake
+usr/share/dart/DARTConfigVersion.cmake
+usr/share/dart/DARTTargets.cmake
+usr/lib/libdart.so

@@ -34,8 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart-core.h"
-#include "dart/gui/gui.h"
+#include "dart/config.h"
+#include "dart/common/common.h"
+#include "dart/math/math.h"
+#include "dart/integration/integration.h"
+#include "dart/collision/collision.h"
+#include "dart/lcpsolver/lcpsolver.h"
+#include "dart/constraint/constraint.h"
 #include "dart/optimizer/optimizer.h"
-#include "dart/planning/planning.h"
-#include "dart/utils/utils.h"
+#include "dart/dynamics/dynamics.h"
+#include "dart/simulation/simulation.h"

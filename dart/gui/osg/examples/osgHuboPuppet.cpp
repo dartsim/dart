@@ -35,6 +35,8 @@
  */
 
 #include <dart/dart.h>
+#include <dart/gui/osg/osg.h>
+#include <dart/utils/utils.h>
 
 using namespace dart::dynamics;
 using namespace dart::simulation;

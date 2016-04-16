@@ -7,10 +7,6 @@ file(GLOB detail_hdrs "detail/*.h")
 set(dart_common_hdrs "${hdrs};${detail_hdrs}" PARENT_SCOPE)
 set(dart_common_srcs "${srcs};${detail_srcs}" PARENT_SCOPE)
 
-# Library
-#dart_add_library(dart_common ${srcs} ${hdrs})
-#target_link_libraries(dart_common ${DART_CORE_DEPENDENCIES})
-
 # Generate header for this namespace
 dart_get_filename_components(header_names "common headers" ${hdrs})
 dart_generate_include_header_list(
@@ -36,7 +32,3 @@ install(
   DESTINATION include/dart/common/detail
   COMPONENT headers
 )
-
-#install(TARGETS dart_common EXPORT DARTCoreTargets DESTINATION lib)
-#install(TARGETS dart_common EXPORT DARTTargets DESTINATION lib)
-

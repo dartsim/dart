@@ -53,7 +53,7 @@
 #include "dart/common/Console.h"
 #include "dart/gui/LoadGlut.h"
 #include "dart/gui/GLFuncs.h"
-#include "dart/renderer/OpenGLRenderInterface.h"
+#include "dart/gui/OpenGLRenderInterface.h"
 
 namespace dart {
 namespace gui {
@@ -101,7 +101,7 @@ void GlutWindow::initWindow(int _w, int _h, const char* _name) {
   glutPassiveMotionFunc(mouseMove);
 
   delete mRI;
-  mRI = new renderer::OpenGLRenderInterface();
+  mRI = new gui::OpenGLRenderInterface();
   mRI->initialize();
   // glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
   // glutTimerFunc(mDisplayTimeout, runTimer, 0);

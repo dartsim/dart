@@ -109,6 +109,7 @@ SoftContactConstraint::SoftContactConstraint(
     {
       mPointMass1 = selectCollidingPointMass(mSoftBodyNode1, contact.point,
                                              contact.triID1);
+      mPointMass1->setColliding(true);
     }
   }
   if (mSoftBodyNode2)
@@ -118,6 +119,7 @@ SoftContactConstraint::SoftContactConstraint(
     {
       mPointMass2 = selectCollidingPointMass(mSoftBodyNode2, contact.point,
                                              contact.triID2);
+      mPointMass2->setColliding(true);
     }
   }
 

@@ -113,7 +113,9 @@ bool BodyContactCondition::isSatisfied()
   }
 
   // TODO(JS): Need more elegant condition check method
+DART_SUPPRESS_DEPRECATED_BEGIN
   if (mBodyNode->isColliding() > 0)
+DART_SUPPRESS_DEPRECATED_END
   {
 //    dtmsg << "BodyNode [" << mBodyNode->getName() << "] is in contact."
 //          << std::endl;
