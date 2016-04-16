@@ -1129,7 +1129,7 @@ TEST(MATH, ROTATION) {
   Eigen::Quaterniond q = expToQuat(expmap);
   Eigen::Vector3d expmap2 = quatToExp(q);
 
-  EXPECT_NEAR((expmap - expmap2).norm(), 0.0, DART_EPSILON)
+  EXPECT_NEAR((expmap - expmap2).norm(), 0.0, MATH_EPS)
     << "Orig: " << expmap << " Reconstructed: " << expmap2;
 
   // Test conversion between matrix and euler
@@ -1137,7 +1137,7 @@ TEST(MATH, ROTATION) {
   Eigen::Vector3d e = matrixToEulerXYZ(m);
   Eigen::Matrix3d m2 = eulerXYZToMatrix(e);
 
-  EXPECT_NEAR((m - m2).norm(), 0.0, DART_EPSILON)
+  EXPECT_NEAR((m - m2).norm(), 0.0, MATH_EPS)
     << "Orig: " << m << " Reconstructed: " << m2;
 }
 
@@ -1157,7 +1157,7 @@ TEST(MATH, UTILS) {
   Eigen::Vector3d pt(1.0, 0.5, 1.0);
   Eigen::Vector3d result = M * pt;
   Eigen::Vector3d expected(4.0, 2.5, 2.0);
-  EXPECT_NEAR( (result - expected).norm(), 0.0, DART_EPSILON)
+  EXPECT_NEAR( (result - expected).norm(), 0.0, MATH_EPS)
     << "result = " << result << " expected = " << expected;
 }
 
@@ -1302,6 +1302,6 @@ TEST(MATH, PerformanceComparisonOfAdTJac)
 //==============================================================================
 int main(int argc, char* argv[])
 {
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

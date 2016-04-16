@@ -37,6 +37,7 @@
 #ifndef DART_DYNAMICS_DETAIL_MULTIDOFJOINTPROPERTIES_H_
 #define DART_DYNAMICS_DETAIL_MULTIDOFJOINTPROPERTIES_H_
 
+#include "dart/math/Helpers.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/common/AspectWithVersion.h"
 
@@ -143,14 +144,14 @@ struct MultiDofJointUniqueProperties
 
   /// Default constructor
   MultiDofJointUniqueProperties(
-      const Vector& _positionLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& _positionUpperLimits = Vector::Constant( DART_DBL_INF),
-      const Vector& _velocityLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& _velocityUpperLimits = Vector::Constant( DART_DBL_INF),
-      const Vector& _accelerationLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& _accelerationUpperLimits = Vector::Constant( DART_DBL_INF),
-      const Vector& _forceLowerLimits = Vector::Constant(-DART_DBL_INF),
-      const Vector& _forceUpperLimits = Vector::Constant( DART_DBL_INF),
+      const Vector& _positionLowerLimits = Vector::Constant(-math::constantsd::inf()),
+      const Vector& _positionUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& _velocityLowerLimits = Vector::Constant(-math::constantsd::inf()),
+      const Vector& _velocityUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& _accelerationLowerLimits = Vector::Constant(-math::constantsd::inf()),
+      const Vector& _accelerationUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& _forceLowerLimits = Vector::Constant(-math::constantsd::inf()),
+      const Vector& _forceUpperLimits = Vector::Constant( math::constantsd::inf()),
       const Vector& _springStiffness = Vector::Constant(0.0),
       const Vector& _restPosition = Vector::Constant(0.0),
       const Vector& _dampingCoefficient = Vector::Constant(0.0),

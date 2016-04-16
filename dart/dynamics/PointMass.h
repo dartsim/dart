@@ -39,6 +39,7 @@
 
 #include <vector>
 #include <Eigen/Dense>
+#include "dart/math/Helpers.h"
 #include "dart/dynamics/Entity.h"
 
 namespace dart {
@@ -121,21 +122,21 @@ public:
                double _mass = 0.0005,
                const std::vector<size_t>& _connections = std::vector<size_t>(),
                const Eigen::Vector3d& _positionLowerLimits =
-                                      Eigen::Vector3d::Constant(-DART_DBL_INF),
+                                      Eigen::Vector3d::Constant(-math::constantsd::inf()),
                const Eigen::Vector3d& _positionUpperLimits =
-                                      Eigen::Vector3d::Constant( DART_DBL_INF),
+                                      Eigen::Vector3d::Constant( math::constantsd::inf()),
                const Eigen::Vector3d& _velocityLowerLimits =
-                                      Eigen::Vector3d::Constant(-DART_DBL_INF),
+                                      Eigen::Vector3d::Constant(-math::constantsd::inf()),
                const Eigen::Vector3d& _velocityUpperLimits =
-                                      Eigen::Vector3d::Constant( DART_DBL_INF),
+                                      Eigen::Vector3d::Constant( math::constantsd::inf()),
                const Eigen::Vector3d& _accelerationLowerLimits =
-                                      Eigen::Vector3d::Constant(-DART_DBL_INF),
+                                      Eigen::Vector3d::Constant(-math::constantsd::inf()),
                const Eigen::Vector3d& _accelerationUpperLimits =
-                                      Eigen::Vector3d::Constant( DART_DBL_INF),
+                                      Eigen::Vector3d::Constant( math::constantsd::inf()),
                const Eigen::Vector3d& _forceLowerLimits =
-                                      Eigen::Vector3d::Constant(-DART_DBL_INF),
+                                      Eigen::Vector3d::Constant(-math::constantsd::inf()),
                const Eigen::Vector3d& _forceUpperLimits =
-                                      Eigen::Vector3d::Constant( DART_DBL_INF));
+                                      Eigen::Vector3d::Constant( math::constantsd::inf()));
 
     void setRestingPosition(const Eigen::Vector3d& _x);
 

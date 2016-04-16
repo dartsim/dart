@@ -898,7 +898,7 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
 
     // Don't add a shape for a body doesn't have parent or a body is too close
     // to the parent.
-    if (!parent || tf.translation().norm() < DART_EPSILON)
+    if (!parent || tf.translation().norm() < 1e-6)
       continue;
 
     // If a body already has enough shapes, do NOT automatically generate a new

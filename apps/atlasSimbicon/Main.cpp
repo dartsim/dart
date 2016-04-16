@@ -45,6 +45,7 @@
 using namespace std;
 using namespace Eigen;
 using namespace dart::common;
+using namespace dart::math;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart::utils;
@@ -67,7 +68,7 @@ int main(int argc, char* argv[])
 
   // Set initial configuration for Atlas robot
   VectorXd q = atlas->getPositions();
-  q[0] = -0.5 * DART_PI;
+  q[0] = -0.5 * constantsd::pi();
   atlas->setPositions(q);
 
   // Set gravity of the world

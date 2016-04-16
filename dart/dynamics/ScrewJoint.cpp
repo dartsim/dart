@@ -178,23 +178,26 @@ Joint* ScrewJoint::clone() const
 //==============================================================================
 void ScrewJoint::updateLocalTransform() const
 {
+  using namespace dart::math::suffixes;
+
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = getAxis();
-  S.tail<3>() = getAxis()*getPitch()/DART_2PI;
+  S.tail<3>() = getAxis()*getPitch()*0.5_pi;
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * math::expMap(S * getPositionStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
-  assert(math::verifyTransform(mT));
 }
 
 //==============================================================================
 void ScrewJoint::updateLocalJacobian(bool _mandatory) const
 {
+  using namespace dart::math::suffixes;
+
   if(_mandatory)
   {
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
     S.head<3>() = getAxis();
-    S.tail<3>() = getAxis()*getPitch()/DART_2PI;
+    S.tail<3>() = getAxis()*getPitch()*0.5_pi;
     mJacobian = math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint, S);
     assert(!math::isNan(mJacobian));
   }
