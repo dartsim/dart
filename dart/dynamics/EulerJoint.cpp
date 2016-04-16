@@ -39,7 +39,6 @@
 #include <string>
 
 #include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 
@@ -210,7 +209,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
       J2 <<   0.0,      0.0, 1.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (std::abs(getPositionsStatic()[1]) == DART_PI * 0.5)
+      if (std::abs(getPositionsStatic()[1]) == math::constantsd::pi() * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << mJointP.mName << "]. ("
                   << _positions[0] << ", "
@@ -236,7 +235,7 @@ Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
       J2 << 1.0,   0.0,   0.0, 0.0, 0.0, 0.0;
 
 #ifndef NDEBUG
-      if (std::abs(_positions[1]) == DART_PI * 0.5)
+      if (std::abs(_positions[1]) == math::constantsd::pi() * 0.5)
         std::cout << "Singular configuration in ZYX-euler joint ["
                   << mJointP.mName << "]. ("
                   << _positions[0] << ", "

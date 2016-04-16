@@ -39,12 +39,12 @@
 #include <iostream>
 
 #include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/collision/CollisionObject.h"
 #include "dart/lcpsolver/lcp.h"
 
+#define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP     0.01
 #define DART_MAX_ERV 1e-3
@@ -786,6 +786,8 @@ void ContactConstraint::updateFirstFrictionalDirection()
 Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
     const Eigen::Vector3d& _n)
 {
+  using namespace math::suffixes;
+
   // TODO(JS): Use mNumFrictionConeBases
   // Check if the number of bases is even number.
 //  bool isEvenNumBases = mNumFrictionConeBases % 2 ? true : false;
@@ -809,7 +811,7 @@ Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
   // Each basis and its opposite belong in the matrix, so we iterate half as
   // many times
   T.col(0) = tangent;
-  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(DART_PI_HALF, _n)) * tangent;
+  T.col(1) = Eigen::Quaterniond(Eigen::AngleAxisd(0.5_pi, _n)) * tangent;
   return T;
 }
 

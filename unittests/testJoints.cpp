@@ -162,8 +162,8 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
 
     for (int i = 0; i < dof; ++i)
     {
-      q(i) = random(-DART_PI*1.0, DART_PI*1.0);
-      dq(i) = random(-DART_PI*1.0, DART_PI*1.0);
+      q(i) = random(-constantsd::pi()*1.0, constantsd::pi()*1.0);
+      dq(i) = random(-constantsd::pi()*1.0, constantsd::pi()*1.0);
     }
 
     skeleton->setPositions(q);
@@ -447,8 +447,8 @@ TEST_F(JOINTS, POSITION_LIMIT)
   EXPECT_TRUE(joint0 != nullptr);
   EXPECT_TRUE(joint1 != nullptr);
 
-  double limit0 = DART_PI / 6.0;
-  double limit1 = DART_PI / 6.0;
+  double limit0 = constantsd::pi() / 6.0;
+  double limit1 = constantsd::pi() / 6.0;
 
   joint0->setPositionLimitEnforced(true);
   joint0->setPositionLowerLimit(0, -limit0);
@@ -627,6 +627,8 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION)
 //==============================================================================
 SkeletonPtr createPendulum(Joint::ActuatorType actType)
 {
+  using namespace dart::math::suffixes;
+
   Vector3d dim(1, 1, 1);
   Vector3d offset(0, 0, 2);
 
@@ -646,7 +648,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
   EXPECT_NE(joint, nullptr);
 
   joint->setActuatorType(actType);
-  joint->setPosition(0, 90.0 * DART_RADIAN);
+  joint->setPosition(0, 90.0_deg);
   joint->setDampingCoefficient(0, 0.0);
   joint->setSpringStiffness(0, 0.0);
   joint->setPositionLimitEnforced(true);
@@ -658,11 +660,13 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
 //==============================================================================
 void testServoMotor()
 {
+  using namespace dart::math::suffixes;
+
   size_t numPendulums = 7;
   double timestep = 1e-3;
   double tol = 1e-9;
-  double posUpperLimit = 90.0 * DART_RADIAN;
-  double posLowerLimit = 45.0 * DART_RADIAN;
+  double posUpperLimit = 90.0_deg;
+  double posLowerLimit = 45.0_deg;
   double sufficient_force   = 1e+5;
   double insufficient_force = 1e-1;
 
@@ -731,18 +735,18 @@ void testServoMotor()
   joints[3]->setPositionUpperLimit(0, posUpperLimit);
   joints[3]->setPositionLowerLimit(0, posLowerLimit);
 
-  joints[4]->setForceUpperLimit(0, DART_DBL_INF);
-  joints[4]->setForceLowerLimit(0, -DART_DBL_INF);
+  joints[4]->setForceUpperLimit(0, constantsd::inf());
+  joints[4]->setForceLowerLimit(0, -constantsd::inf());
   joints[4]->setPositionUpperLimit(0, posUpperLimit);
   joints[4]->setPositionLowerLimit(0, posLowerLimit);
 
   joints[5]->setForceUpperLimit(0, sufficient_force);
   joints[5]->setForceLowerLimit(0, -sufficient_force);
-  joints[5]->setCoulombFriction(0, DART_DBL_INF);
+  joints[5]->setCoulombFriction(0, constantsd::inf());
 
-  joints[6]->setForceUpperLimit(0, DART_DBL_INF);
-  joints[6]->setForceLowerLimit(0, -DART_DBL_INF);
-  joints[6]->setCoulombFriction(0, DART_DBL_INF);
+  joints[6]->setForceUpperLimit(0, constantsd::inf());
+  joints[6]->setForceLowerLimit(0, -constantsd::inf());
+  joints[6]->setCoulombFriction(0, constantsd::inf());
 
   for (auto pendulum : pendulums)
     world->addSkeleton(pendulum);
@@ -838,8 +842,8 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
   joint0->setPositionLimitEnforced(true);
   joint1->setPositionLimitEnforced(true);
 
-  const double ll = -DART_PI/12.0; // -15 degree
-  const double ul = +DART_PI/12.0; // +15 degree
+  const double ll = -constantsd::pi()/12.0; // -15 degree
+  const double ul = +constantsd::pi()/12.0; // +15 degree
 
   size_t dof0 = joint0->getNumDofs();
   for (size_t i = 0; i < dof0; ++i)

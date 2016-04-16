@@ -51,10 +51,25 @@
 #include <Eigen/Dense>
 // Local Headers
 #include "dart/common/Deprecated.h"
+#include "dart/math/Constants.h"
 #include "dart/math/MathTypes.h"
 
 namespace dart {
 namespace math {
+
+//==============================================================================
+template <typename T>
+constexpr T toRadian(const T& degree)
+{
+  return degree * constants<T>::pi() / 180.0;
+}
+
+//==============================================================================
+template <typename T>
+constexpr T toDegree(const T& radian)
+{
+  return radian * 180.0 / constants<T>::pi();
+}
 
 /// \brief a cross b = (CR*a) dot b
 /// const Matd CR(2,2,0.0,-1.0,1.0,0.0);
@@ -99,7 +114,7 @@ inline double Tsinc(double _theta) {
 }
 
 inline bool isZero(double _theta) {
-  return (std::abs(_theta) < DART_EPSILON);
+  return (std::abs(_theta) < 1e-6);
 }
 
 inline double asinh(double _X) {
@@ -154,7 +169,7 @@ inline typename DerivedA::PlainObject clip(
 }
 
 inline bool isEqual(double _x, double _y) {
-  return (std::abs(_x - _y) < DART_EPSILON);
+  return (std::abs(_x - _y) < 1e-6);
 }
 
 // check if it is an integer
@@ -282,6 +297,46 @@ inline Eigen::VectorXd randomVectorXd(size_t size, double limit)
 {
   return randomVectorXd(size, -std::abs(limit), std::abs(limit));
 }
+
+namespace suffixes {
+
+//==============================================================================
+constexpr double operator"" _pi(long double x)
+{
+  return x * constants<double>::pi();
+}
+
+//==============================================================================
+constexpr double operator"" _pi(unsigned long long int x)
+{
+  return operator"" _pi(static_cast<long double>(x));
+}
+
+//==============================================================================
+constexpr double operator"" _rad(long double angle)
+{
+  return angle;
+}
+
+//==============================================================================
+constexpr double operator"" _rad(unsigned long long int angle)
+{
+  return operator"" _rad(static_cast<long double>(angle));
+}
+
+//==============================================================================
+constexpr double operator"" _deg(long double angle)
+{
+  return toRadian(angle);
+}
+
+//==============================================================================
+constexpr double operator"" _deg(unsigned long long int angle)
+{
+  return operator"" _deg(static_cast<long double>(angle));
+}
+
+}  // namespace suffixes
 
 }  // namespace math
 

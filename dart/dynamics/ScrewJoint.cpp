@@ -39,7 +39,6 @@
 #include <string>
 
 #include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
 #include "dart/dynamics/BodyNode.h"
 
 namespace dart {
@@ -161,9 +160,11 @@ Joint* ScrewJoint::clone() const
 //==============================================================================
 void ScrewJoint::updateLocalTransform() const
 {
+  using namespace dart::math::suffixes;
+
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = getAxis();
-  S.tail<3>() = getAxis()*getPitch()/DART_2PI;
+  S.tail<3>() = getAxis()*getPitch()*0.5_pi;
   mT = mJointP.mT_ParentBodyToJoint
        * math::expMap(S * getPositionStatic())
        * mJointP.mT_ChildBodyToJoint.inverse();
@@ -173,11 +174,13 @@ void ScrewJoint::updateLocalTransform() const
 //==============================================================================
 void ScrewJoint::updateLocalJacobian(bool _mandatory) const
 {
+  using namespace dart::math::suffixes;
+
   if(_mandatory)
   {
     Eigen::Vector6d S = Eigen::Vector6d::Zero();
     S.head<3>() = getAxis();
-    S.tail<3>() = getAxis()*getPitch()/DART_2PI;
+    S.tail<3>() = getAxis()*getPitch()*0.5_pi;
     mJacobian = math::AdT(mJointP.mT_ChildBodyToJoint, S);
     assert(!math::isNan(mJacobian));
   }
