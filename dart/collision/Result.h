@@ -38,9 +38,18 @@
 #define DART_COLLISION_RESULT_H_
 
 #include <vector>
+#include <unordered_set>
 #include "dart/collision/Contact.h"
 
 namespace dart {
+
+namespace dynamics {
+
+class BodyNode;
+class ShapeFrame;
+
+} // namespace dynamics
+
 namespace collision {
 
 class CollisionResult
@@ -62,16 +71,41 @@ public:
   /// Return contacts
   const std::vector<Contact>& getContacts() const;
 
+  /// Return the set of BodyNodes that are in collision
+  const std::unordered_set<const dynamics::BodyNode*>&
+  getCollidingBodyNodes() const;
+
+  /// Return the set of ShapeFrames that are in collision
+  const std::unordered_set<const dynamics::ShapeFrame*>&
+  getCollidingShapeFrames() const;
+
+  /// Returns true if the given BodyNode is in collision
+  bool inCollision(const dynamics::BodyNode* bn) const;
+
+  /// Returns true if the given ShapeFrame is in collision
+  bool inCollision(const dynamics::ShapeFrame* frame) const;
+
   /// Return binary collision result
   bool isCollision() const;
+
+  /// Implicitly converts this CollisionResult to the value of isCollision()
+  operator bool() const;
 
   /// Clear all the contacts
   void clear();
 
 protected:
 
+  void addObject(CollisionObject* object);
+
   /// List of contact information for each contact
   std::vector<Contact> mContacts;
+
+  /// Set of BodyNodes that are colliding
+  std::unordered_set<const dynamics::BodyNode*> mCollidingBodyNodes;
+
+  /// Set of ShapeFrames that are colliding
+  std::unordered_set<const dynamics::ShapeFrame*> mCollidingShapeFrames;
 
 };
 

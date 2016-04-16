@@ -274,6 +274,7 @@ public:
   double getPotentialEnergy() const override;
 
   // Documentation inherited
+  DEPRECATED(6.0)
   void clearCollidingBodies() override;
 
   /// \}
