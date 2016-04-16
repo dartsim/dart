@@ -1,4 +1,4 @@
-dart (6.0.0) unstable; urgency=medium
+dart6 (6.0.0) unstable; urgency=medium
 
   * Added missing 'liburdfdom-dev' dependency in Ubuntu package
 
