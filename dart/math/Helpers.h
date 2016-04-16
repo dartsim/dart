@@ -307,9 +307,21 @@ constexpr double operator"" _rad(long double angle)
 }
 
 //==============================================================================
+constexpr double operator"" _rad(unsigned long long int angle)
+{
+  return operator"" _rad(static_cast<long double>(angle));
+}
+
+//==============================================================================
 constexpr double operator"" _deg(long double angle)
 {
   return toRadian(angle);
+}
+
+//==============================================================================
+constexpr double operator"" _deg(unsigned long long int angle)
+{
+  return operator"" _deg(static_cast<long double>(angle));
 }
 
 }  // namespace suffixes

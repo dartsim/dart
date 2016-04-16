@@ -124,12 +124,12 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       mBackWheelVelocity = +420.0_deg;
       break;
     case 'a':  // rotate steering wheels to left
-//      mSteeringWheelAngle += +10_deg;
+      mSteeringWheelAngle += +10_deg;
       if (mSteeringWheelAngle > 30.0_deg)
         mSteeringWheelAngle = 30.0_deg;
       break;
     case 'd':  // rotate steering wheels to right
-//      mSteeringWheelAngle += -10_deg;
+      mSteeringWheelAngle += -10_deg;
       if (mSteeringWheelAngle < -30.0_deg)
         mSteeringWheelAngle = -30.0_deg;
       break;
