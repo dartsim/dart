@@ -4,7 +4,7 @@ Maintainer: Jeongseok Lee <jslee02@gmail.com>
 Build-Depends: debhelper (>= 9),
                cmake,
                libeigen3-dev,
-               libccd-dev
+               libccd-dev,
                libfcl-dev (>= 0.2.7),
                libbullet-dev,
                libassimp-dev (>= 3),
@@ -66,7 +66,7 @@ Depends: ${misc:Depends},
          libdart6 (= ${binary:Version}),
          libeigen3-dev,
          libassimp-dev (>= 3),
-         libccd-dev
+         libccd-dev,
          libfcl-dev,
          libbullet-dev,
          libboost-all-dev (>= 1.54.0.1ubuntu1)
