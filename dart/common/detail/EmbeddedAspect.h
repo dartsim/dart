@@ -90,7 +90,7 @@ public:
   constexpr static void (*SetEmbeddedState)(Derived*, const State&) = setEmbeddedState;
   constexpr static const State& (*GetEmbeddedState)(const Derived*) = getEmbeddedState;
 
-  enum Delegate_t { Delegate };
+  enum DelegateTag { Delegate };
 
   EmbeddedStateAspect() = delete;
   EmbeddedStateAspect(const EmbeddedStateAspect&) = delete;
@@ -198,7 +198,7 @@ protected:
   /// arguments into the constructor of the Base class.
   template <typename... RemainingArgs>
   EmbeddedStateAspect(
-      Delegate_t, Composite* comp, const StateData& state,
+      DelegateTag, Composite* comp, const StateData& state,
       RemainingArgs&&... remainingArgs)
     : Base(comp, std::forward<RemainingArgs>(remainingArgs)...),
       mTemporaryState(make_unique<State>(state))
@@ -210,7 +210,7 @@ protected:
   /// arguments into the constructor of the Base class.
   template <typename... BaseArgs>
   EmbeddedStateAspect(
-      Delegate_t, Composite* comp, BaseArgs&&... args)
+      DelegateTag, Composite* comp, BaseArgs&&... args)
     : Base(comp, std::forward<BaseArgs>(args)...)
   {
     // Do nothing
@@ -252,7 +252,7 @@ class EmbeddedPropertiesAspect : public BaseT
 {
 protected:
 
-  enum Delegate_t { Delegate };
+  enum DelegateTag { Delegate };
 
 public:
 
@@ -368,7 +368,7 @@ protected:
   /// arguments into the constructor of the Base class.
   template <typename... RemainingArgs>
   EmbeddedPropertiesAspect(
-      Delegate_t, Composite* comp, const PropertiesData& properties,
+      DelegateTag, Composite* comp, const PropertiesData& properties,
       RemainingArgs&&... remainingArgs)
     : Base(comp, std::forward<RemainingArgs>(remainingArgs)...),
       mTemporaryProperties(make_unique<Properties>(properties))
@@ -380,7 +380,7 @@ protected:
   /// arguments into the constructor of the Base class.
   template <typename... BaseArgs>
   EmbeddedPropertiesAspect(
-      Delegate_t, Composite* comp, BaseArgs&&... args)
+      DelegateTag, Composite* comp, BaseArgs&&... args)
     : Base(comp, std::forward<BaseArgs>(args)...)
   {
     // Do nothing

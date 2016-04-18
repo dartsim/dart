@@ -81,7 +81,7 @@ public:
   /// This enum is used to specify to the create() function that both the start
   /// and the target BodyNodes should be included in the Chain that gets
   /// generated.
-  enum IncludeBoth_t { IncludeBoth };
+  enum IncludeBothTag { IncludeBoth };
 
   /// Create a Chain given some Chain::Criteria
   static ChainPtr create(const Chain::Criteria& _criteria,
@@ -95,7 +95,7 @@ public:
   /// Create a Chain given a start and a target BodyNode. In this version, both
   /// BodyNodes will be included in the Chain that gets created.
   static ChainPtr create(BodyNode* _start, BodyNode* _target,
-                         IncludeBoth_t, const std::string& _name = "Chain");
+                         IncludeBothTag, const std::string& _name = "Chain");
 
   /// Returns false if this Chain has been broken, or some new Branching has
   /// been added.
@@ -112,7 +112,7 @@ protected:
 
   /// Alternative constructor for the Chain class
   Chain(BodyNode* _start, BodyNode* _target,
-        IncludeBoth_t, const std::string& _name = "Chain");
+        IncludeBothTag, const std::string& _name = "Chain");
 
 };
 

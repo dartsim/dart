@@ -75,12 +75,12 @@ public:
   /// This constructor passes one argument to the Base1 constructor and no
   /// arguments to the Base2 constructor.
   template <typename Base1Arg>
-  NodeManagerJoinerForBodyNode(Base1Arg&& arg1, common::NoArg_t);
+  NodeManagerJoinerForBodyNode(Base1Arg&& arg1, common::NoArgTag);
 
   /// This constructor passes no arguments to the Base1 constructor and
   /// arbitrarily many arguments to the Base2 constructor.
   template <typename... Base2Args>
-  NodeManagerJoinerForBodyNode(common::NoArg_t, Base2Args&&... args2);
+  NodeManagerJoinerForBodyNode(common::NoArgTag, Base2Args&&... args2);
 
   template <class NodeType>
   size_t getNumNodes() const;

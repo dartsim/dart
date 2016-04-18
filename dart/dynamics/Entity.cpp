@@ -181,7 +181,7 @@ bool Entity::needsAccelerationUpdate() const
 }
 
 //==============================================================================
-Entity::Entity(ConstructFrame_t)
+Entity::Entity(ConstructFrameTag)
   : mParentFrame(nullptr),
     mNeedTransformUpdate(true),
     mNeedVelocityUpdate(true),
@@ -203,7 +203,7 @@ Entity::Entity(ConstructFrame_t)
 }
 
 //==============================================================================
-Entity::Entity(ConstructAbstract_t)
+Entity::Entity(ConstructAbstractTag)
   : onFrameChanged(mFrameChangedSignal),
     onNameChanged(mNameChangedSignal),
     onTransformUpdated(mTransformUpdatedSignal),

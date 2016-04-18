@@ -527,7 +527,7 @@ Frame::Frame()
 }
 
 //==============================================================================
-Frame::Frame(ConstructAbstract_t)
+Frame::Frame(ConstructAbstractTag)
   : Entity(Entity::ConstructAbstract),
     mAmWorld(false),
     mAmShapeFrame(false)
@@ -592,7 +592,7 @@ void Frame::processRemovedEntity(Entity*)
 }
 
 //==============================================================================
-Frame::Frame(ConstructWorld_t)
+Frame::Frame(ConstructWorldTag)
   : Entity(this, true),
     mWorldTransform(Eigen::Isometry3d::Identity()),
     mVelocity(Eigen::Vector6d::Zero()),

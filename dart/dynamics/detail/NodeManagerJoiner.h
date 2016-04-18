@@ -58,7 +58,7 @@ NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
 template <class Base1, class Base2>
 template <typename Base1Arg>
 NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
-    Base1Arg&& arg1, common::NoArg_t)
+    Base1Arg&& arg1, common::NoArgTag)
   : Base1(std::forward<Base1Arg>(arg1)),
     Base2()
 {
@@ -69,7 +69,7 @@ NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
 template <class Base1, class Base2>
 template <typename... Base2Args>
 NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
-    common::NoArg_t, Base2Args&&... args2)
+    common::NoArgTag, Base2Args&&... args2)
   : Base1(),
     Base2(std::forward<Base2Args>(args2)...)
 {

@@ -140,15 +140,15 @@ protected:
 
   /// Used when constructing a Frame class, because the Frame constructor will
   /// take care of setting up the parameters you pass into it
-  enum ConstructFrame_t { ConstructFrame };
+  enum ConstructFrameTag { ConstructFrame };
 
-  explicit Entity(ConstructFrame_t);
+  explicit Entity(ConstructFrameTag);
 
   /// Used when constructing a pure abstract class, because calling the Entity
   /// constructor is just a formality
-  enum ConstructAbstract_t { ConstructAbstract };
+  enum ConstructAbstractTag { ConstructAbstract };
 
-  explicit Entity(ConstructAbstract_t);
+  explicit Entity(ConstructAbstractTag);
 
   /// Used by derived classes to change their parent frames
   virtual void changeParentFrame(Frame* _newParentFrame);
