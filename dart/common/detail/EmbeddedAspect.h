@@ -101,7 +101,7 @@ public:
   template <typename T>
   struct ConvertIfState
   {
-    using type = typename static_if_else<
+    using type = typename std::conditional<
         std::is_base_of<StateData, T>::value,
         StateData, T>::type;
   };
@@ -272,7 +272,7 @@ public:
   template <typename T>
   struct ConvertIfProperties
   {
-    using type = typename static_if_else<
+    using type = typename std::conditional<
         std::is_base_of<PropertiesData, T>::value,
         PropertiesData, T>::type;
   };

@@ -54,7 +54,7 @@ namespace detail {
 template <class AspectT>
 struct GetAspect
 {
-  using Type = typename static_if_else<
+  using Type = typename std::conditional<
       std::is_base_of<Aspect, AspectT>::value,
       AspectT, typename AspectT::Aspect>::type;
 };
@@ -194,7 +194,7 @@ public:
   template <typename Arg>
   struct ConvertIfData
   {
-    using Type = typename static_if_else<
+    using Type = typename std::conditional<
         std::is_base_of<typename Base::Data, Arg>::value,
         typename Base::Data, Arg>::type;
   };
@@ -202,7 +202,7 @@ public:
   template <typename Arg>
   struct ConvertIfComposite
   {
-    using Type = typename static_if_else<
+    using Type = typename std::conditional<
         std::is_base_of<CompositeType, Arg>::value,
         CompositeType, Arg>::type;
   };
