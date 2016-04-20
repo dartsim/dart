@@ -530,7 +530,7 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull);
 
 /// Intersection_t is returned by the computeIntersection() function to indicate
 /// whether there was a valid intersection between the two line segments
-enum Intersection_t {
+enum IntersectionResult {
 
   INTERSECTING = 0,   ///< An intersection was found
   PARALLEL,           ///< The line segments are parallel
@@ -540,11 +540,12 @@ enum Intersection_t {
 
 /// Compute the intersection between a line segment that goes from a1 -> a2 and
 /// a line segment that goes from b1 -> b2.
-Intersection_t computeIntersection(Eigen::Vector2d& _intersectionPoint,
-                                   const Eigen::Vector2d& a1,
-                                   const Eigen::Vector2d& a2,
-                                   const Eigen::Vector2d& b1,
-                                   const Eigen::Vector2d& b2);
+IntersectionResult computeIntersection(
+    Eigen::Vector2d& _intersectionPoint,
+    const Eigen::Vector2d& a1,
+    const Eigen::Vector2d& a2,
+    const Eigen::Vector2d& b1,
+    const Eigen::Vector2d& b2);
 
 /// Compute a 2D cross product
 double cross(const Eigen::Vector2d& _v1, const Eigen::Vector2d& _v2);

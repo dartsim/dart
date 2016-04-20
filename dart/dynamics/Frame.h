@@ -256,7 +256,7 @@ protected:
 
   /// Used when constructing a pure abstract class, because calling the Frame
   /// constructor is just a formality
-  enum ConstructAbstract_t { ConstructAbstract };
+  enum ConstructAbstractTag { ConstructAbstract };
 
   /// Constructor for typical usage
   explicit Frame(Frame* _refFrame);
@@ -265,7 +265,7 @@ protected:
   Frame();
 
   /// Constructor for use by pure abstract classes
-  explicit Frame(ConstructAbstract_t);
+  explicit Frame(ConstructAbstractTag);
 
   // Documentation inherited
   virtual void changeParentFrame(Frame* _newParentFrame) override;
@@ -282,10 +282,10 @@ protected:
 private:
 
   /// Used when constructing the World
-  enum ConstructWorld_t { ConstructWorld };
+  enum ConstructWorldTag { ConstructWorld };
 
   /// Constructor only to be used by the WorldFrame class
-  explicit Frame(ConstructWorld_t);
+  explicit Frame(ConstructWorldTag);
 
 protected:
   /// World transform of this Frame. This object is mutable to enable

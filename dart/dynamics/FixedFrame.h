@@ -103,7 +103,7 @@ protected:
   FixedFrame();
 
   /// Abstract constructor
-  explicit FixedFrame(ConstructAbstract_t);
+  explicit FixedFrame(ConstructAbstractTag);
 
   /// Used for Relative Velocity and Relative Acceleration of this Frame
   static const Eigen::Vector6d mZero;

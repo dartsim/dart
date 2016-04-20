@@ -58,7 +58,7 @@ CompositeJoiner<Base1, Base2>::CompositeJoiner(
 template <class Base1, class Base2>
 template <typename Base1Arg>
 CompositeJoiner<Base1, Base2>::CompositeJoiner(
-    Base1Arg&& arg1, NoArg_t)
+    Base1Arg&& arg1, NoArgTag)
   : Base1(std::forward<Base1Arg>(arg1)),
     Base2()
 {
@@ -69,7 +69,7 @@ CompositeJoiner<Base1, Base2>::CompositeJoiner(
 template <class Base1, class Base2>
 template <typename... Base2Args>
 CompositeJoiner<Base1, Base2>::CompositeJoiner(
-    NoArg_t, Base2Args&&... args2)
+    NoArgTag, Base2Args&&... args2)
   : Base1(),
     Base2(std::forward<Base2Args>(args2)...)
 {

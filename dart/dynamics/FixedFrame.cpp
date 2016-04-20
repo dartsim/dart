@@ -123,7 +123,7 @@ FixedFrame::FixedFrame()
 }
 
 //==============================================================================
-FixedFrame::FixedFrame(ConstructAbstract_t)
+FixedFrame::FixedFrame(ConstructAbstractTag)
 {
   dterr << "[FixedFrame::FixedFrame] Attempting to construct a pure abstract "
         << "FixedFrame object. This is not allowed!\n";

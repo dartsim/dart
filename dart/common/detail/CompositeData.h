@@ -54,7 +54,7 @@ namespace detail {
 template <class AspectT>
 struct GetAspect
 {
-  using Type = typename static_if_else<
+  using Type = typename std::conditional<
       std::is_base_of<Aspect, AspectT>::value,
       AspectT, typename AspectT::Aspect>::type;
 };
@@ -185,7 +185,7 @@ struct ComposeData<CompositeType, GetData, AspectT, Remainder...> :
 {
 public:
 
-  enum Delegate_t { Delegate };
+  enum DelegateTag { Delegate };
 
   using Base = typename GetData<AspectT>::Type;
   using Data = typename Base::Data;
@@ -194,7 +194,7 @@ public:
   template <typename Arg>
   struct ConvertIfData
   {
-    using Type = typename static_if_else<
+    using Type = typename std::conditional<
         std::is_base_of<typename Base::Data, Arg>::value,
         typename Base::Data, Arg>::type;
   };
@@ -202,7 +202,7 @@ public:
   template <typename Arg>
   struct ConvertIfComposite
   {
-    using Type = typename static_if_else<
+    using Type = typename std::conditional<
         std::is_base_of<CompositeType, Arg>::value,
         CompositeType, Arg>::type;
   };
@@ -279,14 +279,14 @@ public:
 protected:
 
   template <typename... Args>
-  ComposeData(Delegate_t, const Args&... args)
+  ComposeData(DelegateTag, const Args&... args)
     : ComposeData<CompositeType, GetData, Remainder...>(args...)
   {
     // Pass all the arguments along to the next base class
   }
 
   template <typename... Args>
-  ComposeData(Delegate_t, const Data& arg1, const Args&... args)
+  ComposeData(DelegateTag, const Data& arg1, const Args&... args)
     : Base(arg1),
       ComposeData<CompositeType, GetData, Remainder...>(args...)
   {

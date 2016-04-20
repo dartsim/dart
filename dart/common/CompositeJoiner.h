@@ -87,12 +87,12 @@ public:
   /// This constructor passes one argument to the Base1 constructor and no
   /// arguments to the Base2 constructor.
   template <typename Base1Arg>
-  CompositeJoiner(Base1Arg&& arg1, NoArg_t);
+  CompositeJoiner(Base1Arg&& arg1, NoArgTag);
 
   /// This constructor passes no arguments to the Base1 constructor and
   /// arbitrarily many arguments to the Base2 constructor.
   template <typename... Base2Args>
-  CompositeJoiner(NoArg_t, Base2Args&&... args2);
+  CompositeJoiner(NoArgTag, Base2Args&&... args2);
 
   // Documentation inherited
   template <class T>

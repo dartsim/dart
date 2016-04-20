@@ -114,7 +114,7 @@ ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
 
 //==============================================================================
 ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
-                       IncludeBoth_t, const std::string& _name)
+                       IncludeBothTag, const std::string& _name)
 {
   ChainPtr chain(new Chain(_start, _target, IncludeBoth, _name));
   chain->mPtr = chain;
@@ -165,7 +165,7 @@ Chain::Chain(BodyNode* _start, BodyNode* _target, const std::string& _name)
 
 //==============================================================================
 Chain::Chain(BodyNode* _start, BodyNode* _target,
-             IncludeBoth_t, const std::string& _name)
+             IncludeBothTag, const std::string& _name)
   : Linkage(Chain::Criteria(_start, _target, true), _name)
 {
   // Do nothing
