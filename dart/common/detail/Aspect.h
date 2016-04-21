@@ -98,6 +98,7 @@ template <class CompositeType>
 void CompositeTrackingAspect<CompositeType>::loseComposite(
     Composite* oldComposite)
 {
+  DART_UNUSED(oldComposite);
   assert(oldComposite == mComposite);
   mComposite = nullptr;
 }
