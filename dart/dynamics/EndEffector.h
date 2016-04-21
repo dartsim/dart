@@ -149,7 +149,7 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void notifyTransformUpdate() override;
+  void notifyTransformUpdate() override;
 
   /// \}
 

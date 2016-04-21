@@ -67,14 +67,14 @@ public:
   virtual ~TrackballManipulator();
 
   /// Overriding behavior of left mouse button
-  virtual bool performMovementLeftMouseButton(const double eventTimeDelta,
-                                              const double dx,
-                                              const double dy) override;
+  bool performMovementLeftMouseButton(const double eventTimeDelta,
+                                      const double dx,
+                                      const double dy) override;
 
   /// Overriding behavior of right mouse button
-  virtual bool performMovementRightMouseButton(const double eventTimeDelta,
-                                               const double dx,
-                                               const double dy) override;
+  bool performMovementRightMouseButton(const double eventTimeDelta,
+                                       const double dx,
+                                       const double dy) override;
 
   DART_META_Object( dart-gui-osg, TrackballManipulator )
   // TODO(MXG): Consider applying the META macros to every dart::gui::osg Node

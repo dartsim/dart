@@ -53,13 +53,13 @@ public:
   virtual ~SemiImplicitEulerIntegrator();
 
   // Documentation inherited
-  virtual void integrate(IntegrableSystem* _system, double _dt);
+  void integrate(IntegrableSystem* _system, double _dt) override;
 
   // Documentation inherited
-  virtual void integratePos(IntegrableSystem* _system, double _dt);
+  void integratePos(IntegrableSystem* _system, double _dt) override;
 
   // Documentation inherited
-  virtual void integrateVel(IntegrableSystem* _system, double _dt);
+  void integrateVel(IntegrableSystem* _system, double _dt) override;
 };
 
 }  // namespace integration

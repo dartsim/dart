@@ -51,10 +51,10 @@ public:
   virtual ~MyWindow();
 
   /// \brief
-  virtual void drawWorld() const override;
+  void drawWorld() const override;
 
   /// \brief
-  virtual void keyboard(unsigned char _key, int _x, int _y);
+  void keyboard(unsigned char _key, int _x, int _y) override;
 
   /// \brief
   void spawnCube(

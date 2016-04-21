@@ -68,13 +68,13 @@ public:
   Properties getTranslationalJointProperties() const;
 
   // Documentation inherited
-  virtual const std::string& getType() const override;
+  const std::string& getType() const override;
 
   /// Get joint type for this class
   static const std::string& getStaticType();
 
   // Documentation inherited
-  virtual bool isCyclic(size_t _index) const override;
+  bool isCyclic(size_t _index) const override;
 
   Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
@@ -85,21 +85,21 @@ protected:
   TranslationalJoint(const Properties& properties);
 
   // Documentation inherited
-  virtual Joint* clone() const override;
+  Joint* clone() const override;
 
   using MultiDofJoint::getLocalJacobianStatic;
 
   // Documentation inherited
-  virtual void updateDegreeOfFreedomNames() override;
+  void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited
-  virtual void updateLocalTransform() const override;
+  void updateLocalTransform() const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobian(bool _mandatory = true) const override;
+  void updateLocalJacobian(bool _mandatory = true) const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv() const override;
+  void updateLocalJacobianTimeDeriv() const override;
 
 public:
   // To get byte-aligned Eigen vectors

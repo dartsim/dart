@@ -93,7 +93,7 @@ public:
 
 protected:
   // Sets up the test fixture.
-  virtual void SetUp();
+  void SetUp() override;
 
   std::vector<SimpleFrame*> frames;
 };

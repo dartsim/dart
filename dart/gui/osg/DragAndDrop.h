@@ -142,7 +142,7 @@ public:
 protected:
 
   /// Perform cleanup when the subject is destroyed
-  virtual void handleDestructionNotification(
+  void handleDestructionNotification(
       const dart::common::Subject* subscription) override;
 
   /// Pointer to the DnD's Viewer
@@ -232,7 +232,7 @@ public:
 protected:
 
   // Documentation inherited
-  virtual void handleDestructionNotification(
+  void handleDestructionNotification(
       const dart::common::Subject* subscription) override;
 
   /// Shape associated with this DnD

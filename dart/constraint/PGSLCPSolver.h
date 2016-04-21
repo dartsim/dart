@@ -56,7 +56,7 @@ public:
   virtual ~PGSLCPSolver();
 
   // Documentation inherited
-  virtual void solve(ConstrainedGroup* _group);
+  void solve(ConstrainedGroup* _group) override;
 
 #ifndef NDEBUG
 private:

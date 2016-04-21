@@ -77,14 +77,14 @@ public:
   virtual ~SampleObjFunc() {}
 
   /// \copydoc Function::eval
-  virtual double eval(const Eigen::VectorXd& _x) override
+  double eval(const Eigen::VectorXd& _x) override
   {
     return std::sqrt(_x[1]);
   }
 
   /// \copydoc Function::evalGradient
-  virtual void evalGradient(const Eigen::VectorXd& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad) override
+  void evalGradient(const Eigen::VectorXd& _x,
+                    Eigen::Map<Eigen::VectorXd> _grad) override
   {
     _grad[0] = 0.0;
     _grad[1] = 0.5 / std::sqrt(_x[1]);
@@ -102,14 +102,14 @@ public:
   virtual ~SampleConstFunc() {}
 
   /// \copydoc Function::eval
-  virtual double eval(const Eigen::VectorXd& _x) override
+  double eval(const Eigen::VectorXd& _x) override
   {
     return ((mA*_x[0] + mB) * (mA*_x[0] + mB) * (mA*_x[0] + mB) - _x[1]);
   }
 
   /// \copydoc Function::evalGradient
-  virtual void evalGradient(const Eigen::VectorXd& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad) override
+  void evalGradient(const Eigen::VectorXd& _x,
+                    Eigen::Map<Eigen::VectorXd> _grad) override
   {
     _grad[0] = 3 * mA * (mA*_x[0] + mB) * (mA*_x[0] + mB);
     _grad[1] = -1.0;

@@ -72,13 +72,13 @@ public:
   virtual ~IpoptSolver();
 
   // Documentation inherited
-  virtual bool solve() override;
+  bool solve() override;
 
   // Documentation inherited
-  virtual std::string getType() const override;
+  std::string getType() const override;
 
   // Documentation inherited
-  virtual std::shared_ptr<Solver> clone() const override;
+  std::shared_ptr<Solver> clone() const override;
 
   /// Get the application interface for this IpoptSolver
   const Ipopt::SmartPtr<Ipopt::IpoptApplication>& getApplication();
@@ -111,93 +111,93 @@ public:
 
   //------------------------- Ipopt::TNLP --------------------------------------
   /// \brief Method to return some info about the nlp
-  virtual bool get_nlp_info(Ipopt::Index& n,
-                            Ipopt::Index& m,
-                            Ipopt::Index& nnz_jac_g,
-                            Ipopt::Index& nnz_h_lag,
-                            Ipopt::TNLP::IndexStyleEnum& index_style) override;
+  bool get_nlp_info(Ipopt::Index& n,
+                    Ipopt::Index& m,
+                    Ipopt::Index& nnz_jac_g,
+                    Ipopt::Index& nnz_h_lag,
+                    Ipopt::TNLP::IndexStyleEnum& index_style) override;
 
   /// \brief Method to return the bounds for my problem
-  virtual bool get_bounds_info(Ipopt::Index n,
-                               Ipopt::Number* x_l,
-                               Ipopt::Number* x_u,
-                               Ipopt::Index m,
-                               Ipopt::Number* g_l,
-                               Ipopt::Number* g_u) override;
+  bool get_bounds_info(Ipopt::Index n,
+                       Ipopt::Number* x_l,
+                       Ipopt::Number* x_u,
+                       Ipopt::Index m,
+                       Ipopt::Number* g_l,
+                       Ipopt::Number* g_u) override;
 
   /// \brief Method to return the starting point for the algorithm
-  virtual bool get_starting_point(Ipopt::Index n,
-                                  bool init_x,
-                                  Ipopt::Number* x,
-                                  bool init_z,
-                                  Ipopt::Number* z_L,
-                                  Ipopt::Number* z_U,
-                                  Ipopt::Index m,
-                                  bool init_lambda,
-                                  Ipopt::Number* lambda) override;
+  bool get_starting_point(Ipopt::Index n,
+                          bool init_x,
+                          Ipopt::Number* x,
+                          bool init_z,
+                          Ipopt::Number* z_L,
+                          Ipopt::Number* z_U,
+                          Ipopt::Index m,
+                          bool init_lambda,
+                          Ipopt::Number* lambda) override;
 
   /// \brief Method to return the objective value
-  virtual bool eval_f(Ipopt::Index _n,
-                      const Ipopt::Number* _x,
-                      bool _new_x,
-                      Ipopt::Number&
-                      _obj_value) override;
+  bool eval_f(Ipopt::Index _n,
+              const Ipopt::Number* _x,
+              bool _new_x,
+              Ipopt::Number&
+              _obj_value) override;
 
   /// \brief Method to return the gradient of the objective
-  virtual bool eval_grad_f(Ipopt::Index _n,
-                           const Ipopt::Number* _x,
-                           bool _new_x,
-                           Ipopt::Number* _grad_f) override;
+  bool eval_grad_f(Ipopt::Index _n,
+                   const Ipopt::Number* _x,
+                   bool _new_x,
+                   Ipopt::Number* _grad_f) override;
 
   /// \brief Method to return the constraint residuals
-  virtual bool eval_g(Ipopt::Index _n,
-                      const Ipopt::Number* _x,
-                      bool _new_x,
-                      Ipopt::Index _m,
-                      Ipopt::Number* _g) override;
+  bool eval_g(Ipopt::Index _n,
+              const Ipopt::Number* _x,
+              bool _new_x,
+              Ipopt::Index _m,
+              Ipopt::Number* _g) override;
 
   /// \brief Method to return:
   ///        1) The structure of the jacobian (if "values" is nullptr)
   ///        2) The values of the jacobian (if "values" is not nullptr)
-  virtual bool eval_jac_g(Ipopt::Index _n,
-                          const Ipopt::Number* _x,
-                          bool _new_x,
-                          Ipopt::Index _m,
-                          Ipopt::Index _nele_jac,
-                          Ipopt::Index* _iRow,
-                          Ipopt::Index* _jCol,
-                          Ipopt::Number* _values) override;
+  bool eval_jac_g(Ipopt::Index _n,
+                  const Ipopt::Number* _x,
+                  bool _new_x,
+                  Ipopt::Index _m,
+                  Ipopt::Index _nele_jac,
+                  Ipopt::Index* _iRow,
+                  Ipopt::Index* _jCol,
+                  Ipopt::Number* _values) override;
 
   /// \brief Method to return:
   ///        1) The structure of the hessian of the lagrangian (if "values" is
   ///           nullptr)
   ///        2) The values of the hessian of the lagrangian (if "values" is not
   ///           nullptr)
-  virtual bool eval_h(Ipopt::Index _n,
-                      const Ipopt::Number* _x,
-                      bool _new_x,
-                      Ipopt::Number _obj_factor,
-                      Ipopt::Index _m,
-                      const Ipopt::Number* _lambda,
-                      bool _new_lambda,
-                      Ipopt::Index _nele_hess,
-                      Ipopt::Index* _iRow,
-                      Ipopt::Index* _jCol,
-                      Ipopt::Number* _values) override;
+  bool eval_h(Ipopt::Index _n,
+              const Ipopt::Number* _x,
+              bool _new_x,
+              Ipopt::Number _obj_factor,
+              Ipopt::Index _m,
+              const Ipopt::Number* _lambda,
+              bool _new_lambda,
+              Ipopt::Index _nele_hess,
+              Ipopt::Index* _iRow,
+              Ipopt::Index* _jCol,
+              Ipopt::Number* _values) override;
 
   /// \brief This method is called when the algorithm is complete so the TNLP
   ///        can store/write the solution
-  virtual void finalize_solution(Ipopt::SolverReturn _status,
-                                 Ipopt::Index _n,
-                                 const Ipopt::Number* _x,
-                                 const Ipopt::Number* _z_L,
-                                 const Ipopt::Number* _z_U,
-                                 Ipopt::Index _m,
-                                 const Ipopt::Number* _g,
-                                 const Ipopt::Number* _lambda,
-                                 Ipopt::Number _obj_value,
-                                 const Ipopt::IpoptData* _ip_data,
-                                 Ipopt::IpoptCalculatedQuantities* _ip_cq) override;
+  void finalize_solution(Ipopt::SolverReturn _status,
+                         Ipopt::Index _n,
+                         const Ipopt::Number* _x,
+                         const Ipopt::Number* _z_L,
+                         const Ipopt::Number* _z_U,
+                         Ipopt::Index _m,
+                         const Ipopt::Number* _g,
+                         const Ipopt::Number* _lambda,
+                         Ipopt::Number _obj_value,
+                         const Ipopt::IpoptData* _ip_data,
+                         Ipopt::IpoptCalculatedQuantities* _ip_cq) override;
 
 private:
 

@@ -109,7 +109,7 @@ public:
   virtual dynamics::SkeletonPtr getRootSkeleton() const = 0;
 
   ///
-  virtual void uniteSkeletons() {}
+  virtual void uniteSkeletons();
 
   ///
   static dynamics::SkeletonPtr compressPath(dynamics::SkeletonPtr _skeleton);

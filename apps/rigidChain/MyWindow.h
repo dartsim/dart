@@ -47,7 +47,7 @@ public:
 
   virtual ~MyWindow();
 
-  virtual void timeStepping();
+  void timeStepping() override;
 
 private:
   Eigen::VectorXd computeDamping();

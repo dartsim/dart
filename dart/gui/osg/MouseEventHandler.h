@@ -63,7 +63,7 @@ public:
 
 protected:
 
-  inline virtual void handleDestructionNotification(const Subject* _subject) override
+  void handleDestructionNotification(const Subject* _subject) override
   {
     if(mEventHandler == _subject)
       delete this;

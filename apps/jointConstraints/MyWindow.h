@@ -59,11 +59,11 @@ public:
   }
   virtual ~MyWindow() {}
 
-  virtual void timeStepping();
-  virtual void drawSkels();
-  //  virtual void displayTimer(int _val);
-  //  virtual void draw();
-  virtual void keyboard(unsigned char key, int x, int y);
+  void timeStepping() override;
+  void drawSkels() override;
+  //  void displayTimer(int _val) override;
+  //  void draw() override;
+  void keyboard(unsigned char key, int x, int y) override;
 
   void setController(Controller* _controller)
   {
