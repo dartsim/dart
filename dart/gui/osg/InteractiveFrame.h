@@ -132,11 +132,11 @@ public:
                                      double thickness_scale=2.0);
 
   /// Get the specified tool
-  InteractiveTool* getTool(InteractiveTool::Type tool, size_t coordinate);
+  InteractiveTool* getTool(InteractiveTool::Type tool, std::size_t coordinate);
 
   /// Get the specified tool
   const InteractiveTool* getTool(InteractiveTool::Type tool,
-                                 size_t coordinate) const;
+                                 std::size_t coordinate) const;
 
   dart::dynamics::SimpleFrame* addShapeFrame(
       const dart::dynamics::ShapePtr& shape);

@@ -129,28 +129,28 @@ public:
   PointMass* addPointMass(const PointMass::Properties& _properties);
 
   /// \brief
-  size_t getNumPointMasses() const;
+  std::size_t getNumPointMasses() const;
 
   /// \brief
-  PointMass* getPointMass(size_t _idx);
+  PointMass* getPointMass(std::size_t _idx);
 
   /// \brief
-  const PointMass* getPointMass(size_t _idx) const;
+  const PointMass* getPointMass(std::size_t _idx) const;
 
   /// Return all the point masses in this SoftBodyNode
   const std::vector<PointMass*>& getPointMasses() const;
 
   /// \brief
-  void connectPointMasses(size_t _idx1, size_t _idx2);
+  void connectPointMasses(std::size_t _idx1, std::size_t _idx2);
 
   /// \brief
   void addFace(const Eigen::Vector3i& _face);
 
   /// \brief
-  const Eigen::Vector3i& getFace(size_t _idx) const;
+  const Eigen::Vector3i& getFace(std::size_t _idx) const;
 
   /// \brief
-  size_t getNumFaces() const;
+  std::size_t getNumFaces() const;
 
   // Documentation inherited.
   void clearConstraintImpulse() override;
@@ -254,10 +254,10 @@ protected:
   void updateMassMatrix() override;
 
   // Documentation inherited.
-  void aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col) override;
+  void aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col) override;
 
   // Documentation inherited.
-  void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
+  void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col,
                               double _timeStep) override;
 
   // Documentation inherited.
@@ -267,10 +267,10 @@ protected:
   void updateInvAugMassMatrix() override;
 
   // Documentation inherited.
-  void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col) override;
+  void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col) override;
 
   // Documentation inherited.
-  void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col,
+  void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col,
                                  double _timeStep) override;
 
   // Documentation inherited.
@@ -401,8 +401,8 @@ public:
   /// Create a Properties struct for an Ellipsoid-shaped SoftBodyNode
   static SoftBodyNode::UniqueProperties makeEllipsoidProperties(
       const Eigen::Vector3d& _size,
-      size_t                 _nSlices,
-      size_t                 _nStacks,
+      std::size_t                 _nSlices,
+      std::size_t                 _nStacks,
       double                 _totalMass,
       double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
@@ -412,8 +412,8 @@ public:
   /// This should be called before SoftBodyNode::init() is called
   static void setEllipsoid(SoftBodyNode*          _softBodyNode,
       const Eigen::Vector3d& _size,
-      size_t _nSlices,
-      size_t _nStacks,
+      std::size_t _nSlices,
+      std::size_t _nStacks,
       double                 _totalMass,
       double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
@@ -423,9 +423,9 @@ public:
   static SoftBodyNode::UniqueProperties makeCylinderProperties(
       double _radius,
       double _height,
-      size_t _nSlices,
-      size_t _nStacks,
-      size_t _nRings,
+      std::size_t _nSlices,
+      std::size_t _nStacks,
+      std::size_t _nRings,
       double _totalMass,
       double _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
@@ -436,9 +436,9 @@ public:
   static void setCylinder(SoftBodyNode*          _softBodyNode,
       double _radius,
       double _height,
-      size_t _nSlices,
-      size_t _nStacks,
-      size_t _nRings,
+      std::size_t _nSlices,
+      std::size_t _nStacks,
+      std::size_t _nRings,
       double                 _totalMass,
       double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,

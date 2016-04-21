@@ -163,7 +163,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
 
   simulation::WorldPtr world(new simulation::World);
 
-  for(size_t i = 0; i < worldInterface->models.size(); ++i)
+  for(std::size_t i = 0; i < worldInterface->models.size(); ++i)
   {
     const urdf_parsing::Entity& entity = worldInterface->models[i];
     dynamics::SkeletonPtr skeleton = modelInterfaceToSkeleton(
@@ -252,7 +252,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
       return nullptr;
   }
 
-  for(size_t i = 0; i < root->child_links.size(); i++)
+  for(std::size_t i = 0; i < root->child_links.size(); i++)
   {
     if (!createSkeletonRecursive(
            skeleton, root->child_links[i].get(), rootNode,
@@ -286,7 +286,7 @@ bool DartLoader::createSkeletonRecursive(
   if(!result)
     return false;
   
-  for(size_t i = 0; i < _lk->child_links.size(); ++i)
+  for(std::size_t i = 0; i < _lk->child_links.size(); ++i)
   {
     if (!createSkeletonRecursive(_skel, _lk->child_links[i].get(), node,
                                  _baseUri, _resourceRetriever))
@@ -309,7 +309,7 @@ bool DartLoader::readFileToString(
     return false;
 
   // Safe because std::string is guaranteed to be contiguous in C++11.
-  const size_t size = resource->getSize();
+  const std::size_t size = resource->getSize();
   _output.resize(size);
   resource->read(&_output.front(), size, 1);
 

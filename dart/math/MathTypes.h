@@ -80,7 +80,7 @@ template <class T>
 class aligned_allocator_cpp11 : public std::allocator<T>
 {
 public:
-  typedef size_t          size_type;
+  typedef std::size_t          std::size_type;
   typedef std::ptrdiff_t  difference_type;
   typedef T*              pointer;
   typedef const T*        const_pointer;
@@ -106,13 +106,13 @@ public:
 
   ~aligned_allocator_cpp11() {}
 
-  pointer allocate(size_type num, const void* /*hint*/ = 0)
+  pointer allocate(std::size_type num, const void* /*hint*/ = 0)
   {
     internal::check_size_for_overflow<T>(num);
     return static_cast<pointer>( internal::aligned_malloc(num * sizeof(T)) );
   }
 
-  void deallocate(pointer p, size_type /*num*/)
+  void deallocate(pointer p, std::size_type /*num*/)
   {
     internal::aligned_free(p);
   }

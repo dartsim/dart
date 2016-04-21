@@ -74,7 +74,7 @@ public:
   ArrowShape(const Eigen::Vector3d& _tail, const Eigen::Vector3d& _head,
              const Properties& _properties = Properties(),
              const Eigen::Vector4d& _color=Eigen::Vector4d(0.5,0.5,1.0,1.0),
-             size_t _resolution=10);
+             std::size_t _resolution=10);
 
   /// Set the positions of the tail and head of the arrow without changing any
   /// settings
@@ -101,7 +101,7 @@ public:
 
 protected:
 
-  void instantiate(size_t resolution);
+  void instantiate(std::size_t resolution);
 
   Eigen::Vector3d mTail;
   Eigen::Vector3d mHead;

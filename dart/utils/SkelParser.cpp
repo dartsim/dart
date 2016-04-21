@@ -145,10 +145,10 @@ using BodyMap = Eigen::aligned_map<std::string, SkelBodyNode>;
 using JointMap = std::map<std::string, SkelJoint>;
 
 // first: Order that Joint appears in file | second: Child BodyNode name
-using IndexToJoint = std::map<size_t, std::string>;
+using IndexToJoint = std::map<std::size_t, std::string>;
 
 // first: Child BodyNode name | second: Order that Joint appears in file
-using JointToIndex = std::map<std::string, size_t>;
+using JointToIndex = std::map<std::string, std::size_t>;
 
 simulation::WorldPtr readWorld(
     tinyxml2::XMLElement* _worldElement,
@@ -333,13 +333,13 @@ void getDofAttributeIfItExists(
     const std::string& _element_type,
     const tinyxml2::XMLElement* _xmlElement,
     const std::string& _jointName,
-    size_t _index);
+    std::size_t _index);
 
 void setDofLimitAttributes(
     tinyxml2::XMLElement* _dofElement,
     const std::string& _element_type,
     const std::string& _jointName,
-    size_t _index,
+    std::size_t _index,
     double* lower, double* upper, double* initial);
 
 template <typename PropertyType>
@@ -347,21 +347,21 @@ void readAllDegreesOfFreedom(tinyxml2::XMLElement* _jointElement,
                                     PropertyType& _properties,
                                     SkelJoint& _joint,
                                     const std::string& _jointName,
-                                    size_t _numDofs);
+                                    std::size_t _numDofs);
 
 template <typename PropertyType>
 void readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
                                 PropertyType& properties,
                                 SkelJoint& joint,
                                 const std::string& jointName,
-                                size_t numDofs);
+                                std::size_t numDofs);
 
 template <typename PropertyType>
 void readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
                                       PropertyType& _properties,
                                       SkelJoint& _joint,
                                       const std::string& _name,
-                                      size_t _numAxis);
+                                      std::size_t _numAxis);
 
 JointPropPtr readWeldJoint(
     tinyxml2::XMLElement* _jointElement,
@@ -1512,7 +1512,7 @@ void readJoint(tinyxml2::XMLElement* _jointElement,
   _joints[joint.childName] = joint;
 
   // Keep track of when each joint appeared in the file
-  size_t nextIndex;
+  std::size_t nextIndex;
   IndexToJoint::reverse_iterator lastIndex = _order.rbegin();
   if(lastIndex == _order.rend())
     nextIndex = 0;
@@ -1530,7 +1530,7 @@ void getDofAttributeIfItExists(
     const std::string& _element_type,
     const tinyxml2::XMLElement* _xmlElement,
     const std::string& _jointName,
-    size_t _index)
+    std::size_t _index)
 {
   if (_xmlElement->QueryDoubleAttribute(_attribute.c_str(), _value)
       == tinyxml2::XML_WRONG_ATTRIBUTE_TYPE)
@@ -1546,7 +1546,7 @@ void getDofAttributeIfItExists(
 void setDofLimitAttributes(tinyxml2::XMLElement* _dofElement,
                                   const std::string& _element_type,
                                   const std::string& _jointName,
-                                  size_t _index,
+                                  std::size_t _index,
                                   double* lower, double* upper, double* initial)
 {
   const tinyxml2::XMLElement* xmlElement
@@ -1562,7 +1562,7 @@ void setDofLimitAttributes(tinyxml2::XMLElement* _dofElement,
 // SingleDofJoint::Properties and MultiDofJoint::Properties
 struct DofProxy
 {
-  size_t index;
+  std::size_t index;
   bool valid;
 
   double* lowerPosition;
@@ -1590,7 +1590,7 @@ struct DofProxy
   std::string* name;
 
   DofProxy(dynamics::SingleDofJoint::Properties& properties,
-           SkelJoint& joint, size_t _index,
+           SkelJoint& joint, std::size_t _index,
            const std::string& jointName)
     : index(_index),
       valid(true),
@@ -1629,7 +1629,7 @@ struct DofProxy
 
   template <typename PropertyType>
   DofProxy(PropertyType& properties,
-           SkelJoint& joint, size_t _index,
+           SkelJoint& joint, std::size_t _index,
            const std::string& jointName)
     : index(_index),
       valid(true),
@@ -1674,7 +1674,7 @@ void readAllDegreesOfFreedom(tinyxml2::XMLElement* _jointElement,
                                     PropertyType& _properties,
                                     SkelJoint& _joint,
                                     const std::string& _jointName,
-                                    size_t _numDofs)
+                                    std::size_t _numDofs)
 {
   if(_joint.position.size() < (int)_numDofs)
   {
@@ -1712,7 +1712,7 @@ void readDegreeOfFreedom(tinyxml2::XMLElement* _dofElement,
                                 PropertyType& properties,
                                 SkelJoint& joint,
                                 const std::string& jointName,
-                                size_t numDofs)
+                                std::size_t numDofs)
 {
   int localIndex = -1;
   int xml_err = _dofElement->QueryIntAttribute("local_index", &localIndex);
@@ -1811,7 +1811,7 @@ void readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
                                       PropertyType& _properties,
                                       SkelJoint& _joint,
                                       const std::string& _name,
-                                      size_t _numAxis)
+                                      std::size_t _numAxis)
 {
   // TODO(MXG): Consider printing warnings for these tags that recommends using
   // the dof tag instead, because all functionality of these tags have been
@@ -1823,7 +1823,7 @@ void readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
   std::string axisName = "axis";
 
   // axis
-  for (size_t i = 0; i < _numAxis; ++i)
+  for (std::size_t i = 0; i < _numAxis; ++i)
   {
     if (i != 0)
       axisName = "axis" + std::to_string(i + 1);

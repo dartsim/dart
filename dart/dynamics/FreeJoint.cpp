@@ -124,7 +124,7 @@ void FreeJoint::setTransform(Skeleton* skeleton,
   if (nullptr == skeleton)
     return;
 
-  const size_t numTrees = skeleton->getNumTrees();
+  const std::size_t numTrees = skeleton->getNumTrees();
 
   if (0 == numTrees)
     return;
@@ -135,7 +135,7 @@ void FreeJoint::setTransform(Skeleton* skeleton,
     return;
   }
 
-  for (size_t i = 0; i < numTrees; ++i)
+  for (std::size_t i = 0; i < numTrees; ++i)
     setTransform(skeleton->getRootBodyNode(i), tf, withRespectTo);
 }
 
@@ -557,7 +557,7 @@ const std::string& FreeJoint::getStaticType()
 }
 
 //==============================================================================
-bool FreeJoint::isCyclic(size_t _index) const
+bool FreeJoint::isCyclic(std::size_t _index) const
 {
   return _index < 3
       && !hasPositionLimit(0) && !hasPositionLimit(1) && !hasPositionLimit(2);

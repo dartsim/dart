@@ -113,7 +113,7 @@ bool FileInfoWorld::loadFile(const char* _fName)
       }
 
     state.resize(tempState.size());
-    for (size_t j = 0; j < tempState.size(); j++)
+    for (std::size_t j = 0; j < tempState.size(); j++)
       state[j] = tempState[j];
     mRecord->addState(state);
     tempState.clear();

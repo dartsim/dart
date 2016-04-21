@@ -357,7 +357,7 @@ protected:
   ::osgGA::GUIEventAdapter::ModKeyMask mJointRestrictionModKey;
 
   /// Currently unused, but this will change in the future
-  size_t mAdditionalBodyNodes;
+  std::size_t mAdditionalBodyNodes;
 };
 
 } // namespace osg

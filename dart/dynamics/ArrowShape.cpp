@@ -59,7 +59,7 @@ ArrowShape::ArrowShape(const Eigen::Vector3d& _tail,
                        const Eigen::Vector3d& _head,
                        const Properties& _properties,
                        const Eigen::Vector4d& _color,
-                       size_t _resolution)
+                       std::size_t _resolution)
   : MeshShape(Eigen::Vector3d::Ones(), nullptr),
     mTail(_tail),
     mHead(_head),
@@ -99,10 +99,10 @@ void ArrowShape::setProperties(const Properties& _properties)
 //==============================================================================
 void ArrowShape::notifyColorUpdate(const Eigen::Vector4d& _color)
 {
-  for(size_t i=0; i<mMesh->mNumMeshes; ++i)
+  for(std::size_t i=0; i<mMesh->mNumMeshes; ++i)
   {
     aiMesh* mesh = mMesh->mMeshes[i];
-    for(size_t j=0; j<mesh->mNumVertices; ++j)
+    for(std::size_t j=0; j<mesh->mNumVertices; ++j)
     {
       mesh->mColors[0][j] = aiColor4D(_color[0], _color[1],
                                       _color[2], _color[3]);
@@ -120,8 +120,8 @@ const ArrowShape::Properties& ArrowShape::getProperties() const
 static void constructArrowTip(aiMesh* mesh, double base, double tip,
                               const ArrowShape::Properties& properties)
 {
-  size_t resolution = (mesh->mNumVertices-1)/2;
-  for(size_t i=0; i<resolution; ++i)
+  std::size_t resolution = (mesh->mNumVertices-1)/2;
+  for(std::size_t i=0; i<resolution; ++i)
   {
     double theta = (double)(i)/(double)(resolution)*2*M_PI;
 
@@ -147,8 +147,8 @@ static void constructArrowTip(aiMesh* mesh, double base, double tip,
 static void constructArrowBody(aiMesh* mesh, double z1, double z2,
                                const ArrowShape::Properties& properties)
 {
-  size_t resolution = mesh->mNumVertices/2;
-  for(size_t i=0; i<resolution; ++i)
+  std::size_t resolution = mesh->mNumVertices/2;
+  for(std::size_t i=0; i<resolution; ++i)
   {
     double theta = (double)(i)/(double)(resolution)*2*M_PI;
 
@@ -231,8 +231,8 @@ void ArrowShape::configureArrow(const Eigen::Vector3d& _tail,
   }
 
   aiNode* node = mMesh->mRootNode;
-  for(size_t i=0; i<4; ++i)
-    for(size_t j=0; j<4; ++j)
+  for(std::size_t i=0; i<4; ++i)
+    for(std::size_t j=0; j<4; ++j)
       node->mTransformation[i][j] = tf(i,j);
 
   _updateBoundingBoxDim();
@@ -240,12 +240,12 @@ void ArrowShape::configureArrow(const Eigen::Vector3d& _tail,
 }
 
 //==============================================================================
-void ArrowShape::instantiate(size_t resolution)
+void ArrowShape::instantiate(std::size_t resolution)
 {
   aiNode* node = new aiNode;
   node->mNumMeshes = 3;
   node->mMeshes = new unsigned int[3];
-  for(size_t i=0; i<3; ++i)
+  for(std::size_t i=0; i<3; ++i)
     node->mMeshes[i] = i;
 
   aiScene* scene = new aiScene;
@@ -257,9 +257,9 @@ void ArrowShape::instantiate(size_t resolution)
   scene->mMaterials[0] = new aiMaterial;
 
   // allocate memory
-  for(size_t i=0; i<3; ++i)
+  for(std::size_t i=0; i<3; ++i)
   {
-    size_t numVertices = (i==0 || i==2)? 2*resolution+1 : 2*resolution;
+    std::size_t numVertices = (i==0 || i==2)? 2*resolution+1 : 2*resolution;
 
     aiMesh* mesh = new aiMesh;
     mesh->mMaterialIndex = (unsigned int)(-1);
@@ -269,10 +269,10 @@ void ArrowShape::instantiate(size_t resolution)
     mesh->mNormals = new aiVector3D[numVertices];
     mesh->mColors[0] = new aiColor4D[numVertices];
 
-    size_t numFaces = (i==0 || i==2)? 3*resolution : numVertices;
+    std::size_t numFaces = (i==0 || i==2)? 3*resolution : numVertices;
     mesh->mNumFaces = numFaces;
     mesh->mFaces = new aiFace[numFaces];
-    for(size_t j=0; j<numFaces; ++j)
+    for(std::size_t j=0; j<numFaces; ++j)
     {
       mesh->mFaces[j].mNumIndices = 3;
       mesh->mFaces[j].mIndices = new unsigned int[3];
@@ -283,7 +283,7 @@ void ArrowShape::instantiate(size_t resolution)
 
   // set normals
   aiMesh* mesh = scene->mMeshes[0];
-  for(size_t i=0; i<resolution; ++i)
+  for(std::size_t i=0; i<resolution; ++i)
   {
     mesh->mNormals[2*i].Set(0.0f, 0.0f, 1.0f);
 
@@ -293,7 +293,7 @@ void ArrowShape::instantiate(size_t resolution)
   mesh->mNormals[mesh->mNumVertices-1].Set(0.0f, 0.0f, -1.0f);
 
   mesh = scene->mMeshes[1];
-  for(size_t i=0; i<resolution; ++i)
+  for(std::size_t i=0; i<resolution; ++i)
   {
     double theta = (double)(i)/(double)(resolution)*2*M_PI;
     mesh->mNormals[2*i].Set(cos(theta), sin(theta), 0.0f);
@@ -301,7 +301,7 @@ void ArrowShape::instantiate(size_t resolution)
   }
 
   mesh = scene->mMeshes[2];
-  for(size_t i=0; i<resolution; ++i)
+  for(std::size_t i=0; i<resolution; ++i)
   {
     mesh->mNormals[2*i].Set(0.0f, 0.0f, -1.0f);
 
@@ -313,7 +313,7 @@ void ArrowShape::instantiate(size_t resolution)
   // set faces
   mesh = scene->mMeshes[0];
   aiFace* face;
-  for(size_t i=0; i<resolution; ++i)
+  for(std::size_t i=0; i<resolution; ++i)
   {
     // Back of head
     face = &mesh->mFaces[3*i];
@@ -334,7 +334,7 @@ void ArrowShape::instantiate(size_t resolution)
   }
 
   mesh = scene->mMeshes[1];
-  for(size_t i=0; i<resolution; ++i)
+  for(std::size_t i=0; i<resolution; ++i)
   {
     face = &mesh->mFaces[2*i];
     face->mIndices[0] = 2*i;
@@ -348,7 +348,7 @@ void ArrowShape::instantiate(size_t resolution)
   }
 
   mesh = scene->mMeshes[2];
-  for(size_t i=0; i<resolution; ++i)
+  for(std::size_t i=0; i<resolution; ++i)
   {
     // Back of head
     face = &mesh->mFaces[3*i];

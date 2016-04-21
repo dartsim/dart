@@ -66,8 +66,8 @@ protected:
   Eigen::VectorXd mDesiredDofs;
   Eigen::MatrixXd mKp;
   Eigen::MatrixXd mKd;
-  size_t mLeftFoot[2];
-  size_t mRightFoot[2];
+  std::size_t mLeftFoot[2];
+  std::size_t mRightFoot[2];
   int mFrame;
   double mTimestep;
   double mPreOffset;

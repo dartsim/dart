@@ -40,7 +40,7 @@
 
 #include "dart/utils/urdf/DartLoader.h"
 
-std::vector<size_t> twoLinkIndices;
+std::vector<std::size_t> twoLinkIndices;
 
 //==============================================================================
 TEST(FORWARD_KINEMATICS, YAW_ROLL)
@@ -58,7 +58,7 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
 
   // Set the test cases with the joint values and the expected end-effector
   // positions
-  const size_t numTests = 2;
+  const std::size_t numTests = 2;
   double temp = sqrt(0.5*l2*l2);
   Vector2d joints [numTests] = { Vector2d( constantsd::pi()/4.0,  constantsd::pi()/2.0),
                                  Vector2d(-constantsd::pi()/4.0, -constantsd::pi()/4.0) };
@@ -68,7 +68,7 @@ TEST(FORWARD_KINEMATICS, YAW_ROLL)
 
   // Check each case by setting the joint values and obtaining the end-effector
   // position
-  for (size_t i = 0; i < numTests; i++)
+  for (std::size_t i = 0; i < numTests; i++)
   {
     robot->setPositions(Eigen::VectorXd(joints[i]));
     BodyNode* bn = robot->getBodyNode("ee");
@@ -101,7 +101,7 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
 
   // Set the test cases with the joint values and the expected end-effector
   // positions
-  const size_t numTests = 2;
+  const std::size_t numTests = 2;
   Vector2d joints [numTests] = { Vector2d(0.0, constantsd::pi()/2.0),
                                  Vector2d(3*constantsd::pi()/4.0,
                                  -constantsd::pi()/4.0)};
@@ -110,7 +110,7 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
 
   // Check each case by setting the joint values and obtaining the end-effector
   // position
-  for (size_t i = 0; i < numTests; i++)
+  for (std::size_t i = 0; i < numTests; i++)
   {
     robot->setPositions(joints[i]);
     Vector3d actual
@@ -130,7 +130,7 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
 Eigen::MatrixXd finiteDifferenceJacobian(
     const SkeletonPtr& skeleton,
     const Eigen::VectorXd& q,
-    const std::vector<size_t>& active_indices)
+    const std::vector<std::size_t>& active_indices)
 {
   Eigen::MatrixXd J(3, q.size());
   for(int i=0; i < q.size(); ++i)
@@ -162,7 +162,7 @@ Eigen::MatrixXd finiteDifferenceJacobian(
 Eigen::MatrixXd standardJacobian(
     const SkeletonPtr& skeleton,
     const Eigen::VectorXd& q,
-    const std::vector<size_t>& active_indices)
+    const std::vector<std::size_t>& active_indices)
 {
   skeleton->setPositions(active_indices, q);
   BodyNode* last_bn = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1);
@@ -188,8 +188,8 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
 
   SkeletonPtr skeleton2 = skeleton1->clone();
 
-  std::vector<size_t> active_indices;
-  for(size_t i=0; i < 3; ++i)
+  std::vector<std::size_t> active_indices;
+  for(std::size_t i=0; i < 3; ++i)
     active_indices.push_back(i);
 
   Eigen::VectorXd q = Eigen::VectorXd::Random(active_indices.size());

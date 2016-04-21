@@ -59,7 +59,7 @@ public:
                 double elevation = 0.02);
 
   /// Visualize the support polygon of a specific tree in a Skeleton
-  SupportPolygonVisual(const dart::dynamics::SkeletonPtr& skeleton, size_t treeIndex,
+  SupportPolygonVisual(const dart::dynamics::SkeletonPtr& skeleton, std::size_t treeIndex,
                 double elevation = 0.02);
 
   /// Change the Skeleton that is being visualized
@@ -72,7 +72,7 @@ public:
   void visualizeWholeSkeleton();
 
   /// Visualize a specific tree in the Skeleton
-  void visualizeTree(size_t treeIndex);
+  void visualizeTree(std::size_t treeIndex);
 
   /// Change the elevation height at which the polygon is displayed
   void setDisplayElevation(double elevation);
@@ -144,7 +144,7 @@ protected:
   dart::dynamics::WeakSkeletonPtr mSkeleton;
 
   /// Tree index for this visual
-  size_t mTreeIndex;
+  std::size_t mTreeIndex;
 
   /// Elevation that this visual should use
   double mElevation;

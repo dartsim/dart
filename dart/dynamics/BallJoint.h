@@ -68,7 +68,7 @@ public:
   static const std::string& getStaticType();
 
   // Documentation inherited
-  bool isCyclic(size_t _index) const override;
+  bool isCyclic(std::size_t _index) const override;
 
   /// Get the Properties of this BallJoint
   Properties getBallJointProperties() const;

@@ -55,16 +55,16 @@ public:
   bool isGood() const;
 
   // Documentation inherited.
-  size_t getSize() override;
+  std::size_t getSize() override;
 
   // Documentation inherited.
-  size_t tell() override;
+  std::size_t tell() override;
 
   // Documentation inherited.
   bool seek(ptrdiff_t _origin, SeekType _mode) override;
 
   // Documentation inherited.
-  size_t read(void* _buffer, size_t _size, size_t _count) override;
+  std::size_t read(void* _buffer, std::size_t _size, std::size_t _count) override;
 
 private:
   std::FILE* mFile;

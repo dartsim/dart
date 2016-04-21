@@ -60,13 +60,13 @@ public:
   void addContact(const Contact& contact);
 
   /// Return number of contacts
-  size_t getNumContacts() const;
+  std::size_t getNumContacts() const;
 
   /// Return the index-th contact
-  Contact& getContact(size_t index);
+  Contact& getContact(std::size_t index);
 
   /// Return (const) the index-th contact
-  const Contact& getContact(size_t index) const;
+  const Contact& getContact(std::size_t index) const;
 
   /// Return contacts
   const std::vector<Contact>& getContacts() const;

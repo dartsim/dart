@@ -251,7 +251,7 @@ public:
 protected:
 
   SkeletonPtr mAtlas;
-  size_t iter;
+  std::size_t iter;
 
   EndEffectorPtr l_foot;
   EndEffectorPtr r_foot;
@@ -282,7 +282,7 @@ public:
     mRestConfig = mAtlas->getPositions();
 
     mLegs.reserve(12);
-    for(size_t i=0; i<mAtlas->getNumDofs(); ++i)
+    for(std::size_t i=0; i<mAtlas->getNumDofs(); ++i)
     {
       if(mAtlas->getDof(i)->getName().substr(1, 5) == "_leg_")
         mLegs.push_back(mAtlas->getDof(i)->getIndexInSkeleton());
@@ -292,7 +292,7 @@ public:
     mLegs.push_back(mAtlas->getDof("rootJoint_rot_y")->getIndexInSkeleton());
     mLegs.push_back(mAtlas->getDof("rootJoint_pos_z")->getIndexInSkeleton());
 
-    for(size_t i=0; i < mAtlas->getNumEndEffectors(); ++i)
+    for(std::size_t i=0; i < mAtlas->getNumEndEffectors(); ++i)
     {
       const InverseKinematicsPtr ik = mAtlas->getEndEffector(i)->getIK();
       if(ik)
@@ -327,7 +327,7 @@ public:
     {
       if( ea.getKey() == 'p' )
       {
-        for(size_t i=0; i < mAtlas->getNumDofs(); ++i)
+        for(std::size_t i=0; i < mAtlas->getNumDofs(); ++i)
           std::cout << mAtlas->getDof(i)->getName() << ": "
                     << mAtlas->getDof(i)->getPosition() << std::endl;
         std::cout << "  -- -- -- -- -- " << std::endl;
@@ -337,7 +337,7 @@ public:
       if( ea.getKey() == 't' )
       {
         // Reset all the positions except for x, y, and yaw
-        for(size_t i=0; i < mAtlas->getNumDofs(); ++i)
+        for(std::size_t i=0; i < mAtlas->getNumDofs(); ++i)
         {
           if( i < 2 || 4 < i )
             mAtlas->getDof(i)->setPosition(mRestConfig[i]);
@@ -347,7 +347,7 @@ public:
 
       if( '1' <= ea.getKey() && ea.getKey() <= '9' )
       {
-        size_t index = ea.getKey() - '1';
+        std::size_t index = ea.getKey() - '1';
         if(index < mConstraintActive.size())
         {
           EndEffector* ee = mAtlas->getEndEffector(mEndEffectorIndex[index]);
@@ -472,11 +472,11 @@ protected:
 
   Eigen::VectorXd mRestConfig;
 
-  std::vector<size_t> mLegs;
+  std::vector<std::size_t> mLegs;
 
   std::vector<bool> mConstraintActive;
 
-  std::vector<size_t> mEndEffectorIndex;
+  std::vector<std::size_t> mEndEffectorIndex;
 
   std::vector< std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
 
@@ -747,7 +747,7 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
       atlas->getIK(true)->getSolver());
   solver->setNumMaxIterations(10);
 
-  size_t nDofs = atlas->getNumDofs();
+  std::size_t nDofs = atlas->getNumDofs();
 
   double default_weight = 0.01;
   Eigen::VectorXd weights = default_weight * Eigen::VectorXd::Ones(nDofs);
@@ -822,10 +822,10 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
 void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& atlas)
 {
   // Turn on drag-and-drop for the whole Skeleton
-  for(size_t i=0; i < atlas->getNumBodyNodes(); ++i)
+  for(std::size_t i=0; i < atlas->getNumBodyNodes(); ++i)
     viewer.enableDragAndDrop(atlas->getBodyNode(i), false, false);
 
-  for(size_t i=0; i < atlas->getNumEndEffectors(); ++i)
+  for(std::size_t i=0; i < atlas->getNumEndEffectors(); ++i)
   {
     EndEffector* ee = atlas->getEndEffector(i);
     if(!ee->getIK())

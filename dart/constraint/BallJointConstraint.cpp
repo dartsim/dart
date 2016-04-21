@@ -164,7 +164,7 @@ void BallJointConstraint::getInformation(ConstraintInfo* _lcp)
 }
 
 //==============================================================================
-void BallJointConstraint::applyUnitImpulse(size_t _index)
+void BallJointConstraint::applyUnitImpulse(std::size_t _index)
 {
   assert(_index < mDim && "Invalid Index.");
   assert(isActive());
@@ -244,7 +244,7 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
   assert(_vel != nullptr && "Null pointer is not allowed.");
 
-  for (size_t i = 0; i < mDim; ++i)
+  for (std::size_t i = 0; i < mDim; ++i)
    _vel[i] = 0.0;
 
   if (mBodyNode1->getSkeleton()->isImpulseApplied()
@@ -253,7 +253,7 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
     Eigen::Vector3d v1 = mJacobian1 * mBodyNode1->getBodyVelocityChange();
     // std::cout << "velChange " << mBodyNode1->getBodyVelocityChange() << std::endl;
     // std::cout << "v1: " << v1 << std::endl;
-    for (size_t i = 0; i < mDim; ++i)
+    for (std::size_t i = 0; i < mDim; ++i)
       _vel[i] += v1[i];
   }
 
@@ -263,7 +263,7 @@ void BallJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
   {
     Eigen::Vector3d v2 = mJacobian2 * mBodyNode2->getBodyVelocityChange();
     // std::cout << "v2: " << v2 << std::endl;
-    for (size_t i = 0; i < mDim; ++i)
+    for (std::size_t i = 0; i < mDim; ++i)
       _vel[i] -= v2[i];
   }
 

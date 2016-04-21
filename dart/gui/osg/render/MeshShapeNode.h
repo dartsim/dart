@@ -71,7 +71,7 @@ public:
   void refresh();
   void extractData(bool firstTime);
 
-  ::osg::Material* getMaterial(size_t index) const;
+  ::osg::Material* getMaterial(std::size_t index) const;
 
 protected:
 

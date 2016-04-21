@@ -57,12 +57,12 @@ class BodyNode;
 class Skeleton;
 
 /// class MultiDofJoint
-template<size_t DOF>
+template<std::size_t DOF>
 class MultiDofJoint : public detail::MultiDofJointBase< MultiDofJoint<DOF>, DOF >
 {
 public:
 
-  constexpr static size_t NumDofs = DOF;
+  constexpr static std::size_t NumDofs = DOF;
   using Vector = Eigen::Matrix<double, DOF, 1>;
   using Base = detail::MultiDofJointBase<MultiDofJoint<DOF>, DOF>;
   using UniqueProperties = detail::MultiDofJointUniqueProperties<DOF>;
@@ -106,43 +106,43 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  DegreeOfFreedom* getDof(size_t index) override;
+  DegreeOfFreedom* getDof(std::size_t index) override;
 
   // Documentation inherited
-  const DegreeOfFreedom* getDof(size_t _index) const override;
+  const DegreeOfFreedom* getDof(std::size_t _index) const override;
 
   // Documentation inherited
-  size_t getNumDofs() const override;
+  std::size_t getNumDofs() const override;
 
   // Documentation inherited
-  const std::string& setDofName(size_t _index,
+  const std::string& setDofName(std::size_t _index,
                                 const std::string& _name,
                                 bool _preserveName=true) override;
 
   // Docuemntation inherited
-  void preserveDofName(size_t _index, bool _preserve) override;
+  void preserveDofName(std::size_t _index, bool _preserve) override;
 
   // Documentation inherited
-  bool isDofNamePreserved(size_t _index) const override;
+  bool isDofNamePreserved(std::size_t _index) const override;
 
   // Documentation inherited
-  const std::string& getDofName(size_t _index) const override;
+  const std::string& getDofName(std::size_t _index) const override;
 
   // Documentation inherited
-  size_t getIndexInSkeleton(size_t _index) const override;
+  std::size_t getIndexInSkeleton(std::size_t _index) const override;
 
   // Documentation inherited
-  size_t getIndexInTree(size_t _index) const override;
+  std::size_t getIndexInTree(std::size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Command
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setCommand(size_t _index, double command) override;
+  void setCommand(std::size_t _index, double command) override;
 
   // Documentation inherited
-  double getCommand(size_t _index) const override;
+  double getCommand(std::size_t _index) const override;
 
   // Documentation inherited
   void setCommands(const Eigen::VectorXd& _commands) override;
@@ -158,10 +158,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setPosition(size_t _index, double _position) override;
+  void setPosition(std::size_t _index, double _position) override;
 
   // Documentation inherited
-  double getPosition(size_t _index) const override;
+  double getPosition(std::size_t _index) const override;
 
   // Documentation inherited
   void setPositions(const Eigen::VectorXd& _positions) override;
@@ -170,31 +170,31 @@ public:
   Eigen::VectorXd getPositions() const override;
 
   // Documentation inherited
-  void setPositionLowerLimit(size_t _index, double _position) override;
+  void setPositionLowerLimit(std::size_t _index, double _position) override;
 
   // Documentation inherited
-  double getPositionLowerLimit(size_t _index) const override;
+  double getPositionLowerLimit(std::size_t _index) const override;
 
   // Documentation inherited
-  void setPositionUpperLimit(size_t _index, double _position) override;
+  void setPositionUpperLimit(std::size_t _index, double _position) override;
 
   // Documentation inherited
-  double getPositionUpperLimit(size_t _index) const override;
+  double getPositionUpperLimit(std::size_t _index) const override;
 
   // Documentation inherited
-  bool hasPositionLimit(size_t _index) const override;
+  bool hasPositionLimit(std::size_t _index) const override;
 
   // Documentation inherited
-  void resetPosition(size_t _index) override;
+  void resetPosition(std::size_t _index) override;
 
   // Documentation inherited
   void resetPositions() override;
 
   // Documentation inherited
-  void setInitialPosition(size_t _index, double _initial) override;
+  void setInitialPosition(std::size_t _index, double _initial) override;
 
   // Documentation inherited
-  double getInitialPosition(size_t _index) const override;
+  double getInitialPosition(std::size_t _index) const override;
 
   // Documentation inherited
   void setInitialPositions(const Eigen::VectorXd& _initial) override;
@@ -207,10 +207,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setVelocity(size_t _index, double _velocity) override;
+  void setVelocity(std::size_t _index, double _velocity) override;
 
   // Documentation inherited
-  double getVelocity(size_t _index) const override;
+  double getVelocity(std::size_t _index) const override;
 
   // Documentation inherited
   void setVelocities(const Eigen::VectorXd& _velocities) override;
@@ -219,28 +219,28 @@ public:
   Eigen::VectorXd getVelocities() const override;
 
   // Documentation inherited
-  void setVelocityLowerLimit(size_t _index, double _velocity) override;
+  void setVelocityLowerLimit(std::size_t _index, double _velocity) override;
 
   // Documentation inherited
-  double getVelocityLowerLimit(size_t _index) const override;
+  double getVelocityLowerLimit(std::size_t _index) const override;
 
   // Documentation inherited
-  void setVelocityUpperLimit(size_t _index, double _velocity) override;
+  void setVelocityUpperLimit(std::size_t _index, double _velocity) override;
 
   // Documentation inherited
-  double getVelocityUpperLimit(size_t _index) const override;
+  double getVelocityUpperLimit(std::size_t _index) const override;
 
   // Documentation inherited
-  void resetVelocity(size_t _index) override;
+  void resetVelocity(std::size_t _index) override;
 
   // Documentation inherited
   void resetVelocities() override;
 
   // Documentation inherited
-  void setInitialVelocity(size_t _index, double _initial) override;
+  void setInitialVelocity(std::size_t _index, double _initial) override;
 
   // Documentation inherited
-  double getInitialVelocity(size_t _index) const override;
+  double getInitialVelocity(std::size_t _index) const override;
 
   // Documentation inherited
   void setInitialVelocities(const Eigen::VectorXd& _initial) override;
@@ -253,10 +253,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setAcceleration(size_t _index, double _acceleration) override;
+  void setAcceleration(std::size_t _index, double _acceleration) override;
 
   // Documentation inherited
-  double getAcceleration(size_t _index) const override;
+  double getAcceleration(std::size_t _index) const override;
 
   // Documentation inherited
   void setAccelerations(const Eigen::VectorXd& _accelerations) override;
@@ -268,16 +268,16 @@ public:
   void resetAccelerations() override;
 
   // Documentation inherited
-  void setAccelerationLowerLimit(size_t _index, double _acceleration) override;
+  void setAccelerationLowerLimit(std::size_t _index, double _acceleration) override;
 
   // Documentation inherited
-  double getAccelerationLowerLimit(size_t _index) const override;
+  double getAccelerationLowerLimit(std::size_t _index) const override;
 
   // Documentation inherited
-  void setAccelerationUpperLimit(size_t _index, double _acceleration) override;
+  void setAccelerationUpperLimit(std::size_t _index, double _acceleration) override;
 
   // Documentation inherited
-  double getAccelerationUpperLimit(size_t _index) const override;
+  double getAccelerationUpperLimit(std::size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Fixed-size mutators and accessors
@@ -312,10 +312,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setForce(size_t _index, double _force) override;
+  void setForce(std::size_t _index, double _force) override;
 
   // Documentation inherited
-  double getForce(size_t _index) override;
+  double getForce(std::size_t _index) override;
 
   // Documentation inherited
   void setForces(const Eigen::VectorXd& _forces) override;
@@ -327,26 +327,26 @@ public:
   void resetForces() override;
 
   // Documentation inherited
-  void setForceLowerLimit(size_t _index, double _force) override;
+  void setForceLowerLimit(std::size_t _index, double _force) override;
 
   // Documentation inherited
-  double getForceLowerLimit(size_t _index) const override;
+  double getForceLowerLimit(std::size_t _index) const override;
 
   // Documentation inherited
-  void setForceUpperLimit(size_t _index, double _force) override;
+  void setForceUpperLimit(std::size_t _index, double _force) override;
 
   // Documentation inherited
-  double getForceUpperLimit(size_t _index) const override;
+  double getForceUpperLimit(std::size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Velocity change
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setVelocityChange(size_t _index, double _velocityChange) override;
+  void setVelocityChange(std::size_t _index, double _velocityChange) override;
 
   // Documentation inherited
-  double getVelocityChange(size_t _index) const override;
+  double getVelocityChange(std::size_t _index) const override;
 
   // Documentation inherited
   void resetVelocityChanges() override;
@@ -356,10 +356,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setConstraintImpulse(size_t _index, double _impulse) override;
+  void setConstraintImpulse(std::size_t _index, double _impulse) override;
 
   // Documentation inherited
-  double getConstraintImpulse(size_t _index) const override;
+  double getConstraintImpulse(std::size_t _index) const override;
 
   // Documentation inherited
   void resetConstraintImpulses() override;
@@ -387,28 +387,28 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setSpringStiffness(size_t _index, double _k) override;
+  void setSpringStiffness(std::size_t _index, double _k) override;
 
   // Documentation inherited
-  double getSpringStiffness(size_t _index) const override;
+  double getSpringStiffness(std::size_t _index) const override;
 
   // Documentation inherited
-  void setRestPosition(size_t _index, double _q0) override;
+  void setRestPosition(std::size_t _index, double _q0) override;
 
   // Documentation inherited
-  double getRestPosition(size_t _index) const override;
+  double getRestPosition(std::size_t _index) const override;
 
   // Documentation inherited
-  void setDampingCoefficient(size_t _index, double _d) override;
+  void setDampingCoefficient(std::size_t _index, double _d) override;
 
   // Documentation inherited
-  double getDampingCoefficient(size_t _index) const override;
+  double getDampingCoefficient(std::size_t _index) const override;
 
   // Documentation inherited
-  void setCoulombFriction(size_t _index, double _friction) override;
+  void setCoulombFriction(std::size_t _index, double _friction) override;
 
   // Documentation inherited
-  double getCoulombFriction(size_t _index) const override;
+  double getCoulombFriction(std::size_t _index) const override;
 
   /// \}
 
@@ -579,13 +579,13 @@ protected:
 
   // Documentation inherited
   void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
-                               const size_t _col,
+                               const std::size_t _col,
                                const Eigen::Matrix6d& _artInertia,
                                const Eigen::Vector6d& _spatialAcc) override;
 
   // Documentation inherited
   void getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
-                                  const size_t _col,
+                                  const std::size_t _col,
                                   const Eigen::Matrix6d& _artInertia,
                                   const Eigen::Vector6d& _spatialAcc) override;
 

@@ -104,7 +104,7 @@ bool BodyContactCondition::isSatisfied()
   SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(mBodyNode);
   if (soft)
   {
-    for (size_t i = 0; i < soft->getNumPointMasses(); ++i)
+    for (std::size_t i = 0; i < soft->getNumPointMasses(); ++i)
     {
       PointMass* pm = soft->getPointMass(i);
       if (pm->isColliding() > 0)

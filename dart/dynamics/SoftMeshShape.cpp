@@ -124,10 +124,10 @@ void SoftMeshShape::_buildMesh()
 
 void SoftMeshShape::update()
 {
-  size_t nVertices = mSoftBodyNode->getNumPointMasses();
+  std::size_t nVertices = mSoftBodyNode->getNumPointMasses();
 
   aiVector3D itAIVector3d;
-  for (size_t i = 0; i < nVertices; ++i)
+  for (std::size_t i = 0; i < nVertices; ++i)
   {
     PointMass* itPointMass        = mSoftBodyNode->getPointMass(i);
     const Eigen::Vector3d& vertex = itPointMass->getLocalPosition();

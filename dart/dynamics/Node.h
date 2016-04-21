@@ -222,13 +222,13 @@ protected:
   bool mAmAttached;
 
   /// The index of this Node within its vector in its BodyNode's NodeMap
-  size_t mIndexInBodyNode;
+  std::size_t mIndexInBodyNode;
 
   /// The index of this Node within its vector in its Skeleton's NodeMap
-  size_t mIndexInSkeleton;
+  std::size_t mIndexInSkeleton;
 
   /// Index of this Node within its tree
-  size_t mIndexInTree;
+  std::size_t mIndexInTree;
 };
 
 //==============================================================================
@@ -244,16 +244,16 @@ public:
   virtual ~AccessoryNode() = default;
 
   /// Get the index of this Node within its BodyNode.
-  size_t getIndexInBodyNode() const;
+  std::size_t getIndexInBodyNode() const;
 
   /// Get the index of this Node within its Skeleton.
-  size_t getIndexInSkeleton() const;
+  std::size_t getIndexInSkeleton() const;
 
   /// Get the index of this Node within its tree.
-  size_t getIndexInTree() const;
+  std::size_t getIndexInTree() const;
 
   /// Get the index of this Node's tree within its Skeleton
-  size_t getTreeIndex() const;
+  std::size_t getTreeIndex() const;
 
   /// Stage the Node for removal. When all strong references to the Node expire,
   /// the Node will be removed from its BodyNode and deleted.

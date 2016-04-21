@@ -94,26 +94,26 @@ public:
   /// \brief Read from the file
   ///
   /// See fread() for more details
-  size_t Read(void* pvBuffer, size_t pSize, size_t pCount) override;
+  std::size_t Read(void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
 
   /// \brief Not implemented. This is a read-only stream.
-  size_t Write(const void* pvBuffer, size_t pSize, size_t pCount) override;
+  std::size_t Write(const void* pvBuffer, std::size_t pSize, std::size_t pCount) override;
 
   /// \brief Set the read/write cursor of the file
   ///
   /// Note that the offset is _negative_ for aiOrigin_END.
   /// See fseek() for more details
-  aiReturn Seek(size_t pOffset, aiOrigin pOrigin) override;
+  aiReturn Seek(std::size_t pOffset, aiOrigin pOrigin) override;
 
   /// \brief Get the current position of the read/write cursor
   ///
   /// See ftell() for more details
-  size_t Tell() const override;
+  std::size_t Tell() const override;
 
   /// \brief Returns filesize
   ///
   /// Returns the filesize.
-  size_t FileSize() const override;
+  std::size_t FileSize() const override;
 
   /// \brief Not implemented. This is a read-only stream.
   void Flush() override;

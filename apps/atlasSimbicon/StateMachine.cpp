@@ -178,7 +178,7 @@ void StateMachine::transiteTo(string& _stateName, double _currentTime)
 }
 
 //==============================================================================
-void StateMachine::transiteTo(size_t _idx, double _currentTime)
+void StateMachine::transiteTo(std::size_t _idx, double _currentTime)
 {
   assert(_idx <= mStates.size() && "Invalid index of State.");
 
