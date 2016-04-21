@@ -130,7 +130,8 @@ TEST(FORWARD_KINEMATICS, TWO_ROLLS)
 Eigen::MatrixXd finiteDifferenceJacobian(
     const SkeletonPtr& skeleton,
     const Eigen::VectorXd& q,
-    const std::vector<size_t>& active_indices)
+    const std::vector<size_t>& active_indices,
+    JacobianNode* node)
 {
   Eigen::MatrixXd J(3, q.size());
   for(int i=0; i < q.size(); ++i)
@@ -143,16 +144,14 @@ Eigen::MatrixXd finiteDifferenceJacobian(
     q_up[i] += 0.5*dq;
     q_down[i] -= 0.5*dq;
 
-    BodyNode* last_bn = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1);
-
     skeleton->setPositions(active_indices, q_up);
-    Eigen::Vector3d x_up = last_bn->getTransform().translation();
+    Eigen::Vector3d x_up = node->getTransform().translation();
 
     skeleton->setPositions(active_indices, q_down);
-    Eigen::Vector3d x_down = last_bn->getTransform().translation();
+    Eigen::Vector3d x_down = node->getTransform().translation();
 
     skeleton->setPositions(active_indices, q);
-    J.col(i) = last_bn->getWorldTransform().linear().transpose() * (x_up - x_down) / dq;
+    J.col(i) = node->getWorldTransform().linear().transpose() * (x_up - x_down) / dq;
   }
 
   return J;
@@ -162,12 +161,12 @@ Eigen::MatrixXd finiteDifferenceJacobian(
 Eigen::MatrixXd standardJacobian(
     const SkeletonPtr& skeleton,
     const Eigen::VectorXd& q,
-    const std::vector<size_t>& active_indices)
+    const std::vector<size_t>& active_indices,
+    JacobianNode* node)
 {
   skeleton->setPositions(active_indices, q);
-  BodyNode* last_bn = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1);
 
-  Eigen::MatrixXd J = skeleton->getJacobian(last_bn).bottomRows<3>();
+  Eigen::MatrixXd J = skeleton->getJacobian(node).bottomRows<3>();
 
   Eigen::MatrixXd reduced_J(3, q.size());
   for(int i=0; i < q.size(); ++i)
@@ -193,14 +192,63 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
     active_indices.push_back(i);
 
   Eigen::VectorXd q = Eigen::VectorXd::Random(active_indices.size());
-  Eigen::MatrixXd fd_J = finiteDifferenceJacobian(skeleton1, q, active_indices);
-  Eigen::MatrixXd J = standardJacobian(skeleton2, q, active_indices);
+
+  Eigen::MatrixXd fd_J = finiteDifferenceJacobian(
+        skeleton1, q, active_indices,
+        skeleton1->getBodyNode(skeleton1->getNumBodyNodes()-1));
+
+  Eigen::MatrixXd J = standardJacobian(
+        skeleton2, q, active_indices,
+        skeleton2->getBodyNode(skeleton2->getNumBodyNodes()-1));
 
   EXPECT_TRUE((fd_J - J).norm() < tolerance);
 
   q = Eigen::VectorXd::Random(active_indices.size());
-  fd_J = finiteDifferenceJacobian(skeleton1, q, active_indices);
-  J = standardJacobian(skeleton2, q, active_indices);
+
+  fd_J = finiteDifferenceJacobian(
+        skeleton1, q, active_indices,
+        skeleton1->getBodyNode(skeleton1->getNumBodyNodes()-1));
+
+  J = standardJacobian(
+        skeleton2, q, active_indices,
+        skeleton2->getBodyNode(skeleton2->getNumBodyNodes()-1));
+
+  EXPECT_TRUE((fd_J - J).norm() < tolerance);
+}
+
+//==============================================================================
+TEST(FORWARD_KINEMATICS, JACOBIAN_END_EFFECTOR_CHANGE)
+{
+  // This is a regression test for issue #499
+  const double tolerance = 1e-8;
+
+  dart::utils::DartLoader loader;
+  SkeletonPtr skeleton1 =
+      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+
+  BodyNode* last_bn1 = skeleton1->getBodyNode(skeleton1->getNumBodyNodes()-1);
+  EndEffector* ee1 = last_bn1->createEndEffector();
+
+  SkeletonPtr skeleton2 = skeleton1->clone();
+  BodyNode* last_bn2 = skeleton2->getBodyNode(skeleton2->getNumBodyNodes()-1);
+  EndEffector* ee2 = last_bn2->createEndEffector();
+
+  std::vector<size_t> active_indices;
+  for(size_t i=0; i < 3; ++i)
+    active_indices.push_back(i);
+
+  Eigen::VectorXd q = Eigen::VectorXd::Random(active_indices.size());
+
+  Eigen::MatrixXd fd_J = finiteDifferenceJacobian(
+        skeleton1, q, active_indices, ee1);
+
+  Eigen::MatrixXd J = standardJacobian(skeleton2, q, active_indices, ee2);
+
+  EXPECT_TRUE((fd_J - J).norm() < tolerance);
+
+  q = Eigen::VectorXd::Random(active_indices.size());
+  fd_J = finiteDifferenceJacobian(skeleton1, q, active_indices, ee1);
+  J = standardJacobian(skeleton2, q, active_indices, ee2);
 
   EXPECT_TRUE((fd_J - J).norm() < tolerance);
 }

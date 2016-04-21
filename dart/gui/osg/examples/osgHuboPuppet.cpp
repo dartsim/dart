@@ -1172,7 +1172,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   l_hand->getIK()->setGradientMethod<HuboArmIK>("Body_LSP");
 
   l_hand->getIK()->getAnalytical()->setExtraDofUtilization(
-        IK::Analytical::PRE_ANALYTICAL);
+        IK::Analytical::POST_ANALYTICAL);
 
   l_hand->getIK()->getAnalytical()->setExtraErrorLengthClamp(extra_error_clamp);
 
@@ -1198,7 +1198,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   r_hand->getIK()->setGradientMethod<HuboArmIK>("Body_RSP");
 
   r_hand->getIK()->getAnalytical()->setExtraDofUtilization(
-        IK::Analytical::PRE_ANALYTICAL);
+        IK::Analytical::POST_ANALYTICAL);
 
   r_hand->getIK()->getAnalytical()->setExtraErrorLengthClamp(extra_error_clamp);
 

@@ -37,10 +37,10 @@
 #ifndef DART_DYNAMICS_DETAIL_TEMPLATEDJACOBIAN_H_
 #define DART_DYNAMICS_DETAIL_TEMPLATEDJACOBIAN_H_
 
+#include "dart/dynamics/TemplatedJacobianNode.h"
+
 namespace dart {
 namespace dynamics {
-
-#include "dart/dynamics/TemplatedJacobianNode.h"
 
 //==============================================================================
 template<class NodeType>
