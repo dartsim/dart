@@ -56,7 +56,8 @@ namespace detail {
 
 //==============================================================================
 struct BodyNodeState
-{/// External spatial force
+{
+  /// External spatial force
   Eigen::Vector6d mFext;
 
   BodyNodeState(const Eigen::Vector6d& Fext = Eigen::Vector6d::Zero());

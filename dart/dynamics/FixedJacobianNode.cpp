@@ -213,6 +213,5 @@ void FixedJacobianNode::updateWorldJacobianClassicDeriv() const
   mIsWorldJacobianClassicDerivDirty = false;
 }
 
-
 } // namespace dynamics
 } // namespace dart

@@ -306,9 +306,6 @@ protected:
   /// An Entity which tracks when the point masses need to be updated
   PointMassNotifier* mNotifier;
 
-  /// SoftBodyNode Properties
-//  UniqueProperties mSoftP;
-
   /// \brief Soft mesh shape belonging to this node.
   WeakShapeNodePtr mSoftShapeNode;
 
