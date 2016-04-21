@@ -219,6 +219,8 @@ protected:
   /// Pass the temporary State of this Aspect into the new Composite
   void setComposite(Composite* newComposite) override
   {
+    assert(nullptr == this->getComposite());
+
     Base::setComposite(newComposite);
     if(mTemporaryState)
       SetEmbeddedState(static_cast<Derived*>(this), *mTemporaryState);
@@ -234,9 +236,10 @@ protected:
     Base::loseComposite(oldComposite);
   }
 
-  /// During transitions between Composite objects, this will hold the State of
-  /// the Aspect. Once the Aspect has been moved into a new Composite, this
-  /// State will be pushed into the Composite and cleared.
+  /// After this Aspect is constructed and during transitions between Composite
+  /// objects, this will hold the State of the Aspect. Once the Aspect has been
+  /// moved into a new Composite, this State will be pushed into the Composite
+  /// and cleared.
   std::unique_ptr<State> mTemporaryState;
 
 };
@@ -389,6 +392,8 @@ protected:
   /// Pass the temporary Properties of this Aspect into the new Composite
   void setComposite(Composite* newComposite) override
   {
+    assert(nullptr == this->getComposite());
+
     Base::setComposite(newComposite);
     if(mTemporaryProperties)
       SetEmbeddedProperties(static_cast<Derived*>(this), *mTemporaryProperties);
@@ -405,9 +410,10 @@ protected:
     Base::loseComposite(oldComposite);
   }
 
-  /// During transitions between Composite objects, this will hold the Properties
-  /// of the Aspect. Once the Aspect has been moved into a new Composite, these
-  /// Properties will be pushed into the Composite and cleared.
+  /// After this Aspect is constructed and during transitions between Composite
+  /// objects, this will hold the Properties of the Aspect. Once the Aspect has
+  /// been moved into a new Composite, these Properties will be pushed into the
+  /// Composite and cleared.
   std::unique_ptr<Properties> mTemporaryProperties;
 
 };

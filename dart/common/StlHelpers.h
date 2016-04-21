@@ -41,7 +41,6 @@
 #include <cstddef>
 #include <memory>
 #include <vector>
-#include "dart/common/Console.h"
 
 // Macro to suppress -Wunused-parameter and -Wunused-variable warnings in
 // release mode when a variable is only used in assertions.

@@ -146,18 +146,18 @@ bool Composite::requiresAspect() const
 
 //==============================================================================
 template <class T>
-void createAspects(T* /*mgr*/)
+void createAspects(T* /*comp*/)
 {
   // Do nothing
 }
 
 //==============================================================================
 template <class T, class NextAspect, class... Aspects>
-void createAspects(T* mgr)
+void createAspects(T* comp)
 {
-  mgr->template createAspect<NextAspect>();
+  comp->template createAspect<NextAspect>();
 
-  createAspects<T, Aspects...>(mgr);
+  createAspects<T, Aspects...>(comp);
 }
 
 } // namespace common

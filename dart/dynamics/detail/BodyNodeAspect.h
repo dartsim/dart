@@ -144,7 +144,7 @@ using NodeVectorProxyAspect = common::ProxyStateAndPropertiesAspect<BodyNode,
     NodeVectorProxyAspectState, NodeVectorProxyAspectProperties>;
 
 //==============================================================================
-using BodyNodeAspects = common::EmbedStateAndPropertiesOnTopOf<
+using BodyNodeCompositeBase = common::EmbedStateAndPropertiesOnTopOf<
     BodyNode, BodyNodeState, BodyNodeAspectProperties,
     common::RequiresAspect<NodeVectorProxyAspect> >;
 

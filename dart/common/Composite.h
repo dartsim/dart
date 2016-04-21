@@ -196,11 +196,11 @@ protected:
 // itself. Also consider allowing the user to specify arguments for the
 // constructors of the Aspects.
 template <class T>
-void createAspects(T* /*mgr*/);
+void createAspects(T* /*comp*/);
 
 //==============================================================================
 template <class T, class NextAspect, class... Aspects>
-void createAspects(T* mgr);
+void createAspects(T* comp);
 
 } // namespace common
 } // namespace dart

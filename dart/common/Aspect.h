@@ -149,6 +149,9 @@ public:
   /// Get the Composite of this Aspect
   const CompositeType* getComposite() const;
 
+  /// Returns true if this Aspect has a Composite that matches CompositeType
+  bool hasComposite() const;
+
 protected:
 
   /// Grab the new Composite

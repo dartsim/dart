@@ -53,8 +53,9 @@ namespace common {
 template <class SpecAspect>
 SpecializedForAspect<SpecAspect>::SpecializedForAspect()
 {
-  mAspectMap[typeid( SpecAspect )] = nullptr;
-  mSpecAspectIterator = mAspectMap.find(typeid( SpecAspect ));
+  mSpecAspectIterator = mAspectMap.insert(
+        std::make_pair<std::type_index, std::unique_ptr<Aspect>>(
+          typeid(SpecAspect), nullptr)).first;
 }
 
 //==============================================================================

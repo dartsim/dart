@@ -69,7 +69,7 @@ public:
   using State = common::Composite::State;
   using Properties = common::Composite::Properties;
 
-  enum ConfigFlag_t
+  enum ConfigFlags
   {
     CONFIG_NOTHING       = 0,
     CONFIG_POSITIONS     = 1 << 1,

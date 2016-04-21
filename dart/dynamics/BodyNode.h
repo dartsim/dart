@@ -75,7 +75,7 @@ class Marker;
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
 class BodyNode :
-    public detail::BodyNodeAspects,
+    public detail::BodyNodeCompositeBase,
     public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector>,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
