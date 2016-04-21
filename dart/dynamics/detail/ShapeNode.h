@@ -43,7 +43,6 @@
 
 namespace dart {
 namespace dynamics {
-
 namespace detail {
 
 using ShapeNodeCompositeBase = CompositeNode<
