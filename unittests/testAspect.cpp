@@ -366,69 +366,77 @@ class CustomSpecializedComposite : public SpecializedForAspect<SpecializedAspect
 
 TEST(Aspect, Generic)
 {
-  Composite mgr;
+  Composite comp;
 
-  EXPECT_TRUE( mgr.get<GenericAspect>() == nullptr );
+  EXPECT_TRUE( comp.get<GenericAspect>() == nullptr );
+  EXPECT_FALSE( comp.has<GenericAspect>() );
 
-  sub_ptr<GenericAspect> aspect = mgr.createAspect<GenericAspect>();
+  comp.set<GenericAspect>(nullptr);
+  EXPECT_TRUE( comp.get<GenericAspect>() == nullptr );
+  EXPECT_FALSE( comp.has<GenericAspect>() );
+
+  sub_ptr<GenericAspect> aspect = comp.createAspect<GenericAspect>();
   GenericAspect* rawAspect = aspect;
   EXPECT_FALSE( nullptr == aspect );
-  EXPECT_TRUE( mgr.get<GenericAspect>() == aspect );
+  EXPECT_FALSE( nullptr == rawAspect );
+  EXPECT_TRUE( comp.get<GenericAspect>() == aspect );
+  EXPECT_TRUE( comp.get<GenericAspect>() == rawAspect);
 
-  GenericAspect* newAspect = mgr.createAspect<GenericAspect>();
+  GenericAspect* newAspect = comp.createAspect<GenericAspect>();
   EXPECT_FALSE( nullptr == newAspect );
-  EXPECT_TRUE( nullptr == aspect );
+  EXPECT_FALSE( nullptr == rawAspect );
   EXPECT_FALSE( rawAspect == newAspect );
+  EXPECT_TRUE( nullptr == aspect );
 }
 
 TEST(Aspect, Specialized)
 {
   usedSpecializedAspectAccess = false;
-  CustomSpecializedComposite mgr;
+  CustomSpecializedComposite comp;
 
-  EXPECT_TRUE( mgr.get<SpecializedAspect>() == nullptr );
+  EXPECT_TRUE( comp.get<SpecializedAspect>() == nullptr );
   EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
-//  EXPECT_TRUE( mgr.getSpecializedAspect() == nullptr );
-  EXPECT_TRUE( mgr.get<GenericAspect>() == nullptr );
+//  EXPECT_TRUE( comp.getSpecializedAspect() == nullptr );
+  EXPECT_TRUE( comp.get<GenericAspect>() == nullptr );
   EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
-  sub_ptr<SpecializedAspect> spec = mgr.createAspect<SpecializedAspect>();
+  sub_ptr<SpecializedAspect> spec = comp.createAspect<SpecializedAspect>();
   EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
   SpecializedAspect* rawSpec = spec;
 
-  sub_ptr<GenericAspect> generic = mgr.createAspect<GenericAspect>();
+  sub_ptr<GenericAspect> generic = comp.createAspect<GenericAspect>();
   EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
   GenericAspect* rawGeneric = generic;
 
-  EXPECT_TRUE( mgr.get<SpecializedAspect>() == spec );
+  EXPECT_TRUE( comp.get<SpecializedAspect>() == spec );
   EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
-//  EXPECT_TRUE( mgr.getSpecializedAspect() == spec );
+//  EXPECT_TRUE( comp.getSpecializedAspect() == spec );
 
-  EXPECT_TRUE( mgr.get<GenericAspect>() == generic );
+  EXPECT_TRUE( comp.get<GenericAspect>() == generic );
   EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
-//  SpecializedAspect* newSpec = mgr.createSpecializedAspect();
-  SpecializedAspect* newSpec = mgr.createAspect<SpecializedAspect>();
+//  SpecializedAspect* newSpec = comp.createSpecializedAspect();
+  SpecializedAspect* newSpec = comp.createAspect<SpecializedAspect>();
   EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
-  GenericAspect* newGeneric = mgr.createAspect<GenericAspect>();
+  GenericAspect* newGeneric = comp.createAspect<GenericAspect>();
   EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
   EXPECT_TRUE( nullptr == spec );
   EXPECT_TRUE( nullptr == generic );
 
-  EXPECT_FALSE( mgr.get<SpecializedAspect>() == rawSpec );
+  EXPECT_FALSE( comp.get<SpecializedAspect>() == rawSpec );
   EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
-//  EXPECT_FALSE( mgr.getSpecializedAspect() == rawSpec );
+//  EXPECT_FALSE( comp.getSpecializedAspect() == rawSpec );
 
-  EXPECT_FALSE( mgr.get<GenericAspect>() == rawGeneric );
+  EXPECT_FALSE( comp.get<GenericAspect>() == rawGeneric );
   EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 
-  EXPECT_TRUE( mgr.get<SpecializedAspect>() == newSpec );
+  EXPECT_TRUE( comp.get<SpecializedAspect>() == newSpec );
   EXPECT_TRUE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
-//  EXPECT_TRUE( mgr.getSpecializedAspect() == newSpec );
+//  EXPECT_TRUE( comp.getSpecializedAspect() == newSpec );
 
-  EXPECT_TRUE( mgr.get<GenericAspect>() == newGeneric );
+  EXPECT_TRUE( comp.get<GenericAspect>() == newGeneric );
   EXPECT_FALSE( usedSpecializedAspectAccess ); usedSpecializedAspectAccess = false;
 }
 
@@ -448,6 +456,20 @@ TEST(Aspect, Releasing)
     EXPECT_TRUE( receiver.get<GenericAspect>() == nullptr );
 
     receiver.set<GenericAspect>(sender.releaseAspect<GenericAspect>());
+
+    EXPECT_FALSE( nullptr == aspect );
+
+    EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
+    EXPECT_TRUE( receiver.get<GenericAspect>() == aspect );
+
+    sender.set<GenericAspect>(sender.releaseAspect<GenericAspect>());
+
+    EXPECT_FALSE( nullptr == aspect );
+
+    EXPECT_TRUE( sender.get<GenericAspect>() == nullptr );
+    EXPECT_TRUE( receiver.get<GenericAspect>() == aspect );
+
+    receiver.set<GenericAspect>(receiver.releaseAspect<GenericAspect>());
 
     EXPECT_FALSE( nullptr == aspect );
 
@@ -575,100 +597,100 @@ void makePropertiesDifferent(AspectT* aspect, const AspectT* differentFrom)
 
 TEST(Aspect, StateAndProperties)
 {
-  Composite mgr1;
-  mgr1.createAspect<DoubleAspect>();
-  mgr1.createAspect<FloatAspect>();
-  mgr1.createAspect<CharAspect>();
-  mgr1.createAspect<IntAspect>();
+  Composite comp1;
+  comp1.createAspect<DoubleAspect>();
+  comp1.createAspect<FloatAspect>();
+  comp1.createAspect<CharAspect>();
+  comp1.createAspect<IntAspect>();
 
-  Composite mgr2;
-  mgr2.createAspect<DoubleAspect>();
-  mgr2.createAspect<FloatAspect>();
+  Composite comp2;
+  comp2.createAspect<DoubleAspect>();
+  comp2.createAspect<FloatAspect>();
 
-  mgr1.createAspect<StateAspectTest>();
+  comp1.createAspect<StateAspectTest>();
 
   // ---- Test State Transfer ----
 
-  mgr2.setCompositeState(mgr1.getCompositeState());
+  comp2.setCompositeState(comp1.getCompositeState());
 
-  EXPECT_EQ( mgr1.get<DoubleAspect>()->mState.val,
-             mgr2.get<DoubleAspect>()->mState.val );
+  EXPECT_EQ( comp1.get<DoubleAspect>()->mState.val,
+             comp2.get<DoubleAspect>()->mState.val );
 
-  EXPECT_EQ( mgr1.get<FloatAspect>()->mState.val,
-             mgr2.get<FloatAspect>()->mState.val );
+  EXPECT_EQ( comp1.get<FloatAspect>()->mState.val,
+             comp2.get<FloatAspect>()->mState.val );
 
-  makeStatesDifferent( mgr2.get<DoubleAspect>(), mgr1.get<DoubleAspect>() );
-  makeStatesDifferent( mgr2.get<FloatAspect>(), mgr1.get<FloatAspect>() );
+  makeStatesDifferent( comp2.get<DoubleAspect>(), comp1.get<DoubleAspect>() );
+  makeStatesDifferent( comp2.get<FloatAspect>(), comp1.get<FloatAspect>() );
 
-  EXPECT_NE( mgr1.get<DoubleAspect>()->mState.val,
-             mgr2.get<DoubleAspect>()->mState.val );
+  EXPECT_NE( comp1.get<DoubleAspect>()->mState.val,
+             comp2.get<DoubleAspect>()->mState.val );
 
-  EXPECT_NE( mgr1.get<FloatAspect>()->mState.val,
-             mgr2.get<FloatAspect>()->mState.val );
+  EXPECT_NE( comp1.get<FloatAspect>()->mState.val,
+             comp2.get<FloatAspect>()->mState.val );
 
-  mgr1.setCompositeState( mgr2.getCompositeState() );
+  comp1.setCompositeState( comp2.getCompositeState() );
 
-  EXPECT_EQ( mgr1.get<DoubleAspect>()->mState.val,
-             mgr2.get<DoubleAspect>()->mState.val );
+  EXPECT_EQ( comp1.get<DoubleAspect>()->mState.val,
+             comp2.get<DoubleAspect>()->mState.val );
 
-  EXPECT_EQ( mgr1.get<FloatAspect>()->mState.val,
-             mgr2.get<FloatAspect>()->mState.val );
+  EXPECT_EQ( comp1.get<FloatAspect>()->mState.val,
+             comp2.get<FloatAspect>()->mState.val );
 
-  EXPECT_TRUE( nullptr == mgr2.get<CharAspect>() );
-  EXPECT_TRUE( nullptr == mgr2.get<IntAspect>() );
+  EXPECT_TRUE( nullptr == comp2.get<CharAspect>() );
+  EXPECT_TRUE( nullptr == comp2.get<IntAspect>() );
 
 
   // ---- Test Property Transfer ----
 
-  mgr2.setCompositeProperties(mgr1.getCompositeProperties());
+  comp2.setCompositeProperties(comp1.getCompositeProperties());
 
-  EXPECT_EQ( mgr1.get<DoubleAspect>()->mProperties.val,
-             mgr2.get<DoubleAspect>()->mProperties.val );
+  EXPECT_EQ( comp1.get<DoubleAspect>()->mProperties.val,
+             comp2.get<DoubleAspect>()->mProperties.val );
 
-  EXPECT_EQ( mgr1.get<FloatAspect>()->mProperties.val,
-             mgr2.get<FloatAspect>()->mProperties.val );
+  EXPECT_EQ( comp1.get<FloatAspect>()->mProperties.val,
+             comp2.get<FloatAspect>()->mProperties.val );
 
-  makePropertiesDifferent( mgr2.get<DoubleAspect>(), mgr1.get<DoubleAspect>() );
-  makePropertiesDifferent( mgr2.get<FloatAspect>(), mgr1.get<FloatAspect>() );
+  makePropertiesDifferent( comp2.get<DoubleAspect>(), comp1.get<DoubleAspect>() );
+  makePropertiesDifferent( comp2.get<FloatAspect>(), comp1.get<FloatAspect>() );
 
-  EXPECT_NE( mgr1.get<DoubleAspect>()->mProperties.val,
-             mgr2.get<DoubleAspect>()->mProperties.val );
+  EXPECT_NE( comp1.get<DoubleAspect>()->mProperties.val,
+             comp2.get<DoubleAspect>()->mProperties.val );
 
-  EXPECT_NE( mgr1.get<FloatAspect>()->mProperties.val,
-             mgr2.get<FloatAspect>()->mProperties.val );
+  EXPECT_NE( comp1.get<FloatAspect>()->mProperties.val,
+             comp2.get<FloatAspect>()->mProperties.val );
 
-  mgr1.setCompositeProperties( mgr2.getCompositeProperties() );
+  comp1.setCompositeProperties( comp2.getCompositeProperties() );
 
-  EXPECT_EQ( mgr1.get<DoubleAspect>()->mProperties.val,
-             mgr2.get<DoubleAspect>()->mProperties.val );
+  EXPECT_EQ( comp1.get<DoubleAspect>()->mProperties.val,
+             comp2.get<DoubleAspect>()->mProperties.val );
 
-  EXPECT_EQ( mgr1.get<FloatAspect>()->mProperties.val,
-             mgr2.get<FloatAspect>()->mProperties.val );
+  EXPECT_EQ( comp1.get<FloatAspect>()->mProperties.val,
+             comp2.get<FloatAspect>()->mProperties.val );
 
-  EXPECT_TRUE( nullptr == mgr2.get<CharAspect>() );
-  EXPECT_TRUE( nullptr == mgr2.get<IntAspect>() );
+  EXPECT_TRUE( nullptr == comp2.get<CharAspect>() );
+  EXPECT_TRUE( nullptr == comp2.get<IntAspect>() );
 
 
   // ---- Test Data Containers ----
   Composite::MakeState<DoubleAspect, IntAspect, FloatAspect> state(
-        mgr1.getCompositeState());
+        comp1.getCompositeState());
 
-  EXPECT_EQ(mgr1.get<DoubleAspect>()->mState.val,
+  EXPECT_EQ(comp1.get<DoubleAspect>()->mState.val,
             state.DoubleAspect::State::val);
-  EXPECT_EQ(mgr1.get<FloatAspect>()->mState.val,
+  EXPECT_EQ(comp1.get<FloatAspect>()->mState.val,
             state.FloatAspect::State::val);
-  EXPECT_EQ(mgr1.get<IntAspect>()->mState.val,
+  EXPECT_EQ(comp1.get<IntAspect>()->mState.val,
             state.IntAspect::State::val);
 
 
   Composite::MakeProperties<DoubleAspect, CharAspect, FloatAspect> properties(
-        mgr2.getCompositeProperties());
+        comp2.getCompositeProperties());
 
-  EXPECT_EQ(mgr1.get<DoubleAspect>()->mProperties.val,
+  EXPECT_EQ(comp1.get<DoubleAspect>()->mProperties.val,
             properties.DoubleAspect::Properties::val);
-  EXPECT_EQ(mgr1.get<CharAspect>()->mProperties.val,
+  EXPECT_EQ(comp1.get<CharAspect>()->mProperties.val,
             properties.CharAspect::Properties::val);
-  EXPECT_EQ(mgr1.get<FloatAspect>()->mProperties.val,
+  EXPECT_EQ(comp1.get<FloatAspect>()->mProperties.val,
             properties.FloatAspect::Properties::val);
 
 
@@ -684,17 +706,20 @@ TEST(Aspect, StateAndProperties)
 
 TEST(Aspect, Construction)
 {
-  Composite mgr;
+  Composite comp;
 
-  mgr.createAspect<DoubleAspect>();
+  comp.createAspect<DoubleAspect>();
 
-  double s = dart::math::random(0, 100);
-  mgr.createAspect<DoubleAspect>(s);
-  EXPECT_EQ(mgr.get<DoubleAspect>()->mState.val, s);
+  double s1 = dart::math::random(0, 100);
+  comp.createAspect<DoubleAspect>(s1);
+  EXPECT_EQ(comp.get<DoubleAspect>()->mState.val, s1);
 
+  double s2 = dart::math::random(0, 100);
   double p = dart::math::random(0, 100);
-  mgr.createAspect<DoubleAspect>(dart::math::random(0, 100), p);
-  EXPECT_EQ(mgr.get<DoubleAspect>()->mProperties.val, p);
+  comp.createAspect<DoubleAspect>(s2, p);
+  EXPECT_NE(comp.get<DoubleAspect>()->mState.val, s1);
+  EXPECT_EQ(comp.get<DoubleAspect>()->mState.val, s2);
+  EXPECT_EQ(comp.get<DoubleAspect>()->mProperties.val, p);
 }
 
 TEST(Aspect, Joints)
@@ -762,6 +787,7 @@ TEST(Aspect, BodyNodes)
       dart::dynamics::DynamicsAspect>(
         std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones()));
 
+  EXPECT_EQ(bn->getNumShapeNodes(), 1u);
   EXPECT_EQ(bn->getNumShapeNodesWith<dart::dynamics::VisualAspect>(), 1u);
   EXPECT_EQ(bn->getNumShapeNodesWith<dart::dynamics::CollisionAspect>(), 1u);
   EXPECT_EQ(bn->getNumShapeNodesWith<dart::dynamics::DynamicsAspect>(), 1u);
@@ -769,40 +795,40 @@ TEST(Aspect, BodyNodes)
 
 TEST(Aspect, Duplication)
 {
-  Composite mgr1, mgr2;
+  Composite comp1, comp2;
 
-  mgr1.createAspect<DoubleAspect>();
-  mgr1.createAspect<IntAspect>();
-  mgr1.createAspect<FloatAspect>();
-  mgr1.createAspect<CharAspect>();
+  comp1.createAspect<DoubleAspect>();
+  comp1.createAspect<IntAspect>();
+  comp1.createAspect<FloatAspect>();
+  comp1.createAspect<CharAspect>();
 
-  mgr2.createAspect<DoubleAspect>();
+  comp2.createAspect<DoubleAspect>();
 
-  mgr2.duplicateAspects(&mgr1);
+  comp2.duplicateAspects(&comp1);
 
-  EXPECT_FALSE(mgr2.get<DoubleAspect>() == nullptr);
-  EXPECT_FALSE(mgr2.get<IntAspect>() == nullptr);
-  EXPECT_FALSE(mgr2.get<FloatAspect>() == nullptr);
-  EXPECT_FALSE(mgr2.get<CharAspect>() == nullptr);
+  EXPECT_FALSE(comp2.get<DoubleAspect>() == nullptr);
+  EXPECT_FALSE(comp2.get<IntAspect>() == nullptr);
+  EXPECT_FALSE(comp2.get<FloatAspect>() == nullptr);
+  EXPECT_FALSE(comp2.get<CharAspect>() == nullptr);
 
   Composite::MakeState<DoubleAspect, IntAspect, FloatAspect> state;
   state.DoubleAspect::State::val = 1e-6;
   state.FloatAspect::State::val = 1.5;
   state.IntAspect::State::val = 456;
 
-  mgr1.setCompositeState(state);
+  comp1.setCompositeState(state);
 
-  EXPECT_EQ(mgr1.get<DoubleAspect>()->mState.val, 1e-6);
-  EXPECT_EQ(mgr1.get<FloatAspect>()->mState.val, 1.5);
-  EXPECT_EQ(mgr1.get<IntAspect>()->mState.val, 456);
+  EXPECT_EQ(comp1.get<DoubleAspect>()->mState.val, 1e-6);
+  EXPECT_EQ(comp1.get<FloatAspect>()->mState.val, 1.5);
+  EXPECT_EQ(comp1.get<IntAspect>()->mState.val, 456);
 
-  state = mgr2.getCompositeState();
+  state = comp2.getCompositeState();
 
   EXPECT_EQ(state.DoubleAspect::State::val, 0);
   EXPECT_EQ(state.FloatAspect::State::val, 0);
   EXPECT_EQ(state.IntAspect::State::val, 0);
 
-  state = mgr1.getCompositeState();
+  state = comp1.getCompositeState();
 
   EXPECT_EQ(state.DoubleAspect::State::val, 1e-6);
   EXPECT_EQ(state.FloatAspect::State::val, 1.5);
@@ -812,8 +838,16 @@ TEST(Aspect, Duplication)
 TEST(Aspect, Embedded)
 {
   EmbeddedStateComposite s;
+  EXPECT_TRUE(s.has<EmbeddedStateComposite::Aspect>());
+  EXPECT_TRUE(s.get<EmbeddedStateComposite::Aspect>() != nullptr);
+
   EmbeddedPropertiesComposite p;
+  EXPECT_TRUE(p.has<EmbeddedPropertiesComposite::Aspect>());
+  EXPECT_TRUE(p.get<EmbeddedPropertiesComposite::Aspect>() != nullptr);
+
   EmbeddedStateAndPropertiesComposite sp;
+  EXPECT_TRUE(sp.has<EmbeddedStateAndPropertiesComposite::Aspect>());
+  EXPECT_TRUE(sp.get<EmbeddedStateAndPropertiesComposite::Aspect>() != nullptr);
 
   // --------- Test Embedded State -----------
   EmbeddedStateComposite::AspectState state = s.getAspectState();
