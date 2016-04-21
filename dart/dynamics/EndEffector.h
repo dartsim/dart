@@ -42,6 +42,7 @@
 #include "dart/common/AspectWithVersion.h"
 #include "dart/dynamics/FixedJacobianNode.h"
 #include "dart/dynamics/CompositeNode.h"
+#include "dart/dynamics/detail/EndEffectorAspect.h"
 
 namespace dart {
 namespace dynamics {
@@ -49,64 +50,6 @@ namespace dynamics {
 class BodyNode;
 class Skeleton;
 class EndEffector;
-class Support;
-
-namespace detail {
-
-//==============================================================================
-struct EndEffectorProperties
-{
-  /// The default relative transform for the EndEffector. If the relative
-  /// transform of the EndEffector is ever changed, you can call
-  /// resetRelativeTransform() to return the relative transform to this one.
-  Eigen::Isometry3d mDefaultTransform;
-
-  EndEffectorProperties(
-      const Eigen::Isometry3d& defaultTf = Eigen::Isometry3d::Identity());
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
-//==============================================================================
-struct SupportStateData
-{
-  /// Whether or not this EndEffector is currently being used to support the
-  /// weight of the robot.
-  bool mActive;
-
-  inline SupportStateData(bool active = false) : mActive(active) { }
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
-//==============================================================================
-struct SupportPropertiesData
-{
-  /// A set of points representing the support polygon that can be provided by
-  /// the EndEffector. These points must be defined relative to the EndEffector
-  /// frame.
-  math::SupportGeometry mGeometry;
-
-  inline SupportPropertiesData(
-      const math::SupportGeometry& geometry = math::SupportGeometry())
-    : mGeometry(geometry) { }
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
-void SupportUpdate(Support* support);
-
-using EndEffectorCompositeBase = CompositeNode<
-    common::CompositeJoiner<
-        FixedJacobianNode,
-        common::SpecializedForAspect<Support>
-    >
->;
-
-} // namespace detail
 
 //==============================================================================
 class Support final :

@@ -40,23 +40,10 @@
 #include "dart/dynamics/Frame.h"
 #include "dart/common/EmbeddedAspect.h"
 #include "dart/common/VersionCounter.h"
+#include "dart/dynamics/detail/FixedFrameAspect.h"
 
 namespace dart {
 namespace dynamics {
-
-namespace detail {
-struct FixedFrameProperties
-{
-  /// The relative transform of the FixedFrame
-  Eigen::Isometry3d mRelativeTf;
-
-  FixedFrameProperties(
-      const Eigen::Isometry3d& relativeTf = Eigen::Isometry3d::Identity());
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-} // namespace detail
 
 /// The FixedFrame class represents a Frame with zero relative velocity and
 /// zero relative acceleration. It does not move within its parent Frame after
