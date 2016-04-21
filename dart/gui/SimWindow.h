@@ -46,6 +46,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Deprecated.h"
 #include "dart/gui/Win3D.h"
 #include "dart/simulation/World.h"
 

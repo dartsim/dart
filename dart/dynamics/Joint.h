@@ -42,7 +42,6 @@
 #include <vector>
 #include <memory>
 
-#include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
 #include "dart/common/VersionCounter.h"
 #include "dart/common/EmbeddedAspect.h"
@@ -189,9 +188,6 @@ public:
   /// \sa ActuatorType
   void setPositionLimitEnforced(bool _isPositionLimited);
 
-  /// Deprecated. Replaced by setPositionLimitEnforced.
-  DEPRECATED(5.0) void setPositionLimited(bool _isPositionLimited);
-
   /// Get whether enforcing joint position limit
   ///
   /// The joint position limit is valid when the actutor type is one of
@@ -199,9 +195,6 @@ public:
   ///
   /// \sa ActuatorType
   bool isPositionLimitEnforced() const;
-
-  /// Deprecated. Replaced by isPositionLimitEnforced.
-  DEPRECATED(5.0) bool isPositionLimited() const;
 
   /// Get a unique index in skeleton of a generalized coordinate in this Joint
   virtual size_t getIndexInSkeleton(size_t _index) const = 0;

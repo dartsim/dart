@@ -43,7 +43,6 @@
 #include <Eigen/Dense>
 
 #include "dart/math/Geometry.h"
-#include "dart/common/Deprecated.h"
 #include "dart/common/Subject.h"
 #include "dart/dynamics/SmartPointer.h"
 

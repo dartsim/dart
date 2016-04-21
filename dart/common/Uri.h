@@ -38,7 +38,6 @@
 #define DART_COMMON_URI_H_
 
 #include <string>
-#include "dart/common/Deprecated.h"
 
 namespace dart {
 namespace common {

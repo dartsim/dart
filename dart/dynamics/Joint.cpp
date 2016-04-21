@@ -320,21 +320,9 @@ void Joint::setPositionLimitEnforced(bool _isPositionLimited)
 }
 
 //==============================================================================
-void Joint::setPositionLimited(bool _isPositionLimited)
-{
-  setPositionLimitEnforced(_isPositionLimited);
-}
-
-//==============================================================================
 bool Joint::isPositionLimitEnforced() const
 {
   return mAspectProperties.mIsPositionLimited;
-}
-
-//==============================================================================
-bool Joint::isPositionLimited() const
-{
-  return isPositionLimitEnforced();
 }
 
 //==============================================================================

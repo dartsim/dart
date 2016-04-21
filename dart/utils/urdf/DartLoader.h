@@ -10,7 +10,6 @@
 #include <map>
 #include <string>
 
-#include "dart/common/Deprecated.h"
 #include "dart/common/LocalResourceRetriever.h"
 #include "dart/common/ResourceRetriever.h"
 #include "dart/common/Uri.h"
