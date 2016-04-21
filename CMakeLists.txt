@@ -170,7 +170,9 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   if(DART_TREAT_WARNINGS_AS_ERRORS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
+    # Turn warning "deprecated-declarations" into an warning even if -Werror is
+    # specified until we abandon glut.
   endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -fPIC")
   execute_process(
