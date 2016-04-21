@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_SOFTBODYNODEPROPERTIES_H_
-#define DART_DYNAMICS_DETAIL_SOFTBODYNODEPROPERTIES_H_
+#ifndef DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_H_
+#define DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_H_
 
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/PointMass.h"
@@ -128,4 +128,4 @@ using SoftBodyNodeBase = common::EmbedStateAndPropertiesOnTopOf<
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_SOFTBODYNODEPROPERTIES_H_
+#endif // DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_H_

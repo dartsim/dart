@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_BODYNODEPROPERTIES_H_
-#define DART_DYNAMICS_DETAIL_BODYNODEPROPERTIES_H_
+#ifndef DART_DYNAMICS_DETAIL_BODYNODEASPECT_H_
+#define DART_DYNAMICS_DETAIL_BODYNODEASPECT_H_
 
 #include "dart/dynamics/Entity.h"
 #include "dart/dynamics/Inertia.h"
@@ -152,4 +152,4 @@ using BodyNodeCompositeBase = common::EmbedStateAndPropertiesOnTopOf<
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_BODYNODEPROPERTIES_H_
+#endif // DART_DYNAMICS_DETAIL_BODYNODEASPECT_H_
