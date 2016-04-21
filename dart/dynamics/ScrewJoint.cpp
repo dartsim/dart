@@ -186,6 +186,7 @@ void ScrewJoint::updateLocalTransform() const
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * math::expMap(S * getPositionStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
+  assert(math::verifyTransform(mT));
 }
 
 //==============================================================================

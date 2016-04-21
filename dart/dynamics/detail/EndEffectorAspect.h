@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -34,53 +34,76 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_H_
-#define DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_H_
+#ifndef DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_H_
+#define DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_H_
 
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SingleDofJoint.h"
+#include <Eigen/Geometry>
+#include "dart/dynamics/CompositeNode.h"
+#include "dart/common/SpecializedForAspect.h"
 
 namespace dart {
 namespace dynamics {
 
-class PrismaticJoint;
+class FixedJacobianNode;
+class Support;
 
 namespace detail {
 
 //==============================================================================
-struct PrismaticJointUniqueProperties
+struct EndEffectorProperties
 {
-  Eigen::Vector3d mAxis;
+  /// The default relative transform for the EndEffector. If the relative
+  /// transform of the EndEffector is ever changed, you can call
+  /// resetRelativeTransform() to return the relative transform to this one.
+  Eigen::Isometry3d mDefaultTransform;
 
-  PrismaticJointUniqueProperties(
-      const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
+  EndEffectorProperties(
+      const Eigen::Isometry3d& defaultTf = Eigen::Isometry3d::Identity());
 
-  virtual ~PrismaticJointUniqueProperties() = default;
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================
-struct PrismaticJointProperties :
-    SingleDofJoint::Properties,
-    PrismaticJointUniqueProperties
+struct SupportStateData
 {
-  PrismaticJointProperties(
-      const SingleDofJoint::Properties& _singleDofProperties =
-          SingleDofJoint::Properties(),
-      const PrismaticJointUniqueProperties& _prismaticProperties =
-          PrismaticJointUniqueProperties());
+  /// Whether or not this EndEffector is currently being used to support the
+  /// weight of the robot.
+  bool mActive;
 
-  virtual ~PrismaticJointProperties() = default;
+  inline SupportStateData(bool active = false) : mActive(active) { }
+
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================
-using PrismaticJointBase = common::EmbedPropertiesOnTopOf<
-    PrismaticJoint, PrismaticJointUniqueProperties, SingleDofJoint>;
+struct SupportPropertiesData
+{
+  /// A set of points representing the support polygon that can be provided by
+  /// the EndEffector. These points must be defined relative to the EndEffector
+  /// frame.
+  math::SupportGeometry mGeometry;
+
+  inline SupportPropertiesData(
+      const math::SupportGeometry& geometry = math::SupportGeometry())
+    : mGeometry(geometry) { }
+
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+void SupportUpdate(Support* support);
+
+using EndEffectorCompositeBase = CompositeNode<
+    common::CompositeJoiner<
+        FixedJacobianNode,
+        common::SpecializedForAspect<Support>
+    >
+>;
 
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_H_
+#endif // DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_H_

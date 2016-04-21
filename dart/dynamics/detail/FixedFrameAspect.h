@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -34,53 +34,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_H_
-#define DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_H_
+#ifndef DART_DYNAMICS_DETAIL_FIXEDFRAMEASPECT_H_
+#define DART_DYNAMICS_DETAIL_FIXEDFRAMEASPECT_H_
 
-#include <string>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/SingleDofJoint.h"
+#include <Eigen/Geometry>
 
 namespace dart {
 namespace dynamics {
-
-class PrismaticJoint;
-
 namespace detail {
 
-//==============================================================================
-struct PrismaticJointUniqueProperties
+struct FixedFrameProperties
 {
-  Eigen::Vector3d mAxis;
+  /// The relative transform of the FixedFrame
+  Eigen::Isometry3d mRelativeTf;
 
-  PrismaticJointUniqueProperties(
-      const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
+  FixedFrameProperties(
+      const Eigen::Isometry3d& relativeTf = Eigen::Isometry3d::Identity());
 
-  virtual ~PrismaticJointUniqueProperties() = default;
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-//==============================================================================
-struct PrismaticJointProperties :
-    SingleDofJoint::Properties,
-    PrismaticJointUniqueProperties
-{
-  PrismaticJointProperties(
-      const SingleDofJoint::Properties& _singleDofProperties =
-          SingleDofJoint::Properties(),
-      const PrismaticJointUniqueProperties& _prismaticProperties =
-          PrismaticJointUniqueProperties());
-
-  virtual ~PrismaticJointProperties() = default;
-};
-
-//==============================================================================
-using PrismaticJointBase = common::EmbedPropertiesOnTopOf<
-    PrismaticJoint, PrismaticJointUniqueProperties, SingleDofJoint>;
 
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_H_
+#endif // DART_DYNAMICS_DETAIL_FIXEDFRAMEASPECT_H_

@@ -149,7 +149,7 @@ public:
   /// Set the State of this Aspect
   void setState(const State& state)
   {
-    if(this->getComposite())
+    if(this->hasComposite())
     {
       SetEmbeddedState(static_cast<Derived*>(this), state);
       return;
@@ -169,7 +169,7 @@ public:
   /// Get the State of this Aspect
   const State& getState() const
   {
-    if(this->getComposite())
+    if(this->hasComposite())
     {
       return GetEmbeddedState(static_cast<const Derived*>(this));
     }
@@ -323,7 +323,7 @@ public:
   // Documentation inherited
   void setProperties(const Properties& properties)
   {
-    if(this->getComposite())
+    if(this->hasComposite())
     {
       SetEmbeddedProperties(static_cast<Derived*>(this), properties);
       return;
@@ -343,7 +343,7 @@ public:
   // Documentation inherited
   const Properties& getProperties() const
   {
-    if(this->getComposite())
+    if(this->hasComposite())
     {
       return GetEmbeddedProperties(static_cast<const Derived*>(this));
     }
