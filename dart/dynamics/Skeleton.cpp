@@ -1540,6 +1540,11 @@ void Skeleton::registerEndEffector(EndEffector* _newEndEffector)
   mEndEffectors.push_back(_newEndEffector);
   _newEndEffector->mIndexInSkeleton = mEndEffectors.size()-1;
 
+  // We sneak this in here to patch the issue where child JacobianNodes were
+  // going unrecognized. This only works for EndEffector, but EndEffector is
+  // the only JacobianNode type besides BodyNode in v5.1.
+  _newEndEffector->mBodyNode->mChildJacobianNodes.insert(_newEndEffector);
+
   // The EndEffector name gets added when the EndEffector is constructed, so we
   // don't need to add it here.
 }
