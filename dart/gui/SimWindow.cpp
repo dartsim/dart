@@ -55,6 +55,7 @@
 #include "dart/dynamics/MeshShape.h"
 #include "dart/dynamics/SoftMeshShape.h"
 #include "dart/dynamics/LineSegmentShape.h"
+#include "dart/dynamics/Marker.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/gui/LoadGlut.h"

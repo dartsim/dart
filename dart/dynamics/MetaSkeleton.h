@@ -55,8 +55,8 @@ class BodyNode;
 class SoftBodyNode;
 class PointMass;
 class Joint;
-class Marker;
 class DegreeOfFreedom;
+class Marker;
 
 /// MetaSkeleton is a pure abstract base class that provides a common interface
 /// for obtaining data (such as Jacobians and Mass Matrices) from groups of

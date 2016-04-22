@@ -535,6 +535,8 @@ public:
   template <class NodeType, typename ...Args>
   NodeType* createNode(Args&&... args);
 
+  DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( ShapeNode )
+
   /// Create an ShapeNode attached to this BodyNode. Pass a
   /// ShapeNode::Properties argument into its constructor. If automaticName is
   /// true, then the mName field of properties will be ignored, and the
@@ -554,15 +556,6 @@ public:
 
   /// Create an ShapeNode with the specified name
   ShapeNode* createShapeNode(const ShapePtr& shape, const char* name);
-
-  /// Return the number of all the ShapeNodes in this BodyNode
-  size_t getNumShapeNodes() const;
-
-  /// Return the index-th ShapeNode
-  ShapeNode* getShapeNode(size_t index);
-
-  /// Return the index-th (const) ShapeNode
-  const ShapeNode* getShapeNode(size_t index) const;
 
   /// Return the list of ShapeNodes
   const std::vector<ShapeNode*> getShapeNodes();
@@ -599,6 +592,8 @@ public:
   template <class Aspect>
   void removeAllShapeNodesWith();
 
+  DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( EndEffector )
+
   /// Create an EndEffector attached to this BodyNode. Pass an
   /// EndEffector::Properties argument into this function.
   template <class EndEffectorProperties>
@@ -610,17 +605,13 @@ public:
   /// Create an EndEffector with the specified name
   EndEffector* createEndEffector(const char* _name);
 
-  /// Add a marker into the bodynode
-  void addMarker(Marker* _marker);
+  DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( Marker )
 
-  /// Return the number of markers of the bodynode
-  size_t getNumMarkers() const;
-
-  /// Return _index-th marker of the bodynode
-  Marker* getMarker(size_t _index);
-
-  /// Return (const) _index-th marker of the bodynode
-  const Marker* getMarker(size_t _index) const;
+  /// Create a Marker with the given fields
+  Marker* createMarker(
+      const std::string& name = "marker",
+      const Eigen::Vector3d& position = Eigen::Vector3d::Zero(),
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(1.0));
 
   // Documentation inherited
   bool dependsOn(size_t _genCoordIndex) const override;
@@ -1070,9 +1061,6 @@ protected:
   /// Array of child Entities that are not BodyNodes. Organizing them separately
   /// allows some performance optimizations.
   std::set<Entity*> mNonBodyNodeEntities;
-
-  /// List of markers associated
-  std::vector<Marker*> mMarkers;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<size_t> mDependentGenCoordIndices;

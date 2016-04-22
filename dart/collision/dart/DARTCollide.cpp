@@ -43,6 +43,7 @@
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/BodyNode.h"
+#include "dart/math/Helpers.h"
 
 namespace dart {
 namespace collision {

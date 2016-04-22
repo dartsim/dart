@@ -41,6 +41,7 @@
 #include "dart/common/ResourceRetriever.h"
 #include "dart/common/Uri.h"
 #include "dart/dynamics/Skeleton.h"
+#include "dart/math/Helpers.h"
 
 namespace dart {
 namespace utils {

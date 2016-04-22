@@ -40,7 +40,6 @@
 #include "dart/dynamics/Entity.h"
 #include "dart/dynamics/Inertia.h"
 #include "dart/dynamics/Node.h"
-#include "dart/dynamics/Marker.h"
 #include "dart/common/ProxyAspect.h"
 #include "dart/common/EmbeddedAspect.h"
 
@@ -88,9 +87,6 @@ struct BodyNodeAspectProperties
 
   /// Gravity will be applied if true
   bool mGravityMode;
-
-  /// Properties of the Markers belonging to this BodyNode
-  std::vector<Marker::Properties> mMarkerProperties;
 
   /// Constructor
   BodyNodeAspectProperties(

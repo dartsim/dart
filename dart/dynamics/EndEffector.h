@@ -158,9 +158,8 @@ protected:
   /// Constructor used by the Skeleton class
   explicit EndEffector(BodyNode* parent, const BasicProperties& properties);
 
-  /// Create a clone of this BodyNode. This may only be called by the Skeleton
-  /// class.
-  virtual Node* cloneNode(BodyNode* _parent) const override;
+  // Documentation inherited
+  Node* cloneNode(BodyNode* _parent) const override;
 
 public:
 
