@@ -40,7 +40,6 @@
 #include <algorithm>
 
 #include "dart/gui/LoadGlut.h"
-#include "dart/gui/Jitter.h"
 
 namespace dart {
 namespace gui {
@@ -310,32 +309,6 @@ void accPerspective(GLdouble fovy, GLdouble aspect,
 
   accFrustum(left, right, bottom, top, nearPlane, farPlane,
              pixdx, pixdy, eyedx, eyedy, focus);
-}
-
-void Win3D::capturing() {
-  glClear(GL_ACCUM_BUFFER_BIT);
-  for (int jitter = 0; jitter < 4; jitter++) {
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    accPerspective(mPersp,
-                   static_cast<double>(mWinWidth)
-                   / static_cast<double>(mWinHeight),
-                   0.1, 10.0, Jitter::j4[jitter].x, Jitter::j4[jitter].y,
-                   0.0, 0.0, 1.0);
-    gluLookAt(mEye[0], mEye[1], mEye[2], 0.0, 0.0, -1.0, 0.0, 1.0, 0.0);
-
-    initGL();
-
-    mTrackBall.applyGLRotation();
-    glScalef(mZoom, mZoom, mZoom);
-    glTranslatef(mTrans[0]*0.001, mTrans[1]*0.001, mTrans[2]*0.001);
-
-    initLights();
-    draw();
-
-    glAccum(GL_ACCUM, 0.25);
-  }
-  glAccum(GL_RETURN, 1.0);
 }
 
 }  // namespace gui

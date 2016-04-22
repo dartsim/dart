@@ -230,18 +230,6 @@ nlopt::algorithm NloptSolver::getAlgorithm() const
 }
 
 //==============================================================================
-void NloptSolver::setNumMaxEvaluations(size_t _numVal)
-{
-  setNumMaxIterations(_numVal);
-}
-
-//==============================================================================
-size_t NloptSolver::getNumEvaluationMax() const
-{
-  return getNumMaxIterations();
-}
-
-//==============================================================================
 double NloptSolver::_nlopt_func(unsigned _n,
                                 const double* _x,
                                 double* _gradient,

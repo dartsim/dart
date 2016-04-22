@@ -39,6 +39,7 @@
 
 #include <string>
 #include <Eigen/Dense>
+#include "dart/common/Deprecated.h"
 #include "dart/math/Helpers.h"
 
 namespace dart {
