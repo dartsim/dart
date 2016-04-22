@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -106,7 +106,7 @@ public:
   /// Set collision detector. This function acquires ownership of the
   /// CollisionDetector passed as an argument. This method is deprecated in
   /// favor of the overload that accepts a std::shared_ptr.
-  DEPRECATED(7.1)
+  DEPRECATED(6.0)
   void setCollisionDetector(collision::CollisionDetector* collisionDetector);
 
   /// Set collision detector

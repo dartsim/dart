@@ -54,43 +54,43 @@ void FixedJacobianNode::setRelativeTransform(
 }
 
 //==============================================================================
-bool FixedJacobianNode::dependsOn(size_t _genCoordIndex) const
+bool FixedJacobianNode::dependsOn(std::size_t _genCoordIndex) const
 {
   return mBodyNode->dependsOn(_genCoordIndex);
 }
 
 //==============================================================================
-size_t FixedJacobianNode::getNumDependentGenCoords() const
+std::size_t FixedJacobianNode::getNumDependentGenCoords() const
 {
   return mBodyNode->getNumDependentGenCoords();
 }
 
 //==============================================================================
-size_t FixedJacobianNode::getDependentGenCoordIndex(size_t _arrayIndex) const
+std::size_t FixedJacobianNode::getDependentGenCoordIndex(std::size_t _arrayIndex) const
 {
   return mBodyNode->getDependentGenCoordIndex(_arrayIndex);
 }
 
 //==============================================================================
-const std::vector<size_t>& FixedJacobianNode::getDependentGenCoordIndices() const
+const std::vector<std::size_t>& FixedJacobianNode::getDependentGenCoordIndices() const
 {
   return mBodyNode->getDependentGenCoordIndices();
 }
 
 //==============================================================================
-size_t FixedJacobianNode::getNumDependentDofs() const
+std::size_t FixedJacobianNode::getNumDependentDofs() const
 {
   return mBodyNode->getNumDependentDofs();
 }
 
 //==============================================================================
-DegreeOfFreedom* FixedJacobianNode::getDependentDof(size_t _index)
+DegreeOfFreedom* FixedJacobianNode::getDependentDof(std::size_t _index)
 {
   return mBodyNode->getDependentDof(_index);
 }
 
 //==============================================================================
-const DegreeOfFreedom* FixedJacobianNode::getDependentDof(size_t _index) const
+const DegreeOfFreedom* FixedJacobianNode::getDependentDof(std::size_t _index) const
 {
   return mBodyNode->getDependentDof(_index);
 }
@@ -212,7 +212,6 @@ void FixedJacobianNode::updateWorldJacobianClassicDeriv() const
 
   mIsWorldJacobianClassicDerivDirty = false;
 }
-
 
 } // namespace dynamics
 } // namespace dart

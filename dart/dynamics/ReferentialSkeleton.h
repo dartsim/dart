@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -75,13 +75,13 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  size_t getNumBodyNodes() const override;
+  std::size_t getNumBodyNodes() const override;
 
   // Documentation inherited
-  BodyNode* getBodyNode(size_t _idx) override;
+  BodyNode* getBodyNode(std::size_t _idx) override;
 
   // Documentation inherited
-  const BodyNode* getBodyNode(size_t _idx) const override;
+  const BodyNode* getBodyNode(std::size_t _idx) const override;
 
   // Documentation inherited
   const std::vector<BodyNode*>& getBodyNodes() override;
@@ -90,28 +90,28 @@ public:
   const std::vector<const BodyNode*>& getBodyNodes() const override;
 
   // Documentation inherited
-  size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
+  std::size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
 
   // Documentation inherited
-  size_t getNumJoints() const override;
+  std::size_t getNumJoints() const override;
 
   // Documentation inherited
-  Joint* getJoint(size_t _idx) override;
+  Joint* getJoint(std::size_t _idx) override;
 
   // Documentation inherited
-  const Joint* getJoint(size_t _idx) const override;
+  const Joint* getJoint(std::size_t _idx) const override;
 
   // Documentation inherited
-  size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;
+  std::size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;
 
   // Documentation inherited
-  size_t getNumDofs() const override;
+  std::size_t getNumDofs() const override;
 
   // Documentation inherited
-  DegreeOfFreedom* getDof(size_t _idx) override;
+  DegreeOfFreedom* getDof(std::size_t _idx) override;
 
   // Documentation inherited
-  const DegreeOfFreedom* getDof(size_t _idx) const override;
+  const DegreeOfFreedom* getDof(std::size_t _idx) const override;
 
   // Documentation inherited
   const std::vector<DegreeOfFreedom*>& getDofs() override;
@@ -120,7 +120,7 @@ public:
   std::vector<const DegreeOfFreedom*> getDofs() const override;
 
   // Documentation inherited
-  size_t getIndexOf(const DegreeOfFreedom* _dof,
+  std::size_t getIndexOf(const DegreeOfFreedom* _dof,
                     bool _warning=true) const override;
 
   /// \}
@@ -361,7 +361,7 @@ protected:
 
   /// Remove a DegreeOfFreedom from this ReferentialSkeleton. This can only be
   /// used by derived classes.
-  void unregisterDegreeOfFreedom(BodyNode* _bn, size_t _localIndex);
+  void unregisterDegreeOfFreedom(BodyNode* _bn, std::size_t _localIndex);
 
   /// Update the caches to match any changes to the structure of this
   /// ReferentialSkeleton
@@ -375,13 +375,13 @@ protected:
   struct IndexMap
   {
     /// Index of the BodyNode
-    size_t mBodyNodeIndex;
+    std::size_t mBodyNodeIndex;
 
     /// Index of the parent Joint
-    size_t mJointIndex;
+    std::size_t mJointIndex;
 
     /// Indices of the parent DegreesOfFreedom
-    std::vector<size_t> mDofIndices;
+    std::vector<std::size_t> mDofIndices;
 
     /// Default constructor. Initializes mBodyNodeIndex and mJointIndex to
     /// INVALID_INDEX

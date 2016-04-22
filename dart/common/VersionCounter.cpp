@@ -52,7 +52,7 @@ VersionCounter::VersionCounter()
 }
 
 //==============================================================================
-size_t VersionCounter::incrementVersion()
+std::size_t VersionCounter::incrementVersion()
 {
   ++mVersion;
   if(mDependent)
@@ -62,7 +62,7 @@ size_t VersionCounter::incrementVersion()
 }
 
 //==============================================================================
-size_t VersionCounter::getVersion() const
+std::size_t VersionCounter::getVersion() const
 {
   return mVersion;
 }

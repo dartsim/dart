@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -144,7 +144,7 @@ void Controller::changeStateMachine(const string& _name, double _currentTime)
 }
 
 //==============================================================================
-void Controller::changeStateMachine(size_t _idx, double _currentTime)
+void Controller::changeStateMachine(std::size_t _idx, double _currentTime)
 {
   assert(_idx <= mStateMachines.size() && "Invalid index of StateMachine.");
 
@@ -207,7 +207,7 @@ void Controller::printDebugInfo() const
             << " NUM DOF   : " << mAtlasRobot->getNumDofs() << std::endl
             << " NUM JOINTS: " << mAtlasRobot->getNumBodyNodes() << std::endl;
 
-  for(size_t i = 0; i < mAtlasRobot->getNumBodyNodes(); ++i)
+  for(std::size_t i = 0; i < mAtlasRobot->getNumBodyNodes(); ++i)
   {
     Joint* joint = mAtlasRobot->getJoint(i);
     BodyNode* body = mAtlasRobot->getBodyNode(i);
@@ -819,12 +819,12 @@ StateMachine* Controller::_createRunningStateMachine()
 //==============================================================================
 void Controller::_setJointDamping()
 {
-  for (size_t i = 1; i < mAtlasRobot->getNumBodyNodes(); ++i)
+  for (std::size_t i = 1; i < mAtlasRobot->getNumBodyNodes(); ++i)
   {
     Joint* joint = mAtlasRobot->getJoint(i);
     if (joint->getNumDofs() > 0)
     {
-      for (size_t j = 0; j < joint->getNumDofs(); ++j)
+      for (std::size_t j = 0; j < joint->getNumDofs(); ++j)
         joint->setDampingCoefficient(j, 80.0);
     }
   }

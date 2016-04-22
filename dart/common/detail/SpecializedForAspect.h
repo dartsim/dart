@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -53,8 +53,9 @@ namespace common {
 template <class SpecAspect>
 SpecializedForAspect<SpecAspect>::SpecializedForAspect()
 {
-  mAspectMap[typeid( SpecAspect )] = nullptr;
-  mSpecAspectIterator = mAspectMap.find(typeid( SpecAspect ));
+  mSpecAspectIterator = mAspectMap.insert(
+        std::make_pair<std::type_index, std::unique_ptr<Aspect>>(
+          typeid(SpecAspect), nullptr)).first;
 }
 
 //==============================================================================

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -97,13 +97,13 @@ WorldPtr World::clone() const
       cd->cloneWithoutCollisionObjects());
 
   // Clone and add each Skeleton
-  for(size_t i=0; i<mSkeletons.size(); ++i)
+  for(std::size_t i=0; i<mSkeletons.size(); ++i)
   {
     worldClone->addSkeleton(mSkeletons[i]->clone());
   }
 
   // Clone and add each SimpleFrame
-  for(size_t i=0; i<mSimpleFrames.size(); ++i)
+  for(std::size_t i=0; i<mSimpleFrames.size(); ++i)
   {
     worldClone->addSimpleFrame(mSimpleFrames[i]->clone(mSimpleFrames[i]->getParentFrame()));
   }
@@ -111,7 +111,7 @@ WorldPtr World::clone() const
   // For each newly cloned SimpleFrame, try to make its parent Frame be one of
   // the new clones if there is a match. This is meant to minimize any possible
   // interdependencies between the kinematics of different worlds.
-  for(size_t i=0; i<worldClone->getNumSimpleFrames(); ++i)
+  for(std::size_t i=0; i<worldClone->getNumSimpleFrames(); ++i)
   {
     dynamics::Frame* current_parent =
         worldClone->getSimpleFrame(i)->getParentFrame();
@@ -258,7 +258,7 @@ const Eigen::Vector3d& World::getGravity() const
 }
 
 //==============================================================================
-dynamics::SkeletonPtr World::getSkeleton(size_t _index) const
+dynamics::SkeletonPtr World::getSkeleton(std::size_t _index) const
 {
   if(_index < mSkeletons.size())
     return mSkeletons[_index];
@@ -273,7 +273,7 @@ dynamics::SkeletonPtr World::getSkeleton(const std::string& _name) const
 }
 
 //==============================================================================
-size_t World::getNumSkeletons() const
+std::size_t World::getNumSkeletons() const
 {
   return mSkeletons.size();
 }
@@ -332,7 +332,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   }
 
   // Find index of _skeleton in mSkeleton.
-  size_t index = 0;
+  std::size_t index = 0;
   for (; index < mSkeletons.size(); ++index)
   {
     if (mSkeletons[index] == _skeleton)
@@ -349,7 +349,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   }
 
   // Update mIndices.
-  for (size_t i = index+1; i < mSkeletons.size() - 1; ++i)
+  for (std::size_t i = index+1; i < mSkeletons.size() - 1; ++i)
     mIndices[i] = mIndices[i+1] - _skeleton->getNumDofs();
   mIndices.pop_back();
 
@@ -395,7 +395,7 @@ int World::getIndex(int _index) const
 }
 
 //==============================================================================
-dynamics::SimpleFramePtr World::getSimpleFrame(size_t _index) const
+dynamics::SimpleFramePtr World::getSimpleFrame(std::size_t _index) const
 {
   if(_index < mSimpleFrames.size())
     return mSimpleFrames[_index];
@@ -410,7 +410,7 @@ dynamics::SimpleFramePtr World::getSimpleFrame(const std::string& _name) const
 }
 
 //==============================================================================
-size_t World::getNumSimpleFrames() const
+std::size_t World::getNumSimpleFrames() const
 {
   return mSimpleFrames.size();
 }
@@ -462,7 +462,7 @@ void World::removeSimpleFrame(const dynamics::SimpleFramePtr& _frame)
     return;
   }
 
-  size_t index = it - mSimpleFrames.begin();
+  std::size_t index = it - mSimpleFrames.begin();
 
   // Remove the frame
   mSimpleFrames.erase(mSimpleFrames.begin()+index);

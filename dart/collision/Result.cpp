@@ -53,13 +53,13 @@ void CollisionResult::addContact(const Contact& contact)
 }
 
 //==============================================================================
-size_t CollisionResult::getNumContacts() const
+std::size_t CollisionResult::getNumContacts() const
 {
   return mContacts.size();
 }
 
 //==============================================================================
-Contact& CollisionResult::getContact(size_t index)
+Contact& CollisionResult::getContact(std::size_t index)
 {
   assert(index < mContacts.size());
 
@@ -67,7 +67,7 @@ Contact& CollisionResult::getContact(size_t index)
 }
 
 //==============================================================================
-const Contact& CollisionResult::getContact(size_t index) const
+const Contact& CollisionResult::getContact(std::size_t index) const
 {
   assert(index < mContacts.size());
 

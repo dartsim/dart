@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -50,7 +50,6 @@
 // External Libraries
 #include <Eigen/Dense>
 // Local Headers
-#include "dart/common/Deprecated.h"
 #include "dart/math/Constants.h"
 #include "dart/math/MathTypes.h"
 
@@ -97,12 +96,6 @@ template <typename T> inline constexpr
 int sign(T x)
 {
   return sign(x, std::is_signed<T>());
-}
-
-DEPRECATED(5.1)
-inline int sgn(double _a)
-{
-  return sign(_a);
 }
 
 inline double sqr(double _x) {
@@ -221,18 +214,18 @@ inline bool isInf(const Eigen::MatrixXd& _m) {
 
 /// \brief Returns whether _m is symmetric or not
 inline bool isSymmetric(const Eigen::MatrixXd& _m, double _tol = 1e-6) {
-  size_t rows = _m.rows();
-  size_t cols = _m.cols();
+  std::size_t rows = _m.rows();
+  std::size_t cols = _m.cols();
 
   if (rows != cols)
     return false;
 
-  for (size_t i = 0; i < rows; ++i) {
-    for (size_t j = i + 1; j < cols; ++j) {
+  for (std::size_t i = 0; i < rows; ++i) {
+    for (std::size_t j = i + 1; j < cols; ++j) {
       if (std::abs(_m(i, j) - _m(j, i)) > _tol) {
         std::cout << "A: " << std::endl;
-        for (size_t k = 0; k < rows; ++k) {
-          for (size_t l = 0; l < cols; ++l)
+        for (std::size_t k = 0; k < rows; ++k) {
+          for (std::size_t l = 0; l < cols; ++l)
             std::cout << std::setprecision(4) << _m(k, l) << " ";
           std::cout << std::endl;
         }
@@ -251,7 +244,7 @@ inline unsigned seedRand() {
   time_t now = time(0);
   unsigned char* p = reinterpret_cast<unsigned char*>(&now);
   unsigned seed = 0;
-  size_t i;
+  std::size_t i;
 
   for (i = 0; i < sizeof(now); i++)
     seed = seed * (UCHAR_MAX + 2U) + p[i];
@@ -269,7 +262,7 @@ template<int N>
 Eigen::Matrix<double, N, 1> randomVector(double _min, double _max)
 {
   Eigen::Matrix<double, N, 1> v;
-  for(size_t i=0; i<N; ++i)
+  for(std::size_t i=0; i<N; ++i)
     v[i] = random(_min, _max);
 
   return v;
@@ -282,18 +275,18 @@ Eigen::Matrix<double, N, 1> randomVector(double _limit)
 }
 
 //==============================================================================
-inline Eigen::VectorXd randomVectorXd(size_t size, double min, double max)
+inline Eigen::VectorXd randomVectorXd(std::size_t size, double min, double max)
 {
   Eigen::VectorXd v = Eigen::VectorXd::Zero(size);
 
-  for (size_t i = 0; i < size; ++i)
+  for (std::size_t i = 0; i < size; ++i)
     v[i] = random(min, max);
 
   return v;
 }
 
 //==============================================================================
-inline Eigen::VectorXd randomVectorXd(size_t size, double limit)
+inline Eigen::VectorXd randomVectorXd(std::size_t size, double limit)
 {
   return randomVectorXd(size, -std::abs(limit), std::abs(limit));
 }

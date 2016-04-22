@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 
   dart::dynamics::SkeletonPtr skel  = myWorld->getSkeleton(1);
 
-  std::vector<size_t> genCoordIds;
+  std::vector<std::size_t> genCoordIds;
   genCoordIds.push_back(1);
   genCoordIds.push_back(6);   // left hip
   genCoordIds.push_back(9);   // left knee
@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 
   dart::dynamics::Joint* joint0 = skel->getJoint(0);
   joint0->setActuatorType(dart::dynamics::Joint::PASSIVE);
-  for (size_t i = 1; i < skel->getNumBodyNodes(); ++i)
+  for (std::size_t i = 1; i < skel->getNumBodyNodes(); ++i)
   {
     dart::dynamics::Joint* joint = skel->getJoint(i);
     joint->setActuatorType(dart::dynamics::Joint::VELOCITY);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -53,7 +53,7 @@ namespace detail {
 template <class ConfigSpaceT>
 struct GeometricJointState
 {
-  constexpr static size_t NumDofs = ConfigSpaceT::NumDofs;
+  constexpr static std::size_t NumDofs = ConfigSpaceT::NumDofs;
   using EuclideanPoint = typename ConfigSpaceT::EuclideanPoint;
   using Vector = typename ConfigSpaceT::Vector;
 
@@ -89,7 +89,7 @@ struct GeometricJointState
 template <class ConfigSpaceT>
 struct GeometricJointUniqueProperties
 {
-  constexpr static size_t NumDofs = ConfigSpaceT::NumDofs;
+  constexpr static std::size_t NumDofs = ConfigSpaceT::NumDofs;
   using EuclideanPoint = typename ConfigSpaceT::EuclideanPoint;
   using Vector = typename ConfigSpaceT::Vector;
   using BoolArray = std::array<bool, NumDofs>;
@@ -201,10 +201,10 @@ public:
 // See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
 //
 template <class ConfigSpaceT>
-constexpr size_t GeometricJointState<ConfigSpaceT>::NumDofs;
+constexpr std::size_t GeometricJointState<ConfigSpaceT>::NumDofs;
 
 template <class ConfigSpaceT>
-constexpr size_t GeometricJointUniqueProperties<ConfigSpaceT>::NumDofs;
+constexpr std::size_t GeometricJointUniqueProperties<ConfigSpaceT>::NumDofs;
 
 //==============================================================================
 template <class ConfigSpaceT>
@@ -311,4 +311,3 @@ using GeometricJointBase = common::EmbedStateAndPropertiesOnTopOf<
 } // namespace dart
 
 #endif // DART_DYNAMICS_DETAIL_GEOMETRICJOINTASPECT_H_
-

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_PLANARJOINTPROPERTIES_H_
-#define DART_DYNAMICS_DETAIL_PLANARJOINTPROPERTIES_H_
+#ifndef DART_DYNAMICS_DETAIL_PLANARJOINTASPECT_H_
+#define DART_DYNAMICS_DETAIL_PLANARJOINTASPECT_H_
 
 #include <string>
 
@@ -130,4 +130,4 @@ using PlanarJointBase = common::EmbedPropertiesOnTopOf<
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_PLANARJOINTPROPERTIES_H_
+#endif // DART_DYNAMICS_DETAIL_PLANARJOINTASPECT_H_

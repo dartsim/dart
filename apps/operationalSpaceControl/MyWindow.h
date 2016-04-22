@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -53,13 +53,13 @@ public:
   virtual ~MyWindow();
 
   // Documentation inherited
-  virtual void timeStepping();
+  void timeStepping() override;
 
   // Documentation inherited
-  virtual void drawWorld() const override;
+  void drawWorld() const override;
 
   // Documentation inherited
-  virtual void keyboard(unsigned char _key, int _x, int _y);
+  void keyboard(unsigned char _key, int _x, int _y) override;
 
 private:
   /// \brief Operational space controller

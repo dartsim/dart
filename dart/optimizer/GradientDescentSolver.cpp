@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -50,8 +50,8 @@ const std::string GradientDescentSolver::Type = "GradientDescentSolver";
 //==============================================================================
 GradientDescentSolver::UniqueProperties::UniqueProperties(
     double _stepMultiplier,
-    size_t _maxAttempts,
-    size_t _perturbationStep,
+    std::size_t _maxAttempts,
+    std::size_t _perturbationStep,
     double _maxPerturbationFactor,
     double _maxRandomizationStep,
     double _defaultConstraintWeight,
@@ -122,7 +122,7 @@ bool GradientDescentSolver::solve()
 
   double tol = std::abs(mProperties.mTolerance);
   double gamma = mGradientP.mStepSize;
-  size_t dim = problem->getDimension();
+  std::size_t dim = problem->getDimension();
 
   if(dim == 0)
   {
@@ -142,10 +142,10 @@ bool GradientDescentSolver::solve()
   mIneqConstraintCostCache.resize(problem->getNumIneqConstraints());
 
   mLastNumIterations = 0;
-  size_t attemptCount = 0;
+  std::size_t attemptCount = 0;
   do
   {
-    size_t stepCount = 0;
+    std::size_t stepCount = 0;
     do
     {
       ++mLastNumIterations;
@@ -166,7 +166,7 @@ bool GradientDescentSolver::solve()
 
       // Check if the equality constraints are satsified
       satisfied = true;
-      for(size_t i=0; i<problem->getNumEqConstraints(); ++i)
+      for(std::size_t i=0; i<problem->getNumEqConstraints(); ++i)
       {
         mEqConstraintCostCache[i] = problem->getEqConstraint(i)->eval(x);
         if(std::abs(mEqConstraintCostCache[i]) > tol)
@@ -174,7 +174,7 @@ bool GradientDescentSolver::solve()
       }
 
       // Check if the inequality constraints are satisfied
-      for(size_t i=0; i<problem->getNumIneqConstraints(); ++i)
+      for(std::size_t i=0; i<problem->getNumIneqConstraints(); ++i)
       {
         mIneqConstraintCostCache[i] = problem->getIneqConstraint(i)->eval(x);
         if(mIneqConstraintCostCache[i] > std::abs(tol))
@@ -359,25 +359,25 @@ double GradientDescentSolver::getStepSize() const
 }
 
 //==============================================================================
-void GradientDescentSolver::setMaxAttempts(size_t _maxAttempts)
+void GradientDescentSolver::setMaxAttempts(std::size_t _maxAttempts)
 {
   mGradientP.mMaxAttempts = _maxAttempts;
 }
 
 //==============================================================================
-size_t GradientDescentSolver::getMaxAttempts() const
+std::size_t GradientDescentSolver::getMaxAttempts() const
 {
   return mGradientP.mMaxAttempts;
 }
 
 //==============================================================================
-void GradientDescentSolver::setPerturbationStep(size_t _step)
+void GradientDescentSolver::setPerturbationStep(std::size_t _step)
 {
   mGradientP.mPerturbationStep = _step;
 }
 
 //==============================================================================
-size_t GradientDescentSolver::getPerturbationStep() const
+std::size_t GradientDescentSolver::getPerturbationStep() const
 {
   return mGradientP.mPerturbationStep;
 }
@@ -480,7 +480,7 @@ void GradientDescentSolver::clampToBoundary(Eigen::VectorXd& _x)
 }
 
 //==============================================================================
-size_t GradientDescentSolver::getLastNumIterations() const
+std::size_t GradientDescentSolver::getLastNumIterations() const
 {
   return mLastNumIterations;
 }

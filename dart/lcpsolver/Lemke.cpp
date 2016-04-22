@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>,
@@ -121,7 +121,7 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
 
   Eigen::MatrixXd B = -Eigen::MatrixXd::Identity(n, n);
 
-  for (size_t i = 0; i < bas.size(); ++i) {
+  for (std::size_t i = 0; i < bas.size(); ++i) {
     B.col(bas[i]) = _M.col(bas[i]);
   }
 
@@ -167,16 +167,16 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
       break;
     }
 
-    size_t jSize = j.size();
+    std::size_t jSize = j.size();
     Eigen::VectorXd minRatio(jSize);
-    for (size_t i = 0; i < jSize; ++i) {
+    for (std::size_t i = 0; i < jSize; ++i) {
       minRatio[i] = (x[j[i]] + zer_tol) / d[j[i]];
     }
     double theta = minRatio.minCoeff();
 
     std::vector<int> tmpJ;
     std::vector<double> tmpMinRatio;
-    for (size_t i = 0; i < jSize; ++i) {
+    for (std::size_t i = 0; i < jSize; ++i) {
       if (x[j[i]] / d[j[i]] <= theta) {
         tmpJ.push_back(j[i]);
         tmpMinRatio.push_back(minRatio[i]);
@@ -201,7 +201,7 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
     }
     lvindex = -1;
 
-    for (size_t i = 0; i < jSize; ++i) {
+    for (std::size_t i = 0; i < jSize; ++i) {
       if (bas[j[i]] == t)
         lvindex = i;
     }
@@ -211,7 +211,7 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
       theta = tmpMinRatio[0];
       lvindex = 0;
 
-      for (size_t i = 0; i < jSize; ++i) {
+      for (std::size_t i = 0; i < jSize; ++i) {
         if (tmpMinRatio[i]-theta > piv_tol) {
           theta = tmpMinRatio[i];
           lvindex = i;
@@ -245,7 +245,7 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
     err = 1;
 
   if (err == 0) {
-    for (size_t i = 0; i < bas.size(); ++i) {
+    for (std::size_t i = 0; i < bas.size(); ++i) {
       if (bas[i] < _z->size()) {
         (*_z)[bas[i]] = x[i];
       }

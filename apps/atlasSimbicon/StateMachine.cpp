@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -178,7 +178,7 @@ void StateMachine::transiteTo(string& _stateName, double _currentTime)
 }
 
 //==============================================================================
-void StateMachine::transiteTo(size_t _idx, double _currentTime)
+void StateMachine::transiteTo(std::size_t _idx, double _currentTime)
 {
   assert(_idx <= mStates.size() && "Invalid index of State.");
 

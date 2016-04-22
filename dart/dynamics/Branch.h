@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -85,10 +85,10 @@ protected:
          const std::string& _name = "Branch");
 
   // Documentation inherited
-  virtual void update();
+  void update() override;
 
   /// The original number of child nodes for each BodyNode of this Branch
-  std::vector<size_t> mNumChildNodes;
+  std::vector<std::size_t> mNumChildNodes;
 };
 
 } // namespace dynamics

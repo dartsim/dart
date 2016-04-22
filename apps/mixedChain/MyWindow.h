@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -57,13 +57,13 @@ public:
   virtual ~MyWindow();
 
   /// \brief
-  virtual void timeStepping();
+  void timeStepping() override;
 
   /// \brief
-  virtual void keyboard(unsigned char key, int x, int y);
+  void keyboard(unsigned char key, int x, int y) override;
 
   /// \brief
-  virtual void drawWorld() const override;
+  void drawWorld() const override;
 
 private:
   /// \brief

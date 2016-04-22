@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -73,7 +73,7 @@ public:
   void changeStateMachine(const std::string& _name, double _currentTime);
 
   /// \brief Change state machine to a state machine whose index is _idx
-  void changeStateMachine(size_t _idx, double _currentTime);
+  void changeStateMachine(std::size_t _idx, double _currentTime);
 
   /// \brief Keyboard control
   void keyboard(unsigned char _key, int _x, int _y, double _currentTime);
@@ -125,16 +125,16 @@ protected:
   bool mRightFootHarnessOn;
 
   /// \brief Index for coronal left hip
-  size_t mCoronalLeftHip;
+  std::size_t mCoronalLeftHip;
 
   /// \brief Index for coronal right hip
-  size_t mCoronalRightHip;
+  std::size_t mCoronalRightHip;
 
   /// \brief Index for sagital left hip
-  size_t mSagitalLeftHip;
+  std::size_t mSagitalLeftHip;
 
   /// \brief Index for sagital right hip
-  size_t mSagitalRightHip;
+  std::size_t mSagitalRightHip;
 
 private:
   /// \brief Check if this controller contains _stateMachine

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael Koval <mkoval@cs.cmu.edu>
@@ -75,7 +75,7 @@ bool LocalResource::isGood() const
 }
 
 //==============================================================================
-size_t LocalResource::getSize()
+std::size_t LocalResource::getSize()
 {
   if(!mFile)
     return 0;
@@ -131,7 +131,7 @@ size_t LocalResource::getSize()
 }
 
 //==============================================================================
-size_t LocalResource::tell()
+std::size_t LocalResource::tell()
 {
   if(!mFile)
     return 0;
@@ -193,12 +193,12 @@ bool LocalResource::seek(ptrdiff_t _offset, SeekType _mode)
 }
 
 //==============================================================================
-size_t LocalResource::read(void *_buffer, size_t _size, size_t _count)
+std::size_t LocalResource::read(void *_buffer, std::size_t _size, std::size_t _count)
 {
   if (!mFile)
     return 0;
 
-  const size_t result = std::fread(_buffer, _size, _count, mFile);
+  const std::size_t result = std::fread(_buffer, _size, _count, mFile);
   if (std::ferror(mFile)) 
   {
     dtwarn << "[LocalResource::read] Failed reading file: "

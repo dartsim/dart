@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Can Erdogan
@@ -60,7 +60,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
     case '1':
     case '2':
     case '3': {
-      size_t dofIdx = _key - 49;
+      std::size_t dofIdx = _key - 49;
       Eigen::VectorXd pose = skel->getPositions();
       pose(dofIdx) = pose(dofIdx) + (inverse ? -dDOF : dDOF);
       skel->setPositions(pose);

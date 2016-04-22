@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -141,16 +141,16 @@ public:
   // double getDerivativeGain(const std::string& _jointName) const;
 
   /// \brief Set balance feedback gain parameter for sagital com distance
-  void setFeedbackSagitalCOMDistance(size_t _index, double _val);
+  void setFeedbackSagitalCOMDistance(std::size_t _index, double _val);
 
   /// \brief Set balance feedback gain parameter for sagital com velocity
-  void setFeedbackSagitalCOMVelocity(size_t _index, double _val);
+  void setFeedbackSagitalCOMVelocity(std::size_t _index, double _val);
 
   /// \brief Set balance feedback gain parameter for sagital com distance
-  void setFeedbackCoronalCOMDistance(size_t _index, double _val);
+  void setFeedbackCoronalCOMDistance(std::size_t _index, double _val);
 
   /// \brief Set balance feedback gain parameter for sagital com velocity
-  void setFeedbackCoronalCOMVelocity(size_t _index, double _val);
+  void setFeedbackCoronalCOMVelocity(std::size_t _index, double _val);
 
   /// \brief Set stance foot to left foot
   void setStanceFootToLeftFoot();
@@ -321,16 +321,16 @@ private:
   dart::dynamics::BodyNode* mRightFoot;
 
   /// \brief Index for coronal left hip
-  size_t mCoronalLeftHip;
+  std::size_t mCoronalLeftHip;
 
   /// \brief Index for coronal right hip
-  size_t mCoronalRightHip;
+  std::size_t mCoronalRightHip;
 
   /// \brief Index for sagital left hip
-  size_t mSagitalLeftHip;
+  std::size_t mSagitalLeftHip;
 
   /// \brief Index for sagital right hip
-  size_t mSagitalRightHip;
+  std::size_t mSagitalRightHip;
 
   /// \brief Desired joint positions with balance feedback
   Eigen::VectorXd mDesiredJointPositionsBalance;

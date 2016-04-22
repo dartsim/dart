@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael Koval <mkoval@cs.cmu.edu>
@@ -38,7 +38,6 @@
 #define DART_COMMON_URI_H_
 
 #include <string>
-#include "dart/common/Deprecated.h"
 
 namespace dart {
 namespace common {

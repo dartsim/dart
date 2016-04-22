@@ -1,4 +1,4 @@
-Source: dart
+Source: dart6
 Priority: extra
 Maintainer: Jeongseok Lee <jslee02@gmail.com>
 Build-Depends: debhelper (>= 9),

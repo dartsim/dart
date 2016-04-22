@@ -45,81 +45,12 @@
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
 #include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/detail/ShapeFrameAspect.h"
 
 namespace dart {
 namespace dynamics {
 
-class VisualAspect;
-class CollisionAspect;
-class DynamicsAspect;
-class ShapeFrame;
-
-namespace detail {
-
-struct VisualAspectProperties
-{
-  /// Color for the primitive shape
-  Eigen::Vector4d mRGBA;
-
-  bool mUseDefaultColor;
-
-  /// True if this shape node should be kept from rendering
-  bool mHidden;
-
-  /// Constructor
-  VisualAspectProperties(
-      const Eigen::Vector4d& color = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0),
-      const bool hidden = false);
-
-  /// Destructor
-  virtual ~VisualAspectProperties() = default;
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
-struct CollisionAspectProperties
-{
-  /// This object is collidable if true
-  bool mCollidable;
-
-  /// Constructor
-  CollisionAspectProperties(const bool collidable = true);
-
-  /// Destructor
-  virtual ~CollisionAspectProperties() = default;
-};
-
-struct DynamicsAspectProperties
-{
-  /// Coefficient of friction
-  double mFrictionCoeff;
-
-  /// Coefficient of restitution
-  double mRestitutionCoeff;
-
-  /// Constructor
-  DynamicsAspectProperties(const double frictionCoeff = 1.0,
-                           const double restitutionCoeff = 0.0);
-
-  /// Destructor
-  virtual ~DynamicsAspectProperties() = default;
-};
-
-struct ShapeFrameProperties
-{
-  /// Pointer to a shape
-  ShapePtr mShape;
-
-  /// Constructor
-  ShapeFrameProperties(const ShapePtr& shape = nullptr);
-
-  /// Virtual destructor
-  virtual ~ShapeFrameProperties() = default;
-};
-
-} // namespace detail
-
+//==============================================================================
 class VisualAspect final :
     public common::AspectWithVersionedProperties<
         VisualAspect,
@@ -184,6 +115,7 @@ public:
 
 };
 
+//==============================================================================
 class CollisionAspect final :
     public common::AspectWithVersionedProperties<
         CollisionAspect,
@@ -205,6 +137,7 @@ public:
 
 };
 
+//==============================================================================
 class DynamicsAspect final :
     public common::AspectWithVersionedProperties<
         DynamicsAspect,
@@ -230,12 +163,10 @@ public:
 
 };
 
+//==============================================================================
 class ShapeFrame :
     public virtual common::VersionCounter,
-    public common::EmbedPropertiesOnTopOf<
-        ShapeFrame, detail::ShapeFrameProperties,
-        common::SpecializedForAspect<
-            VisualAspect, CollisionAspect, DynamicsAspect> >,
+    public detail::ShapeFrameCompositeBase,
     public virtual Frame
 {
 public:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -60,7 +60,7 @@ BodyNodeSpecializedFor<SpecNode>::BodyNodeSpecializedFor()
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-size_t BodyNodeSpecializedFor<SpecNode>::getNumNodes() const
+std::size_t BodyNodeSpecializedFor<SpecNode>::getNumNodes() const
 {
   return _getNumNodes(type<NodeType>());
 }
@@ -68,7 +68,7 @@ size_t BodyNodeSpecializedFor<SpecNode>::getNumNodes() const
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-NodeType* BodyNodeSpecializedFor<SpecNode>::getNode(size_t index)
+NodeType* BodyNodeSpecializedFor<SpecNode>::getNode(std::size_t index)
 {
   return _getNode(type<NodeType>(), index);
 }
@@ -76,7 +76,7 @@ NodeType* BodyNodeSpecializedFor<SpecNode>::getNode(size_t index)
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-const NodeType* BodyNodeSpecializedFor<SpecNode>::getNode(size_t index) const
+const NodeType* BodyNodeSpecializedFor<SpecNode>::getNode(std::size_t index) const
 {
   return const_cast<BodyNodeSpecializedFor<SpecNode>*>(this)->
       _getNode(type<NodeType>(), index);
@@ -93,14 +93,14 @@ constexpr bool BodyNodeSpecializedFor<SpecNode>::isSpecializedForNode()
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-size_t BodyNodeSpecializedFor<SpecNode>::_getNumNodes(type<NodeType>) const
+std::size_t BodyNodeSpecializedFor<SpecNode>::_getNumNodes(type<NodeType>) const
 {
   return detail::BasicNodeManagerForBodyNode::getNumNodes<NodeType>();
 }
 
 //==============================================================================
 template <class SpecNode>
-size_t BodyNodeSpecializedFor<SpecNode>::_getNumNodes(type<SpecNode>) const
+std::size_t BodyNodeSpecializedFor<SpecNode>::_getNumNodes(type<SpecNode>) const
 {
 #ifdef DART_UNITTEST_SPECIALIZED_NODE_ACCESS
   usedSpecializedNodeAccess = true;
@@ -112,14 +112,14 @@ size_t BodyNodeSpecializedFor<SpecNode>::_getNumNodes(type<SpecNode>) const
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-NodeType* BodyNodeSpecializedFor<SpecNode>::_getNode(type<NodeType>, size_t index)
+NodeType* BodyNodeSpecializedFor<SpecNode>::_getNode(type<NodeType>, std::size_t index)
 {
   return detail::BasicNodeManagerForBodyNode::getNode<NodeType>(index);
 }
 
 //==============================================================================
 template <class SpecNode>
-SpecNode* BodyNodeSpecializedFor<SpecNode>::_getNode(type<SpecNode>, size_t index)
+SpecNode* BodyNodeSpecializedFor<SpecNode>::_getNode(type<SpecNode>, std::size_t index)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_NODE_ACCESS
   usedSpecializedNodeAccess = true;
@@ -157,8 +157,8 @@ SkeletonSpecializedFor<SpecNode>::SkeletonSpecializedFor()
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-size_t SkeletonSpecializedFor<SpecNode>::getNumNodes(
-    size_t treeIndex) const
+std::size_t SkeletonSpecializedFor<SpecNode>::getNumNodes(
+    std::size_t treeIndex) const
 {
   return _getNumNodes(type<NodeType>(), treeIndex);
 }
@@ -167,7 +167,7 @@ size_t SkeletonSpecializedFor<SpecNode>::getNumNodes(
 template <class SpecNode>
 template <class NodeType>
 NodeType* SkeletonSpecializedFor<SpecNode>::getNode(
-    size_t treeIndex, size_t nodeIndex)
+    std::size_t treeIndex, std::size_t nodeIndex)
 {
   return _getNode(type<NodeType>(), treeIndex, nodeIndex);
 }
@@ -176,7 +176,7 @@ NodeType* SkeletonSpecializedFor<SpecNode>::getNode(
 template <class SpecNode>
 template <class NodeType>
 const NodeType* SkeletonSpecializedFor<SpecNode>::getNode(
-    size_t treeIndex, size_t nodeIndex) const
+    std::size_t treeIndex, std::size_t nodeIndex) const
 {
   return const_cast<SkeletonSpecializedFor<SpecNode>*>(this)->
         _getNode(type<NodeType>(), treeIndex, nodeIndex);
@@ -212,16 +212,16 @@ constexpr bool SkeletonSpecializedFor<SpecNode>::isSpecializedForNode()
 //==============================================================================
 template <class SpecNode>
 template <class NodeType>
-size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
-    type<NodeType>, size_t treeIndex) const
+std::size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
+    type<NodeType>, std::size_t treeIndex) const
 {
   return detail::BasicNodeManagerForSkeleton::getNumNodes<NodeType>(treeIndex);
 }
 
 //==============================================================================
 template <class SpecNode>
-size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
-    type<SpecNode>, size_t treeIndex) const
+std::size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
+    type<SpecNode>, std::size_t treeIndex) const
 {
 #ifdef DART_UNITTEST_SPECIALIZED_NODE_ACCESS
   usedSpecializedNodeAccess = true;
@@ -243,7 +243,7 @@ size_t SkeletonSpecializedFor<SpecNode>::_getNumNodes(
 template <class SpecNode>
 template <class NodeType>
 NodeType* SkeletonSpecializedFor<SpecNode>::_getNode(
-    type<NodeType>, size_t treeIndex, size_t nodeIndex)
+    type<NodeType>, std::size_t treeIndex, std::size_t nodeIndex)
 {
   return detail::BasicNodeManagerForSkeleton::getNode<NodeType>(
         treeIndex, nodeIndex);
@@ -252,7 +252,7 @@ NodeType* SkeletonSpecializedFor<SpecNode>::_getNode(
 //==============================================================================
 template <class SpecNode>
 SpecNode* SkeletonSpecializedFor<SpecNode>::_getNode(
-    type<SpecNode>, size_t treeIndex, size_t nodeIndex)
+    type<SpecNode>, std::size_t treeIndex, std::size_t nodeIndex)
 {
 #ifdef DART_UNITTEST_SPECIALIZED_NODE_ACCESS
   usedSpecializedNodeAccess = true;

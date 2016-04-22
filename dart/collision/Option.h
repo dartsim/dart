@@ -57,7 +57,7 @@ struct CollisionOption
   bool binaryCheck;
 
   /// Maximum number of contacts to detect
-  size_t maxNumContacts;
+  std::size_t maxNumContacts;
 
   /// CollisionFilter
   std::shared_ptr<CollisionFilter> collisionFilter;
@@ -65,7 +65,7 @@ struct CollisionOption
   /// Constructor
   CollisionOption(bool enableContact = true,
          bool binaryCheck = false,
-         size_t maxNumContacts = 100,
+         std::size_t maxNumContacts = 100,
          const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
 };
 

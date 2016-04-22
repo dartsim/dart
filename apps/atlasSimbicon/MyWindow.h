@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
@@ -54,13 +54,13 @@ public:
   virtual ~MyWindow();
 
   // Documentation inherited
-  virtual void timeStepping();
+  void timeStepping() override;
 
   // Documentation inherited
-  virtual void drawSkels();
+  void drawSkels() override;
 
   // Documentation inherited
-  virtual void keyboard(unsigned char _key, int _x, int _y);
+  void keyboard(unsigned char _key, int _x, int _y) override;
 
 private:
   /// \brief External force to exert on Atlas robot

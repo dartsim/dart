@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -148,6 +148,9 @@ public:
 
   /// Get the Composite of this Aspect
   const CompositeType* getComposite() const;
+
+  /// Returns true if this Aspect has a Composite that matches CompositeType
+  bool hasComposite() const;
 
 protected:
 

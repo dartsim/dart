@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -91,26 +91,26 @@ public:
   //----------------------------------------------------------------------------
 
   /// Return true if _genCoordIndex-th generalized coordinate
-  virtual bool dependsOn(size_t _genCoordIndex) const = 0;
+  virtual bool dependsOn(std::size_t _genCoordIndex) const = 0;
 
   /// The number of the generalized coordinates which affect this JacobianNode
-  virtual size_t getNumDependentGenCoords() const = 0;
+  virtual std::size_t getNumDependentGenCoords() const = 0;
 
   /// Return a generalized coordinate index from the array index
   /// (< getNumDependentDofs)
-  virtual size_t getDependentGenCoordIndex(size_t _arrayIndex) const = 0;
+  virtual std::size_t getDependentGenCoordIndex(std::size_t _arrayIndex) const = 0;
 
   /// Indices of the generalized coordinates which affect this JacobianNode
-  virtual const std::vector<size_t>& getDependentGenCoordIndices() const = 0;
+  virtual const std::vector<std::size_t>& getDependentGenCoordIndices() const = 0;
 
   /// Same as getNumDependentGenCoords()
-  virtual size_t getNumDependentDofs() const = 0;
+  virtual std::size_t getNumDependentDofs() const = 0;
 
   /// Get a pointer to the _indexth dependent DegreeOfFreedom for this BodyNode
-  virtual DegreeOfFreedom* getDependentDof(size_t _index) = 0;
+  virtual DegreeOfFreedom* getDependentDof(std::size_t _index) = 0;
 
   /// Get a pointer to the _indexth dependent DegreeOfFreedom for this BodyNode
-  virtual const DegreeOfFreedom* getDependentDof(size_t _index) const = 0;
+  virtual const DegreeOfFreedom* getDependentDof(std::size_t _index) const = 0;
 
   /// Return a std::vector of DegreeOfFreedom pointers that this Node depends on
   virtual const std::vector<DegreeOfFreedom*>& getDependentDofs() = 0;

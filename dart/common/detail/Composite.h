@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -146,18 +146,18 @@ bool Composite::requiresAspect() const
 
 //==============================================================================
 template <class T>
-void createAspects(T* /*mgr*/)
+void createAspects(T* /*comp*/)
 {
   // Do nothing
 }
 
 //==============================================================================
 template <class T, class NextAspect, class... Aspects>
-void createAspects(T* mgr)
+void createAspects(T* comp)
 {
-  mgr->template createAspect<NextAspect>();
+  comp->template createAspect<NextAspect>();
 
-  createAspects<T, Aspects...>(mgr);
+  createAspects<T, Aspects...>(comp);
 }
 
 } // namespace common

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -419,8 +419,8 @@ public:
 
       if(stop_highlighting)
       {
-        for(size_t s=0; s < InteractiveTool::NUM_TYPES; ++s)
-          for(size_t c=0; c<3; ++c)
+        for(std::size_t s=0; s < InteractiveTool::NUM_TYPES; ++s)
+          for(std::size_t c=0; c<3; ++c)
             mFrame->getTool((InteractiveTool::Type)s, c)->resetAlpha();
         mHighlighting = false;
       }
@@ -438,9 +438,9 @@ public:
 
       const PickInfo& pick = picks[0];
 
-      for(size_t s=0; s < (size_t)InteractiveTool::NUM_TYPES; ++s)
+      for(std::size_t s=0; s < (std::size_t)InteractiveTool::NUM_TYPES; ++s)
       {
-        for(size_t c=0; c<3; ++c)
+        for(std::size_t c=0; c<3; ++c)
         {
           if(mFrame->getTool((InteractiveTool::Type)s, c) ==
              pick.frame->getParentFrame())
@@ -457,11 +457,11 @@ public:
 
       if(mHighlighting)
       {
-        for(size_t s=0; s < InteractiveTool::NUM_TYPES; ++s)
+        for(std::size_t s=0; s < InteractiveTool::NUM_TYPES; ++s)
         {
-          for(size_t c=0; c<3; ++c)
+          for(std::size_t c=0; c<3; ++c)
           {
-            if(s == (size_t)mTool && c == mCoordinate)
+            if(s == (std::size_t)mTool && c == mCoordinate)
               mFrame->getTool((InteractiveTool::Type)s, c)->setAlpha(1.0);
             else
               mFrame->getTool((InteractiveTool::Type)s, c)->setAlpha(0.3);
@@ -488,7 +488,7 @@ protected:
 
   bool mHighlighting;
   int mTool;
-  size_t mCoordinate;
+  std::size_t mCoordinate;
 };
 
 //==============================================================================
@@ -566,12 +566,12 @@ InteractiveFrameDnD::InteractiveFrameDnD(Viewer* viewer,
   mViewer->getDefaultEventHandler()->addMouseEventHandler(
         new InteractiveFrameMouseEvent(frame));
 
-  for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
-    for(size_t j=0; j<3; ++j)
+  for(std::size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
+    for(std::size_t j=0; j<3; ++j)
       mDnDs.push_back(new InteractiveToolDnD(viewer, frame,
                             frame->getTool((InteractiveTool::Type)i, j)));
 
-  for(size_t i=0; i<3; ++i)
+  for(std::size_t i=0; i<3; ++i)
   {
     DragAndDrop* dnd = mDnDs[i];
     dnd->setRotationOption(SimpleFrameDnD::RotationOption::ALWAYS_OFF);
@@ -595,7 +595,7 @@ void InteractiveFrameDnD::update()
 {
   if(!mAmMoving)
   {
-    for(size_t i=0; i<3; ++i)
+    for(std::size_t i=0; i<3; ++i)
     {
       DragAndDrop* dnd = mDnDs[i];
       Eigen::Matrix3d R = mInteractiveFrame->getWorldTransform().linear();
@@ -610,7 +610,7 @@ void InteractiveFrameDnD::update()
   }
 
   mAmMoving = false;
-  for(size_t i=0; i<mDnDs.size(); ++i)
+  for(std::size_t i=0; i<mDnDs.size(); ++i)
   {
     DragAndDrop* dnd = mDnDs[i];
     dnd->update();
@@ -619,9 +619,9 @@ void InteractiveFrameDnD::update()
 
   if(mAmMoving)
   {
-    for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
+    for(std::size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
     {
-      for(size_t j=0; j<3; ++j)
+      for(std::size_t j=0; j<3; ++j)
       {
         DragAndDrop* dnd = mDnDs[3*i+j];
         InteractiveTool* tool =
@@ -629,7 +629,7 @@ void InteractiveFrameDnD::update()
         if(!dnd->isMoving() && tool->getEnabled())
         {
           const auto shapeFrames = tool->getShapeFrames();
-          for(size_t s=0; s<shapeFrames.size(); ++s)
+          for(std::size_t s=0; s<shapeFrames.size(); ++s)
             shapeFrames[s]->getVisualAspect(true)->setHidden(true);
         }
       }
@@ -637,16 +637,16 @@ void InteractiveFrameDnD::update()
   }
   else
   {
-    for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
+    for(std::size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
     {
-      for(size_t j=0; j<3; ++j)
+      for(std::size_t j=0; j<3; ++j)
       {
         InteractiveTool* tool =
             mInteractiveFrame->getTool((InteractiveTool::Type)i,j);
         if(tool->getEnabled())
         {
           const auto shapeFrames = tool->getShapeFrames();
-          for(size_t s=0; s<shapeFrames.size(); ++s)
+          for(std::size_t s=0; s<shapeFrames.size(); ++s)
             shapeFrames[s]->getVisualAspect(true)->setHidden(false);
         }
       }
@@ -743,12 +743,12 @@ void BodyNodeDnD::move()
 
   if(restrictJoints)
   {
-    std::vector<size_t> dofs;
+    std::vector<std::size_t> dofs;
 
     dart::dynamics::Joint* joint = mBodyNode.lock()->getParentJoint();
-    for(size_t count = 0; count <= mAdditionalBodyNodes; ++count)
+    for(std::size_t count = 0; count <= mAdditionalBodyNodes; ++count)
     {
-      for(size_t j=0; j < joint->getNumDofs(); ++j)
+      for(std::size_t j=0; j < joint->getNumDofs(); ++j)
         dofs.push_back(joint->getDof(j)->getIndexInSkeleton());
     }
 

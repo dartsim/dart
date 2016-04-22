@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>
@@ -115,7 +115,7 @@ void SimWindow::drawSkels()
 //==============================================================================
 void SimWindow::drawEntities()
 {
-  for (size_t i = 0; i < mWorld->getNumSimpleFrames(); ++i)
+  for (std::size_t i = 0; i < mWorld->getNumSimpleFrames(); ++i)
     drawShapeFrame(mWorld->getSimpleFrame(i).get());
 }
 
@@ -140,14 +140,14 @@ void SimWindow::draw() {
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   if (!mSimulating) {
       if (mPlayFrame < mWorld->getRecording()->getNumFrames()) {
-      size_t nSkels = mWorld->getNumSkeletons();
-      for (size_t i = 0; i < nSkels; i++) {
-        // size_t start = mWorld->getIndex(i);
-        // size_t size = mWorld->getSkeleton(i)->getNumDofs();
+      std::size_t nSkels = mWorld->getNumSkeletons();
+      for (std::size_t i = 0; i < nSkels; i++) {
+        // std::size_t start = mWorld->getIndex(i);
+        // std::size_t size = mWorld->getSkeleton(i)->getNumDofs();
         mWorld->getSkeleton(i)->setPositions(mWorld->getRecording()->getConfig(mPlayFrame, i));
       }
       if (mShowMarkers) {
-        // size_t sumDofs = mWorld->getIndex(nSkels);
+        // std::size_t sumDofs = mWorld->getIndex(nSkels);
         int nContact = mWorld->getRecording()->getNumContacts(mPlayFrame);
         for (int i = 0; i < nContact; i++) {
             Eigen::Vector3d v = mWorld->getRecording()->getContactPoint(mPlayFrame, i);

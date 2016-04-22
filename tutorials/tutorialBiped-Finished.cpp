@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>
@@ -67,13 +67,13 @@ public:
     mKp = Eigen::MatrixXd::Identity(nDofs, nDofs);
     mKd = Eigen::MatrixXd::Identity(nDofs, nDofs);
   
-    for(size_t i = 0; i < 6; ++i)
+    for(std::size_t i = 0; i < 6; ++i)
     {
       mKp(i, i) = 0.0;
       mKd(i, i) = 0.0;
     }
 
-    for(size_t i = 6; i < mBiped->getNumDofs(); ++i)
+    for(std::size_t i = 6; i < mBiped->getNumDofs(); ++i)
     {
       mKp(i, i) = 1000;
       mKd(i, i) = 50;
@@ -172,7 +172,7 @@ public:
   {
     int wheelFirstIndex =
         mBiped->getDof("joint_front_left_1")->getIndexInSkeleton();
-    for (size_t i = wheelFirstIndex; i < mBiped->getNumDofs(); ++i)
+    for (std::size_t i = wheelFirstIndex; i < mBiped->getNumDofs(); ++i)
     {
       mKp(i, i) = 0.0;
       mKd(i, i) = 0.0;
@@ -308,7 +308,7 @@ SkeletonPtr loadBiped()
   SkeletonPtr biped = world->getSkeleton("biped");
 
   // Set joint limits
-  for(size_t i = 0; i < biped->getNumJoints(); ++i)
+  for(std::size_t i = 0; i < biped->getNumJoints(); ++i)
     biped->getJoint(i)->setPositionLimitEnforced(true);
   
   // Enable self collision check but ignore adjacent bodies
@@ -379,7 +379,7 @@ Eigen::VectorXd solveIK(SkeletonPtr biped)
   BodyNodePtr leftToe = biped->getBodyNode("h_toe_left");
   double initialHeight = -0.8;
 
-  for(size_t i = 0; i < default_ik_iterations; ++i)
+  for(std::size_t i = 0; i < default_ik_iterations; ++i)
   {
     Eigen::Vector3d deviation = biped->getCOM() - leftHeel->getCOM();
     Eigen::Vector3d localCOM = leftHeel->getCOM(leftHeel);

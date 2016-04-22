@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -42,7 +42,7 @@
 namespace dart {
 namespace dynamics {
 
-constexpr size_t INVALID_INDEX = static_cast<size_t>(-1);
+constexpr std::size_t INVALID_INDEX = static_cast<std::size_t>(-1);
 
 }  // namespace dynamics
 }  // namespace dart

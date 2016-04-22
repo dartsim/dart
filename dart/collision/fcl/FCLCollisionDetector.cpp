@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Chen Tang <ctang40@gatech.edu>,
@@ -149,7 +149,7 @@ struct FCLCollisionCallbackData
   {
     convertOption(mOption, mFclRequest);
 
-    mFclRequest.num_max_contacts = std::max(static_cast<size_t>(100u),
+    mFclRequest.num_max_contacts = std::max(static_cast<std::size_t>(100u),
                                             mOption.maxNumContacts);
     // Since some contact points can be filtered out in the post process, we ask
     // more than the demend. 100 is randomly picked.
@@ -523,12 +523,12 @@ fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
   assert(_mesh);
   fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
   model->beginModel();
-  for (size_t i = 0; i < _mesh->mNumMeshes; i++)
+  for (std::size_t i = 0; i < _mesh->mNumMeshes; i++)
   {
-    for (size_t j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++)
+    for (std::size_t j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++)
     {
       fcl::Vec3f vertices[3];
-      for (size_t k = 0; k < 3; k++)
+      for (std::size_t k = 0; k < 3; k++)
       {
         const aiVector3D& vertex
             = _mesh->mMeshes[i]->mVertices[
@@ -554,10 +554,10 @@ fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
   fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
   model->beginModel();
 
-  for (size_t i = 0; i < _mesh->mNumFaces; i++)
+  for (std::size_t i = 0; i < _mesh->mNumFaces; i++)
   {
     fcl::Vec3f vertices[3];
-    for (size_t j = 0; j < 3; j++)
+    for (std::size_t j = 0; j < 3; j++)
     {
       const aiVector3D& vertex = _mesh->mVertices[_mesh->mFaces[i].mIndices[j]];
       vertices[j] = fcl::Vec3f(vertex.x, vertex.y, vertex.z);
@@ -1071,7 +1071,7 @@ void postProcessFCL(const fcl::CollisionResult& fclResult,
     }
   }
 
-  for (size_t i = 0; i < numContacts; ++i)
+  for (std::size_t i = 0; i < numContacts; ++i)
   {
     if (!markForDeletion[i])
     {

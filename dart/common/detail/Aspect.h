@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -70,8 +70,17 @@ const CompositeType* CompositeTrackingAspect<CompositeType>::getComposite() cons
 
 //==============================================================================
 template <class CompositeType>
+bool CompositeTrackingAspect<CompositeType>::hasComposite() const
+{
+  return (nullptr != mComposite);
+}
+
+//==============================================================================
+template <class CompositeType>
 void CompositeTrackingAspect<CompositeType>::setComposite(Composite* newComposite)
 {
+  assert(nullptr == mComposite);
+
   mComposite = dynamic_cast<CompositeType*>(newComposite);
   if(nullptr == mComposite)
   {
@@ -86,8 +95,11 @@ void CompositeTrackingAspect<CompositeType>::setComposite(Composite* newComposit
 
 //==============================================================================
 template <class CompositeType>
-void CompositeTrackingAspect<CompositeType>::loseComposite(Composite* /*oldComposite*/)
+void CompositeTrackingAspect<CompositeType>::loseComposite(
+    Composite* oldComposite)
 {
+  DART_UNUSED(oldComposite);
+  assert(oldComposite == mComposite);
   mComposite = nullptr;
 }
 

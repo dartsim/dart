@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
@@ -66,8 +66,8 @@ protected:
   Eigen::VectorXd mDesiredDofs;
   Eigen::MatrixXd mKp;
   Eigen::MatrixXd mKd;
-  size_t mLeftFoot[2];
-  size_t mRightFoot[2];
+  std::size_t mLeftFoot[2];
+  std::size_t mRightFoot[2];
   int mFrame;
   double mTimestep;
   double mPreOffset;

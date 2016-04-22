@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -92,7 +92,7 @@ public:
     double mMass;
 
     /// Indices of connected Point Masses
-    std::vector<size_t> mConnectedPointMassIndices;
+    std::vector<std::size_t> mConnectedPointMassIndices;
 
     /// Lower limit of position
     Eigen::Vector3d mPositionLowerLimits; // Currently unused
@@ -120,7 +120,7 @@ public:
 
     Properties(const Eigen::Vector3d& _X0 = Eigen::Vector3d::Zero(),
                double _mass = 0.0005,
-               const std::vector<size_t>& _connections = std::vector<size_t>(),
+               const std::vector<std::size_t>& _connections = std::vector<std::size_t>(),
                const Eigen::Vector3d& _positionLowerLimits =
                                       Eigen::Vector3d::Constant(-math::constantsd::inf()),
                const Eigen::Vector3d& _positionUpperLimits =
@@ -163,7 +163,7 @@ public:
   const State& getState() const;
 
   ///
-  size_t getIndexInSoftBodyNode() const;
+  std::size_t getIndexInSoftBodyNode() const;
 
   ///
   void setMass(double _mass);
@@ -187,13 +187,13 @@ public:
   void addConnectedPointMass(PointMass* _pointMass);
 
   ///
-  size_t getNumConnectedPointMasses() const;
+  std::size_t getNumConnectedPointMasses() const;
 
   ///
-  PointMass* getConnectedPointMass(size_t _idx);
+  PointMass* getConnectedPointMass(std::size_t _idx);
 
   ///
-  const PointMass* getConnectedPointMass(size_t _idx) const;
+  const PointMass* getConnectedPointMass(std::size_t _idx) const;
 
 
   /// Set whether this point mass is colliding with other objects. Note that
@@ -209,23 +209,23 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  size_t getNumDofs() const;
+  std::size_t getNumDofs() const;
 
 //  // Documentation inherited
-//  void setIndexInSkeleton(size_t _index, size_t _indexInSkeleton);
+//  void setIndexInSkeleton(std::size_t _index, std::size_t _indexInSkeleton);
 
 //  // Documentation inherited
-//  size_t getIndexInSkeleton(size_t _index) const;
+//  std::size_t getIndexInSkeleton(std::size_t _index) const;
 
   //----------------------------------------------------------------------------
   // Position
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setPosition(size_t _index, double _position);
+  void setPosition(std::size_t _index, double _position);
 
   // Documentation inherited
-  double getPosition(size_t _index) const;
+  double getPosition(std::size_t _index) const;
 
   // Documentation inherited
   void setPositions(const Eigen::Vector3d& _positions);
@@ -241,10 +241,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setVelocity(size_t _index, double _velocity);
+  void setVelocity(std::size_t _index, double _velocity);
 
   // Documentation inherited
-  double getVelocity(size_t _index) const;
+  double getVelocity(std::size_t _index) const;
 
   // Documentation inherited
   void setVelocities(const Eigen::Vector3d& _velocities);
@@ -260,10 +260,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setAcceleration(size_t _index, double _acceleration);
+  void setAcceleration(std::size_t _index, double _acceleration);
 
   // Documentation inherited
-  double getAcceleration(size_t _index) const;
+  double getAcceleration(std::size_t _index) const;
 
   // Documentation inherited
   void setAccelerations(const Eigen::Vector3d& _accelerations);
@@ -282,10 +282,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setForce(size_t _index, double _force);
+  void setForce(std::size_t _index, double _force);
 
   // Documentation inherited
-  double getForce(size_t _index);
+  double getForce(std::size_t _index);
 
   // Documentation inherited
   void setForces(const Eigen::Vector3d& _forces);
@@ -301,10 +301,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setVelocityChange(size_t _index, double _velocityChange);
+  void setVelocityChange(std::size_t _index, double _velocityChange);
 
   // Documentation inherited
-  double getVelocityChange(size_t _index);
+  double getVelocityChange(std::size_t _index);
 
   // Documentation inherited
   void resetVelocityChanges();
@@ -314,10 +314,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setConstraintImpulse(size_t _index, double _impulse);
+  void setConstraintImpulse(std::size_t _index, double _impulse);
 
   // Documentation inherited
-  double getConstraintImpulse(size_t _index);
+  double getConstraintImpulse(std::size_t _index);
 
   // Documentation inherited
   void resetConstraintImpulses();
@@ -547,13 +547,13 @@ protected:
 protected:
   // TODO(JS): Need?
   ///
-//  Eigen::Matrix<size_t, 3, 1> mIndexInSkeleton;
+//  Eigen::Matrix<std::size_t, 3, 1> mIndexInSkeleton;
 
   /// SoftBodyNode that this PointMass belongs to
   SoftBodyNode* mParentSoftBodyNode;
 
   /// Index of this PointMass within the SoftBodyNode
-  size_t mIndex;
+  std::size_t mIndex;
 
   //----------------------------------------------------------------------------
   // Configuration
@@ -642,7 +642,7 @@ protected:
   Eigen::Vector3d mFext;
 
   /// A increasingly sorted list of dependent dof indices.
-  std::vector<size_t> mDependentGenCoordIndices;
+  std::vector<std::size_t> mDependentGenCoordIndices;
 
   /// Whether the node is currently in collision with another node.
   bool mIsColliding;

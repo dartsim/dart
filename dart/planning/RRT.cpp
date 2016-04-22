@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Georgia Tech Research Corporation
+ * Copyright (c) 2010-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,7 +56,7 @@ namespace dart {
 namespace planning {
 
 /* ********************************************************************************************* */
-RRT::RRT(WorldPtr world, SkeletonPtr robot, const std::vector<size_t> &dofs,
+RRT::RRT(WorldPtr world, SkeletonPtr robot, const std::vector<std::size_t> &dofs,
   const VectorXd &root, double stepSize) :
   ndim(dofs.size()),
   stepSize(stepSize),
@@ -71,7 +71,7 @@ RRT::RRT(WorldPtr world, SkeletonPtr robot, const std::vector<size_t> &dofs,
 }
 
 /* ********************************************************************************************* */
-RRT::RRT(WorldPtr world, SkeletonPtr robot, const std::vector<size_t> &dofs, const vector<VectorXd> &roots, double stepSize) :
+RRT::RRT(WorldPtr world, SkeletonPtr robot, const std::vector<std::size_t> &dofs, const vector<VectorXd> &roots, double stepSize) :
   ndim(dofs.size()),
   stepSize(stepSize),
 	world(world),
@@ -81,7 +81,7 @@ RRT::RRT(WorldPtr world, SkeletonPtr robot, const std::vector<size_t> &dofs, con
 {
 	// Reset the random number generator and add the given start configurations to the flann structure
   srand(time(nullptr));
-  for(size_t i = 0; i < roots.size(); i++) {
+  for(std::size_t i = 0; i < roots.size(); i++) {
 		addNode(roots[i], -1);
 	}
 }
@@ -227,7 +227,7 @@ bool RRT::checkCollisions(const VectorXd &c) {
 }
 
 /* ********************************************************************************************* */
-size_t RRT::getSize() {
+std::size_t RRT::getSize() {
 	return configVector.size();
 }
 

@@ -41,7 +41,6 @@
 #include <cstddef>
 #include <memory>
 #include <vector>
-#include "dart/common/Console.h"
 
 // Macro to suppress -Wunused-parameter and -Wunused-variable warnings in
 // release mode when a variable is only used in assertions.
@@ -62,7 +61,7 @@ std::unique_ptr<T> make_unique(Args&&... args)
 
 //==============================================================================
 template <typename T>
-static T getVectorObjectIfAvailable(size_t index, const std::vector<T>& vec)
+static T getVectorObjectIfAvailable(std::size_t index, const std::vector<T>& vec)
 {
   assert(index < vec.size());
   if(index < vec.size())

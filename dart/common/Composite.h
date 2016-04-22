@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -196,11 +196,11 @@ protected:
 // itself. Also consider allowing the user to specify arguments for the
 // constructors of the Aspects.
 template <class T>
-void createAspects(T* /*mgr*/);
+void createAspects(T* /*comp*/);
 
 //==============================================================================
 template <class T, class NextAspect, class... Aspects>
-void createAspects(T* mgr);
+void createAspects(T* comp);
 
 } // namespace common
 } // namespace dart

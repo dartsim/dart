@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -58,7 +58,7 @@ SupportPolygonVisual::SupportPolygonVisual(const dart::dynamics::SkeletonPtr& sk
 
 //==============================================================================
 SupportPolygonVisual::SupportPolygonVisual(const dart::dynamics::SkeletonPtr& skeleton,
-                             size_t treeIndex, double elevation)
+                             std::size_t treeIndex, double elevation)
   : mSkeleton(skeleton),
     mTreeIndex(treeIndex),
     mElevation(elevation)
@@ -85,7 +85,7 @@ void SupportPolygonVisual::visualizeWholeSkeleton()
 }
 
 //==============================================================================
-void SupportPolygonVisual::visualizeTree(size_t treeIndex)
+void SupportPolygonVisual::visualizeTree(std::size_t treeIndex)
 {
   mTreeIndex = treeIndex;
 }
@@ -252,7 +252,7 @@ void SupportPolygonVisual::refresh()
   {
     mVertices->resize(poly.size());
     mFaces->resize(poly.size());
-    for(size_t i=0; i < poly.size(); ++i)
+    for(std::size_t i=0; i < poly.size(); ++i)
     {
       const Eigen::Vector3d& v = axes.first*poly[i][0] + axes.second*poly[i][1]
                                   + up*mElevation;
@@ -309,7 +309,7 @@ void SupportPolygonVisual::refresh()
           skel->getTreeBodyNodes(mTreeIndex);
 
       double mass = 0.0;
-      for(size_t i=0; i < bns.size(); ++i)
+      for(std::size_t i=0; i < bns.size(); ++i)
       {
         dart::dynamics::BodyNode* bn = bns[i];
         com += bn->getMass() * bn->getCOM();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -290,7 +290,7 @@ LCPSolver* ConstraintSolver::getLCPSolver() const
 //==============================================================================
 void ConstraintSolver::solve()
 {
-  for (size_t i = 0; i < mSkeletons.size(); ++i)
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i)
   {
     mSkeletons[i]->clearConstraintImpulses();
 DART_SUPPRESS_DEPRECATED_BEGIN
@@ -451,16 +451,16 @@ DART_SUPPRESS_DEPRECATED_END
   // Create new joint constraints
   for (const auto& skel : mSkeletons)
   {
-    const size_t numJoints = skel->getNumJoints();
-    for (size_t i = 0; i < numJoints; i++)
+    const std::size_t numJoints = skel->getNumJoints();
+    for (std::size_t i = 0; i < numJoints; i++)
     {
       dynamics::Joint* joint = skel->getJoint(i);
 
       if (joint->isKinematic())
         continue;
 
-      const size_t dof = joint->getNumDofs();
-      for (size_t j = 0; j < dof; ++j)
+      const std::size_t dof = joint->getNumDofs();
+      for (std::size_t j = 0; j < dof; ++j)
       {
         if (joint->getCoulombFriction(j) != 0.0)
         {

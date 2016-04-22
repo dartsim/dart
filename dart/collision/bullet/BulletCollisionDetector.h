@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -107,7 +107,7 @@ private:
 private:
 
   std::map<dynamics::ConstShapePtr,
-           std::pair<btCollisionShape*, size_t>> mShapeMap;
+           std::pair<btCollisionShape*, std::size_t>> mShapeMap;
 
 };
 

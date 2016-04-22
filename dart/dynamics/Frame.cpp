@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -404,7 +404,7 @@ const std::set<const Entity*> Frame::getChildEntities() const
 }
 
 //==============================================================================
-size_t Frame::getNumChildEntities() const
+std::size_t Frame::getNumChildEntities() const
 {
   return mChildEntities.size();
 }
@@ -422,7 +422,7 @@ std::set<const Frame*> Frame::getChildFrames() const
 }
 
 //==============================================================================
-size_t Frame::getNumChildFrames() const
+std::size_t Frame::getNumChildFrames() const
 {
   return mChildFrames.size();
 }

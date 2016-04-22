@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -53,13 +53,13 @@ void MyWindow::timeStepping()
 {
   dart::dynamics::SkeletonPtr skel  = mWorld->getSkeleton(1);
 
-  size_t index0 = skel->getJoint("j_scapula_left")->getIndexInSkeleton(0);
-  size_t index1 = skel->getJoint("j_scapula_right")->getIndexInSkeleton(0);
-  size_t index2 = skel->getJoint("j_forearm_left")->getIndexInSkeleton(0);
-  size_t index3 = skel->getJoint("j_forearm_right")->getIndexInSkeleton(0);
+  std::size_t index0 = skel->getJoint("j_scapula_left")->getIndexInSkeleton(0);
+  std::size_t index1 = skel->getJoint("j_scapula_right")->getIndexInSkeleton(0);
+  std::size_t index2 = skel->getJoint("j_forearm_left")->getIndexInSkeleton(0);
+  std::size_t index3 = skel->getJoint("j_forearm_right")->getIndexInSkeleton(0);
 
-  size_t index6 = skel->getJoint("j_shin_left")->getIndexInSkeleton(0);
-  size_t index7 = skel->getJoint("j_shin_right")->getIndexInSkeleton(0);
+  std::size_t index6 = skel->getJoint("j_shin_left")->getIndexInSkeleton(0);
+  std::size_t index7 = skel->getJoint("j_shin_right")->getIndexInSkeleton(0);
 
   skel->setCommand(index0,  1.0 * std::sin(mWorld->getTime() * 4.0));
   skel->setCommand(index1, -1.0 * std::sin(mWorld->getTime() * 4.0));

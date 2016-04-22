@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -104,7 +104,7 @@ bool BodyContactCondition::isSatisfied()
   SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(mBodyNode);
   if (soft)
   {
-    for (size_t i = 0; i < soft->getNumPointMasses(); ++i)
+    for (std::size_t i = 0; i < soft->getNumPointMasses(); ++i)
     {
       PointMass* pm = soft->getPointMass(i);
       if (pm->isColliding() > 0)

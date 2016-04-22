@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -44,8 +44,6 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Deprecated.h"
-
 namespace dart {
 namespace optimizer {
 
@@ -65,23 +63,8 @@ public:
   /// \brief Get the name of this Function
   const std::string& getName() const;
 
-  /// \brief Evaluate and return the objective function at the point x.
-  ///
-  /// Note: This function is deprecated in favor of the const Eigen::VectorXd&
-  /// version
-  DEPRECATED(5.1)
-  virtual double eval(Eigen::Map<const Eigen::VectorXd>& _x);
-
   /// \brief Evaluate and return the objective function at the point x
-  virtual double eval(const Eigen::VectorXd& _x);
-
-  /// \brief Evaluate and return the objective function at the point x
-  ///
-  /// Note: This function is deprecated in favor of the const Eigen::VectorXd&
-  /// version
-  DEPRECATED(5.1)
-  virtual void evalGradient(Eigen::Map<const Eigen::VectorXd>& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad);
+  virtual double eval(const Eigen::VectorXd& _x) = 0;
 
   /// \brief Evaluate and return the objective function at the point x
   virtual void evalGradient(const Eigen::VectorXd& _x,
@@ -130,16 +113,16 @@ public:
 
   /// \brief eval() will now call whatever CostFunction you set using
   /// setCostFunction()
-  virtual double eval(const Eigen::VectorXd& _x) override;
+  double eval(const Eigen::VectorXd& _x) override;
 
   /// \brief evalGradient() will now call whatever GradientFunction you set
   /// using setGradientFunction()
-  virtual void evalGradient(const Eigen::VectorXd& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad) override;
+  void evalGradient(const Eigen::VectorXd& _x,
+                    Eigen::Map<Eigen::VectorXd> _grad) override;
 
   /// \brief evalHessian() will now call whatever HessianFunction you set using
   /// setHessianFunction()
-  virtual void evalHessian(
+  void evalHessian(
       const Eigen::VectorXd& _x,
       Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) override;
 
@@ -188,16 +171,16 @@ public:
   virtual ~NullFunction();
 
   /// \brief eval() will always return exactly zero
-  virtual double eval(const Eigen::VectorXd&) override;
+  double eval(const Eigen::VectorXd&) override;
 
   /// \brief evalGradient will always set _grad to a zero vector that
   /// matches the dimensionality of _x
-  virtual void evalGradient(const Eigen::VectorXd& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad) override;
+  void evalGradient(const Eigen::VectorXd& _x,
+                    Eigen::Map<Eigen::VectorXd> _grad) override;
 
   /// \brief evalHessian() will always set _Hess to a zero matrix that matches
   /// the dimensionality of _x
-  virtual void evalHessian(
+  void evalHessian(
       const Eigen::VectorXd& _x,
       Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) override;
 };

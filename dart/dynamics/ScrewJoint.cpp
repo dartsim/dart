@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -117,7 +117,7 @@ const std::string& ScrewJoint::getStaticType()
 }
 
 //==============================================================================
-bool ScrewJoint::isCyclic(size_t /*_index*/) const
+bool ScrewJoint::isCyclic(std::size_t /*_index*/) const
 {
   return false;
 }
@@ -213,6 +213,7 @@ void ScrewJoint::updateLocalTransform() const
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * math::expMap(S * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
+  assert(math::verifyTransform(mT));
 }
 
 //==============================================================================

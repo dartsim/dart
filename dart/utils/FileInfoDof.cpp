@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -69,7 +69,7 @@ bool FileInfoDof::loadFile(const char* _fName)
 
   inFile.precision(20);
   char buffer[256];
-  size_t nDof;
+  std::size_t nDof;
 
   // nFrames =
   inFile >> buffer;
@@ -87,12 +87,12 @@ bool FileInfoDof::loadFile(const char* _fName)
   mDofs.resize(mNumFrames);
 
   // dof names
-  for (size_t i = 0; i < nDof; i++)
+  for (std::size_t i = 0; i < nDof; i++)
     inFile >> buffer;
-  for (size_t j = 0; j < mNumFrames; j++)
+  for (std::size_t j = 0; j < mNumFrames; j++)
   {
     mDofs[j].resize(nDof);
-    for (size_t i = 0; i < nDof; i++)
+    for (std::size_t i = 0; i < nDof; i++)
     {
       double val;
       inFile >> val;
@@ -115,7 +115,7 @@ bool FileInfoDof::loadFile(const char* _fName)
 }
 
 //==============================================================================
-bool FileInfoDof::saveFile(const char* _fName, size_t _start, size_t _end,
+bool FileInfoDof::saveFile(const char* _fName, std::size_t _start, std::size_t _end,
                            double /*_sampleRate*/ )
 {
   if (_end < _start) return false;
@@ -123,26 +123,26 @@ bool FileInfoDof::saveFile(const char* _fName, size_t _start, size_t _end,
   std::ofstream outFile(_fName, std::ios::out);
   if (outFile.fail()) return false;
 
-  size_t first = _start < mNumFrames ? _start : mNumFrames - 1;
-  size_t last = _end < mNumFrames ? _end : mNumFrames - 1;
+  std::size_t first = _start < mNumFrames ? _start : mNumFrames - 1;
+  std::size_t last = _end < mNumFrames ? _end : mNumFrames - 1;
 
   outFile.precision(20);
   outFile << "frames = " << last-first+1 << " dofs = " << mSkel->getNumDofs() << std::endl;
 
-  for (size_t i = 0; i < mSkel->getNumDofs(); i++)
+  for (std::size_t i = 0; i < mSkel->getNumDofs(); i++)
   {
     const dynamics::DegreeOfFreedom* dof        = mSkel->getDof(i);
     const dynamics::Joint*           joint      = dof->getJoint();
-    const size_t                     localIndex = dof->getIndexInJoint();
+    const std::size_t                     localIndex = dof->getIndexInJoint();
 
     outFile << joint->getName() << "." << localIndex << ' ';
   }
 
   outFile << std::endl;
 
-  for (size_t i = first; i <= last; i++)
+  for (std::size_t i = first; i <= last; i++)
   {
-    for (size_t j = 0; j < mSkel->getNumDofs(); j++)
+    for (std::size_t j = 0; j < mSkel->getNumDofs(); j++)
       outFile << mDofs[i][j] << ' ';
     outFile << std::endl;
   }
@@ -152,7 +152,7 @@ bool FileInfoDof::saveFile(const char* _fName, size_t _start, size_t _end,
   outFile.close();
 
   std::string text = _fName;
-  size_t lastSlash = text.find_last_of("/");
+  std::size_t lastSlash = text.find_last_of("/");
   text = text.substr(lastSlash + 1);
   std::strcpy(mFileName, text.c_str());
   return true;
@@ -165,7 +165,7 @@ void FileInfoDof::addDof(const Eigen::VectorXd& _dofs)
 }
 
 //==============================================================================
-double FileInfoDof::getDofAt(size_t _frame, size_t _id) const
+double FileInfoDof::getDofAt(std::size_t _frame, std::size_t _id) const
 {
   assert(_frame<mNumFrames); return mDofs.at(_frame)[_id];
 }

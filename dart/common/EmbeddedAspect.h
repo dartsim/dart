@@ -87,6 +87,10 @@ public:
 /// \endcode
 ///
 /// To embed both state and properties information, use EmbedStateAndProperties.
+///
+/// It is possible to customize the way an EmbeddedStateAspect interacts with
+/// your Composite by using the dart::common::detail::EmbeddedStateAspect class
+/// directly instead of inheriting this class.
 template <class DerivedT, typename StateDataT>
 class EmbedState : public virtual common::RequiresAspect<
     common::EmbeddedStateAspect<DerivedT, StateDataT> >
@@ -199,6 +203,11 @@ public:
 /// \endcode
 ///
 /// To embed both state and properties information, use EmbedStateAndProperties.
+///
+/// It is possible to customize the way an EmbeddedPropertiesAspect interacts
+/// with your Composite by using the
+/// dart::common::detail::EmbeddedPropertiesAspect class directly instead of
+/// inheriting this class.
 template <class DerivedT, typename PropertiesDataT>
 class EmbedProperties : public virtual common::RequiresAspect<
     common::EmbeddedPropertiesAspect<DerivedT, PropertiesDataT> >

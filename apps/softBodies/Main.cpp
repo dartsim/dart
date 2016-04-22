@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -55,10 +55,10 @@ int main(int argc, char* argv[])
         DART_DATA_PATH"skel/softBodies.skel");
   assert(myWorld != nullptr);
 
-  for(size_t i=0; i<myWorld->getNumSkeletons(); ++i)
+  for(std::size_t i=0; i<myWorld->getNumSkeletons(); ++i)
   {
     dart::dynamics::SkeletonPtr skel = myWorld->getSkeleton(i);
-    for(size_t j=0; j<skel->getNumBodyNodes(); ++j)
+    for(std::size_t j=0; j<skel->getNumBodyNodes(); ++j)
     {
       dart::dynamics::BodyNode* bn = skel->getBodyNode(j);
       Eigen::Vector3d color = dart::Color::Random();

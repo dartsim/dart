@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -57,18 +57,18 @@ public:
   virtual ~DantzigLCPSolver();
 
   // Documentation inherited
-  virtual void solve(ConstrainedGroup* _group);
+  void solve(ConstrainedGroup* _group) override;
 
 #ifndef NDEBUG
 private:
   /// Return true if the matrix is symmetric
-  bool isSymmetric(size_t _n, double* _A);
+  bool isSymmetric(std::size_t _n, double* _A);
 
   /// Return true if the diagonla block of matrix is symmetric
-  bool isSymmetric(size_t _n, double* _A, size_t _begin, size_t _end);
+  bool isSymmetric(std::size_t _n, double* _A, std::size_t _begin, std::size_t _end);
 
   /// Print debug information
-  void print(size_t _n, double* _A, double* _x, double* _lo, double* _hi,
+  void print(std::size_t _n, double* _A, double* _x, double* _lo, double* _hi,
              double* _b, double* w, int* _findex);
 #endif
 };

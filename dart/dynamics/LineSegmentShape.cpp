@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -101,9 +101,9 @@ float LineSegmentShape::getThickness() const
 }
 
 //==============================================================================
-size_t LineSegmentShape::addVertex(const Eigen::Vector3d& _v)
+std::size_t LineSegmentShape::addVertex(const Eigen::Vector3d& _v)
 {
-  size_t parent = mVertices.size();
+  std::size_t parent = mVertices.size();
   if(parent > 0)
     return addVertex(_v, parent-1);
 
@@ -112,20 +112,20 @@ size_t LineSegmentShape::addVertex(const Eigen::Vector3d& _v)
 }
 
 //==============================================================================
-size_t LineSegmentShape::addVertex(const Eigen::Vector3d& _v, size_t _parent)
+std::size_t LineSegmentShape::addVertex(const Eigen::Vector3d& _v, std::size_t _parent)
 {
-  size_t index = mVertices.size();
+  std::size_t index = mVertices.size();
   mVertices.push_back(_v);
 
   if(_parent > mVertices.size())
   {
     if(mVertices.size() == 0)
-      dtwarn << "[LineSegmentShape::addVertex(const Eigen::Vector3d&, size_t)] "
+      dtwarn << "[LineSegmentShape::addVertex(const Eigen::Vector3d&, std::size_t)] "
              << "Attempting to add a vertex to be a child of vertex #"
              << _parent << ", but no vertices exist yet. No connection will be "
              << "created for the new vertex yet.\n";
     else
-      dtwarn << "[LineSegmentShape::addVertex(const Eigen::Vector3d&, size_t)] "
+      dtwarn << "[LineSegmentShape::addVertex(const Eigen::Vector3d&, std::size_t)] "
              << "Attempting to add a vertex to be a child of vertex #"
              << _parent << ", but the vertex indices only go up to "
              << mVertices.size()-1 << ". No connection will be created for the "
@@ -140,7 +140,7 @@ size_t LineSegmentShape::addVertex(const Eigen::Vector3d& _v, size_t _parent)
 }
 
 //==============================================================================
-void LineSegmentShape::removeVertex(size_t _idx)
+void LineSegmentShape::removeVertex(std::size_t _idx)
 {
   if(_idx >= mVertices.size())
   {
@@ -162,7 +162,7 @@ void LineSegmentShape::removeVertex(size_t _idx)
 }
 
 //==============================================================================
-void LineSegmentShape::setVertex(size_t _idx, const Eigen::Vector3d& _v)
+void LineSegmentShape::setVertex(std::size_t _idx, const Eigen::Vector3d& _v)
 {
   if(_idx >= mVertices.size())
   {
@@ -182,7 +182,7 @@ void LineSegmentShape::setVertex(size_t _idx, const Eigen::Vector3d& _v)
 }
 
 //==============================================================================
-const Eigen::Vector3d& LineSegmentShape::getVertex(size_t _idx) const
+const Eigen::Vector3d& LineSegmentShape::getVertex(std::size_t _idx) const
 {
   if(_idx < mVertices.size())
     return mVertices[_idx];
@@ -205,7 +205,7 @@ const std::vector<Eigen::Vector3d>& LineSegmentShape::getVertices() const
 }
 
 //==============================================================================
-void LineSegmentShape::addConnection(size_t _idx1, size_t _idx2)
+void LineSegmentShape::addConnection(std::size_t _idx1, std::size_t _idx2)
 {
   if(_idx1 >= mVertices.size() || _idx2 >= mVertices.size())
   {
@@ -227,7 +227,7 @@ void LineSegmentShape::addConnection(size_t _idx1, size_t _idx2)
 }
 
 //==============================================================================
-void LineSegmentShape::removeConnection(size_t _vertexIdx1, size_t _vertexIdx2)
+void LineSegmentShape::removeConnection(std::size_t _vertexIdx1, std::size_t _vertexIdx2)
 {
   // Search through all connections to remove any that match the request
   Eigen::aligned_vector<Eigen::Vector2i>::iterator it = mConnections.begin();
@@ -247,17 +247,17 @@ void LineSegmentShape::removeConnection(size_t _vertexIdx1, size_t _vertexIdx2)
 }
 
 //==============================================================================
-void LineSegmentShape::removeConnection(size_t _connectionIdx)
+void LineSegmentShape::removeConnection(std::size_t _connectionIdx)
 {
   if(_connectionIdx >= mConnections.size())
   {
     if(mConnections.size() == 0)
-      dtwarn << "[LineSegmentShape::removeConnection(size_t)] Attempting to "
+      dtwarn << "[LineSegmentShape::removeConnection(std::size_t)] Attempting to "
              << "remove connection #" << _connectionIdx << ", but "
              << "no connections exist yet. "
              << "No connection will be removed.\n";
     else
-      dtwarn << "[LineSegmentShape::removeConnection(size_t)] Attempting to "
+      dtwarn << "[LineSegmentShape::removeConnection(std::size_t)] Attempting to "
              << "remove connection #" << _connectionIdx << ", but "
              << "connection indices only go up to #" << mConnections.size()-1
              << ". " << "No connection will be removed.\n";

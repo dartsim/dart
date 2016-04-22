@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -106,16 +106,16 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  DegreeOfFreedom* getDof(size_t index) override;
+  DegreeOfFreedom* getDof(std::size_t index) override;
 
   // Documentation inherited
-  const DegreeOfFreedom* getDof(size_t index) const override;
+  const DegreeOfFreedom* getDof(std::size_t _index) const override;
 
   // Documentation inherited
-  size_t getNumDofs() const override;
+  std::size_t getNumDofs() const override;
 
   // Documentation inherited
-  const std::string& setDofName(size_t index,
+  const std::string& setDofName(std::size_t index,
                                 const std::string& name,
                                 bool preserveName = true) override;
 
@@ -141,10 +141,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setCommand(size_t index, double command) override;
+  void setCommand(std::size_t index, double command) override;
 
   // Documentation inherited
-  double getCommand(size_t index) const override;
+  double getCommand(std::size_t index) const override;
 
   // Documentation inherited
   void setCommands(const Eigen::VectorXd& commands) override;
@@ -162,10 +162,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setPosition(size_t index, double position) override;
+  void setPosition(std::size_t index, double position) override;
 
   // Documentation inherited
-  double getPosition(size_t index) const override;
+  double getPosition(std::size_t index) const override;
 
   // Documentation inherited
   void setPositions(const Eigen::VectorXd& positions) override;
@@ -174,31 +174,31 @@ public:
   Eigen::VectorXd getPositions() const override;
 
   // Documentation inherited
-  void setPositionLowerLimit(size_t index, double position) override;
+  void setPositionLowerLimit(std::size_t index, double position) override;
 
   // Documentation inherited
-  double getPositionLowerLimit(size_t index) const override;
+  double getPositionLowerLimit(std::size_t index) const override;
 
   // Documentation inherited
-  void setPositionUpperLimit(size_t index, double position) override;
+  void setPositionUpperLimit(std::size_t index, double position) override;
 
   // Documentation inherited
-  double getPositionUpperLimit(size_t index) const override;
+  double getPositionUpperLimit(std::size_t index) const override;
 
   // Documentation inherited
-  bool hasPositionLimit(size_t index) const override;
+  bool hasPositionLimit(std::size_t index) const override;
 
   // Documentation inherited
-  void resetPosition(size_t index) override;
+  void resetPosition(std::size_t index) override;
 
   // Documentation inherited
   void resetPositions() override;
 
   // Documentation inherited
-  void setInitialPosition(size_t index, double initial) override;
+  void setInitialPosition(std::size_t index, double initial) override;
 
   // Documentation inherited
-  double getInitialPosition(size_t index) const override;
+  double getInitialPosition(std::size_t index) const override;
 
   // Documentation inherited
   void setInitialPositions(const Eigen::VectorXd& initial) override;
@@ -243,10 +243,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setVelocity(size_t index, double velocity) override;
+  void setVelocity(std::size_t index, double velocity) override;
 
   // Documentation inherited
-  double getVelocity(size_t index) const override;
+  double getVelocity(std::size_t index) const override;
 
   // Documentation inherited
   void setVelocities(const Eigen::VectorXd& velocities) override;
@@ -255,28 +255,28 @@ public:
   Eigen::VectorXd getVelocities() const override;
 
   // Documentation inherited
-  void setVelocityLowerLimit(size_t index, double velocity) override;
+  void setVelocityLowerLimit(std::size_t index, double velocity) override;
 
   // Documentation inherited
-  double getVelocityLowerLimit(size_t index) const override;
+  double getVelocityLowerLimit(std::size_t index) const override;
 
   // Documentation inherited
-  void setVelocityUpperLimit(size_t index, double velocity) override;
+  void setVelocityUpperLimit(std::size_t index, double velocity) override;
 
   // Documentation inherited
-  double getVelocityUpperLimit(size_t index) const override;
+  double getVelocityUpperLimit(std::size_t index) const override;
 
   // Documentation inherited
-  void resetVelocity(size_t index) override;
+  void resetVelocity(std::size_t index) override;
 
   // Documentation inherited
   void resetVelocities() override;
 
   // Documentation inherited
-  void setInitialVelocity(size_t index, double initial) override;
+  void setInitialVelocity(std::size_t index, double initial) override;
 
   // Documentation inherited
-  double getInitialVelocity(size_t index) const override;
+  double getInitialVelocity(std::size_t index) const override;
 
   // Documentation inherited
   void setInitialVelocities(const Eigen::VectorXd& initial) override;
@@ -291,10 +291,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setAcceleration(size_t index, double acceleration) override;
+  void setAcceleration(std::size_t index, double acceleration) override;
 
   // Documentation inherited
-  double getAcceleration(size_t index) const override;
+  double getAcceleration(std::size_t index) const override;
 
   // Documentation inherited
   void setAccelerations(const Eigen::VectorXd& accelerations) override;
@@ -306,13 +306,13 @@ public:
   void setAccelerationLowerLimit(size_t index, double acceleration) override;
 
   // Documentation inherited
-  double getAccelerationLowerLimit(size_t index) const override;
+  double getAccelerationLowerLimit(std::size_t index) const override;
 
   // Documentation inherited
-  void setAccelerationUpperLimit(size_t index, double acceleration) override;
+  void setAccelerationUpperLimit(std::size_t index, double acceleration) override;
 
   // Documentation inherited
-  double getAccelerationUpperLimit(size_t index) const override;
+  double getAccelerationUpperLimit(std::size_t index) const override;
 
   // Documentation inherited
   void resetAccelerations() override;
@@ -324,10 +324,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setForce(size_t index, double force) override;
+  void setForce(std::size_t index, double force) override;
 
   // Documentation inherited
-  double getForce(size_t index) override;
+  double getForce(std::size_t index) override;
 
   // Documentation inherited
   void setForces(const Eigen::VectorXd& forces) override;
@@ -339,7 +339,7 @@ public:
   void setForceLowerLimit(size_t index, double force) override;
 
   // Documentation inherited
-  double getForceLowerLimit(size_t index) const override;
+  double getForceLowerLimit(std::size_t index) const override;
 
   // Documentation inherited
   void setForceUpperLimit(size_t index, double force) override;
@@ -357,10 +357,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setVelocityChange(size_t index, double velocityChange) override;
+  void setVelocityChange(std::size_t index, double velocityChange) override;
 
   // Documentation inherited
-  double getVelocityChange(size_t index) const override;
+  double getVelocityChange(std::size_t index) const override;
 
   // Documentation inherited
   void resetVelocityChanges() override;
@@ -372,10 +372,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setConstraintImpulse(size_t index, double impulse) override;
+  void setConstraintImpulse(std::size_t index, double impulse) override;
 
   // Documentation inherited
-  double getConstraintImpulse(size_t index) const override;
+  double getConstraintImpulse(std::size_t index) const override;
 
   // Documentation inherited
   void resetConstraintImpulses() override;
@@ -407,28 +407,28 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void setSpringStiffness(size_t index, double k) override;
+  void setSpringStiffness(std::size_t index, double k) override;
 
   // Documentation inherited
-  double getSpringStiffness(size_t index) const override;
+  double getSpringStiffness(std::size_t index) const override;
 
   // Documentation inherited
-  void setRestPosition(size_t index, double q0) override;
+  void setRestPosition(std::size_t index, double q0) override;
 
   // Documentation inherited
-  double getRestPosition(size_t index) const override;
+  double getRestPosition(std::size_t index) const override;
 
   // Documentation inherited
-  void setDampingCoefficient(size_t index, double coeff) override;
+  void setDampingCoefficient(std::size_t index, double coeff) override;
 
   // Documentation inherited
-  double getDampingCoefficient(size_t index) const override;
+  double getDampingCoefficient(std::size_t index) const override;
 
   // Documentation inherited
-  void setCoulombFriction(size_t index, double friction) override;
+  void setCoulombFriction(std::size_t index, double friction) override;
 
   // Documentation inherited
-  double getCoulombFriction(size_t index) const override;
+  double getCoulombFriction(std::size_t index) const override;
 
   /// \}
 

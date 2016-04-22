@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -280,7 +280,7 @@ void Node::stageForRemoval()
   destructors.erase(destructor_iter);
 
   // Reset all the Node indices that have been altered
-  for(size_t i=mIndexInBodyNode; i < nodes.size(); ++i)
+  for(std::size_t i=mIndexInBodyNode; i < nodes.size(); ++i)
     nodes[i]->mIndexInBodyNode = i;
 
   assert(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
