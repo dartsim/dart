@@ -148,8 +148,10 @@ struct GeometricJointUniqueProperties
   GeometricJointUniqueProperties(
       const EuclideanPoint& positionLowerLimits = EuclideanPoint::Constant(-math::constantsd::inf()),
       const EuclideanPoint& positionUpperLimits = EuclideanPoint::Constant( math::constantsd::inf()),
+      const EuclideanPoint& initialPositions = EuclideanPoint::Zero(),
       const Vector& velocityLowerLimits = Vector::Constant(-math::constantsd::inf()),
       const Vector& velocityUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& initialVelocities = Vector::Zero(),
       const Vector& accelerationLowerLimits = Vector::Constant(-math::constantsd::inf()),
       const Vector& accelerationUpperLimits = Vector::Constant( math::constantsd::inf()),
       const Vector& forceLowerLimits = Vector::Constant(-math::constantsd::inf()),
@@ -158,9 +160,6 @@ struct GeometricJointUniqueProperties
       const EuclideanPoint& restPosition = EuclideanPoint::Zero(),
       const Vector& dampingCoefficient = Vector::Zero(),
       const Vector& coulombFrictions = Vector::Zero());
-  // TODO(MXG): In version 6.0, we should add mInitialPositions and
-  // mInitialVelocities to the constructor arguments. For now we must wait in
-  // order to avoid breaking the API.
 
   /// Copy constructor
   // Note: we only need this because VS2013 lacks full support for std::array
@@ -228,8 +227,10 @@ template <class ConfigSpaceT>
 GeometricJointUniqueProperties<ConfigSpaceT>::GeometricJointUniqueProperties(
     const EuclideanPoint& positionLowerLimits,
     const EuclideanPoint& positionUpperLimits,
+    const EuclideanPoint& initialPositions,
     const Vector& velocityLowerLimits,
     const Vector& velocityUpperLimits,
+    const Vector& initialVelocities,
     const Vector& accelerationLowerLimits,
     const Vector& accelerationUpperLimits,
     const Vector& forceLowerLimits,
@@ -240,10 +241,10 @@ GeometricJointUniqueProperties<ConfigSpaceT>::GeometricJointUniqueProperties(
     const Vector& coulombFrictions)
   : mPositionLowerLimits(positionLowerLimits),
     mPositionUpperLimits(positionUpperLimits),
-    mInitialPositions(EuclideanPoint::Zero()),
+    mInitialPositions(initialPositions),
     mVelocityLowerLimits(velocityLowerLimits),
     mVelocityUpperLimits(velocityUpperLimits),
-    mInitialVelocities(Vector::Zero()),
+    mInitialVelocities(initialVelocities),
     mAccelerationLowerLimits(accelerationLowerLimits),
     mAccelerationUpperLimits(accelerationUpperLimits),
     mForceLowerLimits(forceLowerLimits),
