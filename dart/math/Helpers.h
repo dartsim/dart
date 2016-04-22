@@ -50,7 +50,6 @@
 // External Libraries
 #include <Eigen/Dense>
 // Local Headers
-#include "dart/common/Deprecated.h"
 #include "dart/math/Constants.h"
 #include "dart/math/MathTypes.h"
 
@@ -97,12 +96,6 @@ template <typename T> inline constexpr
 int sign(T x)
 {
   return sign(x, std::is_signed<T>());
-}
-
-DEPRECATED(5.1)
-inline int sgn(double _a)
-{
-  return sign(_a);
 }
 
 inline double sqr(double _x) {

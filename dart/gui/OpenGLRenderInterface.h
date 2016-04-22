@@ -39,7 +39,6 @@
 
 #include <list>
 #include <vector>
-#include "dart/common/Deprecated.h"
 #include "dart/gui/RenderInterface.h"
 #include "dart/gui/LoadOpengl.h"
 

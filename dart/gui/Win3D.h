@@ -39,7 +39,6 @@
 
 #include <Eigen/Eigen>
 
-#include "dart/common/Deprecated.h"
 #include "dart/gui/GlutWindow.h"
 #include "dart/gui/Trackball.h"
 
@@ -58,8 +57,6 @@ public:
   virtual void click(int _button, int _state, int _x, int _y);
   virtual void drag(int _x, int _y);
 
-  DEPRECATED(5.0)
-  virtual void capturing();
   virtual void initGL();
   virtual void initLights();
 

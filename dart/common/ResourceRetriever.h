@@ -39,7 +39,6 @@
 
 #include <memory>
 #include <string>
-#include "dart/common/Deprecated.h"
 #include "dart/common/Resource.h"
 #include "dart/common/Uri.h"
 
