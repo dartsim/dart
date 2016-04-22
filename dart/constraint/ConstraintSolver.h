@@ -114,18 +114,18 @@ public:
       const std::shared_ptr<collision::CollisionDetector>& collisionDetector);
 
   /// Get collision detector
-  collision::CollisionDetector* getCollisionDetector();
+  collision::CollisionDetectorPtr getCollisionDetector();
 
-  /// Get collision detector
-  const collision::CollisionDetector* getCollisionDetector() const;
+  /// Get (const) collision detector
+  collision::ConstCollisionDetectorPtr getCollisionDetector() const;
 
   /// Return collision group of collision objects that are added to this
   /// ConstraintSolver
-  collision::CollisionGroup* getCollisionGroup();
+  collision::CollisionGroupPtr getCollisionGroup();
 
   /// Return (const) collision group of collision objects that are added to this
   /// ConstraintSolver
-  const collision::CollisionGroup* getCollisionGroup() const;
+  collision::ConstCollisionGroupPtr getCollisionGroup() const;
 
   /// Return the last collision checking result
   collision::CollisionResult& getLastCollisionResult();
@@ -170,12 +170,12 @@ private:
   using CollisionDetector = collision::CollisionDetector;
 
   /// Collision detector
-  std::shared_ptr<collision::CollisionDetector> mCollisionDetector;
+  collision::CollisionDetectorPtr mCollisionDetector;
 
   /// Collision group
-  std::unique_ptr<collision::CollisionGroup> mCollisionGroup;
+  collision::CollisionGroupPtr mCollisionGroup;
 
-  /// Last collision checking result
+  /// Collision detection option
   collision::CollisionOption mCollisionOption;
 
   /// Last collision checking result
