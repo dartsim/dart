@@ -1430,7 +1430,8 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
   //    JacobianNode is being used as a base for a BodyNode, it does not know
   //    the parent BodyNode.
   //
-  // We should consider doing something to unify the frameworks that currently
+  // We should consider doing something to unify these two pipelines that are
+  // currently independent of each other.
   if(JacobianNode* node = dynamic_cast<JacobianNode*>(_newChildEntity))
     mChildJacobianNodes.insert(node);
 
