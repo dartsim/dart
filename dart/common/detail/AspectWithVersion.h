@@ -49,7 +49,7 @@ namespace detail {
 /// functions for an Aspect class.
 template <class BaseT, class DerivedT, typename StateDataT,
           class CompositeT = Composite,
-          void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*> >
+          void (*updateState)(DerivedT*) = &NoOp<DerivedT*> >
 class AspectWithState : public BaseT
 {
 public:
@@ -107,7 +107,7 @@ protected:
 /// managing functions for an Aspect class.
 template <class BaseT, class DerivedT, typename PropertiesDataT,
           class CompositeT = Composite,
-          void (*updateProperties)(DerivedT*) = &detail::NoOp<DerivedT*> >
+          void (*updateProperties)(DerivedT*) = &NoOp<DerivedT*> >
 class AspectWithVersionedProperties : public BaseT
 {
 public:
