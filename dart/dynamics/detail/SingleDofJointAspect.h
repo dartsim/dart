@@ -145,9 +145,6 @@ struct SingleDofJointUniqueProperties
       double _coulombFriction = 0.0,
       bool _preserveDofName = false,
       const std::string& _dofName = "");
-  // TODO(MXG): In version 6.0, we should add mInitialPosition and
-  // mInitialVelocity to the constructor arguments. For now we must wait in
-  // order to avoid breaking the API
 
   virtual ~SingleDofJointUniqueProperties() = default;
 };
