@@ -41,6 +41,178 @@
 #include <dart/gui/osg/osg.h>
 #include <dart/utils/utils.h>
 
+using namespace dart::dynamics;
+
+class RecordingWorld : public dart::gui::osg::WorldNode
+{
+public:
+
+  RecordingWorld(const dart::simulation::WorldPtr& world)
+    : dart::gui::osg::WorldNode(world)
+  {
+    grabTimeSlice();
+    mCurrentIndex = 0;
+  }
+
+  void grabTimeSlice()
+  {
+    TimeSlice slice;
+    slice.reserve(mWorld->getNumSkeletons());
+
+    for(size_t i=0; i < mWorld->getNumSkeletons(); ++i)
+    {
+      const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
+      State state;
+      state.mConfig = skeleton->getConfiguration();
+      state.mAspectStates.reserve(skeleton->getNumBodyNodes());
+
+      for(size_t j=0; j < skeleton->getNumBodyNodes(); ++j)
+      {
+        BodyNode* bn = skeleton->getBodyNode(j);
+        state.mAspectStates.push_back(bn->getCompositeState());
+      }
+
+      slice.push_back(state);
+    }
+
+    mHistory.push_back(slice);
+  }
+
+  void customPostStep() override
+  {
+    if(mCurrentIndex < mHistory.size()-1)
+      mHistory.resize(mCurrentIndex+1);
+
+    grabTimeSlice();
+    ++mCurrentIndex;
+  }
+
+  void moveTo(size_t index)
+  {
+    mViewer->simulate(false);
+
+    if(mHistory.empty())
+      return;
+
+    if(index >= mHistory.size())
+      index = mHistory.size() - 1;
+
+    std::cout << "Moving to time step #" << index << std::endl;
+
+    const TimeSlice& slice = mHistory[index];
+    for(size_t i=0; i < slice.size(); ++i)
+    {
+      const State& state = slice[i];
+      const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
+
+      skeleton->setConfiguration(state.mConfig);
+
+      for(size_t j=0; j < skeleton->getNumBodyNodes(); ++j)
+      {
+        BodyNode* bn = skeleton->getBodyNode(j);
+        bn->setCompositeState(state.mAspectStates[j]);
+      }
+    }
+
+    mCurrentIndex = index;
+  }
+
+  void moveForward(int delta)
+  {
+    moveTo(mCurrentIndex+delta);
+  }
+
+  void moveBackward(int delta)
+  {
+    if(mCurrentIndex > 0)
+      moveTo(mCurrentIndex-delta);
+  }
+
+  void restart()
+  {
+    moveTo(0);
+  }
+
+  void moveToEnd()
+  {
+    moveTo(mHistory.size()-1);
+  }
+
+  struct State
+  {
+    Skeleton::Configuration mConfig;
+    std::vector<dart::common::Composite::State> mAspectStates;
+  };
+
+  using TimeSlice = std::vector<State>;
+  using History = std::vector<TimeSlice>;
+
+  History mHistory;
+
+  size_t mCurrentIndex;
+};
+
+class RecordingEventHandler : public osgGA::GUIEventHandler
+{
+public:
+
+  RecordingEventHandler(RecordingWorld* rec)
+    : mRecWorld(rec)
+  {
+    // Do nothing
+  }
+
+  virtual bool handle(const osgGA::GUIEventAdapter& ea,
+                      osgGA::GUIActionAdapter&) override
+  {
+    if(!mRecWorld)
+      return false;
+
+    if(ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
+    {
+      if(ea.getKey() == '[')
+      {
+        mRecWorld->moveBackward(1);
+        return true;
+      }
+
+      if(ea.getKey() == ']')
+      {
+        mRecWorld->moveForward(1);
+        return true;
+      }
+
+      if(ea.getKey() == '{')
+      {
+        mRecWorld->moveBackward(10);
+        return true;
+      }
+
+      if(ea.getKey() == '}')
+      {
+        mRecWorld->moveForward(10);
+        return true;
+      }
+
+      if(ea.getKey() == 'r')
+      {
+        mRecWorld->restart();
+        return true;
+      }
+
+      if(ea.getKey() == '\\')
+      {
+        mRecWorld->moveToEnd();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  RecordingWorld* mRecWorld;
+};
+
 int main()
 {
   using namespace dart::dynamics;
@@ -48,13 +220,14 @@ int main()
   dart::simulation::WorldPtr world =
       dart::utils::SkelParser::readWorld(DART_DATA_PATH"skel/softBodies.skel");
 
-  ::osg::ref_ptr<dart::gui::osg::WorldNode> node = new dart::gui::osg::WorldNode(world);
+  osg::ref_ptr<RecordingWorld> node = new RecordingWorld(world);
 
   node->simulate(true);
   node->setNumStepsPerCycle(15);
 
   dart::gui::osg::Viewer viewer;
   viewer.addWorldNode(node);
+  viewer.addEventHandler(new RecordingEventHandler(node));
 
   std::cout << viewer.getInstructions() << std::endl;
 

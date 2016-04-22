@@ -46,13 +46,14 @@
 
 #include "dart/config.h"
 #include "dart/common/Signal.h"
+#include "dart/common/EmbeddedAspect.h"
 #include "dart/math/Geometry.h"
 #include "dart/dynamics/Node.h"
 #include "dart/dynamics/Frame.h"
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
 #include "dart/dynamics/SpecializedNodeManager.h"
-#include "dart/dynamics/detail/BodyNodeProperties.h"
+#include "dart/dynamics/detail/BodyNodeAspect.h"
 #include "dart/dynamics/Skeleton.h"
 
 namespace dart {
@@ -74,7 +75,7 @@ class Marker;
 /// BodyNode inherits Frame, and a parent Frame of a BodyNode is the parent
 /// BodyNode of the BodyNode.
 class BodyNode :
-    public virtual common::AddonManager,
+    public detail::BodyNodeCompositeBase,
     public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector>,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
@@ -88,15 +89,16 @@ public:
 
   using StructuralChangeSignal
       = common::Signal<void(const BodyNode*)>;
+  using CompositeProperties = common::Composite::Properties;
 
-  using NodePropertiesVector = common::ExtensibleVector< std::unique_ptr<Node::Properties> >;
-  using NodePropertiesMap = std::map< std::type_index, std::unique_ptr<NodePropertiesVector> >;
-  using NodeProperties = common::ExtensibleMapHolder<NodePropertiesMap>;
-  using AddonProperties = common::AddonManager::Properties;
+  using AllNodeStates = detail::AllNodeStates;
+  using NodeStateMap = detail::NodeStateMap;
 
-  using UniqueProperties = detail::BodyNodeUniqueProperties;
-  using Properties = detail::BodyNodeProperties;
-  using ExtendedProperties = detail::BodyNodeExtendedProperties;
+  using AllNodeProperties = detail::AllNodeProperties;
+  using NodePropertiesMap = detail::NodePropertiesMap;
+
+  using AspectProperties = detail::BodyNodeAspectProperties;
+  using Properties = common::Composite::MakeProperties<BodyNode>;
 
   BodyNode(const BodyNode&) = delete;
 
@@ -111,36 +113,38 @@ public:
   /// SoftBodyNode, otherwise return nullptr
   virtual const SoftBodyNode* asSoftBodyNode() const;
 
-  /// Set the ExtendedProperties of this BodyNode
-  void setProperties(const ExtendedProperties& _properties);
+  /// Set the Node::State of all Nodes attached to this BodyNode
+  void setAllNodeStates(const AllNodeStates& states);
 
-  /// Set the Properties of the attached Nodes
-  void setProperties(const NodeProperties& _properties);
+  /// Get the Node::State of all Nodes attached to this BodyNode
+  AllNodeStates getAllNodeStates() const;
 
-  /// Same as setAddonProperties()
-  void setProperties(const AddonProperties& _properties);
+  /// Set the Node::Properties of all Nodes attached to this BodyNode
+  void setAllNodeProperties(const AllNodeProperties& properties);
 
-  /// Set the Properties of this BodyNode
-  void setProperties(const Properties& _properties);
+  /// Get the Node::Properties of all Nodes attached to this BodyNode
+  AllNodeProperties getAllNodeProperties() const;
+
+  /// Same as setCompositeProperties()
+  void setProperties(const CompositeProperties& _properties);
 
   /// Set the UniqueProperties of this BodyNode
-  void setProperties(const UniqueProperties& _properties);
+  void setProperties(const AspectProperties& _properties);
+
+  /// Set the AspectState of this BodyNode
+  void setAspectState(const AspectState& state);
+
+  /// Set the AspectProperties of this BodyNode
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this BodyNode
   Properties getBodyNodeProperties() const;
 
-  /// Get the the Properties of the Nodes attached to this BodyNode
-  NodeProperties getAttachedNodeProperties() const;
-
-  /// The the full extended Properties of this BodyNode, including the
-  /// Properties of its Addons, its attached Nodes, and the BodyNode itself.
-  ExtendedProperties getExtendedProperties() const;
+  /// Copy the Properties of another BodyNode
+  void copy(const BodyNode& otherBodyNode);
 
   /// Copy the Properties of another BodyNode
-  void copy(const BodyNode& _otherBodyNode);
-
-  /// Copy the Properties of another BodyNode
-  void copy(const BodyNode* _otherBodyNode);
+  void copy(const BodyNode* otherBodyNode);
 
   /// Same as copy(const BodyNode&)
   BodyNode& operator=(const BodyNode& _otherBodyNode);
@@ -155,6 +159,9 @@ public:
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
   const std::string& setName(const std::string& _name) override;
+
+  // Documentation inherited
+  const std::string& getName() const override;
 
   /// Set whether gravity affects this body
   /// \param[in] _gravityMode True to enable gravity
@@ -566,30 +573,30 @@ public:
   /// Remove all ShapeNodes from this BodyNode
   void removeAllShapeNodes();
 
-  /// Create a ShapeNode with the specified Addons and an automatically assigned
+  /// Create a ShapeNode with the specified Aspects and an automatically assigned
   /// name: <BodyNodeName>_ShapeNode_<#>.
-  template <class... Addons>
+  template <class... Aspects>
   ShapeNode* createShapeNodeWith(const ShapePtr& shape);
 
-  /// Create a ShapeNode with the specified name and Addons
-  template <class... Addons>
+  /// Create a ShapeNode with the specified name and Aspects
+  template <class... Aspects>
   ShapeNode* createShapeNodeWith(const ShapePtr& shape,
                                  const std::string& name);
 
-  /// Return the number of ShapeNodes containing given Addon in this BodyNode
-  template <class Addon>
+  /// Return the number of ShapeNodes containing given Aspect in this BodyNode
+  template <class Aspect>
   size_t getNumShapeNodesWith() const;
 
-  /// Return the list of ShapeNodes containing given Addon
-  template <class Addon>
+  /// Return the list of ShapeNodes containing given Aspect
+  template <class Aspect>
   const std::vector<ShapeNode*> getShapeNodesWith();
 
-  /// Return the list of ShapeNodes containing given Addon
-  template <class Addon>
+  /// Return the list of ShapeNodes containing given Aspect
+  template <class Aspect>
   const std::vector<const ShapeNode*> getShapeNodesWith() const;
 
-  /// Remove all ShapeNodes containing given Addon from this BodyNode
-  template <class Addon>
+  /// Remove all ShapeNodes containing given Aspect from this BodyNode
+  template <class Aspect>
   void removeAllShapeNodesWith();
 
   /// Create an EndEffector attached to this BodyNode. Pass an
@@ -860,6 +867,9 @@ protected:
   BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
            const Properties& _properties);
 
+  /// Delegating constructor
+  BodyNode(const std::tuple<BodyNode*, Joint*, Properties>& args);
+
   /// Create a clone of this BodyNode. This may only be called by the Skeleton
   /// class.
   virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
@@ -1031,9 +1041,6 @@ protected:
   /// Counts the number of nodes globally.
   static size_t msBodyNodeCount;
 
-  /// BodyNode-specific properties
-  UniqueProperties mBodyP;
-
   /// Whether the node is currently in collision with another node.
   /// \deprecated DEPRECATED(6.0) See #670 for more detail.
   bool mIsColliding;
@@ -1113,9 +1120,6 @@ protected:
   /// Transmitted wrench from parent to the bodynode expressed in body-fixed
   /// frame
   Eigen::Vector6d mF;
-
-  /// External spatial force
-  Eigen::Vector6d mFext;
 
   /// Spatial gravity force
   Eigen::Vector6d mFgravity;

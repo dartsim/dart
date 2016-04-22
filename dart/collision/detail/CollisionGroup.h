@@ -90,7 +90,7 @@ void CollisionGroup::addShapeFramesOf(
   assert(bodyNode);
 
   auto collisionShapeNodes
-      = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+      = bodyNode->getShapeNodesWith<dynamics::CollisionAspect>();
 
   for (auto& shapeNode : collisionShapeNodes)
     addShapeFrame(shapeNode);
@@ -163,7 +163,7 @@ void CollisionGroup::removeShapeFramesOf(
   assert(bodyNode);
 
   auto collisionShapeNodes
-      = bodyNode->getShapeNodesWith<dynamics::CollisionAddon>();
+      = bodyNode->getShapeNodesWith<dynamics::CollisionAspect>();
 
   for (auto& shapeNode : collisionShapeNodes)
     removeShapeFrame(shapeNode);

@@ -47,11 +47,25 @@ class VersionCounter
 {
 public:
 
+  /// Default constructor
+  VersionCounter();
+
   /// Increment the version for this object
-  virtual size_t incrementVersion() = 0;
+  virtual size_t incrementVersion();
 
   /// Get the version number of this object
-  virtual size_t getVersion() const = 0;
+  virtual size_t getVersion() const;
+
+  virtual ~VersionCounter() = default;
+
+protected:
+
+  void setVersionDependentObject(VersionCounter* dependent);
+
+  size_t mVersion;
+
+private:
+  VersionCounter* mDependent;
 };
 
 } // namespace common

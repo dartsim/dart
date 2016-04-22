@@ -271,7 +271,7 @@ public:
 protected:
 
   /// Constructor called by Skeleton class
-  FreeJoint(const Properties& _properties);
+  FreeJoint(const Properties& properties);
 
   // Documentation inherited
   Joint* clone() const override;

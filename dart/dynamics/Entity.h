@@ -43,7 +43,7 @@
 
 #include "dart/common/Subject.h"
 #include "dart/common/Signal.h"
-#include "dart/common/AddonManager.h"
+#include "dart/common/Composite.h"
 #include "dart/dynamics/Shape.h"
 #include "dart/dynamics/SmartPointer.h"
 
@@ -75,49 +75,24 @@ public:
                             const std::string& _oldName,
                             const std::string& _newName)>;
 
-  // TODO(MXG): Deprecate this with class the next major version-up, and move
-  // mName into the properties of inheriting classes.
-  struct Properties
-  {
-    /// Name of the Entity
-    std::string mName;
-
-    /// Constructor
-    Properties(const std::string& _name = "");
-
-    virtual ~Properties() = default;
-  };
-
   /// Constructor for typical usage
-  explicit Entity(Frame* _refFrame, const std::string& _name, bool _quiet);
+  explicit Entity(Frame* _refFrame, bool _quiet);
+
+  /// Default constructor, delegates to Entity(ConstructAbstract_t)
+  Entity();
 
   Entity(const Entity&) = delete;
 
   /// Destructor
   virtual ~Entity();
 
-  /// Set the Properties of this Entity
-  void setProperties(const Properties& _properties);
-
-  /// Get the Properties of this Entity
-  const Properties& getEntityProperties() const;
-
-  /// Copy the Properties of another Entity
-  void copy(const Entity& _otherEntity);
-
-  /// Copy the Properties of another Entity
-  void copy(const Entity* _otherEntity);
-
-  /// Same as copy(const Entity&)
-  Entity& operator=(const Entity& _otherEntity);
-
   /// Set name. Some implementations of Entity may make alterations to the name
   /// that gets passed in. The final name that this entity will use gets passed
   /// back in the return of this function.
-  virtual const std::string& setName(const std::string& _name);
+  virtual const std::string& setName(const std::string& _name) = 0;
 
   /// Return the name of this Entity
-  virtual const std::string& getName() const;
+  virtual const std::string& getName() const = 0;
 
   /// Get the parent (reference) frame of this Entity
   Frame* getParentFrame();
@@ -165,23 +140,20 @@ protected:
 
   /// Used when constructing a Frame class, because the Frame constructor will
   /// take care of setting up the parameters you pass into it
-  enum ConstructFrame_t { ConstructFrame };
+  enum ConstructFrameTag { ConstructFrame };
 
-  explicit Entity(ConstructFrame_t);
+  explicit Entity(ConstructFrameTag);
 
   /// Used when constructing a pure abstract class, because calling the Entity
   /// constructor is just a formality
-  enum ConstructAbstract_t { ConstructAbstract };
+  enum ConstructAbstractTag { ConstructAbstract };
 
-  explicit Entity(ConstructAbstract_t);
+  explicit Entity(ConstructAbstractTag);
 
   /// Used by derived classes to change their parent frames
   virtual void changeParentFrame(Frame* _newParentFrame);
 
 protected:
-
-  /// Properties of this Entity
-  Properties mEntityP;
 
   /// Parent frame of this Entity
   Frame* mParentFrame;
@@ -244,7 +216,7 @@ class Detachable : public virtual Entity
 {
 public:
   /// Constructor
-  explicit Detachable(Frame* _refFrame, const std::string& _name, bool _quiet);
+  explicit Detachable(Frame* _refFrame, bool _quiet);
 
   /// Allows the user to change the parent Frame of this Entity
   virtual void setParentFrame(Frame* _newParentFrame);

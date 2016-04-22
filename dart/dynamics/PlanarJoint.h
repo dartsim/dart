@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_PLANARRJOINT_H_
 #define DART_DYNAMICS_PLANARRJOINT_H_
 
-#include "dart/dynamics/detail/PlanarJointProperties.h"
+#include "dart/dynamics/detail/PlanarJointAspect.h"
 
 namespace dart {
 namespace dynamics {
@@ -56,10 +56,9 @@ public:
   using PlaneType = detail::PlaneType;
   using UniqueProperties = detail::PlanarJointUniqueProperties;
   using Properties = detail::PlanarJointProperties;
-  using Addon = detail::PlanarJointAddon;
   using Base = detail::PlanarJointBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, PlanarJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, PlanarJointAspect)
 
   PlanarJoint(const PlanarJoint&) = delete;
 
@@ -71,6 +70,9 @@ public:
 
   /// Set the Properties of this PlanarJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this PlanarJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this PlanarJoint
   Properties getPlanarJointProperties() const;
@@ -132,12 +134,10 @@ public:
   Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
-
 protected:
 
   /// Constructor called by Skeleton class
-  PlanarJoint(const Properties& _properties);
+  PlanarJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

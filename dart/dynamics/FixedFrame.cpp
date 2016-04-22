@@ -39,17 +39,27 @@
 namespace dart {
 namespace dynamics {
 
+namespace detail {
+
+//==============================================================================
+FixedFrameProperties::FixedFrameProperties(const Eigen::Isometry3d& relativeTf)
+  : mRelativeTf(relativeTf)
+{
+  // Do nothing
+}
+
+} // namespace detail
+
 //==============================================================================
 const Eigen::Vector6d FixedFrame::mZero = Eigen::Vector6d::Zero();
 
 //==============================================================================
-FixedFrame::FixedFrame(Frame* _refFrame, const std::string& _name,
-                       const Eigen::Isometry3d& _relativeTransform)
-  : Entity(_refFrame, _name, false),
-    Frame(_refFrame, _name),
-    mRelativeTf(_relativeTransform)
+FixedFrame::FixedFrame(Frame* refFrame,
+                       const Eigen::Isometry3d& relativeTransform)
+  : Entity(refFrame, false),
+    Frame(refFrame)
 {
-  // Do nothing
+  createAspect<Aspect>(AspectProperties(relativeTransform));
 }
 
 //==============================================================================
@@ -59,9 +69,26 @@ FixedFrame::~FixedFrame()
 }
 
 //==============================================================================
+void FixedFrame::setAspectProperties(const AspectProperties& properties)
+{
+  setRelativeTransform(properties.mRelativeTf);
+}
+
+//==============================================================================
+void FixedFrame::setRelativeTransform(const Eigen::Isometry3d& transform)
+{
+  if(transform.matrix() == mAspectProperties.mRelativeTf.matrix())
+    return;
+
+  mAspectProperties.mRelativeTf = transform;
+  notifyTransformUpdate();
+  incrementVersion();
+}
+
+//==============================================================================
 const Eigen::Isometry3d& FixedFrame::getRelativeTransform() const
 {
-  return mRelativeTf;
+  return mAspectProperties.mRelativeTf;
 }
 
 //==============================================================================
@@ -86,6 +113,21 @@ const Eigen::Vector6d& FixedFrame::getPrimaryRelativeAcceleration() const
 const Eigen::Vector6d& FixedFrame::getPartialAcceleration() const
 {
   return mZero;
+}
+
+//==============================================================================
+FixedFrame::FixedFrame()
+  : FixedFrame(ConstructAbstract)
+{
+  // Delegates to the abstract constructor
+}
+
+//==============================================================================
+FixedFrame::FixedFrame(ConstructAbstractTag)
+{
+  dterr << "[FixedFrame::FixedFrame] Attempting to construct a pure abstract "
+        << "FixedFrame object. This is not allowed!\n";
+  assert(false);
 }
 
 } // namespace dynamics

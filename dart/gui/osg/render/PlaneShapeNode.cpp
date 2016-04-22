@@ -74,7 +74,7 @@ class PlaneShapeDrawable : public ::osg::ShapeDrawable
 public:
 
   PlaneShapeDrawable(dart::dynamics::PlaneShape* shape,
-                     dart::dynamics::VisualAddon* visualAddon,
+                     dart::dynamics::VisualAspect* visualAspect,
                      PlaneShapeGeode* parent);
 
   void refresh(bool firstTime);
@@ -84,7 +84,7 @@ protected:
   virtual ~PlaneShapeDrawable();
 
   dart::dynamics::PlaneShape* mPlaneShape;
-  dart::dynamics::VisualAddon* mVisualAddon;
+  dart::dynamics::VisualAspect* mVisualAspect;
   PlaneShapeGeode* mParent;
 
 };
@@ -98,7 +98,7 @@ PlaneShapeNode::PlaneShapeNode(
     mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -106,7 +106,7 @@ void PlaneShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -158,7 +158,7 @@ void PlaneShapeGeode::extractData()
 {
   if(nullptr == mDrawable)
   {
-    mDrawable = new PlaneShapeDrawable(mPlaneShape, mVisualAddon, this);
+    mDrawable = new PlaneShapeDrawable(mPlaneShape, mVisualAspect, this);
     addDrawable(mDrawable);
     return;
   }
@@ -174,10 +174,10 @@ PlaneShapeGeode::~PlaneShapeGeode()
 
 //==============================================================================
 PlaneShapeDrawable::PlaneShapeDrawable(dart::dynamics::PlaneShape* shape,
-                                       dart::dynamics::VisualAddon* visualAddon,
+                                       dart::dynamics::VisualAspect* visualAspect,
                                        PlaneShapeGeode* parent)
   : mPlaneShape(shape),
-    mVisualAddon(visualAddon),
+    mVisualAspect(visualAspect),
     mParent(parent)
 {
   refresh(true);
@@ -207,7 +207,7 @@ void PlaneShapeDrawable::refresh(bool firstTime)
   if(mPlaneShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
-    setColor(eigToOsgVec4(mVisualAddon->getRGBA()));
+    setColor(eigToOsgVec4(mVisualAspect->getRGBA()));
   }
 }
 

@@ -37,86 +37,28 @@
 #ifndef DART_DYNAMICS_SOFTBODYNODE_H_
 #define DART_DYNAMICS_SOFTBODYNODE_H_
 
-const double DART_DEFAULT_VERTEX_STIFFNESS = 1.0;
-const double DART_DEFAULT_EDGE_STIFNESS    = 1.0;
-const double DART_DEFAULT_DAMPING_COEFF    = 0.01;
-
-#include <string>
-#include <vector>
-
-#include <Eigen/Dense>
-
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/PointMass.h"
+#include "dart/dynamics/detail/SoftBodyNodeAspect.h"
 
 namespace dart {
 namespace dynamics {
-
-class PointMass;
-class PointMassNotifier;
-class SoftMeshShape;
 
 /// SoftBodyNode represent a soft body that has one deformable skin
 ///
 /// This class is implementation of Sumit Jain and C. Karen Liu's paper:
 /// http://www.cc.gatech.edu/graphics/projects/Sumit/homepage/projects/softcontacts/index.html
-class SoftBodyNode : public BodyNode
+class SoftBodyNode : public detail::SoftBodyNodeBase
 {
 public:
+
+  using UniqueProperties = detail::SoftBodyNodeUniqueProperties;
+  using Properties = detail::SoftBodyNodeProperties;
+  using Base = detail::SoftBodyNodeBase;
+
   friend class Skeleton;
   friend class PointMass;
   friend class PointMassNotifier;
 
-  struct UniqueProperties
-  {
-    /// Spring stiffness for vertex deformation restoring spring force of the
-    /// point masses
-    double mKv;
-
-    /// Spring stiffness for edge deformation restoring spring force of the
-    /// point masses
-    double mKe;
-
-    /// Damping coefficient
-    double mDampCoeff;
-
-    /// Array of Properties for PointMasses
-    std::vector<PointMass::Properties> mPointProps;
-
-    // TODO(JS): Let's remove this because this is rendering part
-    /// \brief Tri-mesh indexes for rendering.
-    std::vector<Eigen::Vector3i> mFaces;
-
-    UniqueProperties(
-        double _Kv = DART_DEFAULT_VERTEX_STIFFNESS,
-        double _Ke = DART_DEFAULT_EDGE_STIFNESS,
-        double _DampCoeff = DART_DEFAULT_DAMPING_COEFF,
-        const std::vector<PointMass::Properties>& _points =
-                                          std::vector<PointMass::Properties>(),
-        const std::vector<Eigen::Vector3i>& _faces =
-                                          std::vector<Eigen::Vector3i>());
-
-    virtual ~UniqueProperties() = default;
-
-    /// Add a PointMass to this Properties struct
-    void addPointMass(const PointMass::Properties& _properties);
-
-    /// Connect two PointMasses together in this Properties struct
-    bool connectPointMasses(size_t i1, size_t i2);
-
-    /// Add a face to this Properties struct
-    void addFace(const Eigen::Vector3i& _newFace);
-  };
-
-  struct Properties : BodyNode::Properties, UniqueProperties
-  {
-    Properties(
-        const BodyNode::Properties& _bodyProperties = BodyNode::Properties(),
-        const SoftBodyNode::UniqueProperties& _softProperties =
-                                            SoftBodyNode::UniqueProperties());
-
-    virtual ~Properties() = default;
-  };
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, SoftBodyAspect)
 
   /// \brief
   virtual ~SoftBodyNode();
@@ -132,6 +74,12 @@ public:
 
   /// Set the Properties of this SoftBodyNode
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectState of this SoftBodyNode
+  void setAspectState(const AspectState& state);
+
+  /// Set the AspectProperties of this SoftBodyNode
+  void setAspectProperties(const AspectProperties& properties);
 
   using SkeletonRefCountingBase::getSkeleton;
 
@@ -217,6 +165,10 @@ protected:
   /// Skeleton class.
   virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
                           bool cloneNodes) const override;
+
+  /// Used by SoftBodyAspect to have this SoftBodyNode reconstruct its
+  /// SoftMeshShape
+  void configurePointMasses(ShapeNode* softNode);
 
   //--------------------------------------------------------------------------
   // Sub-functions for Recursive Kinematics Algorithms
@@ -347,14 +299,12 @@ protected:
   virtual void clearInternalForces() override;
 
 protected:
+
   /// \brief List of point masses composing deformable mesh.
   std::vector<PointMass*> mPointMasses;
 
   /// An Entity which tracks when the point masses need to be updated
   PointMassNotifier* mNotifier;
-
-  /// SoftBodyNode Properties
-  UniqueProperties mSoftP;
 
   /// \brief Soft mesh shape belonging to this node.
   WeakShapeNodePtr mSoftShapeNode;

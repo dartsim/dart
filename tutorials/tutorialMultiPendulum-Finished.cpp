@@ -258,9 +258,9 @@ public:
     for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
     {
       BodyNode* bn = mPendulum->getBodyNode(i);
-      auto visualShapeNodes = bn->getShapeNodesWith<VisualAddon>();
+      auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();
       for(size_t j = 0; j < 2; ++j)
-        visualShapeNodes[j]->getVisualAddon()->setColor(dart::Color::Blue());
+        visualShapeNodes[j]->getVisualAspect()->setColor(dart::Color::Blue());
 
       // If we have three visualization shapes, that means the arrow is
       // attached. We should remove it in case this body is no longer
@@ -283,8 +283,8 @@ public:
           dof->setForce( mPositiveSign? default_torque : -default_torque );
 
           BodyNode* bn = dof->getChildBodyNode();
-          auto visualShapeNodes = bn->getShapeNodesWith<VisualAddon>();
-          visualShapeNodes[0]->getVisualAddon()->setColor(dart::Color::Red());
+          auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();
+          visualShapeNodes[0]->getVisualAspect()->setColor(dart::Color::Red());
 
           --mForceCountDown[i];
         }
@@ -308,9 +308,9 @@ public:
           }
           bn->addExtForce(force, location, true, true);
 
-          auto shapeNodes = bn->getShapeNodesWith<VisualAddon>();
-          shapeNodes[1]->getVisualAddon()->setColor(dart::Color::Red());
-          bn->createShapeNodeWith<VisualAddon>(mArrow);
+          auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
+          shapeNodes[1]->getVisualAspect()->setColor(dart::Color::Red());
+          bn->createShapeNodeWith<VisualAspect>(mArrow);
 
           --mForceCountDown[i];
         }
@@ -351,8 +351,8 @@ void setGeometry(const BodyNodePtr& bn)
 
   // Create a shpae node for visualization and collision checking
   auto shapeNode
-      = bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(box);
-  shapeNode->getVisualAddon()->setColor(dart::Color::Blue());
+      = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
+  shapeNode->getVisualAspect()->setColor(dart::Color::Blue());
 
   // Set the location of the shape node
   Eigen::Isometry3d box_tf(Eigen::Isometry3d::Identity());
@@ -373,14 +373,14 @@ BodyNode* makeRootBody(const SkeletonPtr& pendulum, const std::string& name)
   properties.mDampingCoefficients = Eigen::Vector3d::Constant(default_damping);
 
   BodyNodePtr bn = pendulum->createJointAndBodyNodePair<BallJoint>(
-        nullptr, properties, BodyNode::Properties(name)).second;
+        nullptr, properties, BodyNode::AspectProperties(name)).second;
 
   // Make a shape for the Joint
   const double& R = default_width;
   std::shared_ptr<EllipsoidShape> ball(
         new EllipsoidShape(sqrt(2) * Eigen::Vector3d(R, R, R)));
-  auto shapeNode = bn->createShapeNodeWith<VisualAddon>(ball);
-  shapeNode->getVisualAddon()->setColor(dart::Color::Blue());
+  auto shapeNode = bn->createShapeNodeWith<VisualAspect>(ball);
+  shapeNode->getVisualAspect()->setColor(dart::Color::Blue());
 
   // Set the geometry of the Body
   setGeometry(bn);
@@ -403,7 +403,7 @@ BodyNode* addBody(const SkeletonPtr& pendulum, BodyNode* parent,
 
   // Create a new BodyNode, attached to its parent by a RevoluteJoint
   BodyNodePtr bn = pendulum->createJointAndBodyNodePair<RevoluteJoint>(
-        parent, properties, BodyNode::Properties(name)).second;
+        parent, properties, BodyNode::AspectProperties(name)).second;
 
   // Make a shape for the Joint
   const double R = default_width / 2.0;
@@ -415,8 +415,8 @@ BodyNode* addBody(const SkeletonPtr& pendulum, BodyNode* parent,
   tf.linear() = dart::math::eulerXYZToMatrix(
         Eigen::Vector3d(90.0 * M_PI / 180.0, 0, 0));
 
-  auto shapeNode = bn->createShapeNodeWith<VisualAddon>(cyl);
-  shapeNode->getVisualAddon()->setColor(dart::Color::Blue());
+  auto shapeNode = bn->createShapeNodeWith<VisualAspect>(cyl);
+  shapeNode->getVisualAspect()->setColor(dart::Color::Blue());
   shapeNode->setRelativeTransform(tf);
 
   // Set the geometry of the Body

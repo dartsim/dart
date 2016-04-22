@@ -73,7 +73,7 @@ class BoxShapeDrawable : public ::osg::ShapeDrawable
 public:
 
   BoxShapeDrawable(dart::dynamics::BoxShape* shape,
-                   dart::dynamics::VisualAddon* visualAddon);
+                   dart::dynamics::VisualAspect* visualAspect);
 
   void refresh(bool firstTime);
 
@@ -82,7 +82,7 @@ protected:
   virtual ~BoxShapeDrawable();
 
   dart::dynamics::BoxShape* mBoxShape;
-  dart::dynamics::VisualAddon* mVisualAddon;
+  dart::dynamics::VisualAspect* mVisualAspect;
 
 };
 
@@ -94,7 +94,7 @@ BoxShapeNode::BoxShapeNode(std::shared_ptr<dart::dynamics::BoxShape> shape,
     mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -102,7 +102,7 @@ void BoxShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -154,7 +154,7 @@ void BoxShapeGeode::extractData()
 {
   if(nullptr == mDrawable)
   {
-    mDrawable = new BoxShapeDrawable(mBoxShape.get(), mVisualAddon);
+    mDrawable = new BoxShapeDrawable(mBoxShape.get(), mVisualAspect);
     addDrawable(mDrawable);
     return;
   }
@@ -170,9 +170,9 @@ BoxShapeGeode::~BoxShapeGeode()
 
 //==============================================================================
 BoxShapeDrawable::BoxShapeDrawable(dart::dynamics::BoxShape* shape,
-                                   dart::dynamics::VisualAddon* visualAddon)
+                                   dart::dynamics::VisualAspect* visualAspect)
   : mBoxShape(shape),
-    mVisualAddon(visualAddon)
+    mVisualAspect(visualAspect)
 {
   refresh(true);
 }
@@ -198,7 +198,7 @@ void BoxShapeDrawable::refresh(bool firstTime)
   if(mBoxShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
-    setColor(eigToOsgVec4(mVisualAddon->getRGBA()));
+    setColor(eigToOsgVec4(mVisualAspect->getRGBA()));
   }
 }
 

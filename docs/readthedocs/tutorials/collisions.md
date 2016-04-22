@@ -127,7 +127,7 @@ that new BodyNode:
 
 ```cpp
 BodyNode* bn = chain->createJointAndBodyNodePair<JointType>(
-      parent, properties, BodyNode::Properties(name)).second;
+      parent, properties, BodyNode::AspectProperties(name)).second;
 ```
 
 There's a lot going on in this function, so let's break it down for a moment:
@@ -145,7 +145,7 @@ type that we want to create, but the default argument is a standard rigid
 BodyNode, so we can leave the second argument blank.
 
 ```cpp
-(parent, properties, BodyNode::Properties(name))
+(parent, properties, BodyNode::AspectProperties(name))
 ```
 
 Now for the function arguments: The first specifies the parent BodyNode. In the
@@ -153,7 +153,8 @@ event that you want to create a root BodyNode, you can simply pass in a nullptr
 as the parent. The second argument is a ``JointType::Properties`` struct, so we
 pass in the ``properties`` object that we created earlier. The third argument is
 a ``BodyNode::Properties`` struct, but we're going to set the BodyNode properties
-later, so we'll just toss the name in and leave the rest as default values.
+later, so we'll just toss the name in by wrapping it up in a
+``BodyNode::AspectProperties`` object and leave the rest as default values.
 
 Now notice the very last thing on this line of code:
 

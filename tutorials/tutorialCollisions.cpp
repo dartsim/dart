@@ -337,9 +337,9 @@ void setAllColors(const SkeletonPtr& object, const Eigen::Vector3d& color)
   for(size_t i=0; i < object->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = object->getBodyNode(i);
-    auto visualShapeNodes = bn->getShapeNodesWith<VisualAddon>();
+    auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();
     for(auto visualShapeNode : visualShapeNodes)
-      visualShapeNode->getVisualAddon()->setColor(color);
+      visualShapeNode->getVisualAspect()->setColor(color);
   }
 }
 
@@ -426,8 +426,8 @@ SkeletonPtr createGround()
         Eigen::Vector3d(default_ground_width, default_ground_width,
                         default_wall_thickness));
   auto shapeNode
-      = bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
-  shapeNode->getVisualAddon()->setColor(Eigen::Vector3d(1.0, 1.0, 1.0));
+      = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(shape);
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(1.0, 1.0, 1.0));
 
   return ground;
 }
@@ -442,8 +442,8 @@ SkeletonPtr createWall()
         Eigen::Vector3d(default_wall_thickness, default_ground_width,
                         default_wall_height));
   auto shapeNode
-      = bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(shape);
-  shapeNode->getVisualAddon()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
+      = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(shape);
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   tf.translation() = Eigen::Vector3d(

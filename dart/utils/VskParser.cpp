@@ -532,14 +532,14 @@ bool readShape(const tinyxml2::XMLElement* shapeEle,
   }
 
   dynamics::ShapeNode* node = parent->createShapeNodeWith<
-      dynamics::VisualAddon,
-      dynamics::CollisionAddon,
-      dynamics::DynamicsAddon>(
+      dynamics::VisualAspect,
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
         shape,
         parent->getName()+"_shape_"+std::to_string(parent->getNumShapeNodes()));
 
   node->setRelativeTransform(localTransform);
-  node->getVisualAddon()->setColor(vskData.bodyNodeColorMap[parent]);
+  node->getVisualAspect()->setColor(vskData.bodyNodeColorMap[parent]);
 
   return true;
 }
@@ -920,15 +920,15 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
     localTransform.translation() = 0.5 * tf.translation();
 
     dynamics::ShapeNode* shapeNode = parent->createShapeNodeWith<
-        dynamics::VisualAddon,
-        dynamics::CollisionAddon,
-        dynamics::DynamicsAddon>(
+        dynamics::VisualAspect,
+        dynamics::CollisionAspect,
+        dynamics::DynamicsAspect>(
           dynamics::ShapePtr(new dynamics::EllipsoidShape(size)),
           parent->getName()+"_shape_"+
           std::to_string(parent->getNumShapeNodes()));
 
     shapeNode->setRelativeTransform(localTransform);
-    shapeNode->getVisualAddon()->setColor(vskData.bodyNodeColorMap[parent]);
+    shapeNode->getVisualAspect()->setColor(vskData.bodyNodeColorMap[parent]);
   }
 
   // Remove redundant leaf body nodes with no shape

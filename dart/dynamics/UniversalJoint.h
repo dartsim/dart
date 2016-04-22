@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_UNIVERSALJOINT_H_
 #define DART_DYNAMICS_UNIVERSALJOINT_H_
 
-#include "dart/dynamics/detail/UniversalJointProperties.h"
+#include "dart/dynamics/detail/UniversalJointAspect.h"
 
 namespace dart {
 namespace dynamics {
@@ -50,10 +50,9 @@ public:
   friend class Skeleton;
   using UniqueProperties = detail::UniversalJointUniqueProperties;
   using Properties = detail::UniversalJointProperties;
-  using Addon = detail::UniversalJointAddon;
   using Base = detail::UniversalJointBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, UniversalJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, UniversalJointAspect)
 
   UniversalJoint(const UniversalJoint&) = delete;
 
@@ -65,6 +64,9 @@ public:
 
   /// Set the Properties of this UniversalJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this UniversalJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this UniversalJoint
   Properties getUniversalJointProperties() const;
@@ -103,12 +105,10 @@ public:
   Eigen::Matrix<double, 6, 2> getLocalJacobianStatic(
       const Eigen::Vector2d& _positions) const override;
 
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
-
 protected:
 
   /// Constructor called by Skeleton class
-  UniversalJoint(const Properties& _properties);
+  UniversalJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

@@ -43,9 +43,17 @@ namespace dynamics {
 
 namespace detail {
 
+//==============================================================================
+EndEffectorProperties::EndEffectorProperties(const Eigen::Isometry3d& defaultTf)
+  : mDefaultTransform(defaultTf)
+{
+  // Do nothing
+}
+
+//==============================================================================
 void SupportUpdate(Support* support)
 {
-  if(EndEffector* ee = support->getManager())
+  if(EndEffector* ee = support->getComposite())
     ee->getSkeleton()->notifySupportUpdate(ee->getTreeIndex());
 }
 
@@ -68,85 +76,38 @@ bool Support::isActive() const
 }
 
 //==============================================================================
-EndEffector::StateData::StateData(
-    const Eigen::Isometry3d& relativeTransform,
-    const common::AddonManager::State& addonStates)
-  : mRelativeTransform(relativeTransform),
-    mAddonStates(addonStates)
+void EndEffector::setProperties(const BasicProperties& properties)
 {
-  // Do nothing
+  setCompositeProperties(properties);
 }
 
 //==============================================================================
-EndEffector::UniqueProperties::UniqueProperties(
-    const Eigen::Isometry3d& _defaultTransform)
-  : mDefaultTransform(_defaultTransform)
+void EndEffector::setProperties(const UniqueProperties& properties,
+                                bool useNow)
 {
-  // Do nothing
+  setDefaultRelativeTransform(properties.mDefaultTransform, useNow);
 }
 
 //==============================================================================
-EndEffector::PropertiesData::PropertiesData(
-    const Entity::Properties& _entityProperties,
-    const UniqueProperties& _effectorProperties,
-    const common::AddonManager::Properties& _addonProperties)
-  : Entity::Properties(_entityProperties),
-    UniqueProperties(_effectorProperties),
-    mAddonProperties(_addonProperties)
+void EndEffector::setAspectProperties(const AspectProperties& properties)
 {
-  // Do nothing
+  setDefaultRelativeTransform(properties.mDefaultTransform);
 }
 
 //==============================================================================
-void EndEffector::setState(const StateData& _state)
+EndEffector::Properties EndEffector::getEndEffectorProperties() const
 {
-  setRelativeTransform(_state.mRelativeTransform);
-  setAddonStates(_state.mAddonStates);
+  return getCompositeProperties();
 }
 
 //==============================================================================
-void EndEffector::setState(StateData&& _state)
+void EndEffector::copy(const EndEffector& otherEndEffector)
 {
-  setRelativeTransform(_state.mRelativeTransform);
-  setAddonStates(std::move(_state.mAddonStates));
-}
-
-//==============================================================================
-EndEffector::StateData EndEffector::getEndEffectorState() const
-{
-  return StateData(mRelativeTf, getAddonStates());
-}
-
-//==============================================================================
-void EndEffector::setProperties(const PropertiesData& _properties, bool _useNow)
-{
-  Entity::setProperties(_properties);
-  setProperties(static_cast<const UniqueProperties&>(_properties), _useNow);
-  setAddonProperties(_properties.mAddonProperties);
-}
-
-//==============================================================================
-void EndEffector::setProperties(const UniqueProperties& _properties,
-                                bool _useNow)
-{
-  setDefaultRelativeTransform(_properties.mDefaultTransform, _useNow);
-}
-
-//==============================================================================
-EndEffector::PropertiesData EndEffector::getEndEffectorProperties() const
-{
-  return PropertiesData(getEntityProperties(), mEndEffectorP,
-                        getAddonProperties());
-}
-
-//==============================================================================
-void EndEffector::copy(const EndEffector& _otherEndEffector)
-{
-  if(this == &_otherEndEffector)
+  if(this == &otherEndEffector)
     return;
 
-  setState(_otherEndEffector.getEndEffectorState());
-  setProperties(_otherEndEffector.getEndEffectorProperties());
+  setCompositeState(otherEndEffector.getCompositeState());
+  setCompositeProperties(otherEndEffector.getCompositeProperties());
 }
 
 //==============================================================================
@@ -166,93 +127,10 @@ EndEffector& EndEffector::operator=(const EndEffector& _otherEndEffector)
 }
 
 //==============================================================================
-const std::string& EndEffector::setName(const std::string& _name)
-{
-  // If it already has the requested name, do nothing
-  if(mEntityP.mName == _name && !_name.empty())
-    return mEntityP.mName;
-
-  mEntityP.mName = registerNameChange(_name);
-
-  // Return the resulting name, after it has been checked for uniqueness
-  return mEntityP.mName;
-}
-
-//==============================================================================
-void EndEffector::setNodeState(const Node::State& otherState)
-{
-  setState(static_cast<const State&>(otherState));
-}
-
-//==============================================================================
-std::unique_ptr<Node::State> EndEffector::getNodeState() const
-{
-  return common::make_unique<EndEffector::State>(getEndEffectorState());
-}
-
-//==============================================================================
-void EndEffector::copyNodeStateTo(std::unique_ptr<Node::State>& outputState) const
-{
-  if(outputState)
-  {
-    EndEffector::State* state =
-        static_cast<EndEffector::State*>(outputState.get());
-
-    state->mRelativeTransform = mRelativeTf;
-    copyAddonStatesTo(state->mAddonStates);
-  }
-  else
-  {
-    outputState = getNodeState();
-  }
-}
-
-//==============================================================================
-void EndEffector::setNodeProperties(const Node::Properties& otherProperties)
-{
-  setProperties(static_cast<const Properties&>(otherProperties));
-}
-
-//==============================================================================
-std::unique_ptr<Node::Properties> EndEffector::getNodeProperties() const
-{
-  return common::make_unique<EndEffector::Properties>(
-      getEndEffectorProperties());
-}
-
-//==============================================================================
-void EndEffector::copyNodePropertiesTo(
-    std::unique_ptr<Node::Properties>& outputProperties) const
-{
-  if(outputProperties)
-  {
-    EndEffector::Properties* properties =
-        static_cast<EndEffector::Properties*>(outputProperties.get());
-
-    static_cast<Entity::Properties&>(*properties) = getEntityProperties();
-    static_cast<UniqueProperties&>(*properties) = mEndEffectorP;
-    copyAddonPropertiesTo(properties->mAddonProperties);
-  }
-  else
-  {
-    outputProperties = getNodeProperties();
-  }
-}
-
-//==============================================================================
-void EndEffector::setRelativeTransform(const Eigen::Isometry3d& _newRelativeTf)
-{
-  mRelativeTf = _newRelativeTf;
-  notifyTransformUpdate();
-  notifyJacobianUpdate();
-  notifyJacobianDerivUpdate();
-}
-
-//==============================================================================
 void EndEffector::setDefaultRelativeTransform(
     const Eigen::Isometry3d& _newDefaultTf, bool _useNow)
 {
-  mEndEffectorP.mDefaultTransform = _newDefaultTf;
+  mAspectProperties.mDefaultTransform = _newDefaultTf;
 
   if(_useNow)
     resetRelativeTransform();
@@ -261,103 +139,7 @@ void EndEffector::setDefaultRelativeTransform(
 //==============================================================================
 void EndEffector::resetRelativeTransform()
 {
-  setRelativeTransform(mEndEffectorP.mDefaultTransform);
-}
-
-//==============================================================================
-bool EndEffector::dependsOn(size_t _genCoordIndex) const
-{
-  return mBodyNode->dependsOn(_genCoordIndex);
-}
-
-//==============================================================================
-size_t EndEffector::getNumDependentGenCoords() const
-{
-  return mBodyNode->getNumDependentGenCoords();
-}
-
-//==============================================================================
-size_t EndEffector::getDependentGenCoordIndex(size_t _arrayIndex) const
-{
-  return mBodyNode->getDependentGenCoordIndex(_arrayIndex);
-}
-
-//==============================================================================
-const std::vector<size_t>& EndEffector::getDependentGenCoordIndices() const
-{
-  return mBodyNode->getDependentGenCoordIndices();
-}
-
-//==============================================================================
-size_t EndEffector::getNumDependentDofs() const
-{
-  return mBodyNode->getNumDependentDofs();
-}
-
-//==============================================================================
-DegreeOfFreedom* EndEffector::getDependentDof(size_t _index)
-{
-  return mBodyNode->getDependentDof(_index);
-}
-
-//==============================================================================
-const DegreeOfFreedom* EndEffector::getDependentDof(size_t _index) const
-{
-  return mBodyNode->getDependentDof(_index);
-}
-
-//==============================================================================
-const std::vector<DegreeOfFreedom*>& EndEffector::getDependentDofs()
-{
-  return mBodyNode->getDependentDofs();
-}
-
-//==============================================================================
-const std::vector<const DegreeOfFreedom*>& EndEffector::getDependentDofs() const
-{
-  return static_cast<const BodyNode*>(mBodyNode)->getDependentDofs();
-}
-
-//==============================================================================
-const std::vector<const DegreeOfFreedom*> EndEffector::getChainDofs() const
-{
-  return mBodyNode->getChainDofs();
-}
-
-//==============================================================================
-const math::Jacobian& EndEffector::getJacobian() const
-{
-  if (mIsBodyJacobianDirty)
-    updateEffectorJacobian();
-
-  return mEffectorJacobian;
-}
-
-//==============================================================================
-const math::Jacobian& EndEffector::getWorldJacobian() const
-{
-  if(mIsWorldJacobianDirty)
-    updateWorldJacobian();
-
-  return mWorldJacobian;
-}
-
-//==============================================================================
-const math::Jacobian& EndEffector::getJacobianSpatialDeriv() const
-{
-  if(mIsBodyJacobianSpatialDerivDirty)
-    updateEffectorJacobianSpatialDeriv();
-
-  return mEffectorJacobianSpatialDeriv;
-}
-
-//==============================================================================
-const math::Jacobian& EndEffector::getJacobianClassicDeriv() const
-{
-  if(mIsWorldJacobianClassicDerivDirty)
-    updateWorldJacobianClassicDeriv();
-
-  return mWorldJacobianClassicDeriv;
+  setRelativeTransform(mAspectProperties.mDefaultTransform);
 }
 
 //==============================================================================
@@ -374,26 +156,23 @@ void EndEffector::notifyTransformUpdate()
 }
 
 //==============================================================================
-void EndEffector::notifyVelocityUpdate()
-{
-  Frame::notifyVelocityUpdate();
-}
-
-//==============================================================================
-EndEffector::EndEffector(BodyNode* _parent, const PropertiesData& _properties)
+EndEffector::EndEffector(BodyNode* parent, const BasicProperties& properties)
   : Entity(ConstructFrame),
-    Frame(_parent, ""),
-    FixedFrame(_parent, "", _properties.mDefaultTransform),
-    TemplatedJacobianNode<EndEffector>(_parent)
+    Frame(parent),
+    FixedFrame(parent, properties.mDefaultTransform),
+    common::EmbedPropertiesOnTopOf<
+        EndEffector, detail::EndEffectorProperties,
+        detail::EndEffectorCompositeBase>(
+      std::make_tuple(parent, properties.mDefaultTransform), common::NoArg)
 {
-  setProperties(_properties);
+  setProperties(properties);
 }
 
 //==============================================================================
 Node* EndEffector::cloneNode(BodyNode* _parent) const
 {
-  EndEffector* ee = new EndEffector(_parent, PropertiesData());
-  ee->duplicateAddons(this);
+  EndEffector* ee = new EndEffector(_parent, Properties());
+  ee->duplicateAspects(this);
 
   ee->copy(this);
 
@@ -401,53 +180,6 @@ Node* EndEffector::cloneNode(BodyNode* _parent) const
     ee->mIK = mIK->clone(ee);
 
   return ee;
-}
-
-//==============================================================================
-void EndEffector::updateEffectorJacobian() const
-{
-  mEffectorJacobian = math::AdInvTJac(getRelativeTransform(),
-                                      mBodyNode->getJacobian());
-  mIsBodyJacobianDirty = false;
-}
-
-//==============================================================================
-void EndEffector::updateWorldJacobian() const
-{
-  mWorldJacobian = math::AdRJac(getWorldTransform(), getJacobian());
-
-  mIsWorldJacobianDirty = false;
-}
-
-//==============================================================================
-void EndEffector::updateEffectorJacobianSpatialDeriv() const
-{
-  mEffectorJacobianSpatialDeriv =
-      math::AdInvTJac(getRelativeTransform(),
-                      mBodyNode->getJacobianSpatialDeriv());
-
-  mIsBodyJacobianSpatialDerivDirty = false;
-}
-
-//==============================================================================
-void EndEffector::updateWorldJacobianClassicDeriv() const
-{
-  const math::Jacobian& dJ_parent = mBodyNode->getJacobianClassicDeriv();
-  const math::Jacobian& J_parent = mBodyNode->getWorldJacobian();
-
-  const Eigen::Vector3d& v_local =
-      getLinearVelocity(mBodyNode, Frame::World());
-
-  const Eigen::Vector3d& w_parent = mBodyNode->getAngularVelocity();
-  const Eigen::Vector3d& p = (getWorldTransform().translation()
-                  - mBodyNode->getWorldTransform().translation()).eval();
-
-  mWorldJacobianClassicDeriv = dJ_parent;
-  mWorldJacobianClassicDeriv.bottomRows<3>().noalias() +=
-      J_parent.topRows<3>().colwise().cross(v_local + w_parent.cross(p))
-      + dJ_parent.topRows<3>().colwise().cross(p);
-
-  mIsWorldJacobianClassicDerivDirty = false;
 }
 
 } // namespace dynamics

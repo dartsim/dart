@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_PRISMATICJOINT_H_
 #define DART_DYNAMICS_PRISMATICJOINT_H_
 
-#include "dart/dynamics/detail/PrismaticJointProperties.h"
+#include "dart/dynamics/detail/PrismaticJointAspect.h"
 
 namespace dart {
 namespace dynamics {
@@ -50,10 +50,8 @@ public:
   friend class Skeleton;
   using UniqueProperties = detail::PrismaticJointUniqueProperties;
   using Properties = detail::PrismaticJointProperties;
-  using Addon = detail::PrismaticJointAddon;
-  using Base = detail::PrismaticJointBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, PrismaticJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, PrismaticJointAspect)
 
   PrismaticJoint(const PrismaticJoint&) = delete;
 
@@ -65,6 +63,9 @@ public:
 
   /// Set the Properties of this PrismaticJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this PrismaticJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this PrismaticJoint
   Properties getPrismaticJointProperties() const;
@@ -93,12 +94,10 @@ public:
   ///
   const Eigen::Vector3d& getAxis() const;
 
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
-
 protected:
 
   /// Constructor called by Skeleton class
-  PrismaticJoint(const Properties& _properties);
+  PrismaticJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

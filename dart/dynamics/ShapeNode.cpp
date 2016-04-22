@@ -41,57 +41,15 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-ShapeNode::UniqueProperties::UniqueProperties(
-    const Eigen::Isometry3d& relativeTransform)
-  : mRelativeTransform(relativeTransform)
-{
-  // Do nothing
-}
-
-//==============================================================================
-ShapeNode::Properties::Properties(
-    const ShapeFrame::Properties& shapeFrameProperties,
-    const ShapeNode::UniqueProperties& shapeNodeProperties,
-    const ShapeNode::AddonProperties& addonProperties)
-  : ShapeFrame::Properties(shapeFrameProperties),
-    ShapeNode::UniqueProperties(shapeNodeProperties),
-    mAddonProperties(addonProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-ShapeNode::Properties::Properties(
-    ShapeFrame::Properties&& shapeFrameProperties,
-    ShapeNode::UniqueProperties&& shapeNodeProperties,
-    ShapeNode::AddonProperties&& addonProperties)
-  : ShapeFrame::Properties(std::move(shapeFrameProperties)),
-    ShapeNode::UniqueProperties(std::move(shapeNodeProperties)),
-    mAddonProperties(std::move(addonProperties))
-{
-  // Do nothing
-}
-
-//==============================================================================
 void ShapeNode::setProperties(const Properties& properties)
 {
-  ShapeFrame::setProperties(
-        static_cast<const ShapeFrame::Properties&>(properties));
-  setProperties(static_cast<const ShapeNode::UniqueProperties&>(properties));
-  setAddonProperties(properties.mAddonProperties);
-}
-
-//==============================================================================
-void ShapeNode::setProperties(const ShapeNode::UniqueProperties& properties)
-{
-  setRelativeTransform(properties.mRelativeTransform);
+  setCompositeProperties(properties);
 }
 
 //==============================================================================
 const ShapeNode::Properties ShapeNode::getShapeNodeProperties() const
 {
-  return Properties(getShapeFrameProperties(), mShapeNodeP,
-                    getAddonProperties());
+  return getCompositeProperties();
 }
 
 //==============================================================================
@@ -120,47 +78,19 @@ ShapeNode& ShapeNode::operator=(const ShapeNode& other)
 }
 
 //==============================================================================
-const std::string& ShapeNode::setName(const std::string& name)
-{
-  // If it already has the requested name, do nothing
-  if(mEntityP.mName == name && !name.empty())
-    return mEntityP.mName;
-
-  mEntityP.mName = registerNameChange(name);
-
-  // Return the resulting name, after it has been checked for uniqueness
-  return mEntityP.mName;
-}
-
-//==============================================================================
-size_t ShapeNode::incrementVersion()
-{
-  ++mShapeFrameP.mVersion;
-  if(const SkeletonPtr& skel = getSkeleton())
-    skel->incrementVersion();
-
-  return mShapeFrameP.mVersion;
-}
-
-//==============================================================================
-size_t ShapeNode::getVersion() const
-{
-  return mShapeFrameP.mVersion;
-}
-
-//==============================================================================
 void ShapeNode::setRelativeTransform(const Eigen::Isometry3d& transform)
 {
-  const Eigen::Isometry3d oldTransform = mRelativeTf;
+  if(transform.matrix() == FixedFrame::mAspectProperties.mRelativeTf.matrix())
+    return;
 
-  mRelativeTf = transform;
-  mShapeNodeP.mRelativeTransform = transform;
-  notifyTransformUpdate();
+  const Eigen::Isometry3d oldTransform = getRelativeTransform();
+
+  FixedFrame::setRelativeTransform(transform);
   notifyJacobianUpdate();
   notifyJacobianDerivUpdate();
 
-  mRelativeTransformUpdatedSignal.raise(this, oldTransform,
-                                        mShapeNodeP.mRelativeTransform);
+  mRelativeTransformUpdatedSignal.raise(
+        this, oldTransform, getRelativeTransform());
 }
 
 //==============================================================================
@@ -206,114 +136,6 @@ Eigen::Vector3d ShapeNode::getOffset() const
 }
 
 //==============================================================================
-std::shared_ptr<Skeleton> ShapeNode::getSkeleton()
-{
-  return mBodyNode->getSkeleton();
-}
-
-//==============================================================================
-std::shared_ptr<const Skeleton> ShapeNode::getSkeleton() const
-{
-  return mBodyNode->getSkeleton();
-}
-
-//==============================================================================
-bool ShapeNode::dependsOn(size_t genCoordIndex) const
-{
-  return mBodyNode->dependsOn(genCoordIndex);
-}
-
-//==============================================================================
-size_t ShapeNode::getNumDependentGenCoords() const
-{
-  return mBodyNode->getNumDependentGenCoords();
-}
-
-//==============================================================================
-size_t ShapeNode::getDependentGenCoordIndex(size_t arrayIndex) const
-{
-  return mBodyNode->getDependentGenCoordIndex(arrayIndex);
-}
-
-//==============================================================================
-const std::vector<size_t>& ShapeNode::getDependentGenCoordIndices() const
-{
-  return mBodyNode->getDependentGenCoordIndices();
-}
-
-//==============================================================================
-size_t ShapeNode::getNumDependentDofs() const
-{
-  return mBodyNode->getNumDependentDofs();
-}
-
-//==============================================================================
-DegreeOfFreedom* ShapeNode::getDependentDof(size_t index)
-{
-  return mBodyNode->getDependentDof(index);
-}
-
-//==============================================================================
-const DegreeOfFreedom* ShapeNode::getDependentDof(size_t index) const
-{
-  return mBodyNode->getDependentDof(index);
-}
-
-//==============================================================================
-const std::vector<DegreeOfFreedom*>& ShapeNode::getDependentDofs()
-{
-  return mBodyNode->getDependentDofs();
-}
-
-//==============================================================================
-const std::vector<const DegreeOfFreedom*>& ShapeNode::getDependentDofs() const
-{
-  return static_cast<const BodyNode*>(mBodyNode)->getDependentDofs();
-}
-
-//==============================================================================
-const std::vector<const DegreeOfFreedom*> ShapeNode::getChainDofs() const
-{
-  return mBodyNode->getChainDofs();
-}
-
-//==============================================================================
-const math::Jacobian& ShapeNode::getJacobian() const
-{
-  if (mIsBodyJacobianDirty)
-    updateShapeNodeJacobian();
-
-  return mShapeNodeJacobian;
-}
-
-//==============================================================================
-const math::Jacobian& ShapeNode::getWorldJacobian() const
-{
-  if(mIsWorldJacobianDirty)
-    updateWorldJacobian();
-
-  return mWorldJacobian;
-}
-
-//==============================================================================
-const math::Jacobian& ShapeNode::getJacobianSpatialDeriv() const
-{
-  if(mIsBodyJacobianSpatialDerivDirty)
-    updateShapeNodeJacobianSpatialDeriv();
-
-  return mShapeNodeJacobianSpatialDeriv;
-}
-
-//==============================================================================
-const math::Jacobian& ShapeNode::getJacobianClassicDeriv() const
-{
-  if(mIsWorldJacobianClassicDerivDirty)
-    updateWorldJacobianClassicDeriv();
-
-  return mWorldJacobianClassicDeriv;
-}
-
-//==============================================================================
 ShapeNode* ShapeNode::asShapeNode()
 {
   return this;
@@ -326,19 +148,16 @@ const ShapeNode* ShapeNode::asShapeNode() const
 }
 
 //==============================================================================
-ShapeNode::ShapeNode(BodyNode* bodyNode, const Properties& properties)
+ShapeNode::ShapeNode(BodyNode* bodyNode, const BasicProperties& properties)
   : Entity(ConstructFrame),
-    Frame(bodyNode, ""),
-    FixedFrame(bodyNode, ""),
-    ShapeFrame(bodyNode),
-    TemplatedJacobianNode<ShapeNode>(bodyNode),
-    mShapeUpdatedSignal(ShapeUpdatedSignal()),
-    mRelativeTransformUpdatedSignal(RelativeTransformUpdatedSignal()),
-    onShapeUpdated(mShapeUpdatedSignal),
-    onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
+    Frame(bodyNode),
+    FixedFrame(bodyNode),
+    detail::ShapeNodeCompositeBase(
+      std::make_tuple(bodyNode, properties.mRelativeTf),
+      bodyNode, properties)
 {
-  mAmShapeNode = true;
   setProperties(properties);
+  mAmShapeNode = true;
 }
 
 //==============================================================================
@@ -346,28 +165,22 @@ ShapeNode::ShapeNode(BodyNode* bodyNode,
                      const ShapePtr& shape,
                      const std::string& name)
   : Entity(ConstructFrame),
-    Frame(bodyNode, ""),
-    FixedFrame(bodyNode, ""),
-    ShapeFrame(bodyNode),
-    TemplatedJacobianNode<ShapeNode>(bodyNode),
-    mShapeUpdatedSignal(ShapeUpdatedSignal()),
-    mRelativeTransformUpdatedSignal(RelativeTransformUpdatedSignal()),
-    onShapeUpdated(mShapeUpdatedSignal),
-    onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
+    Frame(bodyNode),
+    FixedFrame(bodyNode),
+    detail::ShapeNodeCompositeBase(
+      std::make_tuple(bodyNode, Eigen::Isometry3d::Identity()),
+      std::make_tuple(bodyNode, ShapeFrame::Properties(shape)))
 {
+  // TODO(MXG): Consider changing this to a delegating constructor instead
+  setName(name);
   mAmShapeNode = true;
-  Properties prop;
-  prop.mShape = shape;
-  prop.mName = name;
-
-  setProperties(prop);
 }
 
 //==============================================================================
 Node* ShapeNode::cloneNode(BodyNode* parent) const
 {
   ShapeNode* shapeNode = new ShapeNode(parent, Properties());
-  shapeNode->duplicateAddons(this);
+  shapeNode->duplicateAspects(this);
 
   shapeNode->copy(this);
 
@@ -375,53 +188,6 @@ Node* ShapeNode::cloneNode(BodyNode* parent) const
     shapeNode->mIK = mIK->clone(shapeNode);
 
   return shapeNode;
-}
-
-//==============================================================================
-void ShapeNode::updateShapeNodeJacobian() const
-{
-  mShapeNodeJacobian = math::AdInvTJac(getRelativeTransform(),
-                                       mBodyNode->getJacobian());
-  mIsBodyJacobianDirty = false;
-}
-
-//==============================================================================
-void ShapeNode::updateWorldJacobian() const
-{
-  mWorldJacobian = math::AdRJac(getWorldTransform(), getJacobian());
-
-  mIsWorldJacobianDirty = false;
-}
-
-//==============================================================================
-void ShapeNode::updateShapeNodeJacobianSpatialDeriv() const
-{
-  mShapeNodeJacobianSpatialDeriv =
-      math::AdInvTJac(getRelativeTransform(),
-                      mBodyNode->getJacobianSpatialDeriv());
-
-  mIsBodyJacobianSpatialDerivDirty = false;
-}
-
-//==============================================================================
-void ShapeNode::updateWorldJacobianClassicDeriv() const
-{
-  const math::Jacobian& dJ_parent = mBodyNode->getJacobianClassicDeriv();
-  const math::Jacobian& J_parent = mBodyNode->getWorldJacobian();
-
-  const Eigen::Vector3d& v_local =
-      getLinearVelocity(mBodyNode, Frame::World());
-
-  const Eigen::Vector3d& w_parent = mBodyNode->getAngularVelocity();
-  const Eigen::Vector3d& p = (getWorldTransform().translation()
-                  - mBodyNode->getWorldTransform().translation()).eval();
-
-  mWorldJacobianClassicDeriv = dJ_parent;
-  mWorldJacobianClassicDeriv.bottomRows<3>().noalias() +=
-      J_parent.topRows<3>().colwise().cross(v_local + w_parent.cross(p))
-      + dJ_parent.topRows<3>().colwise().cross(p);
-
-  mIsWorldJacobianClassicDerivDirty = false;
 }
 
 } // namespace dynamics

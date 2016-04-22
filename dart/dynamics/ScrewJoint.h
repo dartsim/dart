@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_SCREWJOINT_H_
 #define DART_DYNAMICS_SCREWJOINT_H_
 
-#include "dart/dynamics/detail/ScrewJointProperties.h"
+#include "dart/dynamics/detail/ScrewJointAspect.h"
 
 namespace dart {
 namespace dynamics {
@@ -50,10 +50,9 @@ public:
   friend class Skeleton;
   using UniqueProperties = detail::ScrewJointUniqueProperties;
   using Properties = detail::ScrewJointProperties;
-  using Addon = detail::ScrewJointAddon;
   using Base = detail::ScrewJointBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, ScrewJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, ScrewJointAspect)
 
   ScrewJoint(const ScrewJoint&) = delete;
 
@@ -65,6 +64,9 @@ public:
 
   /// Set the Properties of this ScrewJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this ScrewJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this ScrewJoint
   Properties getScrewJointProperties() const;
@@ -99,12 +101,10 @@ public:
   ///
   double getPitch() const;
 
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
-
 protected:
 
   /// Constructor called by Skeleton class
-  ScrewJoint(const Properties& _properties);
+  ScrewJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

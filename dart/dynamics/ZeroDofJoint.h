@@ -353,7 +353,7 @@ public:
 protected:
 
   /// Constructor called by inheriting classes
-  ZeroDofJoint(const Properties& _properties);
+  ZeroDofJoint();
 
   // Documentation inherited
   void registerDofs() override;

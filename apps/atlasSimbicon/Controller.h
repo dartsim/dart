@@ -181,7 +181,7 @@ private:
   dart::constraint::WeldJointConstraintPtr mWeldJointConstraintRightFoot;
 
   /// \brief Initial state of the robot
-  Eigen::VectorXd mInitialState;
+  dart::dynamics::Skeleton::Configuration mInitialState;
 };
 
 #endif  // APPS_ATLASROBOT_CONTROLLER_H_

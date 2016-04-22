@@ -48,16 +48,8 @@ namespace dynamics {
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
-Entity::Properties::Properties(const std::string& _name)
-  : mName(_name)
-{
- // Do nothing
-}
-
-//==============================================================================
-Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
-  : mEntityP(_name),
-    mParentFrame(nullptr),
+Entity::Entity(Frame* _refFrame, bool _quiet)
+  : mParentFrame(nullptr),
     mNeedTransformUpdate(true),
     mNeedVelocityUpdate(true),
     mNeedAccelerationUpdate(true),
@@ -78,66 +70,16 @@ Entity::Entity(Frame* _refFrame, const std::string& _name, bool _quiet)
 }
 
 //==============================================================================
+Entity::Entity()
+  : Entity(ConstructAbstract)
+{
+  // Delegated to Entity(ConstructAbstract_t)
+}
+
+//==============================================================================
 Entity::~Entity()
 {
   changeParentFrame(nullptr);
-}
-
-//==============================================================================
-void Entity::setProperties(const Properties& _properties)
-{
-  // Set name
-  setName(_properties.mName);
-}
-
-//==============================================================================
-const Entity::Properties& Entity::getEntityProperties() const
-{
-  return mEntityP;
-}
-
-//==============================================================================
-void Entity::copy(const Entity& _otherEntity)
-{
-  if(this == &_otherEntity)
-    return;
-
-  setProperties(_otherEntity.getEntityProperties());
-}
-
-//==============================================================================
-void Entity::copy(const Entity *_otherEntity)
-{
-  if(nullptr == _otherEntity)
-    return;
-
-  copy(*_otherEntity);
-}
-
-//==============================================================================
-Entity& Entity::operator=(const Entity& _otherEntity)
-{
-  copy(_otherEntity);
-  return *this;
-}
-
-//==============================================================================
-const std::string& Entity::setName(const std::string& _name)
-{
-  if (mEntityP.mName == _name)
-    return mEntityP.mName;
-
-  const std::string oldName = mEntityP.mName;
-  mEntityP.mName = _name;
-  mNameChangedSignal.raise(this, oldName, mEntityP.mName);
-
-  return mEntityP.mName;
-}
-
-//==============================================================================
-const std::string& Entity::getName() const
-{
-  return mEntityP.mName;
 }
 
 //==============================================================================
@@ -239,7 +181,7 @@ bool Entity::needsAccelerationUpdate() const
 }
 
 //==============================================================================
-Entity::Entity(ConstructFrame_t)
+Entity::Entity(ConstructFrameTag)
   : mParentFrame(nullptr),
     mNeedTransformUpdate(true),
     mNeedVelocityUpdate(true),
@@ -261,7 +203,7 @@ Entity::Entity(ConstructFrame_t)
 }
 
 //==============================================================================
-Entity::Entity(ConstructAbstract_t)
+Entity::Entity(ConstructAbstractTag)
   : onFrameChanged(mFrameChangedSignal),
     onNameChanged(mNameChangedSignal),
     onTransformUpdated(mTransformUpdatedSignal),
@@ -308,12 +250,13 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
     notifyTransformUpdate();
   }
 
-  mFrameChangedSignal.raise(this, oldParentFrame, mParentFrame);
+  if(mParentFrame)
+    mFrameChangedSignal.raise(this, oldParentFrame, mParentFrame);
 }
 
 //==============================================================================
-Detachable::Detachable(Frame* _refFrame, const std::string& _name, bool _quiet)
-  : Entity(_refFrame, _name, _quiet)
+Detachable::Detachable(Frame* _refFrame, bool _quiet)
+  : Entity(_refFrame, _quiet)
 {
   // Do nothing
 }

@@ -102,7 +102,7 @@ public:
 protected:
 
   /// Constructor called by Skeleton class
-  BallJoint(const Properties& _properties);
+  BallJoint(const Properties& properties);
 
   // Documentation inherited
   Joint* clone() const override;

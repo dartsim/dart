@@ -58,12 +58,12 @@ SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
 
 SoftMeshShape::~SoftMeshShape()
 {
-  delete mAssimpMesh;
+  // Do nothing
 }
 
 const aiMesh* SoftMeshShape::getAssimpMesh() const
 {
-  return mAssimpMesh;
+  return mAssimpMesh.get();
 }
 
 const SoftBodyNode* SoftMeshShape::getSoftBodyNode() const
@@ -91,7 +91,7 @@ void SoftMeshShape::_buildMesh()
   int nFaces    = mSoftBodyNode->getNumFaces();
 
   // Create new aiMesh
-  mAssimpMesh = new aiMesh();
+  mAssimpMesh = common::make_unique<aiMesh>();
 
   // Set vertices and normals
   mAssimpMesh->mNumVertices = nVertices;

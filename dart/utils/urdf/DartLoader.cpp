@@ -424,11 +424,11 @@ bool DartLoader::createDartNodeProperties(
   return true;
 }
 
-void setMaterial(dynamics::VisualAddon* visualAddon, const urdf::Visual* viz)
+void setMaterial(dynamics::VisualAspect* visualAspect, const urdf::Visual* viz)
 {
   if(viz->material)
   {
-    visualAddon->setColor(Eigen::Vector3d(viz->material->color.r,
+    visualAspect->setColor(Eigen::Vector3d(viz->material->color.r,
                                           viz->material->color.g,
                                           viz->material->color.b));
   }
@@ -455,9 +455,9 @@ bool DartLoader::createShapeNodes(
 
     if(shape)
     {
-      auto shapeNode = bodyNode->createShapeNodeWith<dynamics::VisualAddon>(shape);
+      auto shapeNode = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(shape);
       shapeNode->setRelativeTransform(toEigen(visual->origin));
-      setMaterial(shapeNode->getVisualAddon(), visual.get());
+      setMaterial(shapeNode->getVisualAspect(), visual.get());
     }
     else
     {
@@ -474,7 +474,7 @@ bool DartLoader::createShapeNodes(
     if (shape)
     {
       auto shapeNode = bodyNode->createShapeNodeWith<
-          dynamics::CollisionAddon, dynamics::DynamicsAddon>(shape);
+          dynamics::CollisionAspect, dynamics::DynamicsAspect>(shape);
       shapeNode->setRelativeTransform(toEigen(collision->origin));
     }
     else

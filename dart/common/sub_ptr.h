@@ -86,11 +86,12 @@ protected:
   virtual void handleDestructionNotification(
       const Subject* _subject) override;
 
-  /// Store the Subject pointer
-  T* mSubject;
-};
+  /// Store the pointer to the full object
+  T* mT;
 
-#include "dart/common/detail/sub_ptr.h"
+  /// Store the pointer to the virtual Subject base
+  Subject* mSubjectBase;
+};
 
 } // namespace common
 
@@ -99,5 +100,7 @@ template <class T>
 using sub_ptr = common::sub_ptr<T>;
 
 } // namespace dart
+
+#include "dart/common/detail/sub_ptr.h"
 
 #endif // DART_COMMON_SUB_PTR_H_

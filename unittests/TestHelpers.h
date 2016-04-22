@@ -107,7 +107,7 @@ bool equals(const Eigen::DenseBase<MATRIX>& _expected,
 void addEndEffector(SkeletonPtr robot, BodyNode* parent_node, Vector3d dim)
 {
   // Create the end-effector node with a random dimension
-  BodyNode::Properties node(std::string("ee"));
+  BodyNode::Properties node(BodyNode::AspectProperties("ee"));
   std::shared_ptr<Shape> shape(new BoxShape(Vector3d(0.2, 0.2, 0.2)));
 
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
@@ -118,7 +118,7 @@ void addEndEffector(SkeletonPtr robot, BodyNode* parent_node, Vector3d dim)
         parent_node, joint, node);
   auto bodyNode = pair.second;
   bodyNode->createShapeNodeWith<
-      VisualAddon, CollisionAddon, DynamicsAddon>(shape);
+      VisualAspect, CollisionAspect, DynamicsAspect>(shape);
 }
 
 //==============================================================================
@@ -167,18 +167,18 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
   Vector3d dimEE = dim1;
 
   // Create the first link
-  BodyNode::Properties node(std::string("link1"));
+  BodyNode::Properties node(BodyNode::AspectProperties("link1"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim1));
 
   std::pair<Joint*, BodyNode*> pair1 = add1DofJoint(
       robot, nullptr, node, "joint1", 0.0, -constantsd::pi(), constantsd::pi(), type1);
   auto current_node = pair1.second;
-  auto shapeNode = current_node->createShapeNodeWith<VisualAddon>(shape);
+  auto shapeNode = current_node->createShapeNodeWith<VisualAspect>(shape);
   if(collisionShape)
   {
-    shapeNode->createCollisionAddon();
-    shapeNode->createDynamicsAddon();
+    shapeNode->createCollisionAspect();
+    shapeNode->createDynamicsAspect();
   }
 
   BodyNode* parent_node = current_node;
@@ -186,7 +186,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
   if(stopAfter > 1)
   {
     // Create the second link
-    node = BodyNode::Properties(std::string("link2"));
+    node = BodyNode::Properties(BodyNode::AspectProperties("link2"));
     node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
     shape = std::shared_ptr<Shape>(new BoxShape(dim2));
 
@@ -198,11 +198,11 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
     joint->setTransformFromParentBodyNode(T);
 
     auto current_node = pair2.second;
-    auto shapeNode = current_node->createShapeNodeWith<VisualAddon>(shape);
+    auto shapeNode = current_node->createShapeNodeWith<VisualAspect>(shape);
     if(collisionShape)
     {
-      shapeNode->createCollisionAddon();
-      shapeNode->createDynamicsAddon();
+      shapeNode->createCollisionAspect();
+      shapeNode->createDynamicsAspect();
     }
 
     parent_node = pair2.second;
@@ -212,7 +212,7 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
   if(stopAfter > 2)
   {
     // Create the third link
-    node = BodyNode::Properties(std::string("link3"));
+    node = BodyNode::Properties(BodyNode::AspectProperties("link3"));
     node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim3(2)/2.0));
     shape = std::shared_ptr<Shape>(new BoxShape(dim3));
     std::pair<Joint*, BodyNode*> pair3 = add1DofJoint(
@@ -224,11 +224,11 @@ SkeletonPtr createThreeLinkRobot(Vector3d dim1, TypeOfDOF type1,
     joint->setTransformFromParentBodyNode(T);
 
     auto current_node = pair3.second;
-    auto shapeNode = current_node->createShapeNodeWith<VisualAddon>(shape);
+    auto shapeNode = current_node->createShapeNodeWith<VisualAspect>(shape);
     if(collisionShape)
     {
-      shapeNode->createCollisionAddon();
-      shapeNode->createDynamicsAddon();
+      shapeNode->createCollisionAspect();
+      shapeNode->createDynamicsAspect();
     }
 
     parent_node = pair3.second;
@@ -265,7 +265,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
   robot->disableSelfCollision();
 
   // Create the first link, the joint with the ground and its shape
-  BodyNode::Properties node(std::string("link1"));
+  BodyNode::Properties node(BodyNode::AspectProperties("link1"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim));
 
@@ -276,7 +276,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
   joint->setDampingCoefficient(0, 0.01);
 
   auto current_node = pair1.second;
-  current_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
+  current_node->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
         shape);
 
   BodyNode* parent_node = current_node;
@@ -289,7 +289,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
     ssLink << "link" << i;
     ssJoint << "joint" << i;
 
-    node = BodyNode::Properties(ssLink.str());
+    node = BodyNode::Properties(BodyNode::AspectProperties(ssLink.str()));
     node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
     shape = std::shared_ptr<Shape>(new BoxShape(dim));
 
@@ -303,7 +303,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
     joint->setDampingCoefficient(0, 0.01);
 
     auto current_node = newPair.second;
-    current_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
+    current_node->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
           shape);
 
     parent_node = current_node;
@@ -332,7 +332,7 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
   robot->disableSelfCollision();
 
   // Create the first link, the joint with the ground and its shape
-  BodyNode::Properties node(std::string("link1"));
+  BodyNode::Properties node(BodyNode::AspectProperties("link1"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim));
 
@@ -346,7 +346,7 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
   joint->setDampingCoefficient(0, 0.01);
 
   auto current_node = pair1.second;
-  current_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
+  current_node->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
         shape);
 
   BodyNode* parent_node = current_node;
@@ -359,7 +359,7 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
     ssLink << "link" << i;
     ssJoint << "joint" << i;
 
-    node = BodyNode::Properties(ssLink.str());
+    node = BodyNode::Properties(BodyNode::AspectProperties(ssLink.str()));
     node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
     shape = std::shared_ptr<Shape>(new BoxShape(dim));
 
@@ -373,7 +373,7 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
     joint->setDampingCoefficient(0, 0.01);
 
     auto current_node = newPair.second;
-    current_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
+    current_node->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
           shape);
 
     parent_node = current_node;
@@ -399,7 +399,7 @@ SkeletonPtr createGround(
     T.linear() = eulerXYZToMatrix(_orientation);
     Joint::Properties joint("joint1", T);
 
-    BodyNode::Properties node(std::string("link"));
+    BodyNode::Properties node(BodyNode::AspectProperties(std::string("link")));
     std::shared_ptr<Shape> shape(new BoxShape(_size));
     node.mInertia.setMass(mass);
 
@@ -408,7 +408,7 @@ SkeletonPtr createGround(
           nullptr, joint, node);
 
     auto body_node = pair.second;
-    body_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
+    body_node->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
           shape);
 
     return skeleton;
@@ -423,7 +423,7 @@ SkeletonPtr createObject(
 
   MultiDofJoint<6>::Properties joint(std::string("joint1"));
 
-  BodyNode::Properties node(std::string("link1"));
+  BodyNode::Properties node(BodyNode::AspectProperties(std::string("link1")));
   node.mInertia.setMass(mass);
 
   SkeletonPtr skeleton = Skeleton::create();
@@ -447,7 +447,7 @@ SkeletonPtr createSphere(
   BodyNode* bn = sphere->getBodyNode(0);
   std::shared_ptr<EllipsoidShape> ellipShape(
         new EllipsoidShape(Vector3d::Constant(_radius * 2.0)));
-  bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(ellipShape);
+  bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(ellipShape);
 
   return sphere;
 }
@@ -462,7 +462,7 @@ SkeletonPtr createBox(
 
   BodyNode* bn = box->getBodyNode(0);
   std::shared_ptr<Shape> boxShape(new BoxShape(_size));
-  bn->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(boxShape);
+  bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(boxShape);
 
   return box;
 }

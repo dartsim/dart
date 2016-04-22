@@ -256,13 +256,16 @@ protected:
 
   /// Used when constructing a pure abstract class, because calling the Frame
   /// constructor is just a formality
-  enum ConstructAbstract_t { ConstructAbstract };
+  enum ConstructAbstractTag { ConstructAbstract };
 
   /// Constructor for typical usage
-  explicit Frame(Frame* _refFrame, const std::string& _name);
+  explicit Frame(Frame* _refFrame);
+
+  /// Default constructor, delegates to Frame(ConstructAbstract_t)
+  Frame();
 
   /// Constructor for use by pure abstract classes
-  explicit Frame(ConstructAbstract_t);
+  explicit Frame(ConstructAbstractTag);
 
   // Documentation inherited
   virtual void changeParentFrame(Frame* _newParentFrame) override;
@@ -279,10 +282,10 @@ protected:
 private:
 
   /// Used when constructing the World
-  enum ConstructWorld_t { ConstructWorld };
+  enum ConstructWorldTag { ConstructWorld };
 
   /// Constructor only to be used by the WorldFrame class
-  explicit Frame(ConstructWorld_t);
+  explicit Frame(ConstructWorldTag);
 
 protected:
   /// World transform of this Frame. This object is mutable to enable
@@ -329,19 +332,23 @@ public:
   friend class Frame;
 
   /// Always returns the Identity Transform
-  const Eigen::Isometry3d& getRelativeTransform() const override;
+  const Eigen::Isometry3d& getRelativeTransform() const override final;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
+  const Eigen::Vector6d& getRelativeSpatialVelocity() const override final;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override;
+  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override final;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override;
+  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override final;
 
   /// Always returns a zero vector
-  const Eigen::Vector6d& getPartialAcceleration() const override;
+  const Eigen::Vector6d& getPartialAcceleration() const override final;
+
+  const std::string& setName(const std::string& name) override final;
+
+  const std::string& getName() const override final;
 
 private:
   /// This may only be constructed by the Frame class

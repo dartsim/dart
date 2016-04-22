@@ -77,7 +77,7 @@ class EllipsoidShapeDrawable : public ::osg::ShapeDrawable
 public:
 
   EllipsoidShapeDrawable(dart::dynamics::EllipsoidShape* shape,
-                         dart::dynamics::VisualAddon* visualAddon,
+                         dart::dynamics::VisualAspect* visualAspect,
                          EllipsoidShapeGeode* parent);
 
   void refresh(bool firstTime);
@@ -87,7 +87,7 @@ protected:
   virtual ~EllipsoidShapeDrawable();
 
   dart::dynamics::EllipsoidShape* mEllipsoidShape;
-  dart::dynamics::VisualAddon* mVisualAddon;
+  dart::dynamics::VisualAspect* mVisualAspect;
   EllipsoidShapeGeode* mParent;
 
 };
@@ -101,7 +101,7 @@ EllipsoidShapeNode::EllipsoidShapeNode(
     mGeode(nullptr)
 {
   extractData(true);
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 }
 
 //==============================================================================
@@ -109,7 +109,7 @@ void EllipsoidShapeNode::refresh()
 {
   mUtilized = true;
 
-  setNodeMask(mVisualAddon->isHidden()? 0x0 : ~0x0);
+  setNodeMask(mVisualAspect->isHidden()? 0x0 : ~0x0);
 
   if(mShape->getDataVariance() == dart::dynamics::Shape::STATIC)
     return;
@@ -179,7 +179,7 @@ void EllipsoidShapeGeode::extractData()
 {
   if(nullptr == mDrawable)
   {
-    mDrawable = new EllipsoidShapeDrawable(mEllipsoidShape, mVisualAddon, this);
+    mDrawable = new EllipsoidShapeDrawable(mEllipsoidShape, mVisualAspect, this);
     addDrawable(mDrawable);
     return;
   }
@@ -196,10 +196,10 @@ EllipsoidShapeGeode::~EllipsoidShapeGeode()
 //==============================================================================
 EllipsoidShapeDrawable::EllipsoidShapeDrawable(
     dart::dynamics::EllipsoidShape* shape,
-    dart::dynamics::VisualAddon* visualAddon,
+    dart::dynamics::VisualAspect* visualAspect,
     EllipsoidShapeGeode* parent)
   : mEllipsoidShape(shape),
-    mVisualAddon(visualAddon),
+    mVisualAspect(visualAspect),
     mParent(parent)
 {
   refresh(true);
@@ -227,7 +227,7 @@ void EllipsoidShapeDrawable::refresh(bool firstTime)
   if(mEllipsoidShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR)
      || firstTime)
   {
-    setColor(eigToOsgVec4(mVisualAddon->getRGBA()));
+    setColor(eigToOsgVec4(mVisualAspect->getRGBA()));
   }
 }
 

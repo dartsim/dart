@@ -1,0 +1,144 @@
+/*
+ * Copyright (c) 2016, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Michael X. Grey <mxgrey@gatech.edu>
+ *
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
+ *
+ * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
+ * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifndef DART_DYNAMICS_DETAIL_JOINTASPECT_H_
+#define DART_DYNAMICS_DETAIL_JOINTASPECT_H_
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
+namespace dart {
+namespace dynamics {
+namespace detail {
+
+/// Actuator type
+///
+/// The command is taken by setCommand() or setCommands(), and the meaning of
+/// command is different depending on the actuator type. The default actuator
+/// type is FORCE. (TODO: FreeJoint should be PASSIVE?)
+///
+/// FORCE/PASSIVE/SERVO joints are dynamic joints while
+/// ACCELERATION/VELOCITY/LOCKED joints are kinematic joints.
+///
+/// Note the presence of joint damping force and joint spring force for all
+/// the actuator types if the coefficients are non-zero. The default
+/// coefficients are zero.
+///
+/// \sa setActuatorType(), getActuatorType(),
+/// setSpringStiffness(), setDampingCoefficient(),
+enum ActuatorType
+{
+  /// Command input is joint force, and the output is joint acceleration.
+  ///
+  /// If the command is zero, then it's identical to passive joint. The valid
+  /// joint constraints are position limit, velocity limit, and Coulomb
+  /// friction, and the invalid joint constraint is force limit.
+  FORCE,
+
+  /// Passive joint doesn't take any command input, and the output is joint
+  /// acceleration.
+  ///
+  /// The valid joint constraints are position limit, velocity limit, and
+  /// Coulomb friction, and the invalid joint constraint is force limit.
+  PASSIVE,
+
+  /// Command input is desired velocity, and the output is joint acceleration.
+  ///
+  /// The constraint solver will try to track the desired velocity within the
+  /// joint force limit. All the joint constarints are valid.
+  SERVO,
+
+  /// Command input is joint acceleration, and the output is joint force.
+  ///
+  /// The joint acceleration is always satisfied but it doesn't take the joint
+  /// force limit into account. All the joint constraints are invalid.
+  ACCELERATION,
+
+  /// Command input is joint velocity, and the output is joint force.
+  ///
+  /// The joint velocity is always satisfied but it doesn't take the joint
+  /// force limit into account. If you want to consider the joint force limit,
+  /// should use SERVO instead. All the joint constraints are invalid.
+  VELOCITY,
+
+  /// Locked joint always set the velocity and acceleration to zero so that
+  /// the joint dosen't move at all (locked), and the output is joint force.
+  /// force.
+  ///
+  /// All the joint constraints are invalid.
+  LOCKED
+};
+
+const ActuatorType DefaultActuatorType = FORCE;
+
+struct JointProperties
+{
+  /// Joint name
+  std::string mName;
+
+  /// Transformation from parent BodyNode to this Joint
+  Eigen::Isometry3d mT_ParentBodyToJoint;
+
+  /// Transformation from child BodyNode to this Joint
+  Eigen::Isometry3d mT_ChildBodyToJoint;
+
+  /// True if the joint limits should be enforced in dynamic simulation
+  bool mIsPositionLimited;
+
+  /// Actuator type
+  ActuatorType mActuatorType;
+
+  /// Constructor
+  JointProperties(const std::string& _name = "Joint",
+             const Eigen::Isometry3d& _T_ParentBodyToJoint =
+                                 Eigen::Isometry3d::Identity(),
+             const Eigen::Isometry3d& _T_ChildBodyToJoint =
+                                 Eigen::Isometry3d::Identity(),
+             bool _isPositionLimited = false,
+             ActuatorType _actuatorType = DefaultActuatorType);
+
+  virtual ~JointProperties() = default;
+
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+} // namespace detail
+} // namespace dynamics
+} // namespace dart
+
+#endif // DART_DYNAMICS_DETAIL_JOINTASPECT_H_

@@ -40,96 +40,42 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Signal.h"
-#include "dart/common/AddonWithVersion.h"
-#include "dart/common/SpecializedForAddon.h"
+#include "dart/common/AspectWithVersion.h"
+#include "dart/common/SpecializedForAspect.h"
 #include "dart/dynamics/FixedFrame.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
 #include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/detail/ShapeFrameAspect.h"
 
 namespace dart {
 namespace dynamics {
 
-class VisualAddon;
-class CollisionAddon;
-class DynamicsAddon;
-class ShapeFrame;
-
-namespace detail {
-
-struct VisualAddonProperties
-{
-  /// Color for the primitive shape
-  Eigen::Vector4d mRGBA;
-
-  bool mUseDefaultColor;
-
-  /// True if this shape node should be kept from rendering
-  bool mHidden;
-
-  /// Constructor
-  VisualAddonProperties(
-      const Eigen::Vector4d& color = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0),
-      const bool hidden = false);
-
-  /// Destructor
-  virtual ~VisualAddonProperties() = default;
-};
-
-struct CollisionAddonProperties
-{
-  /// This object is collidable if true
-  bool mCollidable;
-
-  /// Constructor
-  CollisionAddonProperties(const bool collidable = true);
-
-  /// Destructor
-  virtual ~CollisionAddonProperties() = default;
-};
-
-struct DynamicsAddonProperties
-{
-  /// Coefficient of friction
-  double mFrictionCoeff;
-
-  /// Coefficient of restitution
-  double mRestitutionCoeff;
-
-  /// Constructor
-  DynamicsAddonProperties(const double frictionCoeff = 1.0,
-                          const double restitutionCoeff = 0.0);
-
-  /// Destructor
-  virtual ~DynamicsAddonProperties() = default;
-};
-
-} // namespace detail
-
-class VisualAddon final :
-    public common::AddonWithVersionedProperties<
-        VisualAddon,
-        detail::VisualAddonProperties,
+//==============================================================================
+class VisualAspect final :
+    public common::AspectWithVersionedProperties<
+        VisualAspect,
+        detail::VisualAspectProperties,
         ShapeFrame>
 {
 public:
 
-  using BaseClass = common::AddonWithVersionedProperties<
-      VisualAddon, detail::VisualAddonProperties, ShapeFrame>;
+  using BaseClass = common::AspectWithVersionedProperties<
+      VisualAspect, detail::VisualAspectProperties, ShapeFrame>;
 
   /// Constructor
-  VisualAddon(common::AddonManager* mgr,
+  VisualAspect(common::Composite* comp,
               const PropertiesData& properties = PropertiesData());
 
-  VisualAddon(const VisualAddon&) = delete;
+  VisualAspect(const VisualAspect&) = delete;
 
   /// Set RGBA color
   void setRGBA(const Eigen::Vector4d& color);
 
-  DART_COMMON_GET_ADDON_PROPERTY( Eigen::Vector4d, RGBA )
+  DART_COMMON_GET_ASPECT_PROPERTY( Eigen::Vector4d, RGBA )
   // void setRGBA(const Eigen::Vector4d& value);
   // const Eigen::Vector4d& getRGBA() const;
 
-  DART_COMMON_SET_GET_ADDON_PROPERTY( bool, Hidden )
+  DART_COMMON_SET_GET_ASPECT_PROPERTY( bool, Hidden )
   // void setHidden(const Eigen::Vector4d& value);
   // const Eigen::Vector4d& getHidden() const;
 
@@ -164,21 +110,25 @@ public:
   /// setting
   bool isHidden() const;
 
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 };
 
-class CollisionAddon final :
-    public common::AddonWithVersionedProperties<
-        CollisionAddon,
-        detail::CollisionAddonProperties,
+//==============================================================================
+class CollisionAspect final :
+    public common::AspectWithVersionedProperties<
+        CollisionAspect,
+        detail::CollisionAspectProperties,
         ShapeFrame>
 {
 public:
 
-  CollisionAddon(const CollisionAddon &) = delete;
-  CollisionAddon(dart::common::AddonManager* mgr,
+  CollisionAspect(const CollisionAspect &) = delete;
+  CollisionAspect(dart::common::Composite* comp,
                       const PropertiesData& properties = PropertiesData());
 
-  DART_COMMON_SET_GET_ADDON_PROPERTY( bool, Collidable )
+  DART_COMMON_SET_GET_ASPECT_PROPERTY( bool, Collidable )
   // void setCollidable(const bool& value);
   // const bool& getCollidable() const;
 
@@ -187,35 +137,36 @@ public:
 
 };
 
-class DynamicsAddon final :
-    public common::AddonWithVersionedProperties<
-        DynamicsAddon,
-        detail::DynamicsAddonProperties,
+//==============================================================================
+class DynamicsAspect final :
+    public common::AspectWithVersionedProperties<
+        DynamicsAspect,
+        detail::DynamicsAspectProperties,
         ShapeFrame>
 {
 public:
 
-  using BaseClass = common::AddonWithVersionedProperties<
-      DynamicsAddon, detail::DynamicsAddonProperties, ShapeFrame>;
+  using BaseClass = common::AspectWithVersionedProperties<
+      DynamicsAspect, detail::DynamicsAspectProperties, ShapeFrame>;
 
-  DynamicsAddon(const DynamicsAddon&) = delete;
+  DynamicsAspect(const DynamicsAspect&) = delete;
 
-  DynamicsAddon(dart::common::AddonManager* mgr,
+  DynamicsAspect(dart::common::Composite* comp,
                 const PropertiesData& properties = PropertiesData());
 
-  DART_COMMON_SET_GET_ADDON_PROPERTY( double, FrictionCoeff )
+  DART_COMMON_SET_GET_ASPECT_PROPERTY( double, FrictionCoeff )
   // void setFrictionCoeff(const double& value);
   // const double& getFrictionCoeff() const;
-  DART_COMMON_SET_GET_ADDON_PROPERTY( double, RestitutionCoeff )
+  DART_COMMON_SET_GET_ASPECT_PROPERTY( double, RestitutionCoeff )
   // void setRestitutionCoeff(const double& value);
   // const double& getRestitutionCoeff() const;
 
 };
 
+//==============================================================================
 class ShapeFrame :
     public virtual common::VersionCounter,
-    public common::SpecializedForAddon<
-        VisualAddon, CollisionAddon, DynamicsAddon>,
+    public detail::ShapeFrameCompositeBase,
     public virtual Frame
 {
 public:
@@ -232,61 +183,19 @@ public:
                             const Eigen::Isometry3d& oldTransform,
                             const Eigen::Isometry3d& newTransform)>;
 
-  using AddonProperties = common::AddonManager::Properties;
-
-  struct UniqueProperties
-  {
-    /// Shape pointer
-    ShapePtr mShape;
-
-    size_t mVersion;
-
-    /// Composed constructor
-    UniqueProperties(const ShapePtr& shape = nullptr);
-
-    /// Composed move constructor
-    UniqueProperties(ShapePtr&& shape);
-
-    virtual ~UniqueProperties() = default;
-  };
-
-  /// Composition of Entity and ShapeFrame properties
-  struct Properties : Entity::Properties, UniqueProperties
-  {
-    /// Composed constructor
-    Properties(const Entity::Properties& entityProperties
-                   = Entity::Properties("ShapeFrame"),
-               const UniqueProperties& shapeFrameProperties
-                   = UniqueProperties(),
-               const AddonProperties& addonProperties
-                   = AddonProperties());
-
-    virtual ~Properties() = default;
-
-    /// Properties of all the Addons attached to this ShapeFrame
-    AddonProperties mAddonProperties;
-  };
+  using UniqueProperties = AspectProperties;
+  using Properties = UniqueProperties;
 
   /// Destructor
   virtual ~ShapeFrame() = default;
 
-  /// Same as setAddonProperties()
-  void setProperties(const AddonProperties& properties);
-
-  /// Set the Properties of this ShapeFrame
-  void setProperties(const Properties& properties);
-
   /// Set the UniqueProperties of this ShapeFrame
   void setProperties(const UniqueProperties& properties);
 
-  /// Get the Properties of this ShapeFrame
-  const Properties getShapeFrameProperties() const;
+  /// Set the AspectProperties of this ShapeFrame
+  void setAspectProperties(const AspectProperties& properties);
 
-  /// Copy the properties of another ShapeFrame
-  void copy(const ShapeFrame& other);
-
-  /// Copy the properties of another ShapeFrame
-  void copy(const ShapeFrame* other);
+  const AspectProperties& getAspectProperties() const;
 
   /// Set shape
   void setShape(const ShapePtr& shape);
@@ -297,17 +206,11 @@ public:
   /// Return (const) shape
   ConstShapePtr getShape() const;
 
-  DART_BAKE_SPECIALIZED_ADDON(VisualAddon)
+  DART_BAKE_SPECIALIZED_ASPECT(VisualAspect)
 
-  DART_BAKE_SPECIALIZED_ADDON(CollisionAddon)
+  DART_BAKE_SPECIALIZED_ASPECT(CollisionAspect)
 
-  DART_BAKE_SPECIALIZED_ADDON(DynamicsAddon)
-
-  // Documentation inherited
-  size_t incrementVersion() override;
-
-  // Documentation inherited
-  size_t getVersion() const override;
+  DART_BAKE_SPECIALIZED_ASPECT(DynamicsAspect)
 
   // Documentation inherited
   ShapeFrame* asShapeFrame() override;
@@ -332,15 +235,13 @@ public:
 protected:
 
   /// Constructor
-  ShapeFrame(Frame* parent, const Properties& properties = Properties());
+  ShapeFrame(Frame* parent, const Properties& properties);
 
   /// Constructor
-  ShapeFrame(Frame* parent,
-             const std::string& name,
-             const ShapePtr& shape = nullptr);
+  ShapeFrame(Frame* parent, const ShapePtr& shape = nullptr);
 
-  /// ShapeFrame properties
-  Properties mShapeFrameP;
+  /// Delegating constructor
+  ShapeFrame(const std::tuple<Frame*, Properties>& args);
 
   /// Contains whether or not this is a ShapeNode
   bool mAmShapeNode;

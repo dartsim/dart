@@ -384,6 +384,12 @@ bool Inertia::verify(bool _printWarnings, double _tolerance) const
 }
 
 //==============================================================================
+bool Inertia::operator ==(const Inertia& other) const
+{
+  return (other.mSpatialTensor == mSpatialTensor);
+}
+
+//==============================================================================
 // Note: Taken from Springer Handbook, chapter 2.2.11
 void Inertia::computeSpatialTensor()
 {

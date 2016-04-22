@@ -62,14 +62,19 @@ void PrismaticJoint::setProperties(const Properties& _properties)
 //==============================================================================
 void PrismaticJoint::setProperties(const UniqueProperties& _properties)
 {
-  setAxis(_properties.mAxis);
+  setAspectProperties(_properties);
+}
+
+//==============================================================================
+void PrismaticJoint::setAspectProperties(const AspectProperties& properties)
+{
+  setAxis(properties.mAxis);
 }
 
 //==============================================================================
 PrismaticJoint::Properties PrismaticJoint::getPrismaticJointProperties() const
 {
-  return Properties(getSingleDofJointProperties(),
-                    getPrismaticJointAddon()->getProperties());
+  return Properties(getSingleDofJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -119,24 +124,30 @@ bool PrismaticJoint::isCyclic(size_t /*_index*/) const
 //==============================================================================
 void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
 {
-  getPrismaticJointAddon()->setAxis(_axis);
+  if(_axis == mAspectProperties.mAxis)
+    return;
+
+  mAspectProperties.mAxis = _axis.normalized();
+  Joint::notifyPositionUpdate();
+  updateLocalJacobian();
+  Joint::incrementVersion();
 }
 
 //==============================================================================
 const Eigen::Vector3d& PrismaticJoint::getAxis() const
 {
-  return getPrismaticJointAddon()->getAxis();
+  return mAspectProperties.mAxis;
 }
 
 //==============================================================================
-PrismaticJoint::PrismaticJoint(const Properties& _properties)
-  : detail::PrismaticJointBase(_properties, common::NoArg)
+PrismaticJoint::PrismaticJoint(const Properties& properties)
+  : detail::PrismaticJointBase(properties)
 {
-  createPrismaticJointAddon(_properties);
-
-  // Inherited Joint Properties must be set in the final joint class or else we
-  // get pure virtual function calls
-  SingleDofJoint::setProperties(_properties);
+  // Inherited Aspects must be created in the final joint class in reverse order
+  // or else we get pure virtual function calls
+  createPrismaticJointAspect(properties);
+  createSingleDofJointAspect(properties);
+  createJointAspect(properties);
 }
 
 //==============================================================================
@@ -148,9 +159,9 @@ Joint* PrismaticJoint::clone() const
 //==============================================================================
 void PrismaticJoint::updateLocalTransform() const
 {
-  mT = mJointP.mT_ParentBodyToJoint
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(getAxis() * getPositionStatic())
-       * mJointP.mT_ChildBodyToJoint.inverse();
+       * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -161,7 +172,7 @@ void PrismaticJoint::updateLocalJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
-    mJacobian = math::AdTLinear(mJointP.mT_ChildBodyToJoint, getAxis());
+    mJacobian = math::AdTLinear(Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis());
 
     // Verification
     assert(!math::isNan(mJacobian));

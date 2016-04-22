@@ -630,7 +630,7 @@ void InteractiveFrameDnD::update()
         {
           const auto shapeFrames = tool->getShapeFrames();
           for(size_t s=0; s<shapeFrames.size(); ++s)
-            shapeFrames[s]->getVisualAddon(true)->setHidden(true);
+            shapeFrames[s]->getVisualAspect(true)->setHidden(true);
         }
       }
     }
@@ -647,7 +647,7 @@ void InteractiveFrameDnD::update()
         {
           const auto shapeFrames = tool->getShapeFrames();
           for(size_t s=0; s<shapeFrames.size(); ++s)
-            shapeFrames[s]->getVisualAddon(true)->setHidden(false);
+            shapeFrames[s]->getVisualAspect(true)->setHidden(false);
         }
       }
     }

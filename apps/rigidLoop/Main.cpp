@@ -70,8 +70,8 @@ int main(int argc, char* argv[])
   // create a ball joint constraint
   BodyNode* bd1 = myWorld->getSkeleton(0)->getBodyNode("link 6");
   BodyNode* bd2 = myWorld->getSkeleton(0)->getBodyNode("link 10");
-  bd1->getShapeNode(0)->getVisualAddon()->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
-  bd2->getShapeNode(0)->getVisualAddon()->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
+  bd1->getShapeNode(0)->getVisualAspect()->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
+  bd2->getShapeNode(0)->getVisualAspect()->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
   Eigen::Vector3d offset(0.0, 0.025, 0.0);
   Eigen::Vector3d jointPos = bd1->getTransform() * offset;
   BallJointConstraintPtr cl =

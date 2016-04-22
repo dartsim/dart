@@ -37,7 +37,10 @@
 #ifndef DART_DYNAMICS_FIXEDFRAME_H_
 #define DART_DYNAMICS_FIXEDFRAME_H_
 
-#include "Frame.h"
+#include "dart/dynamics/Frame.h"
+#include "dart/common/EmbeddedAspect.h"
+#include "dart/common/VersionCounter.h"
+#include "dart/dynamics/detail/FixedFrameAspect.h"
 
 namespace dart {
 namespace dynamics {
@@ -46,16 +49,25 @@ namespace dynamics {
 /// zero relative acceleration. It does not move within its parent Frame after
 /// its relative transform is set. However, classes that inherit the FixedFrame
 /// class may alter its relative transform or change what its parent Frame is.
-class FixedFrame : public virtual Frame
+class FixedFrame :
+    public virtual Frame,
+    public virtual common::VersionCounter,
+    public common::EmbedProperties<FixedFrame, detail::FixedFrameProperties>
 {
 public:
   /// Constructor
-  explicit FixedFrame(Frame* _refFrame, const std::string& _name,
-                      const Eigen::Isometry3d& _relativeTransform =
-                                        Eigen::Isometry3d::Identity());
+  explicit FixedFrame(Frame* refFrame,
+      const Eigen::Isometry3d& relativeTransform =
+          Eigen::Isometry3d::Identity());
 
   /// Destructor
   virtual ~FixedFrame();
+
+  /// Set the AspectProperties of this FixedFrame
+  void setAspectProperties(const AspectProperties& properties);
+
+  /// Set the relative transform of this FixedFrame
+  virtual void setRelativeTransform(const Eigen::Isometry3d& transform);
 
   // Documentation inherited
   const Eigen::Isometry3d& getRelativeTransform() const override;
@@ -73,11 +85,19 @@ public:
   const Eigen::Vector6d& getPartialAcceleration() const override;
 
 protected:
-  /// Relative Transform of this Frame
-  Eigen::Isometry3d mRelativeTf;
+
+  /// Default constructor -- calls the Abstract constructor
+  FixedFrame();
+
+  /// Abstract constructor
+  explicit FixedFrame(ConstructAbstractTag);
 
   /// Used for Relative Velocity and Relative Acceleration of this Frame
   static const Eigen::Vector6d mZero;
+
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } // namespace dynamics

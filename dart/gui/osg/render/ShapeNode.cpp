@@ -52,7 +52,7 @@ ShapeNode::ShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
     mUtilized(true)
 {
   mShapeFrame = mParentShapeFrameNode->getShapeFrame();
-  mVisualAddon = mShapeFrame->getVisualAddon(true);
+  mVisualAspect = mShapeFrame->getVisualAspect(true);
 }
 
 //==============================================================================
@@ -74,15 +74,15 @@ const dart::dynamics::ShapeFrame* ShapeNode::getShapeFrame() const
 }
 
 //==============================================================================
-dart::dynamics::VisualAddon* ShapeNode::getVisualAddon()
+dart::dynamics::VisualAspect* ShapeNode::getVisualAspect()
 {
-  return mVisualAddon;
+  return mVisualAspect;
 }
 
 //==============================================================================
-const dart::dynamics::VisualAddon* ShapeNode::getVisualAddon() const
+const dart::dynamics::VisualAspect* ShapeNode::getVisualAspect() const
 {
-  return mVisualAddon;
+  return mVisualAspect;
 }
 
 //==============================================================================

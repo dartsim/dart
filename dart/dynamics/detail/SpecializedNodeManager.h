@@ -44,7 +44,7 @@ namespace dynamics {
 
 // This preprocessor token should only be used by the unittest that is
 // responsible for checking that the specialized routines are being used to
-// access specialized Addons
+// access specialized Aspects
 #ifdef DART_UNITTEST_SPECIALIZED_NODE_ACCESS
 bool usedSpecializedNodeAccess;
 #endif // DART_UNITTEST_SPECIALIZED_NODE_ACCESS

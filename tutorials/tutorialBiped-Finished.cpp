@@ -269,8 +269,8 @@ public:
     if(mForceCountDown > 0)
     {
       BodyNode* bn = mWorld->getSkeleton("biped")->getBodyNode("h_abdomen");
-      auto shapeNodes = bn->getShapeNodesWith<VisualAddon>();
-      shapeNodes[0]->getVisualAddon()->setColor(dart::Color::Red());
+      auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
+      shapeNodes[0]->getVisualAspect()->setColor(dart::Color::Red());
       
       if(mPositiveSign)
         bn->addExtForce(default_force * Eigen::Vector3d::UnitX(),
@@ -438,8 +438,8 @@ SkeletonPtr createFloor()
   std::shared_ptr<BoxShape> box(
       new BoxShape(Eigen::Vector3d(floor_width, floor_height, floor_width)));
   auto shapeNode
-      = body->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(box);
-  shapeNode->getVisualAddon()->setColor(dart::Color::Black());
+      = body->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
+  shapeNode->getVisualAspect()->setColor(dart::Color::Black());
   
   // Put the body into position
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());

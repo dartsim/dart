@@ -139,24 +139,6 @@ std::shared_ptr<const Skeleton> Node::getSkeleton() const
 }
 
 //==============================================================================
-size_t Node::incrementVersion()
-{
-  if(const SkeletonPtr& skel = getSkeleton())
-    return skel->incrementVersion();
-
-  return 0;
-}
-
-//==============================================================================
-size_t Node::getVersion() const
-{
-  if(const ConstSkeletonPtr& skel = getSkeleton())
-    return skel->getVersion();
-
-  return 0;
-}
-
-//==============================================================================
 std::shared_ptr<NodeDestructor> Node::getOrCreateDestructor()
 {
   std::shared_ptr<NodeDestructor> destructor = mDestructor.lock();
@@ -182,6 +164,9 @@ Node::Node(BodyNode* _bn)
     REPORT_INVALID_NODE(Node);
     return;
   }
+
+  if(mBodyNode != this)
+    setVersionDependentObject(mBodyNode);
 }
 
 //==============================================================================

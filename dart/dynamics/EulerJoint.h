@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_EULERJOINT_H_
 #define DART_DYNAMICS_EULERJOINT_H_
 
-#include "dart/dynamics/detail/EulerJointProperties.h"
+#include "dart/dynamics/detail/EulerJointAspect.h"
 
 namespace dart {
 namespace dynamics {
@@ -51,10 +51,9 @@ public:
   using AxisOrder = detail::AxisOrder;
   using UniqueProperties = detail::EulerJointUniqueProperties;
   using Properties = detail::EulerJointProperties;
-  using Addon = detail::EulerJointAddon;
   using Base = detail::EulerJointBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, EulerJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, EulerJointAspect)
 
   EulerJoint(const EulerJoint&) = delete;
 
@@ -66,6 +65,9 @@ public:
 
   /// Set the Properties of this EulerJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this EulerJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this EulerJoint
   Properties getEulerJointProperties() const;
@@ -148,12 +150,10 @@ public:
   Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
-
 protected:
 
   /// Constructor called by Skeleton class
-  EulerJoint(const Properties& _properties);
+  EulerJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;

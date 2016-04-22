@@ -45,8 +45,8 @@ namespace common {
 struct Empty { };
 
 /// Used to tag arguments as blank for in variadic joiner classes such as
-/// common::AddonManagerJoiner and dynamics::NodeManagerJoiner
-enum NoArg_t { NoArg };
+/// common::CompositeJoiner and dynamics::NodeManagerJoiner
+enum NoArgTag { NoArg };
 
 } // namespace common
 } // namespace dart

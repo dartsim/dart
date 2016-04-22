@@ -40,8 +40,9 @@
 #include <memory>
 
 #include "dart/common/Subject.h"
-#include "dart/common/Extensible.h"
+#include "dart/common/Cloneable.h"
 #include "dart/common/VersionCounter.h"
+#include "dart/common/EmbeddedAspect.h"
 
 #include "dart/dynamics/SmartPointer.h"
 
@@ -51,6 +52,7 @@ namespace dynamics {
 class BodyNode;
 class Node;
 
+//==============================================================================
 class NodeDestructor final
 {
 public:
@@ -73,6 +75,7 @@ private:
 
 };
 
+//==============================================================================
 /// The Node class is a base class for BodyNode and any object that attaches to
 /// a BodyNode. This base class handles ownership and reference counting for the
 /// classes that inherit it.
@@ -103,12 +106,12 @@ public:
   /// get stored in BodyNode::ExtendedProperties. Typically Properties are
   /// values that only change rarely if ever, whereas State contains values that
   /// might change as often as every time step.
-  class State : public common::Extensible<State> { };
+  class State : public common::Cloneable<State> { };
 
-  /// Use the StateMixer class to easily create a State extension from an
+  /// Use the MakeState class to easily create a State extension from an
   /// existing class or struct
   template <class Mixin>
-  using StateMixer = common::ExtensibleMixer<State, Mixin>;
+  using MakeState = common::MakeCloneable<State, Mixin>;
 
   /// If your Node has a Properties class, then that Properties class should
   /// inherit this Node::Properties class. This allows us to safely serialize,
@@ -122,12 +125,12 @@ public:
   /// get stored in BodyNode::ExtendedProperties. Typically Properties are
   /// values that only change rarely if ever, whereas State contains values that
   /// might change as often as every time step.
-  class Properties : public common::Extensible<Properties> { };
+  class Properties : public common::Cloneable<Properties> { };
 
-  /// Use the PropertiesMixer class to easily create a Properties extension
+  /// Use the MakeProperties class to easily create a Properties extension
   /// from an existing class or struct.
   template <class Mixin>
-  using PropertiesMixer = common::ExtensibleMixer<Properties, Mixin>;
+  using MakeProperties = common::MakeCloneable<Properties, Mixin>;
 
   /// Virtual destructor
   virtual ~Node() = default;
@@ -181,14 +184,6 @@ public:
   /// Return the Skeleton that this Node is attached to
   virtual std::shared_ptr<const Skeleton> getSkeleton() const;
 
-  /// Increment the version of this Node (by default, this will increment the
-  /// version number of the Skeleton).
-  size_t incrementVersion() override;
-
-  /// Get the version of this Node (by default, this will get the version
-  /// number of the Skeleton).
-  size_t getVersion() const override;
-
 private:
 
   std::shared_ptr<NodeDestructor> getOrCreateDestructor();
@@ -236,6 +231,7 @@ protected:
   size_t mIndexInTree;
 };
 
+//==============================================================================
 /// AccessoryNode provides an interface for Nodes to get their index within the
 /// list of Nodes, as well as detach and reattach. This uses CRTP to get around
 /// the diamond of death problem.

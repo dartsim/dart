@@ -1591,7 +1591,7 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
     midp12 = 0.5 * (p1+p2);
     midp01 = 0.5 * (p0+p1);
 
-    Intersection_t result =
+    IntersectionResult result =
         computeIntersection(intersect, p0, midp12, p2, midp01);
 
     if(BEYOND_ENDPOINTS == result)
@@ -1763,7 +1763,7 @@ SupportPolygon computeConvexHull(std::vector<size_t>& _originalIndices,
 }
 
 //==============================================================================
-Intersection_t computeIntersection(Eigen::Vector2d& _intersectionPoint,
+IntersectionResult computeIntersection(Eigen::Vector2d& _intersectionPoint,
                                    const Eigen::Vector2d& a1,
                                    const Eigen::Vector2d& a2,
                                    const Eigen::Vector2d& b1,

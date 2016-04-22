@@ -42,7 +42,7 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
-VisualAddonProperties::VisualAddonProperties(const Eigen::Vector4d& color,
+VisualAspectProperties::VisualAspectProperties(const Eigen::Vector4d& color,
                                              const bool hidden)
   : mRGBA(color),
     mHidden(hidden)
@@ -51,7 +51,7 @@ VisualAddonProperties::VisualAddonProperties(const Eigen::Vector4d& color,
 }
 
 //==============================================================================
-CollisionAddonProperties::CollisionAddonProperties(
+CollisionAspectProperties::CollisionAspectProperties(
     const bool collidable)
   : mCollidable(collidable)
 {
@@ -59,7 +59,7 @@ CollisionAddonProperties::CollisionAddonProperties(
 }
 
 //==============================================================================
-DynamicsAddonProperties::DynamicsAddonProperties(
+DynamicsAspectProperties::DynamicsAspectProperties(
     const double frictionCoeff,
     const double restitutionCoeff)
   :
@@ -69,40 +69,47 @@ DynamicsAddonProperties::DynamicsAddonProperties(
   // Do nothing
 }
 
+//==============================================================================
+ShapeFrameProperties::ShapeFrameProperties(const ShapePtr& shape)
+  : mShape(shape)
+{
+  // Do nothing
+}
+
 } // namespace detail
 
 //==============================================================================
-VisualAddon::VisualAddon(common::AddonManager* mgr,
+VisualAspect::VisualAspect(common::Composite* comp,
                          const PropertiesData& properties)
-  : VisualAddon::BaseClass(mgr, properties)
+  : VisualAspect::BaseClass(comp, properties)
 {
   // Do nothing
 }
 
 //==============================================================================
-void VisualAddon::setRGBA(const Eigen::Vector4d& color)
+void VisualAspect::setRGBA(const Eigen::Vector4d& color)
 {
   mProperties.mRGBA = color;
 
   notifyPropertiesUpdate();
 
-  mManager->getShape()->notifyColorUpdate(color);
+  mComposite->getShape()->notifyColorUpdate(color);
 }
 
 //==============================================================================
-void VisualAddon::setColor(const Eigen::Vector3d& color)
+void VisualAspect::setColor(const Eigen::Vector3d& color)
 {
   setRGB(color);
 }
 
 //==============================================================================
-void VisualAddon::setColor(const Eigen::Vector4d& color)
+void VisualAspect::setColor(const Eigen::Vector4d& color)
 {
   setRGBA(color);
 }
 
 //==============================================================================
-void VisualAddon::setRGB(const Eigen::Vector3d& rgb)
+void VisualAspect::setRGB(const Eigen::Vector3d& rgb)
 {
   Eigen::Vector4d rgba = getRGBA();
   rgba.head<3>() = rgb;
@@ -111,182 +118,116 @@ void VisualAddon::setRGB(const Eigen::Vector3d& rgb)
 }
 
 //==============================================================================
-void VisualAddon::setAlpha(const double alpha)
+void VisualAspect::setAlpha(const double alpha)
 {
   mProperties.mRGBA[3] = alpha;
 
   notifyPropertiesUpdate();
 
-  mManager->getShape()->notifyAlphaUpdate(alpha);
+  mComposite->getShape()->notifyAlphaUpdate(alpha);
 }
 
 //==============================================================================
-Eigen::Vector3d VisualAddon::getColor() const
+Eigen::Vector3d VisualAspect::getColor() const
 {
   return getRGB();
 }
 
 //==============================================================================
-Eigen::Vector3d VisualAddon::getRGB() const
+Eigen::Vector3d VisualAspect::getRGB() const
 {
   return getRGBA().head<3>();
 }
 
 //==============================================================================
-double VisualAddon::getAlpha() const
+double VisualAspect::getAlpha() const
 {
   return getRGBA()[3];
 }
 
 //==============================================================================
-void VisualAddon::hide()
+void VisualAspect::hide()
 {
   setHidden(true);
 }
 
 //==============================================================================
-void VisualAddon::show()
+void VisualAspect::show()
 {
   setHidden(false);
 }
 
 //==============================================================================
-bool VisualAddon::isHidden() const
+bool VisualAspect::isHidden() const
 {
   return getHidden();
 }
 
 //==============================================================================
-CollisionAddon::CollisionAddon(
-    common::AddonManager* mgr,
+CollisionAspect::CollisionAspect(
+    common::Composite* comp,
     const PropertiesData& properties)
-  : AddonImplementation(mgr, properties)
+  : AspectImplementation(comp, properties)
 {
   // Do nothing
 }
 
 //==============================================================================
-bool CollisionAddon::isCollidable() const
+bool CollisionAspect::isCollidable() const
 {
   return getCollidable();
 }
 
 //==============================================================================
-DynamicsAddon::DynamicsAddon(
-    common::AddonManager* mgr,
+DynamicsAspect::DynamicsAspect(
+    common::Composite* comp,
     const PropertiesData& properties)
-  : BaseClass(mgr, properties)
+  : BaseClass(comp, properties)
 {
   // Do nothing
-}
-
-//==============================================================================
-ShapeFrame::UniqueProperties::UniqueProperties(const ShapePtr& shape)
-  : mShape(shape),
-    mVersion(0)
-{
-  // Do nothing
-}
-
-//==============================================================================
-ShapeFrame::UniqueProperties::UniqueProperties(ShapePtr&& shape)
-  : mShape(std::move(shape)),
-    mVersion(0)
-{
-  // Do nothing
-}
-
-//==============================================================================
-ShapeFrame::Properties::Properties(
-    const Entity::Properties& entityProperties,
-    const UniqueProperties& shapeFrameProperties,
-    const ShapeFrame::AddonProperties& addonProperties)
-  : Entity::Properties(entityProperties),
-    UniqueProperties(shapeFrameProperties),
-    mAddonProperties(addonProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void ShapeFrame::setProperties(const ShapeFrame::AddonProperties& properties)
-{
-  setAddonProperties(properties);
-}
-
-//==============================================================================
-void ShapeFrame::setProperties(const Properties& properties)
-{
-  Entity::setProperties(static_cast<const Entity::Properties&>(properties));
-  setProperties(static_cast<const UniqueProperties&>(properties));
-  setProperties(properties.mAddonProperties);
 }
 
 //==============================================================================
 void ShapeFrame::setProperties(const ShapeFrame::UniqueProperties& properties)
 {
+  setAspectProperties(properties);
+}
+
+//==============================================================================
+void ShapeFrame::setAspectProperties(const AspectProperties& properties)
+{
   setShape(properties.mShape);
 }
 
 //==============================================================================
-const ShapeFrame::Properties ShapeFrame::getShapeFrameProperties() const
+const ShapeFrame::AspectProperties& ShapeFrame::getAspectProperties() const
 {
-  return Properties(getEntityProperties(), mShapeFrameP, getAddonProperties());
-}
-
-//==============================================================================
-void ShapeFrame::copy(const ShapeFrame& other)
-{
-  if (this == &other)
-    return;
-
-  setProperties(other.getShapeFrameProperties());
-}
-
-//==============================================================================
-void ShapeFrame::copy(const ShapeFrame* other)
-{
-  if (nullptr == other)
-    return;
-
-  copy(*other);
+  return mAspectProperties;
 }
 
 //==============================================================================
 void ShapeFrame::setShape(const ShapePtr& shape)
 {
-  if (shape == mShapeFrameP.mShape)
+  if (shape == ShapeFrame::mAspectProperties.mShape)
     return;
 
-  ShapePtr oldShape = mShapeFrameP.mShape;
+  ShapePtr oldShape = ShapeFrame::mAspectProperties.mShape;
 
-  mShapeFrameP.mShape = shape;
+  ShapeFrame::mAspectProperties.mShape = shape;
 
-  mShapeUpdatedSignal.raise(this, oldShape, mShapeFrameP.mShape);
+  mShapeUpdatedSignal.raise(this, oldShape, ShapeFrame::mAspectProperties.mShape);
 }
 
 //==============================================================================
 ShapePtr ShapeFrame::getShape()
 {
-  return mShapeFrameP.mShape;
+  return ShapeFrame::mAspectProperties.mShape;
 }
 
 //==============================================================================
 ConstShapePtr ShapeFrame::getShape() const
 {
-  return mShapeFrameP.mShape;
-}
-
-//==============================================================================
-size_t ShapeFrame::incrementVersion()
-{
-  return ++mShapeFrameP.mVersion;
-}
-
-//==============================================================================
-size_t ShapeFrame::getVersion() const
-{
-  return mShapeFrameP.mVersion;
+  return ShapeFrame::mAspectProperties.mShape;
 }
 
 //==============================================================================
@@ -321,39 +262,42 @@ const ShapeNode* ShapeFrame::asShapeNode() const
 
 //==============================================================================
 ShapeFrame::ShapeFrame(Frame* parent, const Properties& properties)
-  : common::AddonManager(),
+  : common::Composite(),
     Entity(ConstructFrame),
-    Frame(parent, ""),
+    Frame(parent),
     mAmShapeNode(false),
     mShapeUpdatedSignal(),
     mRelativeTransformUpdatedSignal(),
     onShapeUpdated(mShapeUpdatedSignal),
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {
+  createAspect<Aspect>();
   mAmShapeFrame = true;
   setProperties(properties);
 }
 
 //==============================================================================
 ShapeFrame::ShapeFrame(Frame* parent,
-                       const std::string& name,
                        const ShapePtr& shape)
-  : common::AddonManager(),
+  : common::Composite(),
     Entity(ConstructFrame),
-    Frame(parent, name),
+    Frame(parent),
     mAmShapeNode(false),
     mShapeUpdatedSignal(),
     mRelativeTransformUpdatedSignal(),
     onShapeUpdated(mShapeUpdatedSignal),
     onRelativeTransformUpdated(mRelativeTransformUpdatedSignal)
 {
+  createAspect<Aspect>();
   mAmShapeFrame = true;
-  setName(name);
-  // TODO: As setName() is a virtual function, it is not safe to call this
-  // function in a constructor especially of abstract class. This line should be
-  // removed once Entity class is changed to abstract interface class.
-
   setShape(shape);
+}
+
+//==============================================================================
+ShapeFrame::ShapeFrame(const std::tuple<Frame*, Properties>& args)
+  : ShapeFrame(std::get<0>(args), std::get<1>(args))
+{
+  // Delegating constructor
 }
 
 } // namespace dynamics

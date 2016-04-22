@@ -507,7 +507,7 @@ void Frame::notifyAccelerationUpdate()
 }
 
 //==============================================================================
-Frame::Frame(Frame* _refFrame, const std::string& _name)
+Frame::Frame(Frame* _refFrame)
   : Entity(ConstructFrame),
     mWorldTransform(Eigen::Isometry3d::Identity()),
     mVelocity(Eigen::Vector6d::Zero()),
@@ -516,12 +516,18 @@ Frame::Frame(Frame* _refFrame, const std::string& _name)
     mAmShapeFrame(false)
 {
   mAmFrame = true;
-  mEntityP.mName = _name;
   changeParentFrame(_refFrame);
 }
 
 //==============================================================================
-Frame::Frame(ConstructAbstract_t)
+Frame::Frame()
+  : Frame(ConstructAbstract)
+{
+  // Delegated to Frame(ConstructAbstract)
+}
+
+//==============================================================================
+Frame::Frame(ConstructAbstractTag)
   : Entity(Entity::ConstructAbstract),
     mAmWorld(false),
     mAmShapeFrame(false)
@@ -586,8 +592,8 @@ void Frame::processRemovedEntity(Entity*)
 }
 
 //==============================================================================
-Frame::Frame(ConstructWorld_t)
-  : Entity(this, "World", true),
+Frame::Frame(ConstructWorldTag)
+  : Entity(this, true),
     mWorldTransform(Eigen::Isometry3d::Identity()),
     mVelocity(Eigen::Vector6d::Zero()),
     mAcceleration(Eigen::Vector6d::Zero()),
@@ -631,8 +637,24 @@ const Eigen::Vector6d& WorldFrame::getPartialAcceleration() const
 }
 
 //==============================================================================
+const std::string& WorldFrame::setName(const std::string& name)
+{
+  dterr << "[WorldFrame::setName] attempting to change name of World frame to ["
+        << name << "], but this is not allowed!\n";
+  static const std::string worldName = "World";
+  return worldName;
+}
+
+//==============================================================================
+const std::string& WorldFrame::getName() const
+{
+  static const std::string worldName = "World";
+  return worldName;
+}
+
+//==============================================================================
 WorldFrame::WorldFrame()
-  : Entity(nullptr, "World", true),
+  : Entity(nullptr, true),
     Frame(ConstructWorld),
     mRelativeTf(Eigen::Isometry3d::Identity())
 {

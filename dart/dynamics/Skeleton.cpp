@@ -57,9 +57,6 @@
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SoftBodyNode.h"
 
-namespace dart {
-namespace dynamics {
-
 #define SET_ALL_FLAGS( X ) for(auto& cache : mTreeCache) cache.mDirty. X = true;\
                            mSkelCache.mDirty. X = true;
 
@@ -83,6 +80,187 @@ namespace dynamics {
     else if(nonzero_size == INVALID_INDEX)                                      \
       nonzero_size = V .size();                                                 \
   }
+
+
+namespace dart {
+namespace dynamics {
+
+namespace detail {
+
+//==============================================================================
+/// Templated function for passing each entry in a std::vector<Data> into each
+/// member of an array of Objects belonging to some Owner class.
+///
+/// The ObjectBase argument should be the base class of Object in which the
+/// setData function is defined. In many cases, ObjectBase may be the same as
+/// Object, but it is not always.
+//
+// TODO(MXG): Consider putting this in an accessible header if it might be
+// useful in other places.
+template <class Owner, class Object, class ObjectBase, class Data,
+          size_t (Owner::*getNumObjects)() const,
+          Object* (Owner::*getObject)(size_t),
+          void (ObjectBase::*setData)(const Data&)>
+void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
+{
+  if(!owner)
+  {
+    dterr << "[setAllMemberObjectData] Attempting to set ["
+          << typeid(Data).name() << "] of every [" << typeid(Object).name()
+          << "] in a nullptr [" << typeid(Owner).name() << "]. Please report "
+          << "this as a bug!\n";
+    assert(false);
+    return;
+  }
+
+  size_t numObjects = (owner->*getNumObjects)();
+
+  if(data.size() != numObjects)
+  {
+    dtwarn << "[setAllMemberObjectData] Mismatch between the number of ["
+           << typeid(Object).name() << "] member objects (" << numObjects
+           << ") in the [" << typeid(Owner).name() << "] named ["
+           << owner->getName() << "] (" << owner << ") and the number of ["
+           << typeid(Object).name() << "] which is (" << data.size()
+           << ") while setting [" << typeid(Data).name() << "]\n"
+           << " -- We will set (" << std::min(numObjects, data.size())
+           << ") of them.\n";
+    numObjects = std::min(numObjects, data.size());
+  }
+
+  for(size_t i=0; i < numObjects; ++i)
+    ((owner->*getObject)(i)->*setData)(data[i]);
+}
+
+//==============================================================================
+/// Templated function for aggregating a std::vector<Data> out of each member of
+/// an array of Objects belonging to some Owner class.
+///
+/// The ObjectBase argument should be the base class of Object in which the
+/// getData function is defined. In many cases, ObjectBase may be the same as
+/// Object, but it is not always.
+//
+// TODO(MXG): Consider putting this in an accessible header if it might be
+// useful in other places.
+template <class Owner, class Object, class ObjectBase, class Data,
+          size_t (Owner::*getNumObjects)() const,
+          const Object* (Owner::*getObject)(size_t) const,
+          Data (ObjectBase::*getData)() const>
+std::vector<Data> getAllMemberObjectData(const Owner* owner)
+{
+  if(!owner)
+  {
+    dterr << "[getAllMemberObjectData] Attempting to get the ["
+          << typeid(Data).name() << "] from every [" << typeid(Object).name()
+          << "] in a nullptr [" << typeid(Owner).name() << "]. Please report "
+          << "this as a bug!\n";
+    assert(false);
+    return std::vector<Data>();
+  }
+
+  const size_t numObjects = (owner->*getNumObjects)();
+  std::vector<Data> data;
+  data.reserve(numObjects);
+
+  for(size_t i=0; i < numObjects; ++i)
+    data.push_back(((owner->*getObject)(i)->*getData)());
+
+  return data;
+}
+
+//==============================================================================
+SkeletonAspectProperties::SkeletonAspectProperties(
+    const std::string& _name,
+    bool _isMobile,
+    const Eigen::Vector3d& _gravity,
+    double _timeStep,
+    bool _enabledSelfCollisionCheck,
+    bool _enableAdjacentBodyCheck)
+  : mName(_name),
+    mIsMobile(_isMobile),
+    mGravity(_gravity),
+    mTimeStep(_timeStep),
+    mEnabledSelfCollisionCheck(_enabledSelfCollisionCheck),
+    mEnabledAdjacentBodyCheck(_enableAdjacentBodyCheck)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void setAllBodyNodeStates(Skeleton* skel, const BodyNodeStateVector& states)
+{
+  setAllMemberObjectData<
+      Skeleton, BodyNode, common::Composite, common::Composite::State,
+      &Skeleton::getNumBodyNodes, &Skeleton::getBodyNode,
+      &common::Composite::setCompositeState>(skel, states);
+}
+
+//==============================================================================
+BodyNodeStateVector getAllBodyNodeStates(const Skeleton* skel)
+{
+  return getAllMemberObjectData<
+      Skeleton, BodyNode, common::Composite, common::Composite::State,
+      &Skeleton::getNumBodyNodes, &Skeleton::getBodyNode,
+      &common::Composite::getCompositeState>(skel);
+}
+
+//==============================================================================
+void setAllBodyNodeProperties(
+    Skeleton* skel, const BodyNodePropertiesVector& properties)
+{
+  setAllMemberObjectData<
+      Skeleton, BodyNode, common::Composite, common::Composite::Properties,
+      &Skeleton::getNumBodyNodes, &Skeleton::getBodyNode,
+      &common::Composite::setCompositeProperties>(skel, properties);
+}
+
+//==============================================================================
+BodyNodePropertiesVector getAllBodyNodeProperties(const Skeleton* skel)
+{
+  return getAllMemberObjectData<
+      Skeleton, BodyNode, common::Composite, common::Composite::Properties,
+      &Skeleton::getNumBodyNodes, &Skeleton::getBodyNode,
+      &common::Composite::getCompositeProperties>(skel);
+}
+
+//==============================================================================
+void setAllJointStates(Skeleton* skel, const BodyNodeStateVector& states)
+{
+  setAllMemberObjectData<
+      Skeleton, Joint, common::Composite, common::Composite::State,
+      &Skeleton::getNumJoints, &Skeleton::getJoint,
+      &common::Composite::setCompositeState>(skel, states);
+}
+
+//==============================================================================
+BodyNodeStateVector getAllJointStates(const Skeleton* skel)
+{
+  return getAllMemberObjectData<
+      Skeleton, Joint, common::Composite, common::Composite::State,
+      &Skeleton::getNumJoints, &Skeleton::getJoint,
+      &common::Composite::getCompositeState>(skel);
+}
+
+//==============================================================================
+void setAllJointProperties(
+    Skeleton* skel, const BodyNodePropertiesVector& properties)
+{
+  setAllMemberObjectData<
+      Skeleton, Joint, common::Composite, common::Composite::Properties,
+      &Skeleton::getNumJoints, &Skeleton::getJoint,
+      &common::Composite::setCompositeProperties>(skel, properties);
+}
+
+//==============================================================================
+BodyNodePropertiesVector getAllJointProperties(const Skeleton* skel)
+{
+  return getAllMemberObjectData<
+      Skeleton, Joint, common::Composite, common::Composite::Properties,
+      &Skeleton::getNumJoints, &Skeleton::getJoint,
+      &common::Composite::getCompositeProperties>(skel);
+}
+
+} // namespace detail
 
 //==============================================================================
 Skeleton::Configuration::Configuration(
@@ -165,49 +343,15 @@ bool Skeleton::Configuration::operator!=(const Configuration& other) const
 }
 
 //==============================================================================
-Skeleton::Properties::Properties(
-    const std::string& _name,
-    bool _isMobile,
-    const Eigen::Vector3d& _gravity,
-    double _timeStep,
-    bool _enabledSelfCollisionCheck,
-    bool _enableAdjacentBodyCheck,
-    size_t _version)
-  : mName(_name),
-    mIsMobile(_isMobile),
-    mGravity(_gravity),
-    mTimeStep(_timeStep),
-    mEnabledSelfCollisionCheck(_enabledSelfCollisionCheck),
-    mEnabledAdjacentBodyCheck(_enableAdjacentBodyCheck),
-    mVersion(_version)
-{
-  // Do nothing
-}
-
-//==============================================================================
-Skeleton::ExtendedProperties::ExtendedProperties(
-    const BodyNodeExtendedProperties& bodyNodeProperties,
-    const JointExtendedProperties& jointProperties,
-    const std::vector<std::string>& parentNames,
-    const AddonProperties& addonProperties)
-  : mBodyNodeProperties(bodyNodeProperties),
-    mJointProperties(jointProperties),
-    mParentBodyNodeNames(parentNames),
-    mAddonProperties(addonProperties)
-{
-  // Do nothing
-}
-
-//==============================================================================
 SkeletonPtr Skeleton::create(const std::string& _name)
 {
-  return create(Properties(_name));
+  return create(AspectPropertiesData(_name));
 }
 
 //==============================================================================
-SkeletonPtr Skeleton::create(const Properties& _properties)
+SkeletonPtr Skeleton::create(const AspectPropertiesData& properties)
 {
-  SkeletonPtr skel(new Skeleton(_properties));
+  SkeletonPtr skel(new Skeleton(properties));
   skel->setPtr(skel);
   return skel;
 }
@@ -307,9 +451,8 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
     }
   }
 
-  skelClone->setProperties(getSkeletonProperties());
+  skelClone->setProperties(getAspectProperties());
   skelClone->setName(cloneName);
-  skelClone->mSkeletonP.mVersion = getVersion();
 
   return skelClone;
 }
@@ -377,81 +520,111 @@ Skeleton::Configuration Skeleton::getConfiguration(
 }
 
 //==============================================================================
-void Skeleton::setProperties(const Properties& _properties)
+void Skeleton::setState(const State& state)
 {
-  setName(_properties.mName);
-  setMobile(_properties.mIsMobile);
-  setGravity(_properties.mGravity);
-  setTimeStep(_properties.mTimeStep);
+  setCompositeState(state);
+}
 
-  if(_properties.mEnabledSelfCollisionCheck)
-    enableSelfCollision(_properties.mEnabledAdjacentBodyCheck);
+//==============================================================================
+Skeleton::State Skeleton::getState() const
+{
+  return getCompositeState();
+}
+
+//==============================================================================
+void Skeleton::setProperties(const Properties& properties)
+{
+  setCompositeProperties(properties);
+}
+
+//==============================================================================
+Skeleton::Properties Skeleton::getProperties() const
+{
+  return getCompositeProperties();
+}
+
+//==============================================================================
+void Skeleton::setProperties(const AspectProperties& properties)
+{
+  setAspectProperties(properties);
+}
+
+//==============================================================================
+void Skeleton::setAspectProperties(const AspectProperties& properties)
+{
+  setName(properties.mName);
+  setMobile(properties.mIsMobile);
+  setGravity(properties.mGravity);
+  setTimeStep(properties.mTimeStep);
+
+  if(properties.mEnabledSelfCollisionCheck)
+    enableSelfCollision(properties.mEnabledAdjacentBodyCheck);
   else
     disableSelfCollision();
 }
 
 //==============================================================================
-const Skeleton::Properties& Skeleton::getSkeletonProperties() const
+const Skeleton::AspectProperties& Skeleton::getSkeletonProperties() const
 {
-  return mSkeletonP;
+  return mAspectProperties;
 }
 
 //==============================================================================
 const std::string& Skeleton::setName(const std::string& _name)
 {
-  if(_name == mSkeletonP.mName && !_name.empty())
-    return mSkeletonP.mName;
+  if(_name == mAspectProperties.mName && !_name.empty())
+    return mAspectProperties.mName;
 
-  const std::string oldName = mSkeletonP.mName;
-  mSkeletonP.mName = _name;
+  const std::string oldName = mAspectProperties.mName;
+  mAspectProperties.mName = _name;
 
   mNameMgrForBodyNodes.setManagerName(
-        "Skeleton::BodyNode | "+mSkeletonP.mName);
+        "Skeleton::BodyNode | "+mAspectProperties.mName);
   mNameMgrForSoftBodyNodes.setManagerName(
-        "Skeleton::SoftBodyNode | "+mSkeletonP.mName);
+        "Skeleton::SoftBodyNode | "+mAspectProperties.mName);
   mNameMgrForJoints.setManagerName(
-        "Skeleton::Joint | "+mSkeletonP.mName);
+        "Skeleton::Joint | "+mAspectProperties.mName);
   mNameMgrForDofs.setManagerName(
-        "Skeleton::DegreeOfFreedom | "+mSkeletonP.mName);
+        "Skeleton::DegreeOfFreedom | "+mAspectProperties.mName);
   mNameMgrForMarkers.setManagerName(
-        "Skeleton::Marker | "+mSkeletonP.mName);
+        "Skeleton::Marker | "+mAspectProperties.mName);
 
   for(auto& mgr : mNodeNameMgrMap)
     mgr.second.setManagerName( std::string("Skeleton::") + mgr.first.name()
-                               + " | " + mSkeletonP.mName );
+                               + " | " + mAspectProperties.mName );
 
   ConstMetaSkeletonPtr me = mPtr.lock();
-  mNameChangedSignal.raise(me, oldName, mSkeletonP.mName);
+  mNameChangedSignal.raise(me, oldName, mAspectProperties.mName);
 
-  return mSkeletonP.mName;
+  return mAspectProperties.mName;
 }
 
 //==============================================================================
 const std::string& Skeleton::getName() const
 {
-  return mSkeletonP.mName;
+  return mAspectProperties.mName;
 }
 
 //==============================================================================
 const std::string& Skeleton::addEntryToBodyNodeNameMgr(BodyNode* _newNode)
 {
-  _newNode->mEntityP.mName =
+  _newNode->BodyNode::mAspectProperties.mName =
       mNameMgrForBodyNodes.issueNewNameAndAdd(_newNode->getName(), _newNode);
 
-  return _newNode->mEntityP.mName;
+  return _newNode->BodyNode::mAspectProperties.mName;
 }
 
 //==============================================================================
 const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint,
                                                     bool _updateDofNames)
 {
-  _newJoint->mJointP.mName =
+  _newJoint->mAspectProperties.mName =
       mNameMgrForJoints.issueNewNameAndAdd(_newJoint->getName(), _newJoint);
 
   if(_updateDofNames)
     _newJoint->updateDegreeOfFreedomNames();
 
-  return _newJoint->mJointP.mName;
+  return _newJoint->mAspectProperties.mName;
 }
 
 //==============================================================================
@@ -488,46 +661,46 @@ const std::string& Skeleton::addEntryToMarkerNameMgr(Marker* _newMarker)
 //==============================================================================
 void Skeleton::enableSelfCollision(bool _enableAdjacentBodyCheck)
 {
-  mSkeletonP.mEnabledSelfCollisionCheck = true;
-  mSkeletonP.mEnabledAdjacentBodyCheck = _enableAdjacentBodyCheck;
+  mAspectProperties.mEnabledSelfCollisionCheck = true;
+  mAspectProperties.mEnabledAdjacentBodyCheck = _enableAdjacentBodyCheck;
 }
 
 //==============================================================================
 void Skeleton::disableSelfCollision()
 {
-  mSkeletonP.mEnabledSelfCollisionCheck = false;
-  mSkeletonP.mEnabledAdjacentBodyCheck = false;
+  mAspectProperties.mEnabledSelfCollisionCheck = false;
+  mAspectProperties.mEnabledAdjacentBodyCheck = false;
 }
 
 //==============================================================================
 bool Skeleton::isEnabledSelfCollisionCheck() const
 {
-  return mSkeletonP.mEnabledSelfCollisionCheck;
+  return mAspectProperties.mEnabledSelfCollisionCheck;
 }
 
 //==============================================================================
 bool Skeleton::isEnabledAdjacentBodyCheck() const
 {
-  return mSkeletonP.mEnabledAdjacentBodyCheck;
+  return mAspectProperties.mEnabledAdjacentBodyCheck;
 }
 
 //==============================================================================
 void Skeleton::setMobile(bool _isMobile)
 {
-  mSkeletonP.mIsMobile = _isMobile;
+  mAspectProperties.mIsMobile = _isMobile;
 }
 
 //==============================================================================
 bool Skeleton::isMobile() const
 {
-  return mSkeletonP.mIsMobile;
+  return mAspectProperties.mIsMobile;
 }
 
 //==============================================================================
 void Skeleton::setTimeStep(double _timeStep)
 {
   assert(_timeStep > 0.0);
-  mSkeletonP.mTimeStep = _timeStep;
+  mAspectProperties.mTimeStep = _timeStep;
 
   for(size_t i=0; i<mTreeCache.size(); ++i)
     notifyArticulatedInertiaUpdate(i);
@@ -536,13 +709,13 @@ void Skeleton::setTimeStep(double _timeStep)
 //==============================================================================
 double Skeleton::getTimeStep() const
 {
-  return mSkeletonP.mTimeStep;
+  return mAspectProperties.mTimeStep;
 }
 
 //==============================================================================
 void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 {
-  mSkeletonP.mGravity = _gravity;
+  mAspectProperties.mGravity = _gravity;
   SET_ALL_FLAGS(mGravityForces);
   SET_ALL_FLAGS(mCoriolisAndGravityForces);
   ON_ALL_TREES(notifySupportUpdate);
@@ -551,19 +724,7 @@ void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 //==============================================================================
 const Eigen::Vector3d& Skeleton::getGravity() const
 {
-  return mSkeletonP.mGravity;
-}
-
-//==============================================================================
-size_t Skeleton::incrementVersion()
-{
-  return ++mSkeletonP.mVersion;
-}
-
-//==============================================================================
-size_t Skeleton::getVersion() const
-{
-  return mSkeletonP.mVersion;
+  return mAspectProperties.mGravity;
 }
 
 //==============================================================================
@@ -1172,41 +1333,6 @@ DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, ShapeNode )
 DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, EndEffector )
 
 //==============================================================================
-void Skeleton::setState(const Eigen::VectorXd& _state)
-{
-  assert(_state.size() % 2 == 0);
-
-  size_t index = 0;
-  size_t halfSize = _state.size() / 2;
-  Joint* joint;
-
-  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-  {
-    joint = mSkelCache.mBodyNodes[i]->getParentJoint();
-
-    const size_t dof = joint->getNumDofs();
-
-    if (dof)
-    {
-      joint->setPositions(_state.segment(index, dof));
-      joint->setVelocities(_state.segment(index + halfSize, dof));
-
-      index += dof;
-    }
-  }
-}
-
-//==============================================================================
-Eigen::VectorXd Skeleton::getState() const
-{
-  Eigen::VectorXd state(2 * getNumDofs());
-
-  state << getPositions(), getVelocities();
-
-  return state;
-}
-
-//==============================================================================
 void Skeleton::integratePositions(double _dt)
 {
   for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
@@ -1789,13 +1915,14 @@ const Eigen::VectorXd& Skeleton::getConstraintForces() const
 //}
 
 //==============================================================================
-Skeleton::Skeleton(const Properties& _properties)
-  : mSkeletonP(""),
-    mTotalMass(0.0),
+Skeleton::Skeleton(const AspectPropertiesData& properties)
+  : mTotalMass(0.0),
     mIsImpulseApplied(false),
     mUnionSize(1)
 {
-  setProperties(_properties);
+  createAspect<Aspect>(properties);
+  createAspect<detail::BodyNodeVectorProxyAspect>();
+  createAspect<detail::JointVectorProxyAspect>();
 }
 
 //==============================================================================
@@ -1934,7 +2061,7 @@ void Skeleton::registerJoint(Joint* _newJoint)
   if (nullptr == _newJoint)
   {
     dterr << "[Skeleton::registerJoint] Error: Attempting to add a nullptr "
-             "Joint to the Skeleton named [" << mSkeletonP.mName << "]. Report "
+             "Joint to the Skeleton named [" << mAspectProperties.mName << "]. Report "
              "this as a bug!\n";
     assert(false);
     return;
@@ -1994,7 +2121,7 @@ void Skeleton::registerNode(Node* _newNode)
   if(mNodeNameMgrMap.end() == it)
   {
     mNodeNameMgrMap[info] = common::NameManager<Node*>(
-          std::string("Skeleton::") + info.name() + " | " + mSkeletonP.mName,
+          std::string("Skeleton::") + info.name() + " | " + mAspectProperties.mName,
           info.name() );
 
     it = mNodeNameMgrMap.find(info);
@@ -2437,7 +2564,7 @@ void Skeleton::updateArticulatedInertia(size_t _tree) const
   for (std::vector<BodyNode*>::const_reverse_iterator it = cache.mBodyNodes.rbegin();
        it != cache.mBodyNodes.rend(); ++it)
   {
-    (*it)->updateArtInertia(mSkeletonP.mTimeStep);
+    (*it)->updateArtInertia(mAspectProperties.mTimeStep);
   }
 
   cache.mDirty.mArticulatedInertia = false;
@@ -2590,7 +2717,7 @@ void Skeleton::updateAugMassMatrix(size_t _treeIdx) const
     for (std::vector<BodyNode*>::const_reverse_iterator it =
          cache.mBodyNodes.rbegin(); it != cache.mBodyNodes.rend(); ++it)
     {
-      (*it)->aggregateAugMassMatrix(cache.mAugM, j, mSkeletonP.mTimeStep);
+      (*it)->aggregateAugMassMatrix(cache.mAugM, j, mAspectProperties.mTimeStep);
       size_t localDof = (*it)->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
@@ -2782,7 +2909,7 @@ void Skeleton::updateInvAugMassMatrix(size_t _treeIdx) const
     for (std::vector<BodyNode*>::const_iterator it = cache.mBodyNodes.begin();
          it != cache.mBodyNodes.end(); ++it)
     {
-      (*it)->aggregateInvAugMassMatrix(cache.mInvAugM, j, mSkeletonP.mTimeStep);
+      (*it)->aggregateInvAugMassMatrix(cache.mInvAugM, j, mAspectProperties.mTimeStep);
       size_t localDof = (*it)->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
@@ -2913,7 +3040,7 @@ void Skeleton::updateGravityForces(size_t _treeIdx) const
   for (std::vector<BodyNode*>::const_reverse_iterator it =
        cache.mBodyNodes.rbegin(); it != cache.mBodyNodes.rend(); ++it)
   {
-    (*it)->aggregateGravityForceVector(cache.mG, mSkeletonP.mGravity);
+    (*it)->aggregateGravityForceVector(cache.mG, mAspectProperties.mGravity);
   }
 
   cache.mDirty.mGravityForces = false;
@@ -2970,7 +3097,7 @@ void Skeleton::updateCoriolisAndGravityForces(size_t _treeIdx) const
   for (std::vector<BodyNode*>::const_reverse_iterator it =
        cache.mBodyNodes.rbegin(); it != cache.mBodyNodes.rend(); ++it)
   {
-    (*it)->aggregateCombinedVector(cache.mCg, mSkeletonP.mGravity);
+    (*it)->aggregateCombinedVector(cache.mCg, mAspectProperties.mGravity);
   }
 
   cache.mDirty.mCoriolisAndGravityForces = false;
@@ -3106,7 +3233,7 @@ const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
     cache.mFc[i] += cache.mDofs[i]->getConstraintImpulse();
 
   // Get force by dividing the impulse by the time step
-  cache.mFc = cache.mFc / mSkeletonP.mTimeStep;
+  cache.mFc = cache.mFc / mAspectProperties.mTimeStep;
 
   return cache.mFc;
 }
@@ -3314,14 +3441,14 @@ void Skeleton::computeForwardDynamics()
 
   for (auto it = mSkelCache.mBodyNodes.rbegin();
        it != mSkelCache.mBodyNodes.rend(); ++it)
-    (*it)->updateBiasForce(mSkeletonP.mGravity, mSkeletonP.mTimeStep);
+    (*it)->updateBiasForce(mAspectProperties.mGravity, mAspectProperties.mTimeStep);
 
   // Forward recursion
   for (auto& bodyNode : mSkelCache.mBodyNodes)
   {
     bodyNode->updateAccelerationFD();
     bodyNode->updateTransmittedForceFD();
-    bodyNode->updateJointForceFD(mSkeletonP.mTimeStep, true, true);
+    bodyNode->updateJointForceFD(mAspectProperties.mTimeStep, true, true);
   }
 }
 
@@ -3338,8 +3465,8 @@ void Skeleton::computeInverseDynamics(bool _withExternalForces,
   for (auto it = mSkelCache.mBodyNodes.rbegin();
        it != mSkelCache.mBodyNodes.rend(); ++it)
   {
-    (*it)->updateTransmittedForceID(mSkeletonP.mGravity, _withExternalForces);
-    (*it)->updateJointForceID(mSkeletonP.mTimeStep,
+    (*it)->updateTransmittedForceID(mAspectProperties.mGravity, _withExternalForces);
+    (*it)->updateJointForceID(mAspectProperties.mTimeStep,
                               _withDampingForces,
                               _withSpringForces);
   }
@@ -3580,7 +3707,7 @@ void Skeleton::computeImpulseForwardDynamics()
     bodyNode->updateVelocityChangeFD();
     bodyNode->updateTransmittedImpulse();
     bodyNode->updateJointImpulseFD();
-    bodyNode->updateConstrainedTerms(mSkeletonP.mTimeStep);
+    bodyNode->updateConstrainedTerms(mAspectProperties.mTimeStep);
   }
 }
 
@@ -3607,7 +3734,7 @@ double Skeleton::getPotentialEnergy() const
   for (std::vector<BodyNode*>::const_iterator it = mSkelCache.mBodyNodes.begin();
        it != mSkelCache.mBodyNodes.end(); ++it)
   {
-    PE += (*it)->getPotentialEnergy(mSkeletonP.mGravity);
+    PE += (*it)->getPotentialEnergy(mAspectProperties.mGravity);
     PE += (*it)->getParentJoint()->getPotentialEnergy();
   }
 

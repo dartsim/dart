@@ -73,12 +73,13 @@ TranslationalJoint::Properties TranslationalJoint::getTranslationalJointProperti
 }
 
 //==============================================================================
-TranslationalJoint::TranslationalJoint(const Properties& _properties)
-  : MultiDofJoint<3>(_properties)
+TranslationalJoint::TranslationalJoint(const Properties& properties)
+  : MultiDofJoint<3>(properties)
 {
-  // Inherited Joint Properties must be set in the final joint class or else we
-  // get pure virtual function calls
-  MultiDofJoint<3>::setProperties(_properties);
+  // Inherited Aspects must be created in the final joint class in reverse order
+  // or else we get pure virtual function calls
+  createMultiDofJointAspect(properties);
+  createJointAspect(properties);
 }
 
 //==============================================================================
@@ -110,19 +111,19 @@ bool TranslationalJoint::isCyclic(size_t /*_index*/) const
 void TranslationalJoint::updateDegreeOfFreedomNames()
 {
   if(!mDofs[0]->isNamePreserved())
-    mDofs[0]->setName(mJointP.mName + "_x", false);
+    mDofs[0]->setName(Joint::mAspectProperties.mName + "_x", false);
   if(!mDofs[1]->isNamePreserved())
-    mDofs[1]->setName(mJointP.mName + "_y", false);
+    mDofs[1]->setName(Joint::mAspectProperties.mName + "_y", false);
   if(!mDofs[2]->isNamePreserved())
-    mDofs[2]->setName(mJointP.mName + "_z", false);
+    mDofs[2]->setName(Joint::mAspectProperties.mName + "_z", false);
 }
 
 //==============================================================================
 void TranslationalJoint::updateLocalTransform() const
 {
-  mT = mJointP.mT_ParentBodyToJoint
+  mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(getPositionsStatic())
-       * mJointP.mT_ChildBodyToJoint.inverse();
+       * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
   assert(math::verifyTransform(mT));
@@ -133,7 +134,7 @@ void TranslationalJoint::updateLocalJacobian(bool _mandatory) const
 {
   if (_mandatory)
   {
-    mJacobian.bottomRows<3>() = mJointP.mT_ChildBodyToJoint.linear();
+    mJacobian.bottomRows<3>() = Joint::mAspectProperties.mT_ChildBodyToJoint.linear();
 
     // Verification
     assert(mJacobian.topRows<3>() == Eigen::Matrix3d::Zero());

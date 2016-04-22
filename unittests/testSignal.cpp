@@ -270,9 +270,9 @@ TEST(Signal, ReturnValues)
 }
 
 //==============================================================================
-void frameChangecCallback(const Entity* _entity,
-                          const Frame* _oldParentFrame,
-                          const Frame* _newParentFrame)
+void frameChangeCallback(const Entity* _entity,
+                         const Frame* _oldParentFrame,
+                         const Frame* _newParentFrame)
 {
   assert(_entity);
 
@@ -281,8 +281,11 @@ void frameChangecCallback(const Entity* _entity,
   std::string newFrameName
       = _newParentFrame == nullptr ? "(empty)" : _newParentFrame->getName();
 
-  std::cout << "[" << _entity->getName() << "]: "
-            << oldFrameName << " --> " << newFrameName << std::endl;
+  if(_newParentFrame)
+    std::cout << "[" << _entity->getName() << "]: "
+              << oldFrameName << " --> " << newFrameName << std::endl;
+  else
+    std::cout << "Entity (" << _entity << ") has been destroyed" << std::endl;
 }
 
 //==============================================================================
@@ -314,9 +317,9 @@ TEST(Signal, FrameSignals)
   SimpleFrame F2(&F1, "F2", tf2);
   SimpleFrame F3(&F2, "F3", tf3);
 
-  Connection cf1 = F1.onFrameChanged.connect(frameChangecCallback);
-  Connection cf2 = F2.onFrameChanged.connect(frameChangecCallback);
-  ScopedConnection cf3(F3.onFrameChanged.connect(frameChangecCallback));
+  Connection cf1 = F1.onFrameChanged.connect(frameChangeCallback);
+  Connection cf2 = F2.onFrameChanged.connect(frameChangeCallback);
+  ScopedConnection cf3(F3.onFrameChanged.connect(frameChangeCallback));
 
   Connection cv1 = F1.onNameChanged.connect(nameChangedCallback);
   Connection cv2 = F2.onNameChanged.connect(nameChangedCallback);

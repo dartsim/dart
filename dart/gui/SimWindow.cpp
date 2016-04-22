@@ -326,7 +326,7 @@ void SimWindow::drawBodyNode(const dynamics::BodyNode* bodyNode,
   mRI->transform(bodyNode->getRelativeTransform());
 
   // _ri->pushName(???); TODO(MXG): What should we do about this for Frames?
-  auto shapeNodes = bodyNode->getShapeNodesWith<dynamics::VisualAddon>();
+  auto shapeNodes = bodyNode->getShapeNodesWith<dynamics::VisualAspect>();
   for (const auto& shapeNode : shapeNodes)
     drawShapeFrame(shapeNode, color, useDefaultColor);
   // _ri.popName();
@@ -366,16 +366,16 @@ void SimWindow::drawShapeFrame(const dynamics::ShapeFrame* shapeFrame,
   if (!mRI)
     return;
 
-  const auto& visualAddon = shapeFrame->getVisualAddon();
+  const auto& visualAspect = shapeFrame->getVisualAspect();
 
-  if (!visualAddon || visualAddon->isHidden())
+  if (!visualAspect || visualAspect->isHidden())
     return;
 
   mRI->pushMatrix();
   mRI->transform(shapeFrame->getRelativeTransform());
 
   if (useDefaultColor)
-    drawShape(shapeFrame->getShape().get(), visualAddon->getRGBA());
+    drawShape(shapeFrame->getShape().get(), visualAspect->getRGBA());
   else
     drawShape(shapeFrame->getShape().get(), color);
 

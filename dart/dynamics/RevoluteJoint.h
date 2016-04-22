@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_REVOLUTEJOINT_H_
 #define DART_DYNAMICS_REVOLUTEJOINT_H_
 
-#include "dart/dynamics/detail/RevoluteJointProperties.h"
+#include "dart/dynamics/detail/RevoluteJointAspect.h"
 
 namespace dart {
 namespace dynamics {
@@ -50,10 +50,9 @@ public:
   friend class Skeleton;
   using UniqueProperties = detail::RevoluteJointUniqueProperties;
   using Properties = detail::RevoluteJointProperties;
-  using Addon = detail::RevoluteJointAddon;
   using Base = detail::RevoluteJointBase;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR(Addon, RevoluteJointAddon)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, RevoluteJointAspect)
 
   RevoluteJoint(const RevoluteJoint&) = delete;
 
@@ -65,6 +64,9 @@ public:
 
   /// Set the Properties of this RevoluteJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectProperties of this RevoluteJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this RevoluteJoint
   Properties getRevoluteJointProperties() const;
@@ -96,7 +98,7 @@ public:
 protected:
 
   /// Constructor called by Skeleton class
-  RevoluteJoint(const Properties& _properties);
+  RevoluteJoint(const Properties& properties);
 
   // Documentation inherited
   virtual Joint* clone() const override;
@@ -111,8 +113,6 @@ protected:
   virtual void updateLocalJacobianTimeDeriv() const override;
 
 public:
-
-  template<class AddonType> friend void detail::JointPropertyUpdate(AddonType*);
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

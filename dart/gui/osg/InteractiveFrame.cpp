@@ -48,7 +48,7 @@ namespace osg {
 InteractiveTool::InteractiveTool(InteractiveFrame* frame, double defaultAlpha,
                                  const std::string& name)
   : Entity(ConstructFrame),
-    Frame(frame, name),
+    Frame(frame),
     SimpleFrame(frame, name),
     mDefaultAlpha(defaultAlpha),
     mEnabled(true),
@@ -62,7 +62,7 @@ void InteractiveTool::setEnabled(bool enabled)
 {
   mEnabled = enabled;
   for(auto& frame : mSimpleFrames)
-    frame->getVisualAddon(true)->setHidden(!enabled);
+    frame->getVisualAspect(true)->setHidden(!enabled);
 }
 
 //==============================================================================
@@ -75,7 +75,7 @@ bool InteractiveTool::getEnabled() const
 void InteractiveTool::setAlpha(double alpha)
 {
   for(auto& frame : mSimpleFrames)
-    frame->getVisualAddon(true)->setAlpha(alpha);
+    frame->getVisualAspect(true)->setAlpha(alpha);
 }
 
 //==============================================================================
@@ -119,7 +119,7 @@ dart::dynamics::SimpleFrame* InteractiveTool::addShapeFrame(
 
   auto shapeFrame = mSimpleFrames.back().get();
   shapeFrame->setShape(shape);
-  shapeFrame->createVisualAddon();
+  shapeFrame->createVisualAspect();
 
   return shapeFrame;
 }
@@ -160,8 +160,8 @@ InteractiveFrame::InteractiveFrame(
     const std::string& name,
     const Eigen::Isometry3d& relativeTransform,
     double size_scale, double thickness_scale)
-  : Entity(referenceFrame, name, false),
-    Frame(referenceFrame, name),
+  : Entity(referenceFrame, false),
+    Frame(referenceFrame),
     SimpleFrame(referenceFrame, name, relativeTransform)
 {
   for(size_t i=0; i<3; ++i)
@@ -233,7 +233,7 @@ dart::dynamics::SimpleFrame* InteractiveFrame::addShapeFrame(
 
   auto shapeFrame = mSimpleFrames.back().get();
   shapeFrame->setShape(shape);
-  shapeFrame->createVisualAddon();
+  shapeFrame->createVisualAspect();
 
   return shapeFrame;
 }
@@ -582,7 +582,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     Eigen::Vector3d c(Eigen::Vector3d::Zero());
     c[i] = 1.0;
     auto shapeFrame = addShapeFrame(line);
-    shapeFrame->getVisualAddon(true)->setColor(c);
+    shapeFrame->getVisualAspect(true)->setColor(c);
   }
 }
 

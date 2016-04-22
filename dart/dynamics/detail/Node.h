@@ -202,7 +202,7 @@ void AccessoryNode<NodeType>::reattach()
   mSkelCache.mNodeMap[typeid( NodeName )] = std::vector<dart::dynamics::Node*>(); \
   m ## PluralName ## Iterator = mSkelCache.mNodeMap.find(typeid( NodeName ));     \
   mNodeNameMgrMap[typeid( NodeName )] = dart::common::NameManager<Node*>(         \
-    std::string("Skeleton::") + #NodeName + " | " + mSkeletonP.mName );           \
+    std::string("Skeleton::") + #NodeName + " | " + mAspectProperties.mName );           \
   mNameMgrFor ## PluralName = &mNodeNameMgrMap.find(typeid( NodeName) )->second;
 
 //==============================================================================

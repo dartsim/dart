@@ -70,6 +70,10 @@ TEST(NameManagement, Skeleton)
   EXPECT_FALSE(body2->getName() == body3->getName());
   EXPECT_FALSE(body3->getName() == body1->getName());
 
+  EXPECT_TRUE(body1->getName() == "BodyNode");
+  EXPECT_TRUE(body2->getName() == "BodyNode(1)");
+  EXPECT_TRUE(body3->getName() == "BodyNode(2)");
+
   EXPECT_FALSE(joint1->getName() == joint2->getName());
   EXPECT_FALSE(joint2->getName() == joint3->getName());
   EXPECT_FALSE(joint3->getName() == joint1->getName());
@@ -179,6 +183,13 @@ TEST(NameManagement, Skeleton)
   EXPECT_TRUE(skel->getBodyNode("nonexistent_name") == nullptr);
   EXPECT_TRUE(skel->getJoint("nonexistent_name") == nullptr);
   EXPECT_TRUE(skel->getSoftBodyNode("nonexistent_name") == nullptr);
+
+  // Test Node Names
+  EndEffector* ee1 = body1->createEndEffector("ee");
+  EndEffector* ee2 = body1->createEndEffector("ee");
+
+  EXPECT_TRUE(skel->getEndEffector("ee") == ee1);
+  EXPECT_TRUE(skel->getEndEffector("ee(1)") == ee2);
 }
 
 //==============================================================================
@@ -186,9 +197,9 @@ TEST(NameManagement, SetPattern)
 {
   dart::common::NameManager< std::shared_ptr<Entity> > test_mgr("test", "name");
 
-  std::shared_ptr<Entity> entity0(new Entity(Frame::World(), "name", false));
-  std::shared_ptr<Entity> entity1(new Entity(Frame::World(), "name", false));
-  std::shared_ptr<Entity> entity2(new Entity(Frame::World(), "name", false));
+  std::shared_ptr<Entity> entity0(new SimpleFrame(Frame::World(), "name"));
+  std::shared_ptr<Entity> entity1(new SimpleFrame(Frame::World(), "name"));
+  std::shared_ptr<Entity> entity2(new SimpleFrame(Frame::World(), "name"));
 
   test_mgr.setPattern("%s(%d)");
 

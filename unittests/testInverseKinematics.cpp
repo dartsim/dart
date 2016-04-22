@@ -52,23 +52,23 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
   SkeletonPtr robot = Skeleton::create();
 
   // Create the first link
-  BodyNode::Properties node(std::string("link1"));
+  BodyNode::Properties node(BodyNode::AspectProperties("link1"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim1(2)/2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim1));
 
   BodyNode* parent_node = robot->createJointAndBodyNodePair<FreeJoint>(nullptr,
     MultiDofJoint<6>::Properties(std::string("joint1")), node).second;
-  parent_node->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
+  parent_node->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
         shape);
 
   // Create the second link
-  node = BodyNode::Properties(std::string("link2"));
+  node = BodyNode::Properties(BodyNode::AspectProperties("link2"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim2(2)/2.0));
   shape = std::shared_ptr<Shape>(new BoxShape(dim2));
 
   std::pair<Joint*, BodyNode*> pair2 = add1DofJoint(
         robot, parent_node, node, "joint2", 0.0, -constantsd::pi(), constantsd::pi(), type2);
-  pair2.second->createShapeNodeWith<VisualAddon, CollisionAddon, DynamicsAddon>(
+  pair2.second->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
         shape);
 
   Joint* joint = pair2.first;

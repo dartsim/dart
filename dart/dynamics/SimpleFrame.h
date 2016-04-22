@@ -68,10 +68,16 @@ public:
   /// Destructor
   virtual ~SimpleFrame();
 
+  // Documentation inherited
+  const std::string& setName(const std::string& _name) override;
+
+  // Documentation inherited
+  const std::string& getName() const override;
+
   /// Create a new SimpleFrame with the same world transform, velocity, and
   /// acceleration as this one. _refFrame will be used as the reference Frame
   /// of the new SimpleFrame.
-  virtual std::shared_ptr<SimpleFrame> clone(Frame* _refFrame = Frame::World()) const;
+  std::shared_ptr<SimpleFrame> clone(Frame* _refFrame = Frame::World()) const;
 
   /// Make the world transform, world velocity, and world acceleration of this
   /// SimpleFrame match another Frame. The _refFrame argument will be the new
@@ -129,7 +135,7 @@ public:
                    const Frame* _withRespectTo = Frame::World());
 
   // Documentation inherited
-  const Eigen::Isometry3d& getRelativeTransform() const;
+  const Eigen::Isometry3d& getRelativeTransform() const override;
 
   //--------------------------------------------------------------------------
   // Velocity
@@ -154,7 +160,7 @@ public:
                                   const Frame* _inCoordinatesOf);
 
   // Documentation inherited
-  virtual const Eigen::Vector6d& getRelativeSpatialVelocity() const;
+  const Eigen::Vector6d& getRelativeSpatialVelocity() const override;
 
   //--------------------------------------------------------------------------
   // Acceleration
@@ -175,13 +181,13 @@ public:
       const Frame* _inCoordinatesOf);
 
   // Documentation inherited
-  virtual const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
+  const Eigen::Vector6d& getRelativeSpatialAcceleration() const override;
 
   // Documentation inherited
-  virtual const Eigen::Vector6d& getPrimaryRelativeAcceleration() const;
+  const Eigen::Vector6d& getPrimaryRelativeAcceleration() const override;
 
   // Documentation inherited
-  virtual const Eigen::Vector6d& getPartialAcceleration() const;
+  const Eigen::Vector6d& getPartialAcceleration() const override;
 
   //--------------------------------------------------------------------------
   // Classic Method
@@ -208,6 +214,9 @@ public:
 
 protected:
 
+  /// Name of this SimpleFrame
+  std::string mName;
+
   /// Relative transform of the SimpleFrame
   Eigen::Isometry3d mRelativeTf;
 
@@ -219,6 +228,10 @@ protected:
 
   /// Partial Acceleration of this Frame
   mutable Eigen::Vector6d mPartialAcceleration;
+
+public:
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 };
 

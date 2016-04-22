@@ -40,23 +40,16 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Signal.h"
-#include "dart/dynamics/FixedFrame.h"
-#include "dart/dynamics/ShapeFrame.h"
-#include "dart/dynamics/Node.h"
-#include "dart/dynamics/TemplatedJacobianNode.h"
+#include "dart/dynamics/detail/ShapeNode.h"
 
 namespace dart {
 namespace dynamics {
 
-class VisualAddon;
-class CollisionAddon;
-class DynamicsAddon;
-class ShapeFrame;
+class VisualAspect;
+class CollisionAspect;
+class DynamicsAspect;
 
-class ShapeNode : public virtual FixedFrame,
-                  public ShapeFrame,
-                  public AccessoryNode<ShapeNode>,
-                  public TemplatedJacobianNode<ShapeNode>
+class ShapeNode : public detail::ShapeNodeCompositeBase
 {
 public:
 
@@ -72,50 +65,19 @@ public:
                             const Eigen::Isometry3d& oldTransform,
                             const Eigen::Isometry3d& newTransform)>;
 
-  using AddonProperties = common::AddonManager::Properties;
+  using BasicProperties = common::Composite::MakeProperties<
+      NameAspect,
+      FixedFrame,
+      ShapeFrame>;
 
-  struct UniqueProperties
-  {
-    /// The current relative transform of the Shape in the ShapeNode
-    Eigen::Isometry3d mRelativeTransform;
-    // TODO(JS): Consider moving this to a FixedFrame::State
-    // (or FixedFrame::Properties) struct and the inheriting that struct.
-    // Endeffector has similar issue.
+  using Properties = common::Composite::Properties;
 
-    /// Composed constructor
-    UniqueProperties(
-        const Eigen::Isometry3d& relativeTransform
-            = Eigen::Isometry3d::Identity());
-  };
-
-  struct Properties : ShapeFrame::Properties, UniqueProperties
-  {
-    /// Composed constructor
-    Properties(
-        const ShapeFrame::Properties& shapeFrameProperties
-            = ShapeFrame::Properties(),
-        const ShapeNode::UniqueProperties& shapeNodeProperties
-            = ShapeNode::UniqueProperties(),
-        const AddonProperties& addonProperties = AddonProperties());
-
-    /// Composed move constructor
-    Properties(
-        ShapeFrame::Properties&& shapeFrameProperties,
-        ShapeNode::UniqueProperties&& shapeNodeProperties,
-        AddonProperties&& addonProperties);
-
-    /// The properties of the ShapeNode's Addons
-    AddonProperties mAddonProperties;
-  };
 
   /// Destructor
   virtual ~ShapeNode() = default;
 
   /// Set the Properties of this ShapeNode
   void setProperties(const Properties& properties);
-
-  /// Set the Properties of this ShapeNode
-  void setProperties(const UniqueProperties& properties);
 
   /// Get the Properties of this ShapeNode
   const Properties getShapeNodeProperties() const;
@@ -129,18 +91,8 @@ public:
   /// Same as copy(const ShapeNode&)
   ShapeNode& operator=(const ShapeNode& other);
 
-  /// Set name. If the name is already taken, this will return an altered
-  /// version which will be used by the Skeleton
-  const std::string& setName(const std::string& _name) override;
-
-  // Documentation inherited
-  size_t incrementVersion() override;
-
-  // Documentation inherited
-  size_t getVersion() const override;
-
   /// Set transformation of this shape node relative to the parent frame
-  void setRelativeTransform(const Eigen::Isometry3d& transform);
+  void setRelativeTransform(const Eigen::Isometry3d& transform) override;
 
   /// Set rotation of this shape node relative to the parent frame
   void setRelativeRotation(const Eigen::Matrix3d& rotation);
@@ -161,72 +113,6 @@ public:
   Eigen::Vector3d getOffset() const;
 
   // Documentation inherited
-  std::shared_ptr<Skeleton> getSkeleton() override;
-
-  // Documentation inherited
-  std::shared_ptr<const Skeleton> getSkeleton() const override;
-
-  // Documentation inherited
-  bool dependsOn(size_t genCoordIndex) const override;
-
-  // Documentation inherited
-  size_t getNumDependentGenCoords() const override;
-
-  // Documentation inherited
-  size_t getDependentGenCoordIndex(size_t arrayIndex) const override;
-
-  // Documentation inherited
-  const std::vector<size_t>& getDependentGenCoordIndices() const override;
-
-  // Documentation inherited
-  size_t getNumDependentDofs() const override;
-
-  // Documentation inherited
-  DegreeOfFreedom* getDependentDof(size_t index) override;
-
-  // Documentation inherited
-  const DegreeOfFreedom* getDependentDof(size_t index) const override;
-
-  // Documentation inherited
-  const std::vector<DegreeOfFreedom*>& getDependentDofs() override;
-
-  // Documentation inherited
-  const std::vector<const DegreeOfFreedom*>& getDependentDofs() const override;
-
-  // Documentation inherited
-  const std::vector<const DegreeOfFreedom*> getChainDofs() const override;
-
-  //----------------------------------------------------------------------------
-  /// \{ \name Jacobian Functions
-  //----------------------------------------------------------------------------
-
-  // Documentation inherited
-  const math::Jacobian& getJacobian() const override final;
-
-  // Prevent the inherited getJacobian functions from being shadowed
-  using TemplatedJacobianNode<ShapeNode>::getJacobian;
-
-  // Documentation inherited
-  const math::Jacobian& getWorldJacobian() const override final;
-
-  // Prevent the inherited getWorldJacobian functions from being shadowed
-  using TemplatedJacobianNode<ShapeNode>::getWorldJacobian;
-
-  // Documentation inherited
-  const math::Jacobian& getJacobianSpatialDeriv() const override final;
-
-  // Prevent the inherited getJacobianSpatialDeriv functions from being shadowed
-  using TemplatedJacobianNode<ShapeNode>::getJacobianSpatialDeriv;
-
-  // Documentation inherited
-  const math::Jacobian& getJacobianClassicDeriv() const override final;
-
-  // Prevent the inherited getJacobianClassicDeriv functions from being shadowed
-  using TemplatedJacobianNode<ShapeNode>::getJacobianClassicDeriv;
-
-  /// \}
-
-  // Documentation inherited
   ShapeNode* asShapeNode() override;
 
   // Documentation inherited
@@ -235,7 +121,7 @@ public:
 protected:
 
   /// Constructor used by the Skeleton class
-  ShapeNode(BodyNode* bodyNode, const Properties& properties);
+  ShapeNode(BodyNode* bodyNode, const BasicProperties& properties);
 
   /// Constructor used by the Skeleton class
   ShapeNode(BodyNode* bodyNode, const ShapePtr& shape,
@@ -244,63 +130,6 @@ protected:
   /// Create a clone of this ShapeNode. This may only be called by the Skeleton
   /// class.
   Node* cloneNode(BodyNode* parent) const override;
-
-  /// Update the Jacobian of this ShapeNode. getJacobian() calls this function
-  /// if mIsShapeNodeJacobianDirty is true.
-  void updateShapeNodeJacobian() const;
-
-  /// Update the World Jacobian cache.
-  void updateWorldJacobian() const;
-
-  /// Update the spatial time derivative of the ShapeNode Jacobian.
-  /// getJacobianSpatialDeriv() calls this function if
-  /// mIsShapeNodeJacobianSpatialDerivDirty is true.
-  void updateShapeNodeJacobianSpatialDeriv() const;
-
-  /// Update the classic time derivative of the ShapeNode Jacobian.
-  /// getJacobianClassicDeriv() calls this function if
-  /// mIsWorldJacobianClassicDerivDirty is true.
-  void updateWorldJacobianClassicDeriv() const;
-
-protected:
-
-  /// Properties of this ShapeNode
-  UniqueProperties mShapeNodeP;
-
-  /// Cached Jacobian of this ShapeNode
-  ///
-  /// Do not use directly! Use getJacobian() to access this quantity
-  mutable math::Jacobian mShapeNodeJacobian;
-
-  /// Cached World Jacobian of this ShapeNode
-  ///
-  /// Do not use directly! Use getWorldJacobian() to access this quantity
-  mutable math::Jacobian mWorldJacobian;
-
-  /// Spatial time derivative of ShapeNode Jacobian
-  ///
-  /// Do not use directly! Use getJacobianSpatialDeriv() to access this quantity
-  mutable math::Jacobian mShapeNodeJacobianSpatialDeriv;
-
-  /// Classic time derivative of the ShapeNode Jacobian
-  ///
-  /// Do not use directly! Use getJacobianClassicDeriv() to access this quantity
-  mutable math::Jacobian mWorldJacobianClassicDeriv;
-
-  /// Shape updated signal
-  ShapeUpdatedSignal mShapeUpdatedSignal;
-
-  /// Relative transformation updated signal
-  RelativeTransformUpdatedSignal mRelativeTransformUpdatedSignal;
-
-public:
-
-  /// Slot register for shape updated signal
-  common::SlotRegister<ShapeUpdatedSignal> onShapeUpdated;
-
-  /// Slot register for relative transformation updated signal
-  common::SlotRegister<RelativeTransformUpdatedSignal>
-      onRelativeTransformUpdated;
 
 };
 

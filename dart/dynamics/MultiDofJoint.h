@@ -47,8 +47,8 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/common/RequiresAddon.h"
-#include "dart/dynamics/detail/MultiDofJointProperties.h"
+#include "dart/common/RequiresAspect.h"
+#include "dart/dynamics/detail/MultiDofJointAspect.h"
 
 namespace dart {
 namespace dynamics {
@@ -58,20 +58,19 @@ class Skeleton;
 
 /// class MultiDofJoint
 template<size_t DOF>
-class MultiDofJoint :
-    public Joint,
-    public virtual common::RequiresAddon< detail::MultiDofJointAddon<DOF> >
+class MultiDofJoint : public detail::MultiDofJointBase< MultiDofJoint<DOF>, DOF >
 {
 public:
 
   constexpr static size_t NumDofs = DOF;
   using Vector = Eigen::Matrix<double, DOF, 1>;
-
+  using Base = detail::MultiDofJointBase<MultiDofJoint<DOF>, DOF>;
   using UniqueProperties = detail::MultiDofJointUniqueProperties<DOF>;
   using Properties = detail::MultiDofJointProperties<DOF>;
-  using Addon = detail::MultiDofJointAddon<DOF>;
+  using AspectState = typename Base::AspectState;
+  using AspectProperties = typename Base::AspectProperties;
 
-  DART_BAKE_SPECIALIZED_ADDON_IRREGULAR( typename MultiDofJoint<DOF>::Addon, MultiDofJointAddon )
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR( typename MultiDofJoint<DOF>::Aspect, MultiDofJointAspect )
 
   MultiDofJoint(const MultiDofJoint&) = delete;
 
@@ -83,6 +82,12 @@ public:
 
   /// Set the Properties of this MultiDofJoint
   void setProperties(const UniqueProperties& _properties);
+
+  /// Set the AspectState of this MultiDofJoint
+  void setAspectState(const AspectState& state);
+
+  /// Set the AspectProperties of this MultiDofJoint
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the Properties of this MultiDofJoint
   Properties getMultiDofJointProperties() const;
@@ -134,7 +139,7 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setCommand(size_t _index, double _command) override;
+  virtual void setCommand(size_t _index, double command) override;
 
   // Documentation inherited
   virtual double getCommand(size_t _index) const override;
@@ -418,7 +423,7 @@ public:
 protected:
 
   /// Constructor called by inheriting classes
-  MultiDofJoint(const Properties& _properties);
+  MultiDofJoint(const Properties& properties);
 
   // Docuemntation inherited
   void registerDofs() override;
@@ -597,49 +602,6 @@ protected:
 
   /// Array of DegreeOfFreedom objects
   std::array<DegreeOfFreedom*, DOF> mDofs;
-
-  /// Command
-  Vector mCommands;
-
-  //----------------------------------------------------------------------------
-  // Configuration
-  //----------------------------------------------------------------------------
-
-  /// Position
-  Vector mPositions;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  Vector mPositionDeriv;
-
-  //----------------------------------------------------------------------------
-  // Velocity
-  //----------------------------------------------------------------------------
-
-  /// Generalized velocity
-  Vector mVelocities;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  Vector mVelocitiesDeriv;
-
-  //----------------------------------------------------------------------------
-  // Acceleration
-  //----------------------------------------------------------------------------
-
-  /// Generalized acceleration
-  Vector mAccelerations;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  Vector mAccelerationsDeriv;
-
-  //----------------------------------------------------------------------------
-  // Force
-  //----------------------------------------------------------------------------
-
-  /// Generalized force
-  Vector mForces;
-
-  /// Derivatives w.r.t. an arbitrary scalr variable
-  Vector mForcesDeriv;
 
   //----------------------------------------------------------------------------
   // Impulse
