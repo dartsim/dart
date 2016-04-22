@@ -893,16 +893,6 @@ public:
 
     if( ::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType() )
     {
-      if( ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Tab )
-      {
-        if(mViewer->isRecording())
-          mViewer->pauseRecording();
-        else
-          mViewer->record("/home/grey/dump");
-
-        mViewer->captureScreen("/home/grey/dump/capture.png");
-      }
-
       if( ea.getKey() == 'p' )
       {
         for(size_t i=0; i < mHubo->getNumDofs(); ++i)

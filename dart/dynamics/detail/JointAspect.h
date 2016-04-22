@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_JOINT_H_
-#define DART_DYNAMICS_DETAIL_JOINT_H_
+#ifndef DART_DYNAMICS_DETAIL_JOINTASPECT_H_
+#define DART_DYNAMICS_DETAIL_JOINTASPECT_H_
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -141,4 +141,4 @@ public:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_JOINT_H_
+#endif // DART_DYNAMICS_DETAIL_JOINTASPECT_H_
