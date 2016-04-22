@@ -102,8 +102,8 @@ public:
   double getPitch() const;
 
   // Documentation inherited
-  const GeometricJoint<math::RealSpace>::JacobianMatrix getLocalJacobianStatic(
-      const GeometricJoint<math::RealSpace>::Vector& positions) const override;
+  const GeometricJoint<math::R1Space>::JacobianMatrix getLocalJacobianStatic(
+      const GeometricJoint<math::R1Space>::Vector& positions) const override;
 
 protected:
 

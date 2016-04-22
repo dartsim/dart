@@ -113,7 +113,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using GeometricJoint<math::RealVector2Space>::getLocalJacobianStatic;
+  using GeometricJoint<math::R2Space>::getLocalJacobianStatic;
 
   // Documentation inherited
   void updateDegreeOfFreedomNames() override;

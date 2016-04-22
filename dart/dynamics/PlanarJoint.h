@@ -56,7 +56,7 @@ public:
   using PlaneType = detail::PlaneType;
   using UniqueProperties = detail::PlanarJointUniqueProperties;
   using Properties = detail::PlanarJointProperties;
-  using BaseClass = GeometricJoint<math::RealVector3Space>;
+  using BaseClass = GeometricJoint<math::R3Space>;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, PlanarJointAspect)
 

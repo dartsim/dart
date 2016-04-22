@@ -63,12 +63,12 @@ struct RevoluteJointUniqueProperties
 
 //==============================================================================
 struct RevoluteJointProperties :
-    GeometricJoint<math::RealSpace>::Properties,
+    GeometricJoint<math::R1Space>::Properties,
     RevoluteJointUniqueProperties
 {
   RevoluteJointProperties(
-      const GeometricJoint<math::RealSpace>::Properties& geometricJointProperties =
-          GeometricJoint<math::RealSpace>::Properties(),
+      const GeometricJoint<math::R1Space>::Properties& geometricJointProperties =
+          GeometricJoint<math::R1Space>::Properties(),
       const RevoluteJointUniqueProperties& revoluteProperties =
           RevoluteJointUniqueProperties());
 
@@ -77,7 +77,7 @@ struct RevoluteJointProperties :
 
 //==============================================================================
 using RevoluteJointBase = common::EmbedPropertiesOnTopOf<
-    RevoluteJoint, RevoluteJointUniqueProperties, GeometricJoint<math::RealSpace> >;
+    RevoluteJoint, RevoluteJointUniqueProperties, GeometricJoint<math::R1Space> >;
 
 } // namespace detail
 

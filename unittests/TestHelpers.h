@@ -126,7 +126,7 @@ std::pair<Joint*, BodyNode*> add1DofJoint(SkeletonPtr skel,
     BodyNode* parent, const BodyNode::Properties& node,
     const std::string& name, double val, double min, double max, int type)
 {
-  GeometricJoint<RealSpace>::Properties properties(name);
+  GeometricJoint<R1Space>::Properties properties(name);
   properties.mPositionLowerLimits[0] = min;
   properties.mPositionUpperLimits[0] = max;
   std::pair<Joint*, BodyNode*> newComponent;

@@ -70,13 +70,13 @@ struct EulerJointUniqueProperties
 
 //==============================================================================
 struct EulerJointProperties :
-    GeometricJoint<math::RealVector3Space>::Properties,
+    GeometricJoint<math::R3Space>::Properties,
     EulerJointUniqueProperties
 {
   /// Composed constructor
   EulerJointProperties(
-      const GeometricJoint<math::RealVector3Space>::Properties& geometricJointProperties =
-          GeometricJoint<math::RealVector3Space>::Properties(),
+      const GeometricJoint<math::R3Space>::Properties& geometricJointProperties =
+          GeometricJoint<math::R3Space>::Properties(),
       const EulerJointUniqueProperties& eulerJointProperties =
           EulerJointUniqueProperties());
 
@@ -85,7 +85,7 @@ struct EulerJointProperties :
 
 //==============================================================================
 using EulerJointBase = common::EmbedPropertiesOnTopOf<
-    EulerJoint, EulerJointUniqueProperties, GeometricJoint<math::RealVector3Space> >;
+    EulerJoint, EulerJointUniqueProperties, GeometricJoint<math::R3Space> >;
 
 } // namespace detail
 } // namespace dynamics

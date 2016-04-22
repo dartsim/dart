@@ -141,9 +141,9 @@ void PlanarJointUniqueProperties::setArbitraryPlane(
 
 //==============================================================================
 PlanarJointProperties::PlanarJointProperties(
-    const GeometricJoint<math::RealVector3Space>::Properties& geometricJointProperties,
+    const GeometricJoint<math::R3Space>::Properties& geometricJointProperties,
     const PlanarJointUniqueProperties& planarProperties)
-  : GeometricJoint<math::RealVector3Space>::Properties(geometricJointProperties),
+  : GeometricJoint<math::R3Space>::Properties(geometricJointProperties),
     PlanarJointUniqueProperties(planarProperties)
 {
   // Do nothing

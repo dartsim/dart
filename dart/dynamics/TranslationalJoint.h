@@ -45,13 +45,13 @@ namespace dart {
 namespace dynamics {
 
 /// class TranslationalJoint
-class TranslationalJoint : public GeometricJoint<math::RealVector3Space>
+class TranslationalJoint : public GeometricJoint<math::R3Space>
 {
 public:
 
   friend class Skeleton;
 
-  using BaseClass = GeometricJoint<math::RealVector3Space>;
+  using BaseClass = GeometricJoint<math::R3Space>;
 
   struct Properties : BaseClass::Properties
   {

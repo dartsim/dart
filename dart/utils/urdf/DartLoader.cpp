@@ -333,7 +333,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   basicProperties.mT_ParentBodyToJoint =
       toEigen(_jt->parent_to_joint_origin_transform);
 
-  dynamics::GeometricJoint<math::RealSpace>::UniqueProperties singleDof;
+  dynamics::GeometricJoint<math::R1Space>::UniqueProperties singleDof;
   if(_jt->limits)
   {
     singleDof.mPositionLowerLimits[0] = _jt->limits->lower;
@@ -374,7 +374,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::CONTINUOUS:
     {
       dynamics::RevoluteJoint::Properties properties(
-            dynamics::GeometricJoint<math::RealSpace>::Properties(basicProperties, singleDof),
+            dynamics::GeometricJoint<math::R1Space>::Properties(basicProperties, singleDof),
             toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
@@ -385,7 +385,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::PRISMATIC:
     {
       dynamics::PrismaticJoint::Properties properties(
-            dynamics::GeometricJoint<math::RealSpace>::Properties(basicProperties, singleDof),
+            dynamics::GeometricJoint<math::R1Space>::Properties(basicProperties, singleDof),
             toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(

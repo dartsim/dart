@@ -60,9 +60,9 @@ struct RealVectorSpace
   using JacobianMatrix = Eigen::Matrix<double, 6, NumDofs>;
 };
 
-using RealSpace = RealVectorSpace<1u>;
-using RealVector2Space = RealVectorSpace<2u>;
-using RealVector3Space = RealVectorSpace<3u>;
+using R1Space = RealVectorSpace<1u>;
+using R2Space = RealVectorSpace<2u>;
+using R3Space = RealVectorSpace<3u>;
 
 //==============================================================================
 struct SO3Space

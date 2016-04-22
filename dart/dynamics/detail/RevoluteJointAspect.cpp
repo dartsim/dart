@@ -50,9 +50,9 @@ RevoluteJointUniqueProperties::RevoluteJointUniqueProperties(
 
 //==============================================================================
 RevoluteJointProperties::RevoluteJointProperties(
-    const GeometricJoint<math::RealSpace>::Properties& geometricJointProperties,
+    const GeometricJoint<math::R1Space>::Properties& geometricJointProperties,
     const RevoluteJointUniqueProperties& revoluteProperties)
-  : GeometricJoint<math::RealSpace>::Properties(geometricJointProperties),
+  : GeometricJoint<math::R1Space>::Properties(geometricJointProperties),
     RevoluteJointUniqueProperties(revoluteProperties)
 {
   // Do nothing

@@ -51,9 +51,9 @@ ScrewJointUniqueProperties::ScrewJointUniqueProperties(
 
 //==============================================================================
 ScrewJointProperties::ScrewJointProperties(
-    const GeometricJoint<math::RealSpace>::Properties& geometricJointProperties,
+    const GeometricJoint<math::R1Space>::Properties& geometricJointProperties,
     const ScrewJointUniqueProperties& screwProperties)
-  : GeometricJoint<math::RealSpace>::Properties(geometricJointProperties),
+  : GeometricJoint<math::R1Space>::Properties(geometricJointProperties),
     ScrewJointUniqueProperties(screwProperties)
 {
   // Do nothing

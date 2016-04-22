@@ -67,12 +67,12 @@ struct ScrewJointUniqueProperties
 };
 
 //==============================================================================
-struct ScrewJointProperties : GeometricJoint<math::RealSpace>::Properties,
+struct ScrewJointProperties : GeometricJoint<math::R1Space>::Properties,
                     ScrewJointUniqueProperties
 {
   ScrewJointProperties(
-      const GeometricJoint<math::RealSpace>::Properties& geometricJointProperties =
-          GeometricJoint<math::RealSpace>::Properties(),
+      const GeometricJoint<math::R1Space>::Properties& geometricJointProperties =
+          GeometricJoint<math::R1Space>::Properties(),
       const ScrewJointUniqueProperties& screwProperties =
           ScrewJointUniqueProperties());
 
@@ -81,7 +81,7 @@ struct ScrewJointProperties : GeometricJoint<math::RealSpace>::Properties,
 
 //==============================================================================
 using ScrewJointBase = common::EmbedPropertiesOnTopOf<
-    ScrewJoint, ScrewJointUniqueProperties, GeometricJoint<math::RealSpace> >;
+    ScrewJoint, ScrewJointUniqueProperties, GeometricJoint<math::R1Space> >;
 
 } // namespace detail
 } // namespace dynamics

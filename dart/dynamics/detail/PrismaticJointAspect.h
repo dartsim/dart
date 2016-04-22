@@ -63,12 +63,12 @@ struct PrismaticJointUniqueProperties
 
 //==============================================================================
 struct PrismaticJointProperties :
-    GeometricJoint<math::RealSpace>::Properties,
+    GeometricJoint<math::R1Space>::Properties,
     PrismaticJointUniqueProperties
 {
   PrismaticJointProperties(
-      const GeometricJoint<math::RealSpace>::Properties& geometricJointProperties =
-          GeometricJoint<math::RealSpace>::Properties(),
+      const GeometricJoint<math::R1Space>::Properties& geometricJointProperties =
+          GeometricJoint<math::R1Space>::Properties(),
       const PrismaticJointUniqueProperties& prismaticProperties =
           PrismaticJointUniqueProperties());
 
@@ -77,7 +77,7 @@ struct PrismaticJointProperties :
 
 //==============================================================================
 using PrismaticJointBase = common::EmbedPropertiesOnTopOf<
-    PrismaticJoint, PrismaticJointUniqueProperties, GeometricJoint<math::RealSpace> >;
+    PrismaticJoint, PrismaticJointUniqueProperties, GeometricJoint<math::R1Space> >;
 
 } // namespace detail
 } // namespace dynamics

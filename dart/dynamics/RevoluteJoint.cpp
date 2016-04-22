@@ -55,8 +55,8 @@ RevoluteJoint::~RevoluteJoint()
 //==============================================================================
 void RevoluteJoint::setProperties(const Properties& _properties)
 {
-  GeometricJoint<math::RealSpace>::setProperties(
-        static_cast<const GeometricJoint<math::RealSpace>::Properties&>(_properties));
+  GeometricJoint<math::R1Space>::setProperties(
+        static_cast<const GeometricJoint<math::R1Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -141,11 +141,11 @@ const Eigen::Vector3d& RevoluteJoint::getAxis() const
 }
 
 //==============================================================================
-const GeometricJoint<math::RealSpace>::JacobianMatrix
+const GeometricJoint<math::R1Space>::JacobianMatrix
 RevoluteJoint::getLocalJacobianStatic(
-    const GeometricJoint<math::RealSpace>::Vector& /*positions*/) const
+    const GeometricJoint<math::R1Space>::Vector& /*positions*/) const
 {
-  GeometricJoint<math::RealSpace>::JacobianMatrix jacobian
+  GeometricJoint<math::R1Space>::JacobianMatrix jacobian
       = math::AdTAngular(
         Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis());
 

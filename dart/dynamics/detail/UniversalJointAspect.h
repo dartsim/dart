@@ -64,12 +64,12 @@ struct UniversalJointUniqueProperties
 
 //==============================================================================
 struct UniversalJointProperties :
-    GeometricJoint<math::RealVector2Space>::Properties,
+    GeometricJoint<math::R2Space>::Properties,
     UniversalJointUniqueProperties
 {
   UniversalJointProperties(
-      const GeometricJoint<math::RealVector2Space>::Properties& geometricJointProperties =
-          GeometricJoint<math::RealVector2Space>::Properties(),
+      const GeometricJoint<math::R2Space>::Properties& geometricJointProperties =
+          GeometricJoint<math::R2Space>::Properties(),
       const UniversalJointUniqueProperties& universalProperties =
           UniversalJointUniqueProperties());
 
@@ -78,7 +78,7 @@ struct UniversalJointProperties :
 
 //==============================================================================
 using UniversalJointBase = common::EmbedPropertiesOnTopOf<
-    UniversalJoint, UniversalJointUniqueProperties,  GeometricJoint<math::RealVector2Space> >;
+    UniversalJoint, UniversalJointUniqueProperties,  GeometricJoint<math::R2Space> >;
 
 } // namespace detail
 } // namespace dynamics

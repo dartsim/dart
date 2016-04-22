@@ -53,8 +53,8 @@ UniversalJoint::~UniversalJoint()
 //==============================================================================
 void UniversalJoint::setProperties(const Properties& _properties)
 {
-  GeometricJoint<math::RealVector2Space>::setProperties(
-        static_cast<const GeometricJoint<math::RealVector2Space>::Properties&>(
+  GeometricJoint<math::R2Space>::setProperties(
+        static_cast<const GeometricJoint<math::R2Space>::Properties&>(
           _properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }

@@ -50,12 +50,12 @@ TEST(NameManagement, Skeleton)
 
   std::pair<Joint*, BodyNode*> pair;
   pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
-        nullptr, GeometricJoint<RealSpace>::Properties(std::string("joint")));
+        nullptr, GeometricJoint<R1Space>::Properties(std::string("joint")));
   Joint* joint1 = pair.first;
   BodyNode* body1 = pair.second;
 
   pair = skel->createJointAndBodyNodePair<TranslationalJoint>(
-        body1, GeometricJoint<RealVector3Space>::Properties(std::string("joint")));
+        body1, GeometricJoint<R3Space>::Properties(std::string("joint")));
   Joint* joint2 = pair.first;
   BodyNode* body2 = pair.second;
 

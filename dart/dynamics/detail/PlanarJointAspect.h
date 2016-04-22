@@ -110,12 +110,12 @@ struct PlanarJointUniqueProperties
 
 //==============================================================================
 struct PlanarJointProperties :
-    GeometricJoint<math::RealVector3Space>::Properties,
+    GeometricJoint<math::R3Space>::Properties,
     PlanarJointUniqueProperties
 {
   PlanarJointProperties(
-      const GeometricJoint<math::RealVector3Space>::Properties& geometricJointProperties =
-          GeometricJoint<math::RealVector3Space>::Properties(),
+      const GeometricJoint<math::R3Space>::Properties& geometricJointProperties =
+          GeometricJoint<math::R3Space>::Properties(),
       const PlanarJointUniqueProperties& planarProperties =
           PlanarJointUniqueProperties());
 
@@ -124,7 +124,7 @@ struct PlanarJointProperties :
 
 //==============================================================================
 using PlanarJointBase = common::EmbedPropertiesOnTopOf<
-    PlanarJoint, PlanarJointUniqueProperties, GeometricJoint<math::RealVector3Space> >;
+    PlanarJoint, PlanarJointUniqueProperties, GeometricJoint<math::R3Space> >;
 
 } // namespace detail
 } // namespace dynamics
