@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_ATLASROBOT_STATEMACHINE_H_
-#define APPS_ATLASROBOT_STATEMACHINE_H_
+#ifndef EXAMPLES_ATLASSIMBICON_STATEMACHINE_H_
+#define EXAMPLES_ATLASSIMBICON_STATEMACHINE_H_
 
 #include <vector>
 #include <string>
@@ -129,4 +129,4 @@ private:
   State* _findState(const std::string& _name) const;
 };
 
-#endif  // APPS_ATLASROBOT_STATEMACHINE_H_
+#endif  // EXAMPLES_ATLASSIMBICON_STATEMACHINE_H_

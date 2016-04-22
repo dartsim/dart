@@ -35,13 +35,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_ATLASROBOT_MYWINDOW_H_
-#define APPS_ATLASROBOT_MYWINDOW_H_
+#ifndef EXAMPLES_ATLASSIMBICON_MYWINDOW_H_
+#define EXAMPLES_ATLASSIMBICON_MYWINDOW_H_
 
 #include "dart/dart.h"
 #include "dart/gui/gui.h"
 
-#include "apps/atlasSimbicon/Controller.h"
+#include "examples/atlasSimbicon/Controller.h"
 
 /// \brief class MyWindow
 class MyWindow : public dart::gui::SimWindow
@@ -73,4 +73,4 @@ private:
   Controller* mController;
 };
 
-#endif  // APPS_ATLASROBOT_MYWINDOW_H_
+#endif  // EXAMPLES_ATLASSIMBICON_MYWINDOW_H_

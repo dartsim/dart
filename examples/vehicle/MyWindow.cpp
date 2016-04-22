@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/vehicle/MyWindow.h"
+#include "examples/vehicle/MyWindow.h"
 
 MyWindow::MyWindow()
   : SimWindow() {

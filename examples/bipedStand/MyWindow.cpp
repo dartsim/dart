@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/bipedStand/MyWindow.h"
+#include "examples/bipedStand/MyWindow.h"
 
 MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();

@@ -44,7 +44,7 @@
 
 #include "dart/dart.h"
 
-#include "apps/mixedChain/MyWindow.h"
+#include "examples/mixedChain/MyWindow.h"
 
 int main(int argc, char* argv[])
 {

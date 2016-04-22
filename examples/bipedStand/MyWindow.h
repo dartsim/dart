@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_BALANCE_MYWINDOW_H_
-#define APPS_BALANCE_MYWINDOW_H_
+#ifndef EXAMPLES_BIPEDSTAND_MYWINDOW_H_
+#define EXAMPLES_BIPEDSTAND_MYWINDOW_H_
 
 #include <cstdarg>
 
@@ -45,7 +45,7 @@
 #include "dart/dart.h"
 #include "dart/gui/gui.h"
 
-#include "apps/bipedStand/Controller.h"
+#include "examples/bipedStand/Controller.h"
 
 class MyWindow : public dart::gui::SimWindow {
 public:
@@ -65,4 +65,4 @@ private:
   int mImpulseDuration;
 };
 
-#endif  // APPS_BALANCE_MYWINDOW_H_
+#endif  // EXAMPLES_BIPEDSTAND_MYWINDOW_H_

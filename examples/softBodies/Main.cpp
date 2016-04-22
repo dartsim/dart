@@ -44,7 +44,7 @@
 
 #include "dart/dart.h"
 
-#include "apps/softBodies/MyWindow.h"
+#include "examples/softBodies/MyWindow.h"
 
 int main(int argc, char* argv[])
 {

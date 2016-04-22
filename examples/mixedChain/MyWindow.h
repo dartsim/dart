@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_TESTDROP_MYWINDOW_H_
-#define APPS_TESTDROP_MYWINDOW_H_
+#ifndef EXAMPLES_TESTDROP_MYWINDOW_H_
+#define EXAMPLES_TESTDROP_MYWINDOW_H_
 
 #include "dart/dart.h"
 #include "dart/gui/gui.h"
@@ -76,4 +76,4 @@ private:
   Eigen::Vector3d mForceOnVertex;
 };
 
-#endif  // APPS_TESTDROP_MYWINDOW_H_
+#endif  // EXAMPLES_TESTDROP_MYWINDOW_H_

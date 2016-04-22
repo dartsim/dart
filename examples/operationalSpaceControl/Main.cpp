@@ -36,7 +36,7 @@
 
 #include "dart/dart.h"
 
-#include "apps/operationalSpaceControl/MyWindow.h"
+#include "examples/operationalSpaceControl/MyWindow.h"
 
 int main(int argc, char* argv[])
 {

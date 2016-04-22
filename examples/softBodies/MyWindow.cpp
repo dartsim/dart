@@ -40,7 +40,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/softBodies/MyWindow.h"
+#include "examples/softBodies/MyWindow.h"
 
 #define FORCE_ON_RIGIDBODY 25.0;
 #define FORCE_ON_VERTEX 1.00;

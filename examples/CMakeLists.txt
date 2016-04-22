@@ -1,7 +1,7 @@
-# A list of applications
-set_property(DIRECTORY PROPERTY FOLDER Apps)
+# A list of examples
+set_property(DIRECTORY PROPERTY FOLDER Examples)
 
-# Automatically identify all directories in the apps folder
+# Automatically identify all directories in the examples folder
 file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*")
 set(directories "")
 foreach(child ${children})
@@ -13,7 +13,7 @@ foreach(child ${children})
 endforeach(child)
 
 # List of all the subdirectories to include
-foreach(APPDIR ${directories})
-  add_subdirectory(${APPDIR})
-  dart_add_example(${APPDIR})
-endforeach(APPDIR)
+foreach(EXAMPLE_DIR ${directories})
+  add_subdirectory(${EXAMPLE_DIR})
+  dart_add_example(${EXAMPLE_DIR})
+endforeach(EXAMPLE_DIR)

@@ -40,7 +40,7 @@
 
 #include "dart/dart.h"
 
-#include "apps/bipedStand/MyWindow.h"
+#include "examples/bipedStand/MyWindow.h"
 
 int main(int argc, char* argv[]) {
   // create and initialize the world

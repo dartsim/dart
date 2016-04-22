@@ -38,7 +38,7 @@
 
 #include "dart/dart.h"
 
-#include "apps/vehicle/MyWindow.h"
+#include "examples/vehicle/MyWindow.h"
 
 int main(int argc, char* argv[])
 {

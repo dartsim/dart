@@ -36,7 +36,7 @@
 
 #include "dart/dart.h"
 
-#include "apps/rigidLoop/MyWindow.h"
+#include "examples/rigidLoop/MyWindow.h"
 
 using namespace dart;
 using namespace math;

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_ATLASROBOT_CONTROLLER_H_
-#define APPS_ATLASROBOT_CONTROLLER_H_
+#ifndef EXAMPLES_ATLASSIMBICON_CONTROLLER_H_
+#define EXAMPLES_ATLASSIMBICON_CONTROLLER_H_
 
 #include <vector>
 
@@ -184,4 +184,4 @@ private:
   dart::dynamics::Skeleton::Configuration mInitialState;
 };
 
-#endif  // APPS_ATLASROBOT_CONTROLLER_H_
+#endif  // EXAMPLES_ATLASSIMBICON_CONTROLLER_H_

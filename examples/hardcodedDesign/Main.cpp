@@ -47,7 +47,7 @@
 
 #include "dart/dart.h"
 
-#include "apps/hardcodedDesign/MyWindow.h"
+#include "examples/hardcodedDesign/MyWindow.h"
 
 int main(int argc, char* argv[]) {
   // Create Left Leg skeleton

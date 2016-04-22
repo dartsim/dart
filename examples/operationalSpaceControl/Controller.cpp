@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/operationalSpaceControl/Controller.h"
+#include "examples/operationalSpaceControl/Controller.h"
 
 //==============================================================================
 Controller::Controller(dart::dynamics::SkeletonPtr _robot,

@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/jointConstraints/MyWindow.h"
+#include "examples/jointConstraints/MyWindow.h"
 
 #include <iostream>
 

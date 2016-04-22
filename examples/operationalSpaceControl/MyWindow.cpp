@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/operationalSpaceControl/MyWindow.h"
+#include "examples/operationalSpaceControl/MyWindow.h"
 
 #include <iostream>
 

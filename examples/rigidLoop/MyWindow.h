@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_CLOSEDLOOP_MYWINDOW_H_
-#define APPS_CLOSEDLOOP_MYWINDOW_H_
+#ifndef EXAMPLES_CLOSEDLOOP_MYWINDOW_H_
+#define EXAMPLES_CLOSEDLOOP_MYWINDOW_H_
 
 #include "dart/dart.h"
 #include "dart/gui/gui.h"
@@ -56,4 +56,4 @@ private:
     Eigen::VectorXd computeDamping();
 };
 
-#endif  // APPS_CLOSEDLOOP_MYWINDOW_H_
+#endif  // EXAMPLES_CLOSEDLOOP_MYWINDOW_H_

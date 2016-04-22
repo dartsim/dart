@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_FORWARDSIM_MYWINDOW_H_
-#define APPS_FORWARDSIM_MYWINDOW_H_
+#ifndef EXAMPLES_FORWARDSIM_MYWINDOW_H_
+#define EXAMPLES_FORWARDSIM_MYWINDOW_H_
 
 #include "dart/dart.h"
 #include "dart/gui/gui.h"
@@ -53,4 +53,4 @@ private:
   Eigen::VectorXd computeDamping();
 };
 
-#endif  // APPS_FORWARDSIM_MYWINDOW_H_
+#endif  // EXAMPLES_FORWARDSIM_MYWINDOW_H_

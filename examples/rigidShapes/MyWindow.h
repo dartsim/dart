@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPS_RIGIDSHAPES_MYWINDOW_H_
-#define APPS_RIGIDSHAPES_MYWINDOW_H_
+#ifndef EXAMPLES_RIGIDSHAPES_MYWINDOW_H_
+#define EXAMPLES_RIGIDSHAPES_MYWINDOW_H_
 
 #include "dart/dart.h"
 #include "dart/gui/gui.h"
@@ -85,4 +85,4 @@ public:
       double _mass = 10);
 };
 
-#endif  // APPS_RIGIDSHAPES_MYWINDOW_H_
+#endif  // EXAMPLES_RIGIDSHAPES_MYWINDOW_H_

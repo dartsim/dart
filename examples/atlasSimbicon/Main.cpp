@@ -39,8 +39,8 @@
 
 #include "dart/dart.h"
 
-#include "apps/atlasSimbicon/MyWindow.h"
-#include "apps/atlasSimbicon/Controller.h"
+#include "examples/atlasSimbicon/MyWindow.h"
+#include "examples/atlasSimbicon/Controller.h"
 
 using namespace std;
 using namespace Eigen;

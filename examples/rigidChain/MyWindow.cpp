@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/rigidChain/MyWindow.h"
+#include "examples/rigidChain/MyWindow.h"
 
 MyWindow::MyWindow() : SimWindow() {
 }

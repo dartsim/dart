@@ -1,8 +1,10 @@
-###############################################
-# apps/softDropBoxTest
-set(APP_NAME softBodies)
-file(GLOB ${APP_NAME}_srcs "*.cpp")
-file(GLOB ${APP_NAME}_hdrs "*.h")
-add_executable(${APP_NAME} ${${APP_NAME}_srcs} ${${APP_NAME}_hdrs})
-target_link_libraries(${APP_NAME} dart dart-gui)
-set_target_properties(${APP_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+###############################################################
+# This file can be used as-is in the directory of any example,#
+# however you might need to specify your own dependencies in  #
+# target_link_libraries if your app depends on more than dart #
+###############################################################
+get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
+file(GLOB ${example_name}_srcs "*.cpp" "*.h" "*.hpp")
+add_executable(${example_name} ${${example_name}_srcs})
+target_link_libraries(${example_name} dart dart-gui)
+set_target_properties(${example_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

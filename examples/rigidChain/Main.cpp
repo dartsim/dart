@@ -37,7 +37,7 @@
 
 #include "dart/dart.h"
 
-#include "apps/rigidChain/MyWindow.h"
+#include "examples/rigidChain/MyWindow.h"
 
 int main(int argc, char* argv[]) {
   // create and initialize the world

@@ -41,8 +41,8 @@
  * @brief Simple example of a skeleton created from scratch.
  */
 
-#ifndef APPS_HARDCODEDDESIGN_MYWINDOW_H_
-#define APPS_HARDCODEDDESIGN_MYWINDOW_H_
+#ifndef EXAMPLES_HARDCODEDDESIGN_MYWINDOW_H_
+#define EXAMPLES_HARDCODEDDESIGN_MYWINDOW_H_
 
 #include <cstdio>
 #include <cstdarg>
@@ -68,4 +68,4 @@ public:
   dart::dynamics::SkeletonPtr skel;
 };
 
-#endif  // APPS_HARDCODEDDESIGN_MYWINDOW_H_
+#endif  // EXAMPLES_HARDCODEDDESIGN_MYWINDOW_H_

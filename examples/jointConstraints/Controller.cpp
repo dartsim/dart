@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "apps/jointConstraints/Controller.h"
+#include "examples/jointConstraints/Controller.h"
 
 using namespace dart;
 using namespace dynamics;

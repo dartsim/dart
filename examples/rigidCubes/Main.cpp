@@ -39,7 +39,7 @@
 
 #include "dart/dart.h"
 
-#include "apps/rigidCubes/MyWindow.h"
+#include "examples/rigidCubes/MyWindow.h"
 
 int main(int argc, char* argv[]) {
   // create and initialize the world
