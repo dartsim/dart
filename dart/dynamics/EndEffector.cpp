@@ -111,6 +111,11 @@ EndEffector::~EndEffector()
   assert(mBodyNode->mEndEffectors[index] == this);
   mBodyNode->mEndEffectors.erase(mBodyNode->mEndEffectors.begin() + index);
 
+  // We sneak this in here to patch the issue where child JacobianNodes were
+  // going unrecognized. This only works for EndEffector, but EndEffector is
+  // the only JacobianNode type besides BodyNode in v5.1.
+  mBodyNode->mChildJacobianNodes.erase(this);
+
   for(size_t i=index; i<mBodyNode->mEndEffectors.size(); ++i)
   {
     EndEffector* ee = mBodyNode->mEndEffectors[i];
