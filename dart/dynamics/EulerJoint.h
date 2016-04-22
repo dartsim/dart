@@ -51,7 +51,7 @@ public:
   using AxisOrder = detail::AxisOrder;
   using UniqueProperties = detail::EulerJointUniqueProperties;
   using Properties = detail::EulerJointProperties;
-  using BaseClass = detail::EulerJointBase;
+  using Base = detail::EulerJointBase;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, EulerJointAspect)
 
@@ -158,7 +158,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using BaseClass::getLocalJacobianStatic;
+  using Base::getLocalJacobianStatic;
 
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when axis order is changed.

@@ -53,12 +53,11 @@ public:
 
   friend class Skeleton;
 
-  using BaseClass = GeometricJoint<math::SE3Space>;
+  using Base = GeometricJoint<math::SE3Space>;
 
-  struct Properties : BaseClass::Properties
+  struct Properties : Base::Properties
   {
-    Properties(const BaseClass::Properties& properties
-               = BaseClass::Properties());
+    Properties(const Base::Properties& properties = Base::Properties());
 
     virtual ~Properties() = default;
   };
@@ -278,7 +277,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using BaseClass::getLocalJacobianStatic;
+  using Base::getLocalJacobianStatic;
 
   // Documentation inherited
   void integratePositions(double _dt) override;

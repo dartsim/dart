@@ -81,7 +81,7 @@ ShapeFrameProperties::ShapeFrameProperties(const ShapePtr& shape)
 //==============================================================================
 VisualAspect::VisualAspect(common::Composite* comp,
                          const PropertiesData& properties)
-  : VisualAspect::BaseClass(comp, properties)
+  : VisualAspect::Base(comp, properties)
 {
   // Do nothing
 }
@@ -182,7 +182,7 @@ bool CollisionAspect::isCollidable() const
 DynamicsAspect::DynamicsAspect(
     common::Composite* comp,
     const PropertiesData& properties)
-  : BaseClass(comp, properties)
+  : Base(comp, properties)
 {
   // Do nothing
 }

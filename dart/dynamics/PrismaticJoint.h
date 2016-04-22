@@ -48,7 +48,7 @@ class PrismaticJoint : public detail::PrismaticJointBase
 public:
 
   friend class Skeleton;
-  using BaseClass = detail::PrismaticJointBase;
+  using Base = detail::PrismaticJointBase;
   using UniqueProperties = detail::PrismaticJointUniqueProperties;
   using Properties = detail::PrismaticJointProperties;
 

@@ -46,8 +46,8 @@ namespace dynamics {
 
 //==============================================================================
 TranslationalJoint::Properties::Properties(
-    const BaseClass::Properties& _properties)
-  : BaseClass::Properties(_properties)
+    const Base::Properties& _properties)
+  : Base::Properties(_properties)
 {
   // Do nothing
 }
@@ -75,7 +75,7 @@ TranslationalJoint::getTranslationalJointProperties() const
 
 //==============================================================================
 TranslationalJoint::TranslationalJoint(const Properties& properties)
-  : BaseClass(properties)
+  : Base(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls

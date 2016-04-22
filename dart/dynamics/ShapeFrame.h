@@ -59,7 +59,7 @@ class VisualAspect final :
 {
 public:
 
-  using BaseClass = common::AspectWithVersionedProperties<
+  using Base = common::AspectWithVersionedProperties<
       VisualAspect, detail::VisualAspectProperties, ShapeFrame>;
 
   /// Constructor
@@ -146,7 +146,7 @@ class DynamicsAspect final :
 {
 public:
 
-  using BaseClass = common::AspectWithVersionedProperties<
+  using Base = common::AspectWithVersionedProperties<
       DynamicsAspect, detail::DynamicsAspectProperties, ShapeFrame>;
 
   DynamicsAspect(const DynamicsAspect&) = delete;

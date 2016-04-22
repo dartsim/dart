@@ -54,8 +54,8 @@ EulerJoint::~EulerJoint()
 //==============================================================================
 void EulerJoint::setProperties(const Properties& _properties)
 {
-  BaseClass::setProperties(
-        static_cast<const BaseClass::Properties&>(_properties));
+  Base::setProperties(
+        static_cast<const Base::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 

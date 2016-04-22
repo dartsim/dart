@@ -46,8 +46,8 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-BallJoint::Properties::Properties(const BaseClass::Properties& properties)
-  : BaseClass::Properties(properties)
+BallJoint::Properties::Properties(const Base::Properties& properties)
+  : Base::Properties(properties)
 {
   // Do nothing
 }
@@ -99,7 +99,7 @@ Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
 
 //==============================================================================
 BallJoint::BallJoint(const Properties& properties)
-  : BaseClass(properties),
+  : Base(properties),
     mR(Eigen::Isometry3d::Identity())
 {
   mJacobianDeriv = Eigen::Matrix<double, 6, 3>::Zero();

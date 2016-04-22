@@ -56,7 +56,7 @@ public:
   using PlaneType = detail::PlaneType;
   using UniqueProperties = detail::PlanarJointUniqueProperties;
   using Properties = detail::PlanarJointProperties;
-  using BaseClass = GeometricJoint<math::R3Space>;
+  using Base = GeometricJoint<math::R3Space>;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, PlanarJointAspect)
 
@@ -142,7 +142,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using BaseClass::getLocalJacobianStatic;
+  using Base::getLocalJacobianStatic;
 
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when the Plane type is changed.

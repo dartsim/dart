@@ -46,8 +46,8 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-FreeJoint::Properties::Properties(const BaseClass::Properties& properties)
-  : BaseClass::Properties(properties)
+FreeJoint::Properties::Properties(const Base::Properties& properties)
+  : Base::Properties(properties)
 {
   // Do nothing
 }
@@ -526,7 +526,7 @@ Eigen::Vector6d FreeJoint::getPositionDifferencesStatic(
 
 //==============================================================================
 FreeJoint::FreeJoint(const Properties& properties)
-  : BaseClass(properties),
+  : Base(properties),
     mQ(Eigen::Isometry3d::Identity())
 {
   mJacobianDeriv = Eigen::Matrix6d::Zero();
