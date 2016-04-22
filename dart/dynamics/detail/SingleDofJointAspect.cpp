@@ -60,8 +60,10 @@ SingleDofJointState::SingleDofJointState(
 SingleDofJointUniqueProperties::SingleDofJointUniqueProperties(
     double _positionLowerLimit,
     double _positionUpperLimit,
+    double _initialPosition,
     double _velocityLowerLimit,
     double _velocityUpperLimit,
+    double _initialVelocity,
     double _accelerationLowerLimit,
     double _accelerationUpperLimit,
     double _forceLowerLimit,
@@ -71,13 +73,13 @@ SingleDofJointUniqueProperties::SingleDofJointUniqueProperties(
     double _dampingCoefficient,
     double _coulombFriction,
     bool _preserveDofName,
-    std::string _dofName)
+    const std::string& _dofName)
   : mPositionLowerLimit(_positionLowerLimit),
     mPositionUpperLimit(_positionUpperLimit),
-    mInitialPosition(0.0),
+    mInitialPosition(_initialPosition),
     mVelocityLowerLimit(_velocityLowerLimit),
     mVelocityUpperLimit(_velocityUpperLimit),
-    mInitialVelocity(0.0),
+    mInitialVelocity(_initialVelocity),
     mAccelerationLowerLimit(_accelerationLowerLimit),
     mAccelerationUpperLimit(_accelerationUpperLimit),
     mForceLowerLimit(_forceLowerLimit),
