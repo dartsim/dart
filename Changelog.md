@@ -1,7 +1,11 @@
+## DART 6
+
 ### Version 6.0.0 (2015-12-19)
 
 1. Added missing `liburdfdom-dev` dependency in Ubuntu package
     * [Pull request #574](https://github.com/dartsim/dart/pull/574)
+
+## DART 5
 
 ### Version 5.1.1 (2015-11-06)
 
@@ -300,6 +304,19 @@
 1. Added specification of minimum dependency version
     * [Pull request #306](https://github.com/dartsim/dart/pull/306)
 
+## DART 4
+
+### Version 4.3.6 (2016-04-16)
+
+1. Fixed duplicate entries in Skeleton::mBodyNodes causing segfault in destructor
+    * [Issue #671](https://github.com/dartsim/dart/issues/671)
+    * [Pull request #672](https://github.com/dartsim/dart/pull/672)
+
+### Version 4.3.5 (2016-01-09)
+
+1. Fixed incorrect applying of joint constraint impulses (backported from 6.0.0)
+    * [Pull request #578](https://github.com/dartsim/dart/pull/578)
+
 ### Version 4.3.4 (2015-01-24)
 
 1. Fixed build issue with gtest on Mac
@@ -424,6 +441,8 @@
   * [Issue #122](https://github.com/dartsim/dart/issues/122)
   * [Pull request #168](https://github.com/dartsim/dart/pull/168)
 
+## DART 3
+
 ### Version 3.0 (2013-11-04)
 
 1. Removed Transformation classes. Their functionality is now included in joint classes.
@@ -433,6 +452,8 @@
 1. A lot of function and variable renames
 1. Added constraint namespace
 1. Added "common" namespace
+
+## DART 2
 
 ### Version 2.6 (2013-09-07)
 
