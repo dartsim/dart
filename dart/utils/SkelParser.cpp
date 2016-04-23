@@ -916,6 +916,10 @@ bool createJointAndNodePair(dynamics::SkeletonPtr skeleton,
   newJoint->setAccelerations(joint.acceleration);
   newJoint->setForces(joint.force);
 
+  dynamics::BodyNode* bn = pair.second;
+  for(std::size_t i=0; i < body.markers.size(); ++i)
+    bn->createNode<dynamics::Marker>(body.markers[i]);
+
   return true;
 }
 
