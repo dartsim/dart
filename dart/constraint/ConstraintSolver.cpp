@@ -66,7 +66,7 @@ using namespace dynamics;
 //==============================================================================
 ConstraintSolver::ConstraintSolver(double timeStep)
   : mCollisionDetector(collision::FCLCollisionDetector::create()),
-    mCollisionGroup(mCollisionDetector->createCollisionGroup()),
+    mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
     mCollisionOption(
       collision::CollisionOption(
         true, false, 100, std::make_shared<collision::BodyNodeCollisionFilter>())),
@@ -223,42 +223,47 @@ void ConstraintSolver::setCollisionDetector(
 void ConstraintSolver::setCollisionDetector(
   const std::shared_ptr<collision::CollisionDetector>& collisionDetector)
 {
-  assert(collisionDetector && "Invalid collision detector.");
+  if (!collisionDetector)
+  {
+    dtwarn << "[ConstraintSolver::setCollisionDetector] Attempting to assign "
+           << "nullptr as the new collision detector to the constraint solver, "
+           << "which is not allowed. Ignoring.\n";
+  }
 
-  // Change the collision detector of the constraint solver to new one
+  if (mCollisionDetector == collisionDetector)
+    return;
+
   mCollisionDetector = collisionDetector;
 
-  auto newCollisionGroup = mCollisionDetector->createCollisionGroup();
+  mCollisionGroup = mCollisionDetector->createCollisionGroupAsSharedPtr();
 
   for (const auto& skeleton : mSkeletons)
-    newCollisionGroup->addShapeFramesOf(skeleton.get());
-
-  mCollisionGroup = std::move(newCollisionGroup);
+    mCollisionGroup->addShapeFramesOf(skeleton.get());
 }
 
 //==============================================================================
-collision::CollisionDetector* ConstraintSolver::getCollisionDetector()
+collision::CollisionDetectorPtr ConstraintSolver::getCollisionDetector()
 {
-  return mCollisionDetector.get();
+  return mCollisionDetector;
 }
 
 //==============================================================================
-const collision::CollisionDetector*
+collision::ConstCollisionDetectorPtr
 ConstraintSolver::getCollisionDetector() const
 {
-  return mCollisionDetector.get();
+  return mCollisionDetector;
 }
 
 //==============================================================================
-collision::CollisionGroup* ConstraintSolver::getCollisionGroup()
+collision::CollisionGroupPtr ConstraintSolver::getCollisionGroup()
 {
-  return mCollisionGroup.get();
+  return mCollisionGroup;
 }
 
 //==============================================================================
-const collision::CollisionGroup* ConstraintSolver::getCollisionGroup() const
+collision::ConstCollisionGroupPtr ConstraintSolver::getCollisionGroup() const
 {
-  return mCollisionGroup.get();
+  return mCollisionGroup;
 }
 
 //==============================================================================
@@ -268,7 +273,8 @@ collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
 }
 
 //==============================================================================
-const collision::CollisionResult& ConstraintSolver::getLastCollisionResult() const
+const collision::CollisionResult&
+ConstraintSolver::getLastCollisionResult() const
 {
   return mCollisionResult;
 }
