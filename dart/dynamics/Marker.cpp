@@ -36,8 +36,6 @@
 
 #include "dart/dynamics/Marker.h"
 
-#include <string>
-
 #include "dart/dynamics/BodyNode.h"
 
 namespace dart {

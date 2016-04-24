@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_MARKER_H_
-#define DART_DYNAMICS_DETAIL_MARKER_H_
+#ifndef DART_DYNAMICS_DETAIL_MARKERASPECT_H_
+#define DART_DYNAMICS_DETAIL_MARKERASPECT_H_
 
 #include <Eigen/Core>
 #include "dart/math/Helpers.h"
@@ -64,9 +64,8 @@ struct MarkerProperties
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_MARKER_H_
+#endif // DART_DYNAMICS_DETAIL_MARKERASPECT_H_
