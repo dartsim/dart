@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_ADDDELETESKELS_MYWINDOW_H_
-#define EXAMPLES_ADDDELETESKELS_MYWINDOW_H_
+#ifndef EXAMPLES_ADDDELETESKELS_MYWINDOW_HPP_
+#define EXAMPLES_ADDDELETESKELS_MYWINDOW_HPP_
 
 #include "dart/dart.hpp"
 #include "dart/gui/gui.hpp"
@@ -63,4 +63,4 @@ public:
       double _mass = 0.1);
 };
 
-#endif  // EXAMPLES_ADDDELETESKELS_MYWINDOW_H_
+#endif  // EXAMPLES_ADDDELETESKELS_MYWINDOW_HPP_

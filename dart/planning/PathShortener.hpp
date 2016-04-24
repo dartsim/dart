@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_PLANNING_PATHSHORTENER_H_
-#define DART_PLANNING_PATHSHORTENER_H_
+#ifndef DART_PLANNING_PATHSHORTENER_HPP_
+#define DART_PLANNING_PATHSHORTENER_HPP_
 
 #include <list>
 #include <vector>
@@ -65,4 +65,4 @@ protected:
 } // namespace planning
 } // namespace dart
 
-#endif // DART_PLANNING_PATHSHORTENER_H_
+#endif // DART_PLANNING_PATHSHORTENER_HPP_

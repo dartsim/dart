@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_EMBEDDEDASPECT_H_
-#define DART_COMMON_EMBEDDEDASPECT_H_
+#ifndef DART_COMMON_EMBEDDEDASPECT_HPP_
+#define DART_COMMON_EMBEDDEDASPECT_HPP_
 
 #include "dart/common/detail/EmbeddedAspect.hpp"
 #include "dart/common/RequiresAspect.hpp"
@@ -480,4 +480,4 @@ protected:
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_EMBEDDEDASPECT_H_
+#endif // DART_COMMON_EMBEDDEDASPECT_HPP_

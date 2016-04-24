@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_PROXYASPECT_H_
-#define DART_COMMON_DETAIL_PROXYASPECT_H_
+#ifndef DART_COMMON_DETAIL_PROXYASPECT_HPP_
+#define DART_COMMON_DETAIL_PROXYASPECT_HPP_
 
 #include "dart/common/Aspect.hpp"
 
@@ -183,4 +183,4 @@ protected:
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_PROXYASPECT_H_
+#endif // DART_COMMON_DETAIL_PROXYASPECT_HPP_

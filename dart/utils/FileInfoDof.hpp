@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_FILEINFODOF_H_
-#define DART_UTILS_FILEINFODOF_H_
+#ifndef DART_UTILS_FILEINFODOF_HPP_
+#define DART_UTILS_FILEINFODOF_HPP_
 
 #include <vector>
 
@@ -107,4 +107,4 @@ protected:
 
 }  // namespace utils
 }  // namespace dart
-#endif  // DART_UTILS_FILEINFODOF_H_
+#endif  // DART_UTILS_FILEINFODOF_HPP_

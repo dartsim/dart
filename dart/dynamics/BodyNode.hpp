@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BODYNODE_H_
-#define DART_DYNAMICS_BODYNODE_H_
+#ifndef DART_DYNAMICS_BODYNODE_HPP_
+#define DART_DYNAMICS_BODYNODE_HPP_
 
 #include <string>
 #include <vector>
@@ -1204,4 +1204,4 @@ private:
 
 #include "dart/dynamics/detail/BodyNode.hpp"
 
-#endif  // DART_DYNAMICS_BODYNODE_H_
+#endif  // DART_DYNAMICS_BODYNODE_HPP_

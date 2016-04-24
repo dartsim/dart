@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_MESHSHAPE_H_
-#define DART_DYNAMICS_MESHSHAPE_H_
+#ifndef DART_DYNAMICS_MESHSHAPE_HPP_
+#define DART_DYNAMICS_MESHSHAPE_HPP_
 
 #include <string>
 
@@ -175,4 +175,4 @@ public:
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_MESHSHAPE_H_
+#endif  // DART_DYNAMICS_MESHSHAPE_HPP_

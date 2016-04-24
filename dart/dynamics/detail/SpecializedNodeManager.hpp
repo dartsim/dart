@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_H_
-#define DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_H_
+#ifndef DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_
+#define DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_
 
 #include "dart/dynamics/SpecializedNodeManager.hpp"
 
@@ -324,4 +324,4 @@ constexpr bool SkeletonSpecializedFor<SpecNode>::_isSpecializedForNode(
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_H_
+#endif // DART_DYNAMICS_DETAIL_SPECIALIZEDNODEMANAGER_HPP_

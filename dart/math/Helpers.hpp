@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_HELPERS_H_
-#define DART_MATH_HELPERS_H_
+#ifndef DART_MATH_HELPERS_HPP_
+#define DART_MATH_HELPERS_HPP_
 
 // Standard Libraries
 #include <cfloat>
@@ -435,4 +435,4 @@ inline Eigen::Vector3d Random()
 
 }  // namespace dart
 
-#endif  // DART_MATH_HELPERS_H_
+#endif  // DART_MATH_HELPERS_HPP_

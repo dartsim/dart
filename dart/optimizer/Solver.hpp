@@ -36,8 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_SOLVER_H_
-#define DART_OPTIMIZER_SOLVER_H_
+#ifndef DART_OPTIMIZER_SOLVER_HPP_
+#define DART_OPTIMIZER_SOLVER_HPP_
 
 #include <iostream>
 #include <memory>
@@ -185,4 +185,4 @@ protected:
 }  // namespace optimizer
 }  // namespace dart
 
-#endif  // DART_OPTIMIZER_SOLVER_H_
+#endif  // DART_OPTIMIZER_SOLVER_HPP_

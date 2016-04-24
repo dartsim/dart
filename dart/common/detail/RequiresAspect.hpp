@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_REQUIRESASPECT_H_
-#define DART_COMMON_DETAIL_REQUIRESASPECT_H_
+#ifndef DART_COMMON_DETAIL_REQUIRESASPECT_HPP_
+#define DART_COMMON_DETAIL_REQUIRESASPECT_HPP_
 
 #include "dart/common/RequiresAspect.hpp"
 
@@ -52,4 +52,4 @@ RequiresAspect<ReqAspect>::RequiresAspect()
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_REQUIRESASPECT_H_
+#endif // DART_COMMON_DETAIL_REQUIRESASPECT_HPP_

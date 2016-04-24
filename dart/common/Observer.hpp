@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_OBSERVER_H_
-#define DART_COMMON_OBSERVER_H_
+#ifndef DART_COMMON_OBSERVER_HPP_
+#define DART_COMMON_OBSERVER_HPP_
 
 #include <set>
 
@@ -89,4 +89,4 @@ protected:
 } // namespace dart
 } // namespace common
 
-#endif // DART_COMMON_OBSERVER_H_
+#endif // DART_COMMON_OBSERVER_HPP_

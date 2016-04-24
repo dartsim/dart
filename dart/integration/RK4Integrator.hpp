@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_INTEGRATION_RK4INTEGRATOR_H_
-#define DART_INTEGRATION_RK4INTEGRATOR_H_
+#ifndef DART_INTEGRATION_RK4INTEGRATOR_HPP_
+#define DART_INTEGRATION_RK4INTEGRATOR_HPP_
 
 #include "dart/integration/Integrator.hpp"
 
@@ -70,4 +70,4 @@ private:
 }  // namespace integration
 }  // namespace dart
 
-#endif  // DART_INTEGRATION_RK4INTEGRATOR_H_
+#endif  // DART_INTEGRATION_RK4INTEGRATOR_HPP_

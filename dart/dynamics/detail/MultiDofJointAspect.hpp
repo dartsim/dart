@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_MULTIDOFJOINTASPECT_H_
-#define DART_DYNAMICS_DETAIL_MULTIDOFJOINTASPECT_H_
+#ifndef DART_DYNAMICS_DETAIL_MULTIDOFJOINTASPECT_HPP_
+#define DART_DYNAMICS_DETAIL_MULTIDOFJOINTASPECT_HPP_
 
 #include "dart/math/Helpers.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -303,5 +303,5 @@ using MultiDofJointBase = common::EmbedStateAndPropertiesOnTopOf<
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_MULTIDOFJOINTASPECT_H_
+#endif // DART_DYNAMICS_DETAIL_MULTIDOFJOINTASPECT_HPP_
 

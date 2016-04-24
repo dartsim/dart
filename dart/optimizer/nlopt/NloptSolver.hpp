@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
-#define DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
+#ifndef DART_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
+#define DART_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
 
 #include <nlopt.hpp>
 
@@ -117,5 +117,5 @@ private:
 }  // namespace optimizer
 }  // namespace dart
 
-#endif  // DART_OPTIMIZER_NLOPT_NLOPTSOLVER_H_
+#endif  // DART_OPTIMIZER_NLOPT_NLOPTSOLVER_HPP_
 

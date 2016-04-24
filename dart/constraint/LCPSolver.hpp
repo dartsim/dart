@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_LCPSOLVER_H_
-#define DART_CONSTRAINT_LCPSOLVER_H_
+#ifndef DART_CONSTRAINT_LCPSOLVER_HPP_
+#define DART_CONSTRAINT_LCPSOLVER_HPP_
 
 namespace dart {
 namespace constraint {
@@ -70,5 +70,5 @@ protected:
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_LCPSOLVER_H_
+#endif  // DART_CONSTRAINT_LCPSOLVER_HPP_
 

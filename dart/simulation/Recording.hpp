@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_SIMULATION_RECORDING_H_
-#define DART_SIMULATION_RECORDING_H_
+#ifndef DART_SIMULATION_RECORDING_HPP_
+#define DART_SIMULATION_RECORDING_HPP_
 
 #include <vector>
 
@@ -119,4 +119,4 @@ private:
 }  // namespace simulation
 }  // namespace dart
 
-#endif  // DART_SIMULATION_RECORDING_H_
+#endif  // DART_SIMULATION_RECORDING_HPP_

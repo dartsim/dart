@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
 
 #include <fcl/collision_object.h>
 #include "dart/collision/CollisionObject.hpp"
@@ -87,4 +87,4 @@ protected:
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECT_H_
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_

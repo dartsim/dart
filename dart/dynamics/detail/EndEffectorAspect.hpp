@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_H_
-#define DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_H_
+#ifndef DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_HPP_
+#define DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_HPP_
 
 #include <Eigen/Geometry>
 #include "dart/dynamics/CompositeNode.hpp"
@@ -106,4 +106,4 @@ using EndEffectorCompositeBase = CompositeNode<
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_H_
+#endif // DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_HPP_

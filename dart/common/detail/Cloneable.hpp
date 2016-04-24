@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_CLONEABLE_H_
-#define DART_COMMON_DETAIL_CLONEABLE_H_
+#ifndef DART_COMMON_DETAIL_CLONEABLE_HPP_
+#define DART_COMMON_DETAIL_CLONEABLE_HPP_
 
 #include "dart/common/Cloneable.hpp"
 #include "dart/common/StlHelpers.hpp"
@@ -571,4 +571,4 @@ const std::vector<T>& CloneableVector<T>::getVector() const
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_CLONEABLE_H_
+#endif // DART_COMMON_DETAIL_CLONEABLE_HPP_

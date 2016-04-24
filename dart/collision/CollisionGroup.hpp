@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONGROUP_H_
-#define DART_COLLISION_COLLISIONGROUP_H_
+#ifndef DART_COLLISION_COLLISIONGROUP_HPP_
+#define DART_COLLISION_COLLISIONGROUP_HPP_
 
 #include <map>
 #include <vector>
@@ -238,4 +238,4 @@ protected:
 
 #include "dart/collision/detail/CollisionGroup.hpp"
 
-#endif  // DART_COLLISION_COLLISIONGROUP_H_
+#endif  // DART_COLLISION_COLLISIONGROUP_HPP_

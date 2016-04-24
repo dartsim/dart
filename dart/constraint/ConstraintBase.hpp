@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_CONSTRAINTBASE_H_
-#define DART_CONSTRAINT_CONSTRAINTBASE_H_
+#ifndef DART_CONSTRAINT_CONSTRAINTBASE_HPP_
+#define DART_CONSTRAINT_CONSTRAINTBASE_HPP_
 
 #include <cstddef>
 
@@ -139,5 +139,5 @@ protected:
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_CONSTRAINTBASE_H_
+#endif  // DART_CONSTRAINT_CONSTRAINTBASE_HPP_
 

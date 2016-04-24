@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_URI_H_
-#define DART_COMMON_URI_H_
+#ifndef DART_COMMON_URI_HPP_
+#define DART_COMMON_URI_HPP_
 
 #include <string>
 
@@ -230,4 +230,4 @@ private:
 } // namespace common
 } // namespace dart
 
-#endif // ifndef DART_COMMON_URI_H_
+#endif // ifndef DART_COMMON_URI_HPP_

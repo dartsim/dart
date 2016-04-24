@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_SPECIALIZEDFORASPECT_H_
-#define DART_COMMON_DETAIL_SPECIALIZEDFORASPECT_H_
+#ifndef DART_COMMON_DETAIL_SPECIALIZEDFORASPECT_HPP_
+#define DART_COMMON_DETAIL_SPECIALIZEDFORASPECT_HPP_
 
 #include "dart/common/SpecializedForAspect.hpp"
 
@@ -331,4 +331,4 @@ constexpr bool SpecializedForAspect<SpecAspect>::_isSpecializedFor(type<SpecAspe
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_SPECIALIZEDFORASPECT_H_
+#endif // DART_COMMON_DETAIL_SPECIALIZEDFORASPECT_HPP_

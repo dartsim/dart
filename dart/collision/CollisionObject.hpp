@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONOBJECT_H_
-#define DART_COLLISION_COLLISIONOBJECT_H_
+#ifndef DART_COLLISION_COLLISIONOBJECT_HPP_
+#define DART_COLLISION_COLLISIONOBJECT_HPP_
 
 #include <Eigen/Dense>
 
@@ -93,4 +93,4 @@ protected:
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_COLLISIONOBJECT_H_
+#endif  // DART_COLLISION_COLLISIONOBJECT_HPP_

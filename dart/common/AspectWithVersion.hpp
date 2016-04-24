@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_ASPECTWITHVERSION_H_
-#define DART_COMMON_ASPECTWITHVERSION_H_
+#ifndef DART_COMMON_ASPECTWITHVERSION_HPP_
+#define DART_COMMON_ASPECTWITHVERSION_HPP_
 
 #include "dart/common/detail/AspectWithVersion.hpp"
 
@@ -156,4 +156,4 @@ constexpr void (*AspectWithStateAndVersionedProperties<DerivedT, StateDataT,
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_ASPECTWITHVERSION_H_
+#endif // DART_COMMON_ASPECTWITHVERSION_HPP_

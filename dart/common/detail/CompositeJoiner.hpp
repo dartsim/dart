@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_COMPOSITEJOINER_H_
-#define DART_COMMON_DETAIL_COMPOSITEJOINER_H_
+#ifndef DART_COMMON_DETAIL_COMPOSITEJOINER_HPP_
+#define DART_COMMON_DETAIL_COMPOSITEJOINER_HPP_
 
 #include "dart/common/CompositeJoiner.hpp"
 #include "dart/common/detail/TemplateJoinerDispatchMacro.hpp"
@@ -122,5 +122,5 @@ CompositeJoiner<Base1, Base2, OtherBases...>::CompositeJoiner(
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_COMPOSITEJOINER_H_
+#endif // DART_COMMON_DETAIL_COMPOSITEJOINER_HPP_
 

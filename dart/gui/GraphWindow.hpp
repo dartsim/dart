@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GRAPHWINDOW_H_
-#define DART_GUI_GRAPHWINDOW_H_
+#ifndef DART_GUI_GRAPHWINDOW_HPP_
+#define DART_GUI_GRAPHWINDOW_HPP_
 
 #include <vector>
 
@@ -76,4 +76,4 @@ protected:
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_GRAPHWINDOW_H_
+#endif  // DART_GUI_GRAPHWINDOW_HPP_

@@ -39,8 +39,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_SIMWINDOW_H_
-#define DART_GUI_SIMWINDOW_H_
+#ifndef DART_GUI_SIMWINDOW_HPP_
+#define DART_GUI_SIMWINDOW_HPP_
 
 #include <vector>
 
@@ -160,4 +160,4 @@ protected:
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_SIMWINDOW_H_
+#endif  // DART_GUI_SIMWINDOW_HPP_

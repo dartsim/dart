@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_OPTION_H_
-#define DART_COLLISION_OPTION_H_
+#ifndef DART_COLLISION_OPTION_HPP_
+#define DART_COLLISION_OPTION_HPP_
 
 #include <cstddef>
 #include <memory>
@@ -72,4 +72,4 @@ struct CollisionOption
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_OPTION_H_
+#endif  // DART_COLLISION_OPTION_HPP_

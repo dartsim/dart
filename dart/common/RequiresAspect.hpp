@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_REQUIRESASPECT_H_
-#define DART_COMMON_REQUIRESASPECT_H_
+#ifndef DART_COMMON_REQUIRESASPECT_HPP_
+#define DART_COMMON_REQUIRESASPECT_HPP_
 
 #include "dart/common/SpecializedForAspect.hpp"
 
@@ -74,4 +74,4 @@ class RequiresAspect<ReqAspect1, OtherReqAspects...> :
 
 #include "dart/common/detail/RequiresAspect.hpp"
 
-#endif // DART_COMMON_REQUIRESASPECT_H_
+#endif // DART_COMMON_REQUIRESASPECT_HPP_

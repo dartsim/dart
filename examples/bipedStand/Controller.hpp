@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_BIPEDSTAND_CONTROLLER_H_
-#define EXAMPLES_BIPEDSTAND_CONTROLLER_H_
+#ifndef EXAMPLES_BIPEDSTAND_CONTROLLER_HPP_
+#define EXAMPLES_BIPEDSTAND_CONTROLLER_HPP_
 
 #include <vector>
 
@@ -75,4 +75,4 @@ protected:
   /// \brief SPD utilizes the current info about contact forces
 };
 
-#endif  // EXAMPLES_BIPEDSTAND_CONTROLLER_H_
+#endif  // EXAMPLES_BIPEDSTAND_CONTROLLER_HPP_

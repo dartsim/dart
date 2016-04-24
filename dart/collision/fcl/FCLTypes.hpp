@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLTTYPES_H_
-#define DART_COLLISION_FCL_FCLTTYPES_H_
+#ifndef DART_COLLISION_FCL_FCLTTYPES_HPP_
+#define DART_COLLISION_FCL_FCLTTYPES_HPP_
 
 #include <Eigen/Dense>
 #include <fcl/math/vec_3f.h>
@@ -73,4 +73,4 @@ public:
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLTTYPES_H_
+#endif  // DART_COLLISION_FCL_FCLTTYPES_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_JACOBIANNODE_H_
-#define DART_DYNAMICS_JACOBIANNODE_H_
+#ifndef DART_DYNAMICS_JACOBIANNODE_HPP_
+#define DART_DYNAMICS_JACOBIANNODE_HPP_
 
 #include <memory>
 #include <unordered_set>
@@ -302,4 +302,4 @@ protected:
 } // namespace dart
 } // namespace dynamics
 
-#endif // DART_DYNAMICS_JACOBIANNODE_H_
+#endif // DART_DYNAMICS_JACOBIANNODE_HPP_

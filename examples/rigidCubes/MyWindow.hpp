@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_CUBES_MYWINDOW_H_
-#define EXAMPLES_CUBES_MYWINDOW_H_
+#ifndef EXAMPLES_CUBES_MYWINDOW_HPP_
+#define EXAMPLES_CUBES_MYWINDOW_HPP_
 
 #include "dart/dart.hpp"
 #include "dart/gui/gui.hpp"
@@ -64,4 +64,4 @@ private:
   Eigen::Vector3d mForce;
 };
 
-#endif  // EXAMPLES_CUBES_MYWINDOW_H_
+#endif  // EXAMPLES_CUBES_MYWINDOW_HPP_

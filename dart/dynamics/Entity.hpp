@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_ENTITY_H_
-#define DART_DYNAMICS_ENTITY_H_
+#ifndef DART_DYNAMICS_ENTITY_HPP_
+#define DART_DYNAMICS_ENTITY_HPP_
 
 #include <Eigen/Core>
 #include <string>
@@ -231,4 +231,4 @@ protected:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_ENTITY_H_
+#endif // DART_DYNAMICS_ENTITY_HPP_

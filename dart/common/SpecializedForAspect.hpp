@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SPECIALIZEDFORASPECT_H_
-#define DART_COMMON_SPECIALIZEDFORASPECT_H_
+#ifndef DART_COMMON_SPECIALIZEDFORASPECT_HPP_
+#define DART_COMMON_SPECIALIZEDFORASPECT_HPP_
 
 #include "dart/common/Composite.hpp"
 #include "dart/common/CompositeJoiner.hpp"
@@ -204,4 +204,4 @@ public:
 
 #include "dart/common/detail/SpecializedForAspect.hpp"
 
-#endif // DART_COMMON_SPECIALIZEDFORASPECT_H_
+#endif // DART_COMMON_SPECIALIZEDFORASPECT_HPP_

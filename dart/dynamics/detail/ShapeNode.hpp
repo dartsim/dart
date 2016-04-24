@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_SHAPENODE_H_
-#define DART_DYNAMICS_DETAIL_SHAPENODE_H_
+#ifndef DART_DYNAMICS_DETAIL_SHAPENODE_HPP_
+#define DART_DYNAMICS_DETAIL_SHAPENODE_HPP_
 
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/FixedJacobianNode.hpp"
@@ -56,4 +56,4 @@ using ShapeNodeCompositeBase = CompositeNode<
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_SHAPENODE_H_
+#endif // DART_DYNAMICS_DETAIL_SHAPENODE_HPP_

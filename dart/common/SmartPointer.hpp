@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SMARTPOINTER_H_
-#define DART_COMMON_SMARTPOINTER_H_
+#ifndef DART_COMMON_SMARTPOINTER_HPP_
+#define DART_COMMON_SMARTPOINTER_HPP_
 
 #include <memory>
 
@@ -49,4 +49,4 @@
   typedef std::weak_ptr< X >         Weak ## X ## Ptr;\
   typedef std::weak_ptr< const X >   WeakConst ## X ## Ptr;
 
-#endif // DART_COMMON_SMARTPOINTER_H_
+#endif // DART_COMMON_SMARTPOINTER_HPP_

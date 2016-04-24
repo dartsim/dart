@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SHAPEFRAME_H_
-#define DART_DYNAMICS_SHAPEFRAME_H_
+#ifndef DART_DYNAMICS_SHAPEFRAME_HPP_
+#define DART_DYNAMICS_SHAPEFRAME_HPP_
 
 #include <Eigen/Dense>
 
@@ -266,4 +266,4 @@ public:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_SHAPEFRAME_H_
+#endif // DART_DYNAMICS_SHAPEFRAME_HPP_

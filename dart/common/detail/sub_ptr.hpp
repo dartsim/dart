@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_SUB_PTR_H_
-#define DART_COMMON_DETAIL_SUB_PTR_H_
+#ifndef DART_COMMON_DETAIL_SUB_PTR_HPP_
+#define DART_COMMON_DETAIL_SUB_PTR_HPP_
 
 #include "dart/common/sub_ptr.hpp"
 
@@ -136,4 +136,4 @@ void sub_ptr<T>::handleDestructionNotification(const Subject* _subject)
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_SUB_PTR_H_
+#endif // DART_COMMON_DETAIL_SUB_PTR_HPP_

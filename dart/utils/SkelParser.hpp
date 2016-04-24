@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_SKELPARSER_H_
-#define DART_UTILS_SKELPARSER_H_
+#ifndef DART_UTILS_SKELPARSER_HPP_
+#define DART_UTILS_SKELPARSER_HPP_
 
 #include <string>
 #include "dart/common/Uri.hpp"
@@ -69,4 +69,4 @@ namespace SkelParser {
 } // namespace utils
 } // namespace dart
 
-#endif // #ifndef DART_UTILS_SKELPARSER_H_
+#endif // #ifndef DART_UTILS_SKELPARSER_HPP_

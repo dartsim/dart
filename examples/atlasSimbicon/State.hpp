@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_ATLASSIMBICON_STATE_H_
-#define EXAMPLES_ATLASSIMBICON_STATE_H_
+#ifndef EXAMPLES_ATLASSIMBICON_STATE_HPP_
+#define EXAMPLES_ATLASSIMBICON_STATE_HPP_
 
 #include <map>
 #include <vector>
@@ -336,4 +336,4 @@ private:
   Eigen::VectorXd mDesiredJointPositionsBalance;
 };
 
-#endif  // EXAMPLES_ATLASSIMBICON_STATE_H_
+#endif  // EXAMPLES_ATLASSIMBICON_STATE_HPP_

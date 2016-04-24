@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SUBJECT_H_
-#define DART_COMMON_SUBJECT_H_
+#ifndef DART_COMMON_SUBJECT_HPP_
+#define DART_COMMON_SUBJECT_HPP_
 
 #include <set>
 
@@ -88,4 +88,4 @@ protected:
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_SUBJECT_H_
+#endif // DART_COMMON_SUBJECT_HPP_

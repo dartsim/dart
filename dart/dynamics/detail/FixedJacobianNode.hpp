@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_FIXEDJACOBIANNODE_H_
-#define DART_DYNAMICS_DETAIL_FIXEDJACOBIANNODE_H_
+#ifndef DART_DYNAMICS_DETAIL_FIXEDJACOBIANNODE_HPP_
+#define DART_DYNAMICS_DETAIL_FIXEDJACOBIANNODE_HPP_
 
 #include "dart/dynamics/TemplatedJacobianNode.hpp"
 #include "dart/dynamics/FixedFrame.hpp"
@@ -57,4 +57,4 @@ using FixedJacobianNodeCompositeBase = common::CompositeJoiner<
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_FIXEDJACOBIANNODE_H_
+#endif // DART_DYNAMICS_DETAIL_FIXEDJACOBIANNODE_HPP_

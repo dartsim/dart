@@ -40,8 +40,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_SOFTBODIES_MYWINDOW_H_
-#define EXAMPLES_SOFTBODIES_MYWINDOW_H_
+#ifndef EXAMPLES_SOFTBODIES_MYWINDOW_HPP_
+#define EXAMPLES_SOFTBODIES_MYWINDOW_HPP_
 
 #include "dart/dart.hpp"
 #include "dart/gui/gui.hpp"
@@ -76,4 +76,4 @@ private:
   Eigen::Vector3d mForceOnVertex;
 };
 
-#endif  // EXAMPLES_SOFTBODIES_MYWINDOW_H_
+#endif  // EXAMPLES_SOFTBODIES_MYWINDOW_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_CONTACT_H_
-#define DART_COLLISION_CONTACT_H_
+#ifndef DART_COLLISION_CONTACT_HPP_
+#define DART_COLLISION_CONTACT_HPP_
 
 #include <Eigen/Dense>
 #include "dart/collision/SmartPointer.hpp"
@@ -87,4 +87,4 @@ struct Contact
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_CONTACT_H_
+#endif  // DART_COLLISION_CONTACT_HPP_

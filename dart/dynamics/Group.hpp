@@ -36,8 +36,8 @@
 
 #include "dart/dynamics/ReferentialSkeleton.hpp"
 
-#ifndef DART_DYNAMICS_GROUP_H_
-#define DART_DYNAMICS_GROUP_H_
+#ifndef DART_DYNAMICS_GROUP_HPP_
+#define DART_DYNAMICS_GROUP_HPP_
 
 namespace dart {
 namespace dynamics {
@@ -248,4 +248,4 @@ protected:
 } // dynamics
 } // dart
 
-#endif // DART_DYNAMICS_GROUP_H_
+#endif // DART_DYNAMICS_GROUP_HPP_

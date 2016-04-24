@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RESULT_H_
-#define DART_COLLISION_RESULT_H_
+#ifndef DART_COLLISION_RESULT_HPP_
+#define DART_COLLISION_RESULT_HPP_
 
 #include <vector>
 #include <unordered_set>
@@ -112,4 +112,4 @@ protected:
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_RESULT_H_
+#endif  // DART_COLLISION_RESULT_HPP_

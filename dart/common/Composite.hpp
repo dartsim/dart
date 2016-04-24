@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_COMPOSITE_H_
-#define DART_COMMON_COMPOSITE_H_
+#ifndef DART_COMMON_COMPOSITE_HPP_
+#define DART_COMMON_COMPOSITE_HPP_
 
 #include "dart/common/detail/CompositeData.hpp"
 
@@ -207,4 +207,4 @@ void createAspects(T* comp);
 
 #include "dart/common/detail/Composite.hpp"
 
-#endif // DART_COMMON_COMPOSITE_H_
+#endif // DART_COMMON_COMPOSITE_HPP_

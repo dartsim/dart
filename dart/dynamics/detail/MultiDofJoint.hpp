@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
-#define DART_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
+#ifndef DART_DYNAMICS_DETAIL_MULTIDOFJOINT_HPP_
+#define DART_DYNAMICS_DETAIL_MULTIDOFJOINT_HPP_
 
 #include "dart/dynamics/MultiDofJoint.hpp"
 
@@ -2352,4 +2352,4 @@ Eigen::VectorXd MultiDofJoint<DOF>::getSpatialToGeneralized(
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
+#endif // DART_DYNAMICS_DETAIL_MULTIDOFJOINT_HPP_

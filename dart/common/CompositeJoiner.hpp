@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_COMPOSITEJOINER_H_
-#define DART_COMMON_COMPOSITEJOINER_H_
+#ifndef DART_COMMON_COMPOSITEJOINER_HPP_
+#define DART_COMMON_COMPOSITEJOINER_HPP_
 
 #include "dart/common/Composite.hpp"
 #include "dart/common/Empty.hpp"
@@ -164,5 +164,5 @@ public:
 
 #include "dart/common/detail/CompositeJoiner.hpp"
 
-#endif // DART_COMMON_COMPOSITEJOINER_H_
+#endif // DART_COMMON_COMPOSITEJOINER_HPP_
 

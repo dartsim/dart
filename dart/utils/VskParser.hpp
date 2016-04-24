@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_VSKPARSER_H_
-#define DART_UTILS_VSKPARSER_H_
+#ifndef DART_UTILS_VSKPARSER_HPP_
+#define DART_UTILS_VSKPARSER_HPP_
 
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
@@ -108,5 +108,5 @@ namespace VskParser
 } // namespace utils
 } // namespace dart
 
-#endif // #ifndef DART_UTILS_VSKPARSER_H_
+#endif // #ifndef DART_UTILS_VSKPARSER_HPP_
 

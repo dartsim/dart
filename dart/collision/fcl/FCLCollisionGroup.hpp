@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_
-#define DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_
+#ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_
+#define DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_
 
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 
@@ -100,4 +100,4 @@ protected:
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONGROUP_H_
+#endif  // DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_

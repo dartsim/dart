@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OPENGLRENDERINTERFACE_H_
-#define DART_GUI_OPENGLRENDERINTERFACE_H_
+#ifndef DART_GUI_OPENGLRENDERINTERFACE_HPP_
+#define DART_GUI_OPENGLRENDERINTERFACE_HPP_
 
 #include <list>
 #include <vector>
@@ -117,4 +117,4 @@ public:
 } // namespace gui
 } // namespace dart
 
-#endif // #ifndef DART_GUI_OPENGLRENDERINTERFACE_H_
+#endif // #ifndef DART_GUI_OPENGLRENDERINTERFACE_HPP_

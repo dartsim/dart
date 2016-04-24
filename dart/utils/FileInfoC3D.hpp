@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_FILEINFOC3D_H_
-#define DART_UTILS_FILEINFOC3D_H_
+#ifndef DART_UTILS_FILEINFOC3D_HPP_
+#define DART_UTILS_FILEINFOC3D_HPP_
 
 #include <vector>
 #include <Eigen/Dense>
@@ -72,5 +72,5 @@ protected:
 } // namespace utils
 } // namespace dart
 
-#endif // #ifndef DART_UTILS_FILEINFOC3D_H_
+#endif // #ifndef DART_UTILS_FILEINFOC3D_HPP_
 

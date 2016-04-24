@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_NODE_H_
-#define DART_DYNAMICS_NODE_H_
+#ifndef DART_DYNAMICS_NODE_HPP_
+#define DART_DYNAMICS_NODE_HPP_
 
 #include <memory>
 
@@ -275,4 +275,4 @@ protected:
 
 #include "dart/dynamics/detail/Node.hpp"
 
-#endif // DART_DYNAMICS_NODE_H_
+#endif // DART_DYNAMICS_NODE_HPP_

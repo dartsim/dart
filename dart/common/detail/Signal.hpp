@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_SIGNAL_H_
-#define DART_COMMON_DETAIL_SIGNAL_H_
+#ifndef DART_COMMON_DETAIL_SIGNAL_HPP_
+#define DART_COMMON_DETAIL_SIGNAL_HPP_
 
 #include <vector>
 
@@ -275,5 +275,5 @@ Connection SlotRegister<T>::connect(const SlotType& _slot)
 }  // namespace common
 }  // namespace dart
 
-#endif  // DART_COMMON_DETAIL_SIGNAL_H_
+#endif  // DART_COMMON_DETAIL_SIGNAL_HPP_
 

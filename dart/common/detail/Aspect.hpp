@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_ASPECT_H_
-#define DART_COMMON_DETAIL_ASPECT_H_
+#ifndef DART_COMMON_DETAIL_ASPECT_HPP_
+#define DART_COMMON_DETAIL_ASPECT_HPP_
 
 #include <cassert>
 
@@ -106,4 +106,4 @@ void CompositeTrackingAspect<CompositeType>::loseComposite(
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_ASPECT_H_
+#endif // DART_COMMON_DETAIL_ASPECT_HPP_

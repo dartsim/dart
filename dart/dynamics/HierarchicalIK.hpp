@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_HIERARCHICALIK_H_
-#define DART_DYNAMICS_HIERARCHICALIK_H_
+#ifndef DART_DYNAMICS_HIERARCHICALIK_HPP_
+#define DART_DYNAMICS_HIERARCHICALIK_HPP_
 
 #include <unordered_set>
 
@@ -392,4 +392,4 @@ public:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_HIERARCHICALIK_H_
+#endif // DART_DYNAMICS_HIERARCHICALIK_HPP_

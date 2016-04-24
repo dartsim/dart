@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_ASPECT_H_
-#define DART_COMMON_ASPECT_H_
+#ifndef DART_COMMON_ASPECT_HPP_
+#define DART_COMMON_ASPECT_HPP_
 
 #include <string>
 
@@ -203,4 +203,4 @@ protected:
 
 #include "dart/common/detail/Aspect.hpp"
 
-#endif // DART_COMMON_ASPECT_H_
+#endif // DART_COMMON_ASPECT_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BALLJOINT_H_
-#define DART_DYNAMICS_BALLJOINT_H_
+#ifndef DART_DYNAMICS_BALLJOINT_HPP_
+#define DART_DYNAMICS_BALLJOINT_HPP_
 
 #include <Eigen/Dense>
 
@@ -142,5 +142,5 @@ public:
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_BALLJOINT_H_
+#endif  // DART_DYNAMICS_BALLJOINT_HPP_
 

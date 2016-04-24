@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_H_
-#define DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_H_
+#ifndef DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_HPP_
+#define DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_HPP_
 
 #include "dart/dynamics/NodeManagerJoiner.hpp"
 #include "dart/common/detail/TemplateJoinerDispatchMacro.hpp"
@@ -132,4 +132,4 @@ NodeManagerJoinerForSkeleton<Base1, Base2, OtherBases...>::NodeManagerJoinerForS
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_H_
+#endif // DART_DYNAMICS_DETAIL_NODEMANAGERJOINER_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_METASKELETON_H_
-#define DART_DYNAMICS_METASKELETON_H_
+#ifndef DART_DYNAMICS_METASKELETON_HPP_
+#define DART_DYNAMICS_METASKELETON_HPP_
 
 #include <vector>
 #include <string>
@@ -628,4 +628,4 @@ public:
 } // namespace dart
 
 
-#endif // DART_DYNAMICS_METASKELETON_H_
+#endif // DART_DYNAMICS_METASKELETON_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_SKELETONASPECT_H_
-#define DART_DYNAMICS_DETAIL_SKELETONASPECT_H_
+#ifndef DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
+#define DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_
 
 #include "dart/common/Composite.hpp"
 #include "dart/common/ProxyAspect.hpp"
@@ -163,4 +163,4 @@ using SkeletonAspectBase = common::EmbedPropertiesOnTopOf<
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_SKELETONASPECT_H_
+#endif // DART_DYNAMICS_DETAIL_SKELETONASPECT_HPP_

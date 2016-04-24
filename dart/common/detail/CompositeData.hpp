@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_COMPOSITEDATA_H_
-#define DART_COMMON_DETAIL_COMPOSITEDATA_H_
+#ifndef DART_COMMON_DETAIL_COMPOSITEDATA_HPP_
+#define DART_COMMON_DETAIL_COMPOSITEDATA_HPP_
 
 #include <Eigen/Core>
 
@@ -351,4 +351,4 @@ using MakeCompositeProperties =
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_COMPOSITEDATA_H_
+#endif // DART_COMMON_DETAIL_COMPOSITEDATA_HPP_

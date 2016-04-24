@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_H_
-#define DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_H_
+#ifndef DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_
+#define DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_
 
 #include <Eigen/Core>
 
@@ -123,4 +123,4 @@ using ShapeFrameCompositeBase = common::EmbedPropertiesOnTopOf<
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_H_
+#endif // DART_DYNAMICS_DETAIL_SHAPEFRAMEASPECT_HPP_

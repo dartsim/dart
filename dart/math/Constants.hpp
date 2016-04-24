@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_CONSTANTS_H_
-#define DART_MATH_CONSTANTS_H_
+#ifndef DART_MATH_CONSTANTS_HPP_
+#define DART_MATH_CONSTANTS_HPP_
 
 #include <limits>
 
@@ -65,4 +65,4 @@ using constantsd = constants<double>;
 }  // namespace math
 }  // namespace dart
 
-#endif  // DART_MATH_CONSTANTS_H_
+#endif  // DART_MATH_CONSTANTS_HPP_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_DETAIL_EMBEDDEDASPECT_H_
-#define DART_COMMON_DETAIL_EMBEDDEDASPECT_H_
+#ifndef DART_COMMON_DETAIL_EMBEDDEDASPECT_HPP_
+#define DART_COMMON_DETAIL_EMBEDDEDASPECT_HPP_
 
 #include "dart/common/Aspect.hpp"
 #include "dart/common/StlHelpers.hpp"
@@ -465,4 +465,4 @@ constexpr const PropertiesT& (*EmbeddedPropertiesAspect<
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_DETAIL_EMBEDDEDASPECT_H_
+#endif // DART_COMMON_DETAIL_EMBEDDEDASPECT_HPP_

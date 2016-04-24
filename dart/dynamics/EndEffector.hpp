@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_ENDEFFECTOR_H_
-#define DART_DYNAMICS_ENDEFFECTOR_H_
+#ifndef DART_DYNAMICS_ENDEFFECTOR_HPP_
+#define DART_DYNAMICS_ENDEFFECTOR_HPP_
 
 #include "dart/common/Aspect.hpp"
 #include "dart/common/SpecializedForAspect.hpp"
@@ -172,4 +172,4 @@ public:
 } // namespace dart
 
 
-#endif // DART_DYNAMICS_ENDEFFECTOR_H_
+#endif // DART_DYNAMICS_ENDEFFECTOR_HPP_

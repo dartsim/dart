@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_VERSIONCOUNTER_H_
-#define DART_COMMON_VERSIONCOUNTER_H_
+#ifndef DART_COMMON_VERSIONCOUNTER_HPP_
+#define DART_COMMON_VERSIONCOUNTER_HPP_
 
 #include <cstddef>
 
@@ -71,4 +71,4 @@ private:
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_VERSIONCOUNTER_H_
+#endif // DART_COMMON_VERSIONCOUNTER_HPP_

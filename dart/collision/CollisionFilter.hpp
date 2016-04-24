@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_COLLISIONFILTER_H_
-#define DART_COLLISION_COLLISIONFILTER_H_
+#ifndef DART_COLLISION_COLLISIONFILTER_HPP_
+#define DART_COLLISION_COLLISIONFILTER_HPP_
 
 namespace dart {
 
@@ -65,4 +65,4 @@ struct BodyNodeCollisionFilter : CollisionFilter
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_COLLISIONFILTER_H_
+#endif  // DART_COLLISION_COLLISIONFILTER_HPP_

@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_JOINT_H_
-#define DART_DYNAMICS_JOINT_H_
+#ifndef DART_DYNAMICS_JOINT_HPP_
+#define DART_DYNAMICS_JOINT_HPP_
 
 #include <string>
 #include <vector>
@@ -894,4 +894,4 @@ public:
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_JOINT_H_
+#endif  // DART_DYNAMICS_JOINT_HPP_

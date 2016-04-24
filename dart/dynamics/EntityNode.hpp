@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_ENTITYNODE_H_
-#define DART_DYNAMICS_ENTITYNODE_H_
+#ifndef DART_DYNAMICS_ENTITYNODE_HPP_
+#define DART_DYNAMICS_ENTITYNODE_HPP_
 
 #include "dart/dynamics/detail/EntityNodeAspect.hpp"
 
@@ -79,4 +79,4 @@ public:
 
 #include "dart/dynamics/detail/EntityNode.hpp"
 
-#endif // DART_DYNAMICS_ENTITYNODE_H_
+#endif // DART_DYNAMICS_ENTITYNODE_HPP_

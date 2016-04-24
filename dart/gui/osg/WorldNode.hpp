@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OSG_WORLDNODE_H_
-#define DART_GUI_OSG_WORLDNODE_H_
+#ifndef DART_GUI_OSG_WORLDNODE_HPP_
+#define DART_GUI_OSG_WORLDNODE_HPP_
 
 #include <osg/Group>
 #include <unordered_map>
@@ -183,4 +183,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_OSG_WORLDNODE_H_
+#endif // DART_GUI_OSG_WORLDNODE_HPP_

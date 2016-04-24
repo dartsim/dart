@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_COMPOSITENODE_H_
-#define DART_DYNAMICS_COMPOSITENODE_H_
+#ifndef DART_DYNAMICS_COMPOSITENODE_HPP_
+#define DART_DYNAMICS_COMPOSITENODE_HPP_
 
 #include "dart/common/Composite.hpp"
 #include "dart/dynamics/Node.hpp"
@@ -120,4 +120,4 @@ public:
 
 #include "dart/dynamics/detail/CompositeNode.hpp"
 
-#endif // DART_DYNAMICS_COMPOSITENODE_H_
+#endif // DART_DYNAMICS_COMPOSITENODE_HPP_

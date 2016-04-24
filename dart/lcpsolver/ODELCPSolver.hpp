@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_LCPSOLVER_ODELCPSOLVER_H_
-#define DART_LCPSOLVER_ODELCPSOLVER_H_
+#ifndef DART_LCPSOLVER_ODELCPSOLVER_HPP_
+#define DART_LCPSOLVER_ODELCPSOLVER_HPP_
 
 #include <Eigen/Dense>
 
@@ -84,4 +84,4 @@ private:
 }  // namespace lcpsolver
 }  // namespace dart
 
-#endif  // DART_LCPSOLVER_ODELCPSOLVER_H_
+#endif  // DART_LCPSOLVER_ODELCPSOLVER_HPP_
