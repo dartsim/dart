@@ -38,12 +38,12 @@
 #define DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_H_
 
 // Must be included before any Bullet headers.
-#include "dart/config.h"
+#include "dart/config.hpp"
 
 #include <vector>
 #include <assimp/scene.h>
 #include <btBulletCollisionCommon.h>
-#include "dart/collision/CollisionDetector.h"
+#include "dart/collision/CollisionDetector.hpp"
 
 namespace dart {
 namespace collision {

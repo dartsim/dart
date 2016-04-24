@@ -39,7 +39,7 @@
 
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 
-#include "dart/collision/CollisionGroup.h"
+#include "dart/collision/CollisionGroup.hpp"
 
 namespace dart {
 namespace collision {

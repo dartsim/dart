@@ -39,10 +39,10 @@
 
 #include <map>
 #include <vector>
-#include "dart/collision/SmartPointer.h"
-#include "dart/collision/Option.h"
-#include "dart/collision/Result.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/collision/SmartPointer.hpp"
+#include "dart/collision/Option.hpp"
+#include "dart/collision/Result.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace collision {
@@ -236,6 +236,6 @@ protected:
 }  // namespace collision
 }  // namespace dart
 
-#include "dart/collision/detail/CollisionGroup.h"
+#include "dart/collision/detail/CollisionGroup.hpp"
 
 #endif  // DART_COLLISION_COLLISIONGROUP_H_

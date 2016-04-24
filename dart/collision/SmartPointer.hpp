@@ -37,8 +37,8 @@
 #ifndef DART_COLLISION_SMARTPOINTER_H_
 #define DART_COLLISION_SMARTPOINTER_H_
 
-#include "dart/config.h"
-#include "dart/common/SmartPointer.h"
+#include "dart/config.hpp"
+#include "dart/common/SmartPointer.hpp"
 
 namespace dart {
 namespace collision {

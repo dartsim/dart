@@ -41,7 +41,7 @@
 #include <vector>
 #include <fcl/collision_object.h>
 #include <boost/weak_ptr.hpp> // This should be removed once we migrate to fcl 0.5
-#include "dart/collision/CollisionDetector.h"
+#include "dart/collision/CollisionDetector.hpp"
 
 namespace dart {
 namespace collision {

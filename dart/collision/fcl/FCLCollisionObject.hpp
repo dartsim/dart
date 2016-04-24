@@ -38,7 +38,7 @@
 #define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_H_
 
 #include <fcl/collision_object.h>
-#include "dart/collision/CollisionObject.h"
+#include "dart/collision/CollisionObject.hpp"
 
 namespace dart {
 namespace collision {

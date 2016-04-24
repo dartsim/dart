@@ -37,10 +37,10 @@
 #ifndef DART_COLLISION_DETAIL_COLLISIONGROUP_H_
 #define DART_COLLISION_DETAIL_COLLISIONGROUP_H_
 
-#include "dart/collision/CollisionGroup.h"
+#include "dart/collision/CollisionGroup.hpp"
 
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace collision {

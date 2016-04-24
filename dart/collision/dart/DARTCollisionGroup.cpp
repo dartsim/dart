@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DARTCollisionGroup.h"
+#include "dart/collision/dart/DARTCollisionGroup.hpp"
 
-#include "dart/collision/CollisionObject.h"
+#include "dart/collision/CollisionObject.hpp"
 
 namespace dart {
 namespace collision {

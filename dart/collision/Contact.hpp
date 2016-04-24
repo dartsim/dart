@@ -38,8 +38,8 @@
 #define DART_COLLISION_CONTACT_H_
 
 #include <Eigen/Dense>
-#include "dart/collision/SmartPointer.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/collision/SmartPointer.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace collision {

@@ -34,15 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DARTCollisionDetector.h"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionFilter.h"
-#include "dart/collision/dart/DARTCollide.h"
-#include "dart/collision/dart/DARTCollisionObject.h"
-#include "dart/collision/dart/DARTCollisionGroup.h"
-#include "dart/dynamics/ShapeFrame.h"
-#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/dart/DARTCollide.hpp"
+#include "dart/collision/dart/DARTCollisionObject.hpp"
+#include "dart/collision/dart/DARTCollisionGroup.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
 
 namespace dart {
 namespace collision {

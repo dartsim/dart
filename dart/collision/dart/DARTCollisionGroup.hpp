@@ -37,7 +37,7 @@
 #ifndef DART_COLLISION_DART_DARTCOLLISIONGROUP_H_
 #define DART_COLLISION_DART_DARTCOLLISIONGROUP_H_
 
-#include "dart/collision/CollisionGroup.h"
+#include "dart/collision/CollisionGroup.hpp"
 
 namespace dart {
 namespace collision {

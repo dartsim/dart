@@ -43,11 +43,11 @@
 
 #include <Eigen/Dense>
 
-#include "dart/collision/Contact.h"
-#include "dart/collision/Option.h"
-#include "dart/collision/Result.h"
-#include "dart/collision/SmartPointer.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/collision/Contact.hpp"
+#include "dart/collision/Option.hpp"
+#include "dart/collision/Result.hpp"
+#include "dart/collision/SmartPointer.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace collision {
@@ -225,6 +225,6 @@ private:
 }  // namespace collision
 }  // namespace dart
 
-#include "dart/collision/detail/CollisionDetector.h"
+#include "dart/collision/detail/CollisionDetector.hpp"
 
 #endif  // DART_COLLISION_COLLISIONDETECTOR_H_

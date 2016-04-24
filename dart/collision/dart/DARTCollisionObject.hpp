@@ -38,7 +38,7 @@
 #define DART_COLLISION_DART_DARTCOLLISIONOBJECT_H_
 
 #include <Eigen/Dense>
-#include "dart/collision/CollisionObject.h"
+#include "dart/collision/CollisionObject.hpp"
 
 namespace dart {
 namespace collision {

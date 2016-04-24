@@ -41,8 +41,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/collision/CollisionDetector.h"
-#include "dart/dynamics/Shape.h"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {

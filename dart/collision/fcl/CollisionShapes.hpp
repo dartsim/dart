@@ -38,10 +38,8 @@
 #define DART_COLLISION_FCL_MESH_COLLISIONSHAPES_H_
 
 #include <cmath>
-
 #include <assimp/scene.h>
-
-#include "fcl/BVH/BVH_model.h"
+#include <fcl/BVH/BVH_model.h>
 
 namespace dart {
 namespace collision {
