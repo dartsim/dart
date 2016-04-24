@@ -453,6 +453,7 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
 
   skelClone->setProperties(getAspectProperties());
   skelClone->setName(cloneName);
+  skelClone->setState(getState());
 
   return skelClone;
 }
