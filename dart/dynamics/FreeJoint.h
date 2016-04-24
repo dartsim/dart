@@ -76,7 +76,7 @@ public:
   static const std::string& getStaticType();
 
   // Documentation inherited
-  bool isCyclic(size_t _index) const override;
+  bool isCyclic(std::size_t _index) const override;
 
   /// Convert a transform into a 6D vector that can be used to set the positions
   /// of a FreeJoint. The positions returned by this function will result in a

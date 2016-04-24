@@ -119,7 +119,7 @@ const std::vector<SimpleFrame*>& JOINTS::getFrames() const
 //==============================================================================
 void JOINTS::randomizeRefFrames()
 {
-  for(size_t i=0; i<frames.size(); ++i)
+  for(std::size_t i=0; i<frames.size(); ++i)
   {
     SimpleFrame* F = frames[i];
 
@@ -637,7 +637,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
 
   pendulum->disableSelfCollision();
 
-  for (size_t i = 0; i < pendulum->getNumBodyNodes(); ++i)
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i)
   {
     auto bodyNode = pendulum->getBodyNode(i);
     bodyNode->removeAllShapeNodesWith<CollisionAspect>();
@@ -662,7 +662,7 @@ void testServoMotor()
 {
   using namespace dart::math::suffixes;
 
-  size_t numPendulums = 7;
+  std::size_t numPendulums = 7;
   double timestep = 1e-3;
   double tol = 1e-9;
   double posUpperLimit = 90.0_deg;
@@ -715,7 +715,7 @@ void testServoMotor()
 
   std::vector<SkeletonPtr> pendulums(numPendulums);
   std::vector<JointPtr> joints(numPendulums);
-  for (size_t i = 0; i < numPendulums; ++i)
+  for (std::size_t i = 0; i < numPendulums; ++i)
   {
     pendulums[i] = createPendulum(Joint::SERVO);
     joints[i] = pendulums[i]->getJoint(0);
@@ -775,7 +775,7 @@ void testServoMotor()
     world->step();
 
     std::vector<double> jointVels(numPendulums);
-    for (size_t j = 0; j < numPendulums; ++j)
+    for (std::size_t j = 0; j < numPendulums; ++j)
       jointVels[j] = joints[j]->getVelocity(0);
 
     EXPECT_NEAR(jointVels[0], 0.0, tol);
@@ -845,8 +845,8 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
   const double ll = -constantsd::pi()/12.0; // -15 degree
   const double ul = +constantsd::pi()/12.0; // +15 degree
 
-  size_t dof0 = joint0->getNumDofs();
-  for (size_t i = 0; i < dof0; ++i)
+  std::size_t dof0 = joint0->getNumDofs();
+  for (std::size_t i = 0; i < dof0; ++i)
   {
     joint0->setPosition(i, 0.0);
     joint0->setPosition(i, 0.0);
@@ -854,8 +854,8 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
     joint0->setPositionUpperLimit(i, ul);
   }
 
-  size_t dof1 = joint1->getNumDofs();
-  for (size_t i = 0; i < dof1; ++i)
+  std::size_t dof1 = joint1->getNumDofs();
+  for (std::size_t i = 0; i < dof1; ++i)
   {
     joint1->setPosition(i, 0.0);
     joint1->setPosition(i, 0.0);
@@ -930,7 +930,7 @@ template<int N>
 Eigen::Matrix<double,N,1> random_vec(double limit=100)
 {
   Eigen::Matrix<double,N,1> v;
-  for(size_t i=0; i<N; ++i)
+  for(std::size_t i=0; i<N; ++i)
     v[i] = math::random(-std::abs(limit), std::abs(limit));
   return v;
 }
@@ -1004,7 +1004,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
   balljoint->setTransformFromChildBodyNode(random_transform());
 
   // Test a hundred times
-  for(size_t n=0; n<100; ++n)
+  for(std::size_t n=0; n<100; ++n)
   {
     // -- convert transforms to positions and then positions back to transforms
     Eigen::Isometry3d desired_freejoint_tf = random_transform();
@@ -1047,7 +1047,7 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
     desired_tfs.push_back(desired_balljoint_tf);
     actual_tfs.push_back(actual_balljoint_tf);
 
-    for(size_t i=0; i<joints.size(); ++i)
+    for(std::size_t i=0; i<joints.size(); ++i)
     {
       Joint* joint = joints[i];
       BodyNode* bn = bns[i];

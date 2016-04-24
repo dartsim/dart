@@ -77,9 +77,9 @@ NodeManagerJoinerForBodyNode<Base1, Base2>::NodeManagerJoinerForBodyNode(
 }
 
 //==============================================================================
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(size_t, NodeManagerJoinerForBodyNode, getNumNodes, () const, isSpecializedForNode, ())
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForBodyNode, getNode, (size_t index), isSpecializedForNode, (index))
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForBodyNode, getNode, (size_t index) const, isSpecializedForNode, (index))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(std::size_t, NodeManagerJoinerForBodyNode, getNumNodes, () const, isSpecializedForNode, ())
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForBodyNode, getNode, (std::size_t index), isSpecializedForNode, (index))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForBodyNode, getNode, (std::size_t index) const, isSpecializedForNode, (index))
 
 //==============================================================================
 template <class Base1, class Base2>
@@ -112,9 +112,9 @@ NodeManagerJoinerForSkeleton<Base1, Base2>::NodeManagerJoinerForSkeleton(
 }
 
 //==============================================================================
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(size_t, NodeManagerJoinerForSkeleton, getNumNodes, (size_t treeIndex) const, isSpecializedForNode, (treeIndex))
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForSkeleton, getNode, (size_t treeIndex, size_t nodeIndex), isSpecializedForNode, (treeIndex, nodeIndex))
-DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForSkeleton, getNode, (size_t treeIndex, size_t nodeIndex) const, isSpecializedForNode, (treeIndex, nodeIndex))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(std::size_t, NodeManagerJoinerForSkeleton, getNumNodes, (std::size_t treeIndex) const, isSpecializedForNode, (treeIndex))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForSkeleton, getNode, (std::size_t treeIndex, std::size_t nodeIndex), isSpecializedForNode, (treeIndex, nodeIndex))
+DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForSkeleton, getNode, (std::size_t treeIndex, std::size_t nodeIndex) const, isSpecializedForNode, (treeIndex, nodeIndex))
 DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(T*, NodeManagerJoinerForSkeleton, getNode, (const std::string& name), isSpecializedForNode, (name))
 DETAIL_DART_COMMON_IRREGULAR_TEMPLATEJOINERDISPATCH_IMPL(const T*, NodeManagerJoinerForSkeleton, getNode, (const std::string& name) const, isSpecializedForNode, (name))
 

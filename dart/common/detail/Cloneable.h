@@ -543,7 +543,7 @@ void CloneableVector<T>::copy(const CloneableVector<T>& anotherVector)
   const std::vector<T>& other = anotherVector.getVector();
   mVector.resize(other.size());
 
-  for(size_t i=0; i < other.size(); ++i)
+  for(std::size_t i=0; i < other.size(); ++i)
   {
     if(mVector[i] && other[i])
       mVector[i]->copy(*other[i]);

@@ -80,7 +80,7 @@ template <class T>
 class aligned_allocator_cpp11 : public std::allocator<T>
 {
 public:
-  typedef size_t          size_type;
+  typedef std::size_t     size_type;
   typedef std::ptrdiff_t  difference_type;
   typedef T*              pointer;
   typedef const T*        const_pointer;

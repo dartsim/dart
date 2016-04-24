@@ -87,7 +87,7 @@ protected:
   void getInformation(ConstraintInfo* _lcp) override;
 
   // Documentation inherited
-  void applyUnitImpulse(size_t _index) override;
+  void applyUnitImpulse(std::size_t _index) override;
 
   // Documentation inherited
   void getVelocityChange(double* _delVel, bool _withCfm) override;
@@ -115,10 +115,10 @@ private:
   dynamics::BodyNode* mBodyNode;
 
   /// Index of applied impulse
-  size_t mAppliedImpulseIndex;
+  std::size_t mAppliedImpulseIndex;
 
   ///
-  size_t mLifeTime[6];
+  std::size_t mLifeTime[6];
 
   ///
   bool mActive[6];

@@ -187,7 +187,7 @@ void MeshShapeNode::extractData(bool firstTime)
   {
     mMaterials.reserve(scene->mNumMaterials);
 
-    for(size_t i=0; i<scene->mNumMaterials; ++i)
+    for(std::size_t i=0; i<scene->mNumMaterials; ++i)
     {
       aiMaterial* aiMat = scene->mMaterials[i];
       ::osg::ref_ptr<::osg::Material> material = new ::osg::Material;
@@ -272,7 +272,7 @@ void MeshShapeNode::extractData(bool firstTime)
 }
 
 //==============================================================================
-::osg::Material* MeshShapeNode::getMaterial(size_t index) const
+::osg::Material* MeshShapeNode::getMaterial(std::size_t index) const
 {
   if(index < mMaterials.size())
     return mMaterials[index];
@@ -331,7 +331,7 @@ void osgAiNode::extractData(bool firstTime)
     setMatrix(::osg::Matrixf((float*)(&M)));
   }
 
-  for(size_t i=0; i<mAiNode->mNumChildren; ++i)
+  for(std::size_t i=0; i<mAiNode->mNumChildren; ++i)
   {
     aiNode* child = mAiNode->mChildren[i];
     std::map<const aiNode*,osgAiNode*>::iterator it = mChildNodes.find(child);
@@ -416,7 +416,7 @@ void MeshShapeGeode::extractData(bool)
   clearChildUtilizationFlags();
 
   const aiScene* scene = mMeshShape->getMesh();
-  for(size_t i=0; i<mAiNode->mNumMeshes; ++i)
+  for(std::size_t i=0; i<mAiNode->mNumMeshes; ++i)
   {
     aiMesh* mesh = scene->mMeshes[mAiNode->mMeshes[i]];
 
@@ -512,7 +512,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
     elements[2] = new ::osg::DrawElementsUInt(GL_TRIANGLES);
     elements[3] = new ::osg::DrawElementsUInt(GL_QUADS);
 
-    for(size_t i=0; i<mAiMesh->mNumFaces; ++i)
+    for(std::size_t i=0; i<mAiMesh->mNumFaces; ++i)
     {
       const aiFace& face = mAiMesh->mFaces[i];
 
@@ -520,19 +520,19 @@ void MeshShapeGeometry::extractData(bool firstTime)
       {
         ::osg::ref_ptr<::osg::DrawElementsUInt> polygon =
             new ::osg::DrawElementsUInt(GL_POLYGON);
-        for(size_t j=0; j<face.mNumIndices; ++j)
+        for(std::size_t j=0; j<face.mNumIndices; ++j)
           polygon->push_back(face.mIndices[j]);
         addPrimitiveSet(polygon);
       }
       else if(face.mNumIndices > 0)
       {
         ::osg::DrawElementsUInt* elem = elements[face.mNumIndices-1];
-        for(size_t j=0; j<face.mNumIndices; ++j)
+        for(std::size_t j=0; j<face.mNumIndices; ++j)
           elem->push_back(face.mIndices[j]);
       }
     }
 
-    for(size_t i=0; i<4; ++i)
+    for(std::size_t i=0; i<4; ++i)
       if(elements[i]->size() > 0)
         addPrimitiveSet(elements[i]);
   }
@@ -547,7 +547,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
     if(mNormals->size() != mAiMesh->mNumVertices)
       mNormals->resize(mAiMesh->mNumVertices);
 
-    for(size_t i=0; i<mAiMesh->mNumVertices; ++i)
+    for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
     {
       const aiVector3D& v = mAiMesh->mVertices[i];
       (*mVertices)[i] = ::osg::Vec3(v.x, v.y, v.z);
@@ -591,7 +591,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
         if(mColors->size() != mVertices->size())
           mColors->resize(mVertices->size());
 
-        for(size_t i=0; i<mAiMesh->mNumVertices; ++i)
+        for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
         {
           const aiColor4D& c = colors[i];
           (*mColors)[i] = ::osg::Vec4(c.r, c.g, c.b, c.a);
@@ -652,7 +652,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
         {
           ::osg::ref_ptr<::osg::FloatArray> texture =
               new ::osg::FloatArray(mAiMesh->mNumVertices);
-          for(size_t i=0; i<mAiMesh->mNumVertices; ++i)
+          for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
             (*texture)[i] = aiTexCoords[i].x;
           setTexCoordArray(unit, texture, ::osg::Array::BIND_PER_VERTEX);
           break;
@@ -661,7 +661,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
         {
           ::osg::ref_ptr<::osg::Vec2Array> texture =
               new ::osg::Vec2Array(mAiMesh->mNumVertices);
-          for(size_t i=0; i<mAiMesh->mNumVertices; ++i)
+          for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
           {
             const aiVector3D& t = aiTexCoords[i];
             (*texture)[i] = ::osg::Vec2(t.x, t.y);
@@ -673,7 +673,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
         {
           ::osg::ref_ptr<::osg::Vec3Array> texture =
               new ::osg::Vec3Array(mAiMesh->mNumVertices);
-          for(size_t i=0; i<mAiMesh->mNumVertices; ++i)
+          for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
           {
             const aiVector3D& t = aiTexCoords[i];
             (*texture)[i] = ::osg::Vec3(t.x, t.y, t.z);

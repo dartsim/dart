@@ -88,7 +88,7 @@ protected:
   void update() override;
 
   /// The original number of child nodes for each BodyNode of this Branch
-  std::vector<size_t> mNumChildNodes;
+  std::vector<std::size_t> mNumChildNodes;
 };
 
 } // namespace dynamics

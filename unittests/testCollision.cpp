@@ -123,7 +123,7 @@ void COLLISION::unrotatedTest(fcl::CollisionGeometry* _coll1,
 
     //printResult(result);
 
-    for (size_t i = 0; i < result.numContacts(); ++i)
+    for (std::size_t i = 0; i < result.numContacts(); ++i)
     {
         EXPECT_GE(result.getContact(i).penetration_depth, 0.0);
 //		EXPECT_NEAR(result.getContact(i).normal[_idxAxis], -1.0);
@@ -196,7 +196,7 @@ void COLLISION::dropWithRotation(fcl::CollisionGeometry* _object,
 
         fcl::Transform3f objectTransfInv = objectTransf;
         objectTransfInv.inverse();
-        for (size_t i = 0; i < result.numContacts(); ++i)
+        for (std::size_t i = 0; i < result.numContacts(); ++i)
         {
             fcl::Vec3f posWorld = objectTransfInv.transform(result.getContact(i).pos);
             std::cout << "----- CONTACT " << i << " --------" << std::endl;
@@ -216,7 +216,7 @@ void COLLISION::printResult(const fcl::CollisionResult& _result)
 	std::cout << "====== [ RESULT ] ======" << std::endl;
 	std::cout << "The number of contacts: " << _result.numContacts() << std::endl;
 
-  for (size_t i = 0; i < _result.numContacts(); ++i)
+  for (std::size_t i = 0; i < _result.numContacts(); ++i)
 	{
 		std::cout << "----- CONTACT " << i << " --------" << std::endl;
 		std::cout << "contact_points: " << _result.getContact(i).pos << std::endl;
@@ -456,7 +456,7 @@ TEST_F(COLLISION, FCL_BOX_BOX)
               << result.numContacts()
               << std::endl;
 
-    for (size_t i = 0; i < result.numContacts(); ++i)
+    for (std::size_t i = 0; i < result.numContacts(); ++i)
     {
         std::cout << "----- CONTACT " << i << " --------" << std::endl;
         std::cout << "contact_points: " << result.getContact(i).pos << std::endl;
@@ -870,7 +870,7 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
 
   const double tol       = 1e-9;
   const double timeStep  = 1e-3;
-  const size_t numFrames = 5e+0;  // 5 secs
+  const std::size_t numFrames = 5e+0;  // 5 secs
 
   // Load world and skeleton
   WorldPtr world = SkelParser::readWorld(
@@ -911,7 +911,7 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
   EXPECT_EQ(joint5->getActuatorType(), Joint::VELOCITY);
   EXPECT_EQ(joint6->getActuatorType(), Joint::LOCKED);
 
-  for (size_t i = 0; i < numFrames; ++i)
+  for (std::size_t i = 0; i < numFrames; ++i)
   {
     const double time = world->getTime();
 

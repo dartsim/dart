@@ -79,7 +79,7 @@ class ConstraintBase
 {
 public:
   /// Return dimesion of this constranit
-  size_t getDimension() const;
+  std::size_t getDimension() const;
 
   /// Update constraint using updated Skeleton's states
   virtual void update() = 0;
@@ -88,7 +88,7 @@ public:
   virtual void getInformation(ConstraintInfo* _info) = 0;
 
   /// Apply unit impulse to constraint space
-  virtual void applyUnitImpulse(size_t _index) = 0;
+  virtual void applyUnitImpulse(std::size_t _index) = 0;
 
   /// Get velocity change due to the uint impulse
   virtual void getVelocityChange(double* _vel, bool _withCfm) = 0;
@@ -133,7 +133,7 @@ protected:
 
 protected:
   /// Dimension of constraint
-  size_t mDim;
+  std::size_t mDim;
 };
 
 } // namespace constraint

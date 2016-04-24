@@ -95,7 +95,7 @@ public:
         const Eigen::VectorXd& commands = Eigen::VectorXd());
 
     Configuration(
-        const std::vector<size_t>& indices,
+        const std::vector<std::size_t>& indices,
         const Eigen::VectorXd& positions = Eigen::VectorXd(),
         const Eigen::VectorXd& velocities = Eigen::VectorXd(),
         const Eigen::VectorXd& accelerations = Eigen::VectorXd(),
@@ -104,7 +104,7 @@ public:
 
     /// A list of degree of freedom indices that each entry in the
     /// Eigen::VectorXd members correspond to.
-    std::vector<size_t> mIndices;
+    std::vector<std::size_t> mIndices;
 
     /// Joint positions
     Eigen::VectorXd mPositions;
@@ -182,7 +182,7 @@ public:
   Configuration getConfiguration(int flags = CONFIG_ALL) const;
 
   /// Get the configuration of the specified indices in this Skeleton
-  Configuration getConfiguration(const std::vector<size_t>& indices,
+  Configuration getConfiguration(const std::vector<std::size_t>& indices,
                                  int flags = CONFIG_ALL) const;
 
   /// \}
@@ -302,35 +302,35 @@ public:
   // default argument. Please see #487 for detail
 
   // Documentation inherited
-  size_t getNumBodyNodes() const override;
+  std::size_t getNumBodyNodes() const override;
 
   /// Get number of rigid body nodes.
-  size_t getNumRigidBodyNodes() const;
+  std::size_t getNumRigidBodyNodes() const;
 
   /// Get number of soft body nodes.
-  size_t getNumSoftBodyNodes() const;
+  std::size_t getNumSoftBodyNodes() const;
 
   /// Get the number of independent trees that this Skeleton contains
-  size_t getNumTrees() const;
+  std::size_t getNumTrees() const;
 
   /// Get the root BodyNode of the tree whose index in this Skeleton is _treeIdx
-  BodyNode* getRootBodyNode(size_t _treeIdx = 0);
+  BodyNode* getRootBodyNode(std::size_t _treeIdx = 0);
 
   /// Get the const root BodyNode of the tree whose index in this Skeleton is
   /// _treeIdx
-  const BodyNode* getRootBodyNode(size_t _treeIdx = 0) const;
+  const BodyNode* getRootBodyNode(std::size_t _treeIdx = 0) const;
 
   // Documentation inherited
-  BodyNode* getBodyNode(size_t _idx) override;
+  BodyNode* getBodyNode(std::size_t _idx) override;
 
   // Documentation inherited
-  const BodyNode* getBodyNode(size_t _idx) const override;
+  const BodyNode* getBodyNode(std::size_t _idx) const override;
 
   /// Get SoftBodyNode whose index is _idx
-  SoftBodyNode* getSoftBodyNode(size_t _idx);
+  SoftBodyNode* getSoftBodyNode(std::size_t _idx);
 
   /// Get const SoftBodyNode whose index is _idx
-  const SoftBodyNode* getSoftBodyNode(size_t _idx) const;
+  const SoftBodyNode* getSoftBodyNode(std::size_t _idx) const;
 
   /// Get body node whose name is _name
   BodyNode* getBodyNode(const std::string& _name);
@@ -351,22 +351,22 @@ public:
   const std::vector<const BodyNode*>& getBodyNodes() const override;
 
   // Documentation inherited
-  size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
+  std::size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
 
   /// Get the BodyNodes belonging to a tree in this Skeleton
-  const std::vector<BodyNode*>& getTreeBodyNodes(size_t _treeIdx);
+  const std::vector<BodyNode*>& getTreeBodyNodes(std::size_t _treeIdx);
 
   /// Get the BodyNodes belonging to a tree in this Skeleton
-  std::vector<const BodyNode*> getTreeBodyNodes(size_t _treeIdx) const;
+  std::vector<const BodyNode*> getTreeBodyNodes(std::size_t _treeIdx) const;
 
   // Documentation inherited
-  size_t getNumJoints() const override;
+  std::size_t getNumJoints() const override;
 
   // Documentation inherited
-  Joint* getJoint(size_t _idx) override;
+  Joint* getJoint(std::size_t _idx) override;
 
   // Documentation inherited
-  const Joint* getJoint(size_t _idx) const override;
+  const Joint* getJoint(std::size_t _idx) const override;
 
   /// Get Joint whose name is _name
   Joint* getJoint(const std::string& _name);
@@ -375,16 +375,16 @@ public:
   const Joint* getJoint(const std::string& _name) const;
 
   // Documentation inherited
-  size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;
+  std::size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;
 
   // Documentation inherited
-  size_t getNumDofs() const override;
+  std::size_t getNumDofs() const override;
 
   // Documentation inherited
-  DegreeOfFreedom* getDof(size_t _idx) override;
+  DegreeOfFreedom* getDof(std::size_t _idx) override;
 
   // Documentation inherited
-  const DegreeOfFreedom* getDof(size_t _idx) const override;
+  const DegreeOfFreedom* getDof(std::size_t _idx) const override;
 
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
   DegreeOfFreedom* getDof(const std::string& _name);
@@ -399,14 +399,14 @@ public:
   std::vector<const DegreeOfFreedom*> getDofs() const override;
 
   // Documentation inherited
-  size_t getIndexOf(const DegreeOfFreedom* _dof,
+  std::size_t getIndexOf(const DegreeOfFreedom* _dof,
                     bool _warning=true) const override;
 
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
-  const std::vector<DegreeOfFreedom*>& getTreeDofs(size_t _treeIdx);
+  const std::vector<DegreeOfFreedom*>& getTreeDofs(std::size_t _treeIdx);
 
   /// Get the DegreesOfFreedom belonging to a tree in this Skeleton
-  const std::vector<const DegreeOfFreedom*>& getTreeDofs(size_t _treeIdx) const;
+  const std::vector<const DegreeOfFreedom*>& getTreeDofs(std::size_t _treeIdx) const;
 
   /// This function is only meant for debugging purposes. It will verify that
   /// all objects held in the Skeleton have the correct information about their
@@ -438,7 +438,7 @@ public:
   void clearIK();
 
   /// Get total number of markers in this Skeleton
-  size_t getNumMarkers() const;
+  std::size_t getNumMarkers() const;
 
   /// Get marker whose name is _name
   Marker* getMarker(const std::string& _name);
@@ -486,15 +486,15 @@ public:
 
   /// Same as getSupportPolygon(), but it will only use EndEffectors within the
   /// specified tree within this Skeleton
-  const math::SupportPolygon& getSupportPolygon(size_t _treeIdx) const;
+  const math::SupportPolygon& getSupportPolygon(std::size_t _treeIdx) const;
 
   /// Get a list of the EndEffector indices that correspond to each of the
   /// points in the support polygon.
-  const std::vector<size_t>& getSupportIndices() const;
+  const std::vector<std::size_t>& getSupportIndices() const;
 
   /// Same as getSupportIndices(), but it corresponds to the support polygon of
   /// the specified tree within this Skeleton
-  const std::vector<size_t>& getSupportIndices(size_t _treeIdx) const;
+  const std::vector<std::size_t>& getSupportIndices(std::size_t _treeIdx) const;
 
   /// Get the axes that correspond to each component in the support polygon.
   /// These axes are needed in order to map the points on a support polygon
@@ -505,7 +505,7 @@ public:
   /// Same as getSupportAxes(), but it corresponds to the support polygon of the
   /// specified tree within this Skeleton
   const std::pair<Eigen::Vector3d, Eigen::Vector3d>& getSupportAxes(
-      size_t _treeIdx) const;
+      std::size_t _treeIdx) const;
 
   /// Get the centroid of the support polygon for this Skeleton. If the support
   /// polygon is an empty set, the components of this vector will be nan.
@@ -514,18 +514,18 @@ public:
   /// Get the centroid of the support polygon for a tree in this Skeleton. If
   /// the support polygon is an empty set, the components of this vector will be
   /// nan.
-  const Eigen::Vector2d& getSupportCentroid(size_t _treeIdx) const;
+  const Eigen::Vector2d& getSupportCentroid(std::size_t _treeIdx) const;
 
   /// The version number of a support polygon will be incremented each time the
   /// support polygon needs to be recomputed. This number can be used to
   /// immediately determine whether the support polygon has changed since the
   /// last time you asked for it, allowing you to be more efficient in how you
   /// handle the data.
-  size_t getSupportVersion() const;
+  std::size_t getSupportVersion() const;
 
   /// Same as getSupportVersion(), but it corresponds to the support polygon of
   /// the specified tree within this Skeleton
-  size_t getSupportVersion(size_t _treeIdx) const;
+  std::size_t getSupportVersion(std::size_t _treeIdx) const;
 
   /// \}
 
@@ -733,49 +733,49 @@ public:
   double getMass() const override;
 
   /// Get the mass matrix of a specific tree in the Skeleton
-  const Eigen::MatrixXd& getMassMatrix(size_t _treeIdx) const;
+  const Eigen::MatrixXd& getMassMatrix(std::size_t _treeIdx) const;
 
   // Documentation inherited
   const Eigen::MatrixXd& getMassMatrix() const override;
 
   /// Get the augmented mass matrix of a specific tree in the Skeleton
-  const Eigen::MatrixXd& getAugMassMatrix(size_t _treeIdx) const;
+  const Eigen::MatrixXd& getAugMassMatrix(std::size_t _treeIdx) const;
 
   // Documentation inherited
   const Eigen::MatrixXd& getAugMassMatrix() const override;
 
   /// Get the inverse mass matrix of a specific tree in the Skeleton
-  const Eigen::MatrixXd& getInvMassMatrix(size_t _treeIdx) const;
+  const Eigen::MatrixXd& getInvMassMatrix(std::size_t _treeIdx) const;
 
   // Documentation inherited
   const Eigen::MatrixXd& getInvMassMatrix() const override;
 
   /// Get the inverse augmented mass matrix of a tree
-  const Eigen::MatrixXd& getInvAugMassMatrix(size_t _treeIdx) const;
+  const Eigen::MatrixXd& getInvAugMassMatrix(std::size_t _treeIdx) const;
 
   // Documentation inherited
   const Eigen::MatrixXd& getInvAugMassMatrix() const override;
 
   /// Get the Coriolis force vector of a tree in this Skeleton
-  const Eigen::VectorXd& getCoriolisForces(size_t _treeIdx) const;
+  const Eigen::VectorXd& getCoriolisForces(std::size_t _treeIdx) const;
 
   // Documentation inherited
   const Eigen::VectorXd& getCoriolisForces() const override;
 
   /// Get the gravity forces for a tree in this Skeleton
-  const Eigen::VectorXd& getGravityForces(size_t _treeIdx) const;
+  const Eigen::VectorXd& getGravityForces(std::size_t _treeIdx) const;
 
   // Documentation inherited
   const Eigen::VectorXd& getGravityForces() const override;
 
   /// Get the combined vector of Coriolis force and gravity force of a tree
-  const Eigen::VectorXd& getCoriolisAndGravityForces(size_t _treeIdx) const;
+  const Eigen::VectorXd& getCoriolisAndGravityForces(std::size_t _treeIdx) const;
 
   // Documentation inherited
   const Eigen::VectorXd& getCoriolisAndGravityForces() const override;
 
   /// Get the external force vector of a tree in the Skeleton
-  const Eigen::VectorXd& getExternalForces(size_t _treeIdx) const;
+  const Eigen::VectorXd& getExternalForces(std::size_t _treeIdx) const;
 
   // Documentation inherited
   const Eigen::VectorXd& getExternalForces() const override;
@@ -784,7 +784,7 @@ public:
 //  const Eigen::VectorXd& getDampingForceVector();
 
   /// Get constraint force vector for a tree
-  const Eigen::VectorXd& getConstraintForces(size_t _treeIdx) const;
+  const Eigen::VectorXd& getConstraintForces(std::size_t _treeIdx) const;
 
   /// Get constraint force vector
   const Eigen::VectorXd& getConstraintForces() const override;
@@ -797,10 +797,10 @@ public:
 
   /// Notify that the articulated inertia and everything that depends on it
   /// needs to be updated
-  void notifyArticulatedInertiaUpdate(size_t _treeIdx);
+  void notifyArticulatedInertiaUpdate(std::size_t _treeIdx);
 
   /// Notify that the support polygon of a tree needs to be updated
-  void notifySupportUpdate(size_t _treeIdx);
+  void notifySupportUpdate(std::size_t _treeIdx);
 
   // Documentation inherited
   double getKineticEnergy() const override;
@@ -883,7 +883,7 @@ public:
   friend class SoftBodyNode;
   friend class Joint;
   friend class SingleDofJoint;
-  template<size_t> friend class MultiDofJoint;
+  template<std::size_t> friend class MultiDofJoint;
   friend class DegreeOfFreedom;
   friend class Node;
   friend class ShapeNode;
@@ -908,13 +908,13 @@ protected:
   void registerJoint(Joint* _newJoint);
 
   /// Register a Node with the Skeleton. Internal use only.
-  void registerNode(NodeMap& nodeMap, Node* _newNode, size_t& _index);
+  void registerNode(NodeMap& nodeMap, Node* _newNode, std::size_t& _index);
 
   /// Register a Node with the Skeleton. Internal use only.
   void registerNode(Node* _newNode);
 
   /// Remove an old tree from the Skeleton
-  void destructOldTree(size_t tree);
+  void destructOldTree(std::size_t tree);
 
   /// Remove a BodyNode from the Skeleton. Internal use only.
   void unregisterBodyNode(BodyNode* _oldBodyNode);
@@ -923,7 +923,7 @@ protected:
   void unregisterJoint(Joint* _oldJoint);
 
   /// Remove a Node from the Skeleton. Internal use only.
-  void unregisterNode(NodeMap& nodeMap, Node* _oldNode, size_t& _index);
+  void unregisterNode(NodeMap& nodeMap, Node* _oldNode, std::size_t& _index);
 
   /// Remove a Node from the Skeleton. Internal use only.
   void unregisterNode(Node* _oldNode);
@@ -983,57 +983,57 @@ protected:
   void updateCacheDimensions(DataCache& _cache);
 
   /// Update the dimensions for a tree's cache
-  void updateCacheDimensions(size_t _treeIdx);
+  void updateCacheDimensions(std::size_t _treeIdx);
 
   /// Update the articulated inertia of a tree
-  void updateArticulatedInertia(size_t _tree) const;
+  void updateArticulatedInertia(std::size_t _tree) const;
 
   /// Update the articulated inertias of the skeleton
   void updateArticulatedInertia() const;
 
   /// Update the mass matrix of a tree
-  void updateMassMatrix(size_t _treeIdx) const;
+  void updateMassMatrix(std::size_t _treeIdx) const;
 
   /// Update mass matrix of the skeleton.
   void updateMassMatrix() const;
 
-  void updateAugMassMatrix(size_t _treeIdx) const;
+  void updateAugMassMatrix(std::size_t _treeIdx) const;
 
   /// Update augmented mass matrix of the skeleton.
   void updateAugMassMatrix() const;
 
   /// Update the inverse mass matrix of a tree
-  void updateInvMassMatrix(size_t _treeIdx) const;
+  void updateInvMassMatrix(std::size_t _treeIdx) const;
 
   /// Update inverse of mass matrix of the skeleton.
   void updateInvMassMatrix() const;
 
   /// Update the inverse augmented mass matrix of a tree
-  void updateInvAugMassMatrix(size_t _treeIdx) const;
+  void updateInvAugMassMatrix(std::size_t _treeIdx) const;
 
   /// Update inverse of augmented mass matrix of the skeleton.
   void updateInvAugMassMatrix() const;
 
   /// Update Coriolis force vector for a tree in the Skeleton
-  void updateCoriolisForces(size_t _treeIdx) const;
+  void updateCoriolisForces(std::size_t _treeIdx) const;
 
   /// Update Coriolis force vector of the skeleton.
   void updateCoriolisForces() const;
 
   /// Update the gravity force vector of a tree
-  void updateGravityForces(size_t _treeIdx) const;
+  void updateGravityForces(std::size_t _treeIdx) const;
 
   /// Update gravity force vector of the skeleton.
   void updateGravityForces() const;
 
   /// Update the combined vector for a tree in this Skeleton
-  void updateCoriolisAndGravityForces(size_t _treeIdx) const;
+  void updateCoriolisAndGravityForces(std::size_t _treeIdx) const;
 
   /// Update combined vector of the skeleton.
   void updateCoriolisAndGravityForces() const;
 
   /// Update external force vector to generalized forces for a tree
-  void updateExternalForces(size_t _treeIdx) const;
+  void updateExternalForces(std::size_t _treeIdx) const;
 
   // TODO(JS): Not implemented yet
   /// update external force vector to generalized forces.
@@ -1129,7 +1129,7 @@ protected:
 
     /// Increments each time a new support polygon is computed to help keep
     /// track of changes in the support polygon
-    size_t mSupportVersion;
+    std::size_t mSupportVersion;
   };
 
   struct DataCache
@@ -1181,7 +1181,7 @@ protected:
 
     /// A map of which EndEffectors correspond to the individual points in the
     /// support polygon
-    std::vector<size_t> mSupportIndices;
+    std::vector<std::size_t> mSupportIndices;
 
     /// A pair of vectors which map the 2D coordinates of the support polygon
     /// into 3D space
@@ -1229,10 +1229,10 @@ public:
   std::weak_ptr<Skeleton> mUnionRootSkeleton;
 
   ///
-  size_t mUnionSize;
+  std::size_t mUnionSize;
 
   ///
-  size_t mUnionIndex;
+  std::size_t mUnionIndex;
 
 public:
   // To get byte-aligned Eigen vectors

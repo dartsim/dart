@@ -116,7 +116,7 @@ const std::string& UniversalJoint::getStaticType()
 }
 
 //==============================================================================
-bool UniversalJoint::isCyclic(size_t _index) const
+bool UniversalJoint::isCyclic(std::size_t _index) const
 {
   return !hasPositionLimit(_index);
 }

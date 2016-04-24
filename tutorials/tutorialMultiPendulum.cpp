@@ -102,7 +102,7 @@ public:
     }
   }
 
-  void applyForce(size_t index)
+  void applyForce(std::size_t index)
   {
     if(index < mForceCountDown.size())
       mForceCountDown[index] = default_countdown;
@@ -222,7 +222,7 @@ public:
     if(!mBodyForce)
     {
       // Apply joint torques based on user input, and color the Joint shape red
-      for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
+      for(std::size_t i = 0; i < mPendulum->getNumDofs(); ++i)
       {
         if(mForceCountDown[i] > 0)
         {
@@ -235,7 +235,7 @@ public:
     else
     {
       // Apply body forces based on user input, and color the body shape red
-      for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
+      for(std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
       {
         if(mForceCountDown[i] > 0)
         {

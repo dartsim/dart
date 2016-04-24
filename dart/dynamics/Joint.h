@@ -197,55 +197,55 @@ public:
   bool isPositionLimitEnforced() const;
 
   /// Get a unique index in skeleton of a generalized coordinate in this Joint
-  virtual size_t getIndexInSkeleton(size_t _index) const = 0;
+  virtual std::size_t getIndexInSkeleton(std::size_t _index) const = 0;
 
   /// Get a unique index in the kinematic tree of a generalized coordinate in
   /// this Joint
-  virtual size_t getIndexInTree(size_t _index) const = 0;
+  virtual std::size_t getIndexInTree(std::size_t _index) const = 0;
 
   /// Get the index of this Joint within its Skeleton
-  size_t getJointIndexInSkeleton() const;
+  std::size_t getJointIndexInSkeleton() const;
 
   /// Get the index of this Joint within its tree
-  size_t getJointIndexInTree() const;
+  std::size_t getJointIndexInTree() const;
 
   /// Get the index of the tree that this Joint belongs to
-  size_t getTreeIndex() const;
+  std::size_t getTreeIndex() const;
 
   /// Get an object to access the _index-th degree of freedom (generalized
   /// coordinate) of this Joint
-  virtual DegreeOfFreedom* getDof(size_t _index) = 0;
+  virtual DegreeOfFreedom* getDof(std::size_t _index) = 0;
 
   /// Get an object to access the _index-th degree of freedom (generalized
   /// coordinate) of this Joint
-  virtual const DegreeOfFreedom* getDof(size_t _index) const = 0;
+  virtual const DegreeOfFreedom* getDof(std::size_t _index) const = 0;
 
   /// Alternative to DegreeOfFreedom::setName()
-  virtual const std::string& setDofName(size_t _index,
+  virtual const std::string& setDofName(std::size_t _index,
                                 const std::string& _name,
                                 bool _preserveName=true) = 0;
 
   /// Alternative to DegreeOfFreedom::preserveName()
-  virtual void preserveDofName(size_t _index, bool _preserve) = 0;
+  virtual void preserveDofName(std::size_t _index, bool _preserve) = 0;
 
   /// Alternative to DegreeOfFreedom::isNamePreserved()
-  virtual bool isDofNamePreserved(size_t _index) const = 0;
+  virtual bool isDofNamePreserved(std::size_t _index) const = 0;
 
   /// Alternative to DegreeOfFreedom::getName()
-  virtual const std::string& getDofName(size_t _index) const = 0;
+  virtual const std::string& getDofName(std::size_t _index) const = 0;
 
   /// Get number of generalized coordinates
-  virtual size_t getNumDofs() const = 0;
+  virtual std::size_t getNumDofs() const = 0;
 
   //----------------------------------------------------------------------------
   /// \{ \name Command
   //----------------------------------------------------------------------------
 
   /// Set a single command
-  virtual void setCommand(size_t _index, double _command) = 0;
+  virtual void setCommand(std::size_t _index, double _command) = 0;
 
   /// Get a single command
-  virtual double getCommand(size_t _index) const = 0;
+  virtual double getCommand(std::size_t _index) const = 0;
 
   /// Set all commands for this Joint
   virtual void setCommands(const Eigen::VectorXd& _commands) = 0;
@@ -263,10 +263,10 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set the position of a single generalized coordinate
-  virtual void setPosition(size_t _index, double _position) = 0;
+  virtual void setPosition(std::size_t _index, double _position) = 0;
 
   /// Get the position of a single generalized coordinate
-  virtual double getPosition(size_t _index) const = 0;
+  virtual double getPosition(std::size_t _index) const = 0;
 
   /// Set the positions of all generalized coordinates in this Joint
   virtual void setPositions(const Eigen::VectorXd& _positions) = 0;
@@ -275,39 +275,39 @@ public:
   virtual Eigen::VectorXd getPositions() const = 0;
 
   /// Set lower limit for position
-  virtual void setPositionLowerLimit(size_t _index, double _position) = 0;
+  virtual void setPositionLowerLimit(std::size_t _index, double _position) = 0;
 
   /// Get lower limit for position
-  virtual double getPositionLowerLimit(size_t _index) const = 0;
+  virtual double getPositionLowerLimit(std::size_t _index) const = 0;
 
   /// Set upper limit for position
-  virtual void setPositionUpperLimit(size_t _index, double _position) = 0;
+  virtual void setPositionUpperLimit(std::size_t _index, double _position) = 0;
 
   /// Get upper limit for position
-  virtual double getPositionUpperLimit(size_t _index) const = 0;
+  virtual double getPositionUpperLimit(std::size_t _index) const = 0;
 
   /// Get whether a generalized coordinate is cyclic. Return true if and only
   /// if this generalized coordinate has an infinite number of positions that
   /// produce the same local transform. Note that, for a multi-DOF joint,
   /// producing a cycle may require altering the position of this Joint's other
   /// generalized coordinates.
-  virtual bool isCyclic(size_t _index) const = 0;
+  virtual bool isCyclic(std::size_t _index) const = 0;
 
   /// Get whether the position of a generalized coordinate has limits.
-  virtual bool hasPositionLimit(size_t _index) const = 0;
+  virtual bool hasPositionLimit(std::size_t _index) const = 0;
 
   /// Set the position of this generalized coordinate to its initial position
-  virtual void resetPosition(size_t _index) = 0;
+  virtual void resetPosition(std::size_t _index) = 0;
 
   /// Set the positions of all generalized coordinates in this Joint to their
   /// initial positions
   virtual void resetPositions() = 0;
 
   /// Change the position that resetPositions() will give to this coordinate
-  virtual void setInitialPosition(size_t _index, double _initial) = 0;
+  virtual void setInitialPosition(std::size_t _index, double _initial) = 0;
 
   /// Get the position that resetPosition() will give to this coordinate
-  virtual double getInitialPosition(size_t _index) const = 0;
+  virtual double getInitialPosition(std::size_t _index) const = 0;
 
   /// Change the positions that resetPositions() will give to this Joint's
   /// coordinates
@@ -324,10 +324,10 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set the velocity of a single generalized coordinate
-  virtual void setVelocity(size_t _index, double _velocity) = 0;
+  virtual void setVelocity(std::size_t _index, double _velocity) = 0;
 
   /// Get the velocity of a single generalized coordinate
-  virtual double getVelocity(size_t _index) const = 0;
+  virtual double getVelocity(std::size_t _index) const = 0;
 
   /// Set the velocities of all generalized coordinates in this Joint
   virtual void setVelocities(const Eigen::VectorXd& _velocities) = 0;
@@ -336,30 +336,30 @@ public:
   virtual Eigen::VectorXd getVelocities() const = 0;
 
   /// Set lower limit for velocity
-  virtual void setVelocityLowerLimit(size_t _index, double _velocity) = 0;
+  virtual void setVelocityLowerLimit(std::size_t _index, double _velocity) = 0;
 
   /// Get lower limit for velocity
-  virtual double getVelocityLowerLimit(size_t _index) const = 0;
+  virtual double getVelocityLowerLimit(std::size_t _index) const = 0;
 
   /// Set upper limit for velocity
-  virtual void setVelocityUpperLimit(size_t _index, double _velocity) = 0;
+  virtual void setVelocityUpperLimit(std::size_t _index, double _velocity) = 0;
 
   /// Get upper limit for velocity
-  virtual double getVelocityUpperLimit(size_t _index) const = 0;
+  virtual double getVelocityUpperLimit(std::size_t _index) const = 0;
 
   /// Set the velocity of a generalized coordinate in this Joint to its initial
   /// velocity
-  virtual void resetVelocity(size_t _index) = 0;
+  virtual void resetVelocity(std::size_t _index) = 0;
 
   /// Set the velocities of all generalized coordinates in this Joint to their
   /// initial velocities
   virtual void resetVelocities() = 0;
 
   /// Change the velocity that resetVelocity() will give to this coordinate
-  virtual void setInitialVelocity(size_t _index, double _initial) = 0;
+  virtual void setInitialVelocity(std::size_t _index, double _initial) = 0;
 
   /// Get the velocity that resetVelocity() will give to this coordinate
-  virtual double getInitialVelocity(size_t _index) const = 0;
+  virtual double getInitialVelocity(std::size_t _index) const = 0;
 
   /// Change the velocities that resetVelocities() will give to this Joint's
   /// coordinates
@@ -376,10 +376,10 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set the acceleration of a single generalized coordinate
-  virtual void setAcceleration(size_t _index, double _acceleration) = 0;
+  virtual void setAcceleration(std::size_t _index, double _acceleration) = 0;
 
   /// Get the acceleration of a single generalized coordinate
-  virtual double getAcceleration(size_t _index) const = 0;
+  virtual double getAcceleration(std::size_t _index) const = 0;
 
   /// Set the accelerations of all generalized coordinates in this Joint
   virtual void setAccelerations(const Eigen::VectorXd& _accelerations) = 0;
@@ -391,16 +391,16 @@ public:
   virtual void resetAccelerations() = 0;
 
   /// Set lower limit for acceleration
-  virtual void setAccelerationLowerLimit(size_t _index, double _acceleration) = 0;
+  virtual void setAccelerationLowerLimit(std::size_t _index, double _acceleration) = 0;
 
   /// Get lower limit for acceleration
-  virtual double getAccelerationLowerLimit(size_t _index) const = 0;
+  virtual double getAccelerationLowerLimit(std::size_t _index) const = 0;
 
   /// Set upper limit for acceleration
-  virtual void setAccelerationUpperLimit(size_t _index, double _acceleration) = 0;
+  virtual void setAccelerationUpperLimit(std::size_t _index, double _acceleration) = 0;
 
   /// Get upper limit for acceleration
-  virtual double getAccelerationUpperLimit(size_t _index) const = 0;
+  virtual double getAccelerationUpperLimit(std::size_t _index) const = 0;
 
   /// \}
 
@@ -409,10 +409,10 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set the force of a single generalized coordinate
-  virtual void setForce(size_t _index, double _force) = 0;
+  virtual void setForce(std::size_t _index, double _force) = 0;
 
   /// Get the force of a single generalized coordinate
-  virtual double getForce(size_t _index) = 0;
+  virtual double getForce(std::size_t _index) = 0;
 
   /// Set the forces of all generalized coordinates in this Joint
   virtual void setForces(const Eigen::VectorXd& _forces) = 0;
@@ -424,16 +424,16 @@ public:
   virtual void resetForces() = 0;
 
   /// Set lower limit for force
-  virtual void setForceLowerLimit(size_t _index, double _force) = 0;
+  virtual void setForceLowerLimit(std::size_t _index, double _force) = 0;
 
   /// Get lower limit for force
-  virtual double getForceLowerLimit(size_t _index) const = 0;
+  virtual double getForceLowerLimit(std::size_t _index) const = 0;
 
   /// Set upper limit for force
-  virtual void setForceUpperLimit(size_t _index, double _force) = 0;
+  virtual void setForceUpperLimit(std::size_t _index, double _force) = 0;
 
   /// Get upper limit for force
-  virtual double getForceUpperLimit(size_t _index) const = 0;
+  virtual double getForceUpperLimit(std::size_t _index) const = 0;
 
   /// \}
 
@@ -451,10 +451,10 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set a single velocity change
-  virtual void setVelocityChange(size_t _index, double _velocityChange) = 0;
+  virtual void setVelocityChange(std::size_t _index, double _velocityChange) = 0;
 
   /// Get a single velocity change
-  virtual double getVelocityChange(size_t _index) const = 0;
+  virtual double getVelocityChange(std::size_t _index) const = 0;
 
   /// Set zero all the velocity change
   virtual void resetVelocityChanges() = 0;
@@ -466,10 +466,10 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set a single constraint impulse
-  virtual void setConstraintImpulse(size_t _index, double _impulse) = 0;
+  virtual void setConstraintImpulse(std::size_t _index, double _impulse) = 0;
 
   /// Get a single constraint impulse
-  virtual double getConstraintImpulse(size_t _index) const = 0;
+  virtual double getConstraintImpulse(std::size_t _index) const = 0;
 
   /// Set zero all the constraint impulses
   virtual void resetConstraintImpulses() = 0;
@@ -500,39 +500,39 @@ public:
   /// Set stiffness of joint spring force.
   /// \param[in] _index Index of joint axis.
   /// \param[in] _k Spring stiffness.
-  virtual void setSpringStiffness(size_t _index, double _k) = 0;
+  virtual void setSpringStiffness(std::size_t _index, double _k) = 0;
 
   /// Get stiffness of joint spring force.
   /// \param[in] _index Index of joint axis.
-  virtual double getSpringStiffness(size_t _index) const = 0;
+  virtual double getSpringStiffness(std::size_t _index) const = 0;
 
   /// Set rest position of spring force.
   /// \param[in] _index Index of joint axis.
   /// \param[in] _q0 Rest position.
-  virtual void setRestPosition(size_t _index, double _q0) = 0;
+  virtual void setRestPosition(std::size_t _index, double _q0) = 0;
 
   /// Get rest position of spring force.
   /// \param[in] _index Index of joint axis.
   /// \return Rest position.
-  virtual double getRestPosition(size_t _index) const = 0;
+  virtual double getRestPosition(std::size_t _index) const = 0;
 
   /// Set coefficient of joint damping (viscous friction) force.
   /// \param[in] _index Index of joint axis.
   /// \param[in] _coeff Damping coefficient.
-  virtual void setDampingCoefficient(size_t _index, double _coeff) = 0;
+  virtual void setDampingCoefficient(std::size_t _index, double _coeff) = 0;
 
   /// Get coefficient of joint damping (viscous friction) force.
   /// \param[in] _index Index of joint axis.
-  virtual double getDampingCoefficient(size_t _index) const = 0;
+  virtual double getDampingCoefficient(std::size_t _index) const = 0;
 
   /// Set joint Coulomb friction froce.
   /// \param[in] _index Index of joint axis.
   /// \param[in] _friction Joint Coulomb friction froce given index.
-  virtual void setCoulombFriction(size_t _index, double _friction) = 0;
+  virtual void setCoulombFriction(std::size_t _index, double _friction) = 0;
 
   /// Get joint Coulomb friction froce.
   /// \param[in] _index Index of joint axis.
-  virtual double getCoulombFriction(size_t _index) const = 0;
+  virtual double getCoulombFriction(std::size_t _index) const = 0;
 
   /// \}
 
@@ -652,7 +652,7 @@ protected:
   /// DegreeOfFreedom should be created by the Joint because the DegreeOfFreedom
   /// class has a protected constructor, and the Joint is responsible for memory
   /// management of the pointer which is returned.
-  DegreeOfFreedom* createDofPointer(size_t _indexInJoint);
+  DegreeOfFreedom* createDofPointer(std::size_t _indexInJoint);
 
   /// Update the names of the joint's degrees of freedom. Used when setName() is
   /// called with _renameDofs set to true.
@@ -815,13 +815,13 @@ protected:
 
   ///
   virtual void getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
-                                       const size_t _col,
+                                       const std::size_t _col,
                                        const Eigen::Matrix6d& _artInertia,
                                        const Eigen::Vector6d& _spatialAcc) = 0;
 
   ///
   virtual void getInvAugMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
-                                       const size_t _col,
+                                       const std::size_t _col,
                                        const Eigen::Matrix6d& _artInertia,
                                        const Eigen::Vector6d& _spatialAcc) = 0;
 

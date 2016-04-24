@@ -101,7 +101,7 @@ struct SoftBodyNodeUniqueProperties
   void addPointMass(const PointMass::Properties& _properties);
 
   /// Connect two PointMasses together in this Properties struct
-  bool connectPointMasses(size_t i1, size_t i2);
+  bool connectPointMasses(std::size_t i1, std::size_t i2);
 
   /// Add a face to this Properties struct
   void addFace(const Eigen::Vector3i& _newFace);

@@ -224,7 +224,7 @@ protected:
   /// it, if one existed
   void removeSkeleton(const SkeletonPtr& skel)
   {
-    for(size_t i=0; i<mJointConstraints.size(); ++i)
+    for(std::size_t i=0; i<mJointConstraints.size(); ++i)
     {
       const dart::constraint::JointConstraintPtr& constraint =
           mJointConstraints[i];
@@ -270,7 +270,7 @@ protected:
 
   /// Keep track of how many Skeletons we spawn to ensure we can give them all
   /// unique names
-  size_t mSkelCount;
+  std::size_t mSkelCount;
 
 };
 
@@ -334,7 +334,7 @@ BodyNode* addSoftBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
 void setAllColors(const SkeletonPtr& object, const Eigen::Vector3d& color)
 {
   // Set the color of all the shapes in the object
-  for(size_t i=0; i < object->getNumBodyNodes(); ++i)
+  for(std::size_t i=0; i < object->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = object->getBodyNode(i);
     auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();

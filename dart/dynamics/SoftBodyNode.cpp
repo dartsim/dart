@@ -76,7 +76,7 @@ void SoftBodyNodeUniqueProperties::addPointMass(
 }
 
 //==============================================================================
-bool SoftBodyNodeUniqueProperties::connectPointMasses(size_t i1, size_t i2)
+bool SoftBodyNodeUniqueProperties::connectPointMasses(std::size_t i1, std::size_t i2)
 {
   if(i1 >= mPointProps.size() || i2 >= mPointProps.size())
   {
@@ -104,9 +104,9 @@ void SoftBodyNodeUniqueProperties::addFace(const Eigen::Vector3i& _newFace)
   assert(_newFace[0] != _newFace[1]);
   assert(_newFace[1] != _newFace[2]);
   assert(_newFace[2] != _newFace[0]);
-  assert(0 <= _newFace[0] && static_cast<size_t>(_newFace[0]) < mPointProps.size());
-  assert(0 <= _newFace[1] && static_cast<size_t>(_newFace[1]) < mPointProps.size());
-  assert(0 <= _newFace[2] && static_cast<size_t>(_newFace[2]) < mPointProps.size());
+  assert(0 <= _newFace[0] && static_cast<std::size_t>(_newFace[0]) < mPointProps.size());
+  assert(0 <= _newFace[1] && static_cast<std::size_t>(_newFace[1]) < mPointProps.size());
+  assert(0 <= _newFace[2] && static_cast<std::size_t>(_newFace[2]) < mPointProps.size());
   mFaces.push_back(_newFace);
 }
 
@@ -125,7 +125,7 @@ SoftBodyNodeProperties::SoftBodyNodeProperties(
 //==============================================================================
 SoftBodyNode::~SoftBodyNode()
 {
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     delete mPointMasses[i];
 
   delete mNotifier;
@@ -216,13 +216,13 @@ SoftBodyNode& SoftBodyNode::operator=(const SoftBodyNode& _otherSoftBodyNode)
 }
 
 //==============================================================================
-size_t SoftBodyNode::getNumPointMasses() const
+std::size_t SoftBodyNode::getNumPointMasses() const
 {
   return mPointMasses.size();
 }
 
 //==============================================================================
-PointMass* SoftBodyNode::getPointMass(size_t _idx)
+PointMass* SoftBodyNode::getPointMass(std::size_t _idx)
 {
   assert(_idx < mPointMasses.size());
   if(_idx < mPointMasses.size())
@@ -232,7 +232,7 @@ PointMass* SoftBodyNode::getPointMass(size_t _idx)
 }
 
 //==============================================================================
-const PointMass* SoftBodyNode::getPointMass(size_t _idx) const
+const PointMass* SoftBodyNode::getPointMass(std::size_t _idx) const
 {
   return const_cast<SoftBodyNode*>(this)->getPointMass(_idx);
 }
@@ -287,8 +287,8 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
 {
   const UniqueProperties& softProperties = mAspectProperties;
 
-  size_t newCount = softProperties.mPointProps.size();
-  size_t oldCount = mPointMasses.size();
+  std::size_t newCount = softProperties.mPointProps.size();
+  std::size_t oldCount = mPointMasses.size();
 
   if(newCount == oldCount)
     return;
@@ -296,14 +296,14 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
   // Adjust the number of PointMass objects since that has changed
   if(newCount < oldCount)
   {
-    for(size_t i = newCount; i < oldCount; ++i)
+    for(std::size_t i = newCount; i < oldCount; ++i)
       delete mPointMasses[i];
     mPointMasses.resize(newCount);
   }
   else if(oldCount < newCount)
   {
     mPointMasses.resize(newCount);
-    for(size_t i = oldCount; i < newCount; ++i)
+    for(std::size_t i = oldCount; i < newCount; ++i)
     {
       mPointMasses[i] = new PointMass(this);
       mPointMasses[i]->mIndex = i;
@@ -333,7 +333,7 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
            << "SoftMeshShape.\n";
 
     std::cout << "ShapeNodes: " << std::endl;
-    for(size_t i=0; i < getNumShapeNodes(); ++i)
+    for(std::size_t i=0; i < getNumShapeNodes(); ++i)
     {
       std::cout << "- " << i << ") " << getShapeNode(i)->getName() << std::endl;
     }
@@ -348,7 +348,7 @@ void SoftBodyNode::init(const SkeletonPtr& _skeleton)
 {
   BodyNode::init(_skeleton);
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses[i]->init();
 
 //  //----------------------------------------------------------------------------
@@ -377,7 +377,7 @@ void SoftBodyNode::init(const SkeletonPtr& _skeleton)
 //void SoftBodyNode::aggregatePointMassGenCoords(
 //    std::vector<GenCoord*>* _genCoords)
 //{
-//  for (size_t i = 0; i < getNumPointMasses(); ++i)
+//  for (std::size_t i = 0; i < getNumPointMasses(); ++i)
 //  {
 //    PointMass* pointMass = getPointMass(i);
 //    for (int j = 0; j < pointMass->getNumDofs(); ++j)
@@ -406,7 +406,7 @@ double SoftBodyNode::getMass() const
 {
   double totalMass = BodyNode::getMass();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     totalMass += mPointMasses.at(i)->getMass();
 
   return totalMass;
@@ -487,7 +487,7 @@ PointMass* SoftBodyNode::addPointMass(const PointMass::Properties& _properties)
 }
 
 //==============================================================================
-void SoftBodyNode::connectPointMasses(size_t _idx1, size_t _idx2)
+void SoftBodyNode::connectPointMasses(std::size_t _idx1, std::size_t _idx2)
 {
   assert(_idx1 != _idx2);
   assert(_idx1 < mPointMasses.size());
@@ -505,14 +505,14 @@ void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
 }
 
 //==============================================================================
-const Eigen::Vector3i& SoftBodyNode::getFace(size_t _idx) const
+const Eigen::Vector3i& SoftBodyNode::getFace(std::size_t _idx) const
 {
   assert(_idx < mAspectProperties.mFaces.size());
   return mAspectProperties.mFaces[_idx];
 }
 
 //==============================================================================
-size_t SoftBodyNode::getNumFaces() const
+std::size_t SoftBodyNode::getNumFaces() const
 {
   return mAspectProperties.mFaces.size();
 }
@@ -522,7 +522,7 @@ void SoftBodyNode::clearConstraintImpulse()
 {
   BodyNode::clearConstraintImpulse();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->clearConstraintImpulse();
 }
 
@@ -539,7 +539,7 @@ void SoftBodyNode::updateTransform()
 {
   BodyNode::updateTransform();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updateTransform();
 
   mNotifier->clearTransformNotice();
@@ -550,7 +550,7 @@ void SoftBodyNode::updateVelocity()
 {
   BodyNode::updateVelocity();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updateVelocity();
 
   mNotifier->clearVelocityNotice();
@@ -561,7 +561,7 @@ void SoftBodyNode::updatePartialAcceleration() const
 {
   BodyNode::updatePartialAcceleration();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updatePartialAcceleration();
 
   mNotifier->clearPartialAccelerationNotice();
@@ -572,7 +572,7 @@ void SoftBodyNode::updateAccelerationID()
 {
   BodyNode::updateAccelerationID();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updateAccelerationID();
 
   mNotifier->clearAccelerationNotice();
@@ -634,7 +634,7 @@ void SoftBodyNode::updateJointForceID(double _timeStep,
                                       bool _withDampingForces,
                                       bool _withSpringForces)
 {
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updateJointForceID(_timeStep,
                                            _withDampingForces,
                                            _withSpringForces);
@@ -839,16 +839,16 @@ void SoftBodyNode::updateMassMatrix()
 {
   BodyNode::updateMassMatrix();
 
-//  for (size_t i = 0; i < mPointMasses.size(); ++i)
+//  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
 //    mPointMasses.at(i)->updateMassMatrix();
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col)
+void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
 {
   BodyNode::aggregateMassMatrix(_MCol, _col);
 //  //------------------------ PointMass Part ------------------------------------
-//  for (size_t i = 0; i < mPointMasses.size(); ++i)
+//  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
 //    mPointMasses.at(i)->aggregateMassMatrix(_MCol, _col);
 
 //  //----------------------- SoftBodyNode Part ----------------------------------
@@ -888,7 +888,7 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col)
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
+void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col,
                                           double _timeStep)
 {
   // TODO(JS): Need to be reimplemented
@@ -896,7 +896,7 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
   const Eigen::Matrix6d& mI =
       BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   //------------------------ PointMass Part ------------------------------------
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->aggregateAugMassMatrix(_MCol, _col, _timeStep);
 
   //----------------------- SoftBodyNode Part ----------------------------------
@@ -917,12 +917,12 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
   }
   assert(!math::isNan(mM_F));
 
-  size_t dof = mParentJoint->getNumDofs();
+  std::size_t dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
     Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
-    for (size_t i = 0; i < dof; ++i)
+    for (std::size_t i = 0; i < dof; ++i)
     {
       K(i, i) = mParentJoint->getSpringStiffness(i);
       D(i, i) = mParentJoint->getDampingCoefficient(i);
@@ -941,7 +941,7 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
 void SoftBodyNode::updateInvMassMatrix()
 {
   //------------------------ PointMass Part ------------------------------------
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->updateInvMassMatrix();
 
   //----------------------- SoftBodyNode Part ----------------------------------
@@ -977,7 +977,7 @@ void SoftBodyNode::updateInvAugMassMatrix()
   BodyNode::updateInvAugMassMatrix();
 
 //  //------------------------ PointMass Part ------------------------------------
-////  for (size_t i = 0; i < mPointMasses.size(); ++i)
+////  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
 ////    mPointMasses.at(i)->updateInvAugMassMatrix();
 
 //  //----------------------- SoftBodyNode Part ----------------------------------
@@ -1008,7 +1008,7 @@ void SoftBodyNode::updateInvAugMassMatrix()
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col)
+void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col)
 {
   if (mParentBodyNode)
   {
@@ -1034,13 +1034,13 @@ void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col
   mParentJoint->addInvMassMatrixSegmentTo(mInvM_U);
 
   //
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->aggregateInvMassMatrix(_InvMCol, _col);
 }
 
 //==============================================================================
 void SoftBodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol,
-                                             size_t _col,
+                                             std::size_t _col,
                                              double _timeStep)
 {
   BodyNode::aggregateInvAugMassMatrix(_InvMCol, _col, _timeStep);
@@ -1068,7 +1068,7 @@ void SoftBodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol,
 //  mParentJoint->addInvMassMatrixSegmentTo(mInvM_U);
 
 //  //
-////  for (size_t i = 0; i < mPointMasses.size(); ++i)
+////  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
 ////    mPointMasses.at(i)->aggregateInvAugMassMatrix(_InvMCol, _col, _timeStep);
 }
 
@@ -1085,7 +1085,7 @@ void SoftBodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
   const Eigen::Matrix6d& mI =
       BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   //------------------------ PointMass Part ------------------------------------
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->aggregateGravityForceVector(_g, _gravity);
 
   //----------------------- SoftBodyNode Part ----------------------------------
@@ -1122,7 +1122,7 @@ void SoftBodyNode::updateCombinedVector()
 {
   BodyNode::updateCombinedVector();
 
-//  for (size_t i = 0; i < mPointMasses.size(); ++i)
+//  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
 //    mPointMasses.at(i)->updateCombinedVector();
 }
 
@@ -1132,7 +1132,7 @@ void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
 {
   BodyNode::aggregateCombinedVector(_Cg, _gravity);
 //  //------------------------ PointMass Part ------------------------------------
-//  for (size_t i = 0; i < mPointMasses.size(); ++i)
+//  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
 //    mPointMasses.at(i)->aggregateCombinedVector(_Cg, _gravity);
 
 //  //----------------------- SoftBodyNode Part ----------------------------------
@@ -1174,7 +1174,7 @@ void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
 void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
 {
   //------------------------ PointMass Part ------------------------------------
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->aggregateExternalForces(_Fext);
 
   //----------------------- SoftBodyNode Part ----------------------------------
@@ -1209,7 +1209,7 @@ void SoftBodyNode::clearExternalForces()
 {
   BodyNode::clearExternalForces();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses.at(i)->clearExtForce();
 }
 
@@ -1218,7 +1218,7 @@ void SoftBodyNode::clearInternalForces()
 {
   BodyNode::clearInternalForces();
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
     mPointMasses[i]->resetForces();
 }
 
@@ -1260,7 +1260,7 @@ void SoftBodyNode::updateInertiaWithPointMass()
       BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   mI2 = mI;
 
-  for (size_t i = 0; i < mPointMasses.size(); ++i)
+  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
   {
 
   }
@@ -1282,7 +1282,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // Point masses
   //----------------------------------------------------------------------------
   // Number of point masses
-  size_t nPointMasses = 8;
+  std::size_t nPointMasses = 8;
   properties.mPointProps.resize(8);
 
   // Mass per vertices
@@ -1301,7 +1301,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   restingPos[7] = _size.cwiseProduct(Eigen::Vector3d(+1.0, +1.0, +1.0)) * 0.5;
 
   // Point masses
-  for (size_t i = 0; i < nPointMasses; ++i)
+  for (std::size_t i = 0; i < nPointMasses; ++i)
   {
     properties.mPointProps[i].mX0 = _localTransform * restingPos[i];
     properties.mPointProps[i].mMass = mass;
@@ -1400,7 +1400,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
     }
   }
 
-  size_t id = 0;
+  std::size_t id = 0;
 
   SoftBodyNode::UniqueProperties properties(
         _vertexStiffness, _edgeStiffness, _dampingCoeff);
@@ -1411,14 +1411,14 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // Number of point masses
   assert(frags[0] > 1 && frags[1] > 1 && frags[2] > 1);
 
-  size_t nCorners = 8;
-  size_t nVerticesAtEdgeX = frags[0] - 2;
-  size_t nVerticesAtEdgeY = frags[1] - 2;
-  size_t nVerticesAtEdgeZ = frags[2] - 2;
-  size_t nVerticesAtSideX = nVerticesAtEdgeY*nVerticesAtEdgeZ;
-  size_t nVerticesAtSideY = nVerticesAtEdgeZ*nVerticesAtEdgeX;
-  size_t nVerticesAtSideZ = nVerticesAtEdgeX*nVerticesAtEdgeY;
-  size_t nVertices
+  std::size_t nCorners = 8;
+  std::size_t nVerticesAtEdgeX = frags[0] - 2;
+  std::size_t nVerticesAtEdgeY = frags[1] - 2;
+  std::size_t nVerticesAtEdgeZ = frags[2] - 2;
+  std::size_t nVerticesAtSideX = nVerticesAtEdgeY*nVerticesAtEdgeZ;
+  std::size_t nVerticesAtSideY = nVerticesAtEdgeZ*nVerticesAtEdgeX;
+  std::size_t nVerticesAtSideZ = nVerticesAtEdgeX*nVerticesAtEdgeY;
+  std::size_t nVertices
       = nCorners
         + 4*(nVerticesAtEdgeX + nVerticesAtEdgeY + nVerticesAtEdgeZ)
         + 2*(nVerticesAtSideX + nVerticesAtSideY + nVerticesAtSideZ);
@@ -1430,7 +1430,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
                             _size[1]/(frags[1] - 1),
                             _size[2]/(frags[2] - 1));
 
-  typedef std::pair<PointMass::Properties, size_t> PointPair;
+  typedef std::pair<PointMass::Properties, std::size_t> PointPair;
 
   std::vector<PointPair> corners(nCorners);
 
@@ -1479,7 +1479,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   beginPts[6] = x1y1z1;
   beginPts[7] = x0y1z1;
 
-  for (size_t i = 0; i < nCorners; ++i)
+  for (std::size_t i = 0; i < nCorners; ++i)
   {
     corners[i].first.setRestingPosition(_localTransform * beginPts[i]);
     corners[i].first.setMass(mass);
@@ -1495,11 +1495,11 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   beginPts[2] = x0y1z1;
   beginPts[3] = x0y0z1;
 
-  for (size_t i = 0; i < 4; ++i)
+  for (std::size_t i = 0; i < 4; ++i)
   {
     restPos = beginPts[i];
 
-    for (size_t j = 0; j < nVerticesAtEdgeX; ++j)
+    for (std::size_t j = 0; j < nVerticesAtEdgeX; ++j)
     {
       restPos[0] += segLength[0];
 
@@ -1517,11 +1517,11 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   beginPts[2] = x1y0z1;
   beginPts[3] = x1y0z0;
 
-  for (size_t i = 0; i < 4; ++i)
+  for (std::size_t i = 0; i < 4; ++i)
   {
     restPos = beginPts[i];
 
-    for (size_t j = 0; j < nVerticesAtEdgeY; ++j)
+    for (std::size_t j = 0; j < nVerticesAtEdgeY; ++j)
     {
       restPos[1] += segLength[1];
 
@@ -1539,11 +1539,11 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   beginPts[2] = x1y1z0;
   beginPts[3] = x0y1z0;
 
-  for (size_t i = 0; i < 4; ++i)
+  for (std::size_t i = 0; i < 4; ++i)
   {
     restPos = beginPts[i];
 
-    for (size_t j = 0; j < nVerticesAtEdgeZ; ++j)
+    for (std::size_t j = 0; j < nVerticesAtEdgeZ; ++j)
     {
       restPos[2] += segLength[2];
 
@@ -1558,12 +1558,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // Negative X side
   restPos = x0y0z0;
 
-  for (size_t i = 0; i < nVerticesAtEdgeY; ++i)
+  for (std::size_t i = 0; i < nVerticesAtEdgeY; ++i)
   {
     restPos[2] = x0y0z0[2];
     restPos[1] += segLength[1];
 
-    for (size_t j = 0; j < nVerticesAtEdgeZ; ++j)
+    for (std::size_t j = 0; j < nVerticesAtEdgeZ; ++j)
     {
       restPos[2] += segLength[2];
 
@@ -1578,12 +1578,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // Positive X side
   restPos = x1y0z0;
 
-  for (size_t i = 0; i < nVerticesAtEdgeY; ++i)
+  for (std::size_t i = 0; i < nVerticesAtEdgeY; ++i)
   {
     restPos[2] = x1y0z0[2];
     restPos[1] += segLength[1];
 
-    for (size_t j = 0; j < nVerticesAtEdgeZ; ++j)
+    for (std::size_t j = 0; j < nVerticesAtEdgeZ; ++j)
     {
       restPos[2] += segLength[2];
 
@@ -1598,12 +1598,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // Negative Y side
   restPos = x0y0z0;
 
-  for (size_t i = 0; i < nVerticesAtEdgeZ; ++i)
+  for (std::size_t i = 0; i < nVerticesAtEdgeZ; ++i)
   {
     restPos[0] = x0y0z0[0];
     restPos[2] += segLength[2];
 
-    for (size_t j = 0; j < nVerticesAtEdgeX; ++j)
+    for (std::size_t j = 0; j < nVerticesAtEdgeX; ++j)
     {
       restPos[0] += segLength[0];
 
@@ -1618,12 +1618,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // Positive Y side
   restPos = x0y1z0;
 
-  for (size_t i = 0; i < nVerticesAtEdgeZ; ++i)
+  for (std::size_t i = 0; i < nVerticesAtEdgeZ; ++i)
   {
     restPos[0] = x0y1z0[0];
     restPos[2] += segLength[2];
 
-    for (size_t j = 0; j < nVerticesAtEdgeX; ++j)
+    for (std::size_t j = 0; j < nVerticesAtEdgeX; ++j)
     {
       restPos[0] += segLength[0];
 
@@ -1638,12 +1638,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // Negative Z side
   restPos = x0y0z0;
 
-  for (size_t i = 0; i < nVerticesAtEdgeX; ++i)
+  for (std::size_t i = 0; i < nVerticesAtEdgeX; ++i)
   {
     restPos[1] = x0y0z0[1];
     restPos[0] += segLength[0];
 
-    for (size_t j = 0; j < nVerticesAtEdgeY; ++j)
+    for (std::size_t j = 0; j < nVerticesAtEdgeY; ++j)
     {
       restPos[1] += segLength[1];
 
@@ -1658,12 +1658,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   // Positive Z side
   restPos = x0y0z1;
 
-  for (size_t i = 0; i < nVerticesAtEdgeX; ++i)
+  for (std::size_t i = 0; i < nVerticesAtEdgeX; ++i)
   {
     restPos[1] = x0y0z1[1];
     restPos[0] += segLength[0];
 
-    for (size_t j = 0; j < nVerticesAtEdgeY; ++j)
+    for (std::size_t j = 0; j < nVerticesAtEdgeY; ++j)
     {
       restPos[1] += segLength[1];
 
@@ -1678,10 +1678,10 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   //----------------------------------------------------------------------------
   // Faces
   //----------------------------------------------------------------------------
-  size_t nFacesX = 2*(frags[1] - 1)*(frags[2] - 1);
-  size_t nFacesY = 2*(frags[2] - 1)*(frags[0] - 1);
-  size_t nFacesZ = 2*(frags[0] - 1)*(frags[1] - 1);
-  size_t nFaces  = 2*nFacesX + 2*nFacesY + 2*nFacesZ;
+  std::size_t nFacesX = 2*(frags[1] - 1)*(frags[2] - 1);
+  std::size_t nFacesY = 2*(frags[2] - 1)*(frags[0] - 1);
+  std::size_t nFacesZ = 2*(frags[0] - 1)*(frags[1] - 1);
+  std::size_t nFaces  = 2*nFacesX + 2*nFacesY + 2*nFacesZ;
 
   std::vector<Eigen::Vector3i> faces(nFaces, Eigen::Vector3i::Zero());
 
@@ -1992,7 +1992,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   properties.addFace(faces[47]);
 
   // EdgeX[0]
-  for (size_t i = 0; i < edgeX[0].size() - 1; ++i)
+  for (std::size_t i = 0; i < edgeX[0].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeX[0][i].second;
     faces[fIdx][1] = edgeX[0][i + 1].second;
@@ -2020,7 +2020,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // EdgeX[1]
-  for (size_t i = 0; i < edgeX[1].size() - 1; ++i)
+  for (std::size_t i = 0; i < edgeX[1].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeX[1][i].second;
     faces[fIdx][1] = sideYPos[0][i].second;
@@ -2048,7 +2048,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // EdgeX[2]
-  for (size_t i = 0; i < edgeX[2].size() - 1; ++i)
+  for (std::size_t i = 0; i < edgeX[2].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeX[2][i + 1].second;
     faces[fIdx][1] = sideYPos.back()[i + 1].second;
@@ -2076,7 +2076,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // EdgeX[3]
-  for (size_t i = 0; i < edgeX[3].size() - 1; ++i)
+  for (std::size_t i = 0; i < edgeX[3].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeX[3][i].second;
     faces[fIdx][1] = sideYNeg.back()[i].second;
@@ -2104,7 +2104,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // edgeY[0]
-  for (size_t i = 0; i < edgeY[0].size() - 1; ++i)
+  for (std::size_t i = 0; i < edgeY[0].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeY[0][i + 1].second;
     faces[fIdx][1] = sideZNeg[0][i + 1].second;
@@ -2132,7 +2132,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // edgeY[1]
-  for (size_t i = 0; i < edgeY[1].size() - 1; ++i)
+  for (std::size_t i = 0; i < edgeY[1].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeY[1][i].second;
     faces[fIdx][1] = sideZPos[0][i].second;
@@ -2160,7 +2160,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // edgeY[2]
-  for (size_t i = 0; i < edgeY[2].size() - 1; ++i)
+  for (std::size_t i = 0; i < edgeY[2].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeY[2][i + 1].second;
     faces[fIdx][1] = sideZPos.back()[i + 1].second;
@@ -2188,7 +2188,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // edgeY[3]
-  for (size_t i = 0; i < edgeY[3].size() - 1; ++i)
+  for (std::size_t i = 0; i < edgeY[3].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeY[3][i].second;
     faces[fIdx][1] = sideZNeg.back()[i].second;
@@ -2216,7 +2216,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // edgeZ[0]
-  for (size_t i = 0; i < edgeZ[0].size() - 1; ++i)
+  for (std::size_t i = 0; i < edgeZ[0].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeZ[0][i + 1].second;
     faces[fIdx][1] = sideXNeg[0][i + 1].second;
@@ -2244,7 +2244,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // edgeZ[1]
-  for (size_t i = 0; i < edgeZ[1].size() - 1; ++i)
+  for (std::size_t i = 0; i < edgeZ[1].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeZ[1][i].second;
     faces[fIdx][1] = sideXPos[0][i].second;
@@ -2272,7 +2272,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // edgeZ[2]
-  for (size_t i = 0; i < edgeZ[2].size() - 1; ++i)
+  for (std::size_t i = 0; i < edgeZ[2].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeZ[2][i + 1].second;
     faces[fIdx][1] = sideXPos.back()[i + 1].second;
@@ -2300,7 +2300,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // edgeZ[3]
-  for (size_t i = 0; i < edgeZ[3].size() - 1; ++i)
+  for (std::size_t i = 0; i < edgeZ[3].size() - 1; ++i)
   {
     faces[fIdx][0] = edgeZ[3][i].second;
     faces[fIdx][1] = sideXNeg.back()[i].second;
@@ -2328,9 +2328,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // -X side
-  for (size_t i = 0; i < sideXNeg.size() - 1; ++i)
+  for (std::size_t i = 0; i < sideXNeg.size() - 1; ++i)
   {
-    for (size_t j = 0; j < sideXNeg[i].size() - 1; ++j)
+    for (std::size_t j = 0; j < sideXNeg[i].size() - 1; ++j)
     {
       faces[fIdx][0] = sideXNeg[i + 0][j + 0].second;
       faces[fIdx][1] = sideXNeg[i + 0][j + 1].second;
@@ -2347,9 +2347,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // +X side
-  for (size_t i = 0; i < sideXPos.size() - 1; ++i)
+  for (std::size_t i = 0; i < sideXPos.size() - 1; ++i)
   {
-    for (size_t j = 0; j < sideXPos[i].size() - 1; ++j)
+    for (std::size_t j = 0; j < sideXPos[i].size() - 1; ++j)
     {
       faces[fIdx][0] = sideXPos[i + 0][j + 0].second;
       faces[fIdx][1] = sideXPos[i + 1][j + 0].second;
@@ -2366,9 +2366,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // -Y side
-  for (size_t i = 0; i < sideYNeg.size() - 1; ++i)
+  for (std::size_t i = 0; i < sideYNeg.size() - 1; ++i)
   {
-    for (size_t j = 0; j < sideYNeg[i].size() - 1; ++j)
+    for (std::size_t j = 0; j < sideYNeg[i].size() - 1; ++j)
     {
       faces[fIdx][0] = sideYNeg[i + 0][j + 0].second;
       faces[fIdx][1] = sideYNeg[i + 0][j + 1].second;
@@ -2385,9 +2385,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // +Y side
-  for (size_t i = 0; i < sideYPos.size() - 1; ++i)
+  for (std::size_t i = 0; i < sideYPos.size() - 1; ++i)
   {
-    for (size_t j = 0; j < sideYPos[i].size() - 1; ++j)
+    for (std::size_t j = 0; j < sideYPos[i].size() - 1; ++j)
     {
       faces[fIdx][0] = sideYPos[i + 0][j + 0].second;
       faces[fIdx][1] = sideYPos[i + 1][j + 0].second;
@@ -2404,9 +2404,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // -Z side
-  for (size_t i = 0; i < sideZNeg.size() - 1; ++i)
+  for (std::size_t i = 0; i < sideZNeg.size() - 1; ++i)
   {
-    for (size_t j = 0; j < sideZNeg[i].size() - 1; ++j)
+    for (std::size_t j = 0; j < sideZNeg[i].size() - 1; ++j)
     {
       faces[fIdx][0] = sideZNeg[i + 0][j + 0].second;
       faces[fIdx][1] = sideZNeg[i + 0][j + 1].second;
@@ -2423,9 +2423,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
   }
 
   // +Z side
-  for (size_t i = 0; i < sideZPos.size() - 1; ++i)
+  for (std::size_t i = 0; i < sideZPos.size() - 1; ++i)
   {
-    for (size_t j = 0; j < sideZPos[i].size() - 1; ++j)
+    for (std::size_t j = 0; j < sideZPos[i].size() - 1; ++j)
     {
       faces[fIdx][0] = sideZPos[i + 0][j + 0].second;
       faces[fIdx][1] = sideZPos[i + 1][j + 0].second;
@@ -2479,7 +2479,7 @@ SoftBodyNodeHelper::makeSinglePointMassProperties(
   // Point masses
   //----------------------------------------------------------------------------
   // Number of point masses
-  size_t nPointMasses = 1;
+  std::size_t nPointMasses = 1;
 
   // Mass per vertices
   double mass = _totalMass / nPointMasses;
@@ -2490,7 +2490,7 @@ SoftBodyNodeHelper::makeSinglePointMassProperties(
   restingPos[0] = Eigen::Vector3d(+0.1, +0.1, +0.1);
 
   // Point masses
-  for (size_t i = 0; i < nPointMasses; ++i)
+  for (std::size_t i = 0; i < nPointMasses; ++i)
   {
     PointMass::Properties point(restingPos[i], mass);
     properties.addPointMass(point);
@@ -2517,8 +2517,8 @@ void SoftBodyNodeHelper::setSinglePointMass(SoftBodyNode* _softBodyNode,
 //==============================================================================
 SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
     const Eigen::Vector3d& _size,
-    size_t _nSlices,
-    size_t _nStacks,
+    std::size_t _nSlices,
+    std::size_t _nStacks,
     double _totalMass,
     double _vertexStiffness,
     double _edgeStiffness,
@@ -2547,13 +2547,13 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
   // middle
   float drho = 1_pi / _nStacks;
   float dtheta = 2_pi / _nSlices;
-  for (size_t i = 1; i < _nStacks; i++)
+  for (std::size_t i = 1; i < _nStacks; i++)
   {
     float rho = i * drho;
     float srho = (sin(rho));
     float crho = (cos(rho));
 
-    for (size_t j = 0; j < _nSlices; j++)
+    for (std::size_t j = 0; j < _nSlices; j++)
     {
       float theta = (j == _nSlices) ? 0.0f : j * dtheta;
       float stheta = (-sin(theta));
@@ -2578,22 +2578,22 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
   //----------------------------------------------------------------------------
   // a) longitudinal
   // -- top
-  for (size_t i = 0; i < _nSlices; i++)
+  for (std::size_t i = 0; i < _nSlices; i++)
     properties.connectPointMasses(0, i + 1);
   // -- middle
-  for (size_t i = 0; i < _nStacks - 2; i++)
-    for (size_t j = 0; j < _nSlices; j++)
+  for (std::size_t i = 0; i < _nStacks - 2; i++)
+    for (std::size_t j = 0; j < _nSlices; j++)
       properties.connectPointMasses(i*_nSlices + j + 1,
                                         (i + 1)*_nSlices + j + 1);
   // -- bottom
-  for (size_t i = 0; i < _nSlices; i++)
+  for (std::size_t i = 0; i < _nSlices; i++)
     properties.connectPointMasses((_nStacks-1)*_nSlices + 1,
                                       (_nStacks-2)*_nSlices + i + 1);
 
   // b) latitudinal
-  for (size_t i = 0; i < _nStacks - 1; i++)
+  for (std::size_t i = 0; i < _nStacks - 1; i++)
   {
-    for (size_t j = 0; j < _nSlices - 1; j++)
+    for (std::size_t j = 0; j < _nSlices - 1; j++)
     {
       properties.connectPointMasses(i*_nSlices + j + 1, i*_nSlices + j + 2);
     }
@@ -2601,9 +2601,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
   }
 
   // c) cross (shear)
-  for (size_t i = 0; i < _nStacks - 2; i++)
+  for (std::size_t i = 0; i < _nStacks - 2; i++)
   {
-    for (size_t j = 0; j < _nSlices - 1; j++)
+    for (std::size_t j = 0; j < _nSlices - 1; j++)
     {
       properties.connectPointMasses(i * _nSlices + j + 1,
                                         (i + 1) * _nSlices + j + 2);
@@ -2623,7 +2623,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
 
   // top
   meshIdx1 = 0;
-  for (size_t i = 0; i < _nSlices - 1; i++)
+  for (std::size_t i = 0; i < _nSlices - 1; i++)
   {
     meshIdx2 = i + 1;
     meshIdx3 = i + 2;
@@ -2634,9 +2634,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
   properties.addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
 
   // middle
-  for (size_t i = 0; i < _nStacks - 2; i++)
+  for (std::size_t i = 0; i < _nStacks - 2; i++)
   {
-    for (size_t j = 0; j < _nSlices - 1; j++)
+    for (std::size_t j = 0; j < _nSlices - 1; j++)
     {
       meshIdx1 = i*_nSlices + j + 1;
       meshIdx2 = (i + 1)*_nSlices + j + 1;
@@ -2662,7 +2662,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
 
   // bottom
   meshIdx1 = (_nStacks-1)*_nSlices + 1;
-  for (size_t i = 0; i < _nSlices - 1; i++)
+  for (std::size_t i = 0; i < _nSlices - 1; i++)
   {
     meshIdx2 = (_nStacks-2)*_nSlices + i + 2;
     meshIdx3 = (_nStacks-2)*_nSlices + i + 1;
@@ -2678,8 +2678,8 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
 //==============================================================================
 void SoftBodyNodeHelper::setEllipsoid(SoftBodyNode*          _softBodyNode,
                                       const Eigen::Vector3d& _size,
-                                      size_t                 _nSlices,
-                                      size_t                 _nStacks,
+                                      std::size_t                 _nSlices,
+                                      std::size_t                 _nStacks,
                                       double                 _totalMass,
                                       double                 _vertexStiffness,
                                       double                 _edgeStiffness,
@@ -2699,9 +2699,9 @@ void SoftBodyNodeHelper::setEllipsoid(SoftBodyNode*          _softBodyNode,
 SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
     double _radius,
     double _height,
-    size_t _nSlices,
-    size_t _nStacks,
-    size_t _nRings,
+    std::size_t _nSlices,
+    std::size_t _nStacks,
+    std::size_t _nRings,
     double _totalMass,
     double _vertexStiffness,
     double _edgeStiffness,
@@ -2717,9 +2717,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
   // Point masses
   //----------------------------------------------------------------------------
   // Number of point masses
-  size_t nTopPointMasses = _nSlices * (_nRings - 1) + 1;
-  size_t nDrumPointMasses = (_nStacks + 1) * _nSlices;
-  size_t nTotalMasses = nDrumPointMasses + 2 * nTopPointMasses;
+  std::size_t nTopPointMasses = _nSlices * (_nRings - 1) + 1;
+  std::size_t nDrumPointMasses = (_nStacks + 1) * _nSlices;
+  std::size_t nTotalMasses = nDrumPointMasses + 2 * nTopPointMasses;
 
   // Mass per vertices
   double mass = _totalMass / nTotalMasses;
@@ -2732,12 +2732,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
   properties.addPointMass(PointMass::Properties(
             Eigen::Vector3d(0.0, 0.0, 0.5 * _height), mass));
 
-  for (size_t i = 1; i < _nRings; ++i)
+  for (std::size_t i = 1; i < _nRings; ++i)
   {
     float z = 0.5;
     float radius = i * dradius;
 
-    for (size_t j = 0; j < _nSlices; j++)
+    for (std::size_t j = 0; j < _nSlices; j++)
     {
       float theta = (j == _nSlices) ? 0.0f : j * dtheta;
       float stheta = (-sin(theta));
@@ -2753,11 +2753,11 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
 
   // -- middle
   float dz     = -1.0 / static_cast<float>(_nStacks);
-  for (size_t i = 0; i < _nStacks + 1; i++)
+  for (std::size_t i = 0; i < _nStacks + 1; i++)
   {
     float z = 0.5 + i * dz;
 
-    for (size_t j = 0; j < _nSlices; j++)
+    for (std::size_t j = 0; j < _nSlices; j++)
     {
       float theta = (j == _nSlices) ? 0.0f : j * dtheta;
       float stheta = (-sin(theta));
@@ -2772,12 +2772,12 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
   }
 
   // -- bottom
-  for (size_t i = 1; i < _nRings; ++i)
+  for (std::size_t i = 1; i < _nRings; ++i)
   {
     float z = -0.5;
     float radius = _radius - i * dradius;
 
-    for (size_t j = 0; j < _nSlices; j++)
+    for (std::size_t j = 0; j < _nSlices; j++)
     {
       float theta = (j == _nSlices) ? 0.0f : j * dtheta;
       float stheta = (-sin(theta));
@@ -2801,11 +2801,11 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
 
   // a) longitudinal
   // -- top
-  for (size_t i = 0; i < _nSlices; i++)
+  for (std::size_t i = 0; i < _nSlices; i++)
     properties.connectPointMasses(0, i + 1);
-  for (size_t i = 0; i < _nRings - 1; i++)
+  for (std::size_t i = 0; i < _nRings - 1; i++)
   {
-    for (size_t j = 0; j < _nSlices; j++)
+    for (std::size_t j = 0; j < _nSlices; j++)
     {
       properties.connectPointMasses(
             _nSlices + 1 + (i + 0) * _nSlices + j,
@@ -2813,9 +2813,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
     }
   }
   // -- middle
-  for (size_t i = 0; i < _nStacks - 1; i++)
+  for (std::size_t i = 0; i < _nStacks - 1; i++)
   {
-    for (size_t j = 0; j < _nSlices; j++)
+    for (std::size_t j = 0; j < _nSlices; j++)
     {
       properties.connectPointMasses(
             nTopPointMasses + (i + 0) * _nSlices + j,
@@ -2823,9 +2823,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
     }
   }
   // -- bottom
-  for (size_t i = 0; i < _nRings - 1; i++)
+  for (std::size_t i = 0; i < _nRings - 1; i++)
   {
-    for (size_t j = 0; j < _nSlices; j++)
+    for (std::size_t j = 0; j < _nSlices; j++)
     {
       properties.connectPointMasses(
             nTopPointMasses + (nDrumPointMasses - _nSlices)
@@ -2834,14 +2834,14 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
             + (i + 1) * _nSlices + j);
     }
   }
-  for (size_t i = 1; i < _nSlices; i++)
+  for (std::size_t i = 1; i < _nSlices; i++)
     properties.connectPointMasses(nTotalMasses - 1 - i,
                                       nTotalMasses - 1);
 
   // b) latitudinal
-  for (size_t i = 0; i < _nStacks; i++)
+  for (std::size_t i = 0; i < _nStacks; i++)
   {
-    for (size_t j = 0; j < _nSlices - 1; j++)
+    for (std::size_t j = 0; j < _nSlices - 1; j++)
     {
       properties.connectPointMasses(
             nTopPointMasses + i * _nSlices + j + 0,
@@ -2857,9 +2857,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
 
   // c) cross (shear)
   // -- drum part
-  for (size_t i = 0; i < _nStacks - 2; i++)
+  for (std::size_t i = 0; i < _nStacks - 2; i++)
   {
-    for (size_t j = 0; j < _nSlices - 1; j++)
+    for (std::size_t j = 0; j < _nSlices - 1; j++)
     {
       properties.connectPointMasses(
             nTopPointMasses + (i + 0) * _nSlices + j + 0,
@@ -2887,9 +2887,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
   int meshIdx3 = 0;
 
   // top
-  size_t nConePointMass = 1;
+  std::size_t nConePointMass = 1;
   meshIdx1 = 0;
-  for (size_t i = 0; i < _nSlices - 1; i++)
+  for (std::size_t i = 0; i < _nSlices - 1; i++)
   {
     meshIdx2 = i + 1;
     meshIdx3 = i + 2;
@@ -2898,9 +2898,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
   meshIdx2 = _nSlices;
   meshIdx3 = 1;
   properties.addFace(Eigen::Vector3i(meshIdx1, meshIdx2, meshIdx3));
-  for (size_t i = 0; i < _nRings - 1; ++i)
+  for (std::size_t i = 0; i < _nRings - 1; ++i)
   {
-    for (size_t j = 0; j < _nSlices - 1; ++j)
+    for (std::size_t j = 0; j < _nSlices - 1; ++j)
     {
       meshIdx1 = (i + 0) * _nSlices + j;
       meshIdx2 = (i + 1) * _nSlices + j;
@@ -2933,9 +2933,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
   }
 
   // middle
-  for (size_t i = 0; i < _nStacks; i++)
+  for (std::size_t i = 0; i < _nStacks; i++)
   {
-    for (size_t j = 0; j < _nSlices - 1; j++)
+    for (std::size_t j = 0; j < _nSlices - 1; j++)
     {
       meshIdx1 = (i + 0) * _nSlices + j;
       meshIdx2 = (i + 1) * _nSlices + j;
@@ -2968,9 +2968,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
   }
 
   // bottom
-  for (size_t i = 0; i < _nRings - 1; ++i)
+  for (std::size_t i = 0; i < _nRings - 1; ++i)
   {
-    for (size_t j = 0; j < _nSlices - 1; ++j)
+    for (std::size_t j = 0; j < _nSlices - 1; ++j)
     {
       meshIdx1 = (i + 0) * _nSlices + j;
       meshIdx2 = (i + 1) * _nSlices + j;
@@ -3010,7 +3010,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
             nTopPointMasses + (nDrumPointMasses - _nSlices) + meshIdx3));
   }
   meshIdx1 = 1;
-  for (size_t i = 0; i < _nSlices - 1; i++)
+  for (std::size_t i = 0; i < _nSlices - 1; i++)
   {
     meshIdx2 = i + 2;
     meshIdx3 = i + 3;
@@ -3033,9 +3033,9 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
 void SoftBodyNodeHelper::setCylinder(SoftBodyNode* _softBodyNode,
                                      double _radius,
                                      double _height,
-                                     size_t _nSlices,
-                                     size_t _nStacks,
-                                     size_t _nRings,
+                                     std::size_t _nSlices,
+                                     std::size_t _nStacks,
+                                     std::size_t _nRings,
                                      double _totalMass,
                                      double _vertexStiffness,
                                      double _edgeStiffness,

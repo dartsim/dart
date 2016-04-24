@@ -87,7 +87,7 @@ protected:
   void getInformation(ConstraintInfo* lcp) override;
 
   // Documentation inherited
-  void applyUnitImpulse(size_t index) override;
+  void applyUnitImpulse(std::size_t index) override;
 
   // Documentation inherited
   void getVelocityChange(double* delVel, bool withCfm) override;
@@ -115,10 +115,10 @@ private:
   dynamics::BodyNode* mBodyNode;
 
   /// Index of applied impulse
-  size_t mAppliedImpulseIndex;
+  std::size_t mAppliedImpulseIndex;
 
   ///
-  size_t mLifeTime[6];
+  std::size_t mLifeTime[6];
   // TODO(JS): Lifetime should be considered only when we use iterative lcp
   // solver
 

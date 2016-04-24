@@ -45,15 +45,15 @@ namespace dart {
 namespace dynamics {
 
 // Forward declare the MultiDofJoint class
-template <size_t DOF> class MultiDofJoint;
+template <std::size_t DOF> class MultiDofJoint;
 
 namespace detail {
 
 //==============================================================================
-template <size_t DOF>
+template <std::size_t DOF>
 struct MultiDofJointState
 {
-  constexpr static size_t NumDofs = DOF;
+  constexpr static std::size_t NumDofs = DOF;
   using Vector = Eigen::Matrix<double, DOF, 1>;
 
   /// Position
@@ -85,10 +85,10 @@ struct MultiDofJointState
 };
 
 //==============================================================================
-template <size_t DOF>
+template <std::size_t DOF>
 struct MultiDofJointUniqueProperties
 {
-  constexpr static size_t NumDofs = DOF;
+  constexpr static std::size_t NumDofs = DOF;
   using Vector = Eigen::Matrix<double, DOF, 1>;
   using BoolArray = std::array<bool, DOF>;
   using StringArray = std::array<std::string, DOF>;
@@ -172,7 +172,7 @@ public:
 };
 
 //==============================================================================
-template <size_t DOF>
+template <std::size_t DOF>
 struct MultiDofJointProperties :
     Joint::Properties,
     MultiDofJointUniqueProperties<DOF>
@@ -196,14 +196,14 @@ public:
 //
 // See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
 //
-template <size_t DOF>
-constexpr size_t MultiDofJointState<DOF>::NumDofs;
+template <std::size_t DOF>
+constexpr std::size_t MultiDofJointState<DOF>::NumDofs;
 
-template <size_t DOF>
-constexpr size_t MultiDofJointUniqueProperties<DOF>::NumDofs;
+template <std::size_t DOF>
+constexpr std::size_t MultiDofJointUniqueProperties<DOF>::NumDofs;
 
 //==============================================================================
-template <size_t DOF>
+template <std::size_t DOF>
 MultiDofJointState<DOF>::MultiDofJointState(
     const Vector& positions,
     const Vector& velocities,
@@ -220,7 +220,7 @@ MultiDofJointState<DOF>::MultiDofJointState(
 }
 
 //==============================================================================
-template <size_t DOF>
+template <std::size_t DOF>
 MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
     const Vector& _positionLowerLimits,
     const Vector& _positionUpperLimits,
@@ -251,7 +251,7 @@ MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
     mDampingCoefficients(_dampingCoefficient),
     mFrictions(_coulombFrictions)
 {
-  for (size_t i = 0; i < DOF; ++i)
+  for (std::size_t i = 0; i < DOF; ++i)
   {
     mPreserveDofNames[i] = false;
     mDofNames[i] = std::string();
@@ -259,7 +259,7 @@ MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
 }
 
 //==============================================================================
-template <size_t DOF>
+template <std::size_t DOF>
 MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
     const MultiDofJointUniqueProperties& _other)
   : mPositionLowerLimits(_other.mPositionLowerLimits),
@@ -277,7 +277,7 @@ MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
     mDampingCoefficients(_other.mDampingCoefficients),
     mFrictions(_other.mFrictions)
 {
-  for (size_t i = 0; i < DOF; ++i)
+  for (std::size_t i = 0; i < DOF; ++i)
   {
     mPreserveDofNames[i] = _other.mPreserveDofNames[i];
     mDofNames[i] = _other.mDofNames[i];
@@ -285,7 +285,7 @@ MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
 }
 
 //==============================================================================
-template <size_t DOF>
+template <std::size_t DOF>
 MultiDofJointProperties<DOF>::MultiDofJointProperties(
     const Joint::Properties& _jointProperties,
     const MultiDofJointUniqueProperties<DOF>& _multiDofProperties)
@@ -295,7 +295,7 @@ MultiDofJointProperties<DOF>::MultiDofJointProperties(
   // Do nothing
 }
 
-template <class Derived, size_t DOF>
+template <class Derived, std::size_t DOF>
 using MultiDofJointBase = common::EmbedStateAndPropertiesOnTopOf<
     Derived, MultiDofJointState<DOF>, MultiDofJointUniqueProperties<DOF>, Joint>;
 

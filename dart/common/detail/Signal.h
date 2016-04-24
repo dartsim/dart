@@ -106,9 +106,9 @@ void Signal<_Res (_ArgTypes...), Combiner>::cleanupConnections()
 
 //==============================================================================
 template <typename _Res, typename... _ArgTypes, template<class> class Combiner>
-size_t Signal<_Res (_ArgTypes...), Combiner>::getNumConnections() const
+std::size_t Signal<_Res (_ArgTypes...), Combiner>::getNumConnections() const
 {
-  size_t numConnections = 0;
+  std::size_t numConnections = 0;
 
   // Counts all the connected conection bodies
   for (const auto& connectionBody : mConnectionBodies)
@@ -216,9 +216,9 @@ void Signal<void (_ArgTypes...)>::cleanupConnections()
 
 //==============================================================================
 template <typename... _ArgTypes>
-size_t Signal<void (_ArgTypes...)>::getNumConnections() const
+std::size_t Signal<void (_ArgTypes...)>::getNumConnections() const
 {
-  size_t numConnections = 0;
+  std::size_t numConnections = 0;
 
   // Counts all the connected conection bodies
   for (const auto& connectionBody : mConnectionBodies)

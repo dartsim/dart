@@ -342,7 +342,7 @@ double getParameter(const ParameterMap& ParameterMap,
 }
 
 //==============================================================================
-template <size_t NumParams>
+template <std::size_t NumParams>
 Eigen::Matrix<double, NumParams, 1> getParameters(
     const ParameterMap& ParameterMap,
     const std::string& paramNamesOrValues)
@@ -354,14 +354,14 @@ Eigen::Matrix<double, NumParams, 1> getParameters(
 
   Eigen::Matrix<double, NumParams, 1> result;
 
-  for (size_t i = 0; i < NumParams; ++i)
+  for (std::size_t i = 0; i < NumParams; ++i)
     result[i] = getParameter(ParameterMap, tokens[i]);
 
   return result;
 }
 
 //==============================================================================
-template <size_t NumParams>
+template <std::size_t NumParams>
 Eigen::Matrix<double, NumParams, 1> readAttributeVector(
     const tinyxml2::XMLElement* element,
     const std::string& name,
@@ -889,7 +889,7 @@ bool readStick(const tinyxml2::XMLElement* /*stickEle*/,
 void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
 {
   // Generate shapes for bodies that have their parents
-  for (size_t i = 0; i < skel->getNumBodyNodes(); ++i)
+  for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i)
   {
     dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
     dynamics::Joint*    joint    = skel->getJoint(i);
@@ -935,7 +935,7 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
   if (vskData.options.removeEndBodyNodes)
   {
     std::vector<dynamics::BodyNode*> emptynodes;
-    for (size_t i = 0; i < skel->getNumBodyNodes(); ++i)
+    for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i)
     {
       dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
 
@@ -952,7 +952,7 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
 
   // Update mass and moments of inertia of the bodies based on the their shapes
   const double& density = vskData.options.density;
-  for (size_t i = 0; i < skel->getNumBodyNodes(); ++i)
+  for (std::size_t i = 0; i < skel->getNumBodyNodes(); ++i)
   {
     dynamics::BodyNode* bodyNode = skel->getBodyNode(i);
 

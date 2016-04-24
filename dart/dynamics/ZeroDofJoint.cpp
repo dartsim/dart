@@ -64,7 +64,7 @@ ZeroDofJoint::Properties ZeroDofJoint::getZeroDofJointProperties() const
 }
 
 //==============================================================================
-DegreeOfFreedom* ZeroDofJoint::getDof(size_t)
+DegreeOfFreedom* ZeroDofJoint::getDof(std::size_t)
 {
   dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
         << "ZeroDofJoint. This is not allowed!\n";
@@ -73,7 +73,7 @@ DegreeOfFreedom* ZeroDofJoint::getDof(size_t)
 }
 
 //==============================================================================
-const DegreeOfFreedom* ZeroDofJoint::getDof(size_t) const
+const DegreeOfFreedom* ZeroDofJoint::getDof(std::size_t) const
 {
   dterr << "[ZeroDofJoint::getDof] Attempting to get a DegreeOfFreedom from a "
         << "ZeroDofJoint. This is not allowed!\n";
@@ -82,37 +82,37 @@ const DegreeOfFreedom* ZeroDofJoint::getDof(size_t) const
 }
 
 //==============================================================================
-const std::string& ZeroDofJoint::setDofName(size_t, const std::string &, bool)
+const std::string& ZeroDofJoint::setDofName(std::size_t, const std::string &, bool)
 {
   return emptyString;
 }
 
 //==============================================================================
-void ZeroDofJoint::preserveDofName(size_t, bool)
+void ZeroDofJoint::preserveDofName(std::size_t, bool)
 {
   // Do nothing
 }
 
 //==============================================================================
-bool ZeroDofJoint::isDofNamePreserved(size_t) const
+bool ZeroDofJoint::isDofNamePreserved(std::size_t) const
 {
   return false;
 }
 
 //==============================================================================
-const std::string& ZeroDofJoint::getDofName(size_t) const
+const std::string& ZeroDofJoint::getDofName(std::size_t) const
 {
   return emptyString;
 }
 
 //==============================================================================
-size_t ZeroDofJoint::getNumDofs() const
+std::size_t ZeroDofJoint::getNumDofs() const
 {
   return 0;
 }
 
 //==============================================================================
-size_t ZeroDofJoint::getIndexInSkeleton(size_t _index) const
+std::size_t ZeroDofJoint::getIndexInSkeleton(std::size_t _index) const
 {
   dterr << "[ZeroDofJoint::getIndexInSkeleton] This function should never be "
         << "called (" << _index << ")!\n";
@@ -122,7 +122,7 @@ size_t ZeroDofJoint::getIndexInSkeleton(size_t _index) const
 }
 
 //==============================================================================
-size_t ZeroDofJoint::getIndexInTree(size_t _index) const
+std::size_t ZeroDofJoint::getIndexInTree(std::size_t _index) const
 {
   dterr << "ZeroDofJoint::getIndexInTree] This function should never be "
         << "called (" << _index << ")!\n";
@@ -132,13 +132,13 @@ size_t ZeroDofJoint::getIndexInTree(size_t _index) const
 }
 
 //==============================================================================
-void ZeroDofJoint::setCommand(size_t /*_index*/, double /*_command*/)
+void ZeroDofJoint::setCommand(std::size_t /*_index*/, double /*_command*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getCommand(size_t _index) const
+double ZeroDofJoint::getCommand(std::size_t _index) const
 {
   dterr << "[ZeroDofJoint::getCommand]: index[" << _index << "] out of range"
         << std::endl;
@@ -165,13 +165,13 @@ void ZeroDofJoint::resetCommands()
 }
 
 //==============================================================================
-void ZeroDofJoint::setPosition(size_t, double)
+void ZeroDofJoint::setPosition(std::size_t, double)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getPosition(size_t _index) const
+double ZeroDofJoint::getPosition(std::size_t _index) const
 {
   dterr << "getPosition index[" << _index << "] out of range"
     << std::endl;
@@ -192,39 +192,39 @@ Eigen::VectorXd ZeroDofJoint::getPositions() const
 }
 
 //==============================================================================
-void ZeroDofJoint::setPositionLowerLimit(size_t /*_index*/,
+void ZeroDofJoint::setPositionLowerLimit(std::size_t /*_index*/,
                                          double /*_position*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getPositionLowerLimit(size_t /*_index*/) const
+double ZeroDofJoint::getPositionLowerLimit(std::size_t /*_index*/) const
 {
   return 0.0;
 }
 
 //==============================================================================
-void ZeroDofJoint::setPositionUpperLimit(size_t /*_index*/,
+void ZeroDofJoint::setPositionUpperLimit(std::size_t /*_index*/,
                                          double /*_position*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getPositionUpperLimit(size_t /*_index*/) const
+double ZeroDofJoint::getPositionUpperLimit(std::size_t /*_index*/) const
 {
   return 0.0;
 }
 
 //==============================================================================
-bool ZeroDofJoint::hasPositionLimit(size_t /*_index*/) const
+bool ZeroDofJoint::hasPositionLimit(std::size_t /*_index*/) const
 {
   return true;
 }
 
 //==============================================================================
-void ZeroDofJoint::resetPosition(size_t /*_index*/)
+void ZeroDofJoint::resetPosition(std::size_t /*_index*/)
 {
   // Do nothing
 }
@@ -236,13 +236,13 @@ void ZeroDofJoint::resetPositions()
 }
 
 //==============================================================================
-void ZeroDofJoint::setInitialPosition(size_t /*_index*/, double /*_initial*/)
+void ZeroDofJoint::setInitialPosition(std::size_t /*_index*/, double /*_initial*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getInitialPosition(size_t /*_index*/) const
+double ZeroDofJoint::getInitialPosition(std::size_t /*_index*/) const
 {
   return 0.0;
 }
@@ -260,13 +260,13 @@ Eigen::VectorXd ZeroDofJoint::getInitialPositions() const
 }
 
 //==============================================================================
-void ZeroDofJoint::setVelocity(size_t /*_index*/, double /*_velocity*/)
+void ZeroDofJoint::setVelocity(std::size_t /*_index*/, double /*_velocity*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getVelocity(size_t /*_index*/) const
+double ZeroDofJoint::getVelocity(std::size_t /*_index*/) const
 {
   return 0.0;
 }
@@ -284,33 +284,33 @@ Eigen::VectorXd ZeroDofJoint::getVelocities() const
 }
 
 //==============================================================================
-void ZeroDofJoint::setVelocityLowerLimit(size_t /*_index*/,
+void ZeroDofJoint::setVelocityLowerLimit(std::size_t /*_index*/,
                                          double /*_velocity*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getVelocityLowerLimit(size_t /*_index*/) const
+double ZeroDofJoint::getVelocityLowerLimit(std::size_t /*_index*/) const
 {
   return 0.0;
 }
 
 //==============================================================================
-void ZeroDofJoint::setVelocityUpperLimit(size_t /*_index*/,
+void ZeroDofJoint::setVelocityUpperLimit(std::size_t /*_index*/,
                                          double /*_velocity*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getVelocityUpperLimit(size_t /*_index*/) const
+double ZeroDofJoint::getVelocityUpperLimit(std::size_t /*_index*/) const
 {
   return 0.0;
 }
 
 //==============================================================================
-void ZeroDofJoint::resetVelocity(size_t /*_index*/)
+void ZeroDofJoint::resetVelocity(std::size_t /*_index*/)
 {
   // Do nothing
 }
@@ -322,13 +322,13 @@ void ZeroDofJoint::resetVelocities()
 }
 
 //==============================================================================
-void ZeroDofJoint::setInitialVelocity(size_t /*_index*/, double /*_initial*/)
+void ZeroDofJoint::setInitialVelocity(std::size_t /*_index*/, double /*_initial*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getInitialVelocity(size_t /*_index*/) const
+double ZeroDofJoint::getInitialVelocity(std::size_t /*_index*/) const
 {
   return 0.0;
 }
@@ -346,13 +346,13 @@ Eigen::VectorXd ZeroDofJoint::getInitialVelocities() const
 }
 
 //==============================================================================
-void ZeroDofJoint::setAcceleration(size_t /*_index*/, double /*_acceleration*/)
+void ZeroDofJoint::setAcceleration(std::size_t /*_index*/, double /*_acceleration*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getAcceleration(size_t /*_index*/) const
+double ZeroDofJoint::getAcceleration(std::size_t /*_index*/) const
 {
   return 0.0;
 }
@@ -376,39 +376,39 @@ void ZeroDofJoint::resetAccelerations()
 }
 
 //==============================================================================
-void ZeroDofJoint::setAccelerationLowerLimit(size_t /*_index*/,
+void ZeroDofJoint::setAccelerationLowerLimit(std::size_t /*_index*/,
                                              double /*_acceleration*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getAccelerationLowerLimit(size_t /*_index*/) const
+double ZeroDofJoint::getAccelerationLowerLimit(std::size_t /*_index*/) const
 {
   return 0.0;
 }
 
 //==============================================================================
-void ZeroDofJoint::setAccelerationUpperLimit(size_t /*_index*/,
+void ZeroDofJoint::setAccelerationUpperLimit(std::size_t /*_index*/,
                                              double /*_acceleration*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getAccelerationUpperLimit(size_t /*_index*/) const
+double ZeroDofJoint::getAccelerationUpperLimit(std::size_t /*_index*/) const
 {
   return 0.0;
 }
 
 //==============================================================================
-void ZeroDofJoint::setForce(size_t /*_index*/, double /*_force*/)
+void ZeroDofJoint::setForce(std::size_t /*_index*/, double /*_force*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getForce(size_t /*_index*/)
+double ZeroDofJoint::getForce(std::size_t /*_index*/)
 {
   return 0.0;
 }
@@ -432,38 +432,38 @@ void ZeroDofJoint::resetForces()
 }
 
 //==============================================================================
-void ZeroDofJoint::setForceLowerLimit(size_t /*_index*/, double /*_force*/)
+void ZeroDofJoint::setForceLowerLimit(std::size_t /*_index*/, double /*_force*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getForceLowerLimit(size_t /*_index*/) const
+double ZeroDofJoint::getForceLowerLimit(std::size_t /*_index*/) const
 {
   return 0.0;
 }
 
 //==============================================================================
-void ZeroDofJoint::setForceUpperLimit(size_t /*_index*/, double /*_force*/)
+void ZeroDofJoint::setForceUpperLimit(std::size_t /*_index*/, double /*_force*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getForceUpperLimit(size_t /*_index*/) const
+double ZeroDofJoint::getForceUpperLimit(std::size_t /*_index*/) const
 {
   return 0.0;
 }
 
 //==============================================================================
-void ZeroDofJoint::setVelocityChange(size_t /*_index*/,
+void ZeroDofJoint::setVelocityChange(std::size_t /*_index*/,
                                      double /*_velocityChange*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getVelocityChange(size_t /*_index*/) const
+double ZeroDofJoint::getVelocityChange(std::size_t /*_index*/) const
 {
   return 0.0;
 }
@@ -475,13 +475,13 @@ void ZeroDofJoint::resetVelocityChanges()
 }
 
 //==============================================================================
-void ZeroDofJoint::setConstraintImpulse(size_t /*_index*/, double /*_impulse*/)
+void ZeroDofJoint::setConstraintImpulse(std::size_t /*_index*/, double /*_impulse*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getConstraintImpulse(size_t /*_index*/) const
+double ZeroDofJoint::getConstraintImpulse(std::size_t /*_index*/) const
 {
   return 0.0;
 }
@@ -513,49 +513,49 @@ Eigen::VectorXd ZeroDofJoint::getPositionDifferences(
 }
 
 //==============================================================================
-void ZeroDofJoint::setSpringStiffness(size_t /*_index*/, double /*_k*/)
+void ZeroDofJoint::setSpringStiffness(std::size_t /*_index*/, double /*_k*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getSpringStiffness(size_t /*_index*/) const
+double ZeroDofJoint::getSpringStiffness(std::size_t /*_index*/) const
 {
   return 0.0;
 }
 
 //==============================================================================
-void ZeroDofJoint::setRestPosition(size_t /*_index*/, double /*_q0*/)
+void ZeroDofJoint::setRestPosition(std::size_t /*_index*/, double /*_q0*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getRestPosition(size_t /*_index*/) const
+double ZeroDofJoint::getRestPosition(std::size_t /*_index*/) const
 {
   return 0.0;
 }
 
 //==============================================================================
-void ZeroDofJoint::setDampingCoefficient(size_t /*_index*/, double /*_d*/)
+void ZeroDofJoint::setDampingCoefficient(std::size_t /*_index*/, double /*_d*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getDampingCoefficient(size_t /*_index*/) const
+double ZeroDofJoint::getDampingCoefficient(std::size_t /*_index*/) const
 {
   return 0.0;
 }
 
 //==============================================================================
-void ZeroDofJoint::setCoulombFriction(size_t /*_index*/, double /*_friction*/)
+void ZeroDofJoint::setCoulombFriction(std::size_t /*_index*/, double /*_friction*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getCoulombFriction(size_t /*_index*/) const
+double ZeroDofJoint::getCoulombFriction(std::size_t /*_index*/) const
 {
   return 0.0;
 }
@@ -794,7 +794,7 @@ void ZeroDofJoint::updateTotalForceForInvMassMatrix(
 //==============================================================================
 void ZeroDofJoint::getInvMassMatrixSegment(
     Eigen::MatrixXd& /*_invMassMat*/,
-    const size_t /*_col*/,
+    const std::size_t /*_col*/,
     const Eigen::Matrix6d& /*_artInertia*/,
     const Eigen::Vector6d& /*_spatialAcc*/)
 {
@@ -804,7 +804,7 @@ void ZeroDofJoint::getInvMassMatrixSegment(
 //==============================================================================
 void ZeroDofJoint::getInvAugMassMatrixSegment(
     Eigen::MatrixXd& /*_invMassMat*/,
-    const size_t /*_col*/,
+    const std::size_t /*_col*/,
     const Eigen::Matrix6d& /*_artInertia*/,
     const Eigen::Vector6d& /*_spatialAcc*/)
 {

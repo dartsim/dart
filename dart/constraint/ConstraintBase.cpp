@@ -58,7 +58,7 @@ ConstraintBase::~ConstraintBase()
 }
 
 //==============================================================================
-size_t ConstraintBase::getDimension() const
+std::size_t ConstraintBase::getDimension() const
 {
   return mDim;
 }

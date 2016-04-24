@@ -107,7 +107,7 @@ private:
 private:
 
   std::map<dynamics::ConstShapePtr,
-           std::pair<btCollisionShape*, size_t>> mShapeMap;
+           std::pair<btCollisionShape*, std::size_t>> mShapeMap;
 
 };
 

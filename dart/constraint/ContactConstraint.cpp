@@ -125,7 +125,7 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
     mJacobians2.resize(mDim);
 
     // Intermediate variables
-    size_t idx = 0;
+    std::size_t idx = 0;
 
     Eigen::Vector3d bodyDirection1;
     Eigen::Vector3d bodyDirection2;
@@ -133,7 +133,7 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
     Eigen::Vector3d bodyPoint1;
     Eigen::Vector3d bodyPoint2;
 
-    for (size_t i = 0; i < mContacts.size(); ++i)
+    for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
       collision::Contact* ct = mContacts[i];
 
@@ -224,7 +224,7 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
     Eigen::Vector3d bodyPoint1;
     Eigen::Vector3d bodyPoint2;
 
-    for (size_t i = 0; i < mContacts.size(); ++i)
+    for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
       collision::Contact* ct = mContacts[i];
 
@@ -384,8 +384,8 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
   //----------------------------------------------------------------------------
   if (mIsFrictionOn)
   {
-    size_t index = 0;
-    for (size_t i = 0; i < mContacts.size(); ++i)
+    std::size_t index = 0;
+    for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
       // Bias term, w, should be zero
       assert(_info->w[index] == 0.0);
@@ -470,7 +470,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
   //----------------------------------------------------------------------------
   else
   {
-    for (size_t i = 0; i < mContacts.size(); ++i)
+    for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
       // Bias term, w, should be zero
       _info->w[i] = 0.0;
@@ -531,7 +531,7 @@ void ContactConstraint::getInformation(ConstraintInfo* _info)
 }
 
 //==============================================================================
-void ContactConstraint::applyUnitImpulse(size_t _idx)
+void ContactConstraint::applyUnitImpulse(std::size_t _idx)
 {
   assert(_idx < mDim && "Invalid Index.");
   assert(isActive());
@@ -602,7 +602,7 @@ void ContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
   assert(_vel != nullptr && "Null pointer is not allowed.");
 
-  for (size_t i = 0; i < mDim; ++i)
+  for (std::size_t i = 0; i < mDim; ++i)
   {
     _vel[i] = 0.0;
 
@@ -656,9 +656,9 @@ void ContactConstraint::applyImpulse(double* _lambda)
   //----------------------------------------------------------------------------
   if (mIsFrictionOn)
   {
-    size_t index = 0;
+    std::size_t index = 0;
 
-    for (size_t i = 0; i < mContacts.size(); ++i)
+    for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
 //      std::cout << "_lambda1: " << _lambda[index] << std::endl;
 //      std::cout << "_lambda2: " << _lambda[index + 1] << std::endl;
@@ -717,7 +717,7 @@ void ContactConstraint::applyImpulse(double* _lambda)
   //----------------------------------------------------------------------------
   else
   {
-    for (size_t i = 0; i < mContacts.size(); ++i)
+    for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
       // Normal impulsive force
 //			pContactPts[i]->lambda[0] = _lambda[i];
@@ -738,7 +738,7 @@ void ContactConstraint::getRelVelocity(double* _relVel)
 {
   assert(_relVel != nullptr && "Null pointer is not allowed.");
 
-  for (size_t i = 0; i < mDim; ++i)
+  for (std::size_t i = 0; i < mDim; ++i)
   {
     _relVel[i] = 0.0;
 

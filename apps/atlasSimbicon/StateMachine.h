@@ -94,7 +94,7 @@ public:
   void transiteTo(std::string& _stateName, double _currentTime);
 
   /// \brief Change state to a state whose index is _idx
-  void transiteTo(size_t _idx, double _currentTime);
+  void transiteTo(std::size_t _idx, double _currentTime);
 
 protected:
   /// \brief Name

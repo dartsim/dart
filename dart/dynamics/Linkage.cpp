@@ -58,7 +58,7 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
     // If a start node is not given, then we must treat the root node of each
     // target as if it is a start node.
 
-    for(size_t i=0; i<mTargets.size(); ++i)
+    for(std::size_t i=0; i<mTargets.size(); ++i)
     {
       const Target& target = mTargets[i];
       if(nullptr == target.mNode.lock())
@@ -69,7 +69,7 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
       Target start = mStart;
       start.mPolicy = INCLUDE;
 
-      size_t treeIndex = target_bn->getTreeIndex();
+      std::size_t treeIndex = target_bn->getTreeIndex();
       start.mNode = target_bn->getSkeleton()->getRootBodyNode(treeIndex);
 
       expandToTarget(start, target, bns);
@@ -83,7 +83,7 @@ std::vector<BodyNode*> Linkage::Criteria::satisfy() const
       bns.push_back(mStart.mNode.lock());
     expansionPolicy(mStart.mNode.lock(), mStart.mPolicy, bns);
 
-    for(size_t i=0; i<mTargets.size(); ++i)
+    for(std::size_t i=0; i<mTargets.size(); ++i)
     {
       expandToTarget(mStart, mTargets[i], bns);
     }
@@ -132,7 +132,7 @@ Linkage::Criteria::Terminal::Terminal(BodyNode* _terminal, bool _inclusive)
 void Linkage::Criteria::refreshTerminalMap() const
 {
   mMapOfTerminals.clear();
-  for(size_t i=0; i<mTerminals.size(); ++i)
+  for(std::size_t i=0; i<mTerminals.size(); ++i)
   {
     mMapOfTerminals[mTerminals[i].mTerminal.lock()] = mTerminals[i].mInclusive;
   }
@@ -492,7 +492,7 @@ LinkagePtr Linkage::create(const Criteria &_criteria, const std::string& _name)
 //==============================================================================
 bool Linkage::isAssembled() const
 {
-  for(size_t i=0; i<mParentBodyNodes.size(); ++i)
+  for(std::size_t i=0; i<mParentBodyNodes.size(); ++i)
   {
     const BodyNode* bn = mBodyNodes[i];
     if(bn->getParentBodyNode() != mParentBodyNodes[i].lock())
@@ -505,7 +505,7 @@ bool Linkage::isAssembled() const
 //==============================================================================
 void Linkage::reassemble()
 {
-  for(size_t i=0; i<mBodyNodes.size(); ++i)
+  for(std::size_t i=0; i<mBodyNodes.size(); ++i)
   {
     BodyNode* bn = mBodyNodes[i];
     bn->moveTo(mParentBodyNodes[i].lock());
@@ -540,7 +540,7 @@ void Linkage::update()
 {
   mParentBodyNodes.clear();
   mParentBodyNodes.reserve(mBodyNodes.size());
-  for(size_t i=0; i<mBodyNodes.size(); ++i)
+  for(std::size_t i=0; i<mBodyNodes.size(); ++i)
   {
     mParentBodyNodes.push_back(mBodyNodes[i]->getParentBodyNode());
   }

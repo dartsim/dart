@@ -78,7 +78,7 @@ using namespace dart::simulation;
 void setupRing(const SkeletonPtr& ring)
 {
   // Set the spring and damping coefficients for the degrees of freedom
-  for(size_t i=6; i < ring->getNumDofs(); ++i)
+  for(std::size_t i=6; i < ring->getNumDofs(); ++i)
   {
     DegreeOfFreedom* dof = ring->getDof(i);
     dof->setSpringStiffness(ring_spring_stiffness);
@@ -86,23 +86,23 @@ void setupRing(const SkeletonPtr& ring)
   }
 
   // Compute the joint angle needed to form a ring
-  size_t numEdges = ring->getNumBodyNodes();
+  std::size_t numEdges = ring->getNumBodyNodes();
   double angle = 2*M_PI/numEdges;
 
   // Set the BallJoints so that they have the correct rest position angle
-  for(size_t i=1; i < ring->getNumJoints(); ++i)
+  for(std::size_t i=1; i < ring->getNumJoints(); ++i)
   {
     Joint* joint = ring->getJoint(i);
     Eigen::AngleAxisd rotation(angle, Eigen::Vector3d(0, 1, 0));
     Eigen::Vector3d restPos = BallJoint::convertToPositions(
           Eigen::Matrix3d(rotation));
 
-    for(size_t j=0; j<3; ++j)
+    for(std::size_t j=0; j<3; ++j)
       joint->setRestPosition(j, restPos[j]);
   }
 
   // Set the Joints to be in their rest positions
-  for(size_t i=6; i < ring->getNumDofs(); ++i)
+  for(std::size_t i=6; i < ring->getNumDofs(); ++i)
   {
     DegreeOfFreedom* dof = ring->getDof(i);
     dof->setPosition(dof->getRestPosition());
@@ -297,7 +297,7 @@ protected:
   /// it, if one existed
   void removeSkeleton(const SkeletonPtr& skel)
   {
-    for(size_t i=0; i<mJointConstraints.size(); ++i)
+    for(std::size_t i=0; i<mJointConstraints.size(); ++i)
     {
       const dart::constraint::JointConstraintPtr& constraint =
           mJointConstraints[i];
@@ -343,7 +343,7 @@ protected:
 
   /// Keep track of how many Skeletons we spawn to ensure we can give them all
   /// unique names
-  size_t mSkelCount;
+  std::size_t mSkelCount;
 
 };
 
@@ -405,7 +405,7 @@ BodyNode* addRigidBody(const SkeletonPtr& chain, const std::string& name,
   if(parent)
   {
     Joint* joint = bn->getParentJoint();
-    for(size_t i=0; i < joint->getNumDofs(); ++i)
+    for(std::size_t i=0; i < joint->getNumDofs(); ++i)
       joint->getDof(i)->setDampingCoefficient(default_damping_coefficient);
   }
 
@@ -502,7 +502,7 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
 void setAllColors(const SkeletonPtr& object, const Eigen::Vector3d& color)
 {
   // Set the color of all the shapes in the object
-  for(size_t i=0; i < object->getNumBodyNodes(); ++i)
+  for(std::size_t i=0; i < object->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = object->getBodyNode(i);
     auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();

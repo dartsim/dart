@@ -71,7 +71,7 @@ const std::string& BallJoint::getStaticType()
 }
 
 //==============================================================================
-bool BallJoint::isCyclic(size_t _index) const
+bool BallJoint::isCyclic(std::size_t _index) const
 {
   return _index < 3
       && !hasPositionLimit(0) && !hasPositionLimit(1) && !hasPositionLimit(2);
