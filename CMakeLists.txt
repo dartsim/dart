@@ -228,8 +228,8 @@ message(STATUS "[ Configured files ]")
 
 # Generate the dart config file
 # Ref: http://www.vtk.org/Wiki/CMake:How_To_Write_Platform_Checks
-set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/dart/config.h.in)
-set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/dart/config.h)
+set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/dart/config.hpp.in)
+set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/dart/config.hpp)
 message(STATUS ${DART_CONFIG_OUT})
 configure_file(${DART_CONFIG_IN} ${DART_CONFIG_OUT} @ONLY)
 install(FILES ${DART_CONFIG_OUT} DESTINATION include/dart)
