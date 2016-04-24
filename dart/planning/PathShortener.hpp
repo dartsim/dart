@@ -41,7 +41,7 @@
 #include <vector>
 #include <Eigen/Core>
 
-#include "dart/simulation/World.h"
+#include "dart/simulation/World.hpp"
 
 namespace dart {
 namespace planning {

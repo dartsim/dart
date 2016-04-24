@@ -52,9 +52,9 @@
 #include <limits>
 #include <list>
 #include <vector>
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "RRT.h"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/planning/RRT.hpp"
 #include <cstdio>
 
 namespace dart {

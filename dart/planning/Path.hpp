@@ -36,7 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef DART_PLANNING_PATH_HPP_
+#define DART_PLANNING_PATH_HPP_
 
 #include <list>
 #include <Eigen/Core>
@@ -91,3 +92,5 @@ private:
 
 } // namespace planning
 } // namespace dart
+
+#endif // DART_PLANNING_PATH_HPP_

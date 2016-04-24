@@ -36,11 +36,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef DART_PLANNING_PATHFOLLOWINGTRAJECTORY_HPP_
+#define DART_PLANNING_PATHFOLLOWINGTRAJECTORY_HPP_
 
 #include <Eigen/Core>
-#include "Path.h"
-#include "Trajectory.h"
+#include "dart/planning/Path.hpp"
+#include "dart/planning/Trajectory.hpp"
 
 namespace dart {
 namespace planning {
@@ -104,3 +105,5 @@ private:
 
 } // namespace planning
 } // namespace dart
+
+#endif // DART_PLANNING_PATHFOLLOWINGTRAJECTORY_HPP_

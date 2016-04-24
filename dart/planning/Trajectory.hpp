@@ -36,7 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef DART_PLANNING_TRAJECTORY_HPP_
+#define DART_PLANNING_TRAJECTORY_HPP_
 
 #include <Eigen/Core>
 
@@ -53,3 +54,5 @@ public:
 
 } // namespace planning
 } // namespace dart
+
+#endif // DART_PLANNING_TRAJECTORY_HPP_

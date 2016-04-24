@@ -41,14 +41,15 @@
  * checking, sampling and etc.
  */
 
-#pragma once
+#ifndef DART_PLANNING_RRT_HPP_
+#define DART_PLANNING_RRT_HPP_
 
 #include <vector>
 #include <list>
 #include <Eigen/Core>
 
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/simulation/World.h"
+#include "dart/dynamics/SmartPointer.hpp"
+#include "dart/simulation/World.hpp"
 
 namespace flann {
 	template <class A> class L2;
@@ -165,3 +166,5 @@ protected:
 
 } // namespace planning
 } // namespace dart
+
+#endif // DART_PLANNING_RRT_HPP_
