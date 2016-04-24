@@ -198,22 +198,6 @@ TEST(World, Cloning)
     for(std::size_t j=1; j<5; ++j)
       clones.push_back(clones[j-1]->clone());
 
-    // Make sure all the Skeleton states match at the start
-    // TODO(MXG): This should be removed once state also gets copied over during a cloning
-    for(std::size_t j=1; j<clones.size(); ++j)
-    {
-      for(std::size_t k=0; k<original->getNumSkeletons(); ++k)
-      {
-        dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
-        dart::dynamics::SkeletonPtr clone = clones[j]->getSkeleton(k);
-
-        clone->setPositions(skel->getPositions());
-        clone->setVelocities(skel->getVelocities());
-        clone->setAccelerations(skel->getAccelerations());
-        clone->setForces(skel->getForces());
-      }
-    }
-
 #ifndef NDEBUG // Debug mode
     std::size_t numIterations = 3;
 #else

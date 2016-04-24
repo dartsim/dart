@@ -146,8 +146,10 @@ struct MultiDofJointUniqueProperties
   MultiDofJointUniqueProperties(
       const Vector& _positionLowerLimits = Vector::Constant(-math::constantsd::inf()),
       const Vector& _positionUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& _initialPositions = Vector::Constant(0.0),
       const Vector& _velocityLowerLimits = Vector::Constant(-math::constantsd::inf()),
       const Vector& _velocityUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& _initialVelocities = Vector::Constant(0.0),
       const Vector& _accelerationLowerLimits = Vector::Constant(-math::constantsd::inf()),
       const Vector& _accelerationUpperLimits = Vector::Constant( math::constantsd::inf()),
       const Vector& _forceLowerLimits = Vector::Constant(-math::constantsd::inf()),
@@ -156,9 +158,6 @@ struct MultiDofJointUniqueProperties
       const Vector& _restPosition = Vector::Constant(0.0),
       const Vector& _dampingCoefficient = Vector::Constant(0.0),
       const Vector& _coulombFrictions = Vector::Constant(0.0));
-  // TODO(MXG): In version 6.0, we should add mInitialPositions and
-  // mInitialVelocities to the constructor arguments. For now we must wait in
-  // order to avoid breaking the API.
 
   /// Copy constructor
   // Note: we only need this because VS2013 lacks full support for std::array
@@ -225,8 +224,10 @@ template <std::size_t DOF>
 MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
     const Vector& _positionLowerLimits,
     const Vector& _positionUpperLimits,
+    const Vector& _initialPositions,
     const Vector& _velocityLowerLimits,
     const Vector& _velocityUpperLimits,
+    const Vector& _initialVelocities,
     const Vector& _accelerationLowerLimits,
     const Vector& _accelerationUpperLimits,
     const Vector& _forceLowerLimits,
@@ -237,10 +238,10 @@ MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
     const Vector& _coulombFrictions)
   : mPositionLowerLimits(_positionLowerLimits),
     mPositionUpperLimits(_positionUpperLimits),
-    mInitialPositions(Vector::Zero()),
+    mInitialPositions(_initialPositions),
     mVelocityLowerLimits(_velocityLowerLimits),
     mVelocityUpperLimits(_velocityUpperLimits),
-    mInitialVelocities(Vector::Zero()),
+    mInitialVelocities(_initialVelocities),
     mAccelerationLowerLimits(_accelerationLowerLimits),
     mAccelerationUpperLimits(_accelerationUpperLimits),
     mForceLowerLimits(_forceLowerLimits),
