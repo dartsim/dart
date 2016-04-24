@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2012-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
