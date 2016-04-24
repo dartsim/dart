@@ -38,7 +38,7 @@
 #ifndef DART_INTEGRATION_EULERINTEGRATOR_H_
 #define DART_INTEGRATION_EULERINTEGRATOR_H_
 
-#include "dart/integration/Integrator.h"
+#include "dart/integration/Integrator.hpp"
 
 namespace dart {
 namespace integration {

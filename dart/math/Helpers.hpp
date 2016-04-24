@@ -50,8 +50,8 @@
 // External Libraries
 #include <Eigen/Dense>
 // Local Headers
-#include "dart/math/Constants.h"
-#include "dart/math/MathTypes.h"
+#include "dart/math/Constants.hpp"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace math {

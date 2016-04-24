@@ -40,8 +40,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Deprecated.h"
-#include "dart/math/MathTypes.h"
+#include "dart/common/Deprecated.hpp"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace math {
