@@ -508,7 +508,7 @@ public:
     /// through this function before returning it will make the gradient
     /// suitable for a standard solver.
     void convertJacobianMethodOutputToGradient(
-        Eigen::VectorXd& grad, const std::vector<size_t>& dofs);
+        Eigen::VectorXd& grad, const std::vector<std::size_t>& dofs);
 
     /// Get the Properties of this GradientMethod
     Properties getGradientMethodProperties() const;

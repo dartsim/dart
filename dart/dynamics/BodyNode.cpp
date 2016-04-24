@@ -1440,8 +1440,8 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
 
   // Check if it's a child BodyNode (if not, then it's just some other arbitrary
   // type of Entity)
-  if(find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _newChildEntity) !=
-     mChildBodyNodes.end())
+  if(std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(),
+               _newChildEntity) != mChildBodyNodes.end())
     return;
 
   // Check if it's already accounted for in our Non-BodyNode Entities
@@ -1460,17 +1460,17 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
 //==============================================================================
 void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
 {
-  std::vector<BodyNode*>::iterator it = find(mChildBodyNodes.begin(),
-                                             mChildBodyNodes.end(),
-                                             _oldChildEntity);
+  std::vector<BodyNode*>::iterator it = std::find(mChildBodyNodes.begin(),
+                                                  mChildBodyNodes.end(),
+                                                  _oldChildEntity);
   if(it != mChildBodyNodes.end())
     mChildBodyNodes.erase(it);
 
   if(JacobianNode* node = dynamic_cast<JacobianNode*>(_oldChildEntity))
     mChildJacobianNodes.erase(node);
 
-  if(find(mNonBodyNodeEntities.begin(), mNonBodyNodeEntities.end(),
-          _oldChildEntity) != mNonBodyNodeEntities.end())
+  if(std::find(mNonBodyNodeEntities.begin(), mNonBodyNodeEntities.end(),
+               _oldChildEntity) != mNonBodyNodeEntities.end())
     mNonBodyNodeEntities.erase(_oldChildEntity);
 }
 

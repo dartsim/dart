@@ -97,7 +97,7 @@ bool InverseKinematics::solve(bool _applySolution)
   // need to clear out any velocities that might be in the Skeleton and then
   // reset those velocities later.
   Eigen::VectorXd originalVelocities = skel->getVelocities();
-  for(size_t i=0; i < skel->getNumDofs(); ++i)
+  for(std::size_t i=0; i < skel->getNumDofs(); ++i)
     skel->getDof(i)->setVelocity(0.0);
 
   if(_applySolution)
@@ -709,23 +709,23 @@ InverseKinematics::GradientMethod::getComponentWeights() const
 
 //==============================================================================
 void InverseKinematics::GradientMethod::convertJacobianMethodOutputToGradient(
-    Eigen::VectorXd& grad, const std::vector<size_t>& dofs)
+    Eigen::VectorXd& grad, const std::vector<std::size_t>& dofs)
 {
   const SkeletonPtr& skel = mIK->getNode()->getSkeleton();
   mInitialPositionsCache = skel->getPositions(dofs);
 
-  for(size_t i=0; i < dofs.size(); ++i)
+  for(std::size_t i=0; i < dofs.size(); ++i)
     skel->getDof(dofs[i])->setVelocity(grad[i]);
   // Velocities of unused DOFs should already be set to zero.
 
-  for(size_t i=0; i < dofs.size(); ++i)
+  for(std::size_t i=0; i < dofs.size(); ++i)
   {
     Joint* joint = skel->getDof(dofs[i])->getJoint();
     joint->integratePositions(1.0);
 
     // Reset this joint's velocities to zero to avoid double-integrating
-    const size_t numJointDofs = joint->getNumDofs();
-    for(size_t j=0; j < numJointDofs; ++j)
+    const std::size_t numJointDofs = joint->getNumDofs();
+    for(std::size_t j=0; j < numJointDofs; ++j)
       joint->setVelocity(j, 0.0);
   }
 
@@ -1049,9 +1049,9 @@ void InverseKinematics::Analytical::addExtraDofGradient(
 
   convertJacobianMethodOutputToGradient(mExtraDofGradCache, mExtraDofs);
 
-  for(size_t i=0; i < mExtraDofs.size(); ++i)
+  for(std::size_t i=0; i < mExtraDofs.size(); ++i)
   {
-    size_t depIndex = mExtraDofs[i];
+    std::size_t depIndex = mExtraDofs[i];
     int gradIndex = gradMap[depIndex];
     if(gradIndex == -1)
       continue;

@@ -233,8 +233,8 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_END_EFFECTOR_CHANGE)
   BodyNode* last_bn2 = skeleton2->getBodyNode(skeleton2->getNumBodyNodes()-1);
   EndEffector* ee2 = last_bn2->createEndEffector();
 
-  std::vector<size_t> active_indices;
-  for(size_t i=0; i < 3; ++i)
+  std::vector<std::size_t> active_indices;
+  for(std::size_t i=0; i < 3; ++i)
     active_indices.push_back(i);
 
   Eigen::VectorXd q = Eigen::VectorXd::Random(active_indices.size());

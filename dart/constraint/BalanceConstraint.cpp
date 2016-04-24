@@ -411,11 +411,11 @@ void BalanceConstraint::convertJacobianMethodOutputToGradient(
 
   mInitialPositionsCache = skel->getPositions();
 
-  for(size_t i=0; i < skel->getNumJoints(); ++i)
+  for(std::size_t i=0; i < skel->getNumJoints(); ++i)
     skel->getJoint(i)->integratePositions(1.0);
 
   // Clear out the velocities so we don't interfere with other Jacobian methods
-  for(size_t i=0; i < skel->getNumDofs(); ++i)
+  for(std::size_t i=0; i < skel->getNumDofs(); ++i)
     skel->setVelocity(i, 0.0);
 
   grad = skel->getPositions();
