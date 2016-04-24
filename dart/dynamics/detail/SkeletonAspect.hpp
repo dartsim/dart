@@ -37,10 +37,10 @@
 #ifndef DART_DYNAMICS_DETAIL_SKELETONASPECT_H_
 #define DART_DYNAMICS_DETAIL_SKELETONASPECT_H_
 
-#include "dart/common/Composite.h"
-#include "dart/common/ProxyAspect.h"
-#include "dart/common/EmbeddedAspect.h"
-#include "dart/common/RequiresAspect.h"
+#include "dart/common/Composite.hpp"
+#include "dart/common/ProxyAspect.hpp"
+#include "dart/common/EmbeddedAspect.hpp"
+#include "dart/common/RequiresAspect.hpp"
 #include <Eigen/Core>
 
 namespace dart {

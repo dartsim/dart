@@ -38,7 +38,7 @@
 #ifndef DART_DYNAMICS_ELLIPSOIDSHAPE_H_
 #define DART_DYNAMICS_ELLIPSOIDSHAPE_H_
 
-#include "dart/dynamics/Shape.h"
+#include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {

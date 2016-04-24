@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_DETAIL_COMPOSITENODE_H_
 #define DART_DYNAMICS_DETAIL_COMPOSITENODE_H_
 
-#include "dart/dynamics/CompositeNode.h"
+#include "dart/dynamics/CompositeNode.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -41,8 +41,8 @@
 
 #include <Eigen/Geometry>
 
-#include "dart/dynamics/Entity.h"
-#include "dart/math/MathTypes.h"
+#include "dart/dynamics/Entity.hpp"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace dynamics {

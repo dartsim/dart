@@ -39,17 +39,17 @@
 #define DART_DYNAMICS_SKELETON_H_
 
 #include <mutex>
-#include "dart/common/NameManager.h"
-#include "dart/common/VersionCounter.h"
-#include "dart/dynamics/MetaSkeleton.h"
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/HierarchicalIK.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/ShapeNode.h"
-#include "dart/dynamics/EndEffector.h"
-#include "dart/dynamics/detail/BodyNodeAspect.h"
-#include "dart/dynamics/SpecializedNodeManager.h"
-#include "dart/dynamics/detail/SkeletonAspect.h"
+#include "dart/common/NameManager.hpp"
+#include "dart/common/VersionCounter.hpp"
+#include "dart/dynamics/MetaSkeleton.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
+#include "dart/dynamics/HierarchicalIK.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/detail/BodyNodeAspect.hpp"
+#include "dart/dynamics/SpecializedNodeManager.hpp"
+#include "dart/dynamics/detail/SkeletonAspect.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -1223,6 +1223,6 @@ public:
 }  // namespace dynamics
 }  // namespace dart
 
-#include "dart/dynamics/detail/Skeleton.h"
+#include "dart/dynamics/detail/Skeleton.hpp"
 
 #endif  // DART_DYNAMICS_SKELETON_H_

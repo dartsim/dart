@@ -40,8 +40,8 @@
 #include <assimp/cfileio.h>
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
-#include "dart/common/Resource.h"
-#include "dart/common/ResourceRetriever.h"
+#include "dart/common/Resource.hpp"
+#include "dart/common/ResourceRetriever.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -37,9 +37,9 @@
 #ifndef DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_H_
 #define DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_H_
 
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/PointMass.h"
-#include "dart/common/RequiresAspect.h"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/PointMass.hpp"
+#include "dart/common/RequiresAspect.hpp"
 
 namespace dart {
 namespace dynamics {

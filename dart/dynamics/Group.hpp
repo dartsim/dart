@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ReferentialSkeleton.h"
+#include "dart/dynamics/ReferentialSkeleton.hpp"
 
 #ifndef DART_DYNAMICS_GROUP_H_
 #define DART_DYNAMICS_GROUP_H_

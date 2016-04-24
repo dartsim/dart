@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_DETAIL_NODEPTR_H_
 #define DART_DYNAMICS_DETAIL_NODEPTR_H_
 
-#include "dart/dynamics/detail/BodyNodePtr.h"
+#include "dart/dynamics/detail/BodyNodePtr.hpp"
 
 namespace dart {
 namespace dynamics {

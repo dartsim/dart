@@ -39,8 +39,8 @@
 
 #include <string>
 
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/detail/SingleDofJointAspect.h"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/detail/SingleDofJointAspect.hpp"
 
 namespace dart {
 namespace dynamics {

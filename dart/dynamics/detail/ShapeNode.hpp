@@ -37,9 +37,9 @@
 #ifndef DART_DYNAMICS_DETAIL_SHAPENODE_H_
 #define DART_DYNAMICS_DETAIL_SHAPENODE_H_
 
-#include "dart/dynamics/ShapeFrame.h"
-#include "dart/dynamics/FixedJacobianNode.h"
-#include "dart/dynamics/CompositeNode.h"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/FixedJacobianNode.hpp"
+#include "dart/dynamics/CompositeNode.hpp"
 
 namespace dart {
 namespace dynamics {

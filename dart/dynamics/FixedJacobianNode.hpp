@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_FIXEDJACOBIANNODE_H_
 #define DART_DYNAMICS_FIXEDJACOBIANNODE_H_
 
-#include "dart/dynamics/detail/FixedJacobianNode.h"
+#include "dart/dynamics/detail/FixedJacobianNode.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -40,9 +40,9 @@
 #include <memory>
 #include <unordered_set>
 
-#include "dart/dynamics/Frame.h"
-#include "dart/dynamics/Node.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/Node.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace dynamics {

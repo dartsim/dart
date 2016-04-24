@@ -37,9 +37,9 @@
 #ifndef DART_DYNAMICS_DETAIL_MULTIDOFJOINTASPECT_H_
 #define DART_DYNAMICS_DETAIL_MULTIDOFJOINTASPECT_H_
 
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/common/AspectWithVersion.h"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/common/AspectWithVersion.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_DETAIL_SKELETON_H_
 #define DART_DYNAMICS_DETAIL_SKELETON_H_
 
-#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace dynamics {

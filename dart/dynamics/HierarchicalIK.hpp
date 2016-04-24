@@ -39,7 +39,7 @@
 
 #include <unordered_set>
 
-#include "dart/dynamics/InverseKinematics.h"
+#include "dart/dynamics/InverseKinematics.hpp"
 
 namespace dart {
 namespace dynamics {

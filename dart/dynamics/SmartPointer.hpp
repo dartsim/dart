@@ -37,12 +37,12 @@
 #ifndef DART_DYNAMICS_SMARTPOINTER_H_
 #define DART_DYNAMICS_SMARTPOINTER_H_
 
-#include "dart/common/SmartPointer.h"
-#include "dart/dynamics/detail/BodyNodePtr.h"
-#include "dart/dynamics/detail/JointPtr.h"
-#include "dart/dynamics/detail/DegreeOfFreedomPtr.h"
-#include "dart/dynamics/detail/NodePtr.h"
-#include "dart/dynamics/detail/InverseKinematicsPtr.h"
+#include "dart/common/SmartPointer.hpp"
+#include "dart/dynamics/detail/BodyNodePtr.hpp"
+#include "dart/dynamics/detail/JointPtr.hpp"
+#include "dart/dynamics/detail/DegreeOfFreedomPtr.hpp"
+#include "dart/dynamics/detail/NodePtr.hpp"
+#include "dart/dynamics/detail/InverseKinematicsPtr.hpp"
 
 // This file is a lightweight means of providing the smart pointers which are
 // commonly used within the dart::dynamics namespace. It is 'lightweight' in the

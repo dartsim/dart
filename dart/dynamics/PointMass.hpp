@@ -39,8 +39,8 @@
 
 #include <vector>
 #include <Eigen/Dense>
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/Entity.h"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/Entity.hpp"
 
 namespace dart {
 namespace dynamics {

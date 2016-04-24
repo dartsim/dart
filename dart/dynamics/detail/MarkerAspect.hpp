@@ -38,7 +38,7 @@
 #define DART_DYNAMICS_DETAIL_MARKERASPECT_H_
 
 #include <Eigen/Core>
-#include "dart/math/Helpers.h"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {

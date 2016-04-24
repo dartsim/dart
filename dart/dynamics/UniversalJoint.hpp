@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_UNIVERSALJOINT_H_
 #define DART_DYNAMICS_UNIVERSALJOINT_H_
 
-#include "dart/dynamics/detail/UniversalJointAspect.h"
+#include "dart/dynamics/detail/UniversalJointAspect.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -41,9 +41,9 @@
 #include <typeindex>
 #include <unordered_set>
 
-#include "dart/common/NameManager.h"
-#include "dart/common/Empty.h"
-#include "dart/dynamics/Node.h"
+#include "dart/common/NameManager.hpp"
+#include "dart/common/Empty.hpp"
+#include "dart/dynamics/Node.hpp"
 
 namespace dart {
 namespace dynamics {

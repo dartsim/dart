@@ -37,10 +37,10 @@
 #ifndef DART_DYNAMICS_FIXEDFRAME_H_
 #define DART_DYNAMICS_FIXEDFRAME_H_
 
-#include "dart/dynamics/Frame.h"
-#include "dart/common/EmbeddedAspect.h"
-#include "dart/common/VersionCounter.h"
-#include "dart/dynamics/detail/FixedFrameAspect.h"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/common/EmbeddedAspect.hpp"
+#include "dart/common/VersionCounter.hpp"
+#include "dart/dynamics/detail/FixedFrameAspect.hpp"
 
 namespace dart {
 namespace dynamics {

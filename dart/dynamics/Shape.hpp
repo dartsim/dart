@@ -42,9 +42,9 @@
 
 #include <Eigen/Dense>
 
-#include "dart/math/Geometry.h"
-#include "dart/common/Subject.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/math/Geometry.hpp"
+#include "dart/common/Subject.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -39,8 +39,8 @@
 
 #include <Eigen/Core>
 
-#include "dart/common/EmbeddedAspect.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/common/EmbeddedAspect.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace dynamics {

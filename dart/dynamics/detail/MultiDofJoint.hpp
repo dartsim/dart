@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
 #define DART_DYNAMICS_DETAIL_MULTIDOFJOINT_H_
 
-#include "dart/dynamics/MultiDofJoint.h"
+#include "dart/dynamics/MultiDofJoint.hpp"
 
 #define MULTIDOFJOINT_REPORT_DIM_MISMATCH( func, arg )\
   dterr << "[MultiDofJoint::" #func "] Mismatch beteween size of "\

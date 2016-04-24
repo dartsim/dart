@@ -42,15 +42,15 @@
 
 #include <Eigen/SVD>
 
-#include "dart/common/sub_ptr.h"
-#include "dart/common/Signal.h"
-#include "dart/common/Subject.h"
-#include "dart/math/Geometry.h"
-#include "dart/optimizer/Solver.h"
-#include "dart/optimizer/Problem.h"
-#include "dart/optimizer/Function.h"
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/JacobianNode.h"
+#include "dart/common/sub_ptr.hpp"
+#include "dart/common/Signal.hpp"
+#include "dart/common/Subject.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/optimizer/Solver.hpp"
+#include "dart/optimizer/Problem.hpp"
+#include "dart/optimizer/Function.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
+#include "dart/dynamics/JacobianNode.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -1273,6 +1273,6 @@ typedef InverseKinematics IK;
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/InverseKinematics.h"
+#include "dart/dynamics/detail/InverseKinematics.hpp"
 
 #endif // DART_DYNAMICS_INVERSEKINEMATICS_H_

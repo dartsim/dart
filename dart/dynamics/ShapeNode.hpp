@@ -39,8 +39,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Signal.h"
-#include "dart/dynamics/detail/ShapeNode.h"
+#include "dart/common/Signal.hpp"
+#include "dart/dynamics/detail/ShapeNode.hpp"
 
 namespace dart {
 namespace dynamics {

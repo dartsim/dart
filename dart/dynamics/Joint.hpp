@@ -42,12 +42,12 @@
 #include <vector>
 #include <memory>
 
-#include "dart/common/Subject.h"
-#include "dart/common/VersionCounter.h"
-#include "dart/common/EmbeddedAspect.h"
-#include "dart/math/MathTypes.h"
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/detail/JointAspect.h"
+#include "dart/common/Subject.hpp"
+#include "dart/common/VersionCounter.hpp"
+#include "dart/common/EmbeddedAspect.hpp"
+#include "dart/math/MathTypes.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
+#include "dart/dynamics/detail/JointAspect.hpp"
 
 namespace dart {
 namespace dynamics {

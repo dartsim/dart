@@ -38,8 +38,8 @@
 #define DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_H_
 
 #include <Eigen/Geometry>
-#include "dart/dynamics/CompositeNode.h"
-#include "dart/common/SpecializedForAspect.h"
+#include "dart/dynamics/CompositeNode.hpp"
+#include "dart/common/SpecializedForAspect.hpp"
 
 namespace dart {
 namespace dynamics {

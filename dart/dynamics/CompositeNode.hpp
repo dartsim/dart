@@ -37,8 +37,8 @@
 #ifndef DART_DYNAMICS_COMPOSITENODE_H_
 #define DART_DYNAMICS_COMPOSITENODE_H_
 
-#include "dart/common/Composite.h"
-#include "dart/dynamics/Node.h"
+#include "dart/common/Composite.hpp"
+#include "dart/dynamics/Node.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -118,6 +118,6 @@ public:
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/CompositeNode.h"
+#include "dart/dynamics/detail/CompositeNode.hpp"
 
 #endif // DART_DYNAMICS_COMPOSITENODE_H_

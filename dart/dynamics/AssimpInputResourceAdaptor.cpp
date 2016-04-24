@@ -37,8 +37,8 @@
 #include <cassert>
 #include <iostream>
 #include <assimp/IOStream.hpp>
-#include "dart/common/Console.h"
-#include "AssimpInputResourceAdaptor.h"
+#include "dart/common/Console.hpp"
+#include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 
 namespace dart {
 namespace dynamics {

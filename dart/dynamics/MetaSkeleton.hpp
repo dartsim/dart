@@ -42,11 +42,11 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Signal.h"
-#include "dart/common/Subject.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/Frame.h"
-#include "dart/dynamics/InvalidIndex.h"
+#include "dart/common/Signal.hpp"
+#include "dart/common/Subject.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/InvalidIndex.hpp"
 
 namespace dart {
 namespace dynamics {

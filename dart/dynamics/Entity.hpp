@@ -41,11 +41,11 @@
 #include <string>
 #include <vector>
 
-#include "dart/common/Subject.h"
-#include "dart/common/Signal.h"
-#include "dart/common/Composite.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/common/Subject.hpp"
+#include "dart/common/Signal.hpp"
+#include "dart/common/Composite.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace dynamics {

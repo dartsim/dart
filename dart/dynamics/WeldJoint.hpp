@@ -41,7 +41,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/ZeroDofJoint.h"
+#include "dart/dynamics/ZeroDofJoint.hpp"
 
 namespace dart {
 namespace dynamics {

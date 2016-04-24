@@ -40,15 +40,15 @@
 #include <string>
 #include <array>
 
-#include "dart/config.h"
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/common/RequiresAspect.h"
-#include "dart/dynamics/detail/MultiDofJointAspect.h"
+#include "dart/config.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/common/RequiresAspect.hpp"
+#include "dart/dynamics/detail/MultiDofJointAspect.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -752,6 +752,6 @@ private:
 }  // namespace dynamics
 }  // namespace dart
 
-#include "dart/dynamics/detail/MultiDofJoint.h"
+#include "dart/dynamics/detail/MultiDofJoint.hpp"
 
 #endif  // DART_DYNAMICS_MULTIDOFJOINT_H_

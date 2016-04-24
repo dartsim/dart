@@ -39,7 +39,7 @@
 
 #include <string>
 
-#include "dart/common/Empty.h"
+#include "dart/common/Empty.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -185,6 +185,6 @@ public:
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/NodeManagerJoiner.h"
+#include "dart/dynamics/detail/NodeManagerJoiner.hpp"
 
 #endif // DART_DYNAMICS_NODEMANAGERJOINER_H_

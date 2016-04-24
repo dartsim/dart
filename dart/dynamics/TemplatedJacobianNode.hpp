@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_TEMPLATEDJACOBIANENTITY_H_
 #define DART_DYNAMICS_TEMPLATEDJACOBIANENTITY_H_
 
-#include "dart/dynamics/JacobianNode.h"
+#include "dart/dynamics/JacobianNode.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -130,6 +130,6 @@ protected:
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/TemplatedJacobianNode.h"
+#include "dart/dynamics/detail/TemplatedJacobianNode.hpp"
 
 #endif // DART_DYNAMICS_TEMPLATEDJACOBIANENTITY_H_

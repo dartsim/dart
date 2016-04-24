@@ -44,17 +44,17 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "dart/config.h"
-#include "dart/common/Signal.h"
-#include "dart/common/EmbeddedAspect.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/Node.h"
-#include "dart/dynamics/Frame.h"
-#include "dart/dynamics/SmartPointer.h"
-#include "dart/dynamics/TemplatedJacobianNode.h"
-#include "dart/dynamics/SpecializedNodeManager.h"
-#include "dart/dynamics/detail/BodyNodeAspect.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/config.hpp"
+#include "dart/common/Signal.hpp"
+#include "dart/common/EmbeddedAspect.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/dynamics/Node.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
+#include "dart/dynamics/TemplatedJacobianNode.hpp"
+#include "dart/dynamics/SpecializedNodeManager.hpp"
+#include "dart/dynamics/detail/BodyNodeAspect.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -1202,6 +1202,6 @@ private:
 }  // namespace dynamics
 }  // namespace dart
 
-#include "dart/dynamics/detail/BodyNode.h"
+#include "dart/dynamics/detail/BodyNode.hpp"
 
 #endif  // DART_DYNAMICS_BODYNODE_H_

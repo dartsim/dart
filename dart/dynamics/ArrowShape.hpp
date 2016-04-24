@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_ARROWSHAPE_H_
 #define DART_DYNAMICS_ARROWSHAPE_H_
 
-#include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/MeshShape.hpp"
 
 namespace dart {
 namespace dynamics {

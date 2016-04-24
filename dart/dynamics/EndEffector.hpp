@@ -37,12 +37,12 @@
 #ifndef DART_DYNAMICS_ENDEFFECTOR_H_
 #define DART_DYNAMICS_ENDEFFECTOR_H_
 
-#include "dart/common/Aspect.h"
-#include "dart/common/SpecializedForAspect.h"
-#include "dart/common/AspectWithVersion.h"
-#include "dart/dynamics/FixedJacobianNode.h"
-#include "dart/dynamics/CompositeNode.h"
-#include "dart/dynamics/detail/EndEffectorAspect.h"
+#include "dart/common/Aspect.hpp"
+#include "dart/common/SpecializedForAspect.hpp"
+#include "dart/common/AspectWithVersion.hpp"
+#include "dart/dynamics/FixedJacobianNode.hpp"
+#include "dart/dynamics/CompositeNode.hpp"
+#include "dart/dynamics/detail/EndEffectorAspect.hpp"
 
 namespace dart {
 namespace dynamics {

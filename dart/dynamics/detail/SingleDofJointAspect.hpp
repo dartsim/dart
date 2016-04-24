@@ -37,11 +37,11 @@
 #ifndef DART_DYNAMICS_DETAIL_SINGLEDOFJOINTASPECT_H_
 #define DART_DYNAMICS_DETAIL_SINGLEDOFJOINTASPECT_H_
 
-#include "dart/common/RequiresAspect.h"
+#include "dart/common/RequiresAspect.hpp"
 
-#include "dart/common/AspectWithVersion.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/Joint.h"
+#include "dart/common/AspectWithVersion.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/Joint.hpp"
 
 namespace dart {
 namespace dynamics {

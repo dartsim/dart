@@ -39,13 +39,13 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Signal.h"
-#include "dart/common/AspectWithVersion.h"
-#include "dart/common/SpecializedForAspect.h"
-#include "dart/dynamics/FixedFrame.h"
-#include "dart/dynamics/TemplatedJacobianNode.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/detail/ShapeFrameAspect.h"
+#include "dart/common/Signal.hpp"
+#include "dart/common/AspectWithVersion.hpp"
+#include "dart/common/SpecializedForAspect.hpp"
+#include "dart/dynamics/FixedFrame.hpp"
+#include "dart/dynamics/TemplatedJacobianNode.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/detail/ShapeFrameAspect.hpp"
 
 namespace dart {
 namespace dynamics {

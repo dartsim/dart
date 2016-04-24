@@ -39,7 +39,7 @@
 
 #include <string>
 
-#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/Joint.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -39,12 +39,12 @@
 
 #include <memory>
 
-#include "dart/common/Subject.h"
-#include "dart/common/Cloneable.h"
-#include "dart/common/VersionCounter.h"
-#include "dart/common/EmbeddedAspect.h"
+#include "dart/common/Subject.hpp"
+#include "dart/common/Cloneable.hpp"
+#include "dart/common/VersionCounter.hpp"
+#include "dart/common/EmbeddedAspect.hpp"
 
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -273,6 +273,6 @@ protected:
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/Node.h"
+#include "dart/dynamics/detail/Node.hpp"
 
 #endif // DART_DYNAMICS_NODE_H_

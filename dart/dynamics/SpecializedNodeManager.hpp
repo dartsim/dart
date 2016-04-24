@@ -37,9 +37,9 @@
 #ifndef DART_DYNAMICS_SPECIALIZEDNODEMANAGER_H_
 #define DART_DYNAMICS_SPECIALIZEDNODEMANAGER_H_
 
-#include "dart/common/Virtual.h"
-#include "dart/dynamics/detail/BasicNodeManager.h"
-#include "dart/dynamics/NodeManagerJoiner.h"
+#include "dart/common/Virtual.hpp"
+#include "dart/dynamics/detail/BasicNodeManager.hpp"
+#include "dart/dynamics/NodeManagerJoiner.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -219,6 +219,6 @@ class SkeletonSpecializedFor<SpecNode1, OtherSpecNodes...> :
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/SpecializedNodeManager.h"
+#include "dart/dynamics/detail/SpecializedNodeManager.hpp"
 
 #endif // DART_DYNAMICS_SPECIALIZEDNODEMANAGER_H_

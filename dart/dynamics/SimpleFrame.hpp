@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_SIMPLEFRAME_H_
 #define DART_DYNAMICS_SIMPLEFRAME_H_
 
-#include "dart/dynamics/ShapeNode.h"
+#include "dart/dynamics/ShapeNode.hpp"
 
 namespace dart {
 namespace dynamics {

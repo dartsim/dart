@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_LINKAGE_H_
 #define DART_DYNAMICS_LINKAGE_H_
 
-#include "ReferentialSkeleton.h"
+#include "dart/dynamics/ReferentialSkeleton.hpp"
 #include <unordered_set>
 
 namespace dart {

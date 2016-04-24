@@ -37,7 +37,7 @@
 #ifndef DART_DYNAMICS_PLANARRJOINT_H_
 #define DART_DYNAMICS_PLANARRJOINT_H_
 
-#include "dart/dynamics/detail/PlanarJointAspect.h"
+#include "dart/dynamics/detail/PlanarJointAspect.hpp"
 
 namespace dart {
 namespace dynamics {

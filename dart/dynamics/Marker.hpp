@@ -38,9 +38,9 @@
 #define DART_DYNAMICS_MARKER_H_
 
 #include <Eigen/Dense>
-#include "dart/common/Deprecated.h"
-#include "dart/dynamics/detail/MarkerAspect.h"
-#include "dart/dynamics/FixedJacobianNode.h"
+#include "dart/common/Deprecated.hpp"
+#include "dart/dynamics/detail/MarkerAspect.hpp"
+#include "dart/dynamics/FixedJacobianNode.hpp"
 
 namespace dart {
 namespace dynamics {

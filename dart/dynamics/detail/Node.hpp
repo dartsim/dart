@@ -39,9 +39,9 @@
 
 #include <cassert>
 
-#include "dart/dynamics/Node.h"
+#include "dart/dynamics/Node.hpp"
 
-#include "dart/common/StlHelpers.h"
+#include "dart/common/StlHelpers.hpp"
 
 namespace dart {
 namespace dynamics {

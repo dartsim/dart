@@ -39,7 +39,7 @@
 
 #include <array>
 
-#include "dart/math/MathTypes.h"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace dynamics {

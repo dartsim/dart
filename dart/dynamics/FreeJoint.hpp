@@ -41,7 +41,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/MultiDofJoint.h"
+#include "dart/dynamics/MultiDofJoint.hpp"
 
 namespace dart {
 namespace dynamics {

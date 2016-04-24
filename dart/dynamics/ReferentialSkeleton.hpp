@@ -39,8 +39,8 @@
 
 #include <unordered_map>
 
-#include "dart/dynamics/MetaSkeleton.h"
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/MetaSkeleton.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace dynamics {
