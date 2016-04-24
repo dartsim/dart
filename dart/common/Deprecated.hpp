@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/config.h"
+#include "dart/config.hpp"
 
 #ifndef DART_COMMON_DEPRECATED_H_
 #define DART_COMMON_DEPRECATED_H_

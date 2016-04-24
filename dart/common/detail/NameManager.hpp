@@ -40,8 +40,8 @@
 
 #include <sstream>
 #include <cassert>
-#include "dart/common/Console.h"
-#include "dart/common/NameManager.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/NameManager.hpp"
 
 namespace dart {
 namespace common {

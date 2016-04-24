@@ -37,9 +37,9 @@
 #ifndef DART_COMMON_EMBEDDEDASPECT_H_
 #define DART_COMMON_EMBEDDEDASPECT_H_
 
-#include "dart/common/detail/EmbeddedAspect.h"
-#include "dart/common/RequiresAspect.h"
-#include "dart/common/CompositeJoiner.h"
+#include "dart/common/detail/EmbeddedAspect.hpp"
+#include "dart/common/RequiresAspect.hpp"
+#include "dart/common/CompositeJoiner.hpp"
 
 namespace dart {
 namespace common {

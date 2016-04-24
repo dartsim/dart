@@ -39,8 +39,8 @@
 
 #include <memory>
 #include <string>
-#include "dart/common/Resource.h"
-#include "dart/common/Uri.h"
+#include "dart/common/Resource.hpp"
+#include "dart/common/Uri.hpp"
 
 namespace dart {
 namespace common {

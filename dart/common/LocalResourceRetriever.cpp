@@ -36,10 +36,10 @@
 
 #include <iostream>
 #include <fstream>
-#include "dart/common/Console.h"
-#include "dart/common/Uri.h"
-#include "LocalResourceRetriever.h"
-#include "LocalResource.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/LocalResource.hpp"
 
 namespace dart {
 namespace common {

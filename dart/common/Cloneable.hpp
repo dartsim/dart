@@ -310,6 +310,6 @@ private:
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/Cloneable.h"
+#include "dart/common/detail/Cloneable.hpp"
 
 #endif // DART_COMMON_CLONEABLE_H_

@@ -37,7 +37,7 @@
 #ifndef DART_COMMON_LOCALRESOURCERETRIEVER_H_
 #define DART_COMMON_LOCALRESOURCERETRIEVER_H_
 
-#include "dart/common/ResourceRetriever.h"
+#include "dart/common/ResourceRetriever.hpp"
 
 namespace dart {
 namespace common {

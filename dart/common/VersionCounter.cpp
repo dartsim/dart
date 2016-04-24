@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/VersionCounter.h"
-#include "dart/common/Console.h"
+#include "dart/common/VersionCounter.hpp"
+#include "dart/common/Console.hpp"
 
 #include <iostream>
 #include <cassert>

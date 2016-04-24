@@ -37,7 +37,7 @@
 #ifndef DART_COMMON_DETAIL_SPECIALIZEDFORASPECT_H_
 #define DART_COMMON_DETAIL_SPECIALIZEDFORASPECT_H_
 
-#include "dart/common/SpecializedForAspect.h"
+#include "dart/common/SpecializedForAspect.hpp"
 
 // This preprocessor token should only be used by the unittest that is
 // responsible for checking that the specialized routines are being used to

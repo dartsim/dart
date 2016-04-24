@@ -37,7 +37,7 @@
 #ifndef DART_COMMON_DETAIL_COMPOSITE_H_
 #define DART_COMMON_DETAIL_COMPOSITE_H_
 
-#include "dart/common/Composite.h"
+#include "dart/common/Composite.hpp"
 
 #define DART_COMMON_CHECK_ILLEGAL_ASPECT_ERASE( Func, T, ReturnType )\
   if(requiresAspect< T >())\

@@ -37,8 +37,8 @@
 #ifndef DART_COMMON_DETAIL_ASPECTWITHVERSION_H_
 #define DART_COMMON_DETAIL_ASPECTWITHVERSION_H_
 
-#include "dart/common/Aspect.h"
-#include "dart/common/StlHelpers.h"
+#include "dart/common/Aspect.hpp"
+#include "dart/common/StlHelpers.hpp"
 
 namespace dart {
 namespace common {

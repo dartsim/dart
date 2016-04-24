@@ -44,7 +44,7 @@
 #include <typeinfo>
 #include <typeindex>
 
-#include "dart/common/Aspect.h"
+#include "dart/common/Aspect.hpp"
 
 namespace dart {
 namespace common {

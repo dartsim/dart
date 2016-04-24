@@ -41,7 +41,7 @@
 #include <memory>
 #include <set>
 
-#include "dart/common/detail/ConnectionBody.h"
+#include "dart/common/detail/ConnectionBody.hpp"
 
 namespace dart {
 namespace common {
@@ -234,7 +234,7 @@ private:
 }  // namespace common
 }  // namespace dart
 
-#include "dart/common/detail/Signal.h"
+#include "dart/common/detail/Signal.hpp"
 
 #endif  // DART_COMMON_SIGNAL_H_
 

@@ -37,8 +37,8 @@
 #ifndef DART_COMMON_DETAIL_CLONEABLE_H_
 #define DART_COMMON_DETAIL_CLONEABLE_H_
 
-#include "dart/common/Cloneable.h"
-#include "dart/common/StlHelpers.h"
+#include "dart/common/Cloneable.hpp"
+#include "dart/common/StlHelpers.hpp"
 
 namespace dart {
 namespace common {

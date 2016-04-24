@@ -37,8 +37,8 @@
 #ifndef DART_COMMON_COMPOSITEJOINER_H_
 #define DART_COMMON_COMPOSITEJOINER_H_
 
-#include "dart/common/Composite.h"
-#include "dart/common/Empty.h"
+#include "dart/common/Composite.hpp"
+#include "dart/common/Empty.hpp"
 
 namespace dart {
 namespace common {
@@ -162,7 +162,7 @@ public:
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/CompositeJoiner.h"
+#include "dart/common/detail/CompositeJoiner.hpp"
 
 #endif // DART_COMMON_COMPOSITEJOINER_H_
 

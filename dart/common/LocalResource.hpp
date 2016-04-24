@@ -37,7 +37,7 @@
 #ifndef DART_COMMON_LOCALRESOURCE_H_
 #define DART_COMMON_LOCALRESOURCE_H_
 
-#include "dart/common/Resource.h"
+#include "dart/common/Resource.hpp"
 
 namespace dart {
 namespace common {

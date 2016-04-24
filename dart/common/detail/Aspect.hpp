@@ -39,8 +39,8 @@
 
 #include <cassert>
 
-#include "dart/common/Console.h"
-#include "dart/common/Aspect.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/Aspect.hpp"
 
 namespace dart {
 namespace common {

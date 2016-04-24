@@ -37,9 +37,9 @@
 #ifndef DART_COMMON_SPECIALIZEDFORASPECT_H_
 #define DART_COMMON_SPECIALIZEDFORASPECT_H_
 
-#include "dart/common/Composite.h"
-#include "dart/common/CompositeJoiner.h"
-#include "dart/common/Virtual.h"
+#include "dart/common/Composite.hpp"
+#include "dart/common/CompositeJoiner.hpp"
+#include "dart/common/Virtual.hpp"
 
 namespace dart {
 namespace common {
@@ -202,6 +202,6 @@ public:
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/SpecializedForAspect.h"
+#include "dart/common/detail/SpecializedForAspect.hpp"
 
 #endif // DART_COMMON_SPECIALIZEDFORASPECT_H_

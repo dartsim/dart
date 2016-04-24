@@ -39,8 +39,8 @@
 
 #include <string>
 
-#include "dart/common/Cloneable.h"
-#include "dart/common/detail/NoOp.h"
+#include "dart/common/Cloneable.hpp"
+#include "dart/common/detail/NoOp.hpp"
 
 namespace dart {
 namespace common {
@@ -201,6 +201,6 @@ protected:
   DART_COMMON_SET_ASPECT_PROPERTY( Type, Name )\
   DART_COMMON_GET_ASPECT_PROPERTY( Type, Name )
 
-#include "dart/common/detail/Aspect.h"
+#include "dart/common/detail/Aspect.hpp"
 
 #endif // DART_COMMON_ASPECT_H_

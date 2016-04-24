@@ -37,7 +37,7 @@
 #ifndef DART_COMMON_DETAIL_PROXYASPECT_H_
 #define DART_COMMON_DETAIL_PROXYASPECT_H_
 
-#include "dart/common/Aspect.h"
+#include "dart/common/Aspect.hpp"
 
 namespace dart {
 namespace common {

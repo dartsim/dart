@@ -37,7 +37,7 @@
 #ifndef DART_COMMON_SUB_PTR_H_
 #define DART_COMMON_SUB_PTR_H_
 
-#include "dart/common/Observer.h"
+#include "dart/common/Observer.hpp"
 
 namespace dart {
 namespace common {
@@ -100,6 +100,6 @@ using sub_ptr = common::sub_ptr<T>;
 
 } // namespace dart
 
-#include "dart/common/detail/sub_ptr.h"
+#include "dart/common/detail/sub_ptr.hpp"
 
 #endif // DART_COMMON_SUB_PTR_H_

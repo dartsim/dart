@@ -37,7 +37,7 @@
 #ifndef DART_COMMON_PROXYASPECT_H_
 #define DART_COMMON_PROXYASPECT_H_
 
-#include "dart/common/detail/ProxyAspect.h"
+#include "dart/common/detail/ProxyAspect.hpp"
 
 namespace dart {
 namespace common {
