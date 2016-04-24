@@ -132,16 +132,16 @@ public:
   virtual ~GradientDescentSolver();
 
   // Documentation inherited
-  virtual bool solve() override;
+  bool solve() override;
 
   /// Get the last configuration that was used by the Solver
   Eigen::VectorXd getLastConfiguration() const;
 
   // Documentation inherited
-  virtual std::string getType() const override;
+  std::string getType() const override;
 
   // Documentation inherited
-  virtual std::shared_ptr<Solver> clone() const override;
+  std::shared_ptr<Solver> clone() const override;
 
   /// Set the Properties of this GradientDescentSolver
   void setProperties(const Properties& _properties);

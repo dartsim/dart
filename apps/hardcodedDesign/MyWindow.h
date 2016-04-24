@@ -59,10 +59,10 @@ public:
   }
 
   /// \brief Draw the skeleton
-  virtual void draw();
+  void draw() override;
 
   /// \brief Move the joints with the {1,2,3} keys and '-' to change direction
-  virtual void keyboard(unsigned char _key, int _x, int _y);
+  void keyboard(unsigned char _key, int _x, int _y) override;
 
   /// \brief Hardcoded skeleton
   dart::dynamics::SkeletonPtr skel;

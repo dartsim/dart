@@ -77,7 +77,7 @@ public:
   virtual ~TimerCondition();
 
   // Documentation inherited.
-  virtual bool isSatisfied();
+  bool isSatisfied() override;
 
 protected:
   /// \brief Duration
@@ -96,7 +96,7 @@ public:
   virtual ~BodyContactCondition();
 
   // Documentation inherited.
-  virtual bool isSatisfied();
+  bool isSatisfied() override;
 
 protected:
   /// \brief Body node to be tested

@@ -57,13 +57,13 @@ public:
   virtual ~MyWindow();
 
   /// \brief
-  virtual void timeStepping();
+  void timeStepping() override;
 
   /// \brief
-  virtual void keyboard(unsigned char key, int x, int y);
+  void keyboard(unsigned char key, int x, int y) override;
 
   /// \brief
-  virtual void drawWorld() const override;
+  void drawWorld() const override;
 
 private:
   /// \brief

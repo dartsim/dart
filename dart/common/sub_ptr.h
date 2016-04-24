@@ -83,8 +83,7 @@ public:
 
 protected:
 
-  virtual void handleDestructionNotification(
-      const Subject* _subject) override;
+  void handleDestructionNotification(const Subject* _subject) override;
 
   /// Store the pointer to the full object
   T* mT;

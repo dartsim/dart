@@ -64,6 +64,12 @@ size_t ConstraintBase::getDimension() const
 }
 
 //==============================================================================
+void ConstraintBase::uniteSkeletons()
+{
+  // Do nothing
+}
+
+//==============================================================================
 dynamics::SkeletonPtr ConstraintBase::compressPath(
     dynamics::SkeletonPtr _skeleton)
 {

@@ -85,7 +85,7 @@ protected:
          const std::string& _name = "Branch");
 
   // Documentation inherited
-  virtual void update();
+  void update() override;
 
   /// The original number of child nodes for each BodyNode of this Branch
   std::vector<size_t> mNumChildNodes;

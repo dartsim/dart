@@ -129,29 +129,29 @@ public:
   const std::string& getDofName(size_t _index) const override;
 
   // Documentation inherited
-  virtual size_t getIndexInSkeleton(size_t _index) const override;
+  size_t getIndexInSkeleton(size_t _index) const override;
 
   // Documentation inherited
-  virtual size_t getIndexInTree(size_t _index) const override;
+  size_t getIndexInTree(size_t _index) const override;
 
   //----------------------------------------------------------------------------
   // Command
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setCommand(size_t _index, double command) override;
+  void setCommand(size_t _index, double command) override;
 
   // Documentation inherited
-  virtual double getCommand(size_t _index) const override;
+  double getCommand(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setCommands(const Eigen::VectorXd& _commands) override;
+  void setCommands(const Eigen::VectorXd& _commands) override;
 
   // Documentation inherited
-  virtual Eigen::VectorXd getCommands() const override;
+  Eigen::VectorXd getCommands() const override;
 
   // Documentation inherited
-  virtual void resetCommands() override;
+  void resetCommands() override;
 
   //----------------------------------------------------------------------------
   // Position
@@ -182,7 +182,7 @@ public:
   double getPositionUpperLimit(size_t _index) const override;
 
   // Documentation inherited
-  virtual bool hasPositionLimit(size_t _index) const override;
+  bool hasPositionLimit(size_t _index) const override;
 
   // Documentation inherited
   void resetPosition(size_t _index) override;
@@ -343,36 +343,36 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setVelocityChange(size_t _index, double _velocityChange) override;
+  void setVelocityChange(size_t _index, double _velocityChange) override;
 
   // Documentation inherited
-  virtual double getVelocityChange(size_t _index) const override;
+  double getVelocityChange(size_t _index) const override;
 
   // Documentation inherited
-  virtual void resetVelocityChanges() override;
+  void resetVelocityChanges() override;
 
   //----------------------------------------------------------------------------
   // Constraint impulse
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setConstraintImpulse(size_t _index, double _impulse) override;
+  void setConstraintImpulse(size_t _index, double _impulse) override;
 
   // Documentation inherited
-  virtual double getConstraintImpulse(size_t _index) const override;
+  double getConstraintImpulse(size_t _index) const override;
 
   // Documentation inherited
-  virtual void resetConstraintImpulses() override;
+  void resetConstraintImpulses() override;
 
   //----------------------------------------------------------------------------
   // Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void integratePositions(double _dt) override;
+  void integratePositions(double _dt) override;
 
   // Documentation inherited
-  virtual void integrateVelocities(double _dt) override;
+  void integrateVelocities(double _dt) override;
 
   // Documentation inherited
   Eigen::VectorXd getPositionDifferences(
@@ -387,38 +387,38 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setSpringStiffness(size_t _index, double _k) override;
+  void setSpringStiffness(size_t _index, double _k) override;
 
   // Documentation inherited
-  virtual double getSpringStiffness(size_t _index) const override;
+  double getSpringStiffness(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setRestPosition(size_t _index, double _q0) override;
+  void setRestPosition(size_t _index, double _q0) override;
 
   // Documentation inherited
-  virtual double getRestPosition(size_t _index) const override;
+  double getRestPosition(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setDampingCoefficient(size_t _index, double _d) override;
+  void setDampingCoefficient(size_t _index, double _d) override;
 
   // Documentation inherited
-  virtual double getDampingCoefficient(size_t _index) const override;
+  double getDampingCoefficient(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setCoulombFriction(size_t _index, double _friction) override;
+  void setCoulombFriction(size_t _index, double _friction) override;
 
   // Documentation inherited
-  virtual double getCoulombFriction(size_t _index) const override;
+  double getCoulombFriction(size_t _index) const override;
 
   /// \}
 
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual double getPotentialEnergy() const override;
+  double getPotentialEnergy() const override;
 
   // Documentation inherited
-  virtual Eigen::Vector6d getBodyConstraintWrench() const override;
+  Eigen::Vector6d getBodyConstraintWrench() const override;
 
 protected:
 
@@ -477,13 +477,13 @@ protected:
       const Eigen::Vector6d& _childVelocity) override;
 
   // Documentation inherited
-  virtual void addAccelerationTo(Eigen::Vector6d& _acc) override;
+  void addAccelerationTo(Eigen::Vector6d& _acc) override;
 
   // Documentation inherited
-  virtual void addVelocityChangeTo(Eigen::Vector6d& _velocityChange) override;
+  void addVelocityChangeTo(Eigen::Vector6d& _velocityChange) override;
 
   // Documentation inherited
-  virtual void addChildArtInertiaTo(
+  void addChildArtInertiaTo(
       Eigen::Matrix6d& _parentArtInertia,
       const Eigen::Matrix6d& _childArtInertia) override;
 
@@ -535,25 +535,25 @@ protected:
       const Eigen::Vector6d& _velocityChange) override;
 
   // Documentation inherited
-  virtual void updateForceID(const Eigen::Vector6d& _bodyForce,
-                             double _timeStep,
-                             bool _withDampingForces,
-                             bool _withSpringForces) override;
+  void updateForceID(const Eigen::Vector6d& _bodyForce,
+                     double _timeStep,
+                     bool _withDampingForces,
+                     bool _withSpringForces) override;
 
   // Documentation inherited
-  virtual void updateForceFD(const Eigen::Vector6d& _bodyForce,
-                             double _timeStep,
-                             bool _withDampingForces,
-                             bool _withSpringForces) override;
+  void updateForceFD(const Eigen::Vector6d& _bodyForce,
+                     double _timeStep,
+                     bool _withDampingForces,
+                     bool _withSpringForces) override;
 
   // Documentation inherited
-  virtual void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) override;
+  void updateImpulseID(const Eigen::Vector6d& _bodyImpulse) override;
 
   // Documentation inherited
-  virtual void updateImpulseFD(const Eigen::Vector6d& _bodyImpulse) override;
+  void updateImpulseFD(const Eigen::Vector6d& _bodyImpulse) override;
 
   // Documentation inherited
-  virtual void updateConstrainedTerms(double _timeStep) override;
+  void updateConstrainedTerms(double _timeStep) override;
 
   /// \}
 

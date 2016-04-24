@@ -78,13 +78,13 @@ public:
   virtual void drawEntities();
 
   /// \brief
-  virtual void displayTimer(int _val);
+  void displayTimer(int _val) override;
 
   /// \brief
-  virtual void draw();
+  void draw() override;
 
   /// \brief
-  virtual void keyboard(unsigned char _key, int _x, int _y);
+  void keyboard(unsigned char _key, int _x, int _y) override;
 
   /// \brief
   void setWorld(dart::simulation::WorldPtr _world);

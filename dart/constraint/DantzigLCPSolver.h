@@ -57,7 +57,7 @@ public:
   virtual ~DantzigLCPSolver();
 
   // Documentation inherited
-  virtual void solve(ConstrainedGroup* _group);
+  void solve(ConstrainedGroup* _group) override;
 
 #ifndef NDEBUG
 private:

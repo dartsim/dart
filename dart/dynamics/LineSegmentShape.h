@@ -102,7 +102,7 @@ public:
 
   /// The returned inertia matrix will be like a very thin cylinder. The _mass
   /// will be evenly distributed across all lines.
-  virtual Eigen::Matrix3d computeInertia(double mass) const override;
+  Eigen::Matrix3d computeInertia(double mass) const override;
 
   // TODO(MXG): Consider supporting colors-per-vertex
 

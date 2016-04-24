@@ -326,36 +326,36 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setVelocityChange(size_t _index, double _velocityChange) override;
+  void setVelocityChange(size_t _index, double _velocityChange) override;
 
   // Documentation inherited
-  virtual double getVelocityChange(size_t _index) const override;
+  double getVelocityChange(size_t _index) const override;
 
   // Documentation inherited
-  virtual void resetVelocityChanges() override;
+  void resetVelocityChanges() override;
 
   //----------------------------------------------------------------------------
   // Constraint impulse
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setConstraintImpulse(size_t _index, double _impulse) override;
+  void setConstraintImpulse(size_t _index, double _impulse) override;
 
   // Documentation inherited
-  virtual double getConstraintImpulse(size_t _index) const override;
+  double getConstraintImpulse(size_t _index) const override;
 
   // Documentation inherited
-  virtual void resetConstraintImpulses() override;
+  void resetConstraintImpulses() override;
 
   //----------------------------------------------------------------------------
   // Integration and finite difference
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void integratePositions(double _dt) override;
+  void integratePositions(double _dt) override;
 
   // Documentation inherited
-  virtual void integrateVelocities(double _dt) override;
+  void integrateVelocities(double _dt) override;
 
   // Documentation inherited
   Eigen::VectorXd getPositionDifferences(
@@ -369,35 +369,35 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void setSpringStiffness(size_t _index, double _k) override;
+  void setSpringStiffness(size_t _index, double _k) override;
 
   // Documentation inherited
-  virtual double getSpringStiffness(size_t _index) const override;
+  double getSpringStiffness(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setRestPosition(size_t _index, double _q0) override;
+  void setRestPosition(size_t _index, double _q0) override;
 
   // Documentation inherited
-  virtual double getRestPosition(size_t _index) const override;
+  double getRestPosition(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setDampingCoefficient(size_t _index, double _d) override;
+  void setDampingCoefficient(size_t _index, double _d) override;
 
   // Documentation inherited
-  virtual double getDampingCoefficient(size_t _index) const override;
+  double getDampingCoefficient(size_t _index) const override;
 
   // Documentation inherited
-  virtual void setCoulombFriction(size_t _index, double _friction) override;
+  void setCoulombFriction(size_t _index, double _friction) override;
 
   // Documentation inherited
-  virtual double getCoulombFriction(size_t _index) const override;
+  double getCoulombFriction(size_t _index) const override;
 
   /// \}
 
   //----------------------------------------------------------------------------
 
   /// Get potential energy
-  virtual double getPotentialEnergy() const override;
+  double getPotentialEnergy() const override;
 
   // Documentation inherited
   const math::Jacobian getLocalJacobian() const override;
@@ -410,7 +410,7 @@ public:
   const math::Jacobian getLocalJacobianTimeDeriv() const override;
 
   // Documentation inherited
-  virtual Eigen::Vector6d getBodyConstraintWrench() const override;
+  Eigen::Vector6d getBodyConstraintWrench() const override;
 
 protected:
 
@@ -424,7 +424,7 @@ protected:
   std::string changeDofName(const std::string& name);
 
   // Documentation inherited
-  virtual void updateDegreeOfFreedomNames() override;
+  void updateDegreeOfFreedomNames() override;
 
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines

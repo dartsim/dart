@@ -54,7 +54,7 @@ public:
   virtual ~RK4Integrator();
 
   // Documentation inherited
-  virtual void integrate(IntegrableSystem* _system, double _dt);
+  void integrate(IntegrableSystem* _system, double _dt) override;
 
 private:
   /// \brief Initial configurations

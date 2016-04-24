@@ -62,10 +62,10 @@ public:
   virtual ~GraphWindow();
 
   /// \brief
-  virtual void draw();
+  void draw() override;
 
   /// \brief
-  virtual void keyboard(unsigned char _key, int _x, int _y);
+  void keyboard(unsigned char _key, int _x, int _y) override;
 
   void setData(Eigen::VectorXd _data);
 

@@ -63,7 +63,7 @@ public:
 
 protected:
   // Sets up the test fixture.
-  virtual void SetUp();
+  void SetUp() override;
 
   // Skel file list.
   std::vector<std::string> list;

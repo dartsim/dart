@@ -57,13 +57,13 @@ public:
   virtual ~MyWindow();
 
   // Documentation inherited
-  virtual void timeStepping() override;
+  void timeStepping() override;
 
   // Documentation inherited
-  virtual void keyboard(unsigned char key, int x, int y) override;
+  void keyboard(unsigned char key, int x, int y) override;
 
   // Documentation inherited
-  virtual void drawWorld() const override;
+  void drawWorld() const override;
 
   /// Spawn a box into the world
   void spawnBox(
