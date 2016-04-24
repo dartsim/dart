@@ -39,8 +39,8 @@
 
 #include <cstddef>
 
-#include "dart/config.h"
-#include "dart/constraint/LCPSolver.h"
+#include "dart/config.hpp"
+#include "dart/constraint/LCPSolver.hpp"
 
 namespace dart {
 namespace constraint {

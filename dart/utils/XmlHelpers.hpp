@@ -43,9 +43,9 @@
 // http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
-#include "dart/common/Deprecated.h"
-#include "dart/common/ResourceRetriever.h"
-#include "dart/math/MathTypes.h"
+#include "dart/common/Deprecated.hpp"
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace utils {

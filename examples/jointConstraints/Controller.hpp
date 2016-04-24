@@ -41,7 +41,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dart.h"
+#include "dart/dart.hpp"
 
 class Controller
 {

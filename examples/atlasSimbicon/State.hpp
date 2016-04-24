@@ -43,7 +43,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dart.h"
+#include "dart/dart.hpp"
 
 #define ATLAS_DEFAULT_KD 1.0  // No more than 1.0
 #define ATLAS_DEFAULT_KP 1e+3

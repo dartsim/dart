@@ -48,13 +48,13 @@
 #include <vector>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Dense>
-#include "dart/common/Uri.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/dynamics.h"
-#include "dart/collision/CollisionDetector.h"
-#include "dart/constraint/ConstraintSolver.h"
-#include "dart/simulation/World.h"
-#include "dart/common/ResourceRetriever.h"
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/dynamics/dynamics.hpp"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/simulation/World.hpp"
 
 using namespace Eigen;
 using namespace dart::math;

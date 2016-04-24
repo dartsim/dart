@@ -40,10 +40,10 @@
 #include <Eigen/Dense>
 #include <stdarg.h>
 
-#include "examples/jointConstraints/Controller.h"
+#include "examples/jointConstraints/Controller.hpp"
 
-#include "dart/dart.h"
-#include "dart/gui/gui.h"
+#include "dart/dart.hpp"
+#include "dart/gui/gui.hpp"
 
 class MyWindow : public dart::gui::SimWindow
 {
@@ -83,11 +83,11 @@ private:
 
 /*
 #include <stdarg.h>
-#include "yui/Win3D.h"
-#include "Controller.h"
-#include "integration/EulerIntegrator.h"
-#include "integration/RK4Integrator.h"
-#include "dynamics/SkeletonDynamics.h"
+#include "yui/Win3D.hpp"
+#include "Controller.hpp"
+#include "integration/EulerIntegrator.hpp"
+#include "integration/RK4Integrator.hpp"
+#include "dynamics/SkeletonDynamics.hpp"
 
 class MyWindow : public yui::Win3D, public integration::IntegrableSystem {
 public:

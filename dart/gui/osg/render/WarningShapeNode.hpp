@@ -40,7 +40,7 @@
 #include <osg/Node>
 #include <memory>
 
-#include "dart/gui/osg/render/ShapeNode.h"
+#include "dart/gui/osg/render/ShapeNode.hpp"
 
 namespace dart {
 namespace gui {

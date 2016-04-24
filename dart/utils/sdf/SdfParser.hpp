@@ -37,10 +37,10 @@
 #ifndef DART_UTILS_SDFPARSER_H
 #define DART_UTILS_SDFPARSER_H
 
-#include "dart/common/Deprecated.h"
-#include "dart/common/ResourceRetriever.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
+#include "dart/common/Deprecated.hpp"
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/World.hpp"
 
 namespace dart {
 namespace utils {

@@ -46,9 +46,9 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Deprecated.h"
-#include "dart/gui/Win3D.h"
-#include "dart/simulation/World.h"
+#include "dart/common/Deprecated.hpp"
+#include "dart/gui/Win3D.hpp"
+#include "dart/simulation/World.hpp"
 
 namespace dart {
 namespace gui {

@@ -39,8 +39,8 @@
 
 #include <Eigen/Dense>
 
-#include "dart/math/MathTypes.h"
-#include "dart/constraint/JointConstraint.h"
+#include "dart/math/MathTypes.hpp"
+#include "dart/constraint/JointConstraint.hpp"
 
 namespace dart {
 namespace constraint {

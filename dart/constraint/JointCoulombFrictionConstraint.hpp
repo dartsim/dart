@@ -37,7 +37,7 @@
 #ifndef DART_CONSTRAINT_JOINTCOULOMBFRICTIONCONSTRAINT_H_
 #define DART_CONSTRAINT_JOINTCOULOMBFRICTIONCONSTRAINT_H_
 
-#include "dart/constraint/ConstraintBase.h"
+#include "dart/constraint/ConstraintBase.hpp"
 
 namespace dart {
 

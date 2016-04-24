@@ -39,8 +39,8 @@
 
 #include <list>
 #include <vector>
-#include "dart/gui/RenderInterface.h"
-#include "dart/gui/LoadOpengl.h"
+#include "dart/gui/RenderInterface.hpp"
+#include "dart/gui/LoadOpengl.hpp"
 
 namespace dart {
 

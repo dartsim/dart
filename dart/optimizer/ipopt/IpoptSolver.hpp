@@ -49,7 +49,7 @@
 
 #include <memory>
 
-#include "dart/optimizer/Solver.h"
+#include "dart/optimizer/Solver.hpp"
 
 namespace dart {
 namespace optimizer {

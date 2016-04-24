@@ -40,14 +40,14 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "dart/common/Console.h"
-#include "dart/math/Constants.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/PointMass.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Constants.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/PointMass.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/utils/SkelParser.hpp"
 
 using namespace std;
 using namespace Eigen;

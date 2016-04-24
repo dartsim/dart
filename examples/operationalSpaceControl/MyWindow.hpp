@@ -37,10 +37,10 @@
 #ifndef EXAMPLES_OPERATIONALSPACECONTROL_MYWINDOW_H_
 #define EXAMPLES_OPERATIONALSPACECONTROL_MYWINDOW_H_
 
-#include "dart/dart.h"
-#include "dart/gui/gui.h"
+#include "dart/dart.hpp"
+#include "dart/gui/gui.hpp"
 
-#include "Controller.h"
+#include "Controller.hpp"
 
 /// \brief class MyWindow
 class MyWindow : public dart::gui::SimWindow

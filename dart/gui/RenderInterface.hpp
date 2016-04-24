@@ -41,7 +41,7 @@
 #include <assimp/scene.h>
 #include <Eigen/Dense>
 
-#include "dart/math/MathTypes.h"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace gui {

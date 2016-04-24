@@ -38,10 +38,10 @@
 #ifndef DART_UTILS_VSKPARSER_H_
 #define DART_UTILS_VSKPARSER_H_
 
-#include "dart/common/ResourceRetriever.h"
-#include "dart/common/Uri.h"
-#include "dart/math/Constants.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/math/Constants.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace utils {

@@ -38,9 +38,9 @@
 #define DART_UTILS_SKEL_PARSER_H
 
 #include <string>
-#include "dart/common/Uri.h"
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/simulation/World.h"
+#include "dart/common/Uri.hpp"
+#include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/simulation/World.hpp"
 
 namespace dart {
 namespace utils {

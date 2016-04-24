@@ -39,7 +39,7 @@
 
 #include <osg/MatrixTransform>
 
-#include "dart/gui/osg/render/ShapeNode.h"
+#include "dart/gui/osg/render/ShapeNode.hpp"
 
 namespace dart {
 

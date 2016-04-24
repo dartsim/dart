@@ -47,8 +47,8 @@
 #include <cstdio>
 #include <cstdarg>
 
-#include "dart/dart.h"
-#include "dart/gui/gui.h"
+#include "dart/dart.hpp"
+#include "dart/gui/gui.hpp"
 
 class MyWindow : public dart::gui::SimWindow {
 public:

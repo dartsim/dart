@@ -36,14 +36,14 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/common/Timer.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
+#include "dart/common/Timer.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/World.hpp"
 
 using namespace dart;
 using namespace common;

@@ -40,7 +40,7 @@
 #include <map>
 #include <memory>
 #include <osg/MatrixTransform>
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace dynamics {

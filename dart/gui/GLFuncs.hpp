@@ -40,7 +40,6 @@
 #include <string>
 
 #include <Eigen/Eigen>
-// #include "FreeImage.h"
 
 namespace dart {
 namespace gui {

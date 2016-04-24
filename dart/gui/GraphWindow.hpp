@@ -47,7 +47,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/gui/Win2D.h"
+#include "dart/gui/Win2D.hpp"
 
 namespace dart {
 namespace gui {

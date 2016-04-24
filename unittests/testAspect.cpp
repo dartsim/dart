@@ -41,16 +41,16 @@
 
 #include <gtest/gtest.h>
 
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/common/Subject.h"
-#include "dart/common/sub_ptr.h"
-#include "dart/common/Composite.h"
-#include "dart/common/SpecializedForAspect.h"
-#include "dart/common/EmbeddedAspect.h"
+#include "dart/common/Subject.hpp"
+#include "dart/common/sub_ptr.hpp"
+#include "dart/common/Composite.hpp"
+#include "dart/common/SpecializedForAspect.hpp"
+#include "dart/common/EmbeddedAspect.hpp"
 
-#include "dart/dynamics/EulerJoint.h"
-#include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 
 using namespace dart::common;
 

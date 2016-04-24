@@ -41,7 +41,7 @@
 #include <memory>
 #include <Eigen/Dense>
 
-#include "dart/constraint/SmartPointer.h"
+#include "dart/constraint/SmartPointer.hpp"
 
 namespace dart {
 

@@ -41,7 +41,7 @@
 #include <unordered_map>
 #include <memory>
 
-#include "dart/gui/osg/Viewer.h"
+#include "dart/gui/osg/Viewer.hpp"
 
 namespace dart {
 

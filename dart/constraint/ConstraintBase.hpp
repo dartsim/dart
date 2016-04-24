@@ -39,7 +39,7 @@
 
 #include <cstddef>
 
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 

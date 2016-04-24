@@ -37,7 +37,7 @@
 #ifndef DART_GUI_WIN2D_H_
 #define DART_GUI_WIN2D_H_
 
-#include "dart/gui/GlutWindow.h"
+#include "dart/gui/GlutWindow.hpp"
 
 namespace dart {
 namespace gui {

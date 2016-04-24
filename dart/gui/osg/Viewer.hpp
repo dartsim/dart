@@ -45,7 +45,7 @@
 
 #include <Eigen/Core>
 
-#include "dart/common/Subject.h"
+#include "dart/common/Subject.hpp"
 
 namespace dart {
 

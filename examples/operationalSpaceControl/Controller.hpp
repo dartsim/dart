@@ -39,7 +39,7 @@
 
 #include <Eigen/Eigen>
 
-#include "dart/dart.h"
+#include "dart/dart.hpp"
 
 /// \brief Operational space controller for 6-dof manipulator
 class Controller

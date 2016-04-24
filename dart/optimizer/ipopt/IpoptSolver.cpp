@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/ipopt/IpoptSolver.h"
+#include "dart/optimizer/ipopt/IpoptSolver.hpp"
 
-#include "dart/common/Console.h"
-#include "dart/common/StlHelpers.h"
-#include "dart/math/Helpers.h"
-#include "dart/optimizer/Function.h"
-#include "dart/optimizer/Problem.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/StlHelpers.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/optimizer/Function.hpp"
+#include "dart/optimizer/Problem.hpp"
 
 namespace dart {
 namespace optimizer {

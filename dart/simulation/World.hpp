@@ -49,12 +49,12 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Timer.h"
-#include "dart/common/NameManager.h"
-#include "dart/common/Subject.h"
-#include "dart/simulation/Recording.h"
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/common/Timer.hpp"
+#include "dart/common/NameManager.hpp"
+#include "dart/common/Subject.hpp"
+#include "dart/simulation/Recording.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 

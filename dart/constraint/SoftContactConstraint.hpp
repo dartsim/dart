@@ -37,10 +37,10 @@
 #ifndef DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_H_
 #define DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_H_
 
-#include "dart/constraint/ConstraintBase.h"
+#include "dart/constraint/ConstraintBase.hpp"
 
-#include "dart/math/MathTypes.h"
-#include "dart/collision/CollisionDetector.h"
+#include "dart/math/MathTypes.hpp"
+#include "dart/collision/CollisionDetector.hpp"
 
 namespace dart {
 

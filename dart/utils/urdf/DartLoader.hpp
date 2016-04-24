@@ -42,15 +42,15 @@
 #include <map>
 #include <string>
 
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/ResourceRetriever.h"
-#include "dart/common/Uri.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/CompositeResourceRetriever.h"
-#include "dart/utils/PackageResourceRetriever.h"
+#include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/utils/CompositeResourceRetriever.hpp"
+#include "dart/utils/PackageResourceRetriever.hpp"
 
 namespace urdf
 {

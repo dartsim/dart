@@ -43,7 +43,7 @@
 
 #include <Eigen/Dense>
 
-#include <dart/optimizer/Function.h>
+#include "dart/optimizer/Function.hpp"
 
 namespace dart {
 namespace optimizer {

@@ -41,10 +41,10 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Deprecated.h"
-#include "dart/constraint/SmartPointer.h"
-#include "dart/constraint/ConstraintBase.h"
-#include "dart/collision/CollisionDetector.h"
+#include "dart/common/Deprecated.hpp"
+#include "dart/constraint/SmartPointer.hpp"
+#include "dart/constraint/ConstraintBase.hpp"
+#include "dart/collision/CollisionDetector.hpp"
 
 namespace dart {
 

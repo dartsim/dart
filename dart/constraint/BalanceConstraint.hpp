@@ -37,7 +37,7 @@
 #ifndef DART_CONSTRAINT_BALANCECONSTRAINT_H_
 #define DART_CONSTRAINT_BALANCECONSTRAINT_H_
 
-#include "dart/dynamics/HierarchicalIK.h"
+#include "dart/dynamics/HierarchicalIK.hpp"
 
 namespace dart {
 namespace constraint {

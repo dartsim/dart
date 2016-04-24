@@ -39,8 +39,8 @@
 
 #include <Eigen/Eigen>
 
-#include "dart/gui/GlutWindow.h"
-#include "dart/gui/Trackball.h"
+#include "dart/gui/GlutWindow.hpp"
+#include "dart/gui/Trackball.hpp"
 
 namespace dart {
 namespace gui {

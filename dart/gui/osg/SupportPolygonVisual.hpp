@@ -39,10 +39,10 @@
 
 #include <osg/Geode>
 
-#include "dart/dynamics/SmartPointer.h"
+#include "dart/dynamics/SmartPointer.hpp"
 
-#include "dart/gui/osg/Viewer.h"
-#include "ShapeFrameNode.h"
+#include "dart/gui/osg/Viewer.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
 
 namespace dart {
 namespace gui {

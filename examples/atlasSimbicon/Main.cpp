@@ -37,10 +37,10 @@
 
 #include <iostream>
 
-#include "dart/dart.h"
+#include "dart/dart.hpp"
 
-#include "examples/atlasSimbicon/MyWindow.h"
-#include "examples/atlasSimbicon/Controller.h"
+#include "examples/atlasSimbicon/MyWindow.hpp"
+#include "examples/atlasSimbicon/Controller.hpp"
 
 using namespace std;
 using namespace Eigen;

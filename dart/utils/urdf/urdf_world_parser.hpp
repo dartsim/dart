@@ -39,14 +39,13 @@
 
 #include <string>
 
-#include <urdf_world/world.h>
-
-#include <dart/common/Uri.h>
-#include <dart/common/ResourceRetriever.h>
-
 #include <urdf_model/model.h>
 #include <urdf_model/pose.h>
 #include <urdf_model/twist.h>
+#include <urdf_world/world.h>
+
+#include "dart/common/Uri.hpp"
+#include "dart/common/ResourceRetriever.hpp"
 
 namespace dart {
 namespace utils {

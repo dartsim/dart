@@ -43,8 +43,8 @@
 #ifndef EXAMPLES_SOFTBODIES_MYWINDOW_H_
 #define EXAMPLES_SOFTBODIES_MYWINDOW_H_
 
-#include "dart/dart.h"
-#include "dart/gui/gui.h"
+#include "dart/dart.hpp"
+#include "dart/gui/gui.hpp"
 
 /// \brief
 class MyWindow : public dart::gui::SoftSimWindow

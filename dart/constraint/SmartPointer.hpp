@@ -37,7 +37,7 @@
 #ifndef DART_CONSTRAINT_SMARTPOINTER_H_
 #define DART_CONSTRAINT_SMARTPOINTER_H_
 
-#include "dart/common/SmartPointer.h"
+#include "dart/common/SmartPointer.hpp"
 
 namespace dart {
 namespace constraint {

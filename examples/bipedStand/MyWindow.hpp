@@ -42,10 +42,10 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dart.h"
-#include "dart/gui/gui.h"
+#include "dart/dart.hpp"
+#include "dart/gui/gui.hpp"
 
-#include "examples/bipedStand/Controller.h"
+#include "examples/bipedStand/Controller.hpp"
 
 class MyWindow : public dart::gui::SimWindow {
 public:

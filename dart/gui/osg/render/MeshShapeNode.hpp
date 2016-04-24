@@ -43,7 +43,7 @@
 #include <osg/MatrixTransform>
 #include <osg/Material>
 
-#include "dart/gui/osg/render/ShapeNode.h"
+#include "dart/gui/osg/render/ShapeNode.hpp"
 
 struct aiNode;
 
