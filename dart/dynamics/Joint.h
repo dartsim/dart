@@ -186,7 +186,7 @@ public:
   /// PASSIVE/FORCE.
   ///
   /// \sa ActuatorType
-  void setPositionLimitEnforced(bool _isPositionLimited);
+  void setPositionLimitEnforced(bool _isPositionLimitEnforced);
 
   /// Get whether enforcing joint position limit
   ///

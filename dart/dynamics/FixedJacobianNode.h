@@ -37,23 +37,10 @@
 #ifndef DART_DYNAMICS_FIXEDJACOBIANNODE_H_
 #define DART_DYNAMICS_FIXEDJACOBIANNODE_H_
 
-#include "dart/dynamics/TemplatedJacobianNode.h"
-#include "dart/dynamics/FixedFrame.h"
-#include "dart/dynamics/EntityNode.h"
+#include "dart/dynamics/detail/FixedJacobianNode.h"
 
 namespace dart {
 namespace dynamics {
-
-class FixedJacobianNode;
-
-namespace detail {
-
-using FixedJacobianNodeCompositeBase = common::CompositeJoiner<
-    EntityNode< TemplatedJacobianNode<FixedJacobianNode> >,
-    common::Virtual<FixedFrame>
->;
-
-} // namespace detail
 
 class FixedJacobianNode :
     public detail::FixedJacobianNodeCompositeBase,

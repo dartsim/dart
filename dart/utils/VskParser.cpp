@@ -617,7 +617,7 @@ bool readJointBall(const tinyxml2::XMLElement* /*jointEle*/,
         vskData.options.jointPositionLowerLimit);
   properties.mPositionUpperLimits = Eigen::Vector3d::Constant(
         vskData.options.jointPositionUpperLimit);
-  properties.mIsPositionLimited = true;
+  properties.mIsPositionLimitEnforced = true;
   properties.mFrictions = Eigen::Vector3d::Constant(
         vskData.options.jointFriction);
 
@@ -657,7 +657,7 @@ bool readJointHardySpicer(const tinyxml2::XMLElement* jointEle,
         vskData.options.jointPositionLowerLimit);
   properties.mPositionUpperLimits = Eigen::Vector2d::Constant(
         vskData.options.jointPositionUpperLimit);
-  properties.mIsPositionLimited = true;
+  properties.mIsPositionLimitEnforced = true;
   properties.mFrictions = Eigen::Vector2d::Constant(
         vskData.options.jointFriction);
 
@@ -687,7 +687,7 @@ bool readJointHinge(const tinyxml2::XMLElement* jointEle,
   properties.mDampingCoefficient = vskData.options.jointDampingCoefficient;
   properties.mPositionLowerLimit = vskData.options.jointPositionLowerLimit;
   properties.mPositionUpperLimit = vskData.options.jointPositionUpperLimit;
-  properties.mIsPositionLimited = true;
+  properties.mIsPositionLimitEnforced = true;
   properties.mFriction = vskData.options.jointFriction;
 
   jointProperties
