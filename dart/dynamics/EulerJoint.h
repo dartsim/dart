@@ -88,7 +88,7 @@ public:
   static const std::string& getStaticType();
 
   // Documentation inherited
-  bool isCyclic(size_t _index) const override;
+  bool isCyclic(std::size_t _index) const override;
 
   /// Set the axis order
   /// \param[in] _order Axis order

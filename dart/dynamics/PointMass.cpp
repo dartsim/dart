@@ -80,7 +80,7 @@ bool PointMass::State::operator ==(const PointMass::State& other) const
 PointMass::Properties::Properties(
     const Vector3d& _X0,
     double _mass,
-    const std::vector<size_t>& _connections,
+    const std::vector<std::size_t>& _connections,
     const Vector3d& _positionLowerLimits,
     const Vector3d& _positionUpperLimits,
     const Vector3d& _velocityLowerLimits,
@@ -143,7 +143,7 @@ bool PointMass::Properties::operator !=(const PointMass::Properties& other) cons
 
 //==============================================================================
 PointMass::PointMass(SoftBodyNode* _softBodyNode)
-  : // mIndexInSkeleton(Eigen::Matrix<size_t, 3, 1>::Zero()),
+  : // mIndexInSkeleton(Eigen::Matrix<std::size_t, 3, 1>::Zero()),
     mParentSoftBodyNode(_softBodyNode),
     mPositionDeriv(Eigen::Vector3d::Zero()),
     mVelocitiesDeriv(Eigen::Vector3d::Zero()),
@@ -197,7 +197,7 @@ const PointMass::State& PointMass::getState() const
 }
 
 //==============================================================================
-size_t PointMass::getIndexInSoftBodyNode() const
+std::size_t PointMass::getIndexInSoftBodyNode() const
 {
   return mIndex;
 }
@@ -259,14 +259,14 @@ void PointMass::addConnectedPointMass(PointMass* _pointMass)
 }
 
 //==============================================================================
-size_t PointMass::getNumConnectedPointMasses() const
+std::size_t PointMass::getNumConnectedPointMasses() const
 {
   return mParentSoftBodyNode->mAspectProperties.mPointProps[mIndex].
       mConnectedPointMassIndices.size();
 }
 
 //==============================================================================
-PointMass* PointMass::getConnectedPointMass(size_t _idx)
+PointMass* PointMass::getConnectedPointMass(std::size_t _idx)
 {
   assert(_idx < getNumConnectedPointMasses());
 
@@ -276,7 +276,7 @@ PointMass* PointMass::getConnectedPointMass(size_t _idx)
 }
 
 //==============================================================================
-const PointMass* PointMass::getConnectedPointMass(size_t _idx) const
+const PointMass* PointMass::getConnectedPointMass(std::size_t _idx) const
 {
   return const_cast<PointMass*>(this)->getConnectedPointMass(_idx);
 }
@@ -294,13 +294,13 @@ bool PointMass::isColliding()
 }
 
 //==============================================================================
-size_t PointMass::getNumDofs() const
+std::size_t PointMass::getNumDofs() const
 {
   return 3;
 }
 
 ////==============================================================================
-//void PointMass::setIndexInSkeleton(size_t _index, size_t _indexInSkeleton)
+//void PointMass::setIndexInSkeleton(std::size_t _index, std::size_t _indexInSkeleton)
 //{
 //  assert(_index < 3);
 
@@ -308,7 +308,7 @@ size_t PointMass::getNumDofs() const
 //}
 
 ////==============================================================================
-//size_t PointMass::getIndexInSkeleton(size_t _index) const
+//std::size_t PointMass::getIndexInSkeleton(std::size_t _index) const
 //{
 //  assert(_index < 3);
 
@@ -316,7 +316,7 @@ size_t PointMass::getNumDofs() const
 //}
 
 //==============================================================================
-void PointMass::setPosition(size_t _index, double _position)
+void PointMass::setPosition(std::size_t _index, double _position)
 {
   assert(_index < 3);
 
@@ -325,7 +325,7 @@ void PointMass::setPosition(size_t _index, double _position)
 }
 
 //==============================================================================
-double PointMass::getPosition(size_t _index) const
+double PointMass::getPosition(std::size_t _index) const
 {
   assert(_index < 3);
 
@@ -353,7 +353,7 @@ void PointMass::resetPositions()
 }
 
 //==============================================================================
-void PointMass::setVelocity(size_t _index, double _velocity)
+void PointMass::setVelocity(std::size_t _index, double _velocity)
 {
   assert(_index < 3);
 
@@ -362,7 +362,7 @@ void PointMass::setVelocity(size_t _index, double _velocity)
 }
 
 //==============================================================================
-double PointMass::getVelocity(size_t _index) const
+double PointMass::getVelocity(std::size_t _index) const
 {
   assert(_index < 3);
 
@@ -390,7 +390,7 @@ void PointMass::resetVelocities()
 }
 
 //==============================================================================
-void PointMass::setAcceleration(size_t _index, double _acceleration)
+void PointMass::setAcceleration(std::size_t _index, double _acceleration)
 {
   assert(_index < 3);
 
@@ -399,7 +399,7 @@ void PointMass::setAcceleration(size_t _index, double _acceleration)
 }
 
 //==============================================================================
-double PointMass::getAcceleration(size_t _index) const
+double PointMass::getAcceleration(std::size_t _index) const
 {
  assert(_index < 3);
 
@@ -435,7 +435,7 @@ void PointMass::resetAccelerations()
 }
 
 //==============================================================================
-void PointMass::setForce(size_t _index, double _force)
+void PointMass::setForce(std::size_t _index, double _force)
 {
   assert(_index < 3);
 
@@ -443,7 +443,7 @@ void PointMass::setForce(size_t _index, double _force)
 }
 
 //==============================================================================
-double PointMass::getForce(size_t _index)
+double PointMass::getForce(std::size_t _index)
 {
   assert(_index < 3);
 
@@ -469,7 +469,7 @@ void PointMass::resetForces()
 }
 
 //==============================================================================
-void PointMass::setVelocityChange(size_t _index, double _velocityChange)
+void PointMass::setVelocityChange(std::size_t _index, double _velocityChange)
 {
   assert(_index < 3);
 
@@ -477,7 +477,7 @@ void PointMass::setVelocityChange(size_t _index, double _velocityChange)
 }
 
 //==============================================================================
-double PointMass::getVelocityChange(size_t _index)
+double PointMass::getVelocityChange(std::size_t _index)
 {
   assert(_index < 3);
 
@@ -491,7 +491,7 @@ void PointMass::resetVelocityChanges()
 }
 
 //==============================================================================
-void PointMass::setConstraintImpulse(size_t _index, double _impulse)
+void PointMass::setConstraintImpulse(std::size_t _index, double _impulse)
 {
   assert(_index < 3);
 
@@ -499,7 +499,7 @@ void PointMass::setConstraintImpulse(size_t _index, double _impulse)
 }
 
 //==============================================================================
-double PointMass::getConstraintImpulse(size_t _index)
+double PointMass::getConstraintImpulse(std::size_t _index)
 {
   assert(_index < 3);
 
@@ -845,7 +845,7 @@ void PointMass::updateBiasForceFD(double _dt, const Eigen::Vector3d& _gravity)
            - (_dt * (kv + nN * ke) + kd) * getVelocities()
            - getMass() * getPartialAccelerations()
            - mB;
-  for (size_t i = 0; i < getNumConnectedPointMasses(); ++i)
+  for (std::size_t i = 0; i < getNumConnectedPointMasses(); ++i)
   {
     const State& i_state = getConnectedPointMass(i)->getState();
     mAlpha += ke * (i_state.mPositions + _dt * i_state.mVelocities);

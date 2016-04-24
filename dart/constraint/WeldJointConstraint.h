@@ -71,7 +71,7 @@ protected:
   void getInformation(ConstraintInfo* _lcp) override;
 
   // Documentation inherited
-  void applyUnitImpulse(size_t _index) override;
+  void applyUnitImpulse(std::size_t _index) override;
 
   // Documentation inherited
   void getVelocityChange(double* _vel, bool _withCfm) override;
@@ -111,7 +111,7 @@ private:
   double mOldX[6];
 
   /// Index of applied impulse
-  size_t mAppliedImpulseIndex;
+  std::size_t mAppliedImpulseIndex;
 
 public:
   // To get byte-aligned Eigen vectors

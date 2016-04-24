@@ -149,7 +149,7 @@ bool CollisionGroup::hasShapeFrame(
 }
 
 //==============================================================================
-size_t CollisionGroup::getNumShapeFrames() const
+std::size_t CollisionGroup::getNumShapeFrames() const
 {
   return mShapeFrameMap.size();
 }

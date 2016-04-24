@@ -171,7 +171,7 @@ TEST(NameManagement, Skeleton)
 
   // Test whether the return of getIndexInSkeleton() and the index of the
   // corresponding DegreeOfFreedom in the Skeleton are same
-  for (size_t i = 0; i < skel->getNumDofs(); ++i)
+  for (std::size_t i = 0; i < skel->getNumDofs(); ++i)
     EXPECT_TRUE(skel->getDof(i)->getIndexInSkeleton() == i);
 
   // Test whether all the joint names are still unique

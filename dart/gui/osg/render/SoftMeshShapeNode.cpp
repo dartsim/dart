@@ -196,7 +196,7 @@ SoftMeshShapeDrawable::SoftMeshShapeDrawable(
 
 static Eigen::Vector3d normalFromVertex(const dart::dynamics::SoftBodyNode* bn,
                                         const Eigen::Vector3i& face,
-                                        size_t v)
+                                        std::size_t v)
 {
   const Eigen::Vector3d& v0 = bn->getPointMass(face[v])->getLocalPosition();
   const Eigen::Vector3d& v1 = bn->getPointMass(face[(v+1)%3])->getLocalPosition();
@@ -215,17 +215,17 @@ static Eigen::Vector3d normalFromVertex(const dart::dynamics::SoftBodyNode* bn,
 static void computeNormals(std::vector<Eigen::Vector3d>& normals,
                            const dart::dynamics::SoftBodyNode* bn)
 {
-  for(size_t i=0; i<normals.size(); ++i)
+  for(std::size_t i=0; i<normals.size(); ++i)
     normals[i] = Eigen::Vector3d::Zero();
 
-  for(size_t i=0; i<bn->getNumFaces(); ++i)
+  for(std::size_t i=0; i<bn->getNumFaces(); ++i)
   {
     const Eigen::Vector3i& face = bn->getFace(i);
-    for(size_t j=0; j<3; ++j)
+    for(std::size_t j=0; j<3; ++j)
       normals[face[j]] += normalFromVertex(bn, face, j);
   }
 
-  for(size_t i=0; i<normals.size(); ++i)
+  for(std::size_t i=0; i<normals.size(); ++i)
     normals[i].normalize();
 }
 
@@ -246,10 +246,10 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
         new ::osg::DrawElementsUInt(GL_TRIANGLES);
     elements->reserve(3*bn->getNumFaces());
 
-    for(size_t i=0; i < bn->getNumFaces(); ++i)
+    for(std::size_t i=0; i < bn->getNumFaces(); ++i)
     {
       const Eigen::Vector3i& F = bn->getFace(i);
-      for(size_t j=0; j<3; ++j)
+      for(std::size_t j=0; j<3; ++j)
         elements->push_back(F[j]);
     }
 
@@ -270,7 +270,7 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
       mEigNormals.resize(bn->getNumPointMasses());
 
     computeNormals(mEigNormals, bn);
-    for(size_t i=0; i<bn->getNumPointMasses(); ++i)
+    for(std::size_t i=0; i<bn->getNumPointMasses(); ++i)
     {
       (*mVertices)[i] = eigToOsgVec3(bn->getPointMass(i)->getLocalPosition());
       (*mNormals)[i] = eigToOsgVec3(mEigNormals[i]);

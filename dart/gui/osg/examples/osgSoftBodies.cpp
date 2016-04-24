@@ -59,14 +59,14 @@ public:
     TimeSlice slice;
     slice.reserve(mWorld->getNumSkeletons());
 
-    for(size_t i=0; i < mWorld->getNumSkeletons(); ++i)
+    for(std::size_t i=0; i < mWorld->getNumSkeletons(); ++i)
     {
       const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
       State state;
       state.mConfig = skeleton->getConfiguration();
       state.mAspectStates.reserve(skeleton->getNumBodyNodes());
 
-      for(size_t j=0; j < skeleton->getNumBodyNodes(); ++j)
+      for(std::size_t j=0; j < skeleton->getNumBodyNodes(); ++j)
       {
         BodyNode* bn = skeleton->getBodyNode(j);
         state.mAspectStates.push_back(bn->getCompositeState());
@@ -87,7 +87,7 @@ public:
     ++mCurrentIndex;
   }
 
-  void moveTo(size_t index)
+  void moveTo(std::size_t index)
   {
     mViewer->simulate(false);
 
@@ -100,14 +100,14 @@ public:
     std::cout << "Moving to time step #" << index << std::endl;
 
     const TimeSlice& slice = mHistory[index];
-    for(size_t i=0; i < slice.size(); ++i)
+    for(std::size_t i=0; i < slice.size(); ++i)
     {
       const State& state = slice[i];
       const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
 
       skeleton->setConfiguration(state.mConfig);
 
-      for(size_t j=0; j < skeleton->getNumBodyNodes(); ++j)
+      for(std::size_t j=0; j < skeleton->getNumBodyNodes(); ++j)
       {
         BodyNode* bn = skeleton->getBodyNode(j);
         bn->setCompositeState(state.mAspectStates[j]);
@@ -149,7 +149,7 @@ public:
 
   History mHistory;
 
-  size_t mCurrentIndex;
+  std::size_t mCurrentIndex;
 };
 
 class RecordingEventHandler : public osgGA::GUIEventHandler

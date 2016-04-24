@@ -120,7 +120,7 @@ protected:
   void getInformation(ConstraintInfo* _info) override;
 
   // Documentation inherited
-  void applyUnitImpulse(size_t _idx) override;
+  void applyUnitImpulse(std::size_t _idx) override;
 
   // Documentation inherited
   void getVelocityChange(double* _vel, bool _withCfm) override;
@@ -224,7 +224,7 @@ private:
   bool mIsFrictionOn;
 
   /// Index of applied impulse
-  size_t mAppliedImpulseIndex;
+  std::size_t mAppliedImpulseIndex;
 
   ///
   bool mIsBounceOn;

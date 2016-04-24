@@ -78,7 +78,7 @@ static void extractDataFromNodeTypeMap(
 
     data->getVector().resize(nodes.size());
 
-    for(size_t i=0; i < nodes.size(); ++i)
+    for(std::size_t i=0; i < nodes.size(); ++i)
     {
       std::unique_ptr<DataType>& datum = data->getVector()[i];
       datum = (nodes[i]->*getData)();
@@ -182,7 +182,7 @@ ConstSkeletonPtr SkeletonRefCountingBase::getSkeleton() const
 typedef std::set<Entity*> EntityPtrSet;
 
 //==============================================================================
-size_t BodyNode::msBodyNodeCount = 0;
+std::size_t BodyNode::msBodyNodeCount = 0;
 
 namespace detail {
 
@@ -657,19 +657,19 @@ double BodyNode::getRestitutionCoeff() const
 }
 
 //==============================================================================
-size_t BodyNode::getIndexInSkeleton() const
+std::size_t BodyNode::getIndexInSkeleton() const
 {
   return mIndexInSkeleton;
 }
 
 //==============================================================================
-size_t BodyNode::getIndexInTree() const
+std::size_t BodyNode::getIndexInTree() const
 {
   return mIndexInTree;
 }
 
 //==============================================================================
-size_t BodyNode::getTreeIndex() const
+std::size_t BodyNode::getTreeIndex() const
 {
   return mTreeIndex;
 }
@@ -841,31 +841,31 @@ void BodyNode::addChildBodyNode(BodyNode* _body)
 }
 
 //==============================================================================
-size_t BodyNode::getNumChildBodyNodes() const
+std::size_t BodyNode::getNumChildBodyNodes() const
 {
   return mChildBodyNodes.size();
 }
 
 //==============================================================================
-BodyNode* BodyNode::getChildBodyNode(size_t _index)
+BodyNode* BodyNode::getChildBodyNode(std::size_t _index)
 {
   return common::getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
 }
 
 //==============================================================================
-const BodyNode* BodyNode::getChildBodyNode(size_t _index) const
+const BodyNode* BodyNode::getChildBodyNode(std::size_t _index) const
 {
   return common::getVectorObjectIfAvailable<BodyNode*>(_index, mChildBodyNodes);
 }
 
 //==============================================================================
-size_t BodyNode::getNumChildJoints() const
+std::size_t BodyNode::getNumChildJoints() const
 {
   return mChildBodyNodes.size();
 }
 
 //==============================================================================
-Joint* BodyNode::getChildJoint(size_t _index)
+Joint* BodyNode::getChildJoint(std::size_t _index)
 {
   BodyNode* childBodyNode = getChildBodyNode(_index);
 
@@ -876,7 +876,7 @@ Joint* BodyNode::getChildJoint(size_t _index)
 }
 
 //==============================================================================
-const Joint* BodyNode::getChildJoint(size_t _index) const
+const Joint* BodyNode::getChildJoint(std::size_t _index) const
 {
   return const_cast<BodyNode*>(this)->getChildJoint(_index);
 }
@@ -979,7 +979,7 @@ Marker* BodyNode::createMarker(const std::string& name,
 }
 
 //==============================================================================
-bool BodyNode::dependsOn(size_t _genCoordIndex) const
+bool BodyNode::dependsOn(std::size_t _genCoordIndex) const
 {
   return std::binary_search(mDependentGenCoordIndices.begin(),
                             mDependentGenCoordIndices.end(),
@@ -987,13 +987,13 @@ bool BodyNode::dependsOn(size_t _genCoordIndex) const
 }
 
 //==============================================================================
-size_t BodyNode::getNumDependentGenCoords() const
+std::size_t BodyNode::getNumDependentGenCoords() const
 {
   return mDependentGenCoordIndices.size();
 }
 
 //==============================================================================
-size_t BodyNode::getDependentGenCoordIndex(size_t _arrayIndex) const
+std::size_t BodyNode::getDependentGenCoordIndex(std::size_t _arrayIndex) const
 {
   assert(_arrayIndex < mDependentGenCoordIndices.size());
 
@@ -1001,26 +1001,26 @@ size_t BodyNode::getDependentGenCoordIndex(size_t _arrayIndex) const
 }
 
 //==============================================================================
-const std::vector<size_t>& BodyNode::getDependentGenCoordIndices() const
+const std::vector<std::size_t>& BodyNode::getDependentGenCoordIndices() const
 {
   return mDependentGenCoordIndices;
 }
 
 //==============================================================================
-size_t BodyNode::getNumDependentDofs() const
+std::size_t BodyNode::getNumDependentDofs() const
 {
   return mDependentDofs.size();
 }
 
 //==============================================================================
-DegreeOfFreedom* BodyNode::getDependentDof(size_t _index)
+DegreeOfFreedom* BodyNode::getDependentDof(std::size_t _index)
 {
   return common::getVectorObjectIfAvailable<DegreeOfFreedom*>(
         _index, mDependentDofs);
 }
 
 //==============================================================================
-const DegreeOfFreedom* BodyNode::getDependentDof(size_t _index) const
+const DegreeOfFreedom* BodyNode::getDependentDof(std::size_t _index) const
 {
   return common::getVectorObjectIfAvailable<DegreeOfFreedom*>(
         _index, mDependentDofs);
@@ -1052,8 +1052,8 @@ const std::vector<const DegreeOfFreedom*> BodyNode::getChainDofs() const
   for(std::vector<BodyNode*>::reverse_iterator rit = bn_chain.rbegin();
       rit != bn_chain.rend(); ++rit)
   {
-    size_t nDofs = (*rit)->getParentJoint()->getNumDofs();
-    for(size_t i=0; i<nDofs; ++i)
+    std::size_t nDofs = (*rit)->getParentJoint()->getNumDofs();
+    for(std::size_t i=0; i<nDofs; ++i)
       dofs.push_back( (*rit)->getParentJoint()->getDof(i) );
   }
 
@@ -1330,7 +1330,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
   else
     mDependentGenCoordIndices.clear();
 
-  for (size_t i = 0; i < mParentJoint->getNumDofs(); i++)
+  for (std::size_t i = 0; i < mParentJoint->getNumDofs(); i++)
     mDependentGenCoordIndices.push_back(mParentJoint->getIndexInSkeleton(i));
 
   // Sort
@@ -1340,7 +1340,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
   mDependentDofs.reserve(mDependentGenCoordIndices.size());
   mConstDependentDofs.clear();
   mConstDependentDofs.reserve(mDependentGenCoordIndices.size());
-  for(const size_t& index : mDependentGenCoordIndices)
+  for(const std::size_t& index : mDependentGenCoordIndices)
   {
     mDependentDofs.push_back(_skeleton->getDof(index));
     mConstDependentDofs.push_back(_skeleton->getDof(index));
@@ -1348,10 +1348,10 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
 
 #ifndef NDEBUG
   // Check whether there is duplicated indices.
-  size_t nDepGenCoordIndices = mDependentGenCoordIndices.size();
-  for (size_t i = 0; i < nDepGenCoordIndices; ++i)
+  std::size_t nDepGenCoordIndices = mDependentGenCoordIndices.size();
+  for (std::size_t i = 0; i < nDepGenCoordIndices; ++i)
   {
-    for (size_t j = i + 1; j < nDepGenCoordIndices; ++j)
+    for (std::size_t j = i + 1; j < nDepGenCoordIndices; ++j)
     {
       assert(mDependentGenCoordIndices[i] !=
              mDependentGenCoordIndices[j] &&
@@ -1363,7 +1363,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
   //--------------------------------------------------------------------------
   // Set dimensions of dynamics matrices and vectors.
   //--------------------------------------------------------------------------
-  size_t numDepGenCoords = getNumDependentGenCoords();
+  std::size_t numDepGenCoords = getNumDependentGenCoords();
   mBodyJacobian.setZero(6, numDepGenCoords);
   mWorldJacobian.setZero(6, numDepGenCoords);
   mBodyJacobianSpatialDeriv.setZero(6, numDepGenCoords);
@@ -1448,7 +1448,7 @@ void BodyNode::notifyTransformUpdate()
 
   // Child BodyNodes and other generic Entities are notified separately to allow
   // some optimizations
-  for(size_t i=0; i<mChildBodyNodes.size(); ++i)
+  for(std::size_t i=0; i<mChildBodyNodes.size(); ++i)
     mChildBodyNodes[i]->notifyTransformUpdate();
 
   for(Entity* entity : mNonBodyNodeEntities)
@@ -1475,7 +1475,7 @@ void BodyNode::notifyVelocityUpdate()
 
   // Child BodyNodes and other generic Entities are notified separately to allow
   // some optimizations
-  for(size_t i=0; i<mChildBodyNodes.size(); ++i)
+  for(std::size_t i=0; i<mChildBodyNodes.size(); ++i)
     mChildBodyNodes[i]->notifyVelocityUpdate();
 
   for(Entity* entity : mNonBodyNodeEntities)
@@ -1491,7 +1491,7 @@ void BodyNode::notifyAccelerationUpdate()
 
   mNeedAccelerationUpdate = true;
 
-  for(size_t i=0; i<mChildBodyNodes.size(); ++i)
+  for(std::size_t i=0; i<mChildBodyNodes.size(); ++i)
     mChildBodyNodes[i]->notifyAccelerationUpdate();
 
   for(Entity* entity : mNonBodyNodeEntities)
@@ -1964,11 +1964,11 @@ void BodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
                           (*it)->mG_F);
   }
 
-  size_t nGenCoords = mParentJoint->getNumDofs();
+  std::size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
-    size_t iStart = mParentJoint->getIndexInTree(0);
+    std::size_t iStart = mParentJoint->getIndexInTree(0);
     _g.segment(iStart, nGenCoords) = g;
   }
 }
@@ -2010,12 +2010,12 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
     mCg_F += math::dAdInvT((*it)->getParentJoint()->mT, (*it)->mCg_F);
   }
 
-  size_t nGenCoords = mParentJoint->getNumDofs();
+  std::size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Cg
         = mParentJoint->getLocalJacobian().transpose() * mCg_F;
-    size_t iStart = mParentJoint->getIndexInTree(0);
+    std::size_t iStart = mParentJoint->getIndexInTree(0);
     _Cg.segment(iStart, nGenCoords) = Cg;
   }
 }
@@ -2032,11 +2032,11 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
                              (*it)->mFext_F);
   }
 
-  size_t nGenCoords = mParentJoint->getNumDofs();
+  std::size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Fext = mParentJoint->getLocalJacobian().transpose()*mFext_F;
-    size_t iStart = mParentJoint->getIndexInTree(0);
+    std::size_t iStart = mParentJoint->getIndexInTree(0);
     _Fext.segment(iStart, nGenCoords) = Fext;
   }
 }
@@ -2057,7 +2057,7 @@ void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
   }
 
   // Project the spatial quantity to generalized coordinates
-  size_t iStart = mParentJoint->getIndexInTree(0);
+  std::size_t iStart = mParentJoint->getIndexInTree(0);
   _generalized.segment(iStart, mParentJoint->getNumDofs())
       = mParentJoint->getSpatialToGeneralized(mArbitrarySpatial);
 }
@@ -2066,7 +2066,7 @@ void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
 void BodyNode::updateMassMatrix()
 {
   mM_dV.setZero();
-  size_t dof = mParentJoint->getNumDofs();
+  std::size_t dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
     mM_dV.noalias() += mParentJoint->getLocalJacobian()
@@ -2080,7 +2080,7 @@ void BodyNode::updateMassMatrix()
 }
 
 //==============================================================================
-void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col)
+void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
 {
   const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
   //
@@ -2101,17 +2101,17 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col)
   assert(!math::isNan(mM_F));
 
   //
-  size_t dof = mParentJoint->getNumDofs();
+  std::size_t dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
-    size_t iStart = mParentJoint->getIndexInTree(0);
+    std::size_t iStart = mParentJoint->getIndexInTree(0);
     _MCol.block(iStart, _col, dof, 1).noalias() =
         mParentJoint->getLocalJacobian().transpose() * mM_F;
   }
 }
 
 //==============================================================================
-void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
+void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col,
                                       double _timeStep)
 {
   // TODO(JS): Need to be reimplemented
@@ -2135,18 +2135,18 @@ void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
   assert(!math::isNan(mM_F));
 
   //
-  size_t dof = mParentJoint->getNumDofs();
+  std::size_t dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
     Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
     Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
-    for (size_t i = 0; i < dof; ++i)
+    for (std::size_t i = 0; i < dof; ++i)
     {
       K(i, i) = mParentJoint->getSpringStiffness(i);
       D(i, i) = mParentJoint->getDampingCoefficient(i);
     }
 
-    size_t iStart = mParentJoint->getIndexInTree(0);
+    std::size_t iStart = mParentJoint->getIndexInTree(0);
 
     _MCol.block(iStart, _col, dof, 1).noalias()
         = mParentJoint->getLocalJacobian().transpose() * mM_F
@@ -2198,7 +2198,7 @@ void BodyNode::updateInvAugMassMatrix()
 }
 
 //==============================================================================
-void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col)
+void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col)
 {
   if (mParentBodyNode)
   {
@@ -2225,7 +2225,7 @@ void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col)
 }
 
 //==============================================================================
-void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col,
+void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col,
                                          double /*_timeStep*/)
 {
   if (mParentBodyNode)
@@ -2272,16 +2272,16 @@ void BodyNode::updateBodyJacobian() const
   if(nullptr == mParentJoint)
     return;
 
-  const size_t localDof     = mParentJoint->getNumDofs();
+  const std::size_t localDof     = mParentJoint->getNumDofs();
   assert(getNumDependentGenCoords() >= localDof);
-  const size_t ascendantDof = getNumDependentGenCoords() - localDof;
+  const std::size_t ascendantDof = getNumDependentGenCoords() - localDof;
 
   // Parent Jacobian
   if (mParentBodyNode)
   {
-    assert(static_cast<size_t>(mParentBodyNode->getJacobian().cols())
+    assert(static_cast<std::size_t>(mParentBodyNode->getJacobian().cols())
            + mParentJoint->getNumDofs()
-           == static_cast<size_t>(mBodyJacobian.cols()));
+           == static_cast<std::size_t>(mBodyJacobian.cols()));
 
     assert(mParentJoint);
     mBodyJacobian.leftCols(ascendantDof) =
@@ -2333,8 +2333,8 @@ void BodyNode::updateBodyJacobianSpatialDeriv() const
   {
     const auto& dJ_parent = mParentBodyNode->getJacobianSpatialDeriv();
 
-    assert(static_cast<size_t>(dJ_parent.cols()) + mParentJoint->getNumDofs()
-           == static_cast<size_t>(mBodyJacobianSpatialDeriv.cols()));
+    assert(static_cast<std::size_t>(dJ_parent.cols()) + mParentJoint->getNumDofs()
+           == static_cast<std::size_t>(mBodyJacobianSpatialDeriv.cols()));
 
     mBodyJacobianSpatialDeriv.leftCols(numParentDOFs)
         = math::AdInvTJac(mParentJoint->getLocalTransform(), dJ_parent);
@@ -2372,9 +2372,9 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
   if(nullptr == mParentJoint)
     return;
 
-  const size_t numLocalDOFs = mParentJoint->getNumDofs();
+  const std::size_t numLocalDOFs = mParentJoint->getNumDofs();
   assert(getNumDependentGenCoords() >= numLocalDOFs);
-  const size_t numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
+  const std::size_t numParentDOFs = getNumDependentGenCoords() - numLocalDOFs;
 
 
   if(mParentBodyNode)
@@ -2389,8 +2389,8 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
     const Eigen::Vector3d& p = (getWorldTransform().translation()
                   - mParentBodyNode->getWorldTransform().translation()).eval();
 
-    assert(static_cast<size_t>(dJ_parent.cols()) + mParentJoint->getNumDofs()
-           == static_cast<size_t>(mWorldJacobianClassicDeriv.cols()));
+    assert(static_cast<std::size_t>(dJ_parent.cols()) + mParentJoint->getNumDofs()
+           == static_cast<std::size_t>(mWorldJacobianClassicDeriv.cols()));
 
     // dJr
     mWorldJacobianClassicDeriv.block(0,0,3,numParentDOFs)

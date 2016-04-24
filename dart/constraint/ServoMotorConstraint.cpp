@@ -115,8 +115,8 @@ void ServoMotorConstraint::update()
   // Reset dimention
   mDim = 0;
 
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof; ++i)
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof; ++i)
   {
     mNegativeVelocityError[i] = mJoint->getCommand(i) - mJoint->getVelocity(i);
 
@@ -157,9 +157,9 @@ void ServoMotorConstraint::update()
 //==============================================================================
 void ServoMotorConstraint::getInformation(ConstraintInfo* lcp)
 {
-  size_t index = 0;
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof; ++i)
+  std::size_t index = 0;
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -182,15 +182,15 @@ void ServoMotorConstraint::getInformation(ConstraintInfo* lcp)
 }
 
 //==============================================================================
-void ServoMotorConstraint::applyUnitImpulse(size_t index)
+void ServoMotorConstraint::applyUnitImpulse(std::size_t index)
 {
   assert(index < mDim && "Invalid Index.");
 
-  size_t localIndex = 0;
+  std::size_t localIndex = 0;
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
 
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof; ++i)
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -215,9 +215,9 @@ void ServoMotorConstraint::getVelocityChange(double* delVel, bool withCfm)
 {
   assert(delVel != nullptr && "Null pointer is not allowed.");
 
-  size_t localIndex = 0;
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof ; ++i)
+  std::size_t localIndex = 0;
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof ; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -256,9 +256,9 @@ void ServoMotorConstraint::unexcite()
 //==============================================================================
 void ServoMotorConstraint::applyImpulse(double* lambda)
 {
-  size_t localIndex = 0;
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof ; ++i)
+  std::size_t localIndex = 0;
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof ; ++i)
   {
     if (mActive[i] == false)
       continue;

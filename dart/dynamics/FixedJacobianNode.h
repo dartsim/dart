@@ -52,25 +52,25 @@ public:
   void setRelativeTransform(const Eigen::Isometry3d& newRelativeTf) override;
 
   // Documentation inherited
-  bool dependsOn(size_t _genCoordIndex) const override;
+  bool dependsOn(std::size_t _genCoordIndex) const override;
 
   // Documentation inherited
-  size_t getNumDependentGenCoords() const override;
+  std::size_t getNumDependentGenCoords() const override;
 
   // Documentation inherited
-  size_t getDependentGenCoordIndex(size_t _arrayIndex) const override;
+  std::size_t getDependentGenCoordIndex(std::size_t _arrayIndex) const override;
 
   // Documentation inherited
-  const std::vector<size_t>& getDependentGenCoordIndices() const override;
+  const std::vector<std::size_t>& getDependentGenCoordIndices() const override;
 
   // Documentation inherited
-  size_t getNumDependentDofs() const override;
+  std::size_t getNumDependentDofs() const override;
 
   // Documentation inherited
-  DegreeOfFreedom* getDependentDof(size_t _index) override;
+  DegreeOfFreedom* getDependentDof(std::size_t _index) override;
 
   // Documentation inherited
-  const DegreeOfFreedom* getDependentDof(size_t _index) const override;
+  const DegreeOfFreedom* getDependentDof(std::size_t _index) const override;
 
   // Documentation inherited
   const std::vector<DegreeOfFreedom*>& getDependentDofs() override;

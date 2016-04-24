@@ -63,7 +63,7 @@
 #define SET_FLAG( Y, X ) mTreeCache[ Y ].mDirty. X = true;                      \
                          mSkelCache.mDirty. X = true;
 
-#define ON_ALL_TREES( X ) for(size_t i=0; i < mTreeCache.size(); ++i) X (i);
+#define ON_ALL_TREES( X ) for(std::size_t i=0; i < mTreeCache.size(); ++i) X (i);
 
 
 #define CHECK_CONFIG_VECTOR_SIZE( V )                                           \
@@ -98,8 +98,8 @@ namespace detail {
 // TODO(MXG): Consider putting this in an accessible header if it might be
 // useful in other places.
 template <class Owner, class Object, class ObjectBase, class Data,
-          size_t (Owner::*getNumObjects)() const,
-          Object* (Owner::*getObject)(size_t),
+          std::size_t (Owner::*getNumObjects)() const,
+          Object* (Owner::*getObject)(std::size_t),
           void (ObjectBase::*setData)(const Data&)>
 void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
 {
@@ -113,7 +113,7 @@ void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
     return;
   }
 
-  size_t numObjects = (owner->*getNumObjects)();
+  std::size_t numObjects = (owner->*getNumObjects)();
 
   if(data.size() != numObjects)
   {
@@ -128,7 +128,7 @@ void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
     numObjects = std::min(numObjects, data.size());
   }
 
-  for(size_t i=0; i < numObjects; ++i)
+  for(std::size_t i=0; i < numObjects; ++i)
     ((owner->*getObject)(i)->*setData)(data[i]);
 }
 
@@ -143,8 +143,8 @@ void setAllMemberObjectData(Owner* owner, const std::vector<Data>& data)
 // TODO(MXG): Consider putting this in an accessible header if it might be
 // useful in other places.
 template <class Owner, class Object, class ObjectBase, class Data,
-          size_t (Owner::*getNumObjects)() const,
-          const Object* (Owner::*getObject)(size_t) const,
+          std::size_t (Owner::*getNumObjects)() const,
+          const Object* (Owner::*getObject)(std::size_t) const,
           Data (ObjectBase::*getData)() const>
 std::vector<Data> getAllMemberObjectData(const Owner* owner)
 {
@@ -158,11 +158,11 @@ std::vector<Data> getAllMemberObjectData(const Owner* owner)
     return std::vector<Data>();
   }
 
-  const size_t numObjects = (owner->*getNumObjects)();
+  const std::size_t numObjects = (owner->*getNumObjects)();
   std::vector<Data> data;
   data.reserve(numObjects);
 
-  for(size_t i=0; i < numObjects; ++i)
+  for(std::size_t i=0; i < numObjects; ++i)
     data.push_back(((owner->*getObject)(i)->*getData)());
 
   return data;
@@ -275,7 +275,7 @@ Skeleton::Configuration::Configuration(
     mForces(forces),
     mCommands(commands)
 {
-  size_t nonzero_size = INVALID_INDEX;
+  std::size_t nonzero_size = INVALID_INDEX;
 
   CHECK_CONFIG_VECTOR_SIZE(positions);
   CHECK_CONFIG_VECTOR_SIZE(velocities);
@@ -285,14 +285,14 @@ Skeleton::Configuration::Configuration(
 
   if(nonzero_size != INVALID_INDEX)
   {
-    for(size_t i=0; i < nonzero_size; ++i)
+    for(std::size_t i=0; i < nonzero_size; ++i)
       mIndices.push_back(i);
   }
 }
 
 //==============================================================================
 Skeleton::Configuration::Configuration(
-    const std::vector<size_t>& indices,
+    const std::vector<std::size_t>& indices,
     const Eigen::VectorXd& positions,
     const Eigen::VectorXd& velocities,
     const Eigen::VectorXd& accelerations,
@@ -305,7 +305,7 @@ Skeleton::Configuration::Configuration(
     mForces(forces),
     mCommands(commands)
 {
-  size_t nonzero_size = indices.size();
+  std::size_t nonzero_size = indices.size();
 
   CHECK_CONFIG_VECTOR_SIZE(positions);
   CHECK_CONFIG_VECTOR_SIZE(velocities);
@@ -404,7 +404,7 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
 {
   SkeletonPtr skelClone = Skeleton::create(cloneName);
 
-  for(size_t i=0; i<getNumBodyNodes(); ++i)
+  for(std::size_t i=0; i<getNumBodyNodes(); ++i)
   {
     // Create a clone of the parent Joint
     Joint* joint = getJoint(i)->clone();
@@ -487,8 +487,8 @@ void Skeleton::setConfiguration(const Configuration& configuration)
 //==============================================================================
 Skeleton::Configuration Skeleton::getConfiguration(int flags) const
 {
-  std::vector<size_t> indices;
-  for(size_t i=0; i < getNumDofs(); ++i)
+  std::vector<std::size_t> indices;
+  for(std::size_t i=0; i < getNumDofs(); ++i)
     indices.push_back(i);
 
   return getConfiguration(indices, flags);
@@ -496,7 +496,7 @@ Skeleton::Configuration Skeleton::getConfiguration(int flags) const
 
 //==============================================================================
 Skeleton::Configuration Skeleton::getConfiguration(
-    const std::vector<size_t>& indices, int flags) const
+    const std::vector<std::size_t>& indices, int flags) const
 {
   Configuration config(indices);
   if(flags == CONFIG_NOTHING)
@@ -679,7 +679,7 @@ void Skeleton::setTimeStep(double _timeStep)
   assert(_timeStep > 0.0);
   mAspectProperties.mTimeStep = _timeStep;
 
-  for(size_t i=0; i<mTreeCache.size(); ++i)
+  for(std::size_t i=0; i<mTreeCache.size(); ++i)
     notifyArticulatedInertiaUpdate(i);
 }
 
@@ -705,31 +705,31 @@ const Eigen::Vector3d& Skeleton::getGravity() const
 }
 
 //==============================================================================
-size_t Skeleton::getNumBodyNodes() const
+std::size_t Skeleton::getNumBodyNodes() const
 {
   return mSkelCache.mBodyNodes.size();
 }
 
 //==============================================================================
-size_t Skeleton::getNumRigidBodyNodes() const
+std::size_t Skeleton::getNumRigidBodyNodes() const
 {
   return mSkelCache.mBodyNodes.size() - mSoftBodyNodes.size();
 }
 
 //==============================================================================
-size_t Skeleton::getNumSoftBodyNodes() const
+std::size_t Skeleton::getNumSoftBodyNodes() const
 {
   return mSoftBodyNodes.size();
 }
 
 //==============================================================================
-size_t Skeleton::getNumTrees() const
+std::size_t Skeleton::getNumTrees() const
 {
   return mTreeCache.size();
 }
 
 //==============================================================================
-BodyNode* Skeleton::getRootBodyNode(size_t _treeIdx)
+BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx)
 {
   if( mTreeCache.size() > _treeIdx)
     return mTreeCache[_treeIdx].mBodyNodes[0];
@@ -752,34 +752,34 @@ BodyNode* Skeleton::getRootBodyNode(size_t _treeIdx)
 }
 
 //==============================================================================
-const BodyNode* Skeleton::getRootBodyNode(size_t _treeIdx) const
+const BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx) const
 {
   return const_cast<Skeleton*>(this)->getRootBodyNode(_treeIdx);
 }
 
 //==============================================================================
-BodyNode* Skeleton::getBodyNode(size_t _idx)
+BodyNode* Skeleton::getBodyNode(std::size_t _idx)
 {
   return common::getVectorObjectIfAvailable<BodyNode*>(
         _idx, mSkelCache.mBodyNodes);
 }
 
 //==============================================================================
-const BodyNode* Skeleton::getBodyNode(size_t _idx) const
+const BodyNode* Skeleton::getBodyNode(std::size_t _idx) const
 {
   return common::getVectorObjectIfAvailable<BodyNode*>(
         _idx, mSkelCache.mBodyNodes);
 }
 
 //==============================================================================
-SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx)
+SoftBodyNode* Skeleton::getSoftBodyNode(std::size_t _idx)
 {
   return common::getVectorObjectIfAvailable<SoftBodyNode*>(
         _idx, mSoftBodyNodes);
 }
 
 //==============================================================================
-const SoftBodyNode* Skeleton::getSoftBodyNode(size_t _idx) const
+const SoftBodyNode* Skeleton::getSoftBodyNode(std::size_t _idx) const
 {
   return common::getVectorObjectIfAvailable<SoftBodyNode*>(
         _idx, mSoftBodyNodes);
@@ -815,7 +815,7 @@ static std::vector<const T*>& convertToConstPtrVector(
     const std::vector<T*>& vec, std::vector<const T*>& const_vec)
 {
   const_vec.resize(vec.size());
-  for(size_t i=0; i<vec.size(); ++i)
+  for(std::size_t i=0; i<vec.size(); ++i)
     const_vec[i] = vec[i];
   return const_vec;
 }
@@ -834,8 +834,8 @@ const std::vector<const BodyNode*>& Skeleton::getBodyNodes() const
 }
 
 //==============================================================================
-template <class ObjectT, size_t (ObjectT::*getIndexInSkeleton)() const>
-static size_t templatedGetIndexOf(const Skeleton* _skel, const ObjectT* _obj,
+template <class ObjectT, std::size_t (ObjectT::*getIndexInSkeleton)() const>
+static std::size_t templatedGetIndexOf(const Skeleton* _skel, const ObjectT* _obj,
                                   const std::string& _type, bool _warning)
 {
   if(nullptr == _obj)
@@ -865,18 +865,18 @@ static size_t templatedGetIndexOf(const Skeleton* _skel, const ObjectT* _obj,
 }
 
 //==============================================================================
-size_t Skeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
+std::size_t Skeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
 {
   return templatedGetIndexOf<BodyNode, &BodyNode::getIndexInSkeleton>(
         this, _bn, "BodyNode", _warning);
 }
 
 //==============================================================================
-const std::vector<BodyNode*>& Skeleton::getTreeBodyNodes(size_t _treeIdx)
+const std::vector<BodyNode*>& Skeleton::getTreeBodyNodes(std::size_t _treeIdx)
 {
   if(_treeIdx >= mTreeCache.size())
   {
-    size_t count = mTreeCache.size();
+    std::size_t count = mTreeCache.size();
     dterr << "[Skeleton::getTreeBodyNodes] Requesting an invalid tree ("
           << _treeIdx << ") "
           << (count > 0? (std::string("when the max tree index is (") + std::to_string(count-1) + ")\n" ) :
@@ -888,21 +888,21 @@ const std::vector<BodyNode*>& Skeleton::getTreeBodyNodes(size_t _treeIdx)
 }
 
 //==============================================================================
-std::vector<const BodyNode*> Skeleton::getTreeBodyNodes(size_t _treeIdx) const
+std::vector<const BodyNode*> Skeleton::getTreeBodyNodes(std::size_t _treeIdx) const
 {
   return convertToConstPtrVector<BodyNode>(
         mTreeCache[_treeIdx].mBodyNodes, mTreeCache[_treeIdx].mConstBodyNodes);
 }
 
 //==============================================================================
-size_t Skeleton::getNumJoints() const
+std::size_t Skeleton::getNumJoints() const
 {
   // The number of joints and body nodes are identical
   return getNumBodyNodes();
 }
 
 //==============================================================================
-Joint* Skeleton::getJoint(size_t _idx)
+Joint* Skeleton::getJoint(std::size_t _idx)
 {
   BodyNode* bn = common::getVectorObjectIfAvailable<BodyNode*>(
                    _idx, mSkelCache.mBodyNodes);
@@ -913,7 +913,7 @@ Joint* Skeleton::getJoint(size_t _idx)
 }
 
 //==============================================================================
-const Joint* Skeleton::getJoint(size_t _idx) const
+const Joint* Skeleton::getJoint(std::size_t _idx) const
 {
   return const_cast<Skeleton*>(this)->getJoint(_idx);
 }
@@ -931,27 +931,27 @@ const Joint* Skeleton::getJoint(const std::string& _name) const
 }
 
 //==============================================================================
-size_t Skeleton::getIndexOf(const Joint* _joint, bool _warning) const
+std::size_t Skeleton::getIndexOf(const Joint* _joint, bool _warning) const
 {
   return templatedGetIndexOf<Joint, &Joint::getJointIndexInSkeleton>(
         this, _joint, "Joint", _warning);
 }
 
 //==============================================================================
-size_t Skeleton::getNumDofs() const
+std::size_t Skeleton::getNumDofs() const
 {
   return mSkelCache.mDofs.size();
 }
 
 //==============================================================================
-DegreeOfFreedom* Skeleton::getDof(size_t _idx)
+DegreeOfFreedom* Skeleton::getDof(std::size_t _idx)
 {
   return common::getVectorObjectIfAvailable<DegreeOfFreedom*>(
         _idx, mSkelCache.mDofs);
 }
 
 //==============================================================================
-const DegreeOfFreedom* Skeleton::getDof(size_t _idx) const
+const DegreeOfFreedom* Skeleton::getDof(std::size_t _idx) const
 {
   return common::getVectorObjectIfAvailable<DegreeOfFreedom*>(
         _idx, mSkelCache.mDofs);
@@ -983,7 +983,7 @@ std::vector<const DegreeOfFreedom*> Skeleton::getDofs() const
 }
 
 //==============================================================================
-size_t Skeleton::getIndexOf(const DegreeOfFreedom* _dof, bool _warning) const
+std::size_t Skeleton::getIndexOf(const DegreeOfFreedom* _dof, bool _warning) const
 {
   return templatedGetIndexOf<DegreeOfFreedom,
       &DegreeOfFreedom::getIndexInSkeleton>(
@@ -991,14 +991,14 @@ size_t Skeleton::getIndexOf(const DegreeOfFreedom* _dof, bool _warning) const
 }
 
 //==============================================================================
-const std::vector<DegreeOfFreedom*>& Skeleton::getTreeDofs(size_t _treeIdx)
+const std::vector<DegreeOfFreedom*>& Skeleton::getTreeDofs(std::size_t _treeIdx)
 {
   return mTreeCache[_treeIdx].mDofs;
 }
 
 //==============================================================================
 const std::vector<const DegreeOfFreedom*>& Skeleton::getTreeDofs(
-    size_t _treeIdx) const
+    std::size_t _treeIdx) const
 {
   return convertToConstPtrVector<DegreeOfFreedom>(
         mTreeCache[_treeIdx].mDofs, mTreeCache[_treeIdx].mConstDofs);
@@ -1010,7 +1010,7 @@ bool Skeleton::checkIndexingConsistency() const
   bool consistent = true;
 
   // Check each BodyNode in the Skeleton cache
-  for(size_t i=0; i<mSkelCache.mBodyNodes.size(); ++i)
+  for(std::size_t i=0; i<mSkelCache.mBodyNodes.size(); ++i)
   {
     const BodyNode* bn = mSkelCache.mBodyNodes[i];
     if(bn->mIndexInSkeleton != i)
@@ -1055,7 +1055,7 @@ bool Skeleton::checkIndexingConsistency() const
     for(const auto& nodeType : nodeMap)
     {
       const std::vector<Node*>& nodes = nodeType.second;
-      for(size_t k=0; k < nodes.size(); ++k)
+      for(std::size_t k=0; k < nodes.size(); ++k)
       {
         const Node* node = nodes[k];
         if(node->getBodyNodePtr() != bn)
@@ -1088,7 +1088,7 @@ bool Skeleton::checkIndexingConsistency() const
   }
 
   // Check DegreesOfFreedom indexing
-  for(size_t i=0; i < getNumDofs(); ++i)
+  for(std::size_t i=0; i < getNumDofs(); ++i)
   {
     const DegreeOfFreedom* dof = getDof(i);
     if(dof->getIndexInSkeleton() != i)
@@ -1122,7 +1122,7 @@ bool Skeleton::checkIndexingConsistency() const
     for(const auto& nodeType : nodeMap)
     {
       const std::vector<Node*>& nodes = nodeType.second;
-      for(size_t k=0; k < nodes.size(); ++k)
+      for(std::size_t k=0; k < nodes.size(); ++k)
       {
         const Node* node = nodes[k];
         if(node->getSkeleton().get() != this)
@@ -1153,10 +1153,10 @@ bool Skeleton::checkIndexingConsistency() const
   }
 
   // Check each BodyNode in each Tree cache
-  for(size_t i=0; i<mTreeCache.size(); ++i)
+  for(std::size_t i=0; i<mTreeCache.size(); ++i)
   {
     const DataCache& cache = mTreeCache[i];
-    for(size_t j=0; j<cache.mBodyNodes.size(); ++j)
+    for(std::size_t j=0; j<cache.mBodyNodes.size(); ++j)
     {
       const BodyNode* bn = cache.mBodyNodes[j];
       if(bn->mTreeIndex != i)
@@ -1182,7 +1182,7 @@ bool Skeleton::checkIndexingConsistency() const
       }
     }
 
-    for(size_t j=0; j < cache.mDofs.size(); ++j)
+    for(std::size_t j=0; j < cache.mDofs.size(); ++j)
     {
       const DegreeOfFreedom* dof = cache.mDofs[j];
       if(dof->getTreeIndex() != i)
@@ -1211,14 +1211,14 @@ bool Skeleton::checkIndexingConsistency() const
   }
 
   // Check each Node in the NodeMap of each Tree
-  for(size_t i=0; i < mTreeNodeMaps.size(); ++i)
+  for(std::size_t i=0; i < mTreeNodeMaps.size(); ++i)
   {
     const NodeMap& nodeMap = mTreeNodeMaps[i];
 
     for(const auto& nodeType : nodeMap)
     {
       const std::vector<Node*>& nodes = nodeType.second;
-      for(size_t k=0; k < nodes.size(); ++k)
+      for(std::size_t k=0; k < nodes.size(); ++k)
       {
         const Node* node = nodes[k];
         if(node->getBodyNodePtr()->mTreeIndex != i)
@@ -1297,12 +1297,12 @@ DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, EndEffector )
 //==============================================================================
 void Skeleton::integratePositions(double _dt)
 {
-  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
+  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     mSkelCache.mBodyNodes[i]->getParentJoint()->integratePositions(_dt);
 
-  for (size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i)
   {
-    for (size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
+    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
       mSoftBodyNodes[i]->getPointMass(j)->integratePositions(_dt);
   }
 }
@@ -1310,12 +1310,12 @@ void Skeleton::integratePositions(double _dt)
 //==============================================================================
 void Skeleton::integrateVelocities(double _dt)
 {
-  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
+  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     mSkelCache.mBodyNodes[i]->getParentJoint()->integrateVelocities(_dt);
 
-  for (size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i)
   {
-    for (size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
+    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
       mSoftBodyNodes[i]->getPointMass(j)->integrateVelocities(_dt);
   }
 }
@@ -1324,8 +1324,8 @@ void Skeleton::integrateVelocities(double _dt)
 Eigen::VectorXd Skeleton::getPositionDifferences(
     const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
 {
-  if (static_cast<size_t>(_q2.size()) != getNumDofs()
-      || static_cast<size_t>(_q1.size()) != getNumDofs())
+  if (static_cast<std::size_t>(_q2.size()) != getNumDofs()
+      || static_cast<std::size_t>(_q1.size()) != getNumDofs())
   {
     dterr << "Skeleton::getPositionsDifference: q1's size[" << _q1.size()
           << "] or q2's size[" << _q2.size() << "is different with the dof ["
@@ -1338,11 +1338,11 @@ Eigen::VectorXd Skeleton::getPositionDifferences(
   for (const auto& bodyNode : mSkelCache.mBodyNodes)
   {
     const Joint* joint = bodyNode->getParentJoint();
-    const size_t dof   = joint->getNumDofs();
+    const std::size_t dof   = joint->getNumDofs();
 
     if (dof)
     {
-      size_t index = joint->getDof(0)->getIndexInSkeleton();
+      std::size_t index = joint->getDof(0)->getIndexInSkeleton();
       const Eigen::VectorXd& q2Seg = _q2.segment(index, dof);
       const Eigen::VectorXd& q1Seg = _q1.segment(index, dof);
       dq.segment(index, dof) = joint->getPositionDifferences(q2Seg, q1Seg);
@@ -1356,8 +1356,8 @@ Eigen::VectorXd Skeleton::getPositionDifferences(
 Eigen::VectorXd Skeleton::getVelocityDifferences(
     const Eigen::VectorXd& _dq2, const Eigen::VectorXd& _dq1) const
 {
-  if (static_cast<size_t>(_dq2.size()) != getNumDofs()
-      || static_cast<size_t>(_dq1.size()) != getNumDofs())
+  if (static_cast<std::size_t>(_dq2.size()) != getNumDofs()
+      || static_cast<std::size_t>(_dq1.size()) != getNumDofs())
   {
     dterr << "Skeleton::getPositionsDifference: dq1's size[" << _dq1.size()
           << "] or dq2's size[" << _dq2.size() << "is different with the dof ["
@@ -1403,7 +1403,7 @@ void assignJacobian(JacobianType& _J,
                     const JacobianType& _JBodyNode)
 {
   // Assign the BodyNode's Jacobian to the result Jacobian.
-  size_t localIndex = 0;
+  std::size_t localIndex = 0;
   const auto& indices = _node->getDependentGenCoordIndices();
   for (const auto& index : indices)
   {
@@ -1716,7 +1716,7 @@ double Skeleton::getMass() const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getMassMatrix(size_t _treeIdx) const
+const Eigen::MatrixXd& Skeleton::getMassMatrix(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mMassMatrix)
     updateMassMatrix(_treeIdx);
@@ -1732,7 +1732,7 @@ const Eigen::MatrixXd& Skeleton::getMassMatrix() const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getAugMassMatrix(size_t _treeIdx) const
+const Eigen::MatrixXd& Skeleton::getAugMassMatrix(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mAugMassMatrix)
     updateAugMassMatrix(_treeIdx);
@@ -1750,7 +1750,7 @@ const Eigen::MatrixXd& Skeleton::getAugMassMatrix() const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getInvMassMatrix(size_t _treeIdx) const
+const Eigen::MatrixXd& Skeleton::getInvMassMatrix(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mInvMassMatrix)
     updateInvMassMatrix(_treeIdx);
@@ -1768,7 +1768,7 @@ const Eigen::MatrixXd& Skeleton::getInvMassMatrix() const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix(size_t _treeIdx) const
+const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mInvAugMassMatrix)
     updateInvAugMassMatrix(_treeIdx);
@@ -1786,7 +1786,7 @@ const Eigen::MatrixXd& Skeleton::getInvAugMassMatrix() const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getCoriolisForces(size_t _treeIdx) const
+const Eigen::VectorXd& Skeleton::getCoriolisForces(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mCoriolisForces)
     updateCoriolisForces(_treeIdx);
@@ -1804,7 +1804,7 @@ const Eigen::VectorXd& Skeleton::getCoriolisForces() const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getGravityForces(size_t _treeIdx) const
+const Eigen::VectorXd& Skeleton::getGravityForces(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mGravityForces)
     updateGravityForces(_treeIdx);
@@ -1822,7 +1822,7 @@ const Eigen::VectorXd& Skeleton::getGravityForces() const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces(size_t _treeIdx) const
+const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mCoriolisAndGravityForces)
     updateCoriolisAndGravityForces(_treeIdx);
@@ -1840,7 +1840,7 @@ const Eigen::VectorXd& Skeleton::getCoriolisAndGravityForces() const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getExternalForces(size_t _treeIdx) const
+const Eigen::VectorXd& Skeleton::getExternalForces(std::size_t _treeIdx) const
 {
   if (mTreeCache[_treeIdx].mDirty.mExternalForces)
     updateExternalForces(_treeIdx);
@@ -1858,7 +1858,7 @@ const Eigen::VectorXd& Skeleton::getExternalForces() const
 }
 
 //==============================================================================
-const Eigen::VectorXd& Skeleton::getConstraintForces(size_t _treeIdx) const
+const Eigen::VectorXd& Skeleton::getConstraintForces(std::size_t _treeIdx) const
 {
   return computeConstraintForces(mTreeCache[_treeIdx]);
 }
@@ -1944,7 +1944,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   }
   else
   {
-    size_t tree = _newBodyNode->getParentBodyNode()->getTreeIndex();
+    std::size_t tree = _newBodyNode->getParentBodyNode()->getTreeIndex();
     _newBodyNode->mTreeIndex = tree;
     DataCache& cache = mTreeCache[tree];
     cache.mBodyNodes.push_back(_newBodyNode);
@@ -1974,7 +1974,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   updateCacheDimensions(_newBodyNode->mTreeIndex);
 
 #ifndef NDEBUG // Debug mode
-  for(size_t i=0; i<mSkelCache.mBodyNodes.size(); ++i)
+  for(std::size_t i=0; i<mSkelCache.mBodyNodes.size(); ++i)
   {
     if(mSkelCache.mBodyNodes[i]->mIndexInSkeleton != i)
     {
@@ -1987,10 +1987,10 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
     }
   }
 
-  for(size_t i=0; i<mTreeCache.size(); ++i)
+  for(std::size_t i=0; i<mTreeCache.size(); ++i)
   {
     const DataCache& cache = mTreeCache[i];
-    for(size_t j=0; j<cache.mBodyNodes.size(); ++j)
+    for(std::size_t j=0; j<cache.mBodyNodes.size(); ++j)
     {
       BodyNode* bn = cache.mBodyNodes[j];
       if(bn->mTreeIndex != i)
@@ -2032,9 +2032,9 @@ void Skeleton::registerJoint(Joint* _newJoint)
   addEntryToJointNameMgr(_newJoint);
   _newJoint->registerDofs();
 
-  size_t tree = _newJoint->getChildBodyNode()->getTreeIndex();
+  std::size_t tree = _newJoint->getChildBodyNode()->getTreeIndex();
   std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
-  for(size_t i = 0; i < _newJoint->getNumDofs(); ++i)
+  for(std::size_t i = 0; i < _newJoint->getNumDofs(); ++i)
   {
     mSkelCache.mDofs.push_back(_newJoint->getDof(i));
     _newJoint->getDof(i)->mIndexInSkeleton = mSkelCache.mDofs.size()-1;
@@ -2045,7 +2045,7 @@ void Skeleton::registerJoint(Joint* _newJoint)
 }
 
 //==============================================================================
-void Skeleton::registerNode(NodeMap& nodeMap, Node* _newNode, size_t& _index)
+void Skeleton::registerNode(NodeMap& nodeMap, Node* _newNode, std::size_t& _index)
 {
   NodeMap::iterator it = nodeMap.find(typeid(*_newNode));
 
@@ -2094,7 +2094,7 @@ void Skeleton::registerNode(Node* _newNode)
 }
 
 //==============================================================================
-void Skeleton::destructOldTree(size_t tree)
+void Skeleton::destructOldTree(std::size_t tree)
 {
   mTreeCache.erase(mTreeCache.begin() + tree);
   mTreeNodeMaps.erase(mTreeNodeMaps.begin() + tree);
@@ -2102,10 +2102,10 @@ void Skeleton::destructOldTree(size_t tree)
   // Decrease the tree index of every BodyNode whose tree index is higher than
   // the one which is being removed. None of the BodyNodes that predate the
   // current one can have a higher tree index, so they can be ignored.
-  for(size_t i=tree; i < mTreeCache.size(); ++i)
+  for(std::size_t i=tree; i < mTreeCache.size(); ++i)
   {
     DataCache& loweredTree = mTreeCache[i];
-    for(size_t j=0; j < loweredTree.mBodyNodes.size(); ++j)
+    for(std::size_t j=0; j < loweredTree.mBodyNodes.size(); ++j)
       loweredTree.mBodyNodes[j]->mTreeIndex = i;
   }
 
@@ -2128,10 +2128,10 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
 
   mNameMgrForBodyNodes.removeName(_oldBodyNode->getName());
 
-  size_t index = _oldBodyNode->getIndexInSkeleton();
+  std::size_t index = _oldBodyNode->getIndexInSkeleton();
   assert(mSkelCache.mBodyNodes[index] == _oldBodyNode);
   mSkelCache.mBodyNodes.erase(mSkelCache.mBodyNodes.begin()+index);
-  for(size_t i=index; i < mSkelCache.mBodyNodes.size(); ++i)
+  for(std::size_t i=index; i < mSkelCache.mBodyNodes.size(); ++i)
   {
     BodyNode* bn = mSkelCache.mBodyNodes[i];
     bn->mIndexInSkeleton = i;
@@ -2147,7 +2147,7 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
     // registered, because the BodyNodes always get unregistered from leaf to
     // root.
 
-    size_t tree = _oldBodyNode->getTreeIndex();
+    std::size_t tree = _oldBodyNode->getTreeIndex();
     assert(mTreeCache[tree].mBodyNodes.size() == 1);
     assert(mTreeCache[tree].mBodyNodes[0] == _oldBodyNode);
 
@@ -2156,13 +2156,13 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
   }
   else
   {
-    size_t tree = _oldBodyNode->getTreeIndex();
-    size_t indexInTree = _oldBodyNode->getIndexInTree();
+    std::size_t tree = _oldBodyNode->getTreeIndex();
+    std::size_t indexInTree = _oldBodyNode->getIndexInTree();
     assert(mTreeCache[tree].mBodyNodes[indexInTree] == _oldBodyNode);
     mTreeCache[tree].mBodyNodes.erase(
           mTreeCache[tree].mBodyNodes.begin() + indexInTree);
 
-    for(size_t i=indexInTree; i<mTreeCache[tree].mBodyNodes.size(); ++i)
+    for(std::size_t i=indexInTree; i<mTreeCache[tree].mBodyNodes.size(); ++i)
       mTreeCache[tree].mBodyNodes[i]->mIndexInTree = i;
 
     updateCacheDimensions(tree);
@@ -2193,13 +2193,13 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 
   mNameMgrForJoints.removeName(_oldJoint->getName());
 
-  size_t tree = _oldJoint->getChildBodyNode()->getTreeIndex();
+  std::size_t tree = _oldJoint->getChildBodyNode()->getTreeIndex();
   std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
   std::vector<DegreeOfFreedom*>& skelDofs = mSkelCache.mDofs;
 
-  size_t firstSkelIndex = INVALID_INDEX;
-  size_t firstTreeIndex = INVALID_INDEX;
-  for (size_t i = 0; i < _oldJoint->getNumDofs(); ++i)
+  std::size_t firstSkelIndex = INVALID_INDEX;
+  std::size_t firstTreeIndex = INVALID_INDEX;
+  for (std::size_t i = 0; i < _oldJoint->getNumDofs(); ++i)
   {
     DegreeOfFreedom* dof = _oldJoint->getDof(i);
     mNameMgrForDofs.removeObject(dof);
@@ -2213,13 +2213,13 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
           std::remove(treeDofs.begin(), treeDofs.end(), dof), treeDofs.end());
   }
 
-  for (size_t i = firstSkelIndex; i < skelDofs.size(); ++i)
+  for (std::size_t i = firstSkelIndex; i < skelDofs.size(); ++i)
   {
     DegreeOfFreedom* dof = skelDofs[i];
     dof->mIndexInSkeleton = i;
   }
 
-  for (size_t i = firstTreeIndex; i < treeDofs.size(); ++i)
+  for (std::size_t i = firstTreeIndex; i < treeDofs.size(); ++i)
   {
     DegreeOfFreedom* dof = treeDofs[i];
     dof->mIndexInTree = i;
@@ -2227,7 +2227,7 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 }
 
 //==============================================================================
-void Skeleton::unregisterNode(NodeMap& nodeMap, Node* _oldNode, size_t& _index)
+void Skeleton::unregisterNode(NodeMap& nodeMap, Node* _oldNode, std::size_t& _index)
 {
   NodeMap::iterator it = nodeMap.find(typeid(*_oldNode));
 
@@ -2250,18 +2250,18 @@ void Skeleton::unregisterNode(NodeMap& nodeMap, Node* _oldNode, size_t& _index)
 //==============================================================================
 void Skeleton::unregisterNode(Node* _oldNode)
 {
-  const size_t indexInSkel = _oldNode->mIndexInSkeleton;
+  const std::size_t indexInSkel = _oldNode->mIndexInSkeleton;
   unregisterNode(mNodeMap, _oldNode, _oldNode->mIndexInSkeleton);
 
   NodeMap::iterator node_it = mNodeMap.find(typeid(*_oldNode));
   assert(mNodeMap.end() != node_it);
 
   const std::vector<Node*>& skelNodes = node_it->second;
-  for(size_t i=indexInSkel; i < skelNodes.size(); ++i)
+  for(std::size_t i=indexInSkel; i < skelNodes.size(); ++i)
     skelNodes[i]->mIndexInSkeleton = i;
 
-  const size_t indexInTree = _oldNode->mIndexInTree;
-  const size_t treeIndex = _oldNode->getBodyNodePtr()->getTreeIndex();
+  const std::size_t indexInTree = _oldNode->mIndexInTree;
+  const std::size_t treeIndex = _oldNode->getBodyNodePtr()->getTreeIndex();
   NodeMap& treeNodeMap = mTreeNodeMaps[treeIndex];
   unregisterNode(treeNodeMap, _oldNode, _oldNode->mIndexInTree);
 
@@ -2269,7 +2269,7 @@ void Skeleton::unregisterNode(Node* _oldNode)
   assert(treeNodeMap.end() != node_it);
 
   const std::vector<Node*>& treeNodes = node_it->second;
-  for(size_t i=indexInTree; i < treeNodes.size(); ++i)
+  for(std::size_t i=indexInTree; i < treeNodes.size(); ++i)
     treeNodes[i]->mIndexInTree = i;
 
   // Remove it from the NameManager, if a NameManager is being used for this
@@ -2407,7 +2407,7 @@ std::pair<Joint*, BodyNode*> Skeleton::cloneBodyNodeTree(
   std::vector<BodyNode*> clones;
   clones.reserve(tree.size());
 
-  for(size_t i=0; i<tree.size(); ++i)
+  for(std::size_t i=0; i<tree.size(); ++i)
   {
     const BodyNode* original = tree[i];
     // If this is the root of the tree, and the user has requested a change in
@@ -2440,7 +2440,7 @@ static void recursiveConstructBodyNodeTree(
     std::vector<BodyNodeT*>& tree, BodyNodeT* _currentBodyNode)
 {
   tree.push_back(_currentBodyNode);
-  for(size_t i=0; i<_currentBodyNode->getNumChildBodyNodes(); ++i)
+  for(std::size_t i=0; i<_currentBodyNode->getNumChildBodyNodes(); ++i)
     recursiveConstructBodyNodeTree(tree, _currentBodyNode->getChildBodyNode(i));
 }
 
@@ -2474,7 +2474,7 @@ std::vector<BodyNode*> Skeleton::extractBodyNodeTree(BodyNode* _bodyNode)
   for(rit = tree.rbegin(); rit != tree.rend(); ++rit)
     unregisterBodyNode(*rit);
 
-  for(size_t i=0; i<mSkelCache.mBodyNodes.size(); ++i)
+  for(std::size_t i=0; i<mSkelCache.mBodyNodes.size(); ++i)
     mSkelCache.mBodyNodes[i]->init(getPtr());
 
   return tree;
@@ -2491,14 +2491,14 @@ void Skeleton::receiveBodyNodeTree(const std::vector<BodyNode*>& _tree)
 void Skeleton::updateTotalMass()
 {
   mTotalMass = 0.0;
-  for(size_t i=0; i<getNumBodyNodes(); ++i)
+  for(std::size_t i=0; i<getNumBodyNodes(); ++i)
     mTotalMass += getBodyNode(i)->getMass();
 }
 
 //==============================================================================
 void Skeleton::updateCacheDimensions(Skeleton::DataCache& _cache)
 {
-  size_t dof = _cache.mDofs.size();
+  std::size_t dof = _cache.mDofs.size();
   _cache.mM        = Eigen::MatrixXd::Zero(dof, dof);
   _cache.mAugM     = Eigen::MatrixXd::Zero(dof, dof);
   _cache.mInvM     = Eigen::MatrixXd::Zero(dof, dof);
@@ -2511,7 +2511,7 @@ void Skeleton::updateCacheDimensions(Skeleton::DataCache& _cache)
 }
 
 //==============================================================================
-void Skeleton::updateCacheDimensions(size_t _treeIdx)
+void Skeleton::updateCacheDimensions(std::size_t _treeIdx)
 {
   updateCacheDimensions(mTreeCache[_treeIdx]);
   updateCacheDimensions(mSkelCache);
@@ -2520,7 +2520,7 @@ void Skeleton::updateCacheDimensions(size_t _treeIdx)
 }
 
 //==============================================================================
-void Skeleton::updateArticulatedInertia(size_t _tree) const
+void Skeleton::updateArticulatedInertia(std::size_t _tree) const
 {
   DataCache& cache = mTreeCache[_tree];
   for (std::vector<BodyNode*>::const_reverse_iterator it = cache.mBodyNodes.rbegin();
@@ -2535,7 +2535,7 @@ void Skeleton::updateArticulatedInertia(size_t _tree) const
 //==============================================================================
 void Skeleton::updateArticulatedInertia() const
 {
-  for(size_t i=0; i<mTreeCache.size(); ++i)
+  for(std::size_t i=0; i<mTreeCache.size(); ++i)
   {
     DataCache& cache = mTreeCache[i];
     if(cache.mDirty.mArticulatedInertia)
@@ -2546,12 +2546,12 @@ void Skeleton::updateArticulatedInertia() const
 }
 
 //==============================================================================
-void Skeleton::updateMassMatrix(size_t _treeIdx) const
+void Skeleton::updateMassMatrix(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
-  size_t dof = cache.mDofs.size();
-  assert(static_cast<size_t>(cache.mM.cols()) == dof
-         && static_cast<size_t>(cache.mM.rows()) == dof);
+  std::size_t dof = cache.mDofs.size();
+  assert(static_cast<std::size_t>(cache.mM.cols()) == dof
+         && static_cast<std::size_t>(cache.mM.rows()) == dof);
   if (dof == 0)
   {
     cache.mDirty.mMassMatrix = false;
@@ -2565,10 +2565,10 @@ void Skeleton::updateMassMatrix(size_t _treeIdx) const
 
   // Clear out the accelerations of the dofs in this tree so that we can set
   // them to 1.0 one at a time to build up the mass matrix
-  for (size_t i = 0; i < dof; ++i)
+  for (std::size_t i = 0; i < dof; ++i)
     cache.mDofs[i]->setAcceleration(0.0);
 
-  for (size_t j = 0; j < dof; ++j)
+  for (std::size_t j = 0; j < dof; ++j)
   {
     // Set the acceleration of this DOF to 1.0 while all the rest are 0.0
     cache.mDofs[j]->setAcceleration(1.0);
@@ -2585,10 +2585,10 @@ void Skeleton::updateMassMatrix(size_t _treeIdx) const
          cache.mBodyNodes.rbegin(); it != cache.mBodyNodes.rend(); ++it)
     {
       (*it)->aggregateMassMatrix(cache.mM, j);
-      size_t localDof = (*it)->mParentJoint->getNumDofs();
+      std::size_t localDof = (*it)->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
-        size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
+        std::size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
 
         if (iStart + localDof < j)
           break;
@@ -2609,9 +2609,9 @@ void Skeleton::updateMassMatrix(size_t _treeIdx) const
 //==============================================================================
 void Skeleton::updateMassMatrix() const
 {
-  size_t dof = mSkelCache.mDofs.size();
-  assert(static_cast<size_t>(mSkelCache.mM.cols()) == dof
-         && static_cast<size_t>(mSkelCache.mM.rows()) == dof);
+  std::size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<std::size_t>(mSkelCache.mM.cols()) == dof
+         && static_cast<std::size_t>(mSkelCache.mM.rows()) == dof);
   if(dof == 0)
   {
     mSkelCache.mDirty.mMassMatrix = false;
@@ -2620,17 +2620,17 @@ void Skeleton::updateMassMatrix() const
 
   mSkelCache.mM.setZero();
 
-  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  for(std::size_t tree = 0; tree < mTreeCache.size(); ++tree)
   {
     const Eigen::MatrixXd& treeM = getMassMatrix(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
-    size_t nTreeDofs = treeDofs.size();
-    for(size_t i=0; i<nTreeDofs; ++i)
+    std::size_t nTreeDofs = treeDofs.size();
+    for(std::size_t i=0; i<nTreeDofs; ++i)
     {
-      for(size_t j=0; j<nTreeDofs; ++j)
+      for(std::size_t j=0; j<nTreeDofs; ++j)
       {
-        size_t ki = treeDofs[i]->getIndexInSkeleton();
-        size_t kj = treeDofs[j]->getIndexInSkeleton();
+        std::size_t ki = treeDofs[i]->getIndexInSkeleton();
+        std::size_t kj = treeDofs[j]->getIndexInSkeleton();
 
         mSkelCache.mM(ki,kj) = treeM(i,j);
       }
@@ -2641,12 +2641,12 @@ void Skeleton::updateMassMatrix() const
 }
 
 //==============================================================================
-void Skeleton::updateAugMassMatrix(size_t _treeIdx) const
+void Skeleton::updateAugMassMatrix(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
-  size_t dof = cache.mDofs.size();
-  assert(static_cast<size_t>(cache.mAugM.cols()) == dof
-         && static_cast<size_t>(cache.mAugM.rows()) == dof);
+  std::size_t dof = cache.mDofs.size();
+  assert(static_cast<std::size_t>(cache.mAugM.cols()) == dof
+         && static_cast<std::size_t>(cache.mAugM.rows()) == dof);
   if (dof == 0)
   {
     cache.mDirty.mAugMassMatrix = false;
@@ -2660,10 +2660,10 @@ void Skeleton::updateAugMassMatrix(size_t _treeIdx) const
 
   // Clear out the accelerations of the DOFs in this tree so that we can set
   // them to 1.0 one at a time to build up the augmented mass matrix
-  for (size_t i = 0; i < dof; ++i)
+  for (std::size_t i = 0; i < dof; ++i)
     cache.mDofs[i]->setAcceleration(0.0);
 
-  for (size_t j = 0; j < dof; ++j)
+  for (std::size_t j = 0; j < dof; ++j)
   {
     // Set the acceleration of this DOF to 1.0 while all the rest are 0.0
     cache.mDofs[j]->setAcceleration(1.0);
@@ -2680,10 +2680,10 @@ void Skeleton::updateAugMassMatrix(size_t _treeIdx) const
          cache.mBodyNodes.rbegin(); it != cache.mBodyNodes.rend(); ++it)
     {
       (*it)->aggregateAugMassMatrix(cache.mAugM, j, mAspectProperties.mTimeStep);
-      size_t localDof = (*it)->mParentJoint->getNumDofs();
+      std::size_t localDof = (*it)->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
-        size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
+        std::size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
 
         if (iStart + localDof < j)
           break;
@@ -2704,9 +2704,9 @@ void Skeleton::updateAugMassMatrix(size_t _treeIdx) const
 //==============================================================================
 void Skeleton::updateAugMassMatrix() const
 {
-  size_t dof = mSkelCache.mDofs.size();
-  assert(static_cast<size_t>(mSkelCache.mAugM.cols()) == dof
-         && static_cast<size_t>(mSkelCache.mAugM.rows()) == dof);
+  std::size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<std::size_t>(mSkelCache.mAugM.cols()) == dof
+         && static_cast<std::size_t>(mSkelCache.mAugM.rows()) == dof);
   if(dof == 0)
   {
     mSkelCache.mDirty.mMassMatrix = false;
@@ -2715,17 +2715,17 @@ void Skeleton::updateAugMassMatrix() const
 
   mSkelCache.mAugM.setZero();
 
-  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  for(std::size_t tree = 0; tree < mTreeCache.size(); ++tree)
   {
     const Eigen::MatrixXd& treeAugM = getAugMassMatrix(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
-    size_t nTreeDofs = treeDofs.size();
-    for(size_t i=0; i<nTreeDofs; ++i)
+    std::size_t nTreeDofs = treeDofs.size();
+    for(std::size_t i=0; i<nTreeDofs; ++i)
     {
-      for(size_t j=0; j<nTreeDofs; ++j)
+      for(std::size_t j=0; j<nTreeDofs; ++j)
       {
-        size_t ki = treeDofs[i]->getIndexInSkeleton();
-        size_t kj = treeDofs[j]->getIndexInSkeleton();
+        std::size_t ki = treeDofs[i]->getIndexInSkeleton();
+        std::size_t kj = treeDofs[j]->getIndexInSkeleton();
 
         mSkelCache.mAugM(ki,kj) = treeAugM(i,j);
       }
@@ -2736,12 +2736,12 @@ void Skeleton::updateAugMassMatrix() const
 }
 
 //==============================================================================
-void Skeleton::updateInvMassMatrix(size_t _treeIdx) const
+void Skeleton::updateInvMassMatrix(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
-  size_t dof = cache.mDofs.size();
-  assert(static_cast<size_t>(cache.mInvM.cols()) == dof
-         && static_cast<size_t>(cache.mInvM.rows()) == dof);
+  std::size_t dof = cache.mDofs.size();
+  assert(static_cast<std::size_t>(cache.mInvM.cols()) == dof
+         && static_cast<std::size_t>(cache.mInvM.rows()) == dof);
   if (dof == 0)
   {
     cache.mDirty.mInvMassMatrix = false;
@@ -2756,10 +2756,10 @@ void Skeleton::updateInvMassMatrix(size_t _treeIdx) const
 
   // Clear out the forces of the dofs in this tree so that we can set them to
   // 1.0 one at a time to build up the inverse mass matrix
-  for (size_t i = 0; i < dof; ++i)
+  for (std::size_t i = 0; i < dof; ++i)
     cache.mDofs[i]->setForce(0.0);
 
-  for (size_t j = 0; j < dof; ++j)
+  for (std::size_t j = 0; j < dof; ++j)
   {
     // Set the force of this DOF to 1.0 while all the rest are 0.0
     cache.mDofs[j]->setForce(1.0);
@@ -2776,10 +2776,10 @@ void Skeleton::updateInvMassMatrix(size_t _treeIdx) const
          it != cache.mBodyNodes.end(); ++it)
     {
       (*it)->aggregateInvMassMatrix(cache.mInvM, j);
-      size_t localDof = (*it)->mParentJoint->getNumDofs();
+      std::size_t localDof = (*it)->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
-        size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
+        std::size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
 
         if (iStart + localDof > j)
           break;
@@ -2800,9 +2800,9 @@ void Skeleton::updateInvMassMatrix(size_t _treeIdx) const
 //==============================================================================
 void Skeleton::updateInvMassMatrix() const
 {
-  size_t dof = mSkelCache.mDofs.size();
-  assert(static_cast<size_t>(mSkelCache.mInvM.cols()) == dof
-         && static_cast<size_t>(mSkelCache.mInvM.rows()) == dof);
+  std::size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<std::size_t>(mSkelCache.mInvM.cols()) == dof
+         && static_cast<std::size_t>(mSkelCache.mInvM.rows()) == dof);
   if(dof == 0)
   {
     mSkelCache.mDirty.mInvMassMatrix = false;
@@ -2811,17 +2811,17 @@ void Skeleton::updateInvMassMatrix() const
 
   mSkelCache.mInvM.setZero();
 
-  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  for(std::size_t tree = 0; tree < mTreeCache.size(); ++tree)
   {
     const Eigen::MatrixXd& treeInvM = getInvMassMatrix(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
-    size_t nTreeDofs = treeDofs.size();
-    for(size_t i=0; i<nTreeDofs; ++i)
+    std::size_t nTreeDofs = treeDofs.size();
+    for(std::size_t i=0; i<nTreeDofs; ++i)
     {
-      for(size_t j=0; j<nTreeDofs; ++j)
+      for(std::size_t j=0; j<nTreeDofs; ++j)
       {
-        size_t ki = treeDofs[i]->getIndexInSkeleton();
-        size_t kj = treeDofs[j]->getIndexInSkeleton();
+        std::size_t ki = treeDofs[i]->getIndexInSkeleton();
+        std::size_t kj = treeDofs[j]->getIndexInSkeleton();
 
         mSkelCache.mInvM(ki,kj) = treeInvM(i,j);
       }
@@ -2832,12 +2832,12 @@ void Skeleton::updateInvMassMatrix() const
 }
 
 //==============================================================================
-void Skeleton::updateInvAugMassMatrix(size_t _treeIdx) const
+void Skeleton::updateInvAugMassMatrix(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
-  size_t dof = cache.mDofs.size();
-  assert(static_cast<size_t>(cache.mInvAugM.cols()) == dof
-         && static_cast<size_t>(cache.mInvAugM.rows()) == dof);
+  std::size_t dof = cache.mDofs.size();
+  assert(static_cast<std::size_t>(cache.mInvAugM.cols()) == dof
+         && static_cast<std::size_t>(cache.mInvAugM.rows()) == dof);
   if (dof == 0)
   {
     cache.mDirty.mInvAugMassMatrix = false;
@@ -2852,10 +2852,10 @@ void Skeleton::updateInvAugMassMatrix(size_t _treeIdx) const
 
   // Clear out the forces of the dofs in this tree so that we can set them to
   // 1.0 one at a time to build up the inverse augmented mass matrix
-  for (size_t i = 0; i < dof; ++i)
+  for (std::size_t i = 0; i < dof; ++i)
     cache.mDofs[i]->setForce(0.0);
 
-  for (size_t j = 0; j < dof; ++j)
+  for (std::size_t j = 0; j < dof; ++j)
   {
     // Set the force of this DOF to 1.0 while all the rest are 0.0
     cache.mDofs[j]->setForce(1.0);
@@ -2872,10 +2872,10 @@ void Skeleton::updateInvAugMassMatrix(size_t _treeIdx) const
          it != cache.mBodyNodes.end(); ++it)
     {
       (*it)->aggregateInvAugMassMatrix(cache.mInvAugM, j, mAspectProperties.mTimeStep);
-      size_t localDof = (*it)->mParentJoint->getNumDofs();
+      std::size_t localDof = (*it)->mParentJoint->getNumDofs();
       if (localDof > 0)
       {
-        size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
+        std::size_t iStart = (*it)->mParentJoint->getIndexInTree(0);
 
         if (iStart + localDof > j)
           break;
@@ -2897,9 +2897,9 @@ void Skeleton::updateInvAugMassMatrix(size_t _treeIdx) const
 //==============================================================================
 void Skeleton::updateInvAugMassMatrix() const
 {
-  size_t dof = mSkelCache.mDofs.size();
-  assert(static_cast<size_t>(mSkelCache.mInvAugM.cols()) == dof
-         && static_cast<size_t>(mSkelCache.mInvAugM.rows()) == dof);
+  std::size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<std::size_t>(mSkelCache.mInvAugM.cols()) == dof
+         && static_cast<std::size_t>(mSkelCache.mInvAugM.rows()) == dof);
   if(dof == 0)
   {
     mSkelCache.mDirty.mInvAugMassMatrix = false;
@@ -2908,17 +2908,17 @@ void Skeleton::updateInvAugMassMatrix() const
 
   mSkelCache.mInvAugM.setZero();
 
-  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  for(std::size_t tree = 0; tree < mTreeCache.size(); ++tree)
   {
     const Eigen::MatrixXd& treeInvAugM = getInvAugMassMatrix(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
-    size_t nTreeDofs = treeDofs.size();
-    for(size_t i=0; i<nTreeDofs; ++i)
+    std::size_t nTreeDofs = treeDofs.size();
+    for(std::size_t i=0; i<nTreeDofs; ++i)
     {
-      for(size_t j=0; j<nTreeDofs; ++j)
+      for(std::size_t j=0; j<nTreeDofs; ++j)
       {
-        size_t ki = treeDofs[i]->getIndexInSkeleton();
-        size_t kj = treeDofs[j]->getIndexInSkeleton();
+        std::size_t ki = treeDofs[i]->getIndexInSkeleton();
+        std::size_t kj = treeDofs[j]->getIndexInSkeleton();
 
         mSkelCache.mInvAugM(ki,kj) = treeInvAugM(i,j);
       }
@@ -2929,11 +2929,11 @@ void Skeleton::updateInvAugMassMatrix() const
 }
 
 //==============================================================================
-void Skeleton::updateCoriolisForces(size_t _treeIdx) const
+void Skeleton::updateCoriolisForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
-  size_t dof = cache.mDofs.size();
-  assert(static_cast<size_t>(cache.mCvec.size()) == dof);
+  std::size_t dof = cache.mDofs.size();
+  assert(static_cast<std::size_t>(cache.mCvec.size()) == dof);
   if (dof == 0)
   {
     cache.mDirty.mCoriolisForces = false;
@@ -2960,8 +2960,8 @@ void Skeleton::updateCoriolisForces(size_t _treeIdx) const
 //==============================================================================
 void Skeleton::updateCoriolisForces() const
 {
-  size_t dof = mSkelCache.mDofs.size();
-  assert(static_cast<size_t>(mSkelCache.mCvec.size()) == dof);
+  std::size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<std::size_t>(mSkelCache.mCvec.size()) == dof);
   if(dof == 0)
   {
     mSkelCache.mDirty.mCoriolisForces = false;
@@ -2970,14 +2970,14 @@ void Skeleton::updateCoriolisForces() const
 
   mSkelCache.mCvec.setZero();
 
-  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  for(std::size_t tree = 0; tree < mTreeCache.size(); ++tree)
   {
     const Eigen::VectorXd& treeCvec = getCoriolisForces(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
-    size_t nTreeDofs = treeDofs.size();
-    for(size_t i=0; i<nTreeDofs; ++i)
+    std::size_t nTreeDofs = treeDofs.size();
+    for(std::size_t i=0; i<nTreeDofs; ++i)
     {
-      size_t k = treeDofs[i]->getIndexInSkeleton();
+      std::size_t k = treeDofs[i]->getIndexInSkeleton();
       mSkelCache.mCvec[k] = treeCvec[i];
     }
   }
@@ -2986,11 +2986,11 @@ void Skeleton::updateCoriolisForces() const
 }
 
 //==============================================================================
-void Skeleton::updateGravityForces(size_t _treeIdx) const
+void Skeleton::updateGravityForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
-  size_t dof = cache.mDofs.size();
-  assert(static_cast<size_t>(cache.mG.size()) == dof);
+  std::size_t dof = cache.mDofs.size();
+  assert(static_cast<std::size_t>(cache.mG.size()) == dof);
   if (dof == 0)
   {
     cache.mDirty.mGravityForces = false;
@@ -3011,8 +3011,8 @@ void Skeleton::updateGravityForces(size_t _treeIdx) const
 //==============================================================================
 void Skeleton::updateGravityForces() const
 {
-  size_t dof = mSkelCache.mDofs.size();
-  assert(static_cast<size_t>(mSkelCache.mG.size()) == dof);
+  std::size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<std::size_t>(mSkelCache.mG.size()) == dof);
   if(dof == 0)
   {
     mSkelCache.mDirty.mGravityForces = false;
@@ -3021,14 +3021,14 @@ void Skeleton::updateGravityForces() const
 
   mSkelCache.mG.setZero();
 
-  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  for(std::size_t tree = 0; tree < mTreeCache.size(); ++tree)
   {
     const Eigen::VectorXd& treeG = getGravityForces(tree);
     std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
-    size_t nTreeDofs = treeDofs.size();
-    for(size_t i=0; i<nTreeDofs; ++i)
+    std::size_t nTreeDofs = treeDofs.size();
+    for(std::size_t i=0; i<nTreeDofs; ++i)
     {
-      size_t k = treeDofs[i]->getIndexInSkeleton();
+      std::size_t k = treeDofs[i]->getIndexInSkeleton();
       mSkelCache.mG[k] = treeG[i];
     }
   }
@@ -3037,11 +3037,11 @@ void Skeleton::updateGravityForces() const
 }
 
 //==============================================================================
-void Skeleton::updateCoriolisAndGravityForces(size_t _treeIdx) const
+void Skeleton::updateCoriolisAndGravityForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
-  size_t dof = cache.mDofs.size();
-  assert(static_cast<size_t>(cache.mCg.size()) == dof);
+  std::size_t dof = cache.mDofs.size();
+  assert(static_cast<std::size_t>(cache.mCg.size()) == dof);
   if (dof == 0)
   {
     cache.mDirty.mCoriolisAndGravityForces = false;
@@ -3068,8 +3068,8 @@ void Skeleton::updateCoriolisAndGravityForces(size_t _treeIdx) const
 //==============================================================================
 void Skeleton::updateCoriolisAndGravityForces() const
 {
-  size_t dof = mSkelCache.mDofs.size();
-  assert(static_cast<size_t>(mSkelCache.mCg.size()) == dof);
+  std::size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<std::size_t>(mSkelCache.mCg.size()) == dof);
   if (dof == 0)
   {
     mSkelCache.mDirty.mCoriolisAndGravityForces = false;
@@ -3078,14 +3078,14 @@ void Skeleton::updateCoriolisAndGravityForces() const
 
   mSkelCache.mCg.setZero();
 
-  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  for(std::size_t tree = 0; tree < mTreeCache.size(); ++tree)
   {
     const Eigen::VectorXd& treeCg = getCoriolisAndGravityForces(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
-    size_t nTreeDofs = treeDofs.size();
-    for(size_t i=0; i<nTreeDofs; ++i)
+    std::size_t nTreeDofs = treeDofs.size();
+    for(std::size_t i=0; i<nTreeDofs; ++i)
     {
-      size_t k = treeDofs[i]->getIndexInSkeleton();
+      std::size_t k = treeDofs[i]->getIndexInSkeleton();
       mSkelCache.mCg[k] = treeCg[i];
     }
   }
@@ -3094,11 +3094,11 @@ void Skeleton::updateCoriolisAndGravityForces() const
 }
 
 //==============================================================================
-void Skeleton::updateExternalForces(size_t _treeIdx) const
+void Skeleton::updateExternalForces(std::size_t _treeIdx) const
 {
   DataCache& cache = mTreeCache[_treeIdx];
-  size_t dof = cache.mDofs.size();
-  assert(static_cast<size_t>(cache.mFext.size()) == dof);
+  std::size_t dof = cache.mDofs.size();
+  assert(static_cast<std::size_t>(cache.mFext.size()) == dof);
   if (dof == 0)
   {
     cache.mDirty.mExternalForces = false;
@@ -3150,8 +3150,8 @@ void Skeleton::updateExternalForces(size_t _treeIdx) const
 //==============================================================================
 void Skeleton::updateExternalForces() const
 {
-  size_t dof = mSkelCache.mDofs.size();
-  assert(static_cast<size_t>(mSkelCache.mFext.size()) == dof);
+  std::size_t dof = mSkelCache.mDofs.size();
+  assert(static_cast<std::size_t>(mSkelCache.mFext.size()) == dof);
   if(dof == 0)
   {
     mSkelCache.mDirty.mExternalForces = false;
@@ -3160,14 +3160,14 @@ void Skeleton::updateExternalForces() const
 
   mSkelCache.mFext.setZero();
 
-  for(size_t tree = 0; tree < mTreeCache.size(); ++tree)
+  for(std::size_t tree = 0; tree < mTreeCache.size(); ++tree)
   {
     const Eigen::VectorXd& treeFext = getExternalForces(tree);
     const std::vector<DegreeOfFreedom*>& treeDofs = mTreeCache[tree].mDofs;
-    size_t nTreeDofs = treeDofs.size();
-    for(size_t i=0; i<nTreeDofs; ++i)
+    std::size_t nTreeDofs = treeDofs.size();
+    for(std::size_t i=0; i<nTreeDofs; ++i)
     {
-      size_t k = treeDofs[i]->getIndexInSkeleton();
+      std::size_t k = treeDofs[i]->getIndexInSkeleton();
       mSkelCache.mFext[k] = treeFext[i];
     }
   }
@@ -3178,8 +3178,8 @@ void Skeleton::updateExternalForces() const
 //==============================================================================
 const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
 {
-  const size_t dof = cache.mDofs.size();
-  assert(static_cast<size_t>(cache.mFc.size()) == dof);
+  const std::size_t dof = cache.mDofs.size();
+  assert(static_cast<std::size_t>(cache.mFc.size()) == dof);
 
   // Body constraint impulses
   for (std::vector<BodyNode*>::reverse_iterator it =
@@ -3191,7 +3191,7 @@ const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
   }
 
   // Joint constraint impulses
-  for (size_t i = 0; i < dof; ++i)
+  for (std::size_t i = 0; i < dof; ++i)
     cache.mFc[i] += cache.mDofs[i]->getConstraintImpulse();
 
   // Get force by dividing the impulse by the time step
@@ -3203,9 +3203,9 @@ const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
 //==============================================================================
 static void computeSupportPolygon(
     const Skeleton* skel, math::SupportPolygon& polygon,
-    math::SupportGeometry& geometry,  std::vector<size_t>& ee_indices,
+    math::SupportGeometry& geometry,  std::vector<std::size_t>& ee_indices,
     Eigen::Vector3d& axis1, Eigen::Vector3d& axis2, Eigen::Vector2d& centroid,
-    size_t treeIndex)
+    std::size_t treeIndex)
 {
   polygon.clear();
   geometry.clear();
@@ -3223,9 +3223,9 @@ static void computeSupportPolygon(
     return;
   }
 
-  std::vector<size_t> originalEE_map;
+  std::vector<std::size_t> originalEE_map;
   originalEE_map.reserve(skel->getNumEndEffectors());
-  for(size_t i=0; i < skel->getNumEndEffectors(); ++i)
+  for(std::size_t i=0; i < skel->getNumEndEffectors(); ++i)
   {
     const EndEffector* ee = skel->getEndEffector(i);
     if(ee->getSupport() && ee->getSupport()->isActive()
@@ -3248,11 +3248,11 @@ static void computeSupportPolygon(
 
   axis2 = up.normalized().cross(axis1);
 
-  std::vector<size_t> vertex_indices;
+  std::vector<std::size_t> vertex_indices;
   polygon = math::computeSupportPolgyon(vertex_indices, geometry, axis1, axis2);
 
   ee_indices.reserve(vertex_indices.size());
-  for(size_t i=0; i < vertex_indices.size(); ++i)
+  for(std::size_t i=0; i < vertex_indices.size(); ++i)
     ee_indices[i] = originalEE_map[vertex_indices[i]];
 
   if(polygon.size() > 0)
@@ -3281,7 +3281,7 @@ const math::SupportPolygon& Skeleton::getSupportPolygon() const
 }
 
 //==============================================================================
-const math::SupportPolygon& Skeleton::getSupportPolygon(size_t _treeIdx) const
+const math::SupportPolygon& Skeleton::getSupportPolygon(std::size_t _treeIdx) const
 {
   math::SupportPolygon& polygon = mTreeCache[_treeIdx].mSupportPolygon;
 
@@ -3300,14 +3300,14 @@ const math::SupportPolygon& Skeleton::getSupportPolygon(size_t _treeIdx) const
 }
 
 //==============================================================================
-const std::vector<size_t>& Skeleton::getSupportIndices() const
+const std::vector<std::size_t>& Skeleton::getSupportIndices() const
 {
   getSupportPolygon();
   return mSkelCache.mSupportIndices;
 }
 
 //==============================================================================
-const std::vector<size_t>& Skeleton::getSupportIndices(size_t _treeIdx) const
+const std::vector<std::size_t>& Skeleton::getSupportIndices(std::size_t _treeIdx) const
 {
   getSupportPolygon(_treeIdx);
   return mTreeCache[_treeIdx].mSupportIndices;
@@ -3323,7 +3323,7 @@ Skeleton::getSupportAxes() const
 
 //==============================================================================
 const std::pair<Eigen::Vector3d, Eigen::Vector3d>&
-Skeleton::getSupportAxes(size_t _treeIdx) const
+Skeleton::getSupportAxes(std::size_t _treeIdx) const
 {
   getSupportPolygon(_treeIdx);
   return mTreeCache[_treeIdx].mSupportAxes;
@@ -3337,14 +3337,14 @@ const Eigen::Vector2d& Skeleton::getSupportCentroid() const
 }
 
 //==============================================================================
-const Eigen::Vector2d& Skeleton::getSupportCentroid(size_t _treeIdx) const
+const Eigen::Vector2d& Skeleton::getSupportCentroid(std::size_t _treeIdx) const
 {
   getSupportPolygon(_treeIdx);
   return mTreeCache[_treeIdx].mSupportCentroid;
 }
 
 //==============================================================================
-size_t Skeleton::getSupportVersion() const
+std::size_t Skeleton::getSupportVersion() const
 {
   if(mSkelCache.mDirty.mSupport)
     return mSkelCache.mDirty.mSupportVersion + 1;
@@ -3353,7 +3353,7 @@ size_t Skeleton::getSupportVersion() const
 }
 
 //==============================================================================
-size_t Skeleton::getSupportVersion(size_t _treeIdx) const
+std::size_t Skeleton::getSupportVersion(std::size_t _treeIdx) const
 {
   if(mTreeCache[_treeIdx].mDirty.mSupport)
     return mTreeCache[_treeIdx].mDirty.mSupportVersion + 1;
@@ -3449,7 +3449,7 @@ void Skeleton::clearInternalForces()
 }
 
 //==============================================================================
-void Skeleton::notifyArticulatedInertiaUpdate(size_t _treeIdx)
+void Skeleton::notifyArticulatedInertiaUpdate(std::size_t _treeIdx)
 {
   SET_FLAG(_treeIdx, mArticulatedInertia);
   SET_FLAG(_treeIdx, mMassMatrix);
@@ -3462,7 +3462,7 @@ void Skeleton::notifyArticulatedInertiaUpdate(size_t _treeIdx)
 }
 
 //==============================================================================
-void Skeleton::notifySupportUpdate(size_t _treeIdx)
+void Skeleton::notifySupportUpdate(std::size_t _treeIdx)
 {
   SET_FLAG(_treeIdx, mSupport);
 }
@@ -3491,7 +3491,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
-  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
+  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     assert(mSkelCache.mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
 #endif
 
@@ -3522,7 +3522,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
-  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
+  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     assert(mSkelCache.mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
 #endif
 
@@ -3569,7 +3569,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode1,
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
-  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
+  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     assert(mSkelCache.mBodyNodes[i]->mConstraintImpulse ==
            Eigen::Vector6d::Zero());
 #endif
@@ -3579,10 +3579,10 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode1,
   _bodyNode2->mConstraintImpulse = _imp2;
 
   // Find which body is placed later in the list of body nodes in this skeleton
-  size_t index1 = _bodyNode1->getIndexInSkeleton();
-  size_t index2 = _bodyNode2->getIndexInSkeleton();
+  std::size_t index1 = _bodyNode1->getIndexInSkeleton();
+  std::size_t index2 = _bodyNode2->getIndexInSkeleton();
 
-  size_t index = std::max(index1, index2);
+  std::size_t index = std::max(index1, index2);
 
   // Prepare cache data
   for (int i = index; 0 <= i; --i)
@@ -3607,7 +3607,7 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
-  for (size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
+  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     assert(mSkelCache.mBodyNodes[i]->mConstraintImpulse ==
            Eigen::Vector6d::Zero());
 #endif
@@ -3729,8 +3729,8 @@ Eigen::Vector3d Skeleton::getCOM(const Frame* _withRespectTo) const
 {
   Eigen::Vector3d com = Eigen::Vector3d::Zero();
 
-  const size_t numBodies = getNumBodyNodes();
-  for (size_t i = 0; i < numBodies; ++i)
+  const std::size_t numBodies = getNumBodyNodes();
+  for (std::size_t i = 0; i < numBodies; ++i)
   {
     const BodyNode* bodyNode = getBodyNode(i);
     com += bodyNode->getMass() * bodyNode->getCOM(_withRespectTo);
@@ -3752,8 +3752,8 @@ PropertyType getCOMPropertyTemplate(const Skeleton* _skel,
 {
   PropertyType result(PropertyType::Zero());
 
-  const size_t numBodies = _skel->getNumBodyNodes();
-  for (size_t i = 0; i < numBodies; ++i)
+  const std::size_t numBodies = _skel->getNumBodyNodes();
+  for (std::size_t i = 0; i < numBodies; ++i)
   {
     const BodyNode* bodyNode = _skel->getBodyNode(i);
     result += bodyNode->getMass()
@@ -3811,8 +3811,8 @@ JacType getCOMJacobianTemplate(const Skeleton* _skel,
   JacType J = JacType::Zero(JacType::RowsAtCompileTime, _skel->getNumDofs());
 
   // Iterate through each of the Skeleton's BodyNodes
-  const size_t numBodies = _skel->getNumBodyNodes();
-  for (size_t i = 0; i < numBodies; ++i)
+  const std::size_t numBodies = _skel->getNumBodyNodes();
+  for (std::size_t i = 0; i < numBodies; ++i)
   {
     const BodyNode* bn = _skel->getBodyNode(i);
 
@@ -3824,9 +3824,9 @@ JacType getCOMJacobianTemplate(const Skeleton* _skel,
 
     // For each column in the Jacobian of this BodyNode, we add it to the
     // appropriate column of the overall BodyNode
-    for (size_t j=0, end=bn->getNumDependentGenCoords(); j < end; ++j)
+    for (std::size_t j=0, end=bn->getNumDependentGenCoords(); j < end; ++j)
     {
-      size_t idx = bn->getDependentGenCoordIndex(j);
+      std::size_t idx = bn->getDependentGenCoordIndex(j);
       J.col(idx) += bnJ.col(j);
     }
   }

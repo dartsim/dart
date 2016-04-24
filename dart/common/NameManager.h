@@ -115,7 +115,7 @@ public:
   bool hasObject(const T& _obj) const;
 
   /// Get the number of the objects currently stored by the NameManager
-  size_t getCount() const;
+  std::size_t getCount() const;
 
   /// Get object by given name
   /// \param[in] _name

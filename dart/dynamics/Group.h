@@ -75,10 +75,10 @@ public:
   virtual ~Group() = default;
 
   /// Swap the index of BodyNode _index1 with _index2
-  void swapBodyNodeIndices(size_t _index1, size_t _index2);
+  void swapBodyNodeIndices(std::size_t _index1, std::size_t _index2);
 
   /// Swap the index of DegreeOfFreedom _index1 with _index2
-  void swapDofIndices(size_t _index1, size_t _index2);
+  void swapDofIndices(std::size_t _index1, std::size_t _index2);
 
   /// Add a BodyNode and its parent DegreesOfFreedom to this Group. If _warning
   /// is true, you will be warned when the BodyNode and all its DegreesOfFreedom

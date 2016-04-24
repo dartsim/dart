@@ -116,7 +116,7 @@ const std::string& EulerJoint::getStaticType()
 }
 
 //==============================================================================
-bool EulerJoint::isCyclic(size_t _index) const
+bool EulerJoint::isCyclic(std::size_t _index) const
 {
   return !hasPositionLimit(_index);
 }
@@ -327,7 +327,7 @@ void EulerJoint::updateDegreeOfFreedomNames()
 
   if (affixes.size() == 3)
   {
-    for (size_t i = 0; i < 3; ++i)
+    for (std::size_t i = 0; i < 3; ++i)
     {
       if(!mDofs[i]->isNamePreserved())
         mDofs[i]->setName(Joint::mAspectProperties.mName + affixes[i], false);

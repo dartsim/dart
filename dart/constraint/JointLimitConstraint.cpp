@@ -187,8 +187,8 @@ void JointLimitConstraint::update()
   // Reset dimention
   mDim = 0;
 
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof; ++i)
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof; ++i)
   {
     // Lower bound check
     mViolation[i] = mJoint->getPosition(i) - mJoint->getPositionLowerLimit(i);
@@ -243,9 +243,9 @@ void JointLimitConstraint::update()
 //==============================================================================
 void JointLimitConstraint::getInformation(ConstraintInfo* _lcp)
 {
-  size_t index = 0;
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof; ++i)
+  std::size_t index = 0;
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -290,15 +290,15 @@ void JointLimitConstraint::getInformation(ConstraintInfo* _lcp)
 }
 
 //==============================================================================
-void JointLimitConstraint::applyUnitImpulse(size_t _index)
+void JointLimitConstraint::applyUnitImpulse(std::size_t _index)
 {
   assert(_index < mDim && "Invalid Index.");
 
-  size_t localIndex = 0;
+  std::size_t localIndex = 0;
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
 
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof; ++i)
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -323,9 +323,9 @@ void JointLimitConstraint::getVelocityChange(double* _delVel, bool _withCfm)
 {
   assert(_delVel != nullptr && "Null pointer is not allowed.");
 
-  size_t localIndex = 0;
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof ; ++i)
+  std::size_t localIndex = 0;
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof ; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -364,9 +364,9 @@ void JointLimitConstraint::unexcite()
 //==============================================================================
 void JointLimitConstraint::applyImpulse(double* _lambda)
 {
-  size_t localIndex = 0;
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof ; ++i)
+  std::size_t localIndex = 0;
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof ; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -389,7 +389,7 @@ dynamics::SkeletonPtr JointLimitConstraint::getRootSkeleton() const
 //==============================================================================
 bool JointLimitConstraint::isActive() const
 {
-  for (size_t i = 0; i < 6; ++i)
+  for (std::size_t i = 0; i < 6; ++i)
   {
     if (mActive[i])
       return true;

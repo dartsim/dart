@@ -67,11 +67,11 @@ public:
     ///
     /// Set this to 0 to keep trying until a solution is found (the program will
     /// need to be interrupted in order to stop if no solution is being found).
-    size_t mMaxAttempts;
+    std::size_t mMaxAttempts;
 
     /// The number of steps between random perturbations being applied to the
     /// configuration. Set this to 0 to never apply randomized perturbations.
-    size_t mPerturbationStep;
+    std::size_t mPerturbationStep;
 
     /// The random perturbation works as follows: A random point in the domain
     /// of the Problem is selected, and then a random step size between 0 and
@@ -106,8 +106,8 @@ public:
 
     UniqueProperties(
         double _stepMultiplier = 0.1,
-        size_t _maxAttempts = 1,
-        size_t _perturbationStep = 0,
+        std::size_t _maxAttempts = 1,
+        std::size_t _perturbationStep = 0,
         double _maxPerturbationFactor = 1.0,
         double _maxRandomizationStep = 1e10,
         double _defaultConstraintWeight = 1.0,
@@ -168,17 +168,17 @@ public:
   /// will use getNumMaxIterations() steps. When a new attempt is started, it
   /// will use the next seed in the list of seeds. If we've reached the end of
   /// the list of seeds, the attempt will start from a randomized configuration.
-  void setMaxAttempts(size_t _maxAttempts);
+  void setMaxAttempts(std::size_t _maxAttempts);
 
   /// Get the maximum number of solving attempts.
-  size_t getMaxAttempts() const;
+  std::size_t getMaxAttempts() const;
 
   /// Set the number of steps that will be taken before applying a randomized
   /// perturbation.
-  void setPerturbationStep(size_t _step);
+  void setPerturbationStep(std::size_t _step);
 
   /// Get UniqueProperties::mPerturbationStep
-  size_t getPerturbationStep() const;
+  std::size_t getPerturbationStep() const;
 
   /// Set UniqueProperties::mPerturbationFactor
   void setMaxPerturbationFactor(double _factor);
@@ -211,7 +211,7 @@ public:
   void clampToBoundary(Eigen::VectorXd& _x);
 
   /// Get the number of iterations used in the last attempt to solve the problem
-  size_t getLastNumIterations() const;
+  std::size_t getLastNumIterations() const;
 
 protected:
 
@@ -219,7 +219,7 @@ protected:
   UniqueProperties mGradientP;
 
   /// The last number of iterations performed by this Solver
-  size_t mLastNumIterations;
+  std::size_t mLastNumIterations;
 
   /// Randomization device
   std::random_device mRD;

@@ -214,7 +214,7 @@ public:
   const std::set<const Entity*> getChildEntities() const;
 
   /// Get the number of Entities that are currently children of this Frame.
-  size_t getNumChildEntities() const;
+  std::size_t getNumChildEntities() const;
 
   /// Get a container with the Frames that are children of this Frame.
   /// std::set is used because Frames may be arbitrarily added and removed
@@ -227,7 +227,7 @@ public:
   std::set<const Frame*> getChildFrames() const;
 
   /// Get the number of Frames that are currently children of this Frame.
-  size_t getNumChildFrames() const;
+  std::size_t getNumChildFrames() const;
 
   /// Returns true if this Frame is a ShapeFrame
   bool isShapeFrame() const;

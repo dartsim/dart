@@ -93,7 +93,7 @@ public:
   static const std::string& getStaticType();
 
   // Documentation inherited
-  bool isCyclic(size_t _index) const override;
+  bool isCyclic(std::size_t _index) const override;
 
   /// \brief Set plane type as XY-plane
   /// \param[in] _renameDofs If true, the names of dofs in this joint will be

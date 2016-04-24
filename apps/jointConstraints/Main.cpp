@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);
 
-  std::vector<size_t> genCoordIds;
+  std::vector<std::size_t> genCoordIds;
   genCoordIds.push_back(1);   // global orientation y
   genCoordIds.push_back(4);   // global position y
   genCoordIds.push_back(6);   // left hip

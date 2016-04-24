@@ -63,39 +63,39 @@ public:
   float getThickness() const;
 
   /// Add a vertex as a child to the last vertex that was added
-  size_t addVertex(const Eigen::Vector3d& _v);
+  std::size_t addVertex(const Eigen::Vector3d& _v);
 
   /// Add a vertex as a child to the specified vertex
-  size_t addVertex(const Eigen::Vector3d& _v, size_t _parent);
+  std::size_t addVertex(const Eigen::Vector3d& _v, std::size_t _parent);
 
   /// Remove a vertex from the list of vertices. IMPORTANT: Note that this
   /// alters the indices of all vertices that follow it in the list, which also
   /// clobbers the validity of the list of connections for all those vertices.
   /// A safer and more efficient method might be to recycle vertices by moving
   /// them around with setVertex() and/or altering their connections.
-  void removeVertex(size_t _idx);
+  void removeVertex(std::size_t _idx);
 
   /// Change the location of the specified vertex
-  void setVertex(size_t _idx, const Eigen::Vector3d& _v);
+  void setVertex(std::size_t _idx, const Eigen::Vector3d& _v);
 
   /// Get the location of the specified vertex. Returns a zero vector if an
   /// out-of-bounds vertex is requested.
-  const Eigen::Vector3d& getVertex(size_t _idx) const;
+  const Eigen::Vector3d& getVertex(std::size_t _idx) const;
 
   /// Get all the vertices
   const std::vector<Eigen::Vector3d>& getVertices() const;
 
   /// Create a connection between the two specified vertices
-  void addConnection(size_t _idx1, size_t _idx2);
+  void addConnection(std::size_t _idx1, std::size_t _idx2);
 
   /// Search for a connection between two vertices and break it if it exists.
-  /// This is less efficient but more robust than removeConnection(size_t).
-  void removeConnection(size_t _vertexIdx1, size_t _vertexIdx2);
+  /// This is less efficient but more robust than removeConnection(std::size_t).
+  void removeConnection(std::size_t _vertexIdx1, std::size_t _vertexIdx2);
 
   /// Remove the specified connection entry. Note that this will impact the
   /// indices of all connections that come after _connectionIdx. This is more
-  /// efficient but less robust than removeConnection(size_t,size_t)
-  void removeConnection(size_t _connectionIdx);
+  /// efficient but less robust than removeConnection(std::size_t,std::size_t)
+  void removeConnection(std::size_t _connectionIdx);
 
   /// Get all the connections
   const Eigen::aligned_vector<Eigen::Vector2i>& getConnections() const;

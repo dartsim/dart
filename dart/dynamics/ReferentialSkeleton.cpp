@@ -64,19 +64,19 @@ const std::string& ReferentialSkeleton::getName() const
 }
 
 //==============================================================================
-size_t ReferentialSkeleton::getNumBodyNodes() const
+std::size_t ReferentialSkeleton::getNumBodyNodes() const
 {
   return mBodyNodes.size();
 }
 
 //==============================================================================
-BodyNode* ReferentialSkeleton::getBodyNode(size_t _idx)
+BodyNode* ReferentialSkeleton::getBodyNode(std::size_t _idx)
 {
   return common::getVectorObjectIfAvailable<BodyNodePtr>(_idx, mBodyNodes);
 }
 
 //==============================================================================
-const BodyNode* ReferentialSkeleton::getBodyNode(size_t _idx) const
+const BodyNode* ReferentialSkeleton::getBodyNode(std::size_t _idx) const
 {
   return common::getVectorObjectIfAvailable<BodyNodePtr>(_idx, mBodyNodes);
 }
@@ -87,7 +87,7 @@ static std::vector<T2>& convertVector(const std::vector<T1>& t1_vec,
                                       std::vector<T2>& t2_vec)
 {
   t2_vec.resize(t1_vec.size());
-  for(size_t i = 0; i < t1_vec.size(); ++i)
+  for(std::size_t i = 0; i < t1_vec.size(); ++i)
     t2_vec[i] = t1_vec[i];
   return t2_vec;
 }
@@ -109,7 +109,7 @@ const std::vector<const BodyNode*>& ReferentialSkeleton::getBodyNodes() const
 }
 
 //==============================================================================
-size_t ReferentialSkeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
+std::size_t ReferentialSkeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
 {
   if(nullptr == _bn)
   {
@@ -141,25 +141,25 @@ size_t ReferentialSkeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
 }
 
 //==============================================================================
-size_t ReferentialSkeleton::getNumJoints() const
+std::size_t ReferentialSkeleton::getNumJoints() const
 {
   return mJoints.size();
 }
 
 //==============================================================================
-Joint* ReferentialSkeleton::getJoint(size_t _idx)
+Joint* ReferentialSkeleton::getJoint(std::size_t _idx)
 {
   return common::getVectorObjectIfAvailable<JointPtr>(_idx, mJoints);
 }
 
 //==============================================================================
-const Joint* ReferentialSkeleton::getJoint(size_t _idx) const
+const Joint* ReferentialSkeleton::getJoint(std::size_t _idx) const
 {
   return common::getVectorObjectIfAvailable<JointPtr>(_idx, mJoints);
 }
 
 //==============================================================================
-size_t ReferentialSkeleton::getIndexOf(const Joint* _joint, bool _warning) const
+std::size_t ReferentialSkeleton::getIndexOf(const Joint* _joint, bool _warning) const
 {
   if(nullptr == _joint)
   {
@@ -190,19 +190,19 @@ size_t ReferentialSkeleton::getIndexOf(const Joint* _joint, bool _warning) const
 }
 
 //==============================================================================
-size_t ReferentialSkeleton::getNumDofs() const
+std::size_t ReferentialSkeleton::getNumDofs() const
 {
   return mDofs.size();
 }
 
 //==============================================================================
-DegreeOfFreedom* ReferentialSkeleton::getDof(size_t _idx)
+DegreeOfFreedom* ReferentialSkeleton::getDof(std::size_t _idx)
 {
   return common::getVectorObjectIfAvailable<DegreeOfFreedomPtr>(_idx, mDofs);
 }
 
 //==============================================================================
-const DegreeOfFreedom* ReferentialSkeleton::getDof(size_t _idx) const
+const DegreeOfFreedom* ReferentialSkeleton::getDof(std::size_t _idx) const
 {
   return common::getVectorObjectIfAvailable<DegreeOfFreedomPtr>(_idx, mDofs);
 }
@@ -228,7 +228,7 @@ std::vector<const DegreeOfFreedom*> ReferentialSkeleton::getDofs() const
 }
 
 //==============================================================================
-size_t ReferentialSkeleton::getIndexOf(
+std::size_t ReferentialSkeleton::getIndexOf(
     const DegreeOfFreedom* _dof, bool _warning) const
 {
   if(nullptr == _dof)
@@ -258,7 +258,7 @@ size_t ReferentialSkeleton::getIndexOf(
     return INVALID_INDEX;
   }
 
-  size_t localIndex = _dof->getIndexInJoint();
+  std::size_t localIndex = _dof->getIndexInJoint();
   if(it->second.mDofIndices.size() <= localIndex ||
      it->second.mDofIndices[localIndex] == INVALID_INDEX )
   {
@@ -306,10 +306,10 @@ void assignJacobian(JacobianType& _J,
 {
   const std::vector<const DegreeOfFreedom*>& bn_dofs =
       _node->getDependentDofs();
-  size_t nDofs = bn_dofs.size();
-  for(size_t i=0; i<nDofs; ++i)
+  std::size_t nDofs = bn_dofs.size();
+  for(std::size_t i=0; i<nDofs; ++i)
   {
-    size_t refIndex = _refSkel->getIndexOf(bn_dofs[i], false);
+    std::size_t refIndex = _refSkel->getIndexOf(bn_dofs[i], false);
     if(INVALID_INDEX == refIndex)
       continue;
 
@@ -621,29 +621,29 @@ double ReferentialSkeleton::getMass() const
 }
 
 //==============================================================================
-template <const Eigen::MatrixXd& (Skeleton::*getMatrix)(size_t) const>
+template <const Eigen::MatrixXd& (Skeleton::*getMatrix)(std::size_t) const>
 const Eigen::MatrixXd& setMatrixFromSkeletonData(
     Eigen::MatrixXd& M, const std::vector<const DegreeOfFreedom*>& dofs)
 {
-  const size_t nDofs = dofs.size();
+  const std::size_t nDofs = dofs.size();
 
   M.setZero();
 
-  for(size_t i=0; i<nDofs; ++i)
+  for(std::size_t i=0; i<nDofs; ++i)
   {
     const DegreeOfFreedom* dof_i = dofs[i];
-    const size_t tree_i = dof_i->getTreeIndex();
+    const std::size_t tree_i = dof_i->getTreeIndex();
     const ConstSkeletonPtr& skel_i = dof_i->getSkeleton();
 
-    const size_t index_i = dof_i->getIndexInTree();
+    const std::size_t index_i = dof_i->getIndexInTree();
     const Eigen::MatrixXd& treeMatrix = (skel_i.get()->*getMatrix)(tree_i);
 
     M(i,i) = treeMatrix(index_i, index_i);
 
-    for(size_t j=i+1; j<nDofs; ++j)
+    for(std::size_t j=i+1; j<nDofs; ++j)
     {
       const DegreeOfFreedom* dof_j = dofs[j];
-      const size_t tree_j = dof_j->getTreeIndex();
+      const std::size_t tree_j = dof_j->getTreeIndex();
       const ConstSkeletonPtr& skel_j = dof_j->getSkeleton();
 
       // If the DegreesOfFreedom are in the same tree within the same
@@ -651,7 +651,7 @@ const Eigen::MatrixXd& setMatrixFromSkeletonData(
       // Otherwise, leave the entry as zero.
       if(skel_i == skel_j && tree_i == tree_j)
       {
-        const size_t index_j = dof_j->getIndexInTree();
+        const std::size_t index_j = dof_j->getIndexInTree();
 
         M(i,j) = treeMatrix(index_i, index_j);
         M(j,i) = M(i,j);
@@ -690,21 +690,21 @@ const Eigen::MatrixXd& ReferentialSkeleton::getInvAugMassMatrix() const
 }
 
 //==============================================================================
-template <const Eigen::VectorXd& (Skeleton::*getVector)(size_t) const>
+template <const Eigen::VectorXd& (Skeleton::*getVector)(std::size_t) const>
 const Eigen::VectorXd& setVectorFromSkeletonData(
     Eigen::VectorXd& V, const std::vector<const DegreeOfFreedom*>& dofs)
 {
-  const size_t nDofs = dofs.size();
+  const std::size_t nDofs = dofs.size();
 
   V.setZero();
 
-  for(size_t i=0; i<nDofs; ++i)
+  for(std::size_t i=0; i<nDofs; ++i)
   {
     const DegreeOfFreedom* dof_i = dofs[i];
-    const size_t tree_i = dof_i->getTreeIndex();
+    const std::size_t tree_i = dof_i->getTreeIndex();
     const ConstSkeletonPtr& skel_i = dof_i->getSkeleton();
 
-    const size_t index_i = dof_i->getIndexInTree();
+    const std::size_t index_i = dof_i->getIndexInTree();
     const Eigen::VectorXd& treeVector = (skel_i.get()->*getVector)(tree_i);
 
     V[i] = treeVector[index_i];
@@ -905,11 +905,11 @@ JacType getCOMJacobianTemplate(const ReferentialSkeleton* _refSkel,
     totalMass += bn->getMass();
 
     const std::vector<const DegreeOfFreedom*>& dofs = bn->getDependentDofs();
-    size_t nDofs = dofs.size();
-    for(size_t i=0; i<nDofs; ++i)
+    std::size_t nDofs = dofs.size();
+    for(std::size_t i=0; i<nDofs; ++i)
     {
       const DegreeOfFreedom* dof = dofs[i];
-      size_t index = _refSkel->getIndexOf(dof, false);
+      std::size_t index = _refSkel->getIndexOf(dof, false);
       if(INVALID_INDEX == index)
         continue;
 
@@ -965,8 +965,8 @@ void ReferentialSkeleton::registerComponent(BodyNode* _bn)
   registerBodyNode(_bn);
   registerJoint(_bn->getParentJoint());
 
-  size_t nDofs = _bn->getParentJoint()->getNumDofs();
-  for(size_t i=0; i < nDofs; ++i)
+  std::size_t nDofs = _bn->getParentJoint()->getNumDofs();
+  for(std::size_t i=0; i < nDofs; ++i)
     registerDegreeOfFreedom(_bn->getParentJoint()->getDof(i));
 }
 
@@ -1041,7 +1041,7 @@ void ReferentialSkeleton::registerJoint(Joint* _joint)
 void ReferentialSkeleton::registerDegreeOfFreedom(DegreeOfFreedom* _dof)
 {
   BodyNode* bn = _dof->getChildBodyNode();
-  size_t localIndex = _dof->getIndexInJoint();
+  std::size_t localIndex = _dof->getIndexInJoint();
 
   std::unordered_map<const BodyNode*, IndexMap>::iterator it =
       mIndexMap.find(bn);
@@ -1109,11 +1109,11 @@ void ReferentialSkeleton::unregisterBodyNode(
   }
 
   IndexMap& indexing = it->second;
-  size_t bnIndex = indexing.mBodyNodeIndex;
+  std::size_t bnIndex = indexing.mBodyNodeIndex;
   mBodyNodes.erase(mBodyNodes.begin() + bnIndex);
   indexing.mBodyNodeIndex = INVALID_INDEX;
 
-  for(size_t i=bnIndex; i < mBodyNodes.size(); ++i)
+  for(std::size_t i=bnIndex; i < mBodyNodes.size(); ++i)
   {
     // Re-index all the BodyNodes in this ReferentialSkeleton which came after
     // the one that was removed.
@@ -1123,7 +1123,7 @@ void ReferentialSkeleton::unregisterBodyNode(
 
   if(_unregisterDofs)
   {
-    for(size_t i=0; i < indexing.mDofIndices.size(); ++i)
+    for(std::size_t i=0; i < indexing.mDofIndices.size(); ++i)
     {
       if(indexing.mDofIndices[i] != INVALID_INDEX)
         unregisterDegreeOfFreedom(_bn, i);
@@ -1165,11 +1165,11 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
     return;
   }
 
-  size_t jointIndex = it->second.mJointIndex;
+  std::size_t jointIndex = it->second.mJointIndex;
   mJoints.erase(mJoints.begin() + jointIndex);
   it->second.mJointIndex = INVALID_INDEX;
 
-  for(size_t i = jointIndex; i < mJoints.size(); ++i)
+  for(std::size_t i = jointIndex; i < mJoints.size(); ++i)
   {
     // Re-index all of the Joints in this ReferentialSkeleton which came after
     // the Joint that was removed.
@@ -1189,7 +1189,7 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
 
 //==============================================================================
 void ReferentialSkeleton::unregisterDegreeOfFreedom(
-    BodyNode* _bn, size_t _localIndex)
+    BodyNode* _bn, std::size_t _localIndex)
 {
   if(nullptr == _bn)
   {
@@ -1216,11 +1216,11 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
     return;
   }
 
-  size_t dofIndex = it->second.mDofIndices[_localIndex];
+  std::size_t dofIndex = it->second.mDofIndices[_localIndex];
   mDofs.erase(mDofs.begin() + dofIndex);
   it->second.mDofIndices[_localIndex] = INVALID_INDEX;
 
-  for(size_t i = dofIndex; i < mDofs.size(); ++i)
+  for(std::size_t i = dofIndex; i < mDofs.size(); ++i)
   {
     // Re-index all the DOFs in this ReferentialSkeleton which came after the
     // DOF that was removed.
@@ -1265,7 +1265,7 @@ void ReferentialSkeleton::updateCaches()
     mRawConstDofs.push_back(dof);
   }
 
-  size_t nDofs = mDofs.size();
+  std::size_t nDofs = mDofs.size();
   mM        = Eigen::MatrixXd::Zero(nDofs, nDofs);
   mAugM     = Eigen::MatrixXd::Zero(nDofs, nDofs);
   mInvM     = Eigen::MatrixXd::Zero(nDofs, nDofs);
@@ -1294,7 +1294,7 @@ bool ReferentialSkeleton::IndexMap::isExpired() const
   if(INVALID_INDEX != mJointIndex)
     return false;
 
-  for(size_t i=0; i < mDofIndices.size(); ++i)
+  for(std::size_t i=0; i < mDofIndices.size(); ++i)
   {
     if(mDofIndices[i] != INVALID_INDEX)
       return false;

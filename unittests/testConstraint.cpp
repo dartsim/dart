@@ -116,9 +116,9 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   //----------------------------------------------------------------------------
   // Number of random state tests for each skeletons
 #ifndef NDEBUG  // Debug mode
-  // size_t testCount = 1;
+  // std::size_t testCount = 1;
 #else
-  // size_t testCount = 1;
+  // std::size_t testCount = 1;
 #endif
 
   WorldPtr world(new World);
@@ -176,7 +176,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
       continue;
     }
 
-    // for (size_t j = 0; j < cd->getNumContacts(); ++j)
+    // for (std::size_t j = 0; j < cd->getNumContacts(); ++j)
     // {
       // Contact contact = cd->getContact(j);
       // Vector3d pos1 = sphere->getTransform().inverse() * contact.point;

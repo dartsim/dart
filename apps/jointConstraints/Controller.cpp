@@ -83,7 +83,7 @@ void Controller::computeTorques(const Eigen::VectorXd& _dof,
                                 const Eigen::VectorXd& _dofVel)
 {
   // SPD tracking
-  // size_t nDof = mSkel->getNumDofs();
+  // std::size_t nDof = mSkel->getNumDofs();
   Eigen::MatrixXd invM = (mSkel->getMassMatrix() + mKd * mTimestep).inverse();
   Eigen::VectorXd p = -mKp * (_dof + _dofVel * mTimestep - mDesiredDofs);
   Eigen::VectorXd d = -mKd * _dofVel;

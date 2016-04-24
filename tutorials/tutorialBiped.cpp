@@ -68,13 +68,13 @@ public:
     mKp = Eigen::MatrixXd::Identity(nDofs, nDofs);
     mKd = Eigen::MatrixXd::Identity(nDofs, nDofs);
   
-    for(size_t i = 0; i < 6; ++i)
+    for(std::size_t i = 0; i < 6; ++i)
     {
       mKp(i, i) = 0.0;
       mKd(i, i) = 0.0;
     }
 
-    for(size_t i = 6; i < biped->getNumDofs(); ++i)
+    for(std::size_t i = 6; i < biped->getNumDofs(); ++i)
     {
       mKp(i, i) = 1000;
       mKd(i, i) = 50;

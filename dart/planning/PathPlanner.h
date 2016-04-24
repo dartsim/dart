@@ -70,7 +70,7 @@ public:
   bool bidirectional;      ///< Whether two trees try to meet each other or one goes for the goal
   double stepSize;        ///< Step size from a node in the tree to the random/goal node
   double goalBias;        ///< Choose btw goal and random value (for goal-biased search)
-  size_t maxNodes;        ///< Maximum number of iterations the sampling would continue
+  std::size_t maxNodes;        ///< Maximum number of iterations the sampling would continue
   simulation::WorldPtr world;  ///< The world that the robot is in (for obstacles and etc.)
 
   // NOTE: It is useful to keep the rrts around after planning for reuse, analysis, and etc.
@@ -84,7 +84,7 @@ public:
 
   /// The desired constructor - you should use this one.
   PathPlanner(simulation::World& world, bool bidirectional_ = true, bool connect_ = true, double stepSize_ = 0.1,
-    size_t maxNodes_ = 1e6, double goalBias_ = 0.3) : world(&world), bidirectional(bidirectional_),
+    std::size_t maxNodes_ = 1e6, double goalBias_ = 0.3) : world(&world), bidirectional(bidirectional_),
     connect(connect_), stepSize(stepSize_), maxNodes(maxNodes_), goalBias(goalBias_) {
   }
 
@@ -101,7 +101,7 @@ public:
   }
 
   /// Plan a path from a _set_ of start configurations to a _set_ of goals
-  bool planPath(dynamics::Skeleton* robot, const std::vector<size_t> &dofs, const std::vector<Eigen::VectorXd> &start,
+  bool planPath(dynamics::Skeleton* robot, const std::vector<std::size_t> &dofs, const std::vector<Eigen::VectorXd> &start,
     const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path);
 
 private:
@@ -124,7 +124,7 @@ private:
 
 /* ********************************************************************************************* */
 template <class R>
-bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<size_t> &dofs,
+bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<std::size_t> &dofs,
     const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal,
     std::list<Eigen::VectorXd> &path) {
 
@@ -191,7 +191,7 @@ bool PathPlanner<R>::planSingleTreeRrt(dynamics::Skeleton* robot, const std::vec
   // Expand the tree until the goal is reached or the max # nodes is passed
   typename R::StepResult result = R::STEP_PROGRESS;
   double smallestGap = std::numeric_limits<double>::infinity();
-  size_t numNodes = start_rrt->getSize();
+  std::size_t numNodes = start_rrt->getSize();
   while(numNodes <= maxNodes) {
 
     // Get the target node based on the bias
@@ -240,7 +240,7 @@ bool PathPlanner<R>::planBidirectionalRrt(dynamics::Skeleton* robot, const std::
 
   // Expand the tree until the trees meet or the max # nodes is passed
   double smallestGap = std::numeric_limits<double>::infinity();
-  size_t numNodes = rrt1->getSize() + rrt2->getSize();
+  std::size_t numNodes = rrt1->getSize() + rrt2->getSize();
   while(numNodes < maxNodes) {
 
     // Swap the roles of the two RRTs. Remember, the first rrt reaches out to a target node and

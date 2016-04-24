@@ -117,7 +117,7 @@ const std::string& ScrewJoint::getStaticType()
 }
 
 //==============================================================================
-bool ScrewJoint::isCyclic(size_t /*_index*/) const
+bool ScrewJoint::isCyclic(std::size_t /*_index*/) const
 {
   return false;
 }

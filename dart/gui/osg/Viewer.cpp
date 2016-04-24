@@ -257,7 +257,7 @@ void Viewer::captureScreen(const std::string& filename)
 
 //==============================================================================
 void Viewer::record(const std::string& directory, const std::string& prefix,
-                    bool restart, size_t digits)
+                    bool restart, std::size_t digits)
 {
   if(directory.empty())
   {

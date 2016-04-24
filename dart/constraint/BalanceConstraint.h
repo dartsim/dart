@@ -163,7 +163,7 @@ protected:
 
   /// The indices of the supporting end effectors that are closest to the center
   /// of mass. These are used when using FROM_EDGE
-  size_t mClosestEndEffector[2];
+  std::size_t mClosestEndEffector[2];
 
   /// The error vector points away from the direction that the center of mass
   /// should move in order to reduce the balance error
@@ -173,7 +173,7 @@ protected:
   Eigen::Vector3d mLastCOM;
 
   /// The last version of the support polygon that was computed
-  size_t mLastSupportVersion;
+  std::size_t mLastSupportVersion;
 
   /// Cache for the center of mass Jacobian so that the memory space does not
   /// need to be reallocated each loop

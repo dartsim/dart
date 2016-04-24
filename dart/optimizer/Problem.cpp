@@ -49,7 +49,7 @@ namespace optimizer {
 
 //==============================================================================
 template<typename T>
-static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
+static T getVectorObjectIfAvailable(std::size_t _idx, const std::vector<T>& _vec)
 {
   // TODO: Should we have an out-of-bounds assertion or throw here?
   if (_idx < _vec.size())
@@ -59,7 +59,7 @@ static T getVectorObjectIfAvailable(size_t _idx, const std::vector<T>& _vec)
 }
 
 //==============================================================================
-Problem::Problem(size_t _dim)
+Problem::Problem(std::size_t _dim)
   : mDimension(0),
     mOptimumValue(0.0)
 {
@@ -67,7 +67,7 @@ Problem::Problem(size_t _dim)
 }
 
 //==============================================================================
-void Problem::setDimension(size_t _dim)
+void Problem::setDimension(std::size_t _dim)
 {
   if(_dim != mDimension)
   {
@@ -87,7 +87,7 @@ void Problem::setDimension(size_t _dim)
 }
 
 //==============================================================================
-size_t Problem::getDimension() const
+std::size_t Problem::getDimension() const
 {
   return mDimension;
 }
@@ -95,7 +95,7 @@ size_t Problem::getDimension() const
 //==============================================================================
 void Problem::setInitialGuess(const Eigen::VectorXd& _initGuess)
 {
-  assert(static_cast<size_t>(_initGuess.size()) == mDimension
+  assert(static_cast<std::size_t>(_initGuess.size()) == mDimension
          && "Invalid size.");
 
   if(_initGuess.size() != static_cast<int>(mDimension))
@@ -132,7 +132,7 @@ void Problem::addSeed(const Eigen::VectorXd& _seed)
 }
 
 //==============================================================================
-Eigen::VectorXd& Problem::getSeed(size_t _index)
+Eigen::VectorXd& Problem::getSeed(std::size_t _index)
 {
   if(_index < mSeeds.size())
     return mSeeds[_index];
@@ -150,7 +150,7 @@ Eigen::VectorXd& Problem::getSeed(size_t _index)
 }
 
 //==============================================================================
-const Eigen::VectorXd& Problem::getSeed(size_t _index) const
+const Eigen::VectorXd& Problem::getSeed(std::size_t _index) const
 {
   return const_cast<Problem*>(this)->getSeed(_index);
 }
@@ -176,7 +176,7 @@ void Problem::clearAllSeeds()
 //==============================================================================
 void Problem::setLowerBounds(const Eigen::VectorXd& _lb)
 {
-  assert(static_cast<size_t>(_lb.size()) == mDimension && "Invalid size.");
+  assert(static_cast<std::size_t>(_lb.size()) == mDimension && "Invalid size.");
   mLowerBounds = _lb;
 }
 
@@ -189,7 +189,7 @@ const Eigen::VectorXd& Problem::getLowerBounds() const
 //==============================================================================
 void Problem::setUpperBounds(const Eigen::VectorXd& _ub)
 {
-  assert(static_cast<size_t>(_ub.size()) == mDimension && "Invalid size.");
+  assert(static_cast<std::size_t>(_ub.size()) == mDimension && "Invalid size.");
   mUpperBounds = _ub;
 }
 
@@ -227,26 +227,26 @@ void Problem::addIneqConstraint(FunctionPtr _ineqConst)
 }
 
 //==============================================================================
-size_t Problem::getNumEqConstraints() const
+std::size_t Problem::getNumEqConstraints() const
 {
   return mEqConstraints.size();
 }
 
 //==============================================================================
-size_t Problem::getNumIneqConstraints() const
+std::size_t Problem::getNumIneqConstraints() const
 {
   return mIneqConstraints.size();
 }
 
 //==============================================================================
-FunctionPtr Problem::getEqConstraint(size_t _idx) const
+FunctionPtr Problem::getEqConstraint(std::size_t _idx) const
 {
   assert(_idx < mEqConstraints.size());
   return getVectorObjectIfAvailable<FunctionPtr>(_idx, mEqConstraints);
 }
 
 //==============================================================================
-FunctionPtr Problem::getIneqConstraint(size_t _idx) const
+FunctionPtr Problem::getIneqConstraint(std::size_t _idx) const
 {
   assert(_idx < mIneqConstraints.size());
   return getVectorObjectIfAvailable<FunctionPtr>(_idx, mIneqConstraints);
@@ -301,7 +301,7 @@ double Problem::getOptimumValue() const
 //==============================================================================
 void Problem::setOptimalSolution(const Eigen::VectorXd& _optParam)
 {
-  assert(static_cast<size_t>(_optParam.size()) == mDimension
+  assert(static_cast<std::size_t>(_optParam.size()) == mDimension
          && "Invalid size.");
   mOptimalSolution = _optParam;
 }

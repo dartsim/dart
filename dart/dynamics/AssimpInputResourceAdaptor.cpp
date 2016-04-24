@@ -120,15 +120,15 @@ AssimpInputResourceAdaptor::~AssimpInputResourceAdaptor()
 }
 
 //==============================================================================
-size_t AssimpInputResourceAdaptor::Read(
-  void* pvBuffer, size_t psize, size_t pCount)
+std::size_t AssimpInputResourceAdaptor::Read(
+  void* pvBuffer, std::size_t psize, std::size_t pCount)
 {
   return mResource->read(pvBuffer, psize, pCount);
 }
 
 //==============================================================================
-size_t AssimpInputResourceAdaptor::Write(
-  const void* /*pvBuffer*/, size_t /*pSize*/, size_t /*pCount*/)
+std::size_t AssimpInputResourceAdaptor::Write(
+  const void* /*pvBuffer*/, std::size_t /*pSize*/, std::size_t /*pCount*/)
 {
   dtwarn << "[AssimpInputResourceAdaptor::Write] Write is not implemented."
             " This is a read-only stream.\n";
@@ -136,7 +136,7 @@ size_t AssimpInputResourceAdaptor::Write(
 }
 
 //==============================================================================
-aiReturn AssimpInputResourceAdaptor::Seek(size_t pOffset, aiOrigin pOrigin)
+aiReturn AssimpInputResourceAdaptor::Seek(std::size_t pOffset, aiOrigin pOrigin)
 {
   using common::Resource;
 
@@ -168,13 +168,13 @@ aiReturn AssimpInputResourceAdaptor::Seek(size_t pOffset, aiOrigin pOrigin)
 }
 
 //==============================================================================
-size_t AssimpInputResourceAdaptor::Tell() const
+std::size_t AssimpInputResourceAdaptor::Tell() const
 {
   return mResource->tell();
 }
 
 //==============================================================================
-size_t AssimpInputResourceAdaptor::FileSize() const
+std::size_t AssimpInputResourceAdaptor::FileSize() const
 {
   return mResource->getSize();
 }
@@ -211,32 +211,32 @@ void fileFlushProc(aiFile *_file)
 }
 
 //==============================================================================
-size_t fileReadProc(aiFile *_file, char *_buffer, size_t _size, size_t _count)
+std::size_t fileReadProc(aiFile *_file, char *_buffer, std::size_t _size, std::size_t _count)
 {
   return getIOStream(_file)->Read(_buffer, _size, _count);
 }
 
 //==============================================================================
-aiReturn fileSeekProc(aiFile *_file, size_t _offset, aiOrigin _origin)
+aiReturn fileSeekProc(aiFile *_file, std::size_t _offset, aiOrigin _origin)
 {
   return getIOStream(_file)->Seek(_offset, _origin);
 }
 
 //==============================================================================
-size_t fileSizeProc(aiFile *_file)
+std::size_t fileSizeProc(aiFile *_file)
 {
   return getIOStream(_file)->FileSize();
 }
 
 //==============================================================================
-size_t fileTellProc(aiFile *_file)
+std::size_t fileTellProc(aiFile *_file)
 {
   return getIOStream(_file)->Tell();
 }
 
 //==============================================================================
-size_t fileWriteProc(
-  aiFile *_file, const char *_buffer, size_t _size, size_t _count)
+std::size_t fileWriteProc(
+  aiFile *_file, const char *_buffer, std::size_t _size, std::size_t _count)
 {
   return getIOStream(_file)->Write(_buffer, _size, _count);
 }

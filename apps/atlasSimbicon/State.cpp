@@ -533,7 +533,7 @@ double State::getElapsedTime() const
 //==============================================================================
 void State::setDesiredJointPosition(const string& _jointName, double _val)
 {
-  size_t index = mSkeleton->getDof(_jointName)->getIndexInSkeleton();
+  std::size_t index = mSkeleton->getDof(_jointName)->getIndexInSkeleton();
   mDesiredJointPositions[index] = _val;
 }
 
@@ -646,7 +646,7 @@ double State::getDerivativeGain(int _idx) const
 //}
 
 //==============================================================================
-void State::setFeedbackSagitalCOMDistance(size_t _index, double _val)
+void State::setFeedbackSagitalCOMDistance(std::size_t _index, double _val)
 {
   assert(static_cast<int>(_index) <= mSagitalCd.size() && "Invalid index.");
 
@@ -654,7 +654,7 @@ void State::setFeedbackSagitalCOMDistance(size_t _index, double _val)
 }
 
 //==============================================================================
-void State::setFeedbackSagitalCOMVelocity(size_t _index, double _val)
+void State::setFeedbackSagitalCOMVelocity(std::size_t _index, double _val)
 {
   assert(static_cast<int>(_index) <= mSagitalCv.size() && "Invalid index.");
 
@@ -662,7 +662,7 @@ void State::setFeedbackSagitalCOMVelocity(size_t _index, double _val)
 }
 
 //==============================================================================
-void State::setFeedbackCoronalCOMDistance(size_t _index, double _val)
+void State::setFeedbackCoronalCOMDistance(std::size_t _index, double _val)
 {
   assert(static_cast<int>(_index) <= mCoronalCd.size() && "Invalid index.");
 
@@ -670,7 +670,7 @@ void State::setFeedbackCoronalCOMDistance(size_t _index, double _val)
 }
 
 //==============================================================================
-void State::setFeedbackCoronalCOMVelocity(size_t _index, double _val)
+void State::setFeedbackCoronalCOMVelocity(std::size_t _index, double _val)
 {
   assert(static_cast<int>(_index) <= mCoronalCv.size() && "Invalid index.");
 

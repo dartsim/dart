@@ -79,10 +79,10 @@ public:
   void addConstraint(const ConstraintBasePtr& _constraint);
 
   /// Return number of constraints in this constrained group
-  size_t getNumConstraints() const;
+  std::size_t getNumConstraints() const;
 
   /// Return a constraint
-  ConstraintBasePtr getConstraint(size_t _index) const;
+  ConstraintBasePtr getConstraint(std::size_t _index) const;
 
   /// Remove constraint
   void removeConstraint(const ConstraintBasePtr& _constraint);
@@ -91,7 +91,7 @@ public:
   void removeAllConstraints();
 
   /// Get total dimension of contraints in this group
-  size_t getTotalDimension() const;
+  std::size_t getTotalDimension() const;
 
   //----------------------------------------------------------------------------
   // Friendship

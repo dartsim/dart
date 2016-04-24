@@ -219,7 +219,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
         new ::osg::DrawElementsUInt(GL_LINES);
     elements->reserve(2*connections.size());
 
-    for(size_t i=0; i < connections.size(); ++i)
+    for(std::size_t i=0; i < connections.size(); ++i)
     {
       const Eigen::Vector2i& c = connections[i];
       elements->push_back(c[0]);
@@ -236,7 +236,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
     if(mVertices->size() != vertices.size())
       mVertices->resize(vertices.size());
 
-    for(size_t i=0; i<vertices.size(); ++i)
+    for(std::size_t i=0; i<vertices.size(); ++i)
       (*mVertices)[i] = eigToOsgVec3(vertices[i]);
 
     setVertexArray(mVertices);

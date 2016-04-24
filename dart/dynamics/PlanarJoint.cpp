@@ -120,7 +120,7 @@ const std::string& PlanarJoint::getStaticType()
 }
 
 //==============================================================================
-bool PlanarJoint::isCyclic(size_t _index) const
+bool PlanarJoint::isCyclic(std::size_t _index) const
 {
   return _index == 2 && !hasPositionLimit(_index);
 }
@@ -260,7 +260,7 @@ void PlanarJoint::updateDegreeOfFreedomNames()
 
   if (affixes.size() == 2)
   {
-    for (size_t i = 0; i < 2; ++i)
+    for (std::size_t i = 0; i < 2; ++i)
     {
       if (!mDofs[i]->isNamePreserved())
         mDofs[i]->setName(Joint::mAspectProperties.mName + affixes[i], false);

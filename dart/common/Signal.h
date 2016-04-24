@@ -145,7 +145,7 @@ public:
   void cleanupConnections();
 
   /// Get the number of connections
-  size_t getNumConnections() const;
+  std::size_t getNumConnections() const;
 
   /// Raise the signal
   template <typename... ArgTypes>
@@ -195,7 +195,7 @@ public:
   void cleanupConnections();
 
   /// Get the number of connections
-  size_t getNumConnections() const;
+  std::size_t getNumConnections() const;
 
   /// Raise the signal
   template <typename... ArgTypes>

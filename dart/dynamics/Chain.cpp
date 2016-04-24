@@ -129,7 +129,7 @@ bool Chain::isStillChain() const
 
   // Make sure there are no Branches and no parent FreeJoints on the BodyNodes
   // on the inside of the chain
-  for(size_t i=1; i<mBodyNodes.size()-1; ++i)
+  for(std::size_t i=1; i<mBodyNodes.size()-1; ++i)
   {
     if(mBodyNodes[i]->getNumChildBodyNodes() > 1)
       return false;
