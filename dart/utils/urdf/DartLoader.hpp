@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_URDF_LOADER_H
-#define DART_UTILS_URDF_LOADER_H
+#ifndef DART_UTILS_URDF_DARTLOADER_H_
+#define DART_UTILS_URDF_DARTLOADER_H_
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -186,4 +186,4 @@ private:
 }
 }
 
-#endif /** DART_UTILS_URDF_LOADER_H */
+#endif // DART_UTILS_URDF_DARTLOADER_H_

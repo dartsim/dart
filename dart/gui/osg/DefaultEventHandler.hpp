@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OSG_DEFAULTEVENTHANDLER_H
-#define DART_GUI_OSG_DEFAULTEVENTHANDLER_H
+#ifndef DART_GUI_OSG_DEFAULTEVENTHANDLER_H_
+#define DART_GUI_OSG_DEFAULTEVENTHANDLER_H_
 
 #include <vector>
 #include <array>
@@ -236,4 +236,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_OSG_DEFAULTEVENTHANDLER_H
+#endif // DART_GUI_OSG_DEFAULTEVENTHANDLER_H_

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OSG_MOUSEEVENTHANDLER_H
-#define DART_GUI_OSG_MOUSEEVENTHANDLER_H
+#ifndef DART_GUI_OSG_MOUSEEVENTHANDLER_H_
+#define DART_GUI_OSG_MOUSEEVENTHANDLER_H_
 
 #include "dart/common/Subject.hpp"
 #include "dart/common/Observer.hpp"
@@ -77,4 +77,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_OSG_MOUSEEVENTHANDLER_H
+#endif // DART_GUI_OSG_MOUSEEVENTHANDLER_H_

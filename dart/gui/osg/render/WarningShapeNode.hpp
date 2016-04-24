@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OSG_RENDER_WARNINGSHAPENODE_H
-#define DART_GUI_OSG_RENDER_WARNINGSHAPENODE_H
+#ifndef DART_GUI_OSG_RENDER_WARNINGSHAPENODE_H_
+#define DART_GUI_OSG_RENDER_WARNINGSHAPENODE_H_
 
 #include <osg/Node>
 #include <memory>
@@ -67,4 +67,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_OSG_RENDER_WARNINGSHAPENODE_H
+#endif // DART_GUI_OSG_RENDER_WARNINGSHAPENODE_H_

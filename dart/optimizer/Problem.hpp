@@ -35,8 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_PROBLEM_H
-#define DART_OPTIMIZER_PROBLEM_H
+#ifndef DART_OPTIMIZER_PROBLEM_H_
+#define DART_OPTIMIZER_PROBLEM_H_
 
 #include <cstddef>
 #include <vector>
@@ -193,5 +193,5 @@ protected:
 } // namespace optimizer
 } // namespace dart
 
-#endif // #ifndef DART_OPTIMIZER_PROBLEM_H
+#endif // #ifndef DART_OPTIMIZER_PROBLEM_H_
 

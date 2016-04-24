@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OSG_VIEWER_H
-#define DART_GUI_OSG_VIEWER_H
+#ifndef DART_GUI_OSG_VIEWER_H_
+#define DART_GUI_OSG_VIEWER_H_
 
 #include <map>
 #include <unordered_set>
@@ -384,4 +384,4 @@ protected:
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_OSG_VIEWER_H
+#endif // DART_GUI_OSG_VIEWER_H_
