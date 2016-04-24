@@ -161,10 +161,23 @@ bool CollisionGroup::collide(const CollisionOption& option, CollisionResult& res
 }
 
 //==============================================================================
+bool CollisionGroup::collide(const CollisionOption& option)
+{
+  return mCollisionDetector->collide(this, option);
+}
+
+//==============================================================================
 bool CollisionGroup::collide(
     CollisionGroup* other, const CollisionOption& option, CollisionResult& result)
 {
   return mCollisionDetector->collide(this, other, option, result);
+}
+
+//==============================================================================
+bool CollisionGroup::collide(
+    CollisionGroup* other, const CollisionOption& option)
+{
+  return mCollisionDetector->collide(this, other, option);
 }
 
 //==============================================================================

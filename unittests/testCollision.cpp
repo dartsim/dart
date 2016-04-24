@@ -737,6 +737,12 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   option.binaryCheck = true;
   EXPECT_TRUE(group->collide(option, result));
   EXPECT_EQ(result.getNumContacts(), 1u);
+
+  // Binary check without passing option
+  EXPECT_TRUE(group->collide(option));
+
+  // Binary check without passing option and result
+  EXPECT_TRUE(group->collide());
 }
 
 //==============================================================================
@@ -802,6 +808,19 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get(), option, result));
   EXPECT_TRUE(bodyNodeGroup1->collide(bodyNodeGroup2.get(), option, result));
   EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get(), option, result));
+
+  // Binary check without passing option
+  auto oldBinaryCheckOption = option.binaryCheck;
+  option.binaryCheck = true;
+  EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get(), option));
+  EXPECT_TRUE(bodyNodeGroup1->collide(bodyNodeGroup2.get(), option));
+  EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get(), option));
+  option.binaryCheck = oldBinaryCheckOption;
+
+  // Binary check without passing option and result
+  EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get()));
+  EXPECT_TRUE(bodyNodeGroup1->collide(bodyNodeGroup2.get()));
+  EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get()));
 
   // Regression test for #666
   auto world = common::make_unique<World>();

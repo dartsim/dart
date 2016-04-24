@@ -168,15 +168,24 @@ public:
   /// Return number of ShapeFrames added to this CollisionGroup
   std::size_t getNumShapeFrames() const;
 
-  /// Perform collision detection within this CollisionGroup.
+  /// Perform collision check within this CollisionGroup.
   bool collide(const CollisionOption& option, CollisionResult& result);
 
-  /// Perform collision detection with other CollisionGroup.
+  /// Binary collision check within this CollisionGroup.
+  bool collide(const CollisionOption& option
+                   = CollisionOption(false, true, 1u, nullptr));
+
+  /// Perform collision check with other CollisionGroup.
   ///
   /// Return false if the engine type of the other CollisionGroup is different
   /// from this CollisionObject engine.
   bool collide(CollisionGroup* group,
                const CollisionOption& option, CollisionResult& result);
+
+  /// Binary collision check with other CollisionGroup.
+  bool collide(CollisionGroup* group,
+               const CollisionOption& option
+                   = CollisionOption(false, true, 1u, nullptr));
 
 protected:
 
