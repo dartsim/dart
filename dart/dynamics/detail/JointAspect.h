@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_JOINT_H_
-#define DART_DYNAMICS_DETAIL_JOINT_H_
+#ifndef DART_DYNAMICS_DETAIL_JOINTASPECT_H_
+#define DART_DYNAMICS_DETAIL_JOINTASPECT_H_
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -116,7 +116,7 @@ struct JointProperties
   Eigen::Isometry3d mT_ChildBodyToJoint;
 
   /// True if the joint limits should be enforced in dynamic simulation
-  bool mIsPositionLimited;
+  bool mIsPositionLimitEnforced;
 
   /// Actuator type
   ActuatorType mActuatorType;
@@ -127,7 +127,7 @@ struct JointProperties
                                  Eigen::Isometry3d::Identity(),
              const Eigen::Isometry3d& _T_ChildBodyToJoint =
                                  Eigen::Isometry3d::Identity(),
-             bool _isPositionLimited = false,
+             bool _isPositionLimitEnforced = false,
              ActuatorType _actuatorType = DefaultActuatorType);
 
   virtual ~JointProperties() = default;
@@ -141,4 +141,4 @@ public:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_JOINT_H_
+#endif // DART_DYNAMICS_DETAIL_JOINTASPECT_H_

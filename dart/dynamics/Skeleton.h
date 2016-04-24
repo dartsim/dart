@@ -164,15 +164,9 @@ public:
   Skeleton& operator=(const Skeleton& _other) = delete;
 
   /// Create an identical clone of this Skeleton.
-  ///
-  /// Note: the state of the Skeleton will NOT be cloned, only the structure and
-  /// properties will be [TODO(MXG): copy the state as well]
   SkeletonPtr clone() const;
 
   /// Create an identical clone of this Skeleton, except that it has a new name.
-  ///
-  /// Note: the state of the Skeleton will NOT be cloned, only the structure and
-  /// properties will be [TODO(MXG): copy the state as well]
   SkeletonPtr clone(const std::string& cloneName) const;
 
   /// \}

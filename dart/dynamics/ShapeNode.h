@@ -40,28 +40,14 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Signal.h"
-#include "dart/dynamics/ShapeFrame.h"
-#include "dart/dynamics/FixedJacobianNode.h"
-#include "dart/dynamics/CompositeNode.h"
+#include "dart/dynamics/detail/ShapeNode.h"
 
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
-using ShapeNodeCompositeBase = CompositeNode<
-    common::CompositeJoiner<
-        FixedJacobianNode,
-        ShapeFrame
-    >
->;
-
-} // namespace detail
-
 class VisualAspect;
 class CollisionAspect;
 class DynamicsAspect;
-class ShapeFrame;
 
 class ShapeNode : public detail::ShapeNodeCompositeBase
 {
