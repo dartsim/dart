@@ -4,7 +4,6 @@
 # This sets the following variables:
 # DART_INCLUDE_DIRS - Directories containing the DART include files.
 # DART_LIBRARIES    - Libraries needed to use DART.
-# DART_LIBRARY_DIRS - Directories that contain the DART libraries.
 # DART_VERSION      - DART version.
 
 #===============================================================================
@@ -13,35 +12,27 @@
 set(DART_INCLUDE_DIRS "@DART_INCLUDE_DIRS@")
 
 #===============================================================================
-# DART_LIBRARY_DIRS
-#===============================================================================
-set(DART_LIBRARY_DIRS "@CMAKE_INSTALL_PREFIX@/lib" "@Boost_LIBRARY_DIRS@")
-
-#===============================================================================
 # DART_LIBRARIES
 #===============================================================================
-get_filename_component(CURRENT_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-include("${CURRENT_DIR}/DARTTargets.cmake")
-# Return absolute path of the library instead of just library name as
-# recommended in CMake documentation:
-# http://www.cmake.org/cmake/help/v3.0/command/link_directories.html
-find_library(dart_location NAMES "dart" PATHS "@CMAKE_INSTALL_PREFIX@/lib")
-set(DART_LIBRARIES "${dart_location}")
+if(NOT TARGET dart)
+  include("${CMAKE_CURRENT_LIST_DIR}/DARTTargets.cmake")
+endif()
+set(DART_LIBRARIES dart)
 
 # Handle requested components in find_package(DART COMPONENTS [components]).
 # The list of components is passed in DART_FIND_COMPONENTS.
 if(DART_FIND_COMPONENTS)
   foreach(comp ${DART_FIND_COMPONENTS})
-    find_library(dart_${comp}_location
-                 NAMES "dart-${comp}"
-                 PATHS "@CMAKE_INSTALL_PREFIX@/lib")
-    if(dart_${comp}_location)
-      list(APPEND DART_LIBRARIES "${dart_${comp}_location}")
-    else()
+    if(NOT TARGET "dart-${comp}")
+      set(DART_${comp}_FOUND 0)
       if(DART_FIND_REQUIRED_${comp})
         message(FATAL_ERROR "dart-${comp} not available")
-      endif(DART_FIND_REQUIRED_${comp})
-    endif(dart_${comp}_location)
+      endif()
+    else()
+      set(DART_${comp}_FOUND 1)
+      set(DART_${comp}_LIBRARY "dart-${comp}")
+      list(APPEND DART_LIBRARIES "${DART_${comp}_LIBRARY}")
+    endif()
   endforeach(comp)
 endif(DART_FIND_COMPONENTS)
 
