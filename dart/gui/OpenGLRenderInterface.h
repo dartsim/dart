@@ -89,7 +89,7 @@ public:
     void drawCube(const Eigen::Vector3d& _size) override;
     void drawCylinder(double _radius, double _height) override;
     void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) override;
-    void drawSoftMesh(const aiMesh* mesh);
+    void drawSoftMesh(const aiMesh* mesh) override;
     void drawList(GLuint index) override;
     void drawLineSegments(const std::vector<Eigen::Vector3d>& _vertices,
                                   const Eigen::aligned_vector<Eigen::Vector2i>& _connections) override;
