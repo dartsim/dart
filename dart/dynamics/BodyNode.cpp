@@ -1375,6 +1375,22 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
 void BodyNode::processNewEntity(Entity* _newChildEntity)
 {
   // If the Entity is a JacobianNode, add it to the list of JacobianNodes
+
+  // Dev Note (MXG): There are two places where child JacobianNodes get added.
+  // This is one place, and the constructor of the JacobianNode class is another
+  // place. They get added in two different places because:
+  // 1. This location only works for child BodyNodes. When a non-BodyNode gets
+  //    constructed, its Entity becomes a child of this BodyNode frame during
+  //    the Entity construction, so it cannot be dynamically cast to a
+  //    JacobianNode at that time. But this is not an issue for BodyNodes,
+  //    because BodyNodes become children of this Frame after construction is
+  //    finished.
+  // 2. The JacobianNode constructor only works for non-BodyNodes. When a
+  //    JacobianNode is being used as a base for a BodyNode, it does not know
+  //    the parent BodyNode.
+  //
+  // We should consider doing something to unify these two pipelines that are
+  // currently independent of each other.
   if(JacobianNode* node = dynamic_cast<JacobianNode*>(_newChildEntity))
     mChildJacobianNodes.insert(node);
 
@@ -1410,13 +1426,7 @@ void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
     mChildBodyNodes.erase(it);
 
   if(JacobianNode* node = dynamic_cast<JacobianNode*>(_oldChildEntity))
-  {
-    std::unordered_set<JacobianNode*>::iterator node_it =
-        mChildJacobianNodes.find(node);
-
-    if(node_it != mChildJacobianNodes.end())
-      mChildJacobianNodes.erase(node_it);
-  }
+    mChildJacobianNodes.erase(node);
 
   if(find(mNonBodyNodeEntities.begin(), mNonBodyNodeEntities.end(),
           _oldChildEntity) != mNonBodyNodeEntities.end())
