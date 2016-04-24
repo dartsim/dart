@@ -279,7 +279,7 @@ endfunction(dart_add_unittest)
 #===============================================================================
 
 add_subdirectory(dart)
-add_subdirectory(apps EXCLUDE_FROM_ALL)
+add_subdirectory(examples EXCLUDE_FROM_ALL)
 add_subdirectory(tutorials EXCLUDE_FROM_ALL)
 
 # Add a "tutorials" target to build tutorials.
