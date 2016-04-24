@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongsoek Lee <jslee02@gmail.com>

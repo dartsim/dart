@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -61,6 +61,12 @@ ConstraintBase::~ConstraintBase()
 size_t ConstraintBase::getDimension() const
 {
   return mDim;
+}
+
+//==============================================================================
+void ConstraintBase::uniteSkeletons()
+{
+  // Do nothing
 }
 
 //==============================================================================

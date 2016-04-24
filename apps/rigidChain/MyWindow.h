@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
@@ -47,7 +47,7 @@ public:
 
   virtual ~MyWindow();
 
-  virtual void timeStepping();
+  void timeStepping() override;
 
 private:
   Eigen::VectorXd computeDamping();

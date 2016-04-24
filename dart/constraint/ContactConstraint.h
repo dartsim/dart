@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -108,34 +108,34 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void update();
+  void update() override;
 
   // Documentation inherited
-  virtual void getInformation(ConstraintInfo* _info);
+  void getInformation(ConstraintInfo* _info) override;
 
   // Documentation inherited
-  virtual void applyUnitImpulse(size_t _idx);
+  void applyUnitImpulse(size_t _idx) override;
 
   // Documentation inherited
-  virtual void getVelocityChange(double* _vel, bool _withCfm);
+  void getVelocityChange(double* _vel, bool _withCfm) override;
 
   // Documentation inherited
-  virtual void excite();
+  void excite() override;
 
   // Documentation inherited
-  virtual void unexcite();
+  void unexcite() override;
 
   // Documentation inherited
-  virtual void applyImpulse(double* _lambda);
+  void applyImpulse(double* _lambda) override;
 
   // Documentation inherited
-  virtual dynamics::SkeletonPtr getRootSkeleton() const;
+  dynamics::SkeletonPtr getRootSkeleton() const override;
 
   // Documentation inherited
-  virtual void uniteSkeletons();
+  void uniteSkeletons() override;
 
   // Documentation inherited
-  virtual bool isActive() const;
+  bool isActive() const override;
 
 private:
   /// Get change in relative velocity at contact point due to external impulse

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -77,7 +77,7 @@ public:
   virtual ~TimerCondition();
 
   // Documentation inherited.
-  virtual bool isSatisfied();
+  bool isSatisfied() override;
 
 protected:
   /// \brief Duration
@@ -96,7 +96,7 @@ public:
   virtual ~BodyContactCondition();
 
   // Documentation inherited.
-  virtual bool isSatisfied();
+  bool isSatisfied() override;
 
 protected:
   /// \brief Body node to be tested

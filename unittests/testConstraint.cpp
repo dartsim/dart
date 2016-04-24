@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sumit Jain <sumit@cc.gatech.edu>,
@@ -63,7 +63,7 @@ public:
 
 protected:
   // Sets up the test fixture.
-  virtual void SetUp();
+  void SetUp() override;
 
   // Skel file list.
   std::vector<std::string> list;

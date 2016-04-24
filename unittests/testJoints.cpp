@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -93,7 +93,7 @@ public:
 
 protected:
   // Sets up the test fixture.
-  virtual void SetUp();
+  void SetUp() override;
 
   std::vector<SimpleFrame*> frames;
 };

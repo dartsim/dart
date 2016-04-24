@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sumit Jain <sumit@cc.gatech.edu>
@@ -49,13 +49,13 @@ class Win3D : public GlutWindow {
 public:
   Win3D();
 
-  virtual void initWindow(int _w, int _h, const char* _name);
-  virtual void resize(int _w, int _h);
-  virtual void render();
+  void initWindow(int _w, int _h, const char* _name) override;
+  void resize(int _w, int _h) override;
+  void render() override;
 
-  virtual void keyboard(unsigned char _key, int _x, int _y);
-  virtual void click(int _button, int _state, int _x, int _y);
-  virtual void drag(int _x, int _y);
+  void keyboard(unsigned char _key, int _x, int _y) override;
+  void click(int _button, int _state, int _x, int _y) override;
+  void drag(int _x, int _y) override;
 
   virtual void initGL();
   virtual void initLights();

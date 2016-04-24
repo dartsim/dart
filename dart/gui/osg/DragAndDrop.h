@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -142,7 +142,7 @@ public:
 protected:
 
   /// Perform cleanup when the subject is destroyed
-  virtual void handleDestructionNotification(
+  void handleDestructionNotification(
       const dart::common::Subject* subscription) override;
 
   /// Pointer to the DnD's Viewer
@@ -232,7 +232,7 @@ public:
 protected:
 
   // Documentation inherited
-  virtual void handleDestructionNotification(
+  void handleDestructionNotification(
       const dart::common::Subject* subscription) override;
 
   /// Shape associated with this DnD

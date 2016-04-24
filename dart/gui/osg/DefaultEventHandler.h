@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -182,8 +182,8 @@ public:
   const std::set<MouseEventHandler*>& getMouseEventHandlers() const;
 
   /// Handle incoming user input
-  virtual bool handle(const ::osgGA::GUIEventAdapter& ea,
-                      ::osgGA::GUIActionAdapter&) override;
+  bool handle(const ::osgGA::GUIEventAdapter& ea,
+              ::osgGA::GUIActionAdapter&) override;
 
 protected:
 
@@ -196,7 +196,7 @@ protected:
   /// Clear out the current button events
   void clearButtonEvents();
 
-  virtual void handleDestructionNotification(
+  void handleDestructionNotification(
       const dart::common::Subject* _subject) override;
 
   /// dart::gui::osg::Viewer that this event handler is tied to

@@ -1,4 +1,4 @@
-# Copyright (c) 2015, Georgia Tech Graphics Lab and Humanoid Robotics Lab
+# Copyright (c) 2015-2016, Georgia Tech Graphics Lab and Humanoid Robotics Lab
 # This file is provided under the "BSD-style" License
 
 # Find FCL

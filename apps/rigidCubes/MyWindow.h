@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
@@ -51,13 +51,13 @@ public:
   virtual ~MyWindow();
 
   /// \brief
-  virtual void timeStepping();
+  void timeStepping() override;
 
   /// \brief
-  virtual void drawWorld() const override;
+  void drawWorld() const override;
 
   /// \brief
-  virtual void keyboard(unsigned char _key, int _x, int _y);
+  void keyboard(unsigned char _key, int _x, int _y) override;
 
 private:
   /// \brief

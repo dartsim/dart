@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -102,7 +102,7 @@ public:
 
   /// The returned inertia matrix will be like a very thin cylinder. The _mass
   /// will be evenly distributed across all lines.
-  virtual Eigen::Matrix3d computeInertia(double mass) const override;
+  Eigen::Matrix3d computeInertia(double mass) const override;
 
   // TODO(MXG): Consider supporting colors-per-vertex
 
