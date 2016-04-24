@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -92,12 +92,12 @@ SoftContactConstraint::SoftContactConstraint(
   // Set the colliding state of body nodes and point masses to false
   if (mSoftBodyNode1)
   {
-    for (size_t i = 0; i < mSoftBodyNode1->getNumPointMasses(); ++i)
+    for (std::size_t i = 0; i < mSoftBodyNode1->getNumPointMasses(); ++i)
       mSoftBodyNode1->getPointMass(i)->setColliding(false);
   }
   if (mSoftBodyNode2)
   {
-    for (size_t i = 0; i < mSoftBodyNode2->getNumPointMasses(); ++i)
+    for (std::size_t i = 0; i < mSoftBodyNode2->getNumPointMasses(); ++i)
       mSoftBodyNode2->getPointMass(i)->setColliding(false);
   }
 
@@ -175,7 +175,7 @@ SoftContactConstraint::SoftContactConstraint(
     Eigen::Vector3d bodyPoint1;
     Eigen::Vector3d bodyPoint2;
 
-    for (size_t i = 0; i < mContacts.size(); ++i)
+    for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
       collision::Contact* ct = mContacts[i];
 
@@ -266,7 +266,7 @@ SoftContactConstraint::SoftContactConstraint(
     Eigen::Vector3d bodyPoint1;
     Eigen::Vector3d bodyPoint2;
 
-    for (size_t i = 0; i < mContacts.size(); ++i)
+    for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
       collision::Contact* ct = mContacts[i];
 
@@ -426,8 +426,8 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
   //----------------------------------------------------------------------------
   if (mIsFrictionOn)
   {
-    size_t index = 0;
-    for (size_t i = 0; i < mContacts.size(); ++i)
+    std::size_t index = 0;
+    for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
       // Bias term, w, should be zero
       assert(_info->w[index] == 0.0);
@@ -512,7 +512,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
   //----------------------------------------------------------------------------
   else
   {
-    for (size_t i = 0; i < mContacts.size(); ++i)
+    for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
       // Bias term, w, should be zero
       _info->w[i] = 0.0;
@@ -575,7 +575,7 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
 }
 
 //==============================================================================
-void SoftContactConstraint::applyUnitImpulse(size_t _idx)
+void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
 {
   assert(_idx < mDim && "Invalid Index.");
   assert(isActive());
@@ -664,7 +664,7 @@ void SoftContactConstraint::getVelocityChange(double* _vel, bool _withCfm)
 {
   assert(_vel != nullptr && "Null pointer is not allowed.");
 
-  for (size_t i = 0; i < mDim; ++i)
+  for (std::size_t i = 0; i < mDim; ++i)
   {
     _vel[i] = 0.0;
 
@@ -736,9 +736,9 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
   //----------------------------------------------------------------------------
   if (mIsFrictionOn)
   {
-    size_t index = 0;
+    std::size_t index = 0;
 
-    for (size_t i = 0; i < mContacts.size(); ++i)
+    for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
 //      std::cout << "_lambda1: " << _lambda[_idx] << std::endl;
 //      std::cout << "_lambda2: " << _lambda[_idx + 1] << std::endl;
@@ -848,7 +848,7 @@ void SoftContactConstraint::applyImpulse(double* _lambda)
   //----------------------------------------------------------------------------
   else
   {
-    for (size_t i = 0; i < mContacts.size(); ++i)
+    for (std::size_t i = 0; i < mContacts.size(); ++i)
     {
       // Normal impulsive force
 //			pContactPts[i]->lambda[0] = _lambda[i];
@@ -886,7 +886,7 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
 {
   assert(_vel != nullptr && "Null pointer is not allowed.");
 
-  for (size_t i = 0; i < mDim; ++i)
+  for (std::size_t i = 0; i < mDim; ++i)
   {
     _vel[i] = 0.0;
 

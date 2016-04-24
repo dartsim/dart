@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>
@@ -442,7 +442,7 @@ void OpenGLRenderInterface::compileList(dynamics::Skeleton* _skel)
   if(_skel == 0)
     return;
 
-  for (size_t i = 0; i < _skel->getNumBodyNodes(); i++) {
+  for (std::size_t i = 0; i < _skel->getNumBodyNodes(); i++) {
     compileList(_skel->getBodyNode(i));
   }
 }

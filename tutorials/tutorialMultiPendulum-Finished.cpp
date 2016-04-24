@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -102,7 +102,7 @@ public:
     }
   }
 
-  void applyForce(size_t index)
+  void applyForce(std::size_t index)
   {
     if(index < mForceCountDown.size())
       mForceCountDown[index] = default_countdown;
@@ -110,7 +110,7 @@ public:
 
   void changeRestPosition(double delta)
   {
-    for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
+    for(std::size_t i = 0; i < mPendulum->getNumDofs(); ++i)
     {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double q0 = dof->getRestPosition() + delta;
@@ -130,7 +130,7 @@ public:
 
   void changeStiffness(double delta)
   {
-    for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
+    for(std::size_t i = 0; i < mPendulum->getNumDofs(); ++i)
     {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double stiffness = dof->getSpringStiffness() + delta;
@@ -142,7 +142,7 @@ public:
 
   void changeDamping(double delta)
   {
-    for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
+    for(std::size_t i = 0; i < mPendulum->getNumDofs(); ++i)
     {
       DegreeOfFreedom* dof = mPendulum->getDof(i);
       double damping = dof->getDampingCoefficient() + delta;
@@ -255,11 +255,11 @@ public:
   void timeStepping() override
   {
     // Reset all the shapes to be Blue
-    for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
+    for(std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
     {
       BodyNode* bn = mPendulum->getBodyNode(i);
       auto visualShapeNodes = bn->getShapeNodesWith<VisualAspect>();
-      for(size_t j = 0; j < 2; ++j)
+      for(std::size_t j = 0; j < 2; ++j)
         visualShapeNodes[j]->getVisualAspect()->setColor(dart::Color::Blue());
 
       // If we have three visualization shapes, that means the arrow is
@@ -275,7 +275,7 @@ public:
     if(!mBodyForce)
     {
       // Apply joint torques based on user input, and color the Joint shape red
-      for(size_t i = 0; i < mPendulum->getNumDofs(); ++i)
+      for(std::size_t i = 0; i < mPendulum->getNumDofs(); ++i)
       {
         if(mForceCountDown[i] > 0)
         {
@@ -293,7 +293,7 @@ public:
     else
     {
       // Apply body forces based on user input, and color the body shape red
-      for(size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
+      for(std::size_t i = 0; i < mPendulum->getNumBodyNodes(); ++i)
       {
         if(mForceCountDown[i] > 0)
         {

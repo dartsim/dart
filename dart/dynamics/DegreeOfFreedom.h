@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -51,7 +51,7 @@ class Skeleton;
 class Joint;
 class BodyNode;
 class SingleDofJoint;
-template<size_t> class MultiDofJoint;
+template<std::size_t> class MultiDofJoint;
 
 /// DegreeOfFreedom class is a proxy class for accessing single degrees of
 /// freedom (aka generalized coordinates) of the Skeleton.
@@ -61,7 +61,7 @@ public:
 
   friend class Joint;
   friend class SingleDofJoint;
-  template<size_t> friend class MultiDofJoint;
+  template<std::size_t> friend class MultiDofJoint;
   friend class Skeleton;
 
   DegreeOfFreedom(const DegreeOfFreedom&) = delete;
@@ -101,16 +101,16 @@ public:
   bool isNamePreserved() const;
 
   /// Get this DegreeOfFreedom's index within its Skeleton
-  size_t getIndexInSkeleton() const;
+  std::size_t getIndexInSkeleton() const;
 
   /// Get this DegreeOfFreedom's index within its tree
-  size_t getIndexInTree() const;
+  std::size_t getIndexInTree() const;
 
   /// Get this DegreeOfFreedom's index within its Joint
-  size_t getIndexInJoint() const;
+  std::size_t getIndexInJoint() const;
 
   /// Get the index of the tree that this DegreeOfFreedom belongs to
-  size_t getTreeIndex() const;
+  std::size_t getTreeIndex() const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Command
@@ -387,19 +387,19 @@ public:
 protected:
   /// The constructor is protected so that only Joints can create
   /// DegreeOfFreedom classes
-  DegreeOfFreedom(Joint* _joint, size_t _indexInJoint);
+  DegreeOfFreedom(Joint* _joint, std::size_t _indexInJoint);
 
   /// \brief Index of this DegreeOfFreedom within its Joint
   ///
   /// The index is determined when this DegreeOfFreedom is created by the Joint
   /// it belongs to. Note that the index should be unique within the Joint.
-  size_t mIndexInJoint;
+  std::size_t mIndexInJoint;
 
   /// Index of this DegreeOfFreedom within its Skeleton
-  size_t mIndexInSkeleton;
+  std::size_t mIndexInSkeleton;
 
   /// Index of this DegreeOfFreedom within its tree
-  size_t mIndexInTree;
+  std::size_t mIndexInTree;
 
   /// The joint that this DegreeOfFreedom belongs to
   Joint* mJoint;

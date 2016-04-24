@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -55,17 +55,17 @@ public:
     mEndEffector = mRobot->getBodyNode(mRobot->getNumBodyNodes()-1);
 
     // Setup gain matrices
-    size_t dofs = mEndEffector->getNumDependentGenCoords();
+    std::size_t dofs = mEndEffector->getNumDependentGenCoords();
     mKp.setZero();
-    for(size_t i=0; i<3; ++i)
+    for(std::size_t i=0; i<3; ++i)
       mKp(i,i) = 50.0;
 
     mKd.setZero(dofs,dofs);
-    for(size_t i=0; i<dofs; ++i)
+    for(std::size_t i=0; i<dofs; ++i)
       mKd(i,i) = 5.0;
 
     // Set joint properties
-    for(size_t i=0; i<mRobot->getNumJoints(); ++i)
+    for(std::size_t i=0; i<mRobot->getNumJoints(); ++i)
     {
       mRobot->getJoint(i)->setPositionLimitEnforced(false);
       mRobot->getJoint(i)->setDampingCoefficient(0, 0.5);
@@ -153,7 +153,7 @@ public:
 
   void clearConstraints()
   {
-    for(size_t i=0; i<3; ++i)
+    for(std::size_t i=0; i<3; ++i)
       mConstrained[i] = false;
   }
 
@@ -216,8 +216,8 @@ public:
     if(!handled)
       return handled;
 
-    size_t constraintDofs = 0;
-    for(size_t i=0; i<3; ++i)
+    std::size_t constraintDofs = 0;
+    for(std::size_t i=0; i<3; ++i)
       if(mConstrained[i])
         ++constraintDofs;
 
@@ -228,7 +228,7 @@ public:
     else if(constraintDofs == 1)
     {
       Eigen::Vector3d v(Eigen::Vector3d::Zero());
-      for(size_t i=0; i<3; ++i)
+      for(std::size_t i=0; i<3; ++i)
         if(mConstrained[i])
           v[i] = 1.0;
 
@@ -237,7 +237,7 @@ public:
     else if(constraintDofs == 2)
     {
       Eigen::Vector3d v(Eigen::Vector3d::Zero());
-      for(size_t i=0; i<3; ++i)
+      for(std::size_t i=0; i<3; ++i)
         if(!mConstrained[i])
           v[i] = 1.0;
 
@@ -263,7 +263,7 @@ int main()
   world->addSkeleton(robot);
 
   // Set the colors of the models to obey the shape's color specification
-  for(size_t i=0; i<robot->getNumBodyNodes(); ++i)
+  for(std::size_t i=0; i<robot->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = robot->getBodyNode(i);
     auto shapeNodes = bn->getShapeNodesWith<dart::dynamics::VisualAspect>();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael Koval <mkoval@cs.cmu.edu>
@@ -61,11 +61,11 @@ public:
   virtual ~Resource() = default;
 
   /// \brief Return the size of the resource, in bytes.
-  virtual size_t getSize() = 0;
+  virtual std::size_t getSize() = 0;
 
   /// \brief Return the current value of the position indicator.
   /// \note This method has the same API as the standard ftell function.
-  virtual size_t tell() = 0;
+  virtual std::size_t tell() = 0;
 
   /// \brief Set the position indicator to a new position.
   /// \param[in] _offset Offset, in bytes, relative to _origin.
@@ -79,7 +79,7 @@ public:
   /// \param[in] _size Size, in bytes, of each element.
   /// \param[in] _count Number of elements, each of _size bytes.
   /// \note This method has the same API as the standard fread function.
-  virtual size_t read(void *_buffer, size_t _size, size_t _count) = 0; 
+  virtual std::size_t read(void *_buffer, std::size_t _size, std::size_t _count) = 0;
 };
 
 using ResourcePtr = std::shared_ptr<Resource>;

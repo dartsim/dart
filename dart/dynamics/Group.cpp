@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -73,7 +73,7 @@ GroupPtr Group::create(const std::string& _name,
 }
 
 //==============================================================================
-void Group::swapBodyNodeIndices(size_t _index1, size_t _index2)
+void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
 {
   if(_index1 >= mBodyNodes.size() || _index2 >= mBodyNodes.size())
   {
@@ -123,7 +123,7 @@ void Group::swapBodyNodeIndices(size_t _index1, size_t _index2)
 }
 
 //==============================================================================
-void Group::swapDofIndices(size_t _index1, size_t _index2)
+void Group::swapDofIndices(std::size_t _index1, std::size_t _index2)
 {
   if(_index1 >= mDofs.size() || _index2 >= mDofs.size())
   {
@@ -164,8 +164,8 @@ void Group::swapDofIndices(size_t _index1, size_t _index2)
     return;
   }
 
-  size_t localIndex1 = dof1->getIndexInJoint();
-  size_t localIndex2 = dof2->getIndexInJoint();
+  std::size_t localIndex1 = dof1->getIndexInJoint();
+  std::size_t localIndex2 = dof2->getIndexInJoint();
 
   it1->second.mDofIndices[localIndex1] = _index2;
   it2->second.mDofIndices[localIndex2] = _index1;
@@ -195,7 +195,7 @@ bool Group::addComponent(BodyNode* _bn, bool _warning)
 
   added |= addBodyNode(_bn, false);
 
-  for(size_t i=0; i < _bn->getParentJoint()->getNumDofs(); ++i)
+  for(std::size_t i=0; i < _bn->getParentJoint()->getNumDofs(); ++i)
     added |= addDof(_bn->getParentJoint()->getDof(i), false);
 
   if(_warning && !added)
@@ -240,7 +240,7 @@ bool Group::removeComponent(BodyNode* _bn, bool _warning)
 
   removed |= removeBodyNode(_bn, false);
 
-  for(size_t i=0; i < _bn->getParentJoint()->getNumDofs(); ++i)
+  for(std::size_t i=0; i < _bn->getParentJoint()->getNumDofs(); ++i)
     removed |= removeDof(_bn->getParentJoint()->getDof(i), false);
 
   if(_warning && !removed)
@@ -376,7 +376,7 @@ bool Group::addJoint(Joint* _joint, bool _addDofs, bool _warning)
 
   if(_addDofs)
   {
-    for(size_t i=0; i < _joint->getNumDofs(); ++i)
+    for(std::size_t i=0; i < _joint->getNumDofs(); ++i)
       added |= addDof(_joint->getDof(i), false, false);
   }
 
@@ -439,7 +439,7 @@ bool Group::removeJoint(Joint* _joint, bool _removeDofs, bool _warning)
 
   if(_removeDofs)
   {
-    for(size_t i=0; i < _joint->getNumDofs(); ++i)
+    for(std::size_t i=0; i < _joint->getNumDofs(); ++i)
       removed |= removeDof(_joint->getDof(i), false, false);
   }
 
@@ -553,7 +553,7 @@ bool Group::removeDof(DegreeOfFreedom* _dof, bool _cleanupJoint, bool _warning)
     // Check whether any DOFs belonging to the Joint are remaining in the Group
     bool performCleanup = true;
     Joint* joint = _dof->getJoint();
-    for(size_t i=0; i < joint->getNumDofs(); ++i)
+    for(std::size_t i=0; i < joint->getNumDofs(); ++i)
     {
       if(getIndexOf(joint->getDof(i), false) == INVALID_INDEX)
       {
@@ -609,7 +609,7 @@ Group::Group(const std::string& _name,
 
   if(_includeDofs || _includeJoints)
   {
-    for(size_t i=0; i < _bodyNodes.size(); ++i)
+    for(std::size_t i=0; i < _bodyNodes.size(); ++i)
     {
       Joint* joint = _bodyNodes[i]->getParentJoint();
 
@@ -618,7 +618,7 @@ Group::Group(const std::string& _name,
 
       if(_includeDofs)
       {
-        for(size_t j=0; j < joint->getNumDofs(); ++j)
+        for(std::size_t j=0; j < joint->getNumDofs(); ++j)
           addDof(joint->getDof(j));
       }
     }
@@ -635,7 +635,7 @@ Group::Group(const std::string& _name,
 
   if(_includeBodyNodes)
   {
-    for(size_t i=0; i < _dofs.size(); ++i)
+    for(std::size_t i=0; i < _dofs.size(); ++i)
     {
       DegreeOfFreedom* dof = _dofs[i];
       addBodyNode(dof->getChildBodyNode(), false);
@@ -651,13 +651,13 @@ Group::Group(const std::string& _name,
 
   if(_metaSkeleton)
   {
-    for(size_t i=0; i < _metaSkeleton->getNumBodyNodes(); ++i)
+    for(std::size_t i=0; i < _metaSkeleton->getNumBodyNodes(); ++i)
       addBodyNode(_metaSkeleton->getBodyNode(i));
 
-    for(size_t i=0; i < _metaSkeleton->getNumJoints(); ++i)
+    for(std::size_t i=0; i < _metaSkeleton->getNumJoints(); ++i)
       addJoint(_metaSkeleton->getJoint(i), false);
 
-    for(size_t i=0; i < _metaSkeleton->getNumDofs(); ++i)
+    for(std::size_t i=0; i < _metaSkeleton->getNumDofs(); ++i)
       addDof(_metaSkeleton->getDof(i), false);
   }
 }

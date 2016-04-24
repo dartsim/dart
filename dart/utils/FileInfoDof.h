@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -64,14 +64,14 @@ public:
 
   /// \brief Save file
   /// \note Down sampling not implemented yet
-  bool saveFile(const char* _fileName, size_t _start, size_t _end,
+  bool saveFile(const char* _fileName, std::size_t _start, std::size_t _end,
                 double _sampleRate = 1.0);
 
   /// \brief Add Dof
   void addDof(const Eigen::VectorXd& _dofs);
 
   /// \brief Get Dof
-  double getDofAt(size_t _frame, size_t _id) const;
+  double getDofAt(std::size_t _frame, std::size_t _id) const;
 
   /// \brief Get pose at frame
   Eigen::VectorXd getPoseAtFrame(int _frame) const;
@@ -96,7 +96,7 @@ protected:
   double mFPS;
 
   /// \brief Number of frames
-  size_t mNumFrames;
+  std::size_t mNumFrames;
 
   /// \brief File name
   char mFileName[256];

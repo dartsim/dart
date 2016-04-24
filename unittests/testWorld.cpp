@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -187,26 +187,26 @@ TEST(World, Cloning)
   fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
 
   std::vector<dart::simulation::WorldPtr> worlds;
-  for(size_t i=0; i<fileList.size(); ++i)
+  for(std::size_t i=0; i<fileList.size(); ++i)
     worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
 
-  for(size_t i=0; i<worlds.size(); ++i)
+  for(std::size_t i=0; i<worlds.size(); ++i)
   {
     dart::simulation::WorldPtr original = worlds[i];
     std::vector<dart::simulation::WorldPtr> clones;
     clones.push_back(original);
-    for(size_t j=1; j<5; ++j)
+    for(std::size_t j=1; j<5; ++j)
       clones.push_back(clones[j-1]->clone());
 
 #ifndef NDEBUG // Debug mode
-    size_t numIterations = 3;
+    std::size_t numIterations = 3;
 #else
-    size_t numIterations = 500;
+    std::size_t numIterations = 500;
 #endif
 
-    for(size_t j=0; j<numIterations; ++j)
+    for(std::size_t j=0; j<numIterations; ++j)
     {
-      for(size_t k=0; k<original->getNumSkeletons(); ++k)
+      for(std::size_t k=0; k<original->getNumSkeletons(); ++k)
       {
         dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
 
@@ -216,7 +216,7 @@ TEST(World, Cloning)
           commands[q] = random(-0.1, 0.1);
 
         // Assign the command vector to each clone of the kth skeleton
-        for(size_t c=0; c<clones.size(); ++c)
+        for(std::size_t c=0; c<clones.size(); ++c)
         {
           dart::dynamics::SkeletonPtr skelClone = clones[c]->getSkeleton(k);
           skelClone->setCommands(commands);
@@ -224,13 +224,13 @@ TEST(World, Cloning)
       }
 
       // Step each clone forward
-      for(size_t c=0; c<clones.size(); ++c)
+      for(std::size_t c=0; c<clones.size(); ++c)
         clones[c]->step(false);
     }
 
-    for(size_t c=0; c<clones.size(); ++c)
+    for(std::size_t c=0; c<clones.size(); ++c)
     {
-      for(size_t k=0; k<original->getNumSkeletons(); ++k)
+      for(std::size_t k=0; k<original->getNumSkeletons(); ++k)
       {
         dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
         dart::dynamics::SkeletonPtr clone = clones[c]->getSkeleton(k);
@@ -270,7 +270,7 @@ TEST(World, ValidatingClones)
   fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
 
   std::vector<dart::simulation::WorldPtr> worlds;
-  for(size_t i=0; i<fileList.size(); ++i)
+  for(std::size_t i=0; i<fileList.size(); ++i)
   {
     worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
 
@@ -284,12 +284,12 @@ TEST(World, ValidatingClones)
 #endif
   }
 
-  for(size_t i=0; i<worlds.size(); ++i)
+  for(std::size_t i=0; i<worlds.size(); ++i)
   {
     dart::simulation::WorldPtr original = worlds[i];
     std::vector<dart::simulation::WorldPtr> clones;
     clones.push_back(original);
-    for(size_t j=1; j<5; ++j)
+    for(std::size_t j=1; j<5; ++j)
     {
       clones.push_back(clones[j-1]->clone());
 

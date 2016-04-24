@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -54,7 +54,7 @@ class Problem
 public:
 
   /// \brief Constructor
-  explicit Problem(size_t _dim = 0);
+  explicit Problem(std::size_t _dim = 0);
 
   /// \brief Destructor
   virtual ~Problem() = default;
@@ -62,10 +62,10 @@ public:
   //--------------------------- Problem Setting --------------------------------
   /// \brief Set dimension. Note: Changing the dimension will clear out the
   /// initial guess and any seeds that have been added.
-  void setDimension(size_t _dim);
+  void setDimension(std::size_t _dim);
 
   /// \brief Get dimension
-  size_t getDimension() const;
+  std::size_t getDimension() const;
 
   /// \brief Set initial guess for opimization parameters
   void setInitialGuess(const Eigen::VectorXd& _initGuess);
@@ -80,10 +80,10 @@ public:
   /// \brief Get a mutable reference of the seed for the specified index. If an
   /// out-of-bounds index is provided a warning will print, and a reference to
   /// the initial guess will be returned instead.
-  Eigen::VectorXd& getSeed(size_t _index);
+  Eigen::VectorXd& getSeed(std::size_t _index);
 
-  /// \brief An immutable version of getSeed(size_t)
-  const Eigen::VectorXd& getSeed(size_t _index) const;
+  /// \brief An immutable version of getSeed(std::size_t)
+  const Eigen::VectorXd& getSeed(std::size_t _index) const;
 
   /// \brief Get a mutable reference to the full vector of seeds that this
   /// Problem currently contains
@@ -121,16 +121,16 @@ public:
   void addIneqConstraint(FunctionPtr _ineqConst);
 
   /// \brief Get number of equality constraints
-  size_t getNumEqConstraints() const;
+  std::size_t getNumEqConstraints() const;
 
   /// \brief Get number of inequality constraints
-  size_t getNumIneqConstraints() const;
+  std::size_t getNumIneqConstraints() const;
 
   /// \brief Get equality constraint
-  FunctionPtr getEqConstraint(size_t _idx) const;
+  FunctionPtr getEqConstraint(std::size_t _idx) const;
 
   /// \brief Get inequality constraint
-  FunctionPtr getIneqConstraint(size_t _idx) const;
+  FunctionPtr getIneqConstraint(std::size_t _idx) const;
 
   /// \brief Remove equality constraint
   void removeEqConstraint(FunctionPtr _eqConst);
@@ -160,7 +160,7 @@ public:
 
 protected:
   /// \brief Dimension of this problem
-  size_t mDimension;
+  std::size_t mDimension;
 
   /// \brief Initial guess for optimization parameters
   Eigen::VectorXd mInitialGuess;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -66,15 +66,15 @@ public:
 
   /// Get the number of Nodes corresponding to the specified type
   template <class NodeType>
-  size_t getNumNodes() const;
+  std::size_t getNumNodes() const;
 
   /// Get the Node of the specified type and the specified index
   template <class NodeType>
-  NodeType* getNode(size_t index);
+  NodeType* getNode(std::size_t index);
 
   /// Get the Node of the specified type and the specified index
   template <class NodeType>
-  const NodeType* getNode(size_t index) const;
+  const NodeType* getNode(std::size_t index) const;
 
   /// Check if this Manager is specialized for a specific type of Node
   template <class NodeType>
@@ -84,17 +84,17 @@ protected:
 
   /// Redirect to BasicNodeManagerForBodyNode::getNumNodes()
   template <class NodeType>
-  size_t _getNumNodes(type<NodeType>) const;
+  std::size_t _getNumNodes(type<NodeType>) const;
 
   /// Specialized implementation of getNumNodes()
-  size_t _getNumNodes(type<SpecNode>) const;
+  std::size_t _getNumNodes(type<SpecNode>) const;
 
-  /// Redirect to BasicNodeManagerForBodyNode::getNode(size_t)
+  /// Redirect to BasicNodeManagerForBodyNode::getNode(std::size_t)
   template <class NodeType>
-  NodeType* _getNode(type<NodeType>, size_t index);
+  NodeType* _getNode(type<NodeType>, std::size_t index);
 
-  /// Specialized implementation of getNode(size_t)
-  SpecNode* _getNode(type<SpecNode>, size_t index);
+  /// Specialized implementation of getNode(std::size_t)
+  SpecNode* _getNode(type<SpecNode>, std::size_t index);
 
   /// Return false
   template <class NodeType>
@@ -142,17 +142,17 @@ public:
   /// Get the number of Nodes of the specified type that are in the treeIndexth
   /// tree of this Skeleton
   template <class NodeType>
-  size_t getNumNodes(size_t treeIndex) const;
+  std::size_t getNumNodes(std::size_t treeIndex) const;
 
   /// Get the nodeIndexth Node of the specified type within the tree of
   /// treeIndex.
   template <class NodeType>
-  NodeType* getNode(size_t treeIndex, size_t nodeIndex);
+  NodeType* getNode(std::size_t treeIndex, std::size_t nodeIndex);
 
   /// Get the nodeIndexth Node of the specified type within the tree of
   /// treeIndex.
   template <class NodeType>
-  const NodeType* getNode(size_t treeIndex, size_t nodeIndex) const;
+  const NodeType* getNode(std::size_t treeIndex, std::size_t nodeIndex) const;
 
   /// Get the Node of the specified type with the given name.
   template <class NodeType>
@@ -168,19 +168,19 @@ public:
 
 protected:
 
-  /// Redirect to BasicNodeManagerForSkeleton::getNumNodes(size_t)
+  /// Redirect to BasicNodeManagerForSkeleton::getNumNodes(std::size_t)
   template <class NodeType>
-  size_t _getNumNodes(type<NodeType>, size_t treeIndex) const;
+  std::size_t _getNumNodes(type<NodeType>, std::size_t treeIndex) const;
 
-  /// Specialized implementation of getNumNodes(size_t)
-  size_t _getNumNodes(type<SpecNode>, size_t treeIndex) const;
+  /// Specialized implementation of getNumNodes(std::size_t)
+  std::size_t _getNumNodes(type<SpecNode>, std::size_t treeIndex) const;
 
-  /// Redirect to BasicNodeManagerForSkeleton::getNode(size_t, size_t)
+  /// Redirect to BasicNodeManagerForSkeleton::getNode(std::size_t, std::size_t)
   template <class NodeType>
-  NodeType* _getNode(type<NodeType>, size_t treeIndex, size_t nodeIndex);
+  NodeType* _getNode(type<NodeType>, std::size_t treeIndex, std::size_t nodeIndex);
 
-  /// Specialized implementation of getNode(size_t, size_t)
-  SpecNode* _getNode(type<SpecNode>, size_t treeIndex, size_t nodeIndex);
+  /// Specialized implementation of getNode(std::size_t, std::size_t)
+  SpecNode* _getNode(type<SpecNode>, std::size_t treeIndex, std::size_t nodeIndex);
 
   /// Redirect to BasicNodeManagerForSkeleton::getNode(const std::string&)
   template <class NodeType>

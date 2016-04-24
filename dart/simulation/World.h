@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -129,7 +129,7 @@ public:
   //--------------------------------------------------------------------------
 
   /// Get the indexed skeleton
-  dynamics::SkeletonPtr getSkeleton(size_t _index) const;
+  dynamics::SkeletonPtr getSkeleton(std::size_t _index) const;
 
   /// Find a Skeleton by name
   /// \param[in] The name of the Skeleton you are looking for.
@@ -137,7 +137,7 @@ public:
   dynamics::SkeletonPtr getSkeleton(const std::string& _name) const;
 
   /// Get the number of skeletons
-  size_t getNumSkeletons() const;
+  std::size_t getNumSkeletons() const;
 
   /// Add a skeleton to this world
   std::string addSkeleton(const dynamics::SkeletonPtr& _skeleton);
@@ -153,13 +153,13 @@ public:
   int getIndex(int _index) const;
 
   /// Get the indexed Entity
-  dynamics::SimpleFramePtr getSimpleFrame(size_t _index) const;
+  dynamics::SimpleFramePtr getSimpleFrame(std::size_t _index) const;
 
   /// Find an Entity by name
   dynamics::SimpleFramePtr getSimpleFrame(const std::string& _name) const;
 
   /// Get the number of Entities
-  size_t getNumSimpleFrames() const;
+  std::size_t getNumSimpleFrames() const;
 
   /// Add an Entity to this world
   std::string addSimpleFrame(const dynamics::SimpleFramePtr& _frame);

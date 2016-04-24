@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -496,11 +496,11 @@ SupportPolygon computeSupportPolgyon(
     const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
     const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
 
-/// Same as computeSupportPolgyon, except you can pass in a std::vector<size_t>
+/// Same as computeSupportPolgyon, except you can pass in a std::vector<std::size_t>
 /// which will have the same size as the returned SupportPolygon, and each entry
 /// will contain the original index of each point in the SupportPolygon
 SupportPolygon computeSupportPolgyon(
-    std::vector<size_t>& _originalIndices,
+    std::vector<std::size_t>& _originalIndices,
     const SupportGeometry& _geometry,
     const Eigen::Vector3d& _axis1 = Eigen::Vector3d::UnitX(),
     const Eigen::Vector3d& _axis2 = Eigen::Vector3d::UnitY());
@@ -510,7 +510,7 @@ SupportPolygon computeConvexHull(const SupportPolygon& _points);
 
 /// Computes the convex hull of a set of 2D points and fills in _originalIndices
 /// with the original index of each entry in the returned SupportPolygon
-SupportPolygon computeConvexHull(std::vector<size_t>& _originalIndices,
+SupportPolygon computeConvexHull(std::vector<std::size_t>& _originalIndices,
                                  const SupportPolygon& _points);
 
 /// Compute the centroid of a polygon, assuming the polygon is a convex hull
@@ -558,8 +558,8 @@ Eigen::Vector2d computeClosestPointOnSupportPolygon(
 /// Same as closestPointOnSupportPolygon, but also fills in _index1 and _index2
 /// with the indices of the line segment
 Eigen::Vector2d computeClosestPointOnSupportPolygon(
-    size_t& _index1,
-    size_t& _index2,
+    std::size_t& _index1,
+    std::size_t& _index2,
     const Eigen::Vector2d& _p,
     const SupportPolygon& _support);
 

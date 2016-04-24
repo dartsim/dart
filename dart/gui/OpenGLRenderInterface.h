@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>
@@ -58,49 +58,49 @@ public:
     OpenGLRenderInterface() : mViewportX(0.0), mViewportY(0.0), mViewportWidth(0.0), mViewportHeight(0.0) {}
     virtual ~OpenGLRenderInterface(){}
 
-    virtual void initialize() override;
-    virtual void destroy() override;
+    void initialize() override;
+    void destroy() override;
 
-    virtual void setViewport(int _x,int _y,int _width,int _height) override;
-    virtual void getViewport(int& _x, int& _y, int& _width, int& _height) const override;
+    void setViewport(int _x,int _y,int _width,int _height) override;
+    void getViewport(int& _x, int& _y, int& _width, int& _height) const override;
 
-    virtual void clear(const Eigen::Vector3d& _color) override;
+    void clear(const Eigen::Vector3d& _color) override;
 
-    virtual void setMaterial(const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, double _cosinePow) override;
-    virtual void getMaterial(Eigen::Vector3d& _diffuse, Eigen::Vector3d& _specular, double& _cosinePow) const override;
-    virtual void setDefaultMaterial() override;
+    void setMaterial(const Eigen::Vector3d& _diffuse, const Eigen::Vector3d& _specular, double _cosinePow) override;
+    void getMaterial(Eigen::Vector3d& _diffuse, Eigen::Vector3d& _specular, double& _cosinePow) const override;
+    void setDefaultMaterial() override;
 
-    virtual void pushMatrix() override;
-    virtual void popMatrix() override;
-    virtual void pushName(int _id) override;
-    virtual void popName() override;
+    void pushMatrix() override;
+    void popMatrix() override;
+    void pushName(int _id) override;
+    void popName() override;
 
-    virtual void translate(const Eigen::Vector3d& _offset) override; //glTranslate
-    virtual void rotate(const Eigen::Vector3d& _axis, double _rad) override; //glRotate
-    virtual void transform(const Eigen::Isometry3d& _transform) override; //glMultMatrix
-    virtual void scale(const Eigen::Vector3d& _scale) override; //glScale
+    void translate(const Eigen::Vector3d& _offset) override; //glTranslate
+    void rotate(const Eigen::Vector3d& _axis, double _rad) override; //glRotate
+    void transform(const Eigen::Isometry3d& _transform) override; //glMultMatrix
+    void scale(const Eigen::Vector3d& _scale) override; //glScale
 
     void compileList(dynamics::Skeleton* _skel);
     void compileList(dynamics::BodyNode* _node);
     void compileList(dynamics::Shape* _shape);
     GLuint compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh);
 
-    virtual void drawEllipsoid(const Eigen::Vector3d& _size) override;
-    virtual void drawCube(const Eigen::Vector3d& _size) override;
-    virtual void drawCylinder(double _radius, double _height) override;
-    virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) override;
-    virtual void drawSoftMesh(const aiMesh* mesh);
-    virtual void drawList(GLuint index) override;
-    virtual void drawLineSegments(const std::vector<Eigen::Vector3d>& _vertices,
+    void drawEllipsoid(const Eigen::Vector3d& _size) override;
+    void drawCube(const Eigen::Vector3d& _size) override;
+    void drawCylinder(double _radius, double _height) override;
+    void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) override;
+    void drawSoftMesh(const aiMesh* mesh) override;
+    void drawList(GLuint index) override;
+    void drawLineSegments(const std::vector<Eigen::Vector3d>& _vertices,
                                   const Eigen::aligned_vector<Eigen::Vector2i>& _connections) override;
 
-    virtual void setPenColor(const Eigen::Vector4d& _col) override;
-    virtual void setPenColor(const Eigen::Vector3d& _col) override;
+    void setPenColor(const Eigen::Vector4d& _col) override;
+    void setPenColor(const Eigen::Vector3d& _col) override;
 
-    virtual void setLineWidth(float _width) override;
+    void setLineWidth(float _width) override;
 
-    virtual void saveToImage(const char* _filename, DecoBufferType _buffType = BT_Back) override;
-    virtual void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels) override;
+    void saveToImage(const char* _filename, DecoBufferType _buffType = BT_Back) override;
+    void readFrameBuffer(DecoBufferType _buffType, DecoColorChannel _ch, void* _pixels) override;
 
 private:
     void color4_to_float4(const aiColor4D *c, float f[4]);

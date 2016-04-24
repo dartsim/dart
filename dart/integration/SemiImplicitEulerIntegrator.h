@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -53,13 +53,13 @@ public:
   virtual ~SemiImplicitEulerIntegrator();
 
   // Documentation inherited
-  virtual void integrate(IntegrableSystem* _system, double _dt);
+  void integrate(IntegrableSystem* _system, double _dt) override;
 
   // Documentation inherited
-  virtual void integratePos(IntegrableSystem* _system, double _dt);
+  void integratePos(IntegrableSystem* _system, double _dt) override;
 
   // Documentation inherited
-  virtual void integrateVel(IntegrableSystem* _system, double _dt);
+  void integrateVel(IntegrableSystem* _system, double _dt) override;
 };
 
 }  // namespace integration

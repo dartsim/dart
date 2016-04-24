@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>,
@@ -62,8 +62,8 @@ NameManager<T>::NameManager(const std::string& _managerName,
 template <class T>
 bool NameManager<T>::setPattern(const std::string& _newPattern)
 {
-  size_t name_start = _newPattern.find("%s");
-  size_t number_start = _newPattern.find("%d");
+  std::size_t name_start = _newPattern.find("%s");
+  std::size_t number_start = _newPattern.find("%d");
 
   if(name_start == std::string::npos || number_start == std::string::npos)
     return false;
@@ -73,8 +73,8 @@ bool NameManager<T>::setPattern(const std::string& _newPattern)
   else
     mNameBeforeNumber = false;
 
-  size_t prefix_end = std::min(name_start, number_start);
-  size_t infix_end = std::max(name_start, number_start);
+  std::size_t prefix_end = std::min(name_start, number_start);
+  std::size_t infix_end = std::max(name_start, number_start);
 
   mPrefix = _newPattern.substr(0, prefix_end);
   mInfix = _newPattern.substr(prefix_end+2, infix_end-prefix_end-2);
@@ -221,7 +221,7 @@ bool NameManager<T>::hasObject(const T& _obj) const
 
 //==============================================================================
 template <class T>
-size_t NameManager<T>::getCount() const
+std::size_t NameManager<T>::getCount() const
 {
   return mMap.size();
 }

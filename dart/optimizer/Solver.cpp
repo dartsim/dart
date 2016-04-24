@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -45,8 +45,8 @@ namespace optimizer {
 Solver::Properties::Properties(
     std::shared_ptr<Problem> _problem,
     double _tolerance,
-    size_t _numMaxIterations,
-    size_t _iterationsPerPrint,
+    std::size_t _numMaxIterations,
+    std::size_t _iterationsPerPrint,
     std::ostream* _ostream,
     bool _printFinalResult,
     const std::string &_resultFile)
@@ -133,19 +133,19 @@ double Solver::getTolerance() const
 }
 
 //==============================================================================
-void Solver::setNumMaxIterations(size_t _newMax)
+void Solver::setNumMaxIterations(std::size_t _newMax)
 {
   mProperties.mNumMaxIterations = _newMax;
 }
 
 //==============================================================================
-size_t Solver::getNumMaxIterations() const
+std::size_t Solver::getNumMaxIterations() const
 {
   return mProperties.mNumMaxIterations;
 }
 
 //==============================================================================
-void Solver::setIterationsPerPrint(size_t _newRatio)
+void Solver::setIterationsPerPrint(std::size_t _newRatio)
 {
   mProperties.mIterationsPerPrint = _newRatio;
 }
@@ -163,7 +163,7 @@ std::ostream* Solver::getOutStream() const
 }
 
 //==============================================================================
-size_t Solver::getIterationsPerPrint() const
+std::size_t Solver::getIterationsPerPrint() const
 {
   return mProperties.mIterationsPerPrint;
 }

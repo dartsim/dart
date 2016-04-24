@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -268,13 +268,13 @@ public:
   //--------------------------------------------------------------------------
 
   /// Return the index of this BodyNode within its Skeleton
-  size_t getIndexInSkeleton() const;
+  std::size_t getIndexInSkeleton() const;
 
   /// Return the index of this BodyNode within its tree
-  size_t getIndexInTree() const;
+  std::size_t getIndexInTree() const;
 
   /// Return the index of the tree that this BodyNode belongs to
-  size_t getTreeIndex() const;
+  std::size_t getTreeIndex() const;
 
   /// Remove this BodyNode and all of its children (recursively) from their
   /// Skeleton. If a BodyNodePtr that references this BodyNode (or any of its
@@ -514,22 +514,22 @@ public:
   // default argument. Please see #487 for detail
 
   /// Return the number of child BodyNodes
-  size_t getNumChildBodyNodes() const;
+  std::size_t getNumChildBodyNodes() const;
 
   /// Return the _index-th child BodyNode of this BodyNode
-  BodyNode* getChildBodyNode(size_t _index);
+  BodyNode* getChildBodyNode(std::size_t _index);
 
   /// Return the (const) _index-th child BodyNode of this BodyNode
-  const BodyNode* getChildBodyNode(size_t _index) const;
+  const BodyNode* getChildBodyNode(std::size_t _index) const;
 
   /// Return the number of child Joints
-  size_t getNumChildJoints() const;
+  std::size_t getNumChildJoints() const;
 
   /// Return the _index-th child Joint of this BodyNode
-  Joint* getChildJoint(size_t _index);
+  Joint* getChildJoint(std::size_t _index);
 
   /// Return the (const) _index-th child Joint of this BodyNode
-  const Joint* getChildJoint(size_t _index) const;
+  const Joint* getChildJoint(std::size_t _index) const;
 
   /// Create some Node type and attach it to this BodyNode.
   template <class NodeType, typename ...Args>
@@ -578,7 +578,7 @@ public:
 
   /// Return the number of ShapeNodes containing given Aspect in this BodyNode
   template <class Aspect>
-  size_t getNumShapeNodesWith() const;
+  std::size_t getNumShapeNodesWith() const;
 
   /// Return the list of ShapeNodes containing given Aspect
   template <class Aspect>
@@ -614,25 +614,25 @@ public:
       const Eigen::Vector4d& color = Eigen::Vector4d::Constant(1.0));
 
   // Documentation inherited
-  bool dependsOn(size_t _genCoordIndex) const override;
+  bool dependsOn(std::size_t _genCoordIndex) const override;
 
   // Documentation inherited
-  size_t getNumDependentGenCoords() const override;
+  std::size_t getNumDependentGenCoords() const override;
 
   // Documentation inherited
-  size_t getDependentGenCoordIndex(size_t _arrayIndex) const override;
+  std::size_t getDependentGenCoordIndex(std::size_t _arrayIndex) const override;
 
   // Documentation inherited
-  const std::vector<size_t>& getDependentGenCoordIndices() const override;
+  const std::vector<std::size_t>& getDependentGenCoordIndices() const override;
 
   // Documentation inherited
-  size_t getNumDependentDofs() const override;
+  std::size_t getNumDependentDofs() const override;
 
   // Documentation inherited
-  DegreeOfFreedom* getDependentDof(size_t _index) override;
+  DegreeOfFreedom* getDependentDof(std::size_t _index) override;
 
   // Documentation inherited
-  const DegreeOfFreedom* getDependentDof(size_t _index) const override;
+  const DegreeOfFreedom* getDependentDof(std::size_t _index) const override;
 
   // Documentation inherited
   const std::vector<DegreeOfFreedom*>& getDependentDofs() override;
@@ -969,15 +969,15 @@ protected:
 
   ///
   virtual void updateMassMatrix();
-  virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col);
-  virtual void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
+  virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col);
+  virtual void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col,
                                       double _timeStep);
 
   ///
   virtual void updateInvMassMatrix();
   virtual void updateInvAugMassMatrix();
-  virtual void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col);
-  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col,
+  virtual void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col);
+  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col,
                                          double _timeStep);
 
   ///
@@ -1030,7 +1030,7 @@ protected:
   int mID;
 
   /// Counts the number of nodes globally.
-  static size_t msBodyNodeCount;
+  static std::size_t msBodyNodeCount;
 
   /// Whether the node is currently in collision with another node.
   /// \deprecated DEPRECATED(6.0) See #670 for more detail.
@@ -1041,13 +1041,13 @@ protected:
   //--------------------------------------------------------------------------
 
   /// Index of this BodyNode in its Skeleton
-  size_t mIndexInSkeleton;
+  std::size_t mIndexInSkeleton;
 
   /// Index of this BodyNode in its Tree
-  size_t mIndexInTree;
+  std::size_t mIndexInTree;
 
   /// Index of this BodyNode's tree
-  size_t mTreeIndex;
+  std::size_t mTreeIndex;
 
   /// Parent joint
   Joint* mParentJoint;
@@ -1063,7 +1063,7 @@ protected:
   std::set<Entity*> mNonBodyNodeEntities;
 
   /// A increasingly sorted list of dependent dof indices.
-  std::vector<size_t> mDependentGenCoordIndices;
+  std::vector<std::size_t> mDependentGenCoordIndices;
 
   /// A version of mDependentGenCoordIndices that holds DegreeOfFreedom pointers
   /// instead of indices

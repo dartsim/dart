@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -257,7 +257,7 @@ void Viewer::captureScreen(const std::string& filename)
 
 //==============================================================================
 void Viewer::record(const std::string& directory, const std::string& prefix,
-                    bool restart, size_t digits)
+                    bool restart, std::size_t digits)
 {
   if(directory.empty())
   {

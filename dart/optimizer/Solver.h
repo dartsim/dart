@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -73,11 +73,11 @@ public:
 
     /// The maximum number of iterations that the solver should use. Use 0 for
     /// infinite iterations.
-    size_t mNumMaxIterations;
+    std::size_t mNumMaxIterations;
 
     /// How many iterations between printing the Solver's progress to the
     /// terminal. Use 0 for no printing.
-    size_t mIterationsPerPrint;
+    std::size_t mIterationsPerPrint;
 
     /// Stream for printing the Solver's progress. Default is std::cout.
     std::ostream* mOutStream;
@@ -91,8 +91,8 @@ public:
 
     Properties(std::shared_ptr<Problem> _problem = nullptr,
                double _tolerance = 1e-9,
-               size_t _numMaxIterations = 500,
-               size_t _iterationsPerPrint = 0,
+               std::size_t _numMaxIterations = 500,
+               std::size_t _iterationsPerPrint = 0,
                std::ostream* _ostream = &std::cout,
                bool _printFinalResult = false,
                const std::string& _resultFile = "");
@@ -143,18 +143,18 @@ public:
   double getTolerance() const;
 
   /// Set the maximum number of iterations that the Solver should use
-  virtual void setNumMaxIterations(size_t _newMax);
+  virtual void setNumMaxIterations(std::size_t _newMax);
 
   /// Get the maximum number of iterations that the Solver should use
-  size_t getNumMaxIterations() const;
+  std::size_t getNumMaxIterations() const;
 
   /// Set the number of iterations that should pass between printing progress to
   /// the terminal. Use 0 for no printing.
-  virtual void setIterationsPerPrint(size_t _newRatio);
+  virtual void setIterationsPerPrint(std::size_t _newRatio);
 
   /// Get the number of iterations that should pass between printing progress to
   /// the terminal. A value of 0 means there will be no printing.
-  size_t getIterationsPerPrint() const;
+  std::size_t getIterationsPerPrint() const;
 
   /// Set the output stream that prints the Solver's progress.
   virtual void setOutStream(std::ostream* _os);
