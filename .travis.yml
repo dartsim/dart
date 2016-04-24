@@ -13,8 +13,8 @@ compiler:
   - clang
 
 env:
-  - BUILD_TYPE=Debug   COVERALLS=ON
-  - BUILD_TYPE=Release COVERALLS=OFF
+  - BUILD_TYPE=Debug   TREAT_WARNINGS_AS_ERRORS=ON COVERALLS=ON
+  - BUILD_TYPE=Release TREAT_WARNINGS_AS_ERRORS=ON COVERALLS=OFF
 
 matrix:
   exclude:
@@ -27,7 +27,7 @@ install:
 
 script:
   - mkdir build && cd build
-  - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_COVERALLS=$COVERALLS ..
+  - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_TREAT_WARNINGS_AS_ERRORS=$TREAT_WARNINGS_AS_ERRORS -DDART_COVERALLS=$COVERALLS ..
   - make -j4 all tutorials examples tests test
   - if [ $COVERALLS = ON ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then make -j4 coveralls; fi
 

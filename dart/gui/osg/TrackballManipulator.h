@@ -44,11 +44,11 @@ namespace gui {
 namespace osg {
 
 #define DART_META_Object(library,name) \
-        virtual ::osg::Object* cloneType() const { return new name (); } \
-        virtual ::osg::Object* clone(const ::osg::CopyOp& copyop) const { return new name (*this,copyop); } \
-        virtual bool isSameKindAs(const ::osg::Object* obj) const { return dynamic_cast<const name *>(obj)!=NULL; } \
-        virtual const char* libraryName() const { return #library; }\
-        virtual const char* className() const { return #name; }
+        ::osg::Object* cloneType() const override { return new name (); } \
+        ::osg::Object* clone(const ::osg::CopyOp& copyop) const override { return new name (*this,copyop); } \
+        bool isSameKindAs(const ::osg::Object* obj) const override { return dynamic_cast<const name *>(obj)!=NULL; } \
+        const char* libraryName() const override { return #library; }\
+        const char* className() const override { return #name; }
 // TODO(JS): Copied from osg/Object. Due to the namespace conflict between osg
 // and dart::gui::osg, we need to explicitly specify the root namespace osg as
 // ::osg
