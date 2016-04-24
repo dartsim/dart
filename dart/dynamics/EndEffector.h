@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -149,7 +149,7 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void notifyTransformUpdate() override;
+  void notifyTransformUpdate() override;
 
   /// \}
 

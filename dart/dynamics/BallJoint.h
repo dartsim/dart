@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -68,7 +68,7 @@ public:
   static const std::string& getStaticType();
 
   // Documentation inherited
-  bool isCyclic(size_t _index) const override;
+  bool isCyclic(std::size_t _index) const override;
 
   /// Get the Properties of this BallJoint
   Properties getBallJointProperties() const;

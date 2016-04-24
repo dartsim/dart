@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -41,7 +41,6 @@
 #include <memory>
 #include <set>
 
-#include "dart/common/Deprecated.h"
 #include "dart/common/detail/ConnectionBody.h"
 
 namespace dart {
@@ -143,14 +142,10 @@ public:
   void disconnectAll();
 
   /// Cleanup all the disconnected connections
-  /// \warning Deprecated. Please use cleanupConnections() instead.
-  DEPRECATED(5.1) void clenaupConnections();
-
-  /// Cleanup all the disconnected connections
   void cleanupConnections();
 
   /// Get the number of connections
-  size_t getNumConnections() const;
+  std::size_t getNumConnections() const;
 
   /// Raise the signal
   template <typename... ArgTypes>
@@ -197,14 +192,10 @@ public:
   void disconnectAll();
 
   /// Cleanup all the disconnected connections
-  /// \warning Deprecated. Please use cleanupConnections() instead.
-  DEPRECATED(5.1) void clenaupConnections();
-
-  /// Cleanup all the disconnected connections
   void cleanupConnections();
 
   /// Get the number of connections
-  size_t getNumConnections() const;
+  std::size_t getNumConnections() const;
 
   /// Raise the signal
   template <typename... ArgTypes>

@@ -156,7 +156,7 @@ public:
       Composite* newComposite) const override;
 
   /// Increment the version of this Aspect and its Composite
-  size_t incrementVersion();
+  std::size_t incrementVersion();
 
   /// Call UpdateProperties(this) and incrementVersion()
   void notifyPropertiesUpdate();
@@ -322,7 +322,7 @@ cloneAspect(Composite* newComposite) const
 //==============================================================================
 template <class BaseT, class DerivedT, typename PropertiesData,
           class CompositeT, void (*updateProperties)(DerivedT*)>
-size_t AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
+std::size_t AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
                              CompositeT, updateProperties>::incrementVersion()
 {
   if(CompositeType* comp = this->getComposite())

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -39,7 +39,6 @@
 
 #include <nlopt.hpp>
 
-#include "dart/common/Deprecated.h"
 #include "dart/optimizer/Solver.h"
 
 namespace dart {
@@ -86,18 +85,6 @@ public:
 
   /// Get the algorithm that is to be used by the nlopt solver
   nlopt::algorithm getAlgorithm() const;
-
-  /// Set number of maximum evaluations
-  ///
-  /// Deprecated: Please use setNumMaxIterations() instead
-  DEPRECATED(5.0)
-  virtual void setNumMaxEvaluations(size_t _numVal);
-
-  /// Get number of maximum evaluations
-  ///
-  /// Deprecated: Please use getNumMaxIterations() instead
-  DEPRECATED(5.0)
-  virtual size_t getNumEvaluationMax() const;
 
 private:
   /// \brief Wrapping function for nlopt callback function, nlopt_func

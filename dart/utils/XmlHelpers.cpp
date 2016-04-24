@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -188,7 +188,7 @@ Eigen::Vector2d toVector2d(const std::string& str)
                boost::token_compress_on);
   assert(pieces.size() == 2);
 
-  for (size_t i = 0; i < pieces.size(); ++i)
+  for (std::size_t i = 0; i < pieces.size(); ++i)
   {
     if (pieces[i] != "")
     {
@@ -221,7 +221,7 @@ Eigen::Vector3d toVector3d(const std::string& str)
                boost::token_compress_on);
   assert(pieces.size() == 3);
 
-  for (size_t i = 0; i < pieces.size(); ++i)
+  for (std::size_t i = 0; i < pieces.size(); ++i)
   {
     if (pieces[i] != "")
     {
@@ -255,7 +255,7 @@ Eigen::Vector3i toVector3i(const std::string& str)
                boost::token_compress_on);
   assert(pieces.size() == 3);
 
-  for (size_t i = 0; i < pieces.size(); ++i)
+  for (std::size_t i = 0; i < pieces.size(); ++i)
   {
     if (pieces[i] != "")
     {
@@ -289,7 +289,7 @@ Eigen::Vector6d toVector6d(const std::string& str)
                boost::token_compress_on);
   assert(pieces.size() == 6);
 
-  for (size_t i = 0; i < pieces.size(); ++i)
+  for (std::size_t i = 0; i < pieces.size(); ++i)
   {
     if (pieces[i] != "")
     {
@@ -323,7 +323,7 @@ Eigen::VectorXd toVectorXd(const std::string& str)
 
   Eigen::VectorXd ret(pieces.size());
 
-  for (size_t i = 0; i < pieces.size(); ++i)
+  for (std::size_t i = 0; i < pieces.size(); ++i)
   {
     if (pieces[i] != "")
     {
@@ -357,7 +357,7 @@ Eigen::Isometry3d toIsometry3d(const std::string& str)
                boost::token_compress_on);
   assert(pieces.size() == 6);
 
-  for (size_t i = 0; i < pieces.size(); ++i)
+  for (std::size_t i = 0; i < pieces.size(); ++i)
   {
     if (pieces[i] != "")
     {
@@ -393,7 +393,7 @@ Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str)
                boost::token_compress_on);
   assert(pieces.size() == 6);
 
-  for (size_t i = 0; i < pieces.size(); ++i)
+  for (std::size_t i = 0; i < pieces.size(); ++i)
   {
     if (pieces[i] != "")
     {
@@ -666,7 +666,7 @@ void openXMLFile(tinyxml2::XMLDocument& doc,
   }
 
   // C++11 guarantees that std::string has contiguous storage.
-  const size_t size = resource->getSize();
+  const std::size_t size = resource->getSize();
   std::string content;
   content.resize(size);
   if(resource->read(&content.front(), size, 1) != 1)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -228,12 +228,12 @@ public:
       return mSolutions;
     }
 
-    const size_t SP = 0;
-    const size_t SR = 1;
-    const size_t SY = 2;
-    const size_t EP = 3;
-    const size_t WY = 4;
-    const size_t WP = 5;
+    const std::size_t SP = 0;
+    const std::size_t SR = 1;
+    const std::size_t SY = 2;
+    const std::size_t EP = 3;
+    const std::size_t WY = 4;
+    const std::size_t WP = 5;
 
     const SkeletonPtr& skel = base->getSkeleton();
 
@@ -259,7 +259,7 @@ public:
     double y = p.y();
     double z = p.z();
 
-    for(size_t i = 0; i < 8; ++i)
+    for(std::size_t i = 0; i < 8; ++i)
     {
       const int flipEP = alterantives(i,0);
       const int incWY = alterantives(i,1);
@@ -334,7 +334,7 @@ public:
       testQ(SR) = euler[1];
       testQ(SY) = euler[2];
 
-      for(size_t j=0; j < 6; ++j)
+      for(std::size_t j=0; j < 6; ++j)
       {
         testQ[j] = dart::math::wrapToPi(testQ[j]);
         if(std::abs(testQ[j]) < zeroSize)
@@ -350,7 +350,7 @@ public:
     return mSolutions;
   }
 
-  const std::vector<size_t>& getDofs() const override
+  const std::vector<std::size_t>& getDofs() const override
   {
     if(!configured)
       configure();
@@ -390,7 +390,7 @@ protected:
 
     DegreeOfFreedom* dofs[6];
     BodyNode* bn = base;
-    for(size_t i=0; i < 6; ++i)
+    for(std::size_t i=0; i < 6; ++i)
     {
       Joint* joint = bn->getParentJoint();
       if(joint->getNumDofs() != 1)
@@ -436,7 +436,7 @@ protected:
         -1,  0,  1,
         -1,  0,  0;
 
-    for(size_t i=0; i < 6; ++i)
+    for(std::size_t i=0; i < 6; ++i)
     {
       dofs[i]->setPosition(saved_q[i]);
       mDofs.push_back(dofs[i]->getIndexInSkeleton());
@@ -454,7 +454,7 @@ protected:
 
   mutable Eigen::Matrix<int, 8, 3> alterantives;
 
-  mutable std::vector<size_t> mDofs;
+  mutable std::vector<std::size_t> mDofs;
 
   std::string mBaseLinkName;
   mutable WeakBodyNodePtr mBaseLink;
@@ -529,7 +529,7 @@ public:
     ny = Binv(1,0); sy = Binv(1,1); ay = Binv(1,2); py = Binv(1,3);
                                     az = Binv(2,2); pz = Binv(2,3);
 
-    for(size_t i=0; i < 8; ++i)
+    for(std::size_t i=0; i < 8; ++i)
     {
       bool isValid = true;
 
@@ -588,7 +588,7 @@ public:
     return mSolutions;
   }
 
-  const std::vector<size_t>& getDofs() const override
+  const std::vector<std::size_t>& getDofs() const override
   {
     if(!configured)
       configure();
@@ -628,7 +628,7 @@ protected:
 
     DegreeOfFreedom* dofs[6];
     BodyNode* bn = base;
-    for(size_t i=0; i < 6; ++i)
+    for(std::size_t i=0; i < 6; ++i)
     {
       Joint* joint = bn->getParentJoint();
       if(joint->getNumDofs() != 1)
@@ -680,7 +680,7 @@ protected:
         -1, -1,  1,
         -1, -1, -1;
 
-    for(size_t i=0; i < 6; ++i)
+    for(std::size_t i=0; i < 6; ++i)
     {
       dofs[i]->setPosition(saved_q[i]);
       mDofs.push_back(dofs[i]->getIndexInSkeleton());
@@ -695,7 +695,7 @@ protected:
   mutable Eigen::Isometry3d footTfInv;
   mutable Eigen::Matrix<int, 8, 3> alternatives;
 
-  mutable std::vector<size_t> mDofs;
+  mutable std::vector<std::size_t> mDofs;
 
   mutable bool configured;
 
@@ -824,7 +824,7 @@ public:
 protected:
 
   SkeletonPtr mHubo;
-  size_t iter;
+  std::size_t iter;
 
   EndEffectorPtr l_foot;
   EndEffectorPtr r_foot;
@@ -860,7 +860,7 @@ public:
   {
     mRestConfig = mHubo->getPositions();
 
-    for(size_t i=0; i < mHubo->getNumEndEffectors(); ++i)
+    for(std::size_t i=0; i < mHubo->getNumEndEffectors(); ++i)
     {
       const InverseKinematicsPtr ik = mHubo->getEndEffector(i)->getIK();
       if(ik)
@@ -895,7 +895,7 @@ public:
     {
       if( ea.getKey() == 'p' )
       {
-        for(size_t i=0; i < mHubo->getNumDofs(); ++i)
+        for(std::size_t i=0; i < mHubo->getNumDofs(); ++i)
           std::cout << mHubo->getDof(i)->getName() << ": "
                     << mHubo->getDof(i)->getPosition() << std::endl;
         return true;
@@ -904,7 +904,7 @@ public:
       if( ea.getKey() == 't' )
       {
         // Reset all the positions except for x, y, and yaw
-        for(size_t i=0; i < mHubo->getNumDofs(); ++i)
+        for(std::size_t i=0; i < mHubo->getNumDofs(); ++i)
         {
           if( i < 2 || 4 < i )
             mHubo->getDof(i)->setPosition(mRestConfig[i]);
@@ -914,7 +914,7 @@ public:
 
       if( '1' <= ea.getKey() && ea.getKey() <= '9' )
       {
-        size_t index = ea.getKey() - '1';
+        std::size_t index = ea.getKey() - '1';
         if(index < mConstraintActive.size())
         {
           EndEffector* ee = mHubo->getEndEffector(mEndEffectorIndex[index]);
@@ -1048,7 +1048,7 @@ protected:
 
   std::vector<bool> mConstraintActive;
 
-  std::vector<size_t> mEndEffectorIndex;
+  std::vector<std::size_t> mEndEffectorIndex;
 
   std::vector< std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
 
@@ -1091,7 +1091,7 @@ SkeletonPtr createHubo()
   SkeletonPtr hubo =
       loader.parseSkeleton(DART_DATA_PATH"/urdf/drchubo/drchubo.urdf");
 
-  for(size_t i = 0; i < hubo->getNumBodyNodes(); ++i)
+  for(std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i)
   {
     BodyNode* bn = hubo->getBodyNode(i);
     if(bn->getName().substr(0, 7) == "Body_LF"
@@ -1314,10 +1314,10 @@ void setupEndEffectors(const SkeletonPtr& hubo)
 void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& hubo)
 {
   // Turn on drag-and-drop for the whole Skeleton
-  for(size_t i=0; i < hubo->getNumBodyNodes(); ++i)
+  for(std::size_t i=0; i < hubo->getNumBodyNodes(); ++i)
     viewer.enableDragAndDrop(hubo->getBodyNode(i), false, false);
 
-  for(size_t i=0; i < hubo->getNumEndEffectors(); ++i)
+  for(std::size_t i=0; i < hubo->getNumEndEffectors(); ++i)
   {
     EndEffector* ee = hubo->getEndEffector(i);
     if(!ee->getIK())
@@ -1336,7 +1336,7 @@ void setupWholeBodySolver(const SkeletonPtr& hubo)
       std::dynamic_pointer_cast<dart::optimizer::GradientDescentSolver>(
         hubo->getIK(true)->getSolver());
 
-  size_t nDofs = hubo->getNumDofs();
+  std::size_t nDofs = hubo->getNumDofs();
 
   double default_weight = 0.01;
   Eigen::VectorXd weights = default_weight * Eigen::VectorXd::Ones(nDofs);

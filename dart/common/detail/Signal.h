@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -94,13 +94,6 @@ void Signal<_Res (_ArgTypes...), Combiner>::disconnectAll()
 
 //==============================================================================
 template <typename _Res, typename... _ArgTypes, template<class> class Combiner>
-void Signal<_Res (_ArgTypes...), Combiner>::clenaupConnections()
-{
-  cleanupConnections();
-}
-
-//==============================================================================
-template <typename _Res, typename... _ArgTypes, template<class> class Combiner>
 void Signal<_Res (_ArgTypes...), Combiner>::cleanupConnections()
 {
   // Counts all the connected conection bodies
@@ -113,9 +106,9 @@ void Signal<_Res (_ArgTypes...), Combiner>::cleanupConnections()
 
 //==============================================================================
 template <typename _Res, typename... _ArgTypes, template<class> class Combiner>
-size_t Signal<_Res (_ArgTypes...), Combiner>::getNumConnections() const
+std::size_t Signal<_Res (_ArgTypes...), Combiner>::getNumConnections() const
 {
-  size_t numConnections = 0;
+  std::size_t numConnections = 0;
 
   // Counts all the connected conection bodies
   for (const auto& connectionBody : mConnectionBodies)
@@ -211,13 +204,6 @@ void Signal<void (_ArgTypes...)>::disconnectAll()
 
 //==============================================================================
 template <typename... _ArgTypes>
-void Signal<void (_ArgTypes...)>::clenaupConnections()
-{
-  cleanupConnections();
-}
-
-//==============================================================================
-template <typename... _ArgTypes>
 void Signal<void (_ArgTypes...)>::cleanupConnections()
 {
   // Counts all the connected conection bodies
@@ -230,9 +216,9 @@ void Signal<void (_ArgTypes...)>::cleanupConnections()
 
 //==============================================================================
 template <typename... _ArgTypes>
-size_t Signal<void (_ArgTypes...)>::getNumConnections() const
+std::size_t Signal<void (_ArgTypes...)>::getNumConnections() const
 {
-  size_t numConnections = 0;
+  std::size_t numConnections = 0;
 
   // Counts all the connected conection bodies
   for (const auto& connectionBody : mConnectionBodies)

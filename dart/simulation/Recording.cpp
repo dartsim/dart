@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>
@@ -52,14 +52,14 @@ namespace simulation {
 //==============================================================================
 Recording::Recording(const std::vector<dynamics::SkeletonPtr>& _skeletons)
 {
-  for (size_t i = 0; i < _skeletons.size(); i++)
+  for (std::size_t i = 0; i < _skeletons.size(); i++)
     mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumDofs());
 }
 
 //==============================================================================
 Recording::Recording(const std::vector<int>& _skelDofs)
 {
-  for (size_t i = 0; i < _skelDofs.size(); i++)
+  for (std::size_t i = 0; i < _skelDofs.size(); i++)
     mNumGenCoordsForSkeletons.push_back(_skelDofs[i]);
 }
 
@@ -90,7 +90,7 @@ int Recording::getNumDofs(int _skelIdx) const
 int Recording::getNumContacts(int _frameIdx) const
 {
   int totalDofs = 0;
-  for (size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
+  for (std::size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
     totalDofs += mNumGenCoordsForSkeletons[i];
   return (mBakedStates[_frameIdx].size() - totalDofs) / 6;
 }
@@ -117,7 +117,7 @@ double Recording::getGenCoord(int _frameIdx, int _skelIdx, int _dofIdx) const
 Eigen::Vector3d Recording::getContactPoint(int _frameIdx, int _contactIdx) const
 {
   int totalDofs = 0;
-  for (size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
+  for (std::size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
     totalDofs += mNumGenCoordsForSkeletons[i];
   return mBakedStates[_frameIdx].segment(totalDofs + _contactIdx * 6, 3);
 }
@@ -126,7 +126,7 @@ Eigen::Vector3d Recording::getContactPoint(int _frameIdx, int _contactIdx) const
 Eigen::Vector3d Recording::getContactForce(int _frameIdx, int _contactIdx) const
 {
   int totalDofs = 0;
-  for (size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
+  for (std::size_t i = 0; i < mNumGenCoordsForSkeletons.size(); i++)
     totalDofs += mNumGenCoordsForSkeletons[i];
   return mBakedStates[_frameIdx].segment(totalDofs + _contactIdx * 6 + 3, 3);
 }
@@ -147,7 +147,7 @@ void Recording::updateNumGenCoords(
     const std::vector<dynamics::SkeletonPtr>& _skeletons)
 {
   mNumGenCoordsForSkeletons.clear();
-  for (size_t i = 0; i < _skeletons.size(); ++i)
+  for (std::size_t i = 0; i < _skeletons.size(); ++i)
     mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumDofs());
 }
 

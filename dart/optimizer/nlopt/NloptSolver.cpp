@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -86,7 +86,7 @@ static std::vector<double> convertToStd(const Eigen::VectorXd& v)
 static Eigen::VectorXd convertToEigen(const std::vector<double>& _v)
 {
   Eigen::VectorXd result(_v.size());
-  for(size_t i=0; i<_v.size(); ++i)
+  for(std::size_t i=0; i<_v.size(); ++i)
     result[i] = _v[i];
 
   return result;
@@ -96,7 +96,7 @@ static Eigen::VectorXd convertToEigen(const std::vector<double>& _v)
 bool NloptSolver::solve()
 {
   // Allocate a new nlopt::opt structure if needed
-  size_t dimension = mProperties.mProblem->getDimension();
+  std::size_t dimension = mProperties.mProblem->getDimension();
   if(nullptr == mOpt
      || mOpt->get_dimension() != dimension
      || mOpt->get_algorithm() != mAlg)
@@ -120,7 +120,7 @@ bool NloptSolver::solve()
   mOpt->set_min_objective(NloptSolver::_nlopt_func,
                           problem->getObjective().get());
 
-  for(size_t i=0; i<problem->getNumEqConstraints(); ++i)
+  for(std::size_t i=0; i<problem->getNumEqConstraints(); ++i)
   {
     FunctionPtr fn = problem->getEqConstraint(i);
     try
@@ -145,7 +145,7 @@ bool NloptSolver::solve()
     }
   }
 
-  for(size_t i=0; i<problem->getNumIneqConstraints(); ++i)
+  for(std::size_t i=0; i<problem->getNumIneqConstraints(); ++i)
   {
     FunctionPtr fn = problem->getIneqConstraint(i);
     try
@@ -227,18 +227,6 @@ void NloptSolver::setAlgorithm(nlopt::algorithm _alg)
 nlopt::algorithm NloptSolver::getAlgorithm() const
 {
   return mAlg;
-}
-
-//==============================================================================
-void NloptSolver::setNumMaxEvaluations(size_t _numVal)
-{
-  setNumMaxIterations(_numVal);
-}
-
-//==============================================================================
-size_t NloptSolver::getNumEvaluationMax() const
-{
-  return getNumMaxIterations();
 }
 
 //==============================================================================

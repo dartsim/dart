@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -73,7 +73,7 @@ IKGradientMethod& InverseKinematics::setGradientMethod(Args&&... args)
 template <class DegreeOfFreedomT>
 void InverseKinematics::setDofs(const std::vector<DegreeOfFreedomT*>& _dofs)
 {
-  std::vector<size_t> indices;
+  std::vector<std::size_t> indices;
   indices.reserve(_dofs.size());
   for(const DegreeOfFreedomT* dof : _dofs)
     indices.push_back(dof->getIndexInSkeleton());

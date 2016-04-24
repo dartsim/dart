@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -81,31 +81,31 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void update();
+  void update() override;
 
   // Documentation inherited
-  virtual void getInformation(ConstraintInfo* lcp);
+  void getInformation(ConstraintInfo* lcp) override;
 
   // Documentation inherited
-  virtual void applyUnitImpulse(size_t index);
+  void applyUnitImpulse(std::size_t index) override;
 
   // Documentation inherited
-  virtual void getVelocityChange(double* delVel, bool withCfm);
+  void getVelocityChange(double* delVel, bool withCfm) override;
 
   // Documentation inherited
-  virtual void excite();
+  void excite() override;
 
   // Documentation inherited
-  virtual void unexcite();
+  void unexcite() override;
 
   // Documentation inherited
-  virtual void applyImpulse(double* lambda);
+  void applyImpulse(double* lambda) override;
 
   // Documentation inherited
-  virtual dynamics::SkeletonPtr getRootSkeleton() const;
+  dynamics::SkeletonPtr getRootSkeleton() const override;
 
   // Documentation inherited
-  virtual bool isActive() const;
+  bool isActive() const override;
 
 private:
   ///
@@ -115,10 +115,10 @@ private:
   dynamics::BodyNode* mBodyNode;
 
   /// Index of applied impulse
-  size_t mAppliedImpulseIndex;
+  std::size_t mAppliedImpulseIndex;
 
   ///
-  size_t mLifeTime[6];
+  std::size_t mLifeTime[6];
   // TODO(JS): Lifetime should be considered only when we use iterative lcp
   // solver
 

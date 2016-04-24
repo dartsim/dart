@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -151,13 +151,13 @@ SingleDofJoint& SingleDofJoint::operator=(const SingleDofJoint& _otherJoint)
 }
 
 //==============================================================================
-size_t SingleDofJoint::getNumDofs() const
+std::size_t SingleDofJoint::getNumDofs() const
 {
   return 1;
 }
 
 //==============================================================================
-size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
+std::size_t SingleDofJoint::getIndexInSkeleton(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -169,7 +169,7 @@ size_t SingleDofJoint::getIndexInSkeleton(size_t _index) const
 }
 
 //==============================================================================
-size_t SingleDofJoint::getIndexInTree(size_t _index) const
+std::size_t SingleDofJoint::getIndexInTree(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -181,7 +181,7 @@ size_t SingleDofJoint::getIndexInTree(size_t _index) const
 }
 
 //==============================================================================
-DegreeOfFreedom* SingleDofJoint::getDof(size_t _index)
+DegreeOfFreedom* SingleDofJoint::getDof(std::size_t _index)
 {
   if (0 == _index)
     return mDof;
@@ -191,7 +191,7 @@ DegreeOfFreedom* SingleDofJoint::getDof(size_t _index)
 }
 
 //==============================================================================
-const DegreeOfFreedom* SingleDofJoint::getDof(size_t _index) const
+const DegreeOfFreedom* SingleDofJoint::getDof(std::size_t _index) const
 {
   if (0 == _index)
     return mDof;
@@ -201,7 +201,7 @@ const DegreeOfFreedom* SingleDofJoint::getDof(size_t _index) const
 }
 
 //==============================================================================
-const std::string& SingleDofJoint::setDofName(size_t _index,
+const std::string& SingleDofJoint::setDofName(std::size_t _index,
                                               const std::string& _name,
                                               bool _preserveName)
 {
@@ -233,7 +233,7 @@ const std::string& SingleDofJoint::setDofName(size_t _index,
 }
 
 //==============================================================================
-void SingleDofJoint::preserveDofName(size_t _index, bool _preserve)
+void SingleDofJoint::preserveDofName(std::size_t _index, bool _preserve)
 {
   if (0 < _index)
   {
@@ -245,7 +245,7 @@ void SingleDofJoint::preserveDofName(size_t _index, bool _preserve)
 }
 
 //==============================================================================
-bool SingleDofJoint::isDofNamePreserved(size_t _index) const
+bool SingleDofJoint::isDofNamePreserved(std::size_t _index) const
 {
   if (0 < _index)
   {
@@ -256,7 +256,7 @@ bool SingleDofJoint::isDofNamePreserved(size_t _index) const
 }
 
 //==============================================================================
-const std::string& SingleDofJoint::getDofName(size_t _index) const
+const std::string& SingleDofJoint::getDofName(std::size_t _index) const
 {
   if (0 < _index)
   {
@@ -270,7 +270,7 @@ const std::string& SingleDofJoint::getDofName(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setCommand(size_t _index, double _command)
+void SingleDofJoint::setCommand(std::size_t _index, double _command)
 {
   if (_index != 0)
   {
@@ -326,7 +326,7 @@ void SingleDofJoint::setCommand(size_t _index, double _command)
 }
 
 //==============================================================================
-double SingleDofJoint::getCommand(size_t _index) const
+double SingleDofJoint::getCommand(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -340,7 +340,7 @@ double SingleDofJoint::getCommand(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setCommands(const Eigen::VectorXd& _commands)
 {
-  if (static_cast<size_t>(_commands.size()) != getNumDofs())
+  if (static_cast<std::size_t>(_commands.size()) != getNumDofs())
   {
     SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setCommands, _commands );
     return;
@@ -362,7 +362,7 @@ void SingleDofJoint::resetCommands()
 }
 
 //==============================================================================
-void SingleDofJoint::setPosition(size_t _index, double _position)
+void SingleDofJoint::setPosition(std::size_t _index, double _position)
 {
   if (_index != 0)
   {
@@ -374,7 +374,7 @@ void SingleDofJoint::setPosition(size_t _index, double _position)
 }
 
 //==============================================================================
-double SingleDofJoint::getPosition(size_t _index) const
+double SingleDofJoint::getPosition(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -388,7 +388,7 @@ double SingleDofJoint::getPosition(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setPositions(const Eigen::VectorXd& _positions)
 {
-  if (static_cast<size_t>(_positions.size()) != getNumDofs())
+  if (static_cast<std::size_t>(_positions.size()) != getNumDofs())
   {
     SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setPositions, _positions );
     return;
@@ -404,7 +404,7 @@ Eigen::VectorXd SingleDofJoint::getPositions() const
 }
 
 //==============================================================================
-void SingleDofJoint::setPositionLowerLimit(size_t _index, double _position)
+void SingleDofJoint::setPositionLowerLimit(std::size_t _index, double _position)
 {
   if (_index != 0)
   {
@@ -416,7 +416,7 @@ void SingleDofJoint::setPositionLowerLimit(size_t _index, double _position)
 }
 
 //==============================================================================
-double SingleDofJoint::getPositionLowerLimit(size_t _index) const
+double SingleDofJoint::getPositionLowerLimit(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -428,7 +428,7 @@ double SingleDofJoint::getPositionLowerLimit(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setPositionUpperLimit(size_t _index, double _position)
+void SingleDofJoint::setPositionUpperLimit(std::size_t _index, double _position)
 {
   if (_index != 0)
   {
@@ -440,7 +440,7 @@ void SingleDofJoint::setPositionUpperLimit(size_t _index, double _position)
 }
 
 //==============================================================================
-double SingleDofJoint::getPositionUpperLimit(size_t _index) const
+double SingleDofJoint::getPositionUpperLimit(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -452,7 +452,7 @@ double SingleDofJoint::getPositionUpperLimit(size_t _index) const
 }
 
 //==============================================================================
-bool SingleDofJoint::hasPositionLimit(size_t _index) const
+bool SingleDofJoint::hasPositionLimit(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -465,7 +465,7 @@ bool SingleDofJoint::hasPositionLimit(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::resetPosition(size_t _index)
+void SingleDofJoint::resetPosition(std::size_t _index)
 {
   if (_index != 0)
   {
@@ -483,7 +483,7 @@ void SingleDofJoint::resetPositions()
 }
 
 //==============================================================================
-void SingleDofJoint::setInitialPosition(size_t _index, double _initial)
+void SingleDofJoint::setInitialPosition(std::size_t _index, double _initial)
 {
   if (_index != 0)
   {
@@ -495,7 +495,7 @@ void SingleDofJoint::setInitialPosition(size_t _index, double _initial)
 }
 
 //==============================================================================
-double SingleDofJoint::getInitialPosition(size_t _index) const
+double SingleDofJoint::getInitialPosition(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -509,7 +509,7 @@ double SingleDofJoint::getInitialPosition(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setInitialPositions(const Eigen::VectorXd& _initial)
 {
-  if( static_cast<size_t>(_initial.size()) != getNumDofs() )
+  if( static_cast<std::size_t>(_initial.size()) != getNumDofs() )
   {
     SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setInitialPositions, _initial );
     return;
@@ -526,7 +526,7 @@ Eigen::VectorXd SingleDofJoint::getInitialPositions() const
 }
 
 //==============================================================================
-void SingleDofJoint::setVelocity(size_t _index, double _velocity)
+void SingleDofJoint::setVelocity(std::size_t _index, double _velocity)
 {
   if (_index != 0)
   {
@@ -541,7 +541,7 @@ void SingleDofJoint::setVelocity(size_t _index, double _velocity)
 }
 
 //==============================================================================
-double SingleDofJoint::getVelocity(size_t _index) const
+double SingleDofJoint::getVelocity(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -555,7 +555,7 @@ double SingleDofJoint::getVelocity(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setVelocities(const Eigen::VectorXd& _velocities)
 {
-  if (static_cast<size_t>(_velocities.size()) != getNumDofs())
+  if (static_cast<std::size_t>(_velocities.size()) != getNumDofs())
   {
     SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setVelocities, _velocities );
     return;
@@ -574,7 +574,7 @@ Eigen::VectorXd SingleDofJoint::getVelocities() const
 }
 
 //==============================================================================
-void SingleDofJoint::setVelocityLowerLimit(size_t _index, double _velocity)
+void SingleDofJoint::setVelocityLowerLimit(std::size_t _index, double _velocity)
 {
   if (_index != 0)
   {
@@ -586,7 +586,7 @@ void SingleDofJoint::setVelocityLowerLimit(size_t _index, double _velocity)
 }
 
 //==============================================================================
-double SingleDofJoint::getVelocityLowerLimit(size_t _index) const
+double SingleDofJoint::getVelocityLowerLimit(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -598,7 +598,7 @@ double SingleDofJoint::getVelocityLowerLimit(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setVelocityUpperLimit(size_t _index, double _velocity)
+void SingleDofJoint::setVelocityUpperLimit(std::size_t _index, double _velocity)
 {
   if (_index != 0)
   {
@@ -610,7 +610,7 @@ void SingleDofJoint::setVelocityUpperLimit(size_t _index, double _velocity)
 }
 
 //==============================================================================
-double SingleDofJoint::getVelocityUpperLimit(size_t _index) const
+double SingleDofJoint::getVelocityUpperLimit(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -622,7 +622,7 @@ double SingleDofJoint::getVelocityUpperLimit(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::resetVelocity(size_t _index)
+void SingleDofJoint::resetVelocity(std::size_t _index)
 {
   if (_index != 0)
   {
@@ -640,7 +640,7 @@ void SingleDofJoint::resetVelocities()
 }
 
 //==============================================================================
-void SingleDofJoint::setInitialVelocity(size_t _index, double _initial)
+void SingleDofJoint::setInitialVelocity(std::size_t _index, double _initial)
 {
   if (_index != 0)
   {
@@ -652,7 +652,7 @@ void SingleDofJoint::setInitialVelocity(size_t _index, double _initial)
 }
 
 //==============================================================================
-double SingleDofJoint::getInitialVelocity(size_t _index) const
+double SingleDofJoint::getInitialVelocity(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -666,7 +666,7 @@ double SingleDofJoint::getInitialVelocity(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setInitialVelocities(const Eigen::VectorXd& _initial)
 {
-  if( static_cast<size_t>(_initial.size()) != getNumDofs() )
+  if( static_cast<std::size_t>(_initial.size()) != getNumDofs() )
   {
     SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setInitialVelocities, _initial );
     return;
@@ -683,7 +683,7 @@ Eigen::VectorXd SingleDofJoint::getInitialVelocities() const
 }
 
 //==============================================================================
-void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
+void SingleDofJoint::setAcceleration(std::size_t _index, double _acceleration)
 {
   if (_index != 0)
   {
@@ -698,7 +698,7 @@ void SingleDofJoint::setAcceleration(size_t _index, double _acceleration)
 }
 
 //==============================================================================
-double SingleDofJoint::getAcceleration(size_t _index) const
+double SingleDofJoint::getAcceleration(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -712,7 +712,7 @@ double SingleDofJoint::getAcceleration(size_t _index) const
 //==============================================================================
 void SingleDofJoint::setAccelerations(const Eigen::VectorXd& _accelerations)
 {
-  if (static_cast<size_t>(_accelerations.size()) != getNumDofs())
+  if (static_cast<std::size_t>(_accelerations.size()) != getNumDofs())
   {
     SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setAccelerations, _accelerations );
     return;
@@ -737,7 +737,7 @@ void SingleDofJoint::resetAccelerations()
 }
 
 //==============================================================================
-void SingleDofJoint::setAccelerationLowerLimit(size_t _index,
+void SingleDofJoint::setAccelerationLowerLimit(std::size_t _index,
                                                double _acceleration)
 {
   if (_index != 0)
@@ -750,7 +750,7 @@ void SingleDofJoint::setAccelerationLowerLimit(size_t _index,
 }
 
 //==============================================================================
-double SingleDofJoint::getAccelerationLowerLimit(size_t _index) const
+double SingleDofJoint::getAccelerationLowerLimit(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -762,7 +762,7 @@ double SingleDofJoint::getAccelerationLowerLimit(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setAccelerationUpperLimit(size_t _index,
+void SingleDofJoint::setAccelerationUpperLimit(std::size_t _index,
                                                double _acceleration)
 {
   if (_index != 0)
@@ -775,7 +775,7 @@ void SingleDofJoint::setAccelerationUpperLimit(size_t _index,
 }
 
 //==============================================================================
-double SingleDofJoint::getAccelerationUpperLimit(size_t _index) const
+double SingleDofJoint::getAccelerationUpperLimit(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -835,7 +835,7 @@ const double& SingleDofJoint::getAccelerationStatic() const
 }
 
 //==============================================================================
-void SingleDofJoint::setForce(size_t _index, double _force)
+void SingleDofJoint::setForce(std::size_t _index, double _force)
 {
   if (_index != 0)
   {
@@ -850,7 +850,7 @@ void SingleDofJoint::setForce(size_t _index, double _force)
 }
 
 //==============================================================================
-double SingleDofJoint::getForce(size_t _index)
+double SingleDofJoint::getForce(std::size_t _index)
 {
   if (_index != 0)
   {
@@ -864,7 +864,7 @@ double SingleDofJoint::getForce(size_t _index)
 //==============================================================================
 void SingleDofJoint::setForces(const Eigen::VectorXd& _forces)
 {
-  if (static_cast<size_t>(_forces.size()) != getNumDofs())
+  if (static_cast<std::size_t>(_forces.size()) != getNumDofs())
   {
     SINGLEDOFJOINT_REPORT_DIM_MISMATCH( setForces, _forces );
     return;
@@ -892,7 +892,7 @@ void SingleDofJoint::resetForces()
 }
 
 //==============================================================================
-void SingleDofJoint::setForceLowerLimit(size_t _index, double _force)
+void SingleDofJoint::setForceLowerLimit(std::size_t _index, double _force)
 {
   if (_index != 0)
   {
@@ -904,7 +904,7 @@ void SingleDofJoint::setForceLowerLimit(size_t _index, double _force)
 }
 
 //==============================================================================
-double SingleDofJoint::getForceLowerLimit(size_t _index) const
+double SingleDofJoint::getForceLowerLimit(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -916,7 +916,7 @@ double SingleDofJoint::getForceLowerLimit(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setForceUpperLimit(size_t _index, double _force)
+void SingleDofJoint::setForceUpperLimit(std::size_t _index, double _force)
 {
   if (_index != 0)
   {
@@ -928,7 +928,7 @@ void SingleDofJoint::setForceUpperLimit(size_t _index, double _force)
 }
 
 //==============================================================================
-double SingleDofJoint::getForceUpperLimit(size_t _index) const
+double SingleDofJoint::getForceUpperLimit(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -940,7 +940,7 @@ double SingleDofJoint::getForceUpperLimit(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setVelocityChange(size_t _index, double _velocityChange)
+void SingleDofJoint::setVelocityChange(std::size_t _index, double _velocityChange)
 {
   if (_index != 0)
   {
@@ -952,7 +952,7 @@ void SingleDofJoint::setVelocityChange(size_t _index, double _velocityChange)
 }
 
 //==============================================================================
-double SingleDofJoint::getVelocityChange(size_t _index) const
+double SingleDofJoint::getVelocityChange(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -970,7 +970,7 @@ void SingleDofJoint::resetVelocityChanges()
 }
 
 //==============================================================================
-void SingleDofJoint::setConstraintImpulse(size_t _index, double _impulse)
+void SingleDofJoint::setConstraintImpulse(std::size_t _index, double _impulse)
 {
   if (_index != 0)
   {
@@ -982,7 +982,7 @@ void SingleDofJoint::setConstraintImpulse(size_t _index, double _impulse)
 }
 
 //==============================================================================
-double SingleDofJoint::getConstraintImpulse(size_t _index) const
+double SingleDofJoint::getConstraintImpulse(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -1015,8 +1015,8 @@ void SingleDofJoint::integrateVelocities(double _dt)
 Eigen::VectorXd SingleDofJoint::getPositionDifferences(
     const Eigen::VectorXd& _q2, const Eigen::VectorXd& _q1) const
 {
-  if (static_cast<size_t>(_q1.size()) != getNumDofs()
-      || static_cast<size_t>(_q2.size()) != getNumDofs())
+  if (static_cast<std::size_t>(_q1.size()) != getNumDofs()
+      || static_cast<std::size_t>(_q2.size()) != getNumDofs())
   {
     dterr << "[SingleDofJoint::getPositionsDifference] q1's size ["
           << _q1.size() << "] and q2's size [" << _q2.size() << "] must both "
@@ -1037,7 +1037,7 @@ double SingleDofJoint::getPositionDifferenceStatic(double _q2,
 }
 
 //==============================================================================
-void SingleDofJoint::setSpringStiffness(size_t _index, double _k)
+void SingleDofJoint::setSpringStiffness(std::size_t _index, double _k)
 {
   if (_index != 0)
   {
@@ -1051,7 +1051,7 @@ void SingleDofJoint::setSpringStiffness(size_t _index, double _k)
 }
 
 //==============================================================================
-double SingleDofJoint::getSpringStiffness(size_t _index) const
+double SingleDofJoint::getSpringStiffness(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -1063,7 +1063,7 @@ double SingleDofJoint::getSpringStiffness(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setRestPosition(size_t _index, double _q0)
+void SingleDofJoint::setRestPosition(std::size_t _index, double _q0)
 {
   if (_index != 0)
   {
@@ -1087,7 +1087,7 @@ void SingleDofJoint::setRestPosition(size_t _index, double _q0)
 }
 
 //==============================================================================
-double SingleDofJoint::getRestPosition(size_t _index) const
+double SingleDofJoint::getRestPosition(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -1099,7 +1099,7 @@ double SingleDofJoint::getRestPosition(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setDampingCoefficient(size_t _index, double _d)
+void SingleDofJoint::setDampingCoefficient(std::size_t _index, double _d)
 {
   if (_index != 0)
   {
@@ -1113,7 +1113,7 @@ void SingleDofJoint::setDampingCoefficient(size_t _index, double _d)
 }
 
 //==============================================================================
-double SingleDofJoint::getDampingCoefficient(size_t _index) const
+double SingleDofJoint::getDampingCoefficient(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -1125,7 +1125,7 @@ double SingleDofJoint::getDampingCoefficient(size_t _index) const
 }
 
 //==============================================================================
-void SingleDofJoint::setCoulombFriction(size_t _index, double _friction)
+void SingleDofJoint::setCoulombFriction(std::size_t _index, double _friction)
 {
   if (_index != 0)
   {
@@ -1139,7 +1139,7 @@ void SingleDofJoint::setCoulombFriction(size_t _index, double _friction)
 }
 
 //==============================================================================
-double SingleDofJoint::getCoulombFriction(size_t _index) const
+double SingleDofJoint::getCoulombFriction(std::size_t _index) const
 {
   if (_index != 0)
   {
@@ -2003,7 +2003,7 @@ void SingleDofJoint::updateTotalForceForInvMassMatrix(
 
 //==============================================================================
 void SingleDofJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
-                                             const size_t _col,
+                                             const std::size_t _col,
                                              const Eigen::Matrix6d& _artInertia,
                                              const Eigen::Vector6d& _spatialAcc)
 {
@@ -2017,7 +2017,7 @@ void SingleDofJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mDof->mIndexInTree;
+  std::size_t iStart = mDof->mIndexInTree;
 
   // Assign
   _invMassMat(iStart, _col) = mInvMassMatrixSegment;
@@ -2026,7 +2026,7 @@ void SingleDofJoint::getInvMassMatrixSegment(Eigen::MatrixXd& _invMassMat,
 //==============================================================================
 void SingleDofJoint::getInvAugMassMatrixSegment(
     Eigen::MatrixXd& _invMassMat,
-    const size_t _col,
+    const std::size_t _col,
     const Eigen::Matrix6d& _artInertia,
     const Eigen::Vector6d& _spatialAcc)
 {
@@ -2040,7 +2040,7 @@ void SingleDofJoint::getInvAugMassMatrixSegment(
   assert(!math::isNan(mInvMassMatrixSegment));
 
   // Index
-  size_t iStart = mDof->mIndexInTree;
+  std::size_t iStart = mDof->mIndexInTree;
 
   // Assign
   _invMassMat(iStart, _col) = mInvMassMatrixSegment;

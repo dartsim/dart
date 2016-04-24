@@ -83,13 +83,13 @@ public:
   NodeManagerJoinerForBodyNode(common::NoArgTag, Base2Args&&... args2);
 
   template <class NodeType>
-  size_t getNumNodes() const;
+  std::size_t getNumNodes() const;
 
   template <class NodeType>
-  NodeType* getNode(size_t index);
+  NodeType* getNode(std::size_t index);
 
   template <class NodeType>
-  const NodeType* getNode(size_t index) const;
+  const NodeType* getNode(std::size_t index) const;
 
   template <class NodeType>
   static constexpr bool isSpecializedForNode();
@@ -144,17 +144,17 @@ public:
   /// Get the number of Nodes of the specified type that are in the treeIndexth
   /// tree of this Skeleton
   template <class NodeType>
-  size_t getNumNodes(size_t treeIndex) const;
+  std::size_t getNumNodes(std::size_t treeIndex) const;
 
   /// Get the nodeIndexth Node of the specified type within the tree of
   /// treeIndex.
   template <class NodeType>
-  NodeType* getNode(size_t treeIndex, size_t nodeIndex);
+  NodeType* getNode(std::size_t treeIndex, std::size_t nodeIndex);
 
   /// Get the nodeIndexth Node of the specified type within the tree of
   /// treeIndex.
   template <class NodeType>
-  const NodeType* getNode(size_t treeIndex, size_t nodeIndex) const;
+  const NodeType* getNode(std::size_t treeIndex, std::size_t nodeIndex) const;
 
   /// Get the Node of the specified type with the given name.
   template <class NodeType>

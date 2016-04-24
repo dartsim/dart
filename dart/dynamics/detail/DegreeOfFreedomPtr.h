@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -118,7 +118,7 @@ public:
 
   /// Get the local generalized coordinate index that this DegreeOfFreedomPtr is
   /// tied to
-  size_t getLocalIndex() const
+  std::size_t getLocalIndex() const
   {
     if(nullptr == mBodyNodePtr)
       return INVALID_INDEX;
@@ -210,7 +210,7 @@ private:
   TemplateBodyNodePtr<BodyNodeT> mBodyNodePtr;
 
   /// Local index of this DegreeOfFreedom within its Joint
-  size_t mIndex;
+  std::size_t mIndex;
 };
 
 /// TemplateWeakDegreeOfFreedomPtr is a templated class that enables users to
@@ -321,7 +321,7 @@ private:
   TemplateWeakBodyNodePtr<BodyNodeT> mWeakBodyNode;
 
   /// Local index of this DegreeOfFreedom within its Joint
-  size_t mIndex;
+  std::size_t mIndex;
 };
 
 } // namespace dynamics

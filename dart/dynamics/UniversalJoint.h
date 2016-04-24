@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -81,13 +81,13 @@ public:
   UniversalJoint& operator=(const UniversalJoint& _otherJoint);
 
   // Documentation inherited
-  virtual const std::string& getType() const override;
+  const std::string& getType() const override;
 
   /// Get joint type for this class
   static const std::string& getStaticType();
 
   // Documentation inherited
-  virtual bool isCyclic(size_t _index) const override;
+  bool isCyclic(std::size_t _index) const override;
 
   ///
   void setAxis1(const Eigen::Vector3d& _axis);
@@ -111,21 +111,21 @@ protected:
   UniversalJoint(const Properties& properties);
 
   // Documentation inherited
-  virtual Joint* clone() const override;
+  Joint* clone() const override;
 
   using MultiDofJoint::getLocalJacobianStatic;
 
   // Documentation inherited
-  virtual void updateDegreeOfFreedomNames() override;
+  void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited
-  virtual void updateLocalTransform() const override;
+  void updateLocalTransform() const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobian(bool =true) const override;
+  void updateLocalJacobian(bool =true) const override;
 
   // Documentation inherited
-  virtual void updateLocalJacobianTimeDeriv() const override;
+  void updateLocalJacobianTimeDeriv() const override;
 
 public:
   // To get byte-aligned Eigen vectors

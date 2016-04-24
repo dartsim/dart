@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -65,12 +65,12 @@ JointProperties::JointProperties(
     const std::string& _name,
     const Eigen::Isometry3d& _T_ParentBodyToJoint,
     const Eigen::Isometry3d& _T_ChildBodyToJoint,
-    bool _isPositionLimited,
+    bool _isPositionLimitEnforced,
     ActuatorType _actuatorType)
   : mName(_name),
     mT_ParentBodyToJoint(_T_ParentBodyToJoint),
     mT_ChildBodyToJoint(_T_ChildBodyToJoint),
-    mIsPositionLimited(_isPositionLimited),
+    mIsPositionLimitEnforced(_isPositionLimitEnforced),
     mActuatorType(_actuatorType)
 {
   // Do nothing
@@ -116,7 +116,7 @@ void Joint::setAspectProperties(const AspectProperties& properties)
   setName(properties.mName);
   setTransformFromParentBodyNode(properties.mT_ParentBodyToJoint);
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
-  setPositionLimitEnforced(properties.mIsPositionLimited);
+  setPositionLimitEnforced(properties.mIsPositionLimitEnforced);
   setActuatorType(properties.mActuatorType);
 }
 
@@ -314,43 +314,31 @@ const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
 }
 
 //==============================================================================
-void Joint::setPositionLimitEnforced(bool _isPositionLimited)
+void Joint::setPositionLimitEnforced(bool _isPositionLimitEnforced)
 {
-  mAspectProperties.mIsPositionLimited = _isPositionLimited;
-}
-
-//==============================================================================
-void Joint::setPositionLimited(bool _isPositionLimited)
-{
-  setPositionLimitEnforced(_isPositionLimited);
+  mAspectProperties.mIsPositionLimitEnforced = _isPositionLimitEnforced;
 }
 
 //==============================================================================
 bool Joint::isPositionLimitEnforced() const
 {
-  return mAspectProperties.mIsPositionLimited;
+  return mAspectProperties.mIsPositionLimitEnforced;
 }
 
 //==============================================================================
-bool Joint::isPositionLimited() const
-{
-  return isPositionLimitEnforced();
-}
-
-//==============================================================================
-size_t Joint::getJointIndexInSkeleton() const
+std::size_t Joint::getJointIndexInSkeleton() const
 {
   return mChildBodyNode->getIndexInSkeleton();
 }
 
 //==============================================================================
-size_t Joint::getJointIndexInTree() const
+std::size_t Joint::getJointIndexInTree() const
 {
   return mChildBodyNode->getIndexInTree();
 }
 
 //==============================================================================
-size_t Joint::getTreeIndex() const
+std::size_t Joint::getTreeIndex() const
 {
   return mChildBodyNode->getTreeIndex();
 }
@@ -359,7 +347,7 @@ size_t Joint::getTreeIndex() const
 bool Joint::checkSanity(bool _printWarnings) const
 {
   bool sane = true;
-  for(size_t i=0; i < getNumDofs(); ++i)
+  for(std::size_t i=0; i < getNumDofs(); ++i)
   {
     if(getInitialPosition(i) < getPositionLowerLimit(i)
        || getPositionUpperLimit(i) < getInitialPosition(i))
@@ -452,7 +440,7 @@ Joint::Joint()
 }
 
 //==============================================================================
-DegreeOfFreedom* Joint::createDofPointer(size_t _indexInJoint)
+DegreeOfFreedom* Joint::createDofPointer(std::size_t _indexInJoint)
 {
   return new DegreeOfFreedom(this, _indexInJoint);
 }
@@ -512,7 +500,7 @@ void Joint::notifyPositionUpdate()
   SkeletonPtr skel = getSkeleton();
   if(skel)
   {
-    size_t tree = mChildBodyNode->mTreeIndex;
+    std::size_t tree = mChildBodyNode->mTreeIndex;
     skel->notifyArticulatedInertiaUpdate(tree);
     skel->mTreeCache[tree].mDirty.mExternalForces = true;
     skel->mSkelCache.mDirty.mExternalForces = true;

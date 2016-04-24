@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Georgia Tech Research Corporation
+ * Copyright (c) 2010-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -93,11 +93,11 @@ public:
 public:
 
 	//// Constructor with a single root 
-    RRT(dart::simulation::WorldPtr world, dart::dynamics::SkeletonPtr robot, const std::vector<size_t> &dofs, const Eigen::VectorXd &root,
+    RRT(dart::simulation::WorldPtr world, dart::dynamics::SkeletonPtr robot, const std::vector<std::size_t> &dofs, const Eigen::VectorXd &root,
       double stepSize = 0.02);
 
 	/// Constructor with multiple roots (so, multiple trees)
-    RRT(simulation::WorldPtr world, dynamics::SkeletonPtr robot, const std::vector<size_t> &dofs,
+    RRT(simulation::WorldPtr world, dynamics::SkeletonPtr robot, const std::vector<std::size_t> &dofs,
 			const std::vector<Eigen::VectorXd> &roots, double stepSize = 0.02);
 
 	/// Destructor
@@ -136,7 +136,7 @@ public:
 	void tracePath(int node, std::list<Eigen::VectorXd> &path, bool reverse = false);
 
 	/// Returns the number of nodes in the tree.
-	size_t getSize();
+    std::size_t getSize();
 
 	/// Implementation-specific function for checking collisions 
 	virtual bool checkCollisions(const Eigen::VectorXd &c);
@@ -148,7 +148,7 @@ protected:
 
   simulation::WorldPtr world;                 ///< The world that the robot is in
   dynamics::SkeletonPtr robot;        ///< The ID of the robot for which a plan is generated
-	std::vector<size_t> dofs;                    ///< The dofs of the robot the planner can manipulate
+    std::vector<std::size_t> dofs;                    ///< The dofs of the robot the planner can manipulate
 
 	/// The underlying flann data structure for fast nearest neighbor searches 
 	flann::Index<flann::L2<double> >* index;

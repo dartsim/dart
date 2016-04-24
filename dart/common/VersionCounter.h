@@ -51,10 +51,10 @@ public:
   VersionCounter();
 
   /// Increment the version for this object
-  virtual size_t incrementVersion();
+  virtual std::size_t incrementVersion();
 
   /// Get the version number of this object
-  virtual size_t getVersion() const;
+  virtual std::size_t getVersion() const;
 
   virtual ~VersionCounter() = default;
 
@@ -62,7 +62,7 @@ protected:
 
   void setVersionDependentObject(VersionCounter* dependent);
 
-  size_t mVersion;
+  std::size_t mVersion;
 
 private:
   VersionCounter* mDependent;

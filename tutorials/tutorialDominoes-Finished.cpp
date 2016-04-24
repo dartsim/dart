@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -170,7 +170,7 @@ public:
     // Turn the control gains into matrix form
     Eigen::Matrix6d Kp = mKpOS * Eigen::Matrix6d::Identity();
 
-    size_t dofs = mManipulator->getNumDofs();
+    std::size_t dofs = mManipulator->getNumDofs();
     Eigen::MatrixXd Kd = mKdOS * Eigen::MatrixXd::Identity(dofs, dofs);
 
     // Compute the joint forces needed to exert the desired workspace force

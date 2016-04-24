@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -66,7 +66,7 @@ void randomize_transform(Eigen::Isometry3d& tf,
 
 void randomize_transforms(Eigen::aligned_vector<Eigen::Isometry3d>& tfs)
 {
-  for(size_t i=0; i<tfs.size(); ++i)
+  for(std::size_t i=0; i<tfs.size(); ++i)
   {
     randomize_transform(tfs[i]);
   }
@@ -154,17 +154,17 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
   randomize_transforms(tfs);
 
-  for(size_t i=0; i<frames.size(); ++i)
+  for(std::size_t i=0; i<frames.size(); ++i)
   {
     SimpleFrame* F = frames[i];
     F->setRelativeTransform(tfs[i]);
   }
 
-  for(size_t i=0; i<frames.size(); ++i)
+  for(std::size_t i=0; i<frames.size(); ++i)
   {
     Frame* F = frames[i];
     Eigen::Isometry3d expectation(Eigen::Isometry3d::Identity());
-    for(size_t j=0; j<=i; ++j)
+    for(std::size_t j=0; j<=i; ++j)
     {
       expectation = expectation * tfs[j];
     }
@@ -174,14 +174,14 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
   }
 
   randomize_transforms(tfs);
-  for(size_t i=0; i<frames.size(); ++i)
+  for(std::size_t i=0; i<frames.size(); ++i)
   {
     SimpleFrame* F = frames[i];
     F->setRelativeTransform(tfs[i]);
   }
 
   Eigen::Isometry3d expectation(Eigen::Isometry3d::Identity());
-  for(size_t j=0; j<frames.size(); ++j)
+  for(std::size_t j=0; j<frames.size(); ++j)
     expectation = expectation * tfs[j];
 
   EXPECT_TRUE( equals(frames.back()->getTransform().matrix(),
@@ -196,7 +196,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     Eigen::aligned_vector<Eigen::Vector6d> v_rels(frames.size());
     Eigen::aligned_vector<Eigen::Vector6d> v_total(frames.size());
 
-    for(size_t i=0; i<frames.size(); ++i)
+    for(std::size_t i=0; i<frames.size(); ++i)
     {
       v_rels[i] = random_vec<6>();
 
@@ -211,7 +211,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
                                  F->getRelativeTransform(), v_total[i]);
     }
 
-    for(size_t i=0; i<frames.size(); ++i)
+    for(std::size_t i=0; i<frames.size(); ++i)
     {
       SimpleFrame* F = frames[i];
 
@@ -229,7 +229,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     std::vector<Eigen::Vector3d> v_total(frames.size());
     std::vector<Eigen::Vector3d> w_total(frames.size());
 
-    for(size_t i=0; i<frames.size(); ++i)
+    for(std::size_t i=0; i<frames.size(); ++i)
     {
       v_rels[i] = random_vec<3>();
       w_rels[i] = random_vec<3>();
@@ -251,7 +251,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
                          offset, tf, v_total[i], w_total[i]);
     }
 
-    for(size_t i=0; i<frames.size(); ++i)
+    for(std::size_t i=0; i<frames.size(); ++i)
     {
       SimpleFrame* F = frames[i];
       Eigen::Vector3d v_actual = F->getLinearVelocity();
@@ -273,7 +273,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     Eigen::aligned_vector<Eigen::Vector6d> a_total(frames.size());
 
 
-    for(size_t i=0; i<frames.size(); ++i)
+    for(std::size_t i=0; i<frames.size(); ++i)
     {
       v_rels[i] = random_vec<6>();
       a_rels[i] = random_vec<6>();
@@ -298,7 +298,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       }
     }
 
-    for(size_t i=0; i<frames.size(); ++i)
+    for(std::size_t i=0; i<frames.size(); ++i)
     {
       SimpleFrame* F = frames[i];
 
@@ -308,7 +308,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     }
 
     // Test relative computations
-    for(size_t i=0; i<frames.size(); ++i)
+    for(std::size_t i=0; i<frames.size(); ++i)
     {
       Frame* F = frames[i];
       Frame* P = F->getParentFrame();
@@ -321,7 +321,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     }
 
     // Test offset computations
-    for(size_t i=0; i<frames.size(); ++i)
+    for(std::size_t i=0; i<frames.size(); ++i)
     {
       Eigen::Vector3d offset = random_vec<3>();
       Frame* F = frames[i];
@@ -363,7 +363,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     std::vector<Eigen::Vector3d> a_total(frames.size());
     std::vector<Eigen::Vector3d> alpha_total(frames.size());
 
-    for(size_t i=0; i<frames.size(); ++i)
+    for(std::size_t i=0; i<frames.size(); ++i)
     {
       v_rels[i] = random_vec<3>();
       w_rels[i] = random_vec<3>();
@@ -401,7 +401,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
       }
     }
 
-    for(size_t i=0; i<frames.size(); ++i)
+    for(std::size_t i=0; i<frames.size(); ++i)
     {
       SimpleFrame* F = frames[i];
       Eigen::Vector3d v_actual = F->getLinearVelocity();
@@ -416,7 +416,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
     }
 
     // Test relative computations
-    for(size_t i=0; i<frames.size(); ++i)
+    for(std::size_t i=0; i<frames.size(); ++i)
     {
       SimpleFrame* F = frames[i];
       Frame* P = F->getParentFrame();
@@ -436,7 +436,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 void randomize_target_values(const std::vector<SimpleFrame*>& targets,
                                 bool spatial)
 {
-  for(size_t i=0; i<targets.size(); ++i)
+  for(std::size_t i=0; i<targets.size(); ++i)
   {
     SimpleFrame* T = targets[i];
 
@@ -462,7 +462,7 @@ void set_relative_values(const std::vector<SimpleFrame*>& targets,
                          const std::vector<SimpleFrame*>& followers,
                          bool spatial)
 {
-  for(size_t i=0; i<targets.size(); ++i)
+  for(std::size_t i=0; i<targets.size(); ++i)
   {
     Frame* T = targets[i];
     SimpleFrame* F = followers[i];
@@ -488,7 +488,7 @@ void check_world_values(const std::vector<SimpleFrame*>& targets,
                         const std::vector<SimpleFrame*>& followers,
                         double tolerance)
 {
-  for(size_t i=0; i<targets.size(); ++i)
+  for(std::size_t i=0; i<targets.size(); ++i)
   {
     Frame* T = targets[i];
     Frame* F = followers[i];
@@ -528,7 +528,7 @@ void check_values(const std::vector<SimpleFrame*>& targets,
                   const Frame* inCoordinatesOf,
                   double tolerance)
 {
-  for(size_t i=0; i<targets.size(); ++i)
+  for(std::size_t i=0; i<targets.size(); ++i)
   {
     Frame* T = targets[i];
     Frame* F = followers[i];
@@ -574,7 +574,7 @@ void check_offset_computations(const std::vector<SimpleFrame*>& targets,
                                const Frame* inCoordinatesOf,
                                double tolerance)
 {
-  for(size_t i=0; i<targets.size(); ++i)
+  for(std::size_t i=0; i<targets.size(); ++i)
   {
     Frame* T = targets[i];
     Frame* F = followers[i];
@@ -684,10 +684,10 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
   check_world_values(targets, followers, tolerance);
 
   // Check every combination of relative values
-  for(size_t i=0; i<targets.size(); ++i)
+  for(std::size_t i=0; i<targets.size(); ++i)
   {
     Frame* T = targets[i];
-    for(size_t j=0; j<followers.size(); ++j)
+    for(std::size_t j=0; j<followers.size(); ++j)
     {
       Frame* F = followers[j];
 
@@ -698,9 +698,9 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
   }
 
   // Test SimpleFrame::setTransform()
-  for(size_t i=0; i<followers.size(); ++i)
+  for(std::size_t i=0; i<followers.size(); ++i)
   {
-    for(size_t j=0; j<followers.size(); ++j)
+    for(std::size_t j=0; j<followers.size(); ++j)
     {
       SimpleFrame* F = followers[i];
       SimpleFrame* T = followers[j];

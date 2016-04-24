@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -70,13 +70,13 @@ public:
   Properties getFreeJointProperties() const;
 
   // Documentation inherited
-  virtual const std::string& getType() const override;
+  const std::string& getType() const override;
 
   /// Get joint type for this class
   static const std::string& getStaticType();
 
   // Documentation inherited
-  virtual bool isCyclic(size_t _index) const override;
+  bool isCyclic(std::size_t _index) const override;
 
   /// Convert a transform into a 6D vector that can be used to set the positions
   /// of a FreeJoint. The positions returned by this function will result in a

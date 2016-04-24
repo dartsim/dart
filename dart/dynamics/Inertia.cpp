@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -144,7 +144,7 @@ void Inertia::setMoment(const Eigen::Matrix3d& _moment)
            << "matrix. Results might not by physically accurate or "
            << "meaningful.\n";
 
-  for(size_t i=0; i<3; ++i)
+  for(std::size_t i=0; i<3; ++i)
     mMoment[i] = _moment(i,i);
 
   mMoment[I_XY-4] = _moment(0,1);
@@ -243,7 +243,7 @@ bool Inertia::verifySpatialTensor(const Eigen::Matrix6d& _spatial,
 
   bool valid = true;
 
-  for(size_t i=0; i<6; ++i)
+  for(std::size_t i=0; i<6; ++i)
   {
     if(_spatial(i, i) <= 0)
     {
@@ -260,9 +260,9 @@ bool Inertia::verifySpatialTensor(const Eigen::Matrix6d& _spatial,
   }
 
   // Off-diagonals of top left block
-  for(size_t i=0; i<3; ++i)
+  for(std::size_t i=0; i<3; ++i)
   {
-    for(size_t j=i+1; j<3; ++j)
+    for(std::size_t j=i+1; j<3; ++j)
     {
       if(std::abs(_spatial(i,j) - _spatial(j,i)) > _tolerance)
       {
@@ -276,9 +276,9 @@ bool Inertia::verifySpatialTensor(const Eigen::Matrix6d& _spatial,
   }
 
   // Off-diagonals of bottom right block
-  for(size_t i=3; i<6; ++i)
+  for(std::size_t i=3; i<6; ++i)
   {
-    for(size_t j=i+1; j<6; ++j)
+    for(std::size_t j=i+1; j<6; ++j)
     {
       if(_spatial(i,j) != 0)
       {
@@ -301,12 +301,12 @@ bool Inertia::verifySpatialTensor(const Eigen::Matrix6d& _spatial,
   }
 
   // Diagonals of the bottom left and top right blocks
-  for(size_t k=0; k<2; ++k)
+  for(std::size_t k=0; k<2; ++k)
   {
-    for(size_t i=0; i<3; ++i)
+    for(std::size_t i=0; i<3; ++i)
     {
-      size_t i1 = k==0? i+3 : i;
-      size_t i2 = k==0? i : i+3;
+      std::size_t i1 = k==0? i+3 : i;
+      std::size_t i2 = k==0? i : i+3;
       if(_spatial(i1,i2) != 0)
       {
         valid = false;
@@ -319,17 +319,17 @@ bool Inertia::verifySpatialTensor(const Eigen::Matrix6d& _spatial,
   }
 
   // Check skew-symmetry in bottom left and top right
-  for(size_t k=0; k<2; ++k)
+  for(std::size_t k=0; k<2; ++k)
   {
-    for(size_t i=0; i<3; ++i)
+    for(std::size_t i=0; i<3; ++i)
     {
-      for(size_t j=i+1; j<3; ++j)
+      for(std::size_t j=i+1; j<3; ++j)
       {
-        size_t i1 = k==0? i+3 : i;
-        size_t j1 = k==0? j : j+3;
+        std::size_t i1 = k==0? i+3 : i;
+        std::size_t j1 = k==0? j : j+3;
 
-        size_t i2 = k==0? j+3 : j;
-        size_t j2 = k==0? i : i+3;
+        std::size_t i2 = k==0? j+3 : j;
+        std::size_t j2 = k==0? i : i+3;
 
         if(std::abs(_spatial(i1,j1) + _spatial(i2,j2)) > _tolerance)
         {
@@ -349,15 +349,15 @@ bool Inertia::verifySpatialTensor(const Eigen::Matrix6d& _spatial,
   // Note that we only need to check three of the components from each block,
   // because the last test ensures that both blocks are skew-symmetric
   // themselves
-  for(size_t i=0; i<3; ++i)
+  for(std::size_t i=0; i<3; ++i)
   {
-    for(size_t j=i+1; j<3; ++j)
+    for(std::size_t j=i+1; j<3; ++j)
     {
-      size_t i1 = i;
-      size_t j1 = j+3;
+      std::size_t i1 = i;
+      std::size_t j1 = j+3;
 
-      size_t i2 = i+3;
-      size_t j2 = j;
+      std::size_t i2 = i+3;
+      std::size_t j2 = j;
 
       if(std::abs(_spatial(i1,j1) - _spatial(i2,j2)) > _tolerance)
       {
@@ -418,7 +418,7 @@ void Inertia::computeParameters()
   mCenterOfMass[2] = -C(0,1);
 
   Eigen::Matrix3d I = mSpatialTensor.block<3,3>(0,0) + mMass*C*C;
-  for(size_t i=0; i<3; ++i)
+  for(std::size_t i=0; i<3; ++i)
     mMoment[i] = I(i,i);
 
   mMoment[I_XY-4] = I(0,1);

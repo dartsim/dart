@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -128,23 +128,23 @@ struct SingleDofJointUniqueProperties
   std::string mDofName;
 
   /// Constructor
-  SingleDofJointUniqueProperties(double _positionLowerLimit = -math::constantsd::inf(),
-                   double _positionUpperLimit =  math::constantsd::inf(),
-                   double _velocityLowerLimit = -math::constantsd::inf(),
-                   double _velocityUpperLimit =  math::constantsd::inf(),
-                   double _accelerationLowerLimit = -math::constantsd::inf(),
-                   double _accelerationUpperLimit =  math::constantsd::inf(),
-                   double _forceLowerLimit = -math::constantsd::inf(),
-                   double _forceUpperLimit =  math::constantsd::inf(),
-                   double _springStiffness = 0.0,
-                   double _restPosition = 0.0,
-                   double _dampingCoefficient = 0.0,
-                   double _coulombFriction = 0.0,
-                   bool _preserveDofName = false,
-                   std::string _dofName = "");
-  // TODO(MXG): In version 6.0, we should add mInitialPosition and
-  // mInitialVelocity to the constructor arguments. For now we must wait in
-  // order to avoid breaking the API
+  SingleDofJointUniqueProperties(
+      double _positionLowerLimit = -math::constantsd::inf(),
+      double _positionUpperLimit =  math::constantsd::inf(),
+      double _initialPosition = 0.0,
+      double _velocityLowerLimit = -math::constantsd::inf(),
+      double _velocityUpperLimit =  math::constantsd::inf(),
+      double _initialVelocity = 0.0,
+      double _accelerationLowerLimit = -math::constantsd::inf(),
+      double _accelerationUpperLimit =  math::constantsd::inf(),
+      double _forceLowerLimit = -math::constantsd::inf(),
+      double _forceUpperLimit =  math::constantsd::inf(),
+      double _springStiffness = 0.0,
+      double _restPosition = 0.0,
+      double _dampingCoefficient = 0.0,
+      double _coulombFriction = 0.0,
+      bool _preserveDofName = false,
+      const std::string& _dofName = "");
 
   virtual ~SingleDofJointUniqueProperties() = default;
 };

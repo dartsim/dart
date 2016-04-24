@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael Koval <mkoval@cs.cmu.edu>
@@ -39,7 +39,6 @@
 
 #include <memory>
 #include <string>
-#include "dart/common/Deprecated.h"
 #include "dart/common/Resource.h"
 #include "dart/common/Uri.h"
 

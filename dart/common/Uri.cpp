@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael Koval <mkoval@cs.cmu.edu>
@@ -226,11 +226,11 @@ bool Uri::fromString(const std::string& _input)
   static regex uriRegex(
     R"END(^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?)END",
     regex::extended | regex::optimize);
-  static const size_t schemeIndex = 2;
-  static const size_t authorityIndex = 4;
-  static const size_t pathIndex = 5;
-  static const size_t queryIndex = 7;
-  static const size_t fragmentIndex = 9;
+  static const std::size_t schemeIndex = 2;
+  static const std::size_t authorityIndex = 4;
+  static const std::size_t pathIndex = 5;
+  static const std::size_t queryIndex = 7;
+  static const std::size_t fragmentIndex = 9;
 
   clear();
 
@@ -614,7 +614,7 @@ std::string Uri::mergePaths(const Uri& _base, const Uri& _relative)
     return "/" + *_relative.mPath;
   else
   {
-    const size_t index = _base.mPath->find_last_of('/');
+    const std::size_t index = _base.mPath->find_last_of('/');
     if(index != std::string::npos)
       return _base.mPath->substr(0, index + 1) + *_relative.mPath;
     else
@@ -664,7 +664,7 @@ std::string Uri::removeDotSegments(const std::string& _path)
     {
       input = "/";
 
-      size_t index = output.find_last_of('/');
+      std::size_t index = output.find_last_of('/');
       if(index != std::string::npos)
         output = output.substr(0, index);
       else
@@ -674,7 +674,7 @@ std::string Uri::removeDotSegments(const std::string& _path)
     {
       input = "/" + input.substr(4);
 
-      size_t index = output.find_last_of('/');
+      std::size_t index = output.find_last_of('/');
       if(index != std::string::npos)
         output = output.substr(0, index);
       else
@@ -693,7 +693,7 @@ std::string Uri::removeDotSegments(const std::string& _path)
     else 
     {
       // Start at index one so we keep the leading '/'.
-      size_t index = input.find_first_of('/', 1); 
+      std::size_t index = input.find_first_of('/', 1); 
       output += input.substr(0, index);
 
       if(index != std::string::npos)

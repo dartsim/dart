@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -100,31 +100,31 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  virtual void update();
+  void update() override;
 
   // Documentation inherited
-  virtual void getInformation(ConstraintInfo* _lcp);
+  void getInformation(ConstraintInfo* _lcp) override;
 
   // Documentation inherited
-  virtual void applyUnitImpulse(size_t _index);
+  void applyUnitImpulse(std::size_t _index) override;
 
   // Documentation inherited
-  virtual void getVelocityChange(double* _delVel, bool _withCfm);
+  void getVelocityChange(double* _delVel, bool _withCfm) override;
 
   // Documentation inherited
-  virtual void excite();
+  void excite() override;
 
   // Documentation inherited
-  virtual void unexcite();
+  void unexcite() override;
 
   // Documentation inherited
-  virtual void applyImpulse(double* _lambda);
+  void applyImpulse(double* _lambda) override;
 
   // Documentation inherited
-  virtual dynamics::SkeletonPtr getRootSkeleton() const;
+  dynamics::SkeletonPtr getRootSkeleton() const override;
 
   // Documentation inherited
-  virtual bool isActive() const;
+  bool isActive() const override;
 
 private:
   ///
@@ -134,10 +134,10 @@ private:
   dynamics::BodyNode* mBodyNode;
 
   /// Index of applied impulse
-  size_t mAppliedImpulseIndex;
+  std::size_t mAppliedImpulseIndex;
 
   ///
-  size_t mLifeTime[6];
+  std::size_t mLifeTime[6];
 
   ///
   bool mActive[6];
