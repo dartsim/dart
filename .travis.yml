@@ -4,10 +4,6 @@ sudo: required
 
 dist: trusty
 
-env:
-  - BUILD_TYPE=Debug   TREAT_WARNINGS_AS_ERRORS=ON COVERALLS=ON
-  - BUILD_TYPE=Release TREAT_WARNINGS_AS_ERRORS=ON COVERALLS=OFF
-
 matrix:
   include:
     - os: linux
@@ -30,8 +26,7 @@ matrix:
       env: BUILD_TYPE=Release COVERALLS=OFF COMPILER=CLANG
 
 install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then 'ci/install_linux.sh' ; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx"   ]; then 'ci/install_osx.sh'   ; fi
+  - 'ci/install.sh'
 
 script:
   - 'ci/scrip.sh'
