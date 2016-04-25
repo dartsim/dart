@@ -2,7 +2,7 @@ dart4 (4.3.6) unstable; urgency=medium
 
   * Fixed duplicate entries in Skeleton::mBodyNodes causing segfault in destructor
 
- -- Jeongseok Lee <jslee02@gmail.com>  Sat, 16 Apr 2015 12:00:00 -0500
+ -- Jeongseok Lee <jslee02@gmail.com>  Sat, 16 Apr 2016 12:00:00 -0500
 
 dart4 (4.3.5) unstable; urgency=medium
 
