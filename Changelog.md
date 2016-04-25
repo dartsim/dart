@@ -1,3 +1,19 @@
+### Version 5.1.2 (2016-04-25)
+
+1. Fixed inverse kinematics (backporting)
+    * [Pull request #684](https://github.com/dartsim/dart/pull/684)
+
+1. Fixed aligned memory allocation with Eigen objects in loading meshes
+    * [Pull request #606](https://github.com/dartsim/dart/pull/606)
+
+1. Fixed incorrect applying joint constraint impulses (backporting)
+    * [Pull request #579](https://github.com/dartsim/dart/pull/579)
+
+1. Fixed some build and packaging issues
+    * [Pull request #559](https://github.com/dartsim/dart/pull/559)
+    * [Pull request #595](https://github.com/dartsim/dart/pull/595)
+    * [Pull request #696](https://github.com/dartsim/dart/pull/696)
+
 ### Version 5.1.1 (2015-11-06)
 
 1. Add bullet dependency to package.xml
@@ -294,6 +310,17 @@
 
 1. Added specification of minimum dependency version
     * [Pull request #306](https://github.com/dartsim/dart/pull/306)
+
+### Version 4.3.6 (2016-04-16)
+
+1. Fixed duplicate entries in Skeleton::mBodyNodes causing segfault in destructor
+    * [Issue #671](https://github.com/dartsim/dart/issues/671)
+    * [Pull request #672](https://github.com/dartsim/dart/pull/672)
+
+### Version 4.3.5 (2016-01-09)
+
+1. Fixed incorrect applying of joint constraint impulses (backported from 6.0.0)
+    * [Pull request #578](https://github.com/dartsim/dart/pull/578)
 
 ### Version 4.3.4 (2015-01-24)
 
