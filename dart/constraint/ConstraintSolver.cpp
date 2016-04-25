@@ -228,6 +228,7 @@ void ConstraintSolver::setCollisionDetector(
     dtwarn << "[ConstraintSolver::setCollisionDetector] Attempting to assign "
            << "nullptr as the new collision detector to the constraint solver, "
            << "which is not allowed. Ignoring.\n";
+    return;
   }
 
   if (mCollisionDetector == collisionDetector)
