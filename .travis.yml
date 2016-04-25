@@ -29,7 +29,7 @@ install:
   - 'ci/install.sh'
 
 script:
-  - 'ci/scrip.sh'
+  - 'ci/script.sh'
 
 after_failure: 
   - cat Testing/Temporary/LastTest.log
