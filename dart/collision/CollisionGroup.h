@@ -166,7 +166,7 @@ public:
   bool hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const;
 
   /// Return number of ShapeFrames added to this CollisionGroup
-  size_t getNumShapeFrames() const;
+  std::size_t getNumShapeFrames() const;
 
   /// Perform collision detection within this CollisionGroup.
   bool collide(const CollisionOption& option, CollisionResult& result);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -564,7 +564,7 @@ TEST(Aspect, Releasing)
 template <class AspectT>
 void makeStatesDifferent(AspectT* aspect, const AspectT* differentFrom)
 {
-  size_t counter = 0;
+  std::size_t counter = 0;
   while( aspect->mState.val == differentFrom->mState.val )
   {
     aspect->randomize();
@@ -581,7 +581,7 @@ void makeStatesDifferent(AspectT* aspect, const AspectT* differentFrom)
 template <class AspectT>
 void makePropertiesDifferent(AspectT* aspect, const AspectT* differentFrom)
 {
-  size_t counter = 0;
+  std::size_t counter = 0;
   while( aspect->mProperties.val == differentFrom->mProperties.val )
   {
     aspect->randomize();

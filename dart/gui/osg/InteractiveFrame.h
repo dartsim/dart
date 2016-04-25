@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -132,11 +132,11 @@ public:
                                      double thickness_scale=2.0);
 
   /// Get the specified tool
-  InteractiveTool* getTool(InteractiveTool::Type tool, size_t coordinate);
+  InteractiveTool* getTool(InteractiveTool::Type tool, std::size_t coordinate);
 
   /// Get the specified tool
   const InteractiveTool* getTool(InteractiveTool::Type tool,
-                                 size_t coordinate) const;
+                                 std::size_t coordinate) const;
 
   dart::dynamics::SimpleFrame* addShapeFrame(
       const dart::dynamics::ShapePtr& shape);

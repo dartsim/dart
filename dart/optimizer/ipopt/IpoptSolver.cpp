@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -86,7 +86,7 @@ bool IpoptSolver::solve()
   mIpoptApp->Options()->SetNumericValue("tol", getTolerance());
   mIpoptApp->Options()->SetStringValue("output_file", getResultFileName());
 
-  size_t freq = mProperties.mIterationsPerPrint;
+  std::size_t freq = mProperties.mIterationsPerPrint;
   if(freq > 0)
   {
     mIpoptApp->Options()->SetNumericValue("print_frequency_iter", freq);
@@ -203,8 +203,8 @@ bool DartTNLP::get_bounds_info(Ipopt::Index n,
 
   // here, the n and m we gave IPOPT in get_nlp_info are passed back to us.
   // If desired, we could assert to make sure they are what we think they are.
-  assert(static_cast<size_t>(n) == problem->getDimension());
-  assert(static_cast<size_t>(m) == problem->getNumEqConstraints()
+  assert(static_cast<std::size_t>(n) == problem->getDimension());
+  assert(static_cast<std::size_t>(m) == problem->getNumEqConstraints()
          + problem->getNumIneqConstraints());
   DART_UNUSED(m);
 
@@ -216,14 +216,14 @@ bool DartTNLP::get_bounds_info(Ipopt::Index n,
   }
 
   // Add inequality constraint functions
-  size_t idx = 0;
-  for (size_t i = 0; i < problem->getNumEqConstraints(); ++i)
+  std::size_t idx = 0;
+  for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i)
   {
     g_l[idx] = g_u[idx] = 0.0;
     ++idx;
   }
 
-  for (size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
+  for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
   {
     // Ipopt interprets any number greater than nlp_upper_bound_inf as
     // infinity. The default value of nlp_upper_bound_inf and
@@ -321,7 +321,7 @@ bool DartTNLP::eval_g(Ipopt::Index _n,
 {
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
-  assert(static_cast<size_t>(_m) == problem->getNumEqConstraints()
+  assert(static_cast<std::size_t>(_m) == problem->getNumEqConstraints()
                                     + problem->getNumIneqConstraints());
   DART_UNUSED(_m);
 
@@ -331,10 +331,10 @@ bool DartTNLP::eval_g(Ipopt::Index _n,
   }
 
   Eigen::Map<const Eigen::VectorXd> x(_x, _n);
-  size_t idx = 0;
+  std::size_t idx = 0;
 
   // Evaluate function values for equality constraints
-  for (size_t i = 0; i < problem->getNumEqConstraints(); ++i)
+  for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i)
   {
     _g[idx] = problem->getEqConstraint(i)->eval(
           static_cast<const Eigen::VectorXd&>(x));
@@ -342,7 +342,7 @@ bool DartTNLP::eval_g(Ipopt::Index _n,
   }
 
   // Evaluate function values for inequality constraints
-  for (size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
+  for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
   {
     _g[idx] = problem->getIneqConstraint(i)->eval(
           static_cast<const Eigen::VectorXd&>(x));
@@ -373,7 +373,7 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
     // return the structure of the Jacobian
 
     // Assume the gradient is dense
-    size_t idx = 0;
+    std::size_t idx = 0;
     for (int i = 0; i < _m; ++i)
     {
       for (int j = 0; j < _n; ++j)
@@ -387,12 +387,12 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
   else
   {
     // return the values of the Jacobian of the constraints
-    size_t idx = 0;
+    std::size_t idx = 0;
     Eigen::Map<const Eigen::VectorXd> x(_x, _n);
     Eigen::Map<Eigen::VectorXd> grad(nullptr, 0);
 
     // Evaluate function values for equality constraints
-    for (size_t i = 0; i < problem->getNumEqConstraints(); ++i)
+    for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i)
     {
       new (&grad)Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
       problem->getEqConstraint(i)->evalGradient(
@@ -401,7 +401,7 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
     }
 
     // Evaluate function values for inequality constraints
-    for (size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
+    for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
     {
       new (&grad)Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
       problem->getIneqConstraint(i)->evalGradient(

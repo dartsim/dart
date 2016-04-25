@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Kristin Siu <kasiu@gatech.edu>,
@@ -54,7 +54,7 @@ public:
   virtual ~RK4Integrator();
 
   // Documentation inherited
-  virtual void integrate(IntegrableSystem* _system, double _dt);
+  void integrate(IntegrableSystem* _system, double _dt) override;
 
 private:
   /// \brief Initial configurations

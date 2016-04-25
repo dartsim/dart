@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Karen Liu <karenliu@cc.gatech.edu>
@@ -113,7 +113,7 @@ bool FileInfoWorld::loadFile(const char* _fName)
       }
 
     state.resize(tempState.size());
-    for (size_t j = 0; j < tempState.size(); j++)
+    for (std::size_t j = 0; j < tempState.size(); j++)
       state[j] = tempState[j];
     mRecord->addState(state);
     tempState.clear();

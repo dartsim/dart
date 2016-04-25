@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -114,8 +114,8 @@ void JointCoulombFrictionConstraint::update()
   // Reset dimention
   mDim = 0;
 
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof; ++i)
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof; ++i)
   {
     mNegativeVel[i] = -mJoint->getVelocity(i);
 
@@ -156,9 +156,9 @@ void JointCoulombFrictionConstraint::update()
 //==============================================================================
 void JointCoulombFrictionConstraint::getInformation(ConstraintInfo* _lcp)
 {
-  size_t index = 0;
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof; ++i)
+  std::size_t index = 0;
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -181,15 +181,15 @@ void JointCoulombFrictionConstraint::getInformation(ConstraintInfo* _lcp)
 }
 
 //==============================================================================
-void JointCoulombFrictionConstraint::applyUnitImpulse(size_t _index)
+void JointCoulombFrictionConstraint::applyUnitImpulse(std::size_t _index)
 {
   assert(_index < mDim && "Invalid Index.");
 
-  size_t localIndex = 0;
+  std::size_t localIndex = 0;
   const dynamics::SkeletonPtr& skeleton = mJoint->getSkeleton();
 
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof; ++i)
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -215,9 +215,9 @@ void JointCoulombFrictionConstraint::getVelocityChange(double* _delVel,
 {
   assert(_delVel != nullptr && "Null pointer is not allowed.");
 
-  size_t localIndex = 0;
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof ; ++i)
+  std::size_t localIndex = 0;
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof ; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -256,9 +256,9 @@ void JointCoulombFrictionConstraint::unexcite()
 //==============================================================================
 void JointCoulombFrictionConstraint::applyImpulse(double* _lambda)
 {
-  size_t localIndex = 0;
-  size_t dof = mJoint->getNumDofs();
-  for (size_t i = 0; i < dof ; ++i)
+  std::size_t localIndex = 0;
+  std::size_t dof = mJoint->getNumDofs();
+  for (std::size_t i = 0; i < dof ; ++i)
   {
     if (mActive[i] == false)
       continue;
@@ -281,7 +281,7 @@ dynamics::SkeletonPtr JointCoulombFrictionConstraint::getRootSkeleton() const
 //==============================================================================
 bool JointCoulombFrictionConstraint::isActive() const
 {
-  for (size_t i = 0; i < 6; ++i)
+  for (std::size_t i = 0; i < 6; ++i)
   {
     if (mActive[i])
       return true;

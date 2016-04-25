@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -129,31 +129,31 @@ public:
   PointMass* addPointMass(const PointMass::Properties& _properties);
 
   /// \brief
-  size_t getNumPointMasses() const;
+  std::size_t getNumPointMasses() const;
 
   /// \brief
-  PointMass* getPointMass(size_t _idx);
+  PointMass* getPointMass(std::size_t _idx);
 
   /// \brief
-  const PointMass* getPointMass(size_t _idx) const;
+  const PointMass* getPointMass(std::size_t _idx) const;
 
   /// Return all the point masses in this SoftBodyNode
   const std::vector<PointMass*>& getPointMasses() const;
 
   /// \brief
-  void connectPointMasses(size_t _idx1, size_t _idx2);
+  void connectPointMasses(std::size_t _idx1, std::size_t _idx2);
 
   /// \brief
   void addFace(const Eigen::Vector3i& _face);
 
   /// \brief
-  const Eigen::Vector3i& getFace(size_t _idx) const;
+  const Eigen::Vector3i& getFace(std::size_t _idx) const;
 
   /// \brief
-  size_t getNumFaces() const;
+  std::size_t getNumFaces() const;
 
   // Documentation inherited.
-  virtual void clearConstraintImpulse() override;
+  void clearConstraintImpulse() override;
 
 protected:
 
@@ -163,8 +163,8 @@ protected:
 
   /// Create a clone of this SoftBodyNode. This may only be called by the
   /// Skeleton class.
-  virtual BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
-                          bool cloneNodes) const override;
+  BodyNode* clone(BodyNode* _parentBodyNode, Joint* _parentJoint,
+                  bool cloneNodes) const override;
 
   /// Used by SoftBodyAspect to have this SoftBodyNode reconstruct its
   /// SoftMeshShape
@@ -174,7 +174,7 @@ protected:
   // Sub-functions for Recursive Kinematics Algorithms
   //--------------------------------------------------------------------------
   // Documentation inherited.
-  virtual void init(const SkeletonPtr& _skeleton) override;
+  void init(const SkeletonPtr& _skeleton) override;
 
   // Documentation inherited.
 //  virtual void aggregateGenCoords(std::vector<GenCoord*>* _genCoords);
@@ -190,59 +190,59 @@ protected:
   void checkArticulatedInertiaUpdate() const;
 
   // Documentation inherited.
-  virtual void updateTransform() override;
+  void updateTransform() override;
 
   // Documentation inherited.
-  virtual void updateVelocity() override;
+  void updateVelocity() override;
 
   // Documentation inherited.
-  virtual void updatePartialAcceleration() const override;
+  void updatePartialAcceleration() const override;
 
   // Documentation inherited.
-  virtual void updateArtInertia(double _timeStep) const override;
+  void updateArtInertia(double _timeStep) const override;
 
   // Documentation inherited.
-  virtual void updateBiasForce(const Eigen::Vector3d& _gravity,
-                               double _timeStep) override;
+  void updateBiasForce(const Eigen::Vector3d& _gravity,
+                       double _timeStep) override;
 
   // Documentation inherited.
-  virtual void updateBiasImpulse() override;
+  void updateBiasImpulse() override;
 
   // Documentation inherited.
-  virtual void updateAccelerationID() override;
+  void updateAccelerationID() override;
 
   // Documentation inherited.
-  virtual void updateAccelerationFD() override;
+  void updateAccelerationFD() override;
 
   // Documentation inherited.
-  virtual void updateVelocityChangeFD() override;
+  void updateVelocityChangeFD() override;
 
   // Documentation inherited.
-  virtual void updateTransmittedForceID(
+  void updateTransmittedForceID(
       const Eigen::Vector3d& _gravity,
       bool _withExternalForces = false) override;
 
   // Documentation inherited.
-  virtual void updateTransmittedForceFD() override;
+  void updateTransmittedForceFD() override;
 
   // Documentation inherited.
-  virtual void updateTransmittedImpulse() override;
+  void updateTransmittedImpulse() override;
 
   // Documentation inherited.
-  virtual void updateJointForceID(double _timeStep,
-                                  bool _withDampingForces,
-                                  bool _withSpringForces) override;
+  void updateJointForceID(double _timeStep,
+                          bool _withDampingForces,
+                          bool _withSpringForces) override;
 
   // Documentation inherited.
-  virtual void updateJointForceFD(double _timeStep,
-                                  bool _withDampingForces,
-                                  bool _withSpringForces) override;
+  void updateJointForceFD(double _timeStep,
+                          bool _withDampingForces,
+                          bool _withSpringForces) override;
 
   // Documentation inherited.
-  virtual void updateJointImpulseFD() override;
+  void updateJointImpulseFD() override;
 
   // Documentation inherited.
-  virtual void updateConstrainedTerms(double _timeStep) override;
+  void updateConstrainedTerms(double _timeStep) override;
 
   /// \}
 
@@ -251,52 +251,52 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited.
-  virtual void updateMassMatrix() override;
+  void updateMassMatrix() override;
 
   // Documentation inherited.
-  virtual void aggregateMassMatrix(Eigen::MatrixXd& _MCol, size_t _col) override;
+  void aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col) override;
 
   // Documentation inherited.
-  virtual void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, size_t _col,
-                                      double _timeStep) override;
+  void aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col,
+                              double _timeStep) override;
 
   // Documentation inherited.
-  virtual void updateInvMassMatrix() override;
+  void updateInvMassMatrix() override;
 
   // Documentation inherited.
-  virtual void updateInvAugMassMatrix() override;
+  void updateInvAugMassMatrix() override;
 
   // Documentation inherited.
-  virtual void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col) override;
+  void aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col) override;
 
   // Documentation inherited.
-  virtual void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, size_t _col,
-                                         double _timeStep) override;
+  void aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col,
+                                 double _timeStep) override;
 
   // Documentation inherited.
   // TODO(JS): Not implemented yet.
-  virtual void aggregateCoriolisForceVector(Eigen::VectorXd& _C) override;
+  void aggregateCoriolisForceVector(Eigen::VectorXd& _C) override;
 
   // Documentation inherited.
-  virtual void aggregateGravityForceVector(Eigen::VectorXd& _g,
-                                           const Eigen::Vector3d& _gravity) override;
+  void aggregateGravityForceVector(Eigen::VectorXd& _g,
+                                   const Eigen::Vector3d& _gravity) override;
 
   // Documentation inherited.
-  virtual void updateCombinedVector() override;
+  void updateCombinedVector() override;
 
   // Documentation inherited.
-  virtual void aggregateCombinedVector(Eigen::VectorXd& _Cg,
-                                       const Eigen::Vector3d& _gravity) override;
+  void aggregateCombinedVector(Eigen::VectorXd& _Cg,
+                               const Eigen::Vector3d& _gravity) override;
 
   // Documentation inherited.
-  virtual void aggregateExternalForces(Eigen::VectorXd& _Fext) override;
+  void aggregateExternalForces(Eigen::VectorXd& _Fext) override;
 
   /// \}
 
   // Documentation inherited.
-  virtual void clearExternalForces() override;
+  void clearExternalForces() override;
 
-  virtual void clearInternalForces() override;
+  void clearInternalForces() override;
 
 protected:
 
@@ -401,8 +401,8 @@ public:
   /// Create a Properties struct for an Ellipsoid-shaped SoftBodyNode
   static SoftBodyNode::UniqueProperties makeEllipsoidProperties(
       const Eigen::Vector3d& _size,
-      size_t                 _nSlices,
-      size_t                 _nStacks,
+      std::size_t                 _nSlices,
+      std::size_t                 _nStacks,
       double                 _totalMass,
       double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
@@ -412,8 +412,8 @@ public:
   /// This should be called before SoftBodyNode::init() is called
   static void setEllipsoid(SoftBodyNode*          _softBodyNode,
       const Eigen::Vector3d& _size,
-      size_t _nSlices,
-      size_t _nStacks,
+      std::size_t _nSlices,
+      std::size_t _nStacks,
       double                 _totalMass,
       double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
@@ -423,9 +423,9 @@ public:
   static SoftBodyNode::UniqueProperties makeCylinderProperties(
       double _radius,
       double _height,
-      size_t _nSlices,
-      size_t _nStacks,
-      size_t _nRings,
+      std::size_t _nSlices,
+      std::size_t _nStacks,
+      std::size_t _nRings,
       double _totalMass,
       double _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
@@ -436,9 +436,9 @@ public:
   static void setCylinder(SoftBodyNode*          _softBodyNode,
       double _radius,
       double _height,
-      size_t _nSlices,
-      size_t _nStacks,
-      size_t _nRings,
+      std::size_t _nSlices,
+      std::size_t _nStacks,
+      std::size_t _nRings,
       double                 _totalMass,
       double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
       double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,

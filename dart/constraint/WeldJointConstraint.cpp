@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -177,7 +177,7 @@ void WeldJointConstraint::getInformation(ConstraintInfo* _lcp)
 }
 
 //==============================================================================
-void WeldJointConstraint::applyUnitImpulse(size_t _index)
+void WeldJointConstraint::applyUnitImpulse(std::size_t _index)
 {
   assert(_index < mDim && "Invalid Index.");
   assert(isActive());
@@ -273,7 +273,7 @@ void WeldJointConstraint::getVelocityChange(double* _vel, bool _withCfm)
     velChange -= mJacobian2 * mBodyNode2->getBodyVelocityChange();
   }
 
-  for (size_t i = 0; i < mDim; ++i)
+  for (std::size_t i = 0; i < mDim; ++i)
     _vel[i] = velChange[i];
 
   // Add small values to diagnal to keep it away from singular, similar to cfm

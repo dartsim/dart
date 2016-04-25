@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -127,11 +127,11 @@ public:
 
   /// Set the number of steps to take between each render cycle (only if the
   /// simulation is not paused)
-  void setNumStepsPerCycle(size_t _steps);
+  void setNumStepsPerCycle(std::size_t _steps);
 
   /// Get the number of steps that will be taken between each render cycle (only
   /// if the simulation is not paused)
-  size_t getNumStepsPerCycle() const;
+  std::size_t getNumStepsPerCycle() const;
 
 protected:
 
@@ -172,7 +172,7 @@ protected:
   bool mSimulating;
 
   /// Number of steps to take between rendering cycles
-  size_t mNumStepsPerCycle;
+  std::size_t mNumStepsPerCycle;
 
   /// Viewer that this WorldNode is inside of
   Viewer* mViewer;

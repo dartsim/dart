@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -61,8 +61,8 @@ DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
   mViewer->addInstructionText("Spacebar:     Turn simulation on/off for any active worlds\n");
   mViewer->addInstructionText("Ctrl+H:       Turn headlights on/off\n");
 
-  for(size_t i=0; i<NUM_MOUSE_BUTTONS; ++i)
-    for(size_t j=0; j<BUTTON_NOTHING; ++j)
+  for(std::size_t i=0; i<NUM_MOUSE_BUTTONS; ++i)
+    for(std::size_t j=0; j<BUTTON_NOTHING; ++j)
       mSuppressButtonPicks[i][j] = false;
   mSuppressMovePicks = false;
 
@@ -429,7 +429,7 @@ void DefaultEventHandler::eventPick(const ::osgGA::GUIEventAdapter& ea)
 //==============================================================================
 void DefaultEventHandler::clearButtonEvents()
 {
-  for(size_t i=0; i<NUM_MOUSE_BUTTONS; ++i)
+  for(std::size_t i=0; i<NUM_MOUSE_BUTTONS; ++i)
     mLastButtonEvent[i] = BUTTON_NOTHING;
 }
 

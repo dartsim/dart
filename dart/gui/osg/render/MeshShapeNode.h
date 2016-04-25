@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -71,7 +71,7 @@ public:
   void refresh();
   void extractData(bool firstTime);
 
-  ::osg::Material* getMaterial(size_t index) const;
+  ::osg::Material* getMaterial(std::size_t index) const;
 
 protected:
 

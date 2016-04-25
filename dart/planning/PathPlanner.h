@@ -1,3 +1,40 @@
+/*
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Can Erdogan <cerdogan3@gatech.edu>,
+ *            Tobias Kunz <tobias@gatech.edu>,
+ *
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
+ *
+ * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
+ * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /**
  * @file PathPlanner.h
  * @author Tobias Kunz (?), Can Erdogan
@@ -33,7 +70,7 @@ public:
   bool bidirectional;      ///< Whether two trees try to meet each other or one goes for the goal
   double stepSize;        ///< Step size from a node in the tree to the random/goal node
   double goalBias;        ///< Choose btw goal and random value (for goal-biased search)
-  size_t maxNodes;        ///< Maximum number of iterations the sampling would continue
+  std::size_t maxNodes;        ///< Maximum number of iterations the sampling would continue
   simulation::WorldPtr world;  ///< The world that the robot is in (for obstacles and etc.)
 
   // NOTE: It is useful to keep the rrts around after planning for reuse, analysis, and etc.
@@ -47,7 +84,7 @@ public:
 
   /// The desired constructor - you should use this one.
   PathPlanner(simulation::World& world, bool bidirectional_ = true, bool connect_ = true, double stepSize_ = 0.1,
-    size_t maxNodes_ = 1e6, double goalBias_ = 0.3) : world(&world), bidirectional(bidirectional_),
+    std::size_t maxNodes_ = 1e6, double goalBias_ = 0.3) : world(&world), bidirectional(bidirectional_),
     connect(connect_), stepSize(stepSize_), maxNodes(maxNodes_), goalBias(goalBias_) {
   }
 
@@ -64,7 +101,7 @@ public:
   }
 
   /// Plan a path from a _set_ of start configurations to a _set_ of goals
-  bool planPath(dynamics::Skeleton* robot, const std::vector<size_t> &dofs, const std::vector<Eigen::VectorXd> &start,
+  bool planPath(dynamics::Skeleton* robot, const std::vector<std::size_t> &dofs, const std::vector<Eigen::VectorXd> &start,
     const std::vector<Eigen::VectorXd> &goal, std::list<Eigen::VectorXd> &path);
 
 private:
@@ -87,7 +124,7 @@ private:
 
 /* ********************************************************************************************* */
 template <class R>
-bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<size_t> &dofs,
+bool PathPlanner<R>::planPath(dynamics::Skeleton* robot, const std::vector<std::size_t> &dofs,
     const std::vector<Eigen::VectorXd> &start, const std::vector<Eigen::VectorXd> &goal,
     std::list<Eigen::VectorXd> &path) {
 
@@ -154,7 +191,7 @@ bool PathPlanner<R>::planSingleTreeRrt(dynamics::Skeleton* robot, const std::vec
   // Expand the tree until the goal is reached or the max # nodes is passed
   typename R::StepResult result = R::STEP_PROGRESS;
   double smallestGap = std::numeric_limits<double>::infinity();
-  size_t numNodes = start_rrt->getSize();
+  std::size_t numNodes = start_rrt->getSize();
   while(numNodes <= maxNodes) {
 
     // Get the target node based on the bias
@@ -203,7 +240,7 @@ bool PathPlanner<R>::planBidirectionalRrt(dynamics::Skeleton* robot, const std::
 
   // Expand the tree until the trees meet or the max # nodes is passed
   double smallestGap = std::numeric_limits<double>::infinity();
-  size_t numNodes = rrt1->getSize() + rrt2->getSize();
+  std::size_t numNodes = rrt1->getSize() + rrt2->getSize();
   while(numNodes < maxNodes) {
 
     // Swap the roles of the two RRTs. Remember, the first rrt reaches out to a target node and

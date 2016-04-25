@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sumit Jain <sumit@cc.gatech.edu>
@@ -49,19 +49,19 @@ public:
   Win2D();
 
   /// \brief
-  virtual void resize(int _w, int _h);
+  void resize(int _w, int _h) override;
 
   /// \brief
-  virtual void render();
+  void render() override;
 
   /// \brief
-  virtual void keyboard(unsigned char _key, int _x, int _y);
+  void keyboard(unsigned char _key, int _x, int _y) override;
 
   /// \brief
-  virtual void click(int _button, int _state, int _x, int _y);
+  void click(int _button, int _state, int _x, int _y) override;
 
   /// \brief
-  virtual void drag(int _x, int _y);
+  void drag(int _x, int _y) override;
 
   /// \brief
   virtual void initGL();

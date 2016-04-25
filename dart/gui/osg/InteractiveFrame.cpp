@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -164,7 +164,7 @@ InteractiveFrame::InteractiveFrame(
     Frame(referenceFrame),
     SimpleFrame(referenceFrame, name, relativeTransform)
 {
-  for(size_t i=0; i<3; ++i)
+  for(std::size_t i=0; i<3; ++i)
   {
     std::string affix = (i==0)? "x" : (i==1)? "y" : "z";
 
@@ -196,7 +196,7 @@ void InteractiveFrame::resizeStandardVisuals(double size_scale,
 
 //==============================================================================
 InteractiveTool* InteractiveFrame::getTool(InteractiveTool::Type tool,
-                                           size_t coordinate)
+                                           std::size_t coordinate)
 {
   if(InteractiveTool::NUM_TYPES <= tool)
   {
@@ -214,12 +214,12 @@ InteractiveTool* InteractiveFrame::getTool(InteractiveTool::Type tool,
     return nullptr;
   }
 
-  return mTools[(size_t)tool][coordinate];
+  return mTools[(std::size_t)tool][coordinate];
 }
 
 //==============================================================================
 const InteractiveTool* InteractiveFrame::getTool(
-    InteractiveTool::Type tool, size_t coordinate) const
+    InteractiveTool::Type tool, std::size_t coordinate) const
 {
   return const_cast<InteractiveFrame*>(this)->getTool(tool, coordinate);
 }
@@ -273,14 +273,14 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
                                                          double thickness)
 {
   thickness = std::min(10.0, std::max(0.0, thickness));
-  size_t resolution = 72;
+  std::size_t resolution = 72;
   double ring_outer_scale = 0.7*size;
   double ring_inner_scale = ring_outer_scale*(1-0.1*thickness);
   double plane_corner = 0.9*ring_inner_scale;
   double plane_length = plane_corner/sqrt(2);
 
   // Create translation arrows
-  for(size_t a=0; a<3; ++a)
+  for(std::size_t a=0; a<3; ++a)
   {
     Eigen::Vector3d tail(Eigen::Vector3d::Zero());
 //    tail[a] = 1.2*plane_length;
@@ -312,13 +312,13 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   }
 
   // Create rotation rings
-  for(size_t r=0; r<3; ++r)
+  for(std::size_t r=0; r<3; ++r)
   {
     aiMesh* mesh = new aiMesh;
     mesh->mMaterialIndex = (unsigned int)(-1);
 
-    size_t numVertices = 8*resolution;
-    size_t R = 4*resolution;
+    std::size_t numVertices = 8*resolution;
+    std::size_t R = 4*resolution;
     mesh->mNumVertices = numVertices;
     mesh->mVertices = new aiVector3D[numVertices];
     mesh->mNormals = new aiVector3D[numVertices];
@@ -327,9 +327,9 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     aiVector3D normal;
     aiColor4D color1;
     aiColor4D color2;
-    for(size_t j=0; j<2; ++j)
+    for(std::size_t j=0; j<2; ++j)
     {
-      for(size_t i=0; i<resolution; ++i)
+      for(std::size_t i=0; i<resolution; ++i)
       {
         double theta = (double)(i)/(double)(resolution)*2*M_PI;
 
@@ -356,7 +356,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
         mesh->mNormals[4*i+j+R] = normal;
         mesh->mNormals[4*i+2+j+R] = normal;
 
-        for(size_t c=0; c<3; ++c)
+        for(std::size_t c=0; c<3; ++c)
         {
           color1[c] = 0.0;
           color2[c] = 0.0;
@@ -372,12 +372,12 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
       }
     }
 
-    size_t numFaces = 4*resolution;
-    size_t F = 2*resolution;
-    size_t H = resolution/2;
+    std::size_t numFaces = 4*resolution;
+    std::size_t F = 2*resolution;
+    std::size_t H = resolution/2;
     mesh->mNumFaces = numFaces;
     mesh->mFaces = new aiFace[numFaces];
-    for(size_t i=0; i<H; ++i)
+    for(std::size_t i=0; i<H; ++i)
     {
       // Front
       aiFace* face = &mesh->mFaces[2*i];
@@ -469,19 +469,19 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   }
 
   // Create translation planes
-  for(size_t p=0; p<3; ++p)
+  for(std::size_t p=0; p<3; ++p)
   {
     aiMesh* mesh = new aiMesh;
     mesh->mMaterialIndex = (unsigned int)(-1);
 
-    size_t numVertices = 8;
+    std::size_t numVertices = 8;
     mesh->mNumVertices = numVertices;
     mesh->mVertices = new aiVector3D[numVertices];
     mesh->mNormals = new aiVector3D[numVertices];
     mesh->mColors[0] = new aiColor4D[numVertices];
 
     double L = plane_length;
-    for(size_t i=0; i<2; ++i)
+    for(std::size_t i=0; i<2; ++i)
     {
       mesh->mVertices[4*i+0] = aiVector3D(0, -L, -L);
       mesh->mVertices[4*i+1] = aiVector3D(0,  L, -L);
@@ -489,7 +489,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
       mesh->mVertices[4*i+3] = aiVector3D(0,  L,  L);
     }
 
-    for(size_t i=0; i<4; ++i)
+    for(std::size_t i=0; i<4; ++i)
     {
       mesh->mNormals[i] = aiVector3D(1, 0, 0);
       mesh->mNormals[i+4] = aiVector3D(-1, 0, 0);
@@ -498,13 +498,13 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     aiColor4D color(0.1, 0.1, 0.1,
                     getTool(InteractiveTool::PLANAR,p)->getDefaultAlpha());
     color[p] = 0.9;
-    for(size_t i=0; i<numVertices; ++i)
+    for(std::size_t i=0; i<numVertices; ++i)
       mesh->mColors[0][i] = color;
 
-    size_t numFaces = 4;
+    std::size_t numFaces = 4;
     mesh->mNumFaces = numFaces;
     mesh->mFaces = new aiFace[numFaces];
-    for(size_t i=0; i<numFaces; ++i)
+    for(std::size_t i=0; i<numFaces; ++i)
     {
       aiFace* face = &mesh->mFaces[i];
       face->mNumIndices = 3;
@@ -557,12 +557,12 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
     shapeFrame->setRelativeTransform(tf);
   }
 
-  for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
+  for(std::size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
   {
-    for(size_t j=0; j<3; ++j)
+    for(std::size_t j=0; j<3; ++j)
     {
       const auto& shapesFrames = mTools[i][j]->getShapeFrames();
-      for(size_t s=0; s<shapesFrames.size(); ++s)
+      for(std::size_t s=0; s<shapesFrames.size(); ++s)
       {
         shapesFrames[s]->getShape()->setDataVariance(
               dart::dynamics::Shape::DYNAMIC_COLOR);
@@ -571,7 +571,7 @@ void InteractiveFrame::createStandardVisualizationShapes(double size,
   }
 
   // Create axes
-  for(size_t i=0; i<3; ++i)
+  for(std::size_t i=0; i<3; ++i)
   {
     std::shared_ptr<dart::dynamics::LineSegmentShape> line(
         new dart::dynamics::LineSegmentShape(3.0));
@@ -591,9 +591,9 @@ void InteractiveFrame::deleteAllVisualizationShapes()
 {
   removeAllShapeFrames();
 
-  for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
+  for(std::size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
   {
-    for(size_t j=0; j<3; ++j)
+    for(std::size_t j=0; j<3; ++j)
     {
       InteractiveTool* tool = mTools[i][j];
       tool->removeAllShapeFrames();
@@ -604,8 +604,8 @@ void InteractiveFrame::deleteAllVisualizationShapes()
 //==============================================================================
 void InteractiveFrame::deleteAllTools()
 {
-  for(size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
-    for(size_t j=0; j<3; ++j)
+  for(std::size_t i=0; i<InteractiveTool::NUM_TYPES; ++i)
+    for(std::size_t j=0; j<3; ++j)
       delete mTools[i][j];
 }
 

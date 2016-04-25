@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
@@ -326,19 +326,19 @@ bool Joint::isPositionLimitEnforced() const
 }
 
 //==============================================================================
-size_t Joint::getJointIndexInSkeleton() const
+std::size_t Joint::getJointIndexInSkeleton() const
 {
   return mChildBodyNode->getIndexInSkeleton();
 }
 
 //==============================================================================
-size_t Joint::getJointIndexInTree() const
+std::size_t Joint::getJointIndexInTree() const
 {
   return mChildBodyNode->getIndexInTree();
 }
 
 //==============================================================================
-size_t Joint::getTreeIndex() const
+std::size_t Joint::getTreeIndex() const
 {
   return mChildBodyNode->getTreeIndex();
 }
@@ -347,7 +347,7 @@ size_t Joint::getTreeIndex() const
 bool Joint::checkSanity(bool _printWarnings) const
 {
   bool sane = true;
-  for(size_t i=0; i < getNumDofs(); ++i)
+  for(std::size_t i=0; i < getNumDofs(); ++i)
   {
     if(getInitialPosition(i) < getPositionLowerLimit(i)
        || getPositionUpperLimit(i) < getInitialPosition(i))
@@ -440,7 +440,7 @@ Joint::Joint()
 }
 
 //==============================================================================
-DegreeOfFreedom* Joint::createDofPointer(size_t _indexInJoint)
+DegreeOfFreedom* Joint::createDofPointer(std::size_t _indexInJoint)
 {
   return new DegreeOfFreedom(this, _indexInJoint);
 }
@@ -500,7 +500,7 @@ void Joint::notifyPositionUpdate()
   SkeletonPtr skel = getSkeleton();
   if(skel)
   {
-    size_t tree = mChildBodyNode->mTreeIndex;
+    std::size_t tree = mChildBodyNode->mTreeIndex;
     skel->notifyArticulatedInertiaUpdate(tree);
     skel->mTreeCache[tree].mDirty.mExternalForces = true;
     skel->mSkelCache.mDirty.mExternalForces = true;

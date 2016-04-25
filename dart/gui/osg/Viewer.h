@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -147,7 +147,7 @@ public:
   /// Set the restart argument to true if you want the sequence counter to
   /// restart from 0.
   void record(const std::string& directory, const std::string& prefix = "image",
-              bool restart = false, size_t digits=6);
+              bool restart = false, std::size_t digits=6);
 
   /// If the Viewer is recording, then pause the recording. The next time
   /// record() is called, the numbering of the images will resume from where it
@@ -297,10 +297,10 @@ protected:
   friend class SaveScreen;
 
   /// Current number of the image sequence for screen recording
-  size_t mImageSequenceNum;
+  std::size_t mImageSequenceNum;
 
   /// Number of digits to use when saving an image sequence
-  size_t mImageDigits;
+  std::size_t mImageDigits;
 
   /// Whether or not the Viewer is currently recording
   bool mRecording;

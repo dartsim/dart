@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -179,7 +179,7 @@ ShapeNode* BodyNode::createShapeNodeWith(
 
 //==============================================================================
 template <class AspectT>
-size_t BodyNode::getNumShapeNodesWith() const
+std::size_t BodyNode::getNumShapeNodesWith() const
 {
   auto count = 0u;
   auto numShapeNode = getNumShapeNodes();

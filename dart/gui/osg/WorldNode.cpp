@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -95,7 +95,7 @@ void WorldNode::refresh()
 
   if(mSimulating)
   {
-    for(size_t i=0; i<mNumStepsPerCycle; ++i)
+    for(std::size_t i=0; i<mNumStepsPerCycle; ++i)
     {
       customPreStep();
       mWorld->step();
@@ -148,13 +148,13 @@ void WorldNode::simulate(bool _on)
 }
 
 //==============================================================================
-void WorldNode::setNumStepsPerCycle(size_t _steps)
+void WorldNode::setNumStepsPerCycle(std::size_t _steps)
 {
   mNumStepsPerCycle = _steps;
 }
 
 //==============================================================================
-size_t WorldNode::getNumStepsPerCycle() const
+std::size_t WorldNode::getNumStepsPerCycle() const
 {
   return mNumStepsPerCycle;
 }
@@ -210,10 +210,10 @@ void WorldNode::refreshSkeletons()
 
   // Apply the recursive Frame refreshing functionality to the root BodyNode of
   // each Skeleton
-  for(size_t i=0; i < mWorld->getNumSkeletons(); ++i)
+  for(std::size_t i=0; i < mWorld->getNumSkeletons(); ++i)
   {
     const dart::dynamics::SkeletonPtr& skeleton = mWorld->getSkeleton(i);
-    for(size_t i=0; i < skeleton->getNumTrees(); ++i)
+    for(std::size_t i=0; i < skeleton->getNumTrees(); ++i)
     {
       refreshBaseFrameNode(skeleton->getRootBodyNode(i));
     }
@@ -226,7 +226,7 @@ void WorldNode::refreshSimpleFrames()
   if(!mWorld)
     return;
 
-  for(size_t i=0, end=mWorld->getNumSimpleFrames(); i<end; ++i)
+  for(std::size_t i=0, end=mWorld->getNumSimpleFrames(); i<end; ++i)
     refreshBaseFrameNode(mWorld->getSimpleFrame(i).get());
 }
 

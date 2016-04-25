@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -82,14 +82,14 @@ std::vector<SkeletonPtr> getSkeletons()
   std::vector<std::string> fileList = getFileList();
 
   std::vector<WorldPtr> worlds;
-  for(size_t i=0; i<fileList.size(); ++i)
+  for(std::size_t i=0; i<fileList.size(); ++i)
     worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
 
   std::vector<SkeletonPtr> skeletons;
-  for(size_t i=0; i<worlds.size(); ++i)
+  for(std::size_t i=0; i<worlds.size(); ++i)
   {
     WorldPtr world = worlds[i];
-    for(size_t j=0; j<world->getNumSkeletons(); ++j)
+    for(std::size_t j=0; j<world->getNumSkeletons(); ++j)
       skeletons.push_back(world->getSkeleton(j));
   }
 
@@ -99,7 +99,7 @@ std::vector<SkeletonPtr> getSkeletons()
 void constructSubtree(std::vector<BodyNode*>& _tree, BodyNode* bn)
 {
   _tree.push_back(bn);
-  for(size_t i=0; i<bn->getNumChildBodyNodes(); ++i)
+  for(std::size_t i=0; i<bn->getNumChildBodyNodes(); ++i)
     constructSubtree(_tree, bn->getChildBodyNode(i));
 }
 
@@ -108,25 +108,25 @@ TEST(Skeleton, Restructuring)
   std::vector<SkeletonPtr> skeletons = getSkeletons();
 
 #ifndef NDEBUG
-  size_t numIterations = 10;
+  std::size_t numIterations = 10;
 #else
-  size_t numIterations = 2*skeletons.size();
+  std::size_t numIterations = 2*skeletons.size();
 #endif
 
   for(const auto& skeleton : skeletons)
     EXPECT_TRUE(skeleton->checkIndexingConsistency());
 
   // Test moves within the current Skeleton
-  for(size_t i=0; i<numIterations; ++i)
+  for(std::size_t i=0; i<numIterations; ++i)
   {
-    size_t index = floor(math::random(0, skeletons.size()));
+    std::size_t index = floor(math::random(0, skeletons.size()));
     index = std::min(index, skeletons.size()-1);
     SkeletonPtr skeleton = skeletons[index];
     EXPECT_TRUE(skeleton->checkIndexingConsistency());
     SkeletonPtr original = skeleton->clone();
     EXPECT_TRUE(original->checkIndexingConsistency());
 
-    size_t maxNode = skeleton->getNumBodyNodes()-1;
+    std::size_t maxNode = skeleton->getNumBodyNodes()-1;
     BodyNode* bn1 = skeleton->getBodyNode(floor(math::random(0, maxNode)));
     BodyNode* bn2 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
 
@@ -144,7 +144,7 @@ TEST(Skeleton, Restructuring)
     EXPECT_TRUE(skeleton->getNumBodyNodes() == original->getNumBodyNodes());
     if(skeleton->getNumBodyNodes() == original->getNumBodyNodes())
     {
-      for(size_t j=0; j<skeleton->getNumBodyNodes(); ++j)
+      for(std::size_t j=0; j<skeleton->getNumBodyNodes(); ++j)
       {
         // Make sure no BodyNodes have been lost or gained in translation
         std::string name = original->getBodyNode(j)->getName();
@@ -176,7 +176,7 @@ TEST(Skeleton, Restructuring)
     }
 
     EXPECT_TRUE(skeleton->getNumDofs() == original->getNumDofs());
-    for(size_t j=0; j<skeleton->getNumDofs(); ++j)
+    for(std::size_t j=0; j<skeleton->getNumDofs(); ++j)
     {
       std::string name = original->getDof(j)->getName();
       DegreeOfFreedom* dof = skeleton->getDof(name);
@@ -193,9 +193,9 @@ TEST(Skeleton, Restructuring)
   }
 
   // Test moves between Skeletons
-  for(size_t i=0; i<numIterations; ++i)
+  for(std::size_t i=0; i<numIterations; ++i)
   {
-    size_t fromIndex = floor(math::random(0, skeletons.size()));
+    std::size_t fromIndex = floor(math::random(0, skeletons.size()));
     fromIndex = std::min(fromIndex, skeletons.size()-1);
     SkeletonPtr fromSkel = skeletons[fromIndex];
 
@@ -205,7 +205,7 @@ TEST(Skeleton, Restructuring)
       continue;
     }
 
-    size_t toIndex = floor(math::random(0, skeletons.size()));
+    std::size_t toIndex = floor(math::random(0, skeletons.size()));
     toIndex = std::min(toIndex, skeletons.size()-1);
     SkeletonPtr toSkel = skeletons[toIndex];
 
@@ -250,7 +250,7 @@ TEST(Skeleton, Restructuring)
     EXPECT_TRUE(parentBn->getSkeleton()->checkIndexingConsistency());
 
     // Make sure all the objects have moved
-    for(size_t j=0; j<subtree.size(); ++j)
+    for(std::size_t j=0; j<subtree.size(); ++j)
     {
       BodyNode* bn = subtree[j];
       EXPECT_TRUE(bn->getSkeleton() == toSkel);
@@ -267,7 +267,7 @@ TEST(Skeleton, Restructuring)
     EXPECT_TRUE(childBn->getParentBodyNode() == nullptr);
 
     // The subtree should still be in the same Skeleton
-    for(size_t j=0; j<subtree.size(); ++j)
+    for(std::size_t j=0; j<subtree.size(); ++j)
     {
       BodyNode* bn = subtree[j];
       EXPECT_TRUE(bn->getSkeleton() == toSkel);
@@ -746,7 +746,7 @@ TEST(Skeleton, CloneNodeOrdering)
 
   SkeletonPtr clone = skel->clone();
 
-  for(size_t i=0; i < skel->getNumEndEffectors(); ++i)
+  for(std::size_t i=0; i < skel->getNumEndEffectors(); ++i)
   {
     EXPECT_EQ(skel->getEndEffector(i)->getName(),
               clone->getEndEffector(i)->getName());
@@ -775,15 +775,15 @@ TEST(Skeleton, Referential)
   std::vector<SkeletonPtr> skeletons = getSkeletons();
 
 #ifndef NDEBUG // Debug mode
-  size_t numIterations = 1;
+  std::size_t numIterations = 1;
 #else // Release mode
-  size_t numIterations = 20;
+  std::size_t numIterations = 20;
 #endif
 
-  for(size_t i=0; i<skeletons.size(); ++i)
+  for(std::size_t i=0; i<skeletons.size(); ++i)
   {
     SkeletonPtr skeleton = skeletons[i];
-    for(size_t j=0; j<skeleton->getNumTrees(); ++j)
+    for(std::size_t j=0; j<skeleton->getNumTrees(); ++j)
     {
       BranchPtr tree = Branch::create(skeleton->getRootBodyNode(j));
 
@@ -807,7 +807,7 @@ TEST(Skeleton, Referential)
       Eigen::VectorXd dq = tree->getVelocities();
       Eigen::VectorXd ddq = tree->getAccelerations();
 
-      for(size_t k=0; k<numIterations; ++k)
+      for(std::size_t k=0; k<numIterations; ++k)
       {
         for(int r=0; r<q.size(); ++r)
         {
@@ -851,13 +851,13 @@ TEST(Skeleton, Referential)
         const Eigen::VectorXd& skelFc = skeleton->getConstraintForces();
         const Eigen::VectorXd& treeFc = tree->getConstraintForces();
 
-        const size_t nDofs = tree->getNumDofs();
-        for(size_t r1=0; r1<nDofs; ++r1)
+        const std::size_t nDofs = tree->getNumDofs();
+        for(std::size_t r1=0; r1<nDofs; ++r1)
         {
-          const size_t sr1 = tree->getDof(r1)->getIndexInSkeleton();
-          for(size_t r2=0; r2<nDofs; ++r2)
+          const std::size_t sr1 = tree->getDof(r1)->getIndexInSkeleton();
+          for(std::size_t r2=0; r2<nDofs; ++r2)
           {
-            const size_t sr2 = tree->getDof(r2)->getIndexInSkeleton();
+            const std::size_t sr2 = tree->getDof(r2)->getIndexInSkeleton();
 
             EXPECT_TRUE( skelMassMatrix(sr1,sr2) == treeMassMatrix(r1,r2) );
             EXPECT_TRUE( skelAugM(sr1,sr2) == treeAugM(r1,r2) );
@@ -873,17 +873,17 @@ TEST(Skeleton, Referential)
           EXPECT_TRUE( skelFc[sr1]   == treeFc[r1] );
         }
 
-        const size_t numBodyNodes = tree->getNumBodyNodes();
-        for(size_t m=0; m<numBodyNodes; ++m)
+        const std::size_t numBodyNodes = tree->getNumBodyNodes();
+        for(std::size_t m=0; m<numBodyNodes; ++m)
         {
           const BodyNode* bn = tree->getBodyNode(m);
           const Eigen::MatrixXd Jtree = tree->getJacobian(bn);
           const Eigen::MatrixXd Jskel = skeleton->getJacobian(bn);
 
-          for(size_t r2=0; r2<nDofs; ++r2)
+          for(std::size_t r2=0; r2<nDofs; ++r2)
           {
-            const size_t sr2 = tree->getDof(r2)->getIndexInSkeleton();
-            for(size_t r1=0; r1<6; ++r1)
+            const std::size_t sr2 = tree->getDof(r2)->getIndexInSkeleton();
+            for(std::size_t r1=0; r1<6; ++r1)
             {
               EXPECT_TRUE( Jtree(r1,r2) == Jskel(r1, sr2) );
             }
@@ -929,7 +929,7 @@ SkeletonPtr constructLinkageTestSkeleton()
 }
 
 void checkForBodyNodes(
-    size_t& /*count*/,
+    std::size_t& /*count*/,
     const ReferentialSkeletonPtr& /*refSkel*/,
     const SkeletonPtr& /*skel*/)
 {
@@ -940,7 +940,7 @@ void checkForBodyNodes(
 // names
 template <typename ... Args>
 void checkForBodyNodes(
-    size_t& count,
+    std::size_t& count,
     const ReferentialSkeletonPtr& refSkel,
     const SkeletonPtr& skel,
     const std::string& name,
@@ -960,13 +960,13 @@ void checkForBodyNodes(
 }
 
 template <typename ... Args>
-size_t checkForBodyNodes(
+std::size_t checkForBodyNodes(
     const ReferentialSkeletonPtr& refSkel,
     const SkeletonPtr& skel,
     bool checkCount,
     Args ... args)
 {
-  size_t count = 0;
+  std::size_t count = 0;
   checkForBodyNodes(count, refSkel, skel, args...);
 
   if(checkCount)
@@ -990,7 +990,7 @@ void checkLinkageJointConsistency(const ReferentialSkeletonPtr& refSkel)
 
   // Linkages should have the property:
   // getJoint(i) == getBodyNode(i)->getParentJoint()
-  for(size_t i=0; i < refSkel->getNumJoints(); ++i)
+  for(std::size_t i=0; i < refSkel->getNumJoints(); ++i)
   {
     EXPECT_EQ(refSkel->getJoint(i), refSkel->getBodyNode(i)->getParentJoint());
     EXPECT_EQ(refSkel->getIndexOf(refSkel->getJoint(i)), i);
@@ -1042,7 +1042,7 @@ TEST(Skeleton, Linkage)
         Linkage::Criteria::Target(skel2->getBodyNode("c3b1"),
                                   Linkage::Criteria::UPSTREAM));
   LinkagePtr combinedSkelBases = Linkage::create(criteria, "combinedSkelBases");
-  size_t count = 0;
+  std::size_t count = 0;
   count += checkForBodyNodes(combinedSkelBases, skel, false,
                              "c3b1", "c1b3", "c2b1", "c2b2", "c2b3",
                              "c5b1", "c5b2", "c1b2", "c1b1");
@@ -1127,13 +1127,13 @@ TEST(Skeleton, Group)
   EXPECT_EQ(skel1Group->getNumJoints(), skel->getNumJoints());
   EXPECT_EQ(skel1Group->getNumDofs(), skel->getNumDofs());
 
-  for(size_t i=0; i < skel1Group->getNumBodyNodes(); ++i)
+  for(std::size_t i=0; i < skel1Group->getNumBodyNodes(); ++i)
     EXPECT_EQ(skel1Group->getBodyNode(i), skel->getBodyNode(i));
 
-  for(size_t i=0; i < skel1Group->getNumJoints(); ++i)
+  for(std::size_t i=0; i < skel1Group->getNumJoints(); ++i)
     EXPECT_EQ(skel1Group->getJoint(i), skel->getJoint(i));
 
-  for(size_t i=0; i < skel1Group->getNumDofs(); ++i)
+  for(std::size_t i=0; i < skel1Group->getNumDofs(); ++i)
     EXPECT_EQ(skel1Group->getDof(i), skel->getDof(i));
 
   // Test arbitrary Groups by plucking random BodyNodes, Joints, and
@@ -1142,9 +1142,9 @@ TEST(Skeleton, Group)
   std::vector<BodyNode*> bodyNodes;
   std::vector<Joint*> joints;
   std::vector<DegreeOfFreedom*> dofs;
-  for(size_t i=0; i < 2*skel->getNumBodyNodes(); ++i)
+  for(std::size_t i=0; i < 2*skel->getNumBodyNodes(); ++i)
   {
-    size_t randomIndex = floor(random(0, skel->getNumBodyNodes()));
+    std::size_t randomIndex = floor(random(0, skel->getNumBodyNodes()));
     BodyNode* bn = skel->getBodyNode(randomIndex);
     if(group->addBodyNode(bn, false))
       bodyNodes.push_back(bn);
@@ -1164,13 +1164,13 @@ TEST(Skeleton, Group)
   EXPECT_EQ(group->getNumJoints(), joints.size());
   EXPECT_EQ(group->getNumDofs(), dofs.size());
 
-  for(size_t i=0; i < group->getNumBodyNodes(); ++i)
+  for(std::size_t i=0; i < group->getNumBodyNodes(); ++i)
     EXPECT_EQ(group->getBodyNode(i), bodyNodes[i]);
 
-  for(size_t i=0; i < group->getNumJoints(); ++i)
+  for(std::size_t i=0; i < group->getNumJoints(); ++i)
     EXPECT_EQ(group->getJoint(i), joints[i]);
 
-  for(size_t i=0; i < group->getNumDofs(); ++i)
+  for(std::size_t i=0; i < group->getNumDofs(); ++i)
     EXPECT_EQ(group->getDof(i), dofs[i]);
 }
 

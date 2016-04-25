@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Michael X. Grey <mxgrey@gatech.edu>
@@ -119,7 +119,7 @@ public:
   /// By default, the max_attempts is 1, but this can be changed by calling
   /// InverseKinematics::getSolver() and casting the SolverPtr to an
   /// optimizer::GradientDescentSolver (unless you have changed the Solver type)
-  /// and then calling GradientDescentSolver::setMaxAttempts(size_t).
+  /// and then calling GradientDescentSolver::setMaxAttempts(std::size_t).
   ///
   /// By default, the list of seeds is empty, but they can be added by calling
   /// InverseKinematics::getProblem() and then using
@@ -762,7 +762,7 @@ public:
     /// the DOFs being used by the InverseKinematics module, but this might not
     /// always be possible, so this function ensures that solutions can be
     /// interpreted correctly.
-    virtual const std::vector<size_t>& getDofs() const = 0;
+    virtual const std::vector<std::size_t>& getDofs() const = 0;
 
     /// Set the configuration of the DOFs. The components of _config must
     /// correspond to the DOFs provided by getDofs().
@@ -839,7 +839,7 @@ public:
     /// List of extra DOFs in the module which are not covered by the Analytical
     /// IK implementation. The index of each DOF is its dependency index in the
     /// JacobianNode (i.e. the column it applies to in the Node's Jacobian).
-    std::vector<size_t> mExtraDofs;
+    std::vector<std::size_t> mExtraDofs;
 
     /// A cache for the valid solutions. The valid and invalid solution caches
     /// are kept separate so that they can each be sorted by quality
@@ -878,10 +878,10 @@ public:
   /// value will be projected through the null spaces of all modules with a
   /// smaller hierarchy value. In other words, IK modules with a hierarchy level
   /// closer to 0 are given higher priority.
-  void setHierarchyLevel(size_t _level);
+  void setHierarchyLevel(std::size_t _level);
 
   /// Get the hierarchy level of this modle.
-  size_t getHierarchyLevel() const;
+  std::size_t getHierarchyLevel() const;
 
   /// When solving the IK for this module's Node, use the longest available
   /// dynamics::Chain that goes from this module's Node towards the root of the
@@ -900,10 +900,10 @@ public:
   /// Explicitly set which degrees of freedom should be used to solve the IK for
   /// this module. The values in the vector should correspond to the Skeleton
   /// indices of each DOF.
-  void setDofs(const std::vector<size_t>& _dofs);
+  void setDofs(const std::vector<std::size_t>& _dofs);
 
   /// Get the indices of the DOFs that this IK module will use when solving.
-  const std::vector<size_t>& getDofs() const;
+  const std::vector<std::size_t>& getDofs() const;
 
   /// When a Jacobian is computed for a JacobianNode, it will include a column
   /// for every DegreeOfFreedom that the node depends on. Given the column index
@@ -1181,11 +1181,11 @@ protected:
   bool mActive;
 
   /// Hierarchy level for this IK module
-  size_t mHierarchyLevel;
+  std::size_t mHierarchyLevel;
 
   /// A list of the DegreeOfFreedom Skeleton indices that will be used by this
   /// IK module
-  std::vector<size_t> mDofs;
+  std::vector<std::size_t> mDofs;
 
   /// Map for the DOFs that are to be used by this IK module
   std::vector<int> mDofMap;

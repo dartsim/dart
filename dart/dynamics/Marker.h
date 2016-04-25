@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -37,7 +37,6 @@
 #ifndef DART_DYNAMICS_MARKER_H_
 #define DART_DYNAMICS_MARKER_H_
 
-#include <string>
 #include <Eigen/Dense>
 #include "dart/common/Deprecated.h"
 #include "dart/dynamics/detail/MarkerAspect.h"
@@ -131,11 +130,8 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 };
-// TODO: Marker class should be refactored into a Node once pull request #531 is
-// finished.
 
 }  // namespace dynamics
 }  // namespace dart
 
 #endif  // DART_DYNAMICS_MARKER_H_
-

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
@@ -35,8 +35,6 @@
  */
 
 #include "dart/dynamics/Marker.h"
-
-#include <string>
 
 #include "dart/dynamics/BodyNode.h"
 
