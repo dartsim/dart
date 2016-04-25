@@ -47,6 +47,7 @@
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/ShapeNode.h"
 #include "dart/dynamics/EndEffector.h"
+#include "dart/dynamics/Marker.h"
 #include "dart/dynamics/detail/BodyNodeAspect.h"
 #include "dart/dynamics/SpecializedNodeManager.h"
 #include "dart/dynamics/detail/SkeletonAspect.h"
@@ -58,7 +59,7 @@ namespace dynamics {
 class Skeleton :
     public virtual common::VersionCounter,
     public MetaSkeleton,
-    public SkeletonSpecializedFor<ShapeNode, EndEffector>,
+    public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
     public detail::SkeletonAspectBase
 {
 public:
@@ -437,14 +438,7 @@ public:
   /// nullptr
   void clearIK();
 
-  /// Get total number of markers in this Skeleton
-  std::size_t getNumMarkers() const;
-
-  /// Get marker whose name is _name
-  Marker* getMarker(const std::string& _name);
-
-  /// Get const marker whose name is _name
-  const Marker* getMarker(const std::string& _name) const;
+  DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS( Marker )
 
   DART_BAKE_SPECIALIZED_NODE_SKEL_DECLARATIONS( ShapeNode )
 
@@ -1054,15 +1048,6 @@ protected:
   /// Add a SoftBodyNode to the SoftBodyNode NameManager
   void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
 
-  /// Add entries for all the Markers belonging to BodyNode _node
-  void addMarkersOfBodyNode(BodyNode* _node);
-
-  /// Remove entries for all the Markers belonging to BodyNode _node
-  void removeMarkersOfBodyNode(BodyNode* _node);
-
-  /// Add a Marker entry
-  const std::string& addEntryToMarkerNameMgr(Marker* _newMarker);
-
 protected:
 
   /// The resource-managing pointer to this Skeleton
@@ -1082,9 +1067,6 @@ protected:
 
   /// NameManager for tracking SoftBodyNodes
   dart::common::NameManager<SoftBodyNode*> mNameMgrForSoftBodyNodes;
-
-  /// NameManager for tracking Markers
-  dart::common::NameManager<Marker*> mNameMgrForMarkers;
 
   /// WholeBodyIK module for this Skeleton
   std::shared_ptr<WholeBodyIK> mWholeBodyIK;

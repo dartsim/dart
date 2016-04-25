@@ -863,9 +863,7 @@ bool readMarker(const tinyxml2::XMLElement* markerEle,
     return false;
   }
 
-  dynamics::Marker* marker = new dynamics::Marker(name, position, rgba,
-                                                  bodyNode);
-  bodyNode->addMarker(marker);
+  bodyNode->createMarker(name, position, rgba);
 
   return true;
 }

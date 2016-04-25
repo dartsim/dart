@@ -243,13 +243,6 @@ BodyNode::~BodyNode()
   mNodeMap.clear();
   mNodeDestructors.clear();
 
-  // Release markers
-  for (std::vector<Marker*>::const_iterator it = mMarkers.begin();
-       it != mMarkers.end(); ++it)
-  {
-    delete (*it);
-  }
-
   delete mParentJoint;
 }
 
@@ -329,17 +322,6 @@ void BodyNode::setAspectProperties(const AspectProperties& properties)
   setGravityMode(properties.mGravityMode);
   setFrictionCoeff(properties.mFrictionCoeff);
   setRestitutionCoeff(properties.mRestitutionCoeff);
-
-  // TODO(MXG): Make Markers into Nodes before DART 6.0
-  mAspectProperties.mMarkerProperties = properties.mMarkerProperties;
-  // Remove current markers
-  for(Marker* marker : mMarkers)
-    delete marker;
-
-  // Create new markers
-  mMarkers.clear();
-  for(const Marker::Properties& marker : mAspectProperties.mMarkerProperties)
-    addMarker(new Marker(marker, this));
 }
 
 //==============================================================================
@@ -900,6 +882,9 @@ const Joint* BodyNode::getChildJoint(std::size_t _index) const
 }
 
 //==============================================================================
+DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( BodyNode, ShapeNode )
+
+//==============================================================================
 ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape)
 {
   ShapeNode::BasicProperties properties;
@@ -923,24 +908,6 @@ ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
 ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape, const char* name)
 {
   return createShapeNode(shape, std::string(name));
-}
-
-//==============================================================================
-std::size_t BodyNode::getNumShapeNodes() const
-{
-  return getNumNodes<ShapeNode>();
-}
-
-//==============================================================================
-ShapeNode* BodyNode::getShapeNode(std::size_t index)
-{
-  return getNode<ShapeNode>(index);
-}
-
-//==============================================================================
-const ShapeNode* BodyNode::getShapeNode(std::size_t index) const
-{
-  return getNode<ShapeNode>(index);
 }
 
 //==============================================================================
@@ -978,6 +945,16 @@ void BodyNode::removeAllShapeNodes()
 }
 
 //==============================================================================
+DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( BodyNode, EndEffector )
+
+//==============================================================================
+EndEffector* BodyNode::createEndEffector(
+    const EndEffector::BasicProperties& _properties)
+{
+  return createNode<EndEffector>(_properties);
+}
+
+//==============================================================================
 EndEffector* BodyNode::createEndEffector(const std::string& _name)
 {
   EndEffector::BasicProperties properties;
@@ -993,30 +970,25 @@ EndEffector* BodyNode::createEndEffector(const char* _name)
 }
 
 //==============================================================================
-void BodyNode::addMarker(Marker* _marker)
+DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( BodyNode, Marker )
+
+//==============================================================================
+Marker* BodyNode::createMarker(const std::string& name,
+                               const Eigen::Vector3d& position,
+                               const Eigen::Vector4d& color)
 {
-  mMarkers.push_back(_marker);
-  const SkeletonPtr& skel = getSkeleton();
-  if(skel)
-    skel->addEntryToMarkerNameMgr(_marker);
+  Marker::BasicProperties properties;
+  properties.mName = name;
+  properties.mRelativeTf.translation() = position;
+  properties.mColor = color;
+
+  return createNode<Marker>(properties);
 }
 
 //==============================================================================
-std::size_t BodyNode::getNumMarkers() const
+Marker* BodyNode::createMarker(const Marker::BasicProperties& properties)
 {
-  return mMarkers.size();
-}
-
-//==============================================================================
-Marker* BodyNode::getMarker(std::size_t _index)
-{
-  return common::getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
-}
-
-//==============================================================================
-const Marker* BodyNode::getMarker(std::size_t _index) const
-{
-  return common::getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
+  return createNode<Marker>(properties);
 }
 
 //==============================================================================

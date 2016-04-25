@@ -40,6 +40,7 @@
 
 #include "dart/common/ResourceRetriever.h"
 #include "dart/common/Uri.h"
+#include "dart/math/Constants.h"
 #include "dart/dynamics/Skeleton.h"
 
 namespace dart {

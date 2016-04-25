@@ -122,6 +122,7 @@ struct SkelBodyNode
 {
   BodyPropPtr properties;
   Eigen::Isometry3d initTransform;
+  std::vector<dynamics::Marker::BasicProperties> markers;
   std::string type;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -179,7 +180,7 @@ dynamics::ShapePtr readShape(
     const common::ResourceRetrieverPtr& retriever);
 
 /// Read marker
-dynamics::Marker::Properties readMarker(
+dynamics::Marker::BasicProperties readMarker(
     tinyxml2::XMLElement* _markerElement);
 
 void readJoint(
@@ -318,7 +319,7 @@ dynamics::ShapePtr readShape(
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
-dynamics::Marker::Properties readMarker(
+dynamics::Marker::BasicProperties readMarker(
     tinyxml2::XMLElement* _markerElement);
 
 void readJoint(tinyxml2::XMLElement* _jointElement,
@@ -915,6 +916,10 @@ bool createJointAndNodePair(dynamics::SkeletonPtr skeleton,
   newJoint->setAccelerations(joint.acceleration);
   newJoint->setForces(joint.force);
 
+  dynamics::BodyNode* bn = pair.second;
+  for(std::size_t i=0; i < body.markers.size(); ++i)
+    bn->createNode<dynamics::Marker>(body.markers[i]);
+
   return true;
 }
 
@@ -1118,17 +1123,17 @@ SkelBodyNode readBodyNode(
     }
   }
 
+  SkelBodyNode skelBodyNode;
+  skelBodyNode.properties = newBodyNode;
+  skelBodyNode.initTransform = initTransform;
+
   //--------------------------------------------------------------------------
   // marker
   ElementEnumerator markers(_bodyNodeElement, "marker");
   while (markers.next())
   {
-    newBodyNode->mMarkerProperties.push_back(readMarker(markers.get()));
+    skelBodyNode.markers.push_back(readMarker(markers.get()));
   }
-
-  SkelBodyNode skelBodyNode;
-  skelBodyNode.properties = newBodyNode;
-  skelBodyNode.initTransform = initTransform;
 
   return skelBodyNode;
 }
@@ -1327,7 +1332,7 @@ dynamics::ShapePtr readShape(
 }
 
 //==============================================================================
-dynamics::Marker::Properties readMarker(
+dynamics::Marker::BasicProperties readMarker(
     tinyxml2::XMLElement* _markerElement)
 {
   // Name attribute
@@ -1338,7 +1343,9 @@ dynamics::Marker::Properties readMarker(
   if (hasElement(_markerElement, "offset"))
     offset = getValueVector3d(_markerElement, "offset");
 
-  dynamics::Marker::Properties newMarker(name, offset);
+  dynamics::Marker::BasicProperties newMarker;
+  newMarker.mName = name;
+  newMarker.mRelativeTf.translation() = offset;
 
   return newMarker;
 }
