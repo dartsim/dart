@@ -95,7 +95,7 @@ bool InverseKinematics::solve(bool _applySolution)
 
   // Many GradientMethod implementations use Joint::integratePositions, so we
   // need to clear out any velocities that might be in the Skeleton and then
-  // reset those velocities later.
+  // reset those velocities later. This has been opened as issue #699.
   Eigen::VectorXd originalVelocities = skel->getVelocities();
   for(std::size_t i=0; i < skel->getNumDofs(); ++i)
     skel->getDof(i)->setVelocity(0.0);
@@ -866,7 +866,7 @@ InverseKinematics::Analytical::Solution::Solution(
 
 //==============================================================================
 InverseKinematics::Analytical::UniqueProperties::UniqueProperties(
-    ExtraDofUtilization_t extraDofUtilization, double extraErrorLengthClamp)
+    ExtraDofUtilization extraDofUtilization, double extraErrorLengthClamp)
   : mExtraDofUtilization(extraDofUtilization),
     mExtraErrorLengthClamp(extraErrorLengthClamp)
 {
@@ -875,7 +875,7 @@ InverseKinematics::Analytical::UniqueProperties::UniqueProperties(
 
 //==============================================================================
 InverseKinematics::Analytical::UniqueProperties::UniqueProperties(
-    ExtraDofUtilization_t extraDofUtilization,
+    ExtraDofUtilization extraDofUtilization,
     double extraErrorLengthClamp,
     QualityComparison qualityComparator)
   : mExtraDofUtilization(extraDofUtilization),
@@ -1031,7 +1031,7 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
 void InverseKinematics::Analytical::addExtraDofGradient(
     Eigen::VectorXd& grad,
     const Eigen::Vector6d& error,
-    ExtraDofUtilization_t /*utilization*/)
+    ExtraDofUtilization /*utilization*/)
 {
   mExtraDofGradCache.resize(mExtraDofs.size());
   const math::Jacobian& J = mIK->computeJacobian();
@@ -1160,13 +1160,13 @@ Eigen::VectorXd InverseKinematics::Analytical::getPositions() const
 
 //==============================================================================
 void InverseKinematics::Analytical::setExtraDofUtilization(
-    ExtraDofUtilization_t _utilization)
+    ExtraDofUtilization _utilization)
 {
   mAnalyticalP.mExtraDofUtilization = _utilization;
 }
 
 //==============================================================================
-IK::Analytical::ExtraDofUtilization_t
+IK::Analytical::ExtraDofUtilization
 IK::Analytical::getExtraDofUtilization() const
 {
   return mAnalyticalP.mExtraDofUtilization;
