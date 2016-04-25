@@ -145,6 +145,11 @@ public:
 
 protected:
 
+  /// Convert the gradient that gets generated via Jacobian methods into a
+  /// gradient that can be used by a GradientDescentSolver.
+  void convertJacobianMethodOutputToGradient(
+      Eigen::Map<Eigen::VectorXd>& grad);
+
   /// Pointer to the hierarchical IK that owns this Function. Note that this
   /// Function does not work correctly without a HierarchicalIK.
   std::weak_ptr<dynamics::HierarchicalIK> mIK;
@@ -191,6 +196,10 @@ protected:
 
   /// Cache for an individual null space
   Eigen::MatrixXd mPartialNullSpaceCache;
+
+  /// Cache used by convertJacobianMethodOutputToGradient to avoid reallocating
+  /// this vector on each iteration.
+  Eigen::VectorXd mInitialPositionsCache;
 };
 
 } // namespace constraint

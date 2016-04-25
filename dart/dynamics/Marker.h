@@ -37,61 +37,55 @@
 #ifndef DART_DYNAMICS_MARKER_H_
 #define DART_DYNAMICS_MARKER_H_
 
-#include <string>
 #include <Eigen/Dense>
 #include "dart/common/Deprecated.h"
-#include "dart/math/Helpers.h"
+#include "dart/dynamics/detail/MarkerAspect.h"
+#include "dart/dynamics/FixedJacobianNode.h"
 
 namespace dart {
 namespace dynamics {
 
 class BodyNode;
 
-class Marker
+class Marker final :
+    public common::EmbedPropertiesOnTopOf<
+      Marker, detail::MarkerProperties,
+      FixedJacobianNode>
 {
 public:
 
-  enum ConstraintType
-  {
-    NO,
-    HARD,
-    SOFT
-  };
+  using ConstraintType = detail::MarkerProperties::ConstraintType;
+  static constexpr ConstraintType NO = detail::MarkerProperties::NO;
+  static constexpr ConstraintType HARD = detail::MarkerProperties::HARD;
+  static constexpr ConstraintType SOFT = detail::MarkerProperties::SOFT;
 
-  struct Properties
-  {
-    std::string mName;
-    Eigen::Vector3d mOffset;
-    Eigen::Vector4d mColor;
-    ConstraintType mType;
+  using BasicProperties = common::Composite::MakeProperties<
+      NameAspect,
+      FixedFrame,
+      Marker>;
 
-    Properties(const std::string& name = "",
-               const Eigen::Vector3d& offset = Eigen::Vector3d::Zero(),
-               const Eigen::Vector4d& color = Color::White(1.0),
-               ConstraintType type = NO);
-
-    // To get byte-aligned Eigen vectors
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
-
-  /// Constructor
-  Marker(const std::string& name,
-         const Eigen::Vector3d& offset,
-         const Eigen::Vector4d& color,
-         BodyNode* bodyNode,
-         ConstraintType type = NO);
+  using Properties = common::Composite::Properties;
 
   /// Destructor
-  virtual ~Marker();
+  virtual ~Marker() = default;
+
+  /// Set the AspectProperties of this Marker
+  void setAspectProperties(const AspectProperties& properties);
 
   /// Get the BodyNode this Marker belongs to
+  ///
+  /// Deprecated: Use getBodyNodePtr() instead
+  DEPRECATED(6.0)
   BodyNode* getBodyNode();
 
   /// Get the (const) BodyNode this Marker belongs to
+  ///
+  /// Deprecated: Use getBodyNodePtr() instead
+  DEPRECATED(6.0)
   const BodyNode* getBodyNode() const;
 
   /// Get position of this marker in the parent body node coordinates
-  const Eigen::Vector3d& getLocalPosition() const;
+  Eigen::Vector3d getLocalPosition() const;
 
   /// Set position of this marker in the parent body node coordinates
   void setLocalPosition(const Eigen::Vector3d& offset);
@@ -99,26 +93,8 @@ public:
   /// Get position in the world coordinates
   Eigen::Vector3d getWorldPosition() const;
 
-  /// Deprecated; please use setIndexInSkeleton() instead
-  DEPRECATED(6.0)
-  void setSkeletonIndex(int index);
-
-  /// Set index in skeleton this marker is belongs to
-  void setIndexInSkeleton(int index);
-  // TODO(JS): This function is not called by any. Remove?
-
-  /// Get index in skeleton this marker is belongs to
-  int getIndexInSkeleton() const;
-  // TODO(JS): This function is not called by any. Remove?
-
   /// Get global unique ID
   int getID() const;
-
-  /// Set name of this marker
-  void setName(const std::string& name);
-
-  /// Get name of this marker
-  const std::string& getName() const;
 
   /// Set constraint type. which will be useful for inverse kinematics
   void setConstraintType(ConstraintType type);
@@ -126,25 +102,21 @@ public:
   /// Get constraint type. which will be useful for inverse kinematics
   ConstraintType getConstraintType() const;
 
+  /// Set the color of this Marker
+  void setColor(const Eigen::Vector4d& color);
+
   /// Return color of this Marker
   const Eigen::Vector4d& getColor() const;
 
-  friend class Skeleton;
   friend class BodyNode;
 
 protected:
 
   /// Constructor used by BodyNode
-  Marker(const Properties& properties, BodyNode* parent);
+  Marker(BodyNode* parent, const BasicProperties& properties);
 
-  /// \brief Properties of this Marker
-  Properties mProperties;
-
-  /// \brief BodyNode this marker belongs to
-  BodyNode* mBodyNode;
-
-  /// \brief position in the model class marker vector.
-  int mSkelIndex;
+  // Documentation inherited
+  Node* cloneNode(BodyNode* parent) const override;
 
 private:
   /// Unique ID of this marker globally.
@@ -158,11 +130,8 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 };
-// TODO: Marker class should be refactored into a Node once pull request #531 is
-// finished.
 
 }  // namespace dynamics
 }  // namespace dart
 
 #endif  // DART_DYNAMICS_MARKER_H_
-

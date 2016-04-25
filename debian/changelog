@@ -107,6 +107,18 @@ dart (5.0.0) unstable; urgency=low
 
  -- Jeongseok Lee <jslee02@gmail.com>  Mon, 15 Jun 2015 23:40:00 -0500
 
+dart4 (4.3.6) unstable; urgency=medium
+
+  * Fixed duplicate entries in Skeleton::mBodyNodes causing segfault in destructor
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Sat, 16 Apr 2016 12:00:00 -0500
+
+dart4 (4.3.5) unstable; urgency=medium
+
+  * Fixed incorrect applying of joint constraint impulses (backported from 6.0.0)
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Sat, 9 Jan 2015 12:00:00 -0500
+
 dart (4.3.4) unstable; urgency=low
 
   * Fixed build issue with gtest on Mac

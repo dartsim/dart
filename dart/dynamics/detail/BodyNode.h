@@ -240,14 +240,6 @@ void BodyNode::removeAllShapeNodesWith()
     shapeNode->remove();
 }
 
-//==============================================================================
-template <class EndEffectorProperties>
-EndEffector* BodyNode::createEndEffector(
-    const EndEffectorProperties& _properties)
-{
-  return createNode<EndEffector>(_properties);
-}
-
 } // namespace dynamics
 } // namespace dart
 

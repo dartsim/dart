@@ -76,7 +76,7 @@ class Marker;
 /// BodyNode of the BodyNode.
 class BodyNode :
     public detail::BodyNodeCompositeBase,
-    public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector>,
+    public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector, Marker>,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
 {
@@ -535,6 +535,8 @@ public:
   template <class NodeType, typename ...Args>
   NodeType* createNode(Args&&... args);
 
+  DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( ShapeNode )
+
   /// Create an ShapeNode attached to this BodyNode. Pass a
   /// ShapeNode::Properties argument into its constructor. If automaticName is
   /// true, then the mName field of properties will be ignored, and the
@@ -554,15 +556,6 @@ public:
 
   /// Create an ShapeNode with the specified name
   ShapeNode* createShapeNode(const ShapePtr& shape, const char* name);
-
-  /// Return the number of all the ShapeNodes in this BodyNode
-  std::size_t getNumShapeNodes() const;
-
-  /// Return the index-th ShapeNode
-  ShapeNode* getShapeNode(std::size_t index);
-
-  /// Return the index-th (const) ShapeNode
-  const ShapeNode* getShapeNode(std::size_t index) const;
 
   /// Return the list of ShapeNodes
   const std::vector<ShapeNode*> getShapeNodes();
@@ -599,10 +592,12 @@ public:
   template <class Aspect>
   void removeAllShapeNodesWith();
 
+  DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( EndEffector )
+
   /// Create an EndEffector attached to this BodyNode. Pass an
   /// EndEffector::Properties argument into this function.
-  template <class EndEffectorProperties>
-  EndEffector* createEndEffector(const EndEffectorProperties& _properties);
+  EndEffector* createEndEffector(
+      const EndEffector::BasicProperties& _properties);
 
   /// Create an EndEffector with the specified name
   EndEffector* createEndEffector(const std::string& _name = "EndEffector");
@@ -610,17 +605,16 @@ public:
   /// Create an EndEffector with the specified name
   EndEffector* createEndEffector(const char* _name);
 
-  /// Add a marker into the bodynode
-  void addMarker(Marker* _marker);
+  DART_BAKE_SPECIALIZED_NODE_DECLARATIONS( Marker )
 
-  /// Return the number of markers of the bodynode
-  std::size_t getNumMarkers() const;
+  /// Create a Marker with the given fields
+  Marker* createMarker(
+      const std::string& name = "marker",
+      const Eigen::Vector3d& position = Eigen::Vector3d::Zero(),
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(1.0));
 
-  /// Return _index-th marker of the bodynode
-  Marker* getMarker(std::size_t _index);
-
-  /// Return (const) _index-th marker of the bodynode
-  const Marker* getMarker(std::size_t _index) const;
+  /// Create a Marker given its basic properties
+  Marker* createMarker(const Marker::BasicProperties& properties);
 
   // Documentation inherited
   bool dependsOn(std::size_t _genCoordIndex) const override;
@@ -1070,9 +1064,6 @@ protected:
   /// Array of child Entities that are not BodyNodes. Organizing them separately
   /// allows some performance optimizations.
   std::set<Entity*> mNonBodyNodeEntities;
-
-  /// List of markers associated
-  std::vector<Marker*> mMarkers;
 
   /// A increasingly sorted list of dependent dof indices.
   std::vector<std::size_t> mDependentGenCoordIndices;

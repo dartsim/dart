@@ -43,6 +43,7 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/collision/CollisionObject.h"
 #include "dart/lcpsolver/lcp.h"
+#include "dart/math/Helpers.h"
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0

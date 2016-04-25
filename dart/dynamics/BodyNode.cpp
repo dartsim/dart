@@ -243,13 +243,6 @@ BodyNode::~BodyNode()
   mNodeMap.clear();
   mNodeDestructors.clear();
 
-  // Release markers
-  for (std::vector<Marker*>::const_iterator it = mMarkers.begin();
-       it != mMarkers.end(); ++it)
-  {
-    delete (*it);
-  }
-
   delete mParentJoint;
 }
 
@@ -329,17 +322,6 @@ void BodyNode::setAspectProperties(const AspectProperties& properties)
   setGravityMode(properties.mGravityMode);
   setFrictionCoeff(properties.mFrictionCoeff);
   setRestitutionCoeff(properties.mRestitutionCoeff);
-
-  // TODO(MXG): Make Markers into Nodes before DART 6.0
-  mAspectProperties.mMarkerProperties = properties.mMarkerProperties;
-  // Remove current markers
-  for(Marker* marker : mMarkers)
-    delete marker;
-
-  // Create new markers
-  mMarkers.clear();
-  for(const Marker::Properties& marker : mAspectProperties.mMarkerProperties)
-    addMarker(new Marker(marker, this));
 }
 
 //==============================================================================
@@ -900,6 +882,9 @@ const Joint* BodyNode::getChildJoint(std::size_t _index) const
 }
 
 //==============================================================================
+DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( BodyNode, ShapeNode )
+
+//==============================================================================
 ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape)
 {
   ShapeNode::BasicProperties properties;
@@ -923,24 +908,6 @@ ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
 ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape, const char* name)
 {
   return createShapeNode(shape, std::string(name));
-}
-
-//==============================================================================
-std::size_t BodyNode::getNumShapeNodes() const
-{
-  return getNumNodes<ShapeNode>();
-}
-
-//==============================================================================
-ShapeNode* BodyNode::getShapeNode(std::size_t index)
-{
-  return getNode<ShapeNode>(index);
-}
-
-//==============================================================================
-const ShapeNode* BodyNode::getShapeNode(std::size_t index) const
-{
-  return getNode<ShapeNode>(index);
 }
 
 //==============================================================================
@@ -978,6 +945,16 @@ void BodyNode::removeAllShapeNodes()
 }
 
 //==============================================================================
+DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( BodyNode, EndEffector )
+
+//==============================================================================
+EndEffector* BodyNode::createEndEffector(
+    const EndEffector::BasicProperties& _properties)
+{
+  return createNode<EndEffector>(_properties);
+}
+
+//==============================================================================
 EndEffector* BodyNode::createEndEffector(const std::string& _name)
 {
   EndEffector::BasicProperties properties;
@@ -993,30 +970,25 @@ EndEffector* BodyNode::createEndEffector(const char* _name)
 }
 
 //==============================================================================
-void BodyNode::addMarker(Marker* _marker)
+DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( BodyNode, Marker )
+
+//==============================================================================
+Marker* BodyNode::createMarker(const std::string& name,
+                               const Eigen::Vector3d& position,
+                               const Eigen::Vector4d& color)
 {
-  mMarkers.push_back(_marker);
-  const SkeletonPtr& skel = getSkeleton();
-  if(skel)
-    skel->addEntryToMarkerNameMgr(_marker);
+  Marker::BasicProperties properties;
+  properties.mName = name;
+  properties.mRelativeTf.translation() = position;
+  properties.mColor = color;
+
+  return createNode<Marker>(properties);
 }
 
 //==============================================================================
-std::size_t BodyNode::getNumMarkers() const
+Marker* BodyNode::createMarker(const Marker::BasicProperties& properties)
 {
-  return mMarkers.size();
-}
-
-//==============================================================================
-Marker* BodyNode::getMarker(std::size_t _index)
-{
-  return common::getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
-}
-
-//==============================================================================
-const Marker* BodyNode::getMarker(std::size_t _index) const
-{
-  return common::getVectorObjectIfAvailable<Marker*>(_index, mMarkers);
+  return createNode<Marker>(properties);
 }
 
 //==============================================================================
@@ -1416,6 +1388,22 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
 void BodyNode::processNewEntity(Entity* _newChildEntity)
 {
   // If the Entity is a JacobianNode, add it to the list of JacobianNodes
+
+  // Dev Note (MXG): There are two places where child JacobianNodes get added.
+  // This is one place, and the constructor of the JacobianNode class is another
+  // place. They get added in two different places because:
+  // 1. This location only works for child BodyNodes. When a non-BodyNode gets
+  //    constructed, its Entity becomes a child of this BodyNode frame during
+  //    the Entity construction, so it cannot be dynamically cast to a
+  //    JacobianNode at that time. But this is not an issue for BodyNodes,
+  //    because BodyNodes become children of this Frame after construction is
+  //    finished.
+  // 2. The JacobianNode constructor only works for non-BodyNodes. When a
+  //    JacobianNode is being used as a base for a BodyNode, it does not know
+  //    the parent BodyNode.
+  //
+  // We should consider doing something to unify these two pipelines that are
+  // currently independent of each other.
   if(JacobianNode* node = dynamic_cast<JacobianNode*>(_newChildEntity))
     mChildJacobianNodes.insert(node);
 
@@ -1424,8 +1412,8 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
 
   // Check if it's a child BodyNode (if not, then it's just some other arbitrary
   // type of Entity)
-  if(find(mChildBodyNodes.begin(), mChildBodyNodes.end(), _newChildEntity) !=
-     mChildBodyNodes.end())
+  if(std::find(mChildBodyNodes.begin(), mChildBodyNodes.end(),
+               _newChildEntity) != mChildBodyNodes.end())
     return;
 
   // Check if it's already accounted for in our Non-BodyNode Entities
@@ -1444,23 +1432,17 @@ void BodyNode::processNewEntity(Entity* _newChildEntity)
 //==============================================================================
 void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
 {
-  std::vector<BodyNode*>::iterator it = find(mChildBodyNodes.begin(),
-                                             mChildBodyNodes.end(),
-                                             _oldChildEntity);
+  std::vector<BodyNode*>::iterator it = std::find(mChildBodyNodes.begin(),
+                                                  mChildBodyNodes.end(),
+                                                  _oldChildEntity);
   if(it != mChildBodyNodes.end())
     mChildBodyNodes.erase(it);
 
   if(JacobianNode* node = dynamic_cast<JacobianNode*>(_oldChildEntity))
-  {
-    std::unordered_set<JacobianNode*>::iterator node_it =
-        mChildJacobianNodes.find(node);
+    mChildJacobianNodes.erase(node);
 
-    if(node_it != mChildJacobianNodes.end())
-      mChildJacobianNodes.erase(node_it);
-  }
-
-  if(find(mNonBodyNodeEntities.begin(), mNonBodyNodeEntities.end(),
-          _oldChildEntity) != mNonBodyNodeEntities.end())
+  if(std::find(mNonBodyNodeEntities.begin(), mNonBodyNodeEntities.end(),
+               _oldChildEntity) != mNonBodyNodeEntities.end())
     mNonBodyNodeEntities.erase(_oldChildEntity);
 }
 
