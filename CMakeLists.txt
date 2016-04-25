@@ -123,6 +123,13 @@ if(HAVE_BULLET_COLLISION)
 endif()
 include_directories("${CMAKE_BINARY_DIR}")
 
+set(DART_INCLUDE_DIRS
+    "${CMAKE_INSTALL_PREFIX}/include"
+    "${EIGEN3_INCLUDE_DIRS}")
+if(HAVE_BULLET_COLLISION)
+  list(APPEND DART_INCLUDE_DIRS "${BULLET_INCLUDE_DIRS}")
+endif()
+
 #===============================================================================
 # Check for non-case-sensitive filesystems
 #===============================================================================
