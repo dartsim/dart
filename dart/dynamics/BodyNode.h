@@ -76,7 +76,7 @@ class Marker;
 /// BodyNode of the BodyNode.
 class BodyNode :
     public detail::BodyNodeCompositeBase,
-    public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector>,
+    public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector, Marker>,
     public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
 {
@@ -596,8 +596,8 @@ public:
 
   /// Create an EndEffector attached to this BodyNode. Pass an
   /// EndEffector::Properties argument into this function.
-  template <class EndEffectorProperties>
-  EndEffector* createEndEffector(const EndEffectorProperties& _properties);
+  EndEffector* createEndEffector(
+      const EndEffector::BasicProperties& _properties);
 
   /// Create an EndEffector with the specified name
   EndEffector* createEndEffector(const std::string& _name = "EndEffector");
@@ -612,6 +612,9 @@ public:
       const std::string& name = "marker",
       const Eigen::Vector3d& position = Eigen::Vector3d::Zero(),
       const Eigen::Vector4d& color = Eigen::Vector4d::Constant(1.0));
+
+  /// Create a Marker given its basic properties
+  Marker* createMarker(const Marker::BasicProperties& properties);
 
   // Documentation inherited
   bool dependsOn(size_t _genCoordIndex) const override;

@@ -948,6 +948,13 @@ void BodyNode::removeAllShapeNodes()
 DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( BodyNode, EndEffector )
 
 //==============================================================================
+EndEffector* BodyNode::createEndEffector(
+    const EndEffector::BasicProperties& _properties)
+{
+  return createNode<EndEffector>(_properties);
+}
+
+//==============================================================================
 EndEffector* BodyNode::createEndEffector(const std::string& _name)
 {
   EndEffector::BasicProperties properties;
@@ -975,6 +982,12 @@ Marker* BodyNode::createMarker(const std::string& name,
   properties.mRelativeTf.translation() = position;
   properties.mColor = color;
 
+  return createNode<Marker>(properties);
+}
+
+//==============================================================================
+Marker* BodyNode::createMarker(const Marker::BasicProperties& properties)
+{
   return createNode<Marker>(properties);
 }
 
