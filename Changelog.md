@@ -311,6 +311,17 @@
 1. Added specification of minimum dependency version
     * [Pull request #306](https://github.com/dartsim/dart/pull/306)
 
+### Version 4.3.6 (2016-04-16)
+
+1. Fixed duplicate entries in Skeleton::mBodyNodes causing segfault in destructor
+    * [Issue #671](https://github.com/dartsim/dart/issues/671)
+    * [Pull request #672](https://github.com/dartsim/dart/pull/672)
+
+### Version 4.3.5 (2016-01-09)
+
+1. Fixed incorrect applying of joint constraint impulses (backported from 6.0.0)
+    * [Pull request #578](https://github.com/dartsim/dart/pull/578)
+
 ### Version 4.3.4 (2015-01-24)
 
 1. Fixed build issue with gtest on Mac
