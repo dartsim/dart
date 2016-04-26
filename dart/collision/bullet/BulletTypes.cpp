@@ -35,9 +35,9 @@
  */
 
 // Must be included before any Bullet headers.
-#include "dart/config.h"
+#include "dart/config.hpp"
 
-#include "dart/collision/bullet/BulletTypes.h"
+#include "dart/collision/bullet/BulletTypes.hpp"
 
 namespace dart {
 namespace collision {

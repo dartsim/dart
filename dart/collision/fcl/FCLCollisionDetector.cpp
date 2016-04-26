@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionDetector.h"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 
 #include <assimp/scene.h>
 
@@ -47,21 +47,21 @@
 #include <fcl/shape/geometric_shapes.h>
 #include <fcl/shape/geometric_shape_to_BVH_model.h>
 
-#include "dart/common/Console.h"
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionFilter.h"
-#include "dart/collision/fcl/FCLTypes.h"
-#include "dart/collision/fcl/FCLCollisionObject.h"
-#include "dart/collision/fcl/FCLCollisionGroup.h"
-#include "dart/collision/fcl/tri_tri_intersection_test.h"
-#include "dart/dynamics/ShapeFrame.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SoftMeshShape.h"
+#include "dart/common/Console.hpp"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/fcl/FCLTypes.hpp"
+#include "dart/collision/fcl/FCLCollisionObject.hpp"
+#include "dart/collision/fcl/FCLCollisionGroup.hpp"
+#include "dart/collision/fcl/tri_tri_intersection_test.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 
 namespace dart {
 namespace collision {

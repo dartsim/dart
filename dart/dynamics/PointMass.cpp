@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PointMass.h"
+#include "dart/dynamics/PointMass.hpp"
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 
 using namespace Eigen;
 
@@ -722,23 +722,6 @@ Eigen::Vector3d PointMass::getWorldAcceleration() const
 void PointMass::init()
 {
   mDependentGenCoordIndices = mParentSoftBodyNode->getDependentGenCoordIndices();
-
-  // TODO(MXG): The old code below would result in undefined behavior if the
-  // coordinates were actually used for anything.
-
-//  // Dependen generalized coordinate setting
-//  int parentDof = mParentSoftBodyNode->getNumDependentGenCoords();
-
-//  mDependentGenCoordIndices.resize(parentDof + 3);
-//  for (int i = 0; i < parentDof; ++i)
-//  {
-//    mDependentGenCoordIndices[i]
-//        = mParentSoftBodyNode->getDependentGenCoordIndex(i);
-//  }
-
-////  mDependentGenCoordIndices[parentDof]     = mIndexInSkeleton[0];
-////  mDependentGenCoordIndices[parentDof + 1] = mIndexInSkeleton[1];
-////  mDependentGenCoordIndices[parentDof + 2] = mIndexInSkeleton[2];
 }
 
 //==============================================================================

@@ -36,7 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "PathFollowingTrajectory.h"
+#include "dart/planning/PathFollowingTrajectory.hpp"
+
 #include <limits>
 #include <iostream>
 #include <fstream>

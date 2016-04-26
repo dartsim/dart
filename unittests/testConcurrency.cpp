@@ -39,9 +39,9 @@
 
 #include <gtest/gtest.h>
 
-#include "dart/simulation/World.h"
+#include "dart/simulation/World.hpp"
 
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
 using namespace dart;
 using namespace dynamics;

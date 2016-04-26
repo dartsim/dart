@@ -37,15 +37,15 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/math/Geometry.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/collision/collision.h"
-#include "dart/simulation/World.h"
+#include "dart/math/Geometry.hpp"
+#include "dart/utils/SkelParser.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/collision/collision.hpp"
+#include "dart/simulation/World.hpp"
 
 using namespace dart;
 using namespace math;
@@ -197,22 +197,6 @@ TEST(World, Cloning)
     clones.push_back(original);
     for(std::size_t j=1; j<5; ++j)
       clones.push_back(clones[j-1]->clone());
-
-    // Make sure all the Skeleton states match at the start
-    // TODO(MXG): This should be removed once state also gets copied over during a cloning
-    for(std::size_t j=1; j<clones.size(); ++j)
-    {
-      for(std::size_t k=0; k<original->getNumSkeletons(); ++k)
-      {
-        dart::dynamics::SkeletonPtr skel = original->getSkeleton(k);
-        dart::dynamics::SkeletonPtr clone = clones[j]->getSkeleton(k);
-
-        clone->setPositions(skel->getPositions());
-        clone->setVelocities(skel->getVelocities());
-        clone->setAccelerations(skel->getAccelerations());
-        clone->setForces(skel->getForces());
-      }
-    }
 
 #ifndef NDEBUG // Debug mode
     std::size_t numIterations = 3;

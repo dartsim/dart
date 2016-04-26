@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ShapeFrame.h"
+#include "dart/dynamics/ShapeFrame.hpp"
 
 namespace dart {
 namespace dynamics {

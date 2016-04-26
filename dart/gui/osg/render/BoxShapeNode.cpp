@@ -37,11 +37,11 @@
 #include <osg/Geode>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/render/BoxShapeNode.h"
-#include "dart/gui/osg/Utils.h"
+#include "dart/gui/osg/render/BoxShapeNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/SimpleFrame.h"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
 namespace gui {

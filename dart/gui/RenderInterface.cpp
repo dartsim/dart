@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "RenderInterface.h"
+#include "dart/gui/RenderInterface.hpp"
 
 namespace dart {
 namespace gui {

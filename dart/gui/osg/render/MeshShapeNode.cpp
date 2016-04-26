@@ -41,12 +41,12 @@
 #include <osg/Geometry>
 #include <osg/CullFace>
 
-#include "dart/gui/osg/render/MeshShapeNode.h"
-#include "dart/gui/osg/Utils.h"
+#include "dart/gui/osg/render/MeshShapeNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/common/Console.h"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace gui {

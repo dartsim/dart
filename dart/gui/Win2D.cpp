@@ -34,11 +34,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/Win2D.h"
+#include "dart/gui/Win2D.hpp"
 
 #include <iostream>
 
-#include "dart/gui/LoadGlut.h"
+#include "dart/gui/LoadGlut.hpp"
 
 namespace dart {
 namespace gui {

@@ -34,20 +34,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/osg/DragAndDrop.h"
-#include "dart/gui/osg/DefaultEventHandler.h"
-#include "dart/gui/osg/Viewer.h"
-#include "dart/gui/osg/InteractiveFrame.h"
-#include "dart/gui/osg/MouseEventHandler.h"
+#include "dart/gui/osg/DragAndDrop.hpp"
+#include "dart/gui/osg/DefaultEventHandler.hpp"
+#include "dart/gui/osg/Viewer.hpp"
+#include "dart/gui/osg/InteractiveFrame.hpp"
+#include "dart/gui/osg/MouseEventHandler.hpp"
 
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/MeshShape.hpp"
 
-#include "dart/math/Helpers.h"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace gui {

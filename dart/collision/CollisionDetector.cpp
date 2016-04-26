@@ -35,15 +35,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionDetector.h"
+#include "dart/collision/CollisionDetector.hpp"
 
 #include <algorithm>
 
-#include "dart/common/Console.h"
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionGroup.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/common/Console.hpp"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionGroup.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace collision {

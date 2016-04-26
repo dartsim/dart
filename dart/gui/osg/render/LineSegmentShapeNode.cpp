@@ -39,12 +39,12 @@
 #include <osg/LineWidth>
 #include <osg/ShapeDrawable>
 
-#include "dart/gui/osg/render/LineSegmentShapeNode.h"
-#include "dart/gui/osg/ShapeFrameNode.h"
-#include "dart/gui/osg/Utils.h"
+#include "dart/gui/osg/render/LineSegmentShapeNode.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
-#include "dart/dynamics/LineSegmentShape.h"
-#include "dart/dynamics/SimpleFrame.h"
+#include "dart/dynamics/LineSegmentShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
 namespace gui {

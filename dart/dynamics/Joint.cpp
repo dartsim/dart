@@ -35,15 +35,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/Joint.hpp"
 
 #include <string>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -65,12 +65,12 @@ JointProperties::JointProperties(
     const std::string& _name,
     const Eigen::Isometry3d& _T_ParentBodyToJoint,
     const Eigen::Isometry3d& _T_ChildBodyToJoint,
-    bool _isPositionLimited,
+    bool _isPositionLimitEnforced,
     ActuatorType _actuatorType)
   : mName(_name),
     mT_ParentBodyToJoint(_T_ParentBodyToJoint),
     mT_ChildBodyToJoint(_T_ChildBodyToJoint),
-    mIsPositionLimited(_isPositionLimited),
+    mIsPositionLimitEnforced(_isPositionLimitEnforced),
     mActuatorType(_actuatorType)
 {
   // Do nothing
@@ -116,7 +116,7 @@ void Joint::setAspectProperties(const AspectProperties& properties)
   setName(properties.mName);
   setTransformFromParentBodyNode(properties.mT_ParentBodyToJoint);
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
-  setPositionLimitEnforced(properties.mIsPositionLimited);
+  setPositionLimitEnforced(properties.mIsPositionLimitEnforced);
   setActuatorType(properties.mActuatorType);
 }
 
@@ -314,15 +314,15 @@ const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
 }
 
 //==============================================================================
-void Joint::setPositionLimitEnforced(bool _isPositionLimited)
+void Joint::setPositionLimitEnforced(bool _isPositionLimitEnforced)
 {
-  mAspectProperties.mIsPositionLimited = _isPositionLimited;
+  mAspectProperties.mIsPositionLimitEnforced = _isPositionLimitEnforced;
 }
 
 //==============================================================================
 bool Joint::isPositionLimitEnforced() const
 {
-  return mAspectProperties.mIsPositionLimited;
+  return mAspectProperties.mIsPositionLimitEnforced;
 }
 
 //==============================================================================

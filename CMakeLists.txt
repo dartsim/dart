@@ -123,6 +123,13 @@ if(HAVE_BULLET_COLLISION)
 endif()
 include_directories("${CMAKE_BINARY_DIR}")
 
+set(DART_INCLUDE_DIRS
+    "${CMAKE_INSTALL_PREFIX}/include"
+    "${EIGEN3_INCLUDE_DIRS}")
+if(HAVE_BULLET_COLLISION)
+  list(APPEND DART_INCLUDE_DIRS "${BULLET_INCLUDE_DIRS}")
+endif()
+
 #===============================================================================
 # Check for non-case-sensitive filesystems
 #===============================================================================
@@ -228,8 +235,8 @@ message(STATUS "[ Configured files ]")
 
 # Generate the dart config file
 # Ref: http://www.vtk.org/Wiki/CMake:How_To_Write_Platform_Checks
-set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/dart/config.h.in)
-set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/dart/config.h)
+set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/dart/config.hpp.in)
+set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/dart/config.hpp)
 message(STATUS ${DART_CONFIG_OUT})
 configure_file(${DART_CONFIG_IN} ${DART_CONFIG_OUT} @ONLY)
 install(FILES ${DART_CONFIG_OUT} DESTINATION include/dart)
@@ -279,7 +286,7 @@ endfunction(dart_add_unittest)
 #===============================================================================
 
 add_subdirectory(dart)
-add_subdirectory(apps EXCLUDE_FROM_ALL)
+add_subdirectory(examples EXCLUDE_FROM_ALL)
 add_subdirectory(tutorials EXCLUDE_FROM_ALL)
 
 # Add a "tutorials" target to build tutorials.
@@ -338,6 +345,7 @@ if(DOXYGEN_FOUND)
   set(DOXYGEN_DOXYFILE     ${PROJECT_BINARY_DIR}/doxygen/Doxyfile       )
   set(DOXYGEN_HTML_INDEX   ${PROJECT_SOURCE_DIR}/doxygen/html/index.html)
   set(DOXYGEN_OUTPUT_ROOT  ${PROJECT_SOURCE_DIR}/doxygen/html           ) # Pasted into Doxyfile.in
+  set(DOXYGEN_GENERATE_TAGFILE ${DOXYGEN_OUTPUT_ROOT}/${PROJECT_NAME}.tag)
   set(DOXYGEN_INPUT_ROOT   ${PROJECT_SOURCE_DIR}/dart                   ) # Pasted into Doxyfile.in
   set(DOXYGEN_EXTRA_INPUTS ${PROJECT_SOURCE_DIR}/doxygen/mainpage.dox   ) # Pasted into Doxyfile.in
 

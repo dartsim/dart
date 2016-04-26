@@ -35,27 +35,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
 #include <queue>
 #include <string>
 #include <vector>
 
-#include "dart/common/Console.h"
-#include "dart/common/Deprecated.h"
-#include "dart/common/StlHelpers.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/ShapeNode.h"
-#include "dart/dynamics/EndEffector.h"
-#include "dart/dynamics/InverseKinematics.h"
-#include "dart/dynamics/Marker.h"
-#include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/Deprecated.hpp"
+#include "dart/common/StlHelpers.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/InverseKinematics.hpp"
+#include "dart/dynamics/Marker.hpp"
+#include "dart/dynamics/PointMass.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 
 #define SET_ALL_FLAGS( X ) for(auto& cache : mTreeCache) cache.mDirty. X = true;\
                            mSkelCache.mDirty. X = true;
@@ -453,6 +453,7 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
 
   skelClone->setProperties(getAspectProperties());
   skelClone->setName(cloneName);
+  skelClone->setState(getState());
 
   return skelClone;
 }
@@ -586,8 +587,6 @@ const std::string& Skeleton::setName(const std::string& _name)
         "Skeleton::Joint | "+mAspectProperties.mName);
   mNameMgrForDofs.setManagerName(
         "Skeleton::DegreeOfFreedom | "+mAspectProperties.mName);
-  mNameMgrForMarkers.setManagerName(
-        "Skeleton::Marker | "+mAspectProperties.mName);
 
   for(auto& mgr : mNodeNameMgrMap)
     mgr.second.setManagerName( std::string("Skeleton::") + mgr.first.name()
@@ -634,28 +633,6 @@ void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode)
   // its name has already been resolved against all the BodyNodes, which includes
   // all SoftBodyNodes.
   mNameMgrForSoftBodyNodes.addName(_newNode->getName(), _newNode);
-}
-
-//==============================================================================
-void Skeleton::addMarkersOfBodyNode(BodyNode* _node)
-{
-  for (std::size_t i=0; i<_node->getNumMarkers(); ++i)
-    addEntryToMarkerNameMgr(_node->getMarker(i));
-}
-
-//==============================================================================
-void Skeleton::removeMarkersOfBodyNode(BodyNode* _node)
-{
-  for (std::size_t i=0; i<_node->getNumMarkers(); ++i)
-    mNameMgrForMarkers.removeName(_node->getMarker(i)->getName());
-}
-
-//==============================================================================
-const std::string& Skeleton::addEntryToMarkerNameMgr(Marker* _newMarker)
-{
-  _newMarker->mProperties.mName = mNameMgrForMarkers.issueNewNameAndAdd(
-      _newMarker->getName(), _newMarker);
-  return _newMarker->mProperties.mName;
 }
 
 //==============================================================================
@@ -1309,22 +1286,7 @@ void Skeleton::clearIK()
 }
 
 //==============================================================================
-std::size_t Skeleton::getNumMarkers() const
-{
-  return mNameMgrForMarkers.getCount();
-}
-
-//==============================================================================
-Marker* Skeleton::getMarker(const std::string& _name)
-{
-  return mNameMgrForMarkers.getObject(_name);
-}
-
-//==============================================================================
-const Marker* Skeleton::getMarker(const std::string& _name) const
-{
-  return const_cast<Skeleton*>(this)->getMarker(_name);
-}
+DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, Marker )
 
 //==============================================================================
 DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, ShapeNode )

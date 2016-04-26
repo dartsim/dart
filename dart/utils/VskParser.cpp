@@ -36,7 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/VskParser.h"
+#include "dart/utils/VskParser.hpp"
 
 // Standard Library
 #include <map>
@@ -46,10 +46,10 @@
 #include <Eigen/Dense>
 
 // Local Files
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/Uri.h"
-#include "dart/dynamics/dynamics.h"
-#include "dart/utils/XmlHelpers.h"
+#include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/dynamics/dynamics.hpp"
+#include "dart/utils/XmlHelpers.hpp"
 
 #define SCALE_VSK 1.0e-3
 
@@ -617,7 +617,7 @@ bool readJointBall(const tinyxml2::XMLElement* /*jointEle*/,
         vskData.options.jointPositionLowerLimit);
   properties.mPositionUpperLimits = Eigen::Vector3d::Constant(
         vskData.options.jointPositionUpperLimit);
-  properties.mIsPositionLimited = true;
+  properties.mIsPositionLimitEnforced = true;
   properties.mFrictions = Eigen::Vector3d::Constant(
         vskData.options.jointFriction);
 
@@ -657,7 +657,7 @@ bool readJointHardySpicer(const tinyxml2::XMLElement* jointEle,
         vskData.options.jointPositionLowerLimit);
   properties.mPositionUpperLimits = Eigen::Vector2d::Constant(
         vskData.options.jointPositionUpperLimit);
-  properties.mIsPositionLimited = true;
+  properties.mIsPositionLimitEnforced = true;
   properties.mFrictions = Eigen::Vector2d::Constant(
         vskData.options.jointFriction);
 
@@ -687,7 +687,7 @@ bool readJointHinge(const tinyxml2::XMLElement* jointEle,
   properties.mDampingCoefficients[0] = vskData.options.jointDampingCoefficient;
   properties.mPositionLowerLimits[0] = vskData.options.jointPositionLowerLimit;
   properties.mPositionUpperLimits[0] = vskData.options.jointPositionUpperLimit;
-  properties.mIsPositionLimited = true;
+  properties.mIsPositionLimitEnforced = true;
   properties.mFrictions[0] = vskData.options.jointFriction;
 
   jointProperties
@@ -863,9 +863,7 @@ bool readMarker(const tinyxml2::XMLElement* markerEle,
     return false;
   }
 
-  dynamics::Marker* marker = new dynamics::Marker(name, position, rgba,
-                                                  bodyNode);
-  bodyNode->addMarker(marker);
+  bodyNode->createMarker(name, position, rgba);
 
   return true;
 }

@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/FreeJoint.hpp"
 
 #include <string>
 
-#include "dart/math/Helpers.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/math/Helpers.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 
 namespace dart {
 namespace dynamics {

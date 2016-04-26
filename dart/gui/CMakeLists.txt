@@ -1,6 +1,6 @@
 # Search all header and source files
+file(GLOB hdrs "*.hpp" "*.h")
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
 
 include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
 include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
@@ -20,7 +20,7 @@ target_link_libraries(dart-gui dart-utils ${GLUT_LIBRARY} ${OPENGL_LIBRARIES})
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})
 if(HAVE_OPENSCENEGRAPH)
-  list(APPEND header_names "osg/osg.h")
+  list(APPEND header_names "osg/osg.hpp")
 endif(HAVE_OPENSCENEGRAPH)
 dart_generate_include_header_list(
   gui_headers
@@ -29,13 +29,13 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/gui.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/gui.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/gui.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
   DESTINATION include/dart/gui
   COMPONENT headers
 )

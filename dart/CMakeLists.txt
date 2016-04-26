@@ -1,6 +1,6 @@
 # Enable multi-threaded compilation.
-# We do this here and not in the root folder since the example apps
-# do not have enough source files to benefit from this.
+# We do this here and not in the root folder since the examples and the
+# tutorials do not have enough source files to benefit from this.
 if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 endif()
@@ -20,7 +20,7 @@ add_subdirectory(math)
 add_subdirectory(simulation)
 
 # Set header and source files
-get_filename_component(dart_h "dart.h" ABSOLUTE)
+get_filename_component(dart_h "dart.hpp" ABSOLUTE)
 set(dart_hdrs
   ${dart_h}
   ${dart_common_hdrs}
@@ -62,7 +62,7 @@ if(MSVC)
   )
 endif()
 
-install(FILES dart.h DESTINATION include/dart/ COMPONENT headers)
+install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 install(TARGETS dart EXPORT DARTTargets DESTINATION lib)
 
 # Coverage test files

@@ -40,14 +40,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/GraphWindow.h"
+#include "dart/gui/GraphWindow.hpp"
 
 #include <cstdio>
 #include <iostream>
 #include <string>
 
-#include "dart/gui/GLFuncs.h"
-#include "dart/gui/LoadGlut.h"
+#include "dart/gui/GLFuncs.hpp"
+#include "dart/gui/LoadGlut.hpp"
 
 namespace dart {
 namespace gui {

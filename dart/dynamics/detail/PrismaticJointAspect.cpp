@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PrismaticJoint.h"
+#include "dart/dynamics/PrismaticJoint.hpp"
 
 namespace dart {
 namespace dynamics {

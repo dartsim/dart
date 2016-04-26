@@ -1,6 +1,6 @@
 # Search all header and source files
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
 
 include_directories(SYSTEM ${NLOPT_INCLUDE_DIRS})
 
@@ -17,13 +17,13 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/ipopt.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/ipopt.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/ipopt.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ipopt.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp
   DESTINATION include/dart/optimizer/ipopt
   COMPONENT headers
 )

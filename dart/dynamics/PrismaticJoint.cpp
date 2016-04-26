@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PrismaticJoint.h"
+#include "dart/dynamics/PrismaticJoint.hpp"
 
 #include <string>
 
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
 namespace dynamics {

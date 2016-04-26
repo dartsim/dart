@@ -38,12 +38,12 @@
 
 #include <osg/NodeCallback>
 
-#include "dart/gui/osg/WorldNode.h"
-#include "dart/gui/osg/ShapeFrameNode.h"
+#include "dart/gui/osg/WorldNode.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
 
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
+#include "dart/simulation/World.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
 namespace gui {

@@ -36,8 +36,8 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
-#include "dart/dynamics/SoftBodyNode.h"
+#include "TestHelpers.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 
 using namespace dart;
 using namespace math;

@@ -1,6 +1,6 @@
 # Search all header and source files
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
 file(GLOB detail_srcs "detail/*.cpp")
 file(GLOB detail_hdrs "detail/*.h")
 
@@ -16,13 +16,13 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/math.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/math.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/math.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/math.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/math.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/math.hpp
   DESTINATION include/dart/math
   COMPONENT headers
 )

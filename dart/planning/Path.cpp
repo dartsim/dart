@@ -36,7 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Path.h"
+#include "dart/planning/Path.hpp"
+
 #include <iostream>
 #include <vector>
 #include <algorithm>

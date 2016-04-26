@@ -34,13 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionObject.h"
+#include "dart/collision/fcl/FCLCollisionObject.hpp"
 
 #include <fcl/BVH/BVH_model.h>
 
-#include "dart/collision/fcl/FCLTypes.h"
-#include "dart/dynamics/SoftMeshShape.h"
-#include "dart/dynamics/ShapeFrame.h"
+#include "dart/collision/fcl/FCLTypes.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
 
 namespace dart {
 namespace collision {

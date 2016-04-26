@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/detail/EntityNodeAspect.h"
+#include "dart/dynamics/detail/EntityNodeAspect.hpp"
 
 namespace dart {
 namespace dynamics {

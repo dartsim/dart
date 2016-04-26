@@ -36,10 +36,10 @@
 
 #include <iostream>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/optimizer/GradientDescentSolver.h"
-#include "dart/optimizer/Problem.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/optimizer/GradientDescentSolver.hpp"
+#include "dart/optimizer/Problem.hpp"
 
 namespace dart {
 namespace optimizer {
