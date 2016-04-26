@@ -36,15 +36,15 @@
 
 #include <osgGA/GUIEventAdapter>
 
-#include "dart/gui/osg/DefaultEventHandler.h"
-#include "dart/gui/osg/MouseEventHandler.h"
-#include "dart/gui/osg/Viewer.h"
-#include "dart/gui/osg/render/ShapeNode.h"
-#include "dart/gui/osg/ShapeFrameNode.h"
-#include "dart/gui/osg/Utils.h"
+#include "dart/gui/osg/DefaultEventHandler.hpp"
+#include "dart/gui/osg/MouseEventHandler.hpp"
+#include "dart/gui/osg/Viewer.hpp"
+#include "dart/gui/osg/render/ShapeNode.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
-#include "dart/dynamics/Entity.h"
-#include "dart/dynamics/ShapeFrame.h"
+#include "dart/dynamics/Entity.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
 
 
 #include <iostream>

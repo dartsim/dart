@@ -34,15 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/FileInfoDof.h"
+#include "dart/utils/FileInfoDof.hpp"
 
 #include <fstream>
 #include <string>
 
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/simulation/Recording.h"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/simulation/Recording.hpp"
 
 namespace dart {
 namespace utils {

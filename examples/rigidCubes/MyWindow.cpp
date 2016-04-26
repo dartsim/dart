@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/rigidCubes/MyWindow.h"
+#include "examples/rigidCubes/MyWindow.hpp"
 
 MyWindow::MyWindow()
   : SimWindow() {

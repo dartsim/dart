@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/CylinderShape.h"
+#include "dart/dynamics/CylinderShape.hpp"
 
 #include <cmath>
-#include "dart/math/Helpers.h"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {

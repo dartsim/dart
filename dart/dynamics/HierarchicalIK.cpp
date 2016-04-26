@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/HierarchicalIK.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/EndEffector.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/optimizer/GradientDescentSolver.h"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/HierarchicalIK.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/optimizer/GradientDescentSolver.hpp"
 
 namespace dart {
 namespace dynamics {

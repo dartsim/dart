@@ -1,5 +1,5 @@
 # Search all header and source files
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
 set(dart_utils_hdrs ${hdrs})
@@ -26,12 +26,12 @@ target_link_libraries(
 # Generate header for this namespace
 dart_get_filename_components(header_names "utils headers" ${hdrs})
 if(urdfdom_FOUND)
-  list(APPEND header_names "urdf/urdf.h")
+  list(APPEND header_names "urdf/urdf.hpp")
 endif()
 set(
   header_names
   ${header_names}
-  sdf/sdf.h
+  sdf/sdf.hpp
 )
 dart_generate_include_header_list(
   utils_headers
@@ -40,13 +40,13 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/utils.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/utils.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/utils.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
   DESTINATION include/dart/utils
   COMPONENT headers
 )

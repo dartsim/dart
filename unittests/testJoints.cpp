@@ -37,24 +37,24 @@
 #include <array>
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BallJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/TranslationalJoint.h"
-#include "dart/dynamics/UniversalJoint.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/EulerJoint.h"
-#include "dart/dynamics/ScrewJoint.h"
-#include "dart/dynamics/PlanarJoint.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/SkelParser.h"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/BallJoint.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/UniversalJoint.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/ScrewJoint.hpp"
+#include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/utils/SkelParser.hpp"
 
 using namespace dart;
 using namespace dart::math;

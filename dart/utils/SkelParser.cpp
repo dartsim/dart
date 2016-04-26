@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/SkelParser.h"
+#include "dart/utils/SkelParser.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -43,40 +43,40 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "dart/config.h"
-#include "dart/common/Console.h"
-#include "dart/collision/CollisionObject.h"
+#include "dart/config.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/collision/CollisionObject.hpp"
 #if HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.h"
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 #endif
-#include "dart/collision/dart/DARTCollisionDetector.h"
-#include "dart/collision/fcl/FCLCollisionDetector.h"
-#include "dart/constraint/ConstraintSolver.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/ShapeNode.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SoftMeshShape.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/SingleDofJoint.h"
-#include "dart/dynamics/MultiDofJoint.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/ScrewJoint.h"
-#include "dart/dynamics/TranslationalJoint.h"
-#include "dart/dynamics/BallJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/EulerJoint.h"
-#include "dart/dynamics/UniversalJoint.h"
-#include "dart/dynamics/PlanarJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/Marker.h"
-#include "dart/utils/XmlHelpers.h"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/SingleDofJoint.hpp"
+#include "dart/dynamics/MultiDofJoint.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/ScrewJoint.hpp"
+#include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/BallJoint.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/UniversalJoint.hpp"
+#include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/Marker.hpp"
+#include "dart/utils/XmlHelpers.hpp"
 
 namespace dart {
 

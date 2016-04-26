@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/rigidLoop/MyWindow.h"
+#include "examples/rigidLoop/MyWindow.hpp"
 
 void MyWindow::timeStepping()
 {

@@ -1,5 +1,5 @@
 # Search all header and source files
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
 set(dart_gui_osg_srcs ${dart_gui_osg_srcs} ${srcs} PARENT_SCOPE)
@@ -13,12 +13,12 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/render.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/render.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/render.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/render.hpp
 )
 
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/render.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/render.hpp
   DESTINATION include/dart/gui/osg/render
   COMPONENT headers
 )

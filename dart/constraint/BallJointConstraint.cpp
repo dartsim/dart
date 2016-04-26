@@ -35,10 +35,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 #include <iostream>
-#include "dart/constraint/BallJointConstraint.h"
+#include "dart/constraint/BallJointConstraint.hpp"
 
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/lcp.h"
 
 namespace dart {
