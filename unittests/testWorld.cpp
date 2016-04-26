@@ -37,15 +37,15 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.h"
+#include "TestHelpers.hpp"
 
-#include "dart/math/Geometry.h"
-#include "dart/utils/SkelParser.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/collision/collision.h"
-#include "dart/simulation/World.h"
+#include "dart/math/Geometry.hpp"
+#include "dart/utils/SkelParser.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/collision/collision.hpp"
+#include "dart/simulation/World.hpp"
 
 using namespace dart;
 using namespace math;

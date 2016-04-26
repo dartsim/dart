@@ -42,9 +42,9 @@
 
 #include <iostream>
 
-#include "dart/dart.h"
+#include "dart/dart.hpp"
 
-#include "examples/mixedChain/MyWindow.h"
+#include "examples/mixedChain/MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {

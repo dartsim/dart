@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.h>
-#include <dart/gui/osg/osg.h>
-#include <dart/utils/utils.h>
+#include <dart/dart.hpp>
+#include <dart/gui/osg/osg.hpp>
+#include <dart/utils/utils.hpp>
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -1162,7 +1162,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   l_hand->getIK()->setGradientMethod<HuboArmIK>("Body_LSP");
 
   l_hand->getIK()->getAnalytical()->setExtraDofUtilization(
-        IK::Analytical::PRE_ANALYTICAL);
+        IK::Analytical::POST_ANALYTICAL);
 
   l_hand->getIK()->getAnalytical()->setExtraErrorLengthClamp(extra_error_clamp);
 
@@ -1188,7 +1188,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
   r_hand->getIK()->setGradientMethod<HuboArmIK>("Body_RSP");
 
   r_hand->getIK()->getAnalytical()->setExtraDofUtilization(
-        IK::Analytical::PRE_ANALYTICAL);
+        IK::Analytical::POST_ANALYTICAL);
 
   r_hand->getIK()->getAnalytical()->setExtraErrorLengthClamp(extra_error_clamp);
 

@@ -34,9 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.h"
+#include "dart/dart.hpp"
 
-#include "examples/operationalSpaceControl/MyWindow.h"
+#include "examples/operationalSpaceControl/MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {

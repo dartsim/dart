@@ -39,28 +39,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/SimWindow.h"
+#include "dart/gui/SimWindow.hpp"
 
 #include <cstdio>
 #include <iostream>
 #include <string>
 
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SoftMeshShape.h"
-#include "dart/dynamics/LineSegmentShape.h"
-#include "dart/constraint/ConstraintSolver.h"
-#include "dart/collision/CollisionDetector.h"
-#include "dart/gui/LoadGlut.h"
-#include "dart/gui/GLFuncs.h"
-#include "dart/gui/GraphWindow.h"
-#include "dart/utils/FileInfoWorld.h"
+#include "dart/simulation/World.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/LineSegmentShape.hpp"
+#include "dart/dynamics/Marker.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/gui/LoadGlut.hpp"
+#include "dart/gui/GLFuncs.hpp"
+#include "dart/gui/GraphWindow.hpp"
+#include "dart/utils/FileInfoWorld.hpp"
 
 namespace dart {
 namespace gui {

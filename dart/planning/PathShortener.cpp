@@ -34,13 +34,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "PathShortener.h"
-#include "dart/simulation/World.h"
-#include "RRT.h"
-#include "dart/collision/CollisionDetector.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/planning/PathShortener.hpp"
+
 #include <ctime>
 #include <cstdio>
+
+#include "dart/simulation/World.hpp"
+#include "dart/planning/RRT.hpp"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 using namespace std;
 using namespace Eigen;

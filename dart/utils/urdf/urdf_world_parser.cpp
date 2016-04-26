@@ -34,7 +34,7 @@
 
 /* Author: A. Huaman */
 
-#include "urdf_world_parser.h"
+#include "dart/utils/urdf/urdf_world_parser.hpp"
 
 #include <fstream>
 #include <sstream>
@@ -48,7 +48,7 @@
 #include <urdf_world/world.h>
 #include <urdf_model/pose.h>
 
-#include "dart/common/Console.h"
+#include "dart/common/Console.hpp"
 
 const bool debug = false;
 

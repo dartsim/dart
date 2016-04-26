@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/lcpsolver/ODELCPSolver.h"
+#include "dart/lcpsolver/ODELCPSolver.hpp"
 
 #include <cstdio>
 
-#include "dart/common/StlHelpers.h"
-#include "dart/lcpsolver/Lemke.h"
+#include "dart/common/StlHelpers.hpp"
+#include "dart/lcpsolver/Lemke.hpp"
 #include "dart/lcpsolver/lcp.h"
 #include "dart/lcpsolver/misc.h"
 

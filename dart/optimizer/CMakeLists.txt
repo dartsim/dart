@@ -1,6 +1,6 @@
 # Search all header and source files
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
 
 # Add subdirectories
 if(HAVE_IPOPT)
@@ -19,13 +19,13 @@ set(dart_optimizer_srcs ${srcs} ${dart_optimizer_srcs} PARENT_SCOPE)
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer headers" ${hdrs})
 if(HAVE_IPOPT)
-  set(header_names ${header_names} ipopt/ipopt.h)
+  set(header_names ${header_names} ipopt/ipopt.hpp)
 endif()
 if(HAVE_NLOPT)
-  set(header_names ${header_names} nlopt/nlopt.h)
+  set(header_names ${header_names} nlopt/nlopt.hpp)
 endif()
 if(HAVE_SNOPT)
-  set(header_names ${header_names} snopt/snopt.h)
+  set(header_names ${header_names} snopt/snopt.hpp)
 endif()
 dart_generate_include_header_list(
   optimizer_headers
@@ -34,13 +34,13 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/optimizer.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/optimizer.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/optimizer.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/optimizer.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/optimizer.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/optimizer.hpp
   DESTINATION include/dart/optimizer
   COMPONENT headers
 )

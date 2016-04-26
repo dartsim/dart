@@ -9,10 +9,7 @@
 #===============================================================================
 # DART_INCLUDE_DIRS
 #===============================================================================
-set(DART_INCLUDE_DIRS
-    "@CMAKE_INSTALL_PREFIX@/include"
-    "@EIGEN3_INCLUDE_DIRS@"
-    "@BULLET_INCLUDE_DIRS@")
+set(DART_INCLUDE_DIRS "@DART_INCLUDE_DIRS@")
 
 #===============================================================================
 # DART_LIBRARIES

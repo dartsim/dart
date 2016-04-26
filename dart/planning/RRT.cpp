@@ -41,10 +41,12 @@
  * checking, sampling and etc.
  */
 
-#include "RRT.h"
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/planning/RRT.hpp"
+
 #include <flann/flann.hpp>
+
+#include "dart/simulation/World.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 using namespace std;
 using namespace Eigen;
