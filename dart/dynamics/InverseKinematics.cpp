@@ -95,9 +95,9 @@ bool InverseKinematics::solve(bool _applySolution)
 
   // Many GradientMethod implementations use Joint::integratePositions, so we
   // need to clear out any velocities that might be in the Skeleton and then
-  // reset those velocities later.
+  // reset those velocities later. This has been opened as issue #699.
   Eigen::VectorXd originalVelocities = skel->getVelocities();
-  for(size_t i=0; i < skel->getNumDofs(); ++i)
+  for(std::size_t i=0; i < skel->getNumDofs(); ++i)
     skel->getDof(i)->setVelocity(0.0);
 
   if(_applySolution)
@@ -709,23 +709,23 @@ InverseKinematics::GradientMethod::getComponentWeights() const
 
 //==============================================================================
 void InverseKinematics::GradientMethod::convertJacobianMethodOutputToGradient(
-    Eigen::VectorXd& grad, const std::vector<size_t>& dofs)
+    Eigen::VectorXd& grad, const std::vector<std::size_t>& dofs)
 {
   const SkeletonPtr& skel = mIK->getNode()->getSkeleton();
   mInitialPositionsCache = skel->getPositions(dofs);
 
-  for(size_t i=0; i < dofs.size(); ++i)
+  for(std::size_t i=0; i < dofs.size(); ++i)
     skel->getDof(dofs[i])->setVelocity(grad[i]);
   // Velocities of unused DOFs should already be set to zero.
 
-  for(size_t i=0; i < dofs.size(); ++i)
+  for(std::size_t i=0; i < dofs.size(); ++i)
   {
     Joint* joint = skel->getDof(dofs[i])->getJoint();
     joint->integratePositions(1.0);
 
     // Reset this joint's velocities to zero to avoid double-integrating
-    const size_t numJointDofs = joint->getNumDofs();
-    for(size_t j=0; j < numJointDofs; ++j)
+    const std::size_t numJointDofs = joint->getNumDofs();
+    for(std::size_t j=0; j < numJointDofs; ++j)
       joint->setVelocity(j, 0.0);
   }
 
@@ -866,7 +866,7 @@ InverseKinematics::Analytical::Solution::Solution(
 
 //==============================================================================
 InverseKinematics::Analytical::UniqueProperties::UniqueProperties(
-    ExtraDofUtilization_t extraDofUtilization, double extraErrorLengthClamp)
+    ExtraDofUtilization extraDofUtilization, double extraErrorLengthClamp)
   : mExtraDofUtilization(extraDofUtilization),
     mExtraErrorLengthClamp(extraErrorLengthClamp)
 {
@@ -875,7 +875,7 @@ InverseKinematics::Analytical::UniqueProperties::UniqueProperties(
 
 //==============================================================================
 InverseKinematics::Analytical::UniqueProperties::UniqueProperties(
-    ExtraDofUtilization_t extraDofUtilization,
+    ExtraDofUtilization extraDofUtilization,
     double extraErrorLengthClamp,
     QualityComparison qualityComparator)
   : mExtraDofUtilization(extraDofUtilization),
@@ -1031,7 +1031,7 @@ const std::vector<IK::Analytical::Solution>& IK::Analytical::getSolutions(
 void InverseKinematics::Analytical::addExtraDofGradient(
     Eigen::VectorXd& grad,
     const Eigen::Vector6d& error,
-    ExtraDofUtilization_t /*utilization*/)
+    ExtraDofUtilization /*utilization*/)
 {
   mExtraDofGradCache.resize(mExtraDofs.size());
   const math::Jacobian& J = mIK->computeJacobian();
@@ -1049,9 +1049,9 @@ void InverseKinematics::Analytical::addExtraDofGradient(
 
   convertJacobianMethodOutputToGradient(mExtraDofGradCache, mExtraDofs);
 
-  for(size_t i=0; i < mExtraDofs.size(); ++i)
+  for(std::size_t i=0; i < mExtraDofs.size(); ++i)
   {
-    size_t depIndex = mExtraDofs[i];
+    std::size_t depIndex = mExtraDofs[i];
     int gradIndex = gradMap[depIndex];
     if(gradIndex == -1)
       continue;
@@ -1160,13 +1160,13 @@ Eigen::VectorXd InverseKinematics::Analytical::getPositions() const
 
 //==============================================================================
 void InverseKinematics::Analytical::setExtraDofUtilization(
-    ExtraDofUtilization_t _utilization)
+    ExtraDofUtilization _utilization)
 {
   mAnalyticalP.mExtraDofUtilization = _utilization;
 }
 
 //==============================================================================
-IK::Analytical::ExtraDofUtilization_t
+IK::Analytical::ExtraDofUtilization
 IK::Analytical::getExtraDofUtilization() const
 {
   return mAnalyticalP.mExtraDofUtilization;

@@ -47,6 +47,7 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/Marker.hpp"
 #include "dart/dynamics/detail/BodyNodeAspect.hpp"
 #include "dart/dynamics/SpecializedNodeManager.hpp"
 #include "dart/dynamics/detail/SkeletonAspect.hpp"
@@ -58,7 +59,7 @@ namespace dynamics {
 class Skeleton :
     public virtual common::VersionCounter,
     public MetaSkeleton,
-    public SkeletonSpecializedFor<ShapeNode, EndEffector>,
+    public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,
     public detail::SkeletonAspectBase
 {
 public:
