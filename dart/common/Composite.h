@@ -99,6 +99,16 @@ public:
   template <class T>
   const T* get() const;
 
+  /// Get a certain type of Aspect from this Composite. The Aspect will be
+  /// created if one does not already exist.
+  template <class T, typename... Args>
+  T* getOrCreate(Args&&... args);
+
+  /// Get a certain type of Aspect from this Composite. The Aspect will be
+  /// created if one does not already exist.
+  template <class T, typename... Args>
+  const T* getOrCreate(Args&&... args) const;
+
   /// Make a clone of the aspect and place the clone into this Composite. If
   /// an Aspect of the same type already exists in this Composite, the
   /// existing Aspect will be destroyed.

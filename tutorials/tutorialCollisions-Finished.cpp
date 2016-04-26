@@ -437,7 +437,7 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
   }
 
   // Set the properties of the soft body
-  SoftBodyNode::UniqueProperties soft_properties;
+  SoftBodyAspect::PropertiesData soft_properties;
   // Use the SoftBodyNodeHelper class to create the geometries for the
   // SoftBodyNode
   if(SOFT_BOX == type)
@@ -479,10 +479,11 @@ BodyNode* addSoftBody(const SkeletonPtr& chain, const std::string& name,
   soft_properties.mDampCoeff = default_soft_damping;
 
   // Create the Joint and Body pair
-  SoftBodyNode::Properties body_properties(BodyNode::AspectProperties(name),
-                                           soft_properties);
-  SoftBodyNode* bn = chain->createJointAndBodyNodePair<JointType, SoftBodyNode>(
+  BodyNode::Properties body_properties;
+  body_properties.mName = name;
+  BodyNode* bn = chain->createJointAndBodyNodePair<JointType>(
         parent, joint_properties, body_properties).second;
+  bn->createSoftBodyAspect(soft_properties);
 
   // Zero out the inertia for the underlying BodyNode
   Inertia inertia;

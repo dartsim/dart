@@ -42,9 +42,9 @@
 
 #include "dart/common/Console.h"
 #include "dart/math/Constants.h"
+#include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"
 #include "dart/simulation/World.h"
 #include "dart/utils/SkelParser.h"
@@ -396,7 +396,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       for (int k = 0; k < nSoftBodyNodes; ++k)
       {
         assert(softSkel != nullptr);
-        dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
+        auto sbn = softSkel->getSoftBodyNode(k)->getSoftBodyAspect();
         oldKv[k] = sbn->getVertexSpringStiffness();
         oldKe[k] = sbn->getEdgeSpringStiffness();
         oldD[k]  = sbn->getDampingCoefficient();
@@ -408,7 +408,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       for (int k = 0; k < nSoftBodyNodes; ++k)
       {
         assert(softSkel != nullptr);
-        dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
+        auto sbn = softSkel->getSoftBodyNode(k)->getSoftBodyAspect();
         sbn->setVertexSpringStiffness(0.0);
         sbn->setEdgeSpringStiffness(0.0);
         sbn->setDampingCoefficient(0.0);

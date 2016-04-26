@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,59 +34,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SOFTMESHSHAPE_H_
-#define DART_DYNAMICS_SOFTMESHSHAPE_H_
+#ifndef DART_DYNAMICS_DETAIL_RECURSIVEDYNAMICSALGORITHMS_H_
+#define DART_DYNAMICS_DETAIL_RECURSIVEDYNAMICSALGORITHMS_H_
 
-#include <assimp/scene.h>
-#include "dart/dynamics/Shape.h"
-#include <Eigen/Dense>
+#include "dart/math/MathTypes.h"
 
 namespace dart {
 namespace dynamics {
+namespace detail {
 
-class SoftBodyAspect;
-
-// TODO(JS): Implement
-class SoftMeshShape : public Shape
+struct HybridDynamicsStateForBodyNode
 {
-public:
+  /// Spatial gravity force
+  Eigen::Vector6d mSpatialGravityForce;
 
-  friend class SoftBodyAspect;
+  /// Bias force
+  Eigen::Vector6d mBiasForce;
+
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// Constructor
-  explicit SoftMeshShape(SoftBodyAspect* softBodyAspect);
-
-  /// \brief Destructor.
-  virtual ~SoftMeshShape();
-
-  /// \brief
-  const aiMesh* getAssimpMesh() const;
-
-  /// Get the SoftBodyAspect that is associated with this SoftMeshShape
-  const SoftBodyAspect* getSoftBodyAspect() const;
-
-  /// \brief Update positions of the vertices using the parent soft body node.
-  void update();
-
-  // Documentation inherited.
-  Eigen::Matrix3d computeInertia(double mass) const override;
-
-protected:
-  // Documentation inherited.
-  void updateVolume() override;
-
-private:
-  /// \brief Build mesh using SoftBodyNode data
-  void _buildMesh();
-
-  /// \brief
-  SoftBodyAspect* mSoftBodyAspect;
-
-  /// \brief
-  std::unique_ptr<aiMesh> mAssimpMesh;
+  HybridDynamicsStateForBodyNode();
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace detail
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_SOFTMESHSHAPE_H_
+#endif // DART_DYNAMICS_RECURSIVEDYNAMICSALGORITHMS_H_

@@ -41,7 +41,6 @@
 #include "dart/gui/osg/Utils.h"
 
 #include "dart/dynamics/SoftMeshShape.h"
-#include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/PointMass.h"
 #include "dart/dynamics/SimpleFrame.h"
 
@@ -237,7 +236,7 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  const dart::dynamics::SoftBodyNode* bn = mSoftMeshShape->getSoftBodyNode();
+  const dart::dynamics::SoftBodyNode* bn = mSoftMeshShape->getSoftBodyAspect();
 
   if(mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)

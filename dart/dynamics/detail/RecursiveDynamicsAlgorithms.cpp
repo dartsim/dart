@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,59 +34,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SOFTMESHSHAPE_H_
-#define DART_DYNAMICS_SOFTMESHSHAPE_H_
-
-#include <assimp/scene.h>
-#include "dart/dynamics/Shape.h"
-#include <Eigen/Dense>
+#include "dart/dynamics/detail/RecursiveDynamicsAlgorithms.h"
 
 namespace dart {
 namespace dynamics {
+namespace detail {
 
-class SoftBodyAspect;
-
-// TODO(JS): Implement
-class SoftMeshShape : public Shape
+//==============================================================================
+HybridDynamicsStateForBodyNode::HybridDynamicsStateForBodyNode()
+  : mSpatialGravityForce(Eigen::Vector6d::Zero()),
+    mBiasForce(Eigen::Vector6d::Zero())
 {
-public:
+  // Do nothing
+}
 
-  friend class SoftBodyAspect;
-
-  /// Constructor
-  explicit SoftMeshShape(SoftBodyAspect* softBodyAspect);
-
-  /// \brief Destructor.
-  virtual ~SoftMeshShape();
-
-  /// \brief
-  const aiMesh* getAssimpMesh() const;
-
-  /// Get the SoftBodyAspect that is associated with this SoftMeshShape
-  const SoftBodyAspect* getSoftBodyAspect() const;
-
-  /// \brief Update positions of the vertices using the parent soft body node.
-  void update();
-
-  // Documentation inherited.
-  Eigen::Matrix3d computeInertia(double mass) const override;
-
-protected:
-  // Documentation inherited.
-  void updateVolume() override;
-
-private:
-  /// \brief Build mesh using SoftBodyNode data
-  void _buildMesh();
-
-  /// \brief
-  SoftBodyAspect* mSoftBodyAspect;
-
-  /// \brief
-  std::unique_ptr<aiMesh> mAssimpMesh;
-};
-
-}  // namespace dynamics
-}  // namespace dart
-
-#endif  // DART_DYNAMICS_SOFTMESHSHAPE_H_
+} // namespace detail
+} // namespace dynamics
+} // namespace dart

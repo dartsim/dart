@@ -46,15 +46,15 @@ namespace dart {
 namespace dynamics {
 
 class EllipsoidShape;
-class SoftBodyNode;
-
 class PointMassNotifier;
 
 ///
 class PointMass : public common::Subject
 {
 public:
-  friend class SoftBodyNode;
+
+  friend class BodyNode;
+  friend class SoftBodyAspect;
 
   /// State for each PointMass
   struct State
@@ -166,7 +166,7 @@ public:
   std::size_t getIndexInSoftBodyNode() const;
 
   ///
-  void setMass(double _mass);
+  void setMass(double mass);
 
   ///
   double getMass() const;
@@ -383,10 +383,10 @@ public:
   const Eigen::Vector3d& getBodyVelocityChange() const;
 
   ///
-  SoftBodyNode* getParentSoftBodyNode();
+  BodyNode* getParentSoftBodyNode();
 
   ///
-  const SoftBodyNode* getParentSoftBodyNode() const;
+  const BodyNode* getParentSoftBodyNode() const;
 
   /// The number of the generalized coordinates by which this node is
   ///        affected.
@@ -415,7 +415,7 @@ public:
 
 protected:
   /// Constructor used by SoftBodyNode
-  explicit PointMass(SoftBodyNode* _softBodyNode);
+  explicit PointMass(BodyNode* bodyNode);
 
   ///
   void init();
@@ -550,7 +550,7 @@ protected:
 //  Eigen::Matrix<std::size_t, 3, 1> mIndexInSkeleton;
 
   /// SoftBodyNode that this PointMass belongs to
-  SoftBodyNode* mParentSoftBodyNode;
+  BodyNode* mParentSoftBodyNode;
 
   /// Index of this PointMass within the SoftBodyNode
   std::size_t mIndex;
@@ -681,7 +681,7 @@ class PointMassNotifier : public Entity
 {
 public:
 
-  PointMassNotifier(SoftBodyNode* _parentSoftBody, const std::string& _name);
+  PointMassNotifier(BodyNode* parentSoftBody, const std::string& name);
 
   bool needsPartialAccelerationUpdate() const;
 
@@ -706,7 +706,7 @@ protected:
 
   bool mNeedPartialAccelerationUpdate;
 
-  SoftBodyNode* mParentSoftBodyNode;
+  BodyNode* mParentSoftBodyNode;
 
 };
 

@@ -737,8 +737,7 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndBodyNodePair(
 {
   if (jointType == "JointFree")
   {
-    return skeleton->createJointAndBodyNodePair<
-        dynamics::FreeJoint, dynamics::BodyNode>(
+    return skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
           parentBodyNode,
           *static_cast<const dynamics::FreeJoint::Properties*>(
             jointProperties),
@@ -746,8 +745,7 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndBodyNodePair(
   }
   else if (jointType == "JointBall")
   {
-    return skeleton->createJointAndBodyNodePair<
-        dynamics::BallJoint, dynamics::BodyNode>(
+    return skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(
           parentBodyNode,
           *static_cast<const dynamics::BallJoint::Properties*>(
             jointProperties),
@@ -755,8 +753,7 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndBodyNodePair(
   }
   else if (jointType == "JointHardySpicer")
   {
-    return skeleton->createJointAndBodyNodePair<
-        dynamics::UniversalJoint, dynamics::BodyNode>(
+    return skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(
           parentBodyNode,
           *static_cast<const dynamics::UniversalJoint::Properties*>(
             jointProperties),
@@ -764,8 +761,7 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndBodyNodePair(
   }
   else if (jointType == "JointHinge")
   {
-    return skeleton->createJointAndBodyNodePair<
-        dynamics::RevoluteJoint, dynamics::BodyNode>(
+    return skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
           parentBodyNode,
           *static_cast<const dynamics::RevoluteJoint::Properties*>(
             jointProperties),
@@ -773,8 +769,7 @@ std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndBodyNodePair(
   }
   else if (jointType == "JointDummy")
   {
-    return skeleton->createJointAndBodyNodePair<
-        dynamics::WeldJoint, dynamics::BodyNode>(
+    return skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(
           parentBodyNode,
           *static_cast<const dynamics::WeldJoint::Properties*>(
             jointProperties),

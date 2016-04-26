@@ -53,8 +53,9 @@
 #include "dart/dynamics/SmartPointer.h"
 #include "dart/dynamics/TemplatedJacobianNode.h"
 #include "dart/dynamics/SpecializedNodeManager.h"
+#include "dart/dynamics/Marker.h"
+#include "dart/dynamics/EndEffector.h"
 #include "dart/dynamics/detail/BodyNodeAspect.h"
-#include "dart/dynamics/Skeleton.h"
 
 namespace dart {
 namespace dynamics {
@@ -105,13 +106,7 @@ public:
   /// Destructor
   virtual ~BodyNode();
 
-  /// Convert 'this' into a SoftBodyNode pointer if this BodyNode is a
-  /// SoftBodyNode, otherwise return nullptr
-  virtual SoftBodyNode* asSoftBodyNode();
-
-  /// Convert 'const this' into a SoftBodyNode pointer if this BodyNode is a
-  /// SoftBodyNode, otherwise return nullptr
-  virtual const SoftBodyNode* asSoftBodyNode() const;
+  DART_BAKE_SPECIALIZED_ASPECT( SoftBodyAspect )
 
   /// Set the Node::State of all Nodes attached to this BodyNode
   void setAllNodeStates(const AllNodeStates& states);
@@ -312,10 +307,9 @@ public:
     return typename JointType::Properties();
   }
 
-  template <typename NodeType>
-  static typename NodeType::Properties createBodyNodeProperties()
+  static typename BodyNode::Properties createBodyNodeProperties()
   {
-    return typename NodeType::Properties();
+    return typename BodyNode::Properties();
   }
 #endif
   // TODO: Workaround for MSVC bug on template function specialization with
@@ -497,18 +491,18 @@ public:
   const BodyNode* getParentBodyNode() const;
 
   /// Create a Joint and BodyNode pair as a child of this BodyNode
-  template <class JointType, class NodeType = BodyNode>
-  std::pair<JointType*, NodeType*> createChildJointAndBodyNodePair(
+  template <class JointType>
+  std::pair<JointType*, BodyNode*> createChildJointAndBodyNodePair(
 #ifdef _WIN32
       const typename JointType::Properties& _jointProperties
           = BodyNode::createJointProperties<JointType>(),
-      const typename NodeType::Properties& _bodyProperties
-          = BodyNode::createBodyNodeProperties<NodeType>());
+      const typename BodyNode::Properties& _bodyProperties
+          = BodyNode::createBodyNodeProperties());
 #else
       const typename JointType::Properties& _jointProperties
           = typename JointType::Properties(),
-      const typename NodeType::Properties& _bodyProperties
-          = typename NodeType::Properties());
+      const typename BodyNode::Properties& _bodyProperties
+          = typename BodyNode::Properties());
 #endif
   // TODO: Workaround for MSVC bug on template function specialization with
   // default argument. Please see #487 for detail
@@ -851,9 +845,11 @@ public:
   friend class Skeleton;
   friend class Joint;
   friend class EndEffector;
-  friend class SoftBodyNode;
+  friend class SoftBodyAspect;
   friend class PointMass;
   friend class Node;
+  friend class HybridDynamicsForBodyNode;
+  friend class HybridDynamicsForSoftBodyNode;
 
 protected:
 
@@ -881,6 +877,8 @@ protected:
   //----------------------------------------------------------------------------
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
+
+  DART_BAKE_SPECIALIZED_ASPECT( HybridDynamicsForBodyNode )
 
   /// Separate generic child Entities from child BodyNodes for more efficient
   /// update notices

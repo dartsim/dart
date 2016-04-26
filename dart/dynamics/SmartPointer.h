@@ -111,9 +111,6 @@ DART_DYNAMICS_MAKE_BODYNODEPTR(BodyNode)
 // TemplateWeakBodyNodePtr<BodyNode>        --> WeakBodyNodePtr
 // TemplateWeakBodyNodePtr<const BodyNode>  --> WeakConstBodyNodePtr
 
-// SoftBodyNode smart pointers
-DART_DYNAMICS_MAKE_BODYNODEPTR(SoftBodyNode)
-
 
 //-----------------------------------------------------------------------------
 // BodyNode-dependent Smart Pointers

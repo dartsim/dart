@@ -38,7 +38,6 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.h"
 
-#include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/RevoluteJoint.h"
 #include "dart/dynamics/PlanarJoint.h"
 #include "dart/dynamics/Skeleton.h"

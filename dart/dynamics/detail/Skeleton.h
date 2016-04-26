@@ -37,8 +37,6 @@
 #ifndef DART_DYNAMICS_DETAIL_SKELETON_H_
 #define DART_DYNAMICS_DETAIL_SKELETON_H_
 
-#include "dart/dynamics/Skeleton.h"
-
 namespace dart {
 namespace dynamics {
 
@@ -77,17 +75,17 @@ std::pair<JointType*, BodyNode*> Skeleton::cloneBodyNodeTree(
 }
 
 //==============================================================================
-template <class JointType, class NodeType>
-std::pair<JointType*, NodeType*> Skeleton::createJointAndBodyNodePair(
+template <class JointType>
+std::pair<JointType*, BodyNode*> Skeleton::createJointAndBodyNodePair(
     BodyNode* _parent,
     const typename JointType::Properties& _jointProperties,
-    const typename NodeType::Properties& _bodyProperties)
+    const typename common::Composite::MakeProperties<BodyNode>& _bodyProperties)
 {
   JointType* joint = new JointType(_jointProperties);
-  NodeType* node = new NodeType(_parent, joint, _bodyProperties);
+  BodyNode* node = new BodyNode(_parent, joint, _bodyProperties);
   registerBodyNode(node);
 
-  return std::pair<JointType*, NodeType*>(joint, node);
+  return std::pair<JointType*, BodyNode*>(joint, node);
 }
 
 } // namespace dynamics

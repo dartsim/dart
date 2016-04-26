@@ -124,12 +124,12 @@ SkeletonPtr BodyNode::copyAs(const std::string& _skeletonName,
 }
 
 //==============================================================================
-template <class JointType, class NodeType>
-std::pair<JointType*, NodeType*> BodyNode::createChildJointAndBodyNodePair(
+template <class JointType>
+std::pair<JointType*, BodyNode*> BodyNode::createChildJointAndBodyNodePair(
     const typename JointType::Properties& _jointProperties,
-    const typename NodeType::Properties& _bodyProperties)
+    const typename BodyNode::Properties& _bodyProperties)
 {
-  return getSkeleton()->createJointAndBodyNodePair<JointType, NodeType>(
+  return getSkeleton()->createJointAndBodyNodePair<JointType>(
         this, _jointProperties, _bodyProperties);
 }
 

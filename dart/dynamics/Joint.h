@@ -629,7 +629,9 @@ public:
   //----------------------------------------------------------------------------
 
   friend class BodyNode;
-  friend class SoftBodyNode;
+  friend class HybridDynamicsForBodyNode;
+  friend class HybridDynamicsForSoftBodyNode;
+  friend class SoftBodyAspect;
   friend class Skeleton;
 
 protected:

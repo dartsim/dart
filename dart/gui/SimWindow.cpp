@@ -47,7 +47,6 @@
 
 #include "dart/simulation/World.h"
 #include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
 #include "dart/dynamics/CylinderShape.h"
@@ -334,10 +333,9 @@ void SimWindow::drawBodyNode(const dynamics::BodyNode* bodyNode,
 
   if (mShowPointMasses)
   {
-    const auto& softBodyNode
-        = dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode);
-    if (softBodyNode)
-      drawPointMasses(softBodyNode->getPointMasses(), color);
+    auto softBodyAspect = bodyNode->getSoftBodyAspect();
+    if (softBodyAspect)
+      drawPointMasses(softBodyAspect->getPointMasses(), color);
   }
 
   if (mShowMarkers)

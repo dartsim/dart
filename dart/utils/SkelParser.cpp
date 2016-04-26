@@ -53,7 +53,6 @@
 #include "dart/collision/fcl/FCLCollisionDetector.h"
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/ShapeNode.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/CylinderShape.h"
@@ -90,11 +89,14 @@ enum NextResult
 };
 
 using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
+using SoftBodyAspectPropPtr
+    = std::shared_ptr<dynamics::SoftBodyAspect::PropertiesData>;
 using JointPropPtr = std::shared_ptr<dynamics::Joint::Properties>;
 
 struct SkelBodyNode
 {
   BodyPropPtr properties;
+  SoftBodyAspectPropPtr softProperties;
   Eigen::Isometry3d initTransform;
   std::vector<dynamics::Marker::BasicProperties> markers;
   std::string type;
@@ -809,77 +811,75 @@ NextResult getNextJointAndNodePair(
 }
 
 //==============================================================================
-template <typename BodyType>
-std::pair<dynamics::Joint*, dynamics::BodyNode*> createJointAndNodePair(
-    dynamics::SkeletonPtr skeleton,
-    dynamics::BodyNode* parent,
-    const SkelJoint& joint,
-    const typename BodyType::Properties& body)
-{
-  if(std::string("weld") == joint.type)
-    return skeleton->createJointAndBodyNodePair<dynamics::WeldJoint, BodyType>(parent,
-      static_cast<const dynamics::WeldJoint::Properties&>(*joint.properties), body);
-
-  else if(std::string("prismatic") == joint.type)
-    return skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint, BodyType>(parent,
-      static_cast<const dynamics::PrismaticJoint::Properties&>(*joint.properties), body);
-
-  else if(std::string("revolute") == joint.type)
-    return skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint, BodyType>(parent,
-      static_cast<const dynamics::RevoluteJoint::Properties&>(*joint.properties), body);
-
-  else if(std::string("universal") == joint.type)
-    return skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint, BodyType>(parent,
-      static_cast<const dynamics::UniversalJoint::Properties&>(*joint.properties), body);
-
-  else if(std::string("ball") == joint.type)
-    return skeleton->createJointAndBodyNodePair<dynamics::BallJoint, BodyType>(parent,
-      static_cast<const dynamics::BallJoint::Properties&>(*joint.properties), body);
-
-  else if(std::string("euler") == joint.type)
-    return skeleton->createJointAndBodyNodePair<dynamics::EulerJoint, BodyType>(parent,
-      static_cast<const dynamics::EulerJoint::Properties&>(*joint.properties), body);
-
-  else if(std::string("translational") == joint.type)
-    return skeleton->createJointAndBodyNodePair<dynamics::TranslationalJoint, BodyType>(parent,
-      static_cast<const dynamics::TranslationalJoint::Properties&>(*joint.properties), body);
-
-  else if(std::string("planar") == joint.type)
-    return skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint, BodyType>(parent,
-      static_cast<const dynamics::PlanarJoint::Properties&>(*joint.properties), body);
-
-  else if(std::string("free") == joint.type)
-    return skeleton->createJointAndBodyNodePair<dynamics::FreeJoint, BodyType>(parent,
-      static_cast<const dynamics::FreeJoint::Properties&>(*joint.properties), body);
-
-  else
-  {
-    dterr << "[createJointAndNodePair] Unsupported Joint type ("
-          << joint.type << ") for Joint named [" << joint.properties->mName
-          << "]! It will be discarded.\n";
-    return std::pair<dynamics::Joint*, dynamics::BodyNode*>(nullptr, nullptr);
-  }
-}
-
-//==============================================================================
 bool createJointAndNodePair(dynamics::SkeletonPtr skeleton,
                             dynamics::BodyNode* parent,
                             const SkelJoint& joint,
                             const SkelBodyNode& body)
 {
-  std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
-  if(body.type.empty())
-    pair = createJointAndNodePair<dynamics::BodyNode>(skeleton, parent, joint,
-      static_cast<const dynamics::BodyNode::Properties&>(*body.properties));
-  else if(std::string("soft") == body.type)
-    pair = createJointAndNodePair<dynamics::SoftBodyNode>(skeleton, parent, joint,
-      static_cast<const dynamics::SoftBodyNode::Properties&>(*body.properties));
-  else
+  if(!body.type.empty() && std::string("soft") != body.type)
   {
     dterr << "[createJointAndNodePair] Invalid type (" << body.type
           << ") for BodyNode named [" << body.properties->mName << "]\n";
     return false;
   }
+
+  std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
+
+  if(std::string("weld") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(parent,
+      static_cast<const dynamics::WeldJoint::Properties&>(*joint.properties), *body.properties);
+  }
+  else if(std::string("prismatic") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(parent,
+      static_cast<const dynamics::PrismaticJoint::Properties&>(*joint.properties), *body.properties);
+  }
+  else if(std::string("revolute") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(parent,
+      static_cast<const dynamics::RevoluteJoint::Properties&>(*joint.properties), *body.properties);
+  }
+  else if(std::string("universal") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(parent,
+      static_cast<const dynamics::UniversalJoint::Properties&>(*joint.properties), *body.properties);
+  }
+  else if(std::string("ball") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(parent,
+      static_cast<const dynamics::BallJoint::Properties&>(*joint.properties), *body.properties);
+  }
+  else if(std::string("euler") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::EulerJoint>(parent,
+      static_cast<const dynamics::EulerJoint::Properties&>(*joint.properties), *body.properties);
+  }
+  else if(std::string("translational") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::TranslationalJoint>(parent,
+      static_cast<const dynamics::TranslationalJoint::Properties&>(*joint.properties), *body.properties);
+  }
+  else if(std::string("planar") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::PlanarJoint>(parent,
+      static_cast<const dynamics::PlanarJoint::Properties&>(*joint.properties), *body.properties);
+  }
+  else if(std::string("free") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(parent,
+      static_cast<const dynamics::FreeJoint::Properties&>(*joint.properties), *body.properties);
+  }
+  else
+  {
+    dterr << "[createJointAndNodePair] Unsupported Joint type ("
+          << joint.type << ") for Joint named [" << joint.properties->mName
+          << "]! It will be discarded.\n";
+    return false;
+  }
+
+  if (std::string("soft") == body.type)
+    pair.second->createSoftBodyAspect(*body.softProperties);
 
   if(pair.first == nullptr || pair.second == nullptr)
     return false;
@@ -1135,7 +1135,7 @@ SkelBodyNode readSoftBodyNode(
 
   //----------------------------------------------------------------------------
   // Soft properties
-  dynamics::SoftBodyNode::UniqueProperties newSoftBodyNode;
+  dynamics::SoftBodyAspect::PropertiesData newSoftBodyNode;
 
   if (hasElement(_softBodyNodeElement, "soft_shape"))
   {
@@ -1215,9 +1215,12 @@ SkelBodyNode readSoftBodyNode(
   }
 
   SkelBodyNode softBodyNode;
-  softBodyNode.properties =
-      Eigen::make_aligned_shared<dynamics::SoftBodyNode::Properties>(
-          *standardBodyNode.properties, newSoftBodyNode);
+  softBodyNode.properties
+      = Eigen::make_aligned_shared<dynamics::BodyNode::Properties>(
+        *standardBodyNode.properties);
+  softBodyNode.softProperties
+      = Eigen::make_aligned_shared<dynamics::SoftBodyAspect::PropertiesData>(
+        newSoftBodyNode);
 
   softBodyNode.initTransform = standardBodyNode.initTransform;
   softBodyNode.type = "soft";

@@ -274,10 +274,10 @@ public:
     return typename JointType::Properties();
   }
 
-  template <typename NodeType>
-  static typename NodeType::Properties createBodyNodeProperties()
+  static typename common::Composite::MakeProperties<BodyNode>
+  createBodyNodeProperties()
   {
-    return typename NodeType::Properties();
+    return typename common::Composite::MakeProperties<BodyNode>();
   }
 #endif
   // TODO: Workaround for MSVC bug on template function specialization with
@@ -285,19 +285,19 @@ public:
 
   /// Create a Joint and child BodyNode pair of the given types. When creating
   /// a root (parentless) BodyNode, pass in nullptr for the _parent argument.
-  template <class JointType, class NodeType = BodyNode>
-  std::pair<JointType*, NodeType*> createJointAndBodyNodePair(
-    BodyNode* _parent = nullptr,
+  template <class JointType>
+  std::pair<JointType*, BodyNode*> createJointAndBodyNodePair(
+      BodyNode* _parent = nullptr,
 #ifdef _WIN32
       const typename JointType::Properties& _jointProperties
           = Skeleton::createJointProperties<JointType>(),
-      const typename NodeType::Properties& _bodyProperties
-          = Skeleton::createBodyNodeProperties<NodeType>());
+      const typename common::Composite::MakeProperties<BodyNode>& _bodyProperties
+          = Skeleton::createBodyNodeProperties());
 #else
       const typename JointType::Properties& _jointProperties
           = typename JointType::Properties(),
-      const typename NodeType::Properties& _bodyProperties
-          = typename NodeType::Properties());
+      const typename common::Composite::MakeProperties<BodyNode>& _bodyProperties
+          = typename common::Composite::MakeProperties<BodyNode>());
 #endif
   // TODO: Workaround for MSVC bug on template function specialization with
   // default argument. Please see #487 for detail
@@ -322,16 +322,22 @@ public:
   const BodyNode* getRootBodyNode(std::size_t _treeIdx = 0) const;
 
   // Documentation inherited
-  BodyNode* getBodyNode(std::size_t _idx) override;
+  BodyNode* getBodyNode(std::size_t index) override;
 
   // Documentation inherited
-  const BodyNode* getBodyNode(std::size_t _idx) const override;
+  const BodyNode* getBodyNode(std::size_t index) const override;
 
-  /// Get SoftBodyNode whose index is _idx
-  SoftBodyNode* getSoftBodyNode(std::size_t _idx);
+  /// Return the list of BodyNodes containing SoftBodyAspect
+  std::vector<BodyNode*> getSoftBodyNodes();
 
-  /// Get const SoftBodyNode whose index is _idx
-  const SoftBodyNode* getSoftBodyNode(std::size_t _idx) const;
+  /// Return the (const) list of BodyNodes containing SoftBodyAspect
+  std::vector<const BodyNode*> getSoftBodyNodes() const;
+
+  /// Get SoftBodyNode whose index is index
+  BodyNode* getSoftBodyNode(std::size_t index);
+
+  /// Get const SoftBodyNode whose index is index
+  const BodyNode* getSoftBodyNode(std::size_t index) const;
 
   /// Get body node whose name is _name
   BodyNode* getBodyNode(const std::string& _name);
@@ -340,10 +346,10 @@ public:
   const BodyNode* getBodyNode(const std::string& _name) const;
 
   /// Get soft body node whose name is _name
-  SoftBodyNode* getSoftBodyNode(const std::string& _name);
+  BodyNode* getSoftBodyNode(const std::string& _name);
 
   /// Get const soft body node whose name is _name
-  const SoftBodyNode* getSoftBodyNode(const std::string& _name) const;
+  const BodyNode* getSoftBodyNode(const std::string& _name) const;
 
   // Documentation inherited
   const std::vector<BodyNode*>& getBodyNodes() override;
@@ -364,10 +370,10 @@ public:
   std::size_t getNumJoints() const override;
 
   // Documentation inherited
-  Joint* getJoint(std::size_t _idx) override;
+  Joint* getJoint(std::size_t index) override;
 
   // Documentation inherited
-  const Joint* getJoint(std::size_t _idx) const override;
+  const Joint* getJoint(std::size_t index) const override;
 
   /// Get Joint whose name is _name
   Joint* getJoint(const std::string& _name);
@@ -382,10 +388,10 @@ public:
   std::size_t getNumDofs() const override;
 
   // Documentation inherited
-  DegreeOfFreedom* getDof(std::size_t _idx) override;
+  DegreeOfFreedom* getDof(std::size_t index) override;
 
   // Documentation inherited
-  const DegreeOfFreedom* getDof(std::size_t _idx) const override;
+  const DegreeOfFreedom* getDof(std::size_t index) const override;
 
   /// Get degree of freedom (aka generalized coordinate) whose name is _name
   DegreeOfFreedom* getDof(const std::string& _name);
@@ -451,10 +457,10 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void integratePositions(double _dt);
+  void integratePositions(double dt);
 
   // Documentation inherited
-  void integrateVelocities(double _dt);
+  void integrateVelocities(double dt);
 
   /// Return the difference of two generalized positions which are measured in
   /// the configuration space of this Skeleton. If the configuration space is
@@ -597,7 +603,7 @@ public:
                          BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2);
 
   /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
-  void updateBiasImpulse(SoftBodyNode* _softBodyNode,
+  void updateBiasImpulse(BodyNode* _softBodyNode,
                          PointMass* _pointMass,
                          const Eigen::Vector3d& _imp);
 
@@ -874,7 +880,7 @@ public:
   // Friendship
   //----------------------------------------------------------------------------
   friend class BodyNode;
-  friend class SoftBodyNode;
+  friend class SoftBodyAspect;
   friend class Joint;
   template<class> friend class GeometricJoint;
   friend class DegreeOfFreedom;
@@ -1044,16 +1050,16 @@ protected:
   /// Add a Joint to to the Joint NameManager
   const std::string& addEntryToJointNameMgr(Joint* _newJoint, bool _updateDofNames=true);
 
-  /// Add a SoftBodyNode to the SoftBodyNode NameManager
-  void addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode);
-
 protected:
 
   /// The resource-managing pointer to this Skeleton
   std::weak_ptr<Skeleton> mPtr;
 
-  /// List of Soft body node list in the skeleton
-  std::vector<SoftBodyNode*> mSoftBodyNodes;
+  /// Cache of the Soft body node list in the skeleton
+  std::vector<BodyNode*> mSoftBodyNodes;
+
+  /// Cache of the Soft body node list in the skeleton
+  mutable std::vector<const BodyNode*> mConstSoftBodyNodes;
 
   /// NameManager for tracking BodyNodes
   dart::common::NameManager<BodyNode*> mNameMgrForBodyNodes;
@@ -1063,9 +1069,6 @@ protected:
 
   /// NameManager for tracking DegreesOfFreedom
   dart::common::NameManager<DegreeOfFreedom*> mNameMgrForDofs;
-
-  /// NameManager for tracking SoftBodyNodes
-  dart::common::NameManager<SoftBodyNode*> mNameMgrForSoftBodyNodes;
 
   /// WholeBodyIK module for this Skeleton
   std::shared_ptr<WholeBodyIK> mWholeBodyIK;

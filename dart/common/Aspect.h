@@ -183,6 +183,21 @@ protected:
     : AspectImpl(comp, properties, state) { }
 
 //==============================================================================
+#define DART_COMMON_SET_ASPECT_STATE( Type, Name )\
+  inline void set ## Name (const Type & value)\
+  { mState.m ## Name = value; }
+
+//==============================================================================
+#define DART_COMMON_GET_ASPECT_STATE( Type, Name )\
+  inline const Type& get ## Name () const\
+  { return mState.m ## Name; }
+
+//==============================================================================
+#define DART_COMMON_SET_GET_ASPECT_STATE( Type, Name )\
+  DART_COMMON_SET_ASPECT_STATE( Type, Name )\
+  DART_COMMON_GET_ASPECT_STATE( Type, Name )
+
+//==============================================================================
 #define DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM( Type, Name, Update )\
   inline void set ## Name (const Type & value)\
   { mProperties.m ## Name = value; Update(); }

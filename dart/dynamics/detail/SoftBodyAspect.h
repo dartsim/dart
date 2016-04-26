@@ -2,7 +2,7 @@
  * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
+ * Author(s): Jeongseok Lee <jslee02@gmail.com>
  *
  * Georgia Tech Graphics Lab and Humanoid Robotics Lab
  *
@@ -34,12 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_H_
-#define DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_H_
+#ifndef DART_DYNAMICS_DETAIL_SOFTBODYASPECT_H_
+#define DART_DYNAMICS_DETAIL_SOFTBODYASPECT_H_
 
-#include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/PointMass.h"
-#include "dart/common/RequiresAspect.h"
 
 namespace dart {
 namespace dynamics {
@@ -47,26 +45,19 @@ namespace dynamics {
 const double DART_DEFAULT_VERTEX_STIFFNESS = 1.0;
 const double DART_DEFAULT_EDGE_STIFNESS    = 1.0;
 const double DART_DEFAULT_DAMPING_COEFF    = 0.01;
-
-class SoftBodyNode;
-class SoftMeshShape;
+// TODO(JS): remove the trailing 2 when SoftBodyNode is removed
 
 namespace detail {
 
-//==============================================================================
-class SoftBodyAspect;
-
-//==============================================================================
-struct SoftBodyNodeUniqueState
+struct SoftBodyAspectState
 {
   /// Array of States for PointMasses
   std::vector<PointMass::State> mPointStates;
 
-  virtual ~SoftBodyNodeUniqueState() = default;
+  virtual ~SoftBodyAspectState() = default;
 };
 
-//==============================================================================
-struct SoftBodyNodeUniqueProperties
+struct SoftBodyAspectProperties
 {
   /// Spring stiffness for vertex deformation restoring spring force of the
   /// point masses
@@ -86,16 +77,16 @@ struct SoftBodyNodeUniqueProperties
   /// \brief Tri-mesh indexes for rendering.
   std::vector<Eigen::Vector3i> mFaces;
 
-  SoftBodyNodeUniqueProperties(
-      double _Kv = DART_DEFAULT_VERTEX_STIFFNESS,
-      double _Ke = DART_DEFAULT_EDGE_STIFNESS,
-      double _DampCoeff = DART_DEFAULT_DAMPING_COEFF,
-      const std::vector<PointMass::Properties>& _points =
-                                        std::vector<PointMass::Properties>(),
-      const std::vector<Eigen::Vector3i>& _faces =
-                                        std::vector<Eigen::Vector3i>());
+  SoftBodyAspectProperties(
+      double Kv = DART_DEFAULT_VERTEX_STIFFNESS,
+      double Ke = DART_DEFAULT_EDGE_STIFNESS,
+      double DampCoeff = DART_DEFAULT_DAMPING_COEFF,
+      const std::vector<PointMass::Properties>& points
+          = std::vector<PointMass::Properties>(),
+      const std::vector<Eigen::Vector3i>& faces
+          = std::vector<Eigen::Vector3i>());
 
-  virtual ~SoftBodyNodeUniqueProperties() = default;
+  virtual ~SoftBodyAspectProperties() = default;
 
   /// Add a PointMass to this Properties struct
   void addPointMass(const PointMass::Properties& _properties);
@@ -107,25 +98,8 @@ struct SoftBodyNodeUniqueProperties
   void addFace(const Eigen::Vector3i& _newFace);
 };
 
-//==============================================================================
-struct SoftBodyNodeProperties
-    : BodyNode::Properties, SoftBodyNodeUniqueProperties
-{
-  SoftBodyNodeProperties(
-      const BodyNode::Properties& _bodyProperties = BodyNode::Properties(),
-      const SoftBodyNodeUniqueProperties& _softProperties =
-                                          SoftBodyNodeUniqueProperties());
-
-  virtual ~SoftBodyNodeProperties() = default;
-};
-
-//==============================================================================
-using SoftBodyNodeBase = common::EmbedStateAndPropertiesOnTopOf<
-    SoftBodyNode, SoftBodyNodeUniqueState, SoftBodyNodeUniqueProperties,
-    BodyNode>;
-
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_SOFTBODYNODEASPECT_H_
+#endif // DART_DYNAMICS_DETAIL_SOFTBODYASPECT_H_

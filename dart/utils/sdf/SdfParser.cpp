@@ -49,7 +49,6 @@
 #include "dart/common/ResourceRetriever.h"
 #include "dart/common/Uri.h"
 #include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/SoftBodyNode.h"
 #include "dart/dynamics/BoxShape.h"
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/EllipsoidShape.h"
@@ -75,13 +74,16 @@ namespace SdfParser {
 namespace {
 
 using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
+using SoftBodyAspectPropPtr
+    = std::shared_ptr<dynamics::SoftBodyAspect::PropertiesData>;
 
 struct SDFBodyNode
 {
-    BodyPropPtr properties;
-    Eigen::Isometry3d initTransform;
-    std::string type;
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  BodyPropPtr properties;
+  SoftBodyAspectPropPtr softProperties;
+  Eigen::Isometry3d initTransform;
+  std::string type;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 using JointPropPtr = std::shared_ptr<dynamics::Joint::Properties>;
@@ -138,7 +140,6 @@ dynamics::SkeletonPtr makeSkeleton(
     tinyxml2::XMLElement* skeletonElement,
     Eigen::Isometry3d& skeletonFrame);
 
-template <class NodeType>
 std::pair<dynamics::Joint*,dynamics::BodyNode*> createJointAndNodePair(
     dynamics::SkeletonPtr skeleton,
     dynamics::BodyNode* parent,
@@ -157,7 +158,7 @@ SDFBodyNode readBodyNode(
     const std::string& skelPath,
     const common::ResourceRetrieverPtr& retriever);
 
-dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
+dynamics::SoftBodyAspect::PropertiesData readSoftBodyProperties(
     tinyxml2::XMLElement* softBodyNodeElement);
 
 dynamics::ShapePtr readShape(
@@ -503,27 +504,64 @@ dynamics::SkeletonPtr readSkeleton(
 //==============================================================================
 bool createPair(dynamics::SkeletonPtr skeleton,
                 dynamics::BodyNode* parent,
-                const SDFJoint& newJoint,
-                const SDFBodyNode& newBody)
+                const SDFJoint& joint,
+                const SDFBodyNode& node)
 {
+  if(!node.type.empty() && std::string("soft") != node.type)
+  {
+    dterr << "[createJointAndNodePair] Invalid type (" << node.type
+          << ") for BodyNode named [" << node.properties->mName << "]\n";
+    return false;
+  }
+
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
 
-  if(newBody.type.empty())
+  if (std::string("prismatic") == joint.type)
   {
-    pair = createJointAndNodePair<dynamics::BodyNode>(
-          skeleton, parent, newJoint, newBody);
+    pair = skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(parent,
+          static_cast<const dynamics::PrismaticJoint::Properties&>(*joint.properties),
+          *node.properties);
   }
-  else if(std::string("soft") == newBody.type)
+  else if (std::string("revolute") == joint.type)
   {
-    pair = createJointAndNodePair<dynamics::SoftBodyNode>(
-          skeleton, parent, newJoint, newBody);
+    pair = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(parent,
+          static_cast<const dynamics::RevoluteJoint::Properties&>(*joint.properties),
+          *node.properties);
+  }
+  else if (std::string("screw") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint>(parent,
+          static_cast<const dynamics::ScrewJoint::Properties&>(*joint.properties),
+          *node.properties);
+  }
+  else if (std::string("revolute2") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(parent,
+          static_cast<const dynamics::UniversalJoint::Properties&>(*joint.properties),
+          *node.properties);
+  }
+  else if (std::string("ball") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(parent,
+          static_cast<const dynamics::BallJoint::Properties&>(*joint.properties),
+          *node.properties);
+  }
+  else if (std::string("free") == joint.type)
+  {
+    pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(parent,
+          static_cast<const dynamics::FreeJoint::Properties&>(*joint.properties),
+          *node.properties);
   }
   else
   {
-    dterr << "[SdfParser::createPair] Unsupported Link type: "
-          << newBody.type << "\n";
+    dterr << "[createJointAndNodePair] Unsupported Joint type ("
+          << joint.type << ") for Joint named [" << joint.properties->mName
+          << "]! It will be discarded.\n";
     return false;
   }
+
+  if (std::string("soft") == node.type)
+    pair.second->createSoftBodyAspect(*node.softProperties);
 
   if(!pair.first || !pair.second)
     return false;
@@ -610,43 +648,62 @@ dynamics::SkeletonPtr makeSkeleton(
 }
 
 //==============================================================================
-template <class NodeType>
 std::pair<dynamics::Joint*,dynamics::BodyNode*> createJointAndNodePair(
     dynamics::SkeletonPtr skeleton,
     dynamics::BodyNode* parent,
     const SDFJoint& joint,
     const SDFBodyNode& node)
 {
-  const std::string& type = joint.type;
+  std::pair<dynamics::Joint*, dynamics::BodyNode*> jointAndBodyNode;
 
-  if (std::string("prismatic") == type)
-    return skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(parent,
+  if (std::string("prismatic") == joint.type)
+  {
+    jointAndBodyNode = skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(parent,
           static_cast<const dynamics::PrismaticJoint::Properties&>(*joint.properties),
-          static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("revolute") == type)
-    return skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(parent,
+          *node.properties);
+  }
+  else if (std::string("revolute") == joint.type)
+  {
+    jointAndBodyNode = skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(parent,
           static_cast<const dynamics::RevoluteJoint::Properties&>(*joint.properties),
-          static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("screw") == type)
-    return skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint>(parent,
+          *node.properties);
+  }
+  else if (std::string("screw") == joint.type)
+  {
+    jointAndBodyNode = skeleton->createJointAndBodyNodePair<dynamics::ScrewJoint>(parent,
           static_cast<const dynamics::ScrewJoint::Properties&>(*joint.properties),
-          static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("revolute2") == type)
-    return skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(parent,
+          *node.properties);
+  }
+  else if (std::string("revolute2") == joint.type)
+  {
+    jointAndBodyNode = skeleton->createJointAndBodyNodePair<dynamics::UniversalJoint>(parent,
           static_cast<const dynamics::UniversalJoint::Properties&>(*joint.properties),
-          static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("ball") == type)
-    return skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(parent,
+          *node.properties);
+  }
+  else if (std::string("ball") == joint.type)
+  {
+    jointAndBodyNode = skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(parent,
           static_cast<const dynamics::BallJoint::Properties&>(*joint.properties),
-          static_cast<const typename NodeType::Properties&>(*node.properties));
-  else if (std::string("free") == type)
-    return skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(parent,
+          *node.properties);
+  }
+  else if (std::string("free") == joint.type)
+  {
+    jointAndBodyNode = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(parent,
           static_cast<const dynamics::FreeJoint::Properties&>(*joint.properties),
-          static_cast<const typename NodeType::Properties&>(*node.properties));
+          *node.properties);
+  }
+  else
+  {
+    dterr << "[createJointAndNodePair] Unsupported Joint type ("
+          << joint.type << ") for Joint named [" << joint.properties->mName
+          << "]! It will be discarded.\n";
+    return std::pair<dynamics::Joint*, dynamics::BodyNode*>(nullptr, nullptr);
+  }
 
-  dterr << "[SdfParser::createJointAndNodePair] Unsupported Joint type encountered: "
-        << type << ". Please report this as a bug! We will now quit parsing.\n";
-  return std::pair<dynamics::Joint*, dynamics::BodyNode*>(nullptr, nullptr);
+  if (std::string("soft") == node.type)
+    jointAndBodyNode.second->createSoftBodyAspect(*node.softProperties);
+
+  return jointAndBodyNode;
 }
 
 //==============================================================================
@@ -765,15 +822,18 @@ SDFBodyNode readBodyNode(
   {
     auto softProperties = readSoftBodyProperties(bodyNodeElement);
 
-    sdfBodyNode.properties =
-        Eigen::make_aligned_shared<dynamics::SoftBodyNode::Properties>(
-          properties, softProperties);
+    sdfBodyNode.properties
+        = Eigen::make_aligned_shared<dynamics::BodyNode::Properties>(
+          properties);
+    sdfBodyNode.softProperties
+        = Eigen::make_aligned_shared<dynamics::SoftBodyAspect::PropertiesData>(
+          softProperties);
     sdfBodyNode.type = "soft";
   }
   else
   {
-    sdfBodyNode.properties =
-        Eigen::make_aligned_shared<dynamics::BodyNode::Properties>(properties);
+    sdfBodyNode.properties
+        = std::make_shared<dynamics::BodyNode::Properties>(properties);
     sdfBodyNode.type = "";
   }
 
@@ -781,7 +841,7 @@ SDFBodyNode readBodyNode(
 }
 
 //==============================================================================
-dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
+dynamics::SoftBodyAspect::PropertiesData readSoftBodyProperties(
     tinyxml2::XMLElement* softBodyNodeElement)
 {
   //---------------------------------- Note ------------------------------------
@@ -791,7 +851,7 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
   //----------------------------------------------------------------------------
   assert(softBodyNodeElement != nullptr);
 
-  dynamics::SoftBodyNode::UniqueProperties softProperties;
+  dynamics::SoftBodyAspect::PropertiesData softProperties;
 
   //----------------------------------------------------------------------------
   // Soft properties
@@ -845,21 +905,15 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
 
     // kv
     if (hasElement(softShapeEle, "kv"))
-    {
       softProperties.mKv = getValueDouble(softShapeEle, "kv");
-    }
 
     // ke
     if (hasElement(softShapeEle, "ke"))
-    {
       softProperties.mKe = getValueDouble(softShapeEle, "ke");
-    }
 
     // damp
     if (hasElement(softShapeEle, "damp"))
-    {
       softProperties.mDampCoeff = getValueDouble(softShapeEle, "damp");
-    }
   }
 
   return softProperties;

@@ -77,6 +77,25 @@ const T* Composite::get() const
 }
 
 //==============================================================================
+template <class T, typename... Args>
+T* Composite::getOrCreate(Args&&... args)
+{
+  auto aspect = get<T>();
+  if(aspect)
+    return aspect;
+
+  return createAspect<T>(std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <class T, typename... Args>
+const T* Composite::getOrCreate(Args&&... args) const
+{
+  return const_cast<Composite*>(this)->getOrCreate<T>(
+        std::forward<Args>(args)...);
+}
+
+//==============================================================================
 template <class T>
 void Composite::set(const T* aspect)
 {

@@ -55,7 +55,6 @@
 #include "dart/dynamics/InverseKinematics.h"
 #include "dart/dynamics/Marker.h"
 #include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SoftBodyNode.h"
 
 #define SET_ALL_FLAGS( X ) for(auto& cache : mTreeCache) cache.mDirty. X = true;\
                            mSkelCache.mDirty. X = true;
@@ -581,8 +580,6 @@ const std::string& Skeleton::setName(const std::string& _name)
 
   mNameMgrForBodyNodes.setManagerName(
         "Skeleton::BodyNode | "+mAspectProperties.mName);
-  mNameMgrForSoftBodyNodes.setManagerName(
-        "Skeleton::SoftBodyNode | "+mAspectProperties.mName);
   mNameMgrForJoints.setManagerName(
         "Skeleton::Joint | "+mAspectProperties.mName);
   mNameMgrForDofs.setManagerName(
@@ -624,15 +621,6 @@ const std::string& Skeleton::addEntryToJointNameMgr(Joint* _newJoint,
     _newJoint->updateDegreeOfFreedomNames();
 
   return _newJoint->mAspectProperties.mName;
-}
-
-//==============================================================================
-void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode)
-{
-  // Note: This doesn't need the same checks as BodyNode and Joint, because
-  // its name has already been resolved against all the BodyNodes, which includes
-  // all SoftBodyNodes.
-  mNameMgrForSoftBodyNodes.addName(_newNode->getName(), _newNode);
 }
 
 //==============================================================================
@@ -713,13 +701,13 @@ std::size_t Skeleton::getNumBodyNodes() const
 //==============================================================================
 std::size_t Skeleton::getNumRigidBodyNodes() const
 {
-  return mSkelCache.mBodyNodes.size() - mSoftBodyNodes.size();
+  return mSkelCache.mBodyNodes.size() - getSoftBodyNodes().size();
 }
 
 //==============================================================================
 std::size_t Skeleton::getNumSoftBodyNodes() const
 {
-  return mSoftBodyNodes.size();
+  return getSoftBodyNodes().size();
 }
 
 //==============================================================================
@@ -758,31 +746,59 @@ const BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx) const
 }
 
 //==============================================================================
-BodyNode* Skeleton::getBodyNode(std::size_t _idx)
+BodyNode* Skeleton::getBodyNode(std::size_t index)
 {
   return common::getVectorObjectIfAvailable<BodyNode*>(
-        _idx, mSkelCache.mBodyNodes);
+        index, mSkelCache.mBodyNodes);
 }
 
 //==============================================================================
-const BodyNode* Skeleton::getBodyNode(std::size_t _idx) const
+const BodyNode* Skeleton::getBodyNode(std::size_t index) const
 {
   return common::getVectorObjectIfAvailable<BodyNode*>(
-        _idx, mSkelCache.mBodyNodes);
+        index, mSkelCache.mBodyNodes);
 }
 
 //==============================================================================
-SoftBodyNode* Skeleton::getSoftBodyNode(std::size_t _idx)
+std::vector<BodyNode*> Skeleton::getSoftBodyNodes()
 {
-  return common::getVectorObjectIfAvailable<SoftBodyNode*>(
-        _idx, mSoftBodyNodes);
+  mSoftBodyNodes.reserve(mSkelCache.mBodyNodes.size());
+
+  for (auto bodyNode : mSkelCache.mBodyNodes)
+  {
+    if (bodyNode->hasSoftBodyAspect())
+      mSoftBodyNodes.push_back(bodyNode);
+  }
+
+  return mSoftBodyNodes;
 }
 
 //==============================================================================
-const SoftBodyNode* Skeleton::getSoftBodyNode(std::size_t _idx) const
+std::vector<const BodyNode*> Skeleton::getSoftBodyNodes() const
 {
-  return common::getVectorObjectIfAvailable<SoftBodyNode*>(
-        _idx, mSoftBodyNodes);
+  mConstSoftBodyNodes.reserve(mSkelCache.mBodyNodes.size());
+
+  for (auto bodyNode : mSkelCache.mBodyNodes)
+  {
+    if (bodyNode->hasSoftBodyAspect())
+      mConstSoftBodyNodes.push_back(bodyNode);
+  }
+
+  return mConstSoftBodyNodes;
+}
+
+//==============================================================================
+BodyNode* Skeleton::getSoftBodyNode(std::size_t index)
+{
+  return common::getVectorObjectIfAvailable<BodyNode*>(
+        index, getSoftBodyNodes());
+}
+
+//==============================================================================
+const BodyNode* Skeleton::getSoftBodyNode(std::size_t index) const
+{
+  return common::getVectorObjectIfAvailable<const BodyNode*>(
+        index, getSoftBodyNodes());
 }
 
 //==============================================================================
@@ -798,15 +814,20 @@ const BodyNode* Skeleton::getBodyNode(const std::string& _name) const
 }
 
 //==============================================================================
-SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name)
+BodyNode* Skeleton::getSoftBodyNode(const std::string& _name)
 {
-  return mNameMgrForSoftBodyNodes.getObject(_name);
+  auto bodyNode = getBodyNode(_name);
+
+  if (bodyNode && bodyNode->hasSoftBodyAspect())
+    return bodyNode;
+
+  return nullptr;
 }
 
 //==============================================================================
-const SoftBodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
+const BodyNode* Skeleton::getSoftBodyNode(const std::string& _name) const
 {
-  return mNameMgrForSoftBodyNodes.getObject(_name);
+  return const_cast<Skeleton*>(this)->getSoftBodyNode(_name);
 }
 
 //==============================================================================
@@ -902,10 +923,10 @@ std::size_t Skeleton::getNumJoints() const
 }
 
 //==============================================================================
-Joint* Skeleton::getJoint(std::size_t _idx)
+Joint* Skeleton::getJoint(std::size_t index)
 {
   BodyNode* bn = common::getVectorObjectIfAvailable<BodyNode*>(
-                   _idx, mSkelCache.mBodyNodes);
+                   index, mSkelCache.mBodyNodes);
   if (bn)
     return bn->getParentJoint();
 
@@ -913,9 +934,9 @@ Joint* Skeleton::getJoint(std::size_t _idx)
 }
 
 //==============================================================================
-const Joint* Skeleton::getJoint(std::size_t _idx) const
+const Joint* Skeleton::getJoint(std::size_t index) const
 {
-  return const_cast<Skeleton*>(this)->getJoint(_idx);
+  return const_cast<Skeleton*>(this)->getJoint(index);
 }
 
 //==============================================================================
@@ -944,17 +965,17 @@ std::size_t Skeleton::getNumDofs() const
 }
 
 //==============================================================================
-DegreeOfFreedom* Skeleton::getDof(std::size_t _idx)
+DegreeOfFreedom* Skeleton::getDof(std::size_t index)
 {
   return common::getVectorObjectIfAvailable<DegreeOfFreedom*>(
-        _idx, mSkelCache.mDofs);
+        index, mSkelCache.mDofs);
 }
 
 //==============================================================================
-const DegreeOfFreedom* Skeleton::getDof(std::size_t _idx) const
+const DegreeOfFreedom* Skeleton::getDof(std::size_t index) const
 {
   return common::getVectorObjectIfAvailable<DegreeOfFreedom*>(
-        _idx, mSkelCache.mDofs);
+        index, mSkelCache.mDofs);
 }
 
 //==============================================================================
@@ -1295,28 +1316,34 @@ DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, ShapeNode )
 DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, EndEffector )
 
 //==============================================================================
-void Skeleton::integratePositions(double _dt)
+void Skeleton::integratePositions(double dt)
 {
-  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-    mSkelCache.mBodyNodes[i]->getParentJoint()->integratePositions(_dt);
-
-  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+  for (auto& bodyNode : mSkelCache.mBodyNodes)
   {
-    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
-      mSoftBodyNodes[i]->getPointMass(j)->integratePositions(_dt);
+    bodyNode->getParentJoint()->integratePositions(dt);
+
+    auto softBodyAspect = bodyNode->getSoftBodyAspect();
+    if (softBodyAspect)
+    {
+      for (auto pointMass : softBodyAspect->mPointMasses)
+        pointMass->integratePositions(dt);
+    }
   }
 }
 
 //==============================================================================
-void Skeleton::integrateVelocities(double _dt)
+void Skeleton::integrateVelocities(double dt)
 {
-  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-    mSkelCache.mBodyNodes[i]->getParentJoint()->integrateVelocities(_dt);
-
-  for (std::size_t i = 0; i < mSoftBodyNodes.size(); ++i)
+  for (auto& bodyNode : mSkelCache.mBodyNodes)
   {
-    for (std::size_t j = 0; j < mSoftBodyNodes[i]->getNumPointMasses(); ++j)
-      mSoftBodyNodes[i]->getPointMass(j)->integrateVelocities(_dt);
+    bodyNode->getParentJoint()->integrateVelocities(dt);
+
+    auto softBodyAspect = bodyNode->getSoftBodyAspect();
+    if (softBodyAspect)
+    {
+      for (auto pointMass : softBodyAspect->mPointMasses)
+        pointMass->integrateVelocities(dt);
+    }
   }
 }
 
@@ -1956,13 +1983,6 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   addEntryToBodyNodeNameMgr(_newBodyNode);
   registerJoint(_newBodyNode->getParentJoint());
 
-  SoftBodyNode* softBodyNode = dynamic_cast<SoftBodyNode*>(_newBodyNode);
-  if (softBodyNode)
-  {
-    mSoftBodyNodes.push_back(softBodyNode);
-    addEntryToSoftBodyNodeNameMgr(softBodyNode);
-  }
-
   _newBodyNode->init(getPtr());
 
   BodyNode::NodeMap& nodeMap = _newBodyNode->mNodeMap;
@@ -2166,16 +2186,6 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
       mTreeCache[tree].mBodyNodes[i]->mIndexInTree = i;
 
     updateCacheDimensions(tree);
-  }
-
-  SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(_oldBodyNode);
-  if(soft)
-  {
-    mNameMgrForSoftBodyNodes.removeName(soft->getName());
-
-    mSoftBodyNodes.erase(std::remove(mSoftBodyNodes.begin(),
-                                     mSoftBodyNodes.end(), soft),
-                         mSoftBodyNodes.end());
   }
 }
 
@@ -3593,17 +3603,13 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode1,
 }
 
 //==============================================================================
-void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
-                                 PointMass* _pointMass,
-                                 const Eigen::Vector3d& _imp)
+void Skeleton::updateBiasImpulse(BodyNode* softBodyNode,
+                                 PointMass* pointMass,
+                                 const Eigen::Vector3d& imp)
 {
   // Assertions
-  assert(_softBodyNode != nullptr);
+  assert(softBodyNode != nullptr);
   assert(getNumDofs() > 0);
-
-  // This skeleton should contain _bodyNode
-  assert(std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), _softBodyNode)
-         != mSoftBodyNodes.end());
 
 #ifndef NDEBUG
   // All the constraint impulse should be zero
@@ -3613,11 +3619,11 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
 #endif
 
   // Set impulse to _bodyNode
-  Eigen::Vector3d oldConstraintImpulse =_pointMass->getConstraintImpulses();
-  _pointMass->setConstraintImpulse(_imp, true);
+  Eigen::Vector3d oldConstraintImpulse = pointMass->getConstraintImpulses();
+  pointMass->setConstraintImpulse(imp, true);
 
   // Prepare cache data
-  BodyNode* it = _softBodyNode;
+  BodyNode* it = softBodyNode;
   while (it != nullptr)
   {
     it->updateBiasImpulse();
@@ -3625,7 +3631,7 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
   }
 
   // TODO(JS): Do we need to backup and restore the original value?
-  _pointMass->setConstraintImpulse(oldConstraintImpulse);
+  pointMass->setConstraintImpulse(oldConstraintImpulse);
 }
 
 //==============================================================================
@@ -3713,10 +3719,10 @@ DART_SUPPRESS_DEPRECATED_BEGIN
     bodyNode->setColliding(false);
 DART_SUPPRESS_DEPRECATED_END
 
-    auto softBodyNode = bodyNode->asSoftBodyNode();
-    if (softBodyNode)
+    auto softBodyAspect = bodyNode->getSoftBodyAspect();
+    if (softBodyAspect)
     {
-      auto& pointMasses = softBodyNode->getPointMasses();
+      auto& pointMasses = softBodyAspect->getPointMasses();
 
       for (auto pointMass : pointMasses)
         pointMass->setColliding(false);
