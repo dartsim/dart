@@ -34,16 +34,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/XmlHelpers.h"
+#include "dart/utils/XmlHelpers.hpp"
 
 #include <iostream>
 #include <vector>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/common/LocalResourceRetriever.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/common/LocalResourceRetriever.hpp"
 
 namespace dart {
 namespace utils {

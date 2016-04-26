@@ -37,8 +37,8 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include "dart/dynamics/Linkage.h"
-#include "dart/dynamics/FreeJoint.h"
+#include "dart/dynamics/Linkage.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
 
 namespace dart {
 namespace dynamics {

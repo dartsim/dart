@@ -36,7 +36,7 @@
  */
 
 #include <cmath>
-#include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/BoxShape.hpp"
 
 namespace dart {
 namespace dynamics {

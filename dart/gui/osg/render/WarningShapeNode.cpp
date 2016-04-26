@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/osg/render/WarningShapeNode.h"
-#include "dart/gui/osg/ShapeFrameNode.h"
+#include "dart/gui/osg/render/WarningShapeNode.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
 
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/Entity.h"
-#include "dart/common/Console.h"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/Entity.hpp"
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace gui {

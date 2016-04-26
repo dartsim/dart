@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Console.h"
+#include "dart/common/Console.hpp"
 
 #include <iostream>
 

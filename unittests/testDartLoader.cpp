@@ -36,7 +36,7 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "dart/utils/urdf/DartLoader.h"
+#include "dart/utils/urdf/DartLoader.hpp"
 
 using dart::common::Uri;
 using dart::utils::DartLoader;

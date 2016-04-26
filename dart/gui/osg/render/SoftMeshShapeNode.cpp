@@ -37,13 +37,13 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 
-#include "dart/gui/osg/render/SoftMeshShapeNode.h"
-#include "dart/gui/osg/Utils.h"
+#include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
-#include "dart/dynamics/SoftMeshShape.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SimpleFrame.h"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/PointMass.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
 namespace gui {

@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/jointConstraints/MyWindow.h"
+#include "examples/jointConstraints/MyWindow.hpp"
 
 using namespace dart;
 using namespace math;

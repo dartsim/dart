@@ -39,11 +39,11 @@
 #include <osg/Light>
 #include <osg/Material>
 
-#include "dart/gui/osg/render/EllipsoidShapeNode.h"
-#include "dart/gui/osg/Utils.h"
+#include "dart/gui/osg/render/EllipsoidShapeNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/SimpleFrame.h"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
 namespace gui {

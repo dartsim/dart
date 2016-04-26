@@ -34,12 +34,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SoftMeshShape.h"
+#include "dart/dynamics/SoftMeshShape.hpp"
 
-#include "dart/common/Console.h"
+#include "dart/common/Console.hpp"
 
-#include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/dynamics/PointMass.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 
 namespace dart {
 namespace dynamics {

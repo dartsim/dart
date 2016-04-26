@@ -36,7 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/VskParser.h"
+#include "dart/utils/VskParser.hpp"
 
 // Standard Library
 #include <map>
@@ -46,10 +46,10 @@
 #include <Eigen/Dense>
 
 // Local Files
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/Uri.h"
-#include "dart/dynamics/dynamics.h"
-#include "dart/utils/XmlHelpers.h"
+#include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/dynamics/dynamics.hpp"
+#include "dart/utils/XmlHelpers.hpp"
 
 #define SCALE_VSK 1.0e-3
 
@@ -863,9 +863,7 @@ bool readMarker(const tinyxml2::XMLElement* markerEle,
     return false;
   }
 
-  dynamics::Marker* marker = new dynamics::Marker(name, position, rgba,
-                                                  bodyNode);
-  bodyNode->addMarker(marker);
+  bodyNode->createMarker(name, position, rgba);
 
   return true;
 }

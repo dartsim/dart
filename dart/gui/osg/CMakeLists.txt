@@ -1,7 +1,7 @@
 include_directories(SYSTEM ${OPENSCENEGRAPH_INCLUDE_DIRS})
 
 # Search all header and source files
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
 set(dart_gui_osg_hdrs ${hdrs})
@@ -15,7 +15,7 @@ target_link_libraries(dart-gui-osg dart-gui ${OPENSCENEGRAPH_LIBRARIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})
-list(APPEND header_names "render/render.h")
+list(APPEND header_names "render/render.hpp")
 dart_generate_include_header_list(
   gui_osg_headers
   "dart/gui/osg/"
@@ -23,14 +23,14 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/osg.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/osg.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/osg.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
 )
 
 add_subdirectory(examples EXCLUDE_FROM_ALL)
 
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osg.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
   DESTINATION include/dart/gui/osg
   COMPONENT headers
 )

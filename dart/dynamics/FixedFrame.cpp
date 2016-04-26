@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "FixedFrame.h"
+#include "dart/dynamics/FixedFrame.hpp"
 
 namespace dart {
 namespace dynamics {

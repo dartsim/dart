@@ -36,14 +36,14 @@
 
 #include <memory>
 
-#include "dart/optimizer/nlopt/NloptSolver.h"
+#include "dart/optimizer/nlopt/NloptSolver.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/common/Console.h"
-#include "dart/common/StlHelpers.h"
-#include "dart/optimizer/Problem.h"
-#include "dart/optimizer/Function.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/StlHelpers.hpp"
+#include "dart/optimizer/Problem.hpp"
+#include "dart/optimizer/Function.hpp"
 
 namespace dart {
 namespace optimizer {

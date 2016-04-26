@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SingleDofJoint.h"
+#include "dart/dynamics/SingleDofJoint.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -34,8 +34,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ShapeNode.h"
-#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
 namespace dynamics {

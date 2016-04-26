@@ -34,7 +34,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PlanarJoint.h"
+#include "dart/dynamics/PlanarJoint.hpp"
 
 namespace dart {
 namespace dynamics {

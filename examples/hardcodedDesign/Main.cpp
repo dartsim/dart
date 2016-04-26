@@ -45,9 +45,9 @@
  * direction.
  */
 
-#include "dart/dart.h"
+#include "dart/dart.hpp"
 
-#include "examples/hardcodedDesign/MyWindow.h"
+#include "examples/hardcodedDesign/MyWindow.hpp"
 
 int main(int argc, char* argv[]) {
   // Create Left Leg skeleton
