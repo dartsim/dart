@@ -760,7 +760,7 @@ const BodyNode* Skeleton::getBodyNode(std::size_t _idx) const
 }
 
 //==============================================================================
-std::vector<BodyNode*> Skeleton::getSoftBodyNodes()
+const std::vector<BodyNode*>& Skeleton::getSoftBodyNodes()
 {
   mSoftBodyNodes.clear();
   mSoftBodyNodes.reserve(mSkelCache.mBodyNodes.size());
@@ -775,7 +775,7 @@ std::vector<BodyNode*> Skeleton::getSoftBodyNodes()
 }
 
 //==============================================================================
-std::vector<const BodyNode*> Skeleton::getSoftBodyNodes() const
+const std::vector<const BodyNode*>& Skeleton::getSoftBodyNodes() const
 {
   mConstSoftBodyNodes.clear();
   mConstSoftBodyNodes.reserve(mSkelCache.mBodyNodes.size());

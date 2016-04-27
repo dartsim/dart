@@ -328,10 +328,10 @@ public:
   const BodyNode* getBodyNode(std::size_t _idx) const override;
 
   /// Return the list of BodyNodes containing SoftBodyAspect
-  std::vector<BodyNode*> getSoftBodyNodes();
+  const std::vector<BodyNode*>& getSoftBodyNodes();
 
   /// Return the (const) list of BodyNodes containing SoftBodyAspect
-  std::vector<const BodyNode*> getSoftBodyNodes() const;
+  const std::vector<const BodyNode*>& getSoftBodyNodes() const;
 
   /// Get SoftBodyNode whose index is _idx
   BodyNode* getSoftBodyNode(std::size_t index);

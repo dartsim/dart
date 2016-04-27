@@ -217,7 +217,6 @@ void createAspects(T* comp)
     return this->template releaseAspect<TypeName>();\
   }
 
-
 //==============================================================================
 #define DART_BAKE_SPECIALIZED_ASPECT(AspectName)\
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(AspectName, AspectName);
