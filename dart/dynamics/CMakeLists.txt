@@ -28,7 +28,7 @@ install(
 )
 
 install(
-  FILES ${detail}
+  FILES ${detail_hdrs}
   DESTINATION include/dart/dynamics/detail
   COMPONENT headers
 )

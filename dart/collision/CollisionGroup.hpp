@@ -105,7 +105,7 @@ public:
   /// Add ShapeFrames of Skeleton, and also add another ShapeFrames of other
   /// various objects.
   template <typename... Others>
-  void addShapeFramesOf(const dynamics::Skeleton* skeleton,
+  void addShapeFramesOf(const dynamics::MetaSkeleton* skeleton,
                         const Others*... others);
 
   /// Do nothing. This function is for terminating the recursive variadic
