@@ -320,7 +320,7 @@ BodyNode* addSoftBody(const SkeletonPtr& /*chain*/, const std::string& /*name*/,
 
   // Create the Joint and Body pair
   // Lesson 2c
-  SoftBodyNode* bn = nullptr;
+  BodyNode* bn = nullptr;
 
   // Zero out the inertia for the underlying BodyNode
   // Lesson 2d

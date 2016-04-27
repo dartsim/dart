@@ -89,8 +89,7 @@ void MyWindow::drawWorld() const
   if (mImpulseDuration > 0)
   {
     dart::dynamics::SkeletonPtr Skeleton = mWorld->getSkeleton(1);
-    dart::dynamics::SoftBodyNode* softBodyNode
-        = Skeleton->getSoftBodyNode(3);
+    dart::dynamics::BodyNode* softBodyNode = Skeleton->getSoftBodyNode(3);
     softBodyNode->addExtForce(mForceOnRigidBody);
     Eigen::Vector3d poa
         = softBodyNode->getTransform() * Eigen::Vector3d(0.0, 0.0, 0.0);

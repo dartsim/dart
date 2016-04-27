@@ -37,40 +37,44 @@
 #include "dart/dynamics/SoftMeshShape.hpp"
 
 #include "dart/common/Console.hpp"
-
 #include "dart/dynamics/PointMass.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SoftBodyAspect.hpp"
 
 namespace dart {
 namespace dynamics {
 
-SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
+//==============================================================================
+SoftMeshShape::SoftMeshShape(SoftBodyAspect* softBodyAspect)
   : Shape(SOFT_MESH),
-    mSoftBodyNode(_softBodyNode),
+    mSoftBodyAspect(softBodyAspect),
     mAssimpMesh(nullptr)
 {
-  assert(_softBodyNode != nullptr);
+  assert(softBodyAspect != nullptr);
   // Build mesh here using soft body node
   // TODO(JS): Not implemented.
   _buildMesh();
   mVariance = DYNAMIC_VERTICES;
 }
 
+//==============================================================================
 SoftMeshShape::~SoftMeshShape()
 {
   // Do nothing
 }
 
+//==============================================================================
 const aiMesh* SoftMeshShape::getAssimpMesh() const
 {
   return mAssimpMesh.get();
 }
 
-const SoftBodyNode* SoftMeshShape::getSoftBodyNode() const
+//==============================================================================
+const SoftBodyAspect* SoftMeshShape::getSoftBodyAspect() const
 {
-  return mSoftBodyNode;
+  return mSoftBodyAspect;
 }
 
+//==============================================================================
 Eigen::Matrix3d SoftMeshShape::computeInertia(double /*mass*/) const
 {
   dtwarn << "[SoftMeshShape::computeInertia] Not implemented yet.\n";
@@ -79,16 +83,18 @@ Eigen::Matrix3d SoftMeshShape::computeInertia(double /*mass*/) const
   return Eigen::Matrix3d::Zero();
 }
 
+//==============================================================================
 void SoftMeshShape::updateVolume()
 {
   // TODO(JS): Not implemented.
 }
 
+//==============================================================================
 void SoftMeshShape::_buildMesh()
 {
   // Get number of vertices and faces from soft body node
-  int nVertices = mSoftBodyNode->getNumPointMasses();
-  int nFaces    = mSoftBodyNode->getNumFaces();
+  int nVertices = mSoftBodyAspect->getNumPointMasses();
+  int nFaces    = mSoftBodyAspect->getNumFaces();
 
   // Create new aiMesh
   mAssimpMesh = common::make_unique<aiMesh>();
@@ -100,7 +106,7 @@ void SoftMeshShape::_buildMesh()
   aiVector3D itAIVector3d;
   for (int i = 0; i < nVertices; ++i)
   {
-    PointMass* itPointMass        = mSoftBodyNode->getPointMass(i);
+    PointMass* itPointMass        = mSoftBodyAspect->getPointMass(i);
     const Eigen::Vector3d& vertex = itPointMass->getRestingPosition();
     itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
     mAssimpMesh->mVertices[i] = itAIVector3d;
@@ -112,7 +118,7 @@ void SoftMeshShape::_buildMesh()
   mAssimpMesh->mFaces = new aiFace[nFaces];
   for (int i = 0; i < nFaces; ++i)
   {
-    Eigen::Vector3i itFace = mSoftBodyNode->getFace(i);
+    Eigen::Vector3i itFace = mSoftBodyAspect->getFace(i);
     aiFace* itAIFace = &mAssimpMesh->mFaces[i];
     itAIFace->mNumIndices = 3;
     itAIFace->mIndices    = new unsigned int[3];
@@ -122,14 +128,15 @@ void SoftMeshShape::_buildMesh()
   }
 }
 
+//==============================================================================
 void SoftMeshShape::update()
 {
-  std::size_t nVertices = mSoftBodyNode->getNumPointMasses();
+  std::size_t nVertices = mSoftBodyAspect->getNumPointMasses();
 
   aiVector3D itAIVector3d;
   for (std::size_t i = 0; i < nVertices; ++i)
   {
-    PointMass* itPointMass        = mSoftBodyNode->getPointMass(i);
+    PointMass* itPointMass        = mSoftBodyAspect->getPointMass(i);
     const Eigen::Vector3d& vertex = itPointMass->getLocalPosition();
     itAIVector3d.Set(vertex[0], vertex[1], vertex[2]);
     mAssimpMesh->mVertices[i] = itAIVector3d;

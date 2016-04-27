@@ -38,7 +38,6 @@
 
 #include "dart/common/Deprecated.hpp"
 #include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 
@@ -798,10 +797,10 @@ DART_SUPPRESS_DEPRECATED_BEGIN
     bodyNode->setColliding(false);
 DART_SUPPRESS_DEPRECATED_END
 
-    auto softBodyNode = bodyNode->asSoftBodyNode();
-    if (softBodyNode)
+    auto softBodyAspect = bodyNode->getSoftBodyAspect();
+    if (softBodyAspect)
     {
-      auto& pointMasses = softBodyNode->getPointMasses();
+      auto& pointMasses = softBodyAspect->getPointMasses();
 
       for (auto pointMass : pointMasses)
         pointMass->setColliding(false);

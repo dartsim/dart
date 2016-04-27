@@ -52,7 +52,6 @@ namespace dart {
 namespace dynamics {
 
 class BodyNode;
-class SoftBodyNode;
 class PointMass;
 class Joint;
 class DegreeOfFreedom;

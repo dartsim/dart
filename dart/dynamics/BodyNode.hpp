@@ -105,13 +105,7 @@ public:
   /// Destructor
   virtual ~BodyNode();
 
-  /// Convert 'this' into a SoftBodyNode pointer if this BodyNode is a
-  /// SoftBodyNode, otherwise return nullptr
-  virtual SoftBodyNode* asSoftBodyNode();
-
-  /// Convert 'const this' into a SoftBodyNode pointer if this BodyNode is a
-  /// SoftBodyNode, otherwise return nullptr
-  virtual const SoftBodyNode* asSoftBodyNode() const;
+  DART_BAKE_SPECIALIZED_ASPECT( SoftBodyAspect )
 
   /// Set the Node::State of all Nodes attached to this BodyNode
   void setAllNodeStates(const AllNodeStates& states);
@@ -158,7 +152,7 @@ public:
 
   /// Set name. If the name is already taken, this will return an altered
   /// version which will be used by the Skeleton
-  const std::string& setName(const std::string& _name) override;
+  const std::string& setName(const std::string& name) override;
 
   // Documentation inherited
   const std::string& getName() const override;
@@ -312,10 +306,10 @@ public:
     return typename JointType::Properties();
   }
 
-  template <typename NodeType>
-  static typename NodeType::Properties createBodyNodeProperties()
+  static typename common::Composite::MakeProperties<BodyNode>
+  createBodyNodeProperties()
   {
-    return typename NodeType::Properties();
+    return typename common::Composite::MakeProperties<BodyNode>();
   }
 #endif
   // TODO: Workaround for MSVC bug on template function specialization with
@@ -497,18 +491,18 @@ public:
   const BodyNode* getParentBodyNode() const;
 
   /// Create a Joint and BodyNode pair as a child of this BodyNode
-  template <class JointType, class NodeType = BodyNode>
-  std::pair<JointType*, NodeType*> createChildJointAndBodyNodePair(
+  template <class JointType>
+  std::pair<JointType*, BodyNode*> createChildJointAndBodyNodePair(
 #ifdef _WIN32
       const typename JointType::Properties& _jointProperties
           = BodyNode::createJointProperties<JointType>(),
-      const typename NodeType::Properties& _bodyProperties
-          = BodyNode::createBodyNodeProperties<NodeType>());
+      const typename BodyNode::Properties& _bodyProperties
+          = BodyNode::createBodyNodeProperties());
 #else
       const typename JointType::Properties& _jointProperties
           = typename JointType::Properties(),
-      const typename NodeType::Properties& _bodyProperties
-          = typename NodeType::Properties());
+      const typename BodyNode::Properties& _bodyProperties
+          = typename BodyNode::Properties());
 #endif
   // TODO: Workaround for MSVC bug on template function specialization with
   // default argument. Please see #487 for detail
@@ -850,8 +844,8 @@ public:
 
   friend class Skeleton;
   friend class Joint;
+  friend class SoftBodyAspect;
   friend class EndEffector;
-  friend class SoftBodyNode;
   friend class PointMass;
   friend class Node;
 

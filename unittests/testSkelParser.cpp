@@ -38,7 +38,6 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.hpp"
 
-#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -169,12 +168,12 @@ TEST(SkelParser, RigidAndSoftBodies)
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
   EXPECT_TRUE(skel1 != nullptr);
-  EXPECT_EQ(static_cast<int>(skel1->getNumBodyNodes()), 2);
-  EXPECT_EQ(static_cast<int>(skel1->getNumRigidBodyNodes()), 1);
-  EXPECT_EQ(static_cast<int>(skel1->getNumSoftBodyNodes()), 1);
+  EXPECT_EQ(skel1->getNumBodyNodes(), 2u);
+  EXPECT_EQ(skel1->getNumRigidBodyNodes(), 1u);
+  EXPECT_EQ(skel1->getNumSoftBodyNodes(), 1u);
 
-  SoftBodyNode* sbn = skel1->getSoftBodyNode(0);
-  EXPECT_TRUE(static_cast<int>(sbn->getNumPointMasses()) > 0);
+  auto sbn = skel1->getSoftBodyNode(0)->getSoftBodyAspect();
+  EXPECT_TRUE(sbn->getNumPointMasses() > 0u);
 
   world->step();
 }

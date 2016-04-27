@@ -49,7 +49,6 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/Chain.hpp"
 #include "dart/dynamics/Marker.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/EndEffector.hpp"
 
 namespace dart {
@@ -243,19 +242,9 @@ BodyNode::~BodyNode()
   mNodeMap.clear();
   mNodeDestructors.clear();
 
+  removeSoftBodyAspect();
+
   delete mParentJoint;
-}
-
-//==============================================================================
-SoftBodyNode* BodyNode::asSoftBodyNode()
-{
-  return nullptr;
-}
-
-//==============================================================================
-const SoftBodyNode* BodyNode::asSoftBodyNode() const
-{
-  return nullptr;
 }
 
 //==============================================================================
@@ -405,15 +394,9 @@ const std::string& BodyNode::setName(const std::string& _name)
   if(skel)
   {
     skel->mNameMgrForBodyNodes.removeName(mAspectProperties.mName);
-    SoftBodyNode* softnode = dynamic_cast<SoftBodyNode*>(this);
-    if(softnode)
-      skel->mNameMgrForSoftBodyNodes.removeName(mAspectProperties.mName);
 
     mAspectProperties.mName = _name;
     skel->addEntryToBodyNodeNameMgr(this);
-
-    if(softnode)
-      skel->addEntryToSoftBodyNodeNameMgr(softnode);
   }
   else
   {
@@ -482,7 +465,13 @@ void BodyNode::setMass(double _mass)
 //==============================================================================
 double BodyNode::getMass() const
 {
-  return mAspectProperties.mInertia.getMass();
+  auto mass = mAspectProperties.mInertia.getMass();
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+    mass += softBodyAspect->getMass();
+
+  return mass;
 }
 
 //==============================================================================
@@ -1548,6 +1537,15 @@ void BodyNode::updateTransform()
   // Calling getWorldTransform will update the transform if an update is needed
   getWorldTransform();
   assert(math::verifyTransform(mWorldTransform));
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updateTransform();
+
+    softBodyAspect->mNotifier->clearTransformNotice();
+  }
 }
 
 //==============================================================================
@@ -1556,6 +1554,15 @@ void BodyNode::updateVelocity()
   // Calling getSpatialVelocity will update the velocity if an update is needed
   getSpatialVelocity();
   assert(!math::isNan(mVelocity));
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updateVelocity();
+
+    softBodyAspect->mNotifier->clearVelocityNotice();
+  }
 }
 
 //==============================================================================
@@ -1565,6 +1572,15 @@ void BodyNode::updatePartialAcceleration() const
   mParentJoint->setPartialAccelerationTo(mPartialAcceleration,
                                          getSpatialVelocity());
   mIsPartialAccelerationDirty = false;
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updatePartialAcceleration();
+
+    softBodyAspect->mNotifier->clearPartialAccelerationNotice();
+  }
 }
 
 //==============================================================================
@@ -1574,16 +1590,33 @@ void BodyNode::updateAccelerationID()
   getSpatialAcceleration();
   // Verification
   assert(!math::isNan(mAcceleration));
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updateAccelerationID();
+
+    softBodyAspect->mNotifier->clearAccelerationNotice();
+  }
 }
 
 //==============================================================================
-void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
-                                        bool _withExternalForces)
+void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& gravity,
+                                        bool withExternalForces)
 {
   // Gravity force
   const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updateTransmittedForceID(gravity, withExternalForces);
+  }
+
   if (mAspectProperties.mGravityMode == true)
-    mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
+    mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),gravity);
   else
     mFgravity.setZero();
 
@@ -1591,7 +1624,7 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
   mF.noalias() = mI * getSpatialAcceleration();
 
   // External force
-  if (_withExternalForces)
+  if (withExternalForces)
     mF -= mAspectState.mFext;
 
   // Verification
@@ -1614,17 +1647,32 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
                         childBodyNode->getBodyForce());
   }
 
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+    {
+      mF.head<3>() += pointMass->getLocalPosition().cross(pointMass->mF);
+      mF.tail<3>() += pointMass->mF;
+    }
+  }
+
   // Verification
   assert(!math::isNan(mF));
 }
 
 //==============================================================================
-void BodyNode::updateArtInertia(double _timeStep) const
+void BodyNode::updateArtInertia(double timeStep) const
 {
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updateArtInertiaFD(timeStep);
+  }
+
   // Set spatial inertia to the articulated body inertia
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
-  mArtInertia = mI;
-  mArtInertiaImplicit = mI;
+  mArtInertia = mAspectProperties.mInertia.getSpatialTensor();
+  mArtInertiaImplicit = mArtInertia;
 
   // and add child articulated body inertia
   for (const auto& child : mChildBodyNodes)
@@ -1632,20 +1680,31 @@ void BodyNode::updateArtInertia(double _timeStep) const
     Joint* childJoint = child->getParentJoint();
 
     childJoint->addChildArtInertiaTo(mArtInertia, child->mArtInertia);
-    childJoint->addChildArtInertiaImplicitTo(mArtInertiaImplicit,
-                                             child->mArtInertiaImplicit);
+    childJoint->addChildArtInertiaImplicitTo(
+          mArtInertiaImplicit, child->mArtInertiaImplicit);
+  }
+
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+    {
+      softBodyAspect->addPiToArtInertia(
+            pointMass->getLocalPosition(), pointMass->mPi);
+      softBodyAspect->addPiToArtInertiaImplicit(
+            pointMass->getLocalPosition(), pointMass->mImplicitPi);
+    }
   }
 
   // Verification
-//  assert(!math::isNan(mArtInertia));
+  assert(!math::isNan(mArtInertia));
   assert(!math::isNan(mArtInertiaImplicit));
 
   // Update parent joint's inverse of projected articulated body inertia
   mParentJoint->updateInvProjArtInertia(mArtInertia);
-  mParentJoint->updateInvProjArtInertiaImplicit(mArtInertiaImplicit, _timeStep);
+  mParentJoint->updateInvProjArtInertiaImplicit(mArtInertiaImplicit, timeStep);
 
   // Verification
-//  assert(!math::isNan(mArtInertia));
+  assert(!math::isNan(mArtInertia));
   assert(!math::isNan(mArtInertiaImplicit));
 }
 
@@ -1691,6 +1750,13 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
 //==============================================================================
 void BodyNode::updateBiasImpulse()
 {
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updateBiasImpulseFD();
+  }
+
   // Update impulsive bias force
   mBiasImpulse = -mConstraintImpulse;
 
@@ -1702,6 +1768,16 @@ void BodyNode::updateBiasImpulse()
     childJoint->addChildBiasImpulseTo(mBiasImpulse,
                                       childBodyNode->getArticulatedInertia(),
                                       childBodyNode->mBiasImpulse);
+  }
+
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+    {
+      mBiasImpulse.head<3>()
+          += pointMass->getLocalPosition().cross(pointMass->mImpBeta);
+      mBiasImpulse.tail<3>() += pointMass->mImpBeta;
+    }
   }
 
   // Verification
@@ -1718,6 +1794,13 @@ void BodyNode::updateTransmittedForceFD()
   mF.noalias() += getArticulatedInertiaImplicit() * getSpatialAcceleration();
 
   assert(!math::isNan(mF));
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updateTransmittedForce();
+  }
 }
 
 //==============================================================================
@@ -1727,6 +1810,13 @@ void BodyNode::updateTransmittedImpulse()
   mImpF.noalias() += getArticulatedInertia() * mDelV;
 
   assert(!math::isNan(mImpF));
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updateTransmittedImpulse();
+  }
 }
 
 //==============================================================================
@@ -1747,6 +1837,15 @@ void BodyNode::updateAccelerationFD()
 
   // Verify the spatial acceleration of this body
   assert(!math::isNan(mAcceleration));
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updateAccelerationFD();
+
+    softBodyAspect->mNotifier->clearAccelerationNotice();
+  }
 }
 
 //==============================================================================
@@ -1777,16 +1876,33 @@ void BodyNode::updateVelocityChangeFD()
 
   // Verify the spatial velocity change of this body
   assert(!math::isNan(mDelV));
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updateVelocityChangeFD();
+  }
 }
 
 //==============================================================================
-void BodyNode::updateJointForceID(double _timeStep,
-                                  bool _withDampingForces,
-                                  bool _withSpringForces)
+void BodyNode::updateJointForceID(double timeStep,
+                                  bool withDampingForces,
+                                  bool withSpringForces)
 {
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+    {
+      pointMass->updateJointForceID(
+            timeStep, withDampingForces, withSpringForces);
+    }
+  }
+
   assert(mParentJoint != nullptr);
-  mParentJoint->updateForceID(mF, _timeStep,
-                              _withDampingForces, _withSpringForces);
+  mParentJoint->updateForceID(mF, timeStep,
+                              withDampingForces, withSpringForces);
 }
 
 //==============================================================================
@@ -1807,15 +1923,22 @@ void BodyNode::updateJointImpulseFD()
 }
 
 //==============================================================================
-void BodyNode::updateConstrainedTerms(double _timeStep)
+void BodyNode::updateConstrainedTerms(double timeStep)
 {
   // 1. dq = dq + del_dq
   // 2. ddq = ddq + del_dq / dt
   // 3. tau = tau + imp / dt
-  mParentJoint->updateConstrainedTerms(_timeStep);
+  mParentJoint->updateConstrainedTerms(timeStep);
 
   //
-  mF += mImpF / _timeStep;
+  mF += mImpF / timeStep;
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updateConstrainedTermsFD(timeStep);
+  }
 }
 
 //==============================================================================
@@ -1823,12 +1946,26 @@ void BodyNode::clearExternalForces()
 {
   mAspectState.mFext.setZero();
   SKEL_SET_FLAGS(mExternalForces);
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->clearExtForce();
+  }
 }
 
 //==============================================================================
 void BodyNode::clearInternalForces()
 {
   mParentJoint->resetForces();
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->resetForces();
+  }
 }
 
 //==============================================================================
@@ -1879,6 +2016,10 @@ void BodyNode::clearConstraintImpulse()
   mParentJoint->resetConstraintImpulses();
   mParentJoint->resetTotalImpulses();
   mParentJoint->resetVelocityChanges();
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+    softBodyAspect->clearConstraintImpulse();
 }
 
 //==============================================================================
@@ -1975,6 +2116,14 @@ void BodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
                                            const Eigen::Vector3d& _gravity)
 {
   const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->aggregateGravityForceVector(_g, _gravity);
+  }
+
   if (mAspectProperties.mGravityMode == true)
     mG_F = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
   else
@@ -1985,6 +2134,15 @@ void BodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
   {
     mG_F += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
                           (*it)->mG_F);
+  }
+
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+    {
+      mG_F.head<3>() += pointMass->getLocalPosition().cross(pointMass->mG_F);
+      mG_F.tail<3>() += pointMass->mG_F;
+    }
   }
 
   std::size_t nGenCoords = mParentJoint->getNumDofs();
@@ -2046,6 +2204,13 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
 //==============================================================================
 void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
 {
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->aggregateExternalForces(_Fext);
+  }
+
   mFext_F = mAspectState.mFext;
 
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
@@ -2053,6 +2218,15 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
   {
     mFext_F += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
                              (*it)->mFext_F);
+  }
+
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+    {
+      mFext_F.head<3>() += pointMass->getLocalPosition().cross(pointMass->mFext);
+      mFext_F.tail<3>() += pointMass->mFext;
+    }
   }
 
   std::size_t nGenCoords = mParentJoint->getNumDofs();
@@ -2181,6 +2355,13 @@ void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col,
 //==============================================================================
 void BodyNode::updateInvMassMatrix()
 {
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->updateInvMassMatrix();
+  }
+
   //
   mInvM_c.setZero();
 
@@ -2190,6 +2371,16 @@ void BodyNode::updateInvMassMatrix()
   {
     (*it)->getParentJoint()->addChildBiasForceForInvMassMatrix(
           mInvM_c, (*it)->getArticulatedInertia(), (*it)->mInvM_c);
+  }
+
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+    {
+      mInvM_c.head<3>() += pointMass->getLocalPosition().cross(
+            pointMass->mBiasForceForInvMeta);
+      mInvM_c.tail<3>() += pointMass->mBiasForceForInvMeta;
+    }
   }
 
   // Verification
@@ -2221,13 +2412,13 @@ void BodyNode::updateInvAugMassMatrix()
 }
 
 //==============================================================================
-void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col)
+void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& InvMCol, std::size_t col)
 {
   if (mParentBodyNode)
   {
     //
     mParentJoint->getInvMassMatrixSegment(
-          _InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
+          InvMCol, col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
 
     //
     mInvM_U = math::AdInvT(mParentJoint->getLocalTransform(),
@@ -2237,7 +2428,7 @@ void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _co
   {
     //
     mParentJoint->getInvMassMatrixSegment(
-          _InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
+          InvMCol, col, getArticulatedInertia(), Eigen::Vector6d::Zero());
 
     //
     mInvM_U.setZero();
@@ -2245,6 +2436,13 @@ void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _co
 
   //
   mParentJoint->addInvMassMatrixSegmentTo(mInvM_U);
+
+  auto softBodyAspect = getSoftBodyAspect();
+  if (softBodyAspect)
+  {
+    for (auto& pointMass : softBodyAspect->mPointMasses)
+      pointMass->aggregateInvMassMatrix(InvMCol, col);
+  }
 }
 
 //==============================================================================

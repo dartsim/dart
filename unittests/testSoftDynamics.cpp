@@ -42,9 +42,9 @@
 
 #include "dart/common/Console.hpp"
 #include "dart/math/Constants.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
@@ -310,7 +310,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       // Set random states
       Skeleton::Configuration x = softSkel->getConfiguration();
-      for (std::size_t k = 0u; k < softSkel->getNumDofs(); ++k)
+      for (auto k = 0u; k < softSkel->getNumDofs(); ++k)
       {
         x.mPositions[k] = random(lb, ub);
         x.mVelocities[k] = random(lb, ub);
@@ -396,7 +396,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       for (int k = 0; k < nSoftBodyNodes; ++k)
       {
         assert(softSkel != nullptr);
-        dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
+        auto sbn = softSkel->getSoftBodyNode(k)->getSoftBodyAspect();
         oldKv[k] = sbn->getVertexSpringStiffness();
         oldKe[k] = sbn->getEdgeSpringStiffness();
         oldD[k]  = sbn->getDampingCoefficient();
@@ -408,7 +408,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
       for (int k = 0; k < nSoftBodyNodes; ++k)
       {
         assert(softSkel != nullptr);
-        dynamics::SoftBodyNode* sbn = softSkel->getSoftBodyNode(k);
+        auto sbn = softSkel->getSoftBodyNode(k)->getSoftBodyAspect();
         sbn->setVertexSpringStiffness(0.0);
         sbn->setEdgeSpringStiffness(0.0);
         sbn->setDampingCoefficient(0.0);

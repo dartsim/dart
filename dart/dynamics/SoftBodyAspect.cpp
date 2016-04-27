@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Jeongseok Lee <jslee02@gmail.com>
@@ -34,460 +34,169 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SoftBodyAspect.hpp"
 
-#include <map>
-#include <string>
-#include <vector>
-
-#include "dart/common/Console.hpp"
-#include "dart/math/Helpers.hpp"
-#include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/Shape.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-
-#include "dart/dynamics/PointMass.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
 //==============================================================================
-SoftBodyNodeUniqueProperties::SoftBodyNodeUniqueProperties(
-    double _Kv, double _Ke, double _DampCoeff,
-    const std::vector<PointMass::Properties>& _points,
-    const std::vector<Eigen::Vector3i>& _faces)
-  : mKv(_Kv),
-    mKe(_Ke),
-    mDampCoeff(_DampCoeff),
-    mPointProps(_points),
-    mFaces(_faces)
+SoftBodyAspect::SoftBodyAspect(
+    common::Composite* composite,
+    const StateData& state,
+    const PropertiesData& properties)
+  : AspectImpl(composite, state, properties)
 {
-  // Do nothing
-}
-
-//==============================================================================
-void SoftBodyNodeUniqueProperties::addPointMass(
-    const PointMass::Properties& _properties)
-{
-  mPointProps.push_back(_properties);
-}
-
-//==============================================================================
-bool SoftBodyNodeUniqueProperties::connectPointMasses(std::size_t i1, std::size_t i2)
-{
-  if(i1 >= mPointProps.size() || i2 >= mPointProps.size())
-  {
-    if(mPointProps.size() == 0)
-      dtwarn << "[SoftBodyNode::Properties::addConnection] Attempting to "
-             << "add a connection between indices " << i1 << " and " << i2
-             << ", but there are currently no entries in mPointProps!\n";
-    else
-      dtwarn << "[SoftBodyNode::Properties::addConnection] Attempting to "
-             << "add a connection between indices " << i1 << " and " << i2
-             << ", but the entries in mPointProps only go up to "
-             << mPointProps.size()-1 << "!\n";
-    return false;
-  }
-
-  mPointProps[i1].mConnectedPointMassIndices.push_back(i2);
-  mPointProps[i2].mConnectedPointMassIndices.push_back(i1);
-
-  return true;
-}
-
-//==============================================================================
-void SoftBodyNodeUniqueProperties::addFace(const Eigen::Vector3i& _newFace)
-{
-  assert(_newFace[0] != _newFace[1]);
-  assert(_newFace[1] != _newFace[2]);
-  assert(_newFace[2] != _newFace[0]);
-  assert(0 <= _newFace[0] && static_cast<std::size_t>(_newFace[0]) < mPointProps.size());
-  assert(0 <= _newFace[1] && static_cast<std::size_t>(_newFace[1]) < mPointProps.size());
-  assert(0 <= _newFace[2] && static_cast<std::size_t>(_newFace[2]) < mPointProps.size());
-  mFaces.push_back(_newFace);
-}
-
-//==============================================================================
-SoftBodyNodeProperties::SoftBodyNodeProperties(
-    const BodyNode::Properties& _bodyProperties,
-    const SoftBodyNodeUniqueProperties& _softProperties)
-  : BodyNode::Properties(_bodyProperties),
-    SoftBodyNodeUniqueProperties(_softProperties)
-{
-  // Do nothing
-}
-
-} // namespace detail
-
-//==============================================================================
-SoftBodyNode::~SoftBodyNode()
-{
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    delete mPointMasses[i];
-
-  delete mNotifier;
-}
-
-//==============================================================================
-SoftBodyNode* SoftBodyNode::asSoftBodyNode()
-{
-  return this;
-}
-
-//==============================================================================
-const SoftBodyNode* SoftBodyNode::asSoftBodyNode() const
-{
-  return this;
-}
-
-//==============================================================================
-void SoftBodyNode::setProperties(const Properties& _properties)
-{
-  BodyNode::setProperties(
-        static_cast<const BodyNode::Properties&>(_properties));
-
-  setProperties(static_cast<const UniqueProperties&>(_properties));
-}
-
-//==============================================================================
-void SoftBodyNode::setProperties(const UniqueProperties& _properties)
-{
-  setAspectProperties(_properties);
-}
-
-//==============================================================================
-void SoftBodyNode::setAspectState(const AspectState& state)
-{
-  if(mAspectState.mPointStates == state.mPointStates)
-    return;
-
-  mAspectState = state;
-  mNotifier->notifyTransformUpdate();
-}
-
-//==============================================================================
-void SoftBodyNode::setAspectProperties(const AspectProperties& properties)
-{
-  setVertexSpringStiffness(properties.mKv);
-  setEdgeSpringStiffness(properties.mKe);
-  setDampingCoefficient(properties.mDampCoeff);
-
-  if(properties.mPointProps != mAspectProperties.mPointProps
-     || properties.mFaces != mAspectProperties.mFaces)
-  {
-    mAspectProperties.mPointProps = properties.mPointProps;
-    mAspectProperties.mFaces = properties.mFaces;
-    configurePointMasses(mSoftShapeNode.lock());
-  }
-}
-
-//==============================================================================
-SoftBodyNode::Properties SoftBodyNode::getSoftBodyNodeProperties() const
-{
-  return Properties(getBodyNodeProperties(), mAspectProperties);
-}
-
-//==============================================================================
-void SoftBodyNode::copy(const SoftBodyNode& _otherSoftBodyNode)
-{
-  if(this == &_otherSoftBodyNode)
-    return;
-
-  setProperties(_otherSoftBodyNode.getSoftBodyNodeProperties());
-}
-
-//==============================================================================
-void SoftBodyNode::copy(const SoftBodyNode* _otherSoftBodyNode)
-{
-  if(nullptr == _otherSoftBodyNode)
-    return;
-
-  copy(*_otherSoftBodyNode);
-}
-
-//==============================================================================
-SoftBodyNode& SoftBodyNode::operator=(const SoftBodyNode& _otherSoftBodyNode)
-{
-  copy(_otherSoftBodyNode);
-  return *this;
-}
-
-//==============================================================================
-std::size_t SoftBodyNode::getNumPointMasses() const
-{
-  return mPointMasses.size();
-}
-
-//==============================================================================
-PointMass* SoftBodyNode::getPointMass(std::size_t _idx)
-{
-  assert(_idx < mPointMasses.size());
-  if(_idx < mPointMasses.size())
-    return mPointMasses[_idx];
-
-  return nullptr;
-}
-
-//==============================================================================
-const PointMass* SoftBodyNode::getPointMass(std::size_t _idx) const
-{
-  return const_cast<SoftBodyNode*>(this)->getPointMass(_idx);
-}
-
-//==============================================================================
-const std::vector<PointMass*>& SoftBodyNode::getPointMasses() const
-{
-  return mPointMasses;
-}
-
-//==============================================================================
-SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
-                           Joint* _parentJoint,
-                           const Properties& _properties)
-  : Entity(Frame::World(), false),
-    Frame(Frame::World()),
-    Base(std::make_tuple(_parentBodyNode, _parentJoint, _properties)),
-    mSoftShapeNode(nullptr)
-{
-  createSoftBodyAspect();
-  mNotifier = new PointMassNotifier(this, getName()+"_PointMassNotifier");
-  ShapeNode* softNode = createShapeNodeWith<
-      VisualAspect, CollisionAspect, DynamicsAspect>(
-        std::make_shared<SoftMeshShape>(this), getName()+"_SoftMeshShape");
-  mSoftShapeNode = softNode;
-
   // Dev's Note: We do this workaround (instead of just using setProperties(~))
   // because mSoftShapeNode cannot be used until init(SkeletonPtr) has been
   // called on this BodyNode, but that happens after construction is finished.
-  mAspectProperties = _properties;
-  configurePointMasses(softNode);
-  mNotifier->notifyTransformUpdate();
+  mState = state;
+  mProperties = properties;
 }
 
 //==============================================================================
-BodyNode* SoftBodyNode::clone(BodyNode* _parentBodyNode,
-                              Joint* _parentJoint, bool cloneNodes) const
+SoftBodyAspect::SoftBodyAspect(
+    common::Composite* composite,
+    const PropertiesData& properties,
+    const StateData state)
+  : AspectImpl(composite, properties, state)
 {
-  SoftBodyNode* clonedBn = new SoftBodyNode(
-        _parentBodyNode, _parentJoint, getSoftBodyNodeProperties());
-
-  clonedBn->matchAspects(this);
-
-  if(cloneNodes)
-    clonedBn->matchNodes(this);
-
-  return clonedBn;
+  // Dev's Note: We do this workaround (instead of just using setProperties(~))
+  // because mSoftShapeNode cannot be used until init(SkeletonPtr) has been
+  // called on this BodyNode, but that happens after construction is finished.
+  mState = state;
+  mProperties = properties;
 }
 
 //==============================================================================
-void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
+PointMassNotifier* SoftBodyAspect::getNotifier()
 {
-  const UniqueProperties& softProperties = mAspectProperties;
+  return mNotifier.get();
+}
 
-  std::size_t newCount = softProperties.mPointProps.size();
-  std::size_t oldCount = mPointMasses.size();
+//==============================================================================
+const PointMassNotifier* SoftBodyAspect::getNotifier() const
+{
+  return mNotifier.get();
+}
 
-  if(newCount == oldCount)
+//==============================================================================
+double SoftBodyAspect::getMass() const
+{
+  auto mass = 0.0;
+
+  for (const auto& pointMass : mPointMasses)
+    mass += pointMass->getMass();
+
+  return mass;
+}
+
+//==============================================================================
+void SoftBodyAspect::setVertexSpringStiffness(double kv)
+{
+  assert(0.0 <= kv);
+
+  if (kv == mProperties.mKv)
     return;
 
-  // Adjust the number of PointMass objects since that has changed
-  if(newCount < oldCount)
-  {
-    for(std::size_t i = newCount; i < oldCount; ++i)
-      delete mPointMasses[i];
-    mPointMasses.resize(newCount);
-  }
-  else if(oldCount < newCount)
-  {
-    mPointMasses.resize(newCount);
-    for(std::size_t i = oldCount; i < newCount; ++i)
-    {
-      mPointMasses[i] = new PointMass(this);
-      mPointMasses[i]->mIndex = i;
-      mPointMasses[i]->init();
-    }
-  }
-
-  // Resize the number of States in the Aspect
-  mAspectState.mPointStates.resize(
-        softProperties.mPointProps.size(), PointMass::State());
-
-  // Access the SoftMeshShape and reallocate its meshes
-  if(softNode)
-  {
-    std::shared_ptr<SoftMeshShape> softShape =
-        std::dynamic_pointer_cast<SoftMeshShape>(softNode->getShape());
-
-    if(softShape)
-      softShape->_buildMesh();
-  }
-  else
-  {
-    dtwarn << "[SoftBodyNode::configurePointMasses] The ShapeNode containing "
-           << "the SoftMeshShape for the SoftBodyNode named [" << getName()
-           << "] (" << this << ") has been removed. The soft body features for "
-           << "this SoftBodyNode cannot be used unless you recreate the "
-           << "SoftMeshShape.\n";
-
-    std::cout << "ShapeNodes: " << std::endl;
-    for(std::size_t i=0; i < getNumShapeNodes(); ++i)
-    {
-      std::cout << "- " << i << ") " << getShapeNode(i)->getName() << std::endl;
-    }
-  }
-
-  incrementVersion();
-  mNotifier->notifyTransformUpdate();
-}
-
-//==============================================================================
-void SoftBodyNode::init(const SkeletonPtr& _skeleton)
-{
-  BodyNode::init(_skeleton);
-
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses[i]->init();
-
-//  //----------------------------------------------------------------------------
-//  // Visualization shape
-//  //----------------------------------------------------------------------------
-//  assert(mSoftVisualShape == nullptr);
-//  mSoftVisualShape = new SoftMeshShape(this);
-//  BodyNode::addVisualizationShape(mSoftVisualShape);
-
-//  //----------------------------------------------------------------------------
-//  // Collision shape
-//  //----------------------------------------------------------------------------
-//  assert(mSoftCollShape == nullptr);
-//  mSoftCollShape = new SoftMeshShape(this);
-//  BodyNode::addCollisionShape(mSoftCollShape);
-}
-
-//==============================================================================
-//void SoftBodyNode::aggregateGenCoords(std::vector<GenCoord*>* _genCoords)
-//{
-//  BodyNode::aggregateGenCoords(_genCoords);
-//  aggregatePointMassGenCoords(_genCoords);
-//}
-
-//==============================================================================
-//void SoftBodyNode::aggregatePointMassGenCoords(
-//    std::vector<GenCoord*>* _genCoords)
-//{
-//  for (std::size_t i = 0; i < getNumPointMasses(); ++i)
-//  {
-//    PointMass* pointMass = getPointMass(i);
-//    for (int j = 0; j < pointMass->getNumDofs(); ++j)
-//    {
-//      GenCoord* genCoord = pointMass->getGenCoord(j);
-//      genCoord->setSkeletonIndex(_genCoords->size());
-//      _genCoords->push_back(genCoord);
-//    }
-//  }
-//}
-
-//==============================================================================
-PointMassNotifier* SoftBodyNode::getNotifier()
-{
-  return mNotifier;
-}
-
-//==============================================================================
-const PointMassNotifier* SoftBodyNode::getNotifier() const
-{
-  return mNotifier;
-}
-
-//==============================================================================
-double SoftBodyNode::getMass() const
-{
-  double totalMass = BodyNode::getMass();
-
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    totalMass += mPointMasses.at(i)->getMass();
-
-  return totalMass;
-}
-
-//==============================================================================
-void SoftBodyNode::setVertexSpringStiffness(double _kv)
-{
-  assert(0.0 <= _kv);
-
-  if(_kv == mAspectProperties.mKv)
-    return;
-
-  mAspectProperties.mKv = _kv;
+  mProperties.mKv = kv;
   incrementVersion();
 }
 
 //==============================================================================
-double SoftBodyNode::getVertexSpringStiffness() const
+double SoftBodyAspect::getVertexSpringStiffness() const
 {
-  return mAspectProperties.mKv;
+  return mProperties.mKv;
 }
 
 //==============================================================================
-void SoftBodyNode::setEdgeSpringStiffness(double _ke)
+void SoftBodyAspect::setEdgeSpringStiffness(double _ke)
 {
   assert(0.0 <= _ke);
 
-  if(_ke == mAspectProperties.mKe)
+  if(_ke == mProperties.mKe)
     return;
 
-  mAspectProperties.mKe = _ke;
+  mProperties.mKe = _ke;
   incrementVersion();
 }
 
 //==============================================================================
-double SoftBodyNode::getEdgeSpringStiffness() const
+double SoftBodyAspect::getEdgeSpringStiffness() const
 {
-  return mAspectProperties.mKe;
+  return mProperties.mKe;
 }
 
 //==============================================================================
-void SoftBodyNode::setDampingCoefficient(double _damp)
+void SoftBodyAspect::setDampingCoefficient(double _damp)
 {
   assert(_damp >= 0.0);
 
-  if(_damp == mAspectProperties.mDampCoeff)
+  if(_damp == mProperties.mDampCoeff)
     return;
 
-  mAspectProperties.mDampCoeff = _damp;
+  mProperties.mDampCoeff = _damp;
   incrementVersion();
 }
 
 //==============================================================================
-double SoftBodyNode::getDampingCoefficient() const
+double SoftBodyAspect::getDampingCoefficient() const
 {
-  return mAspectProperties.mDampCoeff;
+  return mProperties.mDampCoeff;
 }
 
 //==============================================================================
-void SoftBodyNode::removeAllPointMasses()
+void SoftBodyAspect::removeAllPointMasses()
 {
   mPointMasses.clear();
-  mAspectProperties.mPointProps.clear();
-  mAspectProperties.mFaces.clear();
+  mProperties.mPointProps.clear();
+  mProperties.mFaces.clear();
   configurePointMasses(mSoftShapeNode.lock());
 }
 
 //==============================================================================
-PointMass* SoftBodyNode::addPointMass(const PointMass::Properties& _properties)
+PointMass* SoftBodyAspect::addPointMass(const PointMass::Properties& properties)
 {
-  mPointMasses.push_back(new PointMass(this));
-  mPointMasses.back()->mIndex = mPointMasses.size()-1;
-  mAspectProperties.mPointProps.push_back(_properties);
+  mPointMasses.push_back(new PointMass(mComposite));
+  mPointMasses.back()->mIndex = mPointMasses.size() - 1u;
+  mProperties.mPointProps.push_back(properties);
   configurePointMasses(mSoftShapeNode.lock());
 
   return mPointMasses.back();
 }
 
 //==============================================================================
-void SoftBodyNode::connectPointMasses(std::size_t _idx1, std::size_t _idx2)
+std::size_t SoftBodyAspect::getNumPointMasses() const
+{
+  return mPointMasses.size();
+}
+
+//==============================================================================
+PointMass* SoftBodyAspect::getPointMass(std::size_t index)
+{
+  assert(index < mPointMasses.size());
+  if(index < mPointMasses.size())
+    return mPointMasses[index];
+
+  return nullptr;
+}
+
+//==============================================================================
+const PointMass* SoftBodyAspect::getPointMass(std::size_t index) const
+{
+  return const_cast<SoftBodyAspect*>(this)->getPointMass(index);
+}
+
+//==============================================================================
+const std::vector<PointMass*>& SoftBodyAspect::getPointMasses() const
+{
+  return mPointMasses;
+}
+
+//==============================================================================
+void SoftBodyAspect::connectPointMasses(std::size_t _idx1, std::size_t _idx2)
 {
   assert(_idx1 != _idx2);
   assert(_idx1 < mPointMasses.size());
@@ -498,776 +207,163 @@ void SoftBodyNode::connectPointMasses(std::size_t _idx1, std::size_t _idx2)
 }
 
 //==============================================================================
-void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
+void SoftBodyAspect::addFace(const Eigen::Vector3i& _face)
 {
-  mAspectProperties.addFace(_face);
+  mProperties.addFace(_face);
   configurePointMasses(mSoftShapeNode.lock());
 }
 
 //==============================================================================
-const Eigen::Vector3i& SoftBodyNode::getFace(std::size_t _idx) const
+const Eigen::Vector3i& SoftBodyAspect::getFace(std::size_t _idx) const
 {
-  assert(_idx < mAspectProperties.mFaces.size());
-  return mAspectProperties.mFaces[_idx];
+  assert(_idx < mProperties.mFaces.size());
+  return mProperties.mFaces[_idx];
 }
 
 //==============================================================================
-std::size_t SoftBodyNode::getNumFaces() const
+std::size_t SoftBodyAspect::getNumFaces() const
 {
-  return mAspectProperties.mFaces.size();
+  return mProperties.mFaces.size();
 }
 
 //==============================================================================
-void SoftBodyNode::clearConstraintImpulse()
+void SoftBodyAspect::clearConstraintImpulse()
 {
-  BodyNode::clearConstraintImpulse();
-
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->clearConstraintImpulse();
-}
-
-//==============================================================================
-void SoftBodyNode::checkArticulatedInertiaUpdate() const
-{
-  ConstSkeletonPtr skel = getSkeleton();
-  if(skel && skel->mTreeCache[mTreeIndex].mDirty.mArticulatedInertia)
-    skel->updateArticulatedInertia(mTreeIndex);
-}
-
-//==============================================================================
-void SoftBodyNode::updateTransform()
-{
-  BodyNode::updateTransform();
-
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateTransform();
-
-  mNotifier->clearTransformNotice();
-}
-
-//==============================================================================
-void SoftBodyNode::updateVelocity()
-{
-  BodyNode::updateVelocity();
-
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateVelocity();
-
-  mNotifier->clearVelocityNotice();
-}
-
-//==============================================================================
-void SoftBodyNode::updatePartialAcceleration() const
-{
-  BodyNode::updatePartialAcceleration();
-
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updatePartialAcceleration();
-
-  mNotifier->clearPartialAccelerationNotice();
-}
-
-//==============================================================================
-void SoftBodyNode::updateAccelerationID()
-{
-  BodyNode::updateAccelerationID();
-
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateAccelerationID();
-
-  mNotifier->clearAccelerationNotice();
-}
-
-//==============================================================================
-void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
-                                            bool _withExternalForces)
-{
-  const Eigen::Matrix6d& mI =
-      BodyNode::mAspectProperties.mInertia.getSpatialTensor();
   for (auto& pointMass : mPointMasses)
-    pointMass->updateTransmittedForceID(_gravity, _withExternalForces);
+    pointMass->clearConstraintImpulse();
+}
 
-  // Gravity force
-  if (BodyNode::mAspectProperties.mGravityMode == true)
-    mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
-  else
-    mFgravity.setZero();
+//==============================================================================
+void SoftBodyAspect::setComposite(common::Composite* newComposite)
+{
+  common::CompositeTrackingAspect<CompositeType>::setComposite(newComposite);
 
-  // Inertial force
-  mF.noalias() = mI * getSpatialAcceleration();
+  init();
+}
 
-  // External force
-  if (_withExternalForces)
-    mF -= BodyNode::mAspectState.mFext;
+//==============================================================================
+void SoftBodyAspect::init()
+{
+  mNotifier.reset(new PointMassNotifier(
+        mComposite, mComposite->getName() + "_PointMassNotifier"));
 
-  // Verification
-  assert(!math::isNan(mF));
+  ShapeNode* softNode = mComposite->createShapeNodeWith<
+      VisualAspect, CollisionAspect, DynamicsAspect>(
+        std::make_shared<SoftMeshShape>(this),
+        mComposite->getName() + "_SoftMeshShape");
+  mSoftShapeNode = softNode;
 
-  // Gravity force
-  mF -= mFgravity;
+  configurePointMasses(softNode);
+  mNotifier->notifyTransformUpdate();
 
-  // Coriolis force
-  const Eigen::Vector6d& V = getSpatialVelocity();
-  mF -= math::dad(V, mI * V);
+  for (auto& pointMass : mPointMasses)
+    pointMass->init();
+}
 
-  //
-  for (const auto& childBodyNode : mChildBodyNodes)
+//==============================================================================
+void SoftBodyAspect::configurePointMasses(ShapeNode* softNode)
+{
+  std::size_t newCount = mProperties.mPointProps.size();
+  std::size_t oldCount = mPointMasses.size();
+
+  if (newCount == oldCount)
+    return;
+
+  // Adjust the number of PointMass objects since that has changed
+  if (newCount < oldCount)
   {
-    Joint* childJoint = childBodyNode->getParentJoint();
-    assert(childJoint != nullptr);
+    for (std::size_t i = newCount; i < oldCount; ++i)
+      delete mPointMasses[i];
 
-    mF += math::dAdInvT(childJoint->getLocalTransform(),
-                        childBodyNode->getBodyForce());
+    mPointMasses.resize(newCount);
   }
-  for (auto& pointMass : mPointMasses)
+  else if (oldCount < newCount)
   {
-    mF.head<3>() += pointMass->getLocalPosition().cross(pointMass->mF);
-    mF.tail<3>() += pointMass->mF;
-  }
+    mPointMasses.resize(newCount);
 
-  // Verification
-  assert(!math::isNan(mF));
-}
-
-//==============================================================================
-void SoftBodyNode::updateJointForceID(double _timeStep,
-                                      bool _withDampingForces,
-                                      bool _withSpringForces)
-{
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateJointForceID(_timeStep,
-                                           _withDampingForces,
-                                           _withSpringForces);
-
-  BodyNode::updateJointForceID(_timeStep,
-                               _withDampingForces,
-                               _withSpringForces);
-}
-
-//==============================================================================
-void SoftBodyNode::updateJointForceFD(double _timeStep,
-                                      bool _withDampingForces,
-                                      bool _withSpringForces)
-{
-  BodyNode::updateJointForceFD(_timeStep,
-                               _withDampingForces,
-                               _withSpringForces);
-}
-
-//==============================================================================
-void SoftBodyNode::updateJointImpulseFD()
-{
-  BodyNode::updateJointImpulseFD();
-}
-
-//==============================================================================
-void SoftBodyNode::updateArtInertia(double _timeStep) const
-{
-  const Eigen::Matrix6d& mI =
-      BodyNode::mAspectProperties.mInertia.getSpatialTensor();
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateArtInertiaFD(_timeStep);
-
-  assert(mParentJoint != nullptr);
-
-  // Set spatial inertia to the articulated body inertia
-  mArtInertia = mI;
-  mArtInertiaImplicit = mI;
-
-  // and add child articulated body inertia
-  for (const auto& child : mChildBodyNodes)
-  {
-    Joint* childJoint = child->getParentJoint();
-
-    childJoint->addChildArtInertiaTo(mArtInertia, child->mArtInertia);
-    childJoint->addChildArtInertiaImplicitTo(mArtInertiaImplicit,
-                                             child->mArtInertiaImplicit);
-  }
-
-  //
-  for (const auto& pointMass : mPointMasses)
-  {
-    _addPiToArtInertia(pointMass->getLocalPosition(), pointMass->mPi);
-    _addPiToArtInertiaImplicit(pointMass->getLocalPosition(),
-                               pointMass->mImplicitPi);
-  }
-
-  // Verification
-  assert(!math::isNan(mArtInertia));
-  assert(!math::isNan(mArtInertiaImplicit));
-
-  // Update parent joint's inverse of projected articulated body inertia
-  mParentJoint->updateInvProjArtInertia(mArtInertia);
-  mParentJoint->updateInvProjArtInertiaImplicit(mArtInertiaImplicit, _timeStep);
-
-  // Verification
-  assert(!math::isNan(mArtInertia));
-  assert(!math::isNan(mArtInertiaImplicit));
-}
-
-//==============================================================================
-void SoftBodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
-                                   double _timeStep)
-{
-  const Eigen::Matrix6d& mI =
-      BodyNode::mAspectProperties.mInertia.getSpatialTensor();
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateBiasForceFD(_timeStep, _gravity);
-
-  // Gravity force
-  if (BodyNode::mAspectProperties.mGravityMode == true)
-    mFgravity.noalias() = mI * math::AdInvRLinear(getWorldTransform(),_gravity);
-  else
-    mFgravity.setZero();
-
-  // Set bias force
-  const Eigen::Vector6d& V = getSpatialVelocity();
-  mBiasForce = -math::dad(V, mI * V) - BodyNode::mAspectState.mFext - mFgravity;
-
-  // Verifycation
-  assert(!math::isNan(mBiasForce));
-
-  // And add child bias force
-  for (const auto& childBodyNode : mChildBodyNodes)
-  {
-    Joint* childJoint = childBodyNode->getParentJoint();
-
-    childJoint->addChildBiasForceTo(mBiasForce,
-                                childBodyNode->getArticulatedInertiaImplicit(),
-                                childBodyNode->mBiasForce,
-                                childBodyNode->getPartialAcceleration());
-  }
-
-  //
-  for (const auto& pointMass : mPointMasses)
-  {
-    mBiasForce.head<3>() += pointMass->getLocalPosition().cross(pointMass->mBeta);
-    mBiasForce.tail<3>() += pointMass->mBeta;
-  }
-
-  // Verifycation
-  assert(!math::isNan(mBiasForce));
-
-  // Update parent joint's total force with implicit joint damping and spring
-  // forces
-  mParentJoint->updateTotalForce( getArticulatedInertiaImplicit()
-                                  * getPartialAcceleration() + mBiasForce,
-                                  _timeStep );
-}
-
-//==============================================================================
-void SoftBodyNode::updateAccelerationFD()
-{
-  BodyNode::updateAccelerationFD();
-
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateAccelerationFD();
-
-  mNotifier->clearAccelerationNotice();
-}
-
-//==============================================================================
-void SoftBodyNode::updateTransmittedForceFD()
-{
-  BodyNode::updateTransmittedForceFD();
-
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateTransmittedForce();
-}
-
-//==============================================================================
-void SoftBodyNode::updateBiasImpulse()
-{
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateBiasImpulseFD();
-
-  // Update impulsive bias force
-  mBiasImpulse = -mConstraintImpulse;
-
-  // And add child bias impulse
-  for (auto& childBodyNode : mChildBodyNodes)
-  {
-    Joint* childJoint = childBodyNode->getParentJoint();
-
-    childJoint->addChildBiasImpulseTo(mBiasImpulse,
-                                      childBodyNode->getArticulatedInertia(),
-                                      childBodyNode->mBiasImpulse);
-  }
-
-  for (auto& pointMass : mPointMasses)
-  {
-    mBiasImpulse.head<3>() += pointMass->getLocalPosition().cross(pointMass->mImpBeta);
-    mBiasImpulse.tail<3>() += pointMass->mImpBeta;
-  }
-
-  // Verification
-  assert(!math::isNan(mBiasImpulse));
-
-  // Update parent joint's total force
-  mParentJoint->updateTotalImpulse(mBiasImpulse);
-}
-
-//==============================================================================
-void SoftBodyNode::updateVelocityChangeFD()
-{
-  BodyNode::updateVelocityChangeFD();
-
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateVelocityChangeFD();
-}
-
-//==============================================================================
-void SoftBodyNode::updateTransmittedImpulse()
-{
-  BodyNode::updateTransmittedImpulse();
-
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateTransmittedImpulse();
-}
-
-//==============================================================================
-void SoftBodyNode::updateConstrainedTerms(double _timeStep)
-{
-  BodyNode::updateConstrainedTerms(_timeStep);
-
-  for (auto& pointMass : mPointMasses)
-    pointMass->updateConstrainedTermsFD(_timeStep);
-}
-
-//==============================================================================
-void SoftBodyNode::updateMassMatrix()
-{
-  BodyNode::updateMassMatrix();
-
-//  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-//    mPointMasses.at(i)->updateMassMatrix();
-}
-
-//==============================================================================
-void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
-{
-  BodyNode::aggregateMassMatrix(_MCol, _col);
-//  //------------------------ PointMass Part ------------------------------------
-//  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-//    mPointMasses.at(i)->aggregateMassMatrix(_MCol, _col);
-
-//  //----------------------- SoftBodyNode Part ----------------------------------
-//  //
-//  mM_F.noalias() = mI * mM_dV;
-
-//  // Verification
-//  assert(!math::isNan(mM_F));
-
-//  //
-//  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-//       it != mChildBodyNodes.end(); ++it)
-//  {
-//    mM_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
-//                          (*it)->mM_F);
-//  }
-
-//  //
-//  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-//       it != mPointMasses.end(); ++it)
-//  {
-//    mM_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mM_F);
-//    mM_F.tail<3>() += (*it)->mM_F;
-//  }
-
-//  // Verification
-//  assert(!math::isNan(mM_F));
-
-//  //
-//  int dof = mParentJoint->getNumDofs();
-//  if (dof > 0)
-//  {
-//    int iStart = mParentJoint->getIndexInTree(0);
-//    _MCol->block(iStart, _col, dof, 1).noalias()
-//        = mParentJoint->getLocalJacobian().transpose() * mM_F;
-//  }
-}
-
-//==============================================================================
-void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col,
-                                          double _timeStep)
-{
-  // TODO(JS): Need to be reimplemented
-
-  const Eigen::Matrix6d& mI =
-      BodyNode::mAspectProperties.mInertia.getSpatialTensor();
-  //------------------------ PointMass Part ------------------------------------
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateAugMassMatrix(_MCol, _col, _timeStep);
-
-  //----------------------- SoftBodyNode Part ----------------------------------
-  mM_F.noalias() = mI * mM_dV;
-  assert(!math::isNan(mM_F));
-
-  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it)
-  {
-    mM_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
-                          (*it)->mM_F);
-  }
-  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-       it != mPointMasses.end(); ++it)
-  {
-    mM_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mM_F);
-    mM_F.tail<3>() += (*it)->mM_F;
-  }
-  assert(!math::isNan(mM_F));
-
-  std::size_t dof = mParentJoint->getNumDofs();
-  if (dof > 0)
-  {
-    Eigen::MatrixXd K = Eigen::MatrixXd::Zero(dof, dof);
-    Eigen::MatrixXd D = Eigen::MatrixXd::Zero(dof, dof);
-    for (std::size_t i = 0; i < dof; ++i)
+    for(std::size_t i = oldCount; i < newCount; ++i)
     {
-      K(i, i) = mParentJoint->getSpringStiffness(i);
-      D(i, i) = mParentJoint->getDampingCoefficient(i);
+      mPointMasses[i] = new PointMass(mComposite);
+      mPointMasses[i]->mIndex = i;
+      mPointMasses[i]->init();
     }
-    int iStart = mParentJoint->getIndexInTree(0);
-
-    // TODO(JS): Not recommended to use Joint::getAccelerations
-    _MCol.block(iStart, _col, dof, 1).noalias()
-        = mParentJoint->getLocalJacobian().transpose() * mM_F
-          + D * (_timeStep * mParentJoint->getAccelerations())
-          + K * (_timeStep * _timeStep * mParentJoint->getAccelerations());
-  }
-}
-
-//==============================================================================
-void SoftBodyNode::updateInvMassMatrix()
-{
-  //------------------------ PointMass Part ------------------------------------
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->updateInvMassMatrix();
-
-  //----------------------- SoftBodyNode Part ----------------------------------
-  //
-  mInvM_c.setZero();
-
-  //
-  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it)
-  {
-    (*it)->getParentJoint()->addChildBiasForceForInvMassMatrix(
-          mInvM_c, (*it)->getArticulatedInertia(), (*it)->mInvM_c);
   }
 
-  //
-  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-       it != mPointMasses.end(); ++it)
+  // Resize the number of States in the Aspect
+  mState.mPointStates.resize(mProperties.mPointProps.size(),
+                             PointMass::State());
+
+  // Access the SoftMeshShape and reallocate its meshes
+  if (softNode)
   {
-    mInvM_c.head<3>() += (*it)->getLocalPosition().cross((*it)->mBiasForceForInvMeta);
-    mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta;
-  }
+    auto softShape
+        = std::dynamic_pointer_cast<SoftMeshShape>(softNode->getShape());
 
-  // Verification
-  assert(!math::isNan(mInvM_c));
-
-  // Update parent joint's total force for inverse mass matrix
-  mParentJoint->updateTotalForceForInvMassMatrix(mInvM_c);
-}
-
-//==============================================================================
-void SoftBodyNode::updateInvAugMassMatrix()
-{
-  BodyNode::updateInvAugMassMatrix();
-
-//  //------------------------ PointMass Part ------------------------------------
-////  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-////    mPointMasses.at(i)->updateInvAugMassMatrix();
-
-//  //----------------------- SoftBodyNode Part ----------------------------------
-//  //
-//  mInvM_c.setZero();
-
-//  //
-//  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-//       it != mChildBodyNodes.end(); ++it)
-//  {
-//    (*it)->getParentJoint()->addChildBiasForceForInvAugMassMatrix(
-//          mInvM_c, (*it)->getArticulatedInertiaImplicit(), (*it)->mInvM_c);
-//  }
-
-//  //
-////  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-////       it != mPointMasses.end(); ++it)
-////  {
-////    mInvM_c.head<3>() += (*it)->getLocalPosition().cross((*it)->mBiasForceForInvMeta);
-////    mInvM_c.tail<3>() += (*it)->mBiasForceForInvMeta;
-////  }
-
-//  // Verification
-//  assert(!math::isNan(mInvM_c));
-
-//  // Update parent joint's total force for inverse mass matrix
-//  mParentJoint->updateTotalForceForInvMassMatrix(mInvM_c);
-}
-
-//==============================================================================
-void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _col)
-{
-  if (mParentBodyNode)
-  {
-    //
-    mParentJoint->getInvMassMatrixSegment(
-          _InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
-
-    //
-    mInvM_U = math::AdInvT(mParentJoint->getLocalTransform(),
-                           mParentBodyNode->mInvM_U);
+    if (softShape)
+      softShape->_buildMesh();
   }
   else
   {
-    //
-    mParentJoint->getInvMassMatrixSegment(
-          _InvMCol, _col, getArticulatedInertia(), Eigen::Vector6d::Zero());
+    dtwarn << "[SoftBodyNode::configurePointMasses] The ShapeNode containing "
+           << "the SoftMeshShape for the SoftBodyNode named ["
+           << mComposite->getName()
+           << "] (" << this << ") has been removed. The soft body features for "
+           << "this SoftBodyNode cannot be used unless you recreate the "
+           << "SoftMeshShape.\n";
 
-    //
-    mInvM_U.setZero();
+    std::cout << "ShapeNodes: " << std::endl;
+    for (auto i = 0u; i < mComposite->getNumShapeNodes(); ++i)
+    {
+      std::cout << "- " << i << ") " << mComposite->getShapeNode(i)->getName()
+                << "\n";
+    }
   }
 
-  //
-  mParentJoint->addInvMassMatrixSegmentTo(mInvM_U);
-
-  //
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateInvMassMatrix(_InvMCol, _col);
+  incrementVersion();
+  mNotifier->notifyTransformUpdate();
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol,
-                                             std::size_t _col,
-                                             double _timeStep)
+void SoftBodyAspect::checkArticulatedInertiaUpdate() const
 {
-  BodyNode::aggregateInvAugMassMatrix(_InvMCol, _col, _timeStep);
+  const auto skel = mComposite->getSkeleton();
 
-//  if (mParentBodyNode)
-//  {
-//    //
-//    mParentJoint->getInvAugMassMatrixSegment(
-//          *_InvMCol, _col, getArticulatedInertiaImplicit(), mParentBodyNode->mInvM_U);
-
-//    //
-//    mInvM_U = math::AdInvT(mParentJoint->mT, mParentBodyNode->mInvM_U);
-//  }
-//  else
-//  {
-//    //
-//    mParentJoint->getInvAugMassMatrixSegment(
-//          *_InvMCol, _col, getArticulatedInertiaImplicit(), Eigen::Vector6d::Zero());
-
-//    //
-//    mInvM_U.setZero();
-//  }
-
-//  //
-//  mParentJoint->addInvMassMatrixSegmentTo(mInvM_U);
-
-//  //
-////  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-////    mPointMasses.at(i)->aggregateInvAugMassMatrix(_InvMCol, _col, _timeStep);
+  if (skel && skel->mTreeCache[mComposite->mTreeIndex].mDirty.mArticulatedInertia)
+    skel->updateArticulatedInertia(mComposite->mTreeIndex);
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateCoriolisForceVector(Eigen::VectorXd& _C)
+void SoftBodyAspect::addPiToArtInertia(
+    const Eigen::Vector3d& p, double Pi) const
 {
-  BodyNode::aggregateCoriolisForceVector(_C);
+  Eigen::Matrix3d tmp = math::makeSkewSymmetric(p);
+
+  mComposite->mArtInertia.topLeftCorner<3, 3>()    -= Pi * tmp * tmp;
+  mComposite->mArtInertia.topRightCorner<3, 3>()   += Pi * tmp;
+  mComposite->mArtInertia.bottomLeftCorner<3, 3>() -= Pi * tmp;
+
+  mComposite->mArtInertia(3, 3) += Pi;
+  mComposite->mArtInertia(4, 4) += Pi;
+  mComposite->mArtInertia(5, 5) += Pi;
 }
 
 //==============================================================================
-void SoftBodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
-                                               const Eigen::Vector3d& _gravity)
+void SoftBodyAspect::addPiToArtInertiaImplicit(
+    const Eigen::Vector3d& p, double ImplicitPi) const
 {
-  const Eigen::Matrix6d& mI =
-      BodyNode::mAspectProperties.mInertia.getSpatialTensor();
-  //------------------------ PointMass Part ------------------------------------
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateGravityForceVector(_g, _gravity);
+  Eigen::Matrix3d tmp = math::makeSkewSymmetric(p);
 
-  //----------------------- SoftBodyNode Part ----------------------------------
-  if (BodyNode::mAspectProperties.mGravityMode == true)
-    mG_F = mI * math::AdInvRLinear(getWorldTransform(), _gravity);
-  else
-    mG_F.setZero();
+  mComposite->mArtInertiaImplicit.topLeftCorner<3, 3>()    -= ImplicitPi * tmp * tmp;
+  mComposite->mArtInertiaImplicit.topRightCorner<3, 3>()   += ImplicitPi * tmp;
+  mComposite->mArtInertiaImplicit.bottomLeftCorner<3, 3>() -= ImplicitPi * tmp;
 
-  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it)
-  {
-    mG_F += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
-                          (*it)->mG_F);
-  }
-
-  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-       it != mPointMasses.end(); ++it)
-  {
-    mG_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mG_F);
-    mG_F.tail<3>() += (*it)->mG_F;
-  }
-
-  int nGenCoords = mParentJoint->getNumDofs();
-  if (nGenCoords > 0)
-  {
-    Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
-    int iStart = mParentJoint->getIndexInTree(0);
-    _g.segment(iStart, nGenCoords) = g;
-  }
+  mComposite->mArtInertiaImplicit(3, 3) += ImplicitPi;
+  mComposite->mArtInertiaImplicit(4, 4) += ImplicitPi;
+  mComposite->mArtInertiaImplicit(5, 5) += ImplicitPi;
 }
 
 //==============================================================================
-void SoftBodyNode::updateCombinedVector()
-{
-  BodyNode::updateCombinedVector();
-
-//  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-//    mPointMasses.at(i)->updateCombinedVector();
-}
-
-//==============================================================================
-void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
-                                           const Eigen::Vector3d& _gravity)
-{
-  BodyNode::aggregateCombinedVector(_Cg, _gravity);
-//  //------------------------ PointMass Part ------------------------------------
-//  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-//    mPointMasses.at(i)->aggregateCombinedVector(_Cg, _gravity);
-
-//  //----------------------- SoftBodyNode Part ----------------------------------
-//  // H(i) = I(i) * W(i) -
-//  //        dad{V}(I(i) * V(i)) + sum(k \in children) dAd_{T(i,j)^{-1}}(H(k))
-//  if (mGravityMode == true)
-//    mFgravity = mI * math::AdInvRLinear(mW, _gravity);
-//  else
-//    mFgravity.setZero();
-
-//  mCg_F = mI * mCg_dV;
-//  mCg_F -= mFgravity;
-//  mCg_F -= math::dad(mV, mI * mV);
-
-//  for (std::vector<BodyNode*>::iterator it = mChildBodyNodes.begin();
-//       it != mChildBodyNodes.end(); ++it)
-//  {
-//    mCg_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
-//                           (*it)->mCg_F);
-//  }
-
-//  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-//       it != mPointMasses.end(); ++it)
-//  {
-//    mCg_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mCg_F);
-//    mCg_F.tail<3>() += (*it)->mCg_F;
-//  }
-
-//  int nGenCoords = mParentJoint->getNumDofs();
-//  if (nGenCoords > 0)
-//  {
-//    Eigen::VectorXd Cg = mParentJoint->getLocalJacobian().transpose() * mCg_F;
-//    int iStart = mParentJoint->getIndexInTree(0);
-//    _Cg->segment(iStart, nGenCoords) = Cg;
-//  }
-}
-
-//==============================================================================
-void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
-{
-  //------------------------ PointMass Part ------------------------------------
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->aggregateExternalForces(_Fext);
-
-  //----------------------- SoftBodyNode Part ----------------------------------
-  mFext_F = BodyNode::mAspectState.mFext;
-
-  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
-       it != mChildBodyNodes.end(); ++it)
-  {
-    mFext_F += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
-                             (*it)->mFext_F);
-  }
-
-  for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
-       it != mPointMasses.end(); ++it)
-  {
-    mFext_F.head<3>() += (*it)->getLocalPosition().cross((*it)->mFext);
-    mFext_F.tail<3>() += (*it)->mFext;
-  }
-
-  int nGenCoords = mParentJoint->getNumDofs();
-  if (nGenCoords > 0)
-  {
-    Eigen::VectorXd Fext
-        = mParentJoint->getLocalJacobian().transpose() * mFext_F;
-    int iStart = mParentJoint->getIndexInTree(0);
-    _Fext.segment(iStart, nGenCoords) = Fext;
-  }
-}
-
-//==============================================================================
-void SoftBodyNode::clearExternalForces()
-{
-  BodyNode::clearExternalForces();
-
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses.at(i)->clearExtForce();
-}
-
-//==============================================================================
-void SoftBodyNode::clearInternalForces()
-{
-  BodyNode::clearInternalForces();
-
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-    mPointMasses[i]->resetForces();
-}
-
-//==============================================================================
-void SoftBodyNode::_addPiToArtInertia(const Eigen::Vector3d& _p, double _Pi) const
-{
-  Eigen::Matrix3d tmp = math::makeSkewSymmetric(_p);
-
-  mArtInertia.topLeftCorner<3, 3>()    -= _Pi * tmp * tmp;
-  mArtInertia.topRightCorner<3, 3>()   += _Pi * tmp;
-  mArtInertia.bottomLeftCorner<3, 3>() -= _Pi * tmp;
-
-  mArtInertia(3, 3) += _Pi;
-  mArtInertia(4, 4) += _Pi;
-  mArtInertia(5, 5) += _Pi;
-}
-
-//==============================================================================
-void SoftBodyNode::_addPiToArtInertiaImplicit(const Eigen::Vector3d& _p,
-                                              double _ImplicitPi) const
-{
-  Eigen::Matrix3d tmp = math::makeSkewSymmetric(_p);
-
-  mArtInertiaImplicit.topLeftCorner<3, 3>()    -= _ImplicitPi * tmp * tmp;
-  mArtInertiaImplicit.topRightCorner<3, 3>()   += _ImplicitPi * tmp;
-  mArtInertiaImplicit.bottomLeftCorner<3, 3>() -= _ImplicitPi * tmp;
-
-  mArtInertiaImplicit(3, 3) += _ImplicitPi;
-  mArtInertiaImplicit(4, 4) += _ImplicitPi;
-  mArtInertiaImplicit(5, 5) += _ImplicitPi;
-}
-
-//==============================================================================
-void SoftBodyNode::updateInertiaWithPointMass()
-{
-  // TODO(JS): Not implemented
-
-  const Eigen::Matrix6d& mI =
-      BodyNode::mAspectProperties.mInertia.getSpatialTensor();
-  mI2 = mI;
-
-  for (std::size_t i = 0; i < mPointMasses.size(); ++i)
-  {
-
-  }
-}
-
-//==============================================================================
-SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
+SoftBodyAspect::PropertiesData SoftBodyNodeHelper::makeBoxProperties(
     const Eigen::Vector3d& _size,
     const Eigen::Isometry3d& _localTransform,
     double _totalMass,
@@ -1275,7 +371,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
     double _edgeStiffness,
     double _dampingCoeff)
 {
-  SoftBodyNode::UniqueProperties properties(
+  SoftBodyAspect::PropertiesData properties(
         _vertexStiffness, _edgeStiffness, _dampingCoeff);
 
   //----------------------------------------------------------------------------
@@ -1359,7 +455,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
 }
 
 //==============================================================================
-void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
+void SoftBodyNodeHelper::setBox(BodyNode*            _softBodyNode,
                                 const Eigen::Vector3d&   _size,
                                 const Eigen::Isometry3d& _localTransform,
                                 double                   _totalMass,
@@ -1368,16 +464,18 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
                                 double                   _dampingCoeff)
 {
   assert(_softBodyNode != nullptr);
-  _softBodyNode->setProperties(makeBoxProperties(_size,
-                                                 _localTransform,
-                                                 _totalMass,
-                                                 _vertexStiffness,
-                                                 _edgeStiffness,
-                                                 _dampingCoeff));
+
+  _softBodyNode->getSoftBodyAspect()->setProperties(
+        makeBoxProperties(_size,
+                          _localTransform,
+                          _totalMass,
+                          _vertexStiffness,
+                          _edgeStiffness,
+                          _dampingCoeff));
 }
 
 //==============================================================================
-SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
+SoftBodyAspect::PropertiesData SoftBodyNodeHelper::makeBoxProperties(
     const Eigen::Vector3d& _size,
     const Eigen::Isometry3d& _localTransform,
     const Eigen::Vector3i& _frags,
@@ -1402,7 +500,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
 
   std::size_t id = 0;
 
-  SoftBodyNode::UniqueProperties properties(
+  SoftBodyAspect::PropertiesData properties(
         _vertexStiffness, _edgeStiffness, _dampingCoeff);
 
   //----------------------------------------------------------------------------
@@ -2445,7 +1543,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeBoxProperties(
 }
 
 //==============================================================================
-void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
+void SoftBodyNodeHelper::setBox(BodyNode*            _softBodyNode,
                                 const Eigen::Vector3d&   _size,
                                 const Eigen::Isometry3d& _localTransform,
                                 const Eigen::Vector3i&   _frags,
@@ -2455,24 +1553,26 @@ void SoftBodyNodeHelper::setBox(SoftBodyNode*            _softBodyNode,
                                 double                   _dampingCoeff)
 {
   assert(_softBodyNode != nullptr);
-  _softBodyNode->setProperties(makeBoxProperties(_size,
-                                                 _localTransform,
-                                                 _frags,
-                                                 _totalMass,
-                                                 _vertexStiffness,
-                                                 _edgeStiffness,
-                                                 _dampingCoeff));
+
+  _softBodyNode->getSoftBodyAspect()->setProperties(
+        makeBoxProperties(_size,
+                          _localTransform,
+                          _frags,
+                          _totalMass,
+                          _vertexStiffness,
+                          _edgeStiffness,
+                          _dampingCoeff));
 }
 
 //==============================================================================
-SoftBodyNode::UniqueProperties
+SoftBodyAspect::PropertiesData
 SoftBodyNodeHelper::makeSinglePointMassProperties(
     double _totalMass,
     double _vertexStiffness,
     double _edgeStiffness,
     double _dampingCoeff)
 {
-  SoftBodyNode::UniqueProperties properties(
+  SoftBodyAspect::PropertiesData properties(
         _vertexStiffness, _edgeStiffness, _dampingCoeff);
 
   //----------------------------------------------------------------------------
@@ -2500,22 +1600,23 @@ SoftBodyNodeHelper::makeSinglePointMassProperties(
 }
 
 //==============================================================================
-void SoftBodyNodeHelper::setSinglePointMass(SoftBodyNode* _softBodyNode,
+void SoftBodyNodeHelper::setSinglePointMass(BodyNode* _softBodyNode,
                                         double _totalMass,
                                         double _vertexStiffness,
                                         double _edgeStiffness,
                                         double _dampingCoeff)
 {
   assert(_softBodyNode != nullptr);
-  _softBodyNode->setProperties(makeSinglePointMassProperties(
-                                 _totalMass,
-                                 _vertexStiffness,
-                                 _edgeStiffness,
-                                 _dampingCoeff));
+
+  _softBodyNode->getSoftBodyAspect()->setProperties(
+        makeSinglePointMassProperties(_totalMass,
+                                      _vertexStiffness,
+                                      _edgeStiffness,
+                                      _dampingCoeff));
 }
 
 //==============================================================================
-SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
+SoftBodyAspect::PropertiesData SoftBodyNodeHelper::makeEllipsoidProperties(
     const Eigen::Vector3d& _size,
     std::size_t _nSlices,
     std::size_t _nStacks,
@@ -2526,7 +1627,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
 {
   using namespace dart::math::suffixes;
 
-  SoftBodyNode::UniqueProperties properties(_vertexStiffness,
+  SoftBodyAspect::PropertiesData properties(_vertexStiffness,
                                             _edgeStiffness,
                                             _dampingCoeff);
 
@@ -2676,7 +1777,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
 }
 
 //==============================================================================
-void SoftBodyNodeHelper::setEllipsoid(SoftBodyNode*          _softBodyNode,
+void SoftBodyNodeHelper::setEllipsoid(BodyNode*          _softBodyNode,
                                       const Eigen::Vector3d& _size,
                                       std::size_t                 _nSlices,
                                       std::size_t                 _nStacks,
@@ -2686,17 +1787,18 @@ void SoftBodyNodeHelper::setEllipsoid(SoftBodyNode*          _softBodyNode,
                                       double                 _dampingCoeff)
 {
   assert(_softBodyNode != nullptr);
-  _softBodyNode->setProperties(makeEllipsoidProperties(_size,
-                                                       _nSlices,
-                                                       _nStacks,
-                                                       _totalMass,
-                                                       _vertexStiffness,
-                                                       _edgeStiffness,
-                                                       _dampingCoeff));
+  _softBodyNode->getSoftBodyAspect()->setProperties(
+        makeEllipsoidProperties(_size,
+                                _nSlices,
+                                _nStacks,
+                                _totalMass,
+                                _vertexStiffness,
+                                _edgeStiffness,
+                                _dampingCoeff));
 }
 
 //==============================================================================
-SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
+SoftBodyAspect::PropertiesData SoftBodyNodeHelper::makeCylinderProperties(
     double _radius,
     double _height,
     std::size_t _nSlices,
@@ -2709,7 +1811,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
 {
   using namespace dart::math::suffixes;
 
-  SoftBodyNode::UniqueProperties properties(_vertexStiffness,
+  SoftBodyAspect::PropertiesData properties(_vertexStiffness,
                                             _edgeStiffness,
                                             _dampingCoeff);
 
@@ -3030,7 +2132,7 @@ SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeCylinderProperties(
 }
 
 //==============================================================================
-void SoftBodyNodeHelper::setCylinder(SoftBodyNode* _softBodyNode,
+void SoftBodyNodeHelper::setCylinder(BodyNode* _softBodyNode,
                                      double _radius,
                                      double _height,
                                      std::size_t _nSlices,
@@ -3042,17 +2144,17 @@ void SoftBodyNodeHelper::setCylinder(SoftBodyNode* _softBodyNode,
                                      double _dampingCoeff)
 {
   assert(_softBodyNode != nullptr);
-  _softBodyNode->setProperties(makeCylinderProperties(_radius,
-                                                      _height,
-                                                      _nSlices,
-                                                      _nStacks,
-                                                      _nRings,
-                                                      _totalMass,
-                                                      _vertexStiffness,
-                                                      _edgeStiffness,
-                                                      _dampingCoeff));
+  _softBodyNode->getSoftBodyAspect()->setProperties(
+        makeCylinderProperties(_radius,
+                               _height,
+                               _nSlices,
+                               _nStacks,
+                               _nRings,
+                               _totalMass,
+                               _vertexStiffness,
+                               _edgeStiffness,
+                               _dampingCoeff));
 }
 
-}  // namespace dynamics
-}  // namespace dart
-
+} // namespace dynamics
+} // namespace dart

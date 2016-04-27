@@ -101,13 +101,12 @@ BodyContactCondition::~BodyContactCondition()
 //==============================================================================
 bool BodyContactCondition::isSatisfied()
 {
-  SoftBodyNode* soft = dynamic_cast<SoftBodyNode*>(mBodyNode);
+  auto soft = mBodyNode->getSoftBodyAspect();
   if (soft)
   {
-    for (std::size_t i = 0; i < soft->getNumPointMasses(); ++i)
+    for (auto pointMass : soft->getPointMasses())
     {
-      PointMass* pm = soft->getPointMass(i);
-      if (pm->isColliding() > 0)
+      if (pointMass->isColliding())
         return true;
     }
   }

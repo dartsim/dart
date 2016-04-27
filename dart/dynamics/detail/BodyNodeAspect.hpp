@@ -37,11 +37,12 @@
 #ifndef DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
 #define DART_DYNAMICS_DETAIL_BODYNODEASPECT_HPP_
 
+#include "dart/common/ProxyAspect.hpp"
+#include "dart/common/EmbeddedAspect.hpp"
 #include "dart/dynamics/Entity.hpp"
 #include "dart/dynamics/Inertia.hpp"
 #include "dart/dynamics/Node.hpp"
-#include "dart/common/ProxyAspect.hpp"
-#include "dart/common/EmbeddedAspect.hpp"
+#include "dart/dynamics/SoftBodyAspect.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -143,7 +144,8 @@ using NodeVectorProxyAspect = common::ProxyStateAndPropertiesAspect<BodyNode,
 //==============================================================================
 using BodyNodeCompositeBase = common::EmbedStateAndPropertiesOnTopOf<
     BodyNode, BodyNodeState, BodyNodeAspectProperties,
-    common::RequiresAspect<NodeVectorProxyAspect> >;
+    common::RequiresAspect<NodeVectorProxyAspect>,
+    common::Virtual<common::SpecializedForAspect<SoftBodyAspect>>>;
 
 } // namespace detail
 } // namespace dynamics

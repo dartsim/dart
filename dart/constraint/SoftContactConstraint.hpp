@@ -42,6 +42,7 @@
 #include "dart/math/MathTypes.hpp"
 #include "dart/collision/CollisionDetector.hpp"
 
+
 namespace dart {
 
 namespace collision{
@@ -50,7 +51,6 @@ class SoftCollisionInfo;
 
 namespace dynamics {
 class BodyNode;
-class SoftBodyNode;
 class PointMass;
 class Skeleton;
 }  // namespace dynamics
@@ -158,17 +158,17 @@ private:
   /// Find the nearest point mass from _point in a face, of which id is _faceId
   /// in _softBodyNode.
   dynamics::PointMass* selectCollidingPointMass(
-      dynamics::SoftBodyNode* _softBodyNode,
-      const Eigen::Vector3d& _point,
-      int _faceId) const;
+      dynamics::SoftBodyAspect* softBodyAspect,
+      const Eigen::Vector3d& point,
+      int faceId) const;
 
   /// Find the nearest point mass from _point in a face, of which id is _faceId
   /// in _softBodyNode. Returns a pointer to a const, and is usable with a const
   /// SoftBodyNode.
   const dynamics::PointMass* selectCollidingPointMass(
-      const dynamics::SoftBodyNode* _softBodyNode,
-      const Eigen::Vector3d& _point,
-      int _faceId) const;
+      const dynamics::SoftBodyAspect* softBodyAspect,
+      const Eigen::Vector3d& point,
+      int faceId) const;
 
 private:
   /// Time step
@@ -181,10 +181,10 @@ private:
   dynamics::BodyNode* mBodyNode2;
 
   /// First soft body node
-  dynamics::SoftBodyNode* mSoftBodyNode1;
+  dynamics::SoftBodyAspect* mSoftBodyAspect1;
 
   /// Second soft body node
-  dynamics::SoftBodyNode* mSoftBodyNode2;
+  dynamics::SoftBodyAspect* mSoftBodyAspect2;
 
   /// First point mass
   dynamics::PointMass* mPointMass1;

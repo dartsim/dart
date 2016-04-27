@@ -38,23 +38,23 @@
 #define DART_DYNAMICS_SOFTMESHSHAPE_HPP_
 
 #include <assimp/scene.h>
-#include "dart/dynamics/Shape.hpp"
 #include <Eigen/Dense>
+#include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class SoftBodyNode;
+class SoftBodyAspect;
 
 // TODO(JS): Implement
 class SoftMeshShape : public Shape
 {
 public:
 
-  friend class SoftBodyNode;
+  friend class SoftBodyAspect;
 
   /// \brief Constructor.
-  explicit SoftMeshShape(SoftBodyNode* _softBodyNode);
+  explicit SoftMeshShape(SoftBodyAspect* softBodyAspect);
 
   /// \brief Destructor.
   virtual ~SoftMeshShape();
@@ -63,7 +63,7 @@ public:
   const aiMesh* getAssimpMesh() const;
 
   /// Get the SoftBodyNode that is associated with this SoftMeshShape
-  const SoftBodyNode* getSoftBodyNode() const;
+  const SoftBodyAspect* getSoftBodyAspect() const;
 
   /// \brief Update positions of the vertices using the parent soft body node.
   void update();
@@ -80,7 +80,7 @@ private:
   void _buildMesh();
 
   /// \brief
-  SoftBodyNode* mSoftBodyNode;
+  SoftBodyAspect* mSoftBodyAspect;
 
   /// \brief
   std::unique_ptr<aiMesh> mAssimpMesh;

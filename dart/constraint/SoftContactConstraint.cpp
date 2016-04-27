@@ -41,7 +41,6 @@
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/collision/CollisionObject.hpp"
@@ -75,8 +74,8 @@ SoftContactConstraint::SoftContactConstraint(
     mTimeStep(timeStep),
     mBodyNode1(const_cast<dynamics::ShapeFrame*>(contact.collisionObject1->getShapeFrame())->asShapeNode()->getBodyNodePtr().get()),
     mBodyNode2(const_cast<dynamics::ShapeFrame*>(contact.collisionObject2->getShapeFrame())->asShapeNode()->getBodyNodePtr().get()),
-    mSoftBodyNode1(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode1)),
-    mSoftBodyNode2(dynamic_cast<dynamics::SoftBodyNode*>(mBodyNode2)),
+    mSoftBodyAspect1(mBodyNode1->getSoftBodyAspect()),
+    mSoftBodyAspect2(mBodyNode2->getSoftBodyAspect()),
     mPointMass1(nullptr),
     mPointMass2(nullptr),
     mSoftCollInfo(static_cast<collision::SoftCollisionInfo*>(contact.userData)),
@@ -90,34 +89,34 @@ SoftContactConstraint::SoftContactConstraint(
   mContacts.push_back(&contact);
 
   // Set the colliding state of body nodes and point masses to false
-  if (mSoftBodyNode1)
+  if (mSoftBodyAspect1)
   {
-    for (std::size_t i = 0; i < mSoftBodyNode1->getNumPointMasses(); ++i)
-      mSoftBodyNode1->getPointMass(i)->setColliding(false);
+    for (std::size_t i = 0; i < mSoftBodyAspect1->getNumPointMasses(); ++i)
+      mSoftBodyAspect1->getPointMass(i)->setColliding(false);
   }
-  if (mSoftBodyNode2)
+  if (mSoftBodyAspect2)
   {
-    for (std::size_t i = 0; i < mSoftBodyNode2->getNumPointMasses(); ++i)
-      mSoftBodyNode2->getPointMass(i)->setColliding(false);
+    for (std::size_t i = 0; i < mSoftBodyAspect2->getNumPointMasses(); ++i)
+      mSoftBodyAspect2->getPointMass(i)->setColliding(false);
   }
 
   // Select colling point mass based on trimesh ID
-  if (mSoftBodyNode1)
+  if (mSoftBodyAspect1)
   {
     if (contact.collisionObject1->getShape()->getShapeType()
         == dynamics::Shape::SOFT_MESH)
     {
-      mPointMass1 = selectCollidingPointMass(mSoftBodyNode1, contact.point,
+      mPointMass1 = selectCollidingPointMass(mSoftBodyAspect1, contact.point,
                                              contact.triID1);
       mPointMass1->setColliding(true);
     }
   }
-  if (mSoftBodyNode2)
+  if (mSoftBodyAspect2)
   {
     if (contact.collisionObject2->getShape()->getShapeType()
         == dynamics::Shape::SOFT_MESH)
     {
-      mPointMass2 = selectCollidingPointMass(mSoftBodyNode2, contact.point,
+      mPointMass2 = selectCollidingPointMass(mSoftBodyAspect2, contact.point,
                                              contact.triID2);
       mPointMass2->setColliding(true);
     }
@@ -409,7 +408,7 @@ const Eigen::Vector3d& SoftContactConstraint::getFrictionDirection1() const
 //==============================================================================
 void SoftContactConstraint::update()
 {
-  assert(mSoftBodyNode1 || mSoftBodyNode2);
+  assert(mSoftBodyAspect1 || mSoftBodyAspect2);
 
   // One of body node is soft body node and soft body node is always active
   mActive = true;
@@ -589,7 +588,7 @@ void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
     if (mPointMass1)
     {
       mBodyNode1->getSkeleton()->updateBiasImpulse(
-            mSoftBodyNode1, mPointMass1, mJacobians1[_idx].tail<3>());
+            mBodyNode1, mPointMass1, mJacobians1[_idx].tail<3>());
     }
     else
     {
@@ -603,7 +602,7 @@ void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
     if (mPointMass2)
     {
       mBodyNode2->getSkeleton()->updateBiasImpulse(
-            mSoftBodyNode2, mPointMass2, mJacobians2[_idx].tail<3>());
+            mBodyNode2, mPointMass2, mJacobians2[_idx].tail<3>());
     }
     else
     {
@@ -623,7 +622,7 @@ void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
     {
       mBodyNode1->getSkeleton()->clearConstraintImpulses();
       mBodyNode1->getSkeleton()->updateBiasImpulse(
-            mSoftBodyNode1, mPointMass1, mJacobians1[_idx].tail<3>());
+            mBodyNode1, mPointMass1, mJacobians1[_idx].tail<3>());
       mBodyNode1->getSkeleton()->updateVelocityChange();
     }
     else
@@ -641,7 +640,7 @@ void SoftContactConstraint::applyUnitImpulse(std::size_t _idx)
     {
       mBodyNode2->getSkeleton()->clearConstraintImpulses();
       mBodyNode2->getSkeleton()->updateBiasImpulse(
-            mSoftBodyNode2, mPointMass2, mJacobians2[_idx].tail<3>());
+            mBodyNode2, mPointMass2, mJacobians2[_idx].tail<3>());
       mBodyNode2->getSkeleton()->updateVelocityChange();
     }
     else
@@ -923,7 +922,7 @@ bool SoftContactConstraint::isActive() const
 //==============================================================================
 dynamics::SkeletonPtr SoftContactConstraint::getRootSkeleton() const
 {
-  if (mSoftBodyNode1 || mBodyNode1->isReactive())
+  if (mSoftBodyAspect1 || mBodyNode1->isReactive())
     return mBodyNode1->getSkeleton()->mUnionRootSkeleton.lock();
   else
     return mBodyNode2->getSkeleton()->mUnionRootSkeleton.lock();
@@ -1007,27 +1006,27 @@ Eigen::MatrixXd SoftContactConstraint::getTangentBasisMatrixODE(
 }
 
 //==============================================================================
-template <typename PointMassT, typename SoftBodyNodeT>
+template <typename PointMassT, typename SoftBodyAspectT>
 static PointMassT selectCollidingPointMassT(
-    SoftBodyNodeT _softBodyNode,
-    const Eigen::Vector3d& _point,
-    int _faceId)
+    SoftBodyAspectT softBodyAspect,
+    const Eigen::Vector3d& point,
+    int faceId)
 {
   PointMassT pointMass = nullptr;
 
-  const Eigen::Vector3i& face = _softBodyNode->getFace(_faceId);
+  const Eigen::Vector3i& face = softBodyAspect->getFace(faceId);
 
-  PointMassT pm0 = _softBodyNode->getPointMass(face[0]);
-  PointMassT pm1 = _softBodyNode->getPointMass(face[1]);
-  PointMassT pm2 = _softBodyNode->getPointMass(face[2]);
+  PointMassT pm0 = softBodyAspect->getPointMass(face[0]);
+  PointMassT pm1 = softBodyAspect->getPointMass(face[1]);
+  PointMassT pm2 = softBodyAspect->getPointMass(face[2]);
 
   const Eigen::Vector3d& pos1 = pm0->getWorldPosition();
   const Eigen::Vector3d& pos2 = pm1->getWorldPosition();
   const Eigen::Vector3d& pos3 = pm2->getWorldPosition();
 
-  double dist0 = (pos1 - _point).dot(pos1 - _point);
-  double dist1 = (pos2 - _point).dot(pos2 - _point);
-  double dist2 = (pos3 - _point).dot(pos3 - _point);
+  double dist0 = (pos1 - point).dot(pos1 - point);
+  double dist1 = (pos2 - point).dot(pos2 - point);
+  double dist2 = (pos3 - point).dot(pos3 - point);
 
   if (dist0 > dist1)
   {
@@ -1049,24 +1048,24 @@ static PointMassT selectCollidingPointMassT(
 
 //==============================================================================
 const dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
-    const dynamics::SoftBodyNode* _softBodyNode,
-    const Eigen::Vector3d& _point,
-    int _faceId) const
+    const dynamics::SoftBodyAspect* softBodyAspect,
+    const Eigen::Vector3d& point,
+    int faceId) const
 {
-  return selectCollidingPointMassT<const dynamics::PointMass*,
-                                   const dynamics::SoftBodyNode*>(
-        _softBodyNode, _point, _faceId);
+  return selectCollidingPointMassT<
+      const dynamics::PointMass*, const dynamics::SoftBodyAspect*>(
+        softBodyAspect, point, faceId);
 }
 
 //==============================================================================
 dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
-    dynamics::SoftBodyNode* _softBodyNode,
-    const Eigen::Vector3d& _point,
-    int _faceId) const
+    dynamics::SoftBodyAspect* softBodyAspect,
+    const Eigen::Vector3d& point,
+    int faceId) const
 {
-  return selectCollidingPointMassT<dynamics::PointMass*,
-                                   dynamics::SoftBodyNode*>(
-        _softBodyNode, _point, _faceId);
+  return selectCollidingPointMassT<
+      dynamics::PointMass*, dynamics::SoftBodyAspect*>(
+        softBodyAspect, point, faceId);
 }
 
 }  // namespace constraint

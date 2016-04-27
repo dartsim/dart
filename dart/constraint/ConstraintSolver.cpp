@@ -46,7 +46,6 @@
   #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 #endif
 #include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
@@ -600,11 +599,8 @@ bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
   auto bodyNode1 = shapeNode1->getBodyNodePtr().get();
   auto bodyNode2 = shapeNode2->getBodyNodePtr().get();
 
-  auto bodyNode1IsSoft =
-      dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode1) != nullptr;
-
-  auto bodyNode2IsSoft =
-      dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode2) != nullptr;
+  auto bodyNode1IsSoft = bodyNode1->hasSoftBodyAspect();
+  auto bodyNode2IsSoft = bodyNode2->hasSoftBodyAspect();
 
   return bodyNode1IsSoft || bodyNode2IsSoft;
 }

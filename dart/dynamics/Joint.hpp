@@ -629,7 +629,6 @@ public:
   //----------------------------------------------------------------------------
 
   friend class BodyNode;
-  friend class SoftBodyNode;
   friend class Skeleton;
 
 protected:

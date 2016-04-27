@@ -319,8 +319,8 @@ TEST(Skeleton, Restructuring)
 TEST(Skeleton, Persistence)
 {
   WeakBodyNodePtr weakBnPtr;
-  SoftBodyNodePtr softBnPtr;
-  WeakSoftBodyNodePtr weakSoftBnPtr;
+  BodyNodePtr softBnPtr;
+  WeakBodyNodePtr weakSoftBnPtr;
   WeakSkeletonPtr weakSkelPtr;
   {
     BodyNodePtr strongPtr;
@@ -358,9 +358,8 @@ TEST(Skeleton, Persistence)
         EXPECT_FALSE( weakBnPtr.lock() > strongPtr );
 
         BodyNodePtr tail = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1);
-        std::pair<Joint*, SoftBodyNode*> pair =
-            skeleton->createJointAndBodyNodePair<RevoluteJoint, SoftBodyNode>(
-              tail);
+        std::pair<Joint*, BodyNode*> pair =
+            skeleton->createJointAndBodyNodePair<RevoluteJoint>(tail);
 
         softBnPtr = pair.second;
         weakSoftBnPtr = softBnPtr;
@@ -514,7 +513,7 @@ TEST(Skeleton, Persistence)
   EXPECT_FALSE(weakSoftBnPtr.expired());
 
   // Test the user-defined copy constructor
-  SoftBodyNodePtr otherSoftBnPtr = softBnPtr;
+  BodyNodePtr otherSoftBnPtr = softBnPtr;
 
   softBnPtr = nullptr;
 

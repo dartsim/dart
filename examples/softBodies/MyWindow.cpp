@@ -59,8 +59,8 @@ MyWindow::~MyWindow()
 
 void MyWindow::timeStepping()
 {
-  dart::dynamics::SkeletonPtr Skeleton = mWorld->getSkeleton(1);
-  dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(0);
+  auto Skeleton = mWorld->getSkeleton(1);
+  auto softBodyNode = Skeleton->getSoftBodyNode(0);
   softBodyNode->addExtForce(mForceOnRigidBody);
 
   mWorld->step();
@@ -89,7 +89,7 @@ void MyWindow::drawWorld() const
   {
     dart::dynamics::SkeletonPtr Skeleton =
         static_cast<dart::dynamics::SkeletonPtr>(mWorld->getSkeleton(1));
-    dart::dynamics::SoftBodyNode* softBodyNode = Skeleton->getSoftBodyNode(0);
+    auto softBodyNode = Skeleton->getSoftBodyNode(0);
     softBodyNode->addExtForce(mForceOnRigidBody);
     Eigen::Vector3d poa
         = softBodyNode->getTransform() * Eigen::Vector3d(0.0, 0.0, 0.0);

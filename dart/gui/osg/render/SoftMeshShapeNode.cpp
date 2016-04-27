@@ -41,7 +41,7 @@
 #include "dart/gui/osg/Utils.hpp"
 
 #include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SoftBodyAspect.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 
@@ -194,13 +194,15 @@ SoftMeshShapeDrawable::SoftMeshShapeDrawable(
   refresh(true);
 }
 
-static Eigen::Vector3d normalFromVertex(const dart::dynamics::SoftBodyNode* bn,
-                                        const Eigen::Vector3i& face,
-                                        std::size_t v)
+//==============================================================================
+static Eigen::Vector3d normalFromVertex(
+    const dart::dynamics::SoftBodyAspect* sa,
+    const Eigen::Vector3i& face,
+    std::size_t v)
 {
-  const Eigen::Vector3d& v0 = bn->getPointMass(face[v])->getLocalPosition();
-  const Eigen::Vector3d& v1 = bn->getPointMass(face[(v+1)%3])->getLocalPosition();
-  const Eigen::Vector3d& v2 = bn->getPointMass(face[(v+2)%3])->getLocalPosition();
+  const Eigen::Vector3d& v0 = sa->getPointMass(face[v])->getLocalPosition();
+  const Eigen::Vector3d& v1 = sa->getPointMass(face[(v+1)%3])->getLocalPosition();
+  const Eigen::Vector3d& v2 = sa->getPointMass(face[(v+2)%3])->getLocalPosition();
 
   const Eigen::Vector3d dv1 = v1-v0;
   const Eigen::Vector3d dv2 = v2-v0;
@@ -212,17 +214,18 @@ static Eigen::Vector3d normalFromVertex(const dart::dynamics::SoftBodyNode* bn,
   return n.normalized() * asin(weight);
 }
 
+//==============================================================================
 static void computeNormals(std::vector<Eigen::Vector3d>& normals,
-                           const dart::dynamics::SoftBodyNode* bn)
+                           const dart::dynamics::SoftBodyAspect* sa)
 {
   for(std::size_t i=0; i<normals.size(); ++i)
     normals[i] = Eigen::Vector3d::Zero();
 
-  for(std::size_t i=0; i<bn->getNumFaces(); ++i)
+  for(std::size_t i=0; i<sa->getNumFaces(); ++i)
   {
-    const Eigen::Vector3i& face = bn->getFace(i);
+    const Eigen::Vector3i& face = sa->getFace(i);
     for(std::size_t j=0; j<3; ++j)
-      normals[face[j]] += normalFromVertex(bn, face, j);
+      normals[face[j]] += normalFromVertex(sa, face, j);
   }
 
   for(std::size_t i=0; i<normals.size(); ++i)
@@ -237,18 +240,19 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
   else
     setDataVariance(::osg::Object::DYNAMIC);
 
-  const dart::dynamics::SoftBodyNode* bn = mSoftMeshShape->getSoftBodyNode();
+  const auto sa = mSoftMeshShape->getSoftBodyAspect();
+  assert(sa);
 
   if(mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)
   {
     ::osg::ref_ptr<::osg::DrawElementsUInt> elements =
         new ::osg::DrawElementsUInt(GL_TRIANGLES);
-    elements->reserve(3*bn->getNumFaces());
+    elements->reserve(3*sa->getNumFaces());
 
-    for(std::size_t i=0; i < bn->getNumFaces(); ++i)
+    for(std::size_t i=0; i < sa->getNumFaces(); ++i)
     {
-      const Eigen::Vector3i& F = bn->getFace(i);
+      const Eigen::Vector3i& F = sa->getFace(i);
       for(std::size_t j=0; j<3; ++j)
         elements->push_back(F[j]);
     }
@@ -260,19 +264,19 @@ void SoftMeshShapeDrawable::refresh(bool firstTime)
      || mSoftMeshShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)
      || firstTime)
   {
-    if(mVertices->size() != bn->getNumPointMasses())
-      mVertices->resize(bn->getNumPointMasses());
+    if(mVertices->size() != sa->getNumPointMasses())
+      mVertices->resize(sa->getNumPointMasses());
 
-    if(mNormals->size() != bn->getNumPointMasses())
-      mNormals->resize(bn->getNumPointMasses());
+    if(mNormals->size() != sa->getNumPointMasses())
+      mNormals->resize(sa->getNumPointMasses());
 
-    if(mEigNormals.size() != bn->getNumPointMasses())
-      mEigNormals.resize(bn->getNumPointMasses());
+    if(mEigNormals.size() != sa->getNumPointMasses())
+      mEigNormals.resize(sa->getNumPointMasses());
 
-    computeNormals(mEigNormals, bn);
-    for(std::size_t i=0; i<bn->getNumPointMasses(); ++i)
+    computeNormals(mEigNormals, sa);
+    for(std::size_t i=0; i<sa->getNumPointMasses(); ++i)
     {
-      (*mVertices)[i] = eigToOsgVec3(bn->getPointMass(i)->getLocalPosition());
+      (*mVertices)[i] = eigToOsgVec3(sa->getPointMass(i)->getLocalPosition());
       (*mNormals)[i] = eigToOsgVec3(mEigNormals[i]);
     }
 
