@@ -208,14 +208,42 @@ public:
   /// Set the lower limit of a generalized coordinate's position
   void setPositionLowerLimit(std::size_t _index, double _position);
 
+  /// Set the lower limits for all generalized coordinates
+  void setPositionLowerLimits(const Eigen::VectorXd& positions);
+
+  /// Set the lower limits for a subset of the generalized coordinates
+  void setPositionLowerLimits(const std::vector<std::size_t>& indices,
+                              const Eigen::VectorXd& positions);
+
   /// Get the lower limit of a generalized coordinate's position
   double getPositionLowerLimit(std::size_t _index) const;
+
+  /// Get the lower limits for all generalized coordinates
+  Eigen::VectorXd getPositionLowerLimits() const;
+
+  /// Get the lower limits for a subset of the generalized coordinates
+  Eigen::VectorXd getPositionLowerLimits(
+      const std::vector<std::size_t>& indices) const;
 
   /// Set the upper limit of a generalized coordainte's position
   void setPositionUpperLimit(std::size_t _index, double _position);
 
+  /// Set the upper limits for all generalized coordinates
+  void setPositionUpperLimits(const Eigen::VectorXd& positions);
+
+  /// Set the upper limits for a subset of the generalized coordinates
+  void setPositionUpperLimits(const std::vector<std::size_t>& indices,
+                              const Eigen::VectorXd& positions);
+
   /// Get the upper limit of a generalized coordinate's position
   double getPositionUpperLimit(std::size_t _index) const;
+
+  /// Get the upper limits for all generalized coordinates
+  Eigen::VectorXd getPositionUpperLimits() const;
+
+  /// Get the upper limits for a subset of the generalized coordinates
+  Eigen::VectorXd getPositionUpperLimits(
+      const std::vector<std::size_t>& indices) const;
 
   /// \}
 
@@ -248,14 +276,46 @@ public:
   /// Set the lower limit of a generalized coordinate's velocity
   void setVelocityLowerLimit(std::size_t _index, double _velocity);
 
+  /// Set the lower limits for all generalized coordinates's velocity
+  void setVelocityLowerLimits(const Eigen::VectorXd& velocities);
+
+  /// Set the lower limits for a subset of the generalized coordinates's
+  /// velocity
+  void setVelocityLowerLimits(const std::vector<std::size_t>& indices,
+                              const Eigen::VectorXd& velocities);
+
   /// Get the lower limit of a generalized coordinate's velocity
   double getVelocityLowerLimit(std::size_t _index);
+
+  /// Get the lower limits for all generalized coordinates's velocity
+  Eigen::VectorXd getVelocityLowerLimits() const;
+
+  /// Get the lower limits for a subset of the generalized coordinates's
+  /// velocity
+  Eigen::VectorXd getVelocityLowerLimits(
+      const std::vector<std::size_t>& indices) const;
 
   /// Set the upper limit of a generalized coordinate's velocity
   void setVelocityUpperLimit(std::size_t _index, double _velocity);
 
+  /// Set the upper limits for all generalized coordinates's velocity
+  void setVelocityUpperLimits(const Eigen::VectorXd& velocities);
+
+  /// Set the upper limits for a subset of the generalized coordinates's
+  /// velocity
+  void setVelocityUpperLimits(const std::vector<std::size_t>& indices,
+                              const Eigen::VectorXd& velocities);
+
   /// Get the upper limit of a generalized coordinate's velocity
   double getVelocityUpperLimit(std::size_t _index);
+
+  /// Get the upper limits for all generalized coordinates's velocity
+  Eigen::VectorXd getVelocityUpperLimits() const;
+
+  /// Get the upper limits for a subset of the generalized coordinates's
+  /// velocity
+  Eigen::VectorXd getVelocityUpperLimits(
+      const std::vector<std::size_t>& indices) const;
 
   /// \}
 
@@ -288,14 +348,46 @@ public:
   /// Set the lower limit of a generalized coordinate's acceleration
   void setAccelerationLowerLimit(std::size_t _index, double _acceleration);
 
+  /// Set the lower limits for all generalized coordinates's acceleration
+  void setAccelerationLowerLimits(const Eigen::VectorXd& accelerations);
+
+  /// Set the lower limits for a subset of the generalized coordinates's
+  /// acceleration
+  void setAccelerationLowerLimits(const std::vector<std::size_t>& indices,
+                              const Eigen::VectorXd& accelerations);
+
   /// Get the lower limit of a generalized coordinate's acceleration
   double getAccelerationLowerLimit(std::size_t _index) const;
+
+  /// Get the lower limits for all generalized coordinates's acceleration
+  Eigen::VectorXd getAccelerationLowerLimits() const;
+
+  /// Get the lower limits for a subset of the generalized coordinates's
+  /// acceleration
+  Eigen::VectorXd getAccelerationLowerLimits(
+      const std::vector<std::size_t>& indices) const;
 
   /// Set the upper limit of a generalized coordinate's acceleration
   void setAccelerationUpperLimit(std::size_t _index, double _acceleration);
 
+  /// Set the upper limits for all generalized coordinates's acceleration
+  void setAccelerationUpperLimits(const Eigen::VectorXd& accelerations);
+
+  /// Set the upper limits for a subset of the generalized coordinates's
+  /// acceleration
+  void setAccelerationUpperLimits(const std::vector<std::size_t>& indices,
+                              const Eigen::VectorXd& accelerations);
+
   /// Get the upper limit of a generalized coordinate's acceleration
   double getAccelerationUpperLimit(std::size_t _index) const;
+
+  /// Get the upper limits for all generalized coordinates's acceleration
+  Eigen::VectorXd getAccelerationUpperLimits() const;
+
+  /// Get the upper limits for a subset of the generalized coordinates's
+  /// acceleration
+  Eigen::VectorXd getAccelerationUpperLimits(
+      const std::vector<std::size_t>& indices) const;
 
   /// \}
 
@@ -328,14 +420,42 @@ public:
   /// Set the lower limit of a generalized coordinate's force
   void setForceLowerLimit(std::size_t _index, double _force);
 
+  /// Set the lower limits for all generalized coordinates's force
+  void setForceLowerLimits(const Eigen::VectorXd& forces);
+
+  /// Set the lower limits for a subset of the generalized coordinates's force
+  void setForceLowerLimits(const std::vector<std::size_t>& indices,
+                           const Eigen::VectorXd& forces);
+
   /// Get the lower limit of a generalized coordinate's force
   double getForceLowerLimit(std::size_t _index) const;
+
+  /// Get the lower limits for all generalized coordinates's force
+  Eigen::VectorXd getForceLowerLimits() const;
+
+  /// Get the lower limits for a subset of the generalized coordinates's force
+  Eigen::VectorXd getForceLowerLimits(
+      const std::vector<std::size_t>& indices) const;
 
   /// Set the upper limit of a generalized coordinate's force
   void setForceUpperLimit(std::size_t _index, double _force);
 
+  /// Set the upperlimits for all generalized coordinates's force
+  void setForceUpperLimits(const Eigen::VectorXd& forces);
+
+  /// Set the upper limits for a subset of the generalized coordinates's force
+  void setForceUpperLimits(const std::vector<std::size_t>& indices,
+                           const Eigen::VectorXd& forces);
+
   /// Get the upper limit of a generalized coordinate's force
   double getForceUpperLimit(std::size_t _index) const;
+
+  /// Get the upper limits for all generalized coordinates's force
+  Eigen::VectorXd getForceUpperLimits() const;
+
+  /// Get the upper limits for a subset of the generalized coordinates's force
+  Eigen::VectorXd getForceUpperLimits(
+      const std::vector<std::size_t>& indices) const;
 
   /// \}
 
