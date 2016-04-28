@@ -207,7 +207,7 @@ void createAspects(T* comp)
     return this->template createAspect<TypeName>(std::forward<Args>(args)...);\
   }\
 \
-  inline void erase ## AspectName ()\
+  inline void remove ## AspectName ()\
   {\
     this->template removeAspect<TypeName>();\
   }\
