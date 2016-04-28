@@ -248,11 +248,27 @@ public:
   /// Map-based move assignment operator
   CloneableMap& operator=(MapType&& otherMap);
 
-  /// Copy the contents of another cloneable map into this one.
-  void copy(const CloneableMap& otherMap);
+  /// Copy the contents of another cloneable map into this one. If merge is set
+  /// to false, then any fields in this map which are not present in the other
+  /// map will be erased; otherwise they will be kept. Setting merge to false
+  /// will make the contents of this map an exact duplicate of the other map.
+  void copy(const CloneableMap& otherMap, bool merge=false);
 
-  /// Copy the contents of a map into this one.
-  void copy(const MapType& otherMap);
+  /// Copy the contents of a map into this one. If merge is set to false, then
+  /// any fields in this map which are not present in the other map will be
+  /// erased; otherwise they will be kept. Setting merge to false will make the
+  /// contents of this map an exact duplicate of the other map.
+  void copy(const MapType& otherMap, bool merge=false);
+
+  /// Merge the contents of another cloneable map into this one. If there are
+  /// any entries which both maps have, then the contents of otherMap will take
+  /// precedence. This is the same as calling copy(otherMap, true).
+  void merge(const CloneableMap& otherMap);
+
+  /// Merge the contents of another map into this one. If there are any entries
+  /// which both maps have, then the contents of otherMap will take precedence.
+  /// This is the same as calling copy(otherMap, true).
+  void merge(const MapType& otherMap);
 
   /// Get the map that is being held
   MapType& getMap();
