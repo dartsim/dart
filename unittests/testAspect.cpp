@@ -702,6 +702,20 @@ TEST(Aspect, StateAndProperties)
   // The constructor arguments should match the type order
   Composite::MakeState<DoubleAspect, IntAspect, CharAspect, FloatAspect>(
         doubleState, intState, charState, floatState);
+
+  // ---- Test copying and merging ----
+  Composite::Properties c_properties_1(properties);
+  EXPECT_FALSE(c_properties_1.has<IntAspect>());
+
+  Composite::Properties c_properties_2;
+  c_properties_2.create<IntAspect>();
+  EXPECT_TRUE(c_properties_2.has<IntAspect>());
+
+  c_properties_2.merge(c_properties_1);
+  EXPECT_TRUE(c_properties_2.has<IntAspect>());
+
+  c_properties_2.copy(c_properties_1);
+  EXPECT_FALSE(c_properties_2.has<IntAspect>());
 }
 
 TEST(Aspect, Construction)
