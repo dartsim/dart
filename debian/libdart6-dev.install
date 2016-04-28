@@ -1,5 +1,5 @@
-usr/include/dart/dart.h
-usr/include/dart/config.h
+usr/include/dart/dart.hpp
+usr/include/dart/config.hpp
 usr/include/dart/collision/*
 usr/include/dart/common/*
 usr/include/dart/constraint/*
