@@ -168,6 +168,9 @@ public:
   /// Return number of ShapeFrames added to this CollisionGroup
   std::size_t getNumShapeFrames() const;
 
+  /// Get the ShapeFrame corresponding to the given index
+  const dynamics::ShapeFrame* getShapeFrame(std::size_t index) const;
+
   /// Perform collision detection within this CollisionGroup.
   bool collide(const CollisionOption& option, CollisionResult& result);
 

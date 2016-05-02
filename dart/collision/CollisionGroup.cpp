@@ -155,6 +155,17 @@ std::size_t CollisionGroup::getNumShapeFrames() const
 }
 
 //==============================================================================
+const dynamics::ShapeFrame* CollisionGroup::getShapeFrame(
+    std::size_t index) const
+{
+  assert(index < mShapeFrameMap.size());
+  if(index < mShapeFrameMap.size())
+    return mShapeFrameMap[index].first;
+
+  return nullptr;
+}
+
+//==============================================================================
 bool CollisionGroup::collide(const CollisionOption& option, CollisionResult& result)
 {
   return mCollisionDetector->collide(this, option, result);
