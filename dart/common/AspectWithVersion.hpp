@@ -98,29 +98,26 @@ public:
 
   /// Construct using a StateData and a PropertiesData instance
   AspectWithStateAndVersionedProperties(
-      common::Composite* comp,
       const StateData& state = StateData(),
       const PropertiesData& properties = PropertiesData())
-    : AspectPropertiesImpl(comp, properties, state)
+    : AspectPropertiesImpl(properties, state)
   {
     // Do nothing
   }
 
   /// Construct using a PropertiesData and a StateData instance
   AspectWithStateAndVersionedProperties(
-      common::Composite* comp,
       const PropertiesData& properties,
       const StateData& state = StateData())
-    : AspectPropertiesImpl(comp, properties, state)
+    : AspectPropertiesImpl(properties, state)
   {
     // Do nothing
   }
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<Derived>(
-          newComposite, this->getState(), this->getProperties());
+    return make_unique<Derived>(this->getState(), this->getProperties());
   }
 
 };

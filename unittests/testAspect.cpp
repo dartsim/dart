@@ -228,8 +228,8 @@ class StateAspectTest : public dart::common::AspectWithState<
 {
 public:
 
-  StateAspectTest(Composite* mgr, const StateData& state = StateData())
-    : dart::common::AspectWithState<StateAspectTest, dart::common::Empty>(mgr, state)
+  StateAspectTest(const StateData& state = StateData())
+    : dart::common::AspectWithState<StateAspectTest, dart::common::Empty>(state)
   {
 
   }
@@ -246,15 +246,15 @@ class GenericAspect : public Aspect, public Subject
 {
 public:
 
-  GenericAspect(Composite* composite)
-    : Aspect(composite)
+  GenericAspect()
+    : Aspect()
   {
     // Do nothing
   }
 
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override final
+  std::unique_ptr<Aspect> cloneAspect() const override final
   {
-    return dart::common::make_unique<GenericAspect>(newComposite);
+    return dart::common::make_unique<GenericAspect>();
   }
 
 };
@@ -263,15 +263,15 @@ class SpecializedAspect : public Aspect, public Subject
 {
 public:
 
-  SpecializedAspect(Composite* composite)
-    : Aspect(composite)
+  SpecializedAspect()
+    : Aspect()
   {
     // Do nothing
   }
 
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override final
+  std::unique_ptr<Aspect> cloneAspect() const override final
   {
-    return dart::common::make_unique<SpecializedAspect>(newComposite);
+    return dart::common::make_unique<SpecializedAspect>();
   }
 };
 
@@ -294,35 +294,35 @@ public:
   using State = Aspect::MakeState<Data>;
   using Properties = Aspect::MakeProperties<Data>;
 
-  StatefulAspect(Composite* mgr)
-    : Aspect(mgr)
+  StatefulAspect()
+    : Aspect()
   {
     // Do nothing
   }
 
-  StatefulAspect(Composite* mgr, const StatefulAspect& other)
-    : Aspect(mgr),
+  StatefulAspect(const StatefulAspect& other)
+    : Aspect(),
       mState(other.mState), mProperties(other.mProperties)
   {
     // Do nothing
   }
 
-  StatefulAspect(Composite* mgr, const T& state)
-    : Aspect(mgr), mState(state)
+  StatefulAspect(const T& state)
+    : Aspect(), mState(state)
   {
     // Do nothing
   }
 
-  StatefulAspect(Composite* mgr, const T& state, const T& properties)
-    : Aspect(mgr),
+  StatefulAspect(const T& state, const T& properties)
+    : Aspect(),
       mState(state), mProperties(properties)
   {
     // Do nothing
   }
 
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override final
+  std::unique_ptr<Aspect> cloneAspect() const override final
   {
-    return dart::common::make_unique<StatefulAspect>(newComposite, *this);
+    return dart::common::make_unique<StatefulAspect>(*this);
   }
 
   void setAspectState(const Aspect::State& otherState) override

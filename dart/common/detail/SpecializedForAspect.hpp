@@ -210,7 +210,7 @@ void SpecializedForAspect<SpecAspect>::_set(
 
   if(aspect)
   {
-    mSpecAspectIterator->second = aspect->cloneAspect(this);
+    mSpecAspectIterator->second = aspect->cloneAspect();
     addToComposite(mSpecAspectIterator->second.get());
   }
   else
@@ -258,7 +258,7 @@ SpecAspect* SpecializedForAspect<SpecAspect>::_createAspect(
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
-  SpecAspect* aspect = new SpecAspect(this, std::forward<Args>(args)...);
+  SpecAspect* aspect = new SpecAspect(std::forward<Args>(args)...);
   mSpecAspectIterator->second = std::unique_ptr<SpecAspect>(aspect);
   addToComposite(aspect);
 

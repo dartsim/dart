@@ -79,9 +79,8 @@ ShapeFrameProperties::ShapeFrameProperties(const ShapePtr& shape)
 } // namespace detail
 
 //==============================================================================
-VisualAspect::VisualAspect(common::Composite* comp,
-                         const PropertiesData& properties)
-  : VisualAspect::BaseClass(comp, properties)
+VisualAspect::VisualAspect(const PropertiesData& properties)
+  : VisualAspect::BaseClass(properties)
 {
   // Do nothing
 }
@@ -165,9 +164,8 @@ bool VisualAspect::isHidden() const
 
 //==============================================================================
 CollisionAspect::CollisionAspect(
-    common::Composite* comp,
     const PropertiesData& properties)
-  : AspectImplementation(comp, properties)
+  : AspectImplementation(properties)
 {
   // Do nothing
 }
@@ -180,9 +178,8 @@ bool CollisionAspect::isCollidable() const
 
 //==============================================================================
 DynamicsAspect::DynamicsAspect(
-    common::Composite* comp,
     const PropertiesData& properties)
-  : BaseClass(comp, properties)
+  : BaseClass(properties)
 {
   // Do nothing
 }
