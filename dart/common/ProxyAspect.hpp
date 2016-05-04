@@ -82,9 +82,9 @@ public:
   }
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<ProxyStateAndPropertiesAspect>(newComposite);
+    return make_unique<ProxyStateAndPropertiesAspect>();
   }
 
 };

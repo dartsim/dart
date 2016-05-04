@@ -92,7 +92,6 @@ public:
 
   enum DelegateTag { Delegate };
 
-  EmbeddedStateAspect() = delete;
   EmbeddedStateAspect(const EmbeddedStateAspect&) = delete;
 
   virtual ~EmbeddedStateAspect() = default;
@@ -107,8 +106,8 @@ public:
   };
 
   /// Construct this Aspect without affecting the State.
-  EmbeddedStateAspect(Composite* comp)
-    : Base(comp)
+  EmbeddedStateAspect()
+    : Base()
   {
     // Do nothing
   }
@@ -130,10 +129,10 @@ public:
   // these constraints, I would gladly replace this implementation. -(MXG)
   template <typename T, typename... RemainingArgs>
   EmbeddedStateAspect(
-      Composite* comp, const T& arg1,
+      const T& arg1,
       RemainingArgs&&... remainingArgs)
     : EmbeddedStateAspect(
-        Delegate, comp,
+        Delegate,
         static_cast<const typename ConvertIfState<T>::type&>(arg1),
         std::forward<RemainingArgs>(remainingArgs)...)
   {
@@ -187,9 +186,9 @@ public:
   }
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<Derived>(newComposite, this->getState());
+    return make_unique<Derived>(this->getState());
   }
 
 protected:
@@ -198,9 +197,9 @@ protected:
   /// arguments into the constructor of the Base class.
   template <typename... RemainingArgs>
   EmbeddedStateAspect(
-      DelegateTag, Composite* comp, const StateData& state,
+      DelegateTag, const StateData& state,
       RemainingArgs&&... remainingArgs)
-    : Base(comp, std::forward<RemainingArgs>(remainingArgs)...),
+    : Base(std::forward<RemainingArgs>(remainingArgs)...),
       mTemporaryState(make_unique<State>(state))
   {
     // Do nothing
@@ -210,8 +209,8 @@ protected:
   /// arguments into the constructor of the Base class.
   template <typename... BaseArgs>
   EmbeddedStateAspect(
-      DelegateTag, Composite* comp, BaseArgs&&... args)
-    : Base(comp, std::forward<BaseArgs>(args)...)
+      DelegateTag, BaseArgs&&... args)
+    : Base(std::forward<BaseArgs>(args)...)
   {
     // Do nothing
   }
@@ -266,7 +265,6 @@ public:
   constexpr static void (*SetEmbeddedProperties)(Derived*, const Properties&) = setEmbeddedProperties;
   constexpr static const Properties& (*GetEmbeddedProperties)(const Derived*) = getEmbeddedProperties;
 
-  EmbeddedPropertiesAspect() = delete;
   EmbeddedPropertiesAspect(const EmbeddedPropertiesAspect&) = delete;
 
   virtual ~EmbeddedPropertiesAspect() = default;
@@ -281,8 +279,8 @@ public:
   };
 
   /// Construct this Aspect without affecting the Properties.
-  EmbeddedPropertiesAspect(Composite* comp)
-    : Base(comp)
+  EmbeddedPropertiesAspect()
+    : Base()
   {
     // Do nothing
   }
@@ -304,10 +302,10 @@ public:
   // these constraints, I would gladly replace this implementation. -(MXG)
   template <typename T, typename... RemainingArgs>
   EmbeddedPropertiesAspect(
-      Composite* comp, const T& arg1,
+      const T& arg1,
       RemainingArgs&&... remainingArgs)
     : EmbeddedPropertiesAspect(
-        Delegate, comp,
+        Delegate,
         static_cast<const typename ConvertIfProperties<T>::type&>(arg1),
         std::forward<RemainingArgs>(remainingArgs)...)
   {
@@ -360,9 +358,9 @@ public:
     return *mTemporaryProperties;
   }
 
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<Derived>(newComposite, this->getProperties());
+    return make_unique<Derived>(this->getProperties());
   }
 
 protected:
@@ -371,9 +369,9 @@ protected:
   /// arguments into the constructor of the Base class.
   template <typename... RemainingArgs>
   EmbeddedPropertiesAspect(
-      DelegateTag, Composite* comp, const PropertiesData& properties,
+      DelegateTag, const PropertiesData& properties,
       RemainingArgs&&... remainingArgs)
-    : Base(comp, std::forward<RemainingArgs>(remainingArgs)...),
+    : Base(std::forward<RemainingArgs>(remainingArgs)...),
       mTemporaryProperties(make_unique<Properties>(properties))
   {
     // Do nothing
@@ -383,8 +381,8 @@ protected:
   /// arguments into the constructor of the Base class.
   template <typename... BaseArgs>
   EmbeddedPropertiesAspect(
-      DelegateTag, Composite* comp, BaseArgs&&... args)
-    : Base(comp, std::forward<BaseArgs>(args)...)
+      DelegateTag, BaseArgs&&... args)
+    : Base(std::forward<BaseArgs>(args)...)
   {
     // Do nothing
   }

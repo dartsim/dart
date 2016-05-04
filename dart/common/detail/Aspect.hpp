@@ -47,9 +47,8 @@ namespace common {
 
 //==============================================================================
 template <class CompositeType>
-CompositeTrackingAspect<CompositeType>::CompositeTrackingAspect(Composite* comp)
-  : Aspect(comp),
-    mComposite(nullptr) // This will be set later when the Composite calls setComposite
+CompositeTrackingAspect<CompositeType>::CompositeTrackingAspect()
+  : mComposite(nullptr) // This will be set later when the Composite calls setComposite
 {
   // Do nothing
 }
@@ -82,15 +81,9 @@ void CompositeTrackingAspect<CompositeType>::setComposite(Composite* newComposit
   assert(nullptr == mComposite);
 
   mComposite = dynamic_cast<CompositeType*>(newComposite);
-  if(nullptr == mComposite)
-  {
-    dterr << "[" << typeid(*this).name() << "::setComposite] Attempting to use a "
-          << "[" << typeid(newComposite).name() << "] type composite, but this "
-          << "Aspect is only designed to be attached to a ["
-          << typeid(CompositeType).name() << "] type composite. This may cause "
-          << "undefined behavior!\n";
-    assert(false);
-  }
+  // Note: Derived classes should be responsible for handling the case in which
+  // the new composite type does not match the expected type. We should not
+  // assume here that it is an error.
 }
 
 //==============================================================================

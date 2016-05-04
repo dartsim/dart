@@ -316,63 +316,56 @@ public:
 
   using CompositeType = CompositeT;
 
-  EmbeddedStateAndPropertiesAspect() = delete;
   EmbeddedStateAndPropertiesAspect(
       const EmbeddedStateAndPropertiesAspect&) = delete;
 
   virtual ~EmbeddedStateAndPropertiesAspect() = default;
 
   /// Construct using nothing. The object will remain unaffected.
-  EmbeddedStateAndPropertiesAspect(
-      common::Composite* comp)
-    : AspectPropertiesImpl(comp)
+  EmbeddedStateAndPropertiesAspect()
+    : AspectPropertiesImpl()
   {
     // Do nothing
   }
 
   /// Construct using a State. The object's Properties will remain unaffected.
   EmbeddedStateAndPropertiesAspect(
-      common::Composite* comp,
       const StateData& state)
-    : AspectPropertiesImpl(comp, state)
+    : AspectPropertiesImpl(state)
   {
     // Do nothing
   }
 
   /// Construct using Properties. The object's State will remain unaffected.
   EmbeddedStateAndPropertiesAspect(
-      common::Composite* comp,
       const PropertiesData& properties)
-    : AspectPropertiesImpl(comp, properties)
+    : AspectPropertiesImpl(properties)
   {
     // Do nothing
   }
 
   /// Construct using a State and Properties instance
   EmbeddedStateAndPropertiesAspect(
-      common::Composite* comp,
       const StateData& state,
       const PropertiesData& properties)
-    : AspectPropertiesImpl(comp, properties, state)
+    : AspectPropertiesImpl(properties, state)
   {
     // Do nothing
   }
 
   /// Construct using a Properties and State instance
   EmbeddedStateAndPropertiesAspect(
-      common::Composite* comp,
       const PropertiesData& properties,
       const StateData& state)
-    : AspectPropertiesImpl(comp, properties, state)
+    : AspectPropertiesImpl(properties, state)
   {
     // Do nothing
   }
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<Derived>(
-          newComposite, this->getState(), this->getProperties());
+    return make_unique<Derived>(this->getState(), this->getProperties());
   }
 
 };

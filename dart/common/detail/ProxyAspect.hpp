@@ -57,9 +57,9 @@ public:
 
   /// General constructor
   template <typename... Args>
-  ProxyStateAspect(Composite* comp, Args&&... args)
-    : Base(comp, std::forward<Args>(args)...),
-      mProxyState(dynamic_cast<CompositeType*>(comp))
+  ProxyStateAspect(Args&&... args)
+    : Base(std::forward<Args>(args)...),
+      mProxyState()
   {
     // Do nothing
   }
@@ -77,9 +77,9 @@ public:
   }
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<ProxyStateAspect>(newComposite);
+    return make_unique<ProxyStateAspect>();
   }
 
 protected:
@@ -126,9 +126,9 @@ public:
 
   /// General constructor
   template <typename... Args>
-  ProxyPropertiesAspect(Composite* comp, Args&&... args)
-    : Base(comp, std::forward<Args>(args)...),
-      mProxyProperties(dynamic_cast<CompositeType*>(this))
+  ProxyPropertiesAspect(Args&&... args)
+    : Base(std::forward<Args>(args)...),
+      mProxyProperties()
   {
     // Do nothing
   }
@@ -146,9 +146,9 @@ public:
   }
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<ProxyPropertiesAspect>(newComposite);
+    return make_unique<ProxyPropertiesAspect>();
   }
 
 protected:
