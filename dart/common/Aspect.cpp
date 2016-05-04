@@ -69,17 +69,6 @@ const Aspect::Properties* Aspect::getAspectProperties() const
 }
 
 //==============================================================================
-Aspect::Aspect(Composite* composite)
-{
-  if(nullptr == composite)
-  {
-    dterr << "[Aspect::constructor] You are not allowed to construct an Aspect "
-          << "outside of an Composite!\n";
-    assert(false);
-  }
-}
-
-//==============================================================================
 void Aspect::setComposite(Composite* /*newComposite*/)
 {
   // Do nothing

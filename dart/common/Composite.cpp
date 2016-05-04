@@ -283,7 +283,7 @@ void Composite::_set(std::type_index type_idx, const Aspect* aspect)
 {
   if(aspect)
   {
-    mAspectMap[type_idx] = aspect->cloneAspect(this);
+    mAspectMap[type_idx] = aspect->cloneAspect();
     addToComposite(mAspectMap[type_idx].get());
   }
   else

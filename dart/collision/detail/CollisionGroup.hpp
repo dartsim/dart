@@ -101,7 +101,7 @@ void CollisionGroup::addShapeFramesOf(
 //==============================================================================
 template <typename... Others>
 void CollisionGroup::addShapeFramesOf(
-    const dynamics::Skeleton* skel, const Others*... others)
+    const dynamics::MetaSkeleton* skel, const Others*... others)
 {
   assert(skel);
 

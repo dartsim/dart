@@ -94,7 +94,7 @@ void Composite::set(std::unique_ptr<T>&& aspect)
 template <class T, typename ...Args>
 T* Composite::createAspect(Args&&... args)
 {
-  T* aspect = new T(this, std::forward<Args>(args)...);
+  T* aspect = new T(std::forward<Args>(args)...);
   mAspectMap[typeid(T)] = std::unique_ptr<T>(aspect);
   addToComposite(aspect);
 
@@ -207,7 +207,7 @@ void createAspects(T* comp)
     return this->template createAspect<TypeName>(std::forward<Args>(args)...);\
   }\
 \
-  inline void erase ## AspectName ()\
+  inline void remove ## AspectName ()\
   {\
     this->template removeAspect<TypeName>();\
   }\

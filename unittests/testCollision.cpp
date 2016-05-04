@@ -541,6 +541,19 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
             + group2->getNumShapeFrames()
             + group3->getNumShapeFrames());
 
+  for(std::size_t i=0; i < group1->getNumShapeFrames(); ++i)
+    EXPECT_EQ(groupAll->getShapeFrame(i), group1->getShapeFrame(i));
+
+  std::size_t start = group1->getNumShapeFrames();
+  std::size_t end = start + group2->getNumShapeFrames();
+  for(std::size_t i=start; i < end; ++i)
+    EXPECT_EQ(groupAll->getShapeFrame(i), group2->getShapeFrame(i-start));
+
+  start = start + group2->getNumShapeFrames();
+  end = start + group3->getNumShapeFrames();
+  for(std::size_t i=start; i < end; ++i)
+    EXPECT_EQ(groupAll->getShapeFrame(i), group3->getShapeFrame(i-start));
+
   collision::CollisionOption option;
   collision::CollisionResult result;
 

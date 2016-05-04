@@ -142,6 +142,11 @@ public:
     return static_cast<Data&>(*it.first);
   }
 
+  template <class AspectT>
+  bool has() const
+  {
+    return (get<AspectT>() != nullptr);
+  }
 };
 
 //==============================================================================
