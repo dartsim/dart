@@ -490,37 +490,37 @@ DegreeOfFreedom* Joint::createDofPointer(std::size_t _indexInJoint)
 //==============================================================================
 void Joint::updateLocalTransform() const
 {
-  updateLocalTransform();
+  updateRelativeTransform();
 }
 
 //==============================================================================
 void Joint::updateLocalSpatialVelocity() const
 {
-  updateLocalSpatialVelocity();
+  updateRelativeSpatialVelocity();
 }
 
 //==============================================================================
 void Joint::updateLocalSpatialAcceleration() const
 {
-  updateLocalSpatialAcceleration();
+  updateRelativeSpatialAcceleration();
 }
 
 //==============================================================================
 void Joint::updateLocalPrimaryAcceleration() const
 {
-  updateLocalPrimaryAcceleration();
+  updateRelativePrimaryAcceleration();
 }
 
 //==============================================================================
 void Joint::updateLocalJacobian(bool mandatory) const
 {
-  updateLocalJacobian(mandatory);
+  updateRelativeJacobian(mandatory);
 }
 
 //==============================================================================
 void Joint::updateLocalJacobianTimeDeriv() const
 {
-  updateLocalJacobianTimeDeriv();
+  updateRelativeJacobianTimeDeriv();
 }
 
 //==============================================================================
