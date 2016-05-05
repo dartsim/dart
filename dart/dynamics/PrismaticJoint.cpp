@@ -129,7 +129,7 @@ void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
 
   mAspectProperties.mAxis = _axis.normalized();
   Joint::notifyPositionUpdate();
-  updateLocalJacobian();
+  updateRelativeJacobian();
   Joint::incrementVersion();
 }
 
@@ -157,7 +157,7 @@ Joint* PrismaticJoint::clone() const
 }
 
 //==============================================================================
-void PrismaticJoint::updateLocalTransform() const
+void PrismaticJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(getAxis() * getPositionStatic())
@@ -168,7 +168,7 @@ void PrismaticJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void PrismaticJoint::updateLocalJacobian(bool _mandatory) const
+void PrismaticJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
@@ -180,7 +180,7 @@ void PrismaticJoint::updateLocalJacobian(bool _mandatory) const
 }
 
 //==============================================================================
-void PrismaticJoint::updateLocalJacobianTimeDeriv() const
+void PrismaticJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of prismatic joint is always zero
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());

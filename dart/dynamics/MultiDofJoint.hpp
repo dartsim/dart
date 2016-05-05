@@ -433,24 +433,24 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  const math::Jacobian getLocalJacobian() const override;
+  const math::Jacobian getRelativeJacobian() const override;
 
-  /// Fixed-size version of getLocalJacobian()
-  const Eigen::Matrix<double, 6, DOF>& getLocalJacobianStatic() const;
+  /// Fixed-size version of getRelativeJacobian()
+  const Eigen::Matrix<double, 6, DOF>& getRelativeJacobianStatic() const;
 
   // Documentation inherited
-  math::Jacobian getLocalJacobian(
+  math::Jacobian getRelativeJacobian(
       const Eigen::VectorXd& _positions) const override;
 
-  /// Fixed-size version of getLocalJacobian()
-  virtual Eigen::Matrix<double, 6, DOF> getLocalJacobianStatic(
+  /// Fixed-size version of getRelativeJacobian()
+  virtual Eigen::Matrix<double, 6, DOF> getRelativeJacobianStatic(
       const Eigen::Matrix<double, DOF, 1>& _positions) const = 0;
 
   // Documentation inherited
-  const math::Jacobian getLocalJacobianTimeDeriv() const override;
+  const math::Jacobian getRelativeJacobianTimeDeriv() const override;
 
-  /// Fixed-size version of getLocalJacobianTimeDeriv()
-  const Eigen::Matrix<double, 6, DOF>& getLocalJacobianTimeDerivStatic() const;
+  /// Fixed-size version of getRelativeJacobianTimeDeriv()
+  const Eigen::Matrix<double, 6, DOF>& getRelativeJacobianTimeDerivStatic() const;
 
   /// Get the inverse of the projected articulated inertia
   const Eigen::Matrix<double, DOF, DOF>& getInvProjArtInertia() const;
@@ -460,13 +460,13 @@ protected:
   const Eigen::Matrix<double, DOF, DOF>& getInvProjArtInertiaImplicit() const;
 
   // Documentation inherited
-  void updateLocalSpatialVelocity() const override;
+  void updateRelativeSpatialVelocity() const override;
 
   // Documentation inherited
-  void updateLocalSpatialAcceleration() const override;
+  void updateRelativeSpatialAcceleration() const override;
 
   // Documentation inherited
-  void updateLocalPrimaryAcceleration() const override;
+  void updateRelativePrimaryAcceleration() const override;
 
   // Documentation inherited
   void addVelocityTo(Eigen::Vector6d& _vel) override;
@@ -622,12 +622,12 @@ protected:
 
   /// Spatial Jacobian expressed in the child body frame
   ///
-  /// Do not use directly! Use getLocalJacobianStatic() to access this quantity
+  /// Do not use directly! Use getRelativeJacobianStatic() to access this quantity
   mutable Eigen::Matrix<double, 6, DOF> mJacobian;
 
   /// Time derivative of spatial Jacobian expressed in the child body frame
   ///
-  /// Do not use directly! Use getLocalJacobianTimeDerivStatic() to access this
+  /// Do not use directly! Use getRelativeJacobianTimeDerivStatic() to access this
   /// quantity
   mutable Eigen::Matrix<double, 6, DOF> mJacobianDeriv;
 

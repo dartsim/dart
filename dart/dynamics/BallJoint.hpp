@@ -92,7 +92,7 @@ public:
   static Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions);
 
   // Documentation inherited
-  Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+  Eigen::Matrix<double, 6, 3> getRelativeJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 
   // Documentation inherited
@@ -107,7 +107,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using MultiDofJoint::getLocalJacobianStatic;
+  using MultiDofJoint::getRelativeJacobianStatic;
 
   // Documentation inherited
   void integratePositions(double _dt) override;
@@ -116,13 +116,13 @@ protected:
   void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited
-  void updateLocalTransform() const override;
+  void updateRelativeTransform() const override;
 
   // Documentation inherited
-  void updateLocalJacobian(bool _mandatory = true) const override;
+  void updateRelativeJacobian(bool _mandatory = true) const override;
 
   // Documentation inherited
-  void updateLocalJacobianTimeDeriv() const override;
+  void updateRelativeJacobianTimeDeriv() const override;
 
 protected:
 

@@ -116,7 +116,7 @@ Joint* BallJoint::clone() const
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> BallJoint::getLocalJacobianStatic(
+Eigen::Matrix<double, 6, 3> BallJoint::getRelativeJacobianStatic(
     const Eigen::Vector3d& /*positions*/) const
 {
   return mJacobian;
@@ -153,7 +153,7 @@ void BallJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void BallJoint::updateLocalTransform() const
+void BallJoint::updateRelativeTransform() const
 {
   mR.linear() = convertToRotation(getPositionsStatic());
 
@@ -164,14 +164,14 @@ void BallJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void BallJoint::updateLocalJacobian(bool _mandatory) const
+void BallJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if (_mandatory)
     mJacobian = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint).leftCols<3>();
 }
 
 //==============================================================================
-void BallJoint::updateLocalJacobianTimeDeriv() const
+void BallJoint::updateRelativeJacobianTimeDeriv() const
 {
   assert(Eigen::Matrix6d::Zero().leftCols<3>() == mJacobianDeriv);
 }
@@ -181,7 +181,7 @@ const Eigen::Isometry3d& BallJoint::getR() const
 {
   if(mNeedTransformUpdate)
   {
-    updateLocalTransform();
+    updateRelativeTransform();
     mNeedTransformUpdate = false;
   }
 

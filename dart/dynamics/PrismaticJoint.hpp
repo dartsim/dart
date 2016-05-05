@@ -103,13 +103,13 @@ protected:
   Joint* clone() const override;
 
   // Documentation inherited
-  void updateLocalTransform() const override;
+  void updateRelativeTransform() const override;
 
   // Documentation inherited
-  void updateLocalJacobian(bool _mandatory=true) const override;
+  void updateRelativeJacobian(bool _mandatory=true) const override;
 
   // Documentation inherited
-  void updateLocalJacobianTimeDeriv() const override;
+  void updateRelativeJacobianTimeDeriv() const override;
 
 public:
   // To get byte-aligned Eigen vectors
