@@ -56,40 +56,6 @@ CollisionDetector::createCollisionGroupAsSharedPtr()
 }
 
 //==============================================================================
-bool CollisionDetector::collide(CollisionGroup* group,
-                                const CollisionOption& option)
-{
-  if (option.binaryCheck)
-    return collide(group, option, getDummyCollisionResult());
-
-  auto& collisionOption = getDummyCollisionOption();
-  collisionOption.collisionFilter = option.collisionFilter;
-
-  assert(false == collisionOption.enableContact);
-  assert(true == collisionOption.binaryCheck);
-  assert(1u == collisionOption.maxNumContacts);
-
-  return collide(group, collisionOption, getDummyCollisionResult());
-}
-
-//==============================================================================
-bool CollisionDetector::collide(CollisionGroup* group1, CollisionGroup* group2,
-                                const CollisionOption& option)
-{
-  if (option.binaryCheck)
-    return collide(group1, group2, option, getDummyCollisionResult());
-
-  auto& collisionOption = getDummyCollisionOption();
-  collisionOption.collisionFilter = option.collisionFilter;
-
-  assert(false == collisionOption.enableContact);
-  assert(true == collisionOption.binaryCheck);
-  assert(1u == collisionOption.maxNumContacts);
-
-  return collide(group1, group2, collisionOption, getDummyCollisionResult());
-}
-
-//==============================================================================
 std::shared_ptr<CollisionObject> CollisionDetector::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
@@ -104,27 +70,6 @@ void CollisionDetector::notifyCollisionObjectDestroying(
     CollisionObject* /*object*/)
 {
   // Do nothing
-}
-
-//==============================================================================
-CollisionOption& CollisionDetector::getDummyCollisionOption()
-{
-  if (!mDummyCollisionOption)
-  {
-    mDummyCollisionOption
-        = common::make_unique<CollisionOption>(false, true, 1u, nullptr);
-  }
-
-  return *mDummyCollisionOption;
-}
-
-//==============================================================================
-CollisionResult& CollisionDetector::getDummyCollisionResult()
-{
-  if (!mDummyCollisionResult)
-    mDummyCollisionResult = common::make_unique<CollisionResult>();
-
-  return *mDummyCollisionResult;
 }
 
 //==============================================================================

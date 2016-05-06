@@ -393,7 +393,7 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   mCollisionResult.clear();
 
-  mCollisionGroup->collide(mCollisionOption, mCollisionResult);
+  mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
 
   // Destroy previous contact constraints
   mContactConstraints.clear();

@@ -560,18 +560,18 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
   simpleFrame3->setTranslation(Eigen::Vector3d(2.2, 0.0, 0.0));
-  EXPECT_FALSE(group1->collide(option, result));
-  EXPECT_FALSE(group2->collide(option, result));
-  EXPECT_FALSE(group3->collide(option, result));
-  EXPECT_FALSE(groupAll->collide(option, result));
+  EXPECT_FALSE(group1->collide(option, &result));
+  EXPECT_FALSE(group2->collide(option, &result));
+  EXPECT_FALSE(group3->collide(option, &result));
+  EXPECT_FALSE(groupAll->collide(option, &result));
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
   simpleFrame3->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
-  EXPECT_TRUE(group1->collide(group2.get(), option, result));
-  EXPECT_TRUE(group1->collide(group2.get(), option, result));
-  EXPECT_TRUE(group2->collide(group3.get(), option, result));
-  EXPECT_TRUE(groupAll->collide(option, result));
+  EXPECT_TRUE(group1->collide(group2.get(), option, &result));
+  EXPECT_TRUE(group1->collide(group2.get(), option, &result));
+  EXPECT_TRUE(group2->collide(group3.get(), option, &result));
+  EXPECT_TRUE(groupAll->collide(option, &result));
 }
 
 //==============================================================================
@@ -649,7 +649,7 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
   collision::CollisionOption option;
   collision::CollisionResult result;
 
-  EXPECT_TRUE(group1->collide(group2.get(), option, result));
+  EXPECT_TRUE(group1->collide(group2.get(), option, &result));
 
   Eigen::Vector3d min = Eigen::Vector3d(-0.25, 0.25, 0.0);
   Eigen::Vector3d max = Eigen::Vector3d(0.25, 0.5, 0.0);
@@ -735,20 +735,20 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   result.clear();
   option.maxNumContacts = 1000u;
   option.binaryCheck = false;
-  EXPECT_TRUE(group->collide(option, result));
+  EXPECT_TRUE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 4u);
 
   result.clear();
   option.maxNumContacts = 2u;
   option.binaryCheck = false;
-  EXPECT_TRUE(group->collide(option, result));
+  EXPECT_TRUE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 2u);
 
   group->addShapeFrame(simpleFrame3.get());
   result.clear();
   option.maxNumContacts = 1e+3;
   option.binaryCheck = true;
-  EXPECT_TRUE(group->collide(option, result));
+  EXPECT_TRUE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 1u);
 
   // Binary check without passing option
@@ -761,10 +761,10 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 //==============================================================================
 TEST_F(COLLISION, Options)
 {
-  auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  testOptions(fcl_mesh_dart);
+//  auto fcl_mesh_dart = FCLCollisionDetector::create();
+//  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+//  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+//  testOptions(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
   // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -818,9 +818,9 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   auto shapeNodeGroup1 = cd->createCollisionGroup(boxShapeNode1);
   auto shapeNodeGroup2 = cd->createCollisionGroup(boxShapeNode2);
 
-  EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get(), option, result));
-  EXPECT_TRUE(bodyNodeGroup1->collide(bodyNodeGroup2.get(), option, result));
-  EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get(), option, result));
+  EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get(), option, &result));
+  EXPECT_TRUE(bodyNodeGroup1->collide(bodyNodeGroup2.get(), option, &result));
+  EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get(), option, &result));
 
   // Binary check without passing option
   auto oldBinaryCheckOption = option.binaryCheck;

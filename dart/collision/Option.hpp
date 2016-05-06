@@ -63,10 +63,11 @@ struct CollisionOption
   std::shared_ptr<CollisionFilter> collisionFilter;
 
   /// Constructor
-  CollisionOption(bool enableContact = true,
-         bool binaryCheck = false,
-         std::size_t maxNumContacts = 100,
-         const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
+  CollisionOption(
+      bool enableContact = true,
+      bool binaryCheck = false,
+      std::size_t maxNumContacts = 100,
+      const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
 };
 
 }  // namespace collision

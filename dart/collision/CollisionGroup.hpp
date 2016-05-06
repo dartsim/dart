@@ -172,23 +172,18 @@ public:
   const dynamics::ShapeFrame* getShapeFrame(std::size_t index) const;
 
   /// Perform collision check within this CollisionGroup.
-  bool collide(const CollisionOption& option, CollisionResult& result);
-
-  /// Binary collision check within this CollisionGroup.
-  bool collide(const CollisionOption& option
-                   = CollisionOption(false, true, 1u, nullptr));
+  bool collide(
+      const CollisionOption& option = CollisionOption(false, true, 1u, nullptr),
+      CollisionResult* result = nullptr);
 
   /// Perform collision check with other CollisionGroup.
   ///
   /// Return false if the engine type of the other CollisionGroup is different
   /// from this CollisionObject engine.
-  bool collide(CollisionGroup* group,
-               const CollisionOption& option, CollisionResult& result);
-
-  /// Binary collision check with other CollisionGroup.
-  bool collide(CollisionGroup* group,
-               const CollisionOption& option
-                   = CollisionOption(false, true, 1u, nullptr));
+  bool collide(
+      CollisionGroup* group,
+      const CollisionOption& option = CollisionOption(false, true, 1u, nullptr),
+      CollisionResult* result = nullptr);
 
 protected:
 

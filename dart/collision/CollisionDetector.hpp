@@ -98,27 +98,22 @@ public:
   std::shared_ptr<CollisionGroup> createCollisionGroupAsSharedPtr(
       const Args&... args);
 
-  /// Perform collision check for a single group.
+  /// Perform collision check for a single group. If nullptr is passed to
+  /// result, then the this returns only simple information whether there is a
+  /// collision of not.
   virtual bool collide(
       CollisionGroup* group,
-      const CollisionOption& option, CollisionResult& result) = 0;
+      const CollisionOption& option = CollisionOption(false, true, 1u, nullptr),
+      CollisionResult* result = nullptr) = 0;
 
-  /// Binary collision check for a single group.
-  bool collide(
-      CollisionGroup* group,
-      const CollisionOption& option
-          = CollisionOption(false, true, 1u, nullptr));
-
-  /// Perform collision check for two groups.
+  /// Perform collision check for two groups. If nullptr is passed to
+  /// result, then the this returns only simple information whether there is a
+  /// collision of not.
   virtual bool collide(
-      CollisionGroup* group1, CollisionGroup* group2,
-      const CollisionOption& option, CollisionResult& result) = 0;
-
-  /// Binary collision check for a two groups.
-  bool collide(
-      CollisionGroup* group1, CollisionGroup* group2,
-      const CollisionOption& option
-          = CollisionOption(false, true, 1u, nullptr));
+      CollisionGroup* group1,
+      CollisionGroup* group2,
+      const CollisionOption& option = CollisionOption(false, true, 1u, nullptr),
+      CollisionResult* result = nullptr) = 0;
 
 protected:
 
@@ -144,16 +139,6 @@ protected:
 protected:
 
   std::unique_ptr<CollisionObjectManager> mCollisionObjectManager;
-
-private:
-
-  CollisionOption& getDummyCollisionOption();
-
-  CollisionResult& getDummyCollisionResult();
-
-  std::unique_ptr<CollisionOption> mDummyCollisionOption;
-
-  std::unique_ptr<CollisionResult> mDummyCollisionResult;
 
 };
 
