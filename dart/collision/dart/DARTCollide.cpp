@@ -1255,6 +1255,9 @@ int collideCylinderPlane(CollisionObject* o1, CollisionObject* o2, const double&
 //==============================================================================
 int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 {
+  // TODO(JS): We could make the contact point computation as optional for
+  // the case that we want only binary check.
+
   const dynamics::ConstShapePtr& shape0 = o1->getShape();
   const dynamics::ConstShapePtr& shape1 = o2->getShape();
   const Eigen::Isometry3d& T0 = o1->getTransform();

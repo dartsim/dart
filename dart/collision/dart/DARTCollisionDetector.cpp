@@ -50,7 +50,7 @@ namespace collision {
 namespace {
 
 bool checkPair(CollisionObject* o1, CollisionObject* o2,
-               const CollisionOption& option, CollisionResult& result);
+               const CollisionOption& option, CollisionResult* result = nullptr);
 
 bool isClose(const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2,
              double tol);
@@ -96,20 +96,57 @@ DARTCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-bool DARTCollisionDetector::collide(
-    CollisionGroup* group,
-    const CollisionOption& option, CollisionResult& result)
+static void clearCollisionResult(
+    const CollisionOption& option, CollisionResult* result)
 {
-  result.clear();
-
-  if (this != group->getCollisionDetector().get())
+  if (!result)
   {
-    dterr << "[DARTCollisionDetector::detect] Attempting to check collision "
+    if (!option.binaryCheck)
+    {
+      dtwarn << "[DARTCollisionDetector::collide] nullptr of CollisionResult is "
+             << "passed in when the binary check option is off. The collision "
+             << "detector will run narrowphase collision checking over all the "
+             << "feasible collision pairs without storing the contact "
+             << "information, which would be meaningless work. Also, it would "
+             << "ignore the maximum number of contacts since the number of "
+             << "contact will not be counted. Please consider either of using "
+             << "binary check or passsing CollisionResult pointer which is not "
+             << "a nullptr.\n";
+    }
+
+    return;
+  }
+
+  result->clear();
+}
+
+//==============================================================================
+static bool checkGroupValidity(DARTCollisionDetector* cd, CollisionGroup* group)
+{
+  if (cd != group->getCollisionDetector().get())
+  {
+    dterr << "[DARTCollisionDetector::collide] Attempting to check collision "
           << "for a collision group that is created from a different collision "
           << "detector instance.\n";
 
     return false;
   }
+
+  return true;
+}
+
+//==============================================================================
+bool DARTCollisionDetector::collide(
+    CollisionGroup* group,
+    const CollisionOption& option,
+    CollisionResult* result)
+{
+  clearCollisionResult(option, result);
+
+  if (!checkGroupValidity(this, group))
+    return false;
+
+  const auto& binaryCheck = option.binaryCheck;
 
   auto casted = static_cast<DARTCollisionGroup*>(group);
   const auto& objects = casted->mCollisionObjects;
@@ -117,54 +154,51 @@ bool DARTCollisionDetector::collide(
   if (objects.empty())
     return false;
 
-  auto done = false;
   const auto& filter = option.collisionFilter;
 
   for (auto i = 0u; i < objects.size() - 1; ++i)
   {
-    auto collObj1 = objects[i];
+    auto* collObj1 = objects[i];
 
     for (auto j = i + 1u; j < objects.size(); ++j)
     {
-      auto collObj2 = objects[j];
+      auto* collObj2 = objects[j];
 
       if (filter && !filter->needCollision(collObj1, collObj2))
         continue;
 
-      checkPair(collObj1, collObj2, option, result);
+      auto collisionFound = checkPair(collObj1, collObj2, option, result);
 
-      if ((option.binaryCheck && result.isCollision())
-          || (result.getNumContacts() >= option.maxNumContacts))
-      {
-        done = true;
-        break;
-      }
+      if (binaryCheck && collisionFound)
+        return true;
+
+      if (result->getNumContacts() >= option.maxNumContacts)
+        return result->isCollision();
     }
-
-    if (done)
-      break;
   }
 
-  return result.isCollision();
+  if (binaryCheck)
+    return false;
+  else
+    return result->isCollision();
 }
 
 //==============================================================================
 bool DARTCollisionDetector::collide(
     CollisionGroup* group1,
     CollisionGroup* group2,
-    const CollisionOption& option, CollisionResult& result)
+    const CollisionOption& option,
+    CollisionResult* result)
 {
-  result.clear();
+  clearCollisionResult(option, result);
 
-  if ((this != group1->getCollisionDetector().get())
-      || (this != group2->getCollisionDetector().get()))
-  {
-    dterr << "[DARTCollisionDetector::detect] Attempting to check collision "
-          << "for a collision group that is created from a different collision "
-          << "detector instance.\n";
-
+  if (!checkGroupValidity(this, group1))
     return false;
-  }
+
+  if (!checkGroupValidity(this, group2))
+    return false;
+
+  const auto& binaryCheck = option.binaryCheck;
 
   auto casted1 = static_cast<DARTCollisionGroup*>(group1);
   auto casted2 = static_cast<DARTCollisionGroup*>(group2);
@@ -175,34 +209,33 @@ bool DARTCollisionDetector::collide(
   if (objects1.empty() || objects2.empty())
     return false;
 
-  auto done = false;
   const auto& filter = option.collisionFilter;
 
   for (auto i = 0u; i < objects1.size(); ++i)
   {
-    auto collObj1 = objects1[i];
+    auto* collObj1 = objects1[i];
 
     for (auto j = 0u; j < objects2.size(); ++j)
     {
-      auto collObj2 = objects2[j];
+      auto* collObj2 = objects2[j];
 
       if (filter && !filter->needCollision(collObj1, collObj2))
         continue;
 
-      checkPair(collObj1, collObj2, option, result);
+      auto collisionFound = checkPair(collObj1, collObj2, option, result);
 
-      if (result.getNumContacts() >= option.maxNumContacts)
-      {
-        done = true;
-        break;
-      }
+      if (binaryCheck && collisionFound)
+        return true;
+
+      if (result->getNumContacts() >= option.maxNumContacts)
+        return result->isCollision();
     }
-
-    if (done)
-      break;
   }
 
-  return result.isCollision();
+  if (binaryCheck)
+    return false;
+  else
+    return result->isCollision();
 }
 
 //==============================================================================
@@ -256,16 +289,20 @@ namespace {
 
 //==============================================================================
 bool checkPair(CollisionObject* o1, CollisionObject* o2,
-               const CollisionOption& option, CollisionResult& result)
+               const CollisionOption& option, CollisionResult* result)
 {
   CollisionResult pairResult;
 
   // Perform narrow-phase detection
-  auto colliding = collide(o1, o2, pairResult);
+  collide(o1, o2, pairResult);
 
-  postProcess(o1, o2, option, result, pairResult);
+  // Early return for binary check
+  if (!result)
+    return pairResult.isCollision();
 
-  return colliding != 0;
+  postProcess(o1, o2, option, *result, pairResult);
+
+  return pairResult.isCollision();
 }
 
 //==============================================================================
