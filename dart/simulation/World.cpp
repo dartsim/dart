@@ -496,13 +496,17 @@ std::set<dynamics::SimpleFramePtr> World::removeAllSimpleFrames()
 bool World::checkCollision(bool checkAllCollisions)
 {
   collision::CollisionOption option;
+
   if (checkAllCollisions)
-    option.enableContact = true;
-  else
-    option.enableContact = false;
+    option.binaryCheck = false;
 
-  collision::CollisionResult result;
+  return checkCollision(option);
+}
 
+//==============================================================================
+bool World::checkCollision(const collision::CollisionOption& option,
+                           collision::CollisionResult* result)
+{
   return mConstraintSolver->getCollisionGroup()->collide(option, result);
 }
 

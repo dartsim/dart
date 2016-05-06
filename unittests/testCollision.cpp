@@ -761,10 +761,10 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 //==============================================================================
 TEST_F(COLLISION, Options)
 {
-//  auto fcl_mesh_dart = FCLCollisionDetector::create();
-//  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-//  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-//  testOptions(fcl_mesh_dart);
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testOptions(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
   // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
