@@ -172,7 +172,7 @@ bool DARTCollisionDetector::collide(
       if (binaryCheck && collisionFound)
         return true;
 
-      if (result->getNumContacts() >= option.maxNumContacts)
+      if (result && result->getNumContacts() >= option.maxNumContacts)
         return result->isCollision();
     }
   }
@@ -227,7 +227,7 @@ bool DARTCollisionDetector::collide(
       if (binaryCheck && collisionFound)
         return true;
 
-      if (result->getNumContacts() >= option.maxNumContacts)
+      if (result && result->getNumContacts() >= option.maxNumContacts)
         return result->isCollision();
     }
   }
