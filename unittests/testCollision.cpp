@@ -567,6 +567,25 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(group1->collide(group2.get(), option, &result));
   EXPECT_TRUE(group2->collide(group3.get(), option, &result));
   EXPECT_TRUE(groupAll->collide(option, &result));
+
+  auto group23 = cd->createCollisionGroup(
+        simpleFrame2.get(), simpleFrame3.get());
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
+  simpleFrame3->setTranslation(Eigen::Vector3d(1.6, 0.0, 0.0));
+  EXPECT_FALSE(group1->collide(group2.get()));
+  EXPECT_FALSE(group1->collide(group3.get()));
+  EXPECT_TRUE(group2->collide(group3.get()));
+  EXPECT_TRUE(group23->collide());
+  if (cd->getType() == BulletCollisionDetector::getStaticType())
+  {
+    dtwarn << "Skipping group-group test for 'bullet' collision detector. "
+           << "Please see Issue #717 for the detail.\n";
+  }
+  else
+  {
+    EXPECT_FALSE(group1->collide(group23.get()));
+  }
 }
 
 //==============================================================================
@@ -815,7 +834,7 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
   option.collisionFilter = std::make_shared<BodyNodeCollisionFilter>();
 
   skel->enableSelfCollision(true);
-  EXPECT_TRUE(group->collide());  // without filer, always collision
+  EXPECT_TRUE(group->collide());  // without filter, always collision
   EXPECT_TRUE(group->collide(option));
 
   skel->enableSelfCollision(false);
