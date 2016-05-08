@@ -4,12 +4,6 @@
  *
  * Author(s): Can Erdogan <cerdogan3@gatech.edu>,
  *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
- *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
