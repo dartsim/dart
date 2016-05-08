@@ -734,28 +734,35 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 
   result.clear();
   option.maxNumContacts = 1000u;
-  option.binaryCheck = false;
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 4u);
 
   result.clear();
   option.maxNumContacts = 2u;
-  option.binaryCheck = false;
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 2u);
 
   group->addShapeFrame(simpleFrame3.get());
   result.clear();
-  option.maxNumContacts = 1e+3;
-  option.binaryCheck = true;
+  option.maxNumContacts = 1u;
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 1u);
 
-  // Binary check without passing option
+  // Binary check without passing result
   EXPECT_TRUE(group->collide(option));
 
   // Binary check without passing option and result
   EXPECT_TRUE(group->collide());
+
+  // Zero maximum number of contacts
+  option.maxNumContacts = 0u;
+  option.enableContact = true;
+  EXPECT_TRUE(group->collide());
+  EXPECT_FALSE(group->collide(option));
+  EXPECT_FALSE(group->collide(option, nullptr));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+  EXPECT_FALSE(result.isCollision());
 }
 
 //==============================================================================
@@ -823,12 +830,12 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get(), option, &result));
 
   // Binary check without passing option
-  auto oldBinaryCheckOption = option.binaryCheck;
-  option.binaryCheck = true;
+  auto oldMaxNumContacts = option.maxNumContacts;
+  option.maxNumContacts = 1u;
   EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get(), option));
   EXPECT_TRUE(bodyNodeGroup1->collide(bodyNodeGroup2.get(), option));
   EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get(), option));
-  option.binaryCheck = oldBinaryCheckOption;
+  option.maxNumContacts = oldMaxNumContacts;
 
   // Binary check without passing option and result
   EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get()));

@@ -103,7 +103,7 @@ public:
   /// collision of not.
   virtual bool collide(
       CollisionGroup* group,
-      const CollisionOption& option = CollisionOption(false, true, 1u, nullptr),
+      const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr) = 0;
 
   /// Perform collision check for two groups. If nullptr is passed to
@@ -112,7 +112,7 @@ public:
   virtual bool collide(
       CollisionGroup* group1,
       CollisionGroup* group2,
-      const CollisionOption& option = CollisionOption(false, true, 1u, nullptr),
+      const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr) = 0;
 
 protected:

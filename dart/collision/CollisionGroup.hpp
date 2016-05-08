@@ -173,7 +173,7 @@ public:
 
   /// Perform collision check within this CollisionGroup.
   bool collide(
-      const CollisionOption& option = CollisionOption(false, true, 1u, nullptr),
+      const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr);
 
   /// Perform collision check with other CollisionGroup.
@@ -182,7 +182,7 @@ public:
   /// from this CollisionObject engine.
   bool collide(
       CollisionGroup* group,
-      const CollisionOption& option = CollisionOption(false, true, 1u, nullptr),
+      const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr);
 
 protected:

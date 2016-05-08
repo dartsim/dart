@@ -183,31 +183,6 @@ BulletCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-static void clearCollisionResult(
-    const CollisionOption& option, CollisionResult* result)
-{
-  if (!result)
-  {
-    if (!option.binaryCheck)
-    {
-      dtwarn << "[BulletCollisionDetector::collide] nullptr of CollisionResult "
-             << "is passed in when the binary check option is off. The "
-             << "collision detector will run narrowphase collision checking "
-             << "over all the feasible collision pairs without storing the "
-             << "contact information, which would be meaningless work. Also, "
-             << "it would ignore the maximum number of contacts since the "
-             << "number of contact will not be counted. Please consider either "
-             << "of using binary check or passsing CollisionResult pointer "
-             << "which is not a nullptr.\n";
-    }
-
-    return;
-  }
-
-  result->clear();
-}
-
-//==============================================================================
 static bool checkGroupValidity(
     BulletCollisionDetector* cd, CollisionGroup* group)
 {
@@ -250,7 +225,11 @@ bool BulletCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
-  clearCollisionResult(option, result);
+  if (result)
+    result->clear();
+
+  if (0u == option.maxNumContacts)
+    return false;
 
   if (!checkGroupValidity(this, group))
     return false;
@@ -285,7 +264,11 @@ bool BulletCollisionDetector::collide(
     CollisionGroup* group1, CollisionGroup* group2,
     const CollisionOption& option, CollisionResult* result)
 {
-  clearCollisionResult(option, result);
+  if (result)
+    result->clear();
+
+  if (0u == option.maxNumContacts)
+    return false;
 
   if (!checkGroupValidity(this, group1))
     return false;
@@ -562,8 +545,7 @@ void convertContacts(
 
       result.addContact(convertContact(cp, userDataA, userDataB));
 
-      if (option.binaryCheck
-          || result.getNumContacts() >= option.maxNumContacts)
+      if (result.getNumContacts() >= option.maxNumContacts)
       {
         overlapFilterCallback->done = true;
         return;

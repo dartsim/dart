@@ -69,7 +69,7 @@ ConstraintSolver::ConstraintSolver(double timeStep)
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
     mCollisionOption(
       collision::CollisionOption(
-        true, false, 100, std::make_shared<collision::BodyNodeCollisionFilter>())),
+        true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
     mTimeStep(timeStep),
     mLCPSolver(new DantzigLCPSolver(mTimeStep))
 {

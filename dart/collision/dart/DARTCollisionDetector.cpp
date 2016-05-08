@@ -96,31 +96,6 @@ DARTCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-static void clearCollisionResult(
-    const CollisionOption& option, CollisionResult* result)
-{
-  if (!result)
-  {
-    if (!option.binaryCheck)
-    {
-      dtwarn << "[DARTCollisionDetector::collide] nullptr of CollisionResult is "
-             << "passed in when the binary check option is off. The collision "
-             << "detector will run narrowphase collision checking over all the "
-             << "feasible collision pairs without storing the contact "
-             << "information, which would be meaningless work. Also, it would "
-             << "ignore the maximum number of contacts since the number of "
-             << "contact will not be counted. Please consider either of using "
-             << "binary check or passsing CollisionResult pointer which is not "
-             << "a nullptr.\n";
-    }
-
-    return;
-  }
-
-  result->clear();
-}
-
-//==============================================================================
 static bool checkGroupValidity(DARTCollisionDetector* cd, CollisionGroup* group)
 {
   if (cd != group->getCollisionDetector().get())
@@ -141,12 +116,14 @@ bool DARTCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
-  clearCollisionResult(option, result);
+  if (result)
+    result->clear();
+
+  if (0u == option.maxNumContacts)
+    return false;
 
   if (!checkGroupValidity(this, group))
     return false;
-
-  const auto& binaryCheck = option.binaryCheck;
 
   auto casted = static_cast<DARTCollisionGroup*>(group);
   const auto& objects = casted->mCollisionObjects;
@@ -154,6 +131,7 @@ bool DARTCollisionDetector::collide(
   if (objects.empty())
     return false;
 
+  auto collisionFound = false;
   const auto& filter = option.collisionFilter;
 
   for (auto i = 0u; i < objects.size() - 1; ++i)
@@ -167,20 +145,24 @@ bool DARTCollisionDetector::collide(
       if (filter && !filter->needCollision(collObj1, collObj2))
         continue;
 
-      auto collisionFound = checkPair(collObj1, collObj2, option, result);
+      collisionFound = checkPair(collObj1, collObj2, option, result);
 
-      if (binaryCheck && collisionFound)
-        return true;
-
-      if (result && result->getNumContacts() >= option.maxNumContacts)
-        return result->isCollision();
+      if (result)
+      {
+        if (result->getNumContacts() >= option.maxNumContacts)
+          return true;
+      }
+      else
+      {
+        // If no result is passed, stop checking when the first contact is found
+        if (collisionFound)
+          return true;
+      }
     }
   }
 
-  if (binaryCheck)
-    return false;
-  else
-    return result->isCollision();
+  // Either no collision found or not reached the maximum number of contacts
+  return collisionFound;
 }
 
 //==============================================================================
@@ -190,15 +172,17 @@ bool DARTCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
-  clearCollisionResult(option, result);
+  if (result)
+    result->clear();
+
+  if (0u == option.maxNumContacts)
+    return false;
 
   if (!checkGroupValidity(this, group1))
     return false;
 
   if (!checkGroupValidity(this, group2))
     return false;
-
-  const auto& binaryCheck = option.binaryCheck;
 
   auto casted1 = static_cast<DARTCollisionGroup*>(group1);
   auto casted2 = static_cast<DARTCollisionGroup*>(group2);
@@ -209,6 +193,7 @@ bool DARTCollisionDetector::collide(
   if (objects1.empty() || objects2.empty())
     return false;
 
+  auto collisionFound = false;
   const auto& filter = option.collisionFilter;
 
   for (auto i = 0u; i < objects1.size(); ++i)
@@ -222,20 +207,24 @@ bool DARTCollisionDetector::collide(
       if (filter && !filter->needCollision(collObj1, collObj2))
         continue;
 
-      auto collisionFound = checkPair(collObj1, collObj2, option, result);
+      collisionFound = checkPair(collObj1, collObj2, option, result);
 
-      if (binaryCheck && collisionFound)
-        return true;
-
-      if (result && result->getNumContacts() >= option.maxNumContacts)
-        return result->isCollision();
+      if (result)
+      {
+        if (result->getNumContacts() >= option.maxNumContacts)
+          return true;
+      }
+      else
+      {
+        // If no result is passed, stop checking when the first contact is found
+        if (collisionFound)
+          return true;
+      }
     }
   }
 
-  if (binaryCheck)
-    return false;
-  else
-    return result->isCollision();
+  // Either no collision found or not reached the maximum number of contacts
+  return collisionFound;
 }
 
 //==============================================================================
@@ -313,9 +302,11 @@ bool isClose(const Eigen::Vector3d& pos1, const Eigen::Vector3d& pos2,
 }
 
 //==============================================================================
-void postProcess(CollisionObject* o1, CollisionObject* o2,
+void postProcess(CollisionObject* o1,
+                 CollisionObject* o2,
                  const CollisionOption& option,
-                 CollisionResult& totalResult, const CollisionResult& pairResult)
+                 CollisionResult& totalResult,
+                 const CollisionResult& pairResult)
 {
   if (!pairResult.isCollision())
     return;
@@ -343,9 +334,6 @@ void postProcess(CollisionObject* o1, CollisionObject* o2,
     contact.collisionObject1 = o1;
     contact.collisionObject2 = o2;
     totalResult.addContact(contact);
-
-    if (option.binaryCheck)
-      break;
 
     if (totalResult.getNumContacts() >= option.maxNumContacts)
       break;

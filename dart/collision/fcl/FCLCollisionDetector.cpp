@@ -644,31 +644,6 @@ FCLCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-static void clearCollisionResult(
-    const CollisionOption& option, CollisionResult* result)
-{
-  if (!result)
-  {
-    if (!option.binaryCheck)
-    {
-      dtwarn << "[FCLCollisionDetector::collide] nullptr of CollisionResult is "
-             << "passed in when the binary check option is off. The collision "
-             << "detector will run narrowphase collision checking over all the "
-             << "feasible collision pairs without storing the contact "
-             << "information, which would be meaningless work. Also, it would "
-             << "ignore the maximum number of contacts since the number of "
-             << "contact will not be counted. Please consider either of using "
-             << "binary check or passsing CollisionResult pointer which is not "
-             << "a nullptr.\n";
-    }
-
-    return;
-  }
-
-  result->clear();
-}
-
-//==============================================================================
 static bool checkGroupValidity(FCLCollisionDetector* cd, CollisionGroup* group)
 {
   if (cd != group->getCollisionDetector().get())
@@ -689,7 +664,11 @@ bool FCLCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
-  clearCollisionResult(option, result);
+  if (result)
+    result->clear();
+
+  if (0u == option.maxNumContacts)
+    return false;
 
   if (!checkGroupValidity(this, group))
     return false;
@@ -711,7 +690,11 @@ bool FCLCollisionDetector::collide(
     CollisionGroup* group1, CollisionGroup* group2,
     const CollisionOption& option, CollisionResult* result)
 {
-  clearCollisionResult(option, result);
+  if (result)
+    result->clear();
+
+  if (0u == option.maxNumContacts)
+    return false;
 
   if (!checkGroupValidity(this, group1))
     return false;
@@ -1012,7 +995,6 @@ bool collisionCallback(
         auto* result      = collData->result;
   const auto& option      = collData->option;
   const auto& filter      = option.collisionFilter;
-  const auto& binaryCheck = option.binaryCheck;
 
   // Filtering
   if (filter)
@@ -1056,12 +1038,14 @@ bool collisionCallback(
     if (result->getNumContacts() >= option.maxNumContacts)
       collData->done = true;
   }
-
-  // Check satisfaction of the stopping conditions
-  if (binaryCheck && fclResult.isCollision())
+  else
   {
-    collData->foundCollision = true;
-    collData->done = true;
+    // If no result is passed, stop checking when the first contact is found
+    if (fclResult.isCollision())
+    {
+      collData->foundCollision = true;
+      collData->done = true;
+    }
   }
 
   return collData->done;
@@ -1169,7 +1153,7 @@ void postProcessFCL(
 
   // For binary check, return after adding the first contact point to the result
   // without the checkings of repeatidity and co-linearity.
-  if (option.binaryCheck)
+  if (1u == option.maxNumContacts)
   {
     result.addContact(convertContact(fclResult.getContact(0), o1, o2, option));
 
@@ -1275,7 +1259,7 @@ void postProcessDART(
 
     // For binary check, return after adding the first contact point to the result
     // without the checkings of repeatidity and co-linearity.
-    if (option.binaryCheck)
+    if (1u == option.maxNumContacts)
     {
       result.addContact(pair1);
 

@@ -187,7 +187,7 @@ public:
   /// penetration depth.
   bool checkCollision(
       const collision::CollisionOption& option
-          = collision::CollisionOption(false, true, 1u, nullptr),
+          = collision::CollisionOption(false, 1u, nullptr),
       collision::CollisionResult* result = nullptr);
 
   /// Return the collision checking result of the last simulation step. If this

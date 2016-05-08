@@ -498,7 +498,9 @@ bool World::checkCollision(bool checkAllCollisions)
   collision::CollisionOption option;
 
   if (checkAllCollisions)
-    option.binaryCheck = false;
+    option.maxNumContacts = 1e+3;
+  else
+    option.maxNumContacts = 1u;
 
   return checkCollision(option);
 }
