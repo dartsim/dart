@@ -234,17 +234,26 @@ bool BulletCollisionDetector::collide(
   if (!checkGroupValidity(this, group))
     return false;
 
-  auto castedData = static_cast<BulletCollisionGroup*>(group);
-  castedData->updateEngineData();
+  // TODO(JS): It seems, when new BulletOverlapFilterCallback is set to
+  // btCollisionWorld, bullet doesn't update the list of collision pairs that
+  // was generated before. Also, there is no way to update the list manually.
+  // Please report us if it's not true.
+  //
+  // In order to have filtered pairs in btCollisionWorld, we instead create a
+  // new btCollisionWorld (by creating new BulletCollisionGroup) and add the
+  // collision objects to the new btCollisionWorld so that the filter prevents
+  // btCollisionWorld to generate unnecessary pairs, which is very inefficient
+  // way.
 
-  auto bulletCollisionWorld = castedData->getBulletCollisionWorld();
+  auto newGroup = common::make_unique<BulletCollisionGroup>(shared_from_this());
+  auto bulletCollisionWorld = newGroup->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
   auto filterCallback = new BulletOverlapFilterCallback(option, result);
-//  auto dispatcher = static_cast<btCollisionDispatcher*>(
-//        bulletCollisionWorld->getDispatcher());
-//  dispatcher->setNearCallback(nullptr);
-
   bulletPairCache->setOverlapFilterCallback(filterCallback);
+
+  newGroup->addShapeFramesOf(group);
+  newGroup->updateEngineData();
+
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
   if (result)
@@ -276,15 +285,17 @@ bool BulletCollisionDetector::collide(
   if (!checkGroupValidity(this, group2))
     return false;
 
-  auto group = common::make_unique<BulletCollisionGroup>(shared_from_this());
-  group->addShapeFramesOf(group1, group2);
-  group->updateEngineData();
+  // TODO(JS): The collision checking does not distinguish the two groups.
 
+  auto group = common::make_unique<BulletCollisionGroup>(shared_from_this());
   auto bulletCollisionWorld = group->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
   auto filterCallback = new BulletOverlapFilterCallback(option, result);
-
   bulletPairCache->setOverlapFilterCallback(filterCallback);
+
+  group->addShapeFramesOf(group1, group2);
+  group->updateEngineData();
+
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
   if (result)
