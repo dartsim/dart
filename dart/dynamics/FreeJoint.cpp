@@ -187,7 +187,7 @@ void FreeJoint::setTransform(const Eigen::Isometry3d& newTransform,
 void FreeJoint::setRelativeSpatialVelocity(
     const Eigen::Vector6d& newSpatialVelocity)
 {
-  setVelocitiesStatic(getLocalJacobianStatic().inverse() * newSpatialVelocity);
+  setVelocitiesStatic(getRelativeJacobianStatic().inverse() * newSpatialVelocity);
 }
 
 //==============================================================================
@@ -241,7 +241,7 @@ void FreeJoint::setSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity,
     if (relativeTo->isWorld())
     {
       const Eigen::Vector6d parentVelocity = math::AdInvT(
-            getLocalTransform(),
+            getRelativeTransform(),
             getChildBodyNode()->getParentFrame()->getSpatialVelocity());
 
       targetRelSpatialVel -= parentVelocity;
@@ -249,7 +249,7 @@ void FreeJoint::setSpatialVelocity(const Eigen::Vector6d& newSpatialVelocity,
     else
     {
       const Eigen::Vector6d parentVelocity = math::AdInvT(
-            getLocalTransform(),
+            getRelativeTransform(),
             getChildBodyNode()->getParentFrame()->getSpatialVelocity());
       const Eigen::Vector6d arbitraryVelocity = math::AdT(
             relativeTo->getTransform(getChildBodyNode()),
@@ -338,8 +338,8 @@ void FreeJoint::setAngularVelocity(const Eigen::Vector3d& newAngularVelocity,
 void FreeJoint::setRelativeSpatialAcceleration(
     const Eigen::Vector6d& newSpatialAcceleration)
 {
-  const Eigen::Matrix6d& J = getLocalJacobianStatic();
-  const Eigen::Matrix6d& dJ = getLocalJacobianTimeDerivStatic();
+  const Eigen::Matrix6d& J = getRelativeJacobianStatic();
+  const Eigen::Matrix6d& dJ = getRelativeJacobianTimeDerivStatic();
 
   setAccelerationsStatic(
     J.inverse() * (newSpatialAcceleration - dJ * getVelocitiesStatic()));
@@ -399,10 +399,10 @@ void FreeJoint::setSpatialAcceleration(
     {
       const Eigen::Vector6d parentAcceleration
           = math::AdInvT(
-            getLocalTransform(),
+            getRelativeTransform(),
             getChildBodyNode()->getParentFrame()->getSpatialAcceleration())
             + math::ad(getChildBodyNode()->getSpatialVelocity(),
-                       getLocalJacobianStatic() * getVelocitiesStatic());
+                       getRelativeJacobianStatic() * getVelocitiesStatic());
 
       targetRelSpatialAcc -= parentAcceleration;
     }
@@ -410,10 +410,10 @@ void FreeJoint::setSpatialAcceleration(
     {
       const Eigen::Vector6d parentAcceleration
           = math::AdInvT(
-            getLocalTransform(),
+            getRelativeTransform(),
             getChildBodyNode()->getParentFrame()->getSpatialAcceleration())
             + math::ad(getChildBodyNode()->getSpatialVelocity(),
-                       getLocalJacobianStatic() * getVelocitiesStatic());
+                       getRelativeJacobianStatic() * getVelocitiesStatic());
       const Eigen::Vector6d arbitraryAcceleration =
           math::AdT(relativeTo->getTransform(getChildBodyNode()),
                     relativeTo->getSpatialAcceleration())
@@ -507,7 +507,7 @@ void FreeJoint::setAngularAcceleration(
 }
 
 //==============================================================================
-Eigen::Matrix6d FreeJoint::getLocalJacobianStatic(
+Eigen::Matrix6d FreeJoint::getRelativeJacobianStatic(
     const Eigen::Vector6d& /*positions*/) const
 {
   return mJacobian;
@@ -590,7 +590,7 @@ void FreeJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void FreeJoint::updateLocalTransform() const
+void FreeJoint::updateRelativeTransform() const
 {
   mQ = convertToTransform(getPositionsStatic());
 
@@ -601,14 +601,14 @@ void FreeJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void FreeJoint::updateLocalJacobian(bool _mandatory) const
+void FreeJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if (_mandatory)
     mJacobian = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint);
 }
 
 //==============================================================================
-void FreeJoint::updateLocalJacobianTimeDeriv() const
+void FreeJoint::updateRelativeJacobianTimeDeriv() const
 {
   assert(Eigen::Matrix6d::Zero() == mJacobianDeriv);
 }
@@ -618,7 +618,7 @@ const Eigen::Isometry3d& FreeJoint::getQ() const
 {
   if(mNeedTransformUpdate)
   {
-    updateLocalTransform();
+    updateRelativeTransform();
     mNeedTransformUpdate = false;
   }
 

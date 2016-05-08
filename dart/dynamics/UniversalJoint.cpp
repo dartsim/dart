@@ -150,7 +150,7 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 2> UniversalJoint::getLocalJacobianStatic(
+Eigen::Matrix<double, 6, 2> UniversalJoint::getRelativeJacobianStatic(
     const Eigen::Vector2d& _positions) const
 {
   Eigen::Matrix<double, 6, 2> J;
@@ -189,7 +189,7 @@ void UniversalJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void UniversalJoint::updateLocalTransform() const
+void UniversalJoint::updateRelativeTransform() const
 {
   const Eigen::Vector2d& positions = getPositionsStatic();
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
@@ -200,15 +200,15 @@ void UniversalJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void UniversalJoint::updateLocalJacobian(bool) const
+void UniversalJoint::updateRelativeJacobian(bool) const
 {
-  mJacobian = getLocalJacobianStatic(getPositionsStatic());
+  mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void UniversalJoint::updateLocalJacobianTimeDeriv() const
+void UniversalJoint::updateRelativeJacobianTimeDeriv() const
 {
-  Eigen::Vector6d tmpV1 = getLocalJacobianStatic().col(1)
+  Eigen::Vector6d tmpV1 = getRelativeJacobianStatic().col(1)
                         * getVelocitiesStatic()[1];
 
   Eigen::Isometry3d tmpT = math::expAngular(

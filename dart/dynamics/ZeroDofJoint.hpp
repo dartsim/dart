@@ -366,14 +366,14 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  const math::Jacobian getLocalJacobian() const override;
+  const math::Jacobian getRelativeJacobian() const override;
 
   // Documentation inherited
-  math::Jacobian getLocalJacobian(
+  math::Jacobian getRelativeJacobian(
       const Eigen::VectorXd& _positions) const override;
 
   // Documentation inherited
-  const math::Jacobian getLocalJacobianTimeDeriv() const override;
+  const math::Jacobian getRelativeJacobianTimeDeriv() const override;
 
   // Documentation inherited
   void addVelocityTo(Eigen::Vector6d& _vel) override;

@@ -1228,11 +1228,11 @@ TEST(Skeleton, Updating)
   Joint* joint0 = skeleton->getJoint(0);
   Joint* joint1 = skeleton->getJoint(1);
 
-  math::Jacobian J0i = joint0->getLocalJacobian();
+  math::Jacobian J0i = joint0->getRelativeJacobian();
   joint0->get<RevoluteJoint::Aspect>()->setProperties(
         joint1->get<RevoluteJoint::Aspect>()->getProperties());
 
-  math::Jacobian J0f = joint0->getLocalJacobian();
+  math::Jacobian J0f = joint0->getRelativeJacobian();
   EXPECT_FALSE(equals(J0i, J0f));
 
   // PrismaticJoint
@@ -1241,10 +1241,10 @@ TEST(Skeleton, Updating)
   joint0 = skeleton->getJoint(0);
   joint1 = skeleton->getJoint(1);
 
-  J0i = joint0->getLocalJacobian();
+  J0i = joint0->getRelativeJacobian();
   joint0->get<PrismaticJoint::Aspect>()->setProperties(
         joint1->get<PrismaticJoint::Aspect>()->getProperties());
-  J0f = joint0->getLocalJacobian();
+  J0f = joint0->getRelativeJacobian();
   EXPECT_FALSE(equals(J0i, J0f));
 
   skeleton = Skeleton::create();
@@ -1253,14 +1253,14 @@ TEST(Skeleton, Updating)
   screw->setAxis(Eigen::Vector3d::UnitX());
   screw->setPitch(2);
 
-  J0i = screw->getLocalJacobian();
+  J0i = screw->getRelativeJacobian();
   screw->setAxis(Eigen::Vector3d::UnitY());
-  J0f = screw->getLocalJacobian();
+  J0f = screw->getRelativeJacobian();
   EXPECT_FALSE(equals(J0i, J0f));
 
   J0i = J0f;
   screw->setPitch(3);
-  J0f = screw->getLocalJacobian();
+  J0f = screw->getRelativeJacobian();
   EXPECT_FALSE(equals(J0i, J0f));
 }
 

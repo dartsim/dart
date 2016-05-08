@@ -400,14 +400,14 @@ public:
   double getPotentialEnergy() const override;
 
   // Documentation inherited
-  const math::Jacobian getLocalJacobian() const override;
+  const math::Jacobian getRelativeJacobian() const override;
 
   // Documentation inherited
-  math::Jacobian getLocalJacobian(
+  math::Jacobian getRelativeJacobian(
       const Eigen::VectorXd& _positions) const override;
 
   // Documentation inherited
-  const math::Jacobian getLocalJacobianTimeDeriv() const override;
+  const math::Jacobian getRelativeJacobianTimeDeriv() const override;
 
   // Documentation inherited
   Eigen::Vector6d getBodyConstraintWrench() const override;
@@ -431,19 +431,19 @@ protected:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void updateLocalSpatialVelocity() const override;
+  void updateRelativeSpatialVelocity() const override;
 
   // Documentation inherited
-  void updateLocalSpatialAcceleration() const override;
+  void updateRelativeSpatialAcceleration() const override;
 
   // Documentation inherited
-  void updateLocalPrimaryAcceleration() const override;
+  void updateRelativePrimaryAcceleration() const override;
 
-  /// Fixed-size version of getLocalJacobian()
-  const Eigen::Vector6d& getLocalJacobianStatic() const;
+  /// Fixed-size version of getRelativeJacobian()
+  const Eigen::Vector6d& getRelativeJacobianStatic() const;
 
-  /// Fixed-size version of getLocalJacobianTimeDeriv()
-  const Eigen::Vector6d& getLocalJacobianTimeDerivStatic() const;
+  /// Fixed-size version of getRelativeJacobianTimeDeriv()
+  const Eigen::Vector6d& getRelativeJacobianTimeDerivStatic() const;
 
   /// Get the inverse of projected articulated inertia
   const double& getInvProjArtInertia() const;
@@ -609,12 +609,12 @@ protected:
 
   /// Spatial Jacobian expressed in the child body frame
   ///
-  /// Do not use directly! Use getLocalJacobianStatic() to access this quantity
+  /// Do not use directly! Use getRelativeJacobianStatic() to access this quantity
   mutable Eigen::Vector6d mJacobian;
 
   /// Time derivative of spatial Jacobian expressed in the child body frame
   ///
-  /// Do not use directly! Use getLocalJacobianTimeDerivStatic() to access this
+  /// Do not use directly! Use getRelativeJacobianTimeDerivStatic() to access this
   /// quantity
   Eigen::Vector6d mJacobianDeriv;
 

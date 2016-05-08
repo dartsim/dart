@@ -130,7 +130,7 @@ void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 
   mAspectProperties.mAxis = _axis.normalized();
   Joint::notifyPositionUpdate();
-  updateLocalJacobian();
+  updateRelativeJacobian();
   Joint::incrementVersion();
 }
 
@@ -158,7 +158,7 @@ Joint* RevoluteJoint::clone() const
 }
 
 //==============================================================================
-void RevoluteJoint::updateLocalTransform() const
+void RevoluteJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * math::expAngular(getAxis() * getPositionStatic())
@@ -169,7 +169,7 @@ void RevoluteJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void RevoluteJoint::updateLocalJacobian(bool _mandatory) const
+void RevoluteJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if(_mandatory)
   {
@@ -182,7 +182,7 @@ void RevoluteJoint::updateLocalJacobian(bool _mandatory) const
 }
 
 //==============================================================================
-void RevoluteJoint::updateLocalJacobianTimeDeriv() const
+void RevoluteJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of revolute joint is always zero
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());
