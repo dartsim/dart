@@ -44,13 +44,8 @@
 #include "dart/config.hpp"
 #include "dart/common/common.hpp"
 #include "dart/math/math.hpp"
-#include "dart/collision/CollisionGroup.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
-#if HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
-#endif
 #include "dart/dynamics/dynamics.hpp"
+#include "dart/collision/collision.hpp"
 #include "dart/simulation/simulation.hpp"
 #include "dart/utils/utils.hpp"
 #include "TestHelpers.hpp"
@@ -795,6 +790,73 @@ TEST_F(COLLISION, Options)
 
   auto dart = DARTCollisionDetector::create();
   testOptions(dart);
+}
+
+//==============================================================================
+void testFilter(const std::shared_ptr<CollisionDetector>& cd)
+{
+  // Create two bodies skeleton. The two bodies are placed at the same position
+  // with the same size shape so that they collide by default.
+  auto skel = Skeleton::create();
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(1, 1, 1));
+  auto pair0 = skel->createJointAndBodyNodePair<RevoluteJoint>(nullptr);
+  auto* body0 = pair0.second;
+  body0->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
+  auto pair1 = body0->createChildJointAndBodyNodePair<RevoluteJoint>();
+  auto* body1 = pair1.second;
+  body1->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
+
+  // Create a collision group from the skeleton
+  auto group = cd->createCollisionGroup(skel.get());
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  // Default collision filter for Skeleton
+  CollisionOption option;
+  option.collisionFilter = std::make_shared<BodyNodeCollisionFilter>();
+
+  skel->enableSelfCollision(true);
+  EXPECT_TRUE(group->collide());  // without filer, always collision
+  EXPECT_TRUE(group->collide(option));
+
+  skel->enableSelfCollision(false);
+  EXPECT_TRUE(group->collide());
+  EXPECT_FALSE(group->collide(option));
+
+  skel->disableSelfCollision();
+  EXPECT_TRUE(group->collide());
+  EXPECT_FALSE(group->collide(option));
+}
+
+//==============================================================================
+TEST_F(COLLISION, Filter)
+{
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testFilter(fcl_mesh_dart);
+
+  // auto fcl_prim_fcl = FCLCollisionDetector::create();
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testFilter(fcl_prim_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testFilter(fcl_mesh_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testFilter(fcl_mesh_fcl);
+
+#if HAVE_BULLET_COLLISION
+  auto bullet = BulletCollisionDetector::create();
+  testFilter(bullet);
+#endif
+
+  auto dart = DARTCollisionDetector::create();
+  testFilter(dart);
 }
 
 //==============================================================================

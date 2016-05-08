@@ -47,9 +47,8 @@ class CollisionFilter;
 
 struct CollisionOption
 {
-public:
 
-  /// Set whether the collision detector computes contact information (contact
+  /// Flag whether the collision detector computes contact information (contact
   /// point, normal, and penetration depth). If it is set to false, only the
   /// result of that which pairs are colliding will be stored in the
   /// CollisionResult without the contact information.
