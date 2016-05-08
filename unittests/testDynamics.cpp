@@ -1093,8 +1093,8 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
         auto body       = skel->getBodyNode(k);
         auto joint      = skel->getJoint(k);
         auto parentBody = body->getParentBodyNode();
-        Eigen::MatrixXd S  = joint->getLocalJacobian();
-        Eigen::MatrixXd dS = joint->getLocalJacobianTimeDeriv();
+        Eigen::MatrixXd S  = joint->getRelativeJacobian();
+        Eigen::MatrixXd dS = joint->getRelativeJacobianTimeDeriv();
         Eigen::VectorXd jointQ   = joint->getPositions();
         Eigen::VectorXd jointDQ  = joint->getVelocities();
         Eigen::VectorXd jointDDQ = joint->getAccelerations();

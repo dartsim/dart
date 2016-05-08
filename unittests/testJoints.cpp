@@ -172,9 +172,9 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     if (dof == 0)
       return;
 
-    Eigen::Isometry3d T = joint->getLocalTransform();
-    Jacobian J = joint->getLocalJacobian();
-    Jacobian dJ = joint->getLocalJacobianTimeDeriv();
+    Eigen::Isometry3d T = joint->getRelativeTransform();
+    Jacobian J = joint->getRelativeJacobian();
+    Jacobian dJ = joint->getRelativeJacobianTimeDeriv();
 
     //--------------------------------------------------------------------------
     // Test T
@@ -191,13 +191,13 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
       // a
       Eigen::VectorXd q_a = q;
       joint->setPositions(q_a);
-      Eigen::Isometry3d T_a = joint->getLocalTransform();
+      Eigen::Isometry3d T_a = joint->getRelativeTransform();
 
       // b
       Eigen::VectorXd q_b = q;
       q_b(i) += q_delta;
       joint->setPositions(q_b);
-      Eigen::Isometry3d T_b = joint->getLocalTransform();
+      Eigen::Isometry3d T_b = joint->getRelativeTransform();
 
       //
       Eigen::Isometry3d Tinv_a = T_a.inverse();
@@ -237,13 +237,13 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
       // a
       Eigen::VectorXd q_a = q;
       joint->setPositions(q_a);
-      Jacobian J_a = joint->getLocalJacobian();
+      Jacobian J_a = joint->getRelativeJacobian();
 
       // b
       Eigen::VectorXd q_b = q;
       q_b(i) += q_delta;
       joint->setPositions(q_b);
-      Jacobian J_b = joint->getLocalJacobian();
+      Jacobian J_b = joint->getRelativeJacobian();
 
       //
       Jacobian dJ_dq = (J_b - J_a) / q_delta;
@@ -273,7 +273,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     if (joint->getNumDofs() == 0)
       return;
 
-    Eigen::Isometry3d T = joint->getLocalTransform();
+    Eigen::Isometry3d T = joint->getRelativeTransform();
     EXPECT_TRUE(math::verifyTransform(T));
   }
 }

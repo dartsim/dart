@@ -59,11 +59,11 @@ TranslationalJoint::~TranslationalJoint()
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> TranslationalJoint::getLocalJacobianStatic(
+Eigen::Matrix<double, 6, 3> TranslationalJoint::getRelativeJacobianStatic(
     const Eigen::Vector3d& /*_positions*/) const
 {
   // The Jacobian is always constant w.r.t. the generalized coordinates.
-  return getLocalJacobianStatic();
+  return getRelativeJacobianStatic();
 }
 
 //==============================================================================
@@ -119,7 +119,7 @@ void TranslationalJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void TranslationalJoint::updateLocalTransform() const
+void TranslationalJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(getPositionsStatic())
@@ -130,7 +130,7 @@ void TranslationalJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void TranslationalJoint::updateLocalJacobian(bool _mandatory) const
+void TranslationalJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if (_mandatory)
   {
@@ -143,7 +143,7 @@ void TranslationalJoint::updateLocalJacobian(bool _mandatory) const
 }
 
 //==============================================================================
-void TranslationalJoint::updateLocalJacobianTimeDeriv() const
+void TranslationalJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of translational joint is always zero
   assert(mJacobianDeriv == (Eigen::Matrix<double, 6, 3>::Zero()));

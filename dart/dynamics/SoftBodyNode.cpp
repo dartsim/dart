@@ -616,7 +616,7 @@ void SoftBodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
     Joint* childJoint = childBodyNode->getParentJoint();
     assert(childJoint != nullptr);
 
-    mF += math::dAdInvT(childJoint->getLocalTransform(),
+    mF += math::dAdInvT(childJoint->getRelativeTransform(),
                         childBodyNode->getBodyForce());
   }
   for (auto& pointMass : mPointMasses)
@@ -862,7 +862,7 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
 //  for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
 //       it != mChildBodyNodes.end(); ++it)
 //  {
-//    mM_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+//    mM_F += math::dAdInvT((*it)->getParentJoint()->getRelativeTransform(),
 //                          (*it)->mM_F);
 //  }
 
@@ -883,7 +883,7 @@ void SoftBodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
 //  {
 //    int iStart = mParentJoint->getIndexInTree(0);
 //    _MCol->block(iStart, _col, dof, 1).noalias()
-//        = mParentJoint->getLocalJacobian().transpose() * mM_F;
+//        = mParentJoint->getRelativeJacobian().transpose() * mM_F;
 //  }
 }
 
@@ -906,7 +906,7 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _c
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
   {
-    mM_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+    mM_F += math::dAdInvT((*it)->getParentJoint()->getRelativeTransform(),
                           (*it)->mM_F);
   }
   for (std::vector<PointMass*>::iterator it = mPointMasses.begin();
@@ -931,7 +931,7 @@ void SoftBodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _c
 
     // TODO(JS): Not recommended to use Joint::getAccelerations
     _MCol.block(iStart, _col, dof, 1).noalias()
-        = mParentJoint->getLocalJacobian().transpose() * mM_F
+        = mParentJoint->getRelativeJacobian().transpose() * mM_F
           + D * (_timeStep * mParentJoint->getAccelerations())
           + K * (_timeStep * _timeStep * mParentJoint->getAccelerations());
   }
@@ -1017,7 +1017,7 @@ void SoftBodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t
           _InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
 
     //
-    mInvM_U = math::AdInvT(mParentJoint->getLocalTransform(),
+    mInvM_U = math::AdInvT(mParentJoint->getRelativeTransform(),
                            mParentBodyNode->mInvM_U);
   }
   else
@@ -1097,7 +1097,7 @@ void SoftBodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
   {
-    mG_F += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
+    mG_F += math::dAdInvT((*it)->mParentJoint->getRelativeTransform(),
                           (*it)->mG_F);
   }
 
@@ -1111,7 +1111,7 @@ void SoftBodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
   int nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0)
   {
-    Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
+    Eigen::VectorXd g = -(mParentJoint->getRelativeJacobian().transpose() * mG_F);
     int iStart = mParentJoint->getIndexInTree(0);
     _g.segment(iStart, nGenCoords) = g;
   }
@@ -1150,7 +1150,7 @@ void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
 //  for (std::vector<BodyNode*>::iterator it = mChildBodyNodes.begin();
 //       it != mChildBodyNodes.end(); ++it)
 //  {
-//    mCg_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+//    mCg_F += math::dAdInvT((*it)->getParentJoint()->getRelativeTransform(),
 //                           (*it)->mCg_F);
 //  }
 
@@ -1164,7 +1164,7 @@ void SoftBodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
 //  int nGenCoords = mParentJoint->getNumDofs();
 //  if (nGenCoords > 0)
 //  {
-//    Eigen::VectorXd Cg = mParentJoint->getLocalJacobian().transpose() * mCg_F;
+//    Eigen::VectorXd Cg = mParentJoint->getRelativeJacobian().transpose() * mCg_F;
 //    int iStart = mParentJoint->getIndexInTree(0);
 //    _Cg->segment(iStart, nGenCoords) = Cg;
 //  }
@@ -1183,7 +1183,7 @@ void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
   {
-    mFext_F += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
+    mFext_F += math::dAdInvT((*it)->mParentJoint->getRelativeTransform(),
                              (*it)->mFext_F);
   }
 
@@ -1198,7 +1198,7 @@ void SoftBodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Fext
-        = mParentJoint->getLocalJacobian().transpose() * mFext_F;
+        = mParentJoint->getRelativeJacobian().transpose() * mFext_F;
     int iStart = mParentJoint->getIndexInTree(0);
     _Fext.segment(iStart, nGenCoords) = Fext;
   }

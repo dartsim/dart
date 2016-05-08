@@ -42,6 +42,7 @@
 #include <vector>
 #include <memory>
 
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/VersionCounter.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
@@ -288,7 +289,7 @@ public:
 
   /// Get whether a generalized coordinate is cyclic. Return true if and only
   /// if this generalized coordinate has an infinite number of positions that
-  /// produce the same local transform. Note that, for a multi-DOF joint,
+  /// produce the same relative transform. Note that, for a multi-DOF joint,
   /// producing a cycle may require altering the position of this Joint's other
   /// generalized coordinates.
   virtual bool isCyclic(std::size_t _index) const = 0;
@@ -543,39 +544,61 @@ public:
 
   //----------------------------------------------------------------------------
 
-  /// Get transformation from parent BodyNode to child BodyNode
+  /// Deprecated. Use getRelativeTransform() instead.
+  DEPRECATED(6.0)
   const Eigen::Isometry3d& getLocalTransform() const;
 
-  /// Get the velocity from the parent BodyNode to the child BodyNode
+  /// Deprecated. Use getLocalSpatialVelocity() instead.
+  DEPRECATED(6.0)
   const Eigen::Vector6d& getLocalSpatialVelocity() const;
 
-  /// Get the acceleration from the parent BodyNode to the child BodyNode
+  /// Deprecated. Use getLocalSpatialAcceleration() instead.
+  DEPRECATED(6.0)
   const Eigen::Vector6d& getLocalSpatialAcceleration() const;
 
-  /// Get the J * q_dd of this joint
+  /// Deprecated. Use getLocalPrimaryAcceleration() instead.
+  DEPRECATED(6.0)
   const Eigen::Vector6d& getLocalPrimaryAcceleration() const;
 
-  /// Get generalized Jacobian from parent body node to child body node
-  /// w.r.t. local generalized coordinate
-  virtual const math::Jacobian getLocalJacobian() const = 0;
+  /// Deprecated. Use getRelativeJacobian() instead.
+  DEPRECATED(6.0)
+  const math::Jacobian getLocalJacobian() const;
 
-  /// Get generalized Jacobian from parent body node to child body node
-  /// w.r.t. local generalized coordinate
-  virtual math::Jacobian getLocalJacobian(
-      const Eigen::VectorXd& _positions) const = 0;
+  /// Deprecated. Use getRelativeJacobian() instead.
+  DEPRECATED(6.0)
+  math::Jacobian getLocalJacobian(const Eigen::VectorXd& positions) const;
 
-  /// Get time derivative of generalized Jacobian from parent body node
-  /// to child body node w.r.t. local generalized coordinate
-  virtual const math::Jacobian getLocalJacobianTimeDeriv() const = 0;
+  /// Deprecated. Use getRelativeJacobianTimeDeriv() instead.
+  DEPRECATED(6.0)
+  const math::Jacobian getLocalJacobianTimeDeriv() const;
 
-  /// Get whether this joint contains _genCoord
-  /// \param[in] Generalized coordinate to see
-  /// \return True if this joint contains _genCoord
-//  bool contains(const GenCoord* _genCoord) const;
+  /// Get transform of the child BodyNode relative to the parent BodyNode
+  /// expressed in the child BodyNode frame
+  const Eigen::Isometry3d& getRelativeTransform() const;
 
-  /// Get local index of the dof at this joint; if the dof is not presented at
-  /// this joint, return -1
-//  int getGenCoordLocalIndex(int _dofSkelIndex) const;
+  /// Get spatial velocity of the child BodyNode relative to the parent BodyNode
+  /// expressed in the child BodyNode frame
+  const Eigen::Vector6d& getRelativeSpatialVelocity() const;
+
+  /// Get spatial acceleration of the child BodyNode relative to the parent
+  /// BodyNode expressed in the child BodyNode frame
+  const Eigen::Vector6d& getRelativeSpatialAcceleration() const;
+
+  /// Get J * \ddot{q} of this joint
+  const Eigen::Vector6d& getRelativePrimaryAcceleration() const;
+
+  /// Get spatial Jacobian of the child BodyNode relative to the parent BodyNode
+  /// expressed in the child BodyNode frame
+  virtual const math::Jacobian getRelativeJacobian() const = 0;
+
+  /// Get spatial Jacobian of the child BodyNode relative to the parent BodyNode
+  /// expressed in the child BodyNode frame
+  virtual math::Jacobian getRelativeJacobian(
+      const Eigen::VectorXd& positions) const = 0;
+
+  /// Get time derivative of spatial Jacobian of the child BodyNode relative to
+  /// the parent BodyNode expressed in the child BodyNode frame
+  virtual const math::Jacobian getRelativeJacobianTimeDeriv() const = 0;
 
   /// Get constraint wrench expressed in body node frame
   virtual Eigen::Vector6d getBodyConstraintWrench() const = 0;
@@ -662,33 +685,60 @@ protected:
   /// \{ \name Recursive dynamics routines
   //----------------------------------------------------------------------------
 
-  /// Update transformation from parent BodyNode to child BodyNode
-  virtual void updateLocalTransform() const = 0;
+  /// Deprecated. Use updateRelativeTransform() instead.
+  DEPRECATED(6.0)
+  void updateLocalTransform() const;
 
-  /// Update velocity from the parent BodyNode to the child BodyNode
-  virtual void updateLocalSpatialVelocity() const = 0;
+  /// Deprecated. Use updateRelativeSpatialVelocity() instead.
+  DEPRECATED(6.0)
+  void updateLocalSpatialVelocity() const;
 
-  /// Update acceleration from the parent BodyNode to the child BodyNode
-  virtual void updateLocalSpatialAcceleration() const = 0;
+  /// Deprecated. Use updateRelativeSpatialAcceleration() instead.
+  DEPRECATED(6.0)
+  void updateLocalSpatialAcceleration() const;
 
-  /// Update the J * q_dd of this joint
-  virtual void updateLocalPrimaryAcceleration() const = 0;
+  /// Deprecated. Use updateRelativePrimaryAcceleration() instead.
+  DEPRECATED(6.0)
+  void updateLocalPrimaryAcceleration() const;
 
-  /// Update generalized Jacobian from parent body node to child body
-  /// node w.r.t. local generalized coordinate
+  /// Deprecated. Use updateRelativeJacobian() instead.
+  DEPRECATED(6.0)
+  void updateLocalJacobian(bool mandatory = true) const;
+
+  /// Deprecated. Use updateRelativeJacobianTimeDeriv() instead.
+  DEPRECATED(6.0)
+  void updateLocalJacobianTimeDeriv() const;
+
+  /// Update transform of the child BodyNode relative to the parent BodyNode
+  /// expressed in the child BodyNode frame
+  virtual void updateRelativeTransform() const = 0;
+
+  /// Update spatial velocity of the child BodyNode relative to the parent
+  /// BodyNode expressed in the child BodyNode frame
+  virtual void updateRelativeSpatialVelocity() const = 0;
+
+  /// Update spatial acceleration of the child BodyNode relative to the parent
+  /// BodyNode expressed in the child BodyNode frame
+  virtual void updateRelativeSpatialAcceleration() const = 0;
+
+  /// Update J * \ddot{q} of this joint
+  virtual void updateRelativePrimaryAcceleration() const = 0;
+
+  /// Update spatial Jacobian of the child BodyNode relative to the parent
+  /// BodyNode expressed in the child BodyNode frame
   ///
-  /// The _mandatory argument can be set to false if the Jacobian update request
-  /// is due to a change in Joint positions, because not all Joint types have a
-  /// Local Jacobian that depends on their Joint positions, so a Local Jacobian
-  /// update would not actually be required.
-  virtual void updateLocalJacobian(bool _mandatory=true) const = 0;
+  /// \param[in] mandatory This argument can be set to false if the Jacobian
+  /// update request is due to a change in Joint positions, because not all
+  /// Joint types have a relative Jacobian that depends on their Joint
+  /// positions, so a relative Jacobian update would not actually be required.
+  virtual void updateRelativeJacobian(bool mandatory = true) const = 0;
 
-  /// Update time derivative of generalized Jacobian from parent body
-  /// node to child body node w.r.t. local generalized coordinate
+  /// Update time derivative of spatial Jacobian of the child BodyNode relative
+  /// to the parent BodyNode expressed in the child BodyNode frame
   ///
-  /// If the Local Jacobian Time Derivative of this Joint is zero, then this
+  /// If the relative Jacobian time derivative of this Joint is zero, then this
   /// function will be a no op.
-  virtual void updateLocalJacobianTimeDeriv() const = 0;
+  virtual void updateRelativeJacobianTimeDeriv() const = 0;
 
   /// Tells the Skeleton to update the articulated inertia if it needs updating
   void updateArticulatedInertia() const;
@@ -839,51 +889,52 @@ protected:
   /// Child BodyNode pointer that this Joint belongs to
   BodyNode* mChildBodyNode;
 
-  /// Local transformation
+  /// Relative transformation of the child BodyNode relative to the parent
+  /// BodyNode expressed in the child BodyNode frame
   ///
-  /// Do not use directly! Use getLocalTransform() to access this
+  /// Do not use directly! Use getRelativeTransform() to access this
   mutable Eigen::Isometry3d mT;
 
   /// Relative spatial velocity from parent BodyNode to child BodyNode where the
   /// velocity is expressed in child body Frame
   ///
-  /// Do not use directly! Use getLocalSpatialVelocity() to access this
+  /// Do not use directly! Use getRelativeSpatialVelocity() to access this
   mutable Eigen::Vector6d mSpatialVelocity;
 
   /// Relative spatial acceleration from parent BodyNode to child BodyNode where
   /// the acceleration is expressed in the child body Frame
   ///
-  /// Do not use directly! Use getLocalSpatialAcceleration() to access this
+  /// Do not use directly! Use getRelativeSpatialAcceleration() to access this
   mutable Eigen::Vector6d mSpatialAcceleration;
 
   /// J * q_dd
   ///
-  /// Do not use directly! Use getLocalPrimaryAcceleration() to access this
+  /// Do not use directly! Use getRelativePrimaryAcceleration() to access this
   mutable Eigen::Vector6d mPrimaryAcceleration;
 
   /// True iff this joint's position has changed since the last call to
-  /// getLocalTransform()
+  /// getRelativeTransform()
   mutable bool mNeedTransformUpdate;
 
   /// True iff this joint's position or velocity has changed since the last call
-  /// to getLocalSpatialVelocity()
+  /// to getRelativeSpatialVelocity()
   mutable bool mNeedSpatialVelocityUpdate;
 
   /// True iff this joint's position, velocity, or acceleration has changed
-  /// since the last call to getLocalSpatialAcceleration()
+  /// since the last call to getRelativeSpatialAcceleration()
   mutable bool mNeedSpatialAccelerationUpdate;
 
   /// True iff this joint's position, velocity, or acceleration has changed
-  /// since the last call to getLocalPrimaryAcceleration()
+  /// since the last call to getRelativePrimaryAcceleration()
   mutable bool mNeedPrimaryAccelerationUpdate;
 
-  /// True iff this joint's local Jacobian has not been updated since the last
+  /// True iff this joint's relative Jacobian has not been updated since the last
   /// position change
-  mutable bool mIsLocalJacobianDirty;
+  mutable bool mIsRelativeJacobianDirty;
 
-  /// True iff this joint's local Jacobian time derivative has not been updated
+  /// True iff this joint's relative Jacobian time derivative has not been updated
   /// since the last position or velocity change
-  mutable bool mIsLocalJacobianTimeDerivDirty;
+  mutable bool mIsRelativeJacobianTimeDerivDirty;
 
 public:
 

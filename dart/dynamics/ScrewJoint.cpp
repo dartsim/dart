@@ -130,7 +130,7 @@ void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
 
   mAspectProperties.mAxis = _axis.normalized();
   Joint::notifyPositionUpdate();
-  updateLocalJacobian();
+  updateRelativeJacobian();
   Joint::incrementVersion();
 }
 
@@ -148,7 +148,7 @@ void ScrewJoint::setPitch(double _pitch)
 
   mAspectProperties.mPitch = _pitch;
   Joint::notifyPositionUpdate();
-  updateLocalJacobian();
+  updateRelativeJacobian();
   Joint::incrementVersion();
 }
 
@@ -176,7 +176,7 @@ Joint* ScrewJoint::clone() const
 }
 
 //==============================================================================
-void ScrewJoint::updateLocalTransform() const
+void ScrewJoint::updateRelativeTransform() const
 {
   using namespace dart::math::suffixes;
 
@@ -190,7 +190,7 @@ void ScrewJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void ScrewJoint::updateLocalJacobian(bool _mandatory) const
+void ScrewJoint::updateRelativeJacobian(bool _mandatory) const
 {
   using namespace dart::math::suffixes;
 
@@ -205,7 +205,7 @@ void ScrewJoint::updateLocalJacobian(bool _mandatory) const
 }
 
 //==============================================================================
-void ScrewJoint::updateLocalJacobianTimeDeriv() const
+void ScrewJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of screw joint is always zero
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());
