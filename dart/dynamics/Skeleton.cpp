@@ -557,11 +557,8 @@ void Skeleton::setAspectProperties(const AspectProperties& properties)
   setMobile(properties.mIsMobile);
   setGravity(properties.mGravity);
   setTimeStep(properties.mTimeStep);
-
-  if(properties.mEnabledSelfCollisionCheck)
-    enableSelfCollision(properties.mEnabledAdjacentBodyCheck);
-  else
-    disableSelfCollision();
+  setSelfCollisionCheck(properties.mEnabledSelfCollisionCheck);
+  setAdjacentBodyCheck(properties.mEnabledAdjacentBodyCheck);
 }
 
 //==============================================================================
@@ -636,10 +633,10 @@ void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode)
 }
 
 //==============================================================================
-void Skeleton::enableSelfCollision(bool _enableAdjacentBodyCheck)
+void Skeleton::enableSelfCollision(bool enableAdjacentBodyCheck)
 {
   mAspectProperties.mEnabledSelfCollisionCheck = true;
-  mAspectProperties.mEnabledAdjacentBodyCheck = _enableAdjacentBodyCheck;
+  mAspectProperties.mEnabledAdjacentBodyCheck = enableAdjacentBodyCheck;
 }
 
 //==============================================================================
@@ -650,15 +647,63 @@ void Skeleton::disableSelfCollision()
 }
 
 //==============================================================================
-bool Skeleton::isEnabledSelfCollisionCheck() const
+void Skeleton::setSelfCollisionCheck(bool enable)
+{
+  mAspectProperties.mEnabledSelfCollisionCheck = enable;
+}
+
+//==============================================================================
+bool Skeleton::getSelfCollisionCheck() const
 {
   return mAspectProperties.mEnabledSelfCollisionCheck;
 }
 
 //==============================================================================
-bool Skeleton::isEnabledAdjacentBodyCheck() const
+void Skeleton::enableSelfCollisionCheck()
+{
+  setSelfCollisionCheck(true);
+}
+
+//==============================================================================
+void Skeleton::disableSelfCollisionCheck()
+{
+  setSelfCollisionCheck(false);
+}
+
+//==============================================================================
+bool Skeleton::isEnabledSelfCollisionCheck() const
+{
+  return getSelfCollisionCheck();
+}
+
+//==============================================================================
+void Skeleton::setAdjacentBodyCheck(bool enable)
+{
+  mAspectProperties.mEnabledAdjacentBodyCheck = enable;
+}
+
+//==============================================================================
+bool Skeleton::getAdjacentBodyCheck() const
 {
   return mAspectProperties.mEnabledAdjacentBodyCheck;
+}
+
+//==============================================================================
+void Skeleton::enableAdjacentBodyCheck()
+{
+  setAdjacentBodyCheck(true);
+}
+
+//==============================================================================
+void Skeleton::disableAdjacentBodyCheck()
+{
+  setAdjacentBodyCheck(false);
+}
+
+//==============================================================================
+bool Skeleton::isEnabledAdjacentBodyCheck() const
+{
+  return getAdjacentBodyCheck();
 }
 
 //==============================================================================

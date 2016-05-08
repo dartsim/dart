@@ -226,17 +226,45 @@ public:
   /// Get name.
   const std::string& getName() const override;
 
-  /// Enable self collision check
-  void enableSelfCollision(bool _enableAdjacentBodyCheck = false);
+  /// Deprecated. Please use enableSelfCollision() instead.
+  DEPRECATED(6.0)
+  void enableSelfCollision(bool enableAdjacentBodyCheck = false);
 
-  /// Disable self collision check
+  /// Deprecated. Please use disableSelfCollisionCheck() instead.
+  DEPRECATED(6.0)
   void disableSelfCollision();
 
-  /// Return true if self collision check is enabled
+  /// Set whether to check self-collision.
+  void setSelfCollisionCheck(bool enable);
+
+  /// Return whether self-collision check is enabled.
+  bool getSelfCollisionCheck() const;
+
+  /// Enable self-collision check.
+  void enableSelfCollisionCheck();
+
+  /// Disable self-collision check.
+  void disableSelfCollisionCheck();
+
+  /// Return true if self-collision check is enabled
   bool isEnabledSelfCollisionCheck() const;
 
-  /// Return true if self collision check is enabled including adjacent
-  /// bodies
+  /// Set whether to check adjacent bodies. This option is effective only when
+  /// the self-collision check is enabled.
+  void setAdjacentBodyCheck(bool enable);
+
+  /// Return whether adjacent body check is enabled.
+  bool getAdjacentBodyCheck() const;
+
+  /// Enable collision check for adjacent bodies. This option is effective only
+  /// when the self-collision check is enabled.
+  void enableAdjacentBodyCheck();
+
+  /// Disable collision check for adjacent bodies. This option is effective only
+  /// when the self-collision check is enabled.
+  void disableAdjacentBodyCheck();
+
+  /// Return true if self-collision check is enabled including adjacent bodies.
   bool isEnabledAdjacentBodyCheck() const;
 
   /// Set whether this skeleton will be updated by forward dynamics.
