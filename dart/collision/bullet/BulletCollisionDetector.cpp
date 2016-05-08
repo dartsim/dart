@@ -63,27 +63,23 @@ namespace {
 
 struct BulletOverlapFilterCallback : public btOverlapFilterCallback
 {
-  BulletOverlapFilterCallback(const CollisionOption& option, const CollisionResult& result)
-    : mOption(option),
-      mResult(result),
-      mDone(false)
+  BulletOverlapFilterCallback(
+      const CollisionOption& option,
+      CollisionResult* result)
+    : option(option),
+      result(result),
+      foundCollision(false),
+      done(false)
   {
     // Do nothing
   }
 
   // return true when pairs need collision
-  bool needBroadphaseCollision(btBroadphaseProxy* proxy0,
-                               btBroadphaseProxy* proxy1) const override
+  bool needBroadphaseCollision(
+      btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const override
   {
-    if (mDone)
+    if (done)
       return false;
-
-    if ((mOption.binaryCheck && mResult.isCollision())
-        || (mResult.getNumContacts() >= mOption.maxNumContacts))
-    {
-      mDone = true;
-      return false;
-    }
 
     assert((proxy0 != nullptr && proxy1 != nullptr) &&
            "Bullet broadphase overlapping pair proxies are nullptr");
@@ -93,7 +89,7 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
     collide = collide && (proxy1->m_collisionFilterGroup &
                           proxy0->m_collisionFilterMask);
 
-    const auto& filter = mOption.collisionFilter;
+    const auto& filter = option.collisionFilter;
 
     if (collide && filter)
     {
@@ -114,22 +110,28 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
     return collide;
   }
 
-  const CollisionOption& mOption;
-  const CollisionResult& mResult;
+  const CollisionOption& option;
+  const CollisionResult* result;
+
+  /// True if at least one contact is found. This flag is used only when
+  /// mResult is nullptr; otherwise the actual collision result is in mResult.
+  bool foundCollision;
 
   /// Whether the collision iteration can stop
-  mutable bool mDone;
+  mutable bool done;
 };
 
 Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
                        const BulletCollisionObject::UserData* userData1,
                        const BulletCollisionObject::UserData* userData2);
 
-void convertContacts(
-    btCollisionWorld* collWorld, const CollisionOption& option, CollisionResult& result);
+void convertContacts(btCollisionWorld* collWorld,
+                     BulletOverlapFilterCallback* overlapFilterCallback,
+                     const CollisionOption& option,
+                     CollisionResult& result);
 
-btCollisionShape*
-createBulletEllipsoidMesh(float sizeX, float sizeY, float sizeZ);
+btCollisionShape* createBulletEllipsoidMesh(
+    float sizeX, float sizeY, float sizeZ);
 
 btCollisionShape* createBulletCollisionShapeFromAssimpScene(
     const Eigen::Vector3d& scale, const aiScene* scene);
@@ -181,19 +183,77 @@ BulletCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-bool BulletCollisionDetector::collide(
-    CollisionGroup* group, const CollisionOption& option, CollisionResult& result)
+static void clearCollisionResult(
+    const CollisionOption& option, CollisionResult* result)
 {
-  result.clear();
-
-  if (this != group->getCollisionDetector().get())
+  if (!result)
   {
-    dterr << "[BulletCollisionDetector::detect] Attempting to check collision "
+    if (!option.binaryCheck)
+    {
+      dtwarn << "[BulletCollisionDetector::collide] nullptr of CollisionResult "
+             << "is passed in when the binary check option is off. The "
+             << "collision detector will run narrowphase collision checking "
+             << "over all the feasible collision pairs without storing the "
+             << "contact information, which would be meaningless work. Also, "
+             << "it would ignore the maximum number of contacts since the "
+             << "number of contact will not be counted. Please consider either "
+             << "of using binary check or passsing CollisionResult pointer "
+             << "which is not a nullptr.\n";
+    }
+
+    return;
+  }
+
+  result->clear();
+}
+
+//==============================================================================
+static bool checkGroupValidity(
+    BulletCollisionDetector* cd, CollisionGroup* group)
+{
+  if (cd != group->getCollisionDetector().get())
+  {
+    dterr << "[BulletCollisionDetector::collide] Attempting to check collision "
           << "for a collision group that is created from a different collision "
           << "detector instance.\n";
 
     return false;
   }
+
+  return true;
+}
+
+//==============================================================================
+static bool isCollision(btCollisionWorld* world)
+{
+  assert(world);
+
+  auto dispatcher = world->getDispatcher();
+  assert(dispatcher);
+
+  const auto numManifolds = dispatcher->getNumManifolds();
+
+  for (auto i = 0; i < numManifolds; ++i)
+  {
+    const auto* contactManifold = dispatcher->getManifoldByIndexInternal(i);
+
+    if (contactManifold->getNumContacts() > 0)
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool BulletCollisionDetector::collide(
+    CollisionGroup* group,
+    const CollisionOption& option,
+    CollisionResult* result)
+{
+  clearCollisionResult(option, result);
+
+  if (!checkGroupValidity(this, group))
+    return false;
 
   auto castedData = static_cast<BulletCollisionGroup*>(group);
   castedData->updateEngineData();
@@ -201,31 +261,37 @@ bool BulletCollisionDetector::collide(
   auto bulletCollisionWorld = castedData->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
   auto filterCallback = new BulletOverlapFilterCallback(option, result);
+//  auto dispatcher = static_cast<btCollisionDispatcher*>(
+//        bulletCollisionWorld->getDispatcher());
+//  dispatcher->setNearCallback(nullptr);
 
   bulletPairCache->setOverlapFilterCallback(filterCallback);
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
-  convertContacts(bulletCollisionWorld, option, result);
+  if (result)
+  {
+    convertContacts(bulletCollisionWorld, filterCallback, option, *result);
 
-  return result.isCollision();
+    return result->isCollision();
+  }
+  else
+  {
+    return isCollision(bulletCollisionWorld);
+  }
 }
 
 //==============================================================================
 bool BulletCollisionDetector::collide(
     CollisionGroup* group1, CollisionGroup* group2,
-    const CollisionOption& option, CollisionResult& result)
+    const CollisionOption& option, CollisionResult* result)
 {
-  result.clear();
+  clearCollisionResult(option, result);
 
-  if ((this != group1->getCollisionDetector().get())
-      || (this != group2->getCollisionDetector().get()))
-  {
-    dterr << "[BulletCollisionDetector::detect] Attempting to check collision "
-          << "for a collision group that is created from a different collision "
-          << "detector instance.\n";
-
+  if (!checkGroupValidity(this, group1))
     return false;
-  }
+
+  if (!checkGroupValidity(this, group2))
+    return false;
 
   auto group = common::make_unique<BulletCollisionGroup>(shared_from_this());
   group->addShapeFramesOf(group1, group2);
@@ -238,9 +304,16 @@ bool BulletCollisionDetector::collide(
   bulletPairCache->setOverlapFilterCallback(filterCallback);
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
-  convertContacts(bulletCollisionWorld, option, result);
+  if (result)
+  {
+    convertContacts(bulletCollisionWorld, filterCallback, option, *result);
 
-  return result.isCollision();
+    return result->isCollision();
+  }
+  else
+  {
+    return isCollision(bulletCollisionWorld);
+  }
 }
 
 //==============================================================================
@@ -455,7 +528,10 @@ Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
 
 //==============================================================================
 void convertContacts(
-    btCollisionWorld* collWorld, const CollisionOption& option, CollisionResult& result)
+    btCollisionWorld* collWorld,
+    BulletOverlapFilterCallback* overlapFilterCallback,
+    const CollisionOption& option,
+    CollisionResult& result)
 {
   assert(collWorld);
 
@@ -486,11 +562,12 @@ void convertContacts(
 
       result.addContact(convertContact(cp, userDataA, userDataB));
 
-      if (option.binaryCheck)
+      if (option.binaryCheck
+          || result.getNumContacts() >= option.maxNumContacts)
+      {
+        overlapFilterCallback->done = true;
         return;
-
-      if (result.getNumContacts() >= option.maxNumContacts)
-        break;
+      }
     }
   }
 }

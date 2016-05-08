@@ -74,12 +74,17 @@ public:
   std::unique_ptr<CollisionGroup> createCollisionGroup() override;
 
   // Documentation inherited
-  bool collide(CollisionGroup* group,
-               const CollisionOption& option, CollisionResult& result) override;
+  bool collide(
+      CollisionGroup* group,
+      const CollisionOption& option = CollisionOption(false, true, 1u, nullptr),
+      CollisionResult* result = nullptr) override;
 
   // Documentation inherited
-  bool collide(CollisionGroup* group1, CollisionGroup* group2,
-               const CollisionOption& option, CollisionResult& result) override;
+  bool collide(
+      CollisionGroup* group1,
+      CollisionGroup* group2,
+      const CollisionOption& option = CollisionOption(false, true, 1u, nullptr),
+      CollisionResult* result = nullptr) override;
 
 protected:
 

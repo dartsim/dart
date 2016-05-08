@@ -132,33 +132,33 @@ Contact convertContact(
 struct FCLCollisionCallbackData
 {
   /// FCL collision request
-  fcl::CollisionRequest mFclRequest;
+  fcl::CollisionRequest fclRequest;
 
   /// FCL collision result
-  fcl::CollisionResult mFclResult;
+  fcl::CollisionResult fclResult;
 
   /// Collision option of DART
-  const CollisionOption& mOption;
+  const CollisionOption& option;
 
   /// Collision result of DART
-  CollisionResult* mResult;
+  CollisionResult* result;
 
   /// True if at least one contact is found. This flag is used only when
   /// mResult is nullptr; otherwise the actual collision result is in mResult.
   bool foundCollision;
 
-  FCLCollisionDetector::PrimitiveShape mPrimitiveShapeType;
+  FCLCollisionDetector::PrimitiveShape primitiveShapeType;
 
   FCLCollisionDetector::ContactPointComputationMethod
-  mContactPointComputationMethod;
+  contactPointComputationMethod;
 
   /// Whether the collision iteration can stop
   bool done;
 
   bool isCollision() const
   {
-    if (mResult)
-      return mResult->isCollision();
+    if (result)
+      return result->isCollision();
     else
       return foundCollision;
   }
@@ -171,17 +171,17 @@ struct FCLCollisionCallbackData
           = FCLCollisionDetector::MESH,
       FCLCollisionDetector::ContactPointComputationMethod method
           = FCLCollisionDetector::DART)
-    : mOption(option),
-      mResult(result),
+    : option(option),
+      result(result),
       foundCollision(false),
-      mPrimitiveShapeType(type),
-      mContactPointComputationMethod(method),
+      primitiveShapeType(type),
+      contactPointComputationMethod(method),
       done(false)
   {
-    convertOption(mOption, mFclRequest);
+    convertOption(option, fclRequest);
 
-    mFclRequest.num_max_contacts = std::max(static_cast<std::size_t>(100u),
-                                            mOption.maxNumContacts);
+    fclRequest.num_max_contacts = std::max(static_cast<std::size_t>(100u),
+                                            option.maxNumContacts);
     // Since some contact points can be filtered out in the post process, we ask
     // more than the demend. 100 is randomly picked.
   }
@@ -1007,10 +1007,10 @@ bool collisionCallback(
   if (collData->done)
     return true;
 
-  const auto& fclRequest  = collData->mFclRequest;
-        auto& fclResult   = collData->mFclResult;
-        auto* result      = collData->mResult;
-  const auto& option      = collData->mOption;
+  const auto& fclRequest  = collData->fclRequest;
+        auto& fclResult   = collData->fclResult;
+        auto* result      = collData->result;
+  const auto& option      = collData->option;
   const auto& filter      = option.collisionFilter;
   const auto& binaryCheck = option.binaryCheck;
 
@@ -1042,8 +1042,8 @@ bool collisionCallback(
   if (result)
   {
     // Post processing -- converting fcl contact information to ours if needed
-    if (FCLCollisionDetector::DART == collData->mContactPointComputationMethod
-        && FCLCollisionDetector::MESH == collData->mPrimitiveShapeType)
+    if (FCLCollisionDetector::DART == collData->contactPointComputationMethod
+        && FCLCollisionDetector::MESH == collData->primitiveShapeType)
     {
       postProcessDART(fclResult, o1, o2, option, *result);
     }
