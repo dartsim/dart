@@ -833,15 +833,31 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
   CollisionOption option;
   option.collisionFilter = std::make_shared<BodyNodeCollisionFilter>();
 
-  skel->enableSelfCollision(true);
+  skel->enableSelfCollisionCheck();
+  skel->enableAdjacentBodyCheck();
+  EXPECT_TRUE(skel->isEnabledSelfCollisionCheck());
+  EXPECT_TRUE(skel->isEnabledAdjacentBodyCheck());
   EXPECT_TRUE(group->collide());  // without filter, always collision
   EXPECT_TRUE(group->collide(option));
 
-  skel->enableSelfCollision(false);
+  skel->enableSelfCollisionCheck();
+  skel->disableAdjacentBodyCheck();
+  EXPECT_TRUE(skel->isEnabledSelfCollisionCheck());
+  EXPECT_FALSE(skel->isEnabledAdjacentBodyCheck());
   EXPECT_TRUE(group->collide());
   EXPECT_FALSE(group->collide(option));
 
-  skel->disableSelfCollision();
+  skel->disableSelfCollisionCheck();
+  skel->enableAdjacentBodyCheck();
+  EXPECT_FALSE(skel->isEnabledSelfCollisionCheck());
+  EXPECT_TRUE(skel->isEnabledAdjacentBodyCheck());
+  EXPECT_TRUE(group->collide());
+  EXPECT_FALSE(group->collide(option));
+
+  skel->disableSelfCollisionCheck();
+  skel->disableAdjacentBodyCheck();
+  EXPECT_FALSE(skel->isEnabledSelfCollisionCheck());
+  EXPECT_FALSE(skel->isEnabledAdjacentBodyCheck());
   EXPECT_TRUE(group->collide());
   EXPECT_FALSE(group->collide(option));
 }
