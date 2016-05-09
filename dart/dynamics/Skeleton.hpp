@@ -226,7 +226,8 @@ public:
   /// Get name.
   const std::string& getName() const override;
 
-  /// Deprecated. Please use enableSelfCollision() instead.
+  /// Deprecated. Please use enableSelfCollision() and setAdjacentBodyCheck()
+  /// instead.
   DEPRECATED(6.0)
   void enableSelfCollision(bool enableAdjacentBodyCheck = false);
 

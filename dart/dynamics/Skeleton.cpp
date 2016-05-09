@@ -635,15 +635,15 @@ void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode)
 //==============================================================================
 void Skeleton::enableSelfCollision(bool enableAdjacentBodyCheck)
 {
-  mAspectProperties.mEnabledSelfCollisionCheck = true;
-  mAspectProperties.mEnabledAdjacentBodyCheck = enableAdjacentBodyCheck;
+  enableSelfCollisionCheck();
+  setAdjacentBodyCheck(enableAdjacentBodyCheck);
 }
 
 //==============================================================================
 void Skeleton::disableSelfCollision()
 {
-  mAspectProperties.mEnabledSelfCollisionCheck = false;
-  mAspectProperties.mEnabledAdjacentBodyCheck = false;
+  disableSelfCollisionCheck();
+  setAdjacentBodyCheck(false);
 }
 
 //==============================================================================
