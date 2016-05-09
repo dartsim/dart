@@ -509,9 +509,9 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 //==============================================================================
 void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
 {
-  auto simpleFrame1 = std::make_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = std::make_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame3 = std::make_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame3 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
 
   ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
@@ -637,8 +637,8 @@ bool checkBoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max,
 void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
                 double tol = 1e-12)
 {
-  auto simpleFrame1 = std::make_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = std::make_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
 
   ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -722,9 +722,9 @@ TEST_F(COLLISION, BoxBox)
 //==============================================================================
 void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 {
-  auto simpleFrame1 = std::make_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = std::make_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame3 = std::make_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame3 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
 
   ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
