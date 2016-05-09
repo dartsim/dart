@@ -262,7 +262,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
   assert(_n > 0);
 
   SkeletonPtr robot = Skeleton::create();
-  robot->disableSelfCollision();
+  robot->disableSelfCollisionCheck();
 
   // Create the first link, the joint with the ground and its shape
   BodyNode::Properties node(BodyNode::AspectProperties("link1"));
@@ -329,7 +329,7 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
   assert(numBodyNodes > 0);
 
   SkeletonPtr robot = Skeleton::create();
-  robot->disableSelfCollision();
+  robot->disableSelfCollisionCheck();
 
   // Create the first link, the joint with the ground and its shape
   BodyNode::Properties node(BodyNode::AspectProperties("link1"));

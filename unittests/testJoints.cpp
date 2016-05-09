@@ -516,7 +516,7 @@ void testJointCoulombFrictionForce(double _timeStep)
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != nullptr);
-  pendulum->disableSelfCollision();
+  pendulum->disableSelfCollisionCheck();
 
   dynamics::Joint* joint0 = pendulum->getJoint("joint0");
   dynamics::Joint* joint1 = pendulum->getJoint("joint1");
@@ -635,7 +635,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
   SkeletonPtr pendulum = createNLinkPendulum(1, dim, DOF_ROLL, offset);
   EXPECT_NE(pendulum, nullptr);
 
-  pendulum->disableSelfCollision();
+  pendulum->disableSelfCollisionCheck();
 
   for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i)
   {
@@ -829,7 +829,7 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != nullptr);
-  pendulum->disableSelfCollision();
+  pendulum->disableSelfCollisionCheck();
 
   dynamics::Joint* joint0 = pendulum->getJoint("joint0");
   dynamics::Joint* joint1 = pendulum->getJoint("joint1");
