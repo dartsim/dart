@@ -44,6 +44,7 @@
 #include <assimp/scene.h>
 #include <btBulletCollisionCommon.h>
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/bullet/BulletCollisionGroup.hpp"
 
 namespace dart {
 namespace collision {
@@ -113,6 +114,8 @@ private:
 
   std::map<dynamics::ConstShapePtr,
            std::pair<btCollisionShape*, std::size_t>> mShapeMap;
+
+  std::unique_ptr<BulletCollisionGroup> mGroupForFiltering;
 
 };
 

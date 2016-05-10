@@ -245,14 +245,14 @@ bool BulletCollisionDetector::collide(
   // btCollisionWorld to generate unnecessary pairs, which is very inefficient
   // way.
 
-  auto newGroup = common::make_unique<BulletCollisionGroup>(shared_from_this());
-  auto bulletCollisionWorld = newGroup->getBulletCollisionWorld();
+  mGroupForFiltering.reset(new BulletCollisionGroup(shared_from_this()));
+  auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
   auto filterCallback = new BulletOverlapFilterCallback(option, result);
   bulletPairCache->setOverlapFilterCallback(filterCallback);
 
-  newGroup->addShapeFramesOf(group);
-  newGroup->updateEngineData();
+  mGroupForFiltering->addShapeFramesOf(group);
+  mGroupForFiltering->updateEngineData();
 
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
@@ -292,14 +292,14 @@ bool BulletCollisionDetector::collide(
          << "group1 and group2, which is an incorrect behavior. This bug will "
          << "be fixed in the next patch release. (see #717 for the details)\n";
 
-  auto group = common::make_unique<BulletCollisionGroup>(shared_from_this());
-  auto bulletCollisionWorld = group->getBulletCollisionWorld();
+  mGroupForFiltering.reset(new BulletCollisionGroup(shared_from_this()));
+  auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
   auto filterCallback = new BulletOverlapFilterCallback(option, result);
   bulletPairCache->setOverlapFilterCallback(filterCallback);
 
-  group->addShapeFramesOf(group1, group2);
-  group->updateEngineData();
+  mGroupForFiltering->addShapeFramesOf(group1, group2);
+  mGroupForFiltering->updateEngineData();
 
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
@@ -549,9 +549,9 @@ void convertContacts(
     auto userPointer1 = bulletCollObj1->getUserPointer();
 
     auto userDataA
-        = static_cast<BulletCollisionObject::UserData*>(userPointer1);
-    auto userDataB
         = static_cast<BulletCollisionObject::UserData*>(userPointer0);
+    auto userDataB
+        = static_cast<BulletCollisionObject::UserData*>(userPointer1);
 
     auto numContacts = contactManifold->getNumContacts();
 

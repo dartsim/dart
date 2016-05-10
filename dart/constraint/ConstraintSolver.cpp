@@ -96,20 +96,18 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   assert(skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
-  if (!containSkeleton(skeleton))
-  {
-    auto group = mCollisionDetector->createCollisionGroup(skeleton.get());
-    mCollisionGroup->addShapeFramesOf(group.get());
-
-    mSkeletons.push_back(skeleton);
-    mConstrainedGroups.reserve(mSkeletons.size());
-  }
-  else
+  if (containSkeleton(skeleton))
   {
     dtwarn << "[ConstraintSolver::addSkeleton] Attempting to add "
            << "skeleton '" << skeleton->getName()
            << "', which already exists in the ConstraintSolver.\n";
+
+    return;
   }
+
+  mCollisionGroup->addShapeFramesOf(skeleton.get());
+  mSkeletons.push_back(skeleton);
+  mConstrainedGroups.reserve(mSkeletons.size());
 }
 
 //==============================================================================
