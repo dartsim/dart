@@ -123,21 +123,17 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
   assert(skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
-  if (containSkeleton(skeleton))
-  {
-    auto group = mCollisionDetector->createCollisionGroup(skeleton.get());
-    mCollisionGroup->removeShapeFramesOf(group.get());
-
-    mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), skeleton),
-                     mSkeletons.end());
-    mConstrainedGroups.reserve(mSkeletons.size());
-  }
-  else
+  if (!containSkeleton(skeleton))
   {
     dtwarn << "[ConstraintSolver::removeSkeleton] Attempting to remove "
            << "skeleton '" << skeleton->getName()
            << "', which doesn't exist in the ConstraintSolver.\n";
   }
+
+  mCollisionGroup->removeShapeFramesOf(skeleton.get());
+  mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), skeleton),
+                   mSkeletons.end());
+  mConstrainedGroups.reserve(mSkeletons.size());
 }
 
 //==============================================================================
