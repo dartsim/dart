@@ -1,15 +1,9 @@
 dart6 (6.0.0) unstable; urgency=medium
 
-  * Added 'Aspect', 'State', and 'Properties'
+  * Added 'Node', 'Aspect', 'State', and 'Properties'
   * Added mathematical constants and user-defined literals for radian, degree, and pi
   * Added 'ShapeFrame' and 'ShapeNode'
-  * Added bounding box semantics
-  * Added 'Node' and 'Addon'
-  * Improved the authority of Optional/Required 'Addon's
-  * Fixed missing definition of 'getMultiDofJointAddon()'
-  * Fixed segfault from nullptr meshes
-  * Fixed 'NameManager<T>::removeEntries(~)' called a function that does not exist
-  * Fixed 'MeshShape' returned unscaled bounding box dimensions
+  * Added 'BoundingBox'
   * Added convenient functions for setting joint limits
   * Added more description on 'InverseKinematics::solve()'
   * Added API for utilizing analytical inverse kinematics
@@ -30,11 +24,9 @@ dart6 (6.0.0) unstable; urgency=medium
   * Fixed incorrect applying of joint constraint impulses
   * Deprecated 'draw()' functions of dynamics classes
   * Added 'CollisionGroup' and refactored 'CollisionDetector' to be more versatile
-  * Added collision sets to 'CollisionResult', and deprecated 'BodyNode::isColliding'
   * Improved API for self collision checking options
-  * Improved 'FCLCollisionDetector' to utilize broad phase algorithms
+  * Deprecated 'BodyNode::isColliding'; collision sets are moved to 'CollisionResult'
   * Added back VSK parser
-  * Improved VSK parser to support more tag and properties
   * Fixed segfault of 'SdfParser' when 'nullptr' 'ResourceRetriever' is passed
   * Merged 'renderer' namespace into 'gui' namespace
   * Moved 'osgDart' under 'dart::gui' namespace as 'dart::gui::osg'
@@ -54,7 +46,9 @@ dart6 (6.0.0) unstable; urgency=medium
   * Fixed warnings of unused variables in release mode
   * Fixed typo of 'getNumPluralAddoName' in utility macro
   * Fixed linker error by adding namespace-scope definitions for 'constexpr static' members
+  * Fixed segfault from nullptr meshes
   * Fixed typo of tutorial with minor improvements
+  * Fixed 'NameManager<T>::removeEntries(~)' called a function that does not exist
   * Fixed missing definitions for various functions
   * Fixed const correctness of 'BodyNode::getMomentsOfInertia()'
   * Fixed 'ftel' bug in Linux with an workaround

@@ -4,16 +4,10 @@
 
 * Common data structures
 
-  * Added `Aspect`, `State`, and `Properties`: [#713](https://github.com/dartsim/dart/pull/713), [#712](https://github.com/dartsim/dart/issues/712), [#708](https://github.com/dartsim/dart/pull/708), [#707](https://github.com/dartsim/dart/pull/707), [#659](https://github.com/dartsim/dart/pull/659)
+  * Added `Node`, `Aspect`, `State`, and `Properties`: [#713](https://github.com/dartsim/dart/pull/713), [#712](https://github.com/dartsim/dart/issues/712), [#708](https://github.com/dartsim/dart/pull/708), [#707](https://github.com/dartsim/dart/pull/707), [#659](https://github.com/dartsim/dart/pull/659), [#649](https://github.com/dartsim/dart/pull/649), [#645](https://github.com/dartsim/dart/issues/645), [#607](https://github.com/dartsim/dart/pull/607), [#598](https://github.com/dartsim/dart/pull/598), [#591](https://github.com/dartsim/dart/pull/591), [#531](https://github.com/dartsim/dart/pull/531) 
   * Added mathematical constants and user-defined literals for radian, degree, and pi: [#669](https://github.com/dartsim/dart/pull/669), [#314](https://github.com/dartsim/dart/issues/314)
   * Added `ShapeFrame` and `ShapeNode`: [#608](https://github.com/dartsim/dart/pull/608)
-  * Added bounding box semantics: [#547](https://github.com/dartsim/dart/pull/547)
-  * Added `Node` and `Addon`: [#531](https://github.com/dartsim/dart/pull/531), [#598](https://github.com/dartsim/dart/pull/598), [#591](https://github.com/dartsim/dart/pull/591)
-  * Improved the authority of Optional/Required `Addon`s: [#607](https://github.com/dartsim/dart/pull/607)
-  * Fixed missing definition of `getMultiDofJointAddon()`: [#649](https://github.com/dartsim/dart/pull/649), [#645](https://github.com/dartsim/dart/issues/645)
-  * Fixed segfault from nullptr meshes: [#585](https://github.com/dartsim/dart/pull/585)
-  * Fixed `NameManager<T>::removeEntries(~)` called a function that does not exist: [#564](https://github.com/dartsim/dart/pull/564), [#554](https://github.com/dartsim/dart/issues/554)
-  * Fixed `MeshShape` returned unscaled bounding box dimensions: [#547](https://github.com/dartsim/dart/pull/547), [#546](https://github.com/dartsim/dart/issues/546)
+  * Added `BoundingBox`: [#547](https://github.com/dartsim/dart/pull/547), [#546](https://github.com/dartsim/dart/issues/546)
 
 * Kinematics features:
 
@@ -42,15 +36,13 @@
 
 * Collision detection features
 
-  * Added `CollisionGroup` and refactored `CollisionDetector` to be more versatile: [#711](https://github.com/dartsim/dart/pull/711), [#704](https://github.com/dartsim/dart/pull/704), [#689](https://github.com/dartsim/dart/pull/689), [#631](https://github.com/dartsim/dart/pull/631), [#642](https://github.com/dartsim/dart/issues/642)
-  * Added collision sets to `CollisionResult`, and deprecated `BodyNode::isColliding`: [#694](https://github.com/dartsim/dart/pull/694), [#670](https://github.com/dartsim/dart/pull/670), [#668](https://github.com/dartsim/dart/pull/668), [#666](https://github.com/dartsim/dart/issues/666)
+  * Added `CollisionGroup` and refactored `CollisionDetector` to be more versatile: [#711](https://github.com/dartsim/dart/pull/711), [#704](https://github.com/dartsim/dart/pull/704), [#689](https://github.com/dartsim/dart/pull/689), [#631](https://github.com/dartsim/dart/pull/631), [#642](https://github.com/dartsim/dart/issues/642), [#20](https://github.com/dartsim/dart/issues/20)
   * Improved API for self collision checking options: [#718](https://github.com/dartsim/dart/pull/718), [#702](https://github.com/dartsim/dart/issues/702)
-  * Improved `FCLCollisionDetector` to utilize broad phase algorithms: [#20](https://github.com/dartsim/dart/issues/20)
+  * Deprecated `BodyNode::isColliding`; collision sets are moved to `CollisionResult`: [#694](https://github.com/dartsim/dart/pull/694), [#670](https://github.com/dartsim/dart/pull/670), [#668](https://github.com/dartsim/dart/pull/668), [#666](https://github.com/dartsim/dart/issues/666)
 
 * Parsers
 
-  * Added back VSK parser: [#561](https://github.com/dartsim/dart/pull/561), [#254](https://github.com/dartsim/dart/issues/254)
-  * Improved VSK parser to support more tag and properties: [#602](https://github.com/dartsim/dart/pull/602)
+  * Added back VSK parser: [#602](https://github.com/dartsim/dart/pull/602), [#561](https://github.com/dartsim/dart/pull/561), [#254](https://github.com/dartsim/dart/issues/254)
   * Fixed segfault of `SdfParser` when `nullptr` `ResourceRetriever` is passed: [#663](https://github.com/dartsim/dart/pull/663)
 
 * GUI features
@@ -79,7 +71,9 @@
   * Fixed warnings of unused variables in release mode: [#646](https://github.com/dartsim/dart/pull/646)
   * Fixed typo of `getNumPluralAddoName` in utility macro: [#615](https://github.com/dartsim/dart/issues/615)
   * Fixed linker error by adding namespace-scope definitions for `constexpr static` members: [#603](https://github.com/dartsim/dart/pull/603)
+  * Fixed segfault from nullptr meshes: [#585](https://github.com/dartsim/dart/pull/585)
   * Fixed typo of tutorial with minor improvements: [#573](https://github.com/dartsim/dart/pull/573)
+  * Fixed `NameManager<T>::removeEntries(~)` called a function that does not exist: [#564](https://github.com/dartsim/dart/pull/564), [#554](https://github.com/dartsim/dart/issues/554)
   * Fixed missing definitions for various functions: [#558](https://github.com/dartsim/dart/pull/558), [#555](https://github.com/dartsim/dart/issues/555)
   * Fixed const correctness of `BodyNode::getMomentsOfInertia()`: [#541](https://github.com/dartsim/dart/pull/541), [#540](https://github.com/dartsim/dart/issues/540)
   * Fixed `ftel` bug in Linux with an workaround: [#533](https://github.com/dartsim/dart/pull/533)
