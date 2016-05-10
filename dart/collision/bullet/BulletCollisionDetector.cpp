@@ -285,7 +285,12 @@ bool BulletCollisionDetector::collide(
   if (!checkGroupValidity(this, group2))
     return false;
 
-  // TODO(JS): The collision checking does not distinguish the two groups.
+  dtwarn << "[BulletCollisionDetector::collide] collide(group1, group2) "
+         << "supposed to check collisions of the objects in group1 against the "
+         << "objects in group2. However, the current implementation of this "
+         << "function checks for all the objects against each other of both "
+         << "group1 and group2, which is an incorrect behavior. This bug will "
+         << "be fixed in the next patch release. (see #717 for the details)\n";
 
   auto group = common::make_unique<BulletCollisionGroup>(shared_from_this());
   auto bulletCollisionWorld = group->getBulletCollisionWorld();
