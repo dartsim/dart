@@ -98,15 +98,22 @@ public:
   std::shared_ptr<CollisionGroup> createCollisionGroupAsSharedPtr(
       const Args&... args);
 
-  /// Perform collision detection for group.
+  /// Perform collision check for a single group. If nullptr is passed to
+  /// result, then the this returns only simple information whether there is a
+  /// collision of not.
   virtual bool collide(
       CollisionGroup* group,
-      const CollisionOption& option, CollisionResult& result) = 0;
+      const CollisionOption& option = CollisionOption(false, 1u, nullptr),
+      CollisionResult* result = nullptr) = 0;
 
-  /// Perform collision detection for group1-group2.
+  /// Perform collision check for two groups. If nullptr is passed to
+  /// result, then the this returns only simple information whether there is a
+  /// collision of not.
   virtual bool collide(
-      CollisionGroup* group1, CollisionGroup* group2,
-      const CollisionOption& option, CollisionResult& result) = 0;
+      CollisionGroup* group1,
+      CollisionGroup* group2,
+      const CollisionOption& option = CollisionOption(false, 1u, nullptr),
+      CollisionResult* result = nullptr) = 0;
 
 protected:
 

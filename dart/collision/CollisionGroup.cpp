@@ -166,14 +166,17 @@ const dynamics::ShapeFrame* CollisionGroup::getShapeFrame(
 }
 
 //==============================================================================
-bool CollisionGroup::collide(const CollisionOption& option, CollisionResult& result)
+bool CollisionGroup::collide(
+    const CollisionOption& option, CollisionResult* result)
 {
   return mCollisionDetector->collide(this, option, result);
 }
 
 //==============================================================================
 bool CollisionGroup::collide(
-    CollisionGroup* other, const CollisionOption& option, CollisionResult& result)
+    CollisionGroup* other,
+    const CollisionOption& option,
+    CollisionResult* result)
 {
   return mCollisionDetector->collide(this, other, option, result);
 }
