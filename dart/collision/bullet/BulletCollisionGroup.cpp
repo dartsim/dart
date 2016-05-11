@@ -117,7 +117,13 @@ void BulletCollisionGroup::updateCollisionGroupEngineData()
 }
 
 //==============================================================================
-btCollisionWorld* BulletCollisionGroup::getBulletCollisionWorld() const
+btCollisionWorld* BulletCollisionGroup::getBulletCollisionWorld()
+{
+  return mBulletCollisionWorld.get();
+}
+
+//==============================================================================
+const btCollisionWorld* BulletCollisionGroup::getBulletCollisionWorld() const
 {
   return mBulletCollisionWorld.get();
 }

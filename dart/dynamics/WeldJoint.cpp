@@ -113,39 +113,39 @@ Joint* WeldJoint::clone() const
 }
 
 //==============================================================================
-void WeldJoint::updateLocalTransform() const
+void WeldJoint::updateRelativeTransform() const
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalSpatialVelocity() const
+void WeldJoint::updateRelativeSpatialVelocity() const
 {
   // Do nothing
   // Should we have mSpatialVelocity.setZero() here instead?
 }
 
 //==============================================================================
-void WeldJoint::updateLocalSpatialAcceleration() const
+void WeldJoint::updateRelativeSpatialAcceleration() const
 {
   // Do nothing
   // Should we have mSpatialAcceleration.setZero() here instead?
 }
 
 //==============================================================================
-void WeldJoint::updateLocalPrimaryAcceleration() const
+void WeldJoint::updateRelativePrimaryAcceleration() const
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalJacobian(bool) const
+void WeldJoint::updateRelativeJacobian(bool) const
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalJacobianTimeDeriv() const
+void WeldJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Do nothing
 }

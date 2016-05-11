@@ -261,7 +261,7 @@ public:
                               const Frame* inCoordinatesOf = Frame::World());
 
   // Documentation inherited
-  Eigen::Matrix6d getLocalJacobianStatic(
+  Eigen::Matrix6d getRelativeJacobianStatic(
       const Eigen::Vector6d& _positions) const override;
 
   // Documentation inherited
@@ -276,7 +276,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using MultiDofJoint::getLocalJacobianStatic;
+  using MultiDofJoint::getRelativeJacobianStatic;
 
   // Documentation inherited
   void integratePositions(double _dt) override;
@@ -285,13 +285,13 @@ protected:
   void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited
-  void updateLocalTransform() const override;
+  void updateRelativeTransform() const override;
 
   // Documentation inherited
-  void updateLocalJacobian(bool _mandatory = true) const override;
+  void updateRelativeJacobian(bool _mandatory = true) const override;
 
   // Documentation inherited
-  void updateLocalJacobianTimeDeriv() const override;
+  void updateRelativeJacobianTimeDeriv() const override;
 
 protected:
 

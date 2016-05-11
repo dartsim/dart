@@ -1076,25 +1076,25 @@ const std::vector<const DegreeOfFreedom*> BodyNode::getChainDofs() const
 //==============================================================================
 const Eigen::Isometry3d& BodyNode::getRelativeTransform() const
 {
-  return mParentJoint->getLocalTransform();
+  return mParentJoint->getRelativeTransform();
 }
 
 //==============================================================================
 const Eigen::Vector6d& BodyNode::getRelativeSpatialVelocity() const
 {
-  return mParentJoint->getLocalSpatialVelocity();
+  return mParentJoint->getRelativeSpatialVelocity();
 }
 
 //==============================================================================
 const Eigen::Vector6d& BodyNode::getRelativeSpatialAcceleration() const
 {
-  return mParentJoint->getLocalSpatialAcceleration();
+  return mParentJoint->getRelativeSpatialAcceleration();
 }
 
 //==============================================================================
 const Eigen::Vector6d& BodyNode::getPrimaryRelativeAcceleration() const
 {
-  return mParentJoint->getLocalPrimaryAcceleration();
+  return mParentJoint->getRelativePrimaryAcceleration();
 }
 
 //==============================================================================
@@ -1610,7 +1610,7 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
     Joint* childJoint = childBodyNode->getParentJoint();
     assert(childJoint != nullptr);
 
-    mF += math::dAdInvT(childJoint->getLocalTransform(),
+    mF += math::dAdInvT(childJoint->getRelativeTransform(),
                         childBodyNode->getBodyForce());
   }
 
@@ -1759,7 +1759,7 @@ void BodyNode::updateVelocityChangeFD()
                                        mParentBodyNode->mDelV);
 
     // Transmit spatial acceleration of parent body to this body
-    mDelV = math::AdInvT(mParentJoint->getLocalTransform(),
+    mDelV = math::AdInvT(mParentJoint->getRelativeTransform(),
                          mParentBodyNode->mDelV);
   }
   else
@@ -1983,14 +1983,14 @@ void BodyNode::aggregateGravityForceVector(Eigen::VectorXd& _g,
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
   {
-    mG_F += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
+    mG_F += math::dAdInvT((*it)->mParentJoint->getRelativeTransform(),
                           (*it)->mG_F);
   }
 
   std::size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0)
   {
-    Eigen::VectorXd g = -(mParentJoint->getLocalJacobian().transpose() * mG_F);
+    Eigen::VectorXd g = -(mParentJoint->getRelativeJacobian().transpose() * mG_F);
     std::size_t iStart = mParentJoint->getIndexInTree(0);
     _g.segment(iStart, nGenCoords) = g;
   }
@@ -2001,7 +2001,7 @@ void BodyNode::updateCombinedVector()
 {
   if (mParentBodyNode)
   {
-    mCg_dV = math::AdInvT(mParentJoint->getLocalTransform(),
+    mCg_dV = math::AdInvT(mParentJoint->getRelativeTransform(),
                           mParentBodyNode->mCg_dV) + getPartialAcceleration();
   }
   else
@@ -2037,7 +2037,7 @@ void BodyNode::aggregateCombinedVector(Eigen::VectorXd& _Cg,
   if (nGenCoords > 0)
   {
     Eigen::VectorXd Cg
-        = mParentJoint->getLocalJacobian().transpose() * mCg_F;
+        = mParentJoint->getRelativeJacobian().transpose() * mCg_F;
     std::size_t iStart = mParentJoint->getIndexInTree(0);
     _Cg.segment(iStart, nGenCoords) = Cg;
   }
@@ -2051,14 +2051,14 @@ void BodyNode::aggregateExternalForces(Eigen::VectorXd& _Fext)
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
   {
-    mFext_F += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
+    mFext_F += math::dAdInvT((*it)->mParentJoint->getRelativeTransform(),
                              (*it)->mFext_F);
   }
 
   std::size_t nGenCoords = mParentJoint->getNumDofs();
   if (nGenCoords > 0)
   {
-    Eigen::VectorXd Fext = mParentJoint->getLocalJacobian().transpose()*mFext_F;
+    Eigen::VectorXd Fext = mParentJoint->getRelativeJacobian().transpose()*mFext_F;
     std::size_t iStart = mParentJoint->getIndexInTree(0);
     _Fext.segment(iStart, nGenCoords) = Fext;
   }
@@ -2075,7 +2075,7 @@ void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
   {
-    mArbitrarySpatial += math::dAdInvT((*it)->mParentJoint->getLocalTransform(),
+    mArbitrarySpatial += math::dAdInvT((*it)->mParentJoint->getRelativeTransform(),
                                        (*it)->mArbitrarySpatial);
   }
 
@@ -2092,12 +2092,12 @@ void BodyNode::updateMassMatrix()
   std::size_t dof = mParentJoint->getNumDofs();
   if (dof > 0)
   {
-    mM_dV.noalias() += mParentJoint->getLocalJacobian()
+    mM_dV.noalias() += mParentJoint->getRelativeJacobian()
                        * mParentJoint->getAccelerations();
     assert(!math::isNan(mM_dV));
   }
   if (mParentBodyNode)
-    mM_dV += math::AdInvT(mParentJoint->getLocalTransform(),
+    mM_dV += math::AdInvT(mParentJoint->getRelativeTransform(),
                           mParentBodyNode->mM_dV);
   assert(!math::isNan(mM_dV));
 }
@@ -2116,7 +2116,7 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
   {
-    mM_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+    mM_F += math::dAdInvT((*it)->getParentJoint()->getRelativeTransform(),
                           (*it)->mM_F);
   }
 
@@ -2129,7 +2129,7 @@ void BodyNode::aggregateMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col)
   {
     std::size_t iStart = mParentJoint->getIndexInTree(0);
     _MCol.block(iStart, _col, dof, 1).noalias() =
-        mParentJoint->getLocalJacobian().transpose() * mM_F;
+        mParentJoint->getRelativeJacobian().transpose() * mM_F;
   }
 }
 
@@ -2150,7 +2150,7 @@ void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col,
   for (std::vector<BodyNode*>::const_iterator it = mChildBodyNodes.begin();
        it != mChildBodyNodes.end(); ++it)
   {
-    mM_F += math::dAdInvT((*it)->getParentJoint()->getLocalTransform(),
+    mM_F += math::dAdInvT((*it)->getParentJoint()->getRelativeTransform(),
                           (*it)->mM_F);
   }
 
@@ -2172,7 +2172,7 @@ void BodyNode::aggregateAugMassMatrix(Eigen::MatrixXd& _MCol, std::size_t _col,
     std::size_t iStart = mParentJoint->getIndexInTree(0);
 
     _MCol.block(iStart, _col, dof, 1).noalias()
-        = mParentJoint->getLocalJacobian().transpose() * mM_F
+        = mParentJoint->getRelativeJacobian().transpose() * mM_F
           + D * (_timeStep * mParentJoint->getAccelerations())
           + K * (_timeStep * _timeStep * mParentJoint->getAccelerations());
   }
@@ -2230,7 +2230,7 @@ void BodyNode::aggregateInvMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t _co
           _InvMCol, _col, getArticulatedInertia(), mParentBodyNode->mInvM_U);
 
     //
-    mInvM_U = math::AdInvT(mParentJoint->getLocalTransform(),
+    mInvM_U = math::AdInvT(mParentJoint->getRelativeTransform(),
                            mParentBodyNode->mInvM_U);
   }
   else
@@ -2259,7 +2259,7 @@ void BodyNode::aggregateInvAugMassMatrix(Eigen::MatrixXd& _InvMCol, std::size_t 
           mParentBodyNode->mInvM_U);
 
     //
-    mInvM_U = math::AdInvT(mParentJoint->getLocalTransform(),
+    mInvM_U = math::AdInvT(mParentJoint->getRelativeTransform(),
                            mParentBodyNode->mInvM_U);
   }
   else
@@ -2308,12 +2308,12 @@ void BodyNode::updateBodyJacobian() const
 
     assert(mParentJoint);
     mBodyJacobian.leftCols(ascendantDof) =
-        math::AdInvTJac(mParentJoint->getLocalTransform(),
+        math::AdInvTJac(mParentJoint->getRelativeTransform(),
                         mParentBodyNode->getJacobian());
   }
 
   // Local Jacobian
-  mBodyJacobian.rightCols(localDof) = mParentJoint->getLocalJacobian();
+  mBodyJacobian.rightCols(localDof) = mParentJoint->getRelativeJacobian();
 
   mIsBodyJacobianDirty = false;
 }
@@ -2360,13 +2360,13 @@ void BodyNode::updateBodyJacobianSpatialDeriv() const
            == static_cast<std::size_t>(mBodyJacobianSpatialDeriv.cols()));
 
     mBodyJacobianSpatialDeriv.leftCols(numParentDOFs)
-        = math::AdInvTJac(mParentJoint->getLocalTransform(), dJ_parent);
+        = math::AdInvTJac(mParentJoint->getRelativeTransform(), dJ_parent);
   }
 
   // Local Jacobian: ad(V(i), S(i)) + dS(i)
   mBodyJacobianSpatialDeriv.rightCols(numLocalDOFs)
-      = math::adJac(getSpatialVelocity(), mParentJoint->getLocalJacobian())
-        + mParentJoint->getLocalJacobianTimeDeriv();
+      = math::adJac(getSpatialVelocity(), mParentJoint->getRelativeJacobian())
+        + mParentJoint->getRelativeJacobianTimeDeriv();
 
   mIsBodyJacobianSpatialDerivDirty = false;
 }
@@ -2424,8 +2424,8 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
           + dJ_parent.topRows<3>().colwise().cross(p);
   }
 
-  const math::Jacobian& dJ_local = mParentJoint->getLocalJacobianTimeDeriv();
-  const math::Jacobian& J_local = mParentJoint->getLocalJacobian();
+  const math::Jacobian& dJ_local = mParentJoint->getRelativeJacobianTimeDeriv();
+  const math::Jacobian& J_local = mParentJoint->getRelativeJacobian();
   const Eigen::Isometry3d& T = getWorldTransform();
   const Eigen::Vector3d& w = getAngularVelocity();
 

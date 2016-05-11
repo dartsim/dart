@@ -102,7 +102,7 @@ public:
   const Eigen::Vector3d& getAxis2() const;
 
   // Documentation inherited
-  Eigen::Matrix<double, 6, 2> getLocalJacobianStatic(
+  Eigen::Matrix<double, 6, 2> getRelativeJacobianStatic(
       const Eigen::Vector2d& _positions) const override;
 
 protected:
@@ -113,19 +113,19 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using MultiDofJoint::getLocalJacobianStatic;
+  using MultiDofJoint::getRelativeJacobianStatic;
 
   // Documentation inherited
   void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited
-  void updateLocalTransform() const override;
+  void updateRelativeTransform() const override;
 
   // Documentation inherited
-  void updateLocalJacobian(bool =true) const override;
+  void updateRelativeJacobian(bool =true) const override;
 
   // Documentation inherited
-  void updateLocalJacobianTimeDeriv() const override;
+  void updateRelativeJacobianTimeDeriv() const override;
 
 public:
   // To get byte-aligned Eigen vectors

@@ -44,13 +44,8 @@
 #include "dart/config.hpp"
 #include "dart/common/common.hpp"
 #include "dart/math/math.hpp"
-#include "dart/collision/CollisionGroup.hpp"
-#include "dart/collision/fcl/FCLCollisionDetector.hpp"
-#include "dart/collision/dart/DARTCollisionDetector.hpp"
-#if HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
-#endif
 #include "dart/dynamics/dynamics.hpp"
+#include "dart/collision/collision.hpp"
 #include "dart/simulation/simulation.hpp"
 #include "dart/utils/utils.hpp"
 #include "TestHelpers.hpp"
@@ -514,9 +509,9 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 //==============================================================================
 void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
 {
-  auto simpleFrame1 = std::make_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = std::make_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame3 = std::make_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame3 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
 
   ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
@@ -541,24 +536,56 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
             + group2->getNumShapeFrames()
             + group3->getNumShapeFrames());
 
+  for(std::size_t i=0; i < group1->getNumShapeFrames(); ++i)
+    EXPECT_EQ(groupAll->getShapeFrame(i), group1->getShapeFrame(i));
+
+  std::size_t start = group1->getNumShapeFrames();
+  std::size_t end = start + group2->getNumShapeFrames();
+  for(std::size_t i=start; i < end; ++i)
+    EXPECT_EQ(groupAll->getShapeFrame(i), group2->getShapeFrame(i-start));
+
+  start = start + group2->getNumShapeFrames();
+  end = start + group3->getNumShapeFrames();
+  for(std::size_t i=start; i < end; ++i)
+    EXPECT_EQ(groupAll->getShapeFrame(i), group3->getShapeFrame(i-start));
+
   collision::CollisionOption option;
   collision::CollisionResult result;
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
   simpleFrame3->setTranslation(Eigen::Vector3d(2.2, 0.0, 0.0));
-  EXPECT_FALSE(group1->collide(option, result));
-  EXPECT_FALSE(group2->collide(option, result));
-  EXPECT_FALSE(group3->collide(option, result));
-  EXPECT_FALSE(groupAll->collide(option, result));
+  EXPECT_FALSE(group1->collide(option, &result));
+  EXPECT_FALSE(group2->collide(option, &result));
+  EXPECT_FALSE(group3->collide(option, &result));
+  EXPECT_FALSE(groupAll->collide(option, &result));
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d(0.5, 0.0, 0.0));
   simpleFrame3->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
-  EXPECT_TRUE(group1->collide(group2.get(), option, result));
-  EXPECT_TRUE(group1->collide(group2.get(), option, result));
-  EXPECT_TRUE(group2->collide(group3.get(), option, result));
-  EXPECT_TRUE(groupAll->collide(option, result));
+  EXPECT_TRUE(group1->collide(group2.get(), option, &result));
+  EXPECT_TRUE(group1->collide(group2.get(), option, &result));
+  EXPECT_TRUE(group2->collide(group3.get(), option, &result));
+  EXPECT_TRUE(groupAll->collide(option, &result));
+
+  auto group23 = cd->createCollisionGroup(
+        simpleFrame2.get(), simpleFrame3.get());
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(1.1, 0.0, 0.0));
+  simpleFrame3->setTranslation(Eigen::Vector3d(1.6, 0.0, 0.0));
+  EXPECT_FALSE(group1->collide(group2.get()));
+  EXPECT_FALSE(group1->collide(group3.get()));
+  EXPECT_TRUE(group2->collide(group3.get()));
+  EXPECT_TRUE(group23->collide());
+  if (cd->getType() == BulletCollisionDetector::getStaticType())
+  {
+    dtwarn << "Skipping group-group test for 'bullet' collision detector. "
+           << "Please see Issue #717 for the detail.\n";
+  }
+  else
+  {
+    EXPECT_FALSE(group1->collide(group23.get()));
+  }
 }
 
 //==============================================================================
@@ -610,8 +637,8 @@ bool checkBoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max,
 void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
                 double tol = 1e-12)
 {
-  auto simpleFrame1 = std::make_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = std::make_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
 
   ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -636,7 +663,7 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
   collision::CollisionOption option;
   collision::CollisionResult result;
 
-  EXPECT_TRUE(group1->collide(group2.get(), option, result));
+  EXPECT_TRUE(group1->collide(group2.get(), option, &result));
 
   Eigen::Vector3d min = Eigen::Vector3d(-0.25, 0.25, 0.0);
   Eigen::Vector3d max = Eigen::Vector3d(0.25, 0.5, 0.0);
@@ -695,9 +722,9 @@ TEST_F(COLLISION, BoxBox)
 //==============================================================================
 void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 {
-  auto simpleFrame1 = std::make_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = std::make_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame3 = std::make_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame3 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
 
   ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -721,22 +748,35 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 
   result.clear();
   option.maxNumContacts = 1000u;
-  option.binaryCheck = false;
-  EXPECT_TRUE(group->collide(option, result));
+  EXPECT_TRUE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 4u);
 
   result.clear();
   option.maxNumContacts = 2u;
-  option.binaryCheck = false;
-  EXPECT_TRUE(group->collide(option, result));
+  EXPECT_TRUE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 2u);
 
   group->addShapeFrame(simpleFrame3.get());
   result.clear();
-  option.maxNumContacts = 1e+3;
-  option.binaryCheck = true;
-  EXPECT_TRUE(group->collide(option, result));
+  option.maxNumContacts = 1u;
+  EXPECT_TRUE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 1u);
+
+  // Binary check without passing result
+  EXPECT_TRUE(group->collide(option));
+
+  // Binary check without passing option and result
+  EXPECT_TRUE(group->collide());
+
+  // Zero maximum number of contacts
+  option.maxNumContacts = 0u;
+  option.enableContact = true;
+  EXPECT_TRUE(group->collide());
+  EXPECT_FALSE(group->collide(option));
+  EXPECT_FALSE(group->collide(option, nullptr));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+  EXPECT_FALSE(result.isCollision());
 }
 
 //==============================================================================
@@ -772,6 +812,89 @@ TEST_F(COLLISION, Options)
 }
 
 //==============================================================================
+void testFilter(const std::shared_ptr<CollisionDetector>& cd)
+{
+  // Create two bodies skeleton. The two bodies are placed at the same position
+  // with the same size shape so that they collide by default.
+  auto skel = Skeleton::create();
+  auto shape = std::make_shared<BoxShape>(Eigen::Vector3d(1, 1, 1));
+  auto pair0 = skel->createJointAndBodyNodePair<RevoluteJoint>(nullptr);
+  auto* body0 = pair0.second;
+  body0->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
+  auto pair1 = body0->createChildJointAndBodyNodePair<RevoluteJoint>();
+  auto* body1 = pair1.second;
+  body1->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
+
+  // Create a collision group from the skeleton
+  auto group = cd->createCollisionGroup(skel.get());
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  // Default collision filter for Skeleton
+  CollisionOption option;
+  option.collisionFilter = std::make_shared<BodyNodeCollisionFilter>();
+
+  skel->enableSelfCollisionCheck();
+  skel->enableAdjacentBodyCheck();
+  EXPECT_TRUE(skel->isEnabledSelfCollisionCheck());
+  EXPECT_TRUE(skel->isEnabledAdjacentBodyCheck());
+  EXPECT_TRUE(group->collide());  // without filter, always collision
+  EXPECT_TRUE(group->collide(option));
+
+  skel->enableSelfCollisionCheck();
+  skel->disableAdjacentBodyCheck();
+  EXPECT_TRUE(skel->isEnabledSelfCollisionCheck());
+  EXPECT_FALSE(skel->isEnabledAdjacentBodyCheck());
+  EXPECT_TRUE(group->collide());
+  EXPECT_FALSE(group->collide(option));
+
+  skel->disableSelfCollisionCheck();
+  skel->enableAdjacentBodyCheck();
+  EXPECT_FALSE(skel->isEnabledSelfCollisionCheck());
+  EXPECT_TRUE(skel->isEnabledAdjacentBodyCheck());
+  EXPECT_TRUE(group->collide());
+  EXPECT_FALSE(group->collide(option));
+
+  skel->disableSelfCollisionCheck();
+  skel->disableAdjacentBodyCheck();
+  EXPECT_FALSE(skel->isEnabledSelfCollisionCheck());
+  EXPECT_FALSE(skel->isEnabledAdjacentBodyCheck());
+  EXPECT_TRUE(group->collide());
+  EXPECT_FALSE(group->collide(option));
+}
+
+//==============================================================================
+TEST_F(COLLISION, Filter)
+{
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testFilter(fcl_mesh_dart);
+
+  // auto fcl_prim_fcl = FCLCollisionDetector::create();
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testFilter(fcl_prim_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testFilter(fcl_mesh_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testFilter(fcl_mesh_fcl);
+
+#if HAVE_BULLET_COLLISION
+  auto bullet = BulletCollisionDetector::create();
+  testFilter(bullet);
+#endif
+
+  auto dart = DARTCollisionDetector::create();
+  testFilter(dart);
+}
+
+//==============================================================================
 void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
 {
   Eigen::Vector3d size(1.0, 1.0, 1.0);
@@ -799,9 +922,22 @@ void testCreateCollisionGroups(const std::shared_ptr<CollisionDetector>& cd)
   auto shapeNodeGroup1 = cd->createCollisionGroup(boxShapeNode1);
   auto shapeNodeGroup2 = cd->createCollisionGroup(boxShapeNode2);
 
-  EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get(), option, result));
-  EXPECT_TRUE(bodyNodeGroup1->collide(bodyNodeGroup2.get(), option, result));
-  EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get(), option, result));
+  EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get(), option, &result));
+  EXPECT_TRUE(bodyNodeGroup1->collide(bodyNodeGroup2.get(), option, &result));
+  EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get(), option, &result));
+
+  // Binary check without passing option
+  auto oldMaxNumContacts = option.maxNumContacts;
+  option.maxNumContacts = 1u;
+  EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get(), option));
+  EXPECT_TRUE(bodyNodeGroup1->collide(bodyNodeGroup2.get(), option));
+  EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get(), option));
+  option.maxNumContacts = oldMaxNumContacts;
+
+  // Binary check without passing option and result
+  EXPECT_TRUE(skeletonGroup1->collide(skeletonGroup2.get()));
+  EXPECT_TRUE(bodyNodeGroup1->collide(bodyNodeGroup2.get()));
+  EXPECT_TRUE(shapeNodeGroup1->collide(shapeNodeGroup2.get()));
 
   // Regression test for #666
   auto world = common::make_unique<World>();

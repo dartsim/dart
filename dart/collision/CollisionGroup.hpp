@@ -105,7 +105,7 @@ public:
   /// Add ShapeFrames of Skeleton, and also add another ShapeFrames of other
   /// various objects.
   template <typename... Others>
-  void addShapeFramesOf(const dynamics::Skeleton* skeleton,
+  void addShapeFramesOf(const dynamics::MetaSkeleton* skeleton,
                         const Others*... others);
 
   /// Do nothing. This function is for terminating the recursive variadic
@@ -168,15 +168,22 @@ public:
   /// Return number of ShapeFrames added to this CollisionGroup
   std::size_t getNumShapeFrames() const;
 
-  /// Perform collision detection within this CollisionGroup.
-  bool collide(const CollisionOption& option, CollisionResult& result);
+  /// Get the ShapeFrame corresponding to the given index
+  const dynamics::ShapeFrame* getShapeFrame(std::size_t index) const;
 
-  /// Perform collision detection with other CollisionGroup.
+  /// Perform collision check within this CollisionGroup.
+  bool collide(
+      const CollisionOption& option = CollisionOption(false, 1u, nullptr),
+      CollisionResult* result = nullptr);
+
+  /// Perform collision check with other CollisionGroup.
   ///
   /// Return false if the engine type of the other CollisionGroup is different
   /// from this CollisionObject engine.
-  bool collide(CollisionGroup* group,
-               const CollisionOption& option, CollisionResult& result);
+  bool collide(
+      CollisionGroup* group,
+      const CollisionOption& option = CollisionOption(false, 1u, nullptr),
+      CollisionResult* result = nullptr);
 
 protected:
 

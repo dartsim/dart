@@ -129,7 +129,7 @@ void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
     updateDegreeOfFreedomNames();
 
   Joint::notifyPositionUpdate();
-  updateLocalJacobian(true);
+  updateRelativeJacobian(true);
   Joint::incrementVersion();
 }
 
@@ -180,7 +180,7 @@ Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d& _positions)
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
+Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
     const Eigen::Vector3d& _positions) const
 {
   Eigen::Matrix<double, 6, 3> J;
@@ -336,7 +336,7 @@ void EulerJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void EulerJoint::updateLocalTransform() const
+void EulerJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint * convertToTransform(getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
@@ -345,13 +345,13 @@ void EulerJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void EulerJoint::updateLocalJacobian(bool) const
+void EulerJoint::updateRelativeJacobian(bool) const
 {
-  mJacobian = getLocalJacobianStatic(getPositionsStatic());
+  mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void EulerJoint::updateLocalJacobianTimeDeriv() const
+void EulerJoint::updateRelativeJacobianTimeDeriv() const
 {
   // double q0 = mPositions[0];
   const Eigen::Vector3d& positions = getPositionsStatic();
