@@ -46,48 +46,12 @@
 #include "dart/dynamics/BodyNode.hpp"
 
 #define REPORT_UNSUPPORTED_SHAPES(shape1, shape2)\
-  dterr << "[DARTCollisionDetector] Attempting to check for a "\
-        << "unsupported pair of '"\
-        << getShapeName(shape1) << "'-'"\
-        << getShapeName(shape2) << "'. "\
-        << "Returning false.\n";
+  dterr << "[DARTCollisionDetector] Attempting to check for an "\
+        << "unsupported shape pair: [" << typeid(*shape1).name()\
+        << "] - [" << typeid(*shape2).name() << "]. Returning false.\n";
 
 namespace dart {
 namespace collision {
-
-static std::string getShapeName(const dynamics::ConstShapePtr& shape)
-{
-  if(!shape)
-    return "nullptr";
-
-  switch (shape->getShapeType())
-  {
-    case dynamics::Shape::BOX:
-      return "box";
-      break;
-    case dynamics::Shape::ELLIPSOID:
-      return "ellipsoid";
-      break;
-    case dynamics::Shape::CYLINDER:
-      return "cylinder";
-      break;
-    case dynamics::Shape::PLANE:
-      return "plane";
-      break;
-    case dynamics::Shape::MESH:
-      return "mesh";
-      break;
-    case dynamics::Shape::SOFT_MESH:
-      return "soft mesh";
-      break;
-    case dynamics::Shape::LINE_SEGMENT:
-      return "line segment";
-      break;
-    default:
-      return "unknown shape type";
-      break;
-  }
-}
 
 // point : world coordinate vector
 // normal : normal vector from right to left 0 <- 1
