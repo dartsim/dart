@@ -11,7 +11,7 @@
  [Yuting Ye](http://yutingye.info/)                 | multibody dynamics, GUI
  [Michael Koval](https://github.com/mkoval)         | uri, resource retriever, bug fixes
  [Ana C. Huamán Quispe](https://github.com/ana-GT)  | urdf parser
- [Chen Tang](https://github.com/chentang)           | detection
+ [Chen Tang](https://github.com/chentang)           | collision detection
  [Matthew Dutton](https://github.com/mdutton3)      | build and bug fixes
  [Eric Huang](https://github.com/ehuang3)           | build and bug fixes
  [Pushkar Kolhe](https://github.com/pushkar)        | early DART build system design
