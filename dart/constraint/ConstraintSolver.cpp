@@ -64,7 +64,7 @@ ConstraintSolver::ConstraintSolver(double timeStep)
     mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
     mCollisionOption(
       collision::CollisionOption(
-        true, false, 100, std::make_shared<collision::BodyNodeCollisionFilter>())),
+        true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
     mTimeStep(timeStep),
     mLCPSolver(new DantzigLCPSolver(mTimeStep))
 {
@@ -91,20 +91,18 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   assert(skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
-  if (!containSkeleton(skeleton))
-  {
-    auto group = mCollisionDetector->createCollisionGroup(skeleton.get());
-    mCollisionGroup->addShapeFramesOf(group.get());
-
-    mSkeletons.push_back(skeleton);
-    mConstrainedGroups.reserve(mSkeletons.size());
-  }
-  else
+  if (containSkeleton(skeleton))
   {
     dtwarn << "[ConstraintSolver::addSkeleton] Attempting to add "
            << "skeleton '" << skeleton->getName()
            << "', which already exists in the ConstraintSolver.\n";
+
+    return;
   }
+
+  mCollisionGroup->addShapeFramesOf(skeleton.get());
+  mSkeletons.push_back(skeleton);
+  mConstrainedGroups.reserve(mSkeletons.size());
 }
 
 //==============================================================================
@@ -120,21 +118,17 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
   assert(skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
-  if (containSkeleton(skeleton))
-  {
-    auto group = mCollisionDetector->createCollisionGroup(skeleton.get());
-    mCollisionGroup->removeShapeFramesOf(group.get());
-
-    mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), skeleton),
-                     mSkeletons.end());
-    mConstrainedGroups.reserve(mSkeletons.size());
-  }
-  else
+  if (!containSkeleton(skeleton))
   {
     dtwarn << "[ConstraintSolver::removeSkeleton] Attempting to remove "
            << "skeleton '" << skeleton->getName()
            << "', which doesn't exist in the ConstraintSolver.\n";
   }
+
+  mCollisionGroup->removeShapeFramesOf(skeleton.get());
+  mSkeletons.erase(remove(mSkeletons.begin(), mSkeletons.end(), skeleton),
+                   mSkeletons.end());
+  mConstrainedGroups.reserve(mSkeletons.size());
 }
 
 //==============================================================================
@@ -388,7 +382,7 @@ void ConstraintSolver::updateConstraints()
   //----------------------------------------------------------------------------
   mCollisionResult.clear();
 
-  mCollisionGroup->collide(mCollisionOption, mCollisionResult);
+  mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
 
   // Destroy previous contact constraints
   mContactConstraints.clear();

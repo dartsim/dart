@@ -267,7 +267,7 @@ public:
     dart::collision::CollisionOption option;
     dart::collision::CollisionResult result;
     bool dominoCollision
-        = collisionGroup->collide(newGroup.get(), option, result);
+        = collisionGroup->collide(newGroup.get(), option, &result);
 
     // If the new domino is not penetrating an existing one
     if(!dominoCollision)

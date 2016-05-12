@@ -306,7 +306,8 @@ SkeletonPtr loadBiped()
     biped->getJoint(i)->setPositionLimitEnforced(true);
   
   // Enable self collision check but ignore adjacent bodies
-  biped->enableSelfCollision();
+  biped->enableSelfCollisionCheck();
+  biped->disableAdjacentBodyCheck();
 
   return biped;
 }

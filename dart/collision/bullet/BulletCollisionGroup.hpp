@@ -76,7 +76,10 @@ protected:
   void updateCollisionGroupEngineData() override;
 
   /// Return Bullet collision world
-  btCollisionWorld* getBulletCollisionWorld() const;
+  btCollisionWorld* getBulletCollisionWorld();
+
+  /// Return Bullet collision world
+  const btCollisionWorld* getBulletCollisionWorld() const;
 
 protected:
 

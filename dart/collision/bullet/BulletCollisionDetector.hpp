@@ -39,6 +39,7 @@
 #include <assimp/scene.h>
 #include <btBulletCollisionCommon.h>
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/bullet/BulletCollisionGroup.hpp"
 
 namespace dart {
 namespace collision {
@@ -69,12 +70,17 @@ public:
   std::unique_ptr<CollisionGroup> createCollisionGroup() override;
 
   // Documentation inherited
-  bool collide(CollisionGroup* group,
-               const CollisionOption& option, CollisionResult& result) override;
+  bool collide(
+      CollisionGroup* group,
+      const CollisionOption& option = CollisionOption(false, 1u, nullptr),
+      CollisionResult* result = nullptr) override;
 
   // Documentation inherited
-  bool collide(CollisionGroup* group1, CollisionGroup* group2,
-               const CollisionOption& option, CollisionResult& result) override;
+  bool collide(
+      CollisionGroup* group1,
+      CollisionGroup* group2,
+      const CollisionOption& option = CollisionOption(false, 1u, nullptr),
+      CollisionResult* result = nullptr) override;
 
 protected:
 
@@ -103,6 +109,8 @@ private:
 
   std::map<dynamics::ConstShapePtr,
            std::pair<btCollisionShape*, std::size_t>> mShapeMap;
+
+  std::unique_ptr<BulletCollisionGroup> mGroupForFiltering;
 
 };
 

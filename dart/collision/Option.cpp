@@ -37,11 +37,9 @@ namespace collision {
 //==============================================================================
 CollisionOption::CollisionOption(
     bool enableContact,
-    bool binaryCheck,
     std::size_t maxNumContacts,
     const std::shared_ptr<CollisionFilter>& collisionFilter)
   : enableContact(enableContact),
-    binaryCheck(binaryCheck),
     maxNumContacts(maxNumContacts),
     collisionFilter(collisionFilter)
 {
