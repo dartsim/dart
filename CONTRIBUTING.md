@@ -8,7 +8,7 @@
  [Michael X. Grey](https://github.com/mxgrey)       | project director, extensive API improvements, inverse kinematics, gui::osg, tutorials
  [Tobias Kunz](https://github.com/tobiaskunz)       | former project director, motion planner
  [Sumit Jain](http://www.cc.gatech.edu/graphics/projects/Sumit/homepage/) | multibody dynamics
- [Yuting Ye](http://yutingye.info/)                 | multibody dynamics, GUI
+ [Yuting Ye](https://github.com/yutingye)           | multibody dynamics, GUI
  [Michael Koval](https://github.com/mkoval)         | uri, resource retriever, bug fixes
  [Ana C. Huamán Quispe](https://github.com/ana-GT)  | urdf parser
  [Chen Tang](https://github.com/chentang)           | collision detection
