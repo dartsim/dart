@@ -33,17 +33,8 @@
 #define DART_COLLISION_DART_DARTCOLLIDE_HPP_
 
 #include <vector>
-
 #include <Eigen/Dense>
-
 #include "dart/collision/CollisionDetector.hpp"
-#include "dart/dynamics/Shape.hpp"
-
-namespace dart {
-namespace dynamics {
-class Shape;
-}  // namespace dynamics
-}  // namespace dart
 
 namespace dart {
 namespace collision {
