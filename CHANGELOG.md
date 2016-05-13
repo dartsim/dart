@@ -6,6 +6,10 @@
 
   * Added warnings for unsupported shape pairs of DARTCollisionDetector: [#722](https://github.com/dartsim/dart/pull/722)
 
+* Misc improvements and bug fixes
+
+  * Updated copyright: added CMU to copyright holder, moved individual contributors to CONTRIBUTING.md: [#723](https://github.com/dartsim/dart/pull/723)
+
 ### DART 6.0.0 (2016-05-10)
 
 * Common data structures
