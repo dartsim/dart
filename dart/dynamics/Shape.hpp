@@ -42,18 +42,19 @@
 
 #include <Eigen/Dense>
 
-#include "dart/math/Geometry.hpp"
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/Subject.hpp"
+#include "dart/math/Geometry.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace dynamics {
-/// \brief
+
 class Shape : public virtual common::Subject
 {
 public:
-  // TODO(JS): We should not use ShapeType because this is not extendable.
-  /// \brief
+
+  /// \deprecated Deprecated in 6.1. Please use getType() instead.
   enum ShapeType {
     BOX,
     ELLIPSOID,
@@ -82,6 +83,9 @@ public:
   /// \brief Destructor
   virtual ~Shape();
 
+  /// Returns a string representing the shape type
+  virtual const std::string& getType() const = 0;
+
   /// \brief Get the bounding box of the shape in its local coordinate frame.
   ///        The dimension will be automatically determined by the sub-classes
   ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
@@ -102,7 +106,8 @@ public:
   /// \brief
   int getID() const;
 
-  /// \brief
+  /// \deprecated Deprecated in 6.1. Please use getType() instead.
+  DEPRECATED(6.1)
   ShapeType getShapeType() const;
 
   /// Set the data variance of this shape. Use the DataVariance to indicate what
@@ -155,7 +160,8 @@ protected:
 
 private:
 
-  /// \brief Type of primitive
+  /// \deprecated Deprecated in 6.1. Please use getType() instead.
+  /// \brief Type of primitive shpae
   ShapeType mType;
 
 };

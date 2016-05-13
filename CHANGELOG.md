@@ -1,5 +1,11 @@
 ## DART 6
 
+### DART 6.1.0 (2016-XX-XX)
+
+* Misc improvements and bug fixes
+
+  * Added `virtual Shape::getType()` and deprecated `ShapeType Shpae::getShapeType()`: [#724](https://github.com/dartsim/dart/pull/724)
+
 ### DART 6.0.1 (2016-XX-XX)
 
 * Collision detection

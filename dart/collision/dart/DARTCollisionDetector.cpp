@@ -42,6 +42,7 @@
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 
 namespace dart {
@@ -241,20 +242,22 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
     return;
 
   const auto& shape = shapeFrame->getShape();
+  const auto& shapeType = shape->getType();
 
-  if (shape->getShapeType() == dynamics::Shape::BOX)
+  if (shapeType == dynamics::BoxShape::getStaticType())
     return;
 
-  if (shape->getShapeType() == dynamics::Shape::ELLIPSOID)
+  if (shapeType == dynamics::EllipsoidShape::getStaticType())
   {
     const auto& ellipsoid
         = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
+
     if (ellipsoid->isSphere())
       return;
   }
 
-  dterr << "[DARTCollisionDetector] Attempting to create shape type '"
-        << shapeFrame->getShape()->getShapeType() << "' that is not supported "
+  dterr << "[DARTCollisionDetector] Attempting to create shape type ["
+        << shapeType << "] that is not supported "
         << "by DARTCollisionDetector. Currently, only BoxShape and "
         << "EllipsoidShape (only when all the radii are equal) are "
         << "supported. This shape will always get penetrated by other "

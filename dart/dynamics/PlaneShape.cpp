@@ -57,6 +57,19 @@ PlaneShape::PlaneShape(const Eigen::Vector3d& _normal,
 }
 
 //==============================================================================
+const std::string& PlaneShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& PlaneShape::getStaticType()
+{
+  static const std::string type = ("PlaneShape");
+  return type;
+}
+
+//==============================================================================
 Eigen::Matrix3d PlaneShape::computeInertia(double /*mass*/) const
 {
   return Eigen::Matrix3d::Zero();

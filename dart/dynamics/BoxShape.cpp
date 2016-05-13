@@ -56,6 +56,19 @@ BoxShape::~BoxShape() {
 }
 
 //==============================================================================
+const std::string& BoxShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& BoxShape::getStaticType()
+{
+  static const std::string type = ("BoxShape");
+  return type;
+}
+
+//==============================================================================
 double BoxShape::computeVolume(const Eigen::Vector3d& size)
 {
   return size[0] * size[1] * size[2];

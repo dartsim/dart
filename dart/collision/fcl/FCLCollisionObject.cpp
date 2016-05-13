@@ -85,42 +85,39 @@ void FCLCollisionObject::updateEngineData()
 
   auto shape = mShapeFrame->getShape().get();
 
-  if (shape->getShapeType() == dynamics::Shape::SOFT_MESH)
+  // Update soft-body's vertices
+  if (shape->getType() == dynamics::SoftMeshShape::getStaticType())
   {
-    // Update soft-body's vertices
-    if (shape->getShapeType() == Shape::SOFT_MESH)
-    {
-      assert(dynamic_cast<const SoftMeshShape*>(shape));
-      auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
+    assert(dynamic_cast<const SoftMeshShape*>(shape));
+    auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
 
-      const aiMesh* mesh = softMeshShape->getAssimpMesh();
-      const_cast<SoftMeshShape*>(softMeshShape)->update();
-      // TODO(JS): update function be called by somewhere out of here.
+    const aiMesh* mesh = softMeshShape->getAssimpMesh();
+    const_cast<SoftMeshShape*>(softMeshShape)->update();
+    // TODO(JS): update function be called by somewhere out of here.
 
 #if FCL_VERSION_AT_LEAST(0,3,0)
-      auto collGeom = const_cast<fcl::CollisionGeometry*>(
+    auto collGeom = const_cast<fcl::CollisionGeometry*>(
           mFCLCollisionObject->collisionGeometry().get());
 #else
-      fcl::CollisionGeometry* collGeom
-          = const_cast<fcl::CollisionGeometry*>(
-              mFCLCollisionObject->getCollisionGeometry());
+    fcl::CollisionGeometry* collGeom
+        = const_cast<fcl::CollisionGeometry*>(
+          mFCLCollisionObject->getCollisionGeometry());
 #endif
-      assert(dynamic_cast<fcl::BVHModel<fcl::OBBRSS>*>(collGeom));
-      auto bvhModel = static_cast<fcl::BVHModel<fcl::OBBRSS>*>(collGeom);
+    assert(dynamic_cast<fcl::BVHModel<fcl::OBBRSS>*>(collGeom));
+    auto bvhModel = static_cast<fcl::BVHModel<fcl::OBBRSS>*>(collGeom);
 
-      bvhModel->beginUpdateModel();
-      for (auto j = 0u; j < mesh->mNumFaces; ++j)
+    bvhModel->beginUpdateModel();
+    for (auto i = 0u; i < mesh->mNumFaces; ++i)
+    {
+      fcl::Vec3f vertices[3];
+      for (auto j = 0u; j < 3; ++j)
       {
-        fcl::Vec3f vertices[3];
-        for (auto k = 0u; k < 3; ++k)
-        {
-          const auto& vertex = mesh->mVertices[mesh->mFaces[j].mIndices[k]];
-          vertices[k] = fcl::Vec3f(vertex.x, vertex.y, vertex.z);
-        }
-        bvhModel->updateTriangle(vertices[0], vertices[1], vertices[2]);
+        const auto& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
+        vertices[j] = fcl::Vec3f(vertex.x, vertex.y, vertex.z);
       }
-      bvhModel->endUpdateModel();
+      bvhModel->updateTriangle(vertices[0], vertices[1], vertices[2]);
     }
+    bvhModel->endUpdateModel();
   }
 
   mFCLCollisionObject->setTransform(FCLTypes::convertTransform(getTransform()));

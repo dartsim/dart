@@ -61,6 +61,19 @@ SoftMeshShape::~SoftMeshShape()
   // Do nothing
 }
 
+//==============================================================================
+const std::string& SoftMeshShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& SoftMeshShape::getStaticType()
+{
+  static const std::string type = ("SoftMeshShape");
+  return type;
+}
+
 const aiMesh* SoftMeshShape::getAssimpMesh() const
 {
   return mAssimpMesh.get();

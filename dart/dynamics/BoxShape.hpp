@@ -51,6 +51,12 @@ public:
   /// \brief Destructor.
   virtual ~BoxShape();
 
+  // Documentation inherited.
+  const std::string& getType() const;
+
+  /// Returns shape type for this class
+  static const std::string& getStaticType();
+
   /// \brief Set size of this box.
   void setSize(const Eigen::Vector3d& _size);
 

@@ -407,64 +407,50 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   using dynamics::SoftMeshShape;
   using dynamics::LineSegmentShape;
 
-  switch (shape->getShapeType())
+  const auto& shapeType = shape->getType();
+
+  if (BoxShape::getStaticType() == shapeType)
   {
-    case Shape::BOX:
-    {
-      const auto& box = static_cast<const BoxShape*>(shape);
-      mRI->drawCube(box->getSize());
+    const auto* box = static_cast<const BoxShape*>(shape);
+    mRI->drawCube(box->getSize());
+  }
+  else if (EllipsoidShape::getStaticType() == shapeType)
+  {
+    const auto* ellipsoid = static_cast<const EllipsoidShape*>(shape);
+    mRI->drawEllipsoid(ellipsoid->getSize());
+  }
+  else if (CylinderShape::getStaticType() == shapeType)
+  {
+    const auto* cylinder = static_cast<const CylinderShape*>(shape);
+    mRI->drawCylinder(cylinder->getRadius(), cylinder->getHeight());
+  }
+  else if (MeshShape::getStaticType() == shapeType)
+  {
+    const auto& mesh = static_cast<const MeshShape*>(shape);
 
-      break;
-    }
-    case Shape::ELLIPSOID:
-    {
-      const auto& ellipsoid = static_cast<const EllipsoidShape*>(shape);
-      mRI->drawEllipsoid(ellipsoid->getSize());
+    glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
 
-      break;
-    }
-    case Shape::CYLINDER:
-    {
-      const auto& cylinder = static_cast<const CylinderShape*>(shape);
-      mRI->drawCylinder(cylinder->getRadius(), cylinder->getHeight());
-
-      break;
-    }
-    case Shape::MESH:
-    {
-      const auto& mesh = static_cast<const MeshShape*>(shape);
-
-      glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
-
-      if (mesh->getDisplayList())
-        mRI->drawList(mesh->getDisplayList());
-      else
-        mRI->drawMesh(mesh->getScale(), mesh->getMesh());
-
-      break;
-    }
-    case Shape::SOFT_MESH:
-    {
-      const auto& softMesh = static_cast<const SoftMeshShape*>(shape);
-      mRI->drawSoftMesh(softMesh->getAssimpMesh());
-
-      break;
-    }
-    case Shape::LINE_SEGMENT:
-    {
-      const auto& lineSegmentShape
-          = static_cast<const LineSegmentShape*>(shape);
-      mRI->drawLineSegments(lineSegmentShape->getVertices(),
-                            lineSegmentShape->getConnections());
-
-      break;
-    }
-    default:
-    {
-      dterr << "[SimWindow::drawShape] Attempting to draw unsupported shape "
-            << "type '" << shape->getShapeType() << "'.\n";
-      break;
-    }
+    if (mesh->getDisplayList())
+      mRI->drawList(mesh->getDisplayList());
+    else
+      mRI->drawMesh(mesh->getScale(), mesh->getMesh());
+  }
+  else if (SoftMeshShape::getStaticType() == shapeType)
+  {
+    const auto& softMesh = static_cast<const SoftMeshShape*>(shape);
+    mRI->drawSoftMesh(softMesh->getAssimpMesh());
+  }
+  else if (LineSegmentShape::getStaticType() == shapeType)
+  {
+    const auto& lineSegmentShape
+        = static_cast<const LineSegmentShape*>(shape);
+    mRI->drawLineSegments(lineSegmentShape->getVertices(),
+                          lineSegmentShape->getConnections());
+  }
+  else
+  {
+    dterr << "[SimWindow::drawShape] Attempting to draw an unsupported shape "
+          << "type [" << shapeType << "].\n";
   }
 
   glDisable(GL_COLOR_MATERIAL);

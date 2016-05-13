@@ -50,6 +50,12 @@ public:
   /// \brief Constructor.
   CylinderShape(double _radius, double _height);
 
+  // Documentation inherited.
+  const std::string& getType() const;
+
+  /// Returns shape type for this class
+  static const std::string& getStaticType();
+
   /// \brief
   double getRadius() const;
 

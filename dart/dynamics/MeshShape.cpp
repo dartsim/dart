@@ -152,6 +152,19 @@ MeshShape::~MeshShape() {
   delete mMesh;
 }
 
+//==============================================================================
+const std::string& MeshShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& MeshShape::getStaticType()
+{
+  static const std::string type = ("MeshShape");
+  return type;
+}
+
 const aiScene* MeshShape::getMesh() const {
   return mMesh;
 }

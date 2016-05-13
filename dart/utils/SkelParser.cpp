@@ -629,8 +629,8 @@ void readAspects(
       {
         for (auto& shapeNode : bodyNode->getShapeNodes())
         {
-          auto shapeType = shapeNode->getShape()->getShapeType();
-          if (dynamics::Shape::SOFT_MESH == shapeType)
+          const auto& shapeType = shapeNode->getShape()->getType();
+          if (dynamics::SoftMeshShape::getStaticType() == shapeType)
             continue;
 
           auto mass = bodyNode->getMass();
