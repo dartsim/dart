@@ -1,8 +1,81 @@
 dart6 (6.0.0) unstable; urgency=medium
 
+  * Added 'Node', 'Aspect', 'State', and 'Properties'
+  * Added mathematical constants and user-defined literals for radian, degree, and pi
+  * Added 'ShapeFrame' and 'ShapeNode'
+  * Added 'BoundingBox'
+  * Added convenient functions for setting joint limits
+  * Added more description on 'InverseKinematics::solve()'
+  * Added API for utilizing analytical inverse kinematics
+  * Added color property to 'Marker'
+  * Improved 'Skeleton' to clone 'State' as well
+  * Improved 'ReferentialSkeleton' to be able to add and remove 'BodyNode's and 'DegreeOfFreedom's to/from 'Group's freely
+  * Changed 'Marker' into 'Node'
+  * Renamed 'Joint::get/setLocal[~]' to 'Joint::get/setRelative[~]'
+  * Renamed 'PositionLimited' to 'PositionLimitEnforced'
+  * Fixed initialization of joint position and velocity
+  * Fixed 'InverseKinematics' when it's used with 'FreeJoint' and 'BallJoint'
+  * Fixed ambiguous overload on 'MetaSkeleton::getLinearJacobianDeriv'
+  * Added 'get/setLCPSolver' functions to 'ConstraintSolver'
+  * Added 'ServoMotorConstraint' as a preliminary implementation for 'SERVO' actuator type
+  * Improved 'ConstraintSolver' to obey C++11 ownership conventions
+  * Fixed segfualting of 'DantzigLCPSolver' when the constraint dimension is zero
+  * Fixed missing implementations in ConstrainedGroup
+  * Fixed incorrect applying of joint constraint impulses
+  * Deprecated 'draw()' functions of dynamics classes
+  * Added 'CollisionGroup' and refactored 'CollisionDetector' to be more versatile
+  * Improved API for self collision checking options
+  * Deprecated 'BodyNode::isColliding'; collision sets are moved to 'CollisionResult'
+  * Added back VSK parser
+  * Fixed segfault of 'SdfParser' when 'nullptr' 'ResourceRetriever' is passed
+  * Merged 'renderer' namespace into 'gui' namespace
+  * Moved 'osgDart' under 'dart::gui' namespace as 'dart::gui::osg'
+  * Fixed GlutWindow::screenshot()
+  * Fixed 'World::clone()' didn't clone the collision detector
+  * Fixed bug of 'World' concurrency
+  * Added 'make_unique<T>' that was omitted from C++11
+  * Added missing 'override' keywords
+  * Added gcc warning flag '-Wextra'
+  * Improved memory management of 'constraint' namespace
+  * Changed the extension of headers from '.h' to '.hpp'
+  * Changed Doxyfile to gnerate tag file
+  * Changed the convention to use 'std::size_t' over 'size_t'
+  * Changed CMake to configure preprocessors using '#cmakedefine'
+  * Updated copyright years
+  * Renamed directory name 'apps' to 'examples'
+  * Fixed warnings of unused variables in release mode
+  * Fixed typo of 'getNumPluralAddoName' in utility macro
+  * Fixed linker error by adding namespace-scope definitions for 'constexpr static' members
+  * Fixed segfault from nullptr meshes
+  * Fixed typo of tutorial with minor improvements
+  * Fixed 'NameManager<T>::removeEntries(~)' called a function that does not exist
+  * Fixed missing definitions for various functions
+  * Fixed const correctness of 'BodyNode::getMomentsOfInertia()'
+  * Fixed 'ftel' bug in Linux with an workaround
+  * Removed unnecessary 'virtual' keyword for overriding functions
+  * Removed deprecated APIs in DART 5
+  * Added CMake target for code coverage testing, and automatic reporting
   * Added missing 'liburdfdom-dev' dependency in Ubuntu package
+  * Modulized DART libraries
+  * Improved Travis-CI script
+  * Improved CMake script by splitting tutorials, examples, and tests into separate targets
+  * Improved wording of the cmake warning messages for ASSIMP
+  * Changed Travis-CI to treat warning as errors using '-Werror' flags
+  * Changed Travis-CI to test DART with bullet collision detector
+  * Changed the minimum requirement of Visual Studio version to 2015
+  * Changed CMake to build gui::osg examples when 'DART_BUILD_EXAMPLES' is on
+  * Simplfied Travis-CI tests for general pushes
+  * Fixed Eigen memory alignment issue in testCollision.cpp
+  * Fixed 'BULLET_INCLUDE_DIRS' in 'DARTConfig.cmake'
+  * Fixed linking with Bullet on OS X El Capitan by supporting for Bullet built with double precision
+  * Fixed FCL version check logic in the main 'CMakeLists.txt'
+  * Fixed 'find_package(DART)' on optimizer components
+  * Fixed linking against '${DART_LIBRARIES}' not working in Ubuntu 14.04
+  * Fixed Visual Studio 2015 build errors
+  * Removed OpenGL dependency from 'dart' library
+  * Removed version check for Bullet
 
- -- Jeongseok Lee <jslee02@gmail.com>  Sun, 17 Apr 2016 00:00:00 -0500
+ -- Jeongseok Lee <jslee02@gmail.com>  Tue, 10 May 2016 12:00:00 -0500
 
 dart (5.1.1) unstable; urgency=medium
 
