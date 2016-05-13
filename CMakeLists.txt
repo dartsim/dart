@@ -334,6 +334,42 @@ configure_file("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in" "${PROJEC
 add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
 
 #===============================================================================
+# Code Formatting
+#===============================================================================
+message(STATUS "")
+message(STATUS "[ Code Formatting ]")
+
+find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format clang-format-3.6)
+
+if (CLANG_FORMAT_EXECUTABLE)
+
+  message(STATUS "Looking for clang-format - found")
+
+  file(GLOB_RECURSE FORMAT_FILES
+       ${CMAKE_SOURCE_DIR}/dart/common/*.hpp
+       ${CMAKE_SOURCE_DIR}/dart/common/*.cpp)
+
+  add_custom_target(format
+                    COMMAND ${CMAKE_COMMAND} -E echo "Formatting code... "
+                    COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i ${FORMAT_FILES}
+                    COMMAND ${CMAKE_COMMAND} -E echo "Done."
+                    DEPENDS ${CLANG_FORMAT_EXECUTABLE}
+                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart)
+
+  add_custom_target(check-format
+                    COMMAND ${CMAKE_COMMAND} -E echo "Checking code format... "
+                    COMMAND ${CMAKE_SOURCE_DIR}/tools/check_format.sh ${CLANG_FORMAT_EXECUTABLE} ${FORMAT_FILES}
+                    COMMAND ${CMAKE_COMMAND} -E echo "Done."
+                    DEPENDS ${CLANG_FORMAT_EXECUTABLE}
+                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart)
+
+else()
+
+  message(STATUS "Looking for clang-format - NOT found, please install clang-format to enable automatic code formatting")
+
+endif()
+
+#===============================================================================
 # API Document using Doxygen
 # References:
 #   http://mementocodex.wordpress.com/2013/01/19/how-to-generate-code-documentation-with-doxygen-and-cmake-a-slightly-improved-approach/
