@@ -1,15 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author: Tobias Kunz <tobias@gatech.edu>
- * Date: 10/2011
- *
- * Humanoid Robotics Lab      Georgia Institute of Technology
- * Director: Mike Stilman     http://www.golems.org
- *
- * Algorithm details and publications:
- * http://www.golems.org/node/1570
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,6 +28,8 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
+
+// Algorithm details and publications: http://www.golems.org/node/1570
 
 #include "dart/planning/PathFollowingTrajectory.hpp"
 
