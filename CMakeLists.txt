@@ -339,7 +339,8 @@ add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/uninsta
 message(STATUS "")
 message(STATUS "[ Code Formatting ]")
 
-find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format clang-format-3.6)
+find_program(CLANG_FORMAT_EXECUTABLE
+             NAMES clang-format clang-format-3.9 clang-format-3.8)
 
 if (CLANG_FORMAT_EXECUTABLE)
 
