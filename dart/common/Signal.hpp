@@ -69,7 +69,7 @@ public:
   /// Disconnect the connection
   void disconnect() const;
 
-  template <typename _Signature, template<class> class Combiner>
+  template <typename _Signature, template <class> class Combiner>
   friend class Signal;
 
 protected:
@@ -101,21 +101,21 @@ public:
 };
 
 template <typename _Signature,
-          template<class> class Combiner = signal::detail::DefaultCombiner>
+          template <class> class Combiner = signal::detail::DefaultCombiner>
 class Signal;
 
 /// Signal implements a signal/slot mechanism
-template <typename _Res, typename... _ArgTypes, template<class> class Combiner>
+template <typename _Res, typename... _ArgTypes, template <class> class Combiner>
 class Signal<_Res(_ArgTypes...), Combiner>
 {
 public:
-  using ResultType    = _Res;
-  using SlotType      = std::function<ResultType(_ArgTypes...)>;
-  using SignalType    = Signal<_Res(_ArgTypes...), Combiner>;
+  using ResultType = _Res;
+  using SlotType   = std::function<ResultType(_ArgTypes...)>;
+  using SignalType = Signal<_Res(_ArgTypes...), Combiner>;
 
   using ConnectionBodyType = signal::detail::ConnectionBody<SlotType>;
-  using ConnectionSetType
-    = std::set<std::shared_ptr<ConnectionBodyType>,
+  using ConnectionSetType =
+      std::set<std::shared_ptr<ConnectionBodyType>,
                std::owner_less<std::shared_ptr<ConnectionBodyType>>>;
 
   /// Constructor
@@ -164,8 +164,8 @@ public:
   using SignalType = Signal<void(_ArgTypes...)>;
 
   using ConnectionBodyType = signal::detail::ConnectionBody<SlotType>;
-  using ConnectionSetType
-    = std::set<std::shared_ptr<ConnectionBodyType>,
+  using ConnectionSetType =
+      std::set<std::shared_ptr<ConnectionBodyType>,
                std::owner_less<std::shared_ptr<ConnectionBodyType>>>;
 
   /// Constructor
@@ -226,10 +226,9 @@ private:
   typename T::SignalType& mSignal;
 };
 
-}  // namespace common
-}  // namespace dart
+} // namespace common
+} // namespace dart
 
 #include "dart/common/detail/Signal.hpp"
 
-#endif  // DART_COMMON_SIGNAL_HPP_
-
+#endif // DART_COMMON_SIGNAL_HPP_

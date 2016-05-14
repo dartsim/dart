@@ -29,8 +29,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Subject.hpp"
 #include "dart/common/Observer.hpp"
+#include "dart/common/Subject.hpp"
 
 namespace dart {
 namespace common {
@@ -38,9 +38,9 @@ namespace common {
 //==============================================================================
 Observer::~Observer()
 {
-  std::set<const Subject*>::iterator it = mSubjects.begin(),
-                                          end = mSubjects.end();
-  while( it != end )
+  std::set<const Subject *>::iterator it  = mSubjects.begin(),
+                                      end = mSubjects.end();
+  while (it != end)
     (*(it++))->removeObserver(this);
   // We do this tricky iterator method to deal with the fact that mObservers
   // will be changing as we go through the loop
@@ -62,10 +62,10 @@ void Observer::handleDestructionNotification(const Subject*)
 //==============================================================================
 void Observer::addSubject(const Subject* _subject)
 {
-  if(nullptr == _subject)
+  if (nullptr == _subject)
     return;
 
-  if(mSubjects.find(_subject) != mSubjects.end())
+  if (mSubjects.find(_subject) != mSubjects.end())
     return;
 
   mSubjects.insert(_subject);
@@ -75,10 +75,10 @@ void Observer::addSubject(const Subject* _subject)
 //==============================================================================
 void Observer::removeSubject(const Subject* _subject)
 {
-  if(nullptr == _subject)
+  if (nullptr == _subject)
     return;
 
-  if(mSubjects.find(_subject) == mSubjects.end())
+  if (mSubjects.find(_subject) == mSubjects.end())
     return;
 
   mSubjects.erase(_subject);
@@ -88,10 +88,10 @@ void Observer::removeSubject(const Subject* _subject)
 //==============================================================================
 void Observer::removeAllSubjects()
 {
-  std::set<const Subject*>::iterator it = mSubjects.begin(),
-                                          end = mSubjects.end();
+  std::set<const Subject *>::iterator it  = mSubjects.begin(),
+                                      end = mSubjects.end();
 
-  while(it != end)
+  while (it != end)
     removeSubject(*(it++));
 }
 

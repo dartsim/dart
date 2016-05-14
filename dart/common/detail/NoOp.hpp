@@ -39,7 +39,7 @@ namespace detail {
 /// NoOp is short for "no operation". This is a placeholder function that can be
 /// used in places where a function needs to be provided but you do not actually
 /// want the function to do anything.
-template <typename ... Args>
+template <typename... Args>
 void NoOp(Args... /*args*/)
 {
   // Do nothing
@@ -52,6 +52,5 @@ void NoOp(Args... /*args*/)
 // The DART_BLANK macro can be passed into macro arguments where you want the
 // argument to expand into blank space.
 #define DART_BLANK // leave blank
-
 
 #endif // DART_COMMON_DETAIL_NOOP_HPP_

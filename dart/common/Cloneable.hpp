@@ -50,7 +50,6 @@ template <class T>
 class Cloneable
 {
 public:
-
   /// Default constructor
   Cloneable() = default;
 
@@ -81,7 +80,6 @@ template <class Base, class Mixin>
 class MakeCloneable : public Base, public Mixin
 {
 public:
-
   using Data = Mixin;
 
   /// Default constructor. Uses the default constructor of Mixin
@@ -121,18 +119,18 @@ public:
 
   // Documentation inherited
   void copy(const Base& other) override final;
-
 };
 
 //==============================================================================
-template <class Base, class OwnerT, class DataT,
+template <class Base,
+          class OwnerT,
+          class DataT,
           void (*setData)(OwnerT*, const DataT&),
           DataT (*getData)(const OwnerT*)>
 class ProxyCloneable : public Base
 {
 public:
-
-  using Data = DataT;
+  using Data  = DataT;
   using Owner = OwnerT;
 
   /// Default constructor. Constructs a default version of Data.
@@ -197,14 +195,12 @@ public:
   void copy(const Base& other) override final;
 
 protected:
-
   /// The ProxyCloneable will not store any data in mData if it has an Owner.
   OwnerT* mOwner;
 
   /// The ProxyCloneable will hold data in this field if it does not have an
   /// owner
   std::unique_ptr<Data> mData;
-
 };
 
 //==============================================================================
@@ -215,7 +211,6 @@ template <typename MapType>
 class CloneableMap
 {
 public:
-
   /// Default constructor
   CloneableMap() = default;
 
@@ -247,13 +242,13 @@ public:
   /// to false, then any fields in this map which are not present in the other
   /// map will be erased; otherwise they will be kept. Setting merge to false
   /// will make the contents of this map an exact duplicate of the other map.
-  void copy(const CloneableMap& otherMap, bool merge=false);
+  void copy(const CloneableMap& otherMap, bool merge = false);
 
   /// Copy the contents of a map into this one. If merge is set to false, then
   /// any fields in this map which are not present in the other map will be
   /// erased; otherwise they will be kept. Setting merge to false will make the
   /// contents of this map an exact duplicate of the other map.
-  void copy(const MapType& otherMap, bool merge=false);
+  void copy(const MapType& otherMap, bool merge = false);
 
   /// Merge the contents of another cloneable map into this one. If there are
   /// any entries which both maps have, then the contents of otherMap will take
@@ -272,7 +267,6 @@ public:
   const MapType& getMap() const;
 
 protected:
-
   /// A map containing the collection of States for the Aspect
   MapType mMap;
 };
@@ -284,7 +278,6 @@ template <typename T>
 class CloneableVector
 {
 public:
-
   /// Default constructor
   CloneableVector() = default;
 
@@ -301,7 +294,7 @@ public:
   CloneableVector& operator=(const CloneableVector& other);
 
   /// Create a copy of this CloneableVector's contents
-  std::unique_ptr< CloneableVector<T> > clone() const;
+  std::unique_ptr<CloneableVector<T>> clone() const;
 
   /// Copy the contents of another cloneable vector into this one.
   void copy(const CloneableVector<T>& anotherVector);
@@ -313,7 +306,6 @@ public:
   const std::vector<T>& getVector() const;
 
 private:
-
   /// The std::vector that this class is wrapping
   std::vector<T> mVector;
 };

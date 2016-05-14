@@ -32,10 +32,10 @@
 #ifndef DART_COMMON_DETAIL_NAMEMANAGER_HPP_
 #define DART_COMMON_DETAIL_NAMEMANAGER_HPP_
 
-#include <sstream>
-#include <cassert>
 #include "dart/common/Console.hpp"
 #include "dart/common/NameManager.hpp"
+#include <cassert>
+#include <sstream>
 
 namespace dart {
 namespace common {
@@ -47,7 +47,9 @@ NameManager<T>::NameManager(const std::string& _managerName,
   : mManagerName(_managerName),
     mDefaultName(_defaultName),
     mNameBeforeNumber(true),
-    mPrefix(""), mInfix("("), mAffix(")")
+    mPrefix(""),
+    mInfix("("),
+    mAffix(")")
 {
   // Do nothing
 }
@@ -56,23 +58,23 @@ NameManager<T>::NameManager(const std::string& _managerName,
 template <class T>
 bool NameManager<T>::setPattern(const std::string& _newPattern)
 {
-  std::size_t name_start = _newPattern.find("%s");
+  std::size_t name_start   = _newPattern.find("%s");
   std::size_t number_start = _newPattern.find("%d");
 
-  if(name_start == std::string::npos || number_start == std::string::npos)
+  if (name_start == std::string::npos || number_start == std::string::npos)
     return false;
 
-  if(name_start < number_start)
+  if (name_start < number_start)
     mNameBeforeNumber = true;
   else
     mNameBeforeNumber = false;
 
   std::size_t prefix_end = std::min(name_start, number_start);
-  std::size_t infix_end = std::max(name_start, number_start);
+  std::size_t infix_end  = std::max(name_start, number_start);
 
   mPrefix = _newPattern.substr(0, prefix_end);
-  mInfix = _newPattern.substr(prefix_end+2, infix_end-prefix_end-2);
-  mAffix = _newPattern.substr(infix_end+2);
+  mInfix  = _newPattern.substr(prefix_end + 2, infix_end - prefix_end - 2);
+  mAffix  = _newPattern.substr(infix_end + 2);
 
   return true;
 }
@@ -81,15 +83,15 @@ bool NameManager<T>::setPattern(const std::string& _newPattern)
 template <class T>
 std::string NameManager<T>::issueNewName(const std::string& _name) const
 {
-  if(!hasName(_name))
+  if (!hasName(_name))
     return _name;
 
-  int count = 1;
+  int         count = 1;
   std::string newName;
   do
   {
     std::stringstream ss;
-    if(mNameBeforeNumber)
+    if (mNameBeforeNumber)
       ss << mPrefix << _name << mInfix << count++ << mAffix;
     else
       ss << mPrefix << count++ << mInfix << _name << mAffix;
@@ -97,8 +99,8 @@ std::string NameManager<T>::issueNewName(const std::string& _name) const
   } while (hasName(newName));
 
   dtmsg << "[NameManager::issueNewName] (" << mManagerName << ") The name ["
-        << _name << "] is a duplicate, so it has been renamed to ["
-        << newName << "]\n";
+        << _name << "] is a duplicate, so it has been renamed to [" << newName
+        << "]\n";
 
   return newName;
 }
@@ -106,10 +108,10 @@ std::string NameManager<T>::issueNewName(const std::string& _name) const
 //==============================================================================
 template <class T>
 std::string NameManager<T>::issueNewNameAndAdd(const std::string& _name,
-                                               const T& _obj)
+                                               const T&           _obj)
 {
-  const std::string& checkEmpty = _name.empty()? mDefaultName : _name;
-  const std::string& newName = issueNewName(checkEmpty);
+  const std::string& checkEmpty = _name.empty() ? mDefaultName : _name;
+  const std::string& newName    = issueNewName(checkEmpty);
   addName(newName, _obj);
 
   return newName;
@@ -224,8 +226,7 @@ std::size_t NameManager<T>::getCount() const
 template <class T>
 T NameManager<T>::getObject(const std::string& _name) const
 {
-  typename std::map<std::string, T>::const_iterator result =
-      mMap.find(_name);
+  typename std::map<std::string, T>::const_iterator result = mMap.find(_name);
 
   if (result != mMap.end())
     return result->second;
@@ -250,16 +251,16 @@ std::string NameManager<T>::getName(const T& _obj) const
 
 //==============================================================================
 template <class T>
-std::string NameManager<T>::changeObjectName(const T& _obj,
+std::string NameManager<T>::changeObjectName(const T&           _obj,
                                              const std::string& _newName)
 {
   assert(mReverseMap.size() == mMap.size());
 
   typename std::map<T, std::string>::iterator rit = mReverseMap.find(_obj);
-  if(rit == mReverseMap.end())
+  if (rit == mReverseMap.end())
     return _newName;
 
-  if(rit->second == _newName)
+  if (rit->second == _newName)
     return rit->second;
 
   removeName(rit->second);

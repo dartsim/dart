@@ -44,25 +44,27 @@ namespace common {
 ///
 /// Required Aspects are also automatically specialized for.
 template <class... OtherRequiredAspects>
-class RequiresAspect { };
+class RequiresAspect
+{
+};
 
 //==============================================================================
 template <class ReqAspect>
 class RequiresAspect<ReqAspect> : public virtual SpecializedForAspect<ReqAspect>
 {
 public:
-
   /// Default constructor. This is where the base Composite is informed that
   /// the Aspect type is required.
   RequiresAspect();
-
 };
 
 //==============================================================================
 template <class ReqAspect1, class... OtherReqAspects>
-class RequiresAspect<ReqAspect1, OtherReqAspects...> :
-    public CompositeJoiner< Virtual< RequiresAspect<ReqAspect1> >,
-                               Virtual< RequiresAspect<OtherReqAspects...> > > { };
+class RequiresAspect<ReqAspect1, OtherReqAspects...>
+    : public CompositeJoiner<Virtual<RequiresAspect<ReqAspect1>>,
+                             Virtual<RequiresAspect<OtherReqAspects...>>>
+{
+};
 
 } // namespace common
 } // namespace dart

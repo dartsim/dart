@@ -33,11 +33,11 @@
 #define DART_COMMON_MEMORY_HPP_
 
 #ifdef __GNUC__
-  #define DART_ALIGNED(v) __attribute__ ((aligned(v)))
+#define DART_ALIGNED(v) __attribute__((aligned(v)))
 #elif defined(_MSC_VER)
-  #define DART_ALIGNED(v) __declspec(align(v))
+#define DART_ALIGNED(v) __declspec(align(v))
 #else
-  #define DART_ALIGNED(v)
+#define DART_ALIGNED(v)
 #endif
 
-#endif  // DART_COMMON_MEMORY_HPP_
+#endif // DART_COMMON_MEMORY_HPP_

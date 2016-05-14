@@ -43,18 +43,16 @@ template <class BaseT, class CompositeT, typename StateT>
 class ProxyStateAspect : public BaseT
 {
 public:
-
-  using Base = BaseT;
+  using Base          = BaseT;
   using CompositeType = CompositeT;
-  using State = StateT;
+  using State         = StateT;
 
   virtual ~ProxyStateAspect() = default;
 
   /// General constructor
   template <typename... Args>
   ProxyStateAspect(Args&&... args)
-    : Base(std::forward<Args>(args)...),
-      mProxyState()
+    : Base(std::forward<Args>(args)...), mProxyState()
   {
     // Do nothing
   }
@@ -78,7 +76,6 @@ public:
   }
 
 protected:
-
   /// Reconfigure the Aspect to link it to this Aspect's new Composite
   void setComposite(Composite* newComposite) override
   {
@@ -88,7 +85,7 @@ protected:
     typename State::Owner* owner =
         dynamic_cast<typename State::Owner*>(newComposite);
 
-    if(owner && mProxyState.getOwner() != owner)
+    if (owner && mProxyState.getOwner() != owner)
     {
       // Link the ProxyState to its new owner
       mProxyState = State(owner);
@@ -104,7 +101,6 @@ protected:
 
   /// Proxy state for this Aspect
   State mProxyState;
-
 };
 
 //==============================================================================
@@ -112,18 +108,16 @@ template <class BaseT, class CompositeT, typename PropertiesT>
 class ProxyPropertiesAspect : public BaseT
 {
 public:
-
-  using Base = BaseT;
+  using Base          = BaseT;
   using CompositeType = CompositeT;
-  using Properties = PropertiesT;
+  using Properties    = PropertiesT;
 
   virtual ~ProxyPropertiesAspect() = default;
 
   /// General constructor
   template <typename... Args>
   ProxyPropertiesAspect(Args&&... args)
-    : Base(std::forward<Args>(args)...),
-      mProxyProperties()
+    : Base(std::forward<Args>(args)...), mProxyProperties()
   {
     // Do nothing
   }
@@ -147,7 +141,6 @@ public:
   }
 
 protected:
-
   /// Reconfigure the Aspect to link it to this Aspect's new Composite
   void setComposite(Composite* newComposite) override
   {
@@ -155,7 +148,7 @@ protected:
     typename Properties::Owner* comp =
         dynamic_cast<typename Properties::Owner*>(newComposite);
 
-    if(comp && mProxyProperties.getOwner() != comp)
+    if (comp && mProxyProperties.getOwner() != comp)
     {
       // Link the ProxyProperties to its new owner
       mProxyProperties = Properties(comp);
@@ -171,7 +164,6 @@ protected:
 
   /// Proxy properties for this Aspect
   Properties mProxyProperties;
-
 };
 
 } // namespace detail

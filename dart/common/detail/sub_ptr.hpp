@@ -39,9 +39,7 @@ namespace common {
 
 //==============================================================================
 template <class T>
-sub_ptr<T>::sub_ptr()
-  : mT(nullptr),
-    mSubjectBase(nullptr)
+sub_ptr<T>::sub_ptr() : mT(nullptr), mSubjectBase(nullptr)
 {
   // Do nothing
 }
@@ -55,7 +53,7 @@ sub_ptr<T>::sub_ptr(T* _ptr) : mT(nullptr), mSubjectBase(nullptr)
 
 //==============================================================================
 template <class T>
-sub_ptr<T>& sub_ptr<T>::operator =(const sub_ptr<T>& _sp)
+sub_ptr<T>& sub_ptr<T>::operator=(const sub_ptr<T>& _sp)
 {
   set(_sp.get());
   return *this;
@@ -63,7 +61,7 @@ sub_ptr<T>& sub_ptr<T>::operator =(const sub_ptr<T>& _sp)
 
 //==============================================================================
 template <class T>
-sub_ptr<T>& sub_ptr<T>::operator =(T* _ptr)
+sub_ptr<T>& sub_ptr<T>::operator=(T* _ptr)
 {
   set(_ptr);
   return *this;
@@ -101,12 +99,12 @@ T* sub_ptr<T>::get() const
 template <class T>
 void sub_ptr<T>::set(T* _ptr)
 {
-  if(mT == _ptr)
+  if (mT == _ptr)
     return;
 
   removeSubject(mSubjectBase);
   mSubjectBase = dynamic_cast<Subject*>(_ptr);
-  mT = _ptr;
+  mT           = _ptr;
   addSubject(mSubjectBase);
 }
 
@@ -121,9 +119,9 @@ bool sub_ptr<T>::valid()
 template <class T>
 void sub_ptr<T>::handleDestructionNotification(const Subject* _subject)
 {
-  if(_subject == mSubjectBase)
+  if (_subject == mSubjectBase)
   {
-    mT = nullptr;
+    mT           = nullptr;
     mSubjectBase = nullptr;
   }
 }
