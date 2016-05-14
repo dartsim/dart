@@ -64,7 +64,7 @@ const std::string& BoxShape::getType() const
 //==============================================================================
 const std::string& BoxShape::getStaticType()
 {
-  static const std::string type = ("BoxShape");
+  static const std::string type("BoxShape");
   return type;
 }
 

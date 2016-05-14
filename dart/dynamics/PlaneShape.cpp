@@ -65,7 +65,7 @@ const std::string& PlaneShape::getType() const
 //==============================================================================
 const std::string& PlaneShape::getStaticType()
 {
-  static const std::string type = ("PlaneShape");
+  static const std::string type("PlaneShape");
   return type;
 }
 

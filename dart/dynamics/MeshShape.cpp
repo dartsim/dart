@@ -161,7 +161,7 @@ const std::string& MeshShape::getType() const
 //==============================================================================
 const std::string& MeshShape::getStaticType()
 {
-  static const std::string type = ("MeshShape");
+  static const std::string type("MeshShape");
   return type;
 }
 

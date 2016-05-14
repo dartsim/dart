@@ -89,7 +89,7 @@ const std::string& LineSegmentShape::getType() const
 //==============================================================================
 const std::string& LineSegmentShape::getStaticType()
 {
-  static const std::string type = ("LineSegmentShape");
+  static const std::string type("LineSegmentShape");
   return type;
 }
 

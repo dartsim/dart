@@ -59,7 +59,7 @@ const std::string& EllipsoidShape::getType() const
 //==============================================================================
 const std::string& EllipsoidShape::getStaticType()
 {
-  static const std::string type = ("EllipsoidShape");
+  static const std::string type("EllipsoidShape");
   return type;
 }
 

@@ -61,7 +61,7 @@ const std::string& CylinderShape::getType() const
 //==============================================================================
 const std::string& CylinderShape::getStaticType()
 {
-  static const std::string type = ("CylinderShape");
+  static const std::string type("CylinderShape");
   return type;
 }
 

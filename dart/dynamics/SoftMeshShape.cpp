@@ -70,7 +70,7 @@ const std::string& SoftMeshShape::getType() const
 //==============================================================================
 const std::string& SoftMeshShape::getStaticType()
 {
-  static const std::string type = ("SoftMeshShape");
+  static const std::string type("SoftMeshShape");
   return type;
 }
 
