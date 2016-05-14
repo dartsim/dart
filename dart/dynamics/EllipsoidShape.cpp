@@ -44,6 +44,19 @@ EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& _size)
 EllipsoidShape::~EllipsoidShape() {
 }
 
+//==============================================================================
+const std::string& EllipsoidShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& EllipsoidShape::getStaticType()
+{
+  static const std::string type("EllipsoidShape");
+  return type;
+}
+
 void EllipsoidShape::setSize(const Eigen::Vector3d& _size) {
   assert(_size[0] > 0.0);
   assert(_size[1] > 0.0);
