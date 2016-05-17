@@ -39,6 +39,9 @@
 namespace dart {
 namespace gui {
 
+/// \deprecated Deprecated in 6.1. Please use
+/// dart::gui::glut::drawStringOnScreen() instead in
+/// dart/gui/glut/GLUTFuncs.hpp file.
 DEPRECATED(6.1)
 void drawStringOnScreen(float _x, float _y, const std::string& _s,
                         bool _bigFont = true);

@@ -32,7 +32,8 @@
 #ifndef DART_GUI_LOADGLUT_HPP_
 #define DART_GUI_LOADGLUT_HPP_
 
-// TODO(JS): warning
+#warning "This file is deprecated in DART 6.1. "\
+         "Please use dart/gui/glut/LoadGlut.hpp instead."
 
 #include "dart/gui/glut/LoadGlut.hpp"
 

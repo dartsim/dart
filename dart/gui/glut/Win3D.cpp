@@ -285,6 +285,6 @@ void Win3D::initLights()
   glEnable(GL_NORMALIZE);
 }
 
-}  // namespace glut
+}  // namespace glfw
 }  // namespace gui
 }  // namespace dart

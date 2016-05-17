@@ -32,9 +32,10 @@
 #ifndef DART_GUI_WIN2D_HPP_
 #define DART_GUI_WIN2D_HPP_
 
-#include "dart/gui/glut/Win2D.hpp"
+#warning "This file is deprecated in DART 6.1. "\
+         "Please use dart/gui/glut/Win2D.hpp instead."
 
-// TODO(JS): warning
+#include "dart/gui/glut/Win2D.hpp"
 
 namespace dart {
 namespace gui {

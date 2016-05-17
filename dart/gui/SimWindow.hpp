@@ -38,9 +38,10 @@
 #ifndef DART_GUI_SIMWINDOW_HPP_
 #define DART_GUI_SIMWINDOW_HPP_
 
-#include "dart/gui/glut/SimWindow.hpp"
+#warning "This file is deprecated in DART 6.1. "\
+         "Please use dart/gui/glut/SimWindow.hpp instead."
 
-// TODO(JS): warning
+#include "dart/gui/glut/SimWindow.hpp"
 
 namespace dart {
 namespace gui {

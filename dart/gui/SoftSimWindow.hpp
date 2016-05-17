@@ -38,6 +38,9 @@
 #ifndef DART_GUI_SOFTSIMWINDOW_HPP_
 #define DART_GUI_SOFTSIMWINDOW_HPP_
 
+#warning "This file is deprecated in DART 6.1. "\
+         "Please use dart/gui/glut/SoftSimWindow.hpp instead."
+
 #include "dart/gui/glut/SoftSimWindow.hpp"
 
 namespace dart {
