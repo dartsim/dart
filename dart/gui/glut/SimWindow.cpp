@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/SimWindow.hpp"
+#include "dart/gui/glut/SimWindow.hpp"
 
 #include <cstdio>
 #include <iostream>
@@ -54,13 +54,14 @@
 #include "dart/dynamics/Marker.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/collision/CollisionDetector.hpp"
-#include "dart/gui/LoadGlut.hpp"
 #include "dart/gui/GLFuncs.hpp"
-#include "dart/gui/GraphWindow.hpp"
+#include "dart/gui/glut/GraphWindow.hpp"
+#include "dart/gui/glut/LoadGlut.hpp"
 #include "dart/utils/FileInfoWorld.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
 SimWindow::SimWindow()
   : Win3D() {
@@ -200,7 +201,7 @@ void SimWindow::draw() {
 #endif
   std::string frame(buff);
   glColor3f(0.0, 0.0, 0.0);
-  gui::drawStringOnScreen(0.02f, 0.02f, frame);
+  drawStringOnScreen(0.02f, 0.02f, frame);
   glEnable(GL_LIGHTING);
 }
 
@@ -526,5 +527,6 @@ void SimWindow::drawMarker(const dynamics::Marker* marker,
   mRI->popName();
 }
 
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart

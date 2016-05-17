@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
@@ -35,17 +35,78 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GRAPHWINDOW_HPP_
-#define DART_GUI_GRAPHWINDOW_HPP_
+#include "dart/gui/glut/SoftSimWindow.hpp"
 
-#include "dart/gui/glut/GraphWindow.hpp"
+#include "dart/gui/glut/LoadGlut.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
-//using GraphWindow = ::dart::gui::glut::GraphWindow;
- 
+SoftSimWindow::SoftSimWindow()
+  : SimWindow(),
+    mShowPointMasses(false),
+    mShowMeshs(true)
+{
+}
+
+SoftSimWindow::~SoftSimWindow()
+{
+}
+
+void SoftSimWindow::keyboard(unsigned char key, int x, int y)
+{
+  switch (key)
+  {
+    case ' ':  // use space key to play or stop the motion
+      mSimulating = !mSimulating;
+      if (mSimulating)
+      {
+        mPlay = false;
+        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+      }
+      break;
+    case 'p':  // playBack
+      mPlay = !mPlay;
+      if (mPlay)
+      {
+        mSimulating = false;
+        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+      }
+      break;
+    // case '[':  // step backward
+    //   if (!mSimulating)
+    //   {
+    //     mPlayFrame--;
+    //     if (mPlayFrame < 0)
+    //       mPlayFrame = 0;
+    //     glutPostRedisplay();
+    //   }
+    //   break;
+    // case ']':  // step forwardward
+    //   if (!mSimulating)
+    //   {
+    //     mPlayFrame++;
+    //     if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
+    //       mPlayFrame = 0;
+    //     glutPostRedisplay();
+    //   }
+    //   break;
+    case 'v':  // show or hide markers
+      mShowMarkers = !mShowMarkers;
+      break;
+    case 'n':
+      mShowPointMasses = !mShowPointMasses;
+      break;
+    case 'm':
+      mShowMeshs = !mShowMeshs;
+      break;
+    default:
+      Win3D::keyboard(key, x, y);
+  }
+  glutPostRedisplay();
+}
+
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart
-
-#endif  // DART_GUI_GRAPHWINDOW_HPP_

@@ -29,41 +29,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GLFUNCS_HPP_
-#define DART_GUI_GLFUNCS_HPP_
+#ifndef DART_GUI_GLUT_WIN2D_HPP_
+#define DART_GUI_GLUT_WIN2D_HPP_
 
-#include <string>
-#include <Eigen/Eigen>
-#include "dart/common/Deprecated.hpp"
+#include "dart/gui/glut/GlutWindow.hpp"
 
 namespace dart {
 namespace gui {
-
-DEPRECATED(6.1)
-void drawStringOnScreen(float _x, float _y, const std::string& _s,
-                        bool _bigFont = true);
+namespace glut {
 
 /// \brief
-void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
-                 const double _length, const double _thickness,
-                 const double _arrowThickness = -1);
+class Win2D : public glut::GlutWindow {
+public:
+  /// \brief
+  Win2D();
 
-/// \brief
-void drawArrow2D(const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec,
-                 double _thickness);
+  /// \brief
+  void resize(int _w, int _h) override;
 
-/// \brief
-void drawProgressBar(int _currFrame, int _totalFrame);
+  /// \brief
+  void render() override;
 
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int w, int h, char *fname,
-//                bool _antialias);
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int x, int y, int w, int h,
-//                 char *fname, bool _antialias);
-// bool screenShot(int w, int h, char *fname, bool _antialias = false);
+  /// \brief
+  void keyboard(unsigned char _key, int _x, int _y) override;
 
-// TODO(Unknown): freeimage
+  /// \brief
+  void click(int _button, int _state, int _x, int _y) override;
 
+  /// \brief
+  void drag(int _x, int _y) override;
+
+  /// \brief
+  virtual void initGL();
+
+  /// \brief
+  virtual void draw() = 0;
+
+protected:
+  /// \brief
+  bool mTranslate;
+
+  /// \brief
+  double mTransX;
+
+  /// \brief
+  double mTransY;
+};
+
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_GLFUNCS_HPP_
+#endif  // DART_GUI_GLUT_WIN2D_HPP_

@@ -29,16 +29,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/Win2D.hpp"
+#include "dart/gui/glut/Win2D.hpp"
 
 #include <iostream>
 
-#include "dart/gui/LoadGlut.hpp"
+#include "dart/gui/glut/LoadGlut.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
-Win2D::Win2D() : GlutWindow() {
+Win2D::Win2D() : glut::GlutWindow() {
   mTransX = 0;
   mTransY = 0;
   mTranslate = false;
@@ -153,5 +154,6 @@ void Win2D::initGL() {
   glEnable(GL_LINE_SMOOTH);
 }
 
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart

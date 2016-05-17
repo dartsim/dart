@@ -38,38 +38,15 @@
 #include <Eigen/Eigen>
 
 #include "dart/gui/LoadOpengl.hpp"
-#include "dart/gui/LoadGlut.hpp"
+#include "dart/gui/glut/GLUTFuncs.hpp"
+// TODO(JS): remove once glut become an optional dependency
 
 namespace dart {
 namespace gui {
 
-  void drawStringOnScreen(float _x, float _y, const std::string& _s,
-                          bool _bigFont) {
-  // draws text on the screen
-  GLint oldMode;
-  glGetIntegerv(GL_MATRIX_MODE, &oldMode);
-  glMatrixMode(GL_PROJECTION);
-
-  glPushMatrix();
-  glLoadIdentity();
-  gluOrtho2D(0.0, 1.0, 0.0, 1.0);
-
-  glMatrixMode(GL_MODELVIEW);
-  glPushMatrix();
-  glLoadIdentity();
-  glRasterPos2f(_x, _y);
-  unsigned int length = _s.length();
-  for (unsigned int c = 0; c < length; c++) {
-    if (_bigFont)
-      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, _s.at(c) );
-    else
-      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, _s.at(c) );
-  }  
-  glPopMatrix();
-
-  glMatrixMode(GL_PROJECTION);
-  glPopMatrix();
-  glMatrixMode(oldMode);
+void drawStringOnScreen(float _x, float _y, const std::string& _s, bool _bigFont)
+{
+  glut::drawStringOnScreen(_x, _y, _s, _bigFont);
 }
 
 // draw a 3D arrow starting from pt along dir, the arrowhead is on the other end

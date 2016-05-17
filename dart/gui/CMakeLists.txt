@@ -5,11 +5,13 @@ file(GLOB srcs "*.cpp")
 include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
 include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 
+# Default gui
+add_subdirectory(glut)
+
 if(HAVE_GLFW)
   add_subdirectory(glfw)
 endif(HAVE_GLFW)
 
-# Add subdirectories
 if(HAVE_OPENSCENEGRAPH)
   add_subdirectory(osg)
 endif(HAVE_OPENSCENEGRAPH)

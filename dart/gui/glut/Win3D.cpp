@@ -29,15 +29,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/Win3D.hpp"
+#include "dart/gui/glut/Win3D.hpp"
 
 #include <algorithm>
 
-#include "dart/gui/LoadGlut.hpp"
+#include "dart/gui/glut/LoadGlut.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
+//==============================================================================
 Win3D::Win3D()
   : GlutWindow(),
     mTrans(0.0, 0.0, 0.0),
@@ -47,17 +49,23 @@ Win3D::Win3D()
     mPersp(45.0),
     mRotate(false),
     mTranslate(false),
-    mZooming(false) {
+    mZooming(false)
+{
+  // Do nothing
 }
 
-void Win3D::initWindow(int _w, int _h, const char* _name) {
+//==============================================================================
+void Win3D::initWindow(int _w, int _h, const char* _name)
+{
   GlutWindow::initWindow(_w, _h, _name);
 
   int smaller = _w < _h ? _w : _h;
   mTrackBall.setTrackball(Eigen::Vector2d(_w*0.5, _h*0.5), smaller/2.5);
 }
 
-void Win3D::resize(int _w, int _h) {
+//==============================================================================
+void Win3D::resize(int _w, int _h)
+{
   mWinWidth = _w;
   mWinHeight = _h;
 
@@ -77,7 +85,9 @@ void Win3D::resize(int _w, int _h) {
   glutPostRedisplay();
 }
 
-void Win3D::keyboard(unsigned char _key, int /*_x*/, int /*_y*/) {
+//==============================================================================
+void Win3D::keyboard(unsigned char _key, int /*_x*/, int /*_y*/)
+{
   switch (_key) {
     case ',':  // slow down
       mDisplayTimeout +=2;
@@ -107,7 +117,9 @@ void Win3D::keyboard(unsigned char _key, int /*_x*/, int /*_y*/) {
   // printf("ascii key: %lu\n", key);
 }
 
-void Win3D::click(int _button, int _state, int _x, int _y) {
+//==============================================================================
+void Win3D::click(int _button, int _state, int _x, int _y)
+{
   mMouseDown = !mMouseDown;
   int mask = glutGetModifiers();
   if (mMouseDown) {
@@ -139,7 +151,9 @@ void Win3D::click(int _button, int _state, int _x, int _y) {
   glutPostRedisplay();
 }
 
-void Win3D::drag(int _x, int _y) {
+//==============================================================================
+void Win3D::drag(int _x, int _y)
+{
   double deltaX = _x - mMouseX;
   double deltaY = _y - mMouseY;
 
@@ -160,7 +174,9 @@ void Win3D::drag(int _x, int _y) {
   glutPostRedisplay();
 }
 
-void Win3D::render() {
+//==============================================================================
+void Win3D::render()
+{
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   gluPerspective(mPersp,
@@ -218,7 +234,9 @@ void Win3D::render() {
     screenshot();
 }
 
-void Win3D::initGL() {
+//==============================================================================
+void Win3D::initGL()
+{
   glClearColor(mBackground[0], mBackground[1], mBackground[2], mBackground[3]);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_BLEND);
@@ -229,7 +247,9 @@ void Win3D::initGL() {
   glPolygonMode(GL_FRONT, GL_FILL);
 }
 
-void Win3D::initLights() {
+//==============================================================================
+void Win3D::initLights()
+{
   static float ambient[]             = {0.2, 0.2, 0.2, 1.0};
   static float diffuse[]             = {0.6, 0.6, 0.6, 1.0};
   static float front_mat_shininess[] = {60.0};
@@ -265,45 +285,6 @@ void Win3D::initLights() {
   glEnable(GL_NORMALIZE);
 }
 
-// Remove once deprecated function, capturing(), is removed
-void accFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top,
-                GLdouble nearPlane, GLdouble farPlane,
-                GLdouble pixdx, GLdouble pixdy, GLdouble eyedx, GLdouble eyedy,
-                GLdouble focus) {
-  GLdouble xwsize, ywsize;
-  GLdouble dx, dy;
-  GLint viewport[4];
-
-  glGetIntegerv(GL_VIEWPORT, viewport);
-
-  xwsize = right - left;
-  ywsize = top - bottom;
-  dx = -(pixdx * xwsize / static_cast<GLdouble>(viewport[2])
-       + eyedx * nearPlane / focus);
-  dy = -(pixdy * ywsize / static_cast<GLdouble>(viewport[3])
-       + eyedy * nearPlane / focus);
-
-  glFrustum(left + dx, right + dx, bottom + dy, top + dy, nearPlane, farPlane);
-
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-  glTranslatef(-eyedx, -eyedy, 0.0);
-}
-
-// Remove once deprecated function, capturing(), is removed
-void accPerspective(GLdouble fovy, GLdouble aspect,
-                    GLdouble nearPlane, GLdouble farPlane,
-                    GLdouble pixdx, GLdouble pixdy,
-                    GLdouble eyedx, GLdouble eyedy, GLdouble focus) {
-  GLdouble fov2 = ((fovy*M_PI) / 180.0) / 2.0;
-  GLdouble top = nearPlane / (cosf(fov2) / sinf(fov2));
-  GLdouble bottom = -top;
-  GLdouble right = top * aspect;
-  GLdouble left = -right;
-
-  accFrustum(left, right, bottom, top, nearPlane, farPlane,
-             pixdx, pixdy, eyedx, eyedy, focus);
-}
-
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart

@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/GlutWindow.hpp"
+#include "dart/gui/glut/GlutWindow.hpp"
 
 #ifdef _WIN32
   #include <sys/types.h>
@@ -51,6 +51,7 @@
 
 namespace dart {
 namespace gui {
+namespace glut {
 
 std::vector<GlutWindow*> GlutWindow::mWindows;
 std::vector<int> GlutWindow::mWinIDs;
@@ -239,5 +240,6 @@ void GlutWindow::drag(int /*_x*/, int /*_y*/) {
 void GlutWindow::move(int /*_x*/, int /*_y*/) {
 }
 
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart

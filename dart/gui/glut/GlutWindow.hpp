@@ -29,41 +29,72 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GLFUNCS_HPP_
-#define DART_GUI_GLFUNCS_HPP_
+#ifndef DART_GUI_GLUT_GLUTWINDOW_HPP_
+#define DART_GUI_GLUT_GLUTWINDOW_HPP_
 
-#include <string>
-#include <Eigen/Eigen>
-#include "dart/common/Deprecated.hpp"
+#include <vector>
+
+#include "dart/gui/LoadOpengl.hpp"
+#include "dart/gui/RenderInterface.hpp"
+#include "dart/gui/lodepng.h"
 
 namespace dart {
 namespace gui {
-
-DEPRECATED(6.1)
-void drawStringOnScreen(float _x, float _y, const std::string& _s,
-                        bool _bigFont = true);
+namespace glut {
 
 /// \brief
-void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
-                 const double _length, const double _thickness,
-                 const double _arrowThickness = -1);
+class GlutWindow {
+public:
+  GlutWindow();
+  virtual ~GlutWindow();
 
-/// \brief
-void drawArrow2D(const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec,
-                 double _thickness);
+  virtual void initWindow(int _w, int _h, const char* _name);
 
-/// \brief
-void drawProgressBar(int _currFrame, int _totalFrame);
+  // callback functions
+  static void reshape(int _w, int _h);
+  static void keyEvent(unsigned char _key, int _x, int _y);
+  static void specKeyEvent(int _key, int _x, int _y);
+  static void mouseClick(int _button, int _state, int _x, int _y);
+  static void mouseDrag(int _x, int _y);
+  static void mouseMove(int _x, int _y);
+  static void refresh();
+  static void refreshTimer(int _val);
+  static void runTimer(int _val);
 
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int w, int h, char *fname,
-//                bool _antialias);
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int x, int y, int w, int h,
-//                 char *fname, bool _antialias);
-// bool screenShot(int w, int h, char *fname, bool _antialias = false);
+  static GlutWindow* current();
+  static std::vector<GlutWindow*> mWindows;
+  static std::vector<int> mWinIDs;
 
-// TODO(Unknown): freeimage
+protected:
+  // callback implementation
+  virtual void resize(int _w, int _h) = 0;
+  virtual void render() = 0;
+  virtual void keyboard(unsigned char _key, int _x, int _y);
+  virtual void specKey(int _key, int _x, int _y);
+  virtual void click(int _button, int _state, int _x, int _y);
+  virtual void drag(int _x, int _y);
+  virtual void move(int _x, int _y);
+  virtual void displayTimer(int _val);
+  virtual void simTimer(int _val);
 
+  virtual bool screenshot();
+
+  int mWinWidth;
+  int mWinHeight;
+  int mMouseX;
+  int mMouseY;
+  double mDisplayTimeout;
+  bool mMouseDown;
+  bool mMouseDrag;
+  bool mCapture;
+  double mBackground[4];
+  gui::RenderInterface* mRI;
+  std::vector<unsigned char> mScreenshotTemp;
+  std::vector<unsigned char> mScreenshotTemp2;
+};
+
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_GLFUNCS_HPP_
+#endif  // DART_GUI_GLUT_GLUTWINDOW_HPP_

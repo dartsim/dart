@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
@@ -29,41 +29,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GLFUNCS_HPP_
-#define DART_GUI_GLFUNCS_HPP_
+#ifndef DART_GUI_GLUT_LOADGLUT_HPP_
+#define DART_GUI_GLUT_LOADGLUT_HPP_
 
-#include <string>
-#include <Eigen/Eigen>
-#include "dart/common/Deprecated.hpp"
+#if defined(_WIN32)
+  #include <cstdlib> // To disable glut::exit() function
+  #include <GL/glut.h>
+#elif defined(__linux__)
+  #include <GL/glut.h>
+#elif defined(__APPLE__)
+  #include <Glut/glut.h>
+#else
+  #error "Load OpenGL Error: What's your operating system?"
+#endif
 
-namespace dart {
-namespace gui {
+#endif  // DART_GUI_GLUT_LOADGLUT_HPP_
 
-DEPRECATED(6.1)
-void drawStringOnScreen(float _x, float _y, const std::string& _s,
-                        bool _bigFont = true);
-
-/// \brief
-void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
-                 const double _length, const double _thickness,
-                 const double _arrowThickness = -1);
-
-/// \brief
-void drawArrow2D(const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec,
-                 double _thickness);
-
-/// \brief
-void drawProgressBar(int _currFrame, int _totalFrame);
-
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int w, int h, char *fname,
-//                bool _antialias);
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int x, int y, int w, int h,
-//                 char *fname, bool _antialias);
-// bool screenShot(int w, int h, char *fname, bool _antialias = false);
-
-// TODO(Unknown): freeimage
-
-}  // namespace gui
-}  // namespace dart
-
-#endif  // DART_GUI_GLFUNCS_HPP_

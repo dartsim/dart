@@ -38,31 +38,12 @@
 #ifndef DART_GUI_SOFTSIMWINDOW_HPP_
 #define DART_GUI_SOFTSIMWINDOW_HPP_
 
-#include "dart/gui/SimWindow.hpp"
+#include "dart/gui/glut/SoftSimWindow.hpp"
 
 namespace dart {
 namespace gui {
 
-/// \brief
-class SoftSimWindow : public SimWindow
-{
-public:
-  /// \brief
-  SoftSimWindow();
-
-  /// \brief
-  virtual ~SoftSimWindow();
-
-  /// \brief
-  void keyboard(unsigned char key, int x, int y) override;
-
-protected:
-  /// \brief
-  bool mShowPointMasses;
-
-  /// \brief
-  bool mShowMeshs;
-};
+using SoftSimWindow = ::dart::gui::glut::SoftSimWindow;
 
 }  // namespace gui
 }  // namespace dart

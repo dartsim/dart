@@ -32,43 +32,14 @@
 #ifndef DART_GUI_WIN3D_HPP_
 #define DART_GUI_WIN3D_HPP_
 
-#include <Eigen/Eigen>
+#include "dart/gui/glut/Win3D.hpp"
 
-#include "dart/gui/GlutWindow.hpp"
-#include "dart/gui/Trackball.hpp"
+// TODO(JS): warning
 
 namespace dart {
 namespace gui {
 
-class Win3D : public GlutWindow {
-public:
-  Win3D();
-
-  void initWindow(int _w, int _h, const char* _name) override;
-  void resize(int _w, int _h) override;
-  void render() override;
-
-  void keyboard(unsigned char _key, int _x, int _y) override;
-  void click(int _button, int _state, int _x, int _y) override;
-  void drag(int _x, int _y) override;
-
-  virtual void initGL();
-  virtual void initLights();
-
-  virtual void draw()=0;
-
-protected:
-  Trackball mTrackBall;
-  Eigen::Vector3d mTrans;
-  Eigen::Vector3d mEye;
-  Eigen::Vector3d mUp;
-  float mZoom;
-  float mPersp;
-
-  bool mRotate;
-  bool mTranslate;
-  bool mZooming;
-};
+using Win3D = ::dart::gui::glut::Win3D;
 
 }  // namespace gui
 }  // namespace dart

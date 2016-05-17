@@ -32,16 +32,9 @@
 #ifndef DART_GUI_LOADGLUT_HPP_
 #define DART_GUI_LOADGLUT_HPP_
 
-#if defined(_WIN32)
-  #include <cstdlib> // To disable glut::exit() function
-  #include <GL/glut.h>
-#elif defined(__linux__)
-  #include <GL/glut.h>
-#elif defined(__APPLE__)
-  #include <Glut/glut.h>
-#else
-  #error "Load OpenGL Error: What's your operating system?"
-#endif
+// TODO(JS): warning
+
+#include "dart/gui/glut/LoadGlut.hpp"
 
 #endif  // DART_GUI_LOADGLUT_HPP_
 

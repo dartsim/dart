@@ -29,41 +29,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GLFUNCS_HPP_
-#define DART_GUI_GLFUNCS_HPP_
+#ifndef DART_GUI_GLUT_GLFUNCS_HPP_
+#define DART_GUI_GLUT_GLFUNCS_HPP_
 
 #include <string>
-#include <Eigen/Eigen>
-#include "dart/common/Deprecated.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
-DEPRECATED(6.1)
-void drawStringOnScreen(float _x, float _y, const std::string& _s,
-                        bool _bigFont = true);
+void drawStringOnScreen(
+    float x, float y, const std::string& s, bool bigFont = true);
 
-/// \brief
-void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
-                 const double _length, const double _thickness,
-                 const double _arrowThickness = -1);
-
-/// \brief
-void drawArrow2D(const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec,
-                 double _thickness);
-
-/// \brief
-void drawProgressBar(int _currFrame, int _totalFrame);
-
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int w, int h, char *fname,
-//                bool _antialias);
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int x, int y, int w, int h,
-//                 char *fname, bool _antialias);
-// bool screenShot(int w, int h, char *fname, bool _antialias = false);
-
-// TODO(Unknown): freeimage
-
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_GLFUNCS_HPP_
+#endif  // DART_GUI_GLUT_GLFUNCS_HPP_

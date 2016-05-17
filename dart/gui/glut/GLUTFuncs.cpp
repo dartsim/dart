@@ -29,41 +29,51 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GLFUNCS_HPP_
-#define DART_GUI_GLFUNCS_HPP_
+#include "dart/gui/glut/GLUTFuncs.hpp"
 
+#include <cstdio>
+#include <iostream>
 #include <string>
+
 #include <Eigen/Eigen>
-#include "dart/common/Deprecated.hpp"
+
+#include "dart/gui/LoadOpengl.hpp"
+#include "dart/gui/LoadGlut.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
-DEPRECATED(6.1)
-void drawStringOnScreen(float _x, float _y, const std::string& _s,
-                        bool _bigFont = true);
+void drawStringOnScreen(float x, float y, const std::string& s, bool bigFont)
+{
+  // draws text on the screen
+  GLint oldMode;
+  glGetIntegerv(GL_MATRIX_MODE, &oldMode);
+  glMatrixMode(GL_PROJECTION);
 
-/// \brief
-void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
-                 const double _length, const double _thickness,
-                 const double _arrowThickness = -1);
+  glPushMatrix();
+  glLoadIdentity();
+  gluOrtho2D(0.0, 1.0, 0.0, 1.0);
 
-/// \brief
-void drawArrow2D(const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec,
-                 double _thickness);
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+  glRasterPos2f(x, y);
+  unsigned int length = s.length();
+  for (unsigned int c = 0; c < length; c++)
+  {
+    if (bigFont)
+      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, s.at(c) );
+    else
+      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, s.at(c) );
+  }
+  glPopMatrix();
 
-/// \brief
-void drawProgressBar(int _currFrame, int _totalFrame);
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+  glMatrixMode(oldMode);
+}
 
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int w, int h, char *fname,
-//                bool _antialias);
-// BOOL screenShot(FREE_IMAGE_FORMAT fif, int x, int y, int w, int h,
-//                 char *fname, bool _antialias);
-// bool screenShot(int w, int h, char *fname, bool _antialias = false);
-
-// TODO(Unknown): freeimage
-
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart
-
-#endif  // DART_GUI_GLFUNCS_HPP_

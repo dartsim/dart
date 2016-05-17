@@ -35,76 +35,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/SoftSimWindow.hpp"
+#ifndef DART_GUI_GLUT_SOFTSIMWINDOW_HPP_
+#define DART_GUI_GLUT_SOFTSIMWINDOW_HPP_
 
-#include "dart/gui/LoadGlut.hpp"
+#include "dart/gui/glut/SimWindow.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
-SoftSimWindow::SoftSimWindow()
-  : SimWindow(),
-    mShowPointMasses(false),
-    mShowMeshs(true)
+/// \brief
+class SoftSimWindow : public SimWindow
 {
-}
+public:
+  /// \brief
+  SoftSimWindow();
 
-SoftSimWindow::~SoftSimWindow()
-{
-}
+  /// \brief
+  virtual ~SoftSimWindow();
 
-void SoftSimWindow::keyboard(unsigned char key, int x, int y)
-{
-  switch (key)
-  {
-    case ' ':  // use space key to play or stop the motion
-      mSimulating = !mSimulating;
-      if (mSimulating)
-      {
-        mPlay = false;
-        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-      }
-      break;
-    case 'p':  // playBack
-      mPlay = !mPlay;
-      if (mPlay)
-      {
-        mSimulating = false;
-        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-      }
-      break;
-    // case '[':  // step backward
-    //   if (!mSimulating)
-    //   {
-    //     mPlayFrame--;
-    //     if (mPlayFrame < 0)
-    //       mPlayFrame = 0;
-    //     glutPostRedisplay();
-    //   }
-    //   break;
-    // case ']':  // step forwardward
-    //   if (!mSimulating)
-    //   {
-    //     mPlayFrame++;
-    //     if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
-    //       mPlayFrame = 0;
-    //     glutPostRedisplay();
-    //   }
-    //   break;
-    case 'v':  // show or hide markers
-      mShowMarkers = !mShowMarkers;
-      break;
-    case 'n':
-      mShowPointMasses = !mShowPointMasses;
-      break;
-    case 'm':
-      mShowMeshs = !mShowMeshs;
-      break;
-    default:
-      Win3D::keyboard(key, x, y);
-  }
-  glutPostRedisplay();
-}
+  /// \brief
+  void keyboard(unsigned char key, int x, int y) override;
 
+protected:
+  /// \brief
+  bool mShowPointMasses;
+
+  /// \brief
+  bool mShowMeshs;
+};
+
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart
+
+#endif  // DART_GUI_SOFTSIMWINDOW_HPP_
