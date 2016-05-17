@@ -275,6 +275,16 @@ else()
   endif()
 endif()
 
+# GLFW
+find_package(glfw3 QUIET)
+if(glfw3_FOUND)
+  message(STATUS "Looking for glfw3 - ${glfw3_VERSION} found")
+  set(HAVE_GLFW TRUE)
+else()
+  message(STATUS "Looking for glfw3 - NOT found, please install libglfw3-dev")
+  set(HAVE_GLFW FALSE)
+endif()
+
 # OpenSceneGraph
 if(DART_BUILD_GUI_OSG)
 
