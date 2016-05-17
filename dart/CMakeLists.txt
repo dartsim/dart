@@ -73,7 +73,7 @@ if(FLANN_FOUND)
   add_subdirectory(planning)
 endif()
 
-if(OPENGL_FOUND AND GLUT_FOUND)
+if(OPENGL_FOUND)
   add_subdirectory(gui)
 endif()
 

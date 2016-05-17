@@ -1,4 +1,4 @@
-include_directories(SYSTEM ${glut_INCLUDE_DIRS})
+include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
@@ -9,7 +9,7 @@ set(dart_gui_glut_srcs ${srcs})
 
 # Library
 dart_add_library(dart-gui-glut ${dart_gui_glut_srcs} ${dart_gui_glut_hdrs})
-target_link_libraries(dart-gui-glut dart-gui)
+target_link_libraries(dart-gui-glut dart-gui ${GLUT_LIBRARY})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui glut headers" ${hdrs})

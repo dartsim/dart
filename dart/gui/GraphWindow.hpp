@@ -43,7 +43,7 @@
 namespace dart {
 namespace gui {
 
-//using GraphWindow = ::dart::gui::glut::GraphWindow;
+using GraphWindow = ::dart::gui::glut::GraphWindow;
  
 }  // namespace gui
 }  // namespace dart
