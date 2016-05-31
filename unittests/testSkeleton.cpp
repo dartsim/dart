@@ -1258,7 +1258,7 @@ TEST(Skeleton, Updating)
   J0f = screw->getRelativeJacobian();
   EXPECT_FALSE(equals(J0i, J0f));
 
-  // Regression test for Pull Request #
+  // Regression test for Pull Request #731
   const double originalMass = skeleton->getMass();
   BodyNode* lastBn = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1);
   const double removedMass = lastBn->getMass();
