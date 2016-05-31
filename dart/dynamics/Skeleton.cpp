@@ -2216,6 +2216,8 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
                                      mSoftBodyNodes.end(), soft),
                          mSoftBodyNodes.end());
   }
+
+  updateTotalMass();
 }
 
 //==============================================================================
