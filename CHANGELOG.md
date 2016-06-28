@@ -1,10 +1,14 @@
 ## DART 6
 
-### DART 6.0.1 (2016-XX-XX)
+### DART 6.0.1 (2016-06-29)
 
 * Collision detection
 
   * Added warnings for unsupported shape pairs of DARTCollisionDetector: [#722](https://github.com/dartsim/dart/pull/722)
+
+* Dynamics
+
+  * Fixed total mass is not being updated when bodies removed from Kkeleton: [#731](https://github.com/dartsim/dart/pull/731)
 
 * Misc improvements and bug fixes
 

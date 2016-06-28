@@ -1,3 +1,11 @@
+dart (6.0.1) unstable; urgency=medium
+
+  * Added warnings for unsupported shape pairs of DARTCollisionDetector
+  * Fixed total mass is not being updated when bodies removed from Kkeleton
+  * Updated copyright - added CMU to copyright holder, moved individual contributors to CONTRIBUTING.md
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Wed, 29 Nov 2016 00:00:00 -0500
+
 dart6 (6.0.0) unstable; urgency=medium
 
   * Added 'Node', 'Aspect', 'State', and 'Properties'
