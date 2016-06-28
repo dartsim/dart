@@ -1,4 +1,4 @@
-dart (6.0.1) unstable; urgency=medium
+dart6 (6.0.1) unstable; urgency=medium
 
   * Added warnings for unsupported shape pairs of DARTCollisionDetector
   * Fixed total mass is not being updated when bodies removed from Kkeleton
