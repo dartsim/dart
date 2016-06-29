@@ -129,7 +129,6 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          libdart6-dev,
-         libdart6-optimizer-dev,
          libdart6-optimizer-nlopt (= ${binary:Version}),
          libnlopt-dev
 Description: Dynamic Animation and Robotics Toolkit - Optimizer-nlopt Component Development Files
@@ -191,7 +190,6 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          libdart6-dev,
-         libdart6-optimizer-dev,
          libdart6-optimizer-ipopt (= ${binary:Version}),
          coinor-libipopt-dev
 Description: Dynamic Animation and Robotics Toolkit - Optimizer-ipopt Component Development Files
@@ -539,7 +537,6 @@ Depends: ${misc:Depends},
          libdart6-utils-urdf-dev,
          libdart6-gui-dev,
          libdart6-gui-osg-dev,
-         libdart6-optimizer-dev,
          libdart6-optimizer-nlopt-dev,
          libdart6-optimizer-ipopt-dev
 Description: Dynamic Animation and Robotics Toolkit - All Development Files
