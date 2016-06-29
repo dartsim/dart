@@ -25,10 +25,14 @@ set(DART_LIBRARIES dart)
 # The list of components is passed in DART_FIND_COMPONENTS.
 if(DART_FIND_COMPONENTS)
   foreach(comp ${DART_FIND_COMPONENTS})
+
     set(TARGETNAME DART-${comp})
     string(TOUPPER ${TARGETNAME} TARGETNAME)
     set(TARGETFILE "${CURRENT_DIR}/${TARGETNAME}Targets.cmake")
-    include(${TARGETFILE})
+    if(EXISTS ${TARGETFILE})
+      include(${TARGETFILE})
+    endif()
+
     if(NOT TARGET "dart-${comp}")
       set(DART_${comp}_FOUND 0)
       if(DART_FIND_REQUIRED_${comp})
@@ -39,6 +43,7 @@ if(DART_FIND_COMPONENTS)
       set(DART_${comp}_LIBRARY "dart-${comp}")
       list(APPEND DART_LIBRARIES "${DART_${comp}_LIBRARY}")
     endif()
+
   endforeach(comp)
 endif(DART_FIND_COMPONENTS)
 
