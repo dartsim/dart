@@ -64,6 +64,7 @@ endif()
 
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 install(TARGETS dart EXPORT DARTTargets DESTINATION lib)
+install(EXPORT DARTTargets DESTINATION share/dart)
 
 # Coverage test files
 set(dart_coveralls_files "${dart_coveralls_files};${dart_hdrs};${dart_srcs}"

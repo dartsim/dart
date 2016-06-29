@@ -4,6 +4,7 @@
 # This sets the following variables:
 # DART_INCLUDE_DIRS - Directories containing the DART include files.
 # DART_LIBRARIES    - Libraries needed to use DART.
+# DART_DEFINITIONS  - Compiler flags to build DART.
 # DART_VERSION      - DART version.
 
 #===============================================================================
@@ -24,6 +25,10 @@ set(DART_LIBRARIES dart)
 # The list of components is passed in DART_FIND_COMPONENTS.
 if(DART_FIND_COMPONENTS)
   foreach(comp ${DART_FIND_COMPONENTS})
+    set(TARGETNAME DART-${comp})
+    string(TOUPPER ${TARGETNAME} TARGETNAME)
+    set(TARGETFILE "${CURRENT_DIR}/${TARGETNAME}Targets.cmake")
+    include(${TARGETFILE})
     if(NOT TARGET "dart-${comp}")
       set(DART_${comp}_FOUND 0)
       if(DART_FIND_REQUIRED_${comp})
@@ -36,6 +41,11 @@ if(DART_FIND_COMPONENTS)
     endif()
   endforeach(comp)
 endif(DART_FIND_COMPONENTS)
+
+#===============================================================================
+# DART_DEFINITIONS
+#===============================================================================
+set(DART_DEFINITIONS -std=c++11)
 
 #===============================================================================
 # DART_VERSION

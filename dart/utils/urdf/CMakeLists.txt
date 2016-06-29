@@ -27,7 +27,8 @@ install(
   DESTINATION include/dart/utils/urdf
   COMPONENT headers
 )
-install(TARGETS dart-utils-urdf EXPORT DARTTargets DESTINATION lib)
+install(TARGETS dart-utils-urdf EXPORT DART-UTILS-URDFTargets DESTINATION lib)
+install(EXPORT DART-UTILS-URDFTargets DESTINATION share/dart)
 
 # Coverage test files
 set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"

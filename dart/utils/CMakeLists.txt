@@ -50,7 +50,8 @@ install(
   DESTINATION include/dart/utils
   COMPONENT headers
 )
-install(TARGETS dart-utils EXPORT DARTTargets DESTINATION lib)
+install(TARGETS dart-utils EXPORT DART-UTILSTargets DESTINATION lib)
+install(EXPORT DART-UTILSTargets DESTINATION share/dart)
 
 # Coverage test files
 set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"

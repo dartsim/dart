@@ -323,11 +323,6 @@ foreach(unittest ${unittests})
   message(STATUS "Adding test: ${unittest}")
 endforeach(unittest ${unittests})
 
-#===============================================================================
-# Export targets
-#===============================================================================
-install(EXPORT DARTTargets DESTINATION share/dart)
-
 # Add an "uninstall" target
 # Ref: http://www.cmake.org/Wiki/CMake_FAQ#Can_I_do_.22make_uninstall.22_with_CMake.3F
 configure_file("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in" "${PROJECT_BINARY_DIR}/uninstall_target.cmake" IMMEDIATE @ONLY)

@@ -1,2 +1,4 @@
 usr/include/dart/utils/urdf/*
+usr/share/dart/DART-UTILS-URDFTargets.cmake
+usr/share/dart/DART-UTILS-URDFTargets-*.cmake
 usr/lib/libdart-utils-urdf.so

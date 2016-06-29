@@ -34,7 +34,8 @@ install(
   DESTINATION include/dart/gui/osg
   COMPONENT headers
 )
-install(TARGETS dart-gui-osg EXPORT DARTTargets DESTINATION lib)
+install(TARGETS dart-gui-osg EXPORT DART-GUI-OSGTargets DESTINATION lib)
+install(EXPORT DART-GUI-OSGTargets DESTINATION share/dart)
 
 # Coverage test files
 set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"

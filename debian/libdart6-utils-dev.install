@@ -1,3 +1,5 @@
 usr/include/dart/utils/*.*
 usr/include/dart/utils/sdf/*.*
+usr/share/dart/DART-UTILSTargets.cmake
+usr/share/dart/DART-UTILSTargets-*.cmake
 usr/lib/libdart-utils.so

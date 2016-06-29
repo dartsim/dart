@@ -1,2 +1,4 @@
 usr/include/dart/gui/*.*
+usr/share/dart/DART-GUITargets.cmake
+usr/share/dart/DART-GUITargets-*.cmake
 usr/lib/libdart-gui.so
