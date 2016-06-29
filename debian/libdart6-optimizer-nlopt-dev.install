@@ -1,2 +1,4 @@
 usr/include/dart/optimizer/nlopt/*
+usr/share/dart/DART-OPTIMIZER-NLOPTTargets.cmake
+usr/share/dart/DART-OPTIMIZER-NLOPTTargets-*.cmake
 usr/lib/libdart-optimizer-nlopt.so
