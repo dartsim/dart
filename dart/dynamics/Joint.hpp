@@ -539,31 +539,31 @@ public:
   //----------------------------------------------------------------------------
 
   /// Deprecated. Use getRelativeTransform() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const Eigen::Isometry3d& getLocalTransform() const;
 
   /// Deprecated. Use getLocalSpatialVelocity() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const Eigen::Vector6d& getLocalSpatialVelocity() const;
 
   /// Deprecated. Use getLocalSpatialAcceleration() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const Eigen::Vector6d& getLocalSpatialAcceleration() const;
 
   /// Deprecated. Use getLocalPrimaryAcceleration() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const Eigen::Vector6d& getLocalPrimaryAcceleration() const;
 
   /// Deprecated. Use getRelativeJacobian() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const math::Jacobian getLocalJacobian() const;
 
   /// Deprecated. Use getRelativeJacobian() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   math::Jacobian getLocalJacobian(const Eigen::VectorXd& positions) const;
 
   /// Deprecated. Use getRelativeJacobianTimeDeriv() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const math::Jacobian getLocalJacobianTimeDeriv() const;
 
   /// Get transform of the child BodyNode relative to the parent BodyNode
@@ -680,27 +680,27 @@ protected:
   //----------------------------------------------------------------------------
 
   /// Deprecated. Use updateRelativeTransform() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalTransform() const;
 
   /// Deprecated. Use updateRelativeSpatialVelocity() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalSpatialVelocity() const;
 
   /// Deprecated. Use updateRelativeSpatialAcceleration() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalSpatialAcceleration() const;
 
   /// Deprecated. Use updateRelativePrimaryAcceleration() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalPrimaryAcceleration() const;
 
   /// Deprecated. Use updateRelativeJacobian() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalJacobian(bool mandatory = true) const;
 
   /// Deprecated. Use updateRelativeJacobianTimeDeriv() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalJacobianTimeDeriv() const;
 
   /// Update transform of the child BodyNode relative to the parent BodyNode
