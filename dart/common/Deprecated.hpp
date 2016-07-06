@@ -41,14 +41,14 @@
 //==============================================================================
 
 #if defined(__GNUC__) || defined(__clang__)
-  #define DEPRECATED(version) __attribute__ ((deprecated))
-  #define FORCEINLINE __attribute__((always_inline))
+  #define DART_DEPRECATED(version) __attribute__ ((deprecated))
+  #define DART_FORCEINLINE __attribute__((always_inline))
 #elif defined(_MSC_VER)
-  #define DEPRECATED(version) __declspec(deprecated)
-  #define FORCEINLINE __forceinline
+  #define DART_DEPRECATED(version) __declspec(deprecated)
+  #define DART_FORCEINLINE __DART_FORCEINLINE
 #else
-  #define DEPRECATED(version) ()
-  #define FORCEINLINE
+  #define DART_DEPRECATED(version) ()
+  #define DART_FORCEINLINE
 #endif
 
 // We define two convenient macros that can be used to suppress
