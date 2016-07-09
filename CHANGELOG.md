@@ -8,7 +8,7 @@
 
 * Dynamics
 
-  * Fixed total mass is not being updated when bodies removed from Kkeleton: [#731](https://github.com/dartsim/dart/pull/731)
+  * Fixed total mass is not being updated when bodies removed from Skeleton: [#731](https://github.com/dartsim/dart/pull/731)
 
 * Misc improvements and bug fixes
 
