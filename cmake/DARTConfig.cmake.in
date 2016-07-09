@@ -21,17 +21,38 @@ if (NOT TARGET dart)
 endif()
 set(DART_LIBRARIES dart)
 
+if(@BUILD_DART_OPTIMIZER_IPOPT@)
+  include("${CURRENT_DIR}/DART-OPTIMIZER-IPOPTTargets.cmake")
+endif()
+
+if(@BUILD_DART_OPTIMIZER_NLOPT@)
+  include("${CURRENT_DIR}/DART-OPTIMIZER-NLOPTTargets.cmake")
+endif()
+
+if(@BUILD_DART_UTILS@)
+  include("${CURRENT_DIR}/DART-UTILSTargets.cmake")
+endif()
+
+if(@BUILD_DART_UTILS_URDF@)
+  include("${CURRENT_DIR}/DART-UTILS-URDFTargets.cmake")
+endif()
+
+if(@BUILD_DART_GUI@)
+  include("${CURRENT_DIR}/DART-GUITargets.cmake")
+endif()
+
+if(@BUILD_DART_GUI_OSG@)
+  include("${CURRENT_DIR}/DART-GUI-OSGTargets.cmake")
+endif()
+
+if(@BUILD_DART_PLANNING@)
+  include("${CURRENT_DIR}/DART-PLANNINGTargets.cmake")
+endif()
+
 # Handle requested components in find_package(DART COMPONENTS [components]).
 # The list of components is passed in DART_FIND_COMPONENTS.
 if(DART_FIND_COMPONENTS)
   foreach(comp ${DART_FIND_COMPONENTS})
-
-    set(TARGETNAME DART-${comp})
-    string(TOUPPER ${TARGETNAME} TARGETNAME)
-    set(TARGETFILE "${CURRENT_DIR}/${TARGETNAME}Targets.cmake")
-    if(EXISTS ${TARGETFILE})
-      include(${TARGETFILE})
-    endif()
 
     if(NOT TARGET "dart-${comp}")
       set(DART_${comp}_FOUND 0)

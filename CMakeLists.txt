@@ -110,6 +110,51 @@ endif()
 include(DARTFindDependencies)
 
 #===============================================================================
+# Setting components builds
+#===============================================================================
+if(HAVE_IPOPT)
+  set(BUILD_DART_OPTIMIZER_IPOPT TRUE)
+else()
+  set(BUILD_DART_OPTIMIZER_IPOPT FALSE)
+endif()
+
+if(HAVE_IPOPT)
+  set(BUILD_DART_OPTIMIZER_NLOPT TRUE)
+else()
+  set(BUILD_DART_OPTIMIZER_NLOPT FALSE)
+endif()
+
+if(TINYXML_FOUND AND TINYXML2_FOUND)
+  set(BUILD_DART_UTILS TRUE)
+else()
+  set(BUILD_DART_UTILS FALSE)
+endif()
+
+if(BUILD_DART_UTILS AND urdfdom_FOUND)
+  set(BUILD_DART_UTILS_URDF TRUE)
+else()
+  set(BUILD_DART_UTILS_URDF FALSE)
+endif()
+
+if(OPENGL_FOUND AND GLUT_FOUND)
+  set(BUILD_DART_GUI TRUE)
+else()
+  set(BUILD_DART_GUI FALSE)
+endif()
+
+if(BUILD_DART_GUI AND HAVE_OPENSCENEGRAPH)
+  set(BUILD_DART_GUI_OSG TRUE)
+else()
+  set(BUILD_DART_GUI_OSG FALSE)
+endif()
+
+if(FLANN_FOUND)
+  set(BUILD_DART_PLANNING TRUE)
+else()
+  set(BUILD_DART_PLANNING FALSE)
+endif()
+
+#===============================================================================
 # Include directories
 #===============================================================================
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})

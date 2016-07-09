@@ -10,7 +10,7 @@ include_directories(SYSTEM ${TINYXML2_INCLUDE_DIRS})
 
 # Add subdirectories
 add_subdirectory(sdf)
-if(urdfdom_FOUND)
+if(BUILD_DART_UTILS_URDF)
   add_subdirectory(urdf)
 endif()
 

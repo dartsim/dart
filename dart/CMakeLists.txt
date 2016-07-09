@@ -70,15 +70,15 @@ install(EXPORT DARTTargets DESTINATION share/dart)
 set(dart_coveralls_files "${dart_coveralls_files};${dart_hdrs};${dart_srcs}"
     CACHE INTERNAL "Files for coverage tests" FORCE)
 
-if(FLANN_FOUND)
+if(BUILD_DART_PLANNING)
   add_subdirectory(planning)
 endif()
 
-if(OPENGL_FOUND AND GLUT_FOUND)
+if(BUILD_DART_GUI)
   add_subdirectory(gui)
 endif()
 
-if(TINYXML_FOUND AND TINYXML2_FOUND AND urdfdom_FOUND)
+if(BUILD_DART_UTILS)
   add_subdirectory(utils)
 endif()
 

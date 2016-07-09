@@ -6,9 +6,9 @@ include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
 include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 
 # Add subdirectories
-if(HAVE_OPENSCENEGRAPH)
+if(BUILD_DART_GUI_OSG)
   add_subdirectory(osg)
-endif(HAVE_OPENSCENEGRAPH)
+endif(BUILD_DART_GUI_OSG)
 
 set(dart_gui_hdrs ${dart_gui_hdrs} ${hdrs})
 set(dart_gui_srcs ${dart_gui_srcs} ${srcs})
