@@ -40,6 +40,8 @@
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/Option.hpp"
 #include "dart/collision/Result.hpp"
+#include "dart/collision/DistanceOption.hpp"
+#include "dart/collision/DistanceResult.hpp"
 #include "dart/collision/SmartPointer.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
@@ -108,6 +110,19 @@ public:
       CollisionGroup* group2,
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr) = 0;
+
+  /// Perform collision check for a single group.
+  virtual bool distance(
+      CollisionGroup* group,
+      const DistanceOption& option = DistanceOption(nullptr),
+      DistanceResult* result = nullptr);
+
+  /// Perform collision check for two groups.
+  virtual bool distance(
+      CollisionGroup* group1,
+      CollisionGroup* group2,
+      const DistanceOption& option = DistanceOption(nullptr),
+      DistanceResult* result = nullptr);
 
 protected:
 

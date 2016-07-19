@@ -36,6 +36,7 @@
 #include <fcl/collision.h>
 #include <fcl/collision_object.h>
 #include <fcl/collision_data.h>
+#include <fcl/distance.h>
 #include <fcl/BVH/BVH_model.h>
 #include <fcl/broadphase/broadphase.h>
 #include <fcl/shape/geometric_shapes.h>
@@ -64,6 +65,12 @@ namespace {
 
 bool collisionCallback(
     fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata);
+
+bool distanceCallback(
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2,
+    void* cdata,
+    fcl::FCL_REAL& dist);
 
 void postProcessFCL(
     const fcl::CollisionResult& fclResult,
@@ -179,6 +186,33 @@ struct FCLCollisionCallbackData
     // Since some contact points can be filtered out in the post process, we ask
     // more than the demend. 100 is randomly picked.
   }
+};
+
+struct FCLDistanceCallbackData
+{
+  FCLDistanceCallbackData(
+      const DistanceOption& option, DistanceResult* result)
+    : option(option),
+      result(result),
+      done(false)
+  {
+    // convertOption(...);
+  }
+
+  /// FCL distance request
+  fcl::DistanceRequest fclRequest;
+
+  /// FCL distance result
+  fcl::DistanceResult fclResult;
+
+  /// Distance option of DART
+  const DistanceOption& option;
+
+  /// Distance result of DART
+  DistanceResult* result;
+
+  /// @brief Whether the distance iteration can stop
+  bool done;
 };
 
 //==============================================================================
@@ -714,6 +748,40 @@ bool FCLCollisionDetector::collide(
 }
 
 //==============================================================================
+bool FCLCollisionDetector::distance(
+    CollisionGroup* group,
+    const DistanceOption& option,
+    DistanceResult* result)
+{
+  if (result)
+    result->clear();
+
+  if (!checkGroupValidity(this, group))
+    return false;
+
+  auto casted = static_cast<FCLCollisionGroup*>(group);
+  casted->updateEngineData();
+
+  FCLDistanceCallbackData distData(option, result);
+
+  casted->getFCLCollisionManager()->distance(&distData, distanceCallback);
+
+  return false; // TODO(JS): not sure what should be returned (if found any?)
+}
+
+//==============================================================================
+bool FCLCollisionDetector::distance(
+    CollisionGroup* /*group1*/,
+    CollisionGroup* /*group2*/,
+    const DistanceOption& /*option*/,
+    DistanceResult* /*result*/)
+{
+  // TODO(JS): Not implemented
+
+  return false;
+}
+
+//==============================================================================
 void FCLCollisionDetector::setPrimitiveShapeType(
     FCLCollisionDetector::PrimitiveShape type)
 {
@@ -1028,6 +1096,39 @@ bool collisionCallback(
   }
 
   return collData->done;
+}
+
+//==============================================================================
+bool distanceCallback(
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2,
+    void* ddata,
+    fcl::FCL_REAL& dist)
+{
+  auto* distdata = static_cast<FCLDistanceCallbackData*>(ddata);
+
+  const auto& fclRequest = distdata->fclRequest;
+        auto& fclResult = distdata->fclResult;
+
+  if (distdata->done)
+  {
+    dist = fclResult.min_distance;
+    return true;
+  }
+
+  fcl::distance(o1, o2, fclRequest, fclResult);
+
+  dist = fclResult.min_distance;
+
+  // TODO(JS): the data should be transformed into the DART's data structure
+
+  if (dist <= 0)
+  {
+    // in collision or in touch
+    return true;
+  }
+
+  return distdata->done;
 }
 
 //==============================================================================

@@ -107,6 +107,19 @@ public:
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr) override;
 
+  // Documentation inherited
+  bool distance(
+      CollisionGroup* group,
+      const DistanceOption& option = DistanceOption(nullptr),
+      DistanceResult* result = nullptr) override;
+
+  // Documentation inherited
+  bool distance(
+      CollisionGroup* group1,
+      CollisionGroup* group2,
+      const DistanceOption& option = DistanceOption(nullptr),
+      DistanceResult* result = nullptr) override;
+
   /// Set primitive shape type
   void setPrimitiveShapeType(PrimitiveShape type);
 
