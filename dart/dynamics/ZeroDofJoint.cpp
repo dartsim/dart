@@ -556,7 +556,7 @@ double ZeroDofJoint::getCoulombFriction(std::size_t /*_index*/) const
 }
 
 //==============================================================================
-double ZeroDofJoint::getPotentialEnergy() const
+double ZeroDofJoint::computePotentialEnergy() const
 {
   return 0.0;
 }
