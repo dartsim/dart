@@ -101,7 +101,7 @@ public:
   int getID() const;
 
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
-  DEPRECATED(6.1)
+  DART_DEPRECATED(6.1)
   ShapeType getShapeType() const;
 
   /// Set the data variance of this shape. Use the DataVariance to indicate what
