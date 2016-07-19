@@ -208,7 +208,7 @@ public:
   void setProperties(const AspectProperties& properties);
 
   /// Get the Properties of this Skeleton
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const AspectProperties& getSkeletonProperties() const;
 
   /// Set the AspectProperties of this Skeleton
@@ -220,13 +220,13 @@ public:
   /// Get name.
   const std::string& getName() const override;
 
-  /// Deprecated. Please use enableSelfCollision() and setAdjacentBodyCheck()
-  /// instead.
-  DEPRECATED(6.0)
+  /// Deprecated. Please use enableSelfCollisionCheck() and
+  /// setAdjacentBodyCheck() instead.
+  DART_DEPRECATED(6.0)
   void enableSelfCollision(bool enableAdjacentBodyCheck = false);
 
   /// Deprecated. Please use disableSelfCollisionCheck() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void disableSelfCollision();
 
   /// Set whether to check self-collision.
@@ -826,7 +826,7 @@ public:
   double getPotentialEnergy() const override;
 
   // Documentation inherited
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void clearCollidingBodies() override;
 
   /// \}

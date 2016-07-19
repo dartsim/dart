@@ -70,13 +70,13 @@ public:
   /// Get the BodyNode this Marker belongs to
   ///
   /// Deprecated: Use getBodyNodePtr() instead
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   BodyNode* getBodyNode();
 
   /// Get the (const) BodyNode this Marker belongs to
   ///
   /// Deprecated: Use getBodyNodePtr() instead
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const BodyNode* getBodyNode() const;
 
   /// Get position of this marker in the parent body node coordinates

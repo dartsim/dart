@@ -67,10 +67,10 @@ public:
 
   virtual void drawSkeletons() const;
 
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   virtual void drawSkels();
 
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   virtual void drawEntities();
 
   /// \brief
