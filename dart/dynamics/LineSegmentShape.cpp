@@ -76,6 +76,19 @@ LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& _v1,
 }
 
 //==============================================================================
+const std::string& LineSegmentShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& LineSegmentShape::getStaticType()
+{
+  static const std::string type("LineSegmentShape");
+  return type;
+}
+
+//==============================================================================
 void LineSegmentShape::setThickness(float _thickness)
 {
   if (_thickness <= 0.0f)
