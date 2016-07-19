@@ -1146,7 +1146,7 @@ double SingleDofJoint::getCoulombFriction(std::size_t _index) const
 }
 
 //==============================================================================
-double SingleDofJoint::getPotentialEnergy() const
+double SingleDofJoint::computePotentialEnergy() const
 {
   // Spring energy
   double pe = 0.5 * mAspectProperties.mSpringStiffness

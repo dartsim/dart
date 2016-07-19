@@ -646,11 +646,22 @@ public:
   /// Clear the internal forces of the BodyNodes in this MetaSkeleton
   virtual void clearInternalForces() = 0;
 
+  /// Compute and return Lagrangian of this MetaSkeleton
+  double computeLagrangian() const;
+
   /// Get the kinetic energy of this MetaSkeleton
-  virtual double getKineticEnergy() const = 0;
+  DEPRECATED(6.1)
+  double getKineticEnergy() const;
+
+  /// Get the kinetic energy of this MetaSkeleton
+  virtual double computeKineticEnergy() const = 0;
 
   /// Get the potential energy of this MetaSkeleton
-  virtual double getPotentialEnergy() const = 0;
+  DEPRECATED(6.1)
+  double getPotentialEnergy() const;
+
+  /// Get the potential energy of this MetaSkeleton
+  virtual double computePotentialEnergy() const = 0;
 
   /// Clear collision flags of the BodyNodes in this MetaSkeleton
   DEPRECATED(6.0)

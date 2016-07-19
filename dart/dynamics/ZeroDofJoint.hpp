@@ -339,8 +339,8 @@ public:
 
   //----------------------------------------------------------------------------
 
-  /// Get potential energy
-  double getPotentialEnergy() const override;
+  // Documentation inherited
+  double computePotentialEnergy() const override;
 
   // Documentation inherited
   Eigen::Vector6d getBodyConstraintWrench() const override;

@@ -820,10 +820,10 @@ public:
   void notifySupportUpdate(std::size_t _treeIdx);
 
   // Documentation inherited
-  double getKineticEnergy() const override;
+  double computeKineticEnergy() const override;
 
   // Documentation inherited
-  double getPotentialEnergy() const override;
+  double computePotentialEnergy() const override;
 
   // Documentation inherited
   DEPRECATED(6.0)

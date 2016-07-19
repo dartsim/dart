@@ -534,7 +534,11 @@ public:
   //----------------------------------------------------------------------------
 
   /// Get potential energy
-  virtual double getPotentialEnergy() const = 0;
+  DEPRECATED(6.1)
+  double getPotentialEnergy() const;
+
+  /// Compute and return the potential energy
+  virtual double computePotentialEnergy() const = 0;
 
   //----------------------------------------------------------------------------
 
