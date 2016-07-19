@@ -820,132 +820,117 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::SoftMeshShape;
 
   fcl::CollisionGeometry* geom = nullptr;
+  const auto& shapeType = shape->getType();
 
-  switch (shape->getShapeType())
+  if (BoxShape::getStaticType() == shapeType)
   {
-    case Shape::BOX:
+    assert(dynamic_cast<const BoxShape*>(shape.get()));
+
+    auto box = static_cast<const BoxShape*>(shape.get());
+    const Eigen::Vector3d& size = box->getSize();
+
+    if (FCLCollisionDetector::PRIMITIVE == type)
+      geom = new fcl::Box(size[0], size[1], size[2]);
+    else
+      geom = createCube<fcl::OBBRSS>(size[0], size[1], size[2]);
+  }
+  else if (EllipsoidShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
+
+    auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
+    const Eigen::Vector3d& size = ellipsoid->getSize();
+
+    if (FCLCollisionDetector::PRIMITIVE == type)
     {
-      assert(dynamic_cast<const BoxShape*>(shape.get()));
-
-      auto box = static_cast<const BoxShape*>(shape.get());
-      const Eigen::Vector3d& size = box->getSize();
-
-      if (FCLCollisionDetector::PRIMITIVE == type)
-        geom = new fcl::Box(size[0], size[1], size[2]);
-      else
-        geom = createCube<fcl::OBBRSS>(size[0], size[1], size[2]);
-
-      break;
-    }
-    case Shape::ELLIPSOID:
-    {
-      assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
-
-      auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
-      const Eigen::Vector3d& size = ellipsoid->getSize();
-
-      if (FCLCollisionDetector::PRIMITIVE == type)
+      if (ellipsoid->isSphere())
       {
-        if (ellipsoid->isSphere())
-        {
-          geom = new fcl::Sphere(size[0] * 0.5);
-        }
-        else
-        {
+        geom = new fcl::Sphere(size[0] * 0.5);
+      }
+      else
+      {
 #if FCL_VERSION_AT_LEAST(0,4,0)
-          geom = new fcl::Ellipsoid(FCLTypes::convertVector3(size * 0.5));
+        geom = new fcl::Ellipsoid(FCLTypes::convertVector3(size * 0.5));
 #else
-          geom = createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]);
-#endif
-        }
-      }
-      else
-      {
         geom = createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]);
+#endif
       }
-
-      break;
     }
-    case Shape::CYLINDER:
+    else
     {
-      assert(dynamic_cast<const CylinderShape*>(shape.get()));
-
-      const auto cylinder = static_cast<const CylinderShape*>(shape.get());
-      const auto radius = cylinder->getRadius();
-      const auto height = cylinder->getHeight();
-
-      if (FCLCollisionDetector::PRIMITIVE == type)
-      {
-        geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
-        // TODO(JS): We still need to use mesh for cylinder because FCL 0.4.0
-        // returns single contact point for cylinder yet. Once FCL support
-        // multiple contact points then above code will be replaced by:
-        // fclCollGeom.reset(new fcl::Cylinder(radius, height));
-      }
-      else
-      {
-        geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
-      }
-
-      break;
-    }
-    case Shape::PLANE:
-    {
-      if (FCLCollisionDetector::PRIMITIVE == type)
-      {
-        assert(dynamic_cast<const PlaneShape*>(shape.get()));
-        auto                  plane = static_cast<const PlaneShape*>(shape.get());
-        const Eigen::Vector3d normal = plane->getNormal();
-        const double          offset = plane->getOffset();
-
-        geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
-      }
-      else
-      {
-        geom = createCube<fcl::OBBRSS>(1000.0, 0.0, 1000.0);
-        dtwarn << "[FCLCollisionDetector] PlaneShape is not supported by "
-               << "FCLCollisionDetector. We create a thin box mesh insted, where "
-               << "the size is [1000 0 1000].\n";
-      }
-
-      break;
-    }
-    case Shape::MESH:
-    {
-      assert(dynamic_cast<const MeshShape*>(shape.get()));
-
-      auto shapeMesh = static_cast<const MeshShape*>(shape.get());
-      const Eigen::Vector3d& scale = shapeMesh->getScale();
-      auto aiScene = shapeMesh->getMesh();
-
-      geom = createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene);
-
-      break;
-    }
-    case Shape::SOFT_MESH:
-    {
-      assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
-
-      auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
-      auto aiMesh = softMeshShape->getAssimpMesh();
-
-      geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
-
-      break;
-    }
-    default:
-    {
-      dterr << "[FCLCollisionDetector] Attempting to create unsupported shape "
-            << "type '" << shape->getShapeType() << "'.\n";
-
-      return nullptr;
+      geom = createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]);
     }
   }
+  else if (CylinderShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const CylinderShape*>(shape.get()));
 
-  if (geom)
-    return boost::shared_ptr<fcl::CollisionGeometry>(geom, deleter);
+    const auto cylinder = static_cast<const CylinderShape*>(shape.get());
+    const auto radius = cylinder->getRadius();
+    const auto height = cylinder->getHeight();
+
+    if (FCLCollisionDetector::PRIMITIVE == type)
+    {
+      geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
+      // TODO(JS): We still need to use mesh for cylinder because FCL 0.4.0
+      // returns single contact point for cylinder yet. Once FCL support
+      // multiple contact points then above code will be replaced by:
+      // fclCollGeom.reset(new fcl::Cylinder(radius, height));
+    }
+    else
+    {
+      geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
+    }
+  }
+  else if (PlaneShape::getStaticType() == shapeType)
+  {
+    if (FCLCollisionDetector::PRIMITIVE == type)
+    {
+      assert(dynamic_cast<const PlaneShape*>(shape.get()));
+      auto                  plane = static_cast<const PlaneShape*>(shape.get());
+      const Eigen::Vector3d normal = plane->getNormal();
+      const double          offset = plane->getOffset();
+
+      geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
+    }
+    else
+    {
+      geom = createCube<fcl::OBBRSS>(1000.0, 0.0, 1000.0);
+      dtwarn << "[FCLCollisionDetector] PlaneShape is not supported by "
+             << "FCLCollisionDetector. We create a thin box mesh insted, where "
+             << "the size is [1000 0 1000].\n";
+    }
+  }
+  else if (MeshShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const MeshShape*>(shape.get()));
+
+    auto shapeMesh = static_cast<const MeshShape*>(shape.get());
+    const Eigen::Vector3d& scale = shapeMesh->getScale();
+    auto aiScene = shapeMesh->getMesh();
+
+    geom = createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene);
+  }
+  else if (SoftMeshShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
+
+    auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
+    auto aiMesh = softMeshShape->getAssimpMesh();
+
+    geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
+  }
   else
-    return boost::shared_ptr<fcl::CollisionGeometry>();
+  {
+    dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
+          << "Attempting to create an unsupported shape type ["
+          << shapeType << "] Creating a sphere with 0.1 radius "
+          << "instead.\n";
+
+    geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
+  }
+
+  return boost::shared_ptr<fcl::CollisionGeometry>(geom, deleter);
 }
 
 //==============================================================================

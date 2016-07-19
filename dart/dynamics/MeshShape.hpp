@@ -69,6 +69,12 @@ public:
   /// \brief Destructor.
   virtual ~MeshShape();
 
+  // Documentation inherited.
+  const std::string& getType() const;
+
+  /// Returns shape type for this class
+  static const std::string& getStaticType();
+
   /// \brief
   const aiScene* getMesh() const;
 

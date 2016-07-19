@@ -463,41 +463,24 @@ void OpenGLRenderInterface::compileList(dynamics::BodyNode* node)
 }
 
 //==============================================================================
-//FIXME: Use polymorphism instead of switch statements
-void OpenGLRenderInterface::compileList(dynamics::Shape* _shape) {
-    if(_shape == 0)
-        return;
+void OpenGLRenderInterface::compileList(dynamics::Shape* shape)
+{
+  if (!shape)
+    return;
 
-    switch(_shape->getShapeType()) {
-        case dynamics::Shape::BOX:
-            break;
-        case dynamics::Shape::CYLINDER:
-            break;
-        case dynamics::Shape::ELLIPSOID:
-            break;
-        case dynamics::Shape::PLANE:
-            dterr << "PLANE is not supported yet." << std::endl;
-            break;
-        case dynamics::Shape::SOFT_MESH:
-            // Do nothing
-            break;
-        case dynamics::Shape::MESH:
-        {
-            //FIXME: Separate these calls once BodyNode is refactored to contain
-            // both a col Shape and vis Shape.
-            dynamics::MeshShape* shapeMesh = dynamic_cast<dynamics::MeshShape*>(_shape);
+  if (shape->getType() == dynamics::MeshShape::getStaticType())
+  {
+    assert(dynamic_cast<dynamics::MeshShape*>(shape));
 
-            if(shapeMesh == 0)
-                return;
-
-            shapeMesh->setDisplayList(compileList(shapeMesh->getScale(), shapeMesh->getMesh()));
-
-            break;
-        }
-        case dynamics::Shape::LINE_SEGMENT:
-            // Do nothing
-            break;
-    }
+    auto* mesh = static_cast<dynamics::MeshShape*>(shape);
+    mesh->setDisplayList(compileList(mesh->getScale(), mesh->getMesh()));
+  }
+  else
+  {
+    dtwarn << "[OpenGLRenderInterface::compileList] Attempting to compile "
+           << "OpenGL list for an unsupported shape type ["
+           << shape->getType() << "].\n";
+  }
 }
 
 GLuint OpenGLRenderInterface::compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh) {
