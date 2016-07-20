@@ -50,6 +50,7 @@ public:
 
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
   enum ShapeType {
+    SPHERE,
     BOX,
     ELLIPSOID,
     CYLINDER,
