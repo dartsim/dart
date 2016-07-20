@@ -71,7 +71,7 @@ public:
     Eigen::Isometry3d tf = mEndEffector->getWorldTransform();
     tf.pretranslate(mOffset);
     mTarget = std::make_shared<SimpleFrame>(Frame::World(), "target", tf);
-    ShapePtr ball(new EllipsoidShape(Eigen::Vector3d(0.05,0.05,0.05)));
+    ShapePtr ball(new SphereShape(0.025));
     mTarget->setShape(ball);
     mTarget->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9,0,0));
     mWorld->addSimpleFrame(mTarget);

@@ -44,6 +44,7 @@
 #include "dart/simulation/World.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -157,7 +158,7 @@ void SimWindow::draw() {
           mRI->setPenColor(Eigen::Vector3d(0.2, 0.2, 0.8));
           mRI->pushMatrix();
           glTranslated(v[0], v[1], v[2]);
-          mRI->drawEllipsoid(Eigen::Vector3d(0.02, 0.02, 0.02));
+          mRI->drawSphere(0.01);
           mRI->popMatrix();
         }
       }
@@ -176,7 +177,7 @@ void SimWindow::draw() {
         mRI->setPenColor(Eigen::Vector3d(0.2, 0.2, 0.8));
         mRI->pushMatrix();
         glTranslated(v[0], v[1], v[2]);
-        mRI->drawEllipsoid(Eigen::Vector3d(0.02, 0.02, 0.02));
+        mRI->drawSphere(0.01);
         mRI->popMatrix();
       }
     }
@@ -395,6 +396,7 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   mRI->setPenColor(color);
 
   using dynamics::Shape;
+  using dynamics::SphereShape;
   using dynamics::BoxShape;
   using dynamics::EllipsoidShape;
   using dynamics::CylinderShape;
@@ -405,7 +407,12 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
 
   const auto& shapeType = shape->getType();
 
-  if (BoxShape::getStaticType() == shapeType)
+  if (SphereShape::getStaticType() == shapeType)
+  {
+    const auto* sphere = static_cast<const SphereShape*>(shape);
+    mRI->drawSphere(sphere->getRadius());
+  }
+  else if (BoxShape::getStaticType() == shapeType)
   {
     const auto* box = static_cast<const BoxShape*>(shape);
     mRI->drawCube(box->getSize());
@@ -473,7 +480,7 @@ void SimWindow::drawPointMasses(
       mRI->setPenColor(Eigen::Vector4d(0.8, 0.3, 0.3, 1.0));
     else
       mRI->setPenColor(color);
-    mRI->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
+    mRI->drawSphere(0.005);
     mRI->popMatrix();
 
     // render point at the resting position
@@ -484,7 +491,7 @@ void SimWindow::drawPointMasses(
       mRI->setPenColor(Eigen::Vector4d(0.8, 0.3, 0.3, 1.0));
     else
       mRI->setPenColor(color);
-    mRI->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
+    mRI->drawSphere(0.005);
     mRI->popMatrix();
   }
 }
@@ -520,7 +527,7 @@ void SimWindow::drawMarker(const dynamics::Marker* marker,
 
   mRI->pushMatrix();
   mRI->translate(marker->getLocalPosition());
-  mRI->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
+  mRI->drawSphere(0.005);
   mRI->popMatrix();
 
   mRI->popName();

@@ -36,6 +36,7 @@
 #include "dart/gui/osg/ShapeFrameNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
 #include "dart/gui/osg/render/ShapeNode.hpp"
+#include "dart/gui/osg/render/SphereShapeNode.hpp"
 #include "dart/gui/osg/render/BoxShapeNode.hpp"
 #include "dart/gui/osg/render/EllipsoidShapeNode.hpp"
 #include "dart/gui/osg/render/CylinderShapeNode.hpp"
@@ -48,6 +49,7 @@
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Entity.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -170,7 +172,16 @@ void ShapeFrameNode::createShapeNode(
 
   const auto& shapeType = shape->getType();
 
-  if(BoxShape::getStaticType() == shapeType)
+  if(SphereShape::getStaticType() == shapeType)
+  {
+    std::shared_ptr<SphereShape> es =
+        std::dynamic_pointer_cast<SphereShape>(shape);
+    if(es)
+      mShapeNode = new render::SphereShapeNode(es, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  }
+  else if(BoxShape::getStaticType() == shapeType)
   {
     std::shared_ptr<BoxShape> bs =
         std::dynamic_pointer_cast<BoxShape>(shape);
