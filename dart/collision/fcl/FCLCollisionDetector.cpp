@@ -50,6 +50,7 @@
 #include "dart/collision/fcl/tri_tri_intersection_test.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -812,6 +813,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const FCLCollisionGeometryDeleter& deleter)
 {
   using dynamics::Shape;
+  using dynamics::SphereShape;
   using dynamics::BoxShape;
   using dynamics::EllipsoidShape;
   using dynamics::CylinderShape;
@@ -822,7 +824,19 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   fcl::CollisionGeometry* geom = nullptr;
   const auto& shapeType = shape->getType();
 
-  if (BoxShape::getStaticType() == shapeType)
+  if (SphereShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const SphereShape*>(shape.get()));
+
+    auto* sphere = static_cast<const SphereShape*>(shape.get());
+    const auto radius = sphere->getRadius();
+
+    if (FCLCollisionDetector::PRIMITIVE == type)
+      geom = new fcl::Sphere(radius);
+    else
+      geom = createEllipsoid<fcl::OBBRSS>(radius*2.0, radius*2.0, radius*2.0);
+  }
+  else if (BoxShape::getStaticType() == shapeType)
   {
     assert(dynamic_cast<const BoxShape*>(shape.get()));
 
@@ -843,18 +857,11 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     if (FCLCollisionDetector::PRIMITIVE == type)
     {
-      if (ellipsoid->isSphere())
-      {
-        geom = new fcl::Sphere(size[0] * 0.5);
-      }
-      else
-      {
 #if FCL_VERSION_AT_LEAST(0,4,0)
-        geom = new fcl::Ellipsoid(FCLTypes::convertVector3(size * 0.5));
+      geom = new fcl::Ellipsoid(FCLTypes::convertVector3(size * 0.5));
 #else
-        geom = createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]);
+      geom = createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]);
 #endif
-      }
     }
     else
     {

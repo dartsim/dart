@@ -44,6 +44,7 @@
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -391,6 +392,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
   using dynamics::Shape;
+  using dynamics::SphereShape;
   using dynamics::BoxShape;
   using dynamics::EllipsoidShape;
   using dynamics::CylinderShape;
@@ -401,7 +403,16 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   const auto& shapeType = shape->getType();
   btCollisionShape* bulletCollisionShape = nullptr;
 
-  if (BoxShape::getStaticType() == shapeType)
+  if (SphereShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const SphereShape*>(shape.get()));
+
+    const auto sphere = static_cast<const SphereShape*>(shape.get());
+    const auto radius = sphere->getRadius();
+
+    bulletCollisionShape = new btSphereShape(radius);
+  }
+  else if (BoxShape::getStaticType() == shapeType)
   {
     assert(dynamic_cast<const BoxShape*>(shape.get()));
 
@@ -417,15 +428,8 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     const auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
     const Eigen::Vector3d& size = ellipsoid->getSize();
 
-    if (ellipsoid->isSphere())
-    {
-      bulletCollisionShape = new btSphereShape(size[0] * 0.5);
-    }
-    else
-    {
-      bulletCollisionShape = createBulletEllipsoidMesh(
-            size[0], size[1], size[2]);
-    }
+    bulletCollisionShape = createBulletEllipsoidMesh(
+          size[0], size[1], size[2]);
   }
   else if (CylinderShape::getStaticType() == shapeType)
   {
