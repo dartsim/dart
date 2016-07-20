@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -172,9 +167,9 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     if (dof == 0)
       return;
 
-    Eigen::Isometry3d T = joint->getLocalTransform();
-    Jacobian J = joint->getLocalJacobian();
-    Jacobian dJ = joint->getLocalJacobianTimeDeriv();
+    Eigen::Isometry3d T = joint->getRelativeTransform();
+    Jacobian J = joint->getRelativeJacobian();
+    Jacobian dJ = joint->getRelativeJacobianTimeDeriv();
 
     //--------------------------------------------------------------------------
     // Test T
@@ -191,13 +186,13 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
       // a
       Eigen::VectorXd q_a = q;
       joint->setPositions(q_a);
-      Eigen::Isometry3d T_a = joint->getLocalTransform();
+      Eigen::Isometry3d T_a = joint->getRelativeTransform();
 
       // b
       Eigen::VectorXd q_b = q;
       q_b(i) += q_delta;
       joint->setPositions(q_b);
-      Eigen::Isometry3d T_b = joint->getLocalTransform();
+      Eigen::Isometry3d T_b = joint->getRelativeTransform();
 
       //
       Eigen::Isometry3d Tinv_a = T_a.inverse();
@@ -237,13 +232,13 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
       // a
       Eigen::VectorXd q_a = q;
       joint->setPositions(q_a);
-      Jacobian J_a = joint->getLocalJacobian();
+      Jacobian J_a = joint->getRelativeJacobian();
 
       // b
       Eigen::VectorXd q_b = q;
       q_b(i) += q_delta;
       joint->setPositions(q_b);
-      Jacobian J_b = joint->getLocalJacobian();
+      Jacobian J_b = joint->getRelativeJacobian();
 
       //
       Jacobian dJ_dq = (J_b - J_a) / q_delta;
@@ -273,7 +268,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
     if (joint->getNumDofs() == 0)
       return;
 
-    Eigen::Isometry3d T = joint->getLocalTransform();
+    Eigen::Isometry3d T = joint->getRelativeTransform();
     EXPECT_TRUE(math::verifyTransform(T));
   }
 }
@@ -516,7 +511,7 @@ void testJointCoulombFrictionForce(double _timeStep)
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != nullptr);
-  pendulum->disableSelfCollision();
+  pendulum->disableSelfCollisionCheck();
 
   dynamics::Joint* joint0 = pendulum->getJoint("joint0");
   dynamics::Joint* joint1 = pendulum->getJoint("joint1");
@@ -635,7 +630,7 @@ SkeletonPtr createPendulum(Joint::ActuatorType actType)
   SkeletonPtr pendulum = createNLinkPendulum(1, dim, DOF_ROLL, offset);
   EXPECT_NE(pendulum, nullptr);
 
-  pendulum->disableSelfCollision();
+  pendulum->disableSelfCollisionCheck();
 
   for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i)
   {
@@ -829,7 +824,7 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
   EXPECT_TRUE(pendulum != nullptr);
-  pendulum->disableSelfCollision();
+  pendulum->disableSelfCollisionCheck();
 
   dynamics::Joint* joint0 = pendulum->getJoint("joint0");
   dynamics::Joint* joint1 = pendulum->getJoint("joint1");

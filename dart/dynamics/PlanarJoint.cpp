@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -71,7 +66,7 @@ void PlanarJoint::setAspectProperties(const AspectProperties& properties)
 {
   mAspectProperties = properties;
   Joint::notifyPositionUpdate();
-  updateLocalJacobian(true);
+  updateRelativeJacobian(true);
   Joint::incrementVersion();
 }
 
@@ -192,7 +187,7 @@ const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 }
 
 //==============================================================================
-const Eigen::Matrix<double, 6, 3> PlanarJoint::getLocalJacobianStatic(
+Eigen::Matrix<double, 6, 3> PlanarJoint::getRelativeJacobianStatic(
     const Eigen::Vector3d& _positions) const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
@@ -269,7 +264,7 @@ void PlanarJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void PlanarJoint::updateLocalTransform() const
+void PlanarJoint::updateRelativeTransform() const
 {
   const Eigen::Vector3d& positions = getPositionsStatic();
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
@@ -283,20 +278,20 @@ void PlanarJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void PlanarJoint::updateLocalJacobian(bool) const
+void PlanarJoint::updateRelativeJacobian(bool) const
 {
-  mJacobian = getLocalJacobianStatic(getPositionsStatic());
+  mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void PlanarJoint::updateLocalJacobianTimeDeriv() const
+void PlanarJoint::updateRelativeJacobianTimeDeriv() const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
   J.block<3, 1>(3, 0) = mAspectProperties.mTransAxis1;
   J.block<3, 1>(3, 1) = mAspectProperties.mTransAxis2;
   J.block<3, 1>(0, 2) = mAspectProperties.mRotAxis;
 
-  const Eigen::Matrix<double, 6, 3>& Jacobian = getLocalJacobianStatic();
+  const Eigen::Matrix<double, 6, 3>& Jacobian = getRelativeJacobianStatic();
   const Eigen::Vector3d& velocities = getVelocitiesStatic();
   mJacobianDeriv.col(0)
       = -math::ad(Jacobian.col(2) * velocities[2],

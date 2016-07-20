@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -1228,11 +1223,11 @@ TEST(Skeleton, Updating)
   Joint* joint0 = skeleton->getJoint(0);
   Joint* joint1 = skeleton->getJoint(1);
 
-  math::Jacobian J0i = joint0->getLocalJacobian();
+  math::Jacobian J0i = joint0->getRelativeJacobian();
   joint0->get<RevoluteJoint::Aspect>()->setProperties(
         joint1->get<RevoluteJoint::Aspect>()->getProperties());
 
-  math::Jacobian J0f = joint0->getLocalJacobian();
+  math::Jacobian J0f = joint0->getRelativeJacobian();
   EXPECT_FALSE(equals(J0i, J0f));
 
   // PrismaticJoint
@@ -1241,10 +1236,10 @@ TEST(Skeleton, Updating)
   joint0 = skeleton->getJoint(0);
   joint1 = skeleton->getJoint(1);
 
-  J0i = joint0->getLocalJacobian();
+  J0i = joint0->getRelativeJacobian();
   joint0->get<PrismaticJoint::Aspect>()->setProperties(
         joint1->get<PrismaticJoint::Aspect>()->getProperties());
-  J0f = joint0->getLocalJacobian();
+  J0f = joint0->getRelativeJacobian();
   EXPECT_FALSE(equals(J0i, J0f));
 
   skeleton = Skeleton::create();
@@ -1253,15 +1248,25 @@ TEST(Skeleton, Updating)
   screw->setAxis(Eigen::Vector3d::UnitX());
   screw->setPitch(2);
 
-  J0i = screw->getLocalJacobian();
+  J0i = screw->getRelativeJacobian();
   screw->setAxis(Eigen::Vector3d::UnitY());
-  J0f = screw->getLocalJacobian();
+  J0f = screw->getRelativeJacobian();
   EXPECT_FALSE(equals(J0i, J0f));
 
   J0i = J0f;
   screw->setPitch(3);
-  J0f = screw->getLocalJacobian();
+  J0f = screw->getRelativeJacobian();
   EXPECT_FALSE(equals(J0i, J0f));
+
+  // Regression test for Pull Request #731
+  const double originalMass = skeleton->getMass();
+  BodyNode* lastBn = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1);
+  const double removedMass = lastBn->getMass();
+  EXPECT_FALSE(removedMass == 0.0);
+  lastBn->remove();
+  const double newMass = skeleton->getMass();
+  EXPECT_FALSE(originalMass == newMass);
+  EXPECT_TRUE(newMass == originalMass - removedMass);
 }
 
 int main(int argc, char* argv[])

@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -94,7 +89,7 @@ void Composite::set(std::unique_ptr<T>&& aspect)
 template <class T, typename ...Args>
 T* Composite::createAspect(Args&&... args)
 {
-  T* aspect = new T(this, std::forward<Args>(args)...);
+  T* aspect = new T(std::forward<Args>(args)...);
   mAspectMap[typeid(T)] = std::unique_ptr<T>(aspect);
   addToComposite(aspect);
 
@@ -207,7 +202,7 @@ void createAspects(T* comp)
     return this->template createAspect<TypeName>(std::forward<Args>(args)...);\
   }\
 \
-  inline void erase ## AspectName ()\
+  inline void remove ## AspectName ()\
   {\
     this->template removeAspect<TypeName>();\
   }\

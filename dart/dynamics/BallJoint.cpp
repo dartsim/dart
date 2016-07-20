@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -117,7 +112,7 @@ Joint* BallJoint::clone() const
 }
 
 //==============================================================================
-const Eigen::Matrix<double, 6, 3> BallJoint::getLocalJacobianStatic(
+Eigen::Matrix<double, 6, 3> BallJoint::getRelativeJacobianStatic(
     const Eigen::Vector3d& /*positions*/) const
 {
   return mJacobian;
@@ -154,7 +149,7 @@ void BallJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void BallJoint::updateLocalTransform() const
+void BallJoint::updateRelativeTransform() const
 {
   mR.linear() = convertToRotation(getPositionsStatic());
 
@@ -165,7 +160,7 @@ void BallJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void BallJoint::updateLocalJacobian(bool _mandatory) const
+void BallJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if (_mandatory)
   {
@@ -175,7 +170,7 @@ void BallJoint::updateLocalJacobian(bool _mandatory) const
 }
 
 //==============================================================================
-void BallJoint::updateLocalJacobianTimeDeriv() const
+void BallJoint::updateRelativeJacobianTimeDeriv() const
 {
   assert(Eigen::Matrix6d::Zero().leftCols<3>() == mJacobianDeriv);
 }
@@ -185,7 +180,7 @@ const Eigen::Isometry3d& BallJoint::getR() const
 {
   if(mNeedTransformUpdate)
   {
-    updateLocalTransform();
+    updateRelativeTransform();
     mNeedTransformUpdate = false;
   }
 

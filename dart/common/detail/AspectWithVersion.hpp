@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2016, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -64,17 +59,16 @@ public:
   using AspectImplementation = AspectWithState<
       Base, Derived, StateData, CompositeT, updateState>;
 
-  AspectWithState() = delete;
   AspectWithState(const AspectWithState&) = delete;
 
   /// Construct using a StateData instance
-  AspectWithState(Composite* comp, const StateData& state = StateData());
+  AspectWithState(const StateData& state = StateData());
 
   /// Construct this Aspect and pass args into the constructor of the Base class
   template <typename... BaseArgs>
-  AspectWithState(Composite* comp, const StateData& state,
+  AspectWithState(const StateData& state,
                  BaseArgs&&... args)
-    : Base(comp, std::forward<BaseArgs>(args)...),
+    : Base(std::forward<BaseArgs>(args)...),
       mState(state)
   {
     // Do nothing
@@ -93,8 +87,7 @@ public:
   const State& getState() const;
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect(
-      Composite* newComposite) const override;
+  std::unique_ptr<Aspect> cloneAspect() const override;
 
 protected:
 
@@ -127,13 +120,13 @@ public:
 
   /// Construct using a PropertiesData instance
   AspectWithVersionedProperties(
-      Composite* comp, const PropertiesData& properties = PropertiesData());
+      const PropertiesData& properties = PropertiesData());
 
   /// Construct this Aspect and pass args into the constructor of the Base class
   template <typename... BaseArgs>
   AspectWithVersionedProperties(
-      Composite* comp, const PropertiesData& properties, BaseArgs&&... args)
-    : Base(comp, std::forward<BaseArgs>(args)...),
+      const PropertiesData& properties, BaseArgs&&... args)
+    : Base(std::forward<BaseArgs>(args)...),
       mProperties(properties)
   {
     // Do nothing
@@ -152,8 +145,7 @@ public:
   const Properties& getProperties() const;
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect(
-      Composite* newComposite) const override;
+  std::unique_ptr<Aspect> cloneAspect() const override;
 
   /// Increment the version of this Aspect and its Composite
   std::size_t incrementVersion();
@@ -185,8 +177,8 @@ constexpr void (*AspectWithState<
 template <class BaseT, class DerivedT, typename StateDataT,
           class CompositeT, void (*updateState)(DerivedT*)>
 AspectWithState<BaseT, DerivedT, StateDataT, CompositeT, updateState>::
-AspectWithState(Composite* comp, const StateDataT& state)
-  : BaseT(comp),
+AspectWithState(const StateDataT& state)
+  : BaseT(),
     mState(state)
 {
   // Do nothing
@@ -235,9 +227,9 @@ template <class BaseT, class DerivedT, typename StateData,
           class CompositeT, void (*updateState)(DerivedT*)>
 std::unique_ptr<Aspect>
 AspectWithState<BaseT, DerivedT, StateData, CompositeT, updateState>::
-    cloneAspect(Composite* newComposite) const
+    cloneAspect() const
 {
-  return common::make_unique<Derived>(newComposite, mState);
+  return common::make_unique<Derived>(mState);
 }
 
 //==============================================================================
@@ -258,9 +250,8 @@ template <class BaseT, class DerivedT, typename PropertiesDataT,
           class CompositeT, void (*updateProperties)(DerivedT*)>
 AspectWithVersionedProperties<BaseT, DerivedT, PropertiesDataT,
                              CompositeT, updateProperties>::
-AspectWithVersionedProperties(
-    Composite* comp, const PropertiesData& properties)
-  : BaseT(comp),
+AspectWithVersionedProperties(const PropertiesData& properties)
+  : BaseT(),
     mProperties(properties)
 {
   // Do nothing
@@ -314,9 +305,9 @@ template <class BaseT, class DerivedT, typename PropertiesData,
 std::unique_ptr<Aspect>
 AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
                              CompositeT, updateProperties>::
-cloneAspect(Composite* newComposite) const
+cloneAspect() const
 {
-  return common::make_unique<Derived>(newComposite, mProperties);
+  return common::make_unique<Derived>(mProperties);
 }
 
 //==============================================================================

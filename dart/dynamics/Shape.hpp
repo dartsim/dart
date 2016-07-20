@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -42,18 +36,19 @@
 
 #include <Eigen/Dense>
 
-#include "dart/math/Geometry.hpp"
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/Subject.hpp"
+#include "dart/math/Geometry.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
 namespace dynamics {
-/// \brief
+
 class Shape : public virtual common::Subject
 {
 public:
-  // TODO(JS): We should not use ShapeType because this is not extendable.
-  /// \brief
+
+  /// \deprecated Deprecated in 6.1. Please use getType() instead.
   enum ShapeType {
     BOX,
     ELLIPSOID,
@@ -82,6 +77,9 @@ public:
   /// \brief Destructor
   virtual ~Shape();
 
+  /// Returns a string representing the shape type
+  virtual const std::string& getType() const = 0;
+
   /// \brief Get the bounding box of the shape in its local coordinate frame.
   ///        The dimension will be automatically determined by the sub-classes
   ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
@@ -102,7 +100,8 @@ public:
   /// \brief
   int getID() const;
 
-  /// \brief
+  /// \deprecated Deprecated in 6.1. Please use getType() instead.
+  DART_DEPRECATED(6.1)
   ShapeType getShapeType() const;
 
   /// Set the data variance of this shape. Use the DataVariance to indicate what
@@ -155,7 +154,8 @@ protected:
 
 private:
 
-  /// \brief Type of primitive
+  /// \deprecated Deprecated in 6.1. Please use getType() instead.
+  /// \brief Type of primitive shpae
   ShapeType mType;
 
 };

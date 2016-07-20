@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -44,6 +39,7 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/lcpsolver/lcp.h"
 
@@ -104,8 +100,8 @@ SoftContactConstraint::SoftContactConstraint(
   // Select colling point mass based on trimesh ID
   if (mSoftBodyNode1)
   {
-    if (contact.collisionObject1->getShape()->getShapeType()
-        == dynamics::Shape::SOFT_MESH)
+    if (contact.collisionObject1->getShape()->getType()
+        == dynamics::SoftMeshShape::getStaticType())
     {
       mPointMass1 = selectCollidingPointMass(mSoftBodyNode1, contact.point,
                                              contact.triID1);
@@ -114,8 +110,8 @@ SoftContactConstraint::SoftContactConstraint(
   }
   if (mSoftBodyNode2)
   {
-    if (contact.collisionObject2->getShape()->getShapeType()
-        == dynamics::Shape::SOFT_MESH)
+    if (contact.collisionObject2->getShape()->getType()
+        == dynamics::SoftMeshShape::getStaticType())
     {
       mPointMass2 = selectCollidingPointMass(mSoftBodyNode2, contact.point,
                                              contact.triID2);

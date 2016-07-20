@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -214,7 +208,7 @@ public:
   void setProperties(const AspectProperties& properties);
 
   /// Get the Properties of this Skeleton
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const AspectProperties& getSkeletonProperties() const;
 
   /// Set the AspectProperties of this Skeleton
@@ -226,17 +220,46 @@ public:
   /// Get name.
   const std::string& getName() const override;
 
-  /// Enable self collision check
-  void enableSelfCollision(bool _enableAdjacentBodyCheck = false);
+  /// Deprecated. Please use enableSelfCollisionCheck() and
+  /// setAdjacentBodyCheck() instead.
+  DART_DEPRECATED(6.0)
+  void enableSelfCollision(bool enableAdjacentBodyCheck = false);
 
-  /// Disable self collision check
+  /// Deprecated. Please use disableSelfCollisionCheck() instead.
+  DART_DEPRECATED(6.0)
   void disableSelfCollision();
 
-  /// Return true if self collision check is enabled
+  /// Set whether to check self-collision.
+  void setSelfCollisionCheck(bool enable);
+
+  /// Return whether self-collision check is enabled.
+  bool getSelfCollisionCheck() const;
+
+  /// Enable self-collision check.
+  void enableSelfCollisionCheck();
+
+  /// Disable self-collision check.
+  void disableSelfCollisionCheck();
+
+  /// Return true if self-collision check is enabled
   bool isEnabledSelfCollisionCheck() const;
 
-  /// Return true if self collision check is enabled including adjacent
-  /// bodies
+  /// Set whether to check adjacent bodies. This option is effective only when
+  /// the self-collision check is enabled.
+  void setAdjacentBodyCheck(bool enable);
+
+  /// Return whether adjacent body check is enabled.
+  bool getAdjacentBodyCheck() const;
+
+  /// Enable collision check for adjacent bodies. This option is effective only
+  /// when the self-collision check is enabled.
+  void enableAdjacentBodyCheck();
+
+  /// Disable collision check for adjacent bodies. This option is effective only
+  /// when the self-collision check is enabled.
+  void disableAdjacentBodyCheck();
+
+  /// Return true if self-collision check is enabled including adjacent bodies.
   bool isEnabledAdjacentBodyCheck() const;
 
   /// Set whether this skeleton will be updated by forward dynamics.
@@ -803,7 +826,7 @@ public:
   double getPotentialEnergy() const override;
 
   // Documentation inherited
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void clearCollidingBodies() override;
 
   /// \}

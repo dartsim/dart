@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -130,7 +125,7 @@ void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
     updateDegreeOfFreedomNames();
 
   Joint::notifyPositionUpdate();
-  updateLocalJacobian(true);
+  updateRelativeJacobian(true);
   Joint::incrementVersion();
 }
 
@@ -181,7 +176,7 @@ Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d& _positions)
 }
 
 //==============================================================================
-const Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
+Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
     const Eigen::Vector3d& _positions) const
 {
   Eigen::Matrix<double, 6, 3> J;
@@ -337,7 +332,7 @@ void EulerJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void EulerJoint::updateLocalTransform() const
+void EulerJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint * convertToTransform(getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
@@ -346,13 +341,13 @@ void EulerJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void EulerJoint::updateLocalJacobian(bool) const
+void EulerJoint::updateRelativeJacobian(bool) const
 {
-  mJacobian = getLocalJacobianStatic(getPositionsStatic());
+  mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void EulerJoint::updateLocalJacobianTimeDeriv() const
+void EulerJoint::updateRelativeJacobianTimeDeriv() const
 {
   // double q0 = mPositions[0];
   const Eigen::Vector3d& positions = getPositionsStatic();

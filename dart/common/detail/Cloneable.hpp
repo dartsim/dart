@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -426,14 +421,14 @@ CloneableMap<MapType>& CloneableMap<MapType>::operator=(
 
 //==============================================================================
 template <typename MapType>
-void CloneableMap<MapType>::copy(const CloneableMap& otherMap)
+void CloneableMap<MapType>::copy(const CloneableMap& otherMap, bool merge)
 {
-  copy(otherMap.getMap());
+  copy(otherMap.getMap(), merge);
 }
 
 //==============================================================================
 template <typename MapType>
-void CloneableMap<MapType>::copy(const MapType& otherMap)
+void CloneableMap<MapType>::copy(const MapType& otherMap, bool merge)
 {
   typename MapType::iterator receiver = mMap.begin();
   typename MapType::const_iterator sender = otherMap.begin();
@@ -449,34 +444,69 @@ void CloneableMap<MapType>::copy(const MapType& otherMap)
     }
     else if( receiver->first == sender->first )
     {
-      // We should copy the incoming object when possible so we can avoid the
-      // memory allocation overhead of cloning.
-      if(receiver->second)
-        receiver->second->copy(*sender->second);
-      else
-        receiver->second = sender->second->clone();
+      if(sender->second)
+      {
+        // If the sender has an object, we should copy it.
+        if(receiver->second)
+          // We should copy instead of cloning the incoming object when possible
+          // so we can avoid the memory allocation overhead of cloning.
+          receiver->second->copy(*sender->second);
+        else
+          receiver->second = sender->second->clone();
+      }
+      else if(!merge)
+      {
+        // If the sender has no object, we should clear this one.
+        receiver->second = nullptr;
+      }
 
       ++receiver;
       ++sender;
     }
     else if( receiver->first < sender->first )
     {
-      // Clear this entry in the map, because it does not have an analog in the
-      // map that we are copying
-      receiver->second = nullptr;
+      if(!merge)
+      {
+        // Clear this entry in the map, because it does not have an analog in
+        // the map that we are copying
+        receiver->second = nullptr;
+      }
       ++receiver;
     }
     else
     {
-      mMap[sender->first] = sender->second->clone();
+      if(sender->second)
+      {
+        // If receiver has a higher value, then the receiving map does not
+        // contain an entry for this entry of the sending map, and therefore the
+        // entry must be created.
+        mMap[sender->first] = sender->second->clone();
+      }
       ++sender;
     }
   }
 
-  while( mMap.end() != receiver )
+  if(!merge)
   {
-    mMap.erase(receiver++);
+    while( mMap.end() != receiver )
+    {
+      mMap.erase(receiver++);
+    }
   }
+}
+
+//==============================================================================
+template <typename MapType>
+void CloneableMap<MapType>::merge(const CloneableMap& otherMap)
+{
+  copy(otherMap, true);
+}
+
+//==============================================================================
+template <typename MapType>
+void CloneableMap<MapType>::merge(const MapType& otherMap)
+{
+  copy(otherMap, true);
 }
 
 //==============================================================================

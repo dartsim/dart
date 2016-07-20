@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2016, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -98,29 +93,26 @@ public:
 
   /// Construct using a StateData and a PropertiesData instance
   AspectWithStateAndVersionedProperties(
-      common::Composite* comp,
       const StateData& state = StateData(),
       const PropertiesData& properties = PropertiesData())
-    : AspectPropertiesImpl(comp, properties, state)
+    : AspectPropertiesImpl(properties, state)
   {
     // Do nothing
   }
 
   /// Construct using a PropertiesData and a StateData instance
   AspectWithStateAndVersionedProperties(
-      common::Composite* comp,
       const PropertiesData& properties,
       const StateData& state = StateData())
-    : AspectPropertiesImpl(comp, properties, state)
+    : AspectPropertiesImpl(properties, state)
   {
     // Do nothing
   }
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<Derived>(
-          newComposite, this->getState(), this->getProperties());
+    return make_unique<Derived>(this->getState(), this->getProperties());
   }
 
 };

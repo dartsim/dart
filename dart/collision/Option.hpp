@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2016, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -47,26 +42,27 @@ class CollisionFilter;
 
 struct CollisionOption
 {
-  /// Flag whether compute contact information such as point, normal, and
-  /// penetration depth. If this flag is set to false, the Engine returns only
-  /// simple information whether there is a collision of not.
+
+  /// Flag whether the collision detector computes contact information (contact
+  /// point, normal, and penetration depth). If it is set to false, only the
+  /// result of that which pairs are colliding will be stored in the
+  /// CollisionResult without the contact information.
   bool enableContact;
 
-  /// If true, the collision checking will terminate as soon as the first
-  /// contact is found.
-  bool binaryCheck;
-
-  /// Maximum number of contacts to detect
+  /// Maximum number of contacts to detect. Once the contacts are found up to
+  /// this number, the collision checking will terminate at that moment. Set
+  /// this to 1 for binary check.
   std::size_t maxNumContacts;
 
   /// CollisionFilter
   std::shared_ptr<CollisionFilter> collisionFilter;
 
   /// Constructor
-  CollisionOption(bool enableContact = true,
-         bool binaryCheck = false,
-         std::size_t maxNumContacts = 100,
-         const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
+  CollisionOption(
+      bool enableContact = true,
+      std::size_t maxNumContacts = 1000u,
+      const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
+
 };
 
 }  // namespace collision

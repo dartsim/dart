@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -47,9 +42,8 @@ namespace common {
 
 //==============================================================================
 template <class CompositeType>
-CompositeTrackingAspect<CompositeType>::CompositeTrackingAspect(Composite* comp)
-  : Aspect(comp),
-    mComposite(nullptr) // This will be set later when the Composite calls setComposite
+CompositeTrackingAspect<CompositeType>::CompositeTrackingAspect()
+  : mComposite(nullptr) // This will be set later when the Composite calls setComposite
 {
   // Do nothing
 }
@@ -82,15 +76,9 @@ void CompositeTrackingAspect<CompositeType>::setComposite(Composite* newComposit
   assert(nullptr == mComposite);
 
   mComposite = dynamic_cast<CompositeType*>(newComposite);
-  if(nullptr == mComposite)
-  {
-    dterr << "[" << typeid(*this).name() << "::setComposite] Attempting to use a "
-          << "[" << typeid(newComposite).name() << "] type composite, but this "
-          << "Aspect is only designed to be attached to a ["
-          << typeid(CompositeType).name() << "] type composite. This may cause "
-          << "undefined behavior!\n";
-    assert(false);
-  }
+  // Note: Derived classes should be responsible for handling the case in which
+  // the new composite type does not match the expected type. We should not
+  // assume here that it is an error.
 }
 
 //==============================================================================

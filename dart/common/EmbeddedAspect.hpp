@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2016, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -316,63 +311,56 @@ public:
 
   using CompositeType = CompositeT;
 
-  EmbeddedStateAndPropertiesAspect() = delete;
   EmbeddedStateAndPropertiesAspect(
       const EmbeddedStateAndPropertiesAspect&) = delete;
 
   virtual ~EmbeddedStateAndPropertiesAspect() = default;
 
   /// Construct using nothing. The object will remain unaffected.
-  EmbeddedStateAndPropertiesAspect(
-      common::Composite* comp)
-    : AspectPropertiesImpl(comp)
+  EmbeddedStateAndPropertiesAspect()
+    : AspectPropertiesImpl()
   {
     // Do nothing
   }
 
   /// Construct using a State. The object's Properties will remain unaffected.
   EmbeddedStateAndPropertiesAspect(
-      common::Composite* comp,
       const StateData& state)
-    : AspectPropertiesImpl(comp, state)
+    : AspectPropertiesImpl(state)
   {
     // Do nothing
   }
 
   /// Construct using Properties. The object's State will remain unaffected.
   EmbeddedStateAndPropertiesAspect(
-      common::Composite* comp,
       const PropertiesData& properties)
-    : AspectPropertiesImpl(comp, properties)
+    : AspectPropertiesImpl(properties)
   {
     // Do nothing
   }
 
   /// Construct using a State and Properties instance
   EmbeddedStateAndPropertiesAspect(
-      common::Composite* comp,
       const StateData& state,
       const PropertiesData& properties)
-    : AspectPropertiesImpl(comp, properties, state)
+    : AspectPropertiesImpl(properties, state)
   {
     // Do nothing
   }
 
   /// Construct using a Properties and State instance
   EmbeddedStateAndPropertiesAspect(
-      common::Composite* comp,
       const PropertiesData& properties,
       const StateData& state)
-    : AspectPropertiesImpl(comp, properties, state)
+    : AspectPropertiesImpl(properties, state)
   {
     // Do nothing
   }
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<Derived>(
-          newComposite, this->getState(), this->getProperties());
+    return make_unique<Derived>(this->getState(), this->getProperties());
   }
 
 };

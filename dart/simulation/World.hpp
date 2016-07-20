@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -52,9 +47,10 @@
 #include "dart/common/Timer.hpp"
 #include "dart/common/NameManager.hpp"
 #include "dart/common/Subject.hpp"
-#include "dart/simulation/Recording.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/collision/Option.hpp"
+#include "dart/simulation/Recording.hpp"
 
 namespace dart {
 
@@ -172,12 +168,27 @@ public:
   std::set<dynamics::SimpleFramePtr> removeAllSimpleFrames();
 
   //--------------------------------------------------------------------------
-  // Kinematics
+  // Collision checking
   //--------------------------------------------------------------------------
 
-  /// Return whether there is any collision between bodies
-  bool checkCollision(bool _checkAllCollisions = false);
+  /// Deprecated. Please use checkCollision(~) instead.
+  DART_DEPRECATED(6.0)
+  bool checkCollision(bool checkAllCollisions);
 
+  /// Perform collision checking with 'option' over all the feasible collision
+  /// pairs in this World, and the result will be stored 'result'. If no
+  /// argument is passed in then it will return just whether there is collision
+  /// or not without the contact information such as contact point, normal, and
+  /// penetration depth.
+  bool checkCollision(
+      const collision::CollisionOption& option
+          = collision::CollisionOption(false, 1u, nullptr),
+      collision::CollisionResult* result = nullptr);
+
+  /// Return the collision checking result of the last simulation step. If this
+  /// world hasn't stepped forward yet, then the result would be empty. Note
+  /// that this function does not return the collision checking result of
+  /// World::checkCollision().
   const collision::CollisionResult& getLastCollisionResult() const;
 
   //--------------------------------------------------------------------------

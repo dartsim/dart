@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -39,11 +34,11 @@
 
 #include <memory>
 
+#include "dart/math/Helpers.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/BodyNode.hpp"
-#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace collision {
@@ -1255,82 +1250,73 @@ int collideCylinderPlane(CollisionObject* o1, CollisionObject* o2, const double&
 //==============================================================================
 int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 {
-  const dynamics::ConstShapePtr& shape0 = o1->getShape();
-  const dynamics::ConstShapePtr& shape1 = o2->getShape();
-  const Eigen::Isometry3d& T0 = o1->getTransform();
-  const Eigen::Isometry3d& T1 = o2->getTransform();
+  // TODO(JS): We could make the contact point computation as optional for
+  // the case that we want only binary check.
 
-  dynamics::Shape::ShapeType LeftType = shape0->getShapeType();
-  dynamics::Shape::ShapeType RightType = shape1->getShapeType();
+  const auto& shape1 = o1->getShape();
+  const auto& shape2 = o2->getShape();
 
-  switch(LeftType)
+  const auto& shapeType1 = shape1->getType();
+  const auto& shapeType2 = shape2->getType();
+
+  const Eigen::Isometry3d& T1 = o1->getTransform();
+  const Eigen::Isometry3d& T2 = o2->getTransform();
+
+  if (dynamics::BoxShape::getStaticType() == shapeType1)
   {
-    case dynamics::Shape::BOX:
+    const auto* box0 = static_cast<const dynamics::BoxShape*>(shape1.get());
+
+    if (dynamics::BoxShape::getStaticType() == shapeType2)
     {
-      const dynamics::BoxShape* box0 = static_cast<const dynamics::BoxShape*>(shape0.get());
+      const auto* box1
+          = static_cast<const dynamics::BoxShape*>(shape2.get());
 
-      switch(RightType)
-      {
-        case dynamics::Shape::BOX:
-        {
-          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(shape1.get());
-          return collideBoxBox(o1, o2,
-                               box0->getSize(), T0,
-                               box1->getSize(), T1, result);
-        }
-        case dynamics::Shape::ELLIPSOID:
-        {
-          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
-          return collideBoxSphere(o1, o2,
-                                  box0->getSize(), T0,
-                                  ellipsoid1->getSize()[0] * 0.5, T1,
-              result);
-        }
-        default:
-        {
-          return false;
-
-          break;
-        }
-      }
-
-      break;
+      return collideBoxBox(o1, o2,
+                           box0->getSize(), T1,
+                           box1->getSize(), T2,
+                           result);
     }
-    case dynamics::Shape::ELLIPSOID:
+    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
     {
-      const dynamics::EllipsoidShape* ellipsoid0 = static_cast<const dynamics::EllipsoidShape*>(shape0.get());
+      const auto* ellipsoid1
+          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
 
-      switch(RightType)
-      {
-        case dynamics::Shape::BOX:
-        {
-          const dynamics::BoxShape* box1 = static_cast<const dynamics::BoxShape*>(shape1.get());
-          return collideSphereBox(o1, o2,
-                                  ellipsoid0->getSize()[0] * 0.5, T0,
-                                  box1->getSize(), T1,
-                                  result);
-        }
-        case dynamics::Shape::ELLIPSOID:
-        {
-          const dynamics::EllipsoidShape* ellipsoid1 = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
-          return collideSphereSphere(o1, o2,
-                                     ellipsoid0->getSize()[0] * 0.5, T0,
-                                     ellipsoid1->getSize()[0] * 0.5, T1,
-                                     result);
-        }
-        default:
-          return false;
-
-          break;
-      }
-
-      break;
+      return collideBoxSphere(o1, o2,
+                              box0->getSize(), T1,
+                              ellipsoid1->getSize()[0] * 0.5, T2,
+                              result);
     }
-    default:
-      return false;
-
-      break;
   }
+  else if (dynamics::EllipsoidShape::getStaticType() == shapeType1)
+  {
+    const auto* ellipsoid0
+        = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
+
+    if (dynamics::BoxShape::getStaticType() == shapeType2)
+    {
+      const auto* box1
+          = static_cast<const dynamics::BoxShape*>(shape2.get());
+
+      return collideSphereBox(o1, o2,
+                              ellipsoid0->getSize()[0] * 0.5, T1,
+                              box1->getSize(), T2,
+                              result);
+    }
+    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
+    {
+      const auto* ellipsoid1
+          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+
+      return collideSphereSphere(o1, o2,
+                                 ellipsoid0->getSize()[0] * 0.5, T1,
+                                 ellipsoid1->getSize()[0] * 0.5, T2,
+                                 result);
+    }
+  }
+
+  dterr << "[DARTCollisionDetector] Attempting to check for an "
+        << "unsupported shape pair: [" << shape1->getType()
+        << "] - [" << shape2->getType() << "]. Returning false.\n";
 
   return false;
 }

@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -129,7 +124,7 @@ void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
 
   mAspectProperties.mAxis = _axis.normalized();
   Joint::notifyPositionUpdate();
-  updateLocalJacobian();
+  updateRelativeJacobian();
   Joint::incrementVersion();
 }
 
@@ -140,8 +135,8 @@ const Eigen::Vector3d& PrismaticJoint::getAxis() const
 }
 
 //==============================================================================
-const GeometricJoint<math::R1Space>::JacobianMatrix
-PrismaticJoint::getLocalJacobianStatic(
+GeometricJoint<math::R1Space>::JacobianMatrix
+PrismaticJoint::getRelativeJacobianStatic(
     const GeometricJoint<math::R1Space>::Vector& /*positions*/) const
 {
   GeometricJoint<math::R1Space>::JacobianMatrix jacobian
@@ -180,7 +175,7 @@ void PrismaticJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void PrismaticJoint::updateLocalTransform() const
+void PrismaticJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(getAxis() * getPositionsStatic())
@@ -191,14 +186,14 @@ void PrismaticJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void PrismaticJoint::updateLocalJacobian(bool _mandatory) const
+void PrismaticJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if(_mandatory)
-    mJacobian = getLocalJacobianStatic(getPositionsStatic());
+    mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void PrismaticJoint::updateLocalJacobianTimeDeriv() const
+void PrismaticJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of prismatic joint is always zero
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());

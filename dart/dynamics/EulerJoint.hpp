@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -147,7 +142,7 @@ public:
   Eigen::Matrix3d convertToRotation(const Eigen::Vector3d& _positions) const;
 
   // Documentation inherited
-  const Eigen::Matrix<double, 6, 3> getLocalJacobianStatic(
+  Eigen::Matrix<double, 6, 3> getRelativeJacobianStatic(
       const Eigen::Vector3d& _positions) const override;
 
 protected:
@@ -158,20 +153,20 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using Base::getLocalJacobianStatic;
+  using Base::getRelativeJacobianStatic;
 
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when axis order is changed.
   void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited
-  void updateLocalTransform() const override;
+  void updateRelativeTransform() const override;
 
   // Documentation inherited
-  void updateLocalJacobian(bool =true) const override;
+  void updateRelativeJacobian(bool =true) const override;
 
   // Documentation inherited
-  void updateLocalJacobianTimeDeriv() const override;
+  void updateRelativeJacobianTimeDeriv() const override;
 
 public:
   // To get byte-aligned Eigen vectors

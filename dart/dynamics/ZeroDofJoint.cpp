@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -592,20 +587,20 @@ Eigen::Vector6d ZeroDofJoint::getBodyConstraintWrench() const
 }
 
 //==============================================================================
-const math::Jacobian ZeroDofJoint::getLocalJacobian() const
+const math::Jacobian ZeroDofJoint::getRelativeJacobian() const
 {
   return Eigen::Matrix<double, 6, 0>();
 }
 
 //==============================================================================
-const math::Jacobian ZeroDofJoint::getLocalJacobian(
+math::Jacobian ZeroDofJoint::getRelativeJacobian(
     const Eigen::VectorXd& /*_positions*/) const
 {
   return Eigen::Matrix<double, 6, 0>();
 }
 
 //==============================================================================
-const math::Jacobian ZeroDofJoint::getLocalJacobianTimeDeriv() const
+const math::Jacobian ZeroDofJoint::getRelativeJacobianTimeDeriv() const
 {
   return Eigen::Matrix<double, 6, 0>();
 }
@@ -643,7 +638,7 @@ void ZeroDofJoint::addChildArtInertiaTo(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(),
+  _parentArtInertia += math::transformInertia(getRelativeTransform().inverse(),
                                               _childArtInertia);
 }
 
@@ -653,7 +648,7 @@ void ZeroDofJoint::addChildArtInertiaImplicitTo(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(),
+  _parentArtInertia += math::transformInertia(getRelativeTransform().inverse(),
                                               _childArtInertia);
 }
 
@@ -681,7 +676,7 @@ void ZeroDofJoint::addChildBiasForceTo(
 {
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(getLocalTransform(), _childBiasForce
+  _parentBiasForce += math::dAdInvT(getRelativeTransform(), _childBiasForce
                                     + _childArtInertia*_childPartialAcc);
 }
 
@@ -693,7 +688,7 @@ void ZeroDofJoint::addChildBiasImpulseTo(
 {
   // Add child body's bias force to parent body's bias impulse. Note that mT
   // should be updated.
-  _parentBiasImpulse += math::dAdInvT(getLocalTransform(), _childBiasImpulse);
+  _parentBiasImpulse += math::dAdInvT(getRelativeTransform(), _childBiasImpulse);
 }
 
 //==============================================================================

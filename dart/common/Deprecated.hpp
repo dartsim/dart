@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -46,14 +41,14 @@
 //==============================================================================
 
 #if defined(__GNUC__) || defined(__clang__)
-  #define DEPRECATED(version) __attribute__ ((deprecated))
-  #define FORCEINLINE __attribute__((always_inline))
+  #define DART_DEPRECATED(version) __attribute__ ((deprecated))
+  #define DART_FORCEINLINE __attribute__((always_inline))
 #elif defined(_MSC_VER)
-  #define DEPRECATED(version) __declspec(deprecated)
-  #define FORCEINLINE __forceinline
+  #define DART_DEPRECATED(version) __declspec(deprecated)
+  #define DART_FORCEINLINE __DART_FORCEINLINE
 #else
-  #define DEPRECATED(version) ()
-  #define FORCEINLINE
+  #define DART_DEPRECATED(version) ()
+  #define DART_FORCEINLINE
 #endif
 
 // We define two convenient macros that can be used to suppress

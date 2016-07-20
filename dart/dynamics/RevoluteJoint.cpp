@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -130,7 +125,7 @@ void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
 
   mAspectProperties.mAxis = _axis.normalized();
   Joint::notifyPositionUpdate();
-  updateLocalJacobian();
+  updateRelativeJacobian();
   Joint::incrementVersion();
 }
 
@@ -141,8 +136,8 @@ const Eigen::Vector3d& RevoluteJoint::getAxis() const
 }
 
 //==============================================================================
-const GeometricJoint<math::R1Space>::JacobianMatrix
-RevoluteJoint::getLocalJacobianStatic(
+GeometricJoint<math::R1Space>::JacobianMatrix
+RevoluteJoint::getRelativeJacobianStatic(
     const GeometricJoint<math::R1Space>::Vector& /*positions*/) const
 {
   GeometricJoint<math::R1Space>::JacobianMatrix jacobian
@@ -181,7 +176,7 @@ void RevoluteJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void RevoluteJoint::updateLocalTransform() const
+void RevoluteJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * math::expAngular(getAxis() * getPositionsStatic())
@@ -192,14 +187,14 @@ void RevoluteJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void RevoluteJoint::updateLocalJacobian(bool _mandatory) const
+void RevoluteJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if(_mandatory)
-    mJacobian = getLocalJacobianStatic(getPositionsStatic());
+    mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void RevoluteJoint::updateLocalJacobianTimeDeriv() const
+void RevoluteJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of revolute joint is always zero
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());

@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2016, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -63,8 +58,7 @@ public:
       VisualAspect, detail::VisualAspectProperties, ShapeFrame>;
 
   /// Constructor
-  VisualAspect(common::Composite* comp,
-              const PropertiesData& properties = PropertiesData());
+  VisualAspect(const PropertiesData& properties = PropertiesData());
 
   VisualAspect(const VisualAspect&) = delete;
 
@@ -125,8 +119,7 @@ class CollisionAspect final :
 public:
 
   CollisionAspect(const CollisionAspect &) = delete;
-  CollisionAspect(dart::common::Composite* comp,
-                      const PropertiesData& properties = PropertiesData());
+  CollisionAspect(const PropertiesData& properties = PropertiesData());
 
   DART_COMMON_SET_GET_ASPECT_PROPERTY( bool, Collidable )
   // void setCollidable(const bool& value);
@@ -151,8 +144,7 @@ public:
 
   DynamicsAspect(const DynamicsAspect&) = delete;
 
-  DynamicsAspect(dart::common::Composite* comp,
-                const PropertiesData& properties = PropertiesData());
+  DynamicsAspect(const PropertiesData& properties = PropertiesData());
 
   DART_COMMON_SET_GET_ASPECT_PROPERTY( double, FrictionCoeff )
   // void setFrictionCoeff(const double& value);

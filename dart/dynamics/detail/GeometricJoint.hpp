@@ -1391,20 +1391,20 @@ double GeometricJoint<ConfigSpaceT>::getPotentialEnergy() const
 //==============================================================================
 template <class ConfigSpaceT>
 const math::Jacobian
-GeometricJoint<ConfigSpaceT>::getLocalJacobian() const
+GeometricJoint<ConfigSpaceT>::getRelativeJacobian() const
 {
-  return getLocalJacobianStatic();
+  return getRelativeJacobianStatic();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
 const typename GeometricJoint<ConfigSpaceT>::JacobianMatrix&
-GeometricJoint<ConfigSpaceT>::getLocalJacobianStatic() const
+GeometricJoint<ConfigSpaceT>::getRelativeJacobianStatic() const
 {
-  if (this->mIsLocalJacobianDirty)
+  if (this->mIsRelativeJacobianDirty)
   {
-    this->updateLocalJacobian(false);
-    this->mIsLocalJacobianDirty = false;
+    this->updateRelativeJacobian(false);
+    this->mIsRelativeJacobianDirty = false;
   }
 
   return mJacobian;
@@ -1412,29 +1412,29 @@ GeometricJoint<ConfigSpaceT>::getLocalJacobianStatic() const
 
 //==============================================================================
 template <class ConfigSpaceT>
-const math::Jacobian GeometricJoint<ConfigSpaceT>::getLocalJacobian(
+math::Jacobian GeometricJoint<ConfigSpaceT>::getRelativeJacobian(
     const Eigen::VectorXd& positions) const
 {
-  return getLocalJacobianStatic(positions);
+  return getRelativeJacobianStatic(positions);
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
 const math::Jacobian
-GeometricJoint<ConfigSpaceT>::getLocalJacobianTimeDeriv() const
+GeometricJoint<ConfigSpaceT>::getRelativeJacobianTimeDeriv() const
 {
-  return getLocalJacobianTimeDerivStatic();
+  return getRelativeJacobianTimeDerivStatic();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
 const typename GeometricJoint<ConfigSpaceT>::JacobianMatrix&
-GeometricJoint<ConfigSpaceT>::getLocalJacobianTimeDerivStatic() const
+GeometricJoint<ConfigSpaceT>::getRelativeJacobianTimeDerivStatic() const
 {
-  if (this->mIsLocalJacobianTimeDerivDirty)
+  if (this->mIsRelativeJacobianTimeDerivDirty)
   {
-    this->updateLocalJacobianTimeDeriv();
-    this->mIsLocalJacobianTimeDerivDirty = false;
+    this->updateRelativeJacobianTimeDeriv();
+    this->mIsRelativeJacobianTimeDerivDirty = false;
   }
 
   return mJacobianDeriv;
@@ -1482,32 +1482,32 @@ GeometricJoint<ConfigSpaceT>::getBodyConstraintWrench() const
 {
   assert(this->mChildBodyNode);
   return this->mChildBodyNode->getBodyForce()
-      - this->getLocalJacobianStatic() * this->mAspectState.mForces;
+      - this->getRelativeJacobianStatic() * this->mAspectState.mForces;
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateLocalSpatialVelocity() const
+void GeometricJoint<ConfigSpaceT>::updateRelativeSpatialVelocity() const
 {
   this->mSpatialVelocity =
-      this->getLocalJacobianStatic() * this->getVelocitiesStatic();
+      this->getRelativeJacobianStatic() * this->getVelocitiesStatic();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateLocalSpatialAcceleration() const
+void GeometricJoint<ConfigSpaceT>::updateRelativeSpatialAcceleration() const
 {
   this->mSpatialAcceleration =
-      this->getLocalPrimaryAcceleration()
-      + this->getLocalJacobianTimeDerivStatic() * this->getVelocitiesStatic();
+      this->getRelativePrimaryAcceleration()
+      + this->getRelativeJacobianTimeDerivStatic() * this->getVelocitiesStatic();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateLocalPrimaryAcceleration() const
+void GeometricJoint<ConfigSpaceT>::updateRelativePrimaryAcceleration() const
 {
   this->mPrimaryAcceleration =
-      this->getLocalJacobianStatic() * this->getAccelerationsStatic();
+      this->getRelativeJacobianStatic() * this->getAccelerationsStatic();
 }
 
 //==============================================================================
@@ -1515,7 +1515,7 @@ template <class ConfigSpaceT>
 void GeometricJoint<ConfigSpaceT>::addVelocityTo(Eigen::Vector6d& vel)
 {
   // Add joint velocity to _vel
-  vel.noalias() += getLocalJacobianStatic() * getVelocitiesStatic();
+  vel.noalias() += getRelativeJacobianStatic() * getVelocitiesStatic();
 
   // Verification
   assert(!math::isNan(vel));
@@ -1529,8 +1529,8 @@ void GeometricJoint<ConfigSpaceT>::setPartialAccelerationTo(
 {
   // ad(V, S * dq) + dS * dq
   partialAcceleration = math::ad(childVelocity,
-                      getLocalJacobianStatic() * getVelocitiesStatic())
-                    + getLocalJacobianTimeDerivStatic() * getVelocitiesStatic();
+                      getRelativeJacobianStatic() * getVelocitiesStatic())
+                    + getRelativeJacobianTimeDerivStatic() * getVelocitiesStatic();
   // Verification
   assert(!math::isNan(partialAcceleration));
 }
@@ -1541,7 +1541,7 @@ void GeometricJoint<ConfigSpaceT>::addAccelerationTo(
     Eigen::Vector6d& acc)
 {
   // Add joint acceleration to _acc
-  acc.noalias() += getLocalJacobianStatic() * getAccelerationsStatic();
+  acc.noalias() += getRelativeJacobianStatic() * getAccelerationsStatic();
 
   // Verification
   assert(!math::isNan(acc));
@@ -1553,7 +1553,7 @@ void GeometricJoint<ConfigSpaceT>::addVelocityChangeTo(
     Eigen::Vector6d& velocityChange)
 {
   // Add joint velocity change to velocityChange
-  velocityChange.noalias() += getLocalJacobianStatic() * mVelocityChanges;
+  velocityChange.noalias() += getRelativeJacobianStatic() * mVelocityChanges;
 
   // Verification
   assert(!math::isNan(velocityChange));
@@ -1612,7 +1612,7 @@ void GeometricJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
     const Eigen::Matrix6d& childArtInertia)
 {
   // Child body's articulated inertia
-  JacobianMatrix AIS = childArtInertia * getLocalJacobianStatic();
+  JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
   Eigen::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertia * AIS.transpose();
   assert(!math::isNan(PI));
@@ -1620,7 +1620,7 @@ void GeometricJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
   parentArtInertia += math::transformInertia(
-        this->getLocalTransform().inverse(), PI);
+        this->getRelativeTransform().inverse(), PI);
 }
 
 //==============================================================================
@@ -1632,7 +1632,7 @@ void GeometricJoint<ConfigSpaceT>::addChildArtInertiaToKinematic(
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
   parentArtInertia += math::transformInertia(
-        this->getLocalTransform().inverse(), childArtInertia);
+        this->getRelativeTransform().inverse(), childArtInertia);
 }
 
 //==============================================================================
@@ -1668,7 +1668,7 @@ void GeometricJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
     const Eigen::Matrix6d& childArtInertia)
 {
   // Child body's articulated inertia
-  JacobianMatrix AIS = childArtInertia * getLocalJacobianStatic();
+  JacobianMatrix AIS = childArtInertia * getRelativeJacobianStatic();
   Eigen::Matrix6d PI = childArtInertia;
   PI.noalias() -= AIS * mInvProjArtInertiaImplicit * AIS.transpose();
   assert(!math::isNan(PI));
@@ -1676,7 +1676,7 @@ void GeometricJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
   parentArtInertia += math::transformInertia(
-        this->getLocalTransform().inverse(), PI);
+        this->getRelativeTransform().inverse(), PI);
 }
 
 //==============================================================================
@@ -1688,7 +1688,7 @@ void GeometricJoint<ConfigSpaceT>::addChildArtInertiaImplicitToKinematic(
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
   parentArtInertia += math::transformInertia(
-        this->getLocalTransform().inverse(), childArtInertia);
+        this->getRelativeTransform().inverse(), childArtInertia);
 }
 
 //==============================================================================
@@ -1720,7 +1720,7 @@ void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaDynamic(
     const Eigen::Matrix6d& artInertia)
 {
   // Projected articulated inertia
-  const JacobianMatrix& Jacobian = getLocalJacobianStatic();
+  const JacobianMatrix& Jacobian = getRelativeJacobianStatic();
   const Matrix projAI = Jacobian.transpose() * artInertia * Jacobian;
 
   // Inversion of projected articulated inertia
@@ -1770,7 +1770,7 @@ void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitDynamic(
     double timeStep)
 {
   // Projected articulated inertia
-  const JacobianMatrix& Jacobian = getLocalJacobianStatic();
+  const JacobianMatrix& Jacobian = getRelativeJacobianStatic();
   Matrix projAI = Jacobian.transpose() * artInertia * Jacobian;
 
   // Add additional inertia for implicit damping and spring force
@@ -1838,7 +1838,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceToDynamic(
       = childBiasForce
         + childArtInertia
           * (childPartialAcc
-             + getLocalJacobianStatic() * getInvProjArtInertiaImplicit()
+             + getRelativeJacobianStatic() * getInvProjArtInertiaImplicit()
                *mTotalForce);
 
   //    Eigen::Vector6d beta
@@ -1851,7 +1851,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceToDynamic(
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  parentBiasForce += math::dAdInvT(this->getLocalTransform(), beta);
+  parentBiasForce += math::dAdInvT(this->getRelativeTransform(), beta);
 }
 
 //==============================================================================
@@ -1866,7 +1866,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceToKinematic(
   const Eigen::Vector6d beta
       = childBiasForce
         + childArtInertia*(childPartialAcc
-                            + getLocalJacobianStatic()*getAccelerationsStatic());
+                            + getRelativeJacobianStatic()*getAccelerationsStatic());
 
   //    Eigen::Vector6d beta
   //        = _childBiasForce;
@@ -1878,7 +1878,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceToKinematic(
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(this->getLocalTransform(), beta);
+  _parentBiasForce += math::dAdInvT(this->getRelativeTransform(), beta);
 }
 
 //==============================================================================
@@ -1920,7 +1920,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasImpulseToDynamic(
   // Compute beta
   const Eigen::Vector6d beta
       = childBiasImpulse
-        + childArtInertia*getLocalJacobianStatic()
+        + childArtInertia*getRelativeJacobianStatic()
           *getInvProjArtInertia()*mTotalImpulse;
 
   // Verification
@@ -1928,7 +1928,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasImpulseToDynamic(
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasImpulse += math::dAdInvT(this->getLocalTransform(), beta);
+  _parentBiasImpulse += math::dAdInvT(this->getRelativeTransform(), beta);
 }
 
 //==============================================================================
@@ -1940,7 +1940,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasImpulseToKinematic(
 {
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  parentBiasImpulse += math::dAdInvT(this->getLocalTransform(), childBiasImpulse);
+  parentBiasImpulse += math::dAdInvT(this->getRelativeTransform(), childBiasImpulse);
 }
 
 //==============================================================================
@@ -2004,7 +2004,7 @@ void GeometricJoint<ConfigSpaceT>::updateTotalForceDynamic(
   mTotalForce = this->mAspectState.mForces
       + springForce
       + dampingForce
-      - getLocalJacobianStatic().transpose() * bodyForce;
+      - getRelativeJacobianStatic().transpose() * bodyForce;
 }
 
 //==============================================================================
@@ -2046,7 +2046,7 @@ void GeometricJoint<ConfigSpaceT>::updateTotalImpulseDynamic(
 {
   //
   mTotalImpulse = mConstraintImpulses
-      - getLocalJacobianStatic().transpose() * bodyImpulse;
+      - getRelativeJacobianStatic().transpose() * bodyImpulse;
 }
 
 //==============================================================================
@@ -2096,8 +2096,8 @@ void GeometricJoint<ConfigSpaceT>::updateAccelerationDynamic(
 {
   //
   setAccelerationsStatic( getInvProjArtInertiaImplicit()
-        * (mTotalForce - getLocalJacobianStatic().transpose()
-           *artInertia*math::AdInvT(this->getLocalTransform(), spatialAcc)) );
+        * (mTotalForce - getRelativeJacobianStatic().transpose()
+           *artInertia*math::AdInvT(this->getRelativeTransform(), spatialAcc)) );
 
   // Verification
   assert(!math::isNan(getAccelerationsStatic()));
@@ -2145,8 +2145,8 @@ void GeometricJoint<ConfigSpaceT>::updateVelocityChangeDynamic(
   //
   mVelocityChanges
       = getInvProjArtInertia()
-      * (mTotalImpulse - getLocalJacobianStatic().transpose()
-         *artInertia*math::AdInvT(this->getLocalTransform(), velocityChange));
+      * (mTotalImpulse - getRelativeJacobianStatic().transpose()
+         *artInertia*math::AdInvT(this->getRelativeTransform(), velocityChange));
 
   // Verification
   assert(!math::isNan(mVelocityChanges));
@@ -2169,7 +2169,7 @@ void GeometricJoint<ConfigSpaceT>::updateForceID(
     bool withDampingForces,
     bool withSpringForces)
 {
-  this->mAspectState.mForces = getLocalJacobianStatic().transpose() * bodyForce;
+  this->mAspectState.mForces = getRelativeJacobianStatic().transpose() * bodyForce;
 
   // Damping force
   if (withDampingForces)
@@ -2222,7 +2222,7 @@ template <class ConfigSpaceT>
 void GeometricJoint<ConfigSpaceT>::updateImpulseID(
     const Eigen::Vector6d& bodyImpulse)
 {
-  mImpulses = getLocalJacobianStatic().transpose()*bodyImpulse;
+  mImpulses = getRelativeJacobianStatic().transpose()*bodyImpulse;
 }
 
 //==============================================================================
@@ -2300,7 +2300,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceForInvMassMatrix(
 {
   // Compute beta
   Eigen::Vector6d beta = childBiasForce;
-  beta.noalias() += childArtInertia * getLocalJacobianStatic()
+  beta.noalias() += childArtInertia * getRelativeJacobianStatic()
                     * getInvProjArtInertia() * mInvM_a;
 
   // Verification
@@ -2308,7 +2308,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceForInvMassMatrix(
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  parentBiasForce += math::dAdInvT(this->getLocalTransform(), beta);
+  parentBiasForce += math::dAdInvT(this->getRelativeTransform(), beta);
 }
 
 //==============================================================================
@@ -2320,7 +2320,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceForInvAugMassMatrix(
 {
   // Compute beta
   Eigen::Vector6d beta = childBiasForce;
-  beta.noalias() += childArtInertia * getLocalJacobianStatic()
+  beta.noalias() += childArtInertia * getRelativeJacobianStatic()
                     * getInvProjArtInertiaImplicit() * mInvM_a;
 
   // Verification
@@ -2328,7 +2328,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceForInvAugMassMatrix(
 
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  parentBiasForce += math::dAdInvT(this->getLocalTransform(), beta);
+  parentBiasForce += math::dAdInvT(this->getRelativeTransform(), beta);
 }
 
 //==============================================================================
@@ -2338,7 +2338,7 @@ void GeometricJoint<ConfigSpaceT>::updateTotalForceForInvMassMatrix(
 {
   // Compute alpha
   mInvM_a = this->mAspectState.mForces
-      - getLocalJacobianStatic().transpose() * bodyForce;
+      - getRelativeJacobianStatic().transpose() * bodyForce;
 }
 
 //==============================================================================
@@ -2352,8 +2352,8 @@ void GeometricJoint<ConfigSpaceT>::getInvMassMatrixSegment(
   //
   mInvMassMatrixSegment
       = getInvProjArtInertia()
-      * (mInvM_a - getLocalJacobianStatic().transpose()
-         * artInertia * math::AdInvT(this->getLocalTransform(), spatialAcc));
+      * (mInvM_a - getRelativeJacobianStatic().transpose()
+         * artInertia * math::AdInvT(this->getRelativeTransform(), spatialAcc));
 
   // Verification
   assert(!math::isNan(mInvMassMatrixSegment));
@@ -2376,8 +2376,8 @@ void GeometricJoint<ConfigSpaceT>::getInvAugMassMatrixSegment(
   //
   mInvMassMatrixSegment
       = getInvProjArtInertiaImplicit()
-      * (mInvM_a - getLocalJacobianStatic().transpose()
-         * artInertia * math::AdInvT(this->getLocalTransform(), spatialAcc));
+      * (mInvM_a - getRelativeJacobianStatic().transpose()
+         * artInertia * math::AdInvT(this->getRelativeTransform(), spatialAcc));
 
   // Verification
   assert(!math::isNan(mInvMassMatrixSegment));
@@ -2395,7 +2395,7 @@ void GeometricJoint<ConfigSpaceT>::addInvMassMatrixSegmentTo(
     Eigen::Vector6d& acc)
 {
   //
-  acc += getLocalJacobianStatic() * mInvMassMatrixSegment;
+  acc += getRelativeJacobianStatic() * mInvMassMatrixSegment;
 }
 
 //==============================================================================
@@ -2403,7 +2403,7 @@ template <class ConfigSpaceT>
 Eigen::VectorXd GeometricJoint<ConfigSpaceT>::getSpatialToGeneralized(
     const Eigen::Vector6d& spatial)
 {
-  return getLocalJacobianStatic().transpose() * spatial;
+  return getRelativeJacobianStatic().transpose() * spatial;
 }
 
 } // namespace dynamics

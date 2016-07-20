@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -268,9 +262,51 @@ std::shared_ptr<const Skeleton> Joint::getSkeleton() const
 //==============================================================================
 const Eigen::Isometry3d& Joint::getLocalTransform() const
 {
+  return getRelativeTransform();
+}
+
+//==============================================================================
+const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
+{
+  return getRelativeSpatialVelocity();
+}
+
+//==============================================================================
+const Eigen::Vector6d& Joint::getLocalSpatialAcceleration() const
+{
+  return getRelativeSpatialAcceleration();
+}
+
+//==============================================================================
+const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
+{
+  return getRelativePrimaryAcceleration();
+}
+
+//==============================================================================
+const math::Jacobian Joint::getLocalJacobian() const
+{
+  return getRelativeJacobian();
+}
+
+//==============================================================================
+math::Jacobian Joint::getLocalJacobian(const Eigen::VectorXd& positions) const
+{
+  return getRelativeJacobian(positions);
+}
+
+//==============================================================================
+const math::Jacobian Joint::getLocalJacobianTimeDeriv() const
+{
+  return getRelativeJacobianTimeDeriv();
+}
+
+//==============================================================================
+const Eigen::Isometry3d& Joint::getRelativeTransform() const
+{
   if(mNeedTransformUpdate)
   {
-    updateLocalTransform();
+    updateRelativeTransform();
     mNeedTransformUpdate = false;
   }
 
@@ -278,11 +314,11 @@ const Eigen::Isometry3d& Joint::getLocalTransform() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
+const Eigen::Vector6d& Joint::getRelativeSpatialVelocity() const
 {
   if(mNeedSpatialVelocityUpdate)
   {
-    updateLocalSpatialVelocity();
+    updateRelativeSpatialVelocity();
     mNeedSpatialVelocityUpdate = false;
   }
 
@@ -290,11 +326,11 @@ const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& Joint::getLocalSpatialAcceleration() const
+const Eigen::Vector6d& Joint::getRelativeSpatialAcceleration() const
 {
   if(mNeedSpatialAccelerationUpdate)
   {
-    updateLocalSpatialAcceleration();
+    updateRelativeSpatialAcceleration();
     mNeedSpatialAccelerationUpdate = false;
   }
 
@@ -302,11 +338,11 @@ const Eigen::Vector6d& Joint::getLocalSpatialAcceleration() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
+const Eigen::Vector6d& Joint::getRelativePrimaryAcceleration() const
 {
   if(mNeedPrimaryAccelerationUpdate)
   {
-    updateLocalPrimaryAcceleration();
+    updateRelativePrimaryAcceleration();
     mNeedPrimaryAccelerationUpdate = false;
   }
 
@@ -406,7 +442,7 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
   mAspectProperties.mT_ChildBodyToJoint = _T;
-  updateLocalJacobian();
+  updateRelativeJacobian();
   notifyPositionUpdate();
 }
 
@@ -433,8 +469,8 @@ Joint::Joint()
     mNeedSpatialVelocityUpdate(true),
     mNeedSpatialAccelerationUpdate(true),
     mNeedPrimaryAccelerationUpdate(true),
-    mIsLocalJacobianDirty(true),
-    mIsLocalJacobianTimeDerivDirty(true)
+    mIsRelativeJacobianDirty(true),
+    mIsRelativeJacobianTimeDerivDirty(true)
 {
   // Do nothing. The Joint::Aspect must be created by a derived class.
 }
@@ -443,6 +479,42 @@ Joint::Joint()
 DegreeOfFreedom* Joint::createDofPointer(std::size_t _indexInJoint)
 {
   return new DegreeOfFreedom(this, _indexInJoint);
+}
+
+//==============================================================================
+void Joint::updateLocalTransform() const
+{
+  updateRelativeTransform();
+}
+
+//==============================================================================
+void Joint::updateLocalSpatialVelocity() const
+{
+  updateRelativeSpatialVelocity();
+}
+
+//==============================================================================
+void Joint::updateLocalSpatialAcceleration() const
+{
+  updateRelativeSpatialAcceleration();
+}
+
+//==============================================================================
+void Joint::updateLocalPrimaryAcceleration() const
+{
+  updateRelativePrimaryAcceleration();
+}
+
+//==============================================================================
+void Joint::updateLocalJacobian(bool mandatory) const
+{
+  updateRelativeJacobian(mandatory);
+}
+
+//==============================================================================
+void Joint::updateLocalJacobianTimeDeriv() const
+{
+  updateRelativeJacobianTimeDeriv();
 }
 
 //==============================================================================
@@ -489,8 +561,8 @@ void Joint::notifyPositionUpdate()
     mChildBodyNode->notifyJacobianDerivUpdate();
   }
 
-  mIsLocalJacobianDirty = true;
-  mIsLocalJacobianTimeDerivDirty = true;
+  mIsRelativeJacobianDirty = true;
+  mIsRelativeJacobianTimeDerivDirty = true;
   mNeedPrimaryAccelerationUpdate = true;
 
   mNeedTransformUpdate = true;
@@ -516,7 +588,7 @@ void Joint::notifyVelocityUpdate()
     mChildBodyNode->notifyJacobianDerivUpdate();
   }
 
-  mIsLocalJacobianTimeDerivDirty = true;
+  mIsRelativeJacobianTimeDerivDirty = true;
 
   mNeedSpatialVelocityUpdate = true;
   mNeedSpatialAccelerationUpdate = true;

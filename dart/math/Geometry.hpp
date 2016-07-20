@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -450,7 +444,7 @@ Eigen::Isometry3d computeTransform(const Eigen::Vector3d& axis,
                                    AxisType axisType = AxisType::AXIS_X);
 
 /// Generate frame given origin and z-axis
-DEPRECATED(6.0)
+DART_DEPRECATED(6.0)
 Eigen::Isometry3d getFrameOriginAxisZ(const Eigen::Vector3d& _origin,
                                       const Eigen::Vector3d& _axisZ);
 

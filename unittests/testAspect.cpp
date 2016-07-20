@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -228,8 +223,8 @@ class StateAspectTest : public dart::common::AspectWithState<
 {
 public:
 
-  StateAspectTest(Composite* mgr, const StateData& state = StateData())
-    : dart::common::AspectWithState<StateAspectTest, dart::common::Empty>(mgr, state)
+  StateAspectTest(const StateData& state = StateData())
+    : dart::common::AspectWithState<StateAspectTest, dart::common::Empty>(state)
   {
 
   }
@@ -246,15 +241,15 @@ class GenericAspect : public Aspect, public Subject
 {
 public:
 
-  GenericAspect(Composite* composite)
-    : Aspect(composite)
+  GenericAspect()
+    : Aspect()
   {
     // Do nothing
   }
 
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override final
+  std::unique_ptr<Aspect> cloneAspect() const override final
   {
-    return dart::common::make_unique<GenericAspect>(newComposite);
+    return dart::common::make_unique<GenericAspect>();
   }
 
 };
@@ -263,15 +258,15 @@ class SpecializedAspect : public Aspect, public Subject
 {
 public:
 
-  SpecializedAspect(Composite* composite)
-    : Aspect(composite)
+  SpecializedAspect()
+    : Aspect()
   {
     // Do nothing
   }
 
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override final
+  std::unique_ptr<Aspect> cloneAspect() const override final
   {
-    return dart::common::make_unique<SpecializedAspect>(newComposite);
+    return dart::common::make_unique<SpecializedAspect>();
   }
 };
 
@@ -294,35 +289,35 @@ public:
   using State = Aspect::MakeState<Data>;
   using Properties = Aspect::MakeProperties<Data>;
 
-  StatefulAspect(Composite* mgr)
-    : Aspect(mgr)
+  StatefulAspect()
+    : Aspect()
   {
     // Do nothing
   }
 
-  StatefulAspect(Composite* mgr, const StatefulAspect& other)
-    : Aspect(mgr),
+  StatefulAspect(const StatefulAspect& other)
+    : Aspect(),
       mState(other.mState), mProperties(other.mProperties)
   {
     // Do nothing
   }
 
-  StatefulAspect(Composite* mgr, const T& state)
-    : Aspect(mgr), mState(state)
+  StatefulAspect(const T& state)
+    : Aspect(), mState(state)
   {
     // Do nothing
   }
 
-  StatefulAspect(Composite* mgr, const T& state, const T& properties)
-    : Aspect(mgr),
+  StatefulAspect(const T& state, const T& properties)
+    : Aspect(),
       mState(state), mProperties(properties)
   {
     // Do nothing
   }
 
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override final
+  std::unique_ptr<Aspect> cloneAspect() const override final
   {
-    return dart::common::make_unique<StatefulAspect>(newComposite, *this);
+    return dart::common::make_unique<StatefulAspect>(*this);
   }
 
   void setAspectState(const Aspect::State& otherState) override
@@ -702,6 +697,20 @@ TEST(Aspect, StateAndProperties)
   // The constructor arguments should match the type order
   Composite::MakeState<DoubleAspect, IntAspect, CharAspect, FloatAspect>(
         doubleState, intState, charState, floatState);
+
+  // ---- Test copying and merging ----
+  Composite::Properties c_properties_1(properties);
+  EXPECT_FALSE(c_properties_1.has<IntAspect>());
+
+  Composite::Properties c_properties_2;
+  c_properties_2.create<IntAspect>();
+  EXPECT_TRUE(c_properties_2.has<IntAspect>());
+
+  c_properties_2.merge(c_properties_1);
+  EXPECT_TRUE(c_properties_2.has<IntAspect>());
+
+  c_properties_2.copy(c_properties_1);
+  EXPECT_FALSE(c_properties_2.has<IntAspect>());
 }
 
 TEST(Aspect, Construction)

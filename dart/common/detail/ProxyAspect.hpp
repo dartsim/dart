@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2016, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -57,9 +52,9 @@ public:
 
   /// General constructor
   template <typename... Args>
-  ProxyStateAspect(Composite* comp, Args&&... args)
-    : Base(comp, std::forward<Args>(args)...),
-      mProxyState(dynamic_cast<CompositeType*>(comp))
+  ProxyStateAspect(Args&&... args)
+    : Base(std::forward<Args>(args)...),
+      mProxyState()
   {
     // Do nothing
   }
@@ -77,9 +72,9 @@ public:
   }
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<ProxyStateAspect>(newComposite);
+    return make_unique<ProxyStateAspect>();
   }
 
 protected:
@@ -126,9 +121,9 @@ public:
 
   /// General constructor
   template <typename... Args>
-  ProxyPropertiesAspect(Composite* comp, Args&&... args)
-    : Base(comp, std::forward<Args>(args)...),
-      mProxyProperties(dynamic_cast<CompositeType*>(this))
+  ProxyPropertiesAspect(Args&&... args)
+    : Base(std::forward<Args>(args)...),
+      mProxyProperties()
   {
     // Do nothing
   }
@@ -146,9 +141,9 @@ public:
   }
 
   // Documentation inherited
-  std::unique_ptr<Aspect> cloneAspect(Composite* newComposite) const override
+  std::unique_ptr<Aspect> cloneAspect() const override
   {
-    return make_unique<ProxyPropertiesAspect>(newComposite);
+    return make_unique<ProxyPropertiesAspect>();
   }
 
 protected:

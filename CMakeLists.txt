@@ -44,7 +44,7 @@ endif()
 project(dart)
 
 set(DART_MAJOR_VERSION "6")
-set(DART_MINOR_VERSION "0")
+set(DART_MINOR_VERSION "1")
 set(DART_PATCH_VERSION "0")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")

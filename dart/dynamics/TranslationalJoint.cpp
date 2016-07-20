@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -59,11 +54,11 @@ TranslationalJoint::~TranslationalJoint()
 }
 
 //==============================================================================
-const Eigen::Matrix<double, 6, 3> TranslationalJoint::getLocalJacobianStatic(
+Eigen::Matrix<double, 6, 3> TranslationalJoint::getRelativeJacobianStatic(
     const Eigen::Vector3d& /*_positions*/) const
 {
   // The Jacobian is always constant w.r.t. the generalized coordinates.
-  return getLocalJacobianStatic();
+  return getRelativeJacobianStatic();
 }
 
 //==============================================================================
@@ -120,7 +115,7 @@ void TranslationalJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void TranslationalJoint::updateLocalTransform() const
+void TranslationalJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(getPositionsStatic())
@@ -131,7 +126,7 @@ void TranslationalJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void TranslationalJoint::updateLocalJacobian(bool _mandatory) const
+void TranslationalJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if (_mandatory)
   {
@@ -144,7 +139,7 @@ void TranslationalJoint::updateLocalJacobian(bool _mandatory) const
 }
 
 //==============================================================================
-void TranslationalJoint::updateLocalJacobianTimeDeriv() const
+void TranslationalJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of translational joint is always zero
   assert(mJacobianDeriv == (Eigen::Matrix<double, 6, 3>::Zero()));

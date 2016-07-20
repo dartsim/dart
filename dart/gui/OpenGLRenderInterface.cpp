@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -468,41 +463,24 @@ void OpenGLRenderInterface::compileList(dynamics::BodyNode* node)
 }
 
 //==============================================================================
-//FIXME: Use polymorphism instead of switch statements
-void OpenGLRenderInterface::compileList(dynamics::Shape* _shape) {
-    if(_shape == 0)
-        return;
+void OpenGLRenderInterface::compileList(dynamics::Shape* shape)
+{
+  if (!shape)
+    return;
 
-    switch(_shape->getShapeType()) {
-        case dynamics::Shape::BOX:
-            break;
-        case dynamics::Shape::CYLINDER:
-            break;
-        case dynamics::Shape::ELLIPSOID:
-            break;
-        case dynamics::Shape::PLANE:
-            dterr << "PLANE is not supported yet." << std::endl;
-            break;
-        case dynamics::Shape::SOFT_MESH:
-            // Do nothing
-            break;
-        case dynamics::Shape::MESH:
-        {
-            //FIXME: Separate these calls once BodyNode is refactored to contain
-            // both a col Shape and vis Shape.
-            dynamics::MeshShape* shapeMesh = dynamic_cast<dynamics::MeshShape*>(_shape);
+  if (shape->getType() == dynamics::MeshShape::getStaticType())
+  {
+    assert(dynamic_cast<dynamics::MeshShape*>(shape));
 
-            if(shapeMesh == 0)
-                return;
-
-            shapeMesh->setDisplayList(compileList(shapeMesh->getScale(), shapeMesh->getMesh()));
-
-            break;
-        }
-        case dynamics::Shape::LINE_SEGMENT:
-            // Do nothing
-            break;
-    }
+    auto* mesh = static_cast<dynamics::MeshShape*>(shape);
+    mesh->setDisplayList(compileList(mesh->getScale(), mesh->getMesh()));
+  }
+  else
+  {
+    dtwarn << "[OpenGLRenderInterface::compileList] Attempting to compile "
+           << "OpenGL list for an unsupported shape type ["
+           << shape->getType() << "].\n";
+  }
 }
 
 GLuint OpenGLRenderInterface::compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh) {

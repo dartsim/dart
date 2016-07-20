@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2016, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -155,14 +150,28 @@ std::size_t CollisionGroup::getNumShapeFrames() const
 }
 
 //==============================================================================
-bool CollisionGroup::collide(const CollisionOption& option, CollisionResult& result)
+const dynamics::ShapeFrame* CollisionGroup::getShapeFrame(
+    std::size_t index) const
+{
+  assert(index < mShapeFrameMap.size());
+  if(index < mShapeFrameMap.size())
+    return mShapeFrameMap[index].first;
+
+  return nullptr;
+}
+
+//==============================================================================
+bool CollisionGroup::collide(
+    const CollisionOption& option, CollisionResult* result)
 {
   return mCollisionDetector->collide(this, option, result);
 }
 
 //==============================================================================
 bool CollisionGroup::collide(
-    CollisionGroup* other, const CollisionOption& option, CollisionResult& result)
+    CollisionGroup* other,
+    const CollisionOption& option,
+    CollisionResult* result)
 {
   return mCollisionDetector->collide(this, other, option, result);
 }

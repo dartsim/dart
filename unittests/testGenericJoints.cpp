@@ -64,7 +64,7 @@ using namespace dynamics;
 //  // Documentation inherited
 //  bool isCyclic(size_t index) const override { return false; }
 
-//  const JacobianMatrix getLocalJacobianStatic(
+//  const JacobianMatrix getRelativeJacobianStatic(
 //      const Vector& positions) const override
 //  { return JacobianMatrix(); }
 
@@ -76,13 +76,13 @@ using namespace dynamics;
 //  void updateDegreeOfFreedomNames() override {}
 
 //  // Documentation inherited
-//  void updateLocalTransform() const override {}
+//  void updateRelativeTransform() const override {}
 
 //  // Documentation inherited
-//  void updateLocalJacobian(bool mandatory = true) const override {}
+//  void updateRelativeJacobian(bool mandatory = true) const override {}
 
 //  // Documentation inherited
-//  void updateLocalJacobianTimeDeriv() const override {}
+//  void updateRelativeJacobianTimeDeriv() const override {}
 //};
 
 class SingleDofJointTest : public GeometricJoint<R1Space>
@@ -104,10 +104,10 @@ public:
   }
 
   // Documentation inherited
-  bool isCyclic(size_t index) const override { return false; }
+  bool isCyclic(size_t /*index*/) const override { return false; }
 
-  const JacobianMatrix getLocalJacobianStatic(
-      const Vector& positions) const override
+  JacobianMatrix getRelativeJacobianStatic(
+      const Vector& /*positions*/) const override
   { return JacobianMatrix(); }
 
 protected:
@@ -118,13 +118,13 @@ protected:
   void updateDegreeOfFreedomNames() override {}
 
   // Documentation inherited
-  void updateLocalTransform() const override {}
+  void updateRelativeTransform() const override {}
 
   // Documentation inherited
-  void updateLocalJacobian(bool mandatory = true) const override {}
+  void updateRelativeJacobian(bool /*mandatory = true*/) const override {}
 
   // Documentation inherited
-  void updateLocalJacobianTimeDeriv() const override {}
+  void updateRelativeJacobianTimeDeriv() const override {}
 };
 
 class MultiDofJointTest : public GeometricJoint<RealVectorSpace<6>>
@@ -146,10 +146,10 @@ public:
   }
 
   // Documentation inherited
-  bool isCyclic(size_t index) const override { return false; }
+  bool isCyclic(size_t /*index*/) const override { return false; }
 
-  const JacobianMatrix getLocalJacobianStatic(
-      const Vector& positions) const override
+  JacobianMatrix getRelativeJacobianStatic(
+      const Vector& /*positions*/) const override
   { return JacobianMatrix(); }
 
 protected:
@@ -160,13 +160,13 @@ protected:
   void updateDegreeOfFreedomNames() override {}
 
   // Documentation inherited
-  void updateLocalTransform() const override {}
+  void updateRelativeTransform() const override {}
 
   // Documentation inherited
-  void updateLocalJacobian(bool mandatory = true) const override {}
+  void updateRelativeJacobian(bool /*mandatory = true*/) const override {}
 
   // Documentation inherited
-  void updateLocalJacobianTimeDeriv() const override {}
+  void updateRelativeJacobianTimeDeriv() const override {}
 };
 
 class SO3JointTest : public GeometricJoint<SO3Space>
@@ -188,10 +188,10 @@ public:
   }
 
   // Documentation inherited
-  bool isCyclic(size_t index) const override { return false; }
+  bool isCyclic(size_t /*index*/) const override { return false; }
 
-  const JacobianMatrix getLocalJacobianStatic(
-      const Vector& positions) const override
+  JacobianMatrix getRelativeJacobianStatic(
+      const Vector& /*positions*/) const override
   { return JacobianMatrix(); }
 
 protected:
@@ -202,13 +202,13 @@ protected:
   void updateDegreeOfFreedomNames() override {}
 
   // Documentation inherited
-  void updateLocalTransform() const override {}
+  void updateRelativeTransform() const override {}
 
   // Documentation inherited
-  void updateLocalJacobian(bool mandatory = true) const override {}
+  void updateRelativeJacobian(bool /*mandatory = true*/) const override {}
 
   // Documentation inherited
-  void updateLocalJacobianTimeDeriv() const override {}
+  void updateRelativeJacobianTimeDeriv() const override {}
 };
 
 //==============================================================================

@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -210,7 +205,7 @@ void SpecializedForAspect<SpecAspect>::_set(
 
   if(aspect)
   {
-    mSpecAspectIterator->second = aspect->cloneAspect(this);
+    mSpecAspectIterator->second = aspect->cloneAspect();
     addToComposite(mSpecAspectIterator->second.get());
   }
   else
@@ -258,7 +253,7 @@ SpecAspect* SpecializedForAspect<SpecAspect>::_createAspect(
   usedSpecializedAspectAccess = true;
 #endif // DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
-  SpecAspect* aspect = new SpecAspect(this, std::forward<Args>(args)...);
+  SpecAspect* aspect = new SpecAspect(std::forward<Args>(args)...);
   mSpecAspectIterator->second = std::unique_ptr<SpecAspect>(aspect);
   addToComposite(aspect);
 

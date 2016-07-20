@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -603,8 +598,8 @@ void readAspects(
       {
         for (auto& shapeNode : bodyNode->getShapeNodes())
         {
-          auto shapeType = shapeNode->getShape()->getShapeType();
-          if (dynamics::Shape::SOFT_MESH == shapeType)
+          const auto& shapeType = shapeNode->getShape()->getType();
+          if (dynamics::SoftMeshShape::getStaticType() == shapeType)
             continue;
 
           auto mass = bodyNode->getMass();

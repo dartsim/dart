@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -557,11 +551,8 @@ void Skeleton::setAspectProperties(const AspectProperties& properties)
   setMobile(properties.mIsMobile);
   setGravity(properties.mGravity);
   setTimeStep(properties.mTimeStep);
-
-  if(properties.mEnabledSelfCollisionCheck)
-    enableSelfCollision(properties.mEnabledAdjacentBodyCheck);
-  else
-    disableSelfCollision();
+  setSelfCollisionCheck(properties.mEnabledSelfCollisionCheck);
+  setAdjacentBodyCheck(properties.mEnabledAdjacentBodyCheck);
 }
 
 //==============================================================================
@@ -636,29 +627,77 @@ void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode)
 }
 
 //==============================================================================
-void Skeleton::enableSelfCollision(bool _enableAdjacentBodyCheck)
+void Skeleton::enableSelfCollision(bool enableAdjacentBodyCheck)
 {
-  mAspectProperties.mEnabledSelfCollisionCheck = true;
-  mAspectProperties.mEnabledAdjacentBodyCheck = _enableAdjacentBodyCheck;
+  enableSelfCollisionCheck();
+  setAdjacentBodyCheck(enableAdjacentBodyCheck);
 }
 
 //==============================================================================
 void Skeleton::disableSelfCollision()
 {
-  mAspectProperties.mEnabledSelfCollisionCheck = false;
-  mAspectProperties.mEnabledAdjacentBodyCheck = false;
+  disableSelfCollisionCheck();
+  setAdjacentBodyCheck(false);
 }
 
 //==============================================================================
-bool Skeleton::isEnabledSelfCollisionCheck() const
+void Skeleton::setSelfCollisionCheck(bool enable)
+{
+  mAspectProperties.mEnabledSelfCollisionCheck = enable;
+}
+
+//==============================================================================
+bool Skeleton::getSelfCollisionCheck() const
 {
   return mAspectProperties.mEnabledSelfCollisionCheck;
 }
 
 //==============================================================================
-bool Skeleton::isEnabledAdjacentBodyCheck() const
+void Skeleton::enableSelfCollisionCheck()
+{
+  setSelfCollisionCheck(true);
+}
+
+//==============================================================================
+void Skeleton::disableSelfCollisionCheck()
+{
+  setSelfCollisionCheck(false);
+}
+
+//==============================================================================
+bool Skeleton::isEnabledSelfCollisionCheck() const
+{
+  return getSelfCollisionCheck();
+}
+
+//==============================================================================
+void Skeleton::setAdjacentBodyCheck(bool enable)
+{
+  mAspectProperties.mEnabledAdjacentBodyCheck = enable;
+}
+
+//==============================================================================
+bool Skeleton::getAdjacentBodyCheck() const
 {
   return mAspectProperties.mEnabledAdjacentBodyCheck;
+}
+
+//==============================================================================
+void Skeleton::enableAdjacentBodyCheck()
+{
+  setAdjacentBodyCheck(true);
+}
+
+//==============================================================================
+void Skeleton::disableAdjacentBodyCheck()
+{
+  setAdjacentBodyCheck(false);
+}
+
+//==============================================================================
+bool Skeleton::isEnabledAdjacentBodyCheck() const
+{
+  return getAdjacentBodyCheck();
 }
 
 //==============================================================================
@@ -2177,6 +2216,8 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
                                      mSoftBodyNodes.end(), soft),
                          mSoftBodyNodes.end());
   }
+
+  updateTotalMass();
 }
 
 //==============================================================================

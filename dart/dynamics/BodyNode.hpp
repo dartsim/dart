@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -712,12 +706,12 @@ public:
   /// this status is set by the constraint solver during dynamics simulation but
   /// not by collision detector.
   /// \param[in] True if this body node is colliding.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void setColliding(bool _isColliding);
 
   /// Return whether this body node is set to be colliding with other objects.
   /// \return True if this body node is colliding.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   bool isColliding();
 
   /// Add applying linear Cartesian forces to this node
@@ -1036,7 +1030,7 @@ protected:
   static std::size_t msBodyNodeCount;
 
   /// Whether the node is currently in collision with another node.
-  /// \deprecated DEPRECATED(6.0) See #670 for more detail.
+  /// \deprecated DART_DEPRECATED(6.0) See #670 for more detail.
   bool mIsColliding;
 
   //--------------------------------------------------------------------------

@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -113,39 +108,39 @@ Joint* WeldJoint::clone() const
 }
 
 //==============================================================================
-void WeldJoint::updateLocalTransform() const
+void WeldJoint::updateRelativeTransform() const
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalSpatialVelocity() const
+void WeldJoint::updateRelativeSpatialVelocity() const
 {
   // Do nothing
   // Should we have mSpatialVelocity.setZero() here instead?
 }
 
 //==============================================================================
-void WeldJoint::updateLocalSpatialAcceleration() const
+void WeldJoint::updateRelativeSpatialAcceleration() const
 {
   // Do nothing
   // Should we have mSpatialAcceleration.setZero() here instead?
 }
 
 //==============================================================================
-void WeldJoint::updateLocalPrimaryAcceleration() const
+void WeldJoint::updateRelativePrimaryAcceleration() const
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalJacobian(bool) const
+void WeldJoint::updateRelativeJacobian(bool) const
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalJacobianTimeDeriv() const
+void WeldJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Do nothing
 }

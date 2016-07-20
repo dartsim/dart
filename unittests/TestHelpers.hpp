@@ -4,12 +4,6 @@
  *
  * Author(s): Can Erdogan <cerdogan3@gatech.edu>,
  *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
- *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
@@ -262,7 +256,7 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
   assert(_n > 0);
 
   SkeletonPtr robot = Skeleton::create();
-  robot->disableSelfCollision();
+  robot->disableSelfCollisionCheck();
 
   // Create the first link, the joint with the ground and its shape
   BodyNode::Properties node(BodyNode::AspectProperties("link1"));
@@ -329,7 +323,7 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
   assert(numBodyNodes > 0);
 
   SkeletonPtr robot = Skeleton::create();
-  robot->disableSelfCollision();
+  robot->disableSelfCollisionCheck();
 
   // Create the first link, the joint with the ground and its shape
   BodyNode::Properties node(BodyNode::AspectProperties("link1"));

@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -449,24 +444,25 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  const math::Jacobian getLocalJacobian() const override;
+  const math::Jacobian getRelativeJacobian() const override;
 
-  /// Fixed-size version of getLocalJacobian()
-  const JacobianMatrix& getLocalJacobianStatic() const;
+  /// Fixed-size version of getRelativeJacobian()
+  const typename GeometricJoint<ConfigSpaceT>::JacobianMatrix&
+  getRelativeJacobianStatic() const;
 
   // Documentation inherited
-  const math::Jacobian getLocalJacobian(
-      const Eigen::VectorXd& positions) const override;
+  math::Jacobian getRelativeJacobian(
+      const Eigen::VectorXd& _positions) const override;
 
-  /// Fixed-size version of getLocalJacobian(positions)
-  virtual const JacobianMatrix getLocalJacobianStatic(
+  /// Fixed-size version of getRelativeJacobian(positions)
+  virtual JacobianMatrix getRelativeJacobianStatic(
       const Vector& positions) const = 0;
 
   // Documentation inherited
-  const math::Jacobian getLocalJacobianTimeDeriv() const override;
+  const math::Jacobian getRelativeJacobianTimeDeriv() const override;
 
-  /// Fixed-size version of getLocalJacobianTimeDeriv()
-  const JacobianMatrix& getLocalJacobianTimeDerivStatic() const;
+  /// Fixed-size version of getRelativeJacobianTimeDeriv()
+  const JacobianMatrix& getRelativeJacobianTimeDerivStatic() const;
 
   /// \}
 
@@ -489,13 +485,13 @@ protected:
   const Matrix& getInvProjArtInertiaImplicit() const;
 
   // Documentation inherited
-  void updateLocalSpatialVelocity() const override;
+  void updateRelativeSpatialVelocity() const override;
 
   // Documentation inherited
-  void updateLocalSpatialAcceleration() const override;
+  void updateRelativeSpatialAcceleration() const override;
 
   // Documentation inherited
-  void updateLocalPrimaryAcceleration() const override;
+  void updateRelativePrimaryAcceleration() const override;
 
   // Documentation inherited
   void addVelocityTo(Eigen::Vector6d& vel) override;
@@ -648,12 +644,12 @@ protected:
 
   /// Spatial Jacobian expressed in the child body frame
   ///
-  /// Do not use directly! Use getLocalJacobianStatic() to access this quantity
+  /// Do not use directly! Use getRelativeJacobianStatic() to access this quantity
   mutable JacobianMatrix mJacobian;
 
   /// Time derivative of spatial Jacobian expressed in the child body frame
   ///
-  /// Do not use directly! Use getLocalJacobianTimeDerivStatic() to access this
+  /// Do not use directly! Use getRelativeJacobianTimeDerivStatic() to access this
   /// quantity
   mutable JacobianMatrix mJacobianDeriv;
 

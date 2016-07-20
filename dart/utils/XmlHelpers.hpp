@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -110,11 +105,11 @@ tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* parentElement,
 bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name);
 
 // Please use getAttributeString() instead.
-DEPRECATED(6.0)
+DART_DEPRECATED(6.0)
 std::string getAttribute(tinyxml2::XMLElement* element, const char* const name);
 
 // Please use getAttributeDouble() instead.
-DEPRECATED(6.0)
+DART_DEPRECATED(6.0)
 void getAttribute(tinyxml2::XMLElement* element, const char* const name, double* d);
 
 std::string     getAttributeString  (const tinyxml2::XMLElement* element, const std::string& attributeName);
