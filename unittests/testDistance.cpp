@@ -81,21 +81,27 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
   result.clear();
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
   simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
-  EXPECT_FALSE(group12->distance(option, &result));
+  group12->distance(option, &result);
   EXPECT_DOUBLE_EQ(result.mMinimumDistance, 0.0);
+  EXPECT_TRUE(result.mShapeFrame1 == simpleFrame1.get()
+              || result.mShapeFrame1 == simpleFrame2.get());
+  EXPECT_TRUE(result.mShapeFrame2 == simpleFrame1.get()
+              || result.mShapeFrame2 == simpleFrame2.get());
+  EXPECT_EQ(result.mNearestPoint1, Eigen::Vector3d::Zero());
+  EXPECT_EQ(result.mNearestPoint2, Eigen::Vector3d::Zero());
 
   result.clear();
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
   simpleFrame2->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
-  EXPECT_FALSE(group12->distance(option, &result));
+  group12->distance(option, &result);
   EXPECT_DOUBLE_EQ(result.mMinimumDistance, 0.25);
 }
 
 //==============================================================================
 TEST(Distance, SphereSphere)
 {
-  auto fcl_mesh_dart = FCLCollisionDetector::create();
-  testSphereSphere(fcl_mesh_dart);
+  auto fcl = FCLCollisionDetector::create();
+  testSphereSphere(fcl);
 
 #if HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
@@ -150,8 +156,8 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
 //==============================================================================
 TEST(Distance, BoxBox)
 {
-  auto fcl_mesh_dart = FCLCollisionDetector::create();
-  testBoxBox(fcl_mesh_dart);
+  auto fcl = FCLCollisionDetector::create();
+  testBoxBox(fcl);
 
 #if HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
@@ -160,6 +166,104 @@ TEST(Distance, BoxBox)
 
   auto dart = DARTCollisionDetector::create();
   testBoxBox(dart);
+}
+
+//==============================================================================
+void testOptions(const std::shared_ptr<CollisionDetector>& cd,
+                 double tol = 1e-12)
+{
+  if (cd->getType() != collision::FCLCollisionDetector::getStaticType())
+  {
+    dtwarn << "Aborting test: distance check is not supported by "
+           << cd->getType() << ".\n";
+    return;
+  }
+
+  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+
+  ShapePtr shape1(new EllipsoidShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape2(new EllipsoidShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+
+  auto group1 = cd->createCollisionGroup(simpleFrame1.get());
+  auto group2 = cd->createCollisionGroup(simpleFrame2.get());
+  auto group12 = cd->createCollisionGroup(group1.get(), group2.get());
+
+  EXPECT_EQ(group1->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group2->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group12->getNumShapeFrames(), 2u);
+
+  collision::DistanceOption option;
+  collision::DistanceResult result;
+
+  EXPECT_TRUE(option.distanceFilter == nullptr);
+  EXPECT_TRUE(option.enableNearestPoints == false);
+
+  EXPECT_TRUE(result.found() == false);
+
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
+  group12->distance(option, &result);
+  EXPECT_DOUBLE_EQ(result.mMinimumDistance, 0.0);
+  EXPECT_TRUE(result.mShapeFrame1 == simpleFrame1.get()
+              || result.mShapeFrame1 == simpleFrame2.get());
+  EXPECT_TRUE(result.mShapeFrame2 == simpleFrame1.get()
+              || result.mShapeFrame2 == simpleFrame2.get());
+  EXPECT_EQ(result.mNearestPoint1, Eigen::Vector3d::Zero());
+  EXPECT_EQ(result.mNearestPoint2, Eigen::Vector3d::Zero());
+  EXPECT_TRUE(result.found() == true);
+
+  option.enableNearestPoints = true;
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
+  group12->distance(option, &result);
+  EXPECT_DOUBLE_EQ(result.mMinimumDistance, 0.0);
+  EXPECT_TRUE(result.mShapeFrame1 == simpleFrame1.get()
+              || result.mShapeFrame1 == simpleFrame2.get());
+  EXPECT_TRUE(result.mShapeFrame2 == simpleFrame1.get()
+              || result.mShapeFrame2 == simpleFrame2.get());
+  EXPECT_TRUE(
+        result.mNearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  EXPECT_TRUE(
+        result.mNearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol));
+  EXPECT_TRUE(result.found() == true);
+
+  option.enableNearestPoints = true;
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  simpleFrame2->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
+  group12->distance(option, &result);
+  EXPECT_DOUBLE_EQ(result.mMinimumDistance, 0.25);
+  EXPECT_TRUE(result.mShapeFrame1 == simpleFrame1.get()
+              || result.mShapeFrame1 == simpleFrame2.get());
+  EXPECT_TRUE(result.mShapeFrame2 == simpleFrame1.get()
+              || result.mShapeFrame2 == simpleFrame2.get());
+  EXPECT_TRUE(
+        result.mNearestPoint1.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol)
+        || result.mNearestPoint1.isApprox(Eigen::Vector3d(0.75, 0.0, 0.0), tol));
+  EXPECT_TRUE(
+        result.mNearestPoint2.isApprox(Eigen::Vector3d(0.5, 0.0, 0.0), tol)
+        || result.mNearestPoint2.isApprox(Eigen::Vector3d(0.75, 0.0, 0.0), tol));
+  EXPECT_TRUE(result.found() == true);
+}
+
+//==============================================================================
+TEST(Distance, Options)
+{
+  auto fcl = FCLCollisionDetector::create();
+  testOptions(fcl);
+
+#if HAVE_BULLET_COLLISION
+  auto bullet = BulletCollisionDetector::create();
+  testOptions(bullet);
+#endif
+
+  auto dart = DARTCollisionDetector::create();
+  testOptions(dart);
 }
 
 //==============================================================================

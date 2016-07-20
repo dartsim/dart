@@ -128,7 +128,10 @@ int FFtest(
 double triArea(fcl::Vec3f& p1, fcl::Vec3f& p2, fcl::Vec3f& p3);
 
 void convertOption(
-    const CollisionOption& fclOption, fcl::CollisionRequest& request);
+    const CollisionOption& option, fcl::CollisionRequest& request);
+
+void convertOption(
+    const DistanceOption& option, fcl::DistanceRequest& request);
 
 Contact convertContact(
     const fcl::Contact& fclContact,
@@ -198,15 +201,6 @@ struct FCLCollisionCallbackData
 
 struct FCLDistanceCallbackData
 {
-  FCLDistanceCallbackData(
-      const DistanceOption& option, DistanceResult* result)
-    : option(option),
-      result(result),
-      done(false)
-  {
-    // convertOption(...);
-  }
-
   /// FCL distance request
   fcl::DistanceRequest fclRequest;
 
@@ -221,6 +215,15 @@ struct FCLDistanceCallbackData
 
   /// @brief Whether the distance iteration can stop
   bool done;
+
+  FCLDistanceCallbackData(
+      const DistanceOption& option, DistanceResult* result)
+    : option(option),
+      result(result),
+      done(false)
+  {
+    convertOption(option, fclRequest);
+  }
 };
 
 //==============================================================================
@@ -756,7 +759,7 @@ bool FCLCollisionDetector::collide(
 }
 
 //==============================================================================
-bool FCLCollisionDetector::distance(
+void FCLCollisionDetector::distance(
     CollisionGroup* group,
     const DistanceOption& option,
     DistanceResult* result)
@@ -765,7 +768,7 @@ bool FCLCollisionDetector::distance(
     result->clear();
 
   if (!checkGroupValidity(this, group))
-    return false;
+    return;
 
   auto casted = static_cast<FCLCollisionGroup*>(group);
   casted->updateEngineData();
@@ -774,11 +777,11 @@ bool FCLCollisionDetector::distance(
 
   casted->getFCLCollisionManager()->distance(&distData, distanceCallback);
 
-  return false; // TODO(JS): not sure what should be returned (if found any?)
+  return;
 }
 
 //==============================================================================
-bool FCLCollisionDetector::distance(
+void FCLCollisionDetector::distance(
     CollisionGroup* /*group1*/,
     CollisionGroup* /*group2*/,
     const DistanceOption& /*option*/,
@@ -786,7 +789,7 @@ bool FCLCollisionDetector::distance(
 {
   // TODO(JS): Not implemented
 
-  return false;
+  return;
 }
 
 //==============================================================================
@@ -1578,13 +1581,19 @@ bool isColinear(const T& pos1, const T& pos2, const T& pos3, double tol)
 }
 
 //==============================================================================
-void convertOption(const CollisionOption& fclOption, fcl::CollisionRequest& request)
+void convertOption(const CollisionOption& option, fcl::CollisionRequest& request)
 {
-  request.num_max_contacts = fclOption.maxNumContacts;
-  request.enable_contact   = fclOption.enableContact;
+  request.num_max_contacts = option.maxNumContacts;
+  request.enable_contact   = option.enableContact;
 #if FCL_VERSION_AT_LEAST(0,3,0)
   request.gjk_solver_type  = fcl::GST_LIBCCD;
 #endif
+}
+
+//==============================================================================
+void convertOption(const DistanceOption& option, fcl::DistanceRequest& request)
+{
+  request.enable_nearest_points = option.enableNearestPoints;
 }
 
 //==============================================================================

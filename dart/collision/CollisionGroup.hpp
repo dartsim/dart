@@ -183,7 +183,7 @@ public:
       CollisionResult* result = nullptr);
 
   /// Perform distance check within this CollisionGroup.
-  bool distance(
+  void distance(
       const DistanceOption& option = DistanceOption(false, nullptr),
       DistanceResult* result = nullptr);
 
@@ -191,7 +191,7 @@ public:
   ///
   /// Return false if the engine type of the other CollisionGroup is different
   /// from this CollisionObject engine.
-  bool distance(
+  void distance(
       CollisionGroup* otherGroup,
       const DistanceOption& option = DistanceOption(false, nullptr),
       DistanceResult* result = nullptr);

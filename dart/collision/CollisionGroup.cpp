@@ -177,14 +177,14 @@ bool CollisionGroup::collide(
 }
 
 //==============================================================================
-bool CollisionGroup::distance(
+void CollisionGroup::distance(
     const DistanceOption& option, DistanceResult* result)
 {
   return mCollisionDetector->distance(this, option, result);
 }
 
 //==============================================================================
-bool CollisionGroup::distance(
+void CollisionGroup::distance(
     CollisionGroup* otherGroup,
     const DistanceOption& option,
     DistanceResult* result)

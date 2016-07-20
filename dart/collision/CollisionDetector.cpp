@@ -50,7 +50,7 @@ CollisionDetector::createCollisionGroupAsSharedPtr()
 }
 
 //==============================================================================
-bool CollisionDetector::distance(
+void CollisionDetector::distance(
     CollisionGroup* /*group*/,
     const DistanceOption& /*option*/,
     DistanceResult* /*result*/)
@@ -60,11 +60,11 @@ bool CollisionDetector::distance(
 
   // Note: Only FCL supports distance query.
 
-  return false;
+  return;
 }
 
 //==============================================================================
-bool CollisionDetector::distance(CollisionGroup* /*group1*/,
+void CollisionDetector::distance(CollisionGroup* /*group1*/,
     CollisionGroup* /*group2*/,
     const DistanceOption& /*option*/,
     DistanceResult* /*result*/)
@@ -74,7 +74,7 @@ bool CollisionDetector::distance(CollisionGroup* /*group1*/,
 
   // Note: Only FCL supports distance query.
 
-  return false;
+  return;
 }
 
 //==============================================================================
