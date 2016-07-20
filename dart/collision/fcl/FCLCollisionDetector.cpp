@@ -782,12 +782,31 @@ void FCLCollisionDetector::distance(
 
 //==============================================================================
 void FCLCollisionDetector::distance(
-    CollisionGroup* /*group1*/,
-    CollisionGroup* /*group2*/,
-    const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
+    CollisionGroup* group1,
+    CollisionGroup* group2,
+    const DistanceOption& option,
+    DistanceResult* result)
 {
-  // TODO(JS): Not implemented
+  if (result)
+    result->clear();
+
+  if (!checkGroupValidity(this, group1))
+    return;
+
+  if (!checkGroupValidity(this, group2))
+    return;
+
+  auto casted1 = static_cast<FCLCollisionGroup*>(group1);
+  auto casted2 = static_cast<FCLCollisionGroup*>(group2);
+  casted1->updateEngineData();
+  casted2->updateEngineData();
+
+  FCLDistanceCallbackData distData(option, result);
+
+  auto broadPhaseAlg1 = casted1->getFCLCollisionManager();
+  auto broadPhaseAlg2 = casted2->getFCLCollisionManager();
+
+  broadPhaseAlg1->distance(broadPhaseAlg2, &distData, distanceCallback);
 
   return;
 }
@@ -1156,21 +1175,18 @@ bool distanceCallback(
   fcl::distance(o1, o2, fclRequest, fclResult);
 
   if (result)
-  {
     interpreteDistanceResult(fclResult, o1, o2, option, *result);
-  }
-  else
-  {
-    // TODO(JS): Not implemented
-  }
-
-  // TODO(JS): the data should be transformed into the DART's data structure
+  // TODO(JS): Not sure if nullptr result would make any sense for distance
+  // check
 
   if (dist <= 0)
   {
     // in collision or in touch
     distData->done = true;
   }
+  // TODO(JS): Do we don't care what's the actual minimum distance when
+  // collision is found? Or should we continue to the narrow check to check
+  // every pairs?
 
   return distData->done;
 }
@@ -1433,7 +1449,7 @@ void interpreteDistanceResult(
     const DistanceOption& option,
     DistanceResult& result)
 {
-  result.mMinimumDistance = fclResult.min_distance;
+  result.minimumDistance = fclResult.min_distance;
 
   const auto* userData1
       = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
@@ -1444,14 +1460,14 @@ void interpreteDistanceResult(
   assert(userData1->mCollisionObject);
   assert(userData2->mCollisionObject);
 
-  result.mShapeFrame1 = userData1->mCollisionObject->getShapeFrame();
-  result.mShapeFrame2 = userData2->mCollisionObject->getShapeFrame();
+  result.shapeFrame1 = userData1->mCollisionObject->getShapeFrame();
+  result.shapeFrame2 = userData2->mCollisionObject->getShapeFrame();
 
   if (option.enableNearestPoints)
   {
-    result.mNearestPoint1
+    result.nearestPoint1
         = FCLTypes::convertVector3(fclResult.nearest_points[0]);
-    result.mNearestPoint2
+    result.nearestPoint2
         = FCLTypes::convertVector3(fclResult.nearest_points[1]);
   }
 }

@@ -29,40 +29,82 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DISTANCE_RESULT_HPP_
-#define DART_COLLISION_DISTANCE_RESULT_HPP_
+#ifndef DART_COLLISION_COLLISIONRESULT_HPP_
+#define DART_COLLISION_COLLISIONRESULT_HPP_
 
-#include <Eigen/Dense>
+#include <vector>
+#include <unordered_set>
+#include "dart/collision/Contact.hpp"
 
 namespace dart {
 
 namespace dynamics {
+
+class BodyNode;
 class ShapeFrame;
-} // namesapce dynamics
+
+} // namespace dynamics
 
 namespace collision {
 
-struct DistanceResult
+class CollisionResult
 {
-  double minimumDistance;
+public:
 
-  Eigen::Vector3d nearestPoint1;
-  Eigen::Vector3d nearestPoint2;
+  /// Add one contact
+  void addContact(const Contact& contact);
 
-  const dynamics::ShapeFrame* shapeFrame1;
-  const dynamics::ShapeFrame* shapeFrame2;
+  /// Return number of contacts
+  std::size_t getNumContacts() const;
 
-  /// Constructor
-  DistanceResult();
+  /// Return the index-th contact
+  Contact& getContact(std::size_t index);
 
-  /// Clear (initialize) the result
+  /// Return (const) the index-th contact
+  const Contact& getContact(std::size_t index) const;
+
+  /// Return contacts
+  const std::vector<Contact>& getContacts() const;
+
+  /// Return the set of BodyNodes that are in collision
+  const std::unordered_set<const dynamics::BodyNode*>&
+  getCollidingBodyNodes() const;
+
+  /// Return the set of ShapeFrames that are in collision
+  const std::unordered_set<const dynamics::ShapeFrame*>&
+  getCollidingShapeFrames() const;
+
+  /// Returns true if the given BodyNode is in collision
+  bool inCollision(const dynamics::BodyNode* bn) const;
+
+  /// Returns true if the given ShapeFrame is in collision
+  bool inCollision(const dynamics::ShapeFrame* frame) const;
+
+  /// Return binary collision result
+  bool isCollision() const;
+
+  /// Implicitly converts this CollisionResult to the value of isCollision()
+  operator bool() const;
+
+  /// Clear all the contacts
   void clear();
 
-  /// Return true if the result is valid
-  bool found() const;
+protected:
+
+  void addObject(CollisionObject* object);
+
+  /// List of contact information for each contact
+  std::vector<Contact> mContacts;
+
+  /// Set of BodyNodes that are colliding
+  std::unordered_set<const dynamics::BodyNode*> mCollidingBodyNodes;
+
+  /// Set of ShapeFrames that are colliding
+  std::unordered_set<const dynamics::ShapeFrame*> mCollidingShapeFrames;
+
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_DISTANCE_RESULT_HPP_
+#endif  // DART_COLLISION_COLLISIONRESULT_HPP_

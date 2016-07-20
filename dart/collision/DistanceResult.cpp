@@ -36,11 +36,11 @@ namespace collision {
 
 //==============================================================================
 DistanceResult::DistanceResult()
-  : mMinimumDistance(0.0),
-    mNearestPoint1(Eigen::Vector3d::Zero()),
-    mNearestPoint2(Eigen::Vector3d::Zero()),
-    mShapeFrame1(nullptr),
-    mShapeFrame2(nullptr)
+  : minimumDistance(0.0),
+    nearestPoint1(Eigen::Vector3d::Zero()),
+    nearestPoint2(Eigen::Vector3d::Zero()),
+    shapeFrame1(nullptr),
+    shapeFrame2(nullptr)
 {
   // Do nothing
 }
@@ -48,19 +48,19 @@ DistanceResult::DistanceResult()
 //==============================================================================
 void DistanceResult::clear()
 {
-  mMinimumDistance = 0.0;
+  minimumDistance = 0.0;
 
-  mNearestPoint1.setZero();
-  mNearestPoint2.setZero();
+  nearestPoint1.setZero();
+  nearestPoint2.setZero();
 
-  mShapeFrame1 = nullptr;
-  mShapeFrame2 = nullptr;
+  shapeFrame1 = nullptr;
+  shapeFrame2 = nullptr;
 }
 
 //==============================================================================
 bool DistanceResult::found() const
 {
-  if (!mShapeFrame1 || !mShapeFrame2)
+  if (!shapeFrame1 || !shapeFrame2)
     return false;
 
   return true;

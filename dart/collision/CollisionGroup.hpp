@@ -35,8 +35,8 @@
 #include <map>
 #include <vector>
 #include "dart/collision/SmartPointer.hpp"
-#include "dart/collision/Option.hpp"
-#include "dart/collision/Result.hpp"
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/DistanceOption.hpp"
 #include "dart/collision/DistanceResult.hpp"
 #include "dart/dynamics/SmartPointer.hpp"

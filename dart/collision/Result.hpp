@@ -32,79 +32,9 @@
 #ifndef DART_COLLISION_RESULT_HPP_
 #define DART_COLLISION_RESULT_HPP_
 
-#include <vector>
-#include <unordered_set>
-#include "dart/collision/Contact.hpp"
+#warning "This header has been deprecated in DART 6.1. "\
+  "Please include CollisionResult.hpp intead."
 
-namespace dart {
-
-namespace dynamics {
-
-class BodyNode;
-class ShapeFrame;
-
-} // namespace dynamics
-
-namespace collision {
-
-class CollisionResult
-{
-public:
-
-  /// Add one contact
-  void addContact(const Contact& contact);
-
-  /// Return number of contacts
-  std::size_t getNumContacts() const;
-
-  /// Return the index-th contact
-  Contact& getContact(std::size_t index);
-
-  /// Return (const) the index-th contact
-  const Contact& getContact(std::size_t index) const;
-
-  /// Return contacts
-  const std::vector<Contact>& getContacts() const;
-
-  /// Return the set of BodyNodes that are in collision
-  const std::unordered_set<const dynamics::BodyNode*>&
-  getCollidingBodyNodes() const;
-
-  /// Return the set of ShapeFrames that are in collision
-  const std::unordered_set<const dynamics::ShapeFrame*>&
-  getCollidingShapeFrames() const;
-
-  /// Returns true if the given BodyNode is in collision
-  bool inCollision(const dynamics::BodyNode* bn) const;
-
-  /// Returns true if the given ShapeFrame is in collision
-  bool inCollision(const dynamics::ShapeFrame* frame) const;
-
-  /// Return binary collision result
-  bool isCollision() const;
-
-  /// Implicitly converts this CollisionResult to the value of isCollision()
-  operator bool() const;
-
-  /// Clear all the contacts
-  void clear();
-
-protected:
-
-  void addObject(CollisionObject* object);
-
-  /// List of contact information for each contact
-  std::vector<Contact> mContacts;
-
-  /// Set of BodyNodes that are colliding
-  std::unordered_set<const dynamics::BodyNode*> mCollidingBodyNodes;
-
-  /// Set of ShapeFrames that are colliding
-  std::unordered_set<const dynamics::ShapeFrame*> mCollidingShapeFrames;
-
-};
-
-}  // namespace collision
-}  // namespace dart
+#include "dart/collision/CollisionResult.hpp"
 
 #endif  // DART_COLLISION_RESULT_HPP_

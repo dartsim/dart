@@ -29,40 +29,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DISTANCE_RESULT_HPP_
-#define DART_COLLISION_DISTANCE_RESULT_HPP_
+#ifndef DART_COLLISION_COLLISIONOPTION_HPP_
+#define DART_COLLISION_COLLISIONOPTION_HPP_
 
-#include <Eigen/Dense>
+#include <cstddef>
+#include <memory>
 
 namespace dart {
-
-namespace dynamics {
-class ShapeFrame;
-} // namesapce dynamics
-
 namespace collision {
 
-struct DistanceResult
+class CollisionFilter;
+
+struct CollisionOption
 {
-  double minimumDistance;
 
-  Eigen::Vector3d nearestPoint1;
-  Eigen::Vector3d nearestPoint2;
+  /// Flag whether the collision detector computes contact information (contact
+  /// point, normal, and penetration depth). If it is set to false, only the
+  /// result of that which pairs are colliding will be stored in the
+  /// CollisionResult without the contact information.
+  bool enableContact;
 
-  const dynamics::ShapeFrame* shapeFrame1;
-  const dynamics::ShapeFrame* shapeFrame2;
+  /// Maximum number of contacts to detect. Once the contacts are found up to
+  /// this number, the collision checking will terminate at that moment. Set
+  /// this to 1 for binary check.
+  std::size_t maxNumContacts;
+
+  /// CollisionFilter
+  std::shared_ptr<CollisionFilter> collisionFilter;
 
   /// Constructor
-  DistanceResult();
+  CollisionOption(
+      bool enableContact = true,
+      std::size_t maxNumContacts = 1000u,
+      const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
 
-  /// Clear (initialize) the result
-  void clear();
-
-  /// Return true if the result is valid
-  bool found() const;
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_DISTANCE_RESULT_HPP_
+#endif  // DART_COLLISION_COLLISIONOPTION_HPP_
