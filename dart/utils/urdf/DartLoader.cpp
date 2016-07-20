@@ -47,8 +47,8 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/simulation/World.hpp"
@@ -529,8 +529,7 @@ dynamics::ShapePtr DartLoader::createShape(
   // Sphere
   if(urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(_vizOrCol->geometry.get()))
   {
-    shape = dynamics::ShapePtr(new dynamics::EllipsoidShape(
-                  2.0 * sphere->radius * Eigen::Vector3d::Ones()));
+    shape = dynamics::ShapePtr(new dynamics::SphereShape(sphere->radius));
   }
   // Box
   else if(urdf::Box* box = dynamic_cast<urdf::Box*>(_vizOrCol->geometry.get()))
