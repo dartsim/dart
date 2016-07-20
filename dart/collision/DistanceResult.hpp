@@ -49,16 +49,11 @@ struct DistanceResult
   const dynamics::ShapeFrame* mShapeFrame1;
   const dynamics::ShapeFrame* mShapeFrame2;
 
-  void clear()
-  {
-    mMinimumDistance = 0.0;
+  DistanceResult();
 
-    mNearestPoint1.setZero();
-    mNearestPoint2.setZero();
+  void clear();
 
-    mShapeFrame1 = nullptr;
-    mShapeFrame2 = nullptr;
-  }
+  bool found() const;
 };
 
 }  // namespace collision

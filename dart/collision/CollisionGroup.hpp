@@ -37,6 +37,8 @@
 #include "dart/collision/SmartPointer.hpp"
 #include "dart/collision/Option.hpp"
 #include "dart/collision/Result.hpp"
+#include "dart/collision/DistanceOption.hpp"
+#include "dart/collision/DistanceResult.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
@@ -176,9 +178,23 @@ public:
   /// Return false if the engine type of the other CollisionGroup is different
   /// from this CollisionObject engine.
   bool collide(
-      CollisionGroup* group,
+      CollisionGroup* otherGroup,
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr);
+
+  /// Perform distance check within this CollisionGroup.
+  bool distance(
+      const DistanceOption& option = DistanceOption(false, nullptr),
+      DistanceResult* result = nullptr);
+
+  /// Perform distance check with other CollisionGroup.
+  ///
+  /// Return false if the engine type of the other CollisionGroup is different
+  /// from this CollisionObject engine.
+  bool distance(
+      CollisionGroup* otherGroup,
+      const DistanceOption& option = DistanceOption(false, nullptr),
+      DistanceResult* result = nullptr);
 
 protected:
 

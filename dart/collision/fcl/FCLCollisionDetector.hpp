@@ -110,14 +110,14 @@ public:
   // Documentation inherited
   bool distance(
       CollisionGroup* group,
-      const DistanceOption& option = DistanceOption(nullptr),
+      const DistanceOption& option = DistanceOption(false, nullptr),
       DistanceResult* result = nullptr) override;
 
   // Documentation inherited
   bool distance(
       CollisionGroup* group1,
       CollisionGroup* group2,
-      const DistanceOption& option = DistanceOption(nullptr),
+      const DistanceOption& option = DistanceOption(false, nullptr),
       DistanceResult* result = nullptr) override;
 
   /// Set primitive shape type

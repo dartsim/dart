@@ -43,9 +43,123 @@ TEST(Distance, Basic)
   auto bulletCd = collision::BulletCollisionDetector::create();
   auto dartCd = collision::DARTCollisionDetector::create();
 
-  EXPECT_TRUE(fclCd->distance(nullptr));
-  EXPECT_FALSE(bulletCd->distance(nullptr));
-  EXPECT_FALSE(dartCd->distance(nullptr));
+//  EXPECT_TRUE(fclCd->distance(nullptr));
+//  EXPECT_FALSE(bulletCd->distance(nullptr));
+//  EXPECT_FALSE(dartCd->distance(nullptr));
+}
+
+//==============================================================================
+void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
+                      double tol = 1e-12)
+{
+  if (cd->getType() != collision::FCLCollisionDetector::getStaticType())
+  {
+    dtwarn << "Aborting test: distance check is not supported by "
+           << cd->getType() << ".\n";
+    return;
+  }
+
+  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+
+  ShapePtr shape1(new EllipsoidShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape2(new EllipsoidShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+
+  auto group1 = cd->createCollisionGroup(simpleFrame1.get());
+  auto group2 = cd->createCollisionGroup(simpleFrame2.get());
+  auto group12 = cd->createCollisionGroup(group1.get(), group2.get());
+
+  EXPECT_EQ(group1->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group2->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group12->getNumShapeFrames(), 2u);
+
+  collision::DistanceOption option;
+  collision::DistanceResult result;
+
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
+  EXPECT_FALSE(group12->distance(option, &result));
+  EXPECT_DOUBLE_EQ(result.mMinimumDistance, 0.0);
+
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  simpleFrame2->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
+  EXPECT_FALSE(group12->distance(option, &result));
+  EXPECT_DOUBLE_EQ(result.mMinimumDistance, 0.25);
+}
+
+//==============================================================================
+TEST(Distance, SphereSphere)
+{
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  testSphereSphere(fcl_mesh_dart);
+
+#if HAVE_BULLET_COLLISION
+  auto bullet = BulletCollisionDetector::create();
+  testSphereSphere(bullet);
+#endif
+
+  auto dart = DARTCollisionDetector::create();
+  testSphereSphere(dart);
+}
+
+//==============================================================================
+void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
+                double tol = 1e-12)
+{
+  if (cd->getType() != collision::FCLCollisionDetector::getStaticType())
+  {
+    dtwarn << "Aborting test: distance check is not supported by "
+           << cd->getType() << ".\n";
+    return;
+  }
+
+  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+
+  ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
+  ShapePtr shape2(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+
+  Eigen::Vector3d pos1 = Eigen::Vector3d(0.0, 0.0, 0.0);
+  Eigen::Vector3d pos2 = Eigen::Vector3d(0.0, 0.0, 0.0);
+  simpleFrame1->setTranslation(pos1);
+  simpleFrame2->setTranslation(pos2);
+
+  auto group1 = cd->createCollisionGroup(simpleFrame1.get());
+  auto group2 = cd->createCollisionGroup(simpleFrame2.get());
+
+  EXPECT_EQ(group1->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group2->getNumShapeFrames(), 1u);
+
+  collision::DistanceOption option;
+  collision::DistanceResult result;
+
+//  EXPECT_TRUE(group1->distance(group2.get(), option, &result));
+
+  Eigen::Vector3d min = Eigen::Vector3d(-0.25, 0.25, 0.0);
+  Eigen::Vector3d max = Eigen::Vector3d(0.25, 0.5, 0.0);
+
+
+}
+
+//==============================================================================
+TEST(Distance, BoxBox)
+{
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  testBoxBox(fcl_mesh_dart);
+
+#if HAVE_BULLET_COLLISION
+  auto bullet = BulletCollisionDetector::create();
+  testBoxBox(bullet);
+#endif
+
+  auto dart = DARTCollisionDetector::create();
+  testBoxBox(dart);
 }
 
 //==============================================================================

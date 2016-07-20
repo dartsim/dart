@@ -34,6 +34,37 @@
 namespace dart {
 namespace collision {
 
+//==============================================================================
+DistanceResult::DistanceResult()
+  : mMinimumDistance(0.0),
+    mNearestPoint1(Eigen::Vector3d::Zero()),
+    mNearestPoint2(Eigen::Vector3d::Zero()),
+    mShapeFrame1(nullptr),
+    mShapeFrame2(nullptr)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void DistanceResult::clear()
+{
+  mMinimumDistance = 0.0;
+
+  mNearestPoint1.setZero();
+  mNearestPoint2.setZero();
+
+  mShapeFrame1 = nullptr;
+  mShapeFrame2 = nullptr;
+}
+
+//==============================================================================
+bool DistanceResult::found() const
+{
+  if (!mShapeFrame1 || !mShapeFrame2)
+    return false;
+
+  return true;
+}
 
 }  // namespace collision
 }  // namespace dart

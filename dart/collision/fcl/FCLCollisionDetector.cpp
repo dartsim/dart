@@ -45,6 +45,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/DistanceFilter.hpp"
 #include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 #include "dart/collision/fcl/FCLCollisionGroup.hpp"
@@ -85,6 +86,13 @@ void postProcessDART(
     fcl::CollisionObject* o2,
     const CollisionOption& option,
     CollisionResult& result);
+
+void interpreteDistanceResult(
+    const fcl::DistanceResult& fclResult,
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2,
+    const DistanceOption& option,
+    DistanceResult& result);
 
 int evalContactPosition(const fcl::Contact& fclContact,
     const fcl::BVHModel<fcl::OBBRSS>* mesh1,
@@ -1105,30 +1113,63 @@ bool distanceCallback(
     void* ddata,
     fcl::FCL_REAL& dist)
 {
-  auto* distdata = static_cast<FCLDistanceCallbackData*>(ddata);
+  auto* distData = static_cast<FCLDistanceCallbackData*>(ddata);
 
-  const auto& fclRequest = distdata->fclRequest;
-        auto& fclResult = distdata->fclResult;
+  const auto& fclRequest = distData->fclRequest;
+        auto& fclResult  = distData->fclResult;
+        auto* result     = distData->result;
+  const auto& option     = distData->option;
+  const auto& filter     = option.distanceFilter;
 
-  if (distdata->done)
+  if (distData->done)
   {
     dist = fclResult.min_distance;
     return true;
   }
 
+  // Filtering
+  if (filter)
+  {
+    auto userData1
+        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
+    auto userData2
+        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
+    assert(userData1);
+    assert(userData2);
+
+    auto collisionObject1 = userData1->mCollisionObject;
+    auto collisionObject2 = userData2->mCollisionObject;
+    assert(collisionObject1);
+    assert(collisionObject2);
+
+    if (!filter->needDistance(collisionObject2, collisionObject1))
+      return distData->done;
+  }
+
+  // Clear previous results
+  fclResult.clear();
+
+  // Perform narrow-phase check
   fcl::distance(o1, o2, fclRequest, fclResult);
 
-  dist = fclResult.min_distance;
+  if (result)
+  {
+    interpreteDistanceResult(fclResult, o1, o2, option, *result);
+  }
+  else
+  {
+    // TODO(JS): Not implemented
+  }
 
   // TODO(JS): the data should be transformed into the DART's data structure
 
   if (dist <= 0)
   {
     // in collision or in touch
-    return true;
+    distData->done = true;
   }
 
-  return distdata->done;
+  return distData->done;
 }
 
 //==============================================================================
@@ -1378,6 +1419,37 @@ void postProcessDART(
 
     if (result.getNumContacts() >= option.maxNumContacts)
       return;
+  }
+}
+
+//==============================================================================
+void interpreteDistanceResult(
+    const fcl::DistanceResult& fclResult,
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2,
+    const DistanceOption& option,
+    DistanceResult& result)
+{
+  result.mMinimumDistance = fclResult.min_distance;
+
+  const auto* userData1
+      = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
+  const auto* userData2
+      = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
+  assert(userData1);
+  assert(userData2);
+  assert(userData1->mCollisionObject);
+  assert(userData2->mCollisionObject);
+
+  result.mShapeFrame1 = userData1->mCollisionObject->getShapeFrame();
+  result.mShapeFrame2 = userData2->mCollisionObject->getShapeFrame();
+
+  if (option.enableNearestPoints)
+  {
+    result.mNearestPoint1
+        = FCLTypes::convertVector3(fclResult.nearest_points[0]);
+    result.mNearestPoint2
+        = FCLTypes::convertVector3(fclResult.nearest_points[1]);
   }
 }
 
