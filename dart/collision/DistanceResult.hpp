@@ -58,12 +58,14 @@ struct DistanceResult
   /// Second ShapeFrame
   const dynamics::ShapeFrame* shapeFrame2;
 
-  /// The nearest point on shapeFrame1. The point is calculated only when
-  /// DistanceOption::enableNearestPoints is true, which is false by default.
+  /// The nearest point on shapeFrame1 w.r.t. the world coordinates. The point
+  /// is calculated only when DistanceOption::enableNearestPoints is true, which
+  /// is false by default.
   Eigen::Vector3d nearestPoint1;
 
-  /// The nearest point on shapeFrame2. The point is calculated only when
-  /// DistanceOption::enableNearestPoints is true, which is false by default.
+  /// The nearest point on shapeFrame2 w.r.t. the world coordinates. The point
+  /// is calculated only when DistanceOption::enableNearestPoints is true, which
+  /// is false by default.
   Eigen::Vector3d nearestPoint2;
 
   /// Constructor
