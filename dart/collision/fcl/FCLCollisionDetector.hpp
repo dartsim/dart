@@ -36,6 +36,7 @@
 #include <fcl/collision_object.h>
 #include <boost/weak_ptr.hpp> // This should be removed once we migrate to fcl 0.5
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/fcl/FCLTypes.hpp"
 
 namespace dart {
 namespace collision {
@@ -130,7 +131,11 @@ protected:
 
   /// Return fcl::CollisionGeometry associated with give Shape. New
   /// fcl::CollisionGeome will be created if it hasn't created yet.
+#if FCL_VERSION_AT_LEAST(0,5,0)
+  std::shared_ptr<fcl::CollisionGeometry> claimFCLCollisionGeometry(
+#else
   boost::shared_ptr<fcl::CollisionGeometry> claimFCLCollisionGeometry(
+#endif
       const dynamics::ConstShapePtr& shape);
 
 protected:
@@ -162,7 +167,11 @@ private:
 
   /// Create fcl::CollisionGeometry with the custom deleter
   /// FCLCollisionGeometryDeleter
+#if FCL_VERSION_AT_LEAST(0,5,0)
+  std::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
+#else
   boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
+#endif
       const dynamics::ConstShapePtr& shape,
       FCLCollisionDetector::PrimitiveShape type,
       const FCLCollisionGeometryDeleter& deleter);
@@ -170,7 +179,11 @@ private:
 private:
 
   using ShapeMap = std::map<dynamics::ConstShapePtr,
-                            boost::weak_ptr<fcl::CollisionGeometry>>;
+#if FCL_VERSION_AT_LEAST(0,5,0)
+                           std::weak_ptr<fcl::CollisionGeometry>>;
+#else
+                           boost::weak_ptr<fcl::CollisionGeometry>>;
+#endif
   // TODO(JS): FCL replaced all the use of boost in version 0.5. Once we migrate
   // to 0.5 or greater, this also should be changed to
   // std::weak_ptr<fcl::CollisionGeometry>
