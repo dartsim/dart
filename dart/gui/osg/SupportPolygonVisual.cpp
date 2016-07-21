@@ -193,7 +193,7 @@ void SupportPolygonVisual::setCenterOfMassRadius(double radius)
   mComRadius = radius;
   const dart::dynamics::ShapePtr& shape = mCom->getShape();
   std::static_pointer_cast<dart::dynamics::SphereShape>(shape)->setRadius(
-        mComRadius/8.0);
+        mComRadius/4.0);
   shape->addDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
 }
 
