@@ -807,14 +807,14 @@ public:
   double computeLagrangian(const Eigen::Vector3d& gravity) const;
 
   /// Return kinetic energy.
-  DEPRECATED(6.1)
+  DART_DEPRECATED(6.1)
   virtual double getKineticEnergy() const;
 
   /// Return kinetic energy
   double computeKineticEnergy() const;
 
   /// Return potential energy.
-  DEPRECATED(6.1)
+  DART_DEPRECATED(6.1)
   virtual double getPotentialEnergy(const Eigen::Vector3d& _gravity) const;
 
   /// Return potential energy.

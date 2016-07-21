@@ -534,7 +534,7 @@ public:
   //----------------------------------------------------------------------------
 
   /// Get potential energy
-  DEPRECATED(6.1)
+  DART_DEPRECATED(6.1)
   double getPotentialEnergy() const;
 
   /// Compute and return the potential energy
