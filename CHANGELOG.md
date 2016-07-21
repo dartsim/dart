@@ -4,6 +4,7 @@
 
 * Collision detection
 
+  * Added support of FCL 0.5 and tinyxml2 4.0: [#749](https://github.com/dartsim/dart/pull/749)
   * Added warnings for unsupported shape pairs of DARTCollisionDetector: [#722](https://github.com/dartsim/dart/pull/722)
 
 * Misc improvements and bug fixes
