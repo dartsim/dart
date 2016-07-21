@@ -114,15 +114,15 @@ public:
   /// Perform collision check for a single group.
   virtual void distance(
       CollisionGroup* group,
-      const DistanceOption& option = DistanceOption(false, nullptr),
-      DistanceResult* result = nullptr);
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr) = 0;
 
   /// Perform collision check for two groups.
   virtual void distance(
       CollisionGroup* group1,
       CollisionGroup* group2,
-      const DistanceOption& option = DistanceOption(false, nullptr),
-      DistanceResult* result = nullptr);
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr) = 0;
 
 protected:
 

@@ -44,12 +44,15 @@ struct DistanceOption
 {
   bool enableNearestPoints;
 
+  double minimumDistance;
+
   /// Distance filter
   std::shared_ptr<DistanceFilter> distanceFilter;
 
   /// Constructor
   DistanceOption(
       bool enableNearestPoints = false,
+      double minimumDistance = 0.0,
       const std::shared_ptr<DistanceFilter>& distanceFilter = nullptr);
 };
 

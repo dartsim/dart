@@ -184,7 +184,7 @@ public:
 
   /// Perform distance check within this CollisionGroup.
   void distance(
-      const DistanceOption& option = DistanceOption(false, nullptr),
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr);
 
   /// Perform distance check with other CollisionGroup.
@@ -193,7 +193,7 @@ public:
   /// from this CollisionObject engine.
   void distance(
       CollisionGroup* otherGroup,
-      const DistanceOption& option = DistanceOption(false, nullptr),
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr);
 
 protected:

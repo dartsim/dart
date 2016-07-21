@@ -50,34 +50,6 @@ CollisionDetector::createCollisionGroupAsSharedPtr()
 }
 
 //==============================================================================
-void CollisionDetector::distance(
-    CollisionGroup* /*group*/,
-    const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
-{
-  dtwarn << "[CollisionDetector::distance] [" << getType() << "] does not "
-         << "support (signed) distance queries. Ignoring this query.\n";
-
-  // Note: Only FCL supports distance query.
-
-  return;
-}
-
-//==============================================================================
-void CollisionDetector::distance(CollisionGroup* /*group1*/,
-    CollisionGroup* /*group2*/,
-    const DistanceOption& /*option*/,
-    DistanceResult* /*result*/)
-{
-  dtwarn << "[CollisionDetector::distance] [" << getType() << "] does not "
-         << "support (signed) distance queries. Ignoring this query.\n";
-
-  // Note: Only FCL supports distance query.
-
-  return;
-}
-
-//==============================================================================
 std::shared_ptr<CollisionObject> CollisionDetector::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {

@@ -311,6 +311,31 @@ bool BulletCollisionDetector::collide(
 }
 
 //==============================================================================
+void BulletCollisionDetector::distance(
+    CollisionGroup* /*group*/,
+    const DistanceOption& /*option*/,
+    DistanceResult* /*result*/)
+{
+  dtwarn << "[BulletCollisionDetector::distance] This collision detector does "
+         << "not support (signed) distance queries. Ignoring this query.\n";
+
+  return;
+}
+
+//==============================================================================
+void BulletCollisionDetector::distance(
+    CollisionGroup* /*group1*/,
+    CollisionGroup* /*group2*/,
+    const DistanceOption& /*option*/,
+    DistanceResult* /*result*/)
+{
+  dtwarn << "[BulletCollisionDetector::distance] This collision detector does "
+         << "not support (signed) distance queries. Ignoring this query.\n";
+
+  return;
+}
+
+//==============================================================================
 BulletCollisionDetector::BulletCollisionDetector()
   : CollisionDetector()
 {

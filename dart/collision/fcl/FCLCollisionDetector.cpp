@@ -1187,14 +1187,8 @@ bool distanceCallback(
   // TODO(JS): Not sure if nullptr result would make any sense for distance
   // check
 
-  if (dist <= 0)
-  {
-    // in collision or in touch
+  if (dist <= option.minimumDistance)
     distData->done = true;
-  }
-  // TODO(JS): Do we don't care what's the actual minimum distance when
-  // collision is found? Or should we continue to the narrow check to check
-  // every pairs?
 
   return distData->done;
 }

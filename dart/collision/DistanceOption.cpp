@@ -35,9 +35,12 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-DistanceOption::DistanceOption(bool enableNearestPoints,
+DistanceOption::DistanceOption(
+    bool enableNearestPoints,
+    double minimumDistance,
     const std::shared_ptr<DistanceFilter>& distanceFilter)
   : enableNearestPoints(enableNearestPoints),
+    minimumDistance(minimumDistance),
     distanceFilter(distanceFilter)
 {
   // Do nothing
