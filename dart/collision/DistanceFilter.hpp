@@ -51,7 +51,7 @@ struct DistanceFilter
 struct BodyNodeDistanceFilter : DistanceFilter
 {
   bool needDistance(const CollisionObject* object1,
-                     const CollisionObject* object2) const override;
+                    const CollisionObject* object2) const override;
 
   bool areAdjacentBodies(const dynamics::BodyNode* bodyNode1,
                          const dynamics::BodyNode* bodyNode2) const;

@@ -42,17 +42,22 @@ class DistanceFilter;
 
 struct DistanceOption
 {
+  /// Whether to return the nearest points
   bool enableNearestPoints;
 
-  double minimumDistance;
+  /// Stopping criteria for further distance check in broadphase. The distance
+  /// check stop as soon as a distance equal to or less than this value is
+  /// found.
+  double minimumDistanceThreshold;
 
-  /// Distance filter
+  /// Filter for excluding pairs of ShapeFrames from distance check. If nullptr,
+  /// every pairs of ShapeFrames in the CollisionGroup(s) are checked.
   std::shared_ptr<DistanceFilter> distanceFilter;
 
   /// Constructor
   DistanceOption(
       bool enableNearestPoints = false,
-      double minimumDistance = 0.0,
+      double minimumDistanceThreshold = 0.0,
       const std::shared_ptr<DistanceFilter>& distanceFilter = nullptr);
 };
 

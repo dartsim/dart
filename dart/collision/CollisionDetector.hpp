@@ -111,13 +111,32 @@ public:
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr) = 0;
 
-  /// Perform collision check for a single group.
+  /// Measure the minimum signed distance between two Shapes of ShapeFrames in
+  /// the given CollisionGroup, and store which ShapeFrames are. The results are
+  /// stored in the given DistanceResult.
+  ///
+  /// The minimum signed distance meaning can be varied depending on the
+  /// DistanceOption::minimumDistanceThreshold passing in. By default, the
+  /// minimum signed distance means either of the non-negative minimum positive
+  /// (when there are no penetrations between shapes) or the firstly found
+  /// negative distance (penetration). Please see DistanceOption for the details
+  /// and other options.
   virtual void distance(
       CollisionGroup* group,
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr) = 0;
 
-  /// Perform collision check for two groups.
+  /// Measure the minimum signed distance between two Shapes of ShapeFrames one
+  /// from group1 and one from group2, and store which ShapeFrames are. Note
+  /// that the distance between ShapeFrames within the same CollisionGroup are
+  /// note measured. The results are stored in the given DistanceResult.
+  ///
+  /// The minimum signed distance meaning can be varied depending on the
+  /// DistanceOption::minimumDistanceThreshold passing in. By default, the
+  /// minimum signed distance means either of the non-negative minimum positive
+  /// (when there are no penetrations between shapes) or the firstly found
+  /// negative distance (penetration). Please see DistanceOption for the details
+  /// and other options.
   virtual void distance(
       CollisionGroup* group1,
       CollisionGroup* group2,

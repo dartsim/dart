@@ -1175,7 +1175,7 @@ bool distanceCallback(
   // TODO(JS): Not sure if nullptr result would make any sense for distance
   // check
 
-  if (dist <= option.minimumDistance)
+  if (dist <= option.minimumDistanceThreshold)
     distData->done = true;
 
   return distData->done;

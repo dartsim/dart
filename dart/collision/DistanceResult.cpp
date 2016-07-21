@@ -37,10 +37,10 @@ namespace collision {
 //==============================================================================
 DistanceResult::DistanceResult()
   : minimumDistance(0.0),
-    nearestPoint1(Eigen::Vector3d::Zero()),
-    nearestPoint2(Eigen::Vector3d::Zero()),
     shapeFrame1(nullptr),
-    shapeFrame2(nullptr)
+    shapeFrame2(nullptr),
+    nearestPoint1(Eigen::Vector3d::Zero()),
+    nearestPoint2(Eigen::Vector3d::Zero())
 {
   // Do nothing
 }

@@ -44,13 +44,27 @@ namespace collision {
 
 struct DistanceResult
 {
+  /// Minimum "singed" distance between two Shapes. If the two Shapes are in
+  /// collision, the distance is negative.
+  ///
+  /// The minimum signed distance meaning can be varied depending on the
+  /// DistanceOption::minimumDistance. Please see
+  /// DistanceOption::minimumDistanceThreshold for further details.
   double minimumDistance;
 
-  Eigen::Vector3d nearestPoint1;
-  Eigen::Vector3d nearestPoint2;
-
+  /// First ShapeFrame
   const dynamics::ShapeFrame* shapeFrame1;
+
+  /// Second ShapeFrame
   const dynamics::ShapeFrame* shapeFrame2;
+
+  /// The nearest point on shapeFrame1. The point is calculated only when
+  /// DistanceOption::enableNearestPoints is true, which is false by default.
+  Eigen::Vector3d nearestPoint1;
+
+  /// The nearest point on shapeFrame2. The point is calculated only when
+  /// DistanceOption::enableNearestPoints is true, which is false by default.
+  Eigen::Vector3d nearestPoint2;
 
   /// Constructor
   DistanceResult();

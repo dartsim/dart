@@ -66,7 +66,7 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd,
   collision::DistanceOption option;
   option.enableNearestPoints = true;
   EXPECT_TRUE(option.enableNearestPoints == true);
-  EXPECT_TRUE(option.minimumDistance == 0.0);
+  EXPECT_TRUE(option.minimumDistanceThreshold == 0.0);
   EXPECT_TRUE(option.distanceFilter == nullptr);
 
   collision::DistanceResult result;
