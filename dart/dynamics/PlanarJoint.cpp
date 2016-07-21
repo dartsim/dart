@@ -73,7 +73,7 @@ void PlanarJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 PlanarJoint::Properties PlanarJoint::getPlanarJointProperties() const
 {
-  return Properties(getGeometricJointProperties(), mAspectProperties);
+  return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -215,7 +215,7 @@ PlanarJoint::PlanarJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createPlanarJointAspect(properties);
-  createGeometricJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 

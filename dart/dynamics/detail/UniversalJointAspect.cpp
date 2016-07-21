@@ -45,9 +45,9 @@ UniversalJointUniqueProperties::UniversalJointUniqueProperties(
 
 //==============================================================================
 UniversalJointProperties::UniversalJointProperties(
-    const GeometricJoint<math::R2Space>::Properties& geometricJointProperties,
+    const GenericJoint<math::R2Space>::Properties& GenericJointProperties,
     const UniversalJointUniqueProperties& universalProperties)
-  : GeometricJoint<math::R2Space>::Properties(geometricJointProperties),
+  : GenericJoint<math::R2Space>::Properties(GenericJointProperties),
     UniversalJointUniqueProperties(universalProperties)
 {
   // Do nothing

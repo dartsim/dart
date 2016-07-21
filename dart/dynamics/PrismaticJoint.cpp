@@ -49,8 +49,8 @@ PrismaticJoint::~PrismaticJoint()
 //==============================================================================
 void PrismaticJoint::setProperties(const Properties& _properties)
 {
-  GeometricJoint<math::R1Space>::setProperties(
-        static_cast<const GeometricJoint<math::R1Space>::Properties&>(_properties));
+  GenericJoint<math::R1Space>::setProperties(
+        static_cast<const GenericJoint<math::R1Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -69,7 +69,7 @@ void PrismaticJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 PrismaticJoint::Properties PrismaticJoint::getPrismaticJointProperties() const
 {
-  return Properties(getGeometricJointProperties(), mAspectProperties);
+  return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -135,11 +135,11 @@ const Eigen::Vector3d& PrismaticJoint::getAxis() const
 }
 
 //==============================================================================
-GeometricJoint<math::R1Space>::JacobianMatrix
+GenericJoint<math::R1Space>::JacobianMatrix
 PrismaticJoint::getRelativeJacobianStatic(
-    const GeometricJoint<math::R1Space>::Vector& /*positions*/) const
+    const GenericJoint<math::R1Space>::Vector& /*positions*/) const
 {
-  GeometricJoint<math::R1Space>::JacobianMatrix jacobian
+  GenericJoint<math::R1Space>::JacobianMatrix jacobian
       = math::AdTLinear(Joint::mAspectProperties.mT_ChildBodyToJoint,
                         getAxis());
 
@@ -156,7 +156,7 @@ PrismaticJoint::PrismaticJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createPrismaticJointAspect(properties);
-  createGeometricJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 

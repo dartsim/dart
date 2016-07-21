@@ -29,12 +29,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_GEOMETRICJOINT_HPP_
-#define DART_DYNAMICS_GEOMETRICJOINT_HPP_
+#ifndef DART_DYNAMICS_GENERICJOINT_HPP_
+#define DART_DYNAMICS_GENERICJOINT_HPP_
 
 #include <string>
 #include <array>
-#include "dart/dynamics/detail/GeometricJointAspect.hpp"
+#include "dart/dynamics/detail/GenericJointAspect.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -42,16 +42,16 @@ namespace dynamics {
 class DegreeOfFreedom;
 
 template <class ConfigSpaceT>
-class GeometricJoint :
-    public detail::GeometricJointBase< GeometricJoint<ConfigSpaceT>,
+class GenericJoint :
+    public detail::GenericJointBase< GenericJoint<ConfigSpaceT>,
                                        ConfigSpaceT >
 {
 public:
 
   static constexpr std::size_t NumDofs = ConfigSpaceT::NumDofs;
 
-  using ThisClass = GeometricJoint<ConfigSpaceT>;
-  using Base = detail::GeometricJointBase<ThisClass, ConfigSpaceT>;
+  using ThisClass = GenericJoint<ConfigSpaceT>;
+  using Base = detail::GenericJointBase<ThisClass, ConfigSpaceT>;
 
   using Point          = typename ConfigSpaceT::Point;
   using EuclideanPoint = typename ConfigSpaceT::EuclideanPoint;
@@ -59,41 +59,41 @@ public:
   using JacobianMatrix = typename ConfigSpaceT::JacobianMatrix;
   using Matrix         = typename ConfigSpaceT::Matrix;
 
-  using UniqueProperties = detail::GeometricJointUniqueProperties<ConfigSpaceT>;
-  using Properties = detail::GeometricJointProperties<ConfigSpaceT>;
+  using UniqueProperties = detail::GenericJointUniqueProperties<ConfigSpaceT>;
+  using Properties = detail::GenericJointProperties<ConfigSpaceT>;
   using AspectState = typename Base::AspectState;
   using AspectProperties = typename Base::AspectProperties;
 
   DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(
-      typename ThisClass::Aspect, GeometricJointAspect )
+      typename ThisClass::Aspect, GenericJointAspect )
 
-  GeometricJoint(const ThisClass&) = delete;
+  GenericJoint(const ThisClass&) = delete;
 
   /// Destructor
-  virtual ~GeometricJoint();
+  virtual ~GenericJoint();
 
-  /// Set the Properties of this GeometricJoint
+  /// Set the Properties of this GenericJoint
   void setProperties(const Properties& properties);
 
-  /// Set the Properties of this GeometricJoint
+  /// Set the Properties of this GenericJoint
   void setProperties(const UniqueProperties& properties);
 
-  /// Set the AspectState of this GeometricJoint
+  /// Set the AspectState of this GenericJoint
   void setAspectState(const AspectState& state);
 
-  /// Set the AspectProperties of this GeometricJoint
+  /// Set the AspectProperties of this GenericJoint
   void setAspectProperties(const AspectProperties& properties);
 
-  /// Get the Properties of this GeometricJoint
-  Properties getGeometricJointProperties() const;
+  /// Get the Properties of this GenericJoint
+  Properties getGenericJointProperties() const;
 
-  /// Copy the Properties of another GeometricJoint
+  /// Copy the Properties of another GenericJoint
   void copy(const ThisClass& otherJoint);
 
-  /// Copy the Properties of another GeometricJoint
+  /// Copy the Properties of another GenericJoint
   void copy(const ThisClass* otherJoint);
 
-  /// Same as copy(const GeometricJoint&)
+  /// Same as copy(const GenericJoint&)
   ThisClass& operator=(const ThisClass& other);
 
   //----------------------------------------------------------------------------
@@ -447,7 +447,7 @@ public:
   const math::Jacobian getRelativeJacobian() const override;
 
   /// Fixed-size version of getRelativeJacobian()
-  const typename GeometricJoint<ConfigSpaceT>::JacobianMatrix&
+  const typename GenericJoint<ConfigSpaceT>::JacobianMatrix&
   getRelativeJacobianStatic() const;
 
   // Documentation inherited
@@ -468,7 +468,7 @@ public:
 
 protected:
 
-  GeometricJoint(const Properties& properties);
+  GenericJoint(const Properties& properties);
 
   // Documentation inherited
   void registerDofs() override;
@@ -774,6 +774,6 @@ private:
 } // namespace dynamics
 } // namespace dart
 
-#include "dart/dynamics/detail/GeometricJoint.hpp"
+#include "dart/dynamics/detail/GenericJoint.hpp"
 
-#endif // DART_DYNAMICS_GEOMETRICJOINT_HPP_
+#endif // DART_DYNAMICS_GENERICJOINT_HPP_

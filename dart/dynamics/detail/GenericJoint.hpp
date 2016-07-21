@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_GEOMETRICJOINT_HPP_
-#define DART_DYNAMICS_DETAIL_GEOMETRICJOINT_HPP_
+#ifndef DART_DYNAMICS_DETAIL_GenericJoint_HPP_
+#define DART_DYNAMICS_DETAIL_GenericJoint_HPP_
 
-#include "dart/dynamics/GeometricJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 #include "dart/config.hpp"
 #include "dart/math/Helpers.hpp"
@@ -45,32 +45,32 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 
-#define GEOMETRICJOINT_REPORT_DIM_MISMATCH( func, arg )\
+#define GenericJoint_REPORT_DIM_MISMATCH( func, arg )\
   {\
-    dterr << "[GeometricJoint::" #func "] Mismatch beteween size of "\
+    dterr << "[GenericJoint::" #func "] Mismatch beteween size of "\
           << #arg " [" << arg .size() << "] and the number of "\
           << "DOFs [" << getNumDofs() << "] for Joint named ["\
           << this->getName() << "].\n";\
     assert(false);\
   }
 
-#define GEOMETRICJOINT_REPORT_OUT_OF_RANGE( func, index )\
+#define GenericJoint_REPORT_OUT_OF_RANGE( func, index )\
   {\
-    dterr << "[GeometricJoint::" << #func << "] The index [" << index\
+    dterr << "[GenericJoint::" << #func << "] The index [" << index\
           << "] is out of range for Joint named [" << this->getName()\
           << "] which has " << this->getNumDofs() << " DOFs.\n";\
     assert(false);\
   }
 
-#define GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR( func )\
+#define GenericJoint_REPORT_UNSUPPORTED_ACTUATOR( func )\
   {\
-    dterr << "[GeometricJoint::" # func "] Unsupported actuator type ("\
+    dterr << "[GenericJoint::" # func "] Unsupported actuator type ("\
           << Joint::mAspectProperties.mActuatorType << ") for Joint ["\
           << this->getName() << "].\n";\
     assert(false);\
   }
 
-#define GEOMETRICJOINT_SET_IF_DIFFERENT( mField, value )\
+#define GenericJoint_SET_IF_DIFFERENT( mField, value )\
   if( value == Base::mAspectProperties. mField )\
     return;\
   Base::mAspectProperties. mField = value;\
@@ -87,11 +87,11 @@ namespace dynamics {
 // See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
 //
 template <class ConfigSpaceT>
-constexpr size_t GeometricJoint<ConfigSpaceT>::NumDofs;
+constexpr size_t GenericJoint<ConfigSpaceT>::NumDofs;
 
 //==============================================================================
 template <class ConfigSpaceT>
-GeometricJoint<ConfigSpaceT>::~GeometricJoint()
+GenericJoint<ConfigSpaceT>::~GenericJoint()
 {
   for (auto i = 0u; i < NumDofs; ++i)
     delete mDofs[i];
@@ -99,7 +99,7 @@ GeometricJoint<ConfigSpaceT>::~GeometricJoint()
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setProperties(const Properties& properties)
+void GenericJoint<ConfigSpaceT>::setProperties(const Properties& properties)
 {
   Joint::setProperties(static_cast<const Joint::Properties&>(properties));
   setProperties(static_cast<const UniqueProperties&>(properties));
@@ -107,7 +107,7 @@ void GeometricJoint<ConfigSpaceT>::setProperties(const Properties& properties)
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setProperties(
+void GenericJoint<ConfigSpaceT>::setProperties(
     const UniqueProperties& properties)
 {
   setAspectProperties(properties);
@@ -115,7 +115,7 @@ void GeometricJoint<ConfigSpaceT>::setProperties(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setAspectState(const AspectState& state)
+void GenericJoint<ConfigSpaceT>::setAspectState(const AspectState& state)
 {
   setCommands(state.mCommands);
   setPositionsStatic(state.mPositions);
@@ -126,7 +126,7 @@ void GeometricJoint<ConfigSpaceT>::setAspectState(const AspectState& state)
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setAspectProperties(
+void GenericJoint<ConfigSpaceT>::setAspectProperties(
     const AspectProperties& properties)
 {
   for (auto i = 0u; i < NumDofs; ++i)
@@ -151,28 +151,28 @@ void GeometricJoint<ConfigSpaceT>::setAspectProperties(
 
 //==============================================================================
 template <class ConfigSpaceT>
-typename GeometricJoint<ConfigSpaceT>::Properties
-GeometricJoint<ConfigSpaceT>::getGeometricJointProperties() const
+typename GenericJoint<ConfigSpaceT>::Properties
+GenericJoint<ConfigSpaceT>::getGenericJointProperties() const
 {
-  return GeometricJoint<ConfigSpaceT>::Properties(
+  return GenericJoint<ConfigSpaceT>::Properties(
         Joint::mAspectProperties, Base::mAspectProperties);
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::copy(
-    const GeometricJoint<ConfigSpaceT>& other)
+void GenericJoint<ConfigSpaceT>::copy(
+    const GenericJoint<ConfigSpaceT>& other)
 {
   if (this == &other)
     return;
 
-  setProperties(other.getGeometricJointProperties());
+  setProperties(other.getGenericJointProperties());
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::copy(
-    const GeometricJoint<ConfigSpaceT>* other)
+void GenericJoint<ConfigSpaceT>::copy(
+    const GenericJoint<ConfigSpaceT>* other)
 {
   if (nullptr == other)
     return;
@@ -182,9 +182,9 @@ void GeometricJoint<ConfigSpaceT>::copy(
 
 //==============================================================================
 template <class ConfigSpaceT>
-GeometricJoint<ConfigSpaceT>&
-GeometricJoint<ConfigSpaceT>::operator=(
-    const GeometricJoint<ConfigSpaceT>& other)
+GenericJoint<ConfigSpaceT>&
+GenericJoint<ConfigSpaceT>::operator=(
+    const GenericJoint<ConfigSpaceT>& other)
 {
   copy(other);
   return *this;
@@ -192,45 +192,45 @@ GeometricJoint<ConfigSpaceT>::operator=(
 
 //==============================================================================
 template <class ConfigSpaceT>
-DegreeOfFreedom* GeometricJoint<ConfigSpaceT>::getDof(size_t index)
+DegreeOfFreedom* GenericJoint<ConfigSpaceT>::getDof(size_t index)
 {
   if (index < NumDofs)
     return mDofs[index];
 
-  GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getDof, index);
+  GenericJoint_REPORT_OUT_OF_RANGE(getDof, index);
 
   return nullptr;
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-const DegreeOfFreedom* GeometricJoint<ConfigSpaceT>::getDof(size_t index) const
+const DegreeOfFreedom* GenericJoint<ConfigSpaceT>::getDof(size_t index) const
 {
   if (index < NumDofs)
     return mDofs[index];
 
-  GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getDof, index);
+  GenericJoint_REPORT_OUT_OF_RANGE(getDof, index);
 
   return nullptr;
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-size_t GeometricJoint<ConfigSpaceT>::getNumDofs() const
+size_t GenericJoint<ConfigSpaceT>::getNumDofs() const
 {
   return NumDofs;
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-const std::string& GeometricJoint<ConfigSpaceT>::setDofName(
+const std::string& GenericJoint<ConfigSpaceT>::setDofName(
     size_t index,
     const std::string& name,
     bool preserveName)
 {
   if (NumDofs <= index)
   {
-    dterr << "[GeometricJoint::setDofName] Attempting to set the name of DOF "
+    dterr << "[GenericJoint::setDofName] Attempting to set the name of DOF "
           << "index " << index << ", which is out of bounds for the Joint ["
           << this->getName()
           << "]. We will set the name of DOF index 0 instead.\n";
@@ -257,24 +257,24 @@ const std::string& GeometricJoint<ConfigSpaceT>::setDofName(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::preserveDofName(size_t index, bool preserve)
+void GenericJoint<ConfigSpaceT>::preserveDofName(size_t index, bool preserve)
 {
   if (NumDofs <= index)
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(preserveDofName, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(preserveDofName, index);
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mPreserveDofNames[index], preserve );
+  GenericJoint_SET_IF_DIFFERENT( mPreserveDofNames[index], preserve );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-bool GeometricJoint<ConfigSpaceT>::isDofNamePreserved(size_t index) const
+bool GenericJoint<ConfigSpaceT>::isDofNamePreserved(size_t index) const
 {
   if(NumDofs <= index)
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(isDofNamePreserved, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(isDofNamePreserved, index);
     index = 0;
   }
 
@@ -283,11 +283,11 @@ bool GeometricJoint<ConfigSpaceT>::isDofNamePreserved(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-const std::string& GeometricJoint<ConfigSpaceT>::getDofName(size_t index) const
+const std::string& GenericJoint<ConfigSpaceT>::getDofName(size_t index) const
 {
   if(NumDofs <= index)
   {
-    dterr << "[GeometricJoint::getDofName] Requested name of DOF index ["
+    dterr << "[GenericJoint::getDofName] Requested name of DOF index ["
           << index << "] in Joint [" << this->getName() << "], but that is "
           << "out of bounds (max " << NumDofs - 1
           << "). Returning name of DOF 0.\n";
@@ -301,11 +301,11 @@ const std::string& GeometricJoint<ConfigSpaceT>::getDofName(size_t index) const
 //==============================================================================
 template <class ConfigSpaceT>
 size_t
-GeometricJoint<ConfigSpaceT>::getIndexInSkeleton(size_t index) const
+GenericJoint<ConfigSpaceT>::getIndexInSkeleton(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getIndexInSkeleton, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getIndexInSkeleton, index);
     return 0;
   }
 
@@ -314,11 +314,11 @@ GeometricJoint<ConfigSpaceT>::getIndexInSkeleton(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-size_t GeometricJoint<ConfigSpaceT>::getIndexInTree(size_t index) const
+size_t GenericJoint<ConfigSpaceT>::getIndexInTree(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getIndexInTree, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getIndexInTree, index);
     return 0;
   }
 
@@ -327,10 +327,10 @@ size_t GeometricJoint<ConfigSpaceT>::getIndexInTree(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setCommand(size_t index, double command)
+void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
 {
   if (index >= getNumDofs())
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setCommand, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setCommand, index);
 
   switch (Joint::mAspectProperties.mActuatorType)
   {
@@ -342,7 +342,7 @@ void GeometricJoint<ConfigSpaceT>::setCommand(size_t index, double command)
     case Joint::PASSIVE:
       if (0.0 != command)
       {
-        dtwarn << "[GeometricJoint::setCommand] Attempting to set a non-zero ("
+        dtwarn << "[GenericJoint::setCommand] Attempting to set a non-zero ("
                << command << ") command for a PASSIVE joint ["
                << this->getName() << "].\n";
       }
@@ -367,7 +367,7 @@ void GeometricJoint<ConfigSpaceT>::setCommand(size_t index, double command)
     case Joint::LOCKED:
       if (0.0 != command)
       {
-        dtwarn << "[GeometricJoint::setCommand] Attempting to set a non-zero ("
+        dtwarn << "[GenericJoint::setCommand] Attempting to set a non-zero ("
                << command << ") command for a LOCKED joint [" << this->getName()
                << "].\n";
       }
@@ -381,11 +381,11 @@ void GeometricJoint<ConfigSpaceT>::setCommand(size_t index, double command)
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getCommand(size_t index) const
+double GenericJoint<ConfigSpaceT>::getCommand(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getCommand, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getCommand, index);
     return 0.0;
   }
 
@@ -394,12 +394,12 @@ double GeometricJoint<ConfigSpaceT>::getCommand(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setCommands(
+void GenericJoint<ConfigSpaceT>::setCommands(
     const Eigen::VectorXd& commands)
 {
   if (static_cast<size_t>(commands.size()) != getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_DIM_MISMATCH(setCommands, commands);
+    GenericJoint_REPORT_DIM_MISMATCH(setCommands, commands);
     return;
   }
 
@@ -413,7 +413,7 @@ void GeometricJoint<ConfigSpaceT>::setCommands(
     case Joint::PASSIVE:
       if(Vector::Zero() != commands)
       {
-        dtwarn << "[GeometricJoint::setCommands] Attempting to set a non-zero ("
+        dtwarn << "[GenericJoint::setCommands] Attempting to set a non-zero ("
                << commands.transpose() << ") command for a PASSIVE joint ["
                << this->getName() << "].\n";
       }
@@ -438,7 +438,7 @@ void GeometricJoint<ConfigSpaceT>::setCommands(
     case Joint::LOCKED:
       if(Vector::Zero() != commands)
       {
-        dtwarn << "[GeometricJoint::setCommands] Attempting to set a non-zero ("
+        dtwarn << "[GenericJoint::setCommands] Attempting to set a non-zero ("
                << commands.transpose() << ") command for a LOCKED joint ["
                << this->getName() << "].\n";
       }
@@ -452,25 +452,25 @@ void GeometricJoint<ConfigSpaceT>::setCommands(
 
 //==============================================================================
 template <class ConfigSpaceT>
-Eigen::VectorXd GeometricJoint<ConfigSpaceT>::getCommands() const
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getCommands() const
 {
   return this->mAspectState.mCommands;
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::resetCommands()
+void GenericJoint<ConfigSpaceT>::resetCommands()
 {
   this->mAspectState.mCommands.setZero();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setPosition(size_t index, double position)
+void GenericJoint<ConfigSpaceT>::setPosition(size_t index, double position)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setPosition, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setPosition, index);
     return;
   }
 
@@ -487,11 +487,11 @@ void GeometricJoint<ConfigSpaceT>::setPosition(size_t index, double position)
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getPosition(size_t index) const
+double GenericJoint<ConfigSpaceT>::getPosition(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getPosition, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getPosition, index);
     return 0.0;
   }
 
@@ -500,12 +500,12 @@ double GeometricJoint<ConfigSpaceT>::getPosition(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setPositions(
+void GenericJoint<ConfigSpaceT>::setPositions(
     const Eigen::VectorXd& positions)
 {
   if (static_cast<size_t>(positions.size()) != getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_DIM_MISMATCH(setPositions, positions);
+    GenericJoint_REPORT_DIM_MISMATCH(setPositions, positions);
     return;
   }
 
@@ -514,32 +514,32 @@ void GeometricJoint<ConfigSpaceT>::setPositions(
 
 //==============================================================================
 template <class ConfigSpaceT>
-Eigen::VectorXd GeometricJoint<ConfigSpaceT>::getPositions() const
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getPositions() const
 {
   return getPositionsStatic();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setPositionLowerLimit(
+void GenericJoint<ConfigSpaceT>::setPositionLowerLimit(
     size_t index, double position)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setPositionLowerLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setPositionLowerLimit, index);
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mPositionLowerLimits[index], position );
+  GenericJoint_SET_IF_DIFFERENT( mPositionLowerLimits[index], position );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getPositionLowerLimit(size_t index) const
+double GenericJoint<ConfigSpaceT>::getPositionLowerLimit(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getPositionLowerLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getPositionLowerLimit, index);
     return 0.0;
   }
 
@@ -548,25 +548,25 @@ double GeometricJoint<ConfigSpaceT>::getPositionLowerLimit(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setPositionUpperLimit(size_t index,
+void GenericJoint<ConfigSpaceT>::setPositionUpperLimit(size_t index,
                                                        double position)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setPositionUpperLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setPositionUpperLimit, index);
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mPositionUpperLimits[index], position );
+  GenericJoint_SET_IF_DIFFERENT( mPositionUpperLimits[index], position );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getPositionUpperLimit(size_t index) const
+double GenericJoint<ConfigSpaceT>::getPositionUpperLimit(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getPositionUpperLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getPositionUpperLimit, index);
     return 0.0;
   }
 
@@ -575,11 +575,11 @@ double GeometricJoint<ConfigSpaceT>::getPositionUpperLimit(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-bool GeometricJoint<ConfigSpaceT>::hasPositionLimit(size_t index) const
+bool GenericJoint<ConfigSpaceT>::hasPositionLimit(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(hasPositionLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(hasPositionLimit, index);
     return true;
   }
 
@@ -589,11 +589,11 @@ bool GeometricJoint<ConfigSpaceT>::hasPositionLimit(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::resetPosition(size_t index)
+void GenericJoint<ConfigSpaceT>::resetPosition(size_t index)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(resetPosition, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(resetPosition, index);
     return;
   }
 
@@ -602,32 +602,32 @@ void GeometricJoint<ConfigSpaceT>::resetPosition(size_t index)
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::resetPositions()
+void GenericJoint<ConfigSpaceT>::resetPositions()
 {
   setPositionsStatic(Base::mAspectProperties.mInitialPositions);
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setInitialPosition(
+void GenericJoint<ConfigSpaceT>::setInitialPosition(
     size_t index, double initial)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setInitialPosition, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setInitialPosition, index);
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mInitialPositions[index], initial );
+  GenericJoint_SET_IF_DIFFERENT( mInitialPositions[index], initial );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getInitialPosition(size_t index) const
+double GenericJoint<ConfigSpaceT>::getInitialPosition(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getInitialPosition, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getInitialPosition, index);
     return 0.0;
   }
 
@@ -636,28 +636,28 @@ double GeometricJoint<ConfigSpaceT>::getInitialPosition(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setInitialPositions(
+void GenericJoint<ConfigSpaceT>::setInitialPositions(
     const Eigen::VectorXd& initial)
 {
   if ( static_cast<size_t>(initial.size()) != getNumDofs() )
   {
-    GEOMETRICJOINT_REPORT_DIM_MISMATCH(setInitialPositions, initial);
+    GenericJoint_REPORT_DIM_MISMATCH(setInitialPositions, initial);
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mInitialPositions, initial);
+  GenericJoint_SET_IF_DIFFERENT( mInitialPositions, initial);
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-Eigen::VectorXd GeometricJoint<ConfigSpaceT>::getInitialPositions() const
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getInitialPositions() const
 {
   return Base::mAspectProperties.mInitialPositions;
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setPositionsStatic(const Vector& positions)
+void GenericJoint<ConfigSpaceT>::setPositionsStatic(const Vector& positions)
 {
   if (this->mAspectState.mPositions == positions)
     return;
@@ -668,15 +668,15 @@ void GeometricJoint<ConfigSpaceT>::setPositionsStatic(const Vector& positions)
 
 //==============================================================================
 template <class ConfigSpaceT>
-const typename GeometricJoint<ConfigSpaceT>::Vector&
-GeometricJoint<ConfigSpaceT>::getPositionsStatic() const
+const typename GenericJoint<ConfigSpaceT>::Vector&
+GenericJoint<ConfigSpaceT>::getPositionsStatic() const
 {
   return this->mAspectState.mPositions;
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setVelocitiesStatic(
+void GenericJoint<ConfigSpaceT>::setVelocitiesStatic(
     const Vector& velocities)
 {
   if (this->mAspectState.mVelocities == velocities)
@@ -688,15 +688,15 @@ void GeometricJoint<ConfigSpaceT>::setVelocitiesStatic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-const typename GeometricJoint<ConfigSpaceT>::Vector&
-GeometricJoint<ConfigSpaceT>::getVelocitiesStatic() const
+const typename GenericJoint<ConfigSpaceT>::Vector&
+GenericJoint<ConfigSpaceT>::getVelocitiesStatic() const
 {
   return this->mAspectState.mVelocities;
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setAccelerationsStatic(const Vector& accels)
+void GenericJoint<ConfigSpaceT>::setAccelerationsStatic(const Vector& accels)
 {
   if (this->mAspectState.mAccelerations == accels)
     return;
@@ -707,19 +707,19 @@ void GeometricJoint<ConfigSpaceT>::setAccelerationsStatic(const Vector& accels)
 
 //==============================================================================
 template <class ConfigSpaceT>
-const typename GeometricJoint<ConfigSpaceT>::Vector&
-GeometricJoint<ConfigSpaceT>::getAccelerationsStatic() const
+const typename GenericJoint<ConfigSpaceT>::Vector&
+GenericJoint<ConfigSpaceT>::getAccelerationsStatic() const
 {
   return this->mAspectState.mAccelerations;
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
+void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setVelocity, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setVelocity, index);
     return;
   }
 
@@ -736,11 +736,11 @@ void GeometricJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getVelocity(size_t index) const
+double GenericJoint<ConfigSpaceT>::getVelocity(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getVelocity, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getVelocity, index);
     return 0.0;
   }
 
@@ -749,12 +749,12 @@ double GeometricJoint<ConfigSpaceT>::getVelocity(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setVelocities(
+void GenericJoint<ConfigSpaceT>::setVelocities(
     const Eigen::VectorXd& velocities)
 {
   if (static_cast<size_t>(velocities.size()) != getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_DIM_MISMATCH(setVelocities, velocities);
+    GenericJoint_REPORT_DIM_MISMATCH(setVelocities, velocities);
     return;
   }
 
@@ -766,32 +766,32 @@ void GeometricJoint<ConfigSpaceT>::setVelocities(
 
 //==============================================================================
 template <class ConfigSpaceT>
-Eigen::VectorXd GeometricJoint<ConfigSpaceT>::getVelocities() const
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getVelocities() const
 {
   return getVelocitiesStatic();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setVelocityLowerLimit(size_t index,
+void GenericJoint<ConfigSpaceT>::setVelocityLowerLimit(size_t index,
                                                           double velocity)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setVelocityLowerLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setVelocityLowerLimit, index);
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mVelocityLowerLimits[index], velocity );
+  GenericJoint_SET_IF_DIFFERENT( mVelocityLowerLimits[index], velocity );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getVelocityLowerLimit(size_t index) const
+double GenericJoint<ConfigSpaceT>::getVelocityLowerLimit(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getVelocityLowerLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getVelocityLowerLimit, index);
     return 0.0;
   }
 
@@ -800,26 +800,26 @@ double GeometricJoint<ConfigSpaceT>::getVelocityLowerLimit(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setVelocityUpperLimit(size_t index,
+void GenericJoint<ConfigSpaceT>::setVelocityUpperLimit(size_t index,
                                                           double velocity)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setVelocityUpperLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setVelocityUpperLimit, index);
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mVelocityUpperLimits[index], velocity );
+  GenericJoint_SET_IF_DIFFERENT( mVelocityUpperLimits[index], velocity );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getVelocityUpperLimit(
+double GenericJoint<ConfigSpaceT>::getVelocityUpperLimit(
     size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getVelocityUpperLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getVelocityUpperLimit, index);
     return 0.0;
   }
 
@@ -828,11 +828,11 @@ double GeometricJoint<ConfigSpaceT>::getVelocityUpperLimit(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::resetVelocity(size_t index)
+void GenericJoint<ConfigSpaceT>::resetVelocity(size_t index)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(resetVelocity, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(resetVelocity, index);
     return;
   }
 
@@ -841,32 +841,32 @@ void GeometricJoint<ConfigSpaceT>::resetVelocity(size_t index)
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::resetVelocities()
+void GenericJoint<ConfigSpaceT>::resetVelocities()
 {
   setVelocitiesStatic(Base::mAspectProperties.mInitialVelocities);
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setInitialVelocity(size_t index,
+void GenericJoint<ConfigSpaceT>::setInitialVelocity(size_t index,
                                                        double initial)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setInitialVelocity, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setInitialVelocity, index);
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mInitialVelocities[index], initial );
+  GenericJoint_SET_IF_DIFFERENT( mInitialVelocities[index], initial );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getInitialVelocity(size_t index) const
+double GenericJoint<ConfigSpaceT>::getInitialVelocity(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getInitialVelocity, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getInitialVelocity, index);
     return 0.0;
   }
 
@@ -875,33 +875,33 @@ double GeometricJoint<ConfigSpaceT>::getInitialVelocity(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setInitialVelocities(
+void GenericJoint<ConfigSpaceT>::setInitialVelocities(
     const Eigen::VectorXd& initial)
 {
   if ( static_cast<size_t>(initial.size()) != getNumDofs() )
   {
-    GEOMETRICJOINT_REPORT_DIM_MISMATCH( setInitialVelocities, initial );
+    GenericJoint_REPORT_DIM_MISMATCH( setInitialVelocities, initial );
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mInitialVelocities, initial );
+  GenericJoint_SET_IF_DIFFERENT( mInitialVelocities, initial );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-Eigen::VectorXd GeometricJoint<ConfigSpaceT>::getInitialVelocities() const
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getInitialVelocities() const
 {
   return Base::mAspectProperties.mInitialVelocities;
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setAcceleration(
+void GenericJoint<ConfigSpaceT>::setAcceleration(
     size_t index, double acceleration)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE( setAcceleration, index );
+    GenericJoint_REPORT_OUT_OF_RANGE( setAcceleration, index );
     return;
   }
 
@@ -918,11 +918,11 @@ void GeometricJoint<ConfigSpaceT>::setAcceleration(
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getAcceleration(size_t index) const
+double GenericJoint<ConfigSpaceT>::getAcceleration(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getAcceleration, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getAcceleration, index);
     return 0.0;
   }
 
@@ -931,12 +931,12 @@ double GeometricJoint<ConfigSpaceT>::getAcceleration(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setAccelerations(
+void GenericJoint<ConfigSpaceT>::setAccelerations(
     const Eigen::VectorXd& accelerations)
 {
   if (static_cast<size_t>(accelerations.size()) != getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_DIM_MISMATCH( setAccelerations, accelerations );
+    GenericJoint_REPORT_DIM_MISMATCH( setAccelerations, accelerations );
     return;
   }
 
@@ -948,34 +948,34 @@ void GeometricJoint<ConfigSpaceT>::setAccelerations(
 
 //==============================================================================
 template <class ConfigSpaceT>
-Eigen::VectorXd GeometricJoint<ConfigSpaceT>::getAccelerations() const
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getAccelerations() const
 {
   return getAccelerationsStatic();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setAccelerationLowerLimit(
+void GenericJoint<ConfigSpaceT>::setAccelerationLowerLimit(
     size_t index, double acceleration)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setAccelerationLowerLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setAccelerationLowerLimit, index);
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mAccelerationLowerLimits[index],
+  GenericJoint_SET_IF_DIFFERENT( mAccelerationLowerLimits[index],
                                   acceleration );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getAccelerationLowerLimit(
+double GenericJoint<ConfigSpaceT>::getAccelerationLowerLimit(
     size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getAccelerationLowerLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getAccelerationLowerLimit, index);
     return 0.0;
   }
 
@@ -984,27 +984,27 @@ double GeometricJoint<ConfigSpaceT>::getAccelerationLowerLimit(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setAccelerationUpperLimit(
+void GenericJoint<ConfigSpaceT>::setAccelerationUpperLimit(
     size_t index, double acceleration)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setAccelerationUpperLimit, index)
+    GenericJoint_REPORT_OUT_OF_RANGE(setAccelerationUpperLimit, index)
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mAccelerationUpperLimits[index],
+  GenericJoint_SET_IF_DIFFERENT( mAccelerationUpperLimits[index],
                                   acceleration);
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getAccelerationUpperLimit(
+double GenericJoint<ConfigSpaceT>::getAccelerationUpperLimit(
     size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getAccelerationUpperLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getAccelerationUpperLimit, index);
     return 0.0;
   }
 
@@ -1013,18 +1013,18 @@ double GeometricJoint<ConfigSpaceT>::getAccelerationUpperLimit(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::resetAccelerations()
+void GenericJoint<ConfigSpaceT>::resetAccelerations()
 {
   setAccelerationsStatic(Vector::Zero());
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setForce(size_t index, double force)
+void GenericJoint<ConfigSpaceT>::setForce(size_t index, double force)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setForce, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setForce, index);
     return;
   }
 
@@ -1036,11 +1036,11 @@ void GeometricJoint<ConfigSpaceT>::setForce(size_t index, double force)
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getForce(size_t index)
+double GenericJoint<ConfigSpaceT>::getForce(size_t index)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getForce, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getForce, index);
     return 0.0;
   }
 
@@ -1049,11 +1049,11 @@ double GeometricJoint<ConfigSpaceT>::getForce(size_t index)
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setForces(const Eigen::VectorXd& forces)
+void GenericJoint<ConfigSpaceT>::setForces(const Eigen::VectorXd& forces)
 {
   if (static_cast<size_t>(forces.size()) != getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_DIM_MISMATCH(setForces, forces);
+    GenericJoint_REPORT_DIM_MISMATCH(setForces, forces);
     return;
   }
 
@@ -1065,32 +1065,32 @@ void GeometricJoint<ConfigSpaceT>::setForces(const Eigen::VectorXd& forces)
 
 //==============================================================================
 template <class ConfigSpaceT>
-Eigen::VectorXd GeometricJoint<ConfigSpaceT>::getForces() const
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getForces() const
 {
   return this->mAspectState.mForces;
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setForceLowerLimit(size_t index, double force)
+void GenericJoint<ConfigSpaceT>::setForceLowerLimit(size_t index, double force)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setForceLowerLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setForceLowerLimit, index);
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mForceLowerLimits[index], force );
+  GenericJoint_SET_IF_DIFFERENT( mForceLowerLimits[index], force );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getForceLowerLimit(
+double GenericJoint<ConfigSpaceT>::getForceLowerLimit(
     size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getForceLowerLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getForceLowerLimit, index);
     return 0.0;
   }
 
@@ -1099,25 +1099,25 @@ double GeometricJoint<ConfigSpaceT>::getForceLowerLimit(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setForceUpperLimit(size_t index, double force)
+void GenericJoint<ConfigSpaceT>::setForceUpperLimit(size_t index, double force)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setForceUpperLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setForceUpperLimit, index);
     return;
   }
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mForceUpperLimits[index], force );
+  GenericJoint_SET_IF_DIFFERENT( mForceUpperLimits[index], force );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getForceUpperLimit(
+double GenericJoint<ConfigSpaceT>::getForceUpperLimit(
     size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getForceUpperLimit, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getForceUpperLimit, index);
     return 0.0;
   }
 
@@ -1126,7 +1126,7 @@ double GeometricJoint<ConfigSpaceT>::getForceUpperLimit(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::resetForces()
+void GenericJoint<ConfigSpaceT>::resetForces()
 {
   this->mAspectState.mForces.setZero();
 
@@ -1136,12 +1136,12 @@ void GeometricJoint<ConfigSpaceT>::resetForces()
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setVelocityChange(
+void GenericJoint<ConfigSpaceT>::setVelocityChange(
     size_t index, double velocityChange)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setVelocityChange, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setVelocityChange, index);
     return;
   }
 
@@ -1150,11 +1150,11 @@ void GeometricJoint<ConfigSpaceT>::setVelocityChange(
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getVelocityChange(size_t index) const
+double GenericJoint<ConfigSpaceT>::getVelocityChange(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getVelocityChange, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getVelocityChange, index);
     return 0.0;
   }
 
@@ -1163,19 +1163,19 @@ double GeometricJoint<ConfigSpaceT>::getVelocityChange(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::resetVelocityChanges()
+void GenericJoint<ConfigSpaceT>::resetVelocityChanges()
 {
   mVelocityChanges.setZero();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setConstraintImpulse(size_t index,
+void GenericJoint<ConfigSpaceT>::setConstraintImpulse(size_t index,
                                                          double impulse)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setConstraintImpulse, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setConstraintImpulse, index);
     return;
   }
 
@@ -1184,11 +1184,11 @@ void GeometricJoint<ConfigSpaceT>::setConstraintImpulse(size_t index,
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getConstraintImpulse(size_t index) const
+double GenericJoint<ConfigSpaceT>::getConstraintImpulse(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getConstraintImpulse, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getConstraintImpulse, index);
     return 0.0;
   }
 
@@ -1197,14 +1197,14 @@ double GeometricJoint<ConfigSpaceT>::getConstraintImpulse(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::resetConstraintImpulses()
+void GenericJoint<ConfigSpaceT>::resetConstraintImpulses()
 {
   mConstraintImpulses.setZero();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::integratePositions(double dt)
+void GenericJoint<ConfigSpaceT>::integratePositions(double dt)
 {
   const Point& point = math::integratePosition<ConfigSpaceT>(
         math::toManifoldPoint<ConfigSpaceT>(getPositionsStatic()),
@@ -1215,7 +1215,7 @@ void GeometricJoint<ConfigSpaceT>::integratePositions(double dt)
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::integrateVelocities(double dt)
+void GenericJoint<ConfigSpaceT>::integrateVelocities(double dt)
 {
   setVelocitiesStatic(math::integrateVelocity<ConfigSpaceT>(
                         getVelocitiesStatic(),
@@ -1224,13 +1224,13 @@ void GeometricJoint<ConfigSpaceT>::integrateVelocities(double dt)
 
 //==============================================================================
 template <class ConfigSpaceT>
-Eigen::VectorXd GeometricJoint<ConfigSpaceT>::getPositionDifferences(
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getPositionDifferences(
     const Eigen::VectorXd& q2, const Eigen::VectorXd& q1) const
 {
   if (static_cast<size_t>(q1.size()) != getNumDofs()
       || static_cast<size_t>(q2.size()) != getNumDofs())
   {
-    dterr << "[GeometricJoint::getPositionsDifference] q1's size [" << q1.size()
+    dterr << "[GenericJoint::getPositionsDifference] q1's size [" << q1.size()
           << "] or q2's size [" << q2.size() << "] must both equal the dof ["
           << this->getNumDofs() << "] for Joint [" << this->getName() << "].\n";
     assert(false);
@@ -1243,7 +1243,7 @@ Eigen::VectorXd GeometricJoint<ConfigSpaceT>::getPositionDifferences(
 //==============================================================================
 template <class ConfigSpaceT>
 typename ConfigSpaceT::Vector
-GeometricJoint<ConfigSpaceT>::getPositionDifferencesStatic(
+GenericJoint<ConfigSpaceT>::getPositionDifferencesStatic(
     const Vector& q2, const Vector& q1) const
 {
   return q2 - q1;
@@ -1252,26 +1252,26 @@ GeometricJoint<ConfigSpaceT>::getPositionDifferencesStatic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setSpringStiffness(size_t index, double k)
+void GenericJoint<ConfigSpaceT>::setSpringStiffness(size_t index, double k)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setSpringStiffness, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setSpringStiffness, index);
     return;
   }
 
   assert(k >= 0.0);
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mSpringStiffnesses[index], k );
+  GenericJoint_SET_IF_DIFFERENT( mSpringStiffnesses[index], k );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getSpringStiffness(size_t index) const
+double GenericJoint<ConfigSpaceT>::getSpringStiffness(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getSpringStiffness, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getSpringStiffness, index);
     return 0.0;
   }
 
@@ -1280,18 +1280,18 @@ double GeometricJoint<ConfigSpaceT>::getSpringStiffness(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setRestPosition(size_t index, double q0)
+void GenericJoint<ConfigSpaceT>::setRestPosition(size_t index, double q0)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setRestPosition, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setRestPosition, index);
     return;
   }
 
   if (Base::mAspectProperties.mPositionLowerLimits[index] > q0
       || Base::mAspectProperties.mPositionUpperLimits[index] < q0)
   {
-    dtwarn << "[GeometricJoint::setRestPosition] Value of _q0 [" << q0
+    dtwarn << "[GenericJoint::setRestPosition] Value of _q0 [" << q0
            << "], is out of the limit range ["
            << Base::mAspectProperties.mPositionLowerLimits[index] << ", "
            << Base::mAspectProperties.mPositionUpperLimits[index]
@@ -1300,16 +1300,16 @@ void GeometricJoint<ConfigSpaceT>::setRestPosition(size_t index, double q0)
     return;
   }
 
-    GEOMETRICJOINT_SET_IF_DIFFERENT( mRestPositions[index], q0 );
+    GenericJoint_SET_IF_DIFFERENT( mRestPositions[index], q0 );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getRestPosition(size_t index) const
+double GenericJoint<ConfigSpaceT>::getRestPosition(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getRestPosition, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getRestPosition, index);
     return 0.0;
   }
 
@@ -1318,27 +1318,27 @@ double GeometricJoint<ConfigSpaceT>::getRestPosition(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setDampingCoefficient(size_t index,
+void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index,
                                                           double d)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setDampingCoefficient, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setDampingCoefficient, index);
     return;
   }
 
   assert(d >= 0.0);
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mDampingCoefficients[index], d );
+  GenericJoint_SET_IF_DIFFERENT( mDampingCoefficients[index], d );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getDampingCoefficient(size_t index) const
+double GenericJoint<ConfigSpaceT>::getDampingCoefficient(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getDampingCoefficient, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getDampingCoefficient, index);
     return 0.0;
   }
 
@@ -1347,27 +1347,27 @@ double GeometricJoint<ConfigSpaceT>::getDampingCoefficient(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setCoulombFriction(
+void GenericJoint<ConfigSpaceT>::setCoulombFriction(
     size_t index, double friction)
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(setCoulombFriction, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(setCoulombFriction, index);
     return;
   }
 
   assert(friction >= 0.0);
 
-  GEOMETRICJOINT_SET_IF_DIFFERENT( mFrictions[index], friction );
+  GenericJoint_SET_IF_DIFFERENT( mFrictions[index], friction );
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getCoulombFriction(size_t index) const
+double GenericJoint<ConfigSpaceT>::getCoulombFriction(size_t index) const
 {
   if (index >= getNumDofs())
   {
-    GEOMETRICJOINT_REPORT_OUT_OF_RANGE(getCoulombFriction, index);
+    GenericJoint_REPORT_OUT_OF_RANGE(getCoulombFriction, index);
     return 0.0;
   }
 
@@ -1376,7 +1376,7 @@ double GeometricJoint<ConfigSpaceT>::getCoulombFriction(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GeometricJoint<ConfigSpaceT>::getPotentialEnergy() const
+double GenericJoint<ConfigSpaceT>::getPotentialEnergy() const
 {
   // Spring energy
   Vector displacement
@@ -1391,15 +1391,15 @@ double GeometricJoint<ConfigSpaceT>::getPotentialEnergy() const
 //==============================================================================
 template <class ConfigSpaceT>
 const math::Jacobian
-GeometricJoint<ConfigSpaceT>::getRelativeJacobian() const
+GenericJoint<ConfigSpaceT>::getRelativeJacobian() const
 {
   return getRelativeJacobianStatic();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-const typename GeometricJoint<ConfigSpaceT>::JacobianMatrix&
-GeometricJoint<ConfigSpaceT>::getRelativeJacobianStatic() const
+const typename GenericJoint<ConfigSpaceT>::JacobianMatrix&
+GenericJoint<ConfigSpaceT>::getRelativeJacobianStatic() const
 {
   if (this->mIsRelativeJacobianDirty)
   {
@@ -1412,7 +1412,7 @@ GeometricJoint<ConfigSpaceT>::getRelativeJacobianStatic() const
 
 //==============================================================================
 template <class ConfigSpaceT>
-math::Jacobian GeometricJoint<ConfigSpaceT>::getRelativeJacobian(
+math::Jacobian GenericJoint<ConfigSpaceT>::getRelativeJacobian(
     const Eigen::VectorXd& positions) const
 {
   return getRelativeJacobianStatic(positions);
@@ -1421,15 +1421,15 @@ math::Jacobian GeometricJoint<ConfigSpaceT>::getRelativeJacobian(
 //==============================================================================
 template <class ConfigSpaceT>
 const math::Jacobian
-GeometricJoint<ConfigSpaceT>::getRelativeJacobianTimeDeriv() const
+GenericJoint<ConfigSpaceT>::getRelativeJacobianTimeDeriv() const
 {
   return getRelativeJacobianTimeDerivStatic();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-const typename GeometricJoint<ConfigSpaceT>::JacobianMatrix&
-GeometricJoint<ConfigSpaceT>::getRelativeJacobianTimeDerivStatic() const
+const typename GenericJoint<ConfigSpaceT>::JacobianMatrix&
+GenericJoint<ConfigSpaceT>::getRelativeJacobianTimeDerivStatic() const
 {
   if (this->mIsRelativeJacobianTimeDerivDirty)
   {
@@ -1442,7 +1442,7 @@ GeometricJoint<ConfigSpaceT>::getRelativeJacobianTimeDerivStatic() const
 
 //==============================================================================
 template <class ConfigSpaceT>
-GeometricJoint<ConfigSpaceT>::GeometricJoint(
+GenericJoint<ConfigSpaceT>::GenericJoint(
     const Properties& properties)
   : mVelocityChanges(Vector::Zero()),
     mImpulses(Vector::Zero()),
@@ -1457,14 +1457,14 @@ GeometricJoint<ConfigSpaceT>::GeometricJoint(
   for (auto i = 0u; i < NumDofs; ++i)
     mDofs[i] = this->createDofPointer(i);
 
-  // Joint and GeometricJoint Aspects must be created by the most derived class.
+  // Joint and GenericJoint Aspects must be created by the most derived class.
   this->mAspectState.mPositions = properties.mInitialPositions;
   this->mAspectState.mVelocities = properties.mInitialVelocities;
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::registerDofs()
+void GenericJoint<ConfigSpaceT>::registerDofs()
 {
   const SkeletonPtr& skel = this->mChildBodyNode->getSkeleton();
   for (auto i = 0u; i < NumDofs; ++i)
@@ -1478,7 +1478,7 @@ void GeometricJoint<ConfigSpaceT>::registerDofs()
 //==============================================================================
 template <class ConfigSpaceT>
 Eigen::Vector6d
-GeometricJoint<ConfigSpaceT>::getBodyConstraintWrench() const
+GenericJoint<ConfigSpaceT>::getBodyConstraintWrench() const
 {
   assert(this->mChildBodyNode);
   return this->mChildBodyNode->getBodyForce()
@@ -1487,7 +1487,7 @@ GeometricJoint<ConfigSpaceT>::getBodyConstraintWrench() const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateRelativeSpatialVelocity() const
+void GenericJoint<ConfigSpaceT>::updateRelativeSpatialVelocity() const
 {
   this->mSpatialVelocity =
       this->getRelativeJacobianStatic() * this->getVelocitiesStatic();
@@ -1495,7 +1495,7 @@ void GeometricJoint<ConfigSpaceT>::updateRelativeSpatialVelocity() const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateRelativeSpatialAcceleration() const
+void GenericJoint<ConfigSpaceT>::updateRelativeSpatialAcceleration() const
 {
   this->mSpatialAcceleration =
       this->getRelativePrimaryAcceleration()
@@ -1504,7 +1504,7 @@ void GeometricJoint<ConfigSpaceT>::updateRelativeSpatialAcceleration() const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateRelativePrimaryAcceleration() const
+void GenericJoint<ConfigSpaceT>::updateRelativePrimaryAcceleration() const
 {
   this->mPrimaryAcceleration =
       this->getRelativeJacobianStatic() * this->getAccelerationsStatic();
@@ -1512,7 +1512,7 @@ void GeometricJoint<ConfigSpaceT>::updateRelativePrimaryAcceleration() const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addVelocityTo(Eigen::Vector6d& vel)
+void GenericJoint<ConfigSpaceT>::addVelocityTo(Eigen::Vector6d& vel)
 {
   // Add joint velocity to _vel
   vel.noalias() += getRelativeJacobianStatic() * getVelocitiesStatic();
@@ -1523,7 +1523,7 @@ void GeometricJoint<ConfigSpaceT>::addVelocityTo(Eigen::Vector6d& vel)
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::setPartialAccelerationTo(
+void GenericJoint<ConfigSpaceT>::setPartialAccelerationTo(
     Eigen::Vector6d& partialAcceleration,
     const Eigen::Vector6d& childVelocity)
 {
@@ -1537,7 +1537,7 @@ void GeometricJoint<ConfigSpaceT>::setPartialAccelerationTo(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addAccelerationTo(
+void GenericJoint<ConfigSpaceT>::addAccelerationTo(
     Eigen::Vector6d& acc)
 {
   // Add joint acceleration to _acc
@@ -1549,7 +1549,7 @@ void GeometricJoint<ConfigSpaceT>::addAccelerationTo(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addVelocityChangeTo(
+void GenericJoint<ConfigSpaceT>::addVelocityChangeTo(
     Eigen::Vector6d& velocityChange)
 {
   // Add joint velocity change to velocityChange
@@ -1561,8 +1561,8 @@ void GeometricJoint<ConfigSpaceT>::addVelocityChangeTo(
 
 //==============================================================================
 template <class ConfigSpaceT>
-const typename GeometricJoint<ConfigSpaceT>::Matrix&
-GeometricJoint<ConfigSpaceT>::getInvProjArtInertia() const
+const typename GenericJoint<ConfigSpaceT>::Matrix&
+GenericJoint<ConfigSpaceT>::getInvProjArtInertia() const
 {
   Joint::updateArticulatedInertia();
 
@@ -1571,8 +1571,8 @@ GeometricJoint<ConfigSpaceT>::getInvProjArtInertia() const
 
 //==============================================================================
 template <class ConfigSpaceT>
-const typename GeometricJoint<ConfigSpaceT>::Matrix&
-GeometricJoint<ConfigSpaceT>::getInvProjArtInertiaImplicit() const
+const typename GenericJoint<ConfigSpaceT>::Matrix&
+GenericJoint<ConfigSpaceT>::getInvProjArtInertiaImplicit() const
 {
   Joint::updateArticulatedInertia();
 
@@ -1581,7 +1581,7 @@ GeometricJoint<ConfigSpaceT>::getInvProjArtInertiaImplicit() const
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildArtInertiaTo(
+void GenericJoint<ConfigSpaceT>::addChildArtInertiaTo(
     Eigen::Matrix6d& parentArtInertia,
     const Eigen::Matrix6d& childArtInertia)
 {
@@ -1600,14 +1600,14 @@ void GeometricJoint<ConfigSpaceT>::addChildArtInertiaTo(
                                              childArtInertia);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildArtInertiaTo);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(addChildArtInertiaTo);
       break;
   }
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
+void GenericJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
     Eigen::Matrix6d& parentArtInertia,
     const Eigen::Matrix6d& childArtInertia)
 {
@@ -1625,7 +1625,7 @@ void GeometricJoint<ConfigSpaceT>::addChildArtInertiaToDynamic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildArtInertiaToKinematic(
+void GenericJoint<ConfigSpaceT>::addChildArtInertiaToKinematic(
     Eigen::Matrix6d& parentArtInertia,
     const Eigen::Matrix6d& childArtInertia)
 {
@@ -1637,7 +1637,7 @@ void GeometricJoint<ConfigSpaceT>::addChildArtInertiaToKinematic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildArtInertiaImplicitTo(
+void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitTo(
     Eigen::Matrix6d& parentArtInertia,
     const Eigen::Matrix6d& childArtInertia)
 {
@@ -1656,14 +1656,14 @@ void GeometricJoint<ConfigSpaceT>::addChildArtInertiaImplicitTo(
                                                 childArtInertia);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildArtInertiaImplicitTo);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(addChildArtInertiaImplicitTo);
       break;
   }
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
+void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
     Eigen::Matrix6d& parentArtInertia,
     const Eigen::Matrix6d& childArtInertia)
 {
@@ -1681,7 +1681,7 @@ void GeometricJoint<ConfigSpaceT>::addChildArtInertiaImplicitToDynamic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildArtInertiaImplicitToKinematic(
+void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitToKinematic(
     Eigen::Matrix6d& parentArtInertia,
     const Eigen::Matrix6d& childArtInertia)
 {
@@ -1693,7 +1693,7 @@ void GeometricJoint<ConfigSpaceT>::addChildArtInertiaImplicitToKinematic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertia(
+void GenericJoint<ConfigSpaceT>::updateInvProjArtInertia(
     const Eigen::Matrix6d& artInertia)
 {
   switch (Joint::mAspectProperties.mActuatorType)
@@ -1709,14 +1709,14 @@ void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertia(
       updateInvProjArtInertiaKinematic(artInertia);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateInvProjArtInertia);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateInvProjArtInertia);
       break;
   }
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaDynamic(
+void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaDynamic(
     const Eigen::Matrix6d& artInertia)
 {
   // Projected articulated inertia
@@ -1732,7 +1732,7 @@ void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaDynamic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaKinematic(
+void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaKinematic(
     const Eigen::Matrix6d& /*_artInertia*/)
 {
   // Do nothing
@@ -1740,7 +1740,7 @@ void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaKinematic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicit(
+void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicit(
     const Eigen::Matrix6d& artInertia,
     double timeStep)
 {
@@ -1757,7 +1757,7 @@ void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicit(
       updateInvProjArtInertiaImplicitKinematic(artInertia, timeStep);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(
             updateInvProjArtInertiaImplicit);
       break;
   }
@@ -1765,7 +1765,7 @@ void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicit(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitDynamic(
+void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitDynamic(
     const Eigen::Matrix6d& artInertia,
     double timeStep)
 {
@@ -1787,7 +1787,7 @@ void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitDynamic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitKinematic(
+void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitKinematic(
     const Eigen::Matrix6d& /*artInertia*/, double /*timeStep*/)
 {
   // Do nothing
@@ -1795,7 +1795,7 @@ void GeometricJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitKinematic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildBiasForceTo(
+void GenericJoint<ConfigSpaceT>::addChildBiasForceTo(
     Eigen::Vector6d& parentBiasForce,
     const Eigen::Matrix6d& childArtInertia,
     const Eigen::Vector6d& childBiasForce,
@@ -1820,14 +1820,14 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceTo(
                                    childPartialAcc);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildBiasForceTo);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(addChildBiasForceTo);
       break;
   }
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildBiasForceToDynamic(
+void GenericJoint<ConfigSpaceT>::addChildBiasForceToDynamic(
     Eigen::Vector6d& parentBiasForce,
     const Eigen::Matrix6d& childArtInertia,
     const Eigen::Vector6d& childBiasForce,
@@ -1856,7 +1856,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceToDynamic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildBiasForceToKinematic(
+void GenericJoint<ConfigSpaceT>::addChildBiasForceToKinematic(
     Eigen::Vector6d& _parentBiasForce,
     const Eigen::Matrix6d& childArtInertia,
     const Eigen::Vector6d& childBiasForce,
@@ -1883,7 +1883,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceToKinematic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildBiasImpulseTo(
+void GenericJoint<ConfigSpaceT>::addChildBiasImpulseTo(
     Eigen::Vector6d& parentBiasImpulse,
     const Eigen::Matrix6d& childArtInertia,
     const Eigen::Vector6d& childBiasImpulse)
@@ -1905,14 +1905,14 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasImpulseTo(
                                      childBiasImpulse);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(addChildBiasImpulseTo);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(addChildBiasImpulseTo);
       break;
   }
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildBiasImpulseToDynamic(
+void GenericJoint<ConfigSpaceT>::addChildBiasImpulseToDynamic(
     Eigen::Vector6d& _parentBiasImpulse,
     const Eigen::Matrix6d& childArtInertia,
     const Eigen::Vector6d& childBiasImpulse)
@@ -1933,7 +1933,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasImpulseToDynamic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildBiasImpulseToKinematic(
+void GenericJoint<ConfigSpaceT>::addChildBiasImpulseToKinematic(
     Eigen::Vector6d& parentBiasImpulse,
     const Eigen::Matrix6d& /*childArtInertia*/,
     const Eigen::Vector6d& childBiasImpulse)
@@ -1945,7 +1945,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasImpulseToKinematic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateTotalForce(
+void GenericJoint<ConfigSpaceT>::updateTotalForce(
     const Eigen::Vector6d& bodyForce,
     double timeStep)
 {
@@ -1977,14 +1977,14 @@ void GeometricJoint<ConfigSpaceT>::updateTotalForce(
       updateTotalForceKinematic(bodyForce, timeStep);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateTotalForce);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateTotalForce);
       break;
   }
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateTotalForceDynamic(
+void GenericJoint<ConfigSpaceT>::updateTotalForceDynamic(
     const Eigen::Vector6d& bodyForce,
     double timeStep)
 {
@@ -2009,7 +2009,7 @@ void GeometricJoint<ConfigSpaceT>::updateTotalForceDynamic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateTotalForceKinematic(
+void GenericJoint<ConfigSpaceT>::updateTotalForceKinematic(
     const Eigen::Vector6d& /*bodyForce*/,
     double /*timeStep*/)
 {
@@ -2018,7 +2018,7 @@ void GeometricJoint<ConfigSpaceT>::updateTotalForceKinematic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateTotalImpulse(
+void GenericJoint<ConfigSpaceT>::updateTotalImpulse(
     const Eigen::Vector6d& bodyImpulse)
 {
   switch (Joint::mAspectProperties.mActuatorType)
@@ -2034,14 +2034,14 @@ void GeometricJoint<ConfigSpaceT>::updateTotalImpulse(
       updateTotalImpulseKinematic(bodyImpulse);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateTotalImpulse);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateTotalImpulse);
       break;
   }
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateTotalImpulseDynamic(
+void GenericJoint<ConfigSpaceT>::updateTotalImpulseDynamic(
     const Eigen::Vector6d& bodyImpulse)
 {
   //
@@ -2051,7 +2051,7 @@ void GeometricJoint<ConfigSpaceT>::updateTotalImpulseDynamic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateTotalImpulseKinematic(
+void GenericJoint<ConfigSpaceT>::updateTotalImpulseKinematic(
     const Eigen::Vector6d& /*bodyImpulse*/)
 {
   // Do nothing
@@ -2059,14 +2059,14 @@ void GeometricJoint<ConfigSpaceT>::updateTotalImpulseKinematic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::resetTotalImpulses()
+void GenericJoint<ConfigSpaceT>::resetTotalImpulses()
 {
   mTotalImpulse.setZero();
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateAcceleration(
+void GenericJoint<ConfigSpaceT>::updateAcceleration(
     const Eigen::Matrix6d& artInertia,
     const Eigen::Vector6d& spatialAcc)
 {
@@ -2083,14 +2083,14 @@ void GeometricJoint<ConfigSpaceT>::updateAcceleration(
       updateAccelerationKinematic(artInertia, spatialAcc);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateAcceleration);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateAcceleration);
       break;
   }
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateAccelerationDynamic(
+void GenericJoint<ConfigSpaceT>::updateAccelerationDynamic(
     const Eigen::Matrix6d& artInertia,
     const Eigen::Vector6d& spatialAcc)
 {
@@ -2105,7 +2105,7 @@ void GeometricJoint<ConfigSpaceT>::updateAccelerationDynamic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateAccelerationKinematic(
+void GenericJoint<ConfigSpaceT>::updateAccelerationKinematic(
     const Eigen::Matrix6d& /*artInertia*/,
     const Eigen::Vector6d& /*spatialAcc*/)
 {
@@ -2114,7 +2114,7 @@ void GeometricJoint<ConfigSpaceT>::updateAccelerationKinematic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateVelocityChange(
+void GenericJoint<ConfigSpaceT>::updateVelocityChange(
     const Eigen::Matrix6d& artInertia,
     const Eigen::Vector6d& velocityChange)
 {
@@ -2131,14 +2131,14 @@ void GeometricJoint<ConfigSpaceT>::updateVelocityChange(
       updateVelocityChangeKinematic(artInertia, velocityChange);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateVelocityChange);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateVelocityChange);
       break;
   }
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateVelocityChangeDynamic(
+void GenericJoint<ConfigSpaceT>::updateVelocityChangeDynamic(
     const Eigen::Matrix6d& artInertia,
     const Eigen::Vector6d& velocityChange)
 {
@@ -2154,7 +2154,7 @@ void GeometricJoint<ConfigSpaceT>::updateVelocityChangeDynamic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateVelocityChangeKinematic(
+void GenericJoint<ConfigSpaceT>::updateVelocityChangeKinematic(
     const Eigen::Matrix6d& /*artInertia*/,
     const Eigen::Vector6d& /*velocityChange*/)
 {
@@ -2163,7 +2163,7 @@ void GeometricJoint<ConfigSpaceT>::updateVelocityChangeKinematic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateForceID(
+void GenericJoint<ConfigSpaceT>::updateForceID(
     const Eigen::Vector6d& bodyForce,
     double timeStep,
     bool withDampingForces,
@@ -2194,7 +2194,7 @@ void GeometricJoint<ConfigSpaceT>::updateForceID(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateForceFD(
+void GenericJoint<ConfigSpaceT>::updateForceFD(
     const Eigen::Vector6d& bodyForce,
     double timeStep,
     bool withDampingForces,
@@ -2212,14 +2212,14 @@ void GeometricJoint<ConfigSpaceT>::updateForceFD(
       updateForceID(bodyForce, timeStep, withDampingForces, withSpringForces);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateForceFD);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateForceFD);
       break;
   }
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateImpulseID(
+void GenericJoint<ConfigSpaceT>::updateImpulseID(
     const Eigen::Vector6d& bodyImpulse)
 {
   mImpulses = getRelativeJacobianStatic().transpose()*bodyImpulse;
@@ -2227,7 +2227,7 @@ void GeometricJoint<ConfigSpaceT>::updateImpulseID(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateImpulseFD(
+void GenericJoint<ConfigSpaceT>::updateImpulseFD(
     const Eigen::Vector6d& bodyImpulse)
 {
   switch (Joint::mAspectProperties.mActuatorType)
@@ -2242,14 +2242,14 @@ void GeometricJoint<ConfigSpaceT>::updateImpulseFD(
       updateImpulseID(bodyImpulse);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateImpulseFD);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateImpulseFD);
       break;
   }
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateConstrainedTerms(double timeStep)
+void GenericJoint<ConfigSpaceT>::updateConstrainedTerms(double timeStep)
 {
   switch (Joint::mAspectProperties.mActuatorType)
   {
@@ -2264,14 +2264,14 @@ void GeometricJoint<ConfigSpaceT>::updateConstrainedTerms(double timeStep)
       updateConstrainedTermsKinematic(timeStep);
       break;
     default:
-      GEOMETRICJOINT_REPORT_UNSUPPORTED_ACTUATOR(updateConstrainedTerms);
+      GenericJoint_REPORT_UNSUPPORTED_ACTUATOR(updateConstrainedTerms);
       break;
   }
 }
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateConstrainedTermsDynamic(
+void GenericJoint<ConfigSpaceT>::updateConstrainedTermsDynamic(
     double timeStep)
 {
   const double invTimeStep = 1.0 / timeStep;
@@ -2285,7 +2285,7 @@ void GeometricJoint<ConfigSpaceT>::updateConstrainedTermsDynamic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateConstrainedTermsKinematic(
+void GenericJoint<ConfigSpaceT>::updateConstrainedTermsKinematic(
     double timeStep)
 {
   this->mAspectState.mForces.noalias() += mImpulses / timeStep;
@@ -2293,7 +2293,7 @@ void GeometricJoint<ConfigSpaceT>::updateConstrainedTermsKinematic(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildBiasForceForInvMassMatrix(
+void GenericJoint<ConfigSpaceT>::addChildBiasForceForInvMassMatrix(
     Eigen::Vector6d& parentBiasForce,
     const Eigen::Matrix6d& childArtInertia,
     const Eigen::Vector6d& childBiasForce)
@@ -2313,7 +2313,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceForInvMassMatrix(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addChildBiasForceForInvAugMassMatrix(
+void GenericJoint<ConfigSpaceT>::addChildBiasForceForInvAugMassMatrix(
     Eigen::Vector6d& parentBiasForce,
     const Eigen::Matrix6d& childArtInertia,
     const Eigen::Vector6d& childBiasForce)
@@ -2333,7 +2333,7 @@ void GeometricJoint<ConfigSpaceT>::addChildBiasForceForInvAugMassMatrix(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::updateTotalForceForInvMassMatrix(
+void GenericJoint<ConfigSpaceT>::updateTotalForceForInvMassMatrix(
     const Eigen::Vector6d& bodyForce)
 {
   // Compute alpha
@@ -2343,7 +2343,7 @@ void GeometricJoint<ConfigSpaceT>::updateTotalForceForInvMassMatrix(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::getInvMassMatrixSegment(
+void GenericJoint<ConfigSpaceT>::getInvMassMatrixSegment(
     Eigen::MatrixXd& _invMassMat,
     const size_t _col,
     const Eigen::Matrix6d& artInertia,
@@ -2367,7 +2367,7 @@ void GeometricJoint<ConfigSpaceT>::getInvMassMatrixSegment(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::getInvAugMassMatrixSegment(
+void GenericJoint<ConfigSpaceT>::getInvAugMassMatrixSegment(
     Eigen::MatrixXd& invMassMat,
     const size_t col,
     const Eigen::Matrix6d& artInertia,
@@ -2391,7 +2391,7 @@ void GeometricJoint<ConfigSpaceT>::getInvAugMassMatrixSegment(
 
 //==============================================================================
 template <class ConfigSpaceT>
-void GeometricJoint<ConfigSpaceT>::addInvMassMatrixSegmentTo(
+void GenericJoint<ConfigSpaceT>::addInvMassMatrixSegmentTo(
     Eigen::Vector6d& acc)
 {
   //
@@ -2400,7 +2400,7 @@ void GeometricJoint<ConfigSpaceT>::addInvMassMatrixSegmentTo(
 
 //==============================================================================
 template <class ConfigSpaceT>
-Eigen::VectorXd GeometricJoint<ConfigSpaceT>::getSpatialToGeneralized(
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getSpatialToGeneralized(
     const Eigen::Vector6d& spatial)
 {
   return getRelativeJacobianStatic().transpose() * spatial;
@@ -2409,4 +2409,4 @@ Eigen::VectorXd GeometricJoint<ConfigSpaceT>::getSpatialToGeneralized(
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_GEOMETRICJOINT_HPP_
+#endif // DART_DYNAMICS_DETAIL_GenericJoint_HPP_

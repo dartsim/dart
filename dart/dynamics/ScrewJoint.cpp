@@ -49,8 +49,8 @@ ScrewJoint::~ScrewJoint()
 //==============================================================================
 void ScrewJoint::setProperties(const Properties& _properties)
 {
-  GeometricJoint<math::R1Space>::setProperties(
-        static_cast<const GeometricJoint<math::R1Space>::Properties&>(_properties));
+  GenericJoint<math::R1Space>::setProperties(
+        static_cast<const GenericJoint<math::R1Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -70,7 +70,7 @@ void ScrewJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 ScrewJoint::Properties ScrewJoint::getScrewJointProperties() const
 {
-  return Properties(getGeometricJointProperties(), mAspectProperties);
+  return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -154,9 +154,9 @@ double ScrewJoint::getPitch() const
 }
 
 //==============================================================================
-GeometricJoint<math::R1Space>::JacobianMatrix
+GenericJoint<math::R1Space>::JacobianMatrix
 ScrewJoint::getRelativeJacobianStatic(
-    const GeometricJoint<math::R1Space>::Vector& /*positions*/) const
+    const GenericJoint<math::R1Space>::Vector& /*positions*/) const
 {
   using namespace dart::math::suffixes;
 
@@ -164,7 +164,7 @@ ScrewJoint::getRelativeJacobianStatic(
   S.head<3>() = getAxis();
   S.tail<3>() = getAxis() * getPitch() * 0.5_pi;
 
-  GeometricJoint<math::R1Space>::JacobianMatrix jacobian
+  GenericJoint<math::R1Space>::JacobianMatrix jacobian
       = math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint, S);
 
   assert(!math::isNan(jacobian));
@@ -179,7 +179,7 @@ ScrewJoint::ScrewJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createScrewJointAspect(properties);
-  createGeometricJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 

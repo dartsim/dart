@@ -36,19 +36,19 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/GeometricJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
 
 /// class FreeJoint
-class FreeJoint : public GeometricJoint<math::SE3Space>
+class FreeJoint : public GenericJoint<math::SE3Space>
 {
 public:
 
   friend class Skeleton;
 
-  using Base = GeometricJoint<math::SE3Space>;
+  using Base = GenericJoint<math::SE3Space>;
 
   struct Properties : Base::Properties
   {

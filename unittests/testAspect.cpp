@@ -739,48 +739,48 @@ TEST(Aspect, Joints)
 
   dart::dynamics::EulerJoint* euler =
       skel->createJointAndBodyNodePair<dart::dynamics::EulerJoint>().first;
-  euler->getGeometricJointAspect();
+  euler->getGenericJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   euler->getEulerJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::PlanarJoint* planar =
       skel->createJointAndBodyNodePair<dart::dynamics::PlanarJoint>().first;
-  planar->getGeometricJointAspect();
+  planar->getGenericJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   planar->getPlanarJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::PrismaticJoint* prismatic =
       skel->createJointAndBodyNodePair<dart::dynamics::PrismaticJoint>().first;
-  prismatic->getGeometricJointAspect();
+  prismatic->getGenericJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   prismatic->getPrismaticJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::RevoluteJoint* revolute =
       skel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>().first;
-  revolute->getGeometricJointAspect();
+  revolute->getGenericJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   revolute->getRevoluteJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::ScrewJoint* screw =
       skel->createJointAndBodyNodePair<dart::dynamics::ScrewJoint>().first;
-  screw->getGeometricJointAspect();
+  screw->getGenericJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   screw->getScrewJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::UniversalJoint* universal =
       skel->createJointAndBodyNodePair<dart::dynamics::UniversalJoint>().first;
-  universal->getGeometricJointAspect();
+  universal->getGenericJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   universal->getUniversalJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   // Regression test for issue #645
-  universal->getGeometricJointAspect(true);
+  universal->getGenericJointAspect(true);
 }
 
 TEST(Aspect, BodyNodes)

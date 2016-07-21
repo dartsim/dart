@@ -76,7 +76,7 @@ bool BallJoint::isCyclic(std::size_t _index) const
 //==============================================================================
 BallJoint::Properties BallJoint::getBallJointProperties() const
 {
-  return getGeometricJointProperties();
+  return getGenericJointProperties();
 }
 
 //==============================================================================
@@ -101,7 +101,7 @@ BallJoint::BallJoint(const Properties& properties)
 
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
-  createGeometricJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 

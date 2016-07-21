@@ -34,7 +34,7 @@
 
 #include <string>
 
-#include "dart/dynamics/GeometricJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -105,12 +105,12 @@ struct PlanarJointUniqueProperties
 
 //==============================================================================
 struct PlanarJointProperties :
-    GeometricJoint<math::R3Space>::Properties,
+    GenericJoint<math::R3Space>::Properties,
     PlanarJointUniqueProperties
 {
   PlanarJointProperties(
-      const GeometricJoint<math::R3Space>::Properties& geometricJointProperties =
-          GeometricJoint<math::R3Space>::Properties(),
+      const GenericJoint<math::R3Space>::Properties& GenericJointProperties =
+          GenericJoint<math::R3Space>::Properties(),
       const PlanarJointUniqueProperties& planarProperties =
           PlanarJointUniqueProperties());
 
@@ -119,7 +119,7 @@ struct PlanarJointProperties :
 
 //==============================================================================
 using PlanarJointBase = common::EmbedPropertiesOnTopOf<
-    PlanarJoint, PlanarJointUniqueProperties, GeometricJoint<math::R3Space> >;
+    PlanarJoint, PlanarJointUniqueProperties, GenericJoint<math::R3Space> >;
 
 } // namespace detail
 } // namespace dynamics

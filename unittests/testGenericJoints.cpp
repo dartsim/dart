@@ -43,12 +43,12 @@
 using namespace dart;
 using namespace dynamics;
 
-//class ZeroDofJointTest : public GeometricJoint<NullSpace>
+//class ZeroDofJointTest : public GenericJoint<NullSpace>
 //{
 //public:
 //  /// Constructor called by Skeleton class
 //  ZeroDofJointTest(const Properties& properties = Properties())
-//    : GeometricJoint<NullSpace>(properties) {}
+//    : GenericJoint<NullSpace>(properties) {}
 
 //  virtual ~ZeroDofJointTest() {}
 
@@ -85,12 +85,12 @@ using namespace dynamics;
 //  void updateRelativeJacobianTimeDeriv() const override {}
 //};
 
-class SingleDofJointTest : public GeometricJoint<R1Space>
+class SingleDofJointTest : public GenericJoint<R1Space>
 {
 public:
   /// Constructor called by Skeleton class
   SingleDofJointTest(const Properties& properties = Properties())
-    : GeometricJoint<R1Space>(properties) {}
+    : GenericJoint<R1Space>(properties) {}
 
   virtual ~SingleDofJointTest() {}
 
@@ -127,12 +127,12 @@ protected:
   void updateRelativeJacobianTimeDeriv() const override {}
 };
 
-class MultiDofJointTest : public GeometricJoint<RealVectorSpace<6>>
+class MultiDofJointTest : public GenericJoint<RealVectorSpace<6>>
 {
 public:
   /// Constructor called by Skeleton class
   MultiDofJointTest(const Properties& properties = Properties())
-    : GeometricJoint<RealVectorSpace<6>>(properties) {}
+    : GenericJoint<RealVectorSpace<6>>(properties) {}
 
   virtual ~MultiDofJointTest() {}
 
@@ -169,12 +169,12 @@ protected:
   void updateRelativeJacobianTimeDeriv() const override {}
 };
 
-class SO3JointTest : public GeometricJoint<SO3Space>
+class SO3JointTest : public GenericJoint<SO3Space>
 {
 public:
   /// Constructor called by Skeleton class
   SO3JointTest(const Properties& properties = Properties())
-    : GeometricJoint<SO3Space>(properties) {}
+    : GenericJoint<SO3Space>(properties) {}
 
   virtual ~SO3JointTest() {}
 

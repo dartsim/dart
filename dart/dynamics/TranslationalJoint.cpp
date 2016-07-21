@@ -65,7 +65,7 @@ Eigen::Matrix<double, 6, 3> TranslationalJoint::getRelativeJacobianStatic(
 TranslationalJoint::Properties
 TranslationalJoint::getTranslationalJointProperties() const
 {
-  return getGeometricJointProperties();
+  return getGenericJointProperties();
 }
 
 //==============================================================================
@@ -74,7 +74,7 @@ TranslationalJoint::TranslationalJoint(const Properties& properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
-  createGeometricJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 

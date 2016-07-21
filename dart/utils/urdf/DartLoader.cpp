@@ -236,7 +236,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     std::pair<dynamics::Joint*, dynamics::BodyNode*> pair =
         skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
           nullptr, dynamics::FreeJoint::Properties(
-            dynamics::GeometricJoint<math::SE3Space>::Properties(
+            dynamics::GenericJoint<math::SE3Space>::Properties(
             dynamics::Joint::Properties("rootJoint"))),
           rootProperties);
     rootNode = pair.second;
@@ -328,7 +328,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   basicProperties.mT_ParentBodyToJoint =
       toEigen(_jt->parent_to_joint_origin_transform);
 
-  dynamics::GeometricJoint<math::R1Space>::UniqueProperties singleDof;
+  dynamics::GenericJoint<math::R1Space>::UniqueProperties singleDof;
   if(_jt->limits)
   {
     singleDof.mPositionLowerLimits[0] = _jt->limits->lower;
@@ -369,7 +369,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::CONTINUOUS:
     {
       dynamics::RevoluteJoint::Properties properties(
-            dynamics::GeometricJoint<math::R1Space>::Properties(basicProperties, singleDof),
+            dynamics::GenericJoint<math::R1Space>::Properties(basicProperties, singleDof),
             toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
@@ -380,7 +380,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::PRISMATIC:
     {
       dynamics::PrismaticJoint::Properties properties(
-            dynamics::GeometricJoint<math::R1Space>::Properties(basicProperties, singleDof),
+            dynamics::GenericJoint<math::R1Space>::Properties(basicProperties, singleDof),
             toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
@@ -396,7 +396,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     }
     case urdf::Joint::FLOATING:
     {
-      dynamics::GeometricJoint<math::SE3Space>::Properties properties(
+      dynamics::GenericJoint<math::SE3Space>::Properties properties(
             basicProperties);
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(

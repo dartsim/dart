@@ -48,8 +48,8 @@ UniversalJoint::~UniversalJoint()
 //==============================================================================
 void UniversalJoint::setProperties(const Properties& _properties)
 {
-  GeometricJoint<math::R2Space>::setProperties(
-        static_cast<const GeometricJoint<math::R2Space>::Properties&>(
+  GenericJoint<math::R2Space>::setProperties(
+        static_cast<const GenericJoint<math::R2Space>::Properties&>(
           _properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
@@ -70,7 +70,7 @@ void UniversalJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 UniversalJoint::Properties UniversalJoint::getUniversalJointProperties() const
 {
-  return Properties(getGeometricJointProperties(), mAspectProperties);
+  return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -165,7 +165,7 @@ UniversalJoint::UniversalJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createUniversalJointAspect(properties);
-  createGeometricJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 

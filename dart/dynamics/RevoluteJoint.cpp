@@ -50,8 +50,8 @@ RevoluteJoint::~RevoluteJoint()
 //==============================================================================
 void RevoluteJoint::setProperties(const Properties& _properties)
 {
-  GeometricJoint<math::R1Space>::setProperties(
-        static_cast<const GeometricJoint<math::R1Space>::Properties&>(_properties));
+  GenericJoint<math::R1Space>::setProperties(
+        static_cast<const GenericJoint<math::R1Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -70,7 +70,7 @@ void RevoluteJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 RevoluteJoint::Properties RevoluteJoint::getRevoluteJointProperties() const
 {
-  return Properties(getGeometricJointProperties(), mAspectProperties);
+  return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -136,11 +136,11 @@ const Eigen::Vector3d& RevoluteJoint::getAxis() const
 }
 
 //==============================================================================
-GeometricJoint<math::R1Space>::JacobianMatrix
+GenericJoint<math::R1Space>::JacobianMatrix
 RevoluteJoint::getRelativeJacobianStatic(
-    const GeometricJoint<math::R1Space>::Vector& /*positions*/) const
+    const GenericJoint<math::R1Space>::Vector& /*positions*/) const
 {
-  GeometricJoint<math::R1Space>::JacobianMatrix jacobian
+  GenericJoint<math::R1Space>::JacobianMatrix jacobian
       = math::AdTAngular(
         Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis());
 
@@ -157,7 +157,7 @@ RevoluteJoint::RevoluteJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createRevoluteJointAspect(properties);
-  createGeometricJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 

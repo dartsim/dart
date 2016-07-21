@@ -34,19 +34,19 @@
 
 #include <string>
 
-#include "dart/dynamics/GeometricJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
 
 /// class TranslationalJoint
-class TranslationalJoint : public GeometricJoint<math::R3Space>
+class TranslationalJoint : public GenericJoint<math::R3Space>
 {
 public:
 
   friend class Skeleton;
 
-  using Base = GeometricJoint<math::R3Space>;
+  using Base = GenericJoint<math::R3Space>;
 
   struct Properties : Base::Properties
   {

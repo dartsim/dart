@@ -36,7 +36,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/GeometricJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -59,12 +59,12 @@ struct UniversalJointUniqueProperties
 
 //==============================================================================
 struct UniversalJointProperties :
-    GeometricJoint<math::R2Space>::Properties,
+    GenericJoint<math::R2Space>::Properties,
     UniversalJointUniqueProperties
 {
   UniversalJointProperties(
-      const GeometricJoint<math::R2Space>::Properties& geometricJointProperties =
-          GeometricJoint<math::R2Space>::Properties(),
+      const GenericJoint<math::R2Space>::Properties& GenericJointProperties =
+          GenericJoint<math::R2Space>::Properties(),
       const UniversalJointUniqueProperties& universalProperties =
           UniversalJointUniqueProperties());
 
@@ -73,7 +73,7 @@ struct UniversalJointProperties :
 
 //==============================================================================
 using UniversalJointBase = common::EmbedPropertiesOnTopOf<
-    UniversalJoint, UniversalJointUniqueProperties,  GeometricJoint<math::R2Space> >;
+    UniversalJoint, UniversalJointUniqueProperties,  GenericJoint<math::R2Space> >;
 
 } // namespace detail
 } // namespace dynamics

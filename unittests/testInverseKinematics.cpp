@@ -52,7 +52,7 @@ SkeletonPtr createFreeFloatingTwoLinkRobot(Vector3d dim1,
   std::shared_ptr<Shape> shape(new BoxShape(dim1));
 
   BodyNode* parent_node = robot->createJointAndBodyNodePair<FreeJoint>(nullptr,
-    GeometricJoint<SE3Space>::Properties(std::string("joint1")), node).second;
+    GenericJoint<SE3Space>::Properties(std::string("joint1")), node).second;
   parent_node->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
         shape);
 

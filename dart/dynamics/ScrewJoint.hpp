@@ -97,8 +97,8 @@ public:
   double getPitch() const;
 
   // Documentation inherited
-  GeometricJoint<math::R1Space>::JacobianMatrix getRelativeJacobianStatic(
-      const GeometricJoint<math::R1Space>::Vector& positions) const override;
+  GenericJoint<math::R1Space>::JacobianMatrix getRelativeJacobianStatic(
+      const GenericJoint<math::R1Space>::Vector& positions) const override;
 
 protected:
 

@@ -899,7 +899,7 @@ public:
   friend class BodyNode;
   friend class SoftBodyNode;
   friend class Joint;
-  template<class> friend class GeometricJoint;
+  template<class> friend class GenericJoint;
   friend class DegreeOfFreedom;
   friend class Node;
   friend class ShapeNode;

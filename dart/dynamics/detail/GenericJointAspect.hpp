@@ -29,8 +29,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_GEOMETRICJOINTASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_GEOMETRICJOINTASPECT_HPP_
+#ifndef DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_
+#define DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_
 
 #include "dart/math/Helpers.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -39,14 +39,14 @@
 namespace dart {
 namespace dynamics {
 
-// Forward declare the GeometricJoint class
-template <class ConfigSpaceT> class GeometricJoint;
+// Forward declare the GenericJoint class
+template <class ConfigSpaceT> class GenericJoint;
 
 namespace detail {
 
 //==============================================================================
 template <class ConfigSpaceT>
-struct GeometricJointState
+struct GenericJointState
 {
   constexpr static std::size_t NumDofs = ConfigSpaceT::NumDofs;
   using EuclideanPoint = typename ConfigSpaceT::EuclideanPoint;
@@ -67,14 +67,14 @@ struct GeometricJointState
   /// Command
   Vector mCommands;
 
-  GeometricJointState(
+  GenericJointState(
       const EuclideanPoint& positions = EuclideanPoint::Zero(),
       const Vector& velocities = Vector::Zero(),
       const Vector& accelerations = Vector::Zero(),
       const Vector& forces = Vector::Zero(),
       const Vector& commands = Vector::Zero());
 
-  virtual ~GeometricJointState() = default;
+  virtual ~GenericJointState() = default;
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -82,7 +82,7 @@ struct GeometricJointState
 
 //==============================================================================
 template <class ConfigSpaceT>
-struct GeometricJointUniqueProperties
+struct GenericJointUniqueProperties
 {
   constexpr static std::size_t NumDofs = ConfigSpaceT::NumDofs;
   using EuclideanPoint = typename ConfigSpaceT::EuclideanPoint;
@@ -140,7 +140,7 @@ struct GeometricJointUniqueProperties
   StringArray mDofNames;
 
   /// Default constructor
-  GeometricJointUniqueProperties(
+  GenericJointUniqueProperties(
       const EuclideanPoint& positionLowerLimits = EuclideanPoint::Constant(-math::constantsd::inf()),
       const EuclideanPoint& positionUpperLimits = EuclideanPoint::Constant( math::constantsd::inf()),
       const EuclideanPoint& initialPositions = EuclideanPoint::Zero(),
@@ -159,9 +159,9 @@ struct GeometricJointUniqueProperties
   /// Copy constructor
   // Note: we only need this because VS2013 lacks full support for std::array
   // Once std::array is properly supported, this should be removed.
-  GeometricJointUniqueProperties(const GeometricJointUniqueProperties& other);
+  GenericJointUniqueProperties(const GenericJointUniqueProperties& other);
 
-  virtual ~GeometricJointUniqueProperties() = default;
+  virtual ~GenericJointUniqueProperties() = default;
 
 public:
   // To get byte-aligned Eigen vectors
@@ -171,16 +171,16 @@ public:
 
 //==============================================================================
 template <class ConfigSpaceT>
-struct GeometricJointProperties :
+struct GenericJointProperties :
     Joint::Properties,
-    GeometricJointUniqueProperties<ConfigSpaceT>
+    GenericJointUniqueProperties<ConfigSpaceT>
 {
-  GeometricJointProperties(
+  GenericJointProperties(
       const Joint::Properties& jointProperties = Joint::Properties(),
-      const GeometricJointUniqueProperties<ConfigSpaceT>& genericProperties =
-          GeometricJointUniqueProperties<ConfigSpaceT>());
+      const GenericJointUniqueProperties<ConfigSpaceT>& genericProperties =
+          GenericJointUniqueProperties<ConfigSpaceT>());
 
-  virtual ~GeometricJointProperties() = default;
+  virtual ~GenericJointProperties() = default;
 
 public:
   // To get byte-aligned Eigen vectors
@@ -195,14 +195,14 @@ public:
 // See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
 //
 template <class ConfigSpaceT>
-constexpr std::size_t GeometricJointState<ConfigSpaceT>::NumDofs;
+constexpr std::size_t GenericJointState<ConfigSpaceT>::NumDofs;
 
 template <class ConfigSpaceT>
-constexpr std::size_t GeometricJointUniqueProperties<ConfigSpaceT>::NumDofs;
+constexpr std::size_t GenericJointUniqueProperties<ConfigSpaceT>::NumDofs;
 
 //==============================================================================
 template <class ConfigSpaceT>
-GeometricJointState<ConfigSpaceT>::GeometricJointState(
+GenericJointState<ConfigSpaceT>::GenericJointState(
     const EuclideanPoint& positions,
     const Vector& velocities,
     const Vector& accelerations,
@@ -219,7 +219,7 @@ GeometricJointState<ConfigSpaceT>::GeometricJointState(
 
 //==============================================================================
 template <class ConfigSpaceT>
-GeometricJointUniqueProperties<ConfigSpaceT>::GeometricJointUniqueProperties(
+GenericJointUniqueProperties<ConfigSpaceT>::GenericJointUniqueProperties(
     const EuclideanPoint& positionLowerLimits,
     const EuclideanPoint& positionUpperLimits,
     const EuclideanPoint& initialPositions,
@@ -258,8 +258,8 @@ GeometricJointUniqueProperties<ConfigSpaceT>::GeometricJointUniqueProperties(
 
 //==============================================================================
 template <class ConfigSpaceT>
-GeometricJointUniqueProperties<ConfigSpaceT>::GeometricJointUniqueProperties(
-    const GeometricJointUniqueProperties& _other)
+GenericJointUniqueProperties<ConfigSpaceT>::GenericJointUniqueProperties(
+    const GenericJointUniqueProperties& _other)
   : mPositionLowerLimits(_other.mPositionLowerLimits),
     mPositionUpperLimits(_other.mPositionUpperLimits),
     mInitialPositions(_other.mInitialPositions),
@@ -284,21 +284,21 @@ GeometricJointUniqueProperties<ConfigSpaceT>::GeometricJointUniqueProperties(
 
 //==============================================================================
 template <class ConfigSpaceT>
-GeometricJointProperties<ConfigSpaceT>::GeometricJointProperties(
+GenericJointProperties<ConfigSpaceT>::GenericJointProperties(
     const Joint::Properties& jointProperties,
-    const GeometricJointUniqueProperties<ConfigSpaceT>& genericProperties)
+    const GenericJointUniqueProperties<ConfigSpaceT>& genericProperties)
   : Joint::Properties(jointProperties),
-    GeometricJointUniqueProperties<ConfigSpaceT>(genericProperties)
+    GenericJointUniqueProperties<ConfigSpaceT>(genericProperties)
 {
   // Do nothing
 }
 
 //==============================================================================
 template <class Derived, class ConfigSpaceT>
-using GeometricJointBase = common::EmbedStateAndPropertiesOnTopOf<
+using GenericJointBase = common::EmbedStateAndPropertiesOnTopOf<
     Derived,
-    GeometricJointState<ConfigSpaceT>,
-    GeometricJointUniqueProperties<ConfigSpaceT>,
+    GenericJointState<ConfigSpaceT>,
+    GenericJointUniqueProperties<ConfigSpaceT>,
     Joint>;
 
 } // namespace detail
@@ -306,4 +306,4 @@ using GeometricJointBase = common::EmbedStateAndPropertiesOnTopOf<
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_GEOMETRICJOINTASPECT_HPP_
+#endif // DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_

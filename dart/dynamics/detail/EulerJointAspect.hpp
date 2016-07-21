@@ -34,7 +34,7 @@
 
 #include <string>
 
-#include "dart/dynamics/GeometricJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -65,13 +65,13 @@ struct EulerJointUniqueProperties
 
 //==============================================================================
 struct EulerJointProperties :
-    GeometricJoint<math::R3Space>::Properties,
+    GenericJoint<math::R3Space>::Properties,
     EulerJointUniqueProperties
 {
   /// Composed constructor
   EulerJointProperties(
-      const GeometricJoint<math::R3Space>::Properties& geometricJointProperties =
-          GeometricJoint<math::R3Space>::Properties(),
+      const GenericJoint<math::R3Space>::Properties& GenericJointProperties =
+          GenericJoint<math::R3Space>::Properties(),
       const EulerJointUniqueProperties& eulerJointProperties =
           EulerJointUniqueProperties());
 
@@ -80,7 +80,7 @@ struct EulerJointProperties :
 
 //==============================================================================
 using EulerJointBase = common::EmbedPropertiesOnTopOf<
-    EulerJoint, EulerJointUniqueProperties, GeometricJoint<math::R3Space> >;
+    EulerJoint, EulerJointUniqueProperties, GenericJoint<math::R3Space> >;
 
 } // namespace detail
 } // namespace dynamics

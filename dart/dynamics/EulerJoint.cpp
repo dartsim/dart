@@ -69,7 +69,7 @@ void EulerJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 EulerJoint::Properties EulerJoint::getEulerJointProperties() const
 {
-  return EulerJoint::Properties(getGeometricJointProperties(),
+  return EulerJoint::Properties(getGenericJointProperties(),
                                 getEulerJointAspect()->getProperties());
 }
 
@@ -290,7 +290,7 @@ EulerJoint::EulerJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createEulerJointAspect(properties);
-  createGeometricJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 

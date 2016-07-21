@@ -1535,7 +1535,7 @@ void setDofLimitAttributes(tinyxml2::XMLElement* _dofElement,
 
 //==============================================================================
 // This structure exists to allow a common interface for setting values in
-// GeometricJoint::Properties
+// GenericJoint::Properties
 struct DofProxy
 {
   std::size_t index;
@@ -1877,7 +1877,7 @@ JointPropPtr readRevoluteJoint(
     assert(0);
   }
 
-  readJointDynamicsAndLimit<dynamics::GeometricJoint<math::R1Space>::Properties>(
+  readJointDynamicsAndLimit<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   //--------------------------------------------------------------------------
@@ -1902,7 +1902,7 @@ JointPropPtr readRevoluteJoint(
     properties.mInitialVelocities[0] = ivel[0];
   }
 
-  readAllDegreesOfFreedom<dynamics::GeometricJoint<math::R1Space>::Properties>(
+  readAllDegreesOfFreedom<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   return Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
@@ -1936,7 +1936,7 @@ JointPropPtr readPrismaticJoint(
     assert(0);
   }
 
-  readJointDynamicsAndLimit<dynamics::GeometricJoint<math::R1Space>::Properties>(
+  readJointDynamicsAndLimit<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   //--------------------------------------------------------------------------
@@ -1961,7 +1961,7 @@ JointPropPtr readPrismaticJoint(
     properties.mInitialVelocities[0] = ivel[0];
   }
 
-  readAllDegreesOfFreedom<dynamics::GeometricJoint<math::R1Space>::Properties>(
+  readAllDegreesOfFreedom<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   return Eigen::make_aligned_shared<dynamics::PrismaticJoint::Properties>(
@@ -2002,7 +2002,7 @@ JointPropPtr readScrewJoint(
     assert(0);
   }
 
-  readJointDynamicsAndLimit<dynamics::GeometricJoint<math::R1Space>::Properties>(
+  readJointDynamicsAndLimit<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   //--------------------------------------------------------------------------
@@ -2027,7 +2027,7 @@ JointPropPtr readScrewJoint(
     properties.mInitialVelocities[0] = ivel[0];
   }
 
-  readAllDegreesOfFreedom<dynamics::GeometricJoint<math::R1Space>::Properties>(
+  readAllDegreesOfFreedom<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   return Eigen::make_aligned_shared<dynamics::ScrewJoint::Properties>(

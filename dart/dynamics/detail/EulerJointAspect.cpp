@@ -44,9 +44,9 @@ EulerJointUniqueProperties::EulerJointUniqueProperties(AxisOrder _axisOrder)
 
 //==============================================================================
 EulerJointProperties::EulerJointProperties(
-    const GeometricJoint<math::R3Space>::Properties& geometricProperties,
+    const GenericJoint<math::R3Space>::Properties& geometricProperties,
     const EulerJointUniqueProperties& eulerJointProperties)
-  : GeometricJoint<math::R3Space>::Properties(geometricProperties),
+  : GenericJoint<math::R3Space>::Properties(geometricProperties),
     EulerJointUniqueProperties(eulerJointProperties)
 {
   // Do nothing

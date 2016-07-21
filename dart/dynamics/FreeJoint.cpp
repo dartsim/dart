@@ -56,7 +56,7 @@ FreeJoint::~FreeJoint()
 //==============================================================================
 FreeJoint::Properties FreeJoint::getFreeJointProperties() const
 {
-  return getGeometricJointProperties();
+  return getGenericJointProperties();
 }
 
 //==============================================================================
@@ -528,7 +528,7 @@ FreeJoint::FreeJoint(const Properties& properties)
 
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
-  createGeometricJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 
