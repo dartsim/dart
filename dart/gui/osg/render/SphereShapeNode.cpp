@@ -50,8 +50,8 @@ class SphereShapeGeode : public ShapeNode, public ::osg::Geode
 public:
 
   SphereShapeGeode(dart::dynamics::SphereShape* shape,
-                      ShapeFrameNode* parentShapeFrame,
-                      SphereShapeNode* parentNode);
+                   ShapeFrameNode* parentShapeFrame,
+                   SphereShapeNode* parentNode);
 
   void refresh();
   void extractData();
@@ -113,21 +113,8 @@ void SphereShapeNode::refresh()
 }
 
 //==============================================================================
-void SphereShapeNode::extractData(bool firstTime)
+void SphereShapeNode::extractData(bool /*firstTime*/)
 {
-  if(   mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_TRANSFORM)
-     || mShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE)
-     || firstTime )
-  {
-    Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
-    const double radius = mSphereShape->getRadius();
-    S(0,0) = radius;
-    S(1,1) = radius;
-    S(2,2) = radius;
-    S(3,3) = 1.0;
-    setMatrix(eigToOsgMatrix(S));
-  }
-
   if(nullptr == mGeode)
   {
     mGeode = new SphereShapeGeode(mSphereShape.get(), mParentShapeFrameNode, this);
