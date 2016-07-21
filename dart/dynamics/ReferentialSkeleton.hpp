@@ -269,7 +269,7 @@ public:
   double computePotentialEnergy() const override;
 
   // Documentation inherited
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void clearCollidingBodies() override;
 
   /// \}
