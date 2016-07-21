@@ -726,7 +726,7 @@ bool getAttributeBool(const tinyxml2::XMLElement* element,
   const int result = element->QueryBoolAttribute(attributeName.c_str(),
                                                  &val);
 
-  if (result != tinyxml2::XML_NO_ERROR)
+  if (result != tinyxml2::XML_SUCCESS)
   {
     dtwarn << "[getAttribute] Error in parsing bool type attribute ["
            << attributeName << "] of an element [" << element->Name()
@@ -744,7 +744,7 @@ int getAttributeInt(const tinyxml2::XMLElement* element,
   int val = 0;
   const int result = element->QueryIntAttribute(attributeName.c_str(), &val);
 
-  if (result != tinyxml2::XML_NO_ERROR)
+  if (result != tinyxml2::XML_SUCCESS)
   {
     dtwarn << "[getAttribute] Error in parsing int type attribute ["
            << attributeName << "] of an element [" << element->Name()
@@ -763,7 +763,7 @@ unsigned int getAttributeUInt(const tinyxml2::XMLElement* element,
   const int result = element->QueryUnsignedAttribute(attributeName.c_str(),
                                                      &val);
 
-  if (result != tinyxml2::XML_NO_ERROR)
+  if (result != tinyxml2::XML_SUCCESS)
   {
     dtwarn << "[getAttribute] Error in parsing unsiged int type attribute ["
            << attributeName << "] of an element [" << element->Name()
@@ -782,7 +782,7 @@ float getAttributeFloat(const tinyxml2::XMLElement* element,
   const int result = element->QueryFloatAttribute(attributeName.c_str(),
                                                   &val);
 
-  if (result != tinyxml2::XML_NO_ERROR)
+  if (result != tinyxml2::XML_SUCCESS)
   {
     dtwarn << "[getAttribute] Error in parsing float type attribute ["
            << attributeName << "] of an element [" << element->Name()
@@ -801,7 +801,7 @@ double getAttributeDouble(const tinyxml2::XMLElement* element,
   const int result = element->QueryDoubleAttribute(attributeName.c_str(),
                                                    &val);
 
-  if (result != tinyxml2::XML_NO_ERROR)
+  if (result != tinyxml2::XML_SUCCESS)
   {
     dtwarn << "[getAttribute] Error in parsing double type attribute ["
            << attributeName << "] of an element [" << element->Name()
