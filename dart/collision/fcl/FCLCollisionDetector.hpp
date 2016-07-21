@@ -144,11 +144,7 @@ protected:
 
   /// Return fcl::CollisionGeometry associated with give Shape. New
   /// fcl::CollisionGeome will be created if it hasn't created yet.
-#if FCL_VERSION_AT_LEAST(0,5,0)
-  std::shared_ptr<fcl::CollisionGeometry> claimFCLCollisionGeometry(
-#else
-  boost::shared_ptr<fcl::CollisionGeometry> claimFCLCollisionGeometry(
-#endif
+  fcl_shared_ptr<fcl::CollisionGeometry> claimFCLCollisionGeometry(
       const dynamics::ConstShapePtr& shape);
 
 protected:
@@ -180,11 +176,7 @@ private:
 
   /// Create fcl::CollisionGeometry with the custom deleter
   /// FCLCollisionGeometryDeleter
-#if FCL_VERSION_AT_LEAST(0,5,0)
-  std::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
-#else
-  boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
-#endif
+  fcl_shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
       const dynamics::ConstShapePtr& shape,
       FCLCollisionDetector::PrimitiveShape type,
       const FCLCollisionGeometryDeleter& deleter);
@@ -192,11 +184,7 @@ private:
 private:
 
   using ShapeMap = std::map<dynamics::ConstShapePtr,
-#if FCL_VERSION_AT_LEAST(0,5,0)
-                           std::weak_ptr<fcl::CollisionGeometry>>;
-#else
-                           boost::weak_ptr<fcl::CollisionGeometry>>;
-#endif
+                            fcl_weak_ptr<fcl::CollisionGeometry>>;
   // TODO(JS): FCL replaced all the use of boost in version 0.5. Once we migrate
   // to 0.5 or greater, this also should be changed to
   // std::weak_ptr<fcl::CollisionGeometry>

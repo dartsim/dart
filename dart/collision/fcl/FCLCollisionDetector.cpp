@@ -876,11 +876,7 @@ std::unique_ptr<CollisionObject> FCLCollisionDetector::createCollisionObject(
 }
 
 //==============================================================================
-#if FCL_VERSION_AT_LEAST(0,5,0)
-std::shared_ptr<fcl::CollisionGeometry>
-#else
-boost::shared_ptr<fcl::CollisionGeometry>
-#endif
+fcl_shared_ptr<fcl::CollisionGeometry>
 FCLCollisionDetector::claimFCLCollisionGeometry(
     const dynamics::ConstShapePtr& shape)
 {
@@ -903,11 +899,7 @@ FCLCollisionDetector::claimFCLCollisionGeometry(
 }
 
 //==============================================================================
-#if FCL_VERSION_AT_LEAST(0,5,0)
-std::shared_ptr<fcl::CollisionGeometry>
-#else
-boost::shared_ptr<fcl::CollisionGeometry>
-#endif
+fcl_shared_ptr<fcl::CollisionGeometry>
 FCLCollisionDetector::createFCLCollisionGeometry(
     const dynamics::ConstShapePtr& shape,
     FCLCollisionDetector::PrimitiveShape type,
@@ -1032,11 +1024,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
   }
 
-#if FCL_VERSION_AT_LEAST(0,5,0)
-  return std::shared_ptr<fcl::CollisionGeometry>(geom, deleter);
-#else
-  return boost::shared_ptr<fcl::CollisionGeometry>(geom, deleter);
-#endif
+  return fcl_shared_ptr<fcl::CollisionGeometry>(geom, deleter);
 }
 
 //==============================================================================
