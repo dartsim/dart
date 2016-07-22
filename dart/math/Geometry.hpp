@@ -432,7 +432,7 @@ Eigen::Isometry3d computeTransform(const Eigen::Vector3d& axis,
                                    AxisType axisType = AxisType::AXIS_X);
 
 /// Generate frame given origin and z-axis
-DEPRECATED(6.0)
+DART_DEPRECATED(6.0)
 Eigen::Isometry3d getFrameOriginAxisZ(const Eigen::Vector3d& _origin,
                                       const Eigen::Vector3d& _axisZ);
 
