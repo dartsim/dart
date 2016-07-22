@@ -6,6 +6,10 @@
 
   * Added distance API: [#744](https://github.com/dartsim/dart/pull/744)
 
+* Dynamics
+
+  * Added `computeLagrangian()` to `MetaSkeleton` and `BodyNode`: [#746](https://github.com/dartsim/dart/pull/746)
+
 * Misc improvements and bug fixes
 
   * Added `virtual Shape::getType()` and deprecated `ShapeType Shape::getShapeType()`: [#724](https://github.com/dartsim/dart/pull/724)
