@@ -432,7 +432,7 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  double getPotentialEnergy() const override;
+  double computePotentialEnergy() const override;
 
   /// \}
 

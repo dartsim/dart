@@ -1376,7 +1376,7 @@ double GenericJoint<ConfigSpaceT>::getCoulombFriction(size_t index) const
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GenericJoint<ConfigSpaceT>::getPotentialEnergy() const
+double GenericJoint<ConfigSpaceT>::computePotentialEnergy() const
 {
   // Spring energy
   Vector displacement
