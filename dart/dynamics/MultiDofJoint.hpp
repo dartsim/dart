@@ -410,7 +410,7 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  double getPotentialEnergy() const override;
+  double computePotentialEnergy() const override;
 
   // Documentation inherited
   Eigen::Vector6d getBodyConstraintWrench() const override;
