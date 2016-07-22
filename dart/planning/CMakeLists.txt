@@ -27,7 +27,8 @@ install(
   DESTINATION include/dart/planning
   COMPONENT headers
 )
-install(TARGETS dart-planning EXPORT DARTTargets DESTINATION lib)
+install(TARGETS dart-planning EXPORT DART-PLANNINGTargets DESTINATION lib)
+install(EXPORT DART-PLANNINGTargets DESTINATION share/dart)
 
 # Coverage test files
 set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"

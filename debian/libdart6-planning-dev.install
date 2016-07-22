@@ -1,2 +1,4 @@
 usr/include/dart/planning/*
+usr/share/dart/DART-PLANNINGTargets.cmake
+usr/share/dart/DART-PLANNINGTargets-*.cmake
 usr/lib/libdart-planning.so

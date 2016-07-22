@@ -45,7 +45,7 @@ project(dart)
 
 set(DART_MAJOR_VERSION "6")
 set(DART_MINOR_VERSION "0")
-set(DART_PATCH_VERSION "1")
+set(DART_PATCH_VERSION "2")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "eigen, ccd, fcl, assimp, boost")
@@ -108,6 +108,51 @@ endif()
 # Find dependencies
 #===============================================================================
 include(DARTFindDependencies)
+
+#===============================================================================
+# Setting components builds
+#===============================================================================
+if(HAVE_IPOPT)
+  set(BUILD_DART_OPTIMIZER_IPOPT TRUE)
+else()
+  set(BUILD_DART_OPTIMIZER_IPOPT FALSE)
+endif()
+
+if(HAVE_IPOPT)
+  set(BUILD_DART_OPTIMIZER_NLOPT TRUE)
+else()
+  set(BUILD_DART_OPTIMIZER_NLOPT FALSE)
+endif()
+
+if(TINYXML_FOUND AND TINYXML2_FOUND)
+  set(BUILD_DART_UTILS TRUE)
+else()
+  set(BUILD_DART_UTILS FALSE)
+endif()
+
+if(BUILD_DART_UTILS AND urdfdom_FOUND)
+  set(BUILD_DART_UTILS_URDF TRUE)
+else()
+  set(BUILD_DART_UTILS_URDF FALSE)
+endif()
+
+if(OPENGL_FOUND AND GLUT_FOUND)
+  set(BUILD_DART_GUI TRUE)
+else()
+  set(BUILD_DART_GUI FALSE)
+endif()
+
+if(BUILD_DART_GUI AND HAVE_OPENSCENEGRAPH)
+  set(BUILD_DART_GUI_OSG TRUE)
+else()
+  set(BUILD_DART_GUI_OSG FALSE)
+endif()
+
+if(FLANN_FOUND)
+  set(BUILD_DART_PLANNING TRUE)
+else()
+  set(BUILD_DART_PLANNING FALSE)
+endif()
 
 #===============================================================================
 # Include directories
@@ -322,11 +367,6 @@ message(STATUS "[ Unit Tests ]")
 foreach(unittest ${unittests})
   message(STATUS "Adding test: ${unittest}")
 endforeach(unittest ${unittests})
-
-#===============================================================================
-# Export targets
-#===============================================================================
-install(EXPORT DARTTargets DESTINATION share/dart)
 
 # Add an "uninstall" target
 # Ref: http://www.cmake.org/Wiki/CMake_FAQ#Can_I_do_.22make_uninstall.22_with_CMake.3F

@@ -12,4 +12,6 @@ usr/include/dart/simulation/*
 usr/share/dart/DARTConfig.cmake
 usr/share/dart/DARTConfigVersion.cmake
 usr/share/dart/DARTTargets.cmake
+usr/share/dart/DARTTargets-*.cmake
+usr/share/dart/package.xml
 usr/lib/libdart.so

@@ -27,7 +27,8 @@ install(
   DESTINATION include/dart/optimizer/ipopt
   COMPONENT headers
 )
-install(TARGETS dart-optimizer-ipopt EXPORT DARTTargets DESTINATION lib)
+install(TARGETS dart-optimizer-ipopt EXPORT DART-OPTIMIZER-IPOPTTargets DESTINATION lib)
+install(EXPORT DART-OPTIMIZER-IPOPTTargets DESTINATION share/dart)
 
 # Coverage test files
 set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"

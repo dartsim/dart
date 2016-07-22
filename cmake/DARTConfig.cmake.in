@@ -4,6 +4,7 @@
 # This sets the following variables:
 # DART_INCLUDE_DIRS - Directories containing the DART include files.
 # DART_LIBRARIES    - Libraries needed to use DART.
+# DART_DEFINITIONS  - Compiler flags to build DART.
 # DART_VERSION      - DART version.
 
 #===============================================================================
@@ -20,10 +21,39 @@ if (NOT TARGET dart)
 endif()
 set(DART_LIBRARIES dart)
 
+if(@BUILD_DART_OPTIMIZER_IPOPT@)
+  include("${CURRENT_DIR}/DART-OPTIMIZER-IPOPTTargets.cmake")
+endif()
+
+if(@BUILD_DART_OPTIMIZER_NLOPT@)
+  include("${CURRENT_DIR}/DART-OPTIMIZER-NLOPTTargets.cmake")
+endif()
+
+if(@BUILD_DART_UTILS@)
+  include("${CURRENT_DIR}/DART-UTILSTargets.cmake")
+endif()
+
+if(@BUILD_DART_UTILS_URDF@)
+  include("${CURRENT_DIR}/DART-UTILS-URDFTargets.cmake")
+endif()
+
+if(@BUILD_DART_GUI@)
+  include("${CURRENT_DIR}/DART-GUITargets.cmake")
+endif()
+
+if(@BUILD_DART_GUI_OSG@)
+  include("${CURRENT_DIR}/DART-GUI-OSGTargets.cmake")
+endif()
+
+if(@BUILD_DART_PLANNING@)
+  include("${CURRENT_DIR}/DART-PLANNINGTargets.cmake")
+endif()
+
 # Handle requested components in find_package(DART COMPONENTS [components]).
 # The list of components is passed in DART_FIND_COMPONENTS.
 if(DART_FIND_COMPONENTS)
   foreach(comp ${DART_FIND_COMPONENTS})
+
     if(NOT TARGET "dart-${comp}")
       set(DART_${comp}_FOUND 0)
       if(DART_FIND_REQUIRED_${comp})
@@ -34,8 +64,14 @@ if(DART_FIND_COMPONENTS)
       set(DART_${comp}_LIBRARY "dart-${comp}")
       list(APPEND DART_LIBRARIES "${DART_${comp}_LIBRARY}")
     endif()
+
   endforeach(comp)
 endif(DART_FIND_COMPONENTS)
+
+#===============================================================================
+# DART_DEFINITIONS
+#===============================================================================
+set(DART_DEFINITIONS -std=c++11)
 
 #===============================================================================
 # DART_VERSION
