@@ -63,7 +63,7 @@ const fcl::CollisionObject* FCLCollisionObject::getFCLCollisionObject() const
 FCLCollisionObject::FCLCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame,
-    const boost::shared_ptr<fcl::CollisionGeometry>& fclCollGeom)
+    const fcl_shared_ptr<fcl::CollisionGeometry>& fclCollGeom)
   : CollisionObject(collisionDetector, shapeFrame),
     mFCLCollisionObjectUserData(new UserData(this)),
     mFCLCollisionObject(new fcl::CollisionObject(fclCollGeom))

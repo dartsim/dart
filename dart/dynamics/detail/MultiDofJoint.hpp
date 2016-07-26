@@ -1320,7 +1320,7 @@ double MultiDofJoint<DOF>::getCoulombFriction(std::size_t _index) const
 
 //==============================================================================
 template <std::size_t DOF>
-double MultiDofJoint<DOF>::getPotentialEnergy() const
+double MultiDofJoint<DOF>::computePotentialEnergy() const
 {
   // Spring energy
   Eigen::VectorXd displacement =
