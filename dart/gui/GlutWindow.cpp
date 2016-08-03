@@ -219,7 +219,7 @@ inline GlutWindow* GlutWindow::current() {
       return mWindows.at(i);
     }
   }
-  std::cout << "An unknown error occured!" << std::endl;
+  std::cout << "An unknown error occurred!" << std::endl;
   exit(0);
 }
 
