@@ -9,7 +9,7 @@
 * Misc improvements and bug fixes
 
   * Added `virtual Shape::getType()` and deprecated `ShapeType Shpae::getShapeType()`: [#724](https://github.com/dartsim/dart/pull/724)
-  * Fixed typo: grount --> ground: [#755](https://github.com/dartsim/dart/pull/755)
+  * Fixed typo: [#756](https://github.com/dartsim/dart/pull/756), [#755](https://github.com/dartsim/dart/pull/755)
 
 ### DART 6.0.1 (2016-XX-XX)
 
