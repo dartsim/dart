@@ -571,7 +571,7 @@ bool readJoint(const std::string& jointType,
   }
   else
   {
-    dtwarn << "[ParserVsk::readSegment] Faild to parse joint type.\n";
+    dtwarn << "[ParserVsk::readSegment] Failed to parse joint type.\n";
     return false;
   }
 }

@@ -568,7 +568,7 @@ SkeletonPtr createSoftBody()
   inertia.setMoment(box->computeInertia(inertia.getMass()));
   bn->setInertia(inertia);
 
-  setAllColors(soft, dart::Color::Fuschia());
+  setAllColors(soft, dart::Color::Fuchsia());
 
   return soft;
 }
