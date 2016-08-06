@@ -393,6 +393,16 @@ public:
       double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
       double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
 
+  /// Create a Properties struct for an Sphere-shaped SoftBodyNode
+  static SoftBodyNode::UniqueProperties makeSphereProperties(
+      double                 _radius,
+      std::size_t            _nSlices,
+      std::size_t            _nStacks,
+      double                 _totalMass,
+      double                 _vertexStiffness = DART_DEFAULT_VERTEX_STIFFNESS,
+      double                 _edgeStiffness   = DART_DEFAULT_EDGE_STIFNESS,
+      double                 _dampingCoeff    = DART_DEFAULT_DAMPING_COEFF);
+
   /// Create a Properties struct for an Ellipsoid-shaped SoftBodyNode
   static SoftBodyNode::UniqueProperties makeEllipsoidProperties(
       const Eigen::Vector3d& _size,

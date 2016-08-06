@@ -7,7 +7,7 @@
             <collision_detector>fcl_mesh</collision_detector>
         </physics>
 
-        <skeleton name="grount skeleton">
+        <skeleton name="ground skeleton">
             <body name="ground">
                 <transformation>0 -0.5 0 0 0 0</transformation>
                 <visualization_shape>
