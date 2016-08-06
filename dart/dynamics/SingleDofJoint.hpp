@@ -391,8 +391,8 @@ public:
 
   //----------------------------------------------------------------------------
 
-  /// Get potential energy
-  double getPotentialEnergy() const override;
+  // Documentation inherited
+  double computePotentialEnergy() const override;
 
   // Documentation inherited
   const math::Jacobian getRelativeJacobian() const override;

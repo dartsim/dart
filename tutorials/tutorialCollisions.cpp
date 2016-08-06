@@ -391,7 +391,7 @@ SkeletonPtr createSoftBody()
   // Add a rigid collision geometry and inertia
   // Lesson 2f
 
-  setAllColors(soft, dart::Color::Fuschia());
+  setAllColors(soft, dart::Color::Fuchsia());
 
   return soft;
 }

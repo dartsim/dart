@@ -430,6 +430,12 @@ bool Joint::checkSanity(bool _printWarnings) const
 }
 
 //==============================================================================
+double Joint::getPotentialEnergy() const
+{
+  return computePotentialEnergy();
+}
+
+//==============================================================================
 void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
