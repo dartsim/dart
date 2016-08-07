@@ -50,6 +50,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
@@ -1173,7 +1174,16 @@ SkelBodyNode readSoftBodyNode(
 
     // geometry
     tinyxml2::XMLElement* geometryEle = getElement(softShapeEle, "geometry");
-    if (hasElement(geometryEle, "box"))
+    if (hasElement(geometryEle, "sphere"))
+    {
+      tinyxml2::XMLElement* sphereEle = getElement(geometryEle, "sphere");
+      const auto radius = getValueDouble(sphereEle, "radius");
+      const auto nSlices = getValueUInt(sphereEle, "num_slices");
+      const auto nStacks = getValueUInt(sphereEle, "num_stacks");
+      newSoftBodyNode = dynamics::SoftBodyNodeHelper::makeSphereProperties(
+            radius, nSlices, nStacks, totalMass);
+    }
+    else if (hasElement(geometryEle, "box"))
     {
       tinyxml2::XMLElement* boxEle = getElement(geometryEle, "box");
       Eigen::Vector3d size  = getValueVector3d(boxEle, "size");
@@ -1185,8 +1195,8 @@ SkelBodyNode readSoftBodyNode(
     {
       tinyxml2::XMLElement* ellipsoidEle = getElement(geometryEle, "ellipsoid");
       Eigen::Vector3d size = getValueVector3d(ellipsoidEle, "size");
-      double nSlices       = getValueDouble(ellipsoidEle, "num_slices");
-      double nStacks       = getValueDouble(ellipsoidEle, "num_stacks");
+      const auto nSlices   = getValueUInt(ellipsoidEle, "num_slices");
+      const auto nStacks   = getValueUInt(ellipsoidEle, "num_stacks");
       newSoftBodyNode = dynamics::SoftBodyNodeHelper::makeEllipsoidProperties(
             size,
             nSlices,
@@ -1259,7 +1269,13 @@ dynamics::ShapePtr readShape(
   assert(hasElement(vizEle, "geometry"));
   tinyxml2::XMLElement* geometryEle = getElement(vizEle, "geometry");
 
-  if (hasElement(geometryEle, "box"))
+  if (hasElement(geometryEle, "sphere"))
+  {
+    tinyxml2::XMLElement* sphereEle    = getElement(geometryEle, "sphere");
+    const auto            radius       = getValueDouble(sphereEle, "radius");
+    newShape = dynamics::ShapePtr(new dynamics::SphereShape(radius));
+  }
+  else if (hasElement(geometryEle, "box"))
   {
     tinyxml2::XMLElement* boxEle       = getElement(geometryEle, "box");
     Eigen::Vector3d       size         = getValueVector3d(boxEle, "size");

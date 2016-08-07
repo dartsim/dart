@@ -37,6 +37,7 @@
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 
@@ -263,6 +264,9 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
 
   const auto& shape = shapeFrame->getShape();
   const auto& shapeType = shape->getType();
+
+  if (shapeType == dynamics::SphereShape::getStaticType())
+    return;
 
   if (shapeType == dynamics::BoxShape::getStaticType())
     return;
