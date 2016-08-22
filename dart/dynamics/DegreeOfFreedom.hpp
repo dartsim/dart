@@ -45,8 +45,6 @@ namespace dynamics {
 class Skeleton;
 class Joint;
 class BodyNode;
-class SingleDofJoint;
-template<std::size_t> class MultiDofJoint;
 
 /// DegreeOfFreedom class is a proxy class for accessing single degrees of
 /// freedom (aka generalized coordinates) of the Skeleton.
@@ -55,8 +53,7 @@ class DegreeOfFreedom : public virtual common::Subject
 public:
 
   friend class Joint;
-  friend class SingleDofJoint;
-  template<std::size_t> friend class MultiDofJoint;
+  template<class> friend class GenericJoint;
   friend class Skeleton;
 
   DegreeOfFreedom(const DegreeOfFreedom&) = delete;
@@ -73,9 +70,9 @@ public:
   ///
   /// DegreeOfFreedom's name will be automatically given by the joint it belongs
   /// to. Below is the naming policy:
-  ///   - SingleDofJoint \n
+  ///   - GenericJoint<RealSpace> \n
   ///       Same name as the joint it belongs to.
-  ///   - MultiDofJoint \n
+  ///   - GenericJoint<[multi_dof_joint_space]> \n
   ///       "[Joint_name]+[affix]" is used. The affix is determined according
   ///       to the role they play in the joint. For example, suppose there's a
   ///       TranslationalJoint named "trans_joint". Then the each dof to be

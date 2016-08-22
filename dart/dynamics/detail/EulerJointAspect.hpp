@@ -34,7 +34,7 @@
 
 #include <string>
 
-#include "dart/dynamics/MultiDofJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -65,14 +65,14 @@ struct EulerJointUniqueProperties
 
 //==============================================================================
 struct EulerJointProperties :
-    MultiDofJoint<3>::Properties,
+    GenericJoint<math::R3Space>::Properties,
     EulerJointUniqueProperties
 {
   /// Composed constructor
   EulerJointProperties(
-      const MultiDofJoint<3>::Properties& _multiDofProperties =
-          MultiDofJoint<3>::Properties(),
-      const EulerJointUniqueProperties& _eulerJointProperties =
+      const GenericJoint<math::R3Space>::Properties& GenericJointProperties =
+          GenericJoint<math::R3Space>::Properties(),
+      const EulerJointUniqueProperties& eulerJointProperties =
           EulerJointUniqueProperties());
 
   virtual ~EulerJointProperties() = default;
@@ -80,7 +80,7 @@ struct EulerJointProperties :
 
 //==============================================================================
 using EulerJointBase = common::EmbedPropertiesOnTopOf<
-    EulerJoint, EulerJointUniqueProperties, MultiDofJoint<3> >;
+    EulerJoint, EulerJointUniqueProperties, GenericJoint<math::R3Space> >;
 
 } // namespace detail
 } // namespace dynamics

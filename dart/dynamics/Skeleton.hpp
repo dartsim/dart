@@ -899,8 +899,7 @@ public:
   friend class BodyNode;
   friend class SoftBodyNode;
   friend class Joint;
-  friend class SingleDofJoint;
-  template<std::size_t> friend class MultiDofJoint;
+  template<class> friend class GenericJoint;
   friend class DegreeOfFreedom;
   friend class Node;
   friend class ShapeNode;
