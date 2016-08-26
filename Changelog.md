@@ -1,3 +1,8 @@
+### Version 5.1.3 (201X-XX-XX)
+
+1. Backported [#749](https://github.com/dartsim/dart/pull/749) to DART 5.1
+    * [Pull request #759](https://github.com/dartsim/dart/pull/759)
+
 ### Version 5.1.2 (2016-04-25)
 
 1. Fixed inverse kinematics (backporting)

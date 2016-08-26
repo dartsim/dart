@@ -351,7 +351,7 @@ FCLCollisionNode::FCLCollisionNode(dynamics::BodyNode* _bodyNode)
   {
     dynamics::ShapePtr shape = _bodyNode->getCollisionShape(i);
 
-    boost::shared_ptr<fcl::CollisionGeometry> fclCollGeom;
+    fcl_shared_ptr<fcl::CollisionGeometry> fclCollGeom;
 
     switch (shape->getShapeType())
     {
