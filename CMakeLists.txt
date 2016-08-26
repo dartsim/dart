@@ -251,12 +251,14 @@ if(NOT BUILD_CORE_ONLY)
   find_package(FLANN 1.8.4 QUIET)
   if(FLANN_FOUND)
     message(STATUS "Looking for FLANN - ${FLANN_VERSION} found")
+    set(HAVE_FLANN TRUE)
   else()
     if(FLANN_VERSION)
       message(SEND_ERROR "Looking for FLANN - ${FLANN_VERSION} found, ${PROJECT_NAME} requires 1.8.4 or greater.")
     else()
       message(SEND_ERROR "Looking for FLANN - NOT found, please install libflann-dev")
     endif()
+    set(HAVE_FLANN FALSE)
   endif()
 
   # TINYXML
@@ -428,6 +430,7 @@ endif()
 
 if(NOT BUILD_CORE_ONLY)
   set(DART_DEPENDENCIES ${urdfdom_LIBRARIES}
+                        ${FLANN_LIBRARIES}
                         ${TINYXML_LIBRARIES}
                         ${TINYXML2_LIBRARIES}
   )
