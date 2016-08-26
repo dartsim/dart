@@ -78,18 +78,18 @@
                 <visualization_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
-                        <ellipsoid>
-                            <size>0.1 0.1 0.1</size>
-                        </ellipsoid>
+                        <sphere>
+                            <radius>0.05</radius>
+                        </sphere>
                     </geometry>
                     <color>0.3 0.8 0.3</color>
                 </visualization_shape>
                 <collision_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
-                        <ellipsoid>
-                            <size>0.1 0.1 0.1</size>
-                        </ellipsoid>
+                        <sphere>
+                            <radius>0.05</radius>
+                        </sphere>
                     </geometry>
                 </collision_shape>                                
             </body>
@@ -180,7 +180,7 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <mesh>
-                            <file_name>../obj/foot.obj</file_name>
+                            <file_name>../obj/BoxSmall.obj</file_name>
                             <scale>1.0 1.0 1.0</scale>
                         </mesh>
                     </geometry>
@@ -190,7 +190,7 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <mesh>
-                            <file_name>../obj/foot.obj</file_name>
+                            <file_name>../obj/BoxSmall.obj</file_name>
                             <scale>1.0 1.0 1.0</scale>
                         </mesh>
                     </geometry>
