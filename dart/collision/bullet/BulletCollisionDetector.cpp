@@ -501,7 +501,7 @@ Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
   Contact contact;
 
   contact.point = convertVector3(bulletManifoldPoint.getPositionWorldOnA());
-  contact.normal = convertVector3(-bulletManifoldPoint.m_normalWorldOnB);
+  contact.normal = convertVector3(bulletManifoldPoint.m_normalWorldOnB);
   contact.penetrationDepth = -bulletManifoldPoint.m_distance1;
   contact.collisionObject1 = userData1->collisionObject;
   contact.collisionObject2 = userData2->collisionObject;
