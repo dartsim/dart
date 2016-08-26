@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
@@ -29,30 +29,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PrismaticJoint.hpp"
+#ifndef DART_DYNAMICS_SPHERESHAPE_HPP_
+#define DART_DYNAMICS_SPHERESHAPE_HPP_
+
+#include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {
-namespace detail {
 
-//==============================================================================
-PrismaticJointUniqueProperties::PrismaticJointUniqueProperties(
-    const Eigen::Vector3d& _axis)
-  : mAxis(_axis.normalized())
+class SphereShape : public Shape
 {
-  // Do nothing
-}
+public:
+  /// Constructor.
+  explicit SphereShape(double radius);
 
-//==============================================================================
-PrismaticJointProperties::PrismaticJointProperties(
-    const GenericJoint<math::R1Space>::Properties& GenericJointProperties,
-    const PrismaticJointUniqueProperties& prismaticProperties)
-  : GenericJoint<math::R1Space>::Properties(GenericJointProperties),
-    PrismaticJointUniqueProperties(prismaticProperties)
-{
-  // Do nothing
-}
+  /// Destructor.
+  virtual ~SphereShape();
 
-} // namespace detail
-} // namespace dynamics
-} // namespace dart
+  // Documentation inherited.
+  const std::string& getType() const;
+
+  /// Returns shape type for this class
+  static const std::string& getStaticType();
+
+  /// Set radius of this box.
+  void setRadius(double radius);
+
+  /// Get radius of this box.
+  double getRadius() const;
+
+  /// Compute volume from given properties
+  static double computeVolume(double radius);
+
+  /// Compute moments of inertia of a Sphere
+  static Eigen::Matrix3d computeInertia(double radius, double mass);
+
+  // Documentation inherited.
+  Eigen::Matrix3d computeInertia(double mass) const override;
+
+protected:
+  // Documentation inherited.
+  void updateVolume() override;
+
+private:
+  /// Radius of this Sphere
+  double mRadius;
+};
+
+}  // namespace dynamics
+}  // namespace dart
+
+#endif  // DART_DYNAMICS_SPHERESHAPE_HPP_

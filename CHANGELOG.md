@@ -5,6 +5,7 @@
 * Dynamics
 
   * Added `computeLagrangian()` to `MetaSkeleton` and `BodyNode`: [#746](https://github.com/dartsim/dart/pull/746)
+  * Added `SphereShape`: [#745](https://github.com/dartsim/dart/pull/745)
 
 * Misc improvements and bug fixes
 

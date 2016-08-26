@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
@@ -29,30 +29,50 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PrismaticJoint.hpp"
+#ifndef DART_GUI_OSG_RENDER_SPHERESHAPENODE_HPP_
+#define DART_GUI_OSG_RENDER_SPHERESHAPENODE_HPP_
+
+#include <osg/ShapeDrawable>
+#include <osg/MatrixTransform>
+
+#include "dart/gui/osg/render/ShapeNode.hpp"
 
 namespace dart {
+
 namespace dynamics {
-namespace detail {
-
-//==============================================================================
-PrismaticJointUniqueProperties::PrismaticJointUniqueProperties(
-    const Eigen::Vector3d& _axis)
-  : mAxis(_axis.normalized())
-{
-  // Do nothing
-}
-
-//==============================================================================
-PrismaticJointProperties::PrismaticJointProperties(
-    const GenericJoint<math::R1Space>::Properties& GenericJointProperties,
-    const PrismaticJointUniqueProperties& prismaticProperties)
-  : GenericJoint<math::R1Space>::Properties(GenericJointProperties),
-    PrismaticJointUniqueProperties(prismaticProperties)
-{
-  // Do nothing
-}
-
-} // namespace detail
+class SphereShape;
 } // namespace dynamics
+
+namespace gui {
+namespace osg {
+namespace render {
+
+class SphereShapeGeode;
+class SphereShapeDrawable;
+
+class SphereShapeNode : public ShapeNode, public ::osg::MatrixTransform
+{
+public:
+
+  SphereShapeNode(
+      std::shared_ptr<dart::dynamics::SphereShape> shape,
+      ShapeFrameNode* parent);
+
+  void refresh();
+  void extractData(bool firstTime);
+
+protected:
+
+  virtual ~SphereShapeNode();
+
+  std::shared_ptr<dart::dynamics::SphereShape> mSphereShape;
+  SphereShapeGeode* mGeode;
+
+};
+
+} // namespace render
+} // namespace osg
+} // namespace gui
 } // namespace dart
+
+#endif // DART_GUI_OSG_RENDER_SPHERESHAPENODE_HPP_

@@ -34,7 +34,7 @@
 
 #include <string>
 
-#include "dart/dynamics/MultiDofJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -105,13 +105,13 @@ struct PlanarJointUniqueProperties
 
 //==============================================================================
 struct PlanarJointProperties :
-    MultiDofJoint<3>::Properties,
+    GenericJoint<math::R3Space>::Properties,
     PlanarJointUniqueProperties
 {
   PlanarJointProperties(
-      const MultiDofJoint<3>::Properties& _multiDofProperties =
-          MultiDofJoint<3>::Properties(),
-      const PlanarJointUniqueProperties& _planarProperties =
+      const GenericJoint<math::R3Space>::Properties& GenericJointProperties =
+          GenericJoint<math::R3Space>::Properties(),
+      const PlanarJointUniqueProperties& planarProperties =
           PlanarJointUniqueProperties());
 
   virtual ~PlanarJointProperties() = default;
@@ -119,7 +119,7 @@ struct PlanarJointProperties :
 
 //==============================================================================
 using PlanarJointBase = common::EmbedPropertiesOnTopOf<
-    PlanarJoint, PlanarJointUniqueProperties, MultiDofJoint<3> >;
+    PlanarJoint, PlanarJointUniqueProperties, GenericJoint<math::R3Space> >;
 
 } // namespace detail
 } // namespace dynamics

@@ -101,6 +101,10 @@ void RenderInterface::scale(const Eigen::Vector3d& /*_scale*/)
 {
 }
 
+void RenderInterface::drawSphere(double /*_radius*/)
+{
+}
+
 void RenderInterface::drawEllipsoid(const Eigen::Vector3d& /*_size*/)
 {
 }

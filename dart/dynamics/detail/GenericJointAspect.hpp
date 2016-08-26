@@ -29,8 +29,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_MULTIDOFJOINTASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_MULTIDOFJOINTASPECT_HPP_
+#ifndef DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_
+#define DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_
 
 #include "dart/math/Helpers.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -39,20 +39,21 @@
 namespace dart {
 namespace dynamics {
 
-// Forward declare the MultiDofJoint class
-template <std::size_t DOF> class MultiDofJoint;
+// Forward declare the GenericJoint class
+template <class ConfigSpaceT> class GenericJoint;
 
 namespace detail {
 
 //==============================================================================
-template <std::size_t DOF>
-struct MultiDofJointState
+template <class ConfigSpaceT>
+struct GenericJointState
 {
-  constexpr static std::size_t NumDofs = DOF;
-  using Vector = Eigen::Matrix<double, DOF, 1>;
+  constexpr static std::size_t NumDofs = ConfigSpaceT::NumDofs;
+  using EuclideanPoint = typename ConfigSpaceT::EuclideanPoint;
+  using Vector = typename ConfigSpaceT::Vector;
 
   /// Position
-  Vector mPositions;
+  EuclideanPoint mPositions;
 
   /// Generalized velocity
   Vector mVelocities;
@@ -66,36 +67,37 @@ struct MultiDofJointState
   /// Command
   Vector mCommands;
 
-  MultiDofJointState(
-      const Vector& positions = Vector::Zero(),
+  GenericJointState(
+      const EuclideanPoint& positions = EuclideanPoint::Zero(),
       const Vector& velocities = Vector::Zero(),
       const Vector& accelerations = Vector::Zero(),
       const Vector& forces = Vector::Zero(),
       const Vector& commands = Vector::Zero());
 
-  virtual ~MultiDofJointState() = default;
+  virtual ~GenericJointState() = default;
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================
-template <std::size_t DOF>
-struct MultiDofJointUniqueProperties
+template <class ConfigSpaceT>
+struct GenericJointUniqueProperties
 {
-  constexpr static std::size_t NumDofs = DOF;
-  using Vector = Eigen::Matrix<double, DOF, 1>;
-  using BoolArray = std::array<bool, DOF>;
-  using StringArray = std::array<std::string, DOF>;
+  constexpr static std::size_t NumDofs = ConfigSpaceT::NumDofs;
+  using EuclideanPoint = typename ConfigSpaceT::EuclideanPoint;
+  using Vector = typename ConfigSpaceT::Vector;
+  using BoolArray = std::array<bool, NumDofs>;
+  using StringArray = std::array<std::string, NumDofs>;
 
   /// Lower limit of position
-  Vector mPositionLowerLimits;
+  EuclideanPoint mPositionLowerLimits;
 
   /// Upper limit of position
-  Vector mPositionUpperLimits;
+  EuclideanPoint mPositionUpperLimits;
 
   /// Initial positions
-  Vector mInitialPositions;
+  EuclideanPoint mInitialPositions;
 
   /// Min value allowed.
   Vector mVelocityLowerLimits;
@@ -122,7 +124,7 @@ struct MultiDofJointUniqueProperties
   Vector mSpringStiffnesses;
 
   /// Rest joint position for joint spring
-  Vector mRestPositions;
+  EuclideanPoint mRestPositions;
 
   /// Joint damping coefficient
   Vector mDampingCoefficients;
@@ -138,46 +140,47 @@ struct MultiDofJointUniqueProperties
   StringArray mDofNames;
 
   /// Default constructor
-  MultiDofJointUniqueProperties(
-      const Vector& _positionLowerLimits = Vector::Constant(-math::constantsd::inf()),
-      const Vector& _positionUpperLimits = Vector::Constant( math::constantsd::inf()),
-      const Vector& _initialPositions = Vector::Constant(0.0),
-      const Vector& _velocityLowerLimits = Vector::Constant(-math::constantsd::inf()),
-      const Vector& _velocityUpperLimits = Vector::Constant( math::constantsd::inf()),
-      const Vector& _initialVelocities = Vector::Constant(0.0),
-      const Vector& _accelerationLowerLimits = Vector::Constant(-math::constantsd::inf()),
-      const Vector& _accelerationUpperLimits = Vector::Constant( math::constantsd::inf()),
-      const Vector& _forceLowerLimits = Vector::Constant(-math::constantsd::inf()),
-      const Vector& _forceUpperLimits = Vector::Constant( math::constantsd::inf()),
-      const Vector& _springStiffness = Vector::Constant(0.0),
-      const Vector& _restPosition = Vector::Constant(0.0),
-      const Vector& _dampingCoefficient = Vector::Constant(0.0),
-      const Vector& _coulombFrictions = Vector::Constant(0.0));
+  GenericJointUniqueProperties(
+      const EuclideanPoint& positionLowerLimits = EuclideanPoint::Constant(-math::constantsd::inf()),
+      const EuclideanPoint& positionUpperLimits = EuclideanPoint::Constant( math::constantsd::inf()),
+      const EuclideanPoint& initialPositions = EuclideanPoint::Zero(),
+      const Vector& velocityLowerLimits = Vector::Constant(-math::constantsd::inf()),
+      const Vector& velocityUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& initialVelocities = Vector::Zero(),
+      const Vector& accelerationLowerLimits = Vector::Constant(-math::constantsd::inf()),
+      const Vector& accelerationUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& forceLowerLimits = Vector::Constant(-math::constantsd::inf()),
+      const Vector& forceUpperLimits = Vector::Constant( math::constantsd::inf()),
+      const Vector& springStiffness = Vector::Zero(),
+      const EuclideanPoint& restPosition = EuclideanPoint::Zero(),
+      const Vector& dampingCoefficient = Vector::Zero(),
+      const Vector& coulombFrictions = Vector::Zero());
 
   /// Copy constructor
   // Note: we only need this because VS2013 lacks full support for std::array
   // Once std::array is properly supported, this should be removed.
-  MultiDofJointUniqueProperties(const MultiDofJointUniqueProperties& _other);
+  GenericJointUniqueProperties(const GenericJointUniqueProperties& other);
 
-  virtual ~MultiDofJointUniqueProperties() = default;
+  virtual ~GenericJointUniqueProperties() = default;
 
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 };
 
 //==============================================================================
-template <std::size_t DOF>
-struct MultiDofJointProperties :
+template <class ConfigSpaceT>
+struct GenericJointProperties :
     Joint::Properties,
-    MultiDofJointUniqueProperties<DOF>
+    GenericJointUniqueProperties<ConfigSpaceT>
 {
-  MultiDofJointProperties(
-      const Joint::Properties& _jointProperties = Joint::Properties(),
-      const MultiDofJointUniqueProperties<DOF>& _multiDofProperties =
-          MultiDofJointUniqueProperties<DOF>());
+  GenericJointProperties(
+      const Joint::Properties& jointProperties = Joint::Properties(),
+      const GenericJointUniqueProperties<ConfigSpaceT>& genericProperties =
+          GenericJointUniqueProperties<ConfigSpaceT>());
 
-  virtual ~MultiDofJointProperties() = default;
+  virtual ~GenericJointProperties() = default;
 
 public:
   // To get byte-aligned Eigen vectors
@@ -191,16 +194,16 @@ public:
 //
 // See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
 //
-template <std::size_t DOF>
-constexpr std::size_t MultiDofJointState<DOF>::NumDofs;
+template <class ConfigSpaceT>
+constexpr std::size_t GenericJointState<ConfigSpaceT>::NumDofs;
 
-template <std::size_t DOF>
-constexpr std::size_t MultiDofJointUniqueProperties<DOF>::NumDofs;
+template <class ConfigSpaceT>
+constexpr std::size_t GenericJointUniqueProperties<ConfigSpaceT>::NumDofs;
 
 //==============================================================================
-template <std::size_t DOF>
-MultiDofJointState<DOF>::MultiDofJointState(
-    const Vector& positions,
+template <class ConfigSpaceT>
+GenericJointState<ConfigSpaceT>::GenericJointState(
+    const EuclideanPoint& positions,
     const Vector& velocities,
     const Vector& accelerations,
     const Vector& forces,
@@ -215,38 +218,38 @@ MultiDofJointState<DOF>::MultiDofJointState(
 }
 
 //==============================================================================
-template <std::size_t DOF>
-MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
-    const Vector& _positionLowerLimits,
-    const Vector& _positionUpperLimits,
-    const Vector& _initialPositions,
-    const Vector& _velocityLowerLimits,
-    const Vector& _velocityUpperLimits,
-    const Vector& _initialVelocities,
-    const Vector& _accelerationLowerLimits,
-    const Vector& _accelerationUpperLimits,
-    const Vector& _forceLowerLimits,
-    const Vector& _forceUpperLimits,
-    const Vector& _springStiffness,
-    const Vector& _restPosition,
-    const Vector& _dampingCoefficient,
-    const Vector& _coulombFrictions)
-  : mPositionLowerLimits(_positionLowerLimits),
-    mPositionUpperLimits(_positionUpperLimits),
-    mInitialPositions(_initialPositions),
-    mVelocityLowerLimits(_velocityLowerLimits),
-    mVelocityUpperLimits(_velocityUpperLimits),
-    mInitialVelocities(_initialVelocities),
-    mAccelerationLowerLimits(_accelerationLowerLimits),
-    mAccelerationUpperLimits(_accelerationUpperLimits),
-    mForceLowerLimits(_forceLowerLimits),
-    mForceUpperLimits(_forceUpperLimits),
-    mSpringStiffnesses(_springStiffness),
-    mRestPositions(_restPosition),
-    mDampingCoefficients(_dampingCoefficient),
-    mFrictions(_coulombFrictions)
+template <class ConfigSpaceT>
+GenericJointUniqueProperties<ConfigSpaceT>::GenericJointUniqueProperties(
+    const EuclideanPoint& positionLowerLimits,
+    const EuclideanPoint& positionUpperLimits,
+    const EuclideanPoint& initialPositions,
+    const Vector& velocityLowerLimits,
+    const Vector& velocityUpperLimits,
+    const Vector& initialVelocities,
+    const Vector& accelerationLowerLimits,
+    const Vector& accelerationUpperLimits,
+    const Vector& forceLowerLimits,
+    const Vector& forceUpperLimits,
+    const Vector& springStiffness,
+    const EuclideanPoint& restPosition,
+    const Vector& dampingCoefficient,
+    const Vector& coulombFrictions)
+  : mPositionLowerLimits(positionLowerLimits),
+    mPositionUpperLimits(positionUpperLimits),
+    mInitialPositions(initialPositions),
+    mVelocityLowerLimits(velocityLowerLimits),
+    mVelocityUpperLimits(velocityUpperLimits),
+    mInitialVelocities(initialVelocities),
+    mAccelerationLowerLimits(accelerationLowerLimits),
+    mAccelerationUpperLimits(accelerationUpperLimits),
+    mForceLowerLimits(forceLowerLimits),
+    mForceUpperLimits(forceUpperLimits),
+    mSpringStiffnesses(springStiffness),
+    mRestPositions(restPosition),
+    mDampingCoefficients(dampingCoefficient),
+    mFrictions(coulombFrictions)
 {
-  for (std::size_t i = 0; i < DOF; ++i)
+  for (auto i = 0u; i < NumDofs; ++i)
   {
     mPreserveDofNames[i] = false;
     mDofNames[i] = std::string();
@@ -254,9 +257,9 @@ MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
 }
 
 //==============================================================================
-template <std::size_t DOF>
-MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
-    const MultiDofJointUniqueProperties& _other)
+template <class ConfigSpaceT>
+GenericJointUniqueProperties<ConfigSpaceT>::GenericJointUniqueProperties(
+    const GenericJointUniqueProperties& _other)
   : mPositionLowerLimits(_other.mPositionLowerLimits),
     mPositionUpperLimits(_other.mPositionUpperLimits),
     mInitialPositions(_other.mInitialPositions),
@@ -272,7 +275,7 @@ MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
     mDampingCoefficients(_other.mDampingCoefficients),
     mFrictions(_other.mFrictions)
 {
-  for (std::size_t i = 0; i < DOF; ++i)
+  for (auto i = 0u; i < NumDofs; ++i)
   {
     mPreserveDofNames[i] = _other.mPreserveDofNames[i];
     mDofNames[i] = _other.mDofNames[i];
@@ -280,23 +283,27 @@ MultiDofJointUniqueProperties<DOF>::MultiDofJointUniqueProperties(
 }
 
 //==============================================================================
-template <std::size_t DOF>
-MultiDofJointProperties<DOF>::MultiDofJointProperties(
-    const Joint::Properties& _jointProperties,
-    const MultiDofJointUniqueProperties<DOF>& _multiDofProperties)
-  : Joint::Properties(_jointProperties),
-    MultiDofJointUniqueProperties<DOF>(_multiDofProperties)
+template <class ConfigSpaceT>
+GenericJointProperties<ConfigSpaceT>::GenericJointProperties(
+    const Joint::Properties& jointProperties,
+    const GenericJointUniqueProperties<ConfigSpaceT>& genericProperties)
+  : Joint::Properties(jointProperties),
+    GenericJointUniqueProperties<ConfigSpaceT>(genericProperties)
 {
   // Do nothing
 }
 
-template <class Derived, std::size_t DOF>
-using MultiDofJointBase = common::EmbedStateAndPropertiesOnTopOf<
-    Derived, MultiDofJointState<DOF>, MultiDofJointUniqueProperties<DOF>, Joint>;
+//==============================================================================
+template <class Derived, class ConfigSpaceT>
+using GenericJointBase = common::EmbedStateAndPropertiesOnTopOf<
+    Derived,
+    GenericJointState<ConfigSpaceT>,
+    GenericJointUniqueProperties<ConfigSpaceT>,
+    Joint>;
 
 } // namespace detail
+
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_MULTIDOFJOINTASPECT_HPP_
-
+#endif // DART_DYNAMICS_DETAIL_GenericJointASPECT_HPP_

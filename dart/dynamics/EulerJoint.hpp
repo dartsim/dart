@@ -153,7 +153,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using MultiDofJoint::getRelativeJacobianStatic;
+  using Base::getRelativeJacobianStatic;
 
   /// Set the names of this joint's DegreesOfFreedom. Used during construction
   /// and when axis order is changed.

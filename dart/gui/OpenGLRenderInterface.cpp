@@ -143,21 +143,24 @@ void OpenGLRenderInterface::scale(const Eigen::Vector3d& _scale) {
     glScaled(_scale[0], _scale[1], _scale[2]);
 }
 
+void OpenGLRenderInterface::drawSphere(double radius)
+{
+  GLint slices = 16;
+  GLint stacks = 16;
+
+  // Code taken from glut/lib/glut_shapes.c
+  QUAD_OBJ_INIT;
+  gluQuadricDrawStyle(quadObj, GLU_FILL);
+  gluQuadricNormals(quadObj, GLU_SMOOTH);
+  //gluQuadricTexture(quadObj, GL_TRUE);
+
+  gluSphere(quadObj, radius, slices, stacks);
+}
+
 void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _size) {
     glScaled(_size(0), _size(1), _size(2));
 
-    GLdouble radius = 0.5;
-    GLint slices = 16;
-    GLint stacks = 16;
-
-    // Code taken from glut/lib/glut_shapes.c
-    QUAD_OBJ_INIT;
-    gluQuadricDrawStyle(quadObj, GLU_FILL);
-    gluQuadricNormals(quadObj, GLU_SMOOTH);
-    //gluQuadricTexture(quadObj, GL_TRUE);
-
-    gluSphere(quadObj, radius, slices, stacks);
-    //glut/lib/glut_shapes.c
+    drawSphere(0.5);
 }
 
 void OpenGLRenderInterface::drawCube(const Eigen::Vector3d& _size) {

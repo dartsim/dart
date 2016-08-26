@@ -36,7 +36,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/SingleDofJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -62,13 +62,13 @@ struct ScrewJointUniqueProperties
 };
 
 //==============================================================================
-struct ScrewJointProperties : SingleDofJoint::Properties,
+struct ScrewJointProperties : GenericJoint<math::R1Space>::Properties,
                     ScrewJointUniqueProperties
 {
   ScrewJointProperties(
-      const SingleDofJoint::Properties& _singleDofProperties =
-          SingleDofJoint::Properties(),
-      const ScrewJointUniqueProperties& _screwProperties =
+      const GenericJoint<math::R1Space>::Properties& GenericJointProperties =
+          GenericJoint<math::R1Space>::Properties(),
+      const ScrewJointUniqueProperties& screwProperties =
           ScrewJointUniqueProperties());
 
   virtual ~ScrewJointProperties() = default;
@@ -76,7 +76,7 @@ struct ScrewJointProperties : SingleDofJoint::Properties,
 
 //==============================================================================
 using ScrewJointBase = common::EmbedPropertiesOnTopOf<
-    ScrewJoint, ScrewJointUniqueProperties, SingleDofJoint>;
+    ScrewJoint, ScrewJointUniqueProperties, GenericJoint<math::R1Space> >;
 
 } // namespace detail
 } // namespace dynamics
