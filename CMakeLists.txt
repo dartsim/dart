@@ -69,6 +69,7 @@ if(MSVC)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
+option(DART_ENABLE_SIMD "Build DART with SIMD enabled" OFF)
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 option(DART_COVERALLS "Turn on coveralls support" OFF)
 option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
@@ -145,6 +146,7 @@ endif()
 # Compiler flags
 #===============================================================================
 if(MSVC)
+
   # Visual Studio enables c++11 support by default
   if(MSVC_VERSION VERSION_LESS 1900)
     message(FATAL_ERROR "${PROJECT_NAME} requires VS 2015 or greater.")
@@ -156,9 +158,18 @@ if(MSVC)
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /INCREMENTAL:NO")
   if(NOT DART_MSVC_DEFAULT_OPTIONS)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc /arch:SSE2")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc")
   endif(NOT DART_MSVC_DEFAULT_OPTIONS)
+  if(DART_ENABLE_SIMD)
+    add_definitions(/arch:SSE2)
+    # This option will be effective for x86 but not for x64. The option will be
+    # ignored on x64 with a warning message. If anyone knows how to detect the
+    # system's architecture in CMake time, then I would gratefully remove this
+    # option for x64.
+  endif()
+
 elseif(CMAKE_COMPILER_IS_GNUCXX)
+
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
   endif()
@@ -175,7 +186,12 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
+  if(DART_ENABLE_SIMD)
+    add_definitions(-march=native)
+  endif()
+
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
     # Turn warning "deprecated-declarations" into an warning even if -Werror is
@@ -197,8 +213,14 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
+  if(DART_ENABLE_SIMD)
+    add_definitions(-march=native)
+  endif()
+
 else()
+
   message(SEND_ERROR "Compiler[${CMAKE_CXX_COMPILER_ID}] not supported.")
+
 endif()
 
 #===============================================================================
