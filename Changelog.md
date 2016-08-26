@@ -1,5 +1,8 @@
 ### Version 5.1.3 (201X-XX-XX)
 
+1. Switched to use btGImpactMeshShape instead of btConvexTriangleMeshShape for mesh
+    * [Pull request #764](https://github.com/dartsim/dart/pull/764)
+
 1. Backported [#749](https://github.com/dartsim/dart/pull/749) to DART 5.1
     * [Pull request #759](https://github.com/dartsim/dart/pull/759)
 
