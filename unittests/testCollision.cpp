@@ -651,6 +651,20 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
   EXPECT_TRUE(result.getNumContacts() == 1u);
   EXPECT_TRUE(result.getContact(0).point.isApprox(
                 Eigen::Vector3d(1.0, 0.0, 0.0), tol));
+  if (cd->getType() == FCLCollisionDetector::getStaticType()
+      && static_cast<FCLCollisionDetector*>(cd.get())->getPrimitiveShapeType()
+         == FCLCollisionDetector::MESH)
+  {
+    EXPECT_TRUE(result.getContact(0).normal.isApprox(
+                  -Eigen::Vector3d::UnitX(), tol * 1e+12));
+    // FCL returns less accurate contact normals for sphere-sphere since we're
+    // using sphere-like rough meshes instead of analytical sphere shapes.
+  }
+  else
+  {
+    EXPECT_TRUE(result.getContact(0).normal.isApprox(
+                  -Eigen::Vector3d::UnitX(), tol));
+  }
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d::Zero());
