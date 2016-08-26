@@ -8,6 +8,7 @@
 # This sets the following variables:
 # FLANN_FOUND
 # FLANN_INCLUDE_DIRS
+# FLANN_LIBRARIES
 # FLANN_VERSION
 
 find_package(PkgConfig QUIET)
@@ -21,6 +22,10 @@ find_path(FLANN_INCLUDE_DIRS
     HINTS ${PC_FLANN_INCLUDEDIR}
     PATHS "${CMAKE_INSTALL_PREFIX}/include")
 
+# Libraries
+find_library(FLANN_LIBRARIES flann_cpp
+    HINTS ${PC_FLANN_LIBDIR})
+
 # Version
 set(FLANN_VERSION ${PC_FLANN_VERSION})
 
@@ -28,6 +33,6 @@ set(FLANN_VERSION ${PC_FLANN_VERSION})
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(FLANN
     FAIL_MESSAGE  DEFAULT_MSG
-    REQUIRED_VARS FLANN_INCLUDE_DIRS
+    REQUIRED_VARS FLANN_INCLUDE_DIRS FLANN_LIBRARIES
     VERSION_VAR   FLANN_VERSION)
 

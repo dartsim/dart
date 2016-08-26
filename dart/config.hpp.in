@@ -46,6 +46,7 @@
 #cmakedefine01 HAVE_IPOPT
 #cmakedefine01 HAVE_SNOPT
 #cmakedefine01 HAVE_BULLET_COLLISION
+#cmakedefine01 HAVE_FLANN
 
 #define DART_ROOT_PATH "@CMAKE_SOURCE_DIR@/"
 #define DART_DATA_PATH "@CMAKE_SOURCE_DIR@/data/"

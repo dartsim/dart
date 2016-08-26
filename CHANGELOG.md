@@ -7,6 +7,10 @@
   * Added `computeLagrangian()` to `MetaSkeleton` and `BodyNode`: [#746](https://github.com/dartsim/dart/pull/746)
   * Added `SphereShape`: [#745](https://github.com/dartsim/dart/pull/745)
 
+* Planning
+
+  * Fixed incorrect linking to flann library: [#761](https://github.com/dartsim/dart/pull/761)
+
 * Misc improvements and bug fixes
 
   * Added `virtual Shape::getType()` and deprecated `ShapeType Shpae::getShapeType()`: [#724](https://github.com/dartsim/dart/pull/724)
