@@ -210,8 +210,10 @@ endif()
 find_package(FLANN 1.8.4 QUIET)
 if(FLANN_FOUND)
   message(STATUS "Looking for FLANN - ${FLANN_VERSION} found")
+  set(HAVE_FLANN TRUE)
 else()
   message(STATUS "Looking for FLANN - NOT found, to build dart-planning, please install libflann-dev (>= 1.8.4)")
+  set(HAVE_FLANN FALSE)
 endif()
 
 #-----------------------------

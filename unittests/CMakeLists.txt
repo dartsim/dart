@@ -75,13 +75,16 @@ foreach(test ${tests})
   endif(NOT contains)
 endforeach(test)
 
+if(HAVE_FLANN)
+  target_link_libraries(testNearestNeighbor dart-planning)
+endif(HAVE_FLANN)
 
 if(HAVE_IPOPT)
-  target_link_libraries(testOptimizer dart-optimizer-ipopt ${IPOPT_LIBRARIES})
+  target_link_libraries(testOptimizer dart-optimizer-ipopt)
 endif(HAVE_IPOPT)
 
 if(HAVE_NLOPT)
-  target_link_libraries(testOptimizer dart-optimizer-nlopt ${NLOPT_LIBRARIES})
+  target_link_libraries(testOptimizer dart-optimizer-nlopt)
 endif(HAVE_NLOPT)
 
 if(HAVE_SNOPT)
