@@ -355,21 +355,43 @@ else()
   set(HAVE_SHARK FALSE)
 endif()
 
-# BulletCollision
-if(UNIX)
-  pkg_check_modules(BULLET bullet>=2.82 QUIET)
-  if(NOT BULLET_FOUND)
-     pkg_check_modules(BULLET bullet2.82>=2.82 QUIET)
-  endif()
-else()
-  find_package(Bullet COMPONENTS BulletMath BulletCollision QUIET)
-endif()
+# Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
+# CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
+# with Bullet, which uses relative paths and may break transitive dependencies.
+find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
+
 if(BULLET_FOUND)
-  message(STATUS "Looking for BulletCollision - ${BULLET_VERSION} found")
+  # Test whether Bullet was built with double precision. If so, we need to
+  # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
+  # any Bullet headers. This is a workaround for the fact that Bullet does not
+  # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
+  include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_FLAGS "")
+  set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
+  set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
+  set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
+  check_cxx_source_compiles(
+    "
+    #include <btBulletCollisionCommon.h>
+    int main()
+    {
+      btVector3 v(0., 0., 1.);
+      btStaticPlaneShape planeShape(v, 0.);
+      return 0;
+    }
+    "
+    BT_USE_DOUBLE_PRECISION
+  )
+
+  if(BT_USE_DOUBLE_PRECISION)
+    message(STATUS "Looking for Bullet - found (double precision)")
+  else()
+    message(STATUS "Looking for Bullet - found (single precision)")
+  endif()
+
   set(HAVE_BULLET_COLLISION TRUE)
-  add_definitions(-DHAVE_BULLET_COLLISION)
 else()
-  message(STATUS "Looking for BulletCollision - NOT found, please install libbullet-dev")
+  message(STATUS "Looking for Bullet - NOT found, to use BulletCollisionDetector, please install libbullet-dev")
   set(HAVE_BULLET_COLLISION FALSE)
 endif()
 
