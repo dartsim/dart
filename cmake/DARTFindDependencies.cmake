@@ -239,7 +239,7 @@ endif()
 # urdfdom
 find_package(urdfdom QUIET)
 if(urdfdom_FOUND)
-  message(STATUS "Looking for urdfdom - found")
+  message(STATUS "Looking for urdfdom - ${urdfdom_headers_VERSION} found")
 else()
   message(STATUS "Looking for urdfdom - NOT found, please install liburdfdom-dev")
 endif()
