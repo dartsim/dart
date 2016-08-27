@@ -49,13 +49,24 @@ install:
 
 # scripts to run before build
 before_build:
+  - cmd: if "%platform%"=="Win32" set CMAKE_GENERATOR_NAME=Visual Studio 14 2015
+  - cmd: if "%platform%"=="x64"   set CMAKE_GENERATOR_NAME=Visual Studio 14 2015 Win64
+  - cmd: if "%platform%"=="Win32" set PROGRAM_FILES_PATH=Program Files (x86)
+  - cmd: if "%platform%"=="x64"   set PROGRAM_FILES_PATH=Program Files
+  - cmd: if not exist "C:\%PROGRAM_FILES_PATH%\flann\include\flann\flann.hpp" (
+            curl -L -o flann-1.9.1.tar.gz https://github.com/mariusmuja/flann/archive/1.9.1.tar.gz &&
+            cmake -E tar zxf flann-1.9.1.tar.gz &&
+            cd flann-1.9.1 &&
+            md build &&
+            cd build &&
+            cmake -G "%CMAKE_GENERATOR_NAME%" -DCMAKE_BUILD_TYPE=%Configuration% .. &&
+            cmake --build . --target install --config %Configuration% &&
+            cd ..\..
+         ) else (echo Using cached flann)
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
-  # We generate project files for Visual Studio 12 because the boost binaries installed on the test server are for Visual Studio 12.
-  - cmd: if "%platform%"=="Win32" set CMAKE_GENERATOR_NAME=Visual Studio 14 2015
-  - cmd: if "%platform%"=="x64"   set CMAKE_GENERATOR_NAME=Visual Studio 14 2015 Win64
-  - cmd: cmake -G "%CMAKE_GENERATOR_NAME%" -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY="%BUILD_CORE_ONLY%" -DDART_BUILD_EXAMPLES="%BUILD_EXAMPLES%" -DDART_BUILD_TUTORIALS="%BUILD_TUTORIALS%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" ..
+  - cmd: cmake -G "%CMAKE_GENERATOR_NAME%" -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY="%BUILD_CORE_ONLY%" -DDART_BUILD_EXAMPLES="%BUILD_EXAMPLES%" -DDART_BUILD_TUTORIALS="%BUILD_TUTORIALS%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" -DFLANN_INCLUDE_DIRS="C:\%PROGRAM_FILES_PATH%\flann\include" -DFLANN_LIBRARIES="C:\%PROGRAM_FILES_PATH%\flann\lib\flann_cpp_s.lib" ..
 
 build:
   project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project

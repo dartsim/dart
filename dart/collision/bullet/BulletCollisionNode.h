@@ -41,6 +41,7 @@
 
 #include <assimp/scene.h>
 #include <btBulletCollisionCommon.h>
+#include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
 #include <Eigen/Dense>
 
 #include "dart/dynamics/SmartPointer.h"
@@ -91,8 +92,8 @@ private:
 };
 
 /// @brief Create Bullet mesh from assimp3 mesh
-btConvexTriangleMeshShape* _createMesh(const Eigen::Vector3d& _scale,
-                                       const aiScene* _mesh);
+btGImpactMeshShape* _createMesh(
+    const Eigen::Vector3d& _scale, const aiScene* _mesh);
 
 }  // namespace collision
 }  // namespace dart
