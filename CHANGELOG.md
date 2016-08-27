@@ -15,6 +15,10 @@
 
   * Fixed incorrect linking to flann library: [#761](https://github.com/dartsim/dart/pull/761)
 
+* Parsers
+
+  * Added support of urdfdom_headers 1.0: [#766](https://github.com/dartsim/dart/pull/766)
+
 * Misc improvements and bug fixes
 
   * Made building with SIMD optional: [#765](https://github.com/dartsim/dart/pull/765), [#760](https://github.com/dartsim/dart/pull/760)
