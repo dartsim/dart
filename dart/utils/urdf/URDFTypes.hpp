@@ -45,14 +45,14 @@ namespace dart {
 namespace utils {
 
 #if URDFDOM_HEADERS_VERSION_AT_LEAST(1,0,0)
-template <class T> using urdf_shared_ptr = std::shared_ptr<T>;
-template <class T> using urdf_weak_ptr = std::weak_ptr<T>;
+template <typename T> using urdf_shared_ptr = std::shared_ptr<T>;
+template <typename T> using urdf_weak_ptr = std::weak_ptr<T>;
 #else
-template <class T> using urdf_shared_ptr = boost::shared_ptr<T>;
-template <class T> using urdf_weak_ptr = boost::weak_ptr<T>;
+template <typename T> using urdf_shared_ptr = boost::shared_ptr<T>;
+template <typename T> using urdf_weak_ptr = boost::weak_ptr<T>;
 #endif
 
 } // namespace utils
 } // namespace dart
 
-#endif // DART_UTILS_URDF_TYPES_HPP_
+#endif // DART_UTILS_URDF_URDFTYPES_HPP_
