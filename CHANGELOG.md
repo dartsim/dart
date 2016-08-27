@@ -2,6 +2,10 @@
 
 ### DART 6.1.0 (2016-XX-XX)
 
+* Collision detection
+
+  * Fixed direction of contact normal of BulletCollisionDetector: [#763](https://github.com/dartsim/dart/pull/763)
+
 * Dynamics
 
   * Added `computeLagrangian()` to `MetaSkeleton` and `BodyNode`: [#746](https://github.com/dartsim/dart/pull/746)
