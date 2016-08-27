@@ -49,9 +49,6 @@ install:
 
 # scripts to run before build
 before_build:
-  - cmd: cd C:\projects\dart
-  - cmd: md build
-  - cmd: cd build
   - cmd: if "%platform%"=="Win32" set CMAKE_GENERATOR_NAME=Visual Studio 14 2015
   - cmd: if "%platform%"=="x64"   set CMAKE_GENERATOR_NAME=Visual Studio 14 2015 Win64
   - cmd: if "%platform%"=="Win32" set PROGRAM_FILES_PATH=Program Files (x86)
