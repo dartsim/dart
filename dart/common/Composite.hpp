@@ -110,6 +110,11 @@ public:
   template <class T, typename ...Args>
   T* createAspect(Args&&... args);
 
+  /// Get a certain type of Aspect from this Composite. If the Aspect hasn't
+  /// created yet, create new one and return it.
+  template <class T, typename ...Args>
+  T* getOrCreateAspect(Args&&... args);
+
   /// Remove an Aspect from this Composite.
   template <class T>
   void removeAspect();

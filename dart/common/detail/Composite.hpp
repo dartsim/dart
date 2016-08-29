@@ -97,6 +97,16 @@ T* Composite::createAspect(Args&&... args)
 }
 
 //==============================================================================
+template <class T, typename ...Args>
+T* Composite::getOrCreateAspect(Args&&... args)
+{
+  if (has<T>())
+    return get<T>();
+  else
+    return createAspect<T>(std::forward<Args>(args)...);
+}
+
+//==============================================================================
 template <class T>
 void Composite::removeAspect()
 {

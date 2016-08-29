@@ -245,6 +245,12 @@ public:
     : Aspect()
   {
     // Do nothing
+    std::cout << "GenericAspect constructor" << std::endl;
+  }
+
+  ~GenericAspect()
+  {
+    std::cout << "GenericAspect destructor" << std::endl;
   }
 
   std::unique_ptr<Aspect> cloneAspect() const override final
@@ -382,6 +388,15 @@ TEST(Aspect, Generic)
   EXPECT_FALSE( nullptr == rawAspect );
   EXPECT_FALSE( rawAspect == newAspect );
   EXPECT_TRUE( nullptr == aspect );
+
+  EXPECT_TRUE( comp.has<GenericAspect>() );
+  EXPECT_TRUE( comp.getOrCreateAspect<GenericAspect>() == newAspect );
+
+  comp.removeAspect<GenericAspect>();
+
+  EXPECT_FALSE( comp.has<GenericAspect>() );
+  EXPECT_FALSE( comp.getOrCreateAspect<GenericAspect>() == nullptr );
+  EXPECT_TRUE( comp.has<GenericAspect>() );
 }
 
 TEST(Aspect, Specialized)
