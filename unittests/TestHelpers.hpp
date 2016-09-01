@@ -259,12 +259,12 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
   robot->disableSelfCollisionCheck();
 
   // Create the first link, the joint with the ground and its shape
-  BodyNode::Properties node(BodyNode::AspectProperties("link1"));
+  BodyNode::Properties node(BodyNode::AspectProperties("link0"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim));
 
   std::pair<Joint*, BodyNode*> pair1 = add1DofJoint(
-        robot, nullptr, node, "joint1", 0.0, -constantsd::pi(), constantsd::pi(), type);
+        robot, nullptr, node, "joint0", 0.0, -constantsd::pi(), constantsd::pi(), type);
 
   Joint* joint = pair1.first;
   joint->setDampingCoefficient(0, 0.01);
@@ -315,9 +315,9 @@ SkeletonPtr createNLinkRobot(int _n, Vector3d dim, TypeOfDOF type,
 /// the specified type. The each offset from the joint position to the child
 /// body is specified.
 SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
-                                const Vector3d& dim,
-                                TypeOfDOF type,
-                                const Vector3d& offset,
+                                const Vector3d& dim = Vector3d(1, 1, 1),
+                                TypeOfDOF type = DOF_ROLL,
+                                const Vector3d& offset = Vector3d(0, 0, 2),
                                 bool finished = false)
 {
   assert(numBodyNodes > 0);
@@ -326,12 +326,12 @@ SkeletonPtr createNLinkPendulum(size_t numBodyNodes,
   robot->disableSelfCollisionCheck();
 
   // Create the first link, the joint with the ground and its shape
-  BodyNode::Properties node(BodyNode::AspectProperties("link1"));
+  BodyNode::Properties node(BodyNode::AspectProperties("link0"));
   node.mInertia.setLocalCOM(Vector3d(0.0, 0.0, dim(2)/2.0));
   std::shared_ptr<Shape> shape(new BoxShape(dim));
 
   std::pair<Joint*, BodyNode*> pair1 = add1DofJoint(
-        robot, nullptr, node, "joint1", 0.0, -constantsd::pi(), constantsd::pi(), type);
+        robot, nullptr, node, "joint0", 0.0, -constantsd::pi(), constantsd::pi(), type);
 
   Joint* joint = pair1.first;
   Eigen::Isometry3d T = joint->getTransformFromChildBodyNode();
