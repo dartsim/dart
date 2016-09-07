@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
@@ -29,30 +29,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PrismaticJoint.hpp"
+#ifndef DART_UTILS_URDF_URDFTYPES_HPP_
+#define DART_UTILS_URDF_URDFTYPES_HPP_
+
+#include "dart/config.hpp"
+
+#if URDFDOM_HEADERS_VERSION_AT_LEAST(1,0,0)
+#include <memory>
+#else
+#include "boost/shared_ptr.hpp"
+#include "boost/weak_ptr.hpp"
+#endif
 
 namespace dart {
-namespace dynamics {
-namespace detail {
+namespace utils {
 
-//==============================================================================
-PrismaticJointUniqueProperties::PrismaticJointUniqueProperties(
-    const Eigen::Vector3d& _axis)
-  : mAxis(_axis.normalized())
-{
-  // Do nothing
-}
+#if URDFDOM_HEADERS_VERSION_AT_LEAST(1,0,0)
+template <typename T> using urdf_shared_ptr = std::shared_ptr<T>;
+template <typename T> using urdf_weak_ptr = std::weak_ptr<T>;
+#else
+template <typename T> using urdf_shared_ptr = boost::shared_ptr<T>;
+template <typename T> using urdf_weak_ptr = boost::weak_ptr<T>;
+#endif
 
-//==============================================================================
-PrismaticJointProperties::PrismaticJointProperties(
-    const GenericJoint<math::R1Space>::Properties& GenericJointProperties,
-    const PrismaticJointUniqueProperties& prismaticProperties)
-  : GenericJoint<math::R1Space>::Properties(GenericJointProperties),
-    PrismaticJointUniqueProperties(prismaticProperties)
-{
-  // Do nothing
-}
-
-} // namespace detail
-} // namespace dynamics
+} // namespace utils
 } // namespace dart
+
+#endif // DART_UTILS_URDF_URDFTYPES_HPP_

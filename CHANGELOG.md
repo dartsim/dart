@@ -4,6 +4,7 @@
 
 * Collision detection
 
+  * Fixed direction of contact normal of BulletCollisionDetector: [#763](https://github.com/dartsim/dart/pull/763)
   * Added distance API: [#744](https://github.com/dartsim/dart/pull/744)
 
 * Dynamics
@@ -11,10 +12,20 @@
   * Added `computeLagrangian()` to `MetaSkeleton` and `BodyNode`: [#746](https://github.com/dartsim/dart/pull/746)
   * Added `SphereShape`: [#745](https://github.com/dartsim/dart/pull/745)
 
+* Planning
+
+  * Fixed incorrect linking to flann library: [#761](https://github.com/dartsim/dart/pull/761)
+
+* Parsers
+
+  * Added support of urdfdom_headers 1.0: [#766](https://github.com/dartsim/dart/pull/766)
+
 * Misc improvements and bug fixes
 
-  * Added `virtual Shape::getType()` and deprecated `ShapeType Shape::getShapeType()`: [#724](https://github.com/dartsim/dart/pull/724)
+  * Fixed Doxyfile to show missing member functions in API documentation: [#768](https://github.com/dartsim/dart/pull/768)
+  * Made building with SIMD optional: [#765](https://github.com/dartsim/dart/pull/765), [#760](https://github.com/dartsim/dart/pull/760)
   * Fixed typo: [#756](https://github.com/dartsim/dart/pull/756), [#755](https://github.com/dartsim/dart/pull/755)
+  * Added `virtual Shape::getType()` and deprecated `ShapeType Shpae::getShapeType()`: [#724](https://github.com/dartsim/dart/pull/724)
 
 ### DART 6.0.1 (2016-XX-XX)
 

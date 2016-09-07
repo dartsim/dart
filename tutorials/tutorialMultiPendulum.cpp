@@ -321,9 +321,9 @@ BodyNode* addBody(const SkeletonPtr& pendulum, BodyNode* parent,
   properties.mAxis = Eigen::Vector3d::UnitY();
   properties.mT_ParentBodyToJoint.translation() =
       Eigen::Vector3d(0, 0, default_height);
-  properties.mRestPosition = default_rest_position;
-  properties.mSpringStiffness = default_stiffness;
-  properties.mDampingCoefficient = default_damping;
+  properties.mRestPositions[0] = default_rest_position;
+  properties.mSpringStiffnesses[0] = default_stiffness;
+  properties.mDampingCoefficients[0] = default_damping;
 
   // Create a new BodyNode, attached to its parent by a RevoluteJoint
   BodyNodePtr bn = pendulum->createJointAndBodyNodePair<RevoluteJoint>(

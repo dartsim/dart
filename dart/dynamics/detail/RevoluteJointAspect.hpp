@@ -36,7 +36,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/SingleDofJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -58,13 +58,13 @@ struct RevoluteJointUniqueProperties
 
 //==============================================================================
 struct RevoluteJointProperties :
-    SingleDofJoint::Properties,
+    GenericJoint<math::R1Space>::Properties,
     RevoluteJointUniqueProperties
 {
   RevoluteJointProperties(
-      const SingleDofJoint::Properties& _singleDofJointProperties =
-          SingleDofJoint::Properties(),
-      const RevoluteJointUniqueProperties& _revoluteProperties =
+      const GenericJoint<math::R1Space>::Properties& GenericJointProperties =
+          GenericJoint<math::R1Space>::Properties(),
+      const RevoluteJointUniqueProperties& revoluteProperties =
           RevoluteJointUniqueProperties());
 
   virtual ~RevoluteJointProperties() = default;
@@ -72,7 +72,7 @@ struct RevoluteJointProperties :
 
 //==============================================================================
 using RevoluteJointBase = common::EmbedPropertiesOnTopOf<
-    RevoluteJoint, RevoluteJointUniqueProperties, SingleDofJoint>;
+    RevoluteJoint, RevoluteJointUniqueProperties, GenericJoint<math::R1Space> >;
 
 } // namespace detail
 

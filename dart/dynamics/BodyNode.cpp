@@ -1616,9 +1616,8 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
 void BodyNode::updateArtInertia(double _timeStep) const
 {
   // Set spatial inertia to the articulated body inertia
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
-  mArtInertia = mI;
-  mArtInertiaImplicit = mI;
+  mArtInertia = mAspectProperties.mInertia.getSpatialTensor();
+  mArtInertiaImplicit = mArtInertia;
 
   // and add child articulated body inertia
   for (const auto& child : mChildBodyNodes)

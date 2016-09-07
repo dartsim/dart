@@ -7,11 +7,15 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include <flann/flann.hpp>
 #include <Eigen/Core>
+#include <dart/dart.hpp>
+#if HAVE_FLANN
+#include <flann/flann.hpp>
+#endif // HAVE_FLANN
 #include "TestHelpers.hpp"
 
 /* ********************************************************************************************* */
+#if HAVE_FLANN
 TEST(NEAREST_NEIGHBOR, 2D) {
 
     // Build the index with the first node
@@ -44,6 +48,7 @@ TEST(NEAREST_NEIGHBOR, 2D) {
     bool equality = equals(Vector2d(point[0], point[1]), p3, 1e-3);
     EXPECT_TRUE(equality);
 }
+#endif // HAVE_FLANN
 
 /* ********************************************************************************************* */
 int main(int argc, char* argv[]) {

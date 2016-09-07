@@ -206,9 +206,11 @@ bool Inertia::verifyMoment(const Eigen::Matrix3d& _moment, bool _printWarnings,
     {
       valid = false;
       if(_printWarnings)
+      {
         dtwarn << "[Inertia::verifyMoment] Invalid entry for (" << i << "," << i
                << "): " << _moment(i,i) << ". Value should be positive "
                << "and greater than zero.\n";
+      }
     }
   }
 
@@ -220,10 +222,12 @@ bool Inertia::verifyMoment(const Eigen::Matrix3d& _moment, bool _printWarnings,
       {
         valid = false;
         if(_printWarnings)
+        {
           dtwarn << "[Inertia::verifyMoment] Values for entries (" << i
                  << "," << j << ") and (" << j << "," << i << ") differ by "
                  << _moment(i,j) - _moment(j,i) << " which is more than the "
                  << "permitted tolerance (" << _tolerance << ")\n";
+        }
       }
     }
   }

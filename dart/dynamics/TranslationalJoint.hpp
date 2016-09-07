@@ -34,22 +34,24 @@
 
 #include <string>
 
-#include "dart/dynamics/MultiDofJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
 
 /// class TranslationalJoint
-class TranslationalJoint : public MultiDofJoint<3>
+class TranslationalJoint : public GenericJoint<math::R3Space>
 {
 public:
 
   friend class Skeleton;
 
-  struct Properties : MultiDofJoint<3>::Properties
+  using Base = GenericJoint<math::R3Space>;
+
+  struct Properties : Base::Properties
   {
-    Properties(const MultiDofJoint<3>::Properties& _properties =
-        MultiDofJoint<3>::Properties());
+    Properties(const Base::Properties& _properties =
+        Base::Properties());
 
     virtual ~Properties() = default;
   };
@@ -82,7 +84,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using MultiDofJoint::getRelativeJacobianStatic;
+  using Base::getRelativeJacobianStatic;
 
   // Documentation inherited
   void updateDegreeOfFreedomNames() override;

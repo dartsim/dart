@@ -110,7 +110,7 @@ struct ShapeFrameProperties
 };
 
 using ShapeFrameCompositeBase = common::EmbedPropertiesOnTopOf<
-    ShapeFrame, detail::ShapeFrameProperties,
+    ShapeFrame, ShapeFrameProperties,
     common::SpecializedForAspect<
         VisualAspect, CollisionAspect, DynamicsAspect> >;
 

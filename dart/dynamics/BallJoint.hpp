@@ -34,22 +34,24 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/MultiDofJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
 
 /// class BallJoint
-class BallJoint : public MultiDofJoint<3>
+class BallJoint : public GenericJoint<math::SO3Space>
 {
 public:
 
   friend class Skeleton;
 
-  struct Properties : MultiDofJoint<3>::Properties
+  using Base = GenericJoint<math::SO3Space>;
+
+  struct Properties : Base::Properties
   {
-    Properties(const MultiDofJoint<3>::Properties& _properties =
-                                                MultiDofJoint<3>::Properties());
+    Properties(const Base::Properties& properties
+               = Base::Properties());
     virtual ~Properties() = default;
   };
 
@@ -102,7 +104,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using MultiDofJoint::getRelativeJacobianStatic;
+  using Base::getRelativeJacobianStatic;
 
   // Documentation inherited
   void integratePositions(double _dt) override;
