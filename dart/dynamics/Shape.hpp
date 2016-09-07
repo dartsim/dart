@@ -156,7 +156,7 @@ protected:
 private:
 
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
-  /// \brief Type of primitive shpae
+  /// \brief Type of primitive shape
   ShapeType mType;
 
 };
