@@ -33,7 +33,6 @@
 #define DART_DYNAMICS_BODYNODEDIFFERENTIAL_HPP_
 
 #include <Eigen/Dense>
-#include <unsupported/Eigen/CXX11/Tensor>
 
 #include "dart/common/AspectWithVersion.hpp"
 #include "dart/dynamics/Skeleton.hpp"
