@@ -33,14 +33,8 @@
 #include <gtest/gtest.h>
 #include "TestHelpers.hpp"
 
-#include "dart/dynamics/SoftBodyNode.hpp"
-#include "dart/dynamics/RevoluteJoint.hpp"
-#include "dart/dynamics/PlanarJoint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
-#include "dart/simulation/World.hpp"
-#include "dart/simulation/World.hpp"
-#include "dart/utils/XmlHelpers.hpp"
-#include "dart/utils/SkelParser.hpp"
+#include "dart/dart.hpp"
+#include "dart/utils/utils.hpp"
 
 using namespace dart;
 using namespace math;
@@ -431,6 +425,79 @@ TEST(SkelParser, JointDynamicsElements)
   EXPECT_EQ(joint1->getCoulombFriction   (2), 3.0);
   EXPECT_EQ(joint1->getRestPosition      (2), 0.3);
   EXPECT_EQ(joint1->getSpringStiffness   (2), 1.0);
+}
+
+//==============================================================================
+TEST(SkelParser, Shapes)
+{
+  WorldPtr world
+      = SkelParser::readWorld(DART_DATA_PATH"/skel/test/test_shapes.skel");
+  EXPECT_NE(world, nullptr);
+
+  const auto numSkels = world->getNumSkeletons();
+  EXPECT_EQ(numSkels, 8);
+
+  ShapePtr shape;
+  SkeletonPtr skel;
+
+  // Ground (box)
+  skel = world->getSkeleton("ground skeleton");
+  EXPECT_NE(skel, nullptr);
+
+  // Box
+  skel = world->getSkeleton("box skeleton");
+  EXPECT_NE(skel, nullptr);
+  shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
+  EXPECT_EQ(shape->getType(), BoxShape::getStaticType());
+  auto boxShape = std::static_pointer_cast<BoxShape>(shape);
+  EXPECT_EQ(boxShape->getSize(), Eigen::Vector3d(0.1, 0.05, 0.1));
+
+  // Sphere
+  skel = world->getSkeleton("sphere skeleton");
+  EXPECT_NE(skel, nullptr);
+  shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
+  EXPECT_EQ(shape->getType(), SphereShape::getStaticType());
+  auto sphereShape = std::static_pointer_cast<SphereShape>(shape);
+  EXPECT_EQ(sphereShape->getRadius(), 0.05);
+
+  // Ellipsoid
+  skel = world->getSkeleton("ellipsoid skeleton");
+  EXPECT_NE(skel, nullptr);
+  shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
+  EXPECT_EQ(shape->getType(), EllipsoidShape::getStaticType());
+  auto ellipsoidShape = std::static_pointer_cast<EllipsoidShape>(shape);
+  EXPECT_EQ(ellipsoidShape->getSize(), Eigen::Vector3d(0.05, 0.10, 0.15));
+
+  // Cylinder
+  skel = world->getSkeleton("cylinder skeleton");
+  EXPECT_NE(skel, nullptr);
+  shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
+  EXPECT_EQ(shape->getType(), CylinderShape::getStaticType());
+  auto cylinderShape = std::static_pointer_cast<CylinderShape>(shape);
+  EXPECT_EQ(cylinderShape->getHeight(), 0.1);
+  EXPECT_EQ(cylinderShape->getRadius(), 0.05);
+
+  // Capsule
+  skel = world->getSkeleton("capsule skeleton");
+  EXPECT_NE(skel, nullptr);
+  shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
+  EXPECT_EQ(shape->getType(), CapsuleShape::getStaticType());
+  auto capsuleShape = std::static_pointer_cast<CapsuleShape>(shape);
+  EXPECT_EQ(capsuleShape->getHeight(), 0.1);
+  EXPECT_EQ(capsuleShape->getRadius(), 0.05);
+
+  // Cone
+  skel = world->getSkeleton("cone skeleton");
+  EXPECT_NE(skel, nullptr);
+  shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
+  EXPECT_EQ(shape->getType(), ConeShape::getStaticType());
+  auto coneShape = std::static_pointer_cast<CapsuleShape>(shape);
+  EXPECT_EQ(coneShape->getHeight(), 0.1);
+  EXPECT_EQ(coneShape->getRadius(), 0.05);
+
+  // Mesh
+  skel = world->getSkeleton("mesh skeleton");
+  EXPECT_NE(skel, nullptr);
 }
 
 //==============================================================================
