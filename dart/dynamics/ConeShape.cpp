@@ -109,7 +109,7 @@ Eigen::Matrix3d ConeShape::computeInertia(
   const auto radius2 = radius*radius;
   const auto height2 = height*height;
 
-  const auto Ixx = (3.0/20.0)*mass*(radius2 + 4.0*height2);
+  const auto Ixx = (3.0/20.0)*mass*(radius2 + (2.0/3.0)*height2);
   const auto Izz = (3.0/10.0)*mass*radius2;
 
   return Eigen::Vector3d(Ixx, Ixx, Izz).asDiagonal();
