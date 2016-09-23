@@ -448,7 +448,7 @@ TEST(SkelParser, Shapes)
   skel = world->getSkeleton("box skeleton");
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
-  EXPECT_EQ(shape->getType(), BoxShape::getStaticType());
+  EXPECT_TRUE(shape->is<BoxShape>());
   auto boxShape = std::static_pointer_cast<BoxShape>(shape);
   EXPECT_EQ(boxShape->getSize(), Eigen::Vector3d(0.1, 0.05, 0.1));
 
@@ -456,7 +456,7 @@ TEST(SkelParser, Shapes)
   skel = world->getSkeleton("sphere skeleton");
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
-  EXPECT_EQ(shape->getType(), SphereShape::getStaticType());
+  EXPECT_TRUE(shape->is<SphereShape>());
   auto sphereShape = std::static_pointer_cast<SphereShape>(shape);
   EXPECT_EQ(sphereShape->getRadius(), 0.05);
 
@@ -464,7 +464,7 @@ TEST(SkelParser, Shapes)
   skel = world->getSkeleton("ellipsoid skeleton");
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
-  EXPECT_EQ(shape->getType(), EllipsoidShape::getStaticType());
+  EXPECT_TRUE(shape->is<EllipsoidShape>());
   auto ellipsoidShape = std::static_pointer_cast<EllipsoidShape>(shape);
   EXPECT_EQ(ellipsoidShape->getSize(), Eigen::Vector3d(0.05, 0.10, 0.15));
 
@@ -472,7 +472,7 @@ TEST(SkelParser, Shapes)
   skel = world->getSkeleton("cylinder skeleton");
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
-  EXPECT_EQ(shape->getType(), CylinderShape::getStaticType());
+  EXPECT_TRUE(shape->is<CylinderShape>());
   auto cylinderShape = std::static_pointer_cast<CylinderShape>(shape);
   EXPECT_EQ(cylinderShape->getHeight(), 0.1);
   EXPECT_EQ(cylinderShape->getRadius(), 0.05);
@@ -481,7 +481,7 @@ TEST(SkelParser, Shapes)
   skel = world->getSkeleton("capsule skeleton");
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
-  EXPECT_EQ(shape->getType(), CapsuleShape::getStaticType());
+  EXPECT_TRUE(shape->is<CapsuleShape>());
   auto capsuleShape = std::static_pointer_cast<CapsuleShape>(shape);
   EXPECT_EQ(capsuleShape->getHeight(), 0.1);
   EXPECT_EQ(capsuleShape->getRadius(), 0.05);
@@ -490,7 +490,7 @@ TEST(SkelParser, Shapes)
   skel = world->getSkeleton("cone skeleton");
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
-  EXPECT_EQ(shape->getType(), ConeShape::getStaticType());
+  EXPECT_TRUE(shape->is<ConeShape>());
   auto coneShape = std::static_pointer_cast<CapsuleShape>(shape);
   EXPECT_EQ(coneShape->getHeight(), 0.1);
   EXPECT_EQ(coneShape->getRadius(), 0.05);

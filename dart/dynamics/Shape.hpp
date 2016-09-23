@@ -83,7 +83,23 @@ public:
   virtual ~Shape();
 
   /// Returns a string representing the shape type
+  /// \sa is()
   virtual const std::string& getType() const = 0;
+
+  /// Get true if the types of this Shape and the template parameter (a shape
+  /// class) are identical. This function is a syntactic sugar, which is
+  /// identical to: (getType() == ShapeType::getStaticType()).
+  ///
+  /// Example code:
+  /// \code
+  /// auto shape = bodyNode->getShapeNode(0)->getShape();
+  /// if (shape->is<BoxShape>())
+  ///   std::cout << "The shape type is box!\n";
+  /// \endcode
+  ///
+  /// \sa getType()
+  template <typename ShapeType>
+  bool is() const;
 
   /// \brief Get the bounding box of the shape in its local coordinate frame.
   ///        The dimension will be automatically determined by the sub-classes
@@ -161,5 +177,7 @@ protected:
 
 }  // namespace dynamics
 }  // namespace dart
+
+#include "dart/dynamics/detail/Shape.hpp"
 
 #endif  // DART_DYNAMICS_SHAPE_HPP_
