@@ -53,6 +53,8 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
@@ -1267,6 +1269,20 @@ dynamics::ShapePtr readShape(
     double                radius       = getValueDouble(cylinderEle, "radius");
     double                height       = getValueDouble(cylinderEle, "height");
     newShape = dynamics::ShapePtr(new dynamics::CylinderShape(radius, height));
+  }
+  else if (hasElement(geometryEle, "capsule"))
+  {
+    tinyxml2::XMLElement* capsuleEle   = getElement(geometryEle, "capsule");
+    double                radius       = getValueDouble(capsuleEle, "radius");
+    double                height       = getValueDouble(capsuleEle, "height");
+    newShape = dynamics::ShapePtr(new dynamics::CapsuleShape(radius, height));
+  }
+  else if (hasElement(geometryEle, "cone"))
+  {
+    tinyxml2::XMLElement* coneEle      = getElement(geometryEle, "cone");
+    double                radius       = getValueDouble(coneEle, "radius");
+    double                height       = getValueDouble(coneEle, "height");
+    newShape = dynamics::ShapePtr(new dynamics::ConeShape(radius, height));
   }
   else if (hasElement(geometryEle, "plane"))
   {

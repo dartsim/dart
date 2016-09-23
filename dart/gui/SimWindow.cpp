@@ -48,6 +48,8 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
@@ -400,6 +402,8 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   using dynamics::BoxShape;
   using dynamics::EllipsoidShape;
   using dynamics::CylinderShape;
+  using dynamics::CapsuleShape;
+  using dynamics::ConeShape;
   using dynamics::PlaneShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
@@ -426,6 +430,16 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   {
     const auto* cylinder = static_cast<const CylinderShape*>(shape);
     mRI->drawCylinder(cylinder->getRadius(), cylinder->getHeight());
+  }
+  else if (CapsuleShape::getStaticType() == shapeType)
+  {
+    const auto* capsule = static_cast<const CapsuleShape*>(shape);
+    mRI->drawCapsule(capsule->getRadius(), capsule->getHeight());
+  }
+  else if (ConeShape::getStaticType() == shapeType)
+  {
+    const auto* cone = static_cast<const ConeShape*>(shape);
+    mRI->drawCone(cone->getRadius(), cone->getHeight());
   }
   else if (MeshShape::getStaticType() == shapeType)
   {

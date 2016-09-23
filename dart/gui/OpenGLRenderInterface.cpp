@@ -232,6 +232,18 @@ void OpenGLRenderInterface::drawCylinder(double _radius, double _height) {
     gluDisk(quadObj, 0, radius, slices, stacks);
 }
 
+//==============================================================================
+void OpenGLRenderInterface::drawCapsule(double /*_radius*/, double /*_height*/)
+{
+  // TODO(JS): Not implemented yet
+}
+
+//==============================================================================
+void OpenGLRenderInterface::drawCone(double /*_radius*/, double /*_height*/)
+{
+  // TODO(JS): Not implemented yet
+}
+
 void OpenGLRenderInterface::color4_to_float4(const aiColor4D *c, float f[4])
 {
     f[0] = c->r;

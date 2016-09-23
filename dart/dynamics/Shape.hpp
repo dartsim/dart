@@ -73,7 +73,11 @@ public:
   };
 
   /// \brief Constructor
+  DART_DEPRECATED(6.1)
   explicit Shape(ShapeType _type);
+
+  /// \brief Constructor
+  Shape();
 
   /// \brief Destructor
   virtual ~Shape();
@@ -152,12 +156,6 @@ protected:
 
   /// \brief
   static int mCounter;
-
-private:
-
-  /// \deprecated Deprecated in 6.1. Please use getType() instead.
-  /// \brief Type of primitive shpae
-  ShapeType mType;
 
 };
 

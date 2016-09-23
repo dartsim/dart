@@ -48,6 +48,8 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
@@ -396,6 +398,8 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   using dynamics::BoxShape;
   using dynamics::EllipsoidShape;
   using dynamics::CylinderShape;
+  using dynamics::CapsuleShape;
+  using dynamics::ConeShape;
   using dynamics::PlaneShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
@@ -441,6 +445,26 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     const auto size = btVector3(radius, radius, height * 0.5);
 
     bulletCollisionShape = new btCylinderShapeZ(size);
+  }
+  else if (CapsuleShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const CapsuleShape*>(shape.get()));
+
+    const auto capsule = static_cast<const CapsuleShape*>(shape.get());
+    const auto radius = capsule->getRadius();
+    const auto height = capsule->getHeight();
+
+    bulletCollisionShape = new btCapsuleShapeZ(radius, height);
+  }
+  else if (ConeShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const ConeShape*>(shape.get()));
+
+    const auto cone = static_cast<const ConeShape*>(shape.get());
+    const auto radius = cone->getRadius();
+    const auto height = cone->getHeight();
+
+    bulletCollisionShape = new btConeShapeZ(radius, height);
   }
   else if (PlaneShape::getStaticType() == shapeType)
   {
