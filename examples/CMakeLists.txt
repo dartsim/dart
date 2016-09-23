@@ -15,5 +15,4 @@ endforeach(child)
 # List of all the subdirectories to include
 foreach(EXAMPLE_DIR ${directories})
   add_subdirectory(${EXAMPLE_DIR})
-  dart_add_example(${EXAMPLE_DIR})
 endforeach(EXAMPLE_DIR)
