@@ -468,7 +468,8 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     bulletCollisionShape->setMargin(0.0);
     // TODO(JS): Bullet seems to use constant margin 0.4, however this could be
     // dangerous when the cone is sufficiently small. We use zero margin here
-    // until find better solution.
+    // until find better solution even using zero margin is not recommended:
+    // https://www.sjbaker.org/wiki/index.php?title=Physics_-_Bullet_Collected_random_advice#Minimum_object_sizes_-_by_Erwin
   }
   else if (PlaneShape::getStaticType() == shapeType)
   {
