@@ -465,6 +465,10 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     const auto height = cone->getHeight();
 
     bulletCollisionShape = new btConeShapeZ(radius, height);
+    bulletCollisionShape->setMargin(0.0);
+    // TODO(JS): Bullet seems to use constant margin 0.4, however this could be
+    // dangerous when the cone is sufficiently small. We use zero margin here
+    // until find better solution.
   }
   else if (PlaneShape::getStaticType() == shapeType)
   {
