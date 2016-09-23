@@ -98,7 +98,7 @@ public:
   /// \endcode
   ///
   /// \sa getType()
-  template <typename ShapeType>
+  template <typename ShapeT>
   bool is() const;
 
   /// \brief Get the bounding box of the shape in its local coordinate frame.
