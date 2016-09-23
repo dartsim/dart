@@ -4,7 +4,7 @@
         <physics>
             <time_step>0.001</time_step>
             <gravity>0 -9.81 0</gravity>
-            <collision_detector>fcl</collision_detector>
+            <collision_detector>bullet</collision_detector>
         </physics>
         
         <skeleton name="ground skeleton">
@@ -168,8 +168,8 @@
             </joint>
         </skeleton>
 
-        <skeleton name="mesh skeleton">
-            <body name="mesh">
+        <skeleton name="capsule skeleton">
+            <body name="capsule">
                 <gravity>1</gravity>
                 <transformation>0.4 -0.0 0 1 2 3</transformation>
                 <inertia>
@@ -179,8 +179,78 @@
                 <visualization_shape>
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
+                        <capsule>
+                            <height>0.1</height>
+                            <radius>0.05</radius>
+                        </capsule>
+                    </geometry>
+                    <color>0.6 0.6 0.8</color>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <capsule>
+                            <height>0.1</height>
+                            <radius>0.05</radius>
+                        </capsule>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>capsule</child>
+            </joint>
+        </skeleton>
+
+        <skeleton name="cone skeleton">
+            <body name="cone">
+                <gravity>1</gravity>
+                <transformation>0.6 -0.0 0 1 2 3</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <cone>
+                            <height>0.1</height>
+                            <radius>0.05</radius>
+                        </cone>
+                    </geometry>
+                    <color>0.6 0.6 0.8</color>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <cone>
+                            <height>0.1</height>
+                            <radius>0.05</radius>
+                        </cone>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>cone</child>
+            </joint>
+        </skeleton>
+
+        <skeleton name="mesh skeleton">
+            <body name="mesh">
+                <gravity>1</gravity>
+                <transformation>0.8 -0.0 0 1 2 3</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
                         <mesh>
-                            <file_name>../obj/BoxSmall.obj</file_name>
+                            <file_name>../obj/foot.obj</file_name>
                             <scale>1.0 1.0 1.0</scale>
                         </mesh>
                     </geometry>
@@ -190,7 +260,7 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <mesh>
-                            <file_name>../obj/BoxSmall.obj</file_name>
+                            <file_name>../obj/foot.obj</file_name>
                             <scale>1.0 1.0 1.0</scale>
                         </mesh>
                     </geometry>
@@ -201,7 +271,7 @@
                 <parent>world</parent>
                 <child>mesh</child>
             </joint>
-        </skeleton> 
+        </skeleton>
 
     </world>
 </skel>
