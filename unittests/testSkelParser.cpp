@@ -435,7 +435,7 @@ TEST(SkelParser, Shapes)
   EXPECT_NE(world, nullptr);
 
   const auto numSkels = world->getNumSkeletons();
-  EXPECT_EQ(numSkels, 8);
+  EXPECT_EQ(numSkels, 9);
 
   ShapePtr shape;
   SkeletonPtr skel;
@@ -494,6 +494,19 @@ TEST(SkelParser, Shapes)
   auto coneShape = std::static_pointer_cast<CapsuleShape>(shape);
   EXPECT_EQ(coneShape->getHeight(), 0.1);
   EXPECT_EQ(coneShape->getRadius(), 0.05);
+
+  // MultiSphere
+  skel = world->getSkeleton("multi sphere skeleton");
+  EXPECT_NE(skel, nullptr);
+  shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
+  EXPECT_TRUE(shape->is<MultiSphereShape>());
+  auto multiSphereShape = std::static_pointer_cast<MultiSphereShape>(shape);
+  EXPECT_EQ(multiSphereShape->getNumSpheres(), 2u);
+  const auto& spheres = multiSphereShape->getSpheres();
+  EXPECT_EQ(spheres[0].first, 0.05);
+  EXPECT_EQ(spheres[0].second, Eigen::Vector3d(-0.075, 0.0, 0.0));
+  EXPECT_EQ(spheres[1].first, 0.075);
+  EXPECT_EQ(spheres[1].second, Eigen::Vector3d(+0.075, 0.0, 0.0));
 
   // Mesh
   skel = world->getSkeleton("mesh skeleton");
