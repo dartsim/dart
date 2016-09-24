@@ -31,18 +31,31 @@
 
 #include "dart/dynamics/Shape.hpp"
 
+#include "dart/common/Console.hpp"
+
 #define PRIMITIVE_MAGIC_NUMBER 1000
 
 namespace dart {
 namespace dynamics {
+
 //==============================================================================
-Shape::Shape(ShapeType _type)
+Shape::Shape(ShapeType /*_type*/)
   : mBoundingBox(),
     mVolume(0.0),
     mID(mCounter++),
-    mVariance(STATIC),
-    mType(_type)
+    mVariance(STATIC)
 {
+  // Do nothing
+}
+
+//==============================================================================
+Shape::Shape()
+  : mBoundingBox(),
+    mVolume(0.0),
+    mID(mCounter++),
+    mVariance(STATIC)
+{
+  // Do nothing
 }
 
 //==============================================================================
@@ -55,6 +68,18 @@ Shape::~Shape()
 const math::BoundingBox& Shape::getBoundingBox() const
 {
     return mBoundingBox;
+}
+
+//==============================================================================
+Eigen::Matrix3d Shape::computeInertiaFromDensity(double density) const
+{
+  return computeInertiaFromMass(density * getVolume());
+}
+
+//==============================================================================
+Eigen::Matrix3d Shape::computeInertiaFromMass(double mass) const
+{
+  return computeInertia(mass);
 }
 
 //==============================================================================
@@ -72,7 +97,12 @@ int Shape::getID() const
 //==============================================================================
 Shape::ShapeType Shape::getShapeType() const
 {
-  return mType;
+  dtwarn << "[Shape::getShapeType] This function is deprecated since DART 6.1 "
+         << "with Shape::ShapeType, and this won't work as expected. Please "
+         << "consider using Shape::getType() or [ShapeClass]::getStaticType() "
+         << "instead for the type checking.\n";
+
+  return static_cast<ShapeType>(0);
 }
 
 //==============================================================================

@@ -40,7 +40,7 @@ namespace dart {
 namespace dynamics {
 
 SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
-  : Shape(SOFT_MESH),
+  : Shape(),
     mSoftBodyNode(_softBodyNode),
     mAssimpMesh(nullptr)
 {

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
@@ -29,103 +29,123 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+
+#include <cmath>
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-PlaneShape::PlaneShape(const Eigen::Vector3d& _normal, double _offset)
+CapsuleShape::CapsuleShape(double radius, double height)
   : Shape(),
-    mNormal(_normal.normalized()),
-    mOffset(_offset)
+    mRadius(radius),
+    mHeight(height)
 {
+  assert(0.0 < radius);
+  assert(0.0 < height);
+  updateBoundingBoxDim();
+  updateVolume();
 }
 
 //==============================================================================
-PlaneShape::PlaneShape(const Eigen::Vector3d& _normal,
-                       const Eigen::Vector3d& _point)
-  : Shape(),
-    mNormal(_normal.normalized()),
-    mOffset(mNormal.dot(_point))
-{
-}
-
-//==============================================================================
-const std::string& PlaneShape::getType() const
+const std::string& CapsuleShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& PlaneShape::getStaticType()
+const std::string& CapsuleShape::getStaticType()
 {
-  static const std::string type("PlaneShape");
+  static const std::string type("CapsuleShape");
   return type;
 }
 
 //==============================================================================
-Eigen::Matrix3d PlaneShape::computeInertia(double /*mass*/) const
+double CapsuleShape::getRadius() const
 {
-  return Eigen::Matrix3d::Zero();
+  return mRadius;
 }
 
 //==============================================================================
-void PlaneShape::setNormal(const Eigen::Vector3d& _normal)
+void CapsuleShape::setRadius(double radius)
 {
-  mNormal = _normal.normalized();
+  assert(0.0 < radius);
+  mRadius = radius;
+  updateBoundingBoxDim();
+  updateVolume();
 }
 
 //==============================================================================
-const Eigen::Vector3d& PlaneShape::getNormal() const
+double CapsuleShape::getHeight() const
 {
-  return mNormal;
+  return mHeight;
 }
 
 //==============================================================================
-void PlaneShape::setOffset(double _offset)
+void CapsuleShape::setHeight(double height)
 {
-  mOffset = _offset;
+  assert(0.0 < height);
+  mHeight = height;
+  updateBoundingBoxDim();
+  updateVolume();
 }
 
 //==============================================================================
-double PlaneShape::getOffset() const
+double CapsuleShape::computeVolume(double radius, double height)
 {
-  return mOffset;
+  return CylinderShape::computeVolume(radius, height)
+      + SphereShape::computeVolume(radius);
 }
 
 //==============================================================================
-void PlaneShape::setNormalAndOffset(const Eigen::Vector3d& _normal,
-                                    double _offset)
+Eigen::Matrix3d CapsuleShape::computeInertia(
+    double radius, double height, double mass)
 {
-  setNormal(_normal);
-  setOffset(_offset);
+  // Reference: http://www.gamedev.net/page/resources/_/technical/
+  // math-and-physics/capsule-inertia-tensor-r3856
+
+  const auto radius2 = radius*radius;
+  const auto height2 = height*height;
+
+  const auto volumeCylinder = CylinderShape::computeVolume(radius, height);
+  const auto volumeSphere = SphereShape::computeVolume(radius);
+
+  const auto density = mass / (volumeCylinder + volumeSphere);
+
+  const auto massCylinder = density * volumeCylinder;
+  const auto massSphere = density * volumeSphere;
+
+  const auto Ixx
+      = massCylinder*(height2/12.0 + radius2/4.0)
+      + massSphere*(height2 + (3.0/8.0)*height*radius + (2.0/5.0)*radius2);
+  const auto Izz = massCylinder*(radius2/2.0) + massSphere*((2.0/5.0)*radius2);
+
+  return Eigen::Vector3d(Ixx, Ixx, Izz).asDiagonal();
 }
 
 //==============================================================================
-void PlaneShape::setNormalAndPoint(const Eigen::Vector3d& _normal,
-                                   const Eigen::Vector3d& _point)
+void CapsuleShape::updateVolume()
 {
-  setNormal(_normal);
-  setOffset(mNormal.dot(_point));
+  mVolume = computeVolume(mRadius, mHeight);
 }
 
 //==============================================================================
-double PlaneShape::computeDistance(const Eigen::Vector3d& _point) const
+Eigen::Matrix3d CapsuleShape::computeInertia(double mass) const
 {
-  return std::abs(computeSignedDistance(_point));
+  return computeInertia(mRadius, mHeight, mass);
 }
 
 //==============================================================================
-double PlaneShape::computeSignedDistance(const Eigen::Vector3d& _point) const
+void CapsuleShape::updateBoundingBoxDim()
 {
-  return mNormal.dot(_point) - mOffset;
-}
+  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5*mHeight);
 
-//==============================================================================
-void PlaneShape::updateVolume()
-{
-  mVolume = 0.0;
+  mBoundingBox.setMin(-corner);
+  mBoundingBox.setMax(corner);
 }
 
 }  // namespace dynamics

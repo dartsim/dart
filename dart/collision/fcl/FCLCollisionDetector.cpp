@@ -927,7 +927,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   {
     dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
           << "Attempting to create an unsupported shape type ["
-          << shapeType << "] Creating a sphere with 0.1 radius "
+          << shapeType << "]. Creating a sphere with 0.1 radius "
           << "instead.\n";
 
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);

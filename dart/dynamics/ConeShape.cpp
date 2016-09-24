@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
@@ -29,94 +29,111 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 
 #include <cmath>
 #include "dart/math/Helpers.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
 
 namespace dart {
 namespace dynamics {
 
-CylinderShape::CylinderShape(double _radius, double _height)
+//==============================================================================
+ConeShape::ConeShape(double radius, double height)
   : Shape(),
-    mRadius(_radius),
-    mHeight(_height) {
-  assert(0.0 < _radius);
-  assert(0.0 < _height);
-  _updateBoundingBoxDim();
+    mRadius(radius),
+    mHeight(height)
+{
+  assert(0.0 < radius);
+  assert(0.0 < height);
+  updateBoundingBoxDim();
   updateVolume();
 }
 
 //==============================================================================
-const std::string& CylinderShape::getType() const
+const std::string& ConeShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& CylinderShape::getStaticType()
+const std::string& ConeShape::getStaticType()
 {
-  static const std::string type("CylinderShape");
+  static const std::string type("ConeShape");
   return type;
 }
 
-double CylinderShape::getRadius() const {
+//==============================================================================
+double ConeShape::getRadius() const
+{
   return mRadius;
 }
 
-void CylinderShape::setRadius(double _radius) {
-  assert(0.0 < _radius);
-  mRadius = _radius;
-  _updateBoundingBoxDim();
+//==============================================================================
+void ConeShape::setRadius(double radius)
+{
+  assert(0.0 < radius);
+  mRadius = radius;
+  updateBoundingBoxDim();
   updateVolume();
 }
 
-double CylinderShape::getHeight() const {
+//==============================================================================
+double ConeShape::getHeight() const
+{
   return mHeight;
 }
 
-void CylinderShape::setHeight(double _height) {
-  assert(0.0 < _height);
-  mHeight = _height;
-  _updateBoundingBoxDim();
+//==============================================================================
+void ConeShape::setHeight(double height)
+{
+  assert(0.0 < height);
+  mHeight = height;
+  updateBoundingBoxDim();
   updateVolume();
 }
 
 //==============================================================================
-double CylinderShape::computeVolume(double radius, double height)
+double ConeShape::computeVolume(double radius, double height)
 {
-  return math::constantsd::pi() * std::pow(radius, 2) * height;
+  return (1.0/3.0) * math::constantsd::pi() * std::pow(radius, 2) * height;
 }
 
 //==============================================================================
-Eigen::Matrix3d CylinderShape::computeInertia(
+Eigen::Matrix3d ConeShape::computeInertia(
     double radius, double height, double mass)
 {
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Zero();
+  // Reference: https://en.wikipedia.org/wiki/List_of_moments_of_inertia
 
-  inertia(0, 0) = mass * (3.0 * std::pow(radius, 2) + std::pow(height, 2))
-      / 12.0;
-  inertia(1, 1) = inertia(0, 0);
-  inertia(2, 2) = 0.5 * mass * radius * radius;
+  const auto radius2 = radius*radius;
+  const auto height2 = height*height;
 
-  return inertia;
+  const auto Ixx = (3.0/20.0)*mass*(radius2 + (2.0/3.0)*height2);
+  const auto Izz = (3.0/10.0)*mass*radius2;
+
+  return Eigen::Vector3d(Ixx, Ixx, Izz).asDiagonal();
 }
 
 //==============================================================================
-void CylinderShape::updateVolume()
+void ConeShape::updateVolume()
 {
   mVolume = computeVolume(mRadius, mHeight);
 }
 
 //==============================================================================
-Eigen::Matrix3d CylinderShape::computeInertia(double mass) const
+Eigen::Matrix3d ConeShape::computeInertia(double mass) const
 {
   return computeInertia(mRadius, mHeight, mass);
 }
 
-void CylinderShape::_updateBoundingBoxDim() {
-  mBoundingBox.setMin(Eigen::Vector3d(-mRadius, -mRadius, -mHeight * 0.5));
-  mBoundingBox.setMax(Eigen::Vector3d(mRadius, mRadius, mHeight * 0.5));
+//==============================================================================
+void ConeShape::updateBoundingBoxDim()
+{
+  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5*mHeight);
+
+  mBoundingBox.setMin(-corner);
+  mBoundingBox.setMax(corner);
 }
 
 }  // namespace dynamics

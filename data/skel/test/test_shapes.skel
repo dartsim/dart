@@ -250,7 +250,7 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <mesh>
-                            <file_name>../obj/foot.obj</file_name>
+                            <file_name>../../obj/foot.obj</file_name>
                             <scale>1.0 1.0 1.0</scale>
                         </mesh>
                     </geometry>
@@ -260,7 +260,7 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <mesh>
-                            <file_name>../obj/foot.obj</file_name>
+                            <file_name>../../obj/foot.obj</file_name>
                             <scale>1.0 1.0 1.0</scale>
                         </mesh>
                     </geometry>
@@ -271,7 +271,7 @@
                 <parent>world</parent>
                 <child>mesh</child>
             </joint>
-        </skeleton>
+        </skeleton> 
 
     </world>
 </skel>
