@@ -491,8 +491,8 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     const auto numSpheres = multiSphere->getNumSpheres();
     const auto& spheres = multiSphere->getSpheres();
 
-    btVector3 bulletPositions[numSpheres];
-    btScalar bulletRadii[numSpheres];
+    std::vector<btVector3> bulletPositions(numSpheres);
+    std::vector<btScalar> bulletRadii(numSpheres);
 
     for (auto i = 0u; i < numSpheres; ++i)
     {
@@ -500,8 +500,8 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
       bulletPositions[i] = convertVector3(spheres[i].second);
     }
 
-    bulletCollisionShape
-        = new btMultiSphereShape(bulletPositions, bulletRadii, numSpheres);
+    bulletCollisionShape = new btMultiSphereShape(
+          bulletPositions.data(), bulletRadii.data(), numSpheres);
   }
   else if (shape->is<MeshShape>())
   {
