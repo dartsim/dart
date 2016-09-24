@@ -39,6 +39,7 @@
 namespace dart {
 namespace dynamics {
 
+/// MultiSphereShape represents the convex hull of a collection of spheres.
 class MultiSphereShape : public Shape
 {
 public:

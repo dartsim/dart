@@ -43,6 +43,7 @@
 #include "dart/gui/osg/render/CapsuleShapeNode.hpp"
 #include "dart/gui/osg/render/ConeShapeNode.hpp"
 #include "dart/gui/osg/render/PlaneShapeNode.hpp"
+#include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
 #include "dart/gui/osg/render/MeshShapeNode.hpp"
 #include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 #include "dart/gui/osg/render/LineSegmentShapeNode.hpp"
@@ -58,6 +59,7 @@
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MultiSphereShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
@@ -236,6 +238,15 @@ void ShapeFrameNode::createShapeNode(
         std::dynamic_pointer_cast<PlaneShape>(shape);
     if(ps)
       mShapeNode = new render::PlaneShapeNode(ps, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  }
+  else if(shape->is<MultiSphereShape>())
+  {
+    std::shared_ptr<MultiSphereShape> ms =
+        std::dynamic_pointer_cast<MultiSphereShape>(shape);
+    if(ms)
+      mShapeNode = new render::MultiSphereShapeNode(ms, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
