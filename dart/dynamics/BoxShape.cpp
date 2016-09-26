@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -42,7 +36,7 @@ namespace dart {
 namespace dynamics {
 
 BoxShape::BoxShape(const Eigen::Vector3d& _size)
-  : Shape(BOX),
+  : Shape(),
     mSize(_size) {
   assert(_size[0] > 0.0);
   assert(_size[1] > 0.0);
@@ -53,6 +47,19 @@ BoxShape::BoxShape(const Eigen::Vector3d& _size)
 }
 
 BoxShape::~BoxShape() {
+}
+
+//==============================================================================
+const std::string& BoxShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& BoxShape::getStaticType()
+{
+  static const std::string type("BoxShape");
+  return type;
 }
 
 //==============================================================================

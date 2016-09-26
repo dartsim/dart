@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -42,6 +37,8 @@
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 
 namespace dart {
@@ -241,20 +238,25 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
     return;
 
   const auto& shape = shapeFrame->getShape();
+  const auto& shapeType = shape->getType();
 
-  if (shape->getShapeType() == dynamics::Shape::BOX)
+  if (shapeType == dynamics::SphereShape::getStaticType())
     return;
 
-  if (shape->getShapeType() == dynamics::Shape::ELLIPSOID)
+  if (shapeType == dynamics::BoxShape::getStaticType())
+    return;
+
+  if (shapeType == dynamics::EllipsoidShape::getStaticType())
   {
     const auto& ellipsoid
         = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
+
     if (ellipsoid->isSphere())
       return;
   }
 
-  dterr << "[DARTCollisionDetector] Attempting to create shape type '"
-        << shapeFrame->getShape()->getShapeType() << "' that is not supported "
+  dterr << "[DARTCollisionDetector] Attempting to create shape type ["
+        << shapeType << "] that is not supported "
         << "by DARTCollisionDetector. Currently, only BoxShape and "
         << "EllipsoidShape (only when all the radii are equal) are "
         << "supported. This shape will always get penetrated by other "

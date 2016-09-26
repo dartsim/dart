@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -310,7 +305,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       // Set random states
       Skeleton::Configuration x = softSkel->getConfiguration();
-      for (std::size_t k = 0u; k < softSkel->getNumDofs(); ++k)
+      for (auto k = 0u; k < softSkel->getNumDofs(); ++k)
       {
         x.mPositions[k] = random(lb, ub);
         x.mVelocities[k] = random(lb, ub);

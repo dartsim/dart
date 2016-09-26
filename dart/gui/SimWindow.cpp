@@ -1,12 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -48,9 +44,12 @@
 #include "dart/simulation/World.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
@@ -161,7 +160,7 @@ void SimWindow::draw() {
           mRI->setPenColor(Eigen::Vector3d(0.2, 0.2, 0.8));
           mRI->pushMatrix();
           glTranslated(v[0], v[1], v[2]);
-          mRI->drawEllipsoid(Eigen::Vector3d(0.02, 0.02, 0.02));
+          mRI->drawSphere(0.01);
           mRI->popMatrix();
         }
       }
@@ -180,7 +179,7 @@ void SimWindow::draw() {
         mRI->setPenColor(Eigen::Vector3d(0.2, 0.2, 0.8));
         mRI->pushMatrix();
         glTranslated(v[0], v[1], v[2]);
-        mRI->drawEllipsoid(Eigen::Vector3d(0.02, 0.02, 0.02));
+        mRI->drawSphere(0.01);
         mRI->popMatrix();
       }
     }
@@ -399,72 +398,76 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   mRI->setPenColor(color);
 
   using dynamics::Shape;
+  using dynamics::SphereShape;
   using dynamics::BoxShape;
   using dynamics::EllipsoidShape;
   using dynamics::CylinderShape;
+  using dynamics::CapsuleShape;
+  using dynamics::ConeShape;
   using dynamics::PlaneShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
   using dynamics::LineSegmentShape;
 
-  switch (shape->getShapeType())
+  const auto& shapeType = shape->getType();
+
+  if (SphereShape::getStaticType() == shapeType)
   {
-    case Shape::BOX:
-    {
-      const auto& box = static_cast<const BoxShape*>(shape);
-      mRI->drawCube(box->getSize());
+    const auto* sphere = static_cast<const SphereShape*>(shape);
+    mRI->drawSphere(sphere->getRadius());
+  }
+  else if (BoxShape::getStaticType() == shapeType)
+  {
+    const auto* box = static_cast<const BoxShape*>(shape);
+    mRI->drawCube(box->getSize());
+  }
+  else if (EllipsoidShape::getStaticType() == shapeType)
+  {
+    const auto* ellipsoid = static_cast<const EllipsoidShape*>(shape);
+    mRI->drawEllipsoid(ellipsoid->getSize());
+  }
+  else if (CylinderShape::getStaticType() == shapeType)
+  {
+    const auto* cylinder = static_cast<const CylinderShape*>(shape);
+    mRI->drawCylinder(cylinder->getRadius(), cylinder->getHeight());
+  }
+  else if (CapsuleShape::getStaticType() == shapeType)
+  {
+    const auto* capsule = static_cast<const CapsuleShape*>(shape);
+    mRI->drawCapsule(capsule->getRadius(), capsule->getHeight());
+  }
+  else if (ConeShape::getStaticType() == shapeType)
+  {
+    const auto* cone = static_cast<const ConeShape*>(shape);
+    mRI->drawCone(cone->getRadius(), cone->getHeight());
+  }
+  else if (MeshShape::getStaticType() == shapeType)
+  {
+    const auto& mesh = static_cast<const MeshShape*>(shape);
 
-      break;
-    }
-    case Shape::ELLIPSOID:
-    {
-      const auto& ellipsoid = static_cast<const EllipsoidShape*>(shape);
-      mRI->drawEllipsoid(ellipsoid->getSize());
+    glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
 
-      break;
-    }
-    case Shape::CYLINDER:
-    {
-      const auto& cylinder = static_cast<const CylinderShape*>(shape);
-      mRI->drawCylinder(cylinder->getRadius(), cylinder->getHeight());
-
-      break;
-    }
-    case Shape::MESH:
-    {
-      const auto& mesh = static_cast<const MeshShape*>(shape);
-
-      glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
-
-      if (mesh->getDisplayList())
-        mRI->drawList(mesh->getDisplayList());
-      else
-        mRI->drawMesh(mesh->getScale(), mesh->getMesh());
-
-      break;
-    }
-    case Shape::SOFT_MESH:
-    {
-      const auto& softMesh = static_cast<const SoftMeshShape*>(shape);
-      mRI->drawSoftMesh(softMesh->getAssimpMesh());
-
-      break;
-    }
-    case Shape::LINE_SEGMENT:
-    {
-      const auto& lineSegmentShape
-          = static_cast<const LineSegmentShape*>(shape);
-      mRI->drawLineSegments(lineSegmentShape->getVertices(),
-                            lineSegmentShape->getConnections());
-
-      break;
-    }
-    default:
-    {
-      dterr << "[SimWindow::drawShape] Attempting to draw unsupported shape "
-            << "type '" << shape->getShapeType() << "'.\n";
-      break;
-    }
+    if (mesh->getDisplayList())
+      mRI->drawList(mesh->getDisplayList());
+    else
+      mRI->drawMesh(mesh->getScale(), mesh->getMesh());
+  }
+  else if (SoftMeshShape::getStaticType() == shapeType)
+  {
+    const auto& softMesh = static_cast<const SoftMeshShape*>(shape);
+    mRI->drawSoftMesh(softMesh->getAssimpMesh());
+  }
+  else if (LineSegmentShape::getStaticType() == shapeType)
+  {
+    const auto& lineSegmentShape
+        = static_cast<const LineSegmentShape*>(shape);
+    mRI->drawLineSegments(lineSegmentShape->getVertices(),
+                          lineSegmentShape->getConnections());
+  }
+  else
+  {
+    dterr << "[SimWindow::drawShape] Attempting to draw an unsupported shape "
+          << "type [" << shapeType << "].\n";
   }
 
   glDisable(GL_COLOR_MATERIAL);
@@ -491,7 +494,7 @@ void SimWindow::drawPointMasses(
       mRI->setPenColor(Eigen::Vector4d(0.8, 0.3, 0.3, 1.0));
     else
       mRI->setPenColor(color);
-    mRI->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
+    mRI->drawSphere(0.005);
     mRI->popMatrix();
 
     // render point at the resting position
@@ -502,7 +505,7 @@ void SimWindow::drawPointMasses(
       mRI->setPenColor(Eigen::Vector4d(0.8, 0.3, 0.3, 1.0));
     else
       mRI->setPenColor(color);
-    mRI->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
+    mRI->drawSphere(0.005);
     mRI->popMatrix();
   }
 }
@@ -538,7 +541,7 @@ void SimWindow::drawMarker(const dynamics::Marker* marker,
 
   mRI->pushMatrix();
   mRI->translate(marker->getLocalPosition());
-  mRI->drawEllipsoid(Eigen::Vector3d::Constant(0.01));
+  mRI->drawSphere(0.005);
   mRI->popMatrix();
 
   mRI->popName();

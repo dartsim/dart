@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -1622,9 +1616,8 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
 void BodyNode::updateArtInertia(double _timeStep) const
 {
   // Set spatial inertia to the articulated body inertia
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
-  mArtInertia = mI;
-  mArtInertiaImplicit = mI;
+  mArtInertia = mAspectProperties.mInertia.getSpatialTensor();
+  mArtInertiaImplicit = mArtInertia;
 
   // and add child articulated body inertia
   for (const auto& child : mChildBodyNodes)
@@ -1908,17 +1901,36 @@ const Eigen::Vector6d& BodyNode::getConstraintImpulse() const
 }
 
 //==============================================================================
+double BodyNode::computeLagrangian(const Eigen::Vector3d& gravity) const
+{
+  return computeKineticEnergy() - computePotentialEnergy(gravity);
+}
+
+//==============================================================================
 double BodyNode::getKineticEnergy() const
 {
+  return computeKineticEnergy();
+}
+
+//==============================================================================
+double BodyNode::computeKineticEnergy() const
+{
   const Eigen::Vector6d& V = getSpatialVelocity();
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
-  return 0.5 * V.dot(mI * V);
+  const Eigen::Matrix6d& G = mAspectProperties.mInertia.getSpatialTensor();
+
+  return 0.5 * V.dot(G * V);
 }
 
 //==============================================================================
 double BodyNode::getPotentialEnergy(const Eigen::Vector3d& _gravity) const
 {
-  return -getMass() * getWorldTransform().translation().dot(_gravity);
+  return computePotentialEnergy(_gravity);
+}
+
+//==============================================================================
+double BodyNode::computePotentialEnergy(const Eigen::Vector3d& gravity) const
+{
+  return -getMass() * getWorldTransform().translation().dot(gravity);
 }
 
 //==============================================================================

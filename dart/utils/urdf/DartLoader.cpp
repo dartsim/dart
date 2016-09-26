@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Ana C. Huamán Quispe <ahuaman3@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -52,17 +47,18 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/simulation/World.hpp"
+#include "dart/utils/urdf/URDFTypes.hpp"
 #include "dart/utils/urdf/urdf_world_parser.hpp"
-
-using ModelInterfacePtr = boost::shared_ptr<urdf::ModelInterface>;
 
 namespace dart {
 namespace utils {
+
+using ModelInterfacePtr = urdf_shared_ptr<urdf::ModelInterface>;
 
 DartLoader::DartLoader()
   : mLocalRetriever(new common::LocalResourceRetriever),
@@ -241,7 +237,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     std::pair<dynamics::Joint*, dynamics::BodyNode*> pair =
         skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
           nullptr, dynamics::FreeJoint::Properties(
-            dynamics::MultiDofJoint<6>::Properties(
+            dynamics::GenericJoint<math::SE3Space>::Properties(
             dynamics::Joint::Properties("rootJoint"))),
           rootProperties);
     rootNode = pair.second;
@@ -333,15 +329,15 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   basicProperties.mT_ParentBodyToJoint =
       toEigen(_jt->parent_to_joint_origin_transform);
 
-  dynamics::SingleDofJoint::UniqueProperties singleDof;
+  dynamics::GenericJoint<math::R1Space>::UniqueProperties singleDof;
   if(_jt->limits)
   {
-    singleDof.mPositionLowerLimit = _jt->limits->lower;
-    singleDof.mPositionUpperLimit = _jt->limits->upper;
-    singleDof.mVelocityLowerLimit = -_jt->limits->velocity;
-    singleDof.mVelocityUpperLimit =  _jt->limits->velocity;
-    singleDof.mForceLowerLimit = -_jt->limits->effort;
-    singleDof.mForceUpperLimit =  _jt->limits->effort;
+    singleDof.mPositionLowerLimits[0] = _jt->limits->lower;
+    singleDof.mPositionUpperLimits[0] = _jt->limits->upper;
+    singleDof.mVelocityLowerLimits[0] = -_jt->limits->velocity;
+    singleDof.mVelocityUpperLimits[0] =  _jt->limits->velocity;
+    singleDof.mForceLowerLimits[0] = -_jt->limits->effort;
+    singleDof.mForceUpperLimits[0] =  _jt->limits->effort;
 
     // If the zero position is out of our limits, we should change the initial
     // position instead of assuming zero.
@@ -349,23 +345,23 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     {
       if(std::isfinite(_jt->limits->lower)
          && std::isfinite(_jt->limits->upper))
-        singleDof.mInitialPosition =
+        singleDof.mInitialPositions[0] =
             (_jt->limits->lower + _jt->limits->upper) / 2.0;
       else if(std::isfinite(_jt->limits->lower))
-        singleDof.mInitialPosition = _jt->limits->lower;
+        singleDof.mInitialPositions[0] = _jt->limits->lower;
       else if(std::isfinite(_jt->limits->upper))
-        singleDof.mInitialPosition = _jt->limits->upper;
+        singleDof.mInitialPositions[0] = _jt->limits->upper;
 
       // Any other case means that the limits are both +inf, both -inf, or
       // either of them is NaN. This should generate warnings elsewhere.
 
       // Apply the same logic to mRestPosition.
-      singleDof.mRestPosition = singleDof.mInitialPosition;
+      singleDof.mRestPositions = singleDof.mInitialPositions;
     }
   }
 
   if(_jt->dynamics)
-    singleDof.mDampingCoefficient = _jt->dynamics->damping;
+    singleDof.mDampingCoefficients[0] = _jt->dynamics->damping;
 
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
   switch(_jt->type)
@@ -374,7 +370,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::CONTINUOUS:
     {
       dynamics::RevoluteJoint::Properties properties(
-            dynamics::SingleDofJoint::Properties(basicProperties, singleDof),
+            dynamics::GenericJoint<math::R1Space>::Properties(basicProperties, singleDof),
             toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
@@ -385,7 +381,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::PRISMATIC:
     {
       dynamics::PrismaticJoint::Properties properties(
-            dynamics::SingleDofJoint::Properties(basicProperties, singleDof),
+            dynamics::GenericJoint<math::R1Space>::Properties(basicProperties, singleDof),
             toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
@@ -401,7 +397,8 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     }
     case urdf::Joint::FLOATING:
     {
-      dynamics::MultiDofJoint<6>::Properties properties(basicProperties);
+      dynamics::GenericJoint<math::SE3Space>::Properties properties(
+            basicProperties);
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
             _parent, properties, _body);
@@ -534,8 +531,7 @@ dynamics::ShapePtr DartLoader::createShape(
   // Sphere
   if(urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(_vizOrCol->geometry.get()))
   {
-    shape = dynamics::ShapePtr(new dynamics::EllipsoidShape(
-                  2.0 * sphere->radius * Eigen::Vector3d::Ones()));
+    shape = dynamics::ShapePtr(new dynamics::SphereShape(sphere->radius));
   }
   // Box
   else if(urdf::Box* box = dynamic_cast<urdf::Box*>(_vizOrCol->geometry.get()))

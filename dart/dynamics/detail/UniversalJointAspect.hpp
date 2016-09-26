@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -41,7 +36,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/MultiDofJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -64,13 +59,13 @@ struct UniversalJointUniqueProperties
 
 //==============================================================================
 struct UniversalJointProperties :
-    MultiDofJoint<2>::Properties,
+    GenericJoint<math::R2Space>::Properties,
     UniversalJointUniqueProperties
 {
   UniversalJointProperties(
-      const MultiDofJoint<2>::Properties& _multiDofProperties =
-          MultiDofJoint<2>::Properties(),
-      const UniversalJointUniqueProperties& _universalProperties =
+      const GenericJoint<math::R2Space>::Properties& GenericJointProperties =
+          GenericJoint<math::R2Space>::Properties(),
+      const UniversalJointUniqueProperties& universalProperties =
           UniversalJointUniqueProperties());
 
   virtual ~UniversalJointProperties() = default;
@@ -78,7 +73,7 @@ struct UniversalJointProperties :
 
 //==============================================================================
 using UniversalJointBase = common::EmbedPropertiesOnTopOf<
-    UniversalJoint, UniversalJointUniqueProperties, MultiDofJoint<2> >;
+    UniversalJoint, UniversalJointUniqueProperties,  GenericJoint<math::R2Space> >;
 
 } // namespace detail
 } // namespace dynamics

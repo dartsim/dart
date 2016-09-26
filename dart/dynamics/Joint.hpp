@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -540,36 +534,40 @@ public:
   //----------------------------------------------------------------------------
 
   /// Get potential energy
-  virtual double getPotentialEnergy() const = 0;
+  DART_DEPRECATED(6.1)
+  double getPotentialEnergy() const;
+
+  /// Compute and return the potential energy
+  virtual double computePotentialEnergy() const = 0;
 
   //----------------------------------------------------------------------------
 
   /// Deprecated. Use getRelativeTransform() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const Eigen::Isometry3d& getLocalTransform() const;
 
   /// Deprecated. Use getLocalSpatialVelocity() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const Eigen::Vector6d& getLocalSpatialVelocity() const;
 
   /// Deprecated. Use getLocalSpatialAcceleration() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const Eigen::Vector6d& getLocalSpatialAcceleration() const;
 
   /// Deprecated. Use getLocalPrimaryAcceleration() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const Eigen::Vector6d& getLocalPrimaryAcceleration() const;
 
   /// Deprecated. Use getRelativeJacobian() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const math::Jacobian getLocalJacobian() const;
 
   /// Deprecated. Use getRelativeJacobian() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   math::Jacobian getLocalJacobian(const Eigen::VectorXd& positions) const;
 
   /// Deprecated. Use getRelativeJacobianTimeDeriv() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const math::Jacobian getLocalJacobianTimeDeriv() const;
 
   /// Get transform of the child BodyNode relative to the parent BodyNode
@@ -686,27 +684,27 @@ protected:
   //----------------------------------------------------------------------------
 
   /// Deprecated. Use updateRelativeTransform() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalTransform() const;
 
   /// Deprecated. Use updateRelativeSpatialVelocity() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalSpatialVelocity() const;
 
   /// Deprecated. Use updateRelativeSpatialAcceleration() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalSpatialAcceleration() const;
 
   /// Deprecated. Use updateRelativePrimaryAcceleration() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalPrimaryAcceleration() const;
 
   /// Deprecated. Use updateRelativeJacobian() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalJacobian(bool mandatory = true) const;
 
   /// Deprecated. Use updateRelativeJacobianTimeDeriv() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalJacobianTimeDeriv() const;
 
   /// Update transform of the child BodyNode relative to the parent BodyNode

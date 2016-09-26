@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -268,13 +263,13 @@ public:
   void clearInternalForces() override;
 
   // Documentation inherited
-  double getKineticEnergy() const override;
+  double computeKineticEnergy() const override;
 
   // Documentation inherited
-  double getPotentialEnergy() const override;
+  double computePotentialEnergy() const override;
 
   // Documentation inherited
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void clearCollidingBodies() override;
 
   /// \}

@@ -1,12 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -71,10 +67,10 @@ public:
 
   virtual void drawSkeletons() const;
 
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   virtual void drawSkels();
 
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   virtual void drawEntities();
 
   /// \brief

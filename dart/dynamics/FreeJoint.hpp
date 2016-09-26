@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -41,22 +36,23 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/MultiDofJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
 
 /// class FreeJoint
-class FreeJoint : public MultiDofJoint<6>
+class FreeJoint : public GenericJoint<math::SE3Space>
 {
 public:
 
   friend class Skeleton;
 
-  struct Properties : MultiDofJoint<6>::Properties
+  using Base = GenericJoint<math::SE3Space>;
+
+  struct Properties : Base::Properties
   {
-    Properties(const MultiDofJoint<6>::Properties& _properties =
-                                                MultiDofJoint<6>::Properties());
+    Properties(const Base::Properties& properties = Base::Properties());
 
     virtual ~Properties() = default;
   };
@@ -276,7 +272,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using MultiDofJoint::getRelativeJacobianStatic;
+  using Base::getRelativeJacobianStatic;
 
   // Documentation inherited
   void integratePositions(double _dt) override;

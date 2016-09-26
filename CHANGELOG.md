@@ -1,5 +1,43 @@
 ## DART 6
 
+### DART 6.1.0 (2016-XX-XX)
+
+* Collision detection
+
+  * Fixed direction of contact normal of BulletCollisionDetector: [#763](https://github.com/dartsim/dart/pull/763)
+
+* Dynamics
+
+  * Added `computeLagrangian()` to `MetaSkeleton` and `BodyNode`: [#746](https://github.com/dartsim/dart/pull/746)
+  * Added new shapes: sphere, capsule, and cone: [#769](https://github.com/dartsim/dart/pull/769), [#745](https://github.com/dartsim/dart/pull/745)
+
+* Planning
+
+  * Fixed incorrect linking to flann library: [#761](https://github.com/dartsim/dart/pull/761)
+
+* Parsers
+
+  * Added support of urdfdom_headers 1.0: [#766](https://github.com/dartsim/dart/pull/766)
+
+* Misc improvements and bug fixes
+
+  * Fixed Doxyfile to show missing member functions in API documentation: [#768](https://github.com/dartsim/dart/pull/768)
+  * Made building with SIMD optional: [#765](https://github.com/dartsim/dart/pull/765), [#760](https://github.com/dartsim/dart/pull/760)
+  * Added `virtual Shape::getType()` and deprecated `ShapeType Shpae::getShapeType()`: [#724](https://github.com/dartsim/dart/pull/724)
+  * Fixed typo: [#756](https://github.com/dartsim/dart/pull/756), [#755](https://github.com/dartsim/dart/pull/755)
+
+### DART 6.0.1 (2016-XX-XX)
+
+* Collision detection
+
+  * Added support of FCL 0.5.0: [#749](https://github.com/dartsim/dart/pull/749)
+  * Added warnings for unsupported shape pairs of DARTCollisionDetector: [#722](https://github.com/dartsim/dart/pull/722)
+
+* Misc improvements and bug fixes
+
+  * Renamed `DEPRECATED` and `FORCEINLINE` to `DART_DEPRECATED` and `DART_FORCEINLINE` to avoid name conflicts: [#742](https://github.com/dartsim/dart/pull/742)
+  * Updated copyright: added CMU to copyright holder, moved individual contributors to CONTRIBUTING.md: [#723](https://github.com/dartsim/dart/pull/723)
+
 ### DART 6.0.0 (2016-05-10)
 
 * Common data structures
@@ -9,7 +47,7 @@
   * Added `ShapeFrame` and `ShapeNode`: [#608](https://github.com/dartsim/dart/pull/608)
   * Added `BoundingBox`: [#547](https://github.com/dartsim/dart/pull/547), [#546](https://github.com/dartsim/dart/issues/546)
 
-* Kinematics features:
+* Kinematics
 
   * Added convenient functions for setting joint limits: [#703](https://github.com/dartsim/dart/pull/703)
   * Added more description on `InverseKinematics::solve()`: [#624](https://github.com/dartsim/dart/pull/624)
@@ -24,7 +62,7 @@
   * Fixed `InverseKinematics` when it's used with `FreeJoint` and `BallJoint`: [#683](https://github.com/dartsim/dart/pull/683)
   * Fixed ambiguous overload on `MetaSkeleton::getLinearJacobianDeriv`: [#628](https://github.com/dartsim/dart/pull/628), [#626](https://github.com/dartsim/dart/issues/626)
 
-* Dynamics features:
+* Dynamics
 
   * Added `get/setLCPSolver` functions to `ConstraintSolver`: [#633](https://github.com/dartsim/dart/pull/633)
   * Added `ServoMotorConstraint` as a preliminary implementation for `SERVO` actuator type: [#566](https://github.com/dartsim/dart/pull/566)
@@ -34,7 +72,7 @@
   * Fixed incorrect applying of joint constraint impulses: [#317](https://github.com/dartsim/dart/issues/317)
   * Deprecated `draw()` functions of dynamics classes: [#654](https://github.com/dartsim/dart/pull/654)
 
-* Collision detection features
+* Collision detection
 
   * Added `CollisionGroup` and refactored `CollisionDetector` to be more versatile: [#711](https://github.com/dartsim/dart/pull/711), [#704](https://github.com/dartsim/dart/pull/704), [#689](https://github.com/dartsim/dart/pull/689), [#631](https://github.com/dartsim/dart/pull/631), [#642](https://github.com/dartsim/dart/issues/642), [#20](https://github.com/dartsim/dart/issues/20)
   * Improved API for self collision checking options: [#718](https://github.com/dartsim/dart/pull/718), [#702](https://github.com/dartsim/dart/issues/702)
@@ -51,7 +89,7 @@
   * Moved `osgDart` under `dart::gui` namespace as `dart::gui::osg`: [#651](https://github.com/dartsim/dart/pull/651)
   * Fixed GlutWindow::screenshot(): [#623](https://github.com/dartsim/dart/pull/623), [#395](https://github.com/dartsim/dart/issues/395)
 
-* Simulation features
+* Simulation
 
   * Fixed `World::clone()` didn't clone the collision detector: [#658](https://github.com/dartsim/dart/pull/658)
   * Fixed bug of `World` concurrency: [#577](https://github.com/dartsim/dart/pull/577), [#576](https://github.com/dartsim/dart/issues/576)

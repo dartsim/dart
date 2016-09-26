@@ -1,15 +1,8 @@
 /*
- * Copyright (c) 2012-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2012-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2012-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Matthew Dutton <MatthewRDutton@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -432,7 +425,7 @@ bool readSegment(const tinyxml2::XMLElement* segment,
 
       if (!res)
       {
-        dtwarn << "[ParserVsk::readSegment] Faild to parse joint type.\n";
+        dtwarn << "[ParserVsk::readSegment] Failed to parse joint type.\n";
         return false;
       }
 
@@ -578,7 +571,7 @@ bool readJoint(const std::string& jointType,
   }
   else
   {
-    dtwarn << "[ParserVsk::readSegment] Faild to parse joint type.\n";
+    dtwarn << "[ParserVsk::readSegment] Failed to parse joint type.\n";
     return false;
   }
 }
@@ -684,11 +677,11 @@ bool readJointHinge(const tinyxml2::XMLElement* jointEle,
   properties.mT_ParentBodyToJoint = tfFromParent;
   properties.mT_ChildBodyToJoint = Eigen::Isometry3d::Identity();
   properties.mAxis = axis;
-  properties.mDampingCoefficient = vskData.options.jointDampingCoefficient;
-  properties.mPositionLowerLimit = vskData.options.jointPositionLowerLimit;
-  properties.mPositionUpperLimit = vskData.options.jointPositionUpperLimit;
+  properties.mDampingCoefficients[0] = vskData.options.jointDampingCoefficient;
+  properties.mPositionLowerLimits[0] = vskData.options.jointPositionLowerLimit;
+  properties.mPositionUpperLimits[0] = vskData.options.jointPositionUpperLimit;
   properties.mIsPositionLimitEnforced = true;
-  properties.mFriction = vskData.options.jointFriction;
+  properties.mFrictions[0] = vskData.options.jointFriction;
 
   jointProperties
       = Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
@@ -958,9 +951,9 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
     Eigen::Matrix3d totalMoi = Eigen::Matrix3d::Zero();
     auto numShapeNodes = bodyNode->getNumNodes<dynamics::ShapeNode>();
 
-    for (auto i = 0u; i < numShapeNodes; ++i)
+    for (auto j = 0u; j < numShapeNodes; ++j)
     {
-      auto shapeNode = bodyNode->getNode<dynamics::ShapeNode>(i);
+      auto shapeNode = bodyNode->getNode<dynamics::ShapeNode>(j);
       auto shape     = shapeNode->getShape();
       const double             mass    = density * shape->getVolume();
       const Eigen::Isometry3d& localTf = shapeNode->getRelativeTransform();
@@ -985,8 +978,13 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
       dtwarn << "[VskParser::generateShapes] A BodyNode '"
              << bodyNode->getName() << "' of Skelelton '"
              << bodyNode->getSkeleton()->getName()
-             << "' has zero mass or zero inertia. Set sufficient mass and "
-             << "inertia properties for meaningful dynamic simulation.\n";
+             << "' has zero mass or zero inertia. Setting unit mass and unit "
+             << "inertia to prevent segfaults during dynamic simulation. Set "
+             << "proper mass and inertia properties for meaningful dynamic "
+             << "simulation.\n";
+
+      totalMass = 1.0;
+      totalMoi = Eigen::Matrix3d::Identity();
     }
 
     const dynamics::Inertia inertia(totalMass, Eigen::Vector3d::Zero(),

@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Chen Tang <ctang40@gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -42,6 +36,7 @@
 #include <fcl/collision_object.h>
 #include <boost/weak_ptr.hpp> // This should be removed once we migrate to fcl 0.5
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/fcl/FCLTypes.hpp"
 
 namespace dart {
 namespace collision {
@@ -136,7 +131,7 @@ protected:
 
   /// Return fcl::CollisionGeometry associated with give Shape. New
   /// fcl::CollisionGeome will be created if it hasn't created yet.
-  boost::shared_ptr<fcl::CollisionGeometry> claimFCLCollisionGeometry(
+  fcl_shared_ptr<fcl::CollisionGeometry> claimFCLCollisionGeometry(
       const dynamics::ConstShapePtr& shape);
 
 protected:
@@ -168,7 +163,7 @@ private:
 
   /// Create fcl::CollisionGeometry with the custom deleter
   /// FCLCollisionGeometryDeleter
-  boost::shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
+  fcl_shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
       const dynamics::ConstShapePtr& shape,
       FCLCollisionDetector::PrimitiveShape type,
       const FCLCollisionGeometryDeleter& deleter);
@@ -176,7 +171,7 @@ private:
 private:
 
   using ShapeMap = std::map<dynamics::ConstShapePtr,
-                            boost::weak_ptr<fcl::CollisionGeometry>>;
+                            fcl_weak_ptr<fcl::CollisionGeometry>>;
   // TODO(JS): FCL replaced all the use of boost in version 0.5. Once we migrate
   // to 0.5 or greater, this also should be changed to
   // std::weak_ptr<fcl::CollisionGeometry>

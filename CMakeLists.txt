@@ -44,7 +44,7 @@ endif()
 project(dart)
 
 set(DART_MAJOR_VERSION "6")
-set(DART_MINOR_VERSION "0")
+set(DART_MINOR_VERSION "1")
 set(DART_PATCH_VERSION "0")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
@@ -69,6 +69,7 @@ if(MSVC)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
+option(DART_ENABLE_SIMD "Build DART with SIMD enabled" ON)
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 option(DART_COVERALLS "Turn on coveralls support" OFF)
 option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
@@ -145,6 +146,7 @@ endif()
 # Compiler flags
 #===============================================================================
 if(MSVC)
+
   # Visual Studio enables c++11 support by default
   if(MSVC_VERSION VERSION_LESS 1900)
     message(FATAL_ERROR "${PROJECT_NAME} requires VS 2015 or greater.")
@@ -156,13 +158,23 @@ if(MSVC)
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /INCREMENTAL:NO")
   if(NOT DART_MSVC_DEFAULT_OPTIONS)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc /arch:SSE2")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc")
   endif(NOT DART_MSVC_DEFAULT_OPTIONS)
+  if(DART_ENABLE_SIMD)
+    add_definitions(/arch:SSE2 /arch:AVX /arch:AVX2)
+    # /arch:SSE2 option is effective only for x86 but not for x64 since it's
+    # enabled for x64 by default. The option will be ignored on x64 with a
+    # warning message. If anyone knows how to detect the system's architecture
+    # in CMake time, then I would gratefully apply these options differently
+    # depending on the architectures.
+  endif()
+
 elseif(CMAKE_COMPILER_IS_GNUCXX)
+
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
   endif()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -msse2 -fPIC")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fPIC")
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
   set(CXX_COMPILER_VERSION ${GCC_VERSION})
@@ -175,13 +187,18 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
+  if(DART_ENABLE_SIMD)
+    add_definitions(-march=native)
+  endif()
+
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
     # Turn warning "deprecated-declarations" into an warning even if -Werror is
     # specified until we abandon glut.
   endif()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -fPIC")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CLANG_VERSION)
   set(CXX_COMPILER_VERSION ${CLANG_VERSION})
@@ -197,8 +214,14 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
+  if(DART_ENABLE_SIMD)
+    add_definitions(-march=native)
+  endif()
+
 else()
+
   message(SEND_ERROR "Compiler[${CMAKE_CXX_COMPILER_ID}] not supported.")
+
 endif()
 
 #===============================================================================
@@ -346,6 +369,7 @@ if(DOXYGEN_FOUND)
   set(DOXYGEN_HTML_INDEX   ${PROJECT_SOURCE_DIR}/doxygen/html/index.html)
   set(DOXYGEN_OUTPUT_ROOT  ${PROJECT_SOURCE_DIR}/doxygen/html           ) # Pasted into Doxyfile.in
   set(DOXYGEN_GENERATE_TAGFILE ${DOXYGEN_OUTPUT_ROOT}/${PROJECT_NAME}.tag)
+  set(DOXYGEN_INCLUDE_PATH ${PROJECT_SOURCE_DIR})
   set(DOXYGEN_INPUT_ROOT   ${PROJECT_SOURCE_DIR}/dart                   ) # Pasted into Doxyfile.in
   set(DOXYGEN_EXTRA_INPUTS ${PROJECT_SOURCE_DIR}/doxygen/mainpage.dox   ) # Pasted into Doxyfile.in
 

@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -95,9 +90,12 @@ public:
     virtual void transform(const Eigen::Isometry3d& _transform); //glMultMatrix
     virtual void scale(const Eigen::Vector3d& _scale); //glScale
 
+    virtual void drawSphere(double _radius);
     virtual void drawEllipsoid(const Eigen::Vector3d& _size);
     virtual void drawCube(const Eigen::Vector3d& _size);
     virtual void drawCylinder(double _radius, double _height);
+    virtual void drawCapsule(double _radius, double _height);
+    virtual void drawCone(double _radius, double _height);
     virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh);
     virtual void drawSoftMesh(const aiMesh* mesh);
     virtual void drawList(unsigned int index);

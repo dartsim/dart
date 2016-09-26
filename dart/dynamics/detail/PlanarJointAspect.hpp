@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -39,7 +34,7 @@
 
 #include <string>
 
-#include "dart/dynamics/MultiDofJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -110,13 +105,13 @@ struct PlanarJointUniqueProperties
 
 //==============================================================================
 struct PlanarJointProperties :
-    MultiDofJoint<3>::Properties,
+    GenericJoint<math::R3Space>::Properties,
     PlanarJointUniqueProperties
 {
   PlanarJointProperties(
-      const MultiDofJoint<3>::Properties& _multiDofProperties =
-          MultiDofJoint<3>::Properties(),
-      const PlanarJointUniqueProperties& _planarProperties =
+      const GenericJoint<math::R3Space>::Properties& GenericJointProperties =
+          GenericJoint<math::R3Space>::Properties(),
+      const PlanarJointUniqueProperties& planarProperties =
           PlanarJointUniqueProperties());
 
   virtual ~PlanarJointProperties() = default;
@@ -124,7 +119,7 @@ struct PlanarJointProperties :
 
 //==============================================================================
 using PlanarJointBase = common::EmbedPropertiesOnTopOf<
-    PlanarJoint, PlanarJointUniqueProperties, MultiDofJoint<3> >;
+    PlanarJoint, PlanarJointUniqueProperties, GenericJoint<math::R3Space> >;
 
 } // namespace detail
 } // namespace dynamics

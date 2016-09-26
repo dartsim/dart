@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -651,14 +646,25 @@ public:
   /// Clear the internal forces of the BodyNodes in this MetaSkeleton
   virtual void clearInternalForces() = 0;
 
+  /// Compute and return Lagrangian of this MetaSkeleton
+  double computeLagrangian() const;
+
   /// Get the kinetic energy of this MetaSkeleton
-  virtual double getKineticEnergy() const = 0;
+  DART_DEPRECATED(6.1)
+  double getKineticEnergy() const;
+
+  /// Get the kinetic energy of this MetaSkeleton
+  virtual double computeKineticEnergy() const = 0;
 
   /// Get the potential energy of this MetaSkeleton
-  virtual double getPotentialEnergy() const = 0;
+  DART_DEPRECATED(6.1)
+  double getPotentialEnergy() const;
+
+  /// Get the potential energy of this MetaSkeleton
+  virtual double computePotentialEnergy() const = 0;
 
   /// Clear collision flags of the BodyNodes in this MetaSkeleton
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   virtual void clearCollidingBodies() = 0;
 
   /// \}

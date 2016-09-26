@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -45,7 +40,7 @@ namespace dart {
 namespace dynamics {
 
 SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
-  : Shape(SOFT_MESH),
+  : Shape(),
     mSoftBodyNode(_softBodyNode),
     mAssimpMesh(nullptr)
 {
@@ -59,6 +54,19 @@ SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
 SoftMeshShape::~SoftMeshShape()
 {
   // Do nothing
+}
+
+//==============================================================================
+const std::string& SoftMeshShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& SoftMeshShape::getStaticType()
+{
+  static const std::string type("SoftMeshShape");
+  return type;
 }
 
 const aiMesh* SoftMeshShape::getAssimpMesh() const

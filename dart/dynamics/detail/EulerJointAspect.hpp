@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -39,7 +34,7 @@
 
 #include <string>
 
-#include "dart/dynamics/MultiDofJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -70,14 +65,14 @@ struct EulerJointUniqueProperties
 
 //==============================================================================
 struct EulerJointProperties :
-    MultiDofJoint<3>::Properties,
+    GenericJoint<math::R3Space>::Properties,
     EulerJointUniqueProperties
 {
   /// Composed constructor
   EulerJointProperties(
-      const MultiDofJoint<3>::Properties& _multiDofProperties =
-          MultiDofJoint<3>::Properties(),
-      const EulerJointUniqueProperties& _eulerJointProperties =
+      const GenericJoint<math::R3Space>::Properties& GenericJointProperties =
+          GenericJoint<math::R3Space>::Properties(),
+      const EulerJointUniqueProperties& eulerJointProperties =
           EulerJointUniqueProperties());
 
   virtual ~EulerJointProperties() = default;
@@ -85,7 +80,7 @@ struct EulerJointProperties :
 
 //==============================================================================
 using EulerJointBase = common::EmbedPropertiesOnTopOf<
-    EulerJoint, EulerJointUniqueProperties, MultiDofJoint<3> >;
+    EulerJoint, EulerJointUniqueProperties, GenericJoint<math::R3Space> >;
 
 } // namespace detail
 } // namespace dynamics

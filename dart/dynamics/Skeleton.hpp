@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -214,7 +208,7 @@ public:
   void setProperties(const AspectProperties& properties);
 
   /// Get the Properties of this Skeleton
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const AspectProperties& getSkeletonProperties() const;
 
   /// Set the AspectProperties of this Skeleton
@@ -226,13 +220,13 @@ public:
   /// Get name.
   const std::string& getName() const override;
 
-  /// Deprecated. Please use enableSelfCollision() and setAdjacentBodyCheck()
-  /// instead.
-  DEPRECATED(6.0)
+  /// Deprecated. Please use enableSelfCollisionCheck() and
+  /// setAdjacentBodyCheck() instead.
+  DART_DEPRECATED(6.0)
   void enableSelfCollision(bool enableAdjacentBodyCheck = false);
 
   /// Deprecated. Please use disableSelfCollisionCheck() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void disableSelfCollision();
 
   /// Set whether to check self-collision.
@@ -826,13 +820,13 @@ public:
   void notifySupportUpdate(std::size_t _treeIdx);
 
   // Documentation inherited
-  double getKineticEnergy() const override;
+  double computeKineticEnergy() const override;
 
   // Documentation inherited
-  double getPotentialEnergy() const override;
+  double computePotentialEnergy() const override;
 
   // Documentation inherited
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void clearCollidingBodies() override;
 
   /// \}
@@ -905,8 +899,7 @@ public:
   friend class BodyNode;
   friend class SoftBodyNode;
   friend class Joint;
-  friend class SingleDofJoint;
-  template<std::size_t> friend class MultiDofJoint;
+  template<class> friend class GenericJoint;
   friend class DegreeOfFreedom;
   friend class Node;
   friend class ShapeNode;

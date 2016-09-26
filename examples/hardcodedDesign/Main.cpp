@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Can Erdogan
- *            Michael X. Grey
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -65,8 +59,8 @@ int main(int argc, char* argv[]) {
   dart::dynamics::RevoluteJoint::Properties joint;
   joint.mName = "LHY";
   joint.mAxis = Eigen::Vector3d(0.0, 0.0, 1.0);
-  joint.mPositionLowerLimit = -dart::math::constantsd::pi();
-  joint.mPositionUpperLimit =  dart::math::constantsd::pi();
+  joint.mPositionLowerLimits[0] = -dart::math::constantsd::pi();
+  joint.mPositionUpperLimits[0] =  dart::math::constantsd::pi();
 
   // You can get the newly created Joint and BodyNode pointers like this
   std::pair<dart::dynamics::Joint*, dart::dynamics::BodyNode*> pair =

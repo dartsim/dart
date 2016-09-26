@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Tobias Kunz <tobias@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -43,13 +38,26 @@ namespace dart {
 namespace dynamics {
 
 CylinderShape::CylinderShape(double _radius, double _height)
-  : Shape(CYLINDER),
+  : Shape(),
     mRadius(_radius),
     mHeight(_height) {
   assert(0.0 < _radius);
   assert(0.0 < _height);
   _updateBoundingBoxDim();
   updateVolume();
+}
+
+//==============================================================================
+const std::string& CylinderShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& CylinderShape::getStaticType()
+{
+  static const std::string type("CylinderShape");
+  return type;
 }
 
 double CylinderShape::getRadius() const {

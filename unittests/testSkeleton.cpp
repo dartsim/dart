@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -1262,6 +1257,16 @@ TEST(Skeleton, Updating)
   screw->setPitch(3);
   J0f = screw->getRelativeJacobian();
   EXPECT_FALSE(equals(J0i, J0f));
+
+  // Regression test for Pull Request #731
+  const double originalMass = skeleton->getMass();
+  BodyNode* lastBn = skeleton->getBodyNode(skeleton->getNumBodyNodes()-1);
+  const double removedMass = lastBn->getMass();
+  EXPECT_FALSE(removedMass == 0.0);
+  lastBn->remove();
+  const double newMass = skeleton->getMass();
+  EXPECT_FALSE(originalMass == newMass);
+  EXPECT_TRUE(newMass == originalMass - removedMass);
 }
 
 int main(int argc, char* argv[])

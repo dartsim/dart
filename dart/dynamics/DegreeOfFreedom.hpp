@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -50,8 +45,6 @@ namespace dynamics {
 class Skeleton;
 class Joint;
 class BodyNode;
-class SingleDofJoint;
-template<std::size_t> class MultiDofJoint;
 
 /// DegreeOfFreedom class is a proxy class for accessing single degrees of
 /// freedom (aka generalized coordinates) of the Skeleton.
@@ -60,8 +53,7 @@ class DegreeOfFreedom : public virtual common::Subject
 public:
 
   friend class Joint;
-  friend class SingleDofJoint;
-  template<std::size_t> friend class MultiDofJoint;
+  template<class> friend class GenericJoint;
   friend class Skeleton;
 
   DegreeOfFreedom(const DegreeOfFreedom&) = delete;
@@ -78,9 +70,9 @@ public:
   ///
   /// DegreeOfFreedom's name will be automatically given by the joint it belongs
   /// to. Below is the naming policy:
-  ///   - SingleDofJoint \n
+  ///   - GenericJoint<RealSpace> \n
   ///       Same name as the joint it belongs to.
-  ///   - MultiDofJoint \n
+  ///   - GenericJoint<[multi_dof_joint_space]> \n
   ///       "[Joint_name]+[affix]" is used. The affix is determined according
   ///       to the role they play in the joint. For example, suppose there's a
   ///       TranslationalJoint named "trans_joint". Then the each dof to be

@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -618,6 +613,107 @@ TEST_F(COLLISION, SimpleFrames)
 
   auto dart = DARTCollisionDetector::create();
   testSimpleFrames(dart);
+}
+
+//==============================================================================
+void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
+                      double tol = 1e-12)
+{
+  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+
+  ShapePtr shape1(new SphereShape(1.0));
+  ShapePtr shape2(new SphereShape(0.5));
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+
+  auto group1 = cd->createCollisionGroup(simpleFrame1.get());
+  auto group2 = cd->createCollisionGroup(simpleFrame2.get());
+
+  EXPECT_EQ(group1->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group2->getNumShapeFrames(), 1u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  result.clear();
+  EXPECT_FALSE(group1->collide(group2.get(), option, &result));
+  EXPECT_TRUE(result.getNumContacts() == 0u);
+
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(1.5, 0.0, 0.0));
+  result.clear();
+  EXPECT_TRUE(group1->collide(group2.get(), option, &result));
+  EXPECT_TRUE(result.getNumContacts() == 1u);
+  EXPECT_TRUE(result.getContact(0).point.isApprox(
+                Eigen::Vector3d(1.0, 0.0, 0.0), tol));
+  if (cd->getType() == FCLCollisionDetector::getStaticType()
+      && static_cast<FCLCollisionDetector*>(cd.get())->getPrimitiveShapeType()
+         == FCLCollisionDetector::MESH)
+  {
+    EXPECT_TRUE(result.getContact(0).normal.isApprox(
+                  -Eigen::Vector3d::UnitX(), tol * 1e+12));
+    // FCL returns less accurate contact normals for sphere-sphere since we're
+    // using sphere-like rough meshes instead of analytical sphere shapes.
+  }
+  else
+  {
+    EXPECT_TRUE(result.getContact(0).normal.isApprox(
+                  -Eigen::Vector3d::UnitX(), tol));
+  }
+
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d::Zero());
+  result.clear();
+  if (cd->getType() == FCLCollisionDetector::getStaticType())
+  {
+    EXPECT_FALSE(group1->collide(group2.get(), option, &result));
+    // FCL is not able to detect collisions when an object completely (strictly)
+    // contanins the other object (no collisions between the hulls)
+  }
+  else
+  {
+    EXPECT_TRUE(group1->collide(group2.get(), option, &result));
+    EXPECT_TRUE(result.getNumContacts() == 1u);
+  }
+  // The positions of contact point are different depending on the collision
+  // detector. More comprehensive tests need to be added.
+}
+
+//==============================================================================
+TEST_F(COLLISION, SphereSphere)
+{
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testSphereSphere(fcl_mesh_dart);
+
+  // auto fcl_prim_fcl = FCLCollisionDetector::create();
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testSphereSphere(fcl_prim_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testSphereSphere(fcl_mesh_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testSphereSphere(fcl_mesh_fcl);
+
+#if HAVE_BULLET_COLLISION
+  auto bullet = BulletCollisionDetector::create();
+  testSphereSphere(bullet);
+#endif
+
+  auto dart = DARTCollisionDetector::create();
+  testSphereSphere(dart);
 }
 
 //==============================================================================

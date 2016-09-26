@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -50,9 +45,9 @@
 #include "dart/common/Uri.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
@@ -810,7 +805,16 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
 
     // geometry
     tinyxml2::XMLElement* geometryEle = getElement(softShapeEle, "geometry");
-    if (hasElement(geometryEle, "box"))
+    if (hasElement(geometryEle, "sphere"))
+    {
+      tinyxml2::XMLElement* sphereEle = getElement(geometryEle, "sphere");
+      const auto radius  = getValueDouble(sphereEle, "radius");
+      const auto nSlices = getValueUInt(sphereEle, "num_slices");
+      const auto nStacks = getValueUInt(sphereEle, "num_stacks");
+      softProperties = dynamics::SoftBodyNodeHelper::makeSphereProperties(
+            radius, nSlices, nStacks, totalMass);
+    }
+    else if (hasElement(geometryEle, "box"))
     {
       tinyxml2::XMLElement* boxEle = getElement(geometryEle, "box");
       Eigen::Vector3d size  = getValueVector3d(boxEle, "size");
@@ -822,8 +826,8 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
     {
       tinyxml2::XMLElement* ellipsoidEle = getElement(geometryEle, "ellipsoid");
       Eigen::Vector3d size = getValueVector3d(ellipsoidEle, "size");
-      double nSlices       = getValueDouble(ellipsoidEle, "num_slices");
-      double nStacks       = getValueDouble(ellipsoidEle, "num_stacks");
+      const auto nSlices   = getValueUInt(ellipsoidEle, "num_slices");
+      const auto nStacks   = getValueUInt(ellipsoidEle, "num_stacks");
       softProperties = dynamics::SoftBodyNodeHelper::makeEllipsoidProperties(
             size, nSlices, nStacks, totalMass);
     }
@@ -877,22 +881,21 @@ dynamics::ShapePtr readShape(
   assert(hasElement(_shapelement, "geometry"));
   tinyxml2::XMLElement* geometryElement = getElement(_shapelement, "geometry");
 
-  if (hasElement(geometryElement, "box"))
+  if (hasElement(geometryElement, "sphere"))
+  {
+    tinyxml2::XMLElement* sphereElement = getElement(geometryElement, "sphere");
+
+    const auto radius = getValueDouble(sphereElement, "radius");
+
+    newShape = dynamics::ShapePtr(new dynamics::SphereShape(radius));
+  }
+  else if (hasElement(geometryElement, "box"))
   {
     tinyxml2::XMLElement* boxElement = getElement(geometryElement, "box");
 
     Eigen::Vector3d size = getValueVector3d(boxElement, "size");
 
     newShape = dynamics::ShapePtr(new dynamics::BoxShape(size));
-  }
-  else if (hasElement(geometryElement, "sphere"))
-  {
-    tinyxml2::XMLElement* ellipsoidElement = getElement(geometryElement, "sphere");
-
-    double radius = getValueDouble(ellipsoidElement, "radius");
-    Eigen::Vector3d size(radius * 2, radius * 2, radius * 2);
-
-    newShape = dynamics::ShapePtr(new dynamics::EllipsoidShape(size));
   }
   else if (hasElement(geometryElement, "cylinder"))
   {
@@ -1308,11 +1311,11 @@ dynamics::RevoluteJoint::Properties readRevoluteJoint(
 
     readAxisElement(axisElement, _parentModelFrame,
                     newRevoluteJoint.mAxis,
-                    newRevoluteJoint.mPositionLowerLimit,
-                    newRevoluteJoint.mPositionUpperLimit,
-                    newRevoluteJoint.mInitialPosition,
-                    newRevoluteJoint.mRestPosition,
-                    newRevoluteJoint.mDampingCoefficient);
+                    newRevoluteJoint.mPositionLowerLimits[0],
+                    newRevoluteJoint.mPositionUpperLimits[0],
+                    newRevoluteJoint.mInitialPositions[0],
+                    newRevoluteJoint.mRestPositions[0],
+                    newRevoluteJoint.mDampingCoefficients[0]);
   }
   else
   {
@@ -1340,11 +1343,11 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
 
     readAxisElement(axisElement, _parentModelFrame,
                     newPrismaticJoint.mAxis,
-                    newPrismaticJoint.mPositionLowerLimit,
-                    newPrismaticJoint.mPositionUpperLimit,
-                    newPrismaticJoint.mInitialPosition,
-                    newPrismaticJoint.mRestPosition,
-                    newPrismaticJoint.mDampingCoefficient);
+                    newPrismaticJoint.mPositionLowerLimits[0],
+                    newPrismaticJoint.mPositionUpperLimits[0],
+                    newPrismaticJoint.mInitialPositions[0],
+                    newPrismaticJoint.mRestPositions[0],
+                    newPrismaticJoint.mDampingCoefficients[0]);
   }
   else
   {
@@ -1372,11 +1375,11 @@ dynamics::ScrewJoint::Properties readScrewJoint(
 
     readAxisElement(axisElement, _parentModelFrame,
                     newScrewJoint.mAxis,
-                    newScrewJoint.mPositionLowerLimit,
-                    newScrewJoint.mPositionUpperLimit,
-                    newScrewJoint.mInitialPosition,
-                    newScrewJoint.mRestPosition,
-                    newScrewJoint.mDampingCoefficient);
+                    newScrewJoint.mPositionLowerLimits[0],
+                    newScrewJoint.mPositionUpperLimits[0],
+                    newScrewJoint.mInitialPositions[0],
+                    newScrewJoint.mRestPositions[0],
+                    newScrewJoint.mDampingCoefficients[0]);
   }
   else
   {

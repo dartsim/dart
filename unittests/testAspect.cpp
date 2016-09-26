@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -744,48 +739,48 @@ TEST(Aspect, Joints)
 
   dart::dynamics::EulerJoint* euler =
       skel->createJointAndBodyNodePair<dart::dynamics::EulerJoint>().first;
-  euler->getMultiDofJointAspect();
+  euler->getGenericJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   euler->getEulerJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::PlanarJoint* planar =
       skel->createJointAndBodyNodePair<dart::dynamics::PlanarJoint>().first;
-  planar->getMultiDofJointAspect();
+  planar->getGenericJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   planar->getPlanarJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::PrismaticJoint* prismatic =
       skel->createJointAndBodyNodePair<dart::dynamics::PrismaticJoint>().first;
-  prismatic->getSingleDofJointAspect();
+  prismatic->getGenericJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   prismatic->getPrismaticJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::RevoluteJoint* revolute =
       skel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>().first;
-  revolute->getSingleDofJointAspect();
+  revolute->getGenericJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   revolute->getRevoluteJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::ScrewJoint* screw =
       skel->createJointAndBodyNodePair<dart::dynamics::ScrewJoint>().first;
-  screw->getSingleDofJointAspect();
+  screw->getGenericJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   screw->getScrewJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   dart::dynamics::UniversalJoint* universal =
       skel->createJointAndBodyNodePair<dart::dynamics::UniversalJoint>().first;
-  universal->getMultiDofJointAspect();
+  universal->getGenericJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
   universal->getUniversalJointAspect();
   EXPECT_TRUE(usedSpecializedAspectAccess); usedSpecializedAspectAccess = false;
 
   // Regression test for issue #645
-  universal->getMultiDofJointAspect(true);
+  universal->getGenericJointAspect(true);
 }
 
 TEST(Aspect, BodyNodes)

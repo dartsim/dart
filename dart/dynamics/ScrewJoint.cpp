@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -54,8 +49,8 @@ ScrewJoint::~ScrewJoint()
 //==============================================================================
 void ScrewJoint::setProperties(const Properties& _properties)
 {
-  SingleDofJoint::setProperties(
-        static_cast<const SingleDofJoint::Properties&>(_properties));
+  GenericJoint<math::R1Space>::setProperties(
+        static_cast<const GenericJoint<math::R1Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -75,7 +70,7 @@ void ScrewJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 ScrewJoint::Properties ScrewJoint::getScrewJointProperties() const
 {
-  return Properties(getSingleDofJointProperties(), mAspectProperties);
+  return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -159,13 +154,32 @@ double ScrewJoint::getPitch() const
 }
 
 //==============================================================================
+GenericJoint<math::R1Space>::JacobianMatrix
+ScrewJoint::getRelativeJacobianStatic(
+    const GenericJoint<math::R1Space>::Vector& /*positions*/) const
+{
+  using namespace dart::math::suffixes;
+
+  Eigen::Vector6d S = Eigen::Vector6d::Zero();
+  S.head<3>() = getAxis();
+  S.tail<3>() = getAxis() * getPitch() * 0.5_pi;
+
+  GenericJoint<math::R1Space>::JacobianMatrix jacobian
+      = math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint, S);
+
+  assert(!math::isNan(jacobian));
+
+  return jacobian;
+}
+
+//==============================================================================
 ScrewJoint::ScrewJoint(const Properties& properties)
   : detail::ScrewJointBase(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createScrewJointAspect(properties);
-  createSingleDofJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 
@@ -173,6 +187,14 @@ ScrewJoint::ScrewJoint(const Properties& properties)
 Joint* ScrewJoint::clone() const
 {
   return new ScrewJoint(getScrewJointProperties());
+}
+
+//==============================================================================
+void ScrewJoint::updateDegreeOfFreedomNames()
+{
+  // Same name as the joint it belongs to.
+  if (!mDofs[0]->isNamePreserved())
+    mDofs[0]->setName(Joint::mAspectProperties.mName, false);
 }
 
 //==============================================================================
@@ -184,7 +206,7 @@ void ScrewJoint::updateRelativeTransform() const
   S.head<3>() = getAxis();
   S.tail<3>() = getAxis()*getPitch()*0.5_pi;
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
-       * math::expMap(S * getPositionStatic())
+       * math::expMap(S * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
   assert(math::verifyTransform(mT));
 }
@@ -192,16 +214,8 @@ void ScrewJoint::updateRelativeTransform() const
 //==============================================================================
 void ScrewJoint::updateRelativeJacobian(bool _mandatory) const
 {
-  using namespace dart::math::suffixes;
-
   if(_mandatory)
-  {
-    Eigen::Vector6d S = Eigen::Vector6d::Zero();
-    S.head<3>() = getAxis();
-    S.tail<3>() = getAxis()*getPitch()*0.5_pi;
-    mJacobian = math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint, S);
-    assert(!math::isNan(mJacobian));
-  }
+    mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================

@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -37,18 +31,31 @@
 
 #include "dart/dynamics/Shape.hpp"
 
+#include "dart/common/Console.hpp"
+
 #define PRIMITIVE_MAGIC_NUMBER 1000
 
 namespace dart {
 namespace dynamics {
+
 //==============================================================================
-Shape::Shape(ShapeType _type)
+Shape::Shape(ShapeType /*_type*/)
   : mBoundingBox(),
     mVolume(0.0),
     mID(mCounter++),
-    mVariance(STATIC),
-    mType(_type)
+    mVariance(STATIC)
 {
+  // Do nothing
+}
+
+//==============================================================================
+Shape::Shape()
+  : mBoundingBox(),
+    mVolume(0.0),
+    mID(mCounter++),
+    mVariance(STATIC)
+{
+  // Do nothing
 }
 
 //==============================================================================
@@ -61,6 +68,18 @@ Shape::~Shape()
 const math::BoundingBox& Shape::getBoundingBox() const
 {
     return mBoundingBox;
+}
+
+//==============================================================================
+Eigen::Matrix3d Shape::computeInertiaFromDensity(double density) const
+{
+  return computeInertiaFromMass(density * getVolume());
+}
+
+//==============================================================================
+Eigen::Matrix3d Shape::computeInertiaFromMass(double mass) const
+{
+  return computeInertia(mass);
 }
 
 //==============================================================================
@@ -78,7 +97,12 @@ int Shape::getID() const
 //==============================================================================
 Shape::ShapeType Shape::getShapeType() const
 {
-  return mType;
+  dtwarn << "[Shape::getShapeType] This function is deprecated since DART 6.1 "
+         << "with Shape::ShapeType, and this won't work as expected. Please "
+         << "consider using Shape::getType() or [ShapeClass]::getStaticType() "
+         << "instead for the type checking.\n";
+
+  return static_cast<ShapeType>(0);
 }
 
 //==============================================================================

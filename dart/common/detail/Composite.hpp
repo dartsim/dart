@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -166,21 +161,28 @@ void createAspects(T* comp)
 //==============================================================================
 // Create non-template alternatives to Composite functions
 #define DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR( TypeName, AspectName )\
+  /** Check if this Composite currently has AspectName. */\
   inline bool has ## AspectName () const\
   {\
     return this->template has<TypeName>();\
   }\
 \
+  /** Get a(an) AspectName from this Composite. */\
   inline TypeName * get ## AspectName ()\
   {\
     return this->template get<TypeName>();\
   }\
 \
+  /** Get a(an) AspectName from this Composite. */\
   inline const TypeName* get ## AspectName () const\
   {\
     return this->template get<TypeName>();\
   }\
 \
+  /**
+    Get a(an) AspectName from this Composite. If _createIfNull is true, then
+    a(an) AspectName will be generated if one does not already exist.
+   */\
   inline TypeName * get ## AspectName (const bool createIfNull)\
   {\
     TypeName* aspect = get ## AspectName();\
@@ -191,27 +193,44 @@ void createAspects(T* comp)
     return aspect;\
   }\
 \
+  /**
+    Make a clone of AspectName and place the clone into this Composite. If
+    a(an) AspectName already exists in this Composite, the existing AspectName
+    will be destroyed.
+   */\
   inline void set ## AspectName (const TypeName * aspect)\
   {\
     this->template set<TypeName>(aspect);\
   }\
 \
+  /**
+    Use move semantics to place AspectName into this Composite. If a(an)
+    AspectName already exists in this Composite, the existing AspectName will be
+    destroyed.
+   */\
   inline void set ## AspectName (std::unique_ptr< TypeName >&& aspect)\
   {\
     this->template set<TypeName>(std::move(aspect));\
   }\
 \
+  /** Construct a(an) AspectName inside of this Composite. */\
   template <typename ...Args>\
   inline TypeName * create ## AspectName (Args&&... args)\
   {\
     return this->template createAspect<TypeName>(std::forward<Args>(args)...);\
   }\
 \
+  /** Remove a(an) AspectName from this Composite. */\
   inline void remove ## AspectName ()\
   {\
     this->template removeAspect<TypeName>();\
   }\
 \
+  /**
+    Remove a(an) AspectName from this Composite, but return its unique_ptr
+    instead of letting it be deleted. This allows you to safely use move
+    semantics to transfer a(an) AspectName between two Composites.
+   */\
   inline std::unique_ptr< TypeName > release ## AspectName ()\
   {\
     return this->template releaseAspect<TypeName>();\

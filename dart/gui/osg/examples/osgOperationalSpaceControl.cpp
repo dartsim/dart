@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -77,7 +71,7 @@ public:
     Eigen::Isometry3d tf = mEndEffector->getWorldTransform();
     tf.pretranslate(mOffset);
     mTarget = std::make_shared<SimpleFrame>(Frame::World(), "target", tf);
-    ShapePtr ball(new EllipsoidShape(Eigen::Vector3d(0.05,0.05,0.05)));
+    ShapePtr ball(new SphereShape(0.025));
     mTarget->setShape(ball);
     mTarget->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9,0,0));
     mWorld->addSimpleFrame(mTarget);

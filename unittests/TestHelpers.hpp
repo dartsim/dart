@@ -4,12 +4,6 @@
  *
  * Author(s): Can Erdogan <cerdogan3@gatech.edu>,
  *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
- *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
@@ -126,9 +120,9 @@ std::pair<Joint*, BodyNode*> add1DofJoint(SkeletonPtr skel,
     BodyNode* parent, const BodyNode::Properties& node,
     const std::string& name, double val, double min, double max, int type)
 {
-  SingleDofJoint::Properties properties(name);
-  properties.mPositionLowerLimit = min;
-  properties.mPositionUpperLimit = max;
+  GenericJoint<R1Space>::Properties properties(name);
+  properties.mPositionLowerLimits[0] = min;
+  properties.mPositionUpperLimits[0] = max;
   std::pair<Joint*, BodyNode*> newComponent;
   if(DOF_X == type)
     newComponent = skel->createJointAndBodyNodePair<PrismaticJoint>(parent,
@@ -421,7 +415,7 @@ SkeletonPtr createObject(
 {
   double mass = 1.0;
 
-  MultiDofJoint<6>::Properties joint(std::string("joint1"));
+  GenericJoint<SE3Space>::Properties joint(std::string("joint1"));
 
   BodyNode::Properties node(BodyNode::AspectProperties(std::string("link1")));
   node.mInertia.setMass(mass);

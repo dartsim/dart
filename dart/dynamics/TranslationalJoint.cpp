@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -46,8 +41,8 @@ namespace dynamics {
 
 //==============================================================================
 TranslationalJoint::Properties::Properties(
-    const MultiDofJoint<3>::Properties& _properties)
-  : MultiDofJoint<3>::Properties(_properties)
+    const Base::Properties& _properties)
+  : Base::Properties(_properties)
 {
   // Do nothing
 }
@@ -67,18 +62,19 @@ Eigen::Matrix<double, 6, 3> TranslationalJoint::getRelativeJacobianStatic(
 }
 
 //==============================================================================
-TranslationalJoint::Properties TranslationalJoint::getTranslationalJointProperties() const
+TranslationalJoint::Properties
+TranslationalJoint::getTranslationalJointProperties() const
 {
-  return getMultiDofJointProperties();
+  return getGenericJointProperties();
 }
 
 //==============================================================================
 TranslationalJoint::TranslationalJoint(const Properties& properties)
-  : MultiDofJoint<3>(properties)
+  : Base(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
-  createMultiDofJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 

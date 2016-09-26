@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -49,9 +44,12 @@
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
@@ -396,107 +394,122 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
   using dynamics::Shape;
+  using dynamics::SphereShape;
   using dynamics::BoxShape;
   using dynamics::EllipsoidShape;
   using dynamics::CylinderShape;
+  using dynamics::CapsuleShape;
+  using dynamics::ConeShape;
   using dynamics::PlaneShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
 
+  const auto& shapeType = shape->getType();
   btCollisionShape* bulletCollisionShape = nullptr;
 
-  switch (shape->getShapeType())
+  if (SphereShape::getStaticType() == shapeType)
   {
-    case Shape::BOX:
-    {
-      assert(dynamic_cast<const BoxShape*>(shape.get()));
+    assert(dynamic_cast<const SphereShape*>(shape.get()));
 
-      const auto box = static_cast<const BoxShape*>(shape.get());
-      const Eigen::Vector3d& size = box->getSize();
+    const auto sphere = static_cast<const SphereShape*>(shape.get());
+    const auto radius = sphere->getRadius();
 
-      bulletCollisionShape = new btBoxShape(convertVector3(size*0.5));
+    bulletCollisionShape = new btSphereShape(radius);
+  }
+  else if (BoxShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const BoxShape*>(shape.get()));
 
-      break;
-    }
-    case Shape::ELLIPSOID:
-    {
-      assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
+    const auto box = static_cast<const BoxShape*>(shape.get());
+    const Eigen::Vector3d& size = box->getSize();
 
-      const auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
-      const Eigen::Vector3d& size = ellipsoid->getSize();
+    bulletCollisionShape = new btBoxShape(convertVector3(size*0.5));
+  }
+  else if (EllipsoidShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
 
-      if (ellipsoid->isSphere())
-      {
-        bulletCollisionShape = new btSphereShape(size[0] * 0.5);
-      }
-      else
-      {
-        bulletCollisionShape = createBulletEllipsoidMesh(
-              size[0], size[1], size[2]);
-      }
+    const auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
+    const Eigen::Vector3d& size = ellipsoid->getSize();
 
-      break;
-    }
-    case Shape::CYLINDER:
-    {
-      assert(dynamic_cast<const CylinderShape*>(shape.get()));
+    bulletCollisionShape = createBulletEllipsoidMesh(
+          size[0], size[1], size[2]);
+  }
+  else if (CylinderShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const CylinderShape*>(shape.get()));
 
-      const auto cylinder = static_cast<const CylinderShape*>(shape.get());
-      const auto radius = cylinder->getRadius();
-      const auto height = cylinder->getHeight();
-      const auto size = btVector3(radius, radius, height * 0.5);
+    const auto cylinder = static_cast<const CylinderShape*>(shape.get());
+    const auto radius = cylinder->getRadius();
+    const auto height = cylinder->getHeight();
+    const auto size = btVector3(radius, radius, height * 0.5);
 
-      bulletCollisionShape = new btCylinderShapeZ(size);
+    bulletCollisionShape = new btCylinderShapeZ(size);
+  }
+  else if (CapsuleShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const CapsuleShape*>(shape.get()));
 
-      break;
-    }
-    case Shape::PLANE:
-    {
-      assert(dynamic_cast<const PlaneShape*>(shape.get()));
+    const auto capsule = static_cast<const CapsuleShape*>(shape.get());
+    const auto radius = capsule->getRadius();
+    const auto height = capsule->getHeight();
 
-      const auto plane = static_cast<const PlaneShape*>(shape.get());
-      const Eigen::Vector3d normal = plane->getNormal();
-      const double offset = plane->getOffset();
+    bulletCollisionShape = new btCapsuleShapeZ(radius, height);
+  }
+  else if (ConeShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const ConeShape*>(shape.get()));
 
-      bulletCollisionShape = new btStaticPlaneShape(
-            convertVector3(normal), offset);
+    const auto cone = static_cast<const ConeShape*>(shape.get());
+    const auto radius = cone->getRadius();
+    const auto height = cone->getHeight();
 
-      break;
-    }
-    case Shape::MESH:
-    {
-      assert(dynamic_cast<const MeshShape*>(shape.get()));
+    bulletCollisionShape = new btConeShapeZ(radius, height);
+    bulletCollisionShape->setMargin(0.0);
+    // TODO(JS): Bullet seems to use constant margin 0.4, however this could be
+    // dangerous when the cone is sufficiently small. We use zero margin here
+    // until find better solution even using zero margin is not recommended:
+    // https://www.sjbaker.org/wiki/index.php?title=Physics_-_Bullet_Collected_random_advice#Minimum_object_sizes_-_by_Erwin
+  }
+  else if (PlaneShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const PlaneShape*>(shape.get()));
 
-      const auto shapeMesh = static_cast<const MeshShape*>(shape.get());
-      const auto scale = shapeMesh->getScale();
-      const auto mesh = shapeMesh->getMesh();
+    const auto plane = static_cast<const PlaneShape*>(shape.get());
+    const Eigen::Vector3d normal = plane->getNormal();
+    const double offset = plane->getOffset();
 
-      bulletCollisionShape = createBulletCollisionShapeFromAssimpScene(
-            scale, mesh);
+    bulletCollisionShape = new btStaticPlaneShape(
+          convertVector3(normal), offset);
+  }
+  else if (MeshShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const MeshShape*>(shape.get()));
 
-      break;
-    }
-    case Shape::SOFT_MESH:
-    {
-      assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
+    const auto shapeMesh = static_cast<const MeshShape*>(shape.get());
+    const auto scale = shapeMesh->getScale();
+    const auto mesh = shapeMesh->getMesh();
 
-      const auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
-      const auto mesh = softMeshShape->getAssimpMesh();
+    bulletCollisionShape = createBulletCollisionShapeFromAssimpScene(
+          scale, mesh);
+  }
+  else if (SoftMeshShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
 
-      bulletCollisionShape = createBulletCollisionShapeFromAssimpMesh(mesh);
+    const auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
+    const auto mesh = softMeshShape->getAssimpMesh();
 
-      break;
-    }
-    default:
-    {
-      dterr << "[BulletCollisionObjectData::init] "
-            << "Attempting to create unsupported shape type '"
-            << shape->getShapeType() << "'.\n";
+    bulletCollisionShape = createBulletCollisionShapeFromAssimpMesh(mesh);
+  }
+  else
+  {
+    dterr << "[BulletCollisionDetector::createBulletCollisionShape] "
+          << "Attempting to create an unsupported shape type ["
+          << shapeType << "] Creating a sphere with 0.1 radius "
+          << "instead.\n";
 
-      bulletCollisionShape = new btSphereShape(0.1);
-
-      break;
-    }
+    bulletCollisionShape = new btSphereShape(0.1);
   }
 
   return bulletCollisionShape;
@@ -517,7 +530,7 @@ Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
   Contact contact;
 
   contact.point = convertVector3(bulletManifoldPoint.getPositionWorldOnA());
-  contact.normal = convertVector3(-bulletManifoldPoint.m_normalWorldOnB);
+  contact.normal = convertVector3(bulletManifoldPoint.m_normalWorldOnB);
   contact.penetrationDepth = -bulletManifoldPoint.m_distance1;
   contact.collisionObject1 = userData1->collisionObject;
   contact.collisionObject2 = userData2->collisionObject;

@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -40,13 +35,14 @@
 
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Geometry.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-BallJoint::Properties::Properties(const MultiDofJoint<3>::Properties& _properties)
-  : MultiDofJoint<3>::Properties(_properties)
+BallJoint::Properties::Properties(const Base::Properties& properties)
+  : Base::Properties(properties)
 {
   // Do nothing
 }
@@ -80,7 +76,7 @@ bool BallJoint::isCyclic(std::size_t _index) const
 //==============================================================================
 BallJoint::Properties BallJoint::getBallJointProperties() const
 {
-  return getMultiDofJointProperties();
+  return getGenericJointProperties();
 }
 
 //==============================================================================
@@ -98,14 +94,14 @@ Eigen::Matrix3d BallJoint::convertToRotation(const Eigen::Vector3d& _positions)
 
 //==============================================================================
 BallJoint::BallJoint(const Properties& properties)
-  : MultiDofJoint<3>(properties),
+  : Base(properties),
     mR(Eigen::Isometry3d::Identity())
 {
   mJacobianDeriv = Eigen::Matrix<double, 6, 3>::Zero();
 
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
-  createMultiDofJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 
@@ -167,7 +163,10 @@ void BallJoint::updateRelativeTransform() const
 void BallJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if (_mandatory)
-    mJacobian = math::getAdTMatrix(Joint::mAspectProperties.mT_ChildBodyToJoint).leftCols<3>();
+  {
+    mJacobian = math::getAdTMatrix(
+          Joint::mAspectProperties.mT_ChildBodyToJoint).leftCols<3>();
+  }
 }
 
 //==============================================================================

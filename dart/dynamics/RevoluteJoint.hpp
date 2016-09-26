@@ -1,13 +1,8 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -95,6 +90,10 @@ public:
   ///
   const Eigen::Vector3d& getAxis() const;
 
+  // Documentation inherited
+  GenericJoint<math::R1Space>::JacobianMatrix getRelativeJacobianStatic(
+      const GenericJoint<math::R1Space>::Vector& positions) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -102,6 +101,9 @@ protected:
 
   // Documentation inherited
   Joint* clone() const override;
+
+  // Documentation inherited
+  void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited
   void updateRelativeTransform() const override;
