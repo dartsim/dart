@@ -42,22 +42,33 @@ class DistanceFilter;
 
 struct DistanceOption
 {
-  /// Whether to return the nearest points
+  /// Whether to calculate the nearest points.
+  ///
+  /// The default is false.
+  /// \sa DistanceResult::nearestPoint1, DistanceResult::nearestPoint2
   bool enableNearestPoints;
 
-  /// Stopping criteria for further distance check in broadphase. The distance
-  /// check stop as soon as a distance equal to or less than this value is
-  /// found.
-  double minimumDistanceThreshold;
+  /// Stopping criteria for distance calculation in broadphase.
+  ///
+  /// This option is used for early termination of distance calculate that stops
+  /// as soon as a distance is found that is equal to or less than the lower
+  /// bound. If you want to check all the shape pairs without the early
+  /// termination then set this value to -inf.
+  ///
+  /// The default value is 0.0.
+  double distanceLowerBound;
 
-  /// Filter for excluding pairs of ShapeFrames from distance check. If nullptr,
-  /// every pairs of ShapeFrames in the CollisionGroup(s) are checked.
+  /// Distance filter for excluding ShapeFrame pairs from distance calculation
+  /// in broadphase.
+  ///
+  /// If nullptr, every pairs of ShapeFrames in the CollisionGroup(s) are
+  /// checked. The default is nullptr. \sa DistanceFilter
   std::shared_ptr<DistanceFilter> distanceFilter;
 
   /// Constructor
   DistanceOption(
       bool enableNearestPoints = false,
-      double minimumDistanceThreshold = 0.0,
+      double distanceLowerBound = 0.0,
       const std::shared_ptr<DistanceFilter>& distanceFilter = nullptr);
 };
 

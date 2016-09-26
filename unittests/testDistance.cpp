@@ -66,7 +66,7 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd,
   collision::DistanceOption option;
   option.enableNearestPoints = true;
   EXPECT_TRUE(option.enableNearestPoints == true);
-  EXPECT_TRUE(option.minimumDistanceThreshold == 0.0);
+  EXPECT_TRUE(option.distanceLowerBound == 0.0);
   EXPECT_TRUE(option.distanceFilter == nullptr);
 
   collision::DistanceResult result;
@@ -76,7 +76,7 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd,
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
   simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
   group1->distance(group2.get(), option, &result);
-  EXPECT_DOUBLE_EQ(result.minimumDistance, 0.0);
+  EXPECT_DOUBLE_EQ(result.minDistance, 0.0);
   EXPECT_TRUE(result.shapeFrame1 == simpleFrame1.get()
               || result.shapeFrame1 == simpleFrame2.get());
   EXPECT_TRUE(result.shapeFrame2 == simpleFrame1.get()
@@ -91,7 +91,7 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd,
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
   simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
   group12->distance(option, &result);
-  EXPECT_DOUBLE_EQ(result.minimumDistance, 0.0);
+  EXPECT_DOUBLE_EQ(result.minDistance, 0.0);
   EXPECT_TRUE(result.shapeFrame1 == simpleFrame1.get()
               || result.shapeFrame1 == simpleFrame2.get());
   EXPECT_TRUE(result.shapeFrame2 == simpleFrame1.get()
@@ -106,7 +106,7 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd,
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
   simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
   cd->distance(group1.get(), group2.get(), option, &result);
-  EXPECT_DOUBLE_EQ(result.minimumDistance, 0.0);
+  EXPECT_DOUBLE_EQ(result.minDistance, 0.0);
   EXPECT_TRUE(result.shapeFrame1 == simpleFrame1.get()
               || result.shapeFrame1 == simpleFrame2.get());
   EXPECT_TRUE(result.shapeFrame2 == simpleFrame1.get()
@@ -172,7 +172,7 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd,
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
   simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
   group12->distance(option, &result);
-  EXPECT_DOUBLE_EQ(result.minimumDistance, 0.0);
+  EXPECT_DOUBLE_EQ(result.minDistance, 0.0);
   EXPECT_TRUE(result.shapeFrame1 == simpleFrame1.get()
               || result.shapeFrame1 == simpleFrame2.get());
   EXPECT_TRUE(result.shapeFrame2 == simpleFrame1.get()
@@ -186,7 +186,7 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd,
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
   simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
   group12->distance(option, &result);
-  EXPECT_DOUBLE_EQ(result.minimumDistance, 0.0);
+  EXPECT_DOUBLE_EQ(result.minDistance, 0.0);
   EXPECT_TRUE(result.shapeFrame1 == simpleFrame1.get()
               || result.shapeFrame1 == simpleFrame2.get());
   EXPECT_TRUE(result.shapeFrame2 == simpleFrame1.get()
@@ -202,7 +202,7 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd,
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
   simpleFrame2->setTranslation(Eigen::Vector3d(1.0, 0.0, 0.0));
   group12->distance(option, &result);
-  EXPECT_DOUBLE_EQ(result.minimumDistance, 0.25);
+  EXPECT_DOUBLE_EQ(result.minDistance, 0.25);
   EXPECT_TRUE(result.shapeFrame1 == simpleFrame1.get()
               || result.shapeFrame1 == simpleFrame2.get());
   EXPECT_TRUE(result.shapeFrame2 == simpleFrame1.get()
@@ -265,7 +265,7 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
   simpleFrame1->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
   simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
   group12->distance(option, &result);
-  EXPECT_DOUBLE_EQ(result.minimumDistance, 0.0);
+  EXPECT_DOUBLE_EQ(result.minDistance, 0.0);
   EXPECT_TRUE(result.shapeFrame1 == simpleFrame1.get()
               || result.shapeFrame1 == simpleFrame2.get());
   EXPECT_TRUE(result.shapeFrame2 == simpleFrame1.get()

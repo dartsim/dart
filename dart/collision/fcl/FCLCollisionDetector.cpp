@@ -211,6 +211,10 @@ struct FCLDistanceCallbackData
   /// Distance option of DART
   const DistanceOption& option;
 
+  /// Minimum distance identical to DistanceResult::minDistnace if result is not
+  /// nullptr.
+  double unclampedMinDistance;
+
   /// Distance result of DART
   DistanceResult* result;
 
@@ -756,7 +760,7 @@ bool FCLCollisionDetector::collide(
 }
 
 //==============================================================================
-void FCLCollisionDetector::distance(
+double FCLCollisionDetector::distance(
     CollisionGroup* group,
     const DistanceOption& option,
     DistanceResult* result)
@@ -765,7 +769,7 @@ void FCLCollisionDetector::distance(
     result->clear();
 
   if (!checkGroupValidity(this, group))
-    return;
+    return 0.0;
 
   auto casted = static_cast<FCLCollisionGroup*>(group);
   casted->updateEngineData();
@@ -774,11 +778,11 @@ void FCLCollisionDetector::distance(
 
   casted->getFCLCollisionManager()->distance(&distData, distanceCallback);
 
-  return;
+  return std::max(distData.unclampedMinDistance, option.distanceLowerBound);
 }
 
 //==============================================================================
-void FCLCollisionDetector::distance(
+double FCLCollisionDetector::distance(
     CollisionGroup* group1,
     CollisionGroup* group2,
     const DistanceOption& option,
@@ -788,10 +792,10 @@ void FCLCollisionDetector::distance(
     result->clear();
 
   if (!checkGroupValidity(this, group1))
-    return;
+    return 0.0;
 
   if (!checkGroupValidity(this, group2))
-    return;
+    return 0.0;
 
   auto casted1 = static_cast<FCLCollisionGroup*>(group1);
   auto casted2 = static_cast<FCLCollisionGroup*>(group2);
@@ -805,7 +809,7 @@ void FCLCollisionDetector::distance(
 
   broadPhaseAlg1->distance(broadPhaseAlg2, &distData, distanceCallback);
 
-  return;
+  return std::max(distData.unclampedMinDistance, option.distanceLowerBound);
 }
 
 //==============================================================================
@@ -1148,7 +1152,7 @@ bool distanceCallback(
 
   if (distData->done)
   {
-    dist = fclResult.min_distance;
+    dist = distData->unclampedMinDistance;
     return true;
   }
 
@@ -1177,12 +1181,13 @@ bool distanceCallback(
   // Perform narrow-phase check
   fcl::distance(o1, o2, fclRequest, fclResult);
 
+  // Store the minimum distance just in case result is nullptr.
+  distData->unclampedMinDistance = fclResult.min_distance;
+
   if (result)
     interpreteDistanceResult(fclResult, o1, o2, option, *result);
-  // TODO(JS): Not sure if nullptr result would make any sense for distance
-  // check
 
-  if (dist <= option.minimumDistanceThreshold)
+  if (distData->unclampedMinDistance <= option.distanceLowerBound)
     distData->done = true;
 
   return distData->done;
@@ -1446,7 +1451,9 @@ void interpreteDistanceResult(
     const DistanceOption& option,
     DistanceResult& result)
 {
-  result.minimumDistance = fclResult.min_distance;
+  result.unclampedMinDistance = fclResult.min_distance;
+  result.minDistance
+      = std::max(fclResult.min_distance, option.distanceLowerBound);
 
   const auto* userData1
       = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());

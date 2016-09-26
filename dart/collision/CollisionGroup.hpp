@@ -182,33 +182,31 @@ public:
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr);
 
-  /// Measure the minimum signed distance between two Shapes of ShapeFrames in
-  /// this CollisionGroup, and store which ShapeFrames are. The results are
-  /// stored in the given DistanceResult.
+  /// Get the minimum signed distance between the Shape pairs in this
+  /// CollisionGroup.
   ///
-  /// The minimum signed distance meaning can be varied depending on the
-  /// DistanceOption::minimumDistanceThreshold passing in. By default, the
-  /// minimum signed distance means either of the non-negative minimum positive
-  /// (when there are no penetrations between shapes) or the firstly found
-  /// negative distance (penetration). Please see DistanceOption for the details
-  /// and other options.
-  void distance(
+  /// The detailed results are stored in the given DistanceResult if provided.
+  ///
+  /// The results can be different by DistanceOption. By default, non-negative
+  /// minimum distance (distance >= 0) is returned for all the shape pairs
+  /// without computing nearest points.
+  double distance(
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr);
 
-  /// Measure the minimum signed distance between two Shapes of ShapeFrames one
-  /// from this CollisionGroup and one from other CollisionGroup, and store
-  /// which ShapeFrames are. Note that the distance between ShapeFrames within
-  /// the same CollisionGroup are note measured. The results are stored in the
-  /// given DistanceResult.
+  /// Get the minimum signed distance between the Shape pairs where a pair
+  /// consist of two shapes from each groups (one from this CollisionGroup and
+  /// one from otherGroup).
   ///
-  /// The minimum signed distance meaning can be varied depending on the
-  /// DistanceOption::minimumDistanceThreshold passing in. By default, the
-  /// minimum signed distance means either of the non-negative minimum positive
-  /// (when there are no penetrations between shapes) or the firstly found
-  /// negative distance (penetration). Please see DistanceOption for the details
-  /// and other options.
-  void distance(
+  /// Note that the distance between shapes within the same CollisionGroup
+  /// are not accounted.
+  ///
+  /// The detailed results are stored in the given DistanceResult if provided.
+  ///
+  /// The results can be different by DistanceOption. By default, non-negative
+  /// minimum distance (distance >= 0) is returned for all the shape pairs
+  /// without computing nearest points.
+  double distance(
       CollisionGroup* otherGroup,
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr);

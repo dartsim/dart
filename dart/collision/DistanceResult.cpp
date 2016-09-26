@@ -31,12 +31,16 @@
 
 #include "dart/collision/DistanceResult.hpp"
 
+#define DART_DEFAULT_MIN_DISTANCE (0.0)
+#define DART_DEFAULT_UNCLAMPED_MIN_DISTANCE (0.0)
+
 namespace dart {
 namespace collision {
 
 //==============================================================================
 DistanceResult::DistanceResult()
-  : minimumDistance(0.0),
+  : minDistance(DART_DEFAULT_MIN_DISTANCE),
+    unclampedMinDistance(0.0),
     shapeFrame1(nullptr),
     shapeFrame2(nullptr),
     nearestPoint1(Eigen::Vector3d::Zero()),
@@ -48,7 +52,8 @@ DistanceResult::DistanceResult()
 //==============================================================================
 void DistanceResult::clear()
 {
-  minimumDistance = 0.0;
+  minDistance = DART_DEFAULT_MIN_DISTANCE;
+  unclampedMinDistance = DART_DEFAULT_UNCLAMPED_MIN_DISTANCE;
 
   nearestPoint1.setZero();
   nearestPoint2.setZero();
@@ -64,6 +69,12 @@ bool DistanceResult::found() const
     return false;
 
   return true;
+}
+
+//==============================================================================
+bool DistanceResult::isMinDistanceClamped() const
+{
+  return found() && (minDistance == unclampedMinDistance);
 }
 
 }  // namespace collision

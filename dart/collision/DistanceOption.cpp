@@ -37,10 +37,10 @@ namespace collision {
 //==============================================================================
 DistanceOption::DistanceOption(
     bool enableNearestPoints,
-    double minimumDistance,
+    double minDistance,
     const std::shared_ptr<DistanceFilter>& distanceFilter)
   : enableNearestPoints(enableNearestPoints),
-    minimumDistanceThreshold(minimumDistance),
+    distanceLowerBound(minDistance),
     distanceFilter(distanceFilter)
 {
   // Do nothing
