@@ -128,6 +128,24 @@ public:
   /// Gets a string representing the joint type
   virtual const std::string& getType() const = 0;
 
+  /// Get true if the types of this Joint and the template parameter (a joint
+  /// class) are identical. This function is a syntactic sugar, which is
+  /// identical to: (getType() == JointT::getStaticType()).
+  ///
+  /// Example code:
+  /// \code
+  /// auto joint = bodyNode->getParentJoint();
+  /// if (joint->is<RevolutionJoint>())
+  ///   std::cout << "The joint type is RevolutionJoint!\n";
+  /// \endcode
+  ///
+  /// \sa getType()
+  template <typename JointT>
+  bool is() const
+  {
+    return (getType() == JointT::getStaticType());
+  }
+
   /// Set actuator type
   void setActuatorType(ActuatorType _actuatorType);
 
