@@ -29,12 +29,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RESULT_HPP_
-#define DART_COLLISION_RESULT_HPP_
+#include "dart/collision/DistanceResult.hpp"
 
-#warning "This header has been deprecated in DART 6.1. "\
-  "Please include CollisionResult.hpp intead."
+namespace dart {
+namespace collision {
 
-#include "dart/collision/CollisionResult.hpp"
+//==============================================================================
+DistanceResult::DistanceResult()
+  : minimumDistance(0.0),
+    shapeFrame1(nullptr),
+    shapeFrame2(nullptr),
+    nearestPoint1(Eigen::Vector3d::Zero()),
+    nearestPoint2(Eigen::Vector3d::Zero())
+{
+  // Do nothing
+}
 
-#endif  // DART_COLLISION_RESULT_HPP_
+//==============================================================================
+void DistanceResult::clear()
+{
+  minimumDistance = 0.0;
+
+  nearestPoint1.setZero();
+  nearestPoint2.setZero();
+
+  shapeFrame1 = nullptr;
+  shapeFrame2 = nullptr;
+}
+
+//==============================================================================
+bool DistanceResult::found() const
+{
+  if (!shapeFrame1 || !shapeFrame2)
+    return false;
+
+  return true;
+}
+
+}  // namespace collision
+}  // namespace dart

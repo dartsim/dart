@@ -29,12 +29,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RESULT_HPP_
-#define DART_COLLISION_RESULT_HPP_
+#ifndef DART_COLLISION_DISTANCEFILTER_HPP_
+#define DART_COLLISION_DISTANCEFILTER_HPP_
 
-#warning "This header has been deprecated in DART 6.1. "\
-  "Please include CollisionResult.hpp intead."
+namespace dart {
 
-#include "dart/collision/CollisionResult.hpp"
+namespace dynamics {
+class BodyNode;
+}  // namespace dynamics
 
-#endif  // DART_COLLISION_RESULT_HPP_
+namespace collision {
+
+class CollisionObject;
+
+struct DistanceFilter
+{
+  virtual bool needDistance(const CollisionObject* object1,
+                             const CollisionObject* object2) const = 0;
+};
+
+struct BodyNodeDistanceFilter : DistanceFilter
+{
+  bool needDistance(const CollisionObject* object1,
+                    const CollisionObject* object2) const override;
+
+  bool areAdjacentBodies(const dynamics::BodyNode* bodyNode1,
+                         const dynamics::BodyNode* bodyNode2) const;
+};
+
+}  // namespace collision
+}  // namespace dart
+
+#endif  // DART_COLLISION_DISTANCEFILTER_HPP_

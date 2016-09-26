@@ -36,6 +36,7 @@
 #include <fcl/collision.h>
 #include <fcl/collision_object.h>
 #include <fcl/collision_data.h>
+#include <fcl/distance.h>
 #include <fcl/BVH/BVH_model.h>
 #include <fcl/broadphase/broadphase.h>
 #include <fcl/shape/geometric_shapes.h>
@@ -44,6 +45,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/DistanceFilter.hpp"
 #include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 #include "dart/collision/fcl/FCLCollisionGroup.hpp"
@@ -66,6 +68,12 @@ namespace {
 bool collisionCallback(
     fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata);
 
+bool distanceCallback(
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2,
+    void* cdata,
+    fcl::FCL_REAL& dist);
+
 void postProcessFCL(
     const fcl::CollisionResult& fclResult,
     fcl::CollisionObject* o1,
@@ -79,6 +87,13 @@ void postProcessDART(
     fcl::CollisionObject* o2,
     const CollisionOption& option,
     CollisionResult& result);
+
+void interpreteDistanceResult(
+    const fcl::DistanceResult& fclResult,
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2,
+    const DistanceOption& option,
+    DistanceResult& result);
 
 int evalContactPosition(const fcl::Contact& fclContact,
     const fcl::BVHModel<fcl::OBBRSS>* mesh1,
@@ -114,7 +129,10 @@ int FFtest(
 double triArea(fcl::Vec3f& p1, fcl::Vec3f& p2, fcl::Vec3f& p3);
 
 void convertOption(
-    const CollisionOption& fclOption, fcl::CollisionRequest& request);
+    const CollisionOption& option, fcl::CollisionRequest& request);
+
+void convertOption(
+    const DistanceOption& option, fcl::DistanceRequest& request);
 
 Contact convertContact(
     const fcl::Contact& fclContact,
@@ -179,6 +197,33 @@ struct FCLCollisionCallbackData
                                             option.maxNumContacts);
     // Since some contact points can be filtered out in the post process, we ask
     // more than the demend. 100 is randomly picked.
+  }
+};
+
+struct FCLDistanceCallbackData
+{
+  /// FCL distance request
+  fcl::DistanceRequest fclRequest;
+
+  /// FCL distance result
+  fcl::DistanceResult fclResult;
+
+  /// Distance option of DART
+  const DistanceOption& option;
+
+  /// Distance result of DART
+  DistanceResult* result;
+
+  /// @brief Whether the distance iteration can stop
+  bool done;
+
+  FCLDistanceCallbackData(
+      const DistanceOption& option, DistanceResult* result)
+    : option(option),
+      result(result),
+      done(false)
+  {
+    convertOption(option, fclRequest);
   }
 };
 
@@ -711,6 +756,59 @@ bool FCLCollisionDetector::collide(
 }
 
 //==============================================================================
+void FCLCollisionDetector::distance(
+    CollisionGroup* group,
+    const DistanceOption& option,
+    DistanceResult* result)
+{
+  if (result)
+    result->clear();
+
+  if (!checkGroupValidity(this, group))
+    return;
+
+  auto casted = static_cast<FCLCollisionGroup*>(group);
+  casted->updateEngineData();
+
+  FCLDistanceCallbackData distData(option, result);
+
+  casted->getFCLCollisionManager()->distance(&distData, distanceCallback);
+
+  return;
+}
+
+//==============================================================================
+void FCLCollisionDetector::distance(
+    CollisionGroup* group1,
+    CollisionGroup* group2,
+    const DistanceOption& option,
+    DistanceResult* result)
+{
+  if (result)
+    result->clear();
+
+  if (!checkGroupValidity(this, group1))
+    return;
+
+  if (!checkGroupValidity(this, group2))
+    return;
+
+  auto casted1 = static_cast<FCLCollisionGroup*>(group1);
+  auto casted2 = static_cast<FCLCollisionGroup*>(group2);
+  casted1->updateEngineData();
+  casted2->updateEngineData();
+
+  FCLDistanceCallbackData distData(option, result);
+
+  auto broadPhaseAlg1 = casted1->getFCLCollisionManager();
+  auto broadPhaseAlg2 = casted2->getFCLCollisionManager();
+
+  broadPhaseAlg1->distance(broadPhaseAlg2, &distData, distanceCallback);
+
+  return;
+}
+
+//==============================================================================
 void FCLCollisionDetector::setPrimitiveShapeType(
     FCLCollisionDetector::PrimitiveShape type)
 {
@@ -1034,6 +1132,63 @@ bool collisionCallback(
 }
 
 //==============================================================================
+bool distanceCallback(
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2,
+    void* ddata,
+    fcl::FCL_REAL& dist)
+{
+  auto* distData = static_cast<FCLDistanceCallbackData*>(ddata);
+
+  const auto& fclRequest = distData->fclRequest;
+        auto& fclResult  = distData->fclResult;
+        auto* result     = distData->result;
+  const auto& option     = distData->option;
+  const auto& filter     = option.distanceFilter;
+
+  if (distData->done)
+  {
+    dist = fclResult.min_distance;
+    return true;
+  }
+
+  // Filtering
+  if (filter)
+  {
+    auto userData1
+        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
+    auto userData2
+        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
+    assert(userData1);
+    assert(userData2);
+
+    auto collisionObject1 = userData1->mCollisionObject;
+    auto collisionObject2 = userData2->mCollisionObject;
+    assert(collisionObject1);
+    assert(collisionObject2);
+
+    if (!filter->needDistance(collisionObject2, collisionObject1))
+      return distData->done;
+  }
+
+  // Clear previous results
+  fclResult.clear();
+
+  // Perform narrow-phase check
+  fcl::distance(o1, o2, fclRequest, fclResult);
+
+  if (result)
+    interpreteDistanceResult(fclResult, o1, o2, option, *result);
+  // TODO(JS): Not sure if nullptr result would make any sense for distance
+  // check
+
+  if (dist <= option.minimumDistanceThreshold)
+    distData->done = true;
+
+  return distData->done;
+}
+
+//==============================================================================
 Eigen::Vector3d getDiff(const Contact& contact1, const Contact& contact2)
 {
   return contact1.point - contact2.point;
@@ -1284,6 +1439,37 @@ void postProcessDART(
 }
 
 //==============================================================================
+void interpreteDistanceResult(
+    const fcl::DistanceResult& fclResult,
+    fcl::CollisionObject* o1,
+    fcl::CollisionObject* o2,
+    const DistanceOption& option,
+    DistanceResult& result)
+{
+  result.minimumDistance = fclResult.min_distance;
+
+  const auto* userData1
+      = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
+  const auto* userData2
+      = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
+  assert(userData1);
+  assert(userData2);
+  assert(userData1->mCollisionObject);
+  assert(userData2->mCollisionObject);
+
+  result.shapeFrame1 = userData1->mCollisionObject->getShapeFrame();
+  result.shapeFrame2 = userData2->mCollisionObject->getShapeFrame();
+
+  if (option.enableNearestPoints)
+  {
+    result.nearestPoint1
+        = FCLTypes::convertVector3(fclResult.nearest_points[0]);
+    result.nearestPoint2
+        = FCLTypes::convertVector3(fclResult.nearest_points[1]);
+  }
+}
+
+//==============================================================================
 int evalContactPosition(
     const fcl::Contact& fclContact,
     const fcl::BVHModel<fcl::OBBRSS>* mesh1,
@@ -1408,13 +1594,19 @@ bool isColinear(const T& pos1, const T& pos2, const T& pos3, double tol)
 }
 
 //==============================================================================
-void convertOption(const CollisionOption& fclOption, fcl::CollisionRequest& request)
+void convertOption(const CollisionOption& option, fcl::CollisionRequest& request)
 {
-  request.num_max_contacts = fclOption.maxNumContacts;
-  request.enable_contact   = fclOption.enableContact;
+  request.num_max_contacts = option.maxNumContacts;
+  request.enable_contact   = option.enableContact;
 #if FCL_VERSION_AT_LEAST(0,3,0)
   request.gjk_solver_type  = fcl::GST_LIBCCD;
 #endif
+}
+
+//==============================================================================
+void convertOption(const DistanceOption& option, fcl::DistanceRequest& request)
+{
+  request.enable_nearest_points = option.enableNearestPoints;
 }
 
 //==============================================================================

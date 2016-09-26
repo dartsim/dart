@@ -71,6 +71,19 @@ public:
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr) override;
 
+  // Documentation inherited
+  void distance(
+      CollisionGroup* group,
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr) override;
+
+  // Documentation inherited
+  void distance(
+      CollisionGroup* group1,
+      CollisionGroup* group2,
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr) override;
+
 protected:
 
   /// Constructor

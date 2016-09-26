@@ -35,8 +35,10 @@
 #include <map>
 #include <vector>
 #include "dart/collision/SmartPointer.hpp"
-#include "dart/collision/Option.hpp"
-#include "dart/collision/Result.hpp"
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/DistanceOption.hpp"
+#include "dart/collision/DistanceResult.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
@@ -176,9 +178,40 @@ public:
   /// Return false if the engine type of the other CollisionGroup is different
   /// from this CollisionObject engine.
   bool collide(
-      CollisionGroup* group,
+      CollisionGroup* otherGroup,
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr);
+
+  /// Measure the minimum signed distance between two Shapes of ShapeFrames in
+  /// this CollisionGroup, and store which ShapeFrames are. The results are
+  /// stored in the given DistanceResult.
+  ///
+  /// The minimum signed distance meaning can be varied depending on the
+  /// DistanceOption::minimumDistanceThreshold passing in. By default, the
+  /// minimum signed distance means either of the non-negative minimum positive
+  /// (when there are no penetrations between shapes) or the firstly found
+  /// negative distance (penetration). Please see DistanceOption for the details
+  /// and other options.
+  void distance(
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr);
+
+  /// Measure the minimum signed distance between two Shapes of ShapeFrames one
+  /// from this CollisionGroup and one from other CollisionGroup, and store
+  /// which ShapeFrames are. Note that the distance between ShapeFrames within
+  /// the same CollisionGroup are note measured. The results are stored in the
+  /// given DistanceResult.
+  ///
+  /// The minimum signed distance meaning can be varied depending on the
+  /// DistanceOption::minimumDistanceThreshold passing in. By default, the
+  /// minimum signed distance means either of the non-negative minimum positive
+  /// (when there are no penetrations between shapes) or the firstly found
+  /// negative distance (penetration). Please see DistanceOption for the details
+  /// and other options.
+  void distance(
+      CollisionGroup* otherGroup,
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr);
 
 protected:
 

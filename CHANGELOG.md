@@ -5,6 +5,7 @@
 * Collision detection
 
   * Fixed direction of contact normal of BulletCollisionDetector: [#763](https://github.com/dartsim/dart/pull/763)
+  * Added distance API: [#744](https://github.com/dartsim/dart/pull/744)
 
 * Dynamics
 
@@ -23,8 +24,8 @@
 
   * Fixed Doxyfile to show missing member functions in API documentation: [#768](https://github.com/dartsim/dart/pull/768)
   * Made building with SIMD optional: [#765](https://github.com/dartsim/dart/pull/765), [#760](https://github.com/dartsim/dart/pull/760)
-  * Added `virtual Shape::getType()` and deprecated `ShapeType Shpae::getShapeType()`: [#724](https://github.com/dartsim/dart/pull/724)
   * Fixed typo: [#756](https://github.com/dartsim/dart/pull/756), [#755](https://github.com/dartsim/dart/pull/755)
+  * Added `virtual Shape::getType()` and deprecated `ShapeType Shape::getShapeType()`: [#724](https://github.com/dartsim/dart/pull/724)
 
 ### DART 6.0.1 (2016-XX-XX)
 

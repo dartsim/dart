@@ -29,12 +29,39 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RESULT_HPP_
-#define DART_COLLISION_RESULT_HPP_
+#ifndef DART_COLLISION_DISTANCE_OPTION_HPP_
+#define DART_COLLISION_DISTANCE_OPTION_HPP_
 
-#warning "This header has been deprecated in DART 6.1. "\
-  "Please include CollisionResult.hpp intead."
+#include <cstddef>
+#include <memory>
 
-#include "dart/collision/CollisionResult.hpp"
+namespace dart {
+namespace collision {
 
-#endif  // DART_COLLISION_RESULT_HPP_
+class DistanceFilter;
+
+struct DistanceOption
+{
+  /// Whether to return the nearest points
+  bool enableNearestPoints;
+
+  /// Stopping criteria for further distance check in broadphase. The distance
+  /// check stop as soon as a distance equal to or less than this value is
+  /// found.
+  double minimumDistanceThreshold;
+
+  /// Filter for excluding pairs of ShapeFrames from distance check. If nullptr,
+  /// every pairs of ShapeFrames in the CollisionGroup(s) are checked.
+  std::shared_ptr<DistanceFilter> distanceFilter;
+
+  /// Constructor
+  DistanceOption(
+      bool enableNearestPoints = false,
+      double minimumDistanceThreshold = 0.0,
+      const std::shared_ptr<DistanceFilter>& distanceFilter = nullptr);
+};
+
+}  // namespace collision
+}  // namespace dart
+
+#endif  // DART_COLLISION_DISTANCE_OPTION_HPP_

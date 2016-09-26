@@ -29,9 +29,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/Result.hpp"
-#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionResult.hpp"
 
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/BodyNode.hpp"

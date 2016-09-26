@@ -29,12 +29,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RESULT_HPP_
-#define DART_COLLISION_RESULT_HPP_
+#ifndef DART_COLLISION_DISTANCE_RESULT_HPP_
+#define DART_COLLISION_DISTANCE_RESULT_HPP_
 
-#warning "This header has been deprecated in DART 6.1. "\
-  "Please include CollisionResult.hpp intead."
+#include <Eigen/Dense>
 
-#include "dart/collision/CollisionResult.hpp"
+namespace dart {
 
-#endif  // DART_COLLISION_RESULT_HPP_
+namespace dynamics {
+class ShapeFrame;
+} // namesapce dynamics
+
+namespace collision {
+
+struct DistanceResult
+{
+  /// Minimum "singed" distance between two Shapes. If the two Shapes are in
+  /// collision, the distance is negative.
+  ///
+  /// The minimum signed distance meaning can be varied depending on the
+  /// DistanceOption::minimumDistance. Please see
+  /// DistanceOption::minimumDistanceThreshold for further details.
+  double minimumDistance;
+
+  /// First ShapeFrame
+  const dynamics::ShapeFrame* shapeFrame1;
+
+  /// Second ShapeFrame
+  const dynamics::ShapeFrame* shapeFrame2;
+
+  /// The nearest point on shapeFrame1 w.r.t. the world coordinates. The point
+  /// is calculated only when DistanceOption::enableNearestPoints is true, which
+  /// is false by default.
+  Eigen::Vector3d nearestPoint1;
+
+  /// The nearest point on shapeFrame2 w.r.t. the world coordinates. The point
+  /// is calculated only when DistanceOption::enableNearestPoints is true, which
+  /// is false by default.
+  Eigen::Vector3d nearestPoint2;
+
+  /// Constructor
+  DistanceResult();
+
+  /// Clear (initialize) the result
+  void clear();
+
+  /// Return true if the result is valid
+  bool found() const;
+};
+
+}  // namespace collision
+}  // namespace dart
+
+#endif  // DART_COLLISION_DISTANCE_RESULT_HPP_
