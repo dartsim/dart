@@ -34,15 +34,22 @@
 
 const double DefaultBlockLength = 0.5;
 const double DefaultBlockWidth = 0.05;
-const double DefaultJointRadius = DefaultBlockWidth/2.0;
+const double DefaultJointRadius = 1.5*DefaultBlockWidth/2.0;
 const double BalsaWoodDensity = 0.16*10e3; // kg/m^3
 const double DefaultBlockMass = BalsaWoodDensity * DefaultBlockLength * pow(DefaultBlockWidth,2);
+const double DefaultDamping = 0.4;
 
-const Eigen::Vector4d DefaultNewColor = dart::Color::Orange(1.0);
-const Eigen::Vector4d DefaultSimulationColor = dart::Color::Blue(1.0);
-const Eigen::Vector4d DefaultPausedColor = Eigen::Vector4d(1.0, 1.0, 0.0, 1.0);
+const Eigen::Vector4d DefaultSimulationColor = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0);
+const Eigen::Vector4d DefaultPausedColor = Eigen::Vector4d(0xEE, 0xC9, 0x00, 0.0)/255.0 + Eigen::Vector4d(0,0,0,1.0);
 const Eigen::Vector4d DefaultSelectedColor = dart::Color::Red(1.0);
-const Eigen::Vector4d DefaultForceColor = dart::Color::Fuchsia(1.0);
+const Eigen::Vector4d DefaultForceBodyColor = dart::Color::Fuchsia(1.0);
+const Eigen::Vector4d DefaultForceLineColor = Eigen::Vector4d(1.0, 0.63, 0.0, 1.0);
+
+const double MaxForce = 200.0;
+const double DefaultForceCoeff = 100.0;
+const double MaxForceCoeff = 1000.0;
+const double MinForceCoeff = 10.0;
+const double ForceIncrement = 10.0;
 
 //==============================================================================
 class TinkertoyWorldNode : public dart::gui::osg::WorldNode
@@ -50,10 +57,126 @@ class TinkertoyWorldNode : public dart::gui::osg::WorldNode
 public:
 
   TinkertoyWorldNode(const dart::simulation::WorldPtr& world)
-    : dart::gui::osg::WorldNode(world)
+    : dart::gui::osg::WorldNode(world),
+      mForceCoeff(DefaultForceCoeff),
+      mWasSimulating(false)
   {
     createShapes();
     createInitialToy();
+    createForceLine();
+
+    mTarget = std::make_shared<dart::gui::osg::InteractiveFrame>(
+          dart::dynamics::Frame::World());
+    getWorld()->addSimpleFrame(mTarget);
+  }
+
+  void setAllBodyColors(const Eigen::Vector4d& color)
+  {
+    for(size_t i=0; i < getWorld()->getNumSkeletons(); ++i)
+    {
+      const dart::dynamics::SkeletonPtr& skel = getWorld()->getSkeleton(i);
+      for(size_t j=0; j < skel->getNumBodyNodes(); ++j)
+      {
+        dart::dynamics::BodyNode* bn = skel->getBodyNode(j);
+        for(size_t k=0; k < bn->getNumShapeNodes(); ++k)
+          bn->getShapeNode(k)->getVisualAspect()->setColor(color);
+      }
+    }
+  }
+
+  void setPickedNodeColor(const Eigen::Vector4d& color)
+  {
+    if(!mPickedNode)
+      return;
+
+    for(size_t i=0; i < mPickedNode->getNumShapeNodes(); ++i)
+      mPickedNode->getShapeNode(i)->getVisualAspect()->setColor(color);
+  }
+
+  void resetForceLine()
+  {
+    if(mPickedNode)
+    {
+      mForceLine->setVertex(0, mPickedNode->getWorldTransform()*mPickedPoint);
+      mForceLine->setVertex(1, mTarget->getWorldTransform().translation());
+    }
+    else
+    {
+      mForceLine->setVertex(0, Eigen::Vector3d::Zero());
+      mForceLine->setVertex(1, Eigen::Vector3d::Zero());
+    }
+  }
+
+  void customPreRefresh() override
+  {
+    if(isSimulating())
+    {
+      setAllBodyColors(DefaultSimulationColor);
+      setPickedNodeColor(DefaultForceBodyColor);
+    }
+    else
+    {
+      setAllBodyColors(DefaultPausedColor);
+      setPickedNodeColor(DefaultSelectedColor);
+    }
+
+    resetForceLine();
+  }
+
+  void customPreStep() override
+  {
+    for(size_t i=0; i < getWorld()->getNumSkeletons(); ++i)
+      getWorld()->getSkeleton(i)->clearExternalForces();
+
+    if(mPickedNode)
+    {
+      Eigen::Vector3d F = mForceCoeff *
+          (mTarget->getWorldTransform().translation()
+           - mPickedNode->getWorldTransform()*mPickedPoint);
+
+      const double F_norm = F.norm();
+      if(F_norm > MaxForce)
+        F = MaxForce*F/F_norm;
+
+      mPickedNode->addExtForce(F, mPickedPoint);
+    }
+  }
+
+  void handlePick(const dart::gui::osg::PickInfo& pick)
+  {
+    dart::dynamics::BodyNode* bn = dynamic_cast<dart::dynamics::BodyNode*>(
+          pick.frame->getParentFrame());
+
+    if(!bn)
+      return;
+
+    mPickedNode = bn;
+    mPickedPoint = bn->getWorldTransform().inverse() * pick.position;
+
+    Eigen::Isometry3d tf = bn->getWorldTransform();
+    tf.translation() = pick.position +
+        pick.normal.normalized()*DefaultBlockWidth/2.0;
+
+    mTarget->setTransform(tf);
+  }
+
+  void clearPick()
+  {
+    mPickedNode = nullptr;
+    mTarget->setTransform(Eigen::Isometry3d::Identity());
+  }
+
+  void deletePick()
+  {
+    if(!mPickedNode)
+      return;
+
+    dart::dynamics::SkeletonPtr temporary = mPickedNode->remove();
+    for(size_t i=0; i < temporary->getNumBodyNodes(); ++i)
+      mViewer->disableDragAndDrop(mViewer->enableDragAndDrop(
+                                    temporary->getBodyNode(i)));
+
+    clearPick();
   }
 
   void createShapes()
@@ -77,7 +200,7 @@ public:
   void createRevoluteJointShape()
   {
     mRevoluteJointShape = std::make_shared<dart::dynamics::CylinderShape>(
-          DefaultJointRadius, DefaultBlockWidth);
+          DefaultJointRadius, 1.5*DefaultBlockWidth);
 
     mRevoluteJointShape->addDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
   }
@@ -102,7 +225,6 @@ public:
     mBlockOffset = Eigen::Isometry3d::Identity();
     mBlockOffset.translation()[0] = DefaultBlockLength/2.0;
   }
-
 
   template<class JointType>
   std::pair<JointType*, dart::dynamics::BodyNode*> addBlock(
@@ -129,19 +251,19 @@ public:
     joint->setName("joint_#" + std::to_string(skel->getNumJoints()));
 
     joint->setTransformFromParentBodyNode(relTf);
+    for(size_t i=0; i < joint->getNumDofs(); ++i)
+      joint->getDof(i)->setDampingCoefficient(DefaultDamping);
 
-    dart::dynamics::ShapeNode* j_node = bn->createShapeNodeWith<
+    bn->createShapeNodeWith<
         dart::dynamics::VisualAspect,
         dart::dynamics::CollisionAspect,
         dart::dynamics::DynamicsAspect>(jointShape);
-    j_node->getVisualAspect()->setColor(DefaultNewColor);
 
     dart::dynamics::ShapeNode* block = bn->createShapeNodeWith<
         dart::dynamics::VisualAspect,
         dart::dynamics::CollisionAspect,
         dart::dynamics::DynamicsAspect>(mBlockShape);
     block->setRelativeTransform(mBlockOffset);
-    block->getVisualAspect()->setColor(DefaultNewColor);
 
     dart::dynamics::Inertia inertia = bn->getInertia();
     inertia.setMass(DefaultBlockMass);
@@ -155,11 +277,29 @@ public:
     return std::make_pair(joint, bn);
   }
 
+  Eigen::Isometry3d getRelTf() const
+  {
+    return mPickedNode? mTarget->getTransform(mPickedNode)
+                      : mTarget->getWorldTransform();
+  }
+
+  void addWeldJointBlock()
+  {
+    addWeldJointBlock(mPickedNode, getRelTf());
+    clearPick();
+  }
+
   dart::dynamics::BodyNode* addWeldJointBlock(
       dart::dynamics::BodyNode* parent, const Eigen::Isometry3d& relTf)
   {
     return addBlock<dart::dynamics::WeldJoint>(
           parent, relTf, mWeldJointShape).second;
+  }
+
+  void addRevoluteJointBlock()
+  {
+    addRevoluteJointBlock(mPickedNode, getRelTf());
+    clearPick();
   }
 
   dart::dynamics::BodyNode* addRevoluteJointBlock(
@@ -170,6 +310,12 @@ public:
 
     pair.first->setAxis(Eigen::Vector3d::UnitZ());
     return pair.second;
+  }
+
+  void addBallJointBlock()
+  {
+    addBallJointBlock(mPickedNode, getRelTf());
+    clearPick();
   }
 
   dart::dynamics::BodyNode* addBallJointBlock(
@@ -198,8 +344,45 @@ public:
 
     tf = Eigen::Isometry3d::Identity();
     tf.translation()[0] = DefaultBlockLength/2.0;
+    tf.translation()[2] = DefaultBlockWidth;
     tf.rotate(Eigen::AngleAxisd(-30.0*M_PI/180.0, Eigen::Vector3d::UnitZ()));
     bn = addBallJointBlock(bn, tf);
+  }
+
+
+  void createForceLine()
+  {
+    dart::dynamics::SimpleFramePtr lineFrame =
+        std::make_shared<dart::dynamics::SimpleFrame>(
+          dart::dynamics::Frame::World());
+
+    mForceLine = std::make_shared<dart::dynamics::LineSegmentShape>(
+          Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), 3.0);
+    mForceLine->addDataVariance(dart::dynamics::Shape::DYNAMIC_VERTICES);
+
+    lineFrame->setShape(mForceLine);
+    lineFrame->createVisualAspect();
+    lineFrame->getVisualAspect()->setColor(DefaultForceLineColor);
+
+    getWorld()->addSimpleFrame(lineFrame);
+  }
+
+  void incrementForceCoeff()
+  {
+    mForceCoeff += ForceIncrement;
+    if(mForceCoeff > MaxForceCoeff)
+      mForceCoeff = MaxForceCoeff;
+
+    std::cout << "[Force Coefficient: " << mForceCoeff << "]" << std::endl;
+  }
+
+  void decrementForceCoeff()
+  {
+    mForceCoeff -= ForceIncrement;
+    if(mForceCoeff < MinForceCoeff)
+      mForceCoeff = MinForceCoeff;
+
+    std::cout << "[Force Coefficient: " << mForceCoeff << "]" << std::endl;
   }
 
 
@@ -207,12 +390,7 @@ protected:
 
   void setupViewer() override
   {
-    for(size_t i=0; i < getWorld()->getNumSkeletons(); ++i)
-    {
-      const dart::dynamics::SkeletonPtr& skel = getWorld()->getSkeleton(i);
-      for(size_t j=0; j < skel->getNumBodyNodes(); ++j)
-        mViewer->enableDragAndDrop(skel->getBodyNode(j));
-    }
+    mViewer->enableDragAndDrop(mTarget.get());
   }
 
   dart::dynamics::ShapePtr mWeldJointShape;
@@ -221,8 +399,14 @@ protected:
   dart::dynamics::ShapePtr mBlockShape;
   Eigen::Isometry3d mBlockOffset;
 
+  dart::dynamics::BodyNode* mPickedNode;
+  Eigen::Vector3d mPickedPoint;
+  dart::gui::osg::InteractiveFramePtr mTarget;
 
+  dart::dynamics::LineSegmentShapePtr mForceLine;
+  double mForceCoeff;
 
+  bool mWasSimulating;
 };
 
 //==============================================================================
@@ -233,23 +417,121 @@ public:
   TinkertoyInputHandler(dart::gui::osg::Viewer* viewer,
                         TinkertoyWorldNode* node)
     : mViewer(viewer),
-      mNode(node)
+      mNode(node),
+      mGravityOn(true)
   {
-    mTarget = std::make_shared<dart::gui::osg::InteractiveFrame>(
-          dart::dynamics::Frame::World());
+    // Do nothing
+  }
 
-    mNode->getWorld()->addSimpleFrame(mTarget);
-    mViewer->enableDragAndDrop(mTarget.get());
+  bool handle(const osgGA::GUIEventAdapter& ea,
+              osgGA::GUIActionAdapter&) override
+  {
+    if(ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
+    {
+      if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Tab)
+      {
+        mViewer->home();
+        return true;
+      }
+      else if(ea.getKey() == '1')
+      {
+        mNode->addWeldJointBlock();
+        return true;
+      }
+      else if(ea.getKey() == '2')
+      {
+        mNode->addRevoluteJointBlock();
+        return true;
+      }
+      else if(ea.getKey() == '3')
+      {
+        mNode->addBallJointBlock();
+        return true;
+      }
+      else if(ea.getKey() == osgGA::GUIEventAdapter::KEY_BackSpace)
+      {
+        mNode->clearPick();
+        return true;
+      }
+      else if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Delete)
+      {
+        mNode->deletePick();
+        return true;
+      }
+      else if(ea.getKey() == 'g')
+      {
+        mGravityOn = !mGravityOn;
+
+        if(mGravityOn)
+        {
+          mNode->getWorld()->setGravity(-9.81*Eigen::Vector3d::UnitZ());
+          std::cout << "[Gravity: On]" << std::endl;
+        }
+        else
+        {
+          mNode->getWorld()->setGravity(Eigen::Vector3d::Zero());
+          std::cout << "[Gravity: Off]" << std::endl;
+        }
+
+        return true;
+      }
+      else if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Up)
+      {
+        mNode->incrementForceCoeff();
+        return true;
+      }
+      else if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Down)
+      {
+        mNode->decrementForceCoeff();
+        return true;
+      }
+    }
+
+    return false;
   }
 
 
-
   dart::gui::osg::Viewer* mViewer;
-  dart::gui::osg::InteractiveFramePtr mTarget;
   TinkertoyWorldNode* mNode;
 
+  bool mGravityOn;
 };
 
+//==============================================================================
+class TinkertoyMouseHandler : public dart::gui::osg::MouseEventHandler
+{
+public:
+
+  TinkertoyMouseHandler(TinkertoyInputHandler* inputHandler)
+    : mInputHandler(inputHandler)
+  {
+    // Do nothing
+  }
+
+  void update() override
+  {
+    dart::gui::osg::Viewer* viewer = mInputHandler->mViewer;
+    TinkertoyWorldNode* node = mInputHandler->mNode;
+
+    dart::gui::osg::MouseButtonEvent event =
+        viewer->getDefaultEventHandler()->
+        getButtonEvent(dart::gui::osg::LEFT_MOUSE);
+
+    if(dart::gui::osg::BUTTON_PUSH == event)
+    {
+      const std::vector<dart::gui::osg::PickInfo>& picks =
+          viewer->getDefaultEventHandler()->getButtonPicks(
+            dart::gui::osg::LEFT_MOUSE, dart::gui::osg::BUTTON_PUSH);
+
+      if(picks.empty())
+        return;
+
+      node->handlePick(picks.front());
+    }
+  }
+
+  TinkertoyInputHandler* mInputHandler;
+};
 
 //==============================================================================
 int main()
@@ -257,12 +539,31 @@ int main()
   // Create a world
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
+  dart::gui::osg::InteractiveFramePtr coordinates =
+      std::make_shared<dart::gui::osg::InteractiveFrame>(
+        dart::dynamics::Frame::World(), "coordinates",
+        Eigen::Isometry3d::Identity(), 0.2);
+
+  for(size_t i=0; i < 3; ++i)
+    for(size_t j=0; j < 3; ++j)
+      coordinates->getTool((dart::gui::osg::InteractiveTool::Type)(i), j)->
+          setEnabled(false);
+
+  world->addSimpleFrame(coordinates);
+
   osg::ref_ptr<TinkertoyWorldNode> node = new TinkertoyWorldNode(world);
   node->setNumStepsPerCycle(20);
 
   dart::gui::osg::Viewer viewer;
   viewer.addWorldNode(node);
-  viewer.addEventHandler(new TinkertoyInputHandler(&viewer, node));
+
+  osg::ref_ptr<TinkertoyInputHandler> input =
+      new TinkertoyInputHandler(&viewer, node);
+  viewer.addEventHandler(input.get());
+
+  std::shared_ptr<TinkertoyMouseHandler> mouse =
+      std::make_shared<TinkertoyMouseHandler>(input);
+  viewer.getDefaultEventHandler()->addMouseEventHandler(mouse.get());
 
   viewer.setUpViewInWindow(0, 0, 640, 480);
 
