@@ -569,6 +569,7 @@ int main()
   // Create a world
   dart::simulation::WorldPtr world(new dart::simulation::World);
 
+  // Create some coordinate axes for the user's reference
   dart::gui::osg::InteractiveFramePtr coordinates =
       std::make_shared<dart::gui::osg::InteractiveFrame>(
         dart::dynamics::Frame::World(), "coordinates",
@@ -581,22 +582,34 @@ int main()
 
   world->addSimpleFrame(coordinates);
 
+  // Create the OSG Node that represents the world
   osg::ref_ptr<TinkertoyWorldNode> node = new TinkertoyWorldNode(world);
   node->setNumStepsPerCycle(20);
 
+  // Create the viewer
   dart::gui::osg::Viewer viewer;
   viewer.addWorldNode(node);
 
+  // Add the keyboard input handler
   osg::ref_ptr<TinkertoyInputHandler> input =
       new TinkertoyInputHandler(&viewer, node);
   viewer.addEventHandler(input.get());
 
+  // Add the mouse input handler
   std::shared_ptr<TinkertoyMouseHandler> mouse =
       std::make_shared<TinkertoyMouseHandler>(input);
   viewer.getDefaultEventHandler()->addMouseEventHandler(mouse.get());
 
+  // Set the dimensions for the window
   viewer.setUpViewInWindow(0, 0, 1280, 960);
 
+  // Set the window name
+  viewer.realize();
+  osgViewer::Viewer::Windows windows;
+  viewer.getWindows(windows);
+  windows.front()->setWindowName("Tinkertoy");
+
+  // Print out instructions for the user
   std::cout << viewer.getInstructions() << std::endl;
 
   std::cout << "Left-click on a block to select it.\n"
@@ -622,5 +635,6 @@ int main()
             << "Collisions between blocks belonging to the same tree will be ignored.\n"
             << std::endl;
 
+  // Run the GUI application
   viewer.run();
 }
