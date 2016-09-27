@@ -285,7 +285,7 @@ public:
     dart::dynamics::Inertia inertia = bn->getInertia();
     inertia.setMass(DefaultBlockMass);
     inertia.setMoment(mBlockShape->computeInertia(DefaultBlockMass));
-    inertia.setLocalCOM(DefaultBlockLength*Eigen::Vector3d::UnitX());
+    inertia.setLocalCOM(DefaultBlockLength/2.0*Eigen::Vector3d::UnitX());
     bn->setInertia(inertia);
 
     getWorld()->getConstraintSolver()->
@@ -595,7 +595,7 @@ int main()
       std::make_shared<TinkertoyMouseHandler>(input);
   viewer.getDefaultEventHandler()->addMouseEventHandler(mouse.get());
 
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+  viewer.setUpViewInWindow(0, 0, 1280, 960);
 
   std::cout << viewer.getInstructions() << std::endl;
 
