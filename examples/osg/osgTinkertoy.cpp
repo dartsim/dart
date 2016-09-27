@@ -33,7 +33,7 @@
 #include <dart/gui/osg/osg.hpp>
 
 const double DefaultBlockLength = 0.5;
-const double DefaultBlockWidth = 0.05;
+const double DefaultBlockWidth = 0.075;
 const double DefaultJointRadius = 1.5*DefaultBlockWidth/2.0;
 const double BalsaWoodDensity = 0.16*10e3; // kg/m^3
 const double DefaultBlockMass = BalsaWoodDensity * DefaultBlockLength * pow(DefaultBlockWidth,2);
@@ -61,13 +61,13 @@ public:
       mForceCoeff(DefaultForceCoeff),
       mWasSimulating(false)
   {
-    createShapes();
-    createInitialToy();
-    createForceLine();
-
     mTarget = std::make_shared<dart::gui::osg::InteractiveFrame>(
           dart::dynamics::Frame::World());
     getWorld()->addSimpleFrame(mTarget);
+
+    createShapes();
+    createInitialToy();
+    createForceLine();
   }
 
   void setAllBodyColors(const Eigen::Vector4d& color)
@@ -125,9 +125,6 @@ public:
 
   void customPreStep() override
   {
-    for(size_t i=0; i < getWorld()->getNumSkeletons(); ++i)
-      getWorld()->getSkeleton(i)->clearExternalForces();
-
     if(mPickedNode)
     {
       Eigen::Vector3d F = mForceCoeff *
@@ -171,10 +168,23 @@ public:
     if(!mPickedNode)
       return;
 
+    if(isSimulating())
+    {
+      std::cout << " -- Please pause simulation [using the Spacebar] before "
+                << "attempting to delete blocks." << std::endl;
+      return;
+    }
+
     dart::dynamics::SkeletonPtr temporary = mPickedNode->remove();
     for(size_t i=0; i < temporary->getNumBodyNodes(); ++i)
+    {
       mViewer->disableDragAndDrop(mViewer->enableDragAndDrop(
                                     temporary->getBodyNode(i)));
+    }
+
+    getWorld()->getConstraintSolver()->getCollisionGroup()->
+        removeShapeFramesOf(temporary.get());
+
 
     clearPick();
   }
@@ -232,6 +242,13 @@ public:
       const Eigen::Isometry3d& relTf,
       const dart::dynamics::ShapePtr& jointShape)
   {
+    if(isSimulating())
+    {
+      std::cout << " -- Please pause simulation [using the Spacebar] before "
+                << "attempting to add new bodies" << std::endl;
+      return std::make_pair(nullptr, nullptr);
+    }
+
     dart::dynamics::SkeletonPtr skel;
     if(parent)
     {
@@ -271,8 +288,10 @@ public:
     inertia.setLocalCOM(DefaultBlockLength*Eigen::Vector3d::UnitX());
     bn->setInertia(inertia);
 
-    if(mViewer)
-      mViewer->enableDragAndDrop(bn);
+    getWorld()->getConstraintSolver()->
+        getCollisionGroup()->addShapeFramesOf(bn);
+
+    clearPick();
 
     return std::make_pair(joint, bn);
   }
@@ -286,7 +305,6 @@ public:
   void addWeldJointBlock()
   {
     addWeldJointBlock(mPickedNode, getRelTf());
-    clearPick();
   }
 
   dart::dynamics::BodyNode* addWeldJointBlock(
@@ -299,7 +317,6 @@ public:
   void addRevoluteJointBlock()
   {
     addRevoluteJointBlock(mPickedNode, getRelTf());
-    clearPick();
   }
 
   dart::dynamics::BodyNode* addRevoluteJointBlock(
@@ -308,14 +325,15 @@ public:
     auto pair = addBlock<dart::dynamics::RevoluteJoint>(
           parent, relTf, mRevoluteJointShape);
 
-    pair.first->setAxis(Eigen::Vector3d::UnitZ());
+    if(pair.first)
+      pair.first->setAxis(Eigen::Vector3d::UnitZ());
+
     return pair.second;
   }
 
   void addBallJointBlock()
   {
     addBallJointBlock(mPickedNode, getRelTf());
-    clearPick();
   }
 
   dart::dynamics::BodyNode* addBallJointBlock(
@@ -383,6 +401,13 @@ public:
       mForceCoeff = MinForceCoeff;
 
     std::cout << "[Force Coefficient: " << mForceCoeff << "]" << std::endl;
+  }
+
+  void reorientTarget()
+  {
+    Eigen::Isometry3d tf = mTarget->getWorldTransform();
+    tf.linear() = Eigen::Matrix3d::Identity();
+    mTarget->setTransform(tf);
   }
 
 
@@ -458,7 +483,7 @@ public:
         mNode->deletePick();
         return true;
       }
-      else if(ea.getKey() == 'g')
+      else if(ea.getKey() == 'g' || ea.getKey() == 'G')
       {
         mGravityOn = !mGravityOn;
 
@@ -483,6 +508,11 @@ public:
       else if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Down)
       {
         mNode->decrementForceCoeff();
+        return true;
+      }
+      else if(ea.getKey() == '`')
+      {
+        mNode->reorientTarget();
         return true;
       }
     }
@@ -566,6 +596,31 @@ int main()
   viewer.getDefaultEventHandler()->addMouseEventHandler(mouse.get());
 
   viewer.setUpViewInWindow(0, 0, 640, 480);
+
+  std::cout << viewer.getInstructions() << std::endl;
+
+  std::cout << "Left-click on a block to select it.\n"
+            << "Press [Backspace] to deselect.\n"
+            << "Press [Tab] to reset the camera view\n"
+            << "Press [`] to reset the orientation of the target\n"
+            << "\n --- While Simulation is Paused ---\n"
+            << "The selected block will be red; all other blocks will be yellow.\n"
+            << "Press [1] -> [3] to attach a new block to the selected block.\n"
+            << "[1]: Attach using a WeldJoint\n"
+            << "[2]: Attach using a RevoluteJoint\n"
+            << "[3]: Attach using a BallJoint\n"
+            << "The longitudinal direction of the new block will be along the x-axis (Red) of the target.\n"
+            << "The joint axis will follow the z-axis (Blue) of the target when making a RevolueJoint.\n"
+            << "Press [Delete] to permanently remove a block and all of its children.\n"
+            << "Adding a block when nothing is currently selected will attach it to the world, beginning a new tree.\n"
+            << "\n --- While Simulation is Active ---\n"
+            << "The selected block will be Fuchsia; all other blocks will be blue.\n"
+            << "Move around the target to pull on the selected block.\n"
+            << "Press [Up] or [Down] to adjust the pulling strength.\n"
+            << "Press [G] to toggle Gravity\n"
+            << "Blocks belonging to different trees can collide with each other during simulation.\n"
+            << "Collisions between blocks belonging to the same tree will be ignored.\n"
+            << std::endl;
 
   viewer.run();
 }
