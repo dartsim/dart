@@ -16,6 +16,8 @@ set(dart_collision_srcs ${srcs} "${dart_collision_srcs};${detail_srcs}" PARENT_S
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision headers" ${hdrs})
+# TODO: remove below line once the files are completely removed.
+list(REMOVE_ITEM header_names "Option.hpp" "Result.hpp")
 set(
   header_names
   ${header_names}

@@ -29,12 +29,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RESULT_HPP_
-#define DART_COLLISION_RESULT_HPP_
+#include "dart/collision/DistanceOption.hpp"
 
-#warning "This header has been deprecated in DART 6.1. "\
-  "Please include CollisionResult.hpp intead."
+namespace dart {
+namespace collision {
 
-#include "dart/collision/CollisionResult.hpp"
+//==============================================================================
+DistanceOption::DistanceOption(
+    bool enableNearestPoints,
+    double minDistance,
+    const std::shared_ptr<DistanceFilter>& distanceFilter)
+  : enableNearestPoints(enableNearestPoints),
+    distanceLowerBound(minDistance),
+    distanceFilter(distanceFilter)
+{
+  // Do nothing
+}
 
-#endif  // DART_COLLISION_RESULT_HPP_
+}  // namespace collision
+}  // namespace dart
