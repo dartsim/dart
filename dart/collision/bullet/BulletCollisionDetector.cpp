@@ -51,6 +51,7 @@
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MultiSphereShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
@@ -426,13 +427,13 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   using dynamics::CapsuleShape;
   using dynamics::ConeShape;
   using dynamics::PlaneShape;
+  using dynamics::MultiSphereShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
 
-  const auto& shapeType = shape->getType();
   btCollisionShape* bulletCollisionShape = nullptr;
 
-  if (SphereShape::getStaticType() == shapeType)
+  if (shape->is<SphereShape>())
   {
     assert(dynamic_cast<const SphereShape*>(shape.get()));
 
@@ -441,7 +442,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
 
     bulletCollisionShape = new btSphereShape(radius);
   }
-  else if (BoxShape::getStaticType() == shapeType)
+  else if (shape->is<BoxShape>())
   {
     assert(dynamic_cast<const BoxShape*>(shape.get()));
 
@@ -450,7 +451,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
 
     bulletCollisionShape = new btBoxShape(convertVector3(size*0.5));
   }
-  else if (EllipsoidShape::getStaticType() == shapeType)
+  else if (shape->is<EllipsoidShape>())
   {
     assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
 
@@ -460,7 +461,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     bulletCollisionShape = createBulletEllipsoidMesh(
           size[0], size[1], size[2]);
   }
-  else if (CylinderShape::getStaticType() == shapeType)
+  else if (shape->is<CylinderShape>())
   {
     assert(dynamic_cast<const CylinderShape*>(shape.get()));
 
@@ -471,7 +472,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
 
     bulletCollisionShape = new btCylinderShapeZ(size);
   }
-  else if (CapsuleShape::getStaticType() == shapeType)
+  else if (shape->is<CapsuleShape>())
   {
     assert(dynamic_cast<const CapsuleShape*>(shape.get()));
 
@@ -481,7 +482,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
 
     bulletCollisionShape = new btCapsuleShapeZ(radius, height);
   }
-  else if (ConeShape::getStaticType() == shapeType)
+  else if (shape->is<ConeShape>())
   {
     assert(dynamic_cast<const ConeShape*>(shape.get()));
 
@@ -496,7 +497,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     // until find better solution even using zero margin is not recommended:
     // https://www.sjbaker.org/wiki/index.php?title=Physics_-_Bullet_Collected_random_advice#Minimum_object_sizes_-_by_Erwin
   }
-  else if (PlaneShape::getStaticType() == shapeType)
+  else if (shape->is<PlaneShape>())
   {
     assert(dynamic_cast<const PlaneShape*>(shape.get()));
 
@@ -507,7 +508,27 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     bulletCollisionShape = new btStaticPlaneShape(
           convertVector3(normal), offset);
   }
-  else if (MeshShape::getStaticType() == shapeType)
+  else if (shape->is<MultiSphereShape>())
+  {
+    assert(dynamic_cast<const MultiSphereShape*>(shape.get()));
+
+    const auto multiSphere = static_cast<const MultiSphereShape*>(shape.get());
+    const auto numSpheres = multiSphere->getNumSpheres();
+    const auto& spheres = multiSphere->getSpheres();
+
+    std::vector<btVector3> bulletPositions(numSpheres);
+    std::vector<btScalar> bulletRadii(numSpheres);
+
+    for (auto i = 0u; i < numSpheres; ++i)
+    {
+      bulletRadii[i] = static_cast<btScalar>(spheres[i].first);
+      bulletPositions[i] = convertVector3(spheres[i].second);
+    }
+
+    bulletCollisionShape = new btMultiSphereShape(
+          bulletPositions.data(), bulletRadii.data(), numSpheres);
+  }
+  else if (shape->is<MeshShape>())
   {
     assert(dynamic_cast<const MeshShape*>(shape.get()));
 
@@ -518,7 +539,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     bulletCollisionShape = createBulletCollisionShapeFromAssimpScene(
           scale, mesh);
   }
-  else if (SoftMeshShape::getStaticType() == shapeType)
+  else if (shape->is<SoftMeshShape>())
   {
     assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
 
@@ -531,7 +552,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   {
     dterr << "[BulletCollisionDetector::createBulletCollisionShape] "
           << "Attempting to create an unsupported shape type ["
-          << shapeType << "] Creating a sphere with 0.1 radius "
+          << shape->getType() << "] Creating a sphere with 0.1 radius "
           << "instead.\n";
 
     bulletCollisionShape = new btSphereShape(0.1);

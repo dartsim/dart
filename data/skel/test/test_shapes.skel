@@ -238,10 +238,57 @@
             </joint>
         </skeleton>
 
+        <skeleton name="multi sphere skeleton">
+            <body name="multi sphere">
+                <gravity>1</gravity>
+                <transformation>0.8 -0.0 0 1 2 3</transformation>
+                <inertia>
+                    <mass>1</mass>
+                    <offset>0 0 0</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <multi_sphere>
+                            <sphere>
+                                <radius>0.05</radius>
+                                <position>-0.075 0.0 0.0</position>
+                            </sphere>
+                            <sphere>
+                                <radius>0.075</radius>
+                                <position>0.075 0.0 0.0</position>
+                            </sphere>
+                        </multi_sphere>
+                    </geometry>
+                    <color>0.6 0.6 0.8</color>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <multi_sphere>
+                            <sphere>
+                                <radius>0.05</radius>
+                                <position>-0.075 0.0 0.0</position>
+                            </sphere>
+                            <sphere>
+                                <radius>0.075</radius>
+                                <position>0.075 0.0 0.0</position>
+                            </sphere>
+                        </multi_sphere>
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            
+            <joint type="free" name="joint 1">
+                <parent>world</parent>
+                <child>multi sphere</child>
+            </joint>
+        </skeleton>
+
         <skeleton name="mesh skeleton">
             <body name="mesh">
                 <gravity>1</gravity>
-                <transformation>0.8 -0.0 0 1 2 3</transformation>
+                <transformation>1.0 -0.0 0 1 2 3</transformation>
                 <inertia>
                     <mass>1</mass>
                     <offset>0 0 0</offset>
@@ -271,7 +318,7 @@
                 <parent>world</parent>
                 <child>mesh</child>
             </joint>
-        </skeleton> 
+        </skeleton>
 
     </world>
 </skel>
