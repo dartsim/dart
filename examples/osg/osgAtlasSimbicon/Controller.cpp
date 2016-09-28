@@ -29,11 +29,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/atlasSimbicon/Controller.hpp"
+#include "Controller.hpp"
 
-#include "examples/atlasSimbicon/State.hpp"
-#include "examples/atlasSimbicon/StateMachine.hpp"
-#include "examples/atlasSimbicon/TerminalCondition.hpp"
+#include "State.hpp"
+#include "StateMachine.hpp"
+#include "TerminalCondition.hpp"
 
 using namespace std;
 
@@ -55,7 +55,8 @@ Controller::Controller(SkeletonPtr _atlasRobot,
     mRightFootHarnessOn(false),
     mWeldJointConstraintPelvis(nullptr),
     mWeldJointConstraintLeftFoot(nullptr),
-    mWeldJointConstraintRightFoot(nullptr)
+    mWeldJointConstraintRightFoot(nullptr),
+    mVerbosity(false)
 {
   mCoronalLeftHip  = mAtlasRobot->getDof("l_leg_hpx")->getIndexInSkeleton();
   mCoronalRightHip = mAtlasRobot->getDof("r_leg_hpx")->getIndexInSkeleton();
@@ -96,6 +97,7 @@ SkeletonPtr Controller::getAtlasRobot()
   return mAtlasRobot;
 }
 
+//==============================================================================
 StateMachine*Controller::getCurrentState()
 {
   return mCurrentStateMachine;
@@ -123,8 +125,11 @@ void Controller::changeStateMachine(StateMachine* _stateMachine,
   mCurrentStateMachine = _stateMachine;
   mCurrentStateMachine->begin(_currentTime);
 
-  dtmsg << "State machine transition: from [" << prevName << "] to ["
+  if (mVerbosity)
+  {
+    dtmsg << "State machine transition: from [" << prevName << "] to ["
         << nextName << "]." << endl;
+  }
 }
 
 //==============================================================================
@@ -232,7 +237,8 @@ void Controller::harnessPelvis()
   mConstratinSolver->addConstraint(mWeldJointConstraintPelvis);
   mPelvisHarnessOn = true;
 
-  dtmsg << "Pelvis is harnessed." << std::endl;
+  if (mVerbosity)
+    dtmsg << "Pelvis is harnessed." << std::endl;
 }
 
 //==============================================================================
@@ -244,7 +250,8 @@ void Controller::unharnessPelvis()
   mConstratinSolver->removeConstraint(mWeldJointConstraintPelvis);
   mPelvisHarnessOn = false;
 
-  dtmsg << "Pelvis is unharnessed." << std::endl;
+  if (mVerbosity)
+    dtmsg << "Pelvis is unharnessed." << std::endl;
 }
 
 //==============================================================================
@@ -257,7 +264,8 @@ void Controller::harnessLeftFoot()
   mWeldJointConstraintLeftFoot = std::make_shared<WeldJointConstraint>(bd);
   mLeftFootHarnessOn = true;
 
-  dtmsg << "Left foot is harnessed." << std::endl;
+  if (mVerbosity)
+    dtmsg << "Left foot is harnessed." << std::endl;
 }
 
 //==============================================================================
@@ -269,7 +277,8 @@ void Controller::unharnessLeftFoot()
   mConstratinSolver->removeConstraint(mWeldJointConstraintLeftFoot);
   mLeftFootHarnessOn = false;
 
-  dtmsg << "Left foot is unharnessed." << std::endl;
+  if (mVerbosity)
+    dtmsg << "Left foot is unharnessed." << std::endl;
 }
 
 //==============================================================================
@@ -282,7 +291,8 @@ void Controller::harnessRightFoot()
   mWeldJointConstraintRightFoot = std::make_shared<WeldJointConstraint>(bd);
   mRightFootHarnessOn = true;
 
-  dtmsg << "Right foot is harnessed." << std::endl;
+  if (mVerbosity)
+    dtmsg << "Right foot is harnessed." << std::endl;
 }
 
 //==============================================================================
@@ -294,7 +304,8 @@ void Controller::unharnessRightFoot()
   mConstratinSolver->removeConstraint(mWeldJointConstraintRightFoot);
   mRightFootHarnessOn = false;
 
-  dtmsg << "Right foot is unharnessed." << std::endl;
+  if (mVerbosity)
+    dtmsg << "Right foot is unharnessed." << std::endl;
 }
 
 //==============================================================================
@@ -302,7 +313,14 @@ void Controller::resetRobot()
 {
   mAtlasRobot->setConfiguration(mInitialState);
 
-  dtmsg << "Robot is reset." << std::endl;
+  if (mVerbosity)
+    dtmsg << "Robot is reset." << std::endl;
+}
+
+//==============================================================================
+void Controller::setVerbosity(bool verbosity)
+{
+  mVerbosity = verbosity;
 }
 
 //==============================================================================

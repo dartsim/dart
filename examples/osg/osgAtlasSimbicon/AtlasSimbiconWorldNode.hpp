@@ -29,6 +29,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWORLDNODE_HPP_
+#define DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWORLDNODE_HPP_
+
 #include <dart/dart.hpp>
 #include <dart/utils/utils.hpp>
 #include <dart/gui/osg/osg.hpp>
@@ -49,8 +52,12 @@ public:
 
   void customPostStep() override;
 
+  void reset();
+
 protected:
 
   std::unique_ptr<Controller> mController;
 
 };
+
+#endif // DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWORLDNODE_HPP_

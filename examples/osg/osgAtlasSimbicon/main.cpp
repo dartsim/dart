@@ -58,13 +58,14 @@ int main()
   // Wrap a WorldNode around it
   osg::ref_ptr<AtlasSimbiconWorldNode> node
       = new AtlasSimbiconWorldNode(world, atlas);
+  node->setNumStepsPerCycle(30);
 
   // Create a Viewer and set it up with the WorldNode
   dart::gui::osg::Viewer viewer;
   viewer.addWorldNode(node);
 
   // Pass in the custom event handler
-  viewer.addEventHandler(new AtlasSimbiconEventHandler);
+  viewer.addEventHandler(new AtlasSimbiconEventHandler(node));
 
   // Set the dimensions for the window
   viewer.setUpViewInWindow(0, 0, 1280, 960);
@@ -82,6 +83,12 @@ int main()
   // We need to re-dirty the CameraManipulator by passing it into the viewer
   // again, so that the viewer knows to update its HomePosition setting
   viewer.setCameraManipulator(viewer.getCameraManipulator());
+
+  // Print out instructions for the user
+  std::cout << viewer.getInstructions() << std::endl;
+
+  std::cout << "Press [r] to reset Atlas to the initial position.\n"
+            << std::endl;
 
   // Begin running the application loop
   viewer.run();

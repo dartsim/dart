@@ -97,6 +97,9 @@ public:
   /// \brief Reset the robot
   void resetRobot();
 
+  /// \brief Set the verbosity
+  void setVerbosity(bool verbosity);
+
 protected:
   /// \brief Atlas robot skeleton
   dart::dynamics::SkeletonPtr mAtlasRobot;
@@ -177,6 +180,9 @@ private:
 
   /// \brief Initial state of the robot
   dart::dynamics::Skeleton::Configuration mInitialState;
+
+  /// \brief Whether to print messages about the internal state
+  bool mVerbosity;
 };
 
 #endif  // EXAMPLES_ATLASSIMBICON_CONTROLLER_HPP_

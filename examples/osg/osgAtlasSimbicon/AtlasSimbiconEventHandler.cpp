@@ -32,9 +32,11 @@
 #include "AtlasSimbiconEventHandler.hpp"
 
 //==============================================================================
-AtlasSimbiconEventHandler::AtlasSimbiconEventHandler()
+AtlasSimbiconEventHandler::AtlasSimbiconEventHandler(
+    AtlasSimbiconWorldNode* node)
+  : mNode(node)
 {
-  // Set up the customized event handler
+  // Do nothing
 }
 
 //==============================================================================
@@ -43,47 +45,10 @@ bool AtlasSimbiconEventHandler::handle(
 {
   if(ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
   {
-    if(ea.getKey() == 'q')
+    if(ea.getKey() == 'r' || ea.getKey() == 'R')
     {
-      std::cout << "Lowercase q pressed" << std::endl;
-      return true;
-    }
-    else if(ea.getKey() == 'Q')
-    {
-      std::cout << "Capital Q pressed" << std::endl;
-      return true;
-    }
-    else if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Left)
-    {
-      std::cout << "Left arrow key pressed" << std::endl;
-      return true;
-    }
-    else if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Right)
-    {
-      std::cout << "Right arrow key pressed" << std::endl;
-      return true;
-    }
-  }
-  else if(ea.getEventType() == osgGA::GUIEventAdapter::KEYUP)
-  {
-    if(ea.getKey() == 'q')
-    {
-      std::cout << "Lowercase q released" << std::endl;
-      return true;
-    }
-    else if(ea.getKey() == 'Q')
-    {
-      std::cout << "Capital Q released" << std::endl;
-      return true;
-    }
-    else if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Left)
-    {
-      std::cout << "Left arrow key released" << std::endl;
-      return true;
-    }
-    else if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Right)
-    {
-      std::cout << "Right arrow key released" << std::endl;
+      mNode->reset();
+
       return true;
     }
   }

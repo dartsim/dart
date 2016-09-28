@@ -76,3 +76,9 @@ void AtlasSimbiconWorldNode::customPostStep()
   // step is performed. This function can be deleted if it does not need
   // to be used.
 }
+
+//==============================================================================
+void AtlasSimbiconWorldNode::reset()
+{
+  mController->resetRobot();
+}

@@ -29,9 +29,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/atlasSimbicon/StateMachine.hpp"
+#include "StateMachine.hpp"
 
-#include "examples/atlasSimbicon/State.hpp"
+#include "State.hpp"
 
 // Macro for functions not implemented yet
 #define NOT_YET(FUNCTION) std::cout << #FUNCTION\
@@ -50,9 +50,10 @@ StateMachine::StateMachine(const std::string& _name)
     mBeginTime(0.0),
     mEndTime(0.0),
     mFrame(0),
-    mElapsedTime(0.0)
+    mElapsedTime(0.0),
+    mVerbosity(false)
 {
-
+  // Do nothing
 }
 
 //==============================================================================
@@ -156,9 +157,12 @@ void StateMachine::transiteTo(State* _state, double _currentTime)
   mCurrentState = _state;
   mCurrentState->begin(_currentTime);
 
-  dtmsg << "Transition: ["
-        << prevStateName << "] --> ["
-        << nextStateName << "]." << endl;
+  if (mVerbosity)
+  {
+    dtmsg << "Transition: ["
+          << prevStateName << "] --> ["
+          << nextStateName << "]." << endl;
+  }
 }
 
 //==============================================================================
@@ -178,6 +182,12 @@ void StateMachine::transiteTo(std::size_t _idx, double _currentTime)
   assert(_idx <= mStates.size() && "Invalid index of State.");
 
   transiteTo(mStates[_idx], _currentTime);
+}
+
+//==============================================================================
+void StateMachine::setVerbosity(bool verbosity)
+{
+  mVerbosity = verbosity;
 }
 
 //==============================================================================
@@ -216,8 +226,3 @@ State* StateMachine::_findState(const string& _name) const
 
   return state;
 }
-
-
-
-
-

@@ -29,17 +29,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONEVENTHANDLER_HPP_
+#define DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONEVENTHANDLER_HPP_
+
 #include <dart/dart.hpp>
 #include <dart/utils/utils.hpp>
 #include <dart/gui/osg/osg.hpp>
+
+#include "AtlasSimbiconWorldNode.hpp"
 
 class AtlasSimbiconEventHandler : public osgGA::GUIEventHandler
 {
 public:
 
-  AtlasSimbiconEventHandler(/*Pass in any necessary arguments*/);
+  AtlasSimbiconEventHandler(AtlasSimbiconWorldNode* node);
 
   bool handle(const osgGA::GUIEventAdapter& ea,
               osgGA::GUIActionAdapter&) override;
 
+protected:
+
+  AtlasSimbiconWorldNode* mNode;
+
 };
+
+#endif // DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONEVENTHANDLER_HPP_

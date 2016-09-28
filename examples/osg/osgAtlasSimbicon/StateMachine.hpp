@@ -91,6 +91,9 @@ public:
   /// \brief Change state to a state whose index is _idx
   void transiteTo(std::size_t _idx, double _currentTime);
 
+  /// \brief Set the verbosity
+  void setVerbosity(bool verbosity);
+
 protected:
   /// \brief Name
   std::string mName;
@@ -122,6 +125,9 @@ private:
 
   /// \brief Find a state whose name is _name
   State* _findState(const std::string& _name) const;
+
+  /// \brief Whether to print messages about the internal state
+  bool mVerbosity;
 };
 
 #endif  // EXAMPLES_ATLASSIMBICON_STATEMACHINE_HPP_
