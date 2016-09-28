@@ -58,7 +58,7 @@ int main()
   // Wrap a WorldNode around it
   osg::ref_ptr<AtlasSimbiconWorldNode> node
       = new AtlasSimbiconWorldNode(world, atlas);
-  node->setNumStepsPerCycle(30);
+  node->setNumStepsPerCycle(20);
 
   // Create a Viewer and set it up with the WorldNode
   dart::gui::osg::Viewer viewer;
@@ -88,6 +88,10 @@ int main()
   std::cout << viewer.getInstructions() << std::endl;
 
   std::cout << "Press [r] to reset Atlas to the initial position.\n"
+            << "Press [a] to push forward Atlas toroso.\n"
+            << "Press [s] to push backward Atlas toroso.\n"
+            << "Press [d] to push left Atlas toroso.\n"
+            << "Press [f] to push right Atlas toroso.\n"
             << std::endl;
 
   // Begin running the application loop

@@ -48,7 +48,26 @@ bool AtlasSimbiconEventHandler::handle(
     if(ea.getKey() == 'r' || ea.getKey() == 'R')
     {
       mNode->reset();
-
+      return true;
+    }
+    else if(ea.getKey() == 'a' || ea.getKey() == 'A')
+    {
+      mNode->pushForwardAtlas();
+      return true;
+    }
+    else if(ea.getKey() == 's' || ea.getKey() == 'S')
+    {
+      mNode->pushBackwardAtlas();
+      return true;
+    }
+    else if(ea.getKey() == 'd' || ea.getKey() == 'D')
+    {
+      mNode->pushLeftAtlas();
+      return true;
+    }
+    else if(ea.getKey() == 'f' || ea.getKey() == 'F')
+    {
+      mNode->pushRightAtlas();
       return true;
     }
   }

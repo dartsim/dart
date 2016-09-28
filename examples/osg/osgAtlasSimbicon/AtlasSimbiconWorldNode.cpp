@@ -35,7 +35,9 @@
 AtlasSimbiconWorldNode::AtlasSimbiconWorldNode(
     const dart::simulation::WorldPtr& world,
     const dart::dynamics::SkeletonPtr& atlas)
-  : dart::gui::osg::WorldNode(world)
+  : dart::gui::osg::WorldNode(world),
+    mExternalForce(Eigen::Vector3d::Zero()),
+    mForceDuration(0.0)
 {
   assert(world);
   assert(atlas);
@@ -66,7 +68,13 @@ void AtlasSimbiconWorldNode::customPreStep()
   // step is performed. This function can be deleted if it does not need
   // to be used.
 
+  mController->getAtlasRobot()->getBodyNode("pelvis")->addExtForce(mExternalForce);
   mController->update(mWorld->getTime());
+
+  if (mForceDuration > 0)
+    mForceDuration--;
+  else
+    mExternalForce.setZero();
 }
 
 //==============================================================================
@@ -80,5 +88,34 @@ void AtlasSimbiconWorldNode::customPostStep()
 //==============================================================================
 void AtlasSimbiconWorldNode::reset()
 {
+  mExternalForce.setZero();
   mController->resetRobot();
+}
+
+//==============================================================================
+void AtlasSimbiconWorldNode::pushForwardAtlas(double force, int frames)
+{
+  mExternalForce.x() = force;
+  mForceDuration = frames;
+}
+
+//==============================================================================
+void AtlasSimbiconWorldNode::pushBackwardAtlas(double force, int frames)
+{
+  mExternalForce.x() = -force;
+  mForceDuration = frames;
+}
+
+//==============================================================================
+void AtlasSimbiconWorldNode::pushLeftAtlas(double force, int frames)
+{
+  mExternalForce.z() = force;
+  mForceDuration = frames;
+}
+
+//==============================================================================
+void AtlasSimbiconWorldNode::pushRightAtlas(double force, int frames)
+{
+  mExternalForce.z() = -force;
+  mForceDuration = frames;
 }
