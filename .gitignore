@@ -1,3 +1,4 @@
+Xcode/
 build/
 build_debug/
 syntax: glob
