@@ -40,7 +40,10 @@
 #include "dart/gui/osg/render/BoxShapeNode.hpp"
 #include "dart/gui/osg/render/EllipsoidShapeNode.hpp"
 #include "dart/gui/osg/render/CylinderShapeNode.hpp"
+#include "dart/gui/osg/render/CapsuleShapeNode.hpp"
+#include "dart/gui/osg/render/ConeShapeNode.hpp"
 #include "dart/gui/osg/render/PlaneShapeNode.hpp"
+#include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
 #include "dart/gui/osg/render/MeshShapeNode.hpp"
 #include "dart/gui/osg/render/SoftMeshShapeNode.hpp"
 #include "dart/gui/osg/render/LineSegmentShapeNode.hpp"
@@ -53,7 +56,10 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MultiSphereShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
@@ -208,12 +214,39 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
+  else if(CapsuleShape::getStaticType() == shapeType)
+  {
+    std::shared_ptr<CapsuleShape> cs =
+        std::dynamic_pointer_cast<CapsuleShape>(shape);
+    if(cs)
+      mShapeNode = new render::CapsuleShapeNode(cs, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  }
+  else if(ConeShape::getStaticType() == shapeType)
+  {
+    std::shared_ptr<ConeShape> cs =
+        std::dynamic_pointer_cast<ConeShape>(shape);
+    if(cs)
+      mShapeNode = new render::ConeShapeNode(cs, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  }
   else if(PlaneShape::getStaticType() == shapeType)
   {
     std::shared_ptr<PlaneShape> ps =
         std::dynamic_pointer_cast<PlaneShape>(shape);
     if(ps)
       mShapeNode = new render::PlaneShapeNode(ps, this);
+    else
+      warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
+  }
+  else if(shape->is<MultiSphereShape>())
+  {
+    std::shared_ptr<MultiSphereShape> ms =
+        std::dynamic_pointer_cast<MultiSphereShape>(shape);
+    if(ms)
+      mShapeNode = new render::MultiSphereShapeNode(ms, this);
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }

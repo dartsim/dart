@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
@@ -29,103 +29,118 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MultiSphereShape.hpp"
+
+#include "dart/common/Console.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-PlaneShape::PlaneShape(const Eigen::Vector3d& _normal, double _offset)
-  : Shape(),
-    mNormal(_normal.normalized()),
-    mOffset(_offset)
+MultiSphereShape::MultiSphereShape(const Spheres& spheres)
+  : Shape()
 {
+  addSpheres(spheres);
 }
 
 //==============================================================================
-PlaneShape::PlaneShape(const Eigen::Vector3d& _normal,
-                       const Eigen::Vector3d& _point)
-  : Shape(),
-    mNormal(_normal.normalized()),
-    mOffset(mNormal.dot(_point))
+MultiSphereShape::~MultiSphereShape()
 {
+  // Do nothing
 }
 
 //==============================================================================
-const std::string& PlaneShape::getType() const
+const std::string& MultiSphereShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& PlaneShape::getStaticType()
+const std::string& MultiSphereShape::getStaticType()
 {
-  static const std::string type("PlaneShape");
+  static const std::string type("MultiSphereShape");
   return type;
 }
 
 //==============================================================================
-Eigen::Matrix3d PlaneShape::computeInertia(double /*mass*/) const
+void MultiSphereShape::addSpheres(const MultiSphereShape::Spheres& spheres)
 {
-  return Eigen::Matrix3d::Zero();
+  mSpheres.insert(mSpheres.end(), spheres.begin(), spheres.end());
+
+  updateBoundingBoxDim();
+  updateVolume();
 }
 
 //==============================================================================
-void PlaneShape::setNormal(const Eigen::Vector3d& _normal)
+void MultiSphereShape::addSphere(const MultiSphereShape::Sphere& sphere)
 {
-  mNormal = _normal.normalized();
+  mSpheres.push_back(sphere);
+
+  updateBoundingBoxDim();
+  updateVolume();
 }
 
 //==============================================================================
-const Eigen::Vector3d& PlaneShape::getNormal() const
+void MultiSphereShape::addSphere(double radius, const Eigen::Vector3d& position)
 {
-  return mNormal;
+  addSphere(std::make_pair(radius, position));
 }
 
 //==============================================================================
-void PlaneShape::setOffset(double _offset)
+void MultiSphereShape::removeAllSpheres()
 {
-  mOffset = _offset;
+  mSpheres.clear();
+
+  updateBoundingBoxDim();
+  updateVolume();
 }
 
 //==============================================================================
-double PlaneShape::getOffset() const
+std::size_t MultiSphereShape::getNumSpheres() const
 {
-  return mOffset;
+  return mSpheres.size();
 }
 
 //==============================================================================
-void PlaneShape::setNormalAndOffset(const Eigen::Vector3d& _normal,
-                                    double _offset)
+const MultiSphereShape::Spheres& MultiSphereShape::getSpheres() const
 {
-  setNormal(_normal);
-  setOffset(_offset);
+  return mSpheres;
 }
 
 //==============================================================================
-void PlaneShape::setNormalAndPoint(const Eigen::Vector3d& _normal,
-                                   const Eigen::Vector3d& _point)
+Eigen::Matrix3d MultiSphereShape::computeInertia(double mass) const
 {
-  setNormal(_normal);
-  setOffset(mNormal.dot(_point));
+  // Use bounding box to represent the mesh
+  return BoxShape::computeInertia(mBoundingBox.computeFullExtents(), mass);
 }
 
 //==============================================================================
-double PlaneShape::computeDistance(const Eigen::Vector3d& _point) const
+void MultiSphereShape::updateVolume()
 {
-  return std::abs(computeSignedDistance(_point));
+  mVolume = BoxShape::computeVolume(mBoundingBox.computeFullExtents());
 }
 
 //==============================================================================
-double PlaneShape::computeSignedDistance(const Eigen::Vector3d& _point) const
+void MultiSphereShape::updateBoundingBoxDim()
 {
-  return mNormal.dot(_point) - mOffset;
-}
+  Eigen::Vector3d min
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
+  Eigen::Vector3d max = -min;
 
-//==============================================================================
-void PlaneShape::updateVolume()
-{
-  mVolume = 0.0;
+  for (const auto& sphere : mSpheres)
+  {
+    const auto& radius = sphere.first;
+    const Eigen::Vector3d& pos = sphere.second;
+    const Eigen::Vector3d extent = Eigen::Vector3d::Constant(radius);
+
+    min = min.cwiseMin(pos - extent);
+    max = max.cwiseMax(pos + extent);
+  }
+
+  mBoundingBox.setMin(min);
+  mBoundingBox.setMax(max);
 }
 
 }  // namespace dynamics

@@ -29,119 +29,112 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/Result.hpp"
-#include "dart/collision/CollisionObject.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 
-#include "dart/dynamics/ShapeFrame.hpp"
-#include "dart/dynamics/ShapeNode.hpp"
-#include "dart/dynamics/BodyNode.hpp"
+#include <cmath>
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
 
 namespace dart {
-namespace collision {
+namespace dynamics {
 
 //==============================================================================
-void CollisionResult::addContact(const Contact& contact)
+ConeShape::ConeShape(double radius, double height)
+  : Shape(),
+    mRadius(radius),
+    mHeight(height)
 {
-  mContacts.push_back(contact);
-  addObject(contact.collisionObject1);
-  addObject(contact.collisionObject2);
+  assert(0.0 < radius);
+  assert(0.0 < height);
+  updateBoundingBoxDim();
+  updateVolume();
 }
 
 //==============================================================================
-std::size_t CollisionResult::getNumContacts() const
+const std::string& ConeShape::getType() const
 {
-  return mContacts.size();
+  return getStaticType();
 }
 
 //==============================================================================
-Contact& CollisionResult::getContact(std::size_t index)
+const std::string& ConeShape::getStaticType()
 {
-  assert(index < mContacts.size());
-
-  return mContacts[index];
+  static const std::string type("ConeShape");
+  return type;
 }
 
 //==============================================================================
-const Contact& CollisionResult::getContact(std::size_t index) const
+double ConeShape::getRadius() const
 {
-  assert(index < mContacts.size());
-
-  return mContacts[index];
+  return mRadius;
 }
 
 //==============================================================================
-const std::vector<Contact>& CollisionResult::getContacts() const
+void ConeShape::setRadius(double radius)
 {
-  return mContacts;
+  assert(0.0 < radius);
+  mRadius = radius;
+  updateBoundingBoxDim();
+  updateVolume();
 }
 
 //==============================================================================
-const std::unordered_set<const dynamics::BodyNode*>&
-CollisionResult::getCollidingBodyNodes() const
+double ConeShape::getHeight() const
 {
-  return mCollidingBodyNodes;
+  return mHeight;
 }
 
 //==============================================================================
-const std::unordered_set<const dynamics::ShapeFrame*>&
-CollisionResult::getCollidingShapeFrames() const
+void ConeShape::setHeight(double height)
 {
-  return mCollidingShapeFrames;
+  assert(0.0 < height);
+  mHeight = height;
+  updateBoundingBoxDim();
+  updateVolume();
 }
 
 //==============================================================================
-bool CollisionResult::inCollision(const dynamics::BodyNode* bn) const
+double ConeShape::computeVolume(double radius, double height)
 {
-  return (mCollidingBodyNodes.find(bn) != mCollidingBodyNodes.end());
+  return (1.0/3.0) * math::constantsd::pi() * std::pow(radius, 2) * height;
 }
 
 //==============================================================================
-bool CollisionResult::inCollision(const dynamics::ShapeFrame* frame) const
+Eigen::Matrix3d ConeShape::computeInertia(
+    double radius, double height, double mass)
 {
-  return (mCollidingShapeFrames.find(frame) != mCollidingShapeFrames.end());
+  // Reference: https://en.wikipedia.org/wiki/List_of_moments_of_inertia
+
+  const auto radius2 = radius*radius;
+  const auto height2 = height*height;
+
+  const auto Ixx = (3.0/20.0)*mass*(radius2 + (2.0/3.0)*height2);
+  const auto Izz = (3.0/10.0)*mass*radius2;
+
+  return Eigen::Vector3d(Ixx, Ixx, Izz).asDiagonal();
 }
 
 //==============================================================================
-bool CollisionResult::isCollision() const
+void ConeShape::updateVolume()
 {
-  return !mContacts.empty();
+  mVolume = computeVolume(mRadius, mHeight);
 }
 
 //==============================================================================
-CollisionResult::operator bool() const
+Eigen::Matrix3d ConeShape::computeInertia(double mass) const
 {
-  return isCollision();
+  return computeInertia(mRadius, mHeight, mass);
 }
 
 //==============================================================================
-void CollisionResult::clear()
+void ConeShape::updateBoundingBoxDim()
 {
-  mContacts.clear();
-  mCollidingShapeFrames.clear();
-  mCollidingBodyNodes.clear();
+  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5*mHeight);
+
+  mBoundingBox.setMin(-corner);
+  mBoundingBox.setMax(corner);
 }
 
-//==============================================================================
-void CollisionResult::addObject(CollisionObject* object)
-{
-  if(!object)
-  {
-    dterr << "[CollisionResult::addObject] Attempting to add a collision with "
-          << "a nullptr object to a CollisionResult instance. This is not "
-          << "allowed. Please report this as a bug!";
-    assert(false);
-    return;
-  }
-
-  const dynamics::ShapeFrame* frame = object->getShapeFrame();
-  mCollidingShapeFrames.insert(frame);
-
-  if(frame->isShapeNode())
-  {
-    const dynamics::ShapeNode* node = frame->asShapeNode();
-    mCollidingBodyNodes.insert(node->getBodyNodePtr());
-  }
-}
-
-}  // namespace collision
+}  // namespace dynamics
 }  // namespace dart

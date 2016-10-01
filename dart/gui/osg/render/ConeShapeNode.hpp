@@ -29,12 +29,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RESULT_HPP_
-#define DART_COLLISION_RESULT_HPP_
+#ifndef DART_GUI_OSG_RENDER_CONESHAPENODE_HPP_
+#define DART_GUI_OSG_RENDER_CONESHAPENODE_HPP_
 
-#warning "This header has been deprecated in DART 6.1. "\
-  "Please include CollisionResult.hpp intead."
+#include <osg/MatrixTransform>
 
-#include "dart/collision/CollisionResult.hpp"
+#include "dart/gui/osg/render/ShapeNode.hpp"
 
-#endif  // DART_COLLISION_RESULT_HPP_
+namespace dart {
+
+namespace dynamics {
+class ConeShape;
+} // namespace dynamics
+
+namespace gui {
+namespace osg {
+namespace render {
+
+class ConeShapeGeode;
+class ConeShapeDrawable;
+
+class ConeShapeNode : public ShapeNode, public ::osg::Group
+{
+public:
+
+  ConeShapeNode(std::shared_ptr<dart::dynamics::ConeShape> shape,
+                    ShapeFrameNode* parent);
+
+  void refresh();
+  void extractData(bool firstTime);
+
+protected:
+
+  virtual ~ConeShapeNode();
+
+  std::shared_ptr<dart::dynamics::ConeShape> mConeShape;
+  ConeShapeGeode* mGeode;
+
+};
+
+} // namespace render
+} // namespace osg
+} // namespace gui
+} // namespace dart
+
+#endif // DART_GUI_OSG_RENDER_CONESHAPENODE_HPP_

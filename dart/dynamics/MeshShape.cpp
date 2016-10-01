@@ -43,6 +43,7 @@
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 
 #if !(ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
 // We define our own constructor and destructor for aiScene, because it seems to
@@ -128,7 +129,7 @@ namespace dynamics {
 MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
                      const std::string& _path,
                      const common::ResourceRetrieverPtr& _resourceRetriever)
-  : Shape(MESH),
+  : Shape(),
     mResourceRetriever(_resourceRetriever),
     mDisplayList(0),
     mColorMode(MATERIAL_COLOR),
@@ -264,19 +265,11 @@ void MeshShape::setDisplayList(int _index) {
   mDisplayList = _index;
 }
 
-Eigen::Matrix3d MeshShape::computeInertia(double _mass) const {
-  // use bounding box to represent the mesh
-  Eigen::Vector3d bounds = mBoundingBox.computeFullExtents();
-  double l = bounds.x();
-  double h = bounds.y();
-  double w = bounds.z();
-
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
-  inertia(0, 0) = _mass / 12.0 * (h * h + w * w);
-  inertia(1, 1) = _mass / 12.0 * (l * l + w * w);
-  inertia(2, 2) = _mass / 12.0 * (l * l + h * h);
-
-  return inertia;
+//==============================================================================
+Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
+{
+  // Use bounding box to represent the mesh
+  return BoxShape::computeInertia(mBoundingBox.computeFullExtents(), _mass);
 }
 
 void MeshShape::updateVolume() {

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
@@ -29,104 +29,119 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/collision/CollisionResult.hpp"
+
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
-namespace dynamics {
+namespace collision {
 
 //==============================================================================
-PlaneShape::PlaneShape(const Eigen::Vector3d& _normal, double _offset)
-  : Shape(),
-    mNormal(_normal.normalized()),
-    mOffset(_offset)
+void CollisionResult::addContact(const Contact& contact)
 {
+  mContacts.push_back(contact);
+  addObject(contact.collisionObject1);
+  addObject(contact.collisionObject2);
 }
 
 //==============================================================================
-PlaneShape::PlaneShape(const Eigen::Vector3d& _normal,
-                       const Eigen::Vector3d& _point)
-  : Shape(),
-    mNormal(_normal.normalized()),
-    mOffset(mNormal.dot(_point))
+std::size_t CollisionResult::getNumContacts() const
 {
+  return mContacts.size();
 }
 
 //==============================================================================
-const std::string& PlaneShape::getType() const
+Contact& CollisionResult::getContact(std::size_t index)
 {
-  return getStaticType();
+  assert(index < mContacts.size());
+
+  return mContacts[index];
 }
 
 //==============================================================================
-const std::string& PlaneShape::getStaticType()
+const Contact& CollisionResult::getContact(std::size_t index) const
 {
-  static const std::string type("PlaneShape");
-  return type;
+  assert(index < mContacts.size());
+
+  return mContacts[index];
 }
 
 //==============================================================================
-Eigen::Matrix3d PlaneShape::computeInertia(double /*mass*/) const
+const std::vector<Contact>& CollisionResult::getContacts() const
 {
-  return Eigen::Matrix3d::Zero();
+  return mContacts;
 }
 
 //==============================================================================
-void PlaneShape::setNormal(const Eigen::Vector3d& _normal)
+const std::unordered_set<const dynamics::BodyNode*>&
+CollisionResult::getCollidingBodyNodes() const
 {
-  mNormal = _normal.normalized();
+  return mCollidingBodyNodes;
 }
 
 //==============================================================================
-const Eigen::Vector3d& PlaneShape::getNormal() const
+const std::unordered_set<const dynamics::ShapeFrame*>&
+CollisionResult::getCollidingShapeFrames() const
 {
-  return mNormal;
+  return mCollidingShapeFrames;
 }
 
 //==============================================================================
-void PlaneShape::setOffset(double _offset)
+bool CollisionResult::inCollision(const dynamics::BodyNode* bn) const
 {
-  mOffset = _offset;
+  return (mCollidingBodyNodes.find(bn) != mCollidingBodyNodes.end());
 }
 
 //==============================================================================
-double PlaneShape::getOffset() const
+bool CollisionResult::inCollision(const dynamics::ShapeFrame* frame) const
 {
-  return mOffset;
+  return (mCollidingShapeFrames.find(frame) != mCollidingShapeFrames.end());
 }
 
 //==============================================================================
-void PlaneShape::setNormalAndOffset(const Eigen::Vector3d& _normal,
-                                    double _offset)
+bool CollisionResult::isCollision() const
 {
-  setNormal(_normal);
-  setOffset(_offset);
+  return !mContacts.empty();
 }
 
 //==============================================================================
-void PlaneShape::setNormalAndPoint(const Eigen::Vector3d& _normal,
-                                   const Eigen::Vector3d& _point)
+CollisionResult::operator bool() const
 {
-  setNormal(_normal);
-  setOffset(mNormal.dot(_point));
+  return isCollision();
 }
 
 //==============================================================================
-double PlaneShape::computeDistance(const Eigen::Vector3d& _point) const
+void CollisionResult::clear()
 {
-  return std::abs(computeSignedDistance(_point));
+  mContacts.clear();
+  mCollidingShapeFrames.clear();
+  mCollidingBodyNodes.clear();
 }
 
 //==============================================================================
-double PlaneShape::computeSignedDistance(const Eigen::Vector3d& _point) const
+void CollisionResult::addObject(CollisionObject* object)
 {
-  return mNormal.dot(_point) - mOffset;
+  if(!object)
+  {
+    dterr << "[CollisionResult::addObject] Attempting to add a collision with "
+          << "a nullptr object to a CollisionResult instance. This is not "
+          << "allowed. Please report this as a bug!";
+    assert(false);
+    return;
+  }
+
+  const dynamics::ShapeFrame* frame = object->getShapeFrame();
+  mCollidingShapeFrames.insert(frame);
+
+  if(frame->isShapeNode())
+  {
+    const dynamics::ShapeNode* node = frame->asShapeNode();
+    mCollidingBodyNodes.insert(node->getBodyNodePtr());
+  }
 }
 
-//==============================================================================
-void PlaneShape::updateVolume()
-{
-  mVolume = 0.0;
-}
-
-}  // namespace dynamics
+}  // namespace collision
 }  // namespace dart

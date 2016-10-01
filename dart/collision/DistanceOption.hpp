@@ -29,12 +29,50 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RESULT_HPP_
-#define DART_COLLISION_RESULT_HPP_
+#ifndef DART_COLLISION_DISTANCE_OPTION_HPP_
+#define DART_COLLISION_DISTANCE_OPTION_HPP_
 
-#warning "This header has been deprecated in DART 6.1. "\
-  "Please include CollisionResult.hpp intead."
+#include <cstddef>
+#include <memory>
 
-#include "dart/collision/CollisionResult.hpp"
+namespace dart {
+namespace collision {
 
-#endif  // DART_COLLISION_RESULT_HPP_
+class DistanceFilter;
+
+struct DistanceOption
+{
+  /// Whether to calculate the nearest points.
+  ///
+  /// The default is false.
+  /// \sa DistanceResult::nearestPoint1, DistanceResult::nearestPoint2
+  bool enableNearestPoints;
+
+  /// Stopping criteria for distance calculation in broadphase.
+  ///
+  /// This option is used for early termination of distance calculate that stops
+  /// as soon as a distance is found that is equal to or less than the lower
+  /// bound. If you want to check all the shape pairs without the early
+  /// termination then set this value to -inf.
+  ///
+  /// The default value is 0.0.
+  double distanceLowerBound;
+
+  /// Distance filter for excluding ShapeFrame pairs from distance calculation
+  /// in broadphase.
+  ///
+  /// If nullptr, every pairs of ShapeFrames in the CollisionGroup(s) are
+  /// checked. The default is nullptr. \sa DistanceFilter
+  std::shared_ptr<DistanceFilter> distanceFilter;
+
+  /// Constructor
+  DistanceOption(
+      bool enableNearestPoints = false,
+      double distanceLowerBound = 0.0,
+      const std::shared_ptr<DistanceFilter>& distanceFilter = nullptr);
+};
+
+}  // namespace collision
+}  // namespace dart
+
+#endif  // DART_COLLISION_DISTANCE_OPTION_HPP_

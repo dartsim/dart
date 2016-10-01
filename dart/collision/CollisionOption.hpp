@@ -29,12 +29,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RESULT_HPP_
-#define DART_COLLISION_RESULT_HPP_
+#ifndef DART_COLLISION_COLLISIONOPTION_HPP_
+#define DART_COLLISION_COLLISIONOPTION_HPP_
 
-#warning "This header has been deprecated in DART 6.1. "\
-  "Please include CollisionResult.hpp intead."
+#include <cstddef>
+#include <memory>
 
-#include "dart/collision/CollisionResult.hpp"
+namespace dart {
+namespace collision {
 
-#endif  // DART_COLLISION_RESULT_HPP_
+class CollisionFilter;
+
+struct CollisionOption
+{
+
+  /// Flag whether the collision detector computes contact information (contact
+  /// point, normal, and penetration depth). If it is set to false, only the
+  /// result of that which pairs are colliding will be stored in the
+  /// CollisionResult without the contact information.
+  bool enableContact;
+
+  /// Maximum number of contacts to detect. Once the contacts are found up to
+  /// this number, the collision checking will terminate at that moment. Set
+  /// this to 1 for binary check.
+  std::size_t maxNumContacts;
+
+  /// CollisionFilter
+  std::shared_ptr<CollisionFilter> collisionFilter;
+
+  /// Constructor
+  CollisionOption(
+      bool enableContact = true,
+      std::size_t maxNumContacts = 1000u,
+      const std::shared_ptr<CollisionFilter>& collisionFilter = nullptr);
+
+};
+
+}  // namespace collision
+}  // namespace dart
+
+#endif  // DART_COLLISION_COLLISIONOPTION_HPP_

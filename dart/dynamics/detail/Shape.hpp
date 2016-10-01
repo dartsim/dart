@@ -29,12 +29,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RESULT_HPP_
-#define DART_COLLISION_RESULT_HPP_
+#ifndef DART_DYNAMICS_DETAIL_SHAPE_HPP_
+#define DART_DYNAMICS_DETAIL_SHAPE_HPP_
 
-#warning "This header has been deprecated in DART 6.1. "\
-  "Please include CollisionResult.hpp intead."
+#include "dart/dynamics/Shape.hpp"
 
-#include "dart/collision/CollisionResult.hpp"
+namespace dart {
+namespace dynamics {
 
-#endif  // DART_COLLISION_RESULT_HPP_
+template <typename ShapeT>
+bool Shape::is() const
+{
+  return getType() == ShapeT::getStaticType();
+}
+
+}  // namespace dynamics
+}  // namespace dart
+
+#endif  // DART_DYNAMICS_DETAIL_SHAPE_HPP_

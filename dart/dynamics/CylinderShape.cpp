@@ -38,7 +38,7 @@ namespace dart {
 namespace dynamics {
 
 CylinderShape::CylinderShape(double _radius, double _height)
-  : Shape(CYLINDER),
+  : Shape(),
     mRadius(_radius),
     mHeight(_height) {
   assert(0.0 < _radius);

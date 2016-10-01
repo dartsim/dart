@@ -29,12 +29,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RESULT_HPP_
-#define DART_COLLISION_RESULT_HPP_
+#ifndef DART_GUI_OSG_RENDER_CAPSULESHAPENODE_HPP_
+#define DART_GUI_OSG_RENDER_CAPSULESHAPENODE_HPP_
 
-#warning "This header has been deprecated in DART 6.1. "\
-  "Please include CollisionResult.hpp intead."
+#include <osg/MatrixTransform>
 
-#include "dart/collision/CollisionResult.hpp"
+#include "dart/gui/osg/render/ShapeNode.hpp"
 
-#endif  // DART_COLLISION_RESULT_HPP_
+namespace dart {
+
+namespace dynamics {
+class CapsuleShape;
+} // namespace dynamics
+
+namespace gui {
+namespace osg {
+namespace render {
+
+class CapsuleShapeGeode;
+class CapsuleShapeDrawable;
+
+class CapsuleShapeNode : public ShapeNode, public ::osg::Group
+{
+public:
+
+  CapsuleShapeNode(std::shared_ptr<dart::dynamics::CapsuleShape> shape,
+                   ShapeFrameNode* parent);
+
+  void refresh();
+  void extractData(bool firstTime);
+
+protected:
+
+  virtual ~CapsuleShapeNode();
+
+  std::shared_ptr<dart::dynamics::CapsuleShape> mCapsuleShape;
+  CapsuleShapeGeode* mGeode;
+
+};
+
+} // namespace render
+} // namespace osg
+} // namespace gui
+} // namespace dart
+
+#endif // DART_GUI_OSG_RENDER_CAPSULESHAPENODE_HPP_

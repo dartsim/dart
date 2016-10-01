@@ -29,12 +29,50 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_RESULT_HPP_
-#define DART_COLLISION_RESULT_HPP_
+#ifndef DART_GUI_OSG_RENDER_MULTISPHERESHAPENODE_HPP_
+#define DART_GUI_OSG_RENDER_MULTISPHERESHAPENODE_HPP_
 
-#warning "This header has been deprecated in DART 6.1. "\
-  "Please include CollisionResult.hpp intead."
+#include <osg/ShapeDrawable>
+#include <osg/MatrixTransform>
 
-#include "dart/collision/CollisionResult.hpp"
+#include "dart/gui/osg/render/ShapeNode.hpp"
 
-#endif  // DART_COLLISION_RESULT_HPP_
+namespace dart {
+
+namespace dynamics {
+class MultiSphereShape;
+} // namespace dynamics
+
+namespace gui {
+namespace osg {
+namespace render {
+
+class MultiSphereShapeGeode;
+class MultiSphereShapeDrawable;
+
+class MultiSphereShapeNode : public ShapeNode, public ::osg::MatrixTransform
+{
+public:
+
+  MultiSphereShapeNode(
+      std::shared_ptr<dart::dynamics::MultiSphereShape> shape,
+      ShapeFrameNode* parent);
+
+  void refresh();
+  void extractData(bool firstTime);
+
+protected:
+
+  virtual ~MultiSphereShapeNode();
+
+  std::shared_ptr<dart::dynamics::MultiSphereShape> mMultiSphereShape;
+  MultiSphereShapeGeode* mGeode;
+
+};
+
+} // namespace render
+} // namespace osg
+} // namespace gui
+} // namespace dart
+
+#endif // DART_GUI_OSG_RENDER_MULTISPHERESHAPENODE_HPP_

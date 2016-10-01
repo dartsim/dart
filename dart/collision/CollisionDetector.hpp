@@ -38,8 +38,10 @@
 #include <Eigen/Dense>
 
 #include "dart/collision/Contact.hpp"
-#include "dart/collision/Option.hpp"
-#include "dart/collision/Result.hpp"
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/DistanceOption.hpp"
+#include "dart/collision/DistanceResult.hpp"
 #include "dart/collision/SmartPointer.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
@@ -108,6 +110,37 @@ public:
       CollisionGroup* group2,
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr) = 0;
+
+  /// Get the minimum signed distance between the Shape pairs in the given
+  /// CollisionGroup.
+  ///
+  /// The detailed results are stored in the given DistanceResult if provided.
+  ///
+  /// The results can be different by DistanceOption. By default, non-negative
+  /// minimum distance (distance >= 0) is returned for all the shape pairs
+  /// without computing nearest points.
+  virtual double distance(
+      CollisionGroup* group,
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr) = 0;
+
+  /// Get the minimum signed distance between the Shape pairs where a pair
+  /// consist of two shapes from each groups (one from group1 and one from
+  /// group2).
+  ///
+  /// Note that the distance between shapes within the same CollisionGroup
+  /// are not accounted.
+  ///
+  /// The detailed results are stored in the given DistanceResult if provided.
+  ///
+  /// The results can be different by DistanceOption. By default, non-negative
+  /// minimum distance (distance >= 0) is returned for all the shape pairs
+  /// without computing nearest points.
+  virtual double distance(
+      CollisionGroup* group1,
+      CollisionGroup* group2,
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr) = 0;
 
 protected:
 
