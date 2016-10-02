@@ -170,9 +170,7 @@ dynamics::ShapeNode* readShapeNode(
 
 void readMaterial(
     tinyxml2::XMLElement* materialEle,
-    dynamics::ShapeNode* shapeNode,
-    const std::string& skelPath,
-    const common::ResourceRetrieverPtr& retriever);
+    dynamics::ShapeNode* shapeNode);
 
 void readVisualizationShapeNode(
     dynamics::BodyNode* bodyNode,
@@ -996,9 +994,7 @@ dynamics::ShapeNode* readShapeNode(
 //==============================================================================
 void readMaterial(
   tinyxml2::XMLElement* materialEle,
-  dynamics::ShapeNode* shapeNode,
-  const std::string& skelPath,
-  const common::ResourceRetrieverPtr& retriever) {
+  dynamics::ShapeNode* shapeNode) {
 
   auto visualAspect = shapeNode->getVisualAspect();
   if (hasElement(materialEle, "diffuse")) {
@@ -1035,7 +1031,7 @@ void readVisualizationShapeNode(
   if (hasElement(vizShapeNodeEle, "material"))
   {
     tinyxml2::XMLElement* materialEle = getElement(vizShapeNodeEle, "material");
-    readMaterial(materialEle, newShapeNode, skelPath, retriever);
+    readMaterial(materialEle, newShapeNode);
   }
 }
 
