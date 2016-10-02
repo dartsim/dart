@@ -641,6 +641,10 @@ std::pair<dynamics::Joint*,dynamics::BodyNode*> createJointAndNodePair(
     return skeleton->createJointAndBodyNodePair<dynamics::BallJoint>(parent,
           static_cast<const dynamics::BallJoint::Properties&>(*joint.properties),
           static_cast<const typename NodeType::Properties&>(*node.properties));
+  else if (std::string("fixed") == type)
+    return skeleton->createJointAndBodyNodePair<dynamics::WeldJoint>(parent,
+          static_cast<const dynamics::WeldJoint::Properties&>(*joint.properties),
+          static_cast<const typename NodeType::Properties&>(*node.properties));
   else if (std::string("free") == type)
     return skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(parent,
           static_cast<const dynamics::FreeJoint::Properties&>(*joint.properties),
@@ -1030,7 +1034,7 @@ void readVisualizationShapeNode(
   {
     tinyxml2::XMLElement* materialEle = getElement(vizShapeNodeEle, "material");
     readMaterial(materialEle, newShapeNode, skelPath, retriever);
-  }  
+  }
 }
 
 //==============================================================================
