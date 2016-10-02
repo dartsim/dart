@@ -1,8 +1,8 @@
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
+file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
-file(GLOB detail_hdrs "detail/*.h")
 
 set(dart_math_hdrs "${hdrs};${detail_hdrs}" PARENT_SCOPE)
 set(dart_math_srcs "${srcs};${detail_srcs}" PARENT_SCOPE)
