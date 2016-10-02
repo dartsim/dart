@@ -167,6 +167,13 @@ dynamics::ShapeNode* readShapeNode(
     const std::string& skelPath,
     const common::ResourceRetrieverPtr& retriever);
 
+
+void readMaterial(
+    tinyxml2::XMLElement* materialEle,
+    dynamics::ShapeNode* shapeNode,
+    const std::string& skelPath,
+    const common::ResourceRetrieverPtr& retriever);
+
 void readVisualizationShapeNode(
     dynamics::BodyNode* bodyNode,
     tinyxml2::XMLElement* vizShapeNodeEle,
@@ -981,6 +988,29 @@ dynamics::ShapeNode* readShapeNode(
   return shapeNode;
 }
 
+
+//==============================================================================
+void readMaterial(
+  tinyxml2::XMLElement* materialEle,
+  dynamics::ShapeNode* shapeNode,
+  const std::string& skelPath,
+  const common::ResourceRetrieverPtr& retriever) {
+
+  auto visualAspect = shapeNode->getVisualAspect();
+  Eigen::VectorXd color = getValueVectorXd(materialEle, "diffuse");
+  if (color.size() == 3) {
+    Eigen::Vector3d color3d = color;
+    visualAspect->setColor(color3d);
+  } else if (color.size() == 4) {
+    Eigen::Vector4d color4d = color;
+    visualAspect->setColor(color4d);
+  } else {
+    dterr << "[SdfParse::readMaterial] Unsupported color vector size: "
+          << color.size() << "\n";
+  }
+}
+
+
 //==============================================================================
 void readVisualizationShapeNode(
     dynamics::BodyNode* bodyNode,
@@ -994,6 +1024,13 @@ void readVisualizationShapeNode(
                       skelPath, retriever);
 
   newShapeNode->createVisualAspect();
+
+  // Material
+  if (hasElement(vizShapeNodeEle, "material"))
+  {
+    tinyxml2::XMLElement* materialEle = getElement(vizShapeNodeEle, "material");
+    readMaterial(materialEle, newShapeNode, skelPath, retriever);
+  }  
 }
 
 //==============================================================================
