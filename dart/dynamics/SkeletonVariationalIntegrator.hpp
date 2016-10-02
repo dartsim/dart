@@ -88,6 +88,13 @@ public:
   TerminalCondition integrate(double tol = 1e-9, std::size_t maxIteration = 30u);
 
 protected:
+
+  void setComposite(common::Composite* newComposite) override;
+
+  void loseComposite(common::Composite* oldComposite) override;
+
+  void setPrevPositions(const Eigen::VectorXd& prevPositions);
+
   Eigen::VectorXd getPrevPositions() const;
 
   void setNextPositions(const Eigen::VectorXd& nextPositions);
@@ -97,9 +104,7 @@ protected:
 
   Eigen::VectorXd getFdel() const;
 
-  void setComposite(common::Composite* newComposite) override;
-
-  void loseComposite(common::Composite* oldComposite) override;
+  void stepForward(const Eigen::VectorXd& nextPositions);
 
 };
 

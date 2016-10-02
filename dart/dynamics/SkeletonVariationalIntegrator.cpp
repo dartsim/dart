@@ -122,7 +122,57 @@ SkeletonVariationalIntegrator::integrate(double tol, std::size_t maxIteration)
     // TODO: generalize for non Eucleadian joint spaces as well
   }
 
+  stepForward(qNext);
+
   return cond;
+}
+
+//==============================================================================
+void SkeletonVariationalIntegrator::setComposite(
+    common::Composite* newComposite)
+{
+  Base::setComposite(newComposite);
+
+  auto* skel = mComposite;
+//  const auto numDofs = skel->getNumDofs();
+
+  assert(skel);
+
+//  mState.mDM_GradientKineticEnergy_q.resize(numDofs);
+
+  for (auto* bodyNode : skel->getBodyNodes())
+  {
+    auto* aspect = bodyNode->getOrCreateAspect<BodyNodeVariationalIntegrator>();
+    aspect->initialize(skel->getTimeStep());
+  }
+}
+
+//==============================================================================
+void SkeletonVariationalIntegrator::loseComposite(common::Composite* oldComposite)
+{
+  Base::loseComposite(oldComposite);
+}
+
+//==============================================================================
+void SkeletonVariationalIntegrator::setPrevPositions(
+    const Eigen::VectorXd& prevPositions)
+{
+  auto* skel = mComposite;
+  assert(skel->getNumDofs() == static_cast<std::size_t>(prevPositions.size()));
+
+  auto index = 0u;
+  for (auto* bodyNode : skel->getBodyNodes())
+  {
+    auto* aspect = bodyNode->get<BodyNodeVariationalIntegrator>();
+    assert(aspect);
+    auto* joint = bodyNode->getParentJoint();
+    const auto numDofs = joint->getNumDofs();
+
+    aspect->getJointVi()->setPrevPositions(
+          prevPositions.segment(index, numDofs));
+
+    index += numDofs;
+  }
 }
 
 //==============================================================================
@@ -234,29 +284,36 @@ Eigen::VectorXd SkeletonVariationalIntegrator::getFdel() const
 }
 
 //==============================================================================
-void SkeletonVariationalIntegrator::setComposite(
-    common::Composite* newComposite)
+void SkeletonVariationalIntegrator::stepForward(
+    const Eigen::VectorXd& nextPositions)
 {
-  Base::setComposite(newComposite);
-
   auto* skel = mComposite;
-//  const auto numDofs = skel->getNumDofs();
+  const auto timeStep = skel->getTimeStep();
 
-  assert(skel);
+  // Update previous/current positions and velocities
+  //setVelocities( (qNext - getPositions()) / getTimeStep() );
+  skel->setVelocities(
+      skel->getPositionDifferences(nextPositions, skel->getPositions())
+      / timeStep);
+  // TODO(JS): the displacement of geometric joints (e.g., BallJoint and
+  // FreeJoint) should be calculated on the geometric space rather than
+  // Euclidean space.
+  setPrevPositions(skel->getPositions());
+  skel->setPositions(nextPositions);
+  // q, dq should be updated to get proper prediction from the continuous
+  // forward dynamics algorithm.
+  // TODO(JS): improve the performance here
 
-//  mState.mDM_GradientKineticEnergy_q.resize(numDofs);
-
+  // Update previous spatial velocity and momentum of the bodies
   for (auto* bodyNode : skel->getBodyNodes())
   {
-    auto* aspect = bodyNode->getOrCreateAspect<BodyNodeVariationalIntegrator>();
-    aspect->initialize(skel->getTimeStep());
-  }
-}
+    auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+    assert(bodyNodeVi);
 
-//==============================================================================
-void SkeletonVariationalIntegrator::loseComposite(common::Composite* oldComposite)
-{
-  Base::loseComposite(oldComposite);
+    bodyNodeVi->mState.mPreAverageVelocity
+        = bodyNodeVi->mState.mPostAverageVelocity;
+    bodyNodeVi->mState.mPrevMomentum = bodyNodeVi->mState.mPostMomentum;
+  }
 }
 
 } // namespace dynamics

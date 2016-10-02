@@ -14,6 +14,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -29,69 +35,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-#include <gtest/gtest.h>
-#include "dart/dart.hpp"
-#include "TestHelpers.hpp"
+#include "dart/simulation/WorldVariationalIntegrator.hpp"
 
-using namespace dart;
+#include "dart/dynamics/SkeletonVariationalIntegrator.hpp"
 
-void setRandomState(const dynamics::SkeletonPtr& skel);
-
-dynamics::SkeletonPtr createRandomSkeleton();
+namespace dart {
+namespace simulation {
 
 //==============================================================================
-TEST(VariationalIntegrator, Basic)
+void WorldVariationalIntegrator::prestep()
 {
-  auto skel = createRandomSkeleton();
-  auto vi = skel->createAspect<dynamics::SkeletonVariationalIntegrator>();
-
-  for (auto i = 0u; i < 1e+3; ++i)
-    vi->integrate();
+  for (auto& skel : mSkeletons)
+    skel->createAspect<dynamics::SkeletonVariationalIntegrator>();
 }
 
 //==============================================================================
-int main(int argc, char* argv[])
+void WorldVariationalIntegrator::step(bool /*resetCommand*/)
 {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
-
-//==============================================================================
-//
-//                              Implementations
-//
-//==============================================================================
-
-//==============================================================================
-void setRandomState(const dynamics::SkeletonPtr& skel)
-{
-  const auto pi = math::constantsd::pi();
-  const auto numDofs = skel->getNumDofs();
-  const auto posLower = pi * -0.5;
-  const auto posUpper = pi *  0.5;
-  const auto velLower = pi * -0.5;
-  const auto velUpper = pi *  0.5;
-
-  for (auto i = 0u; i < numDofs; ++i)
+  // Integrate velocity for unconstrained skeletons
+  for (auto& skel : mSkeletons)
   {
-    auto dof = skel->getDof(i);
+    if (!skel->isMobile())
+      continue;
 
-    const auto pos = math::random(posLower, posUpper);
-    const auto vel = math::random(velLower, velUpper);
-
-    dof->setPosition(pos);
-    dof->setVelocity(vel);
+    auto vi = skel->get<dynamics::SkeletonVariationalIntegrator>();
+    assert(vi);
+    vi->integrate();
   }
+
+  mTime += mTimeStep;
+  mFrame++;
 }
 
-//==============================================================================
-SkeletonPtr createRandomSkeleton()
-{
-  const auto numLinks = 25u;
-  const auto l = 1.5;
-  auto skel = createNLinkRobot(numLinks, Eigen::Vector3d(0.3, 0.3, l), DOF_ROLL);
-  setRandomState(skel);
-
-  return skel;
-}
+}  // namespace simulation
+}  // namespace dart

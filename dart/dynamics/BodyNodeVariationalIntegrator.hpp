@@ -48,6 +48,8 @@ struct BodyNodeVariationalIntegratorState
 {
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /// Constructor
   BodyNodeVariationalIntegratorState();
 
@@ -96,6 +98,8 @@ public:
       BodyNode>;
 
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   BodyNodeVariationalIntegrator(const StateData& state = StateData());
 

@@ -944,6 +944,12 @@ double MetaSkeleton::computeLagrangian() const
 }
 
 //==============================================================================
+double MetaSkeleton::computeTotalEnergy() const
+{
+  return computeKineticEnergy() + computePotentialEnergy();
+}
+
+//==============================================================================
 double MetaSkeleton::getKineticEnergy() const
 {
   return computeKineticEnergy();

@@ -57,6 +57,7 @@ public:
 
 protected:
 
+  virtual void setPrevPositions(const Eigen::VectorXd& prevPositions) = 0;
   virtual Eigen::VectorXd getPrevPositions() const = 0;
   virtual void setNextPositions(const Eigen::VectorXd& nextPositions) = 0;
   virtual void updateNextRelativeTransform() = 0;
@@ -112,6 +113,14 @@ protected:
   void setComposite(common::Composite* newComposite) override
   {
     Base::setComposite(newComposite);
+  }
+
+  void setPrevPositions(const Eigen::VectorXd& prevPositions) override
+  {
+    assert(mComposite->getNumDofs()
+        == static_cast<std::size_t>(prevPositions.size()));
+
+    mPrevPositions = prevPositions;
   }
 
   Eigen::VectorXd getPrevPositions() const override

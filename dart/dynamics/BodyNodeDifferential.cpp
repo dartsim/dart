@@ -111,8 +111,8 @@ void BodyNodeDifferential::updateSpatialVelocityHessian()
   if (thisJoint->getNumDofs() == 0)
     return;
 
-  const auto nBodyNodes = thisBodyNode->getSkeleton()->getNumBodyNodes();
-  const auto* thisParentBodyNode = thisBodyNode->getParentBodyNode();
+//  const auto nBodyNodes = thisBodyNode->getSkeleton()->getNumBodyNodes();
+//  const auto* thisParentBodyNode = thisBodyNode->getParentBodyNode();
 
 //  if (thisParentBodyNode)
 //  {

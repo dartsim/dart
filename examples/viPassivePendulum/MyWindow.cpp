@@ -1,8 +1,14 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2016, Georgia Tech Research Corporation
  * All rights reserved.
+ *
+ * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
+ *            Jeongseok Lee <jslee02@gmail.com>
+ *
+ * Georgia Tech Graphics Lab and Humanoid Robotics Lab
+ *
+ * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
+ * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -29,69 +35,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-#include <gtest/gtest.h>
-#include "dart/dart.hpp"
-#include "TestHelpers.hpp"
-
-using namespace dart;
-
-void setRandomState(const dynamics::SkeletonPtr& skel);
-
-dynamics::SkeletonPtr createRandomSkeleton();
+#include "MyWindow.hpp"
 
 //==============================================================================
-TEST(VariationalIntegrator, Basic)
+MyWindow::MyWindow() : SimWindow()
 {
-  auto skel = createRandomSkeleton();
-  auto vi = skel->createAspect<dynamics::SkeletonVariationalIntegrator>();
-
-  for (auto i = 0u; i < 1e+3; ++i)
-    vi->integrate();
+  // Do nothing
 }
 
 //==============================================================================
-int main(int argc, char* argv[])
+MyWindow::~MyWindow()
 {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  // Do nothing
 }
 
 //==============================================================================
-//
-//                              Implementations
-//
-//==============================================================================
-
-//==============================================================================
-void setRandomState(const dynamics::SkeletonPtr& skel)
+void MyWindow::timeStepping()
 {
-  const auto pi = math::constantsd::pi();
-  const auto numDofs = skel->getNumDofs();
-  const auto posLower = pi * -0.5;
-  const auto posUpper = pi *  0.5;
-  const auto velLower = pi * -0.5;
-  const auto velUpper = pi *  0.5;
-
-  for (auto i = 0u; i < numDofs; ++i)
-  {
-    auto dof = skel->getDof(i);
-
-    const auto pos = math::random(posLower, posUpper);
-    const auto vel = math::random(velLower, velUpper);
-
-    dof->setPosition(pos);
-    dof->setVelocity(vel);
-  }
+//  Eigen::VectorXd damping = computeDamping();
+//  mWorld->getSkeleton(0)->setForces(damping);
+//  mWorld->step();
+  mWorld->step();
+  std::cout << "E: " << mWorld->getSkeleton(0)->computeTotalEnergy() << "\n";
 }
 
 //==============================================================================
-SkeletonPtr createRandomSkeleton()
+Eigen::VectorXd MyWindow::computeDamping()
 {
-  const auto numLinks = 25u;
-  const auto l = 1.5;
-  auto skel = createNLinkRobot(numLinks, Eigen::Vector3d(0.3, 0.3, l), DOF_ROLL);
-  setRandomState(skel);
-
-  return skel;
+  int nDof = mWorld->getSkeleton(0)->getNumDofs();
+  // add damping to each joint; twist-dof has smaller damping
+  Eigen::VectorXd damping = -0.01 * mWorld->getSkeleton(0)->getVelocities();
+  for (int i = 0; i < nDof; i++)
+    if (i % 3 == 1)
+      damping[i] *= 0.1;
+  return damping;
 }
