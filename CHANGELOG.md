@@ -19,6 +19,7 @@
 
 * Parsers
 
+  * Added `sdf` parsing for `fixed` joint and `material` tag of visual shape: [#775](https://github.com/dartsim/dart/pull/775)
   * Added support of urdfdom_headers 1.0: [#766](https://github.com/dartsim/dart/pull/766)
 
 * Misc improvements and bug fixes
