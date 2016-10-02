@@ -1001,16 +1001,18 @@ void readMaterial(
   const common::ResourceRetrieverPtr& retriever) {
 
   auto visualAspect = shapeNode->getVisualAspect();
-  Eigen::VectorXd color = getValueVectorXd(materialEle, "diffuse");
-  if (color.size() == 3) {
-    Eigen::Vector3d color3d = color;
-    visualAspect->setColor(color3d);
-  } else if (color.size() == 4) {
-    Eigen::Vector4d color4d = color;
-    visualAspect->setColor(color4d);
-  } else {
-    dterr << "[SdfParse::readMaterial] Unsupported color vector size: "
-          << color.size() << "\n";
+  if (hasElement(materialEle, "diffuse")) {
+    Eigen::VectorXd color = getValueVectorXd(materialEle, "diffuse");
+    if (color.size() == 3) {
+      Eigen::Vector3d color3d = color;
+      visualAspect->setColor(color3d);
+    } else if (color.size() == 4) {
+      Eigen::Vector4d color4d = color;
+      visualAspect->setColor(color4d);
+    } else {
+      dterr << "[SdfParse::readMaterial] Unsupported color vector size: "
+            << color.size() << "\n";
+    }
   }
 }
 
