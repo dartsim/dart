@@ -41,7 +41,8 @@ std::unique_ptr<common::Aspect> RevoluteJointVariationalIntegrator::cloneAspect(
 
   // TODO(JS): copy necessary member variables
 
-  return newAspect;
+  return std::move(newAspect);
+  // GCC 4.8.5 can't compile with 'return newAspect'.
 }
 
 //==============================================================================

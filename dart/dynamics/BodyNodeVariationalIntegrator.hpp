@@ -117,7 +117,7 @@ protected:
   void updateNextTransform();
   void updateNextVelocity(double timeStep);
 
-  void updateFdel(const Eigen::Vector3d& gravity, double timeStep);
+  void evaluateFdel(const Eigen::Vector3d& gravity, double timeStep);
 
 };
 

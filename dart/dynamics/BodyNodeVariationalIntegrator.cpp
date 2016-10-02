@@ -175,7 +175,7 @@ static Eigen::Vector6d computeSpatialGravityForce(
 }
 
 //==============================================================================
-void BodyNodeVariationalIntegrator::updateFdel(
+void BodyNodeVariationalIntegrator::evaluateFdel(
     const Eigen::Vector3d& gravity, double timeStep)
 {
   auto* bodyNode = mComposite;
@@ -207,7 +207,7 @@ void BodyNodeVariationalIntegrator::updateFdel(
           childBodyNodeVi->mState.mParentImpulse);
   }
 
-  jointAspect->updateFdel(mState.mParentImpulse, timeStep);
+  jointAspect->evaluateFdel(mState.mParentImpulse, timeStep);
 }
 
 } // namespace dynamics

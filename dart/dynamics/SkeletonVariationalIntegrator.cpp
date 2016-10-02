@@ -70,10 +70,34 @@ void SkeletonVariationalIntegrator::initialize()
 }
 
 //==============================================================================
-SkeletonVariationalIntegrator::TerminalCondition
-SkeletonVariationalIntegrator::integrate(double tol, std::size_t maxIteration)
+void SkeletonVariationalIntegrator::setTolerance(double tol)
 {
-  auto skel = mComposite;
+  mTolerance = tol;
+}
+
+//==============================================================================
+double SkeletonVariationalIntegrator::getTolerance() const
+{
+  return mTolerance;
+}
+
+//==============================================================================
+void SkeletonVariationalIntegrator::setMaxIternation(std::size_t iter)
+{
+  mMaxIteration = iter;
+}
+
+//==============================================================================
+std::size_t SkeletonVariationalIntegrator::getMaxIteration() const
+{
+  return mMaxIteration;
+}
+
+//==============================================================================
+SkeletonVariationalIntegrator::TerminalCondition
+SkeletonVariationalIntegrator::integrate()
+{
+  auto* skel = mComposite;
 
   TerminalCondition cond = Invalid;
 
@@ -81,41 +105,32 @@ SkeletonVariationalIntegrator::integrate(double tol, std::size_t maxIteration)
   if (!skel->isMobile() || skel->getNumDofs() == 0u)
     return StaticSkeleton;
 
-  auto iter = 0u;
-  const auto tolSqr = tol * tol;
+  const auto squaredTolerance = mTolerance * mTolerance;
   const auto dt = skel->getTimeStep();
 
   // Initial guess
   skel->computeForwardDynamics();
-  Eigen::VectorXd ddq = skel->getAccelerations();
-  Eigen::VectorXd qCurr = skel->getPositions();
-  Eigen::VectorXd qPrev = getPrevPositions();
+  const Eigen::VectorXd ddq = skel->getAccelerations();
+  const Eigen::VectorXd qCurr = skel->getPositions();
+  const Eigen::VectorXd qPrev = getPrevPositions();
 
   //  Eigen::VectorXd qNext = qCurr;
   Eigen::VectorXd qNext = skel->getPositionDifferences(
         ddq*dt*dt + skel->getPositionDifferences(qCurr, qPrev), -qCurr);
 
-  while (true)
+  cond = MaximumIteration;
+  for (auto i = 0u; i < mMaxIteration; ++i)
   {
-    ++iter;
+    const Eigen::VectorXd error = evaluateFdel(qNext);
+    auto squaredNorm = error.squaredNorm();
 
-    updateFdel(qNext);
-    const Eigen::VectorXd fdel = getFdel();
-    auto squaredNorm = fdel.squaredNorm();
-
-    if (iter >= maxIteration)
-    {
-      cond = MaximumIteration;
-      break;
-    }
-
-    if (squaredNorm <= tolSqr)
+    if (squaredNorm <= squaredTolerance)
     {
       cond = Tolerance;
       break;
     }
 
-    skel->setJointConstraintImpulses(-dt * fdel);
+    skel->setJointConstraintImpulses(-dt * error);
     skel->computeImpulseForwardDynamics();
     const Eigen::VectorXd delV = skel->getVelocityChanges();
     qNext = qNext + delV;
@@ -223,7 +238,7 @@ void SkeletonVariationalIntegrator::setNextPositions(
 }
 
 //==============================================================================
-void SkeletonVariationalIntegrator::updateFdel(
+Eigen::VectorXd SkeletonVariationalIntegrator::evaluateFdel(
     const Eigen::VectorXd& nextPositions)
 {
   // Implementation of Algorithm 2 of "A linear-time variational integrator for
@@ -254,12 +269,14 @@ void SkeletonVariationalIntegrator::updateFdel(
     auto* bodyNode = *it;
     auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
 
-    bodyNodeVi->updateFdel(gravity, timeStep);
+    bodyNodeVi->evaluateFdel(gravity, timeStep);
   }
+
+  return getError();
 }
 
 //==============================================================================
-Eigen::VectorXd SkeletonVariationalIntegrator::getFdel() const
+Eigen::VectorXd SkeletonVariationalIntegrator::getError() const
 {
   auto* skel = mComposite;
   const auto numDofs = skel->getNumDofs();
@@ -275,7 +292,7 @@ Eigen::VectorXd SkeletonVariationalIntegrator::getFdel() const
     auto* jointVi = bodyNodeVi->getJointVi();
     const auto numJointDofs = bodyNode->getParentJoint()->getNumDofs();
 
-    fdel.segment(index, numJointDofs) = jointVi->getFdel();
+    fdel.segment(index, numJointDofs) = jointVi->getError();
 
     index += numJointDofs;
   }

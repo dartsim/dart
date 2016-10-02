@@ -61,8 +61,8 @@ protected:
   virtual Eigen::VectorXd getPrevPositions() const = 0;
   virtual void setNextPositions(const Eigen::VectorXd& nextPositions) = 0;
   virtual void updateNextRelativeTransform() = 0;
-  virtual void updateFdel(const Eigen::Vector6d& force, double timeStep) = 0;
-  virtual Eigen::VectorXd getFdel() const = 0;
+  virtual void evaluateFdel(const Eigen::Vector6d& force, double timeStep) = 0;
+  virtual Eigen::VectorXd getError() const = 0;
 
   /// Transform for the next configuration
   Eigen::Isometry3d mNextTransform{Eigen::Isometry3d::Identity()};
@@ -136,7 +136,7 @@ protected:
     mNextPositions = nextPositions;
   }
 
-  void updateFdel(const Eigen::Vector6d& force, double timeStep) override
+  void evaluateFdel(const Eigen::Vector6d& force, double timeStep) override
   {
     auto* genJoint = getGenericJoint();
 
@@ -144,7 +144,7 @@ protected:
     mFdel -= timeStep * genJoint->getForcesStatic();
   }
 
-  Eigen::VectorXd getFdel() const override
+  Eigen::VectorXd getError() const override
   {
     return mFdel;
   }

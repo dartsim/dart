@@ -85,7 +85,15 @@ public:
 
   void initialize();
 
-  TerminalCondition integrate(double tol = 1e-9, std::size_t maxIteration = 30u);
+  void setTolerance(double tol);
+
+  double getTolerance() const;
+
+  void setMaxIternation(std::size_t iter);
+
+  std::size_t getMaxIteration() const;
+
+  TerminalCondition integrate();
 
 protected:
 
@@ -99,12 +107,19 @@ protected:
 
   void setNextPositions(const Eigen::VectorXd& nextPositions);
 
-  /// Compute forced discrete Euler-Lagrange equation given next configurations.
-  void updateFdel(const Eigen::VectorXd& nextPositions);
+  /// Evaluate forced discrete Euler-Lagrange equation given next
+  /// configurations.
+  Eigen::VectorXd evaluateFdel(const Eigen::VectorXd& nextPositions);
 
-  Eigen::VectorXd getFdel() const;
+  Eigen::VectorXd getError() const;
 
   void stepForward(const Eigen::VectorXd& nextPositions);
+
+protected:
+
+  double mTolerance{1e-9};
+
+  std::size_t mMaxIteration{30u};
 
 };
 
