@@ -38,7 +38,7 @@
     <link name="00FLHip">
       <pose>-0.300000 0.600000 -0.060000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.025000</pose>
+        <pose>0.000000 0.000000 -0.025000 0.000000 0.000000 0.000000</pose>
         <mass>0.012500</mass>
         <inertia>
           <ixx>0.000005</ixx>
@@ -50,7 +50,7 @@
         </inertia>
       </inertial>
       <collision name="00FLHip_collision">
-        <pose>0.000000 0.000000 -0.025000</pose>
+        <pose>0.000000 0.000000 -0.025000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.050000 0.050000 0.050000</size>
@@ -58,7 +58,7 @@
         </geometry>
       </collision>
       <visual name="00FLHip_visual">
-        <pose>0.000000 0.000000 -0.025000</pose>
+        <pose>0.000000 0.000000 -0.025000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.050000 0.050000 0.050000</size>
@@ -72,7 +72,7 @@
     <link name="01FLThigh">
       <pose>-0.300000 0.600000 -0.120000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <mass>0.400000</mass>
         <inertia>
           <ixx>0.005667</ixx>
@@ -84,7 +84,7 @@
         </inertia>
       </inertial>
       <collision name="01FLThigh_collision">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -92,7 +92,7 @@
         </geometry>
       </collision>
       <visual name="01FLThigh_visual">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -106,7 +106,7 @@
     <link name="02FLShin">
       <pose>-0.300000 0.600000 -0.520000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <mass>0.400000</mass>
         <inertia>
           <ixx>0.005667</ixx>
@@ -118,7 +118,7 @@
         </inertia>
       </inertial>
       <collision name="02FLShin_collision">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -126,7 +126,7 @@
         </geometry>
       </collision>
       <visual name="02FLShin_visual">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -140,7 +140,7 @@
     <link name="03FLFoot">
       <pose>-0.300000 0.600000 -0.920000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.150000</pose>
+        <pose>0.000000 0.000000 -0.150000 0.000000 0.000000 0.000000</pose>
         <mass>0.300000</mass>
         <inertia>
           <ixx>0.002500</ixx>
@@ -152,7 +152,7 @@
         </inertia>
       </inertial>
       <collision name="03FLFoot_collision">
-        <pose>0.000000 0.000000 -0.150000</pose>
+        <pose>0.000000 0.000000 -0.150000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.300000</size>
@@ -160,7 +160,7 @@
         </geometry>
       </collision>
       <visual name="03FLFoot_visual">
-        <pose>0.000000 0.000000 -0.150000</pose>
+        <pose>0.000000 0.000000 -0.150000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.300000</size>
@@ -185,7 +185,7 @@
     <link name="04FRHip">
       <pose>0.300000 0.600000 -0.060000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.025000</pose>
+        <pose>0.000000 0.000000 -0.025000 0.000000 0.000000 0.000000</pose>
         <mass>0.012500</mass>
         <inertia>
           <ixx>0.000005</ixx>
@@ -197,7 +197,7 @@
         </inertia>
       </inertial>
       <collision name="04FRHip_collision">
-        <pose>0.000000 0.000000 -0.025000</pose>
+        <pose>0.000000 0.000000 -0.025000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.050000 0.050000 0.050000</size>
@@ -205,7 +205,7 @@
         </geometry>
       </collision>
       <visual name="04FRHip_visual">
-        <pose>0.000000 0.000000 -0.025000</pose>
+        <pose>0.000000 0.000000 -0.025000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.050000 0.050000 0.050000</size>
@@ -219,7 +219,7 @@
     <link name="05FRThigh">
       <pose>0.300000 0.600000 -0.120000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <mass>0.400000</mass>
         <inertia>
           <ixx>0.005667</ixx>
@@ -231,7 +231,7 @@
         </inertia>
       </inertial>
       <collision name="05FRThigh_collision">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -239,7 +239,7 @@
         </geometry>
       </collision>
       <visual name="05FRThigh_visual">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -253,7 +253,7 @@
     <link name="06FRShin">
       <pose>0.300000 0.600000 -0.520000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <mass>0.400000</mass>
         <inertia>
           <ixx>0.005667</ixx>
@@ -265,7 +265,7 @@
         </inertia>
       </inertial>
       <collision name="06FRShin_collision">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -273,7 +273,7 @@
         </geometry>
       </collision>
       <visual name="06FRShin_visual">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -287,7 +287,7 @@
     <link name="07FRFoot">
       <pose>0.300000 0.600000 -0.920000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.150000</pose>
+        <pose>0.000000 0.000000 -0.150000 0.000000 0.000000 0.000000</pose>
         <mass>0.300000</mass>
         <inertia>
           <ixx>0.002500</ixx>
@@ -299,7 +299,7 @@
         </inertia>
       </inertial>
       <collision name="07FRFoot_collision">
-        <pose>0.000000 0.000000 -0.150000</pose>
+        <pose>0.000000 0.000000 -0.150000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.300000</size>
@@ -307,7 +307,7 @@
         </geometry>
       </collision>
       <visual name="07FRFoot_visual">
-        <pose>0.000000 0.000000 -0.150000</pose>
+        <pose>0.000000 0.000000 -0.150000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.300000</size>
@@ -332,7 +332,7 @@
     <link name="08BLHip">
       <pose>-0.300000 -0.600000 -0.060000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.025000</pose>
+        <pose>0.000000 0.000000 -0.025000 0.000000 0.000000 0.000000</pose>
         <mass>0.012500</mass>
         <inertia>
           <ixx>0.000005</ixx>
@@ -344,7 +344,7 @@
         </inertia>
       </inertial>
       <collision name="08BLHip_collision">
-        <pose>0.000000 0.000000 -0.025000</pose>
+        <pose>0.000000 0.000000 -0.025000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.050000 0.050000 0.050000</size>
@@ -352,7 +352,7 @@
         </geometry>
       </collision>
       <visual name="08BLHip_visual">
-        <pose>0.000000 0.000000 -0.025000</pose>
+        <pose>0.000000 0.000000 -0.025000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.050000 0.050000 0.050000</size>
@@ -366,7 +366,7 @@
     <link name="09BLThigh">
       <pose>-0.300000 -0.600000 -0.120000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <mass>0.400000</mass>
         <inertia>
           <ixx>0.005667</ixx>
@@ -378,7 +378,7 @@
         </inertia>
       </inertial>
       <collision name="09BLThigh_collision">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -386,7 +386,7 @@
         </geometry>
       </collision>
       <visual name="09BLThigh_visual">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -400,7 +400,7 @@
     <link name="10BLShin">
       <pose>-0.300000 -0.600000 -0.520000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <mass>0.400000</mass>
         <inertia>
           <ixx>0.005667</ixx>
@@ -412,7 +412,7 @@
         </inertia>
       </inertial>
       <collision name="10BLShin_collision">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -420,7 +420,7 @@
         </geometry>
       </collision>
       <visual name="10BLShin_visual">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -434,7 +434,7 @@
     <link name="11BLFoot">
       <pose>-0.300000 -0.600000 -0.920000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.150000</pose>
+        <pose>0.000000 0.000000 -0.150000 0.000000 0.000000 0.000000</pose>
         <mass>0.300000</mass>
         <inertia>
           <ixx>0.002500</ixx>
@@ -446,7 +446,7 @@
         </inertia>
       </inertial>
       <collision name="11BLFoot_collision">
-        <pose>0.000000 0.000000 -0.150000</pose>
+        <pose>0.000000 0.000000 -0.150000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.300000</size>
@@ -454,7 +454,7 @@
         </geometry>
       </collision>
       <visual name="11BLFoot_visual">
-        <pose>0.000000 0.000000 -0.150000</pose>
+        <pose>0.000000 0.000000 -0.150000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.300000</size>
@@ -479,7 +479,7 @@
     <link name="12BRHip">
       <pose>0.300000 -0.600000 -0.060000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.025000</pose>
+        <pose>0.000000 0.000000 -0.025000 0.000000 0.000000 0.000000</pose>
         <mass>0.012500</mass>
         <inertia>
           <ixx>0.000005</ixx>
@@ -491,7 +491,7 @@
         </inertia>
       </inertial>
       <collision name="12BRHip_collision">
-        <pose>0.000000 0.000000 -0.025000</pose>
+        <pose>0.000000 0.000000 -0.025000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.050000 0.050000 0.050000</size>
@@ -499,7 +499,7 @@
         </geometry>
       </collision>
       <visual name="12BRHip_visual">
-        <pose>0.000000 0.000000 -0.025000</pose>
+        <pose>0.000000 0.000000 -0.025000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.050000 0.050000 0.050000</size>
@@ -513,7 +513,7 @@
     <link name="13BRThigh">
       <pose>0.300000 -0.600000 -0.120000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <mass>0.400000</mass>
         <inertia>
           <ixx>0.005667</ixx>
@@ -525,7 +525,7 @@
         </inertia>
       </inertial>
       <collision name="13BRThigh_collision">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -533,7 +533,7 @@
         </geometry>
       </collision>
       <visual name="13BRThigh_visual">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -547,7 +547,7 @@
     <link name="14BRShin">
       <pose>0.300000 -0.600000 -0.520000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <mass>0.400000</mass>
         <inertia>
           <ixx>0.005667</ixx>
@@ -559,7 +559,7 @@
         </inertia>
       </inertial>
       <collision name="14BRShin_collision">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -567,7 +567,7 @@
         </geometry>
       </collision>
       <visual name="14BRShin_visual">
-        <pose>0.000000 0.000000 -0.200000</pose>
+        <pose>0.000000 0.000000 -0.200000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.400000</size>
@@ -581,7 +581,7 @@
     <link name="15BRFoot">
       <pose>0.300000 -0.600000 -0.920000 0.000000 0.000000 0.000000</pose>
       <inertial>
-        <pose>0.000000 0.000000 -0.150000</pose>
+        <pose>0.000000 0.000000 -0.150000 0.000000 0.000000 0.000000</pose>
         <mass>0.300000</mass>
         <inertia>
           <ixx>0.002500</ixx>
@@ -593,7 +593,7 @@
         </inertia>
       </inertial>
       <collision name="15BRFoot_collision">
-        <pose>0.000000 0.000000 -0.150000</pose>
+        <pose>0.000000 0.000000 -0.150000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.300000</size>
@@ -601,7 +601,7 @@
         </geometry>
       </collision>
       <visual name="15BRFoot_visual">
-        <pose>0.000000 0.000000 -0.150000</pose>
+        <pose>0.000000 0.000000 -0.150000 0.000000 0.000000 0.000000</pose>
         <geometry>
           <box>
             <size>0.100000 0.100000 0.300000</size>
@@ -623,7 +623,7 @@
         </material>
       </visual>
     </link>
-    <joint type="revolute" name="j_00FLHip">
+    <joint name="j_00FLHip" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>Body</parent>
@@ -638,7 +638,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_01FLThigh">
+    <joint name="j_01FLThigh" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>00FLHip</parent>
@@ -653,7 +653,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_02FLShin">
+    <joint name="j_02FLShin" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>01FLThigh</parent>
@@ -668,7 +668,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_03FLFoot">
+    <joint name="j_03FLFoot" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>02FLShin</parent>
@@ -683,7 +683,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_04FRHip">
+    <joint name="j_04FRHip" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>Body</parent>
@@ -698,7 +698,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_05FRThigh">
+    <joint name="j_05FRThigh" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>04FRHip</parent>
@@ -713,7 +713,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_06FRShin">
+    <joint name="j_06FRShin" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>05FRThigh</parent>
@@ -728,7 +728,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_07FRFoot">
+    <joint name="j_07FRFoot" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>06FRShin</parent>
@@ -743,7 +743,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_08BLHip">
+    <joint name="j_08BLHip" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>Body</parent>
@@ -758,7 +758,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_09BLThigh">
+    <joint name="j_09BLThigh" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>08BLHip</parent>
@@ -773,7 +773,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_10BLShin">
+    <joint name="j_10BLShin" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>09BLThigh</parent>
@@ -788,7 +788,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_11BLFoot">
+    <joint name="j_11BLFoot" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>10BLShin</parent>
@@ -803,7 +803,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_12BRHip">
+    <joint name="j_12BRHip" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>Body</parent>
@@ -818,7 +818,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_13BRThigh">
+    <joint name="j_13BRThigh" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>12BRHip</parent>
@@ -833,7 +833,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_14BRShin">
+    <joint name="j_14BRShin" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>13BRThigh</parent>
@@ -848,7 +848,7 @@
         </limit>
       </axis>
     </joint>
-    <joint type="revolute" name="j_15BRFoot">
+    <joint name="j_15BRFoot" type="revolute">
       <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
       <use_parent_model_frame>0</use_parent_model_frame>
       <parent>14BRShin</parent>
