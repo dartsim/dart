@@ -598,6 +598,9 @@ class BoundingBox {
         Eigen::Vector3d mMax;
 };
 
+const Eigen::Vector6d dexp_inv_transpose(
+    const Eigen::Vector6d& V, const Eigen::Vector6d& W);
+
 }  // namespace math
 }  // namespace dart
 

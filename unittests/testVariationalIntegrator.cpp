@@ -38,12 +38,14 @@ using namespace dart;
 
 void setRandomState(const dynamics::SkeletonPtr& skel);
 
-SkeletonPtr createRandomSkeleton();
+dynamics::SkeletonPtr createRandomSkeleton();
 
 //==============================================================================
 TEST(VariationalIntegrator, Basic)
 {
   auto skel = createRandomSkeleton();
+  auto vi = skel->createAspect<dynamics::SkeletonVariationalIntegrator>();
+  vi->integrate();
 }
 
 //==============================================================================

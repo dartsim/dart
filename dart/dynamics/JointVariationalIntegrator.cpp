@@ -29,81 +29,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SKELETONVARIATIONALINTEGRATOR_HPP_
-#define DART_DYNAMICS_SKELETONVARIATIONALINTEGRATOR_HPP_
-
-#include <Eigen/Dense>
-
-#include "dart/common/AspectWithVersion.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/JointVariationalIntegrator.hpp"
 
 namespace dart {
 namespace dynamics {
 
-//class Skeleton;
-
-namespace detail {
-
-struct SkeletonVariationalIntegratorState
+//==============================================================================
+std::unique_ptr<common::Aspect> RevoluteJointVariationalIntegrator::cloneAspect() const
 {
-  /// Constructor
-  SkeletonVariationalIntegratorState();
+  auto newAspect = common::make_unique<RevoluteJointVariationalIntegrator>();
 
-  /// Destructor
-  virtual ~SkeletonVariationalIntegratorState() = default;
-};
+  // TODO(JS): copy necessary member variables
 
-}  // namespace detail
+  return newAspect;
+}
 
 //==============================================================================
-class SkeletonVariationalIntegrator final :
-    public common::AspectWithState<
-        SkeletonVariationalIntegrator,
-        detail::SkeletonVariationalIntegratorState,
-        Skeleton>
+void RevoluteJointVariationalIntegrator::updateNextRelativeTransform()
 {
-public:
+  assert(dynamic_cast<RevoluteJoint*>(mComposite));
+  auto* revJoint = static_cast<RevoluteJoint*>(mComposite);
 
-  using Base = common::AspectWithState<
-      SkeletonVariationalIntegrator,
-      detail::SkeletonVariationalIntegratorState,
-      Skeleton>;
+  mNextTransform
+      = revJoint->getTransformFromParentBodyNode()
+      * Eigen::AngleAxisd(mNextPositions[0], revJoint->getAxis())
+      * revJoint->getTransformFromChildBodyNode().inverse();
 
-  using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
+  // Verification
+  assert(math::verifyTransform(mNextTransform));
+}
 
-  enum TerminalCondition
-  {
-    Invalid,
-    StaticSkeleton,
-    MaximumIteration,
-    Tolerance
-  };
-
-  SkeletonVariationalIntegrator(const StateData& state = StateData());
-
-  SkeletonVariationalIntegrator(const SkeletonVariationalIntegrator&) = delete;
-
-  void initialize();
-
-  TerminalCondition integrate(double tol = 1e-9, std::size_t maxIteration = 30u);
-
-protected:
-  Eigen::VectorXd getPrevPositions() const;
-
-  void setNextPositions(const Eigen::VectorXd& nextPositions);
-
-  /// Compute forced discrete Euler-Lagrange equation given next configurations.
-  void updateFdel(const Eigen::VectorXd& nextPositions);
-
-  Eigen::VectorXd getFdel() const;
-
-  void setComposite(common::Composite* newComposite) override;
-
-  void loseComposite(common::Composite* oldComposite) override;
-
-};
-
-}  // namespace dynamics
-}  // namespace dart
-
-#endif  // DART_DYNAMICS_SKELETONVARIATIONALINTEGRATOR_HPP_
+} // namespace dynamics
+} // namespace dart

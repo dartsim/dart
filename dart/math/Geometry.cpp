@@ -1983,6 +1983,17 @@ BoundingBox::BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max)
 
 }
 
+//==============================================================================
+const Eigen::Vector6d dexp_inv_transpose(
+    const Eigen::Vector6d& V, const Eigen::Vector6d& W)
+{
+  const Eigen::Vector6d dad1 = dad(V, W);
+  const Eigen::Vector6d dad2 = dad(V, dad1);
+  const Eigen::Vector6d dad3 = dad(V, dad2);
+  const Eigen::Vector6d dad4 = dad(V, dad3);
+
+  return W - dad1/2.0 + dad2/12.0 - dad4/720.0;
+}
 
 }  // namespace math
 }  // namespace dart

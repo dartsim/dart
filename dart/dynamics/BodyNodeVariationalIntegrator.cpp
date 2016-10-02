@@ -34,6 +34,7 @@
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/JointVariationalIntegrator.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -56,24 +57,36 @@ BodyNodeVariationalIntegrator::BodyNodeVariationalIntegrator(
 }
 
 //==============================================================================
-void BodyNodeVariationalIntegrator::initialize(double timeStep)
+JointVariationalIntegrator* BodyNodeVariationalIntegrator::getJointVi()
 {
   auto* bodyNode = mComposite;
   auto* joint = bodyNode->getParentJoint();
+  assert(joint->get<JointVariationalIntegrator>());
+
+  return joint->get<JointVariationalIntegrator>();
+}
+
+//==============================================================================
+const JointVariationalIntegrator*
+BodyNodeVariationalIntegrator::getJointVi() const
+{
+  return const_cast<const BodyNodeVariationalIntegrator*>(
+        this)->getJointVi();
+}
+
+//==============================================================================
+void BodyNodeVariationalIntegrator::initialize(double timeStep)
+{
+  auto* bodyNode = mComposite;
 
   const Eigen::Matrix6d& G = bodyNode->getInertia().getSpatialTensor();
   const Eigen::Vector6d& V = bodyNode->getSpatialVelocity();
 
-//  mDiscreteJS.reset(new DiscreteMechanicsJS());
-//  mDiscreteJS->prevMomentum = math::dexp_inv_transpose(V*timeStep, G*V);
+  mState.mPrevMomentum = math::dexp_inv_transpose(V*timeStep, G*V);
 
-//  joint->dm_js_impulse_initialize(timeStep);
-}
-
-//==============================================================================
-void BodyNodeVariationalIntegrator::print()
-{
-  //std::cout << mState.mV_q << std::endl;;
+  auto* joint = bodyNode->getParentJoint();
+  assert(joint->get<JointVariationalIntegrator>());
+  joint->get<JointVariationalIntegrator>()->initialize(timeStep);
 }
 
 //==============================================================================
@@ -82,38 +95,119 @@ void BodyNodeVariationalIntegrator::setComposite(
 {
   Base::setComposite(newComposite);
 
-  const auto* bodyNode = dynamic_cast<BodyNode*>(newComposite);
-  const auto skeleton = bodyNode->getSkeleton();
-  const auto numDofs = skeleton->getNumDofs();
+  auto* bodyNode = mComposite;
+  auto skeleton = bodyNode->getSkeleton();
+//  const auto numDofs = skeleton->getNumDofs();
+//  const auto timeStep = skeleton->getTimeStep();
 
   assert(skeleton);
-
-//  mState.mV_q.resize(6, numDofs);
-//  mState.mV_dq.resize(6, numDofs);
-
-//  mState.mV_q_q.resize(numDofs);
-//  mState.mV_q_dq.resize(numDofs);
-//  mState.mV_dq_dq.resize(numDofs);
-
-//  for (auto i = 0u; i < numDofs; ++i)
-//  {
-//    mState.mV_q_q[i].resize(6, numDofs);
-//    mState.mV_q_dq[i].resize(6, numDofs);
-//    mState.mV_dq_dq[i].resize(6, numDofs);
-//  }
 
   // TODO(JS): These should be updated when the structure of skeleton is
   // modified. We might want to consider adding signal to skeleton for this.
 
-  auto* joint = mComposite->getParentJoint();
+  auto* joint = bodyNode->getParentJoint();
   if (joint->is<RevoluteJoint>())
   {
-
+    JointVariationalIntegrator* revVI
+        = new RevoluteJointVariationalIntegrator();
+    joint->set(revVI);
+    assert(joint->get<JointVariationalIntegrator>());
   }
   else
   {
-    dtwarn << "WARN\n";
+    dterr << "[BodyNodeVariationalIntegrator::setComposite] Attempting to "
+          << "create VI aspect for unsupported joint type '"
+          << joint->getType() << "'.\n";
+    assert(false);
   }
+}
+
+//==============================================================================
+void BodyNodeVariationalIntegrator::updateNextTransform()
+{
+  auto* bodyNode = mComposite;
+  auto* joint = bodyNode->getParentJoint();
+  auto* jointAspect = joint->get<JointVariationalIntegrator>();
+
+  jointAspect->updateNextRelativeTransform();
+}
+
+//==============================================================================
+void BodyNodeVariationalIntegrator::updateNextVelocity(double timeStep)
+{
+  auto* bodyNode = mComposite;
+  auto* parentBodyNode = bodyNode->getParentBodyNode();
+  auto* joint = bodyNode->getParentJoint();
+  auto* jointAspect = joint->get<JointVariationalIntegrator>();
+
+  if (parentBodyNode)
+  {
+    auto parentBodyNodeVi
+        = parentBodyNode->get<BodyNodeVariationalIntegrator>();
+    assert(parentBodyNodeVi);
+
+    mState.mDeltaWorldTransform
+        = joint->getRelativeTransform().inverse()
+        * parentBodyNodeVi->mState.mDeltaWorldTransform
+        * jointAspect->mNextTransform;
+  }
+  else
+  {
+    mState.mDeltaWorldTransform
+        = joint->getRelativeTransform().inverse()
+        * jointAspect->mNextTransform;
+  }
+
+  mState.mPostAverageVelocity
+      = math::logMap(mState.mDeltaWorldTransform) / timeStep;
+}
+
+//==============================================================================
+static Eigen::Vector6d computeSpatialGravityForce(
+    const Eigen::Isometry3d& T,
+    const Eigen::Matrix6d& inertiaTensor,
+    const Eigen::Vector3d& gravityAcceleration)
+{
+  const Eigen::Matrix6d& I = inertiaTensor;
+  const Eigen::Vector3d& g = gravityAcceleration;
+
+  return I * math::AdInvRLinear(T, g);
+}
+
+//==============================================================================
+void BodyNodeVariationalIntegrator::updateFdel(
+    const Eigen::Vector3d& gravity, double timeStep)
+{
+  auto* bodyNode = mComposite;
+  auto* joint = bodyNode->getParentJoint();
+  auto* jointAspect = joint->get<JointVariationalIntegrator>();
+
+  const Eigen::Matrix6d& G = bodyNode->getInertia().getSpatialTensor();
+
+  mState.mPostMomentum = math::dexp_inv_transpose(
+        mState.mPostAverageVelocity*timeStep, G*mState.mPostAverageVelocity);
+
+  const Eigen::Isometry3d expHPrevVelocity
+      = math::expMap(timeStep*mState.mPreAverageVelocity);
+
+  mState.mParentImpulse
+      = mState.mPostMomentum
+      - math::dAdT(expHPrevVelocity, mState.mPrevMomentum)
+      - computeSpatialGravityForce(bodyNode->getTransform(), G, gravity)
+        * timeStep;
+  // TODO(JS): subtract external force * timeStep to parentImpulse
+
+  for (auto i = 0u; i < bodyNode->getNumChildBodyNodes(); ++i)
+  {
+    auto* childBodyNode = bodyNode->getChildBodyNode(i);
+    auto* childBodyNodeVi = childBodyNode->get<BodyNodeVariationalIntegrator>();
+
+    mState.mParentImpulse += math::dAdInvT(
+          childBodyNode->getParentJoint()->getRelativeTransform(),
+          childBodyNodeVi->mState.mParentImpulse);
+  }
+
+  jointAspect->updateFdel(mState.mParentImpulse, timeStep);
 }
 
 } // namespace dynamics

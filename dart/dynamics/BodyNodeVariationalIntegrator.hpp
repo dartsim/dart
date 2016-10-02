@@ -40,7 +40,7 @@
 namespace dart {
 namespace dynamics {
 
-//class Skeleton;
+class JointVariationalIntegrator;
 
 namespace detail {
 
@@ -53,6 +53,28 @@ struct BodyNodeVariationalIntegratorState
 
   /// Destructor
   virtual ~BodyNodeVariationalIntegratorState() = default;
+
+  /// The prediction of the transform for the next discrete time (k+1)
+  Eigen::Isometry3d mNextWorldTransform{Eigen::Isometry3d::Identity()};
+
+  /// The relative transform of the next transform relative to the current
+  /// transform.
+  Eigen::Isometry3d mDeltaWorldTransform{Eigen::Isometry3d::Identity()};
+
+  /// Discrete spatial velocity for the duration of (k-1, k).
+  Eigen::Vector6d mPreAverageVelocity{Eigen::Vector6d::Zero()};
+
+  /// Discrete spatial velocity for the duration of (k, k+1).
+  Eigen::Vector6d mPostAverageVelocity{Eigen::Vector6d::Zero()};
+
+  /// Discrete spatial momentum for the duration of (k-1, k).
+  Eigen::Vector6d mPrevMomentum{Eigen::Vector6d::Zero()};
+
+  /// Discrete spatial momentum for the duration of (k, k+1).
+  Eigen::Vector6d mPostMomentum{Eigen::Vector6d::Zero()};
+
+  /// Spatial impulse transmitted from the parent BodyNode.
+  Eigen::Vector6d mParentImpulse{Eigen::Vector6d::Zero()};
 };
 
 }  // namespace detail
@@ -66,7 +88,7 @@ class BodyNodeVariationalIntegrator final :
 {
 public:
 
-  friend class SkeletonDifferential;
+  friend class SkeletonVariationalIntegrator;
 
   using Base = common::AspectWithState<
       BodyNodeVariationalIntegrator,
@@ -79,13 +101,20 @@ public:
 
   BodyNodeVariationalIntegrator(const BodyNodeVariationalIntegrator&) = delete;
 
-  void initialize(double timeStep);
+  JointVariationalIntegrator* getJointVi();
+  const JointVariationalIntegrator* getJointVi() const;
 
-  void print();
+  void initialize(double timeStep);
 
 protected:
 
   void setComposite(common::Composite* newComposite) override;
+
+  void updateNextTransform();
+  void updateNextVelocity(double timeStep);
+
+  void updateFdel(const Eigen::Vector3d& gravity, double timeStep);
+
 };
 
 }  // namespace dynamics

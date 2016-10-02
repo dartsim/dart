@@ -31,8 +31,10 @@
 
 #include "dart/dynamics/SkeletonVariationalIntegrator.hpp"
 
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BodyNodeVariationalIntegrator.hpp"
+#include "dart/dynamics/JointVariationalIntegrator.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -48,13 +50,192 @@ SkeletonVariationalIntegratorState::SkeletonVariationalIntegratorState()
 } // namespace detail
 
 //==============================================================================
-SkeletonVariationalIntegrator::SkeletonVariationalIntegrator(const StateData& state)
+SkeletonVariationalIntegrator::SkeletonVariationalIntegrator(
+    const StateData& state)
 {
   mState = state;
 }
 
 //==============================================================================
-void SkeletonVariationalIntegrator::setComposite(common::Composite* newComposite)
+void SkeletonVariationalIntegrator::initialize()
+{
+  auto* skel = mComposite;
+
+  for (auto* bodyNode : skel->getBodyNodes())
+  {
+    auto* aspect = bodyNode->get<BodyNodeVariationalIntegrator>();
+    assert(aspect);
+    aspect->initialize(skel->getTimeStep());
+  }
+}
+
+//==============================================================================
+SkeletonVariationalIntegrator::TerminalCondition
+SkeletonVariationalIntegrator::integrate(double tol, std::size_t maxIteration)
+{
+  auto skel = mComposite;
+
+  TerminalCondition cond = Invalid;
+
+  // Skip immobile or 0-dof skeleton
+  if (!skel->isMobile() || skel->getNumDofs() == 0u)
+    return StaticSkeleton;
+
+  auto iter = 0u;
+  const auto tolSqr = tol * tol;
+  const auto dt = skel->getTimeStep();
+
+  // Initial guess
+  skel->computeForwardDynamics();
+  Eigen::VectorXd ddq = skel->getAccelerations();
+  Eigen::VectorXd qCurr = skel->getPositions();
+  Eigen::VectorXd qPrev = getPrevPositions();
+
+  //  Eigen::VectorXd qNext = qCurr;
+  Eigen::VectorXd qNext = skel->getPositionDifferences(
+        ddq*dt*dt + skel->getPositionDifferences(qCurr, qPrev), -qCurr);
+
+  while (true)
+  {
+    ++iter;
+
+    updateFdel(qNext);
+    const Eigen::VectorXd fdel = getFdel();
+    auto squaredNorm = fdel.squaredNorm();
+
+    if (iter >= maxIteration)
+    {
+      cond = MaximumIteration;
+      break;
+    }
+
+    if (squaredNorm <= tolSqr)
+    {
+      cond = Tolerance;
+      break;
+    }
+
+    skel->setJointConstraintImpulses(-dt * fdel);
+    skel->computeImpulseForwardDynamics();
+    const Eigen::VectorXd delV = skel->getVelocityChanges();
+    qNext = qNext + delV;
+    // TODO: generalize for non Eucleadian joint spaces as well
+  }
+
+  return cond;
+}
+
+//==============================================================================
+Eigen::VectorXd SkeletonVariationalIntegrator::getPrevPositions() const
+{
+  auto* skel = mComposite;
+  const auto numDofs = skel->getNumDofs();
+
+  Eigen::VectorXd positions;
+  positions.resize(numDofs);
+
+  auto index = 0u;
+  for (auto* bodyNode : skel->getBodyNodes())
+  {
+    auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+    assert(bodyNodeVi);
+    auto* jointVi = bodyNodeVi->getJointVi();
+    const auto numJointDofs = bodyNode->getParentJoint()->getNumDofs();
+
+    positions.segment(index, numJointDofs) = jointVi->getPrevPositions();
+
+    index += numJointDofs;
+  }
+
+  return positions;
+}
+
+//==============================================================================
+void SkeletonVariationalIntegrator::setNextPositions(
+    const Eigen::VectorXd& nextPositions)
+{
+  auto* skel = mComposite;
+  assert(skel->getNumDofs() == static_cast<std::size_t>(nextPositions.size()));
+
+  auto index = 0u;
+  for (auto* bodyNode : skel->getBodyNodes())
+  {
+    auto* aspect = bodyNode->get<BodyNodeVariationalIntegrator>();
+    assert(aspect);
+    auto* joint = bodyNode->getParentJoint();
+    const auto numDofs = joint->getNumDofs();
+
+    aspect->getJointVi()->setNextPositions(
+          nextPositions.segment(index, numDofs));
+
+    index += numDofs;
+  }
+}
+
+//==============================================================================
+void SkeletonVariationalIntegrator::updateFdel(
+    const Eigen::VectorXd& nextPositions)
+{
+  // Implementation of Algorithm 2 of "A linear-time variational integrator for
+  // multibody systems" (WAFR 2016).
+
+  auto* skel = mComposite;
+  const auto timeStep = skel->getTimeStep();
+  const Eigen::Vector3d& gravity = skel->getGravity();
+
+  setNextPositions(nextPositions);
+
+  // TODO(JS): Not implemented
+
+  // Forward recursion: line 1 to 5 of Algorithm 2
+  for (auto* bodyNode : skel->getBodyNodes())
+  {
+    auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+    assert(bodyNodeVi);
+
+    bodyNodeVi->updateNextTransform();
+    bodyNodeVi->updateNextVelocity(timeStep);
+  }
+
+  // Backward recursion: line 6 to 9 of Algorithm 2
+  for (auto it = skel->getBodyNodes().rbegin();
+       it != skel->getBodyNodes().rend(); ++it)
+  {
+    auto* bodyNode = *it;
+    auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+
+    bodyNodeVi->updateFdel(gravity, timeStep);
+  }
+}
+
+//==============================================================================
+Eigen::VectorXd SkeletonVariationalIntegrator::getFdel() const
+{
+  auto* skel = mComposite;
+  const auto numDofs = skel->getNumDofs();
+
+  Eigen::VectorXd fdel;
+  fdel.resize(numDofs);
+
+  auto index = 0u;
+  for (auto* bodyNode : skel->getBodyNodes())
+  {
+    auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+    assert(bodyNodeVi);
+    auto* jointVi = bodyNodeVi->getJointVi();
+    const auto numJointDofs = bodyNode->getParentJoint()->getNumDofs();
+
+    fdel.segment(index, numJointDofs) = jointVi->getFdel();
+
+    index += numJointDofs;
+  }
+
+  return fdel;
+}
+
+//==============================================================================
+void SkeletonVariationalIntegrator::setComposite(
+    common::Composite* newComposite)
 {
   Base::setComposite(newComposite);
 

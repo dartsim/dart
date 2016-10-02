@@ -710,6 +710,21 @@ GenericJoint<ConfigSpaceT>::getAccelerationsStatic() const
 
 //==============================================================================
 template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setForcesStatic(const Vector& forces)
+{
+  this->mAspectState.mForces = forces;
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+const typename GenericJoint<ConfigSpaceT>::Vector&
+GenericJoint<ConfigSpaceT>::getForcesStatic() const
+{
+  return this->mAspectState.mForces;
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
 {
   if (index >= getNumDofs())

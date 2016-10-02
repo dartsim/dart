@@ -48,6 +48,7 @@ class GenericJoint :
 {
 public:
 
+  using ConfigSpace = ConfigSpaceT;
   static constexpr std::size_t NumDofs = ConfigSpaceT::NumDofs;
 
   using ThisClass = GenericJoint<ConfigSpaceT>;
@@ -230,6 +231,12 @@ public:
 
   /// Fixed-size version of getAccelerations()
   const Vector& getAccelerationsStatic() const;
+
+  /// Fixed-size version of setForces()
+  void setForcesStatic(const Vector& forces);
+
+  /// Fixed-size version of getForces()
+  const Vector& getForcesStatic() const;
 
   /// \}
 
