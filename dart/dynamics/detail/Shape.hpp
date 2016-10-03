@@ -37,10 +37,26 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 template <typename ShapeT>
 bool Shape::is() const
 {
   return getType() == ShapeT::getStaticType();
+}
+
+//==============================================================================
+template <typename ShapeT>
+ShapeT* Shape::as()
+{
+  assert(dynamic_cast<ShapeT*>(this));
+  return static_cast<ShapeT*>(this);
+}
+
+//==============================================================================
+template <typename ShapeT>
+const ShapeT* Shape::as() const
+{
+  return const_cast<Shape*>(this)->as<ShapeT>();
 }
 
 }  // namespace dynamics

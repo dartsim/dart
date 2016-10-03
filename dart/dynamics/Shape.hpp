@@ -101,6 +101,26 @@ public:
   template <typename ShapeT>
   bool is() const;
 
+  /// Cast to the given shape type pointer. This function is a syntactic
+  /// sugar, which is identical to: static_cast<ShapeT*>(this).
+  ///
+  /// Example code:
+  /// \code
+  /// auto shape = bodyNode->getShapeNode(0)->getShape();
+  /// if (shape->is<BoxShape>())
+  /// {
+  ///   std::cout << "The size of box is ["
+  ///             << shape->as<BoxShape>()->getSize().transpose() << "].\n";
+  /// }
+  /// \endcode
+  template <typename ShapeT>
+  ShapeT* as();
+
+  /// Cast to the given shape type const pointer. This function is a syntactic
+  /// sugar, which is identical to: static_cast<const ShapeT*>(this).
+  template <typename ShapeT>
+  const ShapeT* as() const;
+
   /// \brief Get the bounding box of the shape in its local coordinate frame.
   ///        The dimension will be automatically determined by the sub-classes
   ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.

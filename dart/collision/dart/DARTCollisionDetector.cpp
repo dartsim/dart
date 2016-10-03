@@ -263,25 +263,23 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
     return;
 
   const auto& shape = shapeFrame->getShape();
-  const auto& shapeType = shape->getType();
 
-  if (shapeType == dynamics::SphereShape::getStaticType())
-    return;
-
-  if (shapeType == dynamics::BoxShape::getStaticType())
-    return;
-
-  if (shapeType == dynamics::EllipsoidShape::getStaticType())
+  if (shape->is<dynamics::SphereShape>())
   {
-    const auto& ellipsoid
-        = std::static_pointer_cast<const dynamics::EllipsoidShape>(shape);
-
-    if (ellipsoid->isSphere())
+    return;
+  }
+  else if (shape->is<dynamics::BoxShape>())
+  {
+    return;
+  }
+  else if (shape->is<dynamics::EllipsoidShape>())
+  {
+    if (shape->as<dynamics::EllipsoidShape>()->isSphere())
       return;
   }
 
   dterr << "[DARTCollisionDetector] Attempting to create shape type ["
-        << shapeType << "] that is not supported "
+        << shape->getType() << "] that is not supported "
         << "by DARTCollisionDetector. Currently, only BoxShape and "
         << "EllipsoidShape (only when all the radii are equal) are "
         << "supported. This shape will always get penetrated by other "

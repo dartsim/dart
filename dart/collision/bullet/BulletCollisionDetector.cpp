@@ -435,27 +435,21 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
 
   if (shape->is<SphereShape>())
   {
-    assert(dynamic_cast<const SphereShape*>(shape.get()));
-
-    const auto sphere = static_cast<const SphereShape*>(shape.get());
+    const auto* sphere = shape->as<SphereShape>();
     const auto radius = sphere->getRadius();
 
     bulletCollisionShape = new btSphereShape(radius);
   }
   else if (shape->is<BoxShape>())
   {
-    assert(dynamic_cast<const BoxShape*>(shape.get()));
-
-    const auto box = static_cast<const BoxShape*>(shape.get());
+    const auto* box = shape->as<BoxShape>();
     const Eigen::Vector3d& size = box->getSize();
 
     bulletCollisionShape = new btBoxShape(convertVector3(size*0.5));
   }
   else if (shape->is<EllipsoidShape>())
   {
-    assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
-
-    const auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
+    const auto* ellipsoid = shape->as<EllipsoidShape>();
     const Eigen::Vector3d& size = ellipsoid->getSize();
 
     bulletCollisionShape = createBulletEllipsoidMesh(
@@ -463,9 +457,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   }
   else if (shape->is<CylinderShape>())
   {
-    assert(dynamic_cast<const CylinderShape*>(shape.get()));
-
-    const auto cylinder = static_cast<const CylinderShape*>(shape.get());
+    const auto* cylinder = shape->as<CylinderShape>();
     const auto radius = cylinder->getRadius();
     const auto height = cylinder->getHeight();
     const auto size = btVector3(radius, radius, height * 0.5);
@@ -474,9 +466,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   }
   else if (shape->is<CapsuleShape>())
   {
-    assert(dynamic_cast<const CapsuleShape*>(shape.get()));
-
-    const auto capsule = static_cast<const CapsuleShape*>(shape.get());
+    const auto* capsule = shape->as<CapsuleShape>();
     const auto radius = capsule->getRadius();
     const auto height = capsule->getHeight();
 
@@ -484,9 +474,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   }
   else if (shape->is<ConeShape>())
   {
-    assert(dynamic_cast<const ConeShape*>(shape.get()));
-
-    const auto cone = static_cast<const ConeShape*>(shape.get());
+    const auto* cone = shape->as<ConeShape>();
     const auto radius = cone->getRadius();
     const auto height = cone->getHeight();
 
@@ -499,9 +487,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   }
   else if (shape->is<PlaneShape>())
   {
-    assert(dynamic_cast<const PlaneShape*>(shape.get()));
-
-    const auto plane = static_cast<const PlaneShape*>(shape.get());
+    const auto* plane = shape->as<PlaneShape>();
     const Eigen::Vector3d normal = plane->getNormal();
     const double offset = plane->getOffset();
 
@@ -510,9 +496,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   }
   else if (shape->is<MultiSphereShape>())
   {
-    assert(dynamic_cast<const MultiSphereShape*>(shape.get()));
-
-    const auto multiSphere = static_cast<const MultiSphereShape*>(shape.get());
+    const auto* multiSphere = shape->as<MultiSphereShape>();
     const auto numSpheres = multiSphere->getNumSpheres();
     const auto& spheres = multiSphere->getSpheres();
 
@@ -530,9 +514,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   }
   else if (shape->is<MeshShape>())
   {
-    assert(dynamic_cast<const MeshShape*>(shape.get()));
-
-    const auto shapeMesh = static_cast<const MeshShape*>(shape.get());
+    const auto* shapeMesh = shape->as<MeshShape>();
     const auto scale = shapeMesh->getScale();
     const auto mesh = shapeMesh->getMesh();
 
@@ -541,9 +523,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   }
   else if (shape->is<SoftMeshShape>())
   {
-    assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
-
-    const auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
+    const auto* softMeshShape = shape->as<SoftMeshShape>();
     const auto mesh = softMeshShape->getAssimpMesh();
 
     bulletCollisionShape = createBulletCollisionShapeFromAssimpMesh(mesh);

@@ -449,7 +449,7 @@ TEST(SkelParser, Shapes)
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
   EXPECT_TRUE(shape->is<BoxShape>());
-  auto boxShape = std::static_pointer_cast<BoxShape>(shape);
+  auto boxShape = shape->as<BoxShape>();
   EXPECT_EQ(boxShape->getSize(), Eigen::Vector3d(0.1, 0.05, 0.1));
 
   // Sphere
@@ -457,7 +457,7 @@ TEST(SkelParser, Shapes)
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
   EXPECT_TRUE(shape->is<SphereShape>());
-  auto sphereShape = std::static_pointer_cast<SphereShape>(shape);
+  auto sphereShape = shape->as<SphereShape>();
   EXPECT_EQ(sphereShape->getRadius(), 0.05);
 
   // Ellipsoid
@@ -465,7 +465,7 @@ TEST(SkelParser, Shapes)
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
   EXPECT_TRUE(shape->is<EllipsoidShape>());
-  auto ellipsoidShape = std::static_pointer_cast<EllipsoidShape>(shape);
+  auto ellipsoidShape = shape->as<EllipsoidShape>();
   EXPECT_EQ(ellipsoidShape->getSize(), Eigen::Vector3d(0.05, 0.10, 0.15));
 
   // Cylinder
@@ -473,7 +473,7 @@ TEST(SkelParser, Shapes)
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
   EXPECT_TRUE(shape->is<CylinderShape>());
-  auto cylinderShape = std::static_pointer_cast<CylinderShape>(shape);
+  auto cylinderShape = shape->as<CylinderShape>();
   EXPECT_EQ(cylinderShape->getHeight(), 0.1);
   EXPECT_EQ(cylinderShape->getRadius(), 0.05);
 
@@ -482,7 +482,7 @@ TEST(SkelParser, Shapes)
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
   EXPECT_TRUE(shape->is<CapsuleShape>());
-  auto capsuleShape = std::static_pointer_cast<CapsuleShape>(shape);
+  auto capsuleShape = shape->as<CapsuleShape>();
   EXPECT_EQ(capsuleShape->getHeight(), 0.1);
   EXPECT_EQ(capsuleShape->getRadius(), 0.05);
 
@@ -491,7 +491,7 @@ TEST(SkelParser, Shapes)
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
   EXPECT_TRUE(shape->is<ConeShape>());
-  auto coneShape = std::static_pointer_cast<CapsuleShape>(shape);
+  auto coneShape = shape->as<ConeShape>();
   EXPECT_EQ(coneShape->getHeight(), 0.1);
   EXPECT_EQ(coneShape->getRadius(), 0.05);
 
@@ -500,7 +500,7 @@ TEST(SkelParser, Shapes)
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
   EXPECT_TRUE(shape->is<MultiSphereShape>());
-  auto multiSphereShape = std::static_pointer_cast<MultiSphereShape>(shape);
+  auto multiSphereShape = shape->as<MultiSphereShape>();
   EXPECT_EQ(multiSphereShape->getNumSpheres(), 2u);
   const auto& spheres = multiSphereShape->getSpheres();
   EXPECT_EQ(spheres[0].first, 0.05);

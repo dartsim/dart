@@ -920,13 +920,10 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::SoftMeshShape;
 
   fcl::CollisionGeometry* geom = nullptr;
-  const auto& shapeType = shape->getType();
 
-  if (SphereShape::getStaticType() == shapeType)
+  if (shape->is<SphereShape>())
   {
-    assert(dynamic_cast<const SphereShape*>(shape.get()));
-
-    auto* sphere = static_cast<const SphereShape*>(shape.get());
+    const auto* sphere = shape->as<SphereShape>();
     const auto radius = sphere->getRadius();
 
     if (FCLCollisionDetector::PRIMITIVE == type)
@@ -934,11 +931,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     else
       geom = createEllipsoid<fcl::OBBRSS>(radius*2.0, radius*2.0, radius*2.0);
   }
-  else if (BoxShape::getStaticType() == shapeType)
+  else if (shape->is<BoxShape>())
   {
-    assert(dynamic_cast<const BoxShape*>(shape.get()));
-
-    auto box = static_cast<const BoxShape*>(shape.get());
+    const auto* box = shape->as<BoxShape>();
     const Eigen::Vector3d& size = box->getSize();
 
     if (FCLCollisionDetector::PRIMITIVE == type)
@@ -946,11 +941,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     else
       geom = createCube<fcl::OBBRSS>(size[0], size[1], size[2]);
   }
-  else if (EllipsoidShape::getStaticType() == shapeType)
+  else if (shape->is<EllipsoidShape>())
   {
-    assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
-
-    auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
+    const auto* ellipsoid = shape->as<EllipsoidShape>();
     const Eigen::Vector3d& size = ellipsoid->getSize();
 
     if (FCLCollisionDetector::PRIMITIVE == type)
@@ -966,11 +959,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       geom = createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]);
     }
   }
-  else if (CylinderShape::getStaticType() == shapeType)
+  else if (shape->is<CylinderShape>())
   {
-    assert(dynamic_cast<const CylinderShape*>(shape.get()));
-
-    const auto cylinder = static_cast<const CylinderShape*>(shape.get());
+    const auto* cylinder = shape->as<CylinderShape>();
     const auto radius = cylinder->getRadius();
     const auto height = cylinder->getHeight();
 
@@ -987,14 +978,13 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
     }
   }
-  else if (PlaneShape::getStaticType() == shapeType)
+  else if (shape->is<PlaneShape>())
   {
     if (FCLCollisionDetector::PRIMITIVE == type)
     {
-      assert(dynamic_cast<const PlaneShape*>(shape.get()));
-      auto                  plane = static_cast<const PlaneShape*>(shape.get());
+      const auto* plane = shape->as<PlaneShape>();
       const Eigen::Vector3d normal = plane->getNormal();
-      const double          offset = plane->getOffset();
+      const auto offset = plane->getOffset();
 
       geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
     }
@@ -1006,21 +996,17 @@ FCLCollisionDetector::createFCLCollisionGeometry(
              << "the size is [1000 0 1000].\n";
     }
   }
-  else if (MeshShape::getStaticType() == shapeType)
+  else if (shape->is<MeshShape>())
   {
-    assert(dynamic_cast<const MeshShape*>(shape.get()));
-
-    auto shapeMesh = static_cast<const MeshShape*>(shape.get());
+    const auto* shapeMesh = shape->as<MeshShape>();
     const Eigen::Vector3d& scale = shapeMesh->getScale();
     auto aiScene = shapeMesh->getMesh();
 
     geom = createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene);
   }
-  else if (SoftMeshShape::getStaticType() == shapeType)
+  else if (shape->is<SoftMeshShape>())
   {
-    assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
-
-    auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
+    const auto* softMeshShape = shape->as<SoftMeshShape>();
     auto aiMesh = softMeshShape->getAssimpMesh();
 
     geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
@@ -1029,7 +1015,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   {
     dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
           << "Attempting to create an unsupported shape type ["
-          << shapeType << "]. Creating a sphere with 0.1 radius "
+          << shape->getType() << "]. Creating a sphere with 0.1 radius "
           << "instead.\n";
 
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);

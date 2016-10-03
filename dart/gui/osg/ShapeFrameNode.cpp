@@ -178,7 +178,7 @@ void ShapeFrameNode::createShapeNode(
 
   const auto& shapeType = shape->getType();
 
-  if(SphereShape::getStaticType() == shapeType)
+  if(shape->is<SphereShape>())
   {
     std::shared_ptr<SphereShape> es =
         std::dynamic_pointer_cast<SphereShape>(shape);
@@ -187,7 +187,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-  else if(BoxShape::getStaticType() == shapeType)
+  else if(shape->is<BoxShape>())
   {
     std::shared_ptr<BoxShape> bs =
         std::dynamic_pointer_cast<BoxShape>(shape);
@@ -196,7 +196,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-  else if(EllipsoidShape::getStaticType() == shapeType)
+  else if(shape->is<EllipsoidShape>())
   {
     std::shared_ptr<EllipsoidShape> es =
         std::dynamic_pointer_cast<EllipsoidShape>(shape);
@@ -205,7 +205,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-  else if(CylinderShape::getStaticType() == shapeType)
+  else if(shape->is<CylinderShape>())
   {
     std::shared_ptr<CylinderShape> cs =
         std::dynamic_pointer_cast<CylinderShape>(shape);
@@ -214,7 +214,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-  else if(CapsuleShape::getStaticType() == shapeType)
+  else if(shape->is<CapsuleShape>())
   {
     std::shared_ptr<CapsuleShape> cs =
         std::dynamic_pointer_cast<CapsuleShape>(shape);
@@ -223,7 +223,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-  else if(ConeShape::getStaticType() == shapeType)
+  else if(shape->is<ConeShape>())
   {
     std::shared_ptr<ConeShape> cs =
         std::dynamic_pointer_cast<ConeShape>(shape);
@@ -232,7 +232,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-  else if(PlaneShape::getStaticType() == shapeType)
+  else if(shape->is<PlaneShape>())
   {
     std::shared_ptr<PlaneShape> ps =
         std::dynamic_pointer_cast<PlaneShape>(shape);
@@ -250,7 +250,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-  else if(MeshShape::getStaticType() == shapeType)
+  else if(shape->is<MeshShape>())
   {
     std::shared_ptr<MeshShape> ms =
         std::dynamic_pointer_cast<MeshShape>(shape);
@@ -259,7 +259,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-  else if(SoftMeshShape::getStaticType() == shapeType)
+  else if(shape->is<SoftMeshShape>())
   {
     std::shared_ptr<SoftMeshShape> sms =
         std::dynamic_pointer_cast<SoftMeshShape>(shape);
@@ -268,7 +268,7 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-  else if(LineSegmentShape::getStaticType() == shapeType)
+  else if(shape->is<LineSegmentShape>())
   {
     std::shared_ptr<LineSegmentShape> lss =
         std::dynamic_pointer_cast<LineSegmentShape>(shape);

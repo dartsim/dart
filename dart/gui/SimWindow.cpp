@@ -413,37 +413,37 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
 
   if (shape->is<SphereShape>())
   {
-    const auto* sphere = static_cast<const SphereShape*>(shape);
+    const auto* sphere = shape->as<SphereShape>();
     mRI->drawSphere(sphere->getRadius());
   }
   else if (shape->is<BoxShape>())
   {
-    const auto* box = static_cast<const BoxShape*>(shape);
+    const auto* box = shape->as<BoxShape>();
     mRI->drawCube(box->getSize());
   }
   else if (shape->is<EllipsoidShape>())
   {
-    const auto* ellipsoid = static_cast<const EllipsoidShape*>(shape);
+    const auto* ellipsoid = shape->as<EllipsoidShape>();
     mRI->drawEllipsoid(ellipsoid->getSize());
   }
   else if (shape->is<CylinderShape>())
   {
-    const auto* cylinder = static_cast<const CylinderShape*>(shape);
+    const auto* cylinder = shape->as<CylinderShape>();
     mRI->drawCylinder(cylinder->getRadius(), cylinder->getHeight());
   }
   else if (shape->is<CapsuleShape>())
   {
-    const auto* capsule = static_cast<const CapsuleShape*>(shape);
+    const auto* capsule = shape->as<CapsuleShape>();
     mRI->drawCapsule(capsule->getRadius(), capsule->getHeight());
   }
   else if (shape->is<ConeShape>())
   {
-    const auto* cone = static_cast<const ConeShape*>(shape);
+    const auto* cone = shape->as<ConeShape>();
     mRI->drawCone(cone->getRadius(), cone->getHeight());
   }
   else if (shape->is<MultiSphereShape>())
   {
-    const auto* multiSphere = static_cast<const MultiSphereShape*>(shape);
+    const auto* multiSphere = shape->as<MultiSphereShape>();
     const auto& spheres = multiSphere->getSpheres();
     for (const auto& sphere : spheres)
     {
@@ -456,7 +456,7 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   }
   else if (shape->is<MeshShape>())
   {
-    const auto& mesh = static_cast<const MeshShape*>(shape);
+    const auto* mesh = shape->as<MeshShape>();
 
     glDisable(GL_COLOR_MATERIAL); // Use mesh colors to draw
 
@@ -467,13 +467,12 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   }
   else if (shape->is<SoftMeshShape>())
   {
-    const auto& softMesh = static_cast<const SoftMeshShape*>(shape);
+    const auto* softMesh = shape->as<SoftMeshShape>();
     mRI->drawSoftMesh(softMesh->getAssimpMesh());
   }
   else if (shape->is<LineSegmentShape>())
   {
-    const auto& lineSegmentShape
-        = static_cast<const LineSegmentShape*>(shape);
+    const auto* lineSegmentShape = shape->as<LineSegmentShape>();
     mRI->drawLineSegments(lineSegmentShape->getVertices(),
                           lineSegmentShape->getConnections());
   }

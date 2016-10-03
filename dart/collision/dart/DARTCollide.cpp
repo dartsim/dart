@@ -1257,37 +1257,30 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
   const auto& shape1 = o1->getShape();
   const auto& shape2 = o2->getShape();
 
-  const auto& shapeType1 = shape1->getType();
-  const auto& shapeType2 = shape2->getType();
-
   const Eigen::Isometry3d& T1 = o1->getTransform();
   const Eigen::Isometry3d& T2 = o2->getTransform();
 
-  if (dynamics::SphereShape::getStaticType() == shapeType1)
+  if (shape1->is<dynamics::SphereShape>())
   {
-    const auto* sphere0
-        = static_cast<const dynamics::SphereShape*>(shape1.get());
+    const auto* sphere0 = shape1->as<dynamics::SphereShape>();
 
-    if (dynamics::SphereShape::getStaticType() == shapeType2)
+    if (shape2->is<dynamics::SphereShape>())
     {
-      const auto* sphere1
-          = static_cast<const dynamics::SphereShape*>(shape2.get());
+      const auto* sphere1 = shape2->as<dynamics::SphereShape>();
 
       return collideSphereSphere(
             o1, o2, sphere0->getRadius(), T1, sphere1->getRadius(), T2, result);
     }
-    else if (dynamics::BoxShape::getStaticType() == shapeType2)
+    else if (shape2->is<dynamics::BoxShape>())
     {
-      const auto* box1
-          = static_cast<const dynamics::BoxShape*>(shape2.get());
+      const auto* box1 = shape2->as<dynamics::BoxShape>();
 
       return collideSphereBox(
             o1, o2, sphere0->getRadius(), T1, box1->getSize(), T2, result);
     }
-    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
+    else if (shape2->is<dynamics::EllipsoidShape>())
     {
-      const auto* ellipsoid1
-          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+      const auto* ellipsoid1 = shape2->as<dynamics::EllipsoidShape>();
 
       return collideSphereSphere(o1, o2,
                                  sphere0->getRadius(), T1,
@@ -1295,32 +1288,29 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
                                  result);
     }
   }
-  else if (dynamics::BoxShape::getStaticType() == shapeType1)
+  else if (shape1->is<dynamics::BoxShape>())
   {
-    const auto* box0 = static_cast<const dynamics::BoxShape*>(shape1.get());
+    const auto* box0 = shape1->as<dynamics::BoxShape>();
 
-    if (dynamics::SphereShape::getStaticType() == shapeType2)
+    if (shape2->is<dynamics::SphereShape>())
     {
-      const auto* sphere1
-          = static_cast<const dynamics::SphereShape*>(shape2.get());
+      const auto* sphere1 = shape2->as<dynamics::SphereShape>();
 
       return collideBoxSphere(
             o1, o2, box0->getSize(), T1, sphere1->getRadius(), T2, result);
     }
-    else if (dynamics::BoxShape::getStaticType() == shapeType2)
+    else if (shape2->is<dynamics::BoxShape>())
     {
-      const auto* box1
-          = static_cast<const dynamics::BoxShape*>(shape2.get());
+      const auto* box1 = shape2->as<dynamics::BoxShape>();
 
       return collideBoxBox(o1, o2,
                            box0->getSize(), T1,
                            box1->getSize(), T2,
                            result);
     }
-    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
+    else if (shape2->is<dynamics::EllipsoidShape>())
     {
-      const auto* ellipsoid1
-          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+      const auto* ellipsoid1 = shape2->as<dynamics::EllipsoidShape>();
 
       return collideBoxSphere(o1, o2,
                               box0->getSize(), T1,
@@ -1328,35 +1318,31 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
                               result);
     }
   }
-  else if (dynamics::EllipsoidShape::getStaticType() == shapeType1)
+  else if (shape1->is<dynamics::EllipsoidShape>())
   {
-    const auto* ellipsoid0
-        = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
+    const auto* ellipsoid0 = shape1->as<dynamics::EllipsoidShape>();
 
-    if (dynamics::SphereShape::getStaticType() == shapeType2)
+    if (shape2->is<dynamics::SphereShape>())
     {
-      const auto* sphere1
-          = static_cast<const dynamics::SphereShape*>(shape2.get());
+      const auto* sphere1 = shape2->as<dynamics::SphereShape>();
 
       return collideSphereSphere(o1, o2,
                                  ellipsoid0->getSize()[0] * 0.5, T1,
                                  sphere1->getRadius(), T2,
                                  result);
     }
-    else if (dynamics::BoxShape::getStaticType() == shapeType2)
+    else if (shape2->is<dynamics::BoxShape>())
     {
-      const auto* box1
-          = static_cast<const dynamics::BoxShape*>(shape2.get());
+      const auto* box1 = shape2->as<dynamics::BoxShape>();
 
       return collideSphereBox(o1, o2,
                               ellipsoid0->getSize()[0] * 0.5, T1,
                               box1->getSize(), T2,
                               result);
     }
-    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
+    else if (shape2->is<dynamics::EllipsoidShape>())
     {
-      const auto* ellipsoid1
-          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+      const auto* ellipsoid1 = shape2->as<dynamics::EllipsoidShape>();
 
       return collideSphereSphere(o1, o2,
                                  ellipsoid0->getSize()[0] * 0.5, T1,
