@@ -113,11 +113,14 @@ public:
   ///             << shape->as<BoxShape>()->getSize().transpose() << "].\n";
   /// }
   /// \endcode
+  ///
+  /// \sa is()
   template <typename ShapeT>
   ShapeT* as();
 
   /// Cast to the given shape type const pointer. This function is a syntactic
   /// sugar, which is identical to: static_cast<const ShapeT*>(this).
+  /// \sa is()
   template <typename ShapeT>
   const ShapeT* as() const;
 
