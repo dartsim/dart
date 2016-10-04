@@ -52,7 +52,7 @@ ImGuiWidget::ImGuiWidget() : mIsVisible(true)
 //==============================================================================
 ImGuiWidget::~ImGuiWidget()
 {
-
+  // Do nothing
 }
 
 //==============================================================================
@@ -83,36 +83,6 @@ void ImGuiWidget::hide()
 bool ImGuiWidget::isVisible() const
 {
   return mIsVisible;
-}
-
-//==============================================================================
-MainMenuWidget::MainMenuWidget(ImGuiViewer& viewer)
-  : mViewer(viewer)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void MainMenuWidget::render()
-{
-  if (ImGui::BeginMainMenuBar())
-  {
-    if (ImGui::BeginMenu("File"))
-    {
-      if (ImGui::MenuItem("Exit"))
-        mViewer.setDone(true);
-      ImGui::EndMenu();
-    }
-
-    if (ImGui::BeginMenu("Help"))
-    {
-      if (ImGui::MenuItem("About"))
-        mViewer.showAbout();
-      ImGui::EndMenu();
-    }
-
-    ImGui::EndMainMenuBar();
-  }
 }
 
 //==============================================================================

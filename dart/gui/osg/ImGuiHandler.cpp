@@ -65,6 +65,7 @@ void ImGui_RenderDrawLists(ImDrawData* draw_data)
   GLint last_texture; glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
   GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
   glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_TRANSFORM_BIT);
+  glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glDisable(GL_CULL_FACE);
@@ -126,6 +127,7 @@ void ImGui_RenderDrawLists(ImDrawData* draw_data)
   glMatrixMode(GL_PROJECTION);
   glPopMatrix();
   glPopAttrib();
+  glPopClientAttrib();
   glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
 

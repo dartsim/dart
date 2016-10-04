@@ -416,6 +416,21 @@ public:
     getWorld()->addSimpleFrame(lineFrame);
   }
 
+  void setForceCoeff(double coeff)
+  {
+    mForceCoeff = coeff;
+
+    if(mForceCoeff > MaxForceCoeff)
+      mForceCoeff = MaxForceCoeff;
+    else if(mForceCoeff < MinForceCoeff)
+      mForceCoeff = MinForceCoeff;
+  }
+
+  double getForceCoeff() const
+  {
+    return mForceCoeff;
+  }
+
   void incrementForceCoeff()
   {
     mForceCoeff += ForceIncrement;

@@ -41,20 +41,150 @@
 #include "TinkertoyWorldNode.hpp"
 
 //==============================================================================
+TinkertoyWidget::TinkertoyWidget(
+    dart::gui::osg::ImGuiViewer* viewer,
+    TinkertoyWorldNode* node)
+  : mViewer(viewer),
+    mNode(node),
+    mGuiGravity(true),
+    mGravity(true),
+    mGuiHeadlights(true)
+{
+  mGuiForceCoeff = mNode->getForceCoeff();
+}
+
+//==============================================================================
 void TinkertoyWidget::render()
 {
-  ImGui::SetNextWindowPos(ImVec2(10,40));
-  if (!ImGui::Begin("Example: Fixed Overlay", &mIsVisible, ImVec2(0,0), 0.3f,
-                    ImGuiWindowFlags_NoTitleBar |
+  ImGui::SetNextWindowPos(ImVec2(10,20));
+  if (!ImGui::Begin("Tinkertoy Control", nullptr, ImVec2(360,640), 0.5f,
                     ImGuiWindowFlags_NoResize |
-                    ImGuiWindowFlags_NoMove |
-                    ImGuiWindowFlags_NoSavedSettings))
+                    ImGuiWindowFlags_MenuBar |
+                    ImGuiWindowFlags_HorizontalScrollbar))
   {
+    // Early out if the window is collapsed, as an optimization.
     ImGui::End();
     return;
   }
-  ImGui::Text("Simple overlay\non the top-left side of the screen.");
-  ImGui::Separator();
-  ImGui::Text("Mouse Position: (%.1f,%.1f)", ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
+
+  // Menu
+  if (ImGui::BeginMenuBar())
+  {
+    if (ImGui::BeginMenu("Menu"))
+    {
+      if (ImGui::MenuItem("Exit"))
+        mViewer->setDone(true);
+      ImGui::EndMenu();
+    }
+    if (ImGui::BeginMenu("Help"))
+    {
+      if (ImGui::MenuItem("About DART"))
+        mViewer->showAbout();
+      ImGui::EndMenu();
+    }
+    ImGui::EndMenuBar();
+  }
+
+  ImGui::Text("<TODO: Short description about this example>");
+  ImGui::Spacing();
+
+  if (ImGui::CollapsingHeader("Help"))
+  {
+    ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
+    ImGui::Text("User Guid:\n");
+    ImGui::Text("%s", mViewer->getInstructions().c_str());
+    ImGui::Text("Left-click on a block to select it.\n");
+    ImGui::Text("Press [Backspace] to deselect.\n");
+    ImGui::Text("Press [Tab] to reset the camera view\n");
+    ImGui::Text("Press [`] to reset the orientation of the target\n");
+    ImGui::Text("\n --- While Simulation is Paused ---\n");
+    ImGui::Text("The selected block will be red; all other blocks will be yellow.\n");
+    ImGui::Text("Press [1] -> [3] to attach a new block to the selected block.\n");
+    ImGui::Text("[1]: Attach using a WeldJoint\n");
+    ImGui::Text("[2]: Attach using a RevoluteJoint\n");
+    ImGui::Text("[3]: Attach using a BallJoint\n");
+    ImGui::Text("The longitudinal direction of the new block will be along the x-axis (Red) of the target.\n");
+    ImGui::Text("The joint axis will follow the z-axis (Blue) of the target when making a RevolueJoint.\n");
+    ImGui::Text("Press [Delete] to permanently remove a block and all of its children.\n");
+    ImGui::Text("Adding a block when nothing is currently selected will attach it to the world, beginning a new tree.\n");
+    ImGui::Text("\n --- While Simulation is Active ---\n");
+    ImGui::Text("The selected block will be Fuchsia; all other blocks will be blue.\n");
+    ImGui::Text("Move around the target to pull on the selected block.\n");
+    ImGui::Text("Press [Up] or [Down] to adjust the pulling strength.\n");
+    ImGui::Text("Press [G] to toggle Gravity\n");
+    ImGui::Text("Blocks belonging to different trees can collide with each other during simulation.\n");
+    ImGui::Text("Collisions between blocks belonging to the same tree will be ignored.\n");
+    ImGui::PopTextWrapPos();
+  }
+
+  if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
+  {
+    int e = mViewer->isSimulating() ? 0 : 1;
+    if(mViewer->isAllowingSimulation())
+    {
+      if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
+        mViewer->simulate(true);
+      ImGui::SameLine();
+      if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
+        mViewer->simulate(false);
+    }
+  }
+
+  if (ImGui::CollapsingHeader("World Options", ImGuiTreeNodeFlags_DefaultOpen))
+  {
+    // Gravity
+    ImGui::Checkbox("Gravity On/Off", &mGuiGravity);
+    setGravity(mGuiGravity);
+
+    ImGui::Spacing();
+
+    // Headlights
+    mGuiHeadlights = mViewer->checkHeadlights();
+    ImGui::Checkbox("Headlights On/Off", &mGuiHeadlights);
+    mViewer->switchHeadlights(mGuiHeadlights);
+  }
+
+  if (ImGui::CollapsingHeader("Tinkertoy Options", ImGuiTreeNodeFlags_DefaultOpen))
+  {
+    ImGui::SliderFloat(
+          "Force Coeff", &mGuiForceCoeff, MinForceCoeff, MaxForceCoeff, "%.1f");
+    setForceCoeff(mGuiForceCoeff);
+
+    ImGui::Spacing();
+
+    ImGui::PushID(0);
+    ImGui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0/7.0f, 0.6f, 0.6f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0/7.0f, 0.7f, 0.7f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0/7.0f, 0.8f, 0.8f));
+    const auto reorient = ImGui::Button("Reorient Target");
+    if (reorient)
+      mNode->reorientTarget();
+    ImGui::PopStyleColor(3);
+    ImGui::PopID();
+  }
+
   ImGui::End();
+}
+
+//==============================================================================
+void TinkertoyWidget::setGravity(bool gravity)
+{
+  if (mGravity == gravity)
+    return;
+
+  mGravity = gravity;
+
+  if (mGravity)
+    mNode->getWorld()->setGravity(-9.81*Eigen::Vector3d::UnitZ());
+  else
+    mNode->getWorld()->setGravity(Eigen::Vector3d::Zero());
+}
+
+//==============================================================================
+void TinkertoyWidget::setForceCoeff(float coeff)
+{
+  if (mNode->getForceCoeff() == coeff)
+    return;
+
+  mNode->setForceCoeff(mGuiForceCoeff);
 }

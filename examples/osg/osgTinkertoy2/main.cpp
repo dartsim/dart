@@ -42,8 +42,7 @@ public:
   TinkertoyInputHandler(dart::gui::osg::Viewer* viewer,
                         TinkertoyWorldNode* node)
     : mViewer(viewer),
-      mNode(node),
-      mGravityOn(true)
+      mNode(node)
   {
     // Do nothing
   }
@@ -83,23 +82,6 @@ public:
         mNode->deletePick();
         return true;
       }
-      else if(ea.getKey() == 'g' || ea.getKey() == 'G')
-      {
-        mGravityOn = !mGravityOn;
-
-        if(mGravityOn)
-        {
-          mNode->getWorld()->setGravity(-9.81*Eigen::Vector3d::UnitZ());
-          std::cout << "[Gravity: On]" << std::endl;
-        }
-        else
-        {
-          mNode->getWorld()->setGravity(Eigen::Vector3d::Zero());
-          std::cout << "[Gravity: Off]" << std::endl;
-        }
-
-        return true;
-      }
       else if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Up)
       {
         mNode->incrementForceCoeff();
@@ -123,8 +105,6 @@ public:
 
   dart::gui::osg::Viewer* mViewer;
   TinkertoyWorldNode* mNode;
-
-  bool mGravityOn;
 };
 
 //==============================================================================
@@ -192,7 +172,7 @@ int main()
 
   // Add control widget for atlas
   viewer.getImGuiHandler()->addWidget(
-        std::make_shared<TinkertoyWidget>(node.get()));
+        std::make_shared<TinkertoyWidget>(&viewer, node.get()));
 
   // Add the keyboard input handler
   osg::ref_ptr<TinkertoyInputHandler> input =
@@ -212,32 +192,6 @@ int main()
   osgViewer::Viewer::Windows windows;
   viewer.getWindows(windows);
   windows.front()->setWindowName("Tinkertoy");
-
-  // Print out instructions for the user
-  std::cout << viewer.getInstructions() << std::endl;
-
-  std::cout << "Left-click on a block to select it.\n"
-            << "Press [Backspace] to deselect.\n"
-            << "Press [Tab] to reset the camera view\n"
-            << "Press [`] to reset the orientation of the target\n"
-            << "\n --- While Simulation is Paused ---\n"
-            << "The selected block will be red; all other blocks will be yellow.\n"
-            << "Press [1] -> [3] to attach a new block to the selected block.\n"
-            << "[1]: Attach using a WeldJoint\n"
-            << "[2]: Attach using a RevoluteJoint\n"
-            << "[3]: Attach using a BallJoint\n"
-            << "The longitudinal direction of the new block will be along the x-axis (Red) of the target.\n"
-            << "The joint axis will follow the z-axis (Blue) of the target when making a RevolueJoint.\n"
-            << "Press [Delete] to permanently remove a block and all of its children.\n"
-            << "Adding a block when nothing is currently selected will attach it to the world, beginning a new tree.\n"
-            << "\n --- While Simulation is Active ---\n"
-            << "The selected block will be Fuchsia; all other blocks will be blue.\n"
-            << "Move around the target to pull on the selected block.\n"
-            << "Press [Up] or [Down] to adjust the pulling strength.\n"
-            << "Press [G] to toggle Gravity\n"
-            << "Blocks belonging to different trees can collide with each other during simulation.\n"
-            << "Collisions between blocks belonging to the same tree will be ignored.\n"
-            << std::endl;
 
   // Run the GUI application
   viewer.run();

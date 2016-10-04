@@ -39,19 +39,36 @@
 #define DART_EXAMPLE_OSG_OSGATLASSIMBICON_TINKERTOYWIDGET_HPP_
 
 #include "dart/gui/osg/ImGuiWidget.hpp"
+#include "dart/gui/osg/ImGuiViewer.hpp"
 
 class TinkertoyWorldNode;
 
 class TinkertoyWidget : public dart::gui::osg::ImGuiWidget
 {
 public:
-  TinkertoyWidget(TinkertoyWorldNode* node);
 
+  /// Constructor
+  TinkertoyWidget(dart::gui::osg::ImGuiViewer* viewer,
+                  TinkertoyWorldNode* node);
+
+  // Documentation inherited
   void render() override;
 
 protected:
 
+  void setGravity(bool gravity);
+  void setForceCoeff(float coeff);
+
+  dart::gui::osg::ImGuiViewer* mViewer;
+
   TinkertoyWorldNode* mNode;
+
+  bool mGuiGravity;
+  bool mGravity;
+
+  bool mGuiHeadlights;
+
+  float mGuiForceCoeff;
 
 };
 

@@ -42,11 +42,9 @@ namespace osg {
 ImGuiViewer::ImGuiViewer(const ::osg::Vec4& clearColor)
   : Viewer(clearColor),
     mImGuiHandler(new ImGuiHandler()),
-    mMainMenuWidget(std::make_shared<MainMenuWidget>(*this)),
-    mAboutWidget(std::make_shared<AboutWidget>())
+    mAboutWidget(new AboutWidget())
 {
   mImGuiHandler->setCameraCallbacks(getCamera());
-  mImGuiHandler->addWidget(mMainMenuWidget, true);
   mImGuiHandler->addWidget(mAboutWidget, false);
 
   addEventHandler(mImGuiHandler);
@@ -59,18 +57,6 @@ ImGuiViewer::~ImGuiViewer()
 }
 
 //==============================================================================
-void ImGuiViewer::showMainMenu()
-{
-  mMainMenuWidget->show();
-}
-
-//==============================================================================
-void ImGuiViewer::showAbout()
-{
-  mAboutWidget->show();
-}
-
-//==============================================================================
 ImGuiHandler* ImGuiViewer::getImGuiHandler()
 {
   return mImGuiHandler;
@@ -80,6 +66,18 @@ ImGuiHandler* ImGuiViewer::getImGuiHandler()
 const ImGuiHandler* ImGuiViewer::getImGuiHandler() const
 {
   return mImGuiHandler;
+}
+
+//==============================================================================
+void ImGuiViewer::showAbout()
+{
+  mAboutWidget->show();
+}
+
+//==============================================================================
+void ImGuiViewer::hideAbout()
+{
+  mAboutWidget->hide();
 }
 
 } // namespace osg

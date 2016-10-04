@@ -53,21 +53,27 @@ public:
   ImGuiViewer(
       const ::osg::Vec4& clearColor = ::osg::Vec4(0.9f, 0.9f, 0.9f, 1.0f));
 
-  /// Destructor
+  /// Destructor.
   virtual ~ImGuiViewer();
 
-  void showMainMenu();
+  /// Get ImGui handler.
+  ImGuiHandler* getImGuiHandler();
+
+  /// Get cosnt ImGui handler.
+  const ImGuiHandler* getImGuiHandler() const;
+
+  /// Show About widget.
   void showAbout();
 
-  ImGuiHandler* getImGuiHandler();
-  const ImGuiHandler* getImGuiHandler() const;
+  /// Hide About widget.
+  void hideAbout();
 
 protected:
 
   /// ImGui handler.
   ImGuiHandler* mImGuiHandler;
 
-  std::shared_ptr<MainMenuWidget> mMainMenuWidget;
+  /// About widget.
   std::shared_ptr<AboutWidget> mAboutWidget;
 
 };

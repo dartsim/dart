@@ -48,42 +48,41 @@ class ImGuiWidget
 {
 public:
 
+  /// Constructor
   ImGuiWidget();
 
+  /// Destructor.
   virtual ~ImGuiWidget();
 
+  /// The main render function for ImGui widget.
   virtual void render() = 0;
 
+  /// Set the visibility of this widget.
   void setVisible(bool visible);
 
+  /// Toggle the visibility of this widget.
   void toggleVisible();
 
+  /// Show this widget.
   void show();
 
+  /// Hide this widget.
   void hide();
 
+  /// Whether this widget is visible.
   bool isVisible() const;
 
 protected:
 
+  /// Whether this widget is visible.
   bool mIsVisible;
 
-};
-
-class MainMenuWidget : public ImGuiWidget
-{
-public:
-  MainMenuWidget(ImGuiViewer& viewer);
-
-  void render() override;
-
-protected:
-  ImGuiViewer& mViewer;
 };
 
 class AboutWidget : public ImGuiWidget
 {
 public:
+  // Documentation inherited
   void render() override;
 };
 
