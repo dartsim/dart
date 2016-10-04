@@ -59,6 +59,9 @@ public:
   void showMainMenu();
   void showAbout();
 
+  ImGuiHandler* getImGuiHandler();
+  const ImGuiHandler* getImGuiHandler() const;
+
 protected:
 
   /// ImGui handler.

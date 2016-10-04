@@ -14,6 +14,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -29,59 +35,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/osg/ImGuiViewer.hpp"
+#include "AtlasSimbiconWidget.hpp"
 
-#include "dart/gui/osg/ImGuiWidget.hpp"
-#include "dart/gui/osg/ImGuiHandler.hpp"
-
-namespace dart {
-namespace gui {
-namespace osg {
+#include "dart/gui/imgui.h"
 
 //==============================================================================
-ImGuiViewer::ImGuiViewer(const ::osg::Vec4& clearColor)
-  : Viewer(clearColor),
-    mImGuiHandler(new ImGuiHandler()),
-    mMainMenuWidget(std::make_shared<MainMenuWidget>(*this)),
-    mAboutWidget(std::make_shared<AboutWidget>())
+void AtlasSimbiconWidget::render()
 {
-  mImGuiHandler->setCameraCallbacks(getCamera());
-  mImGuiHandler->addWidget(mMainMenuWidget, true);
-  mImGuiHandler->addWidget(mAboutWidget, false);
-
-  addEventHandler(mImGuiHandler);
+  ImGui::SetNextWindowPos(ImVec2(10,40));
+  if (!ImGui::Begin("Example: Fixed Overlay", &mIsVisible, ImVec2(0,0), 0.3f,
+                    ImGuiWindowFlags_NoTitleBar |
+                    ImGuiWindowFlags_NoResize |
+                    ImGuiWindowFlags_NoMove |
+                    ImGuiWindowFlags_NoSavedSettings))
+  {
+    ImGui::End();
+    return;
+  }
+  ImGui::Text("Simple overlay\non the top-left side of the screen.");
+  ImGui::Separator();
+  ImGui::Text("Mouse Position: (%.1f,%.1f)", ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
+  ImGui::End();
 }
-
-//==============================================================================
-ImGuiViewer::~ImGuiViewer()
-{
-  // Do nothing
-}
-
-//==============================================================================
-void ImGuiViewer::showMainMenu()
-{
-  mMainMenuWidget->show();
-}
-
-//==============================================================================
-void ImGuiViewer::showAbout()
-{
-  mAboutWidget->show();
-}
-
-//==============================================================================
-ImGuiHandler* ImGuiViewer::getImGuiHandler()
-{
-  return mImGuiHandler;
-}
-
-//==============================================================================
-const ImGuiHandler* ImGuiViewer::getImGuiHandler() const
-{
-  return mImGuiHandler;
-}
-
-} // namespace osg
-} // namespace gui
-} // namespace dart

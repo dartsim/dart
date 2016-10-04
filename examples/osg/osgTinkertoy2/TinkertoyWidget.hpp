@@ -14,6 +14,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -29,59 +35,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/osg/ImGuiViewer.hpp"
+#ifndef DART_EXAMPLE_OSG_OSGATLASSIMBICON_TINKERTOYWIDGET_HPP_
+#define DART_EXAMPLE_OSG_OSGATLASSIMBICON_TINKERTOYWIDGET_HPP_
 
 #include "dart/gui/osg/ImGuiWidget.hpp"
-#include "dart/gui/osg/ImGuiHandler.hpp"
 
-namespace dart {
-namespace gui {
-namespace osg {
+class TinkertoyWorldNode;
 
-//==============================================================================
-ImGuiViewer::ImGuiViewer(const ::osg::Vec4& clearColor)
-  : Viewer(clearColor),
-    mImGuiHandler(new ImGuiHandler()),
-    mMainMenuWidget(std::make_shared<MainMenuWidget>(*this)),
-    mAboutWidget(std::make_shared<AboutWidget>())
+class TinkertoyWidget : public dart::gui::osg::ImGuiWidget
 {
-  mImGuiHandler->setCameraCallbacks(getCamera());
-  mImGuiHandler->addWidget(mMainMenuWidget, true);
-  mImGuiHandler->addWidget(mAboutWidget, false);
+public:
+  TinkertoyWidget(TinkertoyWorldNode* node);
 
-  addEventHandler(mImGuiHandler);
-}
+  void render() override;
 
-//==============================================================================
-ImGuiViewer::~ImGuiViewer()
-{
-  // Do nothing
-}
+protected:
 
-//==============================================================================
-void ImGuiViewer::showMainMenu()
-{
-  mMainMenuWidget->show();
-}
+  TinkertoyWorldNode* mNode;
 
-//==============================================================================
-void ImGuiViewer::showAbout()
-{
-  mAboutWidget->show();
-}
+};
 
-//==============================================================================
-ImGuiHandler* ImGuiViewer::getImGuiHandler()
-{
-  return mImGuiHandler;
-}
-
-//==============================================================================
-const ImGuiHandler* ImGuiViewer::getImGuiHandler() const
-{
-  return mImGuiHandler;
-}
-
-} // namespace osg
-} // namespace gui
-} // namespace dart
+#endif // DART_EXAMPLE_OSG_OSGATLASSIMBICON_TINKERTOYWIDGET_HPP_

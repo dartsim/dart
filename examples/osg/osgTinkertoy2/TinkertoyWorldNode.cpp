@@ -29,59 +29,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/osg/ImGuiViewer.hpp"
-
-#include "dart/gui/osg/ImGuiWidget.hpp"
-#include "dart/gui/osg/ImGuiHandler.hpp"
-
-namespace dart {
-namespace gui {
-namespace osg {
+#include "TinkertoyWorldNode.hpp"
 
 //==============================================================================
-ImGuiViewer::ImGuiViewer(const ::osg::Vec4& clearColor)
-  : Viewer(clearColor),
-    mImGuiHandler(new ImGuiHandler()),
-    mMainMenuWidget(std::make_shared<MainMenuWidget>(*this)),
-    mAboutWidget(std::make_shared<AboutWidget>())
-{
-  mImGuiHandler->setCameraCallbacks(getCamera());
-  mImGuiHandler->addWidget(mMainMenuWidget, true);
-  mImGuiHandler->addWidget(mAboutWidget, false);
-
-  addEventHandler(mImGuiHandler);
-}
-
-//==============================================================================
-ImGuiViewer::~ImGuiViewer()
-{
-  // Do nothing
-}
-
-//==============================================================================
-void ImGuiViewer::showMainMenu()
-{
-  mMainMenuWidget->show();
-}
-
-//==============================================================================
-void ImGuiViewer::showAbout()
-{
-  mAboutWidget->show();
-}
-
-//==============================================================================
-ImGuiHandler* ImGuiViewer::getImGuiHandler()
-{
-  return mImGuiHandler;
-}
-
-//==============================================================================
-const ImGuiHandler* ImGuiViewer::getImGuiHandler() const
-{
-  return mImGuiHandler;
-}
-
-} // namespace osg
-} // namespace gui
-} // namespace dart

@@ -35,6 +35,7 @@
 
 #include "AtlasSimbiconWorldNode.hpp"
 #include "AtlasSimbiconEventHandler.hpp"
+#include "AtlasSimbiconWidget.hpp"
 
 int main()
 {
@@ -61,8 +62,12 @@ int main()
   node->setNumStepsPerCycle(20);
 
   // Create a Viewer and set it up with the WorldNode
-  dart::gui::osg::Viewer viewer;
+  dart::gui::osg::ImGuiViewer viewer;
   viewer.addWorldNode(node);
+
+  // Add control widget for atlas
+  viewer.getImGuiHandler()->addWidget(
+        std::make_shared<AtlasSimbiconWidget>());
 
   // Pass in the custom event handler
   viewer.addEventHandler(new AtlasSimbiconEventHandler(node));

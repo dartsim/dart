@@ -121,16 +121,14 @@ void AboutWidget::render()
   ImGui::Begin("About DART", &mIsVisible, ImGuiWindowFlags_AlwaysAutoResize);
   //ImGui::Text("HIT %s", Version::asString().c_str());
   ImGui::Separator();
-  ImGui::Text("Copyright 2016 Jeongseok Lee <jslee02@gmail.com> and all github "
-              "contributors.");
-  ImGui::Text("HIT is licensed under the MIT License.");
+  ImGui::Text("Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation");
+  ImGui::Text("Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation");
+  ImGui::Text("Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University");
+  ImGui::Text("DART is licensed under the BSD 2 Clause License.");
   ImGui::Separator();
   ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
               1000.0f / ImGui::GetIO().Framerate,
               ImGui::GetIO().Framerate);
-  ImGui::Text("Based on:");
-  //ImGui::Text("- OpenSceneGraph %s", osgGetVersion());
-  ImGui::Text("- ImGui %s", ImGui::GetVersion());
   ImGui::End();
 }
 
