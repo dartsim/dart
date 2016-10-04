@@ -41,7 +41,7 @@ namespace dynamics {
 
 //==============================================================================
 CapsuleShape::CapsuleShape(double radius, double height)
-  : Shape(),
+  : Shape(CAPSULE),
     mRadius(radius),
     mHeight(height)
 {

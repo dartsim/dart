@@ -54,10 +54,14 @@ public:
     BOX,
     ELLIPSOID,
     CYLINDER,
+    CAPSULE,
+    CONE,
     PLANE,
+    MULTISPHERE,
     MESH,
     SOFT_MESH,
-    LINE_SEGMENT
+    LINE_SEGMENT,
+    UNSUPPORTED
   };
 
   /// DataVariance can be used by renderers to determine whether it should
@@ -73,7 +77,7 @@ public:
   };
 
   /// \brief Constructor
-  DART_DEPRECATED(6.1)
+  /// \deprecated Deprecated in 6.1. Please use getType() instead.
   explicit Shape(ShapeType _type);
 
   /// \brief Constructor
@@ -172,6 +176,10 @@ protected:
 
   /// \brief
   static int mCounter;
+
+  /// \deprecated Deprecated in 6.1. Please use getType() instead.
+  /// Type of primitive shpae.
+  ShapeType mType;
 
 };
 
