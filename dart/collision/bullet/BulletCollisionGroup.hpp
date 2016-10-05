@@ -85,14 +85,14 @@ protected:
 
   using CollisionGroup::updateEngineData;
 
-  /// Bullet broad-phase algorithm
-  std::unique_ptr<btBroadphaseInterface> mBulletProadphaseAlg;
-
   /// Bullet collision configuration
   std::unique_ptr<btCollisionConfiguration> mBulletCollisionConfiguration;
 
   /// Bullet collision dispatcher
-  std::unique_ptr<btDispatcher> mBulletDispatcher;
+  std::unique_ptr<btCollisionDispatcher> mBulletDispatcher;
+
+  /// Bullet broad-phase algorithm
+  std::unique_ptr<btBroadphaseInterface> mBulletBroadphaseAlg;
 
   /// Bullet collision world
   std::unique_ptr<btCollisionWorld> mBulletCollisionWorld;

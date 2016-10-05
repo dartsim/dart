@@ -31,6 +31,7 @@
 
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
 
+#include <bullet/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 
@@ -41,16 +42,18 @@ namespace collision {
 BulletCollisionGroup::BulletCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
   : CollisionGroup(collisionDetector),
-    mBulletProadphaseAlg(new btDbvtBroadphase()),
     mBulletCollisionConfiguration(new btDefaultCollisionConfiguration()),
     mBulletDispatcher(
       new btCollisionDispatcher(mBulletCollisionConfiguration.get())),
+    mBulletBroadphaseAlg(new btDbvtBroadphase()),
     mBulletCollisionWorld(
       new btCollisionWorld(mBulletDispatcher.get(),
-                           mBulletProadphaseAlg.get(),
+                           mBulletBroadphaseAlg.get(),
                            mBulletCollisionConfiguration.get()))
 {
-  // Do nothing
+  // For btGImpactMeshShape support
+  btGImpactCollisionAlgorithm::registerAlgorithm(
+        mBulletDispatcher.get());
 }
 
 //==============================================================================
