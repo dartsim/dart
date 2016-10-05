@@ -29,10 +29,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/config.hpp"
+
 #ifndef DART_COMMON_DEPRECATED_HPP_
 #define DART_COMMON_DEPRECATED_HPP_
-
-#include "dart/config.hpp"
 
 //==============================================================================
 // Deprecated is used for backward compatibility between different minor
@@ -49,6 +49,48 @@
 #else
   #define DART_DEPRECATED(version) ()
   #define DART_FORCEINLINE
+#endif
+
+// We define two convenient macros that can be used to suppress
+// deprecated-warnings for a specific code block rather than a whole project.
+// This macros would be useful when you need to call deprecated function for
+// some reason (e.g., for backward compatibility) but don't want warnings.
+//
+// Example code:
+//
+// deprecated_function()  // warning
+//
+// DART_SUPPRESS_DEPRECATED_BEGIN
+// deprecated_function()  // okay, no warning
+// DART_SUPPRESS_DEPRECATED_END
+//
+#if defined (DART_COMPILER_GCC)
+
+  #define DART_SUPPRESS_DEPRECATED_BEGIN                            \
+    _Pragma("GCC diagnostic push")                                  \
+    _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+
+  #define DART_SUPPRESS_DEPRECATED_END \
+    _Pragma("GCC diagnostic pop")
+
+#elif defined (DART_COMPILER_CLANG)
+
+  #define DART_SUPPRESS_DEPRECATED_BEGIN                              \
+    _Pragma("clang diagnostic push")                                  \
+    _Pragma("clang diagnostic ignored \"-Wdeprecated-declarations\"")
+
+  #define DART_SUPPRESS_DEPRECATED_END \
+    _Pragma("clang diagnostic pop")
+
+#elif defined (DART_COMPILER_MSVC)
+
+  #define DART_SUPPRESS_DEPRECATED_BEGIN \
+    __pragma(warning(push))              \
+    __pragma(warning(disable:4996))
+
+  #define DART_SUPPRESS_DEPRECATED_END \
+    __pragma(warning(pop))
+
 #endif
 
 #endif  // DART_COMMON_DEPRECATED_HPP_

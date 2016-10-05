@@ -37,7 +37,7 @@
 #include <vector>
 
 #include "dart/common/Console.hpp"
-#include "dart/common/Warning.hpp"
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/StlHelpers.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"

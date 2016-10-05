@@ -32,7 +32,6 @@
 #include "dart/constraint/ConstraintSolver.hpp"
 
 #include "dart/common/Console.hpp"
-#include "dart/common/Warning.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionFilter.hpp"
