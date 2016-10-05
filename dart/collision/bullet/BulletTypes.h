@@ -37,6 +37,9 @@
 #ifndef DART_COLLISION_BULLET_BULLETTYPES_H_
 #define DART_COLLISION_BULLET_BULLETTYPES_H_
 
+// Must be included before any Bullet headers.
+#include "dart/config.h"
+
 #include <Eigen/Dense>
 #include <btBulletCollisionCommon.h>
 

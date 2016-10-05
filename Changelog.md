@@ -1,5 +1,8 @@
 ### Version 5.1.3 (201X-XX-XX)
 
+1. Added support for Bullet built with double precision (backport [#660](https://github.com/dartsim/dart/pull/660))
+    * [Pull request #777](https://github.com/dartsim/dart/pull/777)
+
 1. Switched to use btGImpactMeshShape instead of btConvexTriangleMeshShape for mesh
     * [Pull request #764](https://github.com/dartsim/dart/pull/764)
 

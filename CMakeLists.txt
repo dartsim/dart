@@ -158,6 +158,8 @@ if(ASSIMP_FOUND)
 
   # Check for missing symbols in ASSIMP (see #451)
   include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_DEFINITIONS "")
+  set(CMAKE_REQUIRED_FLAGS "")
   set(CMAKE_REQUIRED_INCLUDES ${ASSIMP_INCLUDE_DIRS})
   set(CMAKE_REQUIRED_LIBRARIES ${ASSIMP_LIBRARIES})
 
@@ -393,7 +395,7 @@ if(BULLET_FOUND)
 
   set(HAVE_BULLET_COLLISION TRUE)
 else()
-  message(STATUS "Looking for Bullet - NOT found, to use BulletCollisionDetector, please install libbullet-dev")
+  message(STATUS "Looking for Bullet - NOT found, please install libbullet-dev")
   set(HAVE_BULLET_COLLISION FALSE)
 endif()
 
@@ -449,7 +451,6 @@ include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
 include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 if(HAVE_BULLET_COLLISION)
   include_directories(SYSTEM ${BULLET_INCLUDE_DIRS})
-  add_definitions(${BULLET_CFLAGS})
 endif()
 
 if(NOT BUILD_CORE_ONLY)
@@ -483,9 +484,6 @@ endif()
 link_directories("${CMAKE_BINARY_DIR}/lib")
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 link_directories(${Boost_LIBRARY_DIRS})
-if(HAVE_BULLET_COLLISION)
-  link_directories("${BULLET_LIBRARY_DIRS}")
-endif()
 
 #===============================================================================
 # Check for non-case-sensitive filesystems
