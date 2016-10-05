@@ -42,6 +42,12 @@ class AtlasSimbiconWorldNode : public dart::gui::osg::WorldNode
 {
 public:
 
+  enum ControlMode
+  {
+    Walking,
+    Running
+  };
+
   AtlasSimbiconWorldNode(const dart::simulation::WorldPtr& world, const dart::dynamics::SkeletonPtr& atlas);
 
   void customPreRefresh() override;
@@ -58,6 +64,9 @@ public:
   void pushBackwardAtlas(double force = 500, int frames = 100);
   void pushLeftAtlas(double force = 500, int frames = 100);
   void pushRightAtlas(double force = 500, int frames = 100);
+
+  void changeToWalking();
+  void changeToRunning();
 
 protected:
 

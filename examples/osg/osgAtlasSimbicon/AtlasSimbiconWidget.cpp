@@ -38,22 +38,123 @@
 #include "AtlasSimbiconWidget.hpp"
 
 #include "dart/gui/imgui.h"
+#include "AtlasSimbiconWorldNode.hpp"
+
+//==============================================================================
+AtlasSimbiconWidget::AtlasSimbiconWidget(
+    dart::gui::osg::ImGuiViewer* viewer,
+    AtlasSimbiconWorldNode* node)
+  : mViewer(viewer),
+    mNode(node),
+    mGuiGravityAcc(9.81f),
+    mGravityAcc(mGuiGravityAcc),
+    mGuiHeadlights(true)
+{
+  // Do nothing
+}
 
 //==============================================================================
 void AtlasSimbiconWidget::render()
 {
-  ImGui::SetNextWindowPos(ImVec2(10,40));
-  if (!ImGui::Begin("Example: Fixed Overlay", &mIsVisible, ImVec2(0,0), 0.3f,
-                    ImGuiWindowFlags_NoTitleBar |
+  ImGui::SetNextWindowPos(ImVec2(10,20));
+  if (!ImGui::Begin("Tinkertoy Control", nullptr, ImVec2(360,640), 0.5f,
                     ImGuiWindowFlags_NoResize |
-                    ImGuiWindowFlags_NoMove |
-                    ImGuiWindowFlags_NoSavedSettings))
+                    ImGuiWindowFlags_MenuBar |
+                    ImGuiWindowFlags_HorizontalScrollbar))
   {
+    // Early out if the window is collapsed, as an optimization.
     ImGui::End();
     return;
   }
-  ImGui::Text("Simple overlay\non the top-left side of the screen.");
-  ImGui::Separator();
-  ImGui::Text("Mouse Position: (%.1f,%.1f)", ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
+
+  // Menu
+  if (ImGui::BeginMenuBar())
+  {
+    if (ImGui::BeginMenu("Menu"))
+    {
+      if (ImGui::MenuItem("Exit"))
+        mViewer->setDone(true);
+      ImGui::EndMenu();
+    }
+    if (ImGui::BeginMenu("Help"))
+    {
+      if (ImGui::MenuItem("About DART"))
+        mViewer->showAbout();
+      ImGui::EndMenu();
+    }
+    ImGui::EndMenuBar();
+  }
+
+  ImGui::Text("<TODO: Short description about this example>");
+  ImGui::Spacing();
+
+  if (ImGui::CollapsingHeader("Help"))
+  {
+    ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
+    ImGui::Text("User Guid:\n");
+    ImGui::Text("%s", mViewer->getInstructions().c_str());
+    ImGui::Text("Press [r] to reset Atlas to the initial position.\n");
+    ImGui::Text("Press [a] to push forward Atlas toroso.\n");
+    ImGui::Text("Press [s] to push backward Atlas toroso.\n");
+    ImGui::Text("Press [d] to push left Atlas toroso.\n");
+    ImGui::Text("Press [f] to push right Atlas toroso.\n");
+    ImGui::Text("Left-click on a block to select it.\n");
+    ImGui::PopTextWrapPos();
+  }
+
+  if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
+  {
+    int e = mViewer->isSimulating() ? 0 : 1;
+    if(mViewer->isAllowingSimulation())
+    {
+      if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
+        mViewer->simulate(true);
+      ImGui::SameLine();
+      if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
+        mViewer->simulate(false);
+    }
+  }
+
+  if (ImGui::CollapsingHeader("World Options", ImGuiTreeNodeFlags_DefaultOpen))
+  {
+    // Gravity
+    ImGui::SliderFloat("Gravity Acc.", &mGuiGravityAcc, 5.0, 20.0, "-%.2f");
+    setGravity(mGuiGravityAcc);
+
+    ImGui::Spacing();
+
+    // Headlights
+    mGuiHeadlights = mViewer->checkHeadlights();
+    ImGui::Checkbox("Headlights On/Off", &mGuiHeadlights);
+    mViewer->switchHeadlights(mGuiHeadlights);
+  }
+
+  if (ImGui::CollapsingHeader("Atlas Simbicon Options", ImGuiTreeNodeFlags_DefaultOpen))
+  {
+    const auto reset = ImGui::Button("Reset Atlas");
+    if (reset)
+      mNode->reset();
+
+    ImGui::Spacing();
+
+    // Stride
+    int e = mIsShortStride ? 0 : 1;
+    if (ImGui::RadioButton("Short", &e, 0) && !mViewer->isSimulating())
+      mNode->changeToRunning();
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Large", &e, 1) && mViewer->isSimulating())
+      mNode->changeToWalking();
+  }
+
   ImGui::End();
+}
+
+//==============================================================================
+void AtlasSimbiconWidget::setGravity(float gravity)
+{
+  if (mGravityAcc == gravity)
+    return;
+
+  mGravityAcc = gravity;
+  mNode->getWorld()->setGravity(-mGravityAcc*Eigen::Vector3d::UnitY());
 }

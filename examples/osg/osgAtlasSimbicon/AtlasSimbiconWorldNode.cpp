@@ -43,6 +43,8 @@ AtlasSimbiconWorldNode::AtlasSimbiconWorldNode(
   assert(atlas);
 
   mController.reset(new Controller(atlas, world->getConstraintSolver()));
+
+  changeToRunning();
 }
 
 //==============================================================================
@@ -118,4 +120,16 @@ void AtlasSimbiconWorldNode::pushRightAtlas(double force, int frames)
 {
   mExternalForce.z() = -force;
   mForceDuration = frames;
+}
+
+//==============================================================================
+void AtlasSimbiconWorldNode::changeToWalking()
+{
+  mController->changeStateMachine("walking", mWorld->getTime());
+}
+
+//==============================================================================
+void AtlasSimbiconWorldNode::changeToRunning()
+{
+  mController->changeStateMachine("running", mWorld->getTime());
 }

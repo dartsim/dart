@@ -67,7 +67,7 @@ int main()
 
   // Add control widget for atlas
   viewer.getImGuiHandler()->addWidget(
-        std::make_shared<AtlasSimbiconWidget>());
+        std::make_shared<AtlasSimbiconWidget>(&viewer, node.get()));
 
   // Pass in the custom event handler
   viewer.addEventHandler(new AtlasSimbiconEventHandler(node));
@@ -82,22 +82,13 @@ int main()
   windows.front()->setWindowName("Atlas Simbicon");
 
   // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(::osg::Vec3d( 5.14,  3.28, 6.28),
-                                                 ::osg::Vec3d( 1.00,  0.00, 0.00),
-                                                 ::osg::Vec3d( 0.00,  0.1, 0.00));
+  viewer.getCameraManipulator()->setHomePosition(
+        ::osg::Vec3d( 5.14,  3.28, 6.28)*1.5,
+        ::osg::Vec3d( 1.00,  0.00, 0.00),
+        ::osg::Vec3d( 0.00,  0.1, 0.00));
   // We need to re-dirty the CameraManipulator by passing it into the viewer
   // again, so that the viewer knows to update its HomePosition setting
   viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  // Print out instructions for the user
-  std::cout << viewer.getInstructions() << std::endl;
-
-  std::cout << "Press [r] to reset Atlas to the initial position.\n"
-            << "Press [a] to push forward Atlas toroso.\n"
-            << "Press [s] to push backward Atlas toroso.\n"
-            << "Press [d] to push left Atlas toroso.\n"
-            << "Press [f] to push right Atlas toroso.\n"
-            << std::endl;
 
   // Begin running the application loop
   viewer.run();

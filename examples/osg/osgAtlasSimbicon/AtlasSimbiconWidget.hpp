@@ -39,11 +39,33 @@
 #define DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWIDGET_HPP_
 
 #include "dart/gui/osg/ImGuiWidget.hpp"
+#include "dart/gui/osg/ImGuiViewer.hpp"
+
+class AtlasSimbiconWorldNode;
 
 class AtlasSimbiconWidget : public dart::gui::osg::ImGuiWidget
 {
 public:
-  void render() override;
+
+  /// Constructor
+  AtlasSimbiconWidget(dart::gui::osg::ImGuiViewer* viewer,
+                      AtlasSimbiconWorldNode* node);
+
+  void render() override;\
+
+protected:
+
+  void setGravity(float gravity);
+
+  dart::gui::osg::ImGuiViewer* mViewer;
+
+  AtlasSimbiconWorldNode* mNode;
+
+  float mGuiGravityAcc;
+  float mGravityAcc;
+
+  bool mGuiHeadlights;
+
 };
 
 #endif // DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWIDGET_HPP_

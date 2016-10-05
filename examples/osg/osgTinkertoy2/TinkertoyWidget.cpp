@@ -152,15 +152,9 @@ void TinkertoyWidget::render()
 
     ImGui::Spacing();
 
-    ImGui::PushID(0);
-    ImGui::PushStyleColor(ImGuiCol_Button, ImColor::HSV(0/7.0f, 0.6f, 0.6f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor::HSV(0/7.0f, 0.7f, 0.7f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor::HSV(0/7.0f, 0.8f, 0.8f));
     const auto reorient = ImGui::Button("Reorient Target");
     if (reorient)
       mNode->reorientTarget();
-    ImGui::PopStyleColor(3);
-    ImGui::PopID();
   }
 
   ImGui::End();
