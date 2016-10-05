@@ -41,22 +41,12 @@
 class AtlasSimbiconWorldNode : public dart::gui::osg::WorldNode
 {
 public:
+  /// Constructor
+  AtlasSimbiconWorldNode(const dart::simulation::WorldPtr& world,
+                         const dart::dynamics::SkeletonPtr& atlas);
 
-  enum ControlMode
-  {
-    Walking,
-    Running
-  };
-
-  AtlasSimbiconWorldNode(const dart::simulation::WorldPtr& world, const dart::dynamics::SkeletonPtr& atlas);
-
-  void customPreRefresh() override;
-
-  void customPostRefresh() override;
-
+  // Documentation inherited
   void customPreStep() override;
-
-  void customPostStep() override;
 
   void reset();
 
@@ -65,15 +55,14 @@ public:
   void pushLeftAtlas(double force = 500, int frames = 100);
   void pushRightAtlas(double force = 500, int frames = 100);
 
-  void changeToWalking();
-  void changeToRunning();
+  void switchToNormalStrideWalking();
+  void switchToShortStrideWalking();
+  void switchToNoControl();
 
 protected:
-
   std::unique_ptr<Controller> mController;
   Eigen::Vector3d mExternalForce;
   int mForceDuration;
-
 };
 
 #endif // DART_EXAMPLE_OSG_OSGATLASSIMBICON_ATLASSIMBICONWORLDNODE_HPP_

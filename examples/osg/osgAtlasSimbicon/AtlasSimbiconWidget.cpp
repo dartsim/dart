@@ -48,7 +48,9 @@ AtlasSimbiconWidget::AtlasSimbiconWidget(
     mNode(node),
     mGuiGravityAcc(9.81f),
     mGravityAcc(mGuiGravityAcc),
-    mGuiHeadlights(true)
+    mGuiHeadlights(true),
+    mGuiControlMode(2),
+    mControlMode(2)
 {
   // Do nothing
 }
@@ -57,8 +59,7 @@ AtlasSimbiconWidget::AtlasSimbiconWidget(
 void AtlasSimbiconWidget::render()
 {
   ImGui::SetNextWindowPos(ImVec2(10,20));
-  if (!ImGui::Begin("Tinkertoy Control", nullptr, ImVec2(360,640), 0.5f,
-                    ImGuiWindowFlags_NoResize |
+  if (!ImGui::Begin("Tinkertoy Control", nullptr, ImVec2(360,340), 0.5f,
                     ImGuiWindowFlags_MenuBar |
                     ImGuiWindowFlags_HorizontalScrollbar))
   {
@@ -85,7 +86,7 @@ void AtlasSimbiconWidget::render()
     ImGui::EndMenuBar();
   }
 
-  ImGui::Text("<TODO: Short description about this example>");
+  ImGui::Text("Altas robot controlled by Simbicon");
   ImGui::Spacing();
 
   if (ImGui::CollapsingHeader("Help"))
@@ -138,12 +139,27 @@ void AtlasSimbiconWidget::render()
     ImGui::Spacing();
 
     // Stride
-    int e = mIsShortStride ? 0 : 1;
-    if (ImGui::RadioButton("Short", &e, 0) && !mViewer->isSimulating())
-      mNode->changeToRunning();
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Large", &e, 1) && mViewer->isSimulating())
-      mNode->changeToWalking();
+    ImGui::RadioButton("No Control", &mGuiControlMode, 0);
+    ImGui::RadioButton("Short-Stride Walking", &mGuiControlMode, 1);
+    ImGui::RadioButton("Normal-Stride Walking", &mGuiControlMode, 2);
+
+    if (mGuiControlMode != mControlMode)
+    {
+      switch (mGuiControlMode)
+      {
+        case 0:
+          mNode->switchToNoControl();
+          break;
+        case 1:
+          mNode->switchToShortStrideWalking();
+          break;
+        case 2:
+          mNode->switchToNormalStrideWalking();
+          break;
+      }
+
+      mControlMode = mGuiControlMode;
+    }
   }
 
   ImGui::End();

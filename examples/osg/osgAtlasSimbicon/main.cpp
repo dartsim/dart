@@ -83,7 +83,7 @@ int main()
 
   // Adjust the viewpoint of the Viewer
   viewer.getCameraManipulator()->setHomePosition(
-        ::osg::Vec3d( 5.14,  3.28, 6.28)*1.5,
+        ::osg::Vec3d( 5.14,  3.28, 6.28)*2.0,
         ::osg::Vec3d( 1.00,  0.00, 0.00),
         ::osg::Vec3d( 0.00,  0.1, 0.00));
   // We need to re-dirty the CameraManipulator by passing it into the viewer

@@ -40,7 +40,10 @@
 
 class StateMachine;
 
-/// \brief SIMBICON for Atlas robot
+/// \brief Implementation of Simbicon (Simple biped locomotion control) for
+/// Atlas robot
+///
+/// Reference: http://dl.acm.org/citation.cfm?id=1276509
 class Controller
 {
 public:
@@ -53,7 +56,7 @@ public:
 
   /// \brief Called before every simulation time step in MyWindow class.
   /// Compute control force and apply it to Atlas robot
-  virtual void update(double _currentTime);
+  virtual void update();
 
   /// \brief
   dart::dynamics::SkeletonPtr getAtlasRobot();
@@ -69,6 +72,10 @@ public:
 
   /// \brief Change state machine to a state machine whose index is _idx
   void changeStateMachine(std::size_t _idx, double _currentTime);
+
+  /// \brief Get true iff this controller is currently allowing to control the
+  /// Atlas robot
+  bool isAllowingControl() const;
 
   /// \brief Keyboard control
   void keyboard(unsigned char _key, int _x, int _y, double _currentTime);
@@ -133,6 +140,12 @@ protected:
 
   /// \brief Index for sagital right hip
   std::size_t mSagitalRightHip;
+
+  /// \brief Lower bound for emergency stop
+  double mMinPelvisHeight;
+
+  /// \brief Upper bound for emergency stop
+  double mMaxPelvisHeight;
 
 private:
   /// \brief Check if this controller contains _stateMachine

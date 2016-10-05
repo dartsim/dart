@@ -53,6 +53,8 @@ Controller::Controller(SkeletonPtr _atlasRobot,
     mPelvisHarnessOn(false),
     mLeftFootHarnessOn(false),
     mRightFootHarnessOn(false),
+    mMinPelvisHeight(-0.70),
+    mMaxPelvisHeight(0.30),
     mWeldJointConstraintPelvis(nullptr),
     mWeldJointConstraintLeftFoot(nullptr),
     mWeldJointConstraintRightFoot(nullptr),
@@ -85,10 +87,13 @@ Controller::~Controller()
 }
 
 //==============================================================================
-void Controller::update(double /*_currentTime*/)
+void Controller::update()
 {
-  // Compute control force
-  mCurrentStateMachine->computeControlForce(mAtlasRobot->getTimeStep());
+  if (isAllowingControl())
+  {
+    // Compute control force
+    mCurrentStateMachine->computeControlForce(mAtlasRobot->getTimeStep());
+  }
 }
 
 //==============================================================================
@@ -149,6 +154,20 @@ void Controller::changeStateMachine(std::size_t _idx, double _currentTime)
   assert(_idx <= mStateMachines.size() && "Invalid index of StateMachine.");
 
   changeStateMachine(mStateMachines[_idx], _currentTime);
+}
+
+//==============================================================================
+bool Controller::isAllowingControl() const
+{
+  auto pelvis = mAtlasRobot->getBodyNode("pelvis");
+  const Eigen::Isometry3d tf = pelvis->getTransform();
+  const Eigen::Vector3d pos = tf.translation();
+  const auto y = pos[1];
+
+  if (y < mMinPelvisHeight || mMaxPelvisHeight < y)
+    return false;
+  else
+    return true;
 }
 
 //==============================================================================

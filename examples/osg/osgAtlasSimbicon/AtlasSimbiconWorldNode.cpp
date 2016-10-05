@@ -43,48 +43,19 @@ AtlasSimbiconWorldNode::AtlasSimbiconWorldNode(
   assert(atlas);
 
   mController.reset(new Controller(atlas, world->getConstraintSolver()));
-
-  changeToRunning();
-}
-
-//==============================================================================
-void AtlasSimbiconWorldNode::customPreRefresh()
-{
-  // Use this function to execute custom code before each time that the
-  // window is rendered. This function can be deleted if it does not need
-  // to be used.
-}
-
-//==============================================================================
-void AtlasSimbiconWorldNode::customPostRefresh()
-{
-  // Use this function to execute custom code after each time that the
-  // window is rendered. This function can be deleted if it does not need
-  // to be used.
 }
 
 //==============================================================================
 void AtlasSimbiconWorldNode::customPreStep()
 {
-  // Use this function to execute custom code before each simulation time
-  // step is performed. This function can be deleted if it does not need
-  // to be used.
-
-  mController->getAtlasRobot()->getBodyNode("pelvis")->addExtForce(mExternalForce);
-  mController->update(mWorld->getTime());
+  auto pelvis = mController->getAtlasRobot()->getBodyNode("pelvis");
+  pelvis->addExtForce(mExternalForce);
+  mController->update();
 
   if (mForceDuration > 0)
     mForceDuration--;
   else
     mExternalForce.setZero();
-}
-
-//==============================================================================
-void AtlasSimbiconWorldNode::customPostStep()
-{
-  // Use this function to execute custom code after each simulation time
-  // step is performed. This function can be deleted if it does not need
-  // to be used.
 }
 
 //==============================================================================
@@ -123,13 +94,19 @@ void AtlasSimbiconWorldNode::pushRightAtlas(double force, int frames)
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::changeToWalking()
+void AtlasSimbiconWorldNode::switchToNormalStrideWalking()
 {
   mController->changeStateMachine("walking", mWorld->getTime());
 }
 
 //==============================================================================
-void AtlasSimbiconWorldNode::changeToRunning()
+void AtlasSimbiconWorldNode::switchToShortStrideWalking()
 {
   mController->changeStateMachine("running", mWorld->getTime());
+}
+
+//==============================================================================
+void AtlasSimbiconWorldNode::switchToNoControl()
+{
+  mController->changeStateMachine("standing", mWorld->getTime());
 }
