@@ -812,7 +812,7 @@ btCollisionShape* createBulletEllipsoidMesh(
     {56, 49, 58}
   };
 
-  auto triMesh = new btTriangleMesh();
+  auto ellipsoidMesh = new btConvexHullShape();
 
   for (auto i = 0u; i < 112; ++i)
   {
@@ -830,13 +830,14 @@ btCollisionShape* createBulletEllipsoidMesh(
     vertices[1] = btVector3(p1[0] * sizeX, p1[1] * sizeY, p1[2] * sizeZ);
     vertices[2] = btVector3(p2[0] * sizeX, p2[1] * sizeY, p2[2] * sizeZ);
 
-    triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
+    ellipsoidMesh->addPoint(vertices[0]);
+    ellipsoidMesh->addPoint(vertices[1]);
+    ellipsoidMesh->addPoint(vertices[2]);
   }
 
-  auto gimpactMeshShape = new btGImpactMeshShape(triMesh);
-  gimpactMeshShape->updateBound();
+  ellipsoidMesh->setMargin(0.01 * std::min({sizeX, sizeY, sizeZ}));
 
-  return gimpactMeshShape;
+  return ellipsoidMesh;
 }
 
 //==============================================================================
