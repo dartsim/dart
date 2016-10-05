@@ -20,11 +20,11 @@
                     <color>0.95 0.95 0.95</color>
                 </visualization_shape>
                 <collision_shape>
-                    <transformation>0 -0.005 0 0 0 0</transformation>
+                    <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
-                        <box>
-                            <size>10 0.01 10</size>
-                        </box>
+                        <plane>
+                            <normal>0 1 0</normal>
+                        </plane>
                     </geometry>
                 </collision_shape>                                
             </body>
