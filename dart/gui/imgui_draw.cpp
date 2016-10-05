@@ -109,6 +109,8 @@ namespace IMGUI_STB_NAMESPACE
 using namespace IMGUI_STB_NAMESPACE;
 #endif
 
+#include "dart/common/Warning.hpp"
+
 //-----------------------------------------------------------------------------
 // ImDrawList
 //-----------------------------------------------------------------------------
@@ -1343,7 +1345,9 @@ bool    ImFontAtlas::Build()
         buf_rects_n += glyph_count;
         stbtt_PackSetOversampling(&spc, cfg.OversampleH, cfg.OversampleV);
         int n = stbtt_PackFontRangesGatherRects(&spc, &tmp.FontInfo, tmp.Ranges, tmp.RangesCount, tmp.Rects);
+DART_SUPPRESS_MAYBE_UNINITIALIZED_BEGIN
         stbrp_pack_rects((stbrp_context*)spc.pack_info, tmp.Rects, n);
+DART_SUPPRESS_MAYBE_UNINITIALIZED_END
 
         // Extend texture height
         for (int i = 0; i < n; i++)
