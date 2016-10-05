@@ -40,7 +40,7 @@ namespace dynamics {
 
 //==============================================================================
 MultiSphereShape::MultiSphereShape(const Spheres& spheres)
-  : Shape()
+  : Shape(MULTISPHERE)
 {
   addSpheres(spheres);
 }

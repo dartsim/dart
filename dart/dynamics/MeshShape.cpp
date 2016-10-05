@@ -129,7 +129,7 @@ namespace dynamics {
 MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
                      const std::string& _path,
                      const common::ResourceRetrieverPtr& _resourceRetriever)
-  : Shape(),
+  : Shape(MESH),
     mResourceRetriever(_resourceRetriever),
     mDisplayList(0),
     mColorMode(MATERIAL_COLOR),

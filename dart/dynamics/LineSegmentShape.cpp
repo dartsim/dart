@@ -38,7 +38,7 @@ namespace dynamics {
 
 //==============================================================================
 LineSegmentShape::LineSegmentShape(float _thickness)
-  : Shape(),
+  : Shape(LINE_SEGMENT),
     mThickness(_thickness),
     mDummyVertex(Eigen::Vector3d::Zero())
 {

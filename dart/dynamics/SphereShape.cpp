@@ -38,7 +38,7 @@ namespace dynamics {
 
 //==============================================================================
 SphereShape::SphereShape(double radius)
-  : Shape()
+  : Shape(SPHERE)
 {
   setRadius(radius);
 }

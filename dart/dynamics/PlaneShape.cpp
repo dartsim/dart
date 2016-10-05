@@ -36,7 +36,7 @@ namespace dynamics {
 
 //==============================================================================
 PlaneShape::PlaneShape(const Eigen::Vector3d& _normal, double _offset)
-  : Shape(),
+  : Shape(PLANE),
     mNormal(_normal.normalized()),
     mOffset(_offset)
 {
