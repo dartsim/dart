@@ -65,7 +65,7 @@ public:
       mForceCoeff(DefaultForceCoeff),
       mWasSimulating(false)
   {
-    mTarget = std::make_shared<dart::gui::osg::InteractiveFrame>(
+    mTarget = Eigen::make_aligned_shared<dart::gui::osg::InteractiveFrame>(
           dart::dynamics::Frame::World());
     getWorld()->addSimpleFrame(mTarget);
 
