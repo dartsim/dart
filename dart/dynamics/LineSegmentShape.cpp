@@ -58,7 +58,7 @@ LineSegmentShape::LineSegmentShape(float _thickness)
 LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& _v1,
                                    const Eigen::Vector3d& _v2,
                                    float _thickness)
-  : Shape(LINE_SEGMENT),
+  : Shape(),
     mThickness(_thickness)
 {
   if (_thickness <= 0.0f)

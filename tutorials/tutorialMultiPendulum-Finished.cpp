@@ -344,7 +344,7 @@ void setGeometry(const BodyNodePtr& bn)
   std::shared_ptr<BoxShape> box(new BoxShape(
       Eigen::Vector3d(default_width, default_depth, default_height)));
 
-  // Create a shpae node for visualization and collision checking
+  // Create a shape node for visualization and collision checking
   auto shapeNode
       = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
   shapeNode->getVisualAspect()->setColor(dart::Color::Blue());

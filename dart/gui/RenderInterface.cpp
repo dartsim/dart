@@ -140,6 +140,14 @@ void RenderInterface::drawCylinder(double /*_radius*/, double /*_height*/)
 {
 }
 
+void RenderInterface::drawCapsule(double /*_radius*/, double /*_height*/)
+{
+}
+
+void RenderInterface::drawCone(double /*_radius*/, double /*_height*/)
+{
+}
+
 void RenderInterface::setPenColor(const Eigen::Vector4d& /*_col*/)
 {
 }

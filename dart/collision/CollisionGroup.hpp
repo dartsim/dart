@@ -35,8 +35,10 @@
 #include <map>
 #include <vector>
 #include "dart/collision/SmartPointer.hpp"
-#include "dart/collision/Option.hpp"
-#include "dart/collision/Result.hpp"
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/DistanceOption.hpp"
+#include "dart/collision/DistanceResult.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
@@ -176,9 +178,38 @@ public:
   /// Return false if the engine type of the other CollisionGroup is different
   /// from this CollisionObject engine.
   bool collide(
-      CollisionGroup* group,
+      CollisionGroup* otherGroup,
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr);
+
+  /// Get the minimum signed distance between the Shape pairs in this
+  /// CollisionGroup.
+  ///
+  /// The detailed results are stored in the given DistanceResult if provided.
+  ///
+  /// The results can be different by DistanceOption. By default, non-negative
+  /// minimum distance (distance >= 0) is returned for all the shape pairs
+  /// without computing nearest points.
+  double distance(
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr);
+
+  /// Get the minimum signed distance between the Shape pairs where a pair
+  /// consist of two shapes from each groups (one from this CollisionGroup and
+  /// one from otherGroup).
+  ///
+  /// Note that the distance between shapes within the same CollisionGroup
+  /// are not accounted.
+  ///
+  /// The detailed results are stored in the given DistanceResult if provided.
+  ///
+  /// The results can be different by DistanceOption. By default, non-negative
+  /// minimum distance (distance >= 0) is returned for all the shape pairs
+  /// without computing nearest points.
+  double distance(
+      CollisionGroup* otherGroup,
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr);
 
 protected:
 

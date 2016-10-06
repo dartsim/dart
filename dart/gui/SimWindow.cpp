@@ -48,7 +48,10 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MultiSphereShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
@@ -400,34 +403,58 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   using dynamics::BoxShape;
   using dynamics::EllipsoidShape;
   using dynamics::CylinderShape;
+  using dynamics::CapsuleShape;
+  using dynamics::ConeShape;
   using dynamics::PlaneShape;
+  using dynamics::MultiSphereShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
   using dynamics::LineSegmentShape;
 
-  const auto& shapeType = shape->getType();
-
-  if (SphereShape::getStaticType() == shapeType)
+  if (shape->is<SphereShape>())
   {
     const auto* sphere = static_cast<const SphereShape*>(shape);
     mRI->drawSphere(sphere->getRadius());
   }
-  else if (BoxShape::getStaticType() == shapeType)
+  else if (shape->is<BoxShape>())
   {
     const auto* box = static_cast<const BoxShape*>(shape);
     mRI->drawCube(box->getSize());
   }
-  else if (EllipsoidShape::getStaticType() == shapeType)
+  else if (shape->is<EllipsoidShape>())
   {
     const auto* ellipsoid = static_cast<const EllipsoidShape*>(shape);
     mRI->drawEllipsoid(ellipsoid->getSize());
   }
-  else if (CylinderShape::getStaticType() == shapeType)
+  else if (shape->is<CylinderShape>())
   {
     const auto* cylinder = static_cast<const CylinderShape*>(shape);
     mRI->drawCylinder(cylinder->getRadius(), cylinder->getHeight());
   }
-  else if (MeshShape::getStaticType() == shapeType)
+  else if (shape->is<CapsuleShape>())
+  {
+    const auto* capsule = static_cast<const CapsuleShape*>(shape);
+    mRI->drawCapsule(capsule->getRadius(), capsule->getHeight());
+  }
+  else if (shape->is<ConeShape>())
+  {
+    const auto* cone = static_cast<const ConeShape*>(shape);
+    mRI->drawCone(cone->getRadius(), cone->getHeight());
+  }
+  else if (shape->is<MultiSphereShape>())
+  {
+    const auto* multiSphere = static_cast<const MultiSphereShape*>(shape);
+    const auto& spheres = multiSphere->getSpheres();
+    for (const auto& sphere : spheres)
+    {
+      glTranslated(sphere.second.x(), sphere.second.y(), sphere.second.z());
+      mRI->drawSphere(sphere.first);
+      glTranslated(-sphere.second.x(), -sphere.second.y(), -sphere.second.z());
+    }
+    // TODO(JS): This is an workaround that draws only spheres rather than the
+    // actual convex hull.
+  }
+  else if (shape->is<MeshShape>())
   {
     const auto& mesh = static_cast<const MeshShape*>(shape);
 
@@ -438,12 +465,12 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
     else
       mRI->drawMesh(mesh->getScale(), mesh->getMesh());
   }
-  else if (SoftMeshShape::getStaticType() == shapeType)
+  else if (shape->is<SoftMeshShape>())
   {
     const auto& softMesh = static_cast<const SoftMeshShape*>(shape);
     mRI->drawSoftMesh(softMesh->getAssimpMesh());
   }
-  else if (LineSegmentShape::getStaticType() == shapeType)
+  else if (shape->is<LineSegmentShape>())
   {
     const auto& lineSegmentShape
         = static_cast<const LineSegmentShape*>(shape);
@@ -453,7 +480,7 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   else
   {
     dterr << "[SimWindow::drawShape] Attempting to draw an unsupported shape "
-          << "type [" << shapeType << "].\n";
+          << "type [" << shape->getType() << "].\n";
   }
 
   glDisable(GL_COLOR_MATERIAL);

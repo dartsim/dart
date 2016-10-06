@@ -54,10 +54,14 @@ public:
     BOX,
     ELLIPSOID,
     CYLINDER,
+    CAPSULE,
+    CONE,
     PLANE,
+    MULTISPHERE,
     MESH,
     SOFT_MESH,
-    LINE_SEGMENT
+    LINE_SEGMENT,
+    UNSUPPORTED
   };
 
   /// DataVariance can be used by renderers to determine whether it should
@@ -73,13 +77,33 @@ public:
   };
 
   /// \brief Constructor
+  /// \deprecated Deprecated in 6.1. Please use getType() instead.
   explicit Shape(ShapeType _type);
+
+  /// \brief Constructor
+  Shape();
 
   /// \brief Destructor
   virtual ~Shape();
 
   /// Returns a string representing the shape type
+  /// \sa is()
   virtual const std::string& getType() const = 0;
+
+  /// Get true if the types of this Shape and the template parameter (a shape
+  /// class) are identical. This function is a syntactic sugar, which is
+  /// identical to: (getType() == ShapeType::getStaticType()).
+  ///
+  /// Example code:
+  /// \code
+  /// auto shape = bodyNode->getShapeNode(0)->getShape();
+  /// if (shape->is<BoxShape>())
+  ///   std::cout << "The shape type is box!\n";
+  /// \endcode
+  ///
+  /// \sa getType()
+  template <typename ShapeT>
+  bool is() const;
 
   /// \brief Get the bounding box of the shape in its local coordinate frame.
   ///        The dimension will be automatically determined by the sub-classes
@@ -153,15 +177,15 @@ protected:
   /// \brief
   static int mCounter;
 
-private:
-
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
-  /// \brief Type of primitive shpae
+  /// Type of primitive shpae.
   ShapeType mType;
 
 };
 
 }  // namespace dynamics
 }  // namespace dart
+
+#include "dart/dynamics/detail/Shape.hpp"
 
 #endif  // DART_DYNAMICS_SHAPE_HPP_

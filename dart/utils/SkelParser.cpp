@@ -53,8 +53,11 @@
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MultiSphereShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -1268,6 +1271,20 @@ dynamics::ShapePtr readShape(
     double                height       = getValueDouble(cylinderEle, "height");
     newShape = dynamics::ShapePtr(new dynamics::CylinderShape(radius, height));
   }
+  else if (hasElement(geometryEle, "capsule"))
+  {
+    tinyxml2::XMLElement* capsuleEle   = getElement(geometryEle, "capsule");
+    double                radius       = getValueDouble(capsuleEle, "radius");
+    double                height       = getValueDouble(capsuleEle, "height");
+    newShape = dynamics::ShapePtr(new dynamics::CapsuleShape(radius, height));
+  }
+  else if (hasElement(geometryEle, "cone"))
+  {
+    tinyxml2::XMLElement* coneEle      = getElement(geometryEle, "cone");
+    double                radius       = getValueDouble(coneEle, "radius");
+    double                height       = getValueDouble(coneEle, "height");
+    newShape = dynamics::ShapePtr(new dynamics::ConeShape(radius, height));
+  }
   else if (hasElement(geometryEle, "plane"))
   {
     tinyxml2::XMLElement* planeEle = getElement(geometryEle, "plane");
@@ -1286,6 +1303,23 @@ dynamics::ShapePtr readShape(
              << "plane shape. DART will use 0.0." << std::endl;
       newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, 0.0));
     }
+  }
+  else if (hasElement(geometryEle, "multi_sphere"))
+  {
+    tinyxml2::XMLElement* multiSphereEle = getElement(geometryEle, "multi_sphere");
+
+    ElementEnumerator xmlSpheres(multiSphereEle, "sphere");
+    dynamics::MultiSphereShape::Spheres spheres;
+    while (xmlSpheres.next())
+    {
+      const double radius = getValueDouble(xmlSpheres.get(), "radius");
+      const Eigen::Vector3d position
+          = getValueVector3d(xmlSpheres.get(), "position");
+
+      spheres.emplace_back(radius, position);
+    }
+
+    newShape = dynamics::ShapePtr(new dynamics::MultiSphereShape(spheres));
   }
   else if (hasElement(geometryEle, "mesh"))
   {

@@ -48,7 +48,7 @@ public:
   PlaneShape(const Eigen::Vector3d& _normal, const Eigen::Vector3d& _point);
 
   // Documentation inherited.
-  const std::string& getType() const;
+  const std::string& getType() const override;
 
   /// Returns shape type for this class
   static const std::string& getStaticType();

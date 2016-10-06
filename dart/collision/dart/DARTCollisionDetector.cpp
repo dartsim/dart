@@ -225,6 +225,31 @@ bool DARTCollisionDetector::collide(
 }
 
 //==============================================================================
+double DARTCollisionDetector::distance(
+    CollisionGroup* /*group*/,
+    const DistanceOption& /*option*/,
+    DistanceResult* /*result*/)
+{
+  dtwarn << "[DARTCollisionDetector::distance] This collision detector does "
+         << "not support (signed) distance queries. Returning 0.0.\n";
+
+  return 0.0;
+}
+
+//==============================================================================
+double DARTCollisionDetector::distance(
+    CollisionGroup* /*group1*/,
+    CollisionGroup* /*group2*/,
+    const DistanceOption& /*option*/,
+    DistanceResult* /*result*/)
+{
+  dtwarn << "[DARTCollisionDetector::distance] This collision detector does "
+         << "not support (signed) distance queries. Returning 0.0.\n";
+
+  return 0.0;
+}
+
+//==============================================================================
 DARTCollisionDetector::DARTCollisionDetector()
   : CollisionDetector()
 {
