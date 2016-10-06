@@ -57,7 +57,6 @@ public:
 protected:
 
   void setGravity(bool gravity);
-  void setForceCoeff(float coeff);
 
   dart::gui::osg::ImGuiViewer* mViewer;
 
@@ -67,8 +66,6 @@ protected:
   bool mGravity;
 
   bool mGuiHeadlights;
-
-  float mGuiForceCoeff;
 
 };
 

@@ -456,6 +456,7 @@ public:
     mTarget->setTransform(tf);
   }
 
+  float mForceCoeff;
 
 protected:
 
@@ -475,7 +476,6 @@ protected:
   dart::gui::osg::InteractiveFramePtr mTarget;
 
   dart::dynamics::LineSegmentShapePtr mForceLine;
-  double mForceCoeff;
 
   bool mWasSimulating;
 };

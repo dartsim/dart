@@ -50,7 +50,7 @@ TinkertoyWidget::TinkertoyWidget(
     mGravity(true),
     mGuiHeadlights(true)
 {
-  mGuiForceCoeff = mNode->getForceCoeff();
+  // Do nothing
 }
 
 //==============================================================================
@@ -147,14 +147,34 @@ void TinkertoyWidget::render()
   if (ImGui::CollapsingHeader("Tinkertoy Options", ImGuiTreeNodeFlags_DefaultOpen))
   {
     ImGui::SliderFloat(
-          "Force Coeff", &mGuiForceCoeff, MinForceCoeff, MaxForceCoeff, "%.1f");
-    setForceCoeff(mGuiForceCoeff);
+          "Force Coeff", &mNode->mForceCoeff,
+          MinForceCoeff, MaxForceCoeff, "%.1f");
 
     ImGui::Spacing();
 
     const auto reorient = ImGui::Button("Reorient Target");
     if (reorient)
       mNode->reorientTarget();
+
+    const auto clearTarget = ImGui::Button("Reset Target");
+    if (clearTarget)
+      mNode->clearPick();
+
+    const auto addWeld = ImGui::Button("Add a Weld-Joint Block");
+    if (addWeld)
+      mNode->addWeldJointBlock();
+
+    const auto addRevolute = ImGui::Button("Add a Revolute-Joint Block");
+    if (addRevolute)
+      mNode->addRevoluteJointBlock();
+
+    const auto addBall = ImGui::Button("Add a Ball-Joint Block");
+    if (addBall)
+      mNode->addBallJointBlock();
+
+    const auto deleteBlock = ImGui::Button("Delete Block");
+    if (deleteBlock)
+      mNode->deletePick();
   }
 
   ImGui::End();
@@ -172,13 +192,4 @@ void TinkertoyWidget::setGravity(bool gravity)
     mNode->getWorld()->setGravity(-9.81*Eigen::Vector3d::UnitZ());
   else
     mNode->getWorld()->setGravity(Eigen::Vector3d::Zero());
-}
-
-//==============================================================================
-void TinkertoyWidget::setForceCoeff(float coeff)
-{
-  if (mNode->getForceCoeff() == coeff)
-    return;
-
-  mNode->setForceCoeff(mGuiForceCoeff);
 }

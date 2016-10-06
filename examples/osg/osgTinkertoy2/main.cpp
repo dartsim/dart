@@ -97,6 +97,14 @@ public:
         mNode->reorientTarget();
         return true;
       }
+      else if(ea.getKey() == osgGA::GUIEventAdapter::KEY_Return)
+      {
+        if(!mViewer->isRecording())
+          mViewer->record("/home/grey/dump");
+        else
+          mViewer->pauseRecording();
+        return true;
+      }
     }
 
     return false;
@@ -185,7 +193,7 @@ int main()
   viewer.getDefaultEventHandler()->addMouseEventHandler(mouse.get());
 
   // Set the dimensions for the window
-  viewer.setUpViewInWindow(0, 0, 1280, 960);
+  viewer.setUpViewInWindow(0, 0, 1280, 720);
 
   // Set the window name
   viewer.realize();
