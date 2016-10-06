@@ -22,6 +22,14 @@
   * Added `sdf` parsing for `fixed` joint and `material` tag of visual shape: [#775](https://github.com/dartsim/dart/pull/775)
   * Added support of urdfdom_headers 1.0: [#766](https://github.com/dartsim/dart/pull/766)
 
+* GUI
+
+  * Added ImGui for 2D graphical interface: [#781](https://github.com/dartsim/dart/pull/781)
+
+* Examples
+
+  * Added osgAtlasSimbicon and osgTinkertoy: [#781](https://github.com/dartsim/dart/pull/781)
+
 * Misc improvements and bug fixes
 
   * Added `virtual Shape::getType()` and deprecated `ShapeType Shape::getShapeType()`: [#724](https://github.com/dartsim/dart/pull/724)
