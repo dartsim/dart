@@ -1,11 +1,15 @@
 ## DART 6
 
-### DART 6.0.1 (2016-XX-XX)
+### DART 6.0.1 (2016-06-29)
 
 * Collision detection
 
   * Added support of FCL 0.5 and tinyxml2 4.0: [#749](https://github.com/dartsim/dart/pull/749)
   * Added warnings for unsupported shape pairs of DARTCollisionDetector: [#722](https://github.com/dartsim/dart/pull/722)
+
+* Dynamics
+
+  * Fixed total mass is not being updated when bodies removed from Skeleton: [#731](https://github.com/dartsim/dart/pull/731)
 
 * Misc improvements and bug fixes
 
