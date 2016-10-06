@@ -472,11 +472,8 @@
 1. Added specification of minimum dependency version
     * [Pull request #306](https://github.com/dartsim/dart/pull/306)
 
-<<<<<<< HEAD:CHANGELOG.md
 ## DART 4
 
-=======
->>>>>>> origin/release-5.1:Changelog.md
 ### Version 4.3.6 (2016-04-16)
 
 1. Fixed duplicate entries in Skeleton::mBodyNodes causing segfault in destructor
