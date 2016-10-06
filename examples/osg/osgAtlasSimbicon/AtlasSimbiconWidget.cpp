@@ -59,7 +59,7 @@ AtlasSimbiconWidget::AtlasSimbiconWidget(
 void AtlasSimbiconWidget::render()
 {
   ImGui::SetNextWindowPos(ImVec2(10,20));
-  if (!ImGui::Begin("Tinkertoy Control", nullptr, ImVec2(360,340), 0.5f,
+  if (!ImGui::Begin("Atlas Control", nullptr, ImVec2(360,340), 0.5f,
                     ImGuiWindowFlags_MenuBar |
                     ImGuiWindowFlags_HorizontalScrollbar))
   {
