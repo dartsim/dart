@@ -77,6 +77,15 @@ dart6 (6.0.0) unstable; urgency=medium
 
  -- Jeongseok Lee <jslee02@gmail.com>  Tue, 10 May 2016 12:00:00 -0500
 
+dart5 (5.1.2) unstable; urgency=medium
+
+  * Fixed inverse kinematics (backporting)
+  * Fixed aligned memory allocation with Eigen objects in loading meshes
+  * Fixed incorrect applying joint constraint impulses (backporting)
+  * Fixed some build and packaging issues
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 25 Apr 2016 00:00:00 -0500
+
 dart (5.1.1) unstable; urgency=medium
 
   * Add bullet dependency to package.xml
