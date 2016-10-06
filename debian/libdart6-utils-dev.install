@@ -1,2 +1,3 @@
-usr/include/dart/utils/*
+usr/include/dart/utils/*.*
+usr/include/dart/utils/sdf/*.*
 usr/lib/libdart-utils.so
