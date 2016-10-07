@@ -1,3 +1,13 @@
+dart6 (6.0.1) unstable; urgency=medium
+
+  * Added support of FCL 0.5 and tinyxml2 4.0
+  * Added warnings for unsupported shape pairs of DARTCollisionDetector
+  * Fixed total mass is not being updated when bodies removed from Skeleton
+  * Renamed DEPRECATED and FORCEINLINE to DART_DEPRECATED and DART_FORCEINLINE to avoid name conflicts
+  * Updated copyright - added CMU to copyright holder, moved individual contributors to CONTRIBUTING.md
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Wed, 29 Jun 2016 00:00:00 -0500
+
 dart6 (6.0.0) unstable; urgency=medium
 
   * Added 'Node', 'Aspect', 'State', and 'Properties'
@@ -76,6 +86,15 @@ dart6 (6.0.0) unstable; urgency=medium
   * Removed version check for Bullet
 
  -- Jeongseok Lee <jslee02@gmail.com>  Tue, 10 May 2016 12:00:00 -0500
+
+dart5 (5.1.2) unstable; urgency=medium
+
+  * Fixed inverse kinematics (backporting)
+  * Fixed aligned memory allocation with Eigen objects in loading meshes
+  * Fixed incorrect applying joint constraint impulses (backporting)
+  * Fixed some build and packaging issues
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 25 Apr 2016 00:00:00 -0500
 
 dart (5.1.1) unstable; urgency=medium
 

@@ -41,7 +41,7 @@ namespace dynamics {
 
 //==============================================================================
 ConeShape::ConeShape(double radius, double height)
-  : Shape(),
+  : Shape(CONE),
     mRadius(radius),
     mHeight(height)
 {

@@ -30,12 +30,16 @@
   * Fixed Doxyfile to show missing member functions in API documentation: [#768](https://github.com/dartsim/dart/pull/768)
   * Fixed typo: [#756](https://github.com/dartsim/dart/pull/756), [#755](https://github.com/dartsim/dart/pull/755)
 
-### DART 6.0.1 (2016-XX-XX)
+### DART 6.0.1 (2016-06-29)
 
 * Collision detection
 
-  * Added support of FCL 0.5.0: [#749](https://github.com/dartsim/dart/pull/749)
+  * Added support of FCL 0.5 and tinyxml2 4.0: [#749](https://github.com/dartsim/dart/pull/749)
   * Added warnings for unsupported shape pairs of DARTCollisionDetector: [#722](https://github.com/dartsim/dart/pull/722)
+
+* Dynamics
+
+  * Fixed total mass is not being updated when bodies removed from Skeleton: [#731](https://github.com/dartsim/dart/pull/731)
 
 * Misc improvements and bug fixes
 
@@ -147,6 +151,33 @@
 
 
 ## DART 5
+
+### Version 5.1.3 (201X-XX-XX)
+
+1. Added support for Bullet built with double precision (backport [#660](https://github.com/dartsim/dart/pull/660))
+    * [Pull request #777](https://github.com/dartsim/dart/pull/777)
+
+1. Switched to use btGImpactMeshShape instead of btConvexTriangleMeshShape for mesh
+    * [Pull request #764](https://github.com/dartsim/dart/pull/764)
+
+1. Backported [#749](https://github.com/dartsim/dart/pull/749) to DART 5.1
+    * [Pull request #759](https://github.com/dartsim/dart/pull/759)
+
+### Version 5.1.2 (2016-04-25)
+
+1. Fixed inverse kinematics (backporting)
+    * [Pull request #684](https://github.com/dartsim/dart/pull/684)
+
+1. Fixed aligned memory allocation with Eigen objects in loading meshes
+    * [Pull request #606](https://github.com/dartsim/dart/pull/606)
+
+1. Fixed incorrect applying joint constraint impulses (backporting)
+    * [Pull request #579](https://github.com/dartsim/dart/pull/579)
+
+1. Fixed some build and packaging issues
+    * [Pull request #559](https://github.com/dartsim/dart/pull/559)
+    * [Pull request #595](https://github.com/dartsim/dart/pull/595)
+    * [Pull request #696](https://github.com/dartsim/dart/pull/696)
 
 ### Version 5.1.1 (2015-11-06)
 

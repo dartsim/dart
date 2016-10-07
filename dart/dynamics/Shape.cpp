@@ -39,11 +39,12 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-Shape::Shape(ShapeType /*_type*/)
+Shape::Shape(ShapeType type)
   : mBoundingBox(),
     mVolume(0.0),
     mID(mCounter++),
-    mVariance(STATIC)
+    mVariance(STATIC),
+    mType(type)
 {
   // Do nothing
 }
@@ -53,7 +54,8 @@ Shape::Shape()
   : mBoundingBox(),
     mVolume(0.0),
     mID(mCounter++),
-    mVariance(STATIC)
+    mVariance(STATIC),
+    mType(UNSUPPORTED)
 {
   // Do nothing
 }
@@ -97,12 +99,7 @@ int Shape::getID() const
 //==============================================================================
 Shape::ShapeType Shape::getShapeType() const
 {
-  dtwarn << "[Shape::getShapeType] This function is deprecated since DART 6.1 "
-         << "with Shape::ShapeType, and this won't work as expected. Please "
-         << "consider using Shape::getType() or [ShapeClass]::getStaticType() "
-         << "instead for the type checking.\n";
-
-  return static_cast<ShapeType>(0);
+  return mType;
 }
 
 //==============================================================================
