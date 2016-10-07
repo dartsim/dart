@@ -30,7 +30,7 @@
   * Fixed Doxyfile to show missing member functions in API documentation: [#768](https://github.com/dartsim/dart/pull/768)
   * Fixed typo: [#756](https://github.com/dartsim/dart/pull/756), [#755](https://github.com/dartsim/dart/pull/755)
 
-### DART 6.0.1 (2016-XX-XX)
+### DART 6.0.1 (2016-06-29)
 
 * Collision detection
 
