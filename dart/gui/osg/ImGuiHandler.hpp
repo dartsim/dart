@@ -38,6 +38,7 @@
 #ifndef DART_GUI_OSG_IMGUIHANDLER_HPP_
 #define DART_GUI_OSG_IMGUIHANDLER_HPP_
 
+#include <array>
 #include <memory>
 #include <vector>
 
