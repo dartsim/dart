@@ -19,6 +19,11 @@ target_link_libraries(dart-gui dart-utils ${GLUT_LIBRARY} ${OPENGL_LIBRARIES})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})
+list(REMOVE_ITEM header_names stb_textedit.h)
+list(REMOVE_ITEM header_names stb_truetype.h)
+list(REMOVE_ITEM header_names stb_rect_pack.h)
+list(REMOVE_ITEM header_names imconfig.h)
+list(REMOVE_ITEM header_names imgui_internal.h)
 if(HAVE_OPENSCENEGRAPH)
   list(APPEND header_names "osg/osg.hpp")
 endif(HAVE_OPENSCENEGRAPH)
