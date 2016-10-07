@@ -1,3 +1,21 @@
+dart6 (6.1.0) unstable; urgency=medium
+
+  * Added 'computeLagrangian()' to 'MetaSkeleton' and 'BodyNode'
+  * Added new shapes: sphere, capsule, cone, and multi-sphere
+  * Changed base class of joint from SingleDofJoint/MultiDofJoint to GenericJoint
+  * Fixed incorrect linking to flann library
+  * Added 'sdf' parsing for 'fixed' joint and 'material' tag of visual shape
+  * Added support of urdfdom_headers 1.0
+  * Added ImGui for 2D graphical interface
+  * Added osgAtlasSimbicon and osgTinkertoy
+  * Added 'virtual Shape::getType()' and deprecated 'ShapeType Shape::getShapeType()'
+  * Changed building with SIMD optional
+  * Fixed minor build and install issues
+  * Fixed Doxyfile to show missing member functions in API documentation
+  * Fixed typo
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Fri, 07 Oct 2016 12:00:00 -0500
+
 dart6 (6.0.1) unstable; urgency=medium
 
   * Added support of FCL 0.5 and tinyxml2 4.0
