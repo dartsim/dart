@@ -2,11 +2,29 @@
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
-include_directories(SYSTEM ${NLOPT_INCLUDE_DIRS})
+# Set local target name
+set(target_name ${PROJECT_NAME}-optimizer-nlopt)
+set(component_name optimizer-nlopt)
 
-# Library
-dart_add_library(dart-optimizer-nlopt ${srcs} ${hdrs})
-target_link_libraries(dart-optimizer-nlopt dart ${NLOPT_LIBRARIES})
+# Add target
+dart_add_library(${target_name} ${hdrs} ${srcs})
+target_include_directories(
+  ${target_name} SYSTEM
+  PUBLIC ${NLOPT_INCLUDE_DIRS}
+)
+target_link_libraries(
+  ${target_name}
+  dart
+  ${NLOPT_LIBRARIES}
+)
+
+# Component
+add_component(${PROJECT_NAME} ${component_name})
+add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
+
+# Coverage test
+coveralls_add_sources(${hdrs} ${srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_nlopt headers" ${hdrs})

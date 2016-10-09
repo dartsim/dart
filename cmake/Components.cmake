@@ -1,3 +1,34 @@
+# Copyright (c) 2016 Carnegie Mellon University
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors
+# may be used to endorse or promote products derived from this software without
+# specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# CMake 2.8.12 or above is required for CMakeParseArguments.
+cmake_minimum_required(VERSION 2.8.12)
+
 include(CMakeParseArguments)
 
 # This must be called before any other component function
@@ -28,15 +59,23 @@ function(is_component output_variable package_name component)
 endfunction()
 
 #==============================================================================
+# Create a custom target for a component. The target is named
+# <package_name>_component_<component>. Afterwards, the dependency targets of
+# the component can be added to the target using add_component_targets().
+#
+# Warning: At least one dependency target must be added to the component target,
+# otherwise this function returns error.
 function(add_component package_name component)
   set(component_prefix "${package_name}_component_")
   set(target "${component_prefix}${component}")
   add_custom_target("${target}")
 
-  install(EXPORT "${component_prefix}${component}"
+  install(EXPORT "${target}"
     FILE "${package_name}_${component}Targets.cmake"
     DESTINATION "${CONFIG_INSTALL_DIR}"
     )
+  # TODO(JS): It would be nice we could check if ${target} has at least one
+  # dependency target.
 
   set_property(TARGET "${target}" PROPERTY "${component_prefix}COMPONENT" TRUE)
   set_property(TARGET "${target}" PROPERTY "${component_prefix}DEPENDENCIES")
@@ -111,7 +150,7 @@ function(add_component_targets package_name component)
     endif()
 
     install(TARGETS "${dependency_target}"
-      EXPORT "${component_prefix}${component}"
+      EXPORT "${target}"
       ARCHIVE DESTINATION "${LIBRARY_INSTALL_DIR}"
       LIBRARY DESTINATION "${LIBRARY_INSTALL_DIR}"
       )

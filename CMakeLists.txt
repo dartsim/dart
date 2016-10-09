@@ -1,11 +1,14 @@
 #===============================================================================
 # CMake settings
 #===============================================================================
+# CMake 2.8.12 or above is required for CMakeParseArguments.
 if(MSVC)
   cmake_minimum_required(VERSION 3.1.3)
 else()
-  cmake_minimum_required(VERSION 2.8.6)
+  cmake_minimum_required(VERSION 2.8.12)
 endif()
+
+project(dart)
 
 # Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
 # became default in CMake 3.0. Explicitly setting this policy is necessary to
@@ -21,14 +24,21 @@ if(POLICY CMP0053)
   cmake_policy(SET CMP0053 NEW)
 endif()
 
-# Disables a warning about a change in Cygwin Cmake
-set(CMAKE_LEGACY_CYGWIN_WIN32 0)
-set(CMAKE_CXX_WARNING_LEVEL 4)
+# Variables used in Components.cmake
+set(INCLUDE_INSTALL_DIR "include")
+set(LIBRARY_INSTALL_DIR "lib")
+set(CONFIG_INSTALL_DIR "${LIBRARY_INSTALL_DIR}/${PROJECT_NAME}/cmake")
 
 set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-include(${CMAKE_MODULE_PATH}/DARTMacros.cmake)
+include(DARTMacros)
+
+# CMake component helper. It uses the following variables:
+# - LIBRARY_INSTALL_DIR
+# - CONFIG_INSTALL_DIR
+include(Components)
+initialize_component_helpers(${PROJECT_NAME})
 
 # System install paths on Windows
 if(WIN32)
@@ -38,11 +48,8 @@ endif()
 #===============================================================================
 # Project settings
 #===============================================================================
-#
+
 # If you change the version, please update the <version> tag in package.xml.
-
-project(dart)
-
 set(DART_MAJOR_VERSION "6")
 set(DART_MINOR_VERSION "1")
 set(DART_PATCH_VERSION "0")
@@ -74,6 +81,30 @@ option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 option(DART_COVERALLS "Turn on coveralls support" OFF)
 option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
+
+#===============================================================================
+# Coveralls settings
+#===============================================================================
+define_property(GLOBAL PROPERTY COVERALLS_SOURCES
+  BRIEF_DOCS "Source files that Coveralls evaluates for test coverage."
+  FULL_DOCS "Source files that Coveralls evaluates for test coverage."
+)
+
+function(coveralls_add_sources)
+  foreach(source ${ARGN})
+    set_property(GLOBAL APPEND PROPERTY COVERALLS_SOURCES "${source}")
+#    get_filename_component(source_abs
+#      "${CMAKE_CURRENT_LIST_DIR}/${source}" ABSOLUTE)
+#    if(EXISTS "${source_abs}")
+#      set_property(GLOBAL APPEND PROPERTY COVERALLS_SOURCES "${source_abs}")
+#    else()
+#      message(FATAL_ERROR
+#        "Source file '${source}' does not exist at absolute path"
+#        " '${source_abs}'. This should never happen. Did you recently delete"
+#        " this file or modify 'CMAKE_CURRENT_LIST_DIR'")
+#    endif()
+  endforeach()
+endfunction()
 
 if(DART_COVERALLS)
   include(Coveralls)
@@ -114,22 +145,7 @@ include(DARTFindDependencies)
 # Include directories
 #===============================================================================
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
-include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
-include_directories(SYSTEM ${CCD_INCLUDE_DIRS})
-include_directories(SYSTEM ${FCL_INCLUDE_DIRS})
-include_directories(SYSTEM ${ASSIMP_INCLUDE_DIRS})
-include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-if(HAVE_BULLET_COLLISION)
-  include_directories(SYSTEM ${BULLET_INCLUDE_DIRS})
-endif()
 include_directories("${CMAKE_BINARY_DIR}")
-
-set(DART_INCLUDE_DIRS
-    "${CMAKE_INSTALL_PREFIX}/include"
-    "${EIGEN3_INCLUDE_DIRS}")
-if(HAVE_BULLET_COLLISION)
-  list(APPEND DART_INCLUDE_DIRS "${BULLET_INCLUDE_DIRS}")
-endif()
 
 #===============================================================================
 # Check for non-case-sensitive filesystems
@@ -251,40 +267,6 @@ message(STATUS "CMAKE_SOURCE_DIR : ${CMAKE_SOURCE_DIR}")
 message(STATUS "CMAKE_BINARY_DIR : ${CMAKE_BINARY_DIR}")
 
 #===============================================================================
-# Configure files
-#===============================================================================
-message(STATUS "")
-message(STATUS "[ Configured files ]")
-
-# Generate the dart config file
-# Ref: http://www.vtk.org/Wiki/CMake:How_To_Write_Platform_Checks
-set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/dart/config.hpp.in)
-set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/dart/config.hpp)
-message(STATUS ${DART_CONFIG_OUT})
-configure_file(${DART_CONFIG_IN} ${DART_CONFIG_OUT} @ONLY)
-install(FILES ${DART_CONFIG_OUT} DESTINATION include/dart)
-
-# Generate the DART CMake Config and version files
-include(WriteBasicConfigVersionFile)
-set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in)
-set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake)
-message(STATUS ${DART_CONFIG_OUT})
-message(STATUS ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake)
-configure_file(${DART_CONFIG_IN} ${DART_CONFIG_OUT} @ONLY)
-write_basic_config_version_file(cmake/DARTConfigVersion.cmake VERSION ${DART_VERSION} COMPATIBILITY SameMajorVersion)
-install(FILES ${DART_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake DESTINATION share/dart)
-
-# Generate the DART pkg-config
-set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
-set(PC_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/dart.pc)
-message(STATUS ${PC_CONFIG_OUT})
-configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
-install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
-
-# Install a Catkin 'package.xml' file. This is required by REP-136.
-install(FILES package.xml DESTINATION share/${PROJECT_NAME})
-
-#===============================================================================
 # Helper Functions
 #===============================================================================
 
@@ -347,14 +329,87 @@ foreach(unittest ${unittests})
 endforeach(unittest ${unittests})
 
 #===============================================================================
-# Export targets
+# CMake configuration files for components and targets
 #===============================================================================
-install(EXPORT DARTTargets DESTINATION share/dart)
+# Generate and install CMake configuration files for each component <C>:
+# - <C>Component.cmake, which defines:
+#   - dart_<C>_DEPENDENCIES: list of component dependencies
+#   - dart_<C>_LIBRARIES: list of library targets in this component
+# - <C>Targets.cmake, which creates IMPORTED targets
+install_component_exports(${PROJECT_NAME})
+
+#===============================================================================
+# Configure files
+#===============================================================================
+message(STATUS "")
+message(STATUS "[ Configured files ]")
+
+# Generate and install a Config.cmake file. This file includes the
+# <C>Component.cmake and <C>Targets.cmake created above. It also uses the
+# following variables:
+#
+# - PACKAGE_INCLUDE_INSTALL_DIR
+# - PACKAGE_INCLUDE_DIRS
+get_property(PACKAGE_INCLUDE_DIRS GLOBAL
+  PROPERTY "${PROJECT_NAME}_INCLUDE_DIRS")
+
+# Generate the DART CMake Config and version files
+include(CMakePackageConfigHelpers)
+set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in)
+set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake)
+#message(STATUS ${DART_CONFIG_OUT})
+#message(STATUS ${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake)
+#message(STATUS "CONFIG_INSTALL_DIR: ${CONFIG_INSTALL_DIR}")
+configure_package_config_file(
+  ${DART_CONFIG_IN}
+  ${DART_CONFIG_OUT}
+  INSTALL_DESTINATION "${CONFIG_INSTALL_DIR}"
+  PATH_VARS INCLUDE_INSTALL_DIR
+)
+write_basic_config_version_file(
+  cmake/${PROJECT_NAME}ConfigVersion.cmake
+  VERSION ${DART_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+install(
+  FILES
+    ${DART_CONFIG_OUT}
+    ${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake
+  DESTINATION "${CONFIG_INSTALL_DIR}")
+
+# Generate the DART pkg-config
+set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
+set(PC_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/dart.pc)
+message(STATUS ${PC_CONFIG_OUT})
+configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
+install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
+
+# Install a Catkin 'package.xml' file. This is required by REP-136.
+install(FILES package.xml DESTINATION share/${PROJECT_NAME})
+
+#===============================================================================
+# Uninstall
+#===============================================================================
 
 # Add an "uninstall" target
 # Ref: http://www.cmake.org/Wiki/CMake_FAQ#Can_I_do_.22make_uninstall.22_with_CMake.3F
 configure_file("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in" "${PROJECT_BINARY_DIR}/uninstall_target.cmake" IMMEDIATE @ONLY)
 add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
+
+#===============================================================================
+# Coveralls
+#===============================================================================
+# Setup the coveralls target and tell it to gather
+# coverage data for all the lib sources.
+if(DART_COVERALLS)
+  get_property(sources GLOBAL PROPERTY COVERALLS_SOURCES)
+
+  list(LENGTH sources sources_length)
+  message(STATUS "Running Coveralls on ${sources_length} source files.")
+
+  coveralls_setup("${sources}" ${DART_COVERALLS_UPLOAD}
+    "${PROJECT_SOURCE_DIR}/cmake")
+endif()
 
 #===============================================================================
 # API Document using Doxygen

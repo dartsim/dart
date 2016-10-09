@@ -1,9 +1,8 @@
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
-
-set(dart_constraint_hdrs ${hdrs} PARENT_SCOPE)
-set(dart_constraint_srcs ${srcs} PARENT_SCOPE)
+dart_add_headers(${hdrs})
+dart_add_sources(${srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "constraint headers" ${hdrs})

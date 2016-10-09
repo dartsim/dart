@@ -8,52 +8,129 @@ endif()
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
+set(DART_CONFIG_HPP_IN ${CMAKE_SOURCE_DIR}/dart/config.hpp.in)
+set(DART_CONFIG_HPP_OUT ${CMAKE_BINARY_DIR}/dart/config.hpp)
+message(STATUS ${DART_CONFIG_HPP_OUT})
+configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_IN} @ONLY)
+install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
+
+define_property(GLOBAL PROPERTY DART_CORE_HEADERS
+  BRIEF_DOCS "Header files of DART core."
+  FULL_DOCS "Header files of DART core."
+)
+define_property(GLOBAL PROPERTY DART_CORE_SOURCES
+  BRIEF_DOCS "Source files of DART core."
+  FULL_DOCS "Source files of DART core."
+)
+
+function(dart_add_headers)
+  foreach(headers ${ARGN})
+    set_property(GLOBAL APPEND PROPERTY DART_CORE_HEADERS "${headers}")
+  endforeach()
+endfunction()
+
+function(dart_add_sources)
+  foreach(source ${ARGN})
+    set_property(GLOBAL APPEND PROPERTY DART_CORE_SOURCES "${source}")
+  endforeach()
+endfunction()
+
+# Component
+add_component(${PROJECT_NAME} dart)
+
+#===============================================================================
+# Source directories
+#===============================================================================
+# common
+# math
+# integration
+# lcpsolver
+# optimizer
+#   ipopt
+#   nlopt
+# dynamics
+# collision
+#   dart
+#   fcl
+#   bullet
+# constraint
+# simulation
+# utils
+#   sdf
+#   urdf
+# gui
+#   osg
+#     render
+# planning
+
+#===============================================================================
+# Targets - {dependency targets}, source directories, [external dependency libs]
+#===============================================================================
+# dart - common, math, integration, lcpsolver, optimizer, dynamics, collision,
+#        collision/dart, collision/fcl, constraint, simulation, [eigen3, libccd,
+#        fcl, assimp, boost]
+# dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
+# dart-optimizer-nlopt - {dart}, optimizer/nlopt, [nlopt]
+# dart-collision-bullet - {dart}, collision/bullet, [bullet]
+# dart-utils - {dart-collision-bullet}, utils, utils/sdf, [tinyxml, tinyxml2]
+# dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
+# dart-gui - {dart}, gui, [opengl, glut]
+# dart-gui-osg - {dart-gui}, gui/osg, gui/osg/render, [openscenegraph]
+# dart-planning - {dart}, planning, [flann]
+
+#===============================================================================
+# Components - (dependency component), {dependency targets}
+#===============================================================================
+# dart - {dart}
+# optimizer-ipopt - (dart), {dart-optimizer-ipopt}
+# optimizer-nlopt - (dart), {dart-optimizer-nlopt}
+# collision-bullet - (dart), {dart-collision-bullet}
+# utils - (collision-bullet), {dart-utils}
+# utils-urdf - (utils), {dart-utils-urdf}
+# gui - (utils), {dart-gui}
+# gui-osg - (gui), {dart-gui-osg}
+# planning - (dart), {dart-planning}
+
 # Add subdirectories
-add_subdirectory(collision)
 add_subdirectory(common)
-add_subdirectory(constraint)
-add_subdirectory(dynamics)
-add_subdirectory(optimizer)
+add_subdirectory(math)
 add_subdirectory(integration)
 add_subdirectory(lcpsolver)
-add_subdirectory(math)
+add_subdirectory(optimizer)
+add_subdirectory(dynamics)
+add_subdirectory(collision)
+add_subdirectory(constraint)
 add_subdirectory(simulation)
 
 # Set header and source files
-get_filename_component(dart_h "dart.hpp" ABSOLUTE)
-set(dart_hdrs
-  ${dart_h}
-  ${dart_common_hdrs}
-  ${dart_math_hdrs}
-  ${dart_integration_hdrs}
-  ${dart_lcpsolver_hdrs}
-  ${dart_dynamics_hdrs}
-  ${dart_optimizer_hdrs}
-  ${dart_collision_hdrs}
-  ${dart_constraint_hdrs}
-  ${dart_simulation_hdrs}
-)
-set(dart_srcs
-  ${dart_common_srcs}
-  ${dart_math_srcs}
-  ${dart_integration_srcs}
-  ${dart_lcpsolver_srcs}
-  ${dart_dynamics_srcs}
-  ${dart_optimizer_srcs}
-  ${dart_collision_srcs}
-  ${dart_constraint_srcs}
-  ${dart_simulation_srcs}
-)
+get_filename_component(dart_hpp "dart.hpp" ABSOLUTE)
+dart_add_headers(${dart_hpp})
+get_property(dart_core_headers GLOBAL PROPERTY DART_CORE_HEADERS)
+get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 
-# Library: dart
-dart_add_library(dart ${dart_hdrs} ${dart_srcs})
-target_link_libraries(dart ${CCD_LIBRARIES}
-                           ${FCL_LIBRARIES}
-                           ${ASSIMP_LIBRARIES}
-                           ${Boost_LIBRARIES})
-if(HAVE_BULLET_COLLISION)
-  target_link_libraries(dart ${BULLET_LIBRARIES})
-endif()
+# Add target
+dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
+target_include_directories(
+  dart SYSTEM
+  PUBLIC
+    ${EIGEN3_INCLUDE_DIRS}
+    ${CCD_INCLUDE_DIRS}
+    ${FCL_INCLUDE_DIRS}
+    ${ASSIMP_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
+)
+target_link_libraries(
+  dart
+  ${CCD_LIBRARIES}
+  ${FCL_LIBRARIES}
+  ${ASSIMP_LIBRARIES}
+  ${Boost_LIBRARIES})
+
+# Component
+add_component_targets(${PROJECT_NAME} dart dart)
+
+# Coverage test
+coveralls_add_sources(${dart_core_headers} ${dart_core_sources})
 
 if(MSVC)
   set_target_properties(
@@ -63,26 +140,15 @@ if(MSVC)
 endif()
 
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
-install(TARGETS dart EXPORT DARTTargets DESTINATION lib)
-
-# Coverage test files
-set(dart_coveralls_files "${dart_coveralls_files};${dart_hdrs};${dart_srcs}"
-    CACHE INTERNAL "Files for coverage tests" FORCE)
 
 if(FLANN_FOUND)
   add_subdirectory(planning)
 endif()
 
-if(OPENGL_FOUND AND GLUT_FOUND)
-  add_subdirectory(gui)
-endif()
-
-if(TINYXML_FOUND AND TINYXML2_FOUND AND urdfdom_FOUND)
+if(TINYXML_FOUND AND TINYXML2_FOUND)
   add_subdirectory(utils)
 endif()
 
-# Setup the coveralls target and tell it to gather
-# coverage data for all the lib sources.
-if(DART_COVERALLS)
-  coveralls_setup("${dart_coveralls_files}" ${DART_COVERALLS_UPLOAD})
+if(OPENGL_FOUND AND GLUT_FOUND)
+  add_subdirectory(gui)
 endif()

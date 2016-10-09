@@ -2,13 +2,31 @@
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
-include_directories(SYSTEM ${FLANN_INCLUDE_DIRS})
+# Set local target name
+set(target_name ${PROJECT_NAME}-planning)
+set(component_name planning)
 
-# Library
-dart_add_library(dart-planning ${srcs} ${hdrs})
-target_link_libraries(dart-planning dart ${FLANN_LIBRARIES})
+# Add target
+dart_add_library(${target_name} ${hdrs} ${srcs})
+target_include_directories(
+  ${target_name} SYSTEM
+  PUBLIC ${FLANN_INCLUDE_DIRS}
+)
+target_link_libraries(
+  ${target_name}
+  dart
+  ${FLANN_LIBRARIES}
+)
 
-# Generate header for this namespace
+# Component
+add_component(${PROJECT_NAME} ${component_name})
+add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
+
+# Coverage test
+coveralls_add_sources(${hdrs} ${srcs})
+
+## Generate header for this namespace
 dart_get_filename_components(header_names "planning headers" ${hdrs})
 dart_generate_include_header_list(
   planning_headers
@@ -21,14 +39,9 @@ configure_file(
   ${CMAKE_CURRENT_BINARY_DIR}/planning.hpp
 )
 
-# Install
+## Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.hpp
   DESTINATION include/dart/planning
   COMPONENT headers
 )
-install(TARGETS dart-planning EXPORT DARTTargets DESTINATION lib)
-
-# Coverage test files
-set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"
-    CACHE INTERNAL "files for coverage tests")
