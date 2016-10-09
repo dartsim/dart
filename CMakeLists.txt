@@ -58,16 +58,9 @@ set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "eigen, ccd, fcl, assimp, boost")
 
 #===============================================================================
-# Print intro
-#===============================================================================
-message(STATUS "")
-message(STATUS "============================================")
-message(STATUS "                DART ${DART_VERSION}")
-message(STATUS "============================================")
-
-#===============================================================================
 # Build options
 #===============================================================================
+option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
 option(ENABLE_OPENMP "Build with OpenMP parallaization enabled" ON)
 if(MSVC)
   set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
@@ -83,6 +76,14 @@ option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 
 #===============================================================================
+# Print intro
+#===============================================================================
+message(STATUS "")
+message(STATUS "============================================")
+message(STATUS "                DART ${DART_VERSION}")
+message(STATUS "============================================")
+
+#===============================================================================
 # Coveralls settings
 #===============================================================================
 define_property(GLOBAL PROPERTY COVERALLS_SOURCES
@@ -93,16 +94,6 @@ define_property(GLOBAL PROPERTY COVERALLS_SOURCES
 function(coveralls_add_sources)
   foreach(source ${ARGN})
     set_property(GLOBAL APPEND PROPERTY COVERALLS_SOURCES "${source}")
-#    get_filename_component(source_abs
-#      "${CMAKE_CURRENT_LIST_DIR}/${source}" ABSOLUTE)
-#    if(EXISTS "${source_abs}")
-#      set_property(GLOBAL APPEND PROPERTY COVERALLS_SOURCES "${source_abs}")
-#    else()
-#      message(FATAL_ERROR
-#        "Source file '${source}' does not exist at absolute path"
-#        " '${source_abs}'. This should never happen. Did you recently delete"
-#        " this file or modify 'CMAKE_CURRENT_LIST_DIR'")
-#    endif()
   endforeach()
 endfunction()
 
@@ -243,28 +234,30 @@ endif()
 #===============================================================================
 # Print build summary
 #===============================================================================
-message(STATUS "")
-message(STATUS "[ Build summary ]")
-message(STATUS "CMAKE_GENERATOR  : ${CMAKE_GENERATOR}")
-message(STATUS "Compiler ID      : ${CMAKE_CXX_COMPILER_ID}")
-message(STATUS "Compiler version : ${CXX_COMPILER_VERSION}")
-message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
-message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
-message(STATUS "ENABLE_OPENMP    : ${ENABLE_OPENMP}")
-message(STATUS "Build gui::osg   : ${DART_BUILD_GUI_OSG}")
-message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
-message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
-if(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELEASE")
-  message(STATUS "CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
-elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "DEBUG")
-  message(STATUS "CXX_FLAGS_DEBUG  : ${CMAKE_CXX_FLAGS_DEBUG}")
-elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELWITHDEBINFO")
-  message(STATUS "CXX_FLAGS_RELWITHDEBINFO: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
-elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "PROFILE")
-  message(STATUS "CXX_FLAGS_PROFILE: ${CMAKE_CXX_FLAGS_PROFILE}")
-endif()
-message(STATUS "CMAKE_SOURCE_DIR : ${CMAKE_SOURCE_DIR}")
-message(STATUS "CMAKE_BINARY_DIR : ${CMAKE_BINARY_DIR}")
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ Build summary ]")
+  message(STATUS "CMAKE_GENERATOR  : ${CMAKE_GENERATOR}")
+  message(STATUS "Compiler ID      : ${CMAKE_CXX_COMPILER_ID}")
+  message(STATUS "Compiler version : ${CXX_COMPILER_VERSION}")
+  message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
+  message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
+  message(STATUS "ENABLE_OPENMP    : ${ENABLE_OPENMP}")
+  message(STATUS "Build gui::osg   : ${DART_BUILD_GUI_OSG}")
+  message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
+  message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
+  if(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELEASE")
+    message(STATUS "CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
+  elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "DEBUG")
+    message(STATUS "CXX_FLAGS_DEBUG  : ${CMAKE_CXX_FLAGS_DEBUG}")
+  elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELWITHDEBINFO")
+    message(STATUS "CXX_FLAGS_RELWITHDEBINFO: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+  elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "PROFILE")
+    message(STATUS "CXX_FLAGS_PROFILE: ${CMAKE_CXX_FLAGS_PROFILE}")
+  endif()
+  message(STATUS "CMAKE_SOURCE_DIR : ${CMAKE_SOURCE_DIR}")
+  message(STATUS "CMAKE_BINARY_DIR : ${CMAKE_BINARY_DIR}")
+endif(DART_VERBOSE)
 
 #===============================================================================
 # Helper Functions
@@ -298,22 +291,31 @@ add_subdirectory(tutorials EXCLUDE_FROM_ALL)
 get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
 add_custom_target(tutorials DEPENDS ${tutorials})
 
-message(STATUS "")
-message(STATUS "[ Tutorials ]")
-foreach(tutorial ${tutorials})
-  message(STATUS "Adding tutorial: ${tutorial}")
-endforeach(tutorial ${tutorials})
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ Tutorials ]")
+  foreach(tutorial ${tutorials})
+    message(STATUS "Adding tutorial: ${tutorial}")
+  endforeach(tutorial ${tutorials})
+else(DART_VERBOSE)
+  list(LENGTH tutorials tutorials_length)
+  message(STATUS "${tutorials_length} tutorials added.")
+endif(DART_VERBOSE)
 
 # Add an "examples" target to build examples.
 get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
 add_custom_target(examples DEPENDS ${examples})
 
-message(STATUS "")
-message(STATUS "[ Examples ]")
-
-foreach(example ${examples})
-  message(STATUS "Adding example: ${example}")
-endforeach(example ${examples})
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ Examples ]")
+  foreach(example ${examples})
+    message(STATUS "Adding example: ${example}")
+  endforeach(example ${examples})
+else(DART_VERBOSE)
+  list(LENGTH examples examples_length)
+  message(STATUS "${examples_length} examples added.")
+endif(DART_VERBOSE)
 
 # Add a "tests" target to build unit tests.
 enable_testing()
@@ -322,11 +324,16 @@ add_subdirectory(unittests EXCLUDE_FROM_ALL)
 get_property(unittests GLOBAL PROPERTY DART_UNITTESTS)
 add_custom_target(tests DEPENDS ${unittests})
 
-message(STATUS "")
-message(STATUS "[ Unit Tests ]")
-foreach(unittest ${unittests})
-  message(STATUS "Adding test: ${unittest}")
-endforeach(unittest ${unittests})
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ Unit Tests ]")
+  foreach(unittest ${unittests})
+    message(STATUS "Adding test: ${unittest}")
+  endforeach(unittest ${unittests})
+else(DART_VERBOSE)
+  list(LENGTH unittests unittests_length)
+  message(STATUS "${unittests_length} unittest added.")
+endif(DART_VERBOSE)
 
 #===============================================================================
 # CMake configuration files for components and targets
@@ -341,8 +348,10 @@ install_component_exports(${PROJECT_NAME})
 #===============================================================================
 # Configure files
 #===============================================================================
-message(STATUS "")
-message(STATUS "[ Configured files ]")
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ Configured files ]")
+endif()
 
 # Generate and install a Config.cmake file. This file includes the
 # <C>Component.cmake and <C>Targets.cmake created above. It also uses the
@@ -357,10 +366,11 @@ get_property(PACKAGE_INCLUDE_DIRS GLOBAL
 include(CMakePackageConfigHelpers)
 set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in)
 set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake)
-#message(STATUS ${DART_CONFIG_OUT})
-#message(STATUS ${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake)
-#message(STATUS "CONFIG_INSTALL_DIR: ${CONFIG_INSTALL_DIR}")
-configure_package_config_file(
+if(DART_VERBOSE)
+  message(STATUS ${DART_CONFIG_OUT})
+  message(STATUS ${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake)
+endif()
+  configure_package_config_file(
   ${DART_CONFIG_IN}
   ${DART_CONFIG_OUT}
   INSTALL_DESTINATION "${CONFIG_INSTALL_DIR}"
@@ -380,7 +390,9 @@ install(
 # Generate the DART pkg-config
 set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
 set(PC_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/dart.pc)
-message(STATUS ${PC_CONFIG_OUT})
+if(DART_VERBOSE)
+  message(STATUS ${PC_CONFIG_OUT})
+endif()
 configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
 install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 
