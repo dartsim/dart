@@ -475,6 +475,15 @@ if("${PERLMODULES_FOUND}" STREQUAL "TRUE")
 endif()
 
 #===============================================================================
+# Build Instructions
+#===============================================================================
+message(STATUS "")
+message(STATUS "Run 'make' to build all the components")
+message(STATUS "Run 'make tests' to build all the unittests")
+message(STATUS "Run 'make examples' to build all the examples")
+message(STATUS "Run 'make tutorials' to build all the tutorials")
+
+#===============================================================================
 # END
 #===============================================================================
 message(STATUS "")
