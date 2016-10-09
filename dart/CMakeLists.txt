@@ -109,11 +109,11 @@ if(DART_VERBOSE)
   message(STATUS "")
   message(STATUS "[ Components ]")
   foreach(component ${components})
-    message(STATUS "Building component: ${component}")
+    message(STATUS "Adding component: ${component}")
   endforeach()
 else()
   list(LENGTH components components_length)
-  message(STATUS "Building ${components_length} components including "
+  message(STATUS "Adding ${components_length} components including "
     "the default component 'dart'")
 endif()
 
