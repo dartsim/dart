@@ -27,7 +27,7 @@ endif()
 # Variables used in Components.cmake
 set(INCLUDE_INSTALL_DIR "include")
 set(LIBRARY_INSTALL_DIR "lib")
-set(CONFIG_INSTALL_DIR "${LIBRARY_INSTALL_DIR}/${PROJECT_NAME}/cmake")
+set(CONFIG_INSTALL_DIR "share/${PROJECT_NAME}/cmake")
 
 set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -284,56 +284,66 @@ endfunction(dart_add_unittest)
 #===============================================================================
 
 add_subdirectory(dart)
-add_subdirectory(examples EXCLUDE_FROM_ALL)
-add_subdirectory(tutorials EXCLUDE_FROM_ALL)
 
-# Add a "tutorials" target to build tutorials.
-get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
-add_custom_target(tutorials DEPENDS ${tutorials})
+if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
 
-if(DART_VERBOSE)
-  message(STATUS "")
-  message(STATUS "[ Tutorials ]")
-  foreach(tutorial ${tutorials})
-    message(STATUS "Adding tutorial: ${tutorial}")
-  endforeach(tutorial ${tutorials})
-else(DART_VERBOSE)
-  list(LENGTH tutorials tutorials_length)
-  message(STATUS "${tutorials_length} tutorials added.")
-endif(DART_VERBOSE)
+  # Add a "tests" target to build unit tests.
+  enable_testing()
+  add_subdirectory(unittests EXCLUDE_FROM_ALL)
 
-# Add an "examples" target to build examples.
-get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
-add_custom_target(examples DEPENDS ${examples})
+  get_property(unittests GLOBAL PROPERTY DART_UNITTESTS)
+  add_custom_target(tests DEPENDS ${unittests})
 
-if(DART_VERBOSE)
-  message(STATUS "")
-  message(STATUS "[ Examples ]")
-  foreach(example ${examples})
-    message(STATUS "Adding example: ${example}")
-  endforeach(example ${examples})
-else(DART_VERBOSE)
-  list(LENGTH examples examples_length)
-  message(STATUS "${examples_length} examples added.")
-endif(DART_VERBOSE)
+  if(DART_VERBOSE)
+    message(STATUS "")
+    message(STATUS "[ Unit Tests ]")
+    foreach(unittest ${unittests})
+      message(STATUS "Adding test: ${unittest}")
+    endforeach(unittest ${unittests})
+  else(DART_VERBOSE)
+    list(LENGTH unittests unittests_length)
+    message(STATUS "${unittests_length} unittest added.")
+  endif(DART_VERBOSE)
 
-# Add a "tests" target to build unit tests.
-enable_testing()
-add_subdirectory(unittests EXCLUDE_FROM_ALL)
+  if (OpenGL_FOUND AND HAVE_GLUT)
 
-get_property(unittests GLOBAL PROPERTY DART_UNITTESTS)
-add_custom_target(tests DEPENDS ${unittests})
+    # Add an "examples" target to build examples.
+    add_subdirectory(examples EXCLUDE_FROM_ALL)
 
-if(DART_VERBOSE)
-  message(STATUS "")
-  message(STATUS "[ Unit Tests ]")
-  foreach(unittest ${unittests})
-    message(STATUS "Adding test: ${unittest}")
-  endforeach(unittest ${unittests})
-else(DART_VERBOSE)
-  list(LENGTH unittests unittests_length)
-  message(STATUS "${unittests_length} unittest added.")
-endif(DART_VERBOSE)
+    get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
+    add_custom_target(examples DEPENDS ${examples})
+
+    if(DART_VERBOSE)
+      message(STATUS "")
+      message(STATUS "[ Examples ]")
+      foreach(example ${examples})
+        message(STATUS "Adding example: ${example}")
+      endforeach(example ${examples})
+    else(DART_VERBOSE)
+      list(LENGTH examples examples_length)
+      message(STATUS "${examples_length} examples added.")
+    endif(DART_VERBOSE)
+
+    # Add a "tutorials" target to build tutorials.
+    add_subdirectory(tutorials EXCLUDE_FROM_ALL)
+
+    get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
+    add_custom_target(tutorials DEPENDS ${tutorials})
+
+    if(DART_VERBOSE)
+      message(STATUS "")
+      message(STATUS "[ Tutorials ]")
+      foreach(tutorial ${tutorials})
+        message(STATUS "Adding tutorial: ${tutorial}")
+      endforeach(tutorial ${tutorials})
+    else(DART_VERBOSE)
+      list(LENGTH tutorials tutorials_length)
+      message(STATUS "${tutorials_length} tutorials added.")
+    endif(DART_VERBOSE)
+
+  endif()
+
+endif()
 
 #===============================================================================
 # CMake configuration files for components and targets

@@ -147,10 +147,10 @@ if(FLANN_FOUND)
   add_subdirectory(planning)
 endif()
 
-if(TINYXML_FOUND AND TINYXML2_FOUND)
+if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
   add_subdirectory(utils)
 endif()
 
-if(OPENGL_FOUND AND GLUT_FOUND)
+if(OPENGL_FOUND AND GLUT_FOUND AND BULLET_FOUND)
   add_subdirectory(gui)
 endif()
