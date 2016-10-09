@@ -228,7 +228,7 @@ endif()
 
 # OpenGL
 find_package(OpenGL QUIET)
-dart_check_optional_package(OpenGL "dart-gui" "OpenGL")
+dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
 
 # GLUT
 if(WIN32 AND NOT CYGWIN)

@@ -305,7 +305,7 @@ if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
     message(STATUS "${unittests_length} unittest added.")
   endif(DART_VERBOSE)
 
-  if (OpenGL_FOUND AND HAVE_GLUT)
+  if (OPENGL_FOUND AND HAVE_GLUT)
 
     # Add an "examples" target to build examples.
     add_subdirectory(examples EXCLUDE_FROM_ALL)
