@@ -16,30 +16,6 @@ endif()
 configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
 install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
 
-define_property(GLOBAL PROPERTY DART_CORE_HEADERS
-  BRIEF_DOCS "Header files of DART core."
-  FULL_DOCS "Header files of DART core."
-)
-define_property(GLOBAL PROPERTY DART_CORE_SOURCES
-  BRIEF_DOCS "Source files of DART core."
-  FULL_DOCS "Source files of DART core."
-)
-
-function(dart_add_headers)
-  foreach(headers ${ARGN})
-    set_property(GLOBAL APPEND PROPERTY DART_CORE_HEADERS "${headers}")
-  endforeach()
-endfunction()
-
-function(dart_add_sources)
-  foreach(source ${ARGN})
-    set_property(GLOBAL APPEND PROPERTY DART_CORE_SOURCES "${source}")
-  endforeach()
-endfunction()
-
-# Component
-add_component(${PROJECT_NAME} dart)
-
 #===============================================================================
 # Source directories
 #===============================================================================
@@ -93,6 +69,17 @@ add_component(${PROJECT_NAME} dart)
 # gui-osg - (gui), {dart-gui-osg}
 # planning - (dart), {dart-planning}
 
+# Component. This should be called before adding subdirectories.
+add_component(${PROJECT_NAME} dart)
+
+function(dart_add_core_headers)
+  dart_property_add(DART_CORE_HEADERS ${ARGN})
+endfunction(dart_add_core_headers)
+
+function(dart_add_core_sources)
+  dart_property_add(DART_CORE_SOURCES ${ARGN})
+endfunction(dart_add_core_sources)
+
 # Add subdirectories
 add_subdirectory(common)
 add_subdirectory(math)
@@ -104,9 +91,21 @@ add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(simulation)
 
+if(FLANN_FOUND)
+  add_subdirectory(planning)
+endif()
+
+if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
+  add_subdirectory(utils)
+endif()
+
+if(OPENGL_FOUND AND GLUT_FOUND AND BULLET_FOUND)
+  add_subdirectory(gui)
+endif()
+
 # Set header and source files
 get_filename_component(dart_hpp "dart.hpp" ABSOLUTE)
-dart_add_headers(${dart_hpp})
+dart_add_core_headers(${dart_hpp})
 get_property(dart_core_headers GLOBAL PROPERTY DART_CORE_HEADERS)
 get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 
@@ -132,7 +131,7 @@ target_link_libraries(
 add_component_targets(${PROJECT_NAME} dart dart)
 
 # Coverage test
-coveralls_add_sources(${dart_core_headers} ${dart_core_sources})
+dart_coveralls_add(${dart_core_headers} ${dart_core_sources})
 
 if(MSVC)
   set_target_properties(
@@ -142,15 +141,3 @@ if(MSVC)
 endif()
 
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
-
-if(FLANN_FOUND)
-  add_subdirectory(planning)
-endif()
-
-if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
-  add_subdirectory(utils)
-endif()
-
-if(OPENGL_FOUND AND GLUT_FOUND AND BULLET_FOUND)
-  add_subdirectory(gui)
-endif()

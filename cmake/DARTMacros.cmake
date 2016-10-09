@@ -57,6 +57,24 @@ macro(dart_add_library _name)
 endmacro()
 
 #===============================================================================
+function(dart_property_add property_name)
+
+  get_property(is_defined GLOBAL PROPERTY ${property_name} DEFINED)
+
+  if(NOT is_defined)
+    define_property(GLOBAL PROPERTY ${property_name}
+      BRIEF_DOCS "${property_name}"
+      FULL_DOCS "Global properties for ${property_name}"
+    )
+  endif()
+
+  foreach(item ${ARGN})
+    set_property(GLOBAL APPEND PROPERTY ${property_name} "${item}")
+  endforeach()
+
+endfunction()
+
+#===============================================================================
 function(dart_check_required_package variable dependency)
   if(${${variable}_FOUND})
     if(DART_VERBOSE)

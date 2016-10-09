@@ -86,16 +86,9 @@ message(STATUS "============================================")
 #===============================================================================
 # Coveralls settings
 #===============================================================================
-define_property(GLOBAL PROPERTY COVERALLS_SOURCES
-  BRIEF_DOCS "Source files that Coveralls evaluates for test coverage."
-  FULL_DOCS "Source files that Coveralls evaluates for test coverage."
-)
-
-function(coveralls_add_sources)
-  foreach(source ${ARGN})
-    set_property(GLOBAL APPEND PROPERTY COVERALLS_SOURCES "${source}")
-  endforeach()
-endfunction()
+function(dart_coveralls_add)
+  dart_property_add(COVERALLS_SOURCES ${ARGN})
+endfunction(dart_coveralls_add)
 
 if(DART_COVERALLS)
   include(Coveralls)
@@ -262,21 +255,16 @@ endif(DART_VERBOSE)
 #===============================================================================
 # Helper Functions
 #===============================================================================
-
-set_property(GLOBAL PROPERTY DART_EXAMPLES)
-set_property(GLOBAL PROPERTY DART_TUTORIALS)
-set_property(GLOBAL PROPERTY DART_UNITTESTS)
-
-function(dart_add_example target_name)
-  set_property(GLOBAL APPEND PROPERTY DART_EXAMPLES "${target_name}")
+function(dart_add_example)
+  dart_property_add(DART_EXAMPLES ${ARGN})
 endfunction(dart_add_example)
 
-function(dart_add_tutorial target_name)
-  set_property(GLOBAL APPEND PROPERTY DART_TUTORIALS "${target_name}")
+function(dart_add_tutorial)
+  dart_property_add(DART_TUTORIALS ${ARGN})
 endfunction(dart_add_tutorial)
 
-function(dart_add_unittest target_name)
-  set_property(GLOBAL APPEND PROPERTY DART_UNITTESTS "${target_name}")
+function(dart_add_unittest)
+  dart_property_add(DART_UNITTESTS ${ARGN})
 endfunction(dart_add_unittest)
 
 #===============================================================================

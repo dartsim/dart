@@ -27,7 +27,7 @@ add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} utils)
 
 # Coverage test
-coveralls_add_sources(${hdrs} ${srcs})
+dart_coveralls_add(${hdrs} ${srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})

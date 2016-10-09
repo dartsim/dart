@@ -2,27 +2,13 @@
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
-define_property(GLOBAL PROPERTY DART_UTILS_HEADERS
-  BRIEF_DOCS "Header files of DART utils component."
-  FULL_DOCS "Header files of DART utils component."
-)
-define_property(GLOBAL PROPERTY DART_UTILS_SOURCES
-  BRIEF_DOCS "Source files of DART utils component."
-  FULL_DOCS "Source files of DART utils component."
-)
-
 function(dart_add_utils_headers)
-  foreach(headers ${ARGN})
-    set_property(GLOBAL APPEND PROPERTY DART_UTILS_HEADERS "${headers}")
-  endforeach()
-endfunction()
+  dart_property_add(DART_UTILS_HEADERS ${ARGN})
+endfunction(dart_add_utils_headers)
 
 function(dart_add_utils_sources)
-  foreach(source ${ARGN})
-    set_property(GLOBAL APPEND PROPERTY DART_UTILS_SOURCES "${source}")
-  endforeach()
-endfunction()
-# TODO(JS): Automate above lines
+  dart_property_add(DART_UTILS_SOURCES ${ARGN})
+endfunction(dart_add_utils_sources)
 
 # Add subdirectories
 add_subdirectory(sdf)
@@ -55,7 +41,7 @@ add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} collision-bullet)
 
 # Coverage test
-coveralls_add_sources(${hdrs} ${srcs} ${dart_utils_headers} ${dart_utils_sources})
+dart_coveralls_add(${hdrs} ${srcs} ${dart_utils_headers} ${dart_utils_sources})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "utils headers" ${hdrs})
