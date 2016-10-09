@@ -1,2 +1,5 @@
 usr/include/dart/optimizer/ipopt/*
 usr/lib/libdart-optimizer-ipopt.so
+usr/share/dart/dart_optimizer-ipoptTargets.cmake
+usr/share/dart/dart_optimizer-ipoptTargets-*.cmake
+usr/share/dart/dart_optimizer-ipoptComponent.cmake

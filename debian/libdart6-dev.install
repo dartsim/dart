@@ -9,7 +9,10 @@ usr/include/dart/lcpsolver/*
 usr/include/dart/math/*
 usr/include/dart/optimizer/*.*
 usr/include/dart/simulation/*
-usr/share/dart/DARTConfig.cmake
-usr/share/dart/DARTConfigVersion.cmake
-usr/share/dart/DARTTargets.cmake
 usr/lib/libdart.so
+usr/share/dart/dartConfig.cmake
+usr/share/dart/dartConfigVersion.cmake
+usr/share/dart/dart_dartTargets.cmake
+usr/share/dart/dart_dartTargets-*.cmake
+usr/share/dart/dart_dartComponent.cmake
+

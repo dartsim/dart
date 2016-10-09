@@ -45,8 +45,3 @@ install(
   DESTINATION include/dart/optimizer/nlopt
   COMPONENT headers
 )
-install(TARGETS dart-optimizer-nlopt EXPORT DARTTargets DESTINATION lib)
-
-# Coverage test files
-set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"
-    CACHE INTERNAL "files for coverage tests")

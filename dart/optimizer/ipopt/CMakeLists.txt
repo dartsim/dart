@@ -45,5 +45,3 @@ install(
   DESTINATION include/dart/optimizer/ipopt
   COMPONENT headers
 )
-
-install(TARGETS dart-optimizer-ipopt EXPORT DARTTargets DESTINATION lib)
