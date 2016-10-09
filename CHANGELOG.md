@@ -1,6 +1,6 @@
 ## DART 6
 
-### DART 6.1.0 (2016-XX-XX)
+### DART 6.1.0 (2016-10-07)
 
 * Collision detection
 
@@ -22,9 +22,17 @@
   * Added `sdf` parsing for `fixed` joint and `material` tag of visual shape: [#775](https://github.com/dartsim/dart/pull/775)
   * Added support of urdfdom_headers 1.0: [#766](https://github.com/dartsim/dart/pull/766)
 
+* GUI
+
+  * Added ImGui for 2D graphical interface: [#781](https://github.com/dartsim/dart/pull/781)
+
+* Examples
+
+  * Added osgAtlasSimbicon and osgTinkertoy: [#781](https://github.com/dartsim/dart/pull/781)
+
 * Misc improvements and bug fixes
 
-  * Added `virtual Shape::getType()` and deprecated `ShapeType Shape::getShapeType()`: [#724](https://github.com/dartsim/dart/pull/724)
+  * Added `virtual Shape::getType()` and deprecated `ShapeType Shape::getShapeType()`: [#725](https://github.com/dartsim/dart/pull/725)
   * Changed building with SIMD optional: [#765](https://github.com/dartsim/dart/pull/765), [#760](https://github.com/dartsim/dart/pull/760)
   * Fixed minor build and install issues: [#773](https://github.com/dartsim/dart/pull/773), [#772](https://github.com/dartsim/dart/pull/772)
   * Fixed Doxyfile to show missing member functions in API documentation: [#768](https://github.com/dartsim/dart/pull/768)

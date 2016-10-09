@@ -27,8 +27,6 @@ configure_file(
   ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
 )
 
-add_subdirectory(examples EXCLUDE_FROM_ALL)
-
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/osg.hpp
   DESTINATION include/dart/gui/osg
