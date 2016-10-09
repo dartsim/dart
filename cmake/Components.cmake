@@ -74,7 +74,7 @@ function(add_component package_name component)
     FILE "${package_name}_${component}Targets.cmake"
     DESTINATION "${CONFIG_INSTALL_DIR}"
     )
-  # TODO(JS): It would be nice we could check if ${target} has at least one
+  # TODO(JS): It would be nice if we could check if ${target} has at least one
   # dependency target.
 
   set_property(TARGET "${target}" PROPERTY "${component_prefix}COMPONENT" TRUE)
