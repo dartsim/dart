@@ -103,6 +103,20 @@ if(OPENGL_FOUND AND GLUT_FOUND AND BULLET_FOUND)
   add_subdirectory(gui)
 endif()
 
+# Print building component
+get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ Components ]")
+  foreach(component ${components})
+    message(STATUS "Building component: ${component}")
+  endforeach()
+else()
+  list(LENGTH components components_length)
+  message(STATUS "Building ${components_length} components including "
+    "the default component 'dart'")
+endif()
+
 # Set header and source files
 get_filename_component(dart_hpp "dart.hpp" ABSOLUTE)
 dart_add_core_headers(${dart_hpp})
@@ -127,7 +141,7 @@ target_link_libraries(
   ${ASSIMP_LIBRARIES}
   ${Boost_LIBRARIES})
 
-# Component
+# Default component
 add_component_targets(${PROJECT_NAME} dart dart)
 
 # Coverage test
