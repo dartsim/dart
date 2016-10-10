@@ -16,15 +16,24 @@ target_include_directories(
 )
 target_link_libraries(
   ${target_name}
-  dart-utils
-  ${GLUT_LIBRARY}
-  ${OPENGL_LIBRARIES}
+  PUBLIC
+    dart-utils
+    ${GLUT_LIBRARY}
+    ${OPENGL_LIBRARIES}
+    ${PROJECT_NAME}-external-lodepng
+    ${PROJECT_NAME}-external-imgui
 )
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} utils)
+add_component_dependencies(
+  ${PROJECT_NAME}
+  ${component_name}
+  utils
+  external-lodepng
+  external-imgui
+)
 
 # Coverage test
 dart_coveralls_add(${hdrs} ${srcs})
