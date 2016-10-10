@@ -351,6 +351,8 @@ if(DART_VERBOSE)
   message(STATUS "[ Configured files ]")
 endif()
 
+string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)
+
 # Generate and install a Config.cmake file. This file includes the
 # <C>Component.cmake and <C>Targets.cmake created above. It also uses the
 # following variables:
@@ -358,31 +360,30 @@ endif()
 # - PACKAGE_INCLUDE_INSTALL_DIR
 # - PACKAGE_INCLUDE_DIRS
 get_property(PACKAGE_INCLUDE_DIRS GLOBAL
-  PROPERTY "${PROJECT_NAME}_INCLUDE_DIRS")
+  PROPERTY "${PROJECT_NAME_UPPERCASE}_INCLUDE_DIRS")
 
 # Generate the DART CMake Config and version files
 include(CMakePackageConfigHelpers)
-set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in)
-set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/${PROJECT_NAME}Config.cmake)
+set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME_UPPERCASE}Config.cmake.in)
+set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/${PROJECT_NAME_UPPERCASE}Config.cmake)
+set(DART_VERSION_OUT ${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME_UPPERCASE}ConfigVersion.cmake)
 if(DART_VERBOSE)
   message(STATUS ${DART_CONFIG_OUT})
-  message(STATUS ${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake)
+  message(STATUS ${DART_VERSION_OUT})
 endif()
-  configure_package_config_file(
+configure_package_config_file(
   ${DART_CONFIG_IN}
   ${DART_CONFIG_OUT}
   INSTALL_DESTINATION "${CONFIG_INSTALL_DIR}"
   PATH_VARS INCLUDE_INSTALL_DIR
 )
 write_basic_config_version_file(
-  cmake/${PROJECT_NAME}ConfigVersion.cmake
-  VERSION ${DART_VERSION}
+  ${DART_VERSION_OUT}
+  VERSION ${${PROJECT_NAME_UPPERCASE}_VERSION}
   COMPATIBILITY SameMajorVersion
 )
 install(
-  FILES
-    ${DART_CONFIG_OUT}
-    ${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake
+  FILES ${DART_CONFIG_OUT} ${DART_VERSION_OUT}
   DESTINATION "${CONFIG_INSTALL_DIR}")
 
 # Generate the DART pkg-config

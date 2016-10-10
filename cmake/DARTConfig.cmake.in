@@ -2,15 +2,13 @@
 # CMake config file for DART
 #
 # This sets the following variables:
-# @PROJECT_NAME@_INCLUDE_DIRS - Directories containing the DART include files.
-# @PROJECT_NAME@_LIBRARIES    - Libraries needed to use DART.
-# @PROJECT_NAME@_VERSION      - DART version.
+# @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS - Directories containing the DART include files.
+# @PROJECT_NAME_UPPERCASE@_LIBRARIES    - Libraries needed to use DART.
+# @PROJECT_NAME_UPPERCASE@_VERSION      - DART version.
 
 #===============================================================================
 # Helper Function Definitions
 #===============================================================================
-
-#set(@PROJECT_NAME@_VERSION x.y.z)
 
 @PACKAGE_INIT@
 
@@ -24,8 +22,8 @@ function(@PROJECT_NAME@_traverse_components output_variable)
     # whether or not define_property() was called, not whether the variable was
     # set. The exact behavior seems to vary between CMake versions, so we use
     # an extra variable instead.
-    get_property(is_visited DIRECTORY PROPERTY "@PROJECT_NAME@_${component}_VISITED")
-    set_property(DIRECTORY PROPERTY "@PROJECT_NAME@_${component}_VISITED" TRUE)
+    get_property(is_visited DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_VISITED")
+    set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_VISITED" TRUE)
 
     if(NOT is_visited)
       set(component_include
@@ -36,18 +34,18 @@ function(@PROJECT_NAME@_traverse_components output_variable)
       if(EXISTS "${component_include}" AND EXISTS "${target_include}")
         include("${component_include}")
 
-        set_property(DIRECTORY PROPERTY "@PROJECT_NAME@_${component}_FOUND" TRUE)
+        set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_FOUND" TRUE)
         set_property(DIRECTORY
-          PROPERTY "@PROJECT_NAME@_${component}_INCLUDE_DIRS"
+          PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS"
           ${@PROJECT_NAME@_${component}_INCLUDE_DIRS})
         set_property(DIRECTORY
-          PROPERTY "@PROJECT_NAME@_${component}_DEFINITIONS"
+          PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS"
           ${@PROJECT_NAME@_${component}_DEFINITIONS})
         set_property(DIRECTORY
-          PROPERTY "@PROJECT_NAME@_${component}_LIBRARIES"
+          PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_LIBRARIES"
           ${@PROJECT_NAME@_${component}_LIBRARIES})
         set_property(DIRECTORY
-          PROPERTY "@PROJECT_NAME@_${component}_DEPENDENCIES"
+          PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_DEPENDENCIES"
           ${@PROJECT_NAME@_${component}_DEPENDENCIES})
 
         @PROJECT_NAME@_traverse_components("${output_variable}"
@@ -59,17 +57,17 @@ function(@PROJECT_NAME@_traverse_components output_variable)
         # transitive includes via INTERFACE_INCLUDE_DIRECTORIES.
         foreach(dependency ${@PROJECT_NAME@_${component}_DEPENDENCIES})
           set_property(DIRECTORY APPEND
-            PROPERTY "@PROJECT_NAME@_${component}_INCLUDE_DIRS"
+            PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS"
             ${@PROJECT_NAME@_${dependency}_INCLUDE_DIRS})
           set_property(DIRECTORY APPEND
-            PROPERTY "@PROJECT_NAME@_${component}_DEFINITIONS"
+            PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS"
             ${@PROJECT_NAME@_${dependency}_DEFINITIONS})
           # LIBRARIES is automatically inherited via INTERFACE_LINK_LIBRARIES.
         endforeach()
 
         list(APPEND output_components "${component}")
       else()
-        set_property(DIRECTORY PROPERTY "@PROJECT_NAME@_${component}_FOUND" FALSE)
+        set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_FOUND" FALSE)
       endif()
     endif()
   endforeach()
@@ -97,33 +95,33 @@ endfunction()
 function(@PROJECT_NAME@_package_init)
   @PROJECT_NAME@_traverse_components(required_components "${ARGN}")
 
-  set(@PROJECT_NAME@_INCLUDE_DIRS)
-  set(@PROJECT_NAME@_DEFINITIONS)
-  set(@PROJECT_NAME@_LIBRARIES)
+  set(@PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS)
+  set(@PROJECT_NAME_UPPERCASE@_DEFINITIONS)
+  set(@PROJECT_NAME_UPPERCASE@_LIBRARIES)
 
   foreach(component ${ARGN})
-    @PROJECT_NAME@_export_property("@PROJECT_NAME@_${component}_FOUND")
+    @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_FOUND")
 
-    if(@PROJECT_NAME@_${component}_FOUND)
-      @PROJECT_NAME@_export_property("@PROJECT_NAME@_${component}_INCLUDE_DIRS")
-      @PROJECT_NAME@_export_property("@PROJECT_NAME@_${component}_DEFINITIONS")
-      @PROJECT_NAME@_export_property("@PROJECT_NAME@_${component}_LIBRARIES")
-      @PROJECT_NAME@_export_property("@PROJECT_NAME@_${component}_DEPENDENCIES")
+    if(@PROJECT_NAME_UPPERCASE@_${component}_FOUND)
+      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS")
+      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS")
+      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_LIBRARIES")
+      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_DEPENDENCIES")
 
-      list(APPEND @PROJECT_NAME@_INCLUDE_DIRS ${@PROJECT_NAME@_${component}_INCLUDE_DIRS})
-      list(APPEND @PROJECT_NAME@_DEFINITIONS ${@PROJECT_NAME@_${component}_DEFINITIONS})
-      list(APPEND @PROJECT_NAME@_LIBRARIES ${@PROJECT_NAME@_${component}_LIBRARIES})
+      list(APPEND @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS ${@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS})
+      list(APPEND @PROJECT_NAME_UPPERCASE@_DEFINITIONS ${@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS})
+      list(APPEND @PROJECT_NAME_UPPERCASE@_LIBRARIES ${@PROJECT_NAME_UPPERCASE@_${component}_LIBRARIES})
     else()
-      @PROJECT_NAME@_export_notfound("@PROJECT_NAME@_${component}_INCLUDE_DIRS")
-      @PROJECT_NAME@_export_notfound("@PROJECT_NAME@_${component}_DEFINITIONS")
-      @PROJECT_NAME@_export_notfound("@PROJECT_NAME@_${component}_LIBRARIES")
-      @PROJECT_NAME@_export_notfound("@PROJECT_NAME@_${component}_DEPENDENCIES")
+      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS")
+      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS")
+      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@_${component}_LIBRARIES")
+      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@_${component}_DEPENDENCIES")
     endif()
   endforeach()
 
-  @PROJECT_NAME@_export_variable(@PROJECT_NAME@_INCLUDE_DIRS)
-  @PROJECT_NAME@_export_variable(@PROJECT_NAME@_DEFINITIONS)
-  @PROJECT_NAME@_export_variable(@PROJECT_NAME@_LIBRARIES)
+  @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS)
+  @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_DEFINITIONS)
+  @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_LIBRARIES)
 endfunction()
 
 #===============================================================================
@@ -131,24 +129,25 @@ endfunction()
 #===============================================================================
 
 # Default component: dart
-list(APPEND @PROJECT_NAME@_FIND_COMPONENTS dart)
+list(APPEND @PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS dart)
 
 # Components
-if(@PROJECT_NAME@_FIND_COMPONENTS)
-  set_and_check(@PROJECT_NAME@_PACKAGE_INCLUDE_DIRS "@PACKAGE_INCLUDE_INSTALL_DIR@")
-  set(@PROJECT_NAME@_INCLUDE_DIRS
-    ${@PROJECT_NAME@_PACKAGE_INCLUDE_DIRS}
+if(@PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS)
+  set_and_check(@PROJECT_NAME_UPPERCASE@_PACKAGE_INCLUDE_DIRS "@PACKAGE_INCLUDE_INSTALL_DIR@")
+  set(@PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS
+    ${@PROJECT_NAME_UPPERCASE@_PACKAGE_INCLUDE_DIRS}
     @PACKAGE_INCLUDE_DIRS@
     CACHE INTERNAL "")
 
-  @PROJECT_NAME@_package_init(${@PROJECT_NAME@_FIND_COMPONENTS})
+  @PROJECT_NAME@_package_init(${@PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS})
 endif()
 
 # Use find_package_handle_standard_args to generate output. This handles the
-# REQUIRED keyword, sets @PROJECT_NAME@_FOUND, and generates the appropriate
+# REQUIRED keyword, sets @PROJECT_NAME_UPPERCASE@_FOUND, and generates the appropriate
 # STATUS and FATAL_ERROR messages.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(@PROJECT_NAME@
-  FOUND_VAR @PROJECT_NAME@_FOUND
-  REQUIRED_VARS @PROJECT_NAME@_INCLUDE_DIRS @PROJECT_NAME@_LIBRARIES
+
+find_package_handle_standard_args(@PROJECT_NAME_UPPERCASE@
+  FOUND_VAR @PROJECT_NAME_UPPERCASE@_FOUND
+  REQUIRED_VARS @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS @PROJECT_NAME_UPPERCASE@_LIBRARIES
   HANDLE_COMPONENTS)
