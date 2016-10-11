@@ -1,5 +1,5 @@
 # Search all header and source files
-file(GLOB hdrs "*.hpp" "*.h")
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
 # Set local target name
@@ -40,11 +40,6 @@ dart_coveralls_add(${hdrs} ${srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})
-list(REMOVE_ITEM header_names stb_textedit.h)
-list(REMOVE_ITEM header_names stb_truetype.h)
-list(REMOVE_ITEM header_names stb_rect_pack.h)
-list(REMOVE_ITEM header_names imconfig.h)
-list(REMOVE_ITEM header_names imgui_internal.h)
 if(HAVE_OPENSCENEGRAPH)
   list(APPEND header_names "osg/osg.hpp")
 endif(HAVE_OPENSCENEGRAPH)
