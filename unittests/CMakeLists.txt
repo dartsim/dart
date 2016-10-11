@@ -100,12 +100,18 @@ set(DART_TEST_OUT_DIR "${CMAKE_BINARY_DIR}/bin/tests")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+# We categorize tests as:
+# - "comprehensive": high level tests to verify the combination of several
+#   components are correctly performs together
+# - "regression": issue wise tests to verify that the GitHub issues are still
+#   fixed even after further changes are made
+# - "unit": low level tests for one or few classes and functions to verify that
+#   they performs correctly as expected
 add_subdirectory(comprehensive)
 add_subdirectory(regression)
 add_subdirectory(unit)
 
 # Print tests
-get_property(tests GLOBAL PROPERTY DART_TESTS)
 dart_get_tests(comprehensive_tests "comprehensive")
 dart_get_tests(regression_tests "regression")
 dart_get_tests(unit_tests "unit")
@@ -138,7 +144,7 @@ else()
   )
 endif()
 
-# Add custom target to build all the tests
+# Add custom target to build all the tests as a single target
 add_custom_target(
   tests
   DEPENDS ${tests} ${comprehensive_tests} ${regression_tests} ${unit_tests}
