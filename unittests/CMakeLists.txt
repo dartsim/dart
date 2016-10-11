@@ -83,33 +83,29 @@ endfunction(dart_add_unittest)
 # - DART_${test_type}_TESTS
 #
 # Usage:
-#   add_add_test("comprehensive" testTargetName testSource1.cpp testSource2.cpp)
+#   add_add_test("unit" test_UnitTestA) # assumed source is test_UnitTestA.cpp
+#   add_add_test("unit" test_UnitTestB test_SourceB1.cpp)
+#   add_add_test("unit" test_UnitTestA test_SourceC1.cpp test_SourceC2.cpp)
 #===============================================================================
 function(dart_add_test test_type target_name) # ARGN for source files
 
   dart_property_add(DART_${test_type}_TESTS ${target_name})
 
-  add_executable(${target_name} ${ARGN})
+  if(${ARGC} GREATER 2)
+    set(sources ${ARGN})
+  else()
+    set(sources "${target_name}.cpp")
+  endif()
+
+  add_executable(${target_name} ${sources})
   add_test(
     ${target_name}
     "${DART_TEST_OUT_DIR}/${test_type}/${target_name}")
 
   if(MSVC)
-    target_link_libraries(
-      ${target_name}
-      dart
-      dart-utils
-      dart-utils-urdf
-      optimized gtest debug gtestd
-    )
+    target_link_libraries(${target_name} dart optimized gtest debug gtestd)
   else()
-    target_link_libraries(
-      ${target_name}
-      dart
-      dart-utils
-      dart-utils-urdf
-      gtest
-    )
+    target_link_libraries(${target_name} dart gtest)
   endif()
 
   set_target_properties(
@@ -144,21 +140,21 @@ foreach(test ${tests})
   dart_add_unittest(${base} ${test})
 endforeach(test)
 
-if(TARGET dart-planning)
-  target_link_libraries(testNearestNeighbor dart-planning)
-endif()
+#if(TARGET dart-planning)
+#  target_link_libraries(testNearestNeighbor dart-planning)
+#endif()
 
-if(TARGET dart-optimizer-ipopt)
-  target_link_libraries(testOptimizer dart-optimizer-ipopt)
-endif()
+#if(TARGET dart-optimizer-ipopt)
+#  target_link_libraries(testOptimizer dart-optimizer-ipopt)
+#endif()
 
-if(TARGET dart-optimizer-nlopt)
-  target_link_libraries(testOptimizer dart-optimizer-nlopt)
-endif()
+#if(TARGET dart-optimizer-nlopt)
+#  target_link_libraries(testOptimizer dart-optimizer-nlopt)
+#endif()
 
-if(TARGET dart-optimizer-snopt)
-  target_link_libraries(testOptimizer dart-optimizer-snopt)
-endif()
+#if(TARGET dart-optimizer-snopt)
+#  target_link_libraries(testOptimizer dart-optimizer-snopt)
+#endif()
 
 add_subdirectory(comprehensive)
 add_subdirectory(regression)
