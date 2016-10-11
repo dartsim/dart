@@ -1,0 +1,1 @@
+dart_add_test("comprehensive" test_ComprehensiveTemplate test_ComprehensiveTemplate.cpp)
