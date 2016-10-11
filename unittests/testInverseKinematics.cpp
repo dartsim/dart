@@ -34,7 +34,7 @@
 
 #include "dart/config.hpp"
 #include "dart/math/Helpers.hpp"
-#include "TestHelpers.hpp"
+#include "test/TestHelpers.hpp"
 
 using namespace Eigen;
 using namespace dart;

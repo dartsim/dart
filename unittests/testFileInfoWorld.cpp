@@ -32,7 +32,7 @@
 #include <iostream>
 #include <fstream>
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
+#include "test/TestHelpers.hpp"
 
 #include "dart/math/Geometry.hpp"
 #include "dart/dynamics/BodyNode.hpp"

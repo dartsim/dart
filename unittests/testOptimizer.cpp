@@ -36,7 +36,7 @@
 #include <sstream>
 #include <gtest/gtest.h>
 #include <Eigen/Dense>
-#include "TestHelpers.hpp"
+#include "test/TestHelpers.hpp"
 #include "dart/config.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/optimizer/Function.hpp"
