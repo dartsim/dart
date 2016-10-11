@@ -56,3 +56,51 @@ macro(dart_add_library _name)
   )
 endmacro()
 
+#===============================================================================
+function(dart_property_add property_name)
+
+  get_property(is_defined GLOBAL PROPERTY ${property_name} DEFINED)
+
+  if(NOT is_defined)
+    define_property(GLOBAL PROPERTY ${property_name}
+      BRIEF_DOCS "${property_name}"
+      FULL_DOCS "Global properties for ${property_name}"
+    )
+  endif()
+
+  foreach(item ${ARGN})
+    set_property(GLOBAL APPEND PROPERTY ${property_name} "${item}")
+  endforeach()
+
+endfunction()
+
+#===============================================================================
+function(dart_check_required_package variable dependency)
+  if(${${variable}_FOUND})
+    if(DART_VERBOSE)
+      message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"
+                     " found")
+    endif()
+  endif()
+endfunction()
+
+#===============================================================================
+function(dart_check_optional_package variable component dependency)
+  if(${${variable}_FOUND})
+    set(HAVE_${variable} TRUE PARENT_SCOPE)
+    if(DART_VERBOSE)
+      message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"
+                     " found")
+    endif()
+  else()
+    set(HAVE_${variable} FALSE PARENT_SCOPE)
+    if(ARGV3) # version
+      message(STATUS "Looking for ${dependency} - NOT found, to use"
+                     " ${component}, please install ${dependency} (>= ${ARGV3})")
+    else()
+      message(STATUS "Looking for ${dependency} - NOT found, to use"
+                     " ${component}, please install ${dependency}")
+    endif()
+    return()
+  endif()
+endfunction()

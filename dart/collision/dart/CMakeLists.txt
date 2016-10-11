@@ -1,9 +1,8 @@
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
-
-set(dart_collision_hdrs ${dart_collision_hdrs} ${hdrs} PARENT_SCOPE)
-set(dart_collision_srcs ${dart_collision_srcs} ${srcs} PARENT_SCOPE)
+dart_add_core_headers(${hdrs} ${detail_hdrs})
+dart_add_core_sources(${srcs} ${detail_srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "collision_dart headers" ${hdrs})

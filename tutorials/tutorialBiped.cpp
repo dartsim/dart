@@ -31,6 +31,9 @@
 
 #include "dart/dart.hpp"
 #include "dart/gui/gui.hpp"
+#if HAVE_BULLET_COLLISION
+  #include "dart/collision/bullet/bullet.hpp"
+#endif
 
 const double default_speed_increment = 0.5;
 
