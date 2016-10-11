@@ -38,42 +38,10 @@ target_link_libraries(gtest_main gtest)
 if(NOT WIN32)
   target_link_libraries(gtest pthread)
 endif()
-set_target_properties(gtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
-#===============================================================================
-# Deinfe helper functions for adding test
-#===============================================================================
-function(dart_add_unittest target_name)
-
-  dart_property_add(DART_TESTS ${target_name})
-
-  add_executable(${target_name} ${ARGN})
-  add_test(${target_name} "${CMAKE_BINARY_DIR}/bin/tests/${target_name}")
-
-  if(MSVC)
-    target_link_libraries(
-      ${target_name}
-      dart
-      dart-utils
-      dart-utils-urdf
-      optimized gtest debug gtestd
-    )
-  else()
-    target_link_libraries(
-      ${target_name}
-      dart
-      dart-utils
-      dart-utils-urdf
-      gtest
-    )
-  endif()
-
-  set_target_properties(
-    ${target_name} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/tests"
-  )
-
-endfunction(dart_add_unittest)
+set_target_properties(
+  gtest PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+)
 
 #===============================================================================
 # This functiion uses following variables:
@@ -132,30 +100,6 @@ set(DART_TEST_OUT_DIR "${CMAKE_BINARY_DIR}/bin/tests")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-# Compile each test file
-file(GLOB tests "test*.cpp")
-foreach(test ${tests})
-  # Get the name (i.e. bla.cpp => bla)
-  get_filename_component(base ${test} NAME_WE)
-  dart_add_unittest(${base} ${test})
-endforeach(test)
-
-#if(TARGET dart-planning)
-#  target_link_libraries(testNearestNeighbor dart-planning)
-#endif()
-
-#if(TARGET dart-optimizer-ipopt)
-#  target_link_libraries(testOptimizer dart-optimizer-ipopt)
-#endif()
-
-#if(TARGET dart-optimizer-nlopt)
-#  target_link_libraries(testOptimizer dart-optimizer-nlopt)
-#endif()
-
-#if(TARGET dart-optimizer-snopt)
-#  target_link_libraries(testOptimizer dart-optimizer-snopt)
-#endif()
-
 add_subdirectory(comprehensive)
 add_subdirectory(regression)
 add_subdirectory(unit)
@@ -169,9 +113,6 @@ dart_get_tests(unit_tests "unit")
 if(DART_VERBOSE)
   message(STATUS "")
   message(STATUS "[ Tests ]")
-  foreach(test ${tests})
-    message(STATUS "Adding test: ${test}")
-  endforeach()
   foreach(test ${comprehensive_tests})
     message(STATUS "Adding test: comprehensive/${test}")
   endforeach()
@@ -182,14 +123,17 @@ if(DART_VERBOSE)
     message(STATUS "Adding test: unit/${test}")
   endforeach()
 else()
-  list(LENGTH tests tests_length)
-  list(LENGTH comprehensive_tests comprehensive_tests_length)
-  list(LENGTH regression_tests regression_tests_length)
-  list(LENGTH unit_tests unit_tests_length)
-  message(STATUS "Adding ${tests_length} tests ("
-      "comprehensive: ${comprehensive_tests_length}, "
-      "regression: ${regression_tests_length}, "
-      "unit: ${unit_tests_length}"
+  list(LENGTH comprehensive_tests comprehensive_tests_len)
+  list(LENGTH regression_tests regression_tests_len)
+  list(LENGTH unit_tests unit_tests_len)
+  math(
+    EXPR tests_len
+    "${comprehensive_tests_len} + ${regression_tests_len} + ${unit_tests_len}"
+  )
+  message(STATUS "Adding ${tests_len} tests ("
+      "comprehensive: ${comprehensive_tests_len}, "
+      "regression: ${regression_tests_len}, "
+      "unit: ${unit_tests_len}"
       ")"
   )
 endif()
