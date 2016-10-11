@@ -36,7 +36,7 @@
 
 #include <gtest/gtest.h>
 
-#include "TestHelpers.hpp"
+#include "test/TestHelpers.hpp"
 
 #include "dart/common/Subject.hpp"
 #include "dart/common/sub_ptr.hpp"

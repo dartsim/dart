@@ -31,7 +31,7 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
+#include "test/TestHelpers.hpp"
 
 #include "dart/math/Geometry.hpp"
 #include "dart/utils/SkelParser.hpp"
@@ -39,6 +39,9 @@
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/collision/collision.hpp"
+#if HAVE_BULLET_COLLISION
+  #include "dart/collision/bullet/bullet.hpp"
+#endif
 #include "dart/simulation/World.hpp"
 
 using namespace dart;

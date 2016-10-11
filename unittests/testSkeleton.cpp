@@ -31,7 +31,7 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
+#include "test/TestHelpers.hpp"
 
 #include "dart/common/sub_ptr.hpp"
 #include "dart/math/Geometry.hpp"

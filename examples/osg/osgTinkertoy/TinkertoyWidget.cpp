@@ -37,7 +37,8 @@
 
 #include "TinkertoyWidget.hpp"
 
-#include "dart/gui/imgui.h"
+#include "dart/external/imgui/imgui.h"
+
 #include "TinkertoyWorldNode.hpp"
 
 //==============================================================================

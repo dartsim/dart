@@ -32,7 +32,8 @@
 #include <gtest/gtest.h>
 #include <fcl/distance.h>
 #include "dart/dart.hpp"
-#include "TestHelpers.hpp"
+#include "dart/collision/bullet/bullet.hpp"
+#include "test/TestHelpers.hpp"
 
 using namespace dart;
 
