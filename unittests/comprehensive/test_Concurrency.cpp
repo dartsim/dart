@@ -36,7 +36,7 @@
 
 #include "dart/simulation/World.hpp"
 
-#include "TestHelpers.hpp"
+#include <test/TestHelpers.hpp>
 
 using namespace dart;
 using namespace dynamics;

@@ -29,6 +29,9 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 
+# Utilities for testing DART
+add_subdirectory(test)
+
 # GoogleTest setup
 include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/unittests/gtest/include)
 include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/unittests/gtest)
@@ -71,9 +74,9 @@ function(dart_add_test test_type target_name) # ARGN for source files
     "${DART_TEST_OUT_DIR}/${test_type}/${target_name}")
 
   if(MSVC)
-    target_link_libraries(${target_name} dart optimized gtest debug gtestd)
+    target_link_libraries(${target_name} dart-test optimized gtest debug gtestd)
   else()
-    target_link_libraries(${target_name} dart gtest)
+    target_link_libraries(${target_name} dart-test gtest)
   endif()
 
   set_target_properties(

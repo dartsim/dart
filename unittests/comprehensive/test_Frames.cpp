@@ -34,7 +34,7 @@
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/math/Helpers.hpp"
 
-#include "TestHelpers.hpp"
+#include <test/TestHelpers.hpp>
 
 using namespace dart;
 using namespace dynamics;

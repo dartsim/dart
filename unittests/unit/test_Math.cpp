@@ -31,7 +31,7 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "TestHelpers.hpp"
+#include <test/TestHelpers.hpp>
 
 #include "dart/common/Timer.hpp"
 #include "dart/math/Geometry.hpp"
