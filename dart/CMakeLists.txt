@@ -139,7 +139,13 @@ target_link_libraries(
   ${CCD_LIBRARIES}
   ${FCL_LIBRARIES}
   ${ASSIMP_LIBRARIES}
-  ${Boost_LIBRARIES})
+  ${Boost_LIBRARIES}
+)
+
+# Build DART with all available SIMD instructions
+if(DART_ENABLE_SIMD AND NOT MSVC)
+  target_compile_options(dart PUBLIC -march=native)
+endif()
 
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
