@@ -298,4 +298,4 @@ endif()
 
 # Doxygen
 find_package(Doxygen QUIET)
-dart_check_optional_package(Doxygen "generating API documentation" "doxygen")
+dart_check_optional_package(DOXYGEN "generating API documentation" "doxygen")
