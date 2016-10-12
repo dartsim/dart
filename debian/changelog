@@ -1,3 +1,11 @@
+dart5 (5.1.3) unstable; urgency=medium
+
+  * Updated to support Bullet built with double precision (backport of #660)
+  * Modified to use btGImpactMeshShape instead of btConvexTriangleMeshShape for mesh
+  * Updated to support FCL 0.5 and tinyxml 4.0 (backport of #749)
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 25 Apr 2016 00:00:00 -0500
+
 dart5 (5.1.2) unstable; urgency=medium
 
   * Fixed inverse kinematics (backporting)
