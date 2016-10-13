@@ -164,18 +164,17 @@
   * Removed OpenGL dependency from `dart` library: [#667](https://github.com/dartsim/dart/pull/667)
   * Removed version check for Bullet: [#636](https://github.com/dartsim/dart/pull/636), [#625](https://github.com/dartsim/dart/issues/625)
 
-
 ## DART 5
 
-### Version 5.1.3 (201X-XX-XX)
+### Version 5.1.3 (2016-10-07)
 
-1. Added support for Bullet built with double precision (backport [#660](https://github.com/dartsim/dart/pull/660))
+1. Updated to support Bullet built with double precision (backport of [#660](https://github.com/dartsim/dart/pull/660))
     * [Pull request #777](https://github.com/dartsim/dart/pull/777)
 
-1. Switched to use btGImpactMeshShape instead of btConvexTriangleMeshShape for mesh
+1. Modified to use btGImpactMeshShape instead of btConvexTriangleMeshShape for mesh
     * [Pull request #764](https://github.com/dartsim/dart/pull/764)
 
-1. Backported [#749](https://github.com/dartsim/dart/pull/749) to DART 5.1
+1. Updated to support FCL 0.5 and tinyxml 4.0 (backport of [#749](https://github.com/dartsim/dart/pull/749))
     * [Pull request #759](https://github.com/dartsim/dart/pull/759)
 
 ### Version 5.1.2 (2016-04-25)
