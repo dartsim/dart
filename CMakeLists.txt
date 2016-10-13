@@ -69,7 +69,15 @@ if(MSVC)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
-option(DART_ENABLE_SIMD "Build DART with SIMD enabled" ON)
+# Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART
+# dependent projects on the same machine. If this option is on, then compile
+# option `-march=native` is added to the target `dart` that enables all
+# instruction subsets supported by the local machine. If the architecture of
+# local machines are different then the projects will be built with different
+# compile options, which may cause runtime errors especially memory alignment
+# errors.
+option(DART_ENABLE_SIMD
+  "Build DART with all SIMD instructions on the current local machine" OFF)
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 option(DART_COVERALLS "Turn on coveralls support" OFF)
 option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
@@ -160,14 +168,6 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc")
   endif(NOT DART_MSVC_DEFAULT_OPTIONS)
-  if(DART_ENABLE_SIMD)
-    add_definitions(/arch:SSE2 /arch:AVX /arch:AVX2)
-    # /arch:SSE2 option is effective only for x86 but not for x64 since it's
-    # enabled for x64 by default. The option will be ignored on x64 with a
-    # warning message. If anyone knows how to detect the system's architecture
-    # in CMake time, then I would gratefully apply these options differently
-    # depending on the architectures.
-  endif()
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 
@@ -187,9 +187,6 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-  if(DART_ENABLE_SIMD)
-    add_definitions(-march=native)
-  endif()
 
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 
@@ -214,9 +211,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-  if(DART_ENABLE_SIMD)
-    add_definitions(-march=native)
-  endif()
 
 else()
 

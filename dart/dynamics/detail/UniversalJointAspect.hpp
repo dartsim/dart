@@ -63,7 +63,7 @@ struct UniversalJointProperties :
     UniversalJointUniqueProperties
 {
   UniversalJointProperties(
-      const GenericJoint<math::R2Space>::Properties& GenericJointProperties =
+      const GenericJoint<math::R2Space>::Properties& genericJointProperties =
           GenericJoint<math::R2Space>::Properties(),
       const UniversalJointUniqueProperties& universalProperties =
           UniversalJointUniqueProperties());

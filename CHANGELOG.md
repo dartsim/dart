@@ -4,6 +4,7 @@
 
 * Build
 
+  * Modified to build DART without SIMD options by default: [#790](https://github.com/dartsim/dart/pull/790)
   * Modified to build external libraries as separately build targets: [#787](https://github.com/dartsim/dart/pull/787)
   * Modified to export CMake target files separately per target: [#786](https://github.com/dartsim/dart/pull/786)
 
