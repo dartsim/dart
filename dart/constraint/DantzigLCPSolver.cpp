@@ -36,11 +36,12 @@
 #include <iostream>
 #endif
 
+#include "dart/external/odelcpsolver/lcp.h"
+
 #include "dart/common/Console.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
-#include "dart/lcpsolver/lcp.h"
 
 namespace dart {
 namespace constraint {

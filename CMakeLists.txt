@@ -265,10 +265,6 @@ function(dart_add_tutorial)
   dart_property_add(DART_TUTORIALS ${ARGN})
 endfunction(dart_add_tutorial)
 
-function(dart_add_unittest)
-  dart_property_add(DART_UNITTESTS ${ARGN})
-endfunction(dart_add_unittest)
-
 #===============================================================================
 # Add sub-directories
 #===============================================================================
@@ -280,20 +276,6 @@ if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
   # Add a "tests" target to build unit tests.
   enable_testing()
   add_subdirectory(unittests EXCLUDE_FROM_ALL)
-
-  get_property(unittests GLOBAL PROPERTY DART_UNITTESTS)
-  add_custom_target(tests DEPENDS ${unittests})
-
-  if(DART_VERBOSE)
-    message(STATUS "")
-    message(STATUS "[ Unit Tests ]")
-    foreach(unittest ${unittests})
-      message(STATUS "Adding test: ${unittest}")
-    endforeach(unittest ${unittests})
-  else(DART_VERBOSE)
-    list(LENGTH unittests unittests_length)
-    message(STATUS "Adding ${unittests_length} unittests")
-  endif(DART_VERBOSE)
 
   if (OPENGL_FOUND AND HAVE_GLUT)
 
@@ -432,33 +414,46 @@ endif()
 #===============================================================================
 if(DOXYGEN_FOUND)
 
-  set(DOXYGEN_DOXYFILE_IN  ${PROJECT_SOURCE_DIR}/doxygen/Doxyfile.in    )
-  set(DOXYGEN_DOXYFILE     ${PROJECT_BINARY_DIR}/doxygen/Doxyfile       )
-  set(DOXYGEN_HTML_INDEX   ${PROJECT_SOURCE_DIR}/doxygen/html/index.html)
-  set(DOXYGEN_OUTPUT_ROOT  ${PROJECT_SOURCE_DIR}/doxygen/html           ) # Pasted into Doxyfile.in
-  set(DOXYGEN_GENERATE_TAGFILE ${DOXYGEN_OUTPUT_ROOT}/${PROJECT_NAME}.tag)
-  set(DOXYGEN_INCLUDE_PATH ${PROJECT_SOURCE_DIR})
-  set(DOXYGEN_INPUT_ROOT   ${PROJECT_SOURCE_DIR}/dart                   ) # Pasted into Doxyfile.in
-  set(DOXYGEN_EXTRA_INPUTS ${PROJECT_SOURCE_DIR}/doxygen/mainpage.dox   ) # Pasted into Doxyfile.in
+  set(DOXYGEN_DOXYFILE_IN      "${PROJECT_SOURCE_DIR}/doxygen/Doxyfile.in"    )
+  set(DOXYGEN_DOXYFILE         "${PROJECT_BINARY_DIR}/doxygen/Doxyfile"       )
+  set(DOXYGEN_HTML_INDEX       "${PROJECT_SOURCE_DIR}/doxygen/html/index.html")
+  set(DOXYGEN_OUTPUT_ROOT      "${PROJECT_SOURCE_DIR}/doxygen/html"           )
+  set(DOXYGEN_GENERATE_TAGFILE "${DOXYGEN_OUTPUT_ROOT}/${PROJECT_NAME}.tag"   )
+  set(DOXYGEN_INCLUDE_PATH     "${PROJECT_SOURCE_DIR}"                        )
+  set(DOXYGEN_INPUT_ROOT       "${PROJECT_SOURCE_DIR}/dart"                   )
+  set(DOXYGEN_EXTRA_INPUTS     "${PROJECT_SOURCE_DIR}/doxygen/mainpage.dox"   )
+  set(DOXYGEN_EXCLUDE          "${PROJECT_SOURCE_DIR}/dart/external"          )
 
+  # Generate a Doxyfile. This uses the variables:
+  #
+  # - DOXYGEN_OUTPUT_ROOT
+  # - DOXYGEN_GENERATE_TAGFILE
+  # - DOXYGEN_EXTRA_INPUTS
+  # - DOXYGEN_INPUT_ROOT
+  # - DOXYGEN_EXCLUDE
   configure_file(${DOXYGEN_DOXYFILE_IN} ${DOXYGEN_DOXYFILE} @ONLY)
-  file(COPY "${PROJECT_SOURCE_DIR}/doxygen/DART logo.png" DESTINATION ${DOXYGEN_OUTPUT_ROOT})
-  add_custom_command(OUTPUT ${DOXYGEN_HTML_INDEX}
-                     COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
-                     COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
-                     COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
-                     COMMAND ${CMAKE_COMMAND} -E echo "Done."
-                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
-                     DEPENDS ${DOXYGEN_DOXYFILE}
+  file(
+    COPY "${PROJECT_SOURCE_DIR}/doxygen/DART logo.png"
+    DESTINATION ${DOXYGEN_OUTPUT_ROOT}
+  )
+  add_custom_command(
+    OUTPUT ${DOXYGEN_HTML_INDEX}
+    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
+    COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
+    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
+    COMMAND ${CMAKE_COMMAND} -E echo "Done."
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
+    DEPENDS ${DOXYGEN_DOXYFILE}
   )
   # add_custom_target(docs ALL DEPENDS ${DOXYGEN_HTML_INDEX})
   add_custom_target(docs DEPENDS ${DOXYGEN_HTML_INDEX})
-  add_custom_target(docs_forced
-                    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
-                    COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
-                    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
-                    COMMAND ${CMAKE_COMMAND} -E echo "Done."
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
+  add_custom_target(
+    docs_forced
+    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
+    COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
+    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
+    COMMAND ${CMAKE_COMMAND} -E echo "Done."
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
   )
 
 endif()

@@ -31,6 +31,8 @@
 
 #include "dart/gui/GlutWindow.hpp"
 
+#include "dart/external/lodepng/lodepng.h"
+
 #ifdef _WIN32
   #include <sys/types.h>
   #include <sys/stat.h>
