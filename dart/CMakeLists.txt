@@ -147,8 +147,19 @@ target_link_libraries(
 )
 
 # Build DART with all available SIMD instructions
-if(DART_ENABLE_SIMD AND NOT MSVC)
-  target_compile_options(dart PUBLIC -march=native)
+if(DART_ENABLE_SIMD)
+  if(MSVC)
+    target_compile_options(dart PUBLIC /arch:SSE2 /arch:AVX /arch:AVX2)
+    # /arch:SSE2 option is effective only for x86 but not for x64 since it's
+    # enabled for x64 by default. The option will be ignored on x64 with a
+    # warning message. If anyone knows how to detect the system's architecture
+    # in CMake time, then I would gratefully apply these options differently
+    # depending on the architectures.
+  elseif(CMAKE_COMPILER_IS_GNUCXX)
+    target_compile_options(dart PUBLIC -march=native)
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    target_compile_options(dart PUBLIC -march=native)
+  endif()
 endif()
 
 # Default component

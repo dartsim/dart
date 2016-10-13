@@ -168,14 +168,6 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc")
   endif(NOT DART_MSVC_DEFAULT_OPTIONS)
-  if(DART_ENABLE_SIMD)
-    add_definitions(/arch:SSE2 /arch:AVX /arch:AVX2)
-    # /arch:SSE2 option is effective only for x86 but not for x64 since it's
-    # enabled for x64 by default. The option will be ignored on x64 with a
-    # warning message. If anyone knows how to detect the system's architecture
-    # in CMake time, then I would gratefully apply these options differently
-    # depending on the architectures.
-  endif()
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 
