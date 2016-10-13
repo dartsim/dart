@@ -41,6 +41,7 @@
 #include "dart/math/math.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/collision/collision.hpp"
+#include "dart/collision/bullet/bullet.hpp"
 #include "dart/simulation/simulation.hpp"
 #include "dart/utils/utils.hpp"
 #include "TestHelpers.hpp"

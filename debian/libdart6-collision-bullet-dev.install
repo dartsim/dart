@@ -1,0 +1,6 @@
+usr/include/dart/collision/bullet/*
+usr/lib/libdart-collision-bullet.so
+usr/share/dart/dart_collision-bulletTargets.cmake
+usr/share/dart/dart_collision-bulletTargets-*.cmake
+usr/share/dart/dart_collision-bulletComponent.cmake
+
