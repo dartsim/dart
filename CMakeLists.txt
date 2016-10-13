@@ -263,10 +263,6 @@ function(dart_add_tutorial)
   dart_property_add(DART_TUTORIALS ${ARGN})
 endfunction(dart_add_tutorial)
 
-function(dart_add_unittest)
-  dart_property_add(DART_UNITTESTS ${ARGN})
-endfunction(dart_add_unittest)
-
 #===============================================================================
 # Add sub-directories
 #===============================================================================
@@ -278,20 +274,6 @@ if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
   # Add a "tests" target to build unit tests.
   enable_testing()
   add_subdirectory(unittests EXCLUDE_FROM_ALL)
-
-  get_property(unittests GLOBAL PROPERTY DART_UNITTESTS)
-  add_custom_target(tests DEPENDS ${unittests})
-
-  if(DART_VERBOSE)
-    message(STATUS "")
-    message(STATUS "[ Unit Tests ]")
-    foreach(unittest ${unittests})
-      message(STATUS "Adding test: ${unittest}")
-    endforeach(unittest ${unittests})
-  else(DART_VERBOSE)
-    list(LENGTH unittests unittests_length)
-    message(STATUS "Adding ${unittests_length} unittests")
-  endif(DART_VERBOSE)
 
   if (OPENGL_FOUND AND HAVE_GLUT)
 
