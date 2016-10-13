@@ -4,6 +4,7 @@
 
 * Build
 
+  * Modified to build external libraries as separately build targets: [#787](https://github.com/dartsim/dart/pull/787)
   * Modified to export CMake target files separately per target: [#786](https://github.com/dartsim/dart/pull/786)
 
 ### DART 6.1.0 (2016-10-07)

@@ -36,7 +36,6 @@
 
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/RenderInterface.hpp"
-#include "dart/gui/lodepng.h"
 
 namespace dart {
 namespace gui {

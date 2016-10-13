@@ -33,11 +33,12 @@
 
 #include <iostream>
 
+#include "dart/external/odelcpsolver/lcp.h"
+
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/lcpsolver/lcp.h"
 
 #define DART_CFM     1e-9
 

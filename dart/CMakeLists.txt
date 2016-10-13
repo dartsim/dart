@@ -1,3 +1,5 @@
+add_subdirectory(external)
+
 # Enable multi-threaded compilation.
 # We do this here and not in the root folder since the examples and the
 # tutorials do not have enough source files to benefit from this.
@@ -136,13 +138,25 @@ target_include_directories(
 )
 target_link_libraries(
   dart
-  ${CCD_LIBRARIES}
-  ${FCL_LIBRARIES}
-  ${ASSIMP_LIBRARIES}
-  ${Boost_LIBRARIES})
+  PUBLIC
+    ${CCD_LIBRARIES}
+    ${FCL_LIBRARIES}
+    ${ASSIMP_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PROJECT_NAME}-external-odelcpsolver
+)
 
 # Default component
-add_component_targets(${PROJECT_NAME} dart dart)
+add_component_targets(
+  ${PROJECT_NAME}
+  dart # component name
+  dart # target name
+)
+add_component_dependencies(
+  ${PROJECT_NAME}
+  dart
+  external-odelcpsolver
+)
 
 # Coverage test
 dart_coveralls_add(${dart_core_headers} ${dart_core_sources})

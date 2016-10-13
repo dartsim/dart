@@ -1,0 +1,6 @@
+usr/include/dart/external/lodepng/*
+usr/lib/libdart-external-lodepng.so
+usr/share/dart/dart_external-lodepngTargets.cmake
+usr/share/dart/dart_external-lodepngTargets-*.cmake
+usr/share/dart/dart_external-lodepngComponent.cmake
+

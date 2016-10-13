@@ -1,0 +1,6 @@
+usr/include/dart/external/odelcpsolver/*
+usr/lib/libdart-external-odelcpsolver.so
+usr/share/dart/dart_external-odelcpsolverTargets.cmake
+usr/share/dart/dart_external-odelcpsolverTargets-*.cmake
+usr/share/dart/dart_external-odelcpsolverComponent.cmake
+
