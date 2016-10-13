@@ -109,7 +109,7 @@ struct PlanarJointProperties :
     PlanarJointUniqueProperties
 {
   PlanarJointProperties(
-      const GenericJoint<math::R3Space>::Properties& GenericJointProperties =
+      const GenericJoint<math::R3Space>::Properties& genericJointProperties =
           GenericJoint<math::R3Space>::Properties(),
       const PlanarJointUniqueProperties& planarProperties =
           PlanarJointUniqueProperties());

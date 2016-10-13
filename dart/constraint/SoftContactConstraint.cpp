@@ -33,6 +33,8 @@
 
 #include <iostream>
 
+#include "dart/external/odelcpsolver/lcp.h"
+
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
@@ -41,7 +43,6 @@
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/lcpsolver/lcp.h"
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0

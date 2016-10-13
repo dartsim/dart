@@ -1,11 +1,14 @@
 #===============================================================================
 # CMake settings
 #===============================================================================
+# CMake 2.8.12 or above is required for CMakeParseArguments.
 if(MSVC)
   cmake_minimum_required(VERSION 3.1.3)
 else()
-  cmake_minimum_required(VERSION 2.8.6)
+  cmake_minimum_required(VERSION 2.8.12)
 endif()
+
+project(dart)
 
 # Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
 # became default in CMake 3.0. Explicitly setting this policy is necessary to
@@ -21,14 +24,21 @@ if(POLICY CMP0053)
   cmake_policy(SET CMP0053 NEW)
 endif()
 
-# Disables a warning about a change in Cygwin Cmake
-set(CMAKE_LEGACY_CYGWIN_WIN32 0)
-set(CMAKE_CXX_WARNING_LEVEL 4)
+# Variables used in Components.cmake
+set(INCLUDE_INSTALL_DIR "include")
+set(LIBRARY_INSTALL_DIR "lib")
+set(CONFIG_INSTALL_DIR "share/${PROJECT_NAME}/cmake")
 
 set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-include(${CMAKE_MODULE_PATH}/DARTMacros.cmake)
+include(DARTMacros)
+
+# CMake component helper. It uses the following variables:
+# - LIBRARY_INSTALL_DIR
+# - CONFIG_INSTALL_DIR
+include(Components)
+initialize_component_helpers(${PROJECT_NAME})
 
 # System install paths on Windows
 if(WIN32)
@@ -38,17 +48,40 @@ endif()
 #===============================================================================
 # Project settings
 #===============================================================================
-#
+
 # If you change the version, please update the <version> tag in package.xml.
-
-project(dart)
-
 set(DART_MAJOR_VERSION "6")
 set(DART_MINOR_VERSION "1")
-set(DART_PATCH_VERSION "0")
+set(DART_PATCH_VERSION "1")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "eigen, ccd, fcl, assimp, boost")
+
+#===============================================================================
+# Build options
+#===============================================================================
+option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
+option(ENABLE_OPENMP "Build with OpenMP parallaization enabled" ON)
+if(MSVC)
+  set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
+  set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
+  option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
+else()
+  option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+endif()
+# Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART
+# dependent projects on the same machine. If this option is on, then compile
+# option `-march=native` is added to the target `dart` that enables all
+# instruction subsets supported by the local machine. If the architecture of
+# local machines are different then the projects will be built with different
+# compile options, which may cause runtime errors especially memory alignment
+# errors.
+option(DART_ENABLE_SIMD
+  "Build DART with all SIMD instructions on the current local machine" OFF)
+option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
+option(DART_COVERALLS "Turn on coveralls support" OFF)
+option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
+option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 
 #===============================================================================
 # Print intro
@@ -59,21 +92,11 @@ message(STATUS "                DART ${DART_VERSION}")
 message(STATUS "============================================")
 
 #===============================================================================
-# Build options
+# Coveralls settings
 #===============================================================================
-option(ENABLE_OPENMP "Build with OpenMP parallaization enabled" ON)
-if(MSVC)
-  set(DART_RUNTIME_LIBRARY "/MD" CACHE STRING "BaseName chosen by the user at CMake configure time")
-  set_property(CACHE DART_RUNTIME_LIBRARY PROPERTY STRINGS /MD /MT)
-  option(DART_MSVC_DEFAULT_OPTIONS "Build DART with default Visual Studio options" OFF)
-else()
-  option(BUILD_SHARED_LIBS "Build shared libraries" ON)
-endif()
-option(DART_ENABLE_SIMD "Build DART with SIMD enabled" ON)
-option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
-option(DART_COVERALLS "Turn on coveralls support" OFF)
-option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
-option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
+function(dart_coveralls_add)
+  dart_property_add(COVERALLS_SOURCES ${ARGN})
+endfunction(dart_coveralls_add)
 
 if(DART_COVERALLS)
   include(Coveralls)
@@ -114,22 +137,7 @@ include(DARTFindDependencies)
 # Include directories
 #===============================================================================
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
-include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
-include_directories(SYSTEM ${CCD_INCLUDE_DIRS})
-include_directories(SYSTEM ${FCL_INCLUDE_DIRS})
-include_directories(SYSTEM ${ASSIMP_INCLUDE_DIRS})
-include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-if(HAVE_BULLET_COLLISION)
-  include_directories(SYSTEM ${BULLET_INCLUDE_DIRS})
-endif()
 include_directories("${CMAKE_BINARY_DIR}")
-
-set(DART_INCLUDE_DIRS
-    "${CMAKE_INSTALL_PREFIX}/include"
-    "${EIGEN3_INCLUDE_DIRS}")
-if(HAVE_BULLET_COLLISION)
-  list(APPEND DART_INCLUDE_DIRS "${BULLET_INCLUDE_DIRS}")
-endif()
 
 #===============================================================================
 # Check for non-case-sensitive filesystems
@@ -160,14 +168,6 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc")
   endif(NOT DART_MSVC_DEFAULT_OPTIONS)
-  if(DART_ENABLE_SIMD)
-    add_definitions(/arch:SSE2 /arch:AVX /arch:AVX2)
-    # /arch:SSE2 option is effective only for x86 but not for x64 since it's
-    # enabled for x64 by default. The option will be ignored on x64 with a
-    # warning message. If anyone knows how to detect the system's architecture
-    # in CMake time, then I would gratefully apply these options differently
-    # depending on the architectures.
-  endif()
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 
@@ -187,9 +187,6 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-  if(DART_ENABLE_SIMD)
-    add_definitions(-march=native)
-  endif()
 
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 
@@ -214,9 +211,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-  if(DART_ENABLE_SIMD)
-    add_definitions(-march=native)
-  endif()
 
 else()
 
@@ -227,57 +221,153 @@ endif()
 #===============================================================================
 # Print build summary
 #===============================================================================
-message(STATUS "")
-message(STATUS "[ Build summary ]")
-message(STATUS "CMAKE_GENERATOR  : ${CMAKE_GENERATOR}")
-message(STATUS "Compiler ID      : ${CMAKE_CXX_COMPILER_ID}")
-message(STATUS "Compiler version : ${CXX_COMPILER_VERSION}")
-message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
-message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
-message(STATUS "ENABLE_OPENMP    : ${ENABLE_OPENMP}")
-message(STATUS "Build gui::osg   : ${DART_BUILD_GUI_OSG}")
-message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
-message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
-if(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELEASE")
-  message(STATUS "CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
-elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "DEBUG")
-  message(STATUS "CXX_FLAGS_DEBUG  : ${CMAKE_CXX_FLAGS_DEBUG}")
-elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELWITHDEBINFO")
-  message(STATUS "CXX_FLAGS_RELWITHDEBINFO: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
-elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "PROFILE")
-  message(STATUS "CXX_FLAGS_PROFILE: ${CMAKE_CXX_FLAGS_PROFILE}")
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ Build summary ]")
+  message(STATUS "CMAKE_GENERATOR  : ${CMAKE_GENERATOR}")
+  message(STATUS "Compiler ID      : ${CMAKE_CXX_COMPILER_ID}")
+  message(STATUS "Compiler version : ${CXX_COMPILER_VERSION}")
+  message(STATUS "Build type       : ${CMAKE_BUILD_TYPE}")
+  message(STATUS "BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
+  message(STATUS "ENABLE_OPENMP    : ${ENABLE_OPENMP}")
+  message(STATUS "Build gui::osg   : ${DART_BUILD_GUI_OSG}")
+  message(STATUS "Install path     : ${CMAKE_INSTALL_PREFIX}")
+  message(STATUS "CXX_FLAGS        : ${CMAKE_CXX_FLAGS}")
+  if(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELEASE")
+    message(STATUS "CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
+  elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "DEBUG")
+    message(STATUS "CXX_FLAGS_DEBUG  : ${CMAKE_CXX_FLAGS_DEBUG}")
+  elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "RELWITHDEBINFO")
+    message(STATUS "CXX_FLAGS_RELWITHDEBINFO: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+  elseif(${CMAKE_BUILD_TYPE_UPPERCASE} STREQUAL "PROFILE")
+    message(STATUS "CXX_FLAGS_PROFILE: ${CMAKE_CXX_FLAGS_PROFILE}")
+  endif()
+  message(STATUS "CMAKE_SOURCE_DIR : ${CMAKE_SOURCE_DIR}")
+  message(STATUS "CMAKE_BINARY_DIR : ${CMAKE_BINARY_DIR}")
+endif(DART_VERBOSE)
+
+#===============================================================================
+# Helper Functions
+#===============================================================================
+function(dart_add_example)
+  dart_property_add(DART_EXAMPLES ${ARGN})
+endfunction(dart_add_example)
+
+function(dart_add_tutorial)
+  dart_property_add(DART_TUTORIALS ${ARGN})
+endfunction(dart_add_tutorial)
+
+#===============================================================================
+# Add sub-directories
+#===============================================================================
+
+add_subdirectory(dart)
+
+if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
+
+  # Add a "tests" target to build unit tests.
+  enable_testing()
+  add_subdirectory(unittests EXCLUDE_FROM_ALL)
+
+  if (OPENGL_FOUND AND HAVE_GLUT)
+
+    # Add an "examples" target to build examples.
+    add_subdirectory(examples EXCLUDE_FROM_ALL)
+
+    get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
+    add_custom_target(examples DEPENDS ${examples})
+
+    if(DART_VERBOSE)
+      message(STATUS "")
+      message(STATUS "[ Examples ]")
+      foreach(example ${examples})
+        message(STATUS "Adding example: ${example}")
+      endforeach(example ${examples})
+    else(DART_VERBOSE)
+      list(LENGTH examples examples_length)
+      message(STATUS "Adding ${examples_length} examples")
+    endif(DART_VERBOSE)
+
+    # Add a "tutorials" target to build tutorials.
+    add_subdirectory(tutorials EXCLUDE_FROM_ALL)
+
+    get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
+    add_custom_target(tutorials DEPENDS ${tutorials})
+
+    if(DART_VERBOSE)
+      message(STATUS "")
+      message(STATUS "[ Tutorials ]")
+      foreach(tutorial ${tutorials})
+        message(STATUS "Adding tutorial: ${tutorial}")
+      endforeach(tutorial ${tutorials})
+    else(DART_VERBOSE)
+      list(LENGTH tutorials tutorials_length)
+      message(STATUS "Adding ${tutorials_length} tutorials")
+    endif(DART_VERBOSE)
+
+  endif()
+
 endif()
-message(STATUS "CMAKE_SOURCE_DIR : ${CMAKE_SOURCE_DIR}")
-message(STATUS "CMAKE_BINARY_DIR : ${CMAKE_BINARY_DIR}")
+
+#===============================================================================
+# CMake configuration files for components and targets
+#===============================================================================
+# Generate and install CMake configuration files for each component <C>:
+# - <C>Component.cmake, which defines:
+#   - dart_<C>_DEPENDENCIES: list of component dependencies
+#   - dart_<C>_LIBRARIES: list of library targets in this component
+# - <C>Targets.cmake, which creates IMPORTED targets
+install_component_exports(${PROJECT_NAME})
 
 #===============================================================================
 # Configure files
 #===============================================================================
-message(STATUS "")
-message(STATUS "[ Configured files ]")
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ Configured files ]")
+endif()
 
-# Generate the dart config file
-# Ref: http://www.vtk.org/Wiki/CMake:How_To_Write_Platform_Checks
-set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/dart/config.hpp.in)
-set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/dart/config.hpp)
-message(STATUS ${DART_CONFIG_OUT})
-configure_file(${DART_CONFIG_IN} ${DART_CONFIG_OUT} @ONLY)
-install(FILES ${DART_CONFIG_OUT} DESTINATION include/dart)
+string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)
+
+# Generate and install a Config.cmake file. This file includes the
+# <C>Component.cmake and <C>Targets.cmake created above. It also uses the
+# following variables:
+#
+# - PACKAGE_INCLUDE_INSTALL_DIR
+# - PACKAGE_INCLUDE_DIRS
+get_property(PACKAGE_INCLUDE_DIRS GLOBAL
+  PROPERTY "${PROJECT_NAME_UPPERCASE}_INCLUDE_DIRS")
 
 # Generate the DART CMake Config and version files
-include(WriteBasicConfigVersionFile)
-set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/DARTConfig.cmake.in)
-set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/DARTConfig.cmake)
-message(STATUS ${DART_CONFIG_OUT})
-message(STATUS ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake)
-configure_file(${DART_CONFIG_IN} ${DART_CONFIG_OUT} @ONLY)
-write_basic_config_version_file(cmake/DARTConfigVersion.cmake VERSION ${DART_VERSION} COMPATIBILITY SameMajorVersion)
-install(FILES ${DART_CONFIG_OUT} ${CMAKE_BINARY_DIR}/cmake/DARTConfigVersion.cmake DESTINATION share/dart)
+include(CMakePackageConfigHelpers)
+set(DART_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME_UPPERCASE}Config.cmake.in)
+set(DART_CONFIG_OUT ${CMAKE_BINARY_DIR}/${PROJECT_NAME_UPPERCASE}Config.cmake)
+set(DART_VERSION_OUT ${CMAKE_BINARY_DIR}/cmake/${PROJECT_NAME_UPPERCASE}ConfigVersion.cmake)
+if(DART_VERBOSE)
+  message(STATUS ${DART_CONFIG_OUT})
+  message(STATUS ${DART_VERSION_OUT})
+endif()
+configure_package_config_file(
+  ${DART_CONFIG_IN}
+  ${DART_CONFIG_OUT}
+  INSTALL_DESTINATION "${CONFIG_INSTALL_DIR}"
+  PATH_VARS INCLUDE_INSTALL_DIR
+)
+write_basic_config_version_file(
+  ${DART_VERSION_OUT}
+  VERSION ${${PROJECT_NAME_UPPERCASE}_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+install(
+  FILES ${DART_CONFIG_OUT} ${DART_VERSION_OUT}
+  DESTINATION "${CONFIG_INSTALL_DIR}")
 
 # Generate the DART pkg-config
 set(PC_CONFIG_IN ${CMAKE_SOURCE_DIR}/cmake/dart.pc.in)
 set(PC_CONFIG_OUT ${CMAKE_BINARY_DIR}/cmake/dart.pc)
-message(STATUS ${PC_CONFIG_OUT})
+if(DART_VERBOSE)
+  message(STATUS ${PC_CONFIG_OUT})
+endif()
 configure_file(${PC_CONFIG_IN} ${PC_CONFIG_OUT} @ONLY)
 install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 
@@ -285,76 +375,28 @@ install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 install(FILES package.xml DESTINATION share/${PROJECT_NAME})
 
 #===============================================================================
-# Helper Functions
+# Uninstall
 #===============================================================================
-
-set_property(GLOBAL PROPERTY DART_EXAMPLES)
-set_property(GLOBAL PROPERTY DART_TUTORIALS)
-set_property(GLOBAL PROPERTY DART_UNITTESTS)
-
-function(dart_add_example target_name)
-  set_property(GLOBAL APPEND PROPERTY DART_EXAMPLES "${target_name}")
-endfunction(dart_add_example)
-
-function(dart_add_tutorial target_name)
-  set_property(GLOBAL APPEND PROPERTY DART_TUTORIALS "${target_name}")
-endfunction(dart_add_tutorial)
-
-function(dart_add_unittest target_name)
-  set_property(GLOBAL APPEND PROPERTY DART_UNITTESTS "${target_name}")
-endfunction(dart_add_unittest)
-
-#===============================================================================
-# Add sub-directories
-#===============================================================================
-
-add_subdirectory(dart)
-add_subdirectory(examples EXCLUDE_FROM_ALL)
-add_subdirectory(tutorials EXCLUDE_FROM_ALL)
-
-# Add a "tutorials" target to build tutorials.
-get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
-add_custom_target(tutorials DEPENDS ${tutorials})
-
-message(STATUS "")
-message(STATUS "[ Tutorials ]")
-foreach(tutorial ${tutorials})
-  message(STATUS "Adding tutorial: ${tutorial}")
-endforeach(tutorial ${tutorials})
-
-# Add an "examples" target to build examples.
-get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
-add_custom_target(examples DEPENDS ${examples})
-
-message(STATUS "")
-message(STATUS "[ Examples ]")
-
-foreach(example ${examples})
-  message(STATUS "Adding example: ${example}")
-endforeach(example ${examples})
-
-# Add a "tests" target to build unit tests.
-enable_testing()
-add_subdirectory(unittests EXCLUDE_FROM_ALL)
-
-get_property(unittests GLOBAL PROPERTY DART_UNITTESTS)
-add_custom_target(tests DEPENDS ${unittests})
-
-message(STATUS "")
-message(STATUS "[ Unit Tests ]")
-foreach(unittest ${unittests})
-  message(STATUS "Adding test: ${unittest}")
-endforeach(unittest ${unittests})
-
-#===============================================================================
-# Export targets
-#===============================================================================
-install(EXPORT DARTTargets DESTINATION share/dart)
 
 # Add an "uninstall" target
 # Ref: http://www.cmake.org/Wiki/CMake_FAQ#Can_I_do_.22make_uninstall.22_with_CMake.3F
 configure_file("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in" "${PROJECT_BINARY_DIR}/uninstall_target.cmake" IMMEDIATE @ONLY)
 add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
+
+#===============================================================================
+# Coveralls
+#===============================================================================
+# Setup the coveralls target and tell it to gather
+# coverage data for all the lib sources.
+if(DART_COVERALLS)
+  get_property(sources GLOBAL PROPERTY COVERALLS_SOURCES)
+
+  list(LENGTH sources sources_length)
+  message(STATUS "Running Coveralls on ${sources_length} source files.")
+
+  coveralls_setup("${sources}" ${DART_COVERALLS_UPLOAD}
+    "${PROJECT_SOURCE_DIR}/cmake")
+endif()
 
 #===============================================================================
 # API Document using Doxygen
@@ -364,33 +406,46 @@ add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/uninsta
 #===============================================================================
 if(DOXYGEN_FOUND)
 
-  set(DOXYGEN_DOXYFILE_IN  ${PROJECT_SOURCE_DIR}/doxygen/Doxyfile.in    )
-  set(DOXYGEN_DOXYFILE     ${PROJECT_BINARY_DIR}/doxygen/Doxyfile       )
-  set(DOXYGEN_HTML_INDEX   ${PROJECT_SOURCE_DIR}/doxygen/html/index.html)
-  set(DOXYGEN_OUTPUT_ROOT  ${PROJECT_SOURCE_DIR}/doxygen/html           ) # Pasted into Doxyfile.in
-  set(DOXYGEN_GENERATE_TAGFILE ${DOXYGEN_OUTPUT_ROOT}/${PROJECT_NAME}.tag)
-  set(DOXYGEN_INCLUDE_PATH ${PROJECT_SOURCE_DIR})
-  set(DOXYGEN_INPUT_ROOT   ${PROJECT_SOURCE_DIR}/dart                   ) # Pasted into Doxyfile.in
-  set(DOXYGEN_EXTRA_INPUTS ${PROJECT_SOURCE_DIR}/doxygen/mainpage.dox   ) # Pasted into Doxyfile.in
+  set(DOXYGEN_DOXYFILE_IN      "${PROJECT_SOURCE_DIR}/doxygen/Doxyfile.in"    )
+  set(DOXYGEN_DOXYFILE         "${PROJECT_BINARY_DIR}/doxygen/Doxyfile"       )
+  set(DOXYGEN_HTML_INDEX       "${PROJECT_SOURCE_DIR}/doxygen/html/index.html")
+  set(DOXYGEN_OUTPUT_ROOT      "${PROJECT_SOURCE_DIR}/doxygen/html"           )
+  set(DOXYGEN_GENERATE_TAGFILE "${DOXYGEN_OUTPUT_ROOT}/${PROJECT_NAME}.tag"   )
+  set(DOXYGEN_INCLUDE_PATH     "${PROJECT_SOURCE_DIR}"                        )
+  set(DOXYGEN_INPUT_ROOT       "${PROJECT_SOURCE_DIR}/dart"                   )
+  set(DOXYGEN_EXTRA_INPUTS     "${PROJECT_SOURCE_DIR}/doxygen/mainpage.dox"   )
+  set(DOXYGEN_EXCLUDE          "${PROJECT_SOURCE_DIR}/dart/external"          )
 
+  # Generate a Doxyfile. This uses the variables:
+  #
+  # - DOXYGEN_OUTPUT_ROOT
+  # - DOXYGEN_GENERATE_TAGFILE
+  # - DOXYGEN_EXTRA_INPUTS
+  # - DOXYGEN_INPUT_ROOT
+  # - DOXYGEN_EXCLUDE
   configure_file(${DOXYGEN_DOXYFILE_IN} ${DOXYGEN_DOXYFILE} @ONLY)
-  file(COPY "${PROJECT_SOURCE_DIR}/doxygen/DART logo.png" DESTINATION ${DOXYGEN_OUTPUT_ROOT})
-  add_custom_command(OUTPUT ${DOXYGEN_HTML_INDEX}
-                     COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
-                     COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
-                     COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
-                     COMMAND ${CMAKE_COMMAND} -E echo "Done."
-                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
-                     DEPENDS ${DOXYGEN_DOXYFILE}
+  file(
+    COPY "${PROJECT_SOURCE_DIR}/doxygen/DART logo.png"
+    DESTINATION ${DOXYGEN_OUTPUT_ROOT}
+  )
+  add_custom_command(
+    OUTPUT ${DOXYGEN_HTML_INDEX}
+    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
+    COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
+    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
+    COMMAND ${CMAKE_COMMAND} -E echo "Done."
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
+    DEPENDS ${DOXYGEN_DOXYFILE}
   )
   # add_custom_target(docs ALL DEPENDS ${DOXYGEN_HTML_INDEX})
   add_custom_target(docs DEPENDS ${DOXYGEN_HTML_INDEX})
-  add_custom_target(docs_forced
-                    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
-                    COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
-                    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
-                    COMMAND ${CMAKE_COMMAND} -E echo "Done."
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
+  add_custom_target(
+    docs_forced
+    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
+    COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
+    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
+    COMMAND ${CMAKE_COMMAND} -E echo "Done."
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
   )
 
 endif()
@@ -408,6 +463,15 @@ if("${PERLMODULES_FOUND}" STREQUAL "TRUE")
     endif()
   endif()
 endif()
+
+#===============================================================================
+# Build Instructions
+#===============================================================================
+message(STATUS "")
+message(STATUS "Run 'make' to build all the components")
+message(STATUS "Run 'make tests' to build all the unittests")
+message(STATUS "Run 'make examples' to build all the examples")
+message(STATUS "Run 'make tutorials' to build all the tutorials")
 
 #===============================================================================
 # END

@@ -62,7 +62,7 @@ struct RevoluteJointProperties :
     RevoluteJointUniqueProperties
 {
   RevoluteJointProperties(
-      const GenericJoint<math::R1Space>::Properties& GenericJointProperties =
+      const GenericJoint<math::R1Space>::Properties& genericJointProperties =
           GenericJoint<math::R1Space>::Properties(),
       const RevoluteJointUniqueProperties& revoluteProperties =
           RevoluteJointUniqueProperties());
