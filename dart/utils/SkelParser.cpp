@@ -982,7 +982,7 @@ dynamics::SkeletonPtr readSkeleton(
       BodyMap::const_iterator rootNode = bodyNodes.find(it->second.parentName);
       SkelJoint rootJoint;
       rootJoint.properties =
-          Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
+          dynamics::FreeJoint::Properties::createShared(
             dynamics::Joint::Properties("root", rootNode->second.initTransform));
       rootJoint.type = "free";
 
@@ -1224,7 +1224,7 @@ SkelBodyNode readSoftBodyNode(
 
   SkelBodyNode softBodyNode;
   softBodyNode.properties =
-      Eigen::make_aligned_shared<dynamics::SoftBodyNode::Properties>(
+      dynamics::SoftBodyNode::Properties::createShared(
           *standardBodyNode.properties, newSoftBodyNode);
 
   softBodyNode.initTransform = standardBodyNode.initTransform;
@@ -1897,7 +1897,7 @@ JointPropPtr readWeldJoint(
     SkelJoint& /*_joint*/,
     const std::string&)
 {
-  return Eigen::make_aligned_shared<dynamics::WeldJoint::Properties>();
+  return dynamics::WeldJoint::Properties::createShared();
 }
 
 //==============================================================================
@@ -1955,8 +1955,7 @@ JointPropPtr readRevoluteJoint(
   readAllDegreesOfFreedom<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
-  return Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
-      properties);
+  return dynamics::RevoluteJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2014,8 +2013,7 @@ JointPropPtr readPrismaticJoint(
   readAllDegreesOfFreedom<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
-  return Eigen::make_aligned_shared<dynamics::PrismaticJoint::Properties>(
-      properties);
+  return dynamics::PrismaticJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2080,8 +2078,7 @@ JointPropPtr readScrewJoint(
   readAllDegreesOfFreedom<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
-  return Eigen::make_aligned_shared<dynamics::ScrewJoint::Properties>(
-        properties);
+  return dynamics::ScrewJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2150,8 +2147,7 @@ JointPropPtr readUniversalJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 2);
 
-  return Eigen::make_aligned_shared<dynamics::UniversalJoint::Properties>(
-      properties);
+  return dynamics::UniversalJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2184,8 +2180,7 @@ JointPropPtr readBallJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
 
-  return Eigen::make_aligned_shared<dynamics::BallJoint::Properties>(
-      properties);
+  return dynamics::BallJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2240,8 +2235,7 @@ JointPropPtr readEulerJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
 
-  return Eigen::make_aligned_shared<dynamics::EulerJoint::Properties>(
-      properties);
+  return dynamics::EulerJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2278,8 +2272,7 @@ JointPropPtr readTranslationalJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
 
-  return Eigen::make_aligned_shared<dynamics::TranslationalJoint::Properties>(
-      properties);
+  return dynamics::TranslationalJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2363,8 +2356,7 @@ JointPropPtr readPlanarJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
 
-  return Eigen::make_aligned_shared<dynamics::PlanarJoint::Properties>(
-      properties);
+  return dynamics::PlanarJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2397,8 +2389,7 @@ JointPropPtr readFreeJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 6);
 
-  return Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
-      properties);
+  return dynamics::FreeJoint::Properties::createShared(properties);
 }
 
 //==============================================================================

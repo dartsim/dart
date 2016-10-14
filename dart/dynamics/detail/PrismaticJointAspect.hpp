@@ -61,6 +61,14 @@ struct PrismaticJointProperties :
     GenericJoint<math::R1Space>::Properties,
     PrismaticJointUniqueProperties
 {
+  /// Create shared instance of this class
+  template <typename... Args>
+  static std::shared_ptr<PrismaticJointProperties> createShared(Args&&... args)
+  {
+    return Eigen::make_aligned_shared<PrismaticJointProperties>(
+        std::forward<Args>(args)...);
+  }
+
   PrismaticJointProperties(
       const GenericJoint<math::R1Space>::Properties& genericJointProperties =
           GenericJoint<math::R1Space>::Properties(),

@@ -587,9 +587,7 @@ bool readJointFree(const tinyxml2::XMLElement* /*jointEle*/,
   properties.mT_ParentBodyToJoint = tfFromParent;
   properties.mT_ChildBodyToJoint = Eigen::Isometry3d::Identity();
 
-  jointProperties
-      = Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
-        properties);
+  jointProperties = dynamics::FreeJoint::Properties::createShared(properties);
 
   return true;
 }
@@ -614,9 +612,7 @@ bool readJointBall(const tinyxml2::XMLElement* /*jointEle*/,
   properties.mFrictions = Eigen::Vector3d::Constant(
         vskData.options.jointFriction);
 
-  jointProperties
-      = Eigen::make_aligned_shared<dynamics::BallJoint::Properties>(
-        properties);
+  jointProperties = dynamics::BallJoint::Properties::createShared(properties);
 
   return true;
 }
@@ -655,8 +651,7 @@ bool readJointHardySpicer(const tinyxml2::XMLElement* jointEle,
         vskData.options.jointFriction);
 
   jointProperties
-      = Eigen::make_aligned_shared<dynamics::UniversalJoint::Properties>(
-        properties);
+      = dynamics::UniversalJoint::Properties::createShared(properties);
 
   return true;
 }
@@ -684,8 +679,7 @@ bool readJointHinge(const tinyxml2::XMLElement* jointEle,
   properties.mFrictions[0] = vskData.options.jointFriction;
 
   jointProperties
-      = Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
-        properties);
+      = dynamics::RevoluteJoint::Properties::createShared(properties);
 
   return true;
 }
@@ -701,9 +695,7 @@ bool readJointDummy(const tinyxml2::XMLElement* /*jointEle*/,
   properties.mT_ParentBodyToJoint = tfFromParent;
   properties.mT_ChildBodyToJoint = Eigen::Isometry3d::Identity();
 
-  jointProperties
-      = Eigen::make_aligned_shared<dynamics::WeldJoint::Properties>(
-        properties);
+  jointProperties = dynamics::WeldJoint::Properties::createShared(properties);
 
   return true;
 }

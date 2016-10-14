@@ -106,6 +106,14 @@ struct SoftBodyNodeUniqueProperties
 struct SoftBodyNodeProperties
     : BodyNode::Properties, SoftBodyNodeUniqueProperties
 {
+  /// Create shared instance of this class
+  template <typename... Args>
+  static std::shared_ptr<SoftBodyNodeProperties> createShared(Args&&... args)
+  {
+    return Eigen::make_aligned_shared<SoftBodyNodeProperties>(
+        std::forward<Args>(args)...);
+  }
+
   SoftBodyNodeProperties(
       const BodyNode::Properties& _bodyProperties = BodyNode::Properties(),
       const SoftBodyNodeUniqueProperties& _softProperties =

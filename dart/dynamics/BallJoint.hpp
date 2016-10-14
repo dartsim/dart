@@ -50,8 +50,16 @@ public:
 
   struct Properties : Base::Properties
   {
-    Properties(const Base::Properties& properties
-               = Base::Properties());
+    /// Create shared instance of this class
+    template <typename... Args>
+    static std::shared_ptr<Properties> createShared(Args&&... args)
+    {
+      return Eigen::make_aligned_shared<Properties>(
+          std::forward<Args>(args)...);
+    }
+
+    Properties(const Base::Properties& properties = Base::Properties());
+
     virtual ~Properties() = default;
   };
 

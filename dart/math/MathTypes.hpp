@@ -65,6 +65,38 @@ template <typename _Key, typename _Tp, typename _Compare = std::less<_Key>>
 using aligned_map = std::map<_Key, _Tp, _Compare,
     Eigen::aligned_allocator<std::pair<const _Key, _Tp>>>;
 
+#define DART_DEFINE_CREATE_UNIQUE(class_name)\
+  /** Create unique instance of this class. */\
+  template <typename... Args>\
+  static std::shared_ptr<class_name> createShared(Args&&... args)\
+  {\
+    return ::dart::common::make_unique<class_name>(std::forward<Args>(args)...);\
+  }
+
+#define DART_DEFINE_CREATE_SHARED(class_name)\
+  /** Create shared instance of this class. */\
+  template <typename... Args>\
+  static std::shared_ptr<class_name> createShared(Args&&... args)\
+  {\
+    return std::make_shared<class_name>(std::forward<Args>(args)...);\
+  }
+
+#define DART_DEFINE_CREATE_ALIGNED_SHARED(class_name)\
+  /** Create shared instance of this class. */\
+  template <typename... Args>\
+  static std::shared_ptr<class_name> createShared(Args&&... args)\
+  {\
+    return Eigen::make_aligned_shared<class_name>(std::forward<Args>(args)...);\
+  }
+
+#define DART_DEFINE_CREATE(class_name)\
+  DART_DEFINE_CREATE_SHARED(class_name)\
+  DART_DEFINE_CREATE_UNIQUE(class_name)
+
+#define DART_DEFINE_CREATE_ALIGNED(class_name)\
+  DART_DEFINE_CREATE_ALIGNED_SHARED(class_name)\
+  DART_DEFINE_CREATE_UNIQUE(class_name)
+
 #if EIGEN_VERSION_AT_LEAST(3,2,1)
 
 /// Aligned allocator that is compatible with c++11

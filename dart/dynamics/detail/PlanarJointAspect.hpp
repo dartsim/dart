@@ -108,6 +108,14 @@ struct PlanarJointProperties :
     GenericJoint<math::R3Space>::Properties,
     PlanarJointUniqueProperties
 {
+  /// Create shared instance of this class
+  template <typename... Args>
+  static std::shared_ptr<PlanarJointProperties> createShared(Args&&... args)
+  {
+    return Eigen::make_aligned_shared<PlanarJointProperties>(
+        std::forward<Args>(args)...);
+  }
+
   PlanarJointProperties(
       const GenericJoint<math::R3Space>::Properties& genericJointProperties =
           GenericJoint<math::R3Space>::Properties(),

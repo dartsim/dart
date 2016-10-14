@@ -167,9 +167,6 @@ protected:
   /// Specifies which color index should be used when mColorMode is COLOR_INDEX
   int mColorIndex;
 
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

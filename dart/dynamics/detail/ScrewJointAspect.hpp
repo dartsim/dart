@@ -65,6 +65,14 @@ struct ScrewJointUniqueProperties
 struct ScrewJointProperties : GenericJoint<math::R1Space>::Properties,
                     ScrewJointUniqueProperties
 {
+  /// Create shared instance of this class
+  template <typename... Args>
+  static std::shared_ptr<ScrewJointProperties> createShared(Args&&... args)
+  {
+    return Eigen::make_aligned_shared<ScrewJointProperties>(
+        std::forward<Args>(args)...);
+  }
+
   ScrewJointProperties(
       const GenericJoint<math::R1Space>::Properties& genericJointProperties =
           GenericJoint<math::R1Space>::Properties(),

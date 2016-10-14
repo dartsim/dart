@@ -1222,6 +1222,15 @@ class InverseKinematics::Objective final :
 {
 public:
 
+  /// Create shared instance of this class
+  template <typename... Args>
+  static std::shared_ptr<InverseKinematics::Objective>
+  createShared(Args&&... args)
+  {
+    return Eigen::make_aligned_shared<InverseKinematics::Objective>(
+          std::forward<Args>(args)...);
+  }
+
   /// Constructor
   Objective(InverseKinematics* _ik);
 
