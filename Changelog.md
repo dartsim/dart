@@ -1,4 +1,7 @@
-### Version 5.1.3 (2016-10-14)
+### Version 5.1.4 (2016-10-14)
+
+1. Fixed inconsistent frame rate of GlutWindow
+    * [Pull request #794](https://github.com/dartsim/dart/pull/794)
 
 ### Version 5.1.3 (2016-10-07)
 
