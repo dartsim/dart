@@ -1,6 +1,6 @@
 usr/include/dart/gui/osg/*
 usr/lib/libdart-gui-osg.so
-usr/share/dart/dart_gui-osgTargets.cmake
-usr/share/dart/dart_gui-osgTargets-*.cmake
-usr/share/dart/dart_gui-osgComponent.cmake
+usr/share/dart/cmake/dart_gui-osgTargets.cmake
+usr/share/dart/cmake/dart_gui-osgTargets-*.cmake
+usr/share/dart/cmake/dart_gui-osgComponent.cmake
 
