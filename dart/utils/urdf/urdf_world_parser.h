@@ -48,7 +48,7 @@
 #include <urdf_model/pose.h>
 #include <urdf_model/twist.h>
 
-#include "dart/utils/urdf/URDFTypes.hpp"
+#include "dart/utils/urdf/URDFTypes.h"
 
 namespace dart {
 namespace utils {

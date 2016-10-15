@@ -21,7 +21,7 @@
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/simulation/World.h"
-#include "dart/utils/urdf/URDFTypes.hpp"
+#include "dart/utils/urdf/URDFTypes.h"
 #include "dart/utils/urdf/urdf_world_parser.h"
 
 namespace dart {
