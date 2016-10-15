@@ -1,3 +1,9 @@
+dart5 (5.1.4.ppa0~trusty) trusty; urgency=medium
+
+  * Fixed inconsistent frame rate of GlutWindow
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Fri, 14 Oct 2016 23:59:00 -0500
+
 dart5 (5.1.3) unstable; urgency=medium
 
   * Updated to support Bullet built with double precision (backport of #660)
