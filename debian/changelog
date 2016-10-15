@@ -1,4 +1,4 @@
-dart5 (5.1.4.ppa0~trusty) trusty; urgency=medium
+dart5 (5.1.4) unstable; urgency=medium
 
   * Fixed inconsistent frame rate of GlutWindow
 
