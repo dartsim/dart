@@ -70,7 +70,7 @@ struct EulerJointProperties :
 {
   /// Composed constructor
   EulerJointProperties(
-      const GenericJoint<math::R3Space>::Properties& GenericJointProperties =
+      const GenericJoint<math::R3Space>::Properties& genericJointProperties =
           GenericJoint<math::R3Space>::Properties(),
       const EulerJointUniqueProperties& eulerJointProperties =
           EulerJointUniqueProperties());

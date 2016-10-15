@@ -45,9 +45,9 @@ PrismaticJointUniqueProperties::PrismaticJointUniqueProperties(
 
 //==============================================================================
 PrismaticJointProperties::PrismaticJointProperties(
-    const GenericJoint<math::R1Space>::Properties& GenericJointProperties,
+    const GenericJoint<math::R1Space>::Properties& genericJointProperties,
     const PrismaticJointUniqueProperties& prismaticProperties)
-  : GenericJoint<math::R1Space>::Properties(GenericJointProperties),
+  : GenericJoint<math::R1Space>::Properties(genericJointProperties),
     PrismaticJointUniqueProperties(prismaticProperties)
 {
   // Do nothing

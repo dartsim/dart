@@ -31,6 +31,8 @@
 
 #include "dart/gui/GlutWindow.hpp"
 
+#include "dart/external/lodepng/lodepng.h"
+
 #ifdef _WIN32
   #include <sys/types.h>
   #include <sys/stat.h>
@@ -105,6 +107,9 @@ void GlutWindow::initWindow(int _w, int _h, const char* _name) {
 #endif
   // TODO: Disabled use of GL_MULTISAMPLE for Windows. Please see #411 for the
   // detail.
+
+  glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+  // Note: We book the timer id 0 for the main rendering purpose.
 }
 
 void GlutWindow::reshape(int _w, int _h) {

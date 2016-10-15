@@ -1,6 +1,6 @@
 usr/include/dart/optimizer/nlopt/*
 usr/lib/libdart-optimizer-nlopt.so
-usr/share/dart/dart_optimizer-ipoptTargets.cmake
-usr/share/dart/dart_optimizer-ipoptTargets-*.cmake
-usr/share/dart/dart_optimizer-ipoptComponent.cmake
+usr/share/dart/cmake/dart_optimizer-ipoptTargets.cmake
+usr/share/dart/cmake/dart_optimizer-ipoptTargets-*.cmake
+usr/share/dart/cmake/dart_optimizer-ipoptComponent.cmake
 

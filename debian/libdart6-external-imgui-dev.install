@@ -1,0 +1,6 @@
+usr/include/dart/external/imgui/*
+usr/lib/libdart-external-imgui.so
+usr/share/dart/cmake/dart_external-imguiTargets.cmake
+usr/share/dart/cmake/dart_external-imguiTargets-*.cmake
+usr/share/dart/cmake/dart_external-imguiComponent.cmake
+

@@ -51,8 +51,8 @@ endif()
 
 # If you change the version, please update the <version> tag in package.xml.
 set(DART_MAJOR_VERSION "6")
-set(DART_MINOR_VERSION "1")
-set(DART_PATCH_VERSION "1")
+set(DART_MINOR_VERSION "2")
+set(DART_PATCH_VERSION "0")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "eigen, ccd, fcl, assimp, boost")
@@ -69,7 +69,15 @@ if(MSVC)
 else()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
-option(DART_ENABLE_SIMD "Build DART with SIMD enabled" ON)
+# Warning: DART_ENABLE_SIMD should be ON only when you build DART and the DART
+# dependent projects on the same machine. If this option is on, then compile
+# option `-march=native` is added to the target `dart` that enables all
+# instruction subsets supported by the local machine. If the architecture of
+# local machines are different then the projects will be built with different
+# compile options, which may cause runtime errors especially memory alignment
+# errors.
+option(DART_ENABLE_SIMD
+  "Build DART with all SIMD instructions on the current local machine" OFF)
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 option(DART_COVERALLS "Turn on coveralls support" OFF)
 option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
@@ -160,14 +168,6 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${DART_RUNTIME_LIBRARY} /Zi /GL /Gy /W1 /EHsc")
   endif(NOT DART_MSVC_DEFAULT_OPTIONS)
-  if(DART_ENABLE_SIMD)
-    add_definitions(/arch:SSE2 /arch:AVX /arch:AVX2)
-    # /arch:SSE2 option is effective only for x86 but not for x64 since it's
-    # enabled for x64 by default. The option will be ignored on x64 with a
-    # warning message. If anyone knows how to detect the system's architecture
-    # in CMake time, then I would gratefully apply these options differently
-    # depending on the architectures.
-  endif()
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 
@@ -187,9 +187,6 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-  if(DART_ENABLE_SIMD)
-    add_definitions(-march=native)
-  endif()
 
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 
@@ -214,9 +211,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-  if(DART_ENABLE_SIMD)
-    add_definitions(-march=native)
-  endif()
 
 else()
 
@@ -263,10 +257,6 @@ function(dart_add_tutorial)
   dart_property_add(DART_TUTORIALS ${ARGN})
 endfunction(dart_add_tutorial)
 
-function(dart_add_unittest)
-  dart_property_add(DART_UNITTESTS ${ARGN})
-endfunction(dart_add_unittest)
-
 #===============================================================================
 # Add sub-directories
 #===============================================================================
@@ -278,20 +268,6 @@ if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
   # Add a "tests" target to build unit tests.
   enable_testing()
   add_subdirectory(unittests EXCLUDE_FROM_ALL)
-
-  get_property(unittests GLOBAL PROPERTY DART_UNITTESTS)
-  add_custom_target(tests DEPENDS ${unittests})
-
-  if(DART_VERBOSE)
-    message(STATUS "")
-    message(STATUS "[ Unit Tests ]")
-    foreach(unittest ${unittests})
-      message(STATUS "Adding test: ${unittest}")
-    endforeach(unittest ${unittests})
-  else(DART_VERBOSE)
-    list(LENGTH unittests unittests_length)
-    message(STATUS "Adding ${unittests_length} unittests")
-  endif(DART_VERBOSE)
 
   if (OPENGL_FOUND AND HAVE_GLUT)
 
@@ -430,33 +406,46 @@ endif()
 #===============================================================================
 if(DOXYGEN_FOUND)
 
-  set(DOXYGEN_DOXYFILE_IN  ${PROJECT_SOURCE_DIR}/doxygen/Doxyfile.in    )
-  set(DOXYGEN_DOXYFILE     ${PROJECT_BINARY_DIR}/doxygen/Doxyfile       )
-  set(DOXYGEN_HTML_INDEX   ${PROJECT_SOURCE_DIR}/doxygen/html/index.html)
-  set(DOXYGEN_OUTPUT_ROOT  ${PROJECT_SOURCE_DIR}/doxygen/html           ) # Pasted into Doxyfile.in
-  set(DOXYGEN_GENERATE_TAGFILE ${DOXYGEN_OUTPUT_ROOT}/${PROJECT_NAME}.tag)
-  set(DOXYGEN_INCLUDE_PATH ${PROJECT_SOURCE_DIR})
-  set(DOXYGEN_INPUT_ROOT   ${PROJECT_SOURCE_DIR}/dart                   ) # Pasted into Doxyfile.in
-  set(DOXYGEN_EXTRA_INPUTS ${PROJECT_SOURCE_DIR}/doxygen/mainpage.dox   ) # Pasted into Doxyfile.in
+  set(DOXYGEN_DOXYFILE_IN      "${PROJECT_SOURCE_DIR}/doxygen/Doxyfile.in"    )
+  set(DOXYGEN_DOXYFILE         "${PROJECT_BINARY_DIR}/doxygen/Doxyfile"       )
+  set(DOXYGEN_HTML_INDEX       "${PROJECT_SOURCE_DIR}/doxygen/html/index.html")
+  set(DOXYGEN_OUTPUT_ROOT      "${PROJECT_SOURCE_DIR}/doxygen/html"           )
+  set(DOXYGEN_GENERATE_TAGFILE "${DOXYGEN_OUTPUT_ROOT}/${PROJECT_NAME}.tag"   )
+  set(DOXYGEN_INCLUDE_PATH     "${PROJECT_SOURCE_DIR}"                        )
+  set(DOXYGEN_INPUT_ROOT       "${PROJECT_SOURCE_DIR}/dart"                   )
+  set(DOXYGEN_EXTRA_INPUTS     "${PROJECT_SOURCE_DIR}/doxygen/mainpage.dox"   )
+  set(DOXYGEN_EXCLUDE          "${PROJECT_SOURCE_DIR}/dart/external"          )
 
+  # Generate a Doxyfile. This uses the variables:
+  #
+  # - DOXYGEN_OUTPUT_ROOT
+  # - DOXYGEN_GENERATE_TAGFILE
+  # - DOXYGEN_EXTRA_INPUTS
+  # - DOXYGEN_INPUT_ROOT
+  # - DOXYGEN_EXCLUDE
   configure_file(${DOXYGEN_DOXYFILE_IN} ${DOXYGEN_DOXYFILE} @ONLY)
-  file(COPY "${PROJECT_SOURCE_DIR}/doxygen/DART logo.png" DESTINATION ${DOXYGEN_OUTPUT_ROOT})
-  add_custom_command(OUTPUT ${DOXYGEN_HTML_INDEX}
-                     COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
-                     COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
-                     COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
-                     COMMAND ${CMAKE_COMMAND} -E echo "Done."
-                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
-                     DEPENDS ${DOXYGEN_DOXYFILE}
+  file(
+    COPY "${PROJECT_SOURCE_DIR}/doxygen/DART logo.png"
+    DESTINATION ${DOXYGEN_OUTPUT_ROOT}
+  )
+  add_custom_command(
+    OUTPUT ${DOXYGEN_HTML_INDEX}
+    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
+    COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
+    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
+    COMMAND ${CMAKE_COMMAND} -E echo "Done."
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
+    DEPENDS ${DOXYGEN_DOXYFILE}
   )
   # add_custom_target(docs ALL DEPENDS ${DOXYGEN_HTML_INDEX})
   add_custom_target(docs DEPENDS ${DOXYGEN_HTML_INDEX})
-  add_custom_target(docs_forced
-                    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
-                    COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
-                    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
-                    COMMAND ${CMAKE_COMMAND} -E echo "Done."
-                    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
+  add_custom_target(
+    docs_forced
+    COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
+    COMMAND ${DOXYGEN_EXECUTABLE} -u ${DOXYGEN_DOXYFILE}
+    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_DOXYFILE}
+    COMMAND ${CMAKE_COMMAND} -E echo "Done."
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
   )
 
 endif()

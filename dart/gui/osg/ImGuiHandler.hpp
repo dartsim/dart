@@ -47,8 +47,6 @@
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIEventHandler>
 
-#include "dart/gui/imgui.h"
-
 namespace dart {
 namespace gui {
 namespace osg {

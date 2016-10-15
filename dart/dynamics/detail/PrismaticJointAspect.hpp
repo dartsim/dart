@@ -62,7 +62,7 @@ struct PrismaticJointProperties :
     PrismaticJointUniqueProperties
 {
   PrismaticJointProperties(
-      const GenericJoint<math::R1Space>::Properties& GenericJointProperties =
+      const GenericJoint<math::R1Space>::Properties& genericJointProperties =
           GenericJoint<math::R1Space>::Properties(),
       const PrismaticJointUniqueProperties& prismaticProperties =
           PrismaticJointUniqueProperties());

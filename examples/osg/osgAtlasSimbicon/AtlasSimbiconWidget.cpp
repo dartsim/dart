@@ -37,7 +37,8 @@
 
 #include "AtlasSimbiconWidget.hpp"
 
-#include "dart/gui/imgui.h"
+#include "dart/external/imgui/imgui.h"
+
 #include "AtlasSimbiconWorldNode.hpp"
 
 //==============================================================================

@@ -1,3 +1,12 @@
+dart6 (6.1.1) unstable; urgency=medium
+
+  * Modified to build DART without SIMD options by default
+  * Modified to build external libraries as separately build targets
+  * Modified to export CMake target files separately per target
+  * Updated lodepng up to version 20160501
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Fri, 14 Oct 2016 23:59:00 -0500
+
 dart6 (6.1.0) unstable; urgency=medium
 
   * Added 'computeLagrangian()' to 'MetaSkeleton' and 'BodyNode'
@@ -104,6 +113,14 @@ dart6 (6.0.0) unstable; urgency=medium
   * Removed version check for Bullet
 
  -- Jeongseok Lee <jslee02@gmail.com>  Tue, 10 May 2016 12:00:00 -0500
+
+dart5 (5.1.3) unstable; urgency=medium
+
+  * Updated to support Bullet built with double precision (backport of #660)
+  * Modified to use btGImpactMeshShape instead of btConvexTriangleMeshShape for mesh
+  * Updated to support FCL 0.5 and tinyxml 4.0 (backport of #749)
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Mon, 25 Apr 2016 00:00:00 -0500
 
 dart5 (5.1.2) unstable; urgency=medium
 

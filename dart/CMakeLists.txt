@@ -1,3 +1,5 @@
+add_subdirectory(external)
+
 # Enable multi-threaded compilation.
 # We do this here and not in the root folder since the examples and the
 # tutorials do not have enough source files to benefit from this.
@@ -136,13 +138,41 @@ target_include_directories(
 )
 target_link_libraries(
   dart
-  ${CCD_LIBRARIES}
-  ${FCL_LIBRARIES}
-  ${ASSIMP_LIBRARIES}
-  ${Boost_LIBRARIES})
+  PUBLIC
+    ${CCD_LIBRARIES}
+    ${FCL_LIBRARIES}
+    ${ASSIMP_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PROJECT_NAME}-external-odelcpsolver
+)
+
+# Build DART with all available SIMD instructions
+if(DART_ENABLE_SIMD)
+  if(MSVC)
+    target_compile_options(dart PUBLIC /arch:SSE2 /arch:AVX /arch:AVX2)
+    # /arch:SSE2 option is effective only for x86 but not for x64 since it's
+    # enabled for x64 by default. The option will be ignored on x64 with a
+    # warning message. If anyone knows how to detect the system's architecture
+    # in CMake time, then I would gratefully apply these options differently
+    # depending on the architectures.
+  elseif(CMAKE_COMPILER_IS_GNUCXX)
+    target_compile_options(dart PUBLIC -march=native)
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    target_compile_options(dart PUBLIC -march=native)
+  endif()
+endif()
 
 # Default component
-add_component_targets(${PROJECT_NAME} dart dart)
+add_component_targets(
+  ${PROJECT_NAME}
+  dart # component name
+  dart # target name
+)
+add_component_dependencies(
+  ${PROJECT_NAME}
+  dart
+  external-odelcpsolver
+)
 
 # Coverage test
 dart_coveralls_add(${dart_core_headers} ${dart_core_sources})
