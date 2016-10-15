@@ -1,6 +1,6 @@
 ## DART 6
 
-### DART 6.1.1 (201X-XX-XX)
+### DART 6.1.1 (201X-10-14)
 
 * Build
 
