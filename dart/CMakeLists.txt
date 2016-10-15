@@ -21,7 +21,7 @@ add_subdirectory(renderer)
 add_subdirectory(simulation)
 if(NOT BUILD_CORE_ONLY)
   add_subdirectory(gui)
-  add_subdirectory(planning)
+#  add_subdirectory(planning)
   add_subdirectory(utils)
 endif()
 
