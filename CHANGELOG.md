@@ -2,13 +2,17 @@
 
 ### DART 6.2.0 (201X-XX-XX)
 
-### DART 6.1.1 (201X-XX-XX)
+### DART 6.1.1 (201X-10-14)
 
 * Build
 
   * Modified to build DART without SIMD options by default: [#790](https://github.com/dartsim/dart/pull/790)
   * Modified to build external libraries as separately build targets: [#787](https://github.com/dartsim/dart/pull/787)
   * Modified to export CMake target files separately per target: [#786](https://github.com/dartsim/dart/pull/786)
+
+* Misc
+
+  * Updated lodepng up to version 20160501 : [#791](https://github.com/dartsim/dart/pull/791)
 
 ### DART 6.1.0 (2016-10-07)
 
@@ -168,6 +172,11 @@
   * Removed version check for Bullet: [#636](https://github.com/dartsim/dart/pull/636), [#625](https://github.com/dartsim/dart/issues/625)
 
 ## DART 5
+
+### Version 5.1.4 (2016-10-14)
+
+1. Fixed inconsistent frame rate of GlutWindow
+    * [Pull request #794](https://github.com/dartsim/dart/pull/794)
 
 ### Version 5.1.3 (2016-10-07)
 

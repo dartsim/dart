@@ -12,9 +12,9 @@ usr/include/dart/math/*
 usr/include/dart/optimizer/*.*
 usr/include/dart/simulation/*
 usr/lib/libdart.so
-usr/share/dart/dartConfig.cmake
-usr/share/dart/dartConfigVersion.cmake
-usr/share/dart/dart_dartTargets.cmake
-usr/share/dart/dart_dartTargets-*.cmake
-usr/share/dart/dart_dartComponent.cmake
+usr/share/dart/cmake/DARTConfig.cmake
+usr/share/dart/cmake/DARTConfigVersion.cmake
+usr/share/dart/cmake/dart_dartTargets.cmake
+usr/share/dart/cmake/dart_dartTargets-*.cmake
+usr/share/dart/cmake/dart_dartComponent.cmake
 
