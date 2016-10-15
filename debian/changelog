@@ -1,3 +1,12 @@
+dart6 (6.1.1) unstable; urgency=medium
+
+  * Modified to build DART without SIMD options by default
+  * Modified to build external libraries as separately build targets
+  * Modified to export CMake target files separately per target
+  * Updated lodepng up to version 20160501
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Fri, 14 Oct 2016 23:59:00 -0500
+
 dart6 (6.1.0) unstable; urgency=medium
 
   * Added 'computeLagrangian()' to 'MetaSkeleton' and 'BodyNode'
