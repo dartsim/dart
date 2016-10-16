@@ -121,7 +121,7 @@ SkeletonVariationalIntegrator::integrate()
   cond = MaximumIteration;
   for (auto i = 0u; i < mMaxIteration; ++i)
   {
-    const Eigen::VectorXd error = evaluateFdel(qNext);
+    const Eigen::VectorXd error = evaluateDel(qNext);
     auto squaredNorm = error.squaredNorm();
 
     if (squaredNorm <= squaredTolerance)
@@ -238,7 +238,7 @@ void SkeletonVariationalIntegrator::setNextPositions(
 }
 
 //==============================================================================
-Eigen::VectorXd SkeletonVariationalIntegrator::evaluateFdel(
+Eigen::VectorXd SkeletonVariationalIntegrator::evaluateDel(
     const Eigen::VectorXd& nextPositions)
 {
   // Implementation of Algorithm 2 of "A linear-time variational integrator for
@@ -249,8 +249,6 @@ Eigen::VectorXd SkeletonVariationalIntegrator::evaluateFdel(
   const Eigen::Vector3d& gravity = skel->getGravity();
 
   setNextPositions(nextPositions);
-
-  // TODO(JS): Not implemented
 
   // Forward recursion: line 1 to 5 of Algorithm 2
   for (auto* bodyNode : skel->getBodyNodes())
@@ -269,10 +267,55 @@ Eigen::VectorXd SkeletonVariationalIntegrator::evaluateFdel(
     auto* bodyNode = *it;
     auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
 
-    bodyNodeVi->evaluateFdel(gravity, timeStep);
+    bodyNodeVi->evaluateDel(gravity, timeStep);
   }
 
   return getError();
+}
+
+//==============================================================================
+Eigen::MatrixXd SkeletonVariationalIntegrator::evaluateDelDeriv(
+    const Eigen::VectorXd& /*nextPositions*/)
+{
+  // Implementation of Algorithm 4 of "A linear-time variational integrator for
+  // multibody systems" (WAFR 2016).
+
+  auto* skel = mComposite;
+  const auto numDofs = skel->getNumDofs();
+
+  Eigen::MatrixXd J(numDofs, numDofs);
+
+  const auto timeStep = skel->getTimeStep();
+//  const Eigen::Vector3d& gravity = skel->getGravity();
+
+  //setNextPositions(nextPositions);
+
+  for (auto i = 0u; i < numDofs; ++i)
+  {
+
+    // Forward recursion: line 1 to 5 of Algorithm 4
+    for (auto* bodyNode : skel->getBodyNodes())
+    {
+      auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+      assert(bodyNodeVi);
+
+      bodyNodeVi->updateNextTransformDeriv();
+      bodyNodeVi->updateNextVelocityDeriv(timeStep);
+    }
+
+    //  // Backward recursion: line 6 to 9 of Algorithm 2
+    //  for (auto it = skel->getBodyNodes().rbegin();
+    //       it != skel->getBodyNodes().rend(); ++it)
+    //  {
+    //    auto* bodyNode = *it;
+    //    auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+
+    //    bodyNodeVi->evaluateDel(gravity, timeStep);
+    //  }
+
+  }
+
+  return J;
 }
 
 //==============================================================================
@@ -281,8 +324,7 @@ Eigen::VectorXd SkeletonVariationalIntegrator::getError() const
   auto* skel = mComposite;
   const auto numDofs = skel->getNumDofs();
 
-  Eigen::VectorXd fdel;
-  fdel.resize(numDofs);
+  Eigen::VectorXd fdel(numDofs);
 
   auto index = 0u;
   for (auto* bodyNode : skel->getBodyNodes())

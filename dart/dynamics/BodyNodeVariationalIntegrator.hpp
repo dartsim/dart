@@ -117,7 +117,14 @@ protected:
   void updateNextTransform();
   void updateNextVelocity(double timeStep);
 
-  void evaluateFdel(const Eigen::Vector3d& gravity, double timeStep);
+  void evaluateDel(const Eigen::Vector3d& gravity, double timeStep);
+
+  /// \{ \name Derivative
+
+  void updateNextTransformDeriv();
+  void updateNextVelocityDeriv(double timeStep);
+
+  /// \}
 
 };
 

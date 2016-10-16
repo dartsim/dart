@@ -31,7 +31,7 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 #include "TestHelpers.hpp"
 
 using namespace dart;
@@ -39,14 +39,33 @@ using namespace dart;
 void setRandomState(const dynamics::SkeletonPtr& skel);
 
 dynamics::SkeletonPtr createRandomSkeleton();
+dynamics::SkeletonPtr createRandomSkeletonWithBallJoints();
 
 //==============================================================================
-TEST(VariationalIntegrator, Basic)
+TEST(VariationalIntegrator, SkeletonVariationalIntegrator)
 {
   auto skel = createRandomSkeleton();
   auto vi = skel->createAspect<dynamics::SkeletonVariationalIntegrator>();
 
-  for (auto i = 0u; i < 1e+3; ++i)
+  const auto numDofs = skel->getNumDofs();
+  Eigen::VectorXd randomPos = Eigen::VectorXd::Random(numDofs);
+
+  vi->evaluateDelDeriv(randomPos);
+}
+
+//==============================================================================
+TEST(VariationalIntegrator, Basic)
+{
+#ifdef NDEBUG
+  auto numSteps = 1e+3;
+#else
+  auto numSteps = 1e+2;
+#endif
+
+  auto skel = createRandomSkeleton();
+  auto vi = skel->createAspect<dynamics::SkeletonVariationalIntegrator>();
+
+  for (auto i = 0u; i < numSteps; ++i)
     vi->integrate();
 }
 
@@ -87,6 +106,17 @@ void setRandomState(const dynamics::SkeletonPtr& skel)
 
 //==============================================================================
 SkeletonPtr createRandomSkeleton()
+{
+  const auto numLinks = 25u;
+  const auto l = 1.5;
+  auto skel = createNLinkRobot(numLinks, Eigen::Vector3d(0.3, 0.3, l), DOF_ROLL);
+  setRandomState(skel);
+
+  return skel;
+}
+
+//==============================================================================
+SkeletonPtr createRandomSkeletonWithBallJoints()
 {
   const auto numLinks = 25u;
   const auto l = 1.5;

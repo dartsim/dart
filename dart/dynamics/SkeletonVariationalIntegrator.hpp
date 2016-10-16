@@ -107,9 +107,11 @@ protected:
 
   void setNextPositions(const Eigen::VectorXd& nextPositions);
 
-  /// Evaluate forced discrete Euler-Lagrange equation given next
+  /// Evaluate forced discrete Euler-Lagrange (DEL) equation given next
   /// configurations.
-  Eigen::VectorXd evaluateFdel(const Eigen::VectorXd& nextPositions);
+  Eigen::VectorXd evaluateDel(const Eigen::VectorXd& nextPositions);
+
+public: Eigen::MatrixXd evaluateDelDeriv(const Eigen::VectorXd& nextPositions);
 
   Eigen::VectorXd getError() const;
 

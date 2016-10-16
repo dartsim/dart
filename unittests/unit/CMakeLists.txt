@@ -48,3 +48,5 @@ if(TARGET dart-planning)
   dart_add_test("unit" test_NearestNeighbor)
   target_link_libraries(test_NearestNeighbor dart-planning)
 endif()
+
+add_subdirectory(dynamics)

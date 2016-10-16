@@ -61,7 +61,7 @@ protected:
   virtual Eigen::VectorXd getPrevPositions() const = 0;
   virtual void setNextPositions(const Eigen::VectorXd& nextPositions) = 0;
   virtual void updateNextRelativeTransform() = 0;
-  virtual void evaluateFdel(const Eigen::Vector6d& force, double timeStep) = 0;
+  virtual void evaluateDel(const Eigen::Vector6d& force, double timeStep) = 0;
   virtual Eigen::VectorXd getError() const = 0;
 
   /// Transform for the next configuration
@@ -136,7 +136,7 @@ protected:
     mNextPositions = nextPositions;
   }
 
-  void evaluateFdel(const Eigen::Vector6d& force, double timeStep) override
+  void evaluateDel(const Eigen::Vector6d& force, double timeStep) override
   {
     auto* genJoint = getGenericJoint();
 
