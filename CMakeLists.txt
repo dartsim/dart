@@ -257,6 +257,10 @@ function(dart_add_tutorial)
   dart_property_add(DART_TUTORIALS ${ARGN})
 endfunction(dart_add_tutorial)
 
+function(dart_format_add)
+  dart_property_add(DART_FORMAT_FILES ${ARGN})
+endfunction()
+
 #===============================================================================
 # Add sub-directories
 #===============================================================================
@@ -410,6 +414,10 @@ find_program(
   CLANG_FORMAT_EXECUTABLE
   NAMES clang-format clang-format-3.9 clang-format-3.8
 )
+
+get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
+list(LENGTH formatting_files formatting_files_length)
+message(STATUS "Formatting on ${formatting_files_length} source files.")
 
 if (CLANG_FORMAT_EXECUTABLE)
 
