@@ -143,21 +143,24 @@ void OpenGLRenderInterface::scale(const Eigen::Vector3d& _scale) {
     glScaled(_scale[0], _scale[1], _scale[2]);
 }
 
+void OpenGLRenderInterface::drawSphere(double radius)
+{
+  GLint slices = 16;
+  GLint stacks = 16;
+
+  // Code taken from glut/lib/glut_shapes.c
+  QUAD_OBJ_INIT;
+  gluQuadricDrawStyle(quadObj, GLU_FILL);
+  gluQuadricNormals(quadObj, GLU_SMOOTH);
+  //gluQuadricTexture(quadObj, GL_TRUE);
+
+  gluSphere(quadObj, radius, slices, stacks);
+}
+
 void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _size) {
     glScaled(_size(0), _size(1), _size(2));
 
-    GLdouble radius = 0.5;
-    GLint slices = 16;
-    GLint stacks = 16;
-
-    // Code taken from glut/lib/glut_shapes.c
-    QUAD_OBJ_INIT;
-    gluQuadricDrawStyle(quadObj, GLU_FILL);
-    gluQuadricNormals(quadObj, GLU_SMOOTH);
-    //gluQuadricTexture(quadObj, GL_TRUE);
-
-    gluSphere(quadObj, radius, slices, stacks);
-    //glut/lib/glut_shapes.c
+    drawSphere(0.5);
 }
 
 void OpenGLRenderInterface::drawCube(const Eigen::Vector3d& _size) {
@@ -227,6 +230,124 @@ void OpenGLRenderInterface::drawCylinder(double _radius, double _height) {
     gluDisk(quadObj, 0, radius, slices, stacks);
     glTranslated(0.0,0.0,1.0);
     gluDisk(quadObj, 0, radius, slices, stacks);
+}
+
+//==============================================================================
+static void drawOpenDome(double radius, int slices, int stacks)
+{
+  // (2pi/Stacks)
+  const auto pi = dart::math::constants<double>::pi();
+  const auto drho = pi / stacks / 2.0;
+  const auto dtheta = 2.0 * pi / slices;
+
+  const auto rho = drho;
+  const auto srho = std::sin(rho);
+  const auto crho = std::cos(rho);
+
+  // Many sources of OpenGL sphere drawing code uses a triangle fan
+  // for the caps of the sphere. This however introduces texturing
+  // artifacts at the poles on some OpenGL implementations
+  glBegin(GL_TRIANGLE_FAN);
+  glNormal3d(0.0, 0.0, radius);
+  glVertex3d(0.0, 0.0, radius);
+  for (int j = 0; j <= slices; ++j)
+  {
+    const auto theta = (j == slices) ? 0.0 : j * dtheta;
+    const auto stheta = -std::sin(theta);
+    const auto ctheta = std::cos(theta);
+
+    const auto x = srho * stheta;
+    const auto y = srho * ctheta;
+    const auto z = crho;
+
+    glNormal3d(x, y, z);
+    glVertex3d(x * radius, y * radius, z * radius);
+  }
+  glEnd();
+
+  for (int i = 1; i < stacks; ++i)
+  {
+    const auto rho = i * drho;
+    const auto srho = std::sin(rho);
+    const auto crho = std::cos(rho);
+    const auto srhodrho = std::sin(rho + drho);
+    const auto crhodrho = std::cos(rho + drho);
+
+    // Many sources of OpenGL sphere drawing code uses a triangle fan
+    // for the caps of the sphere. This however introduces texturing
+    // artifacts at the poles on some OpenGL implementations
+    glBegin(GL_TRIANGLE_STRIP);
+
+    for (int j = 0; j <= slices; ++j)
+    {
+      const auto theta = (j == slices) ? 0.0 : j * dtheta;
+      const auto stheta = -std::sin(theta);
+      const auto ctheta = std::cos(theta);
+
+      auto x = srho * stheta;
+      auto y = srho * ctheta;
+      auto z = crho;
+
+      glNormal3d(x, y, z);
+      glVertex3d(x * radius, y * radius, z * radius);
+
+      x = srhodrho * stheta;
+      y = srhodrho * ctheta;
+      z = crhodrho;
+
+      glNormal3d(x, y, z);
+      glVertex3d(x * radius, y * radius, z * radius);
+    }
+    glEnd();
+  }
+}
+
+//==============================================================================
+void OpenGLRenderInterface::drawCapsule(double radius, double height)
+{
+  GLint slices = 16;
+  GLint stacks = 16;
+
+  // Graphics assumes Cylinder is centered at CoM
+  // gluCylinder places base at z = 0 and top at z = height
+  glTranslated(0.0, 0.0, -0.5*height);
+
+  // Code taken from glut/lib/glut_shapes.c
+  QUAD_OBJ_INIT;
+  gluQuadricDrawStyle(quadObj, GLU_FILL);
+  gluQuadricNormals(quadObj, GLU_SMOOTH);
+
+  gluCylinder(quadObj, radius, radius, height, slices, stacks); //glut/lib/glut_shapes.c
+  gluDisk(quadObj, 0, radius, slices, stacks);
+  glTranslated(0.0, 0.0, height);
+  gluDisk(quadObj, 0, radius, slices, stacks);
+
+  // Upper hemisphere
+  drawOpenDome(radius, slices, stacks);
+
+  // Lower hemisphere
+  glTranslated(0.0, 0.0, -height);
+  glRotated(180.0, 0.0, 1.0, 0.0);
+  drawOpenDome(radius, slices, stacks);
+}
+
+//==============================================================================
+void OpenGLRenderInterface::drawCone(double radius, double height)
+{
+  GLint slices = 16;
+  GLint stacks = 16;
+
+  // Graphics assumes Cylinder is centered at CoM
+  // gluCylinder places base at z = 0 and top at z = height
+  glTranslated(0.0, 0.0, -0.5*height);
+
+  // Code taken from glut/lib/glut_shapes.c
+  QUAD_OBJ_INIT;
+  gluQuadricDrawStyle(quadObj, GLU_FILL);
+  gluQuadricNormals(quadObj, GLU_SMOOTH);
+
+  gluCylinder(quadObj, radius, 0.0, height, slices, stacks); //glut/lib/glut_shapes.c
+  gluDisk(quadObj, 0, radius, slices, stacks);
 }
 
 void OpenGLRenderInterface::color4_to_float4(const aiColor4D *c, float f[4])
@@ -463,41 +584,24 @@ void OpenGLRenderInterface::compileList(dynamics::BodyNode* node)
 }
 
 //==============================================================================
-//FIXME: Use polymorphism instead of switch statements
-void OpenGLRenderInterface::compileList(dynamics::Shape* _shape) {
-    if(_shape == 0)
-        return;
+void OpenGLRenderInterface::compileList(dynamics::Shape* shape)
+{
+  if (!shape)
+    return;
 
-    switch(_shape->getShapeType()) {
-        case dynamics::Shape::BOX:
-            break;
-        case dynamics::Shape::CYLINDER:
-            break;
-        case dynamics::Shape::ELLIPSOID:
-            break;
-        case dynamics::Shape::PLANE:
-            dterr << "PLANE is not supported yet." << std::endl;
-            break;
-        case dynamics::Shape::SOFT_MESH:
-            // Do nothing
-            break;
-        case dynamics::Shape::MESH:
-        {
-            //FIXME: Separate these calls once BodyNode is refactored to contain
-            // both a col Shape and vis Shape.
-            dynamics::MeshShape* shapeMesh = dynamic_cast<dynamics::MeshShape*>(_shape);
+  if (shape->getType() == dynamics::MeshShape::getStaticType())
+  {
+    assert(dynamic_cast<dynamics::MeshShape*>(shape));
 
-            if(shapeMesh == 0)
-                return;
-
-            shapeMesh->setDisplayList(compileList(shapeMesh->getScale(), shapeMesh->getMesh()));
-
-            break;
-        }
-        case dynamics::Shape::LINE_SEGMENT:
-            // Do nothing
-            break;
-    }
+    auto* mesh = static_cast<dynamics::MeshShape*>(shape);
+    mesh->setDisplayList(compileList(mesh->getScale(), mesh->getMesh()));
+  }
+  else
+  {
+    dtwarn << "[OpenGLRenderInterface::compileList] Attempting to compile "
+           << "OpenGL list for an unsupported shape type ["
+           << shape->getType() << "].\n";
+  }
 }
 
 GLuint OpenGLRenderInterface::compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh) {

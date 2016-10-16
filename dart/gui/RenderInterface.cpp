@@ -101,6 +101,10 @@ void RenderInterface::scale(const Eigen::Vector3d& /*_scale*/)
 {
 }
 
+void RenderInterface::drawSphere(double /*_radius*/)
+{
+}
+
 void RenderInterface::drawEllipsoid(const Eigen::Vector3d& /*_size*/)
 {
 }
@@ -133,6 +137,14 @@ void RenderInterface::drawCube(const Eigen::Vector3d& /*_size*/)
 }
 
 void RenderInterface::drawCylinder(double /*_radius*/, double /*_height*/)
+{
+}
+
+void RenderInterface::drawCapsule(double /*_radius*/, double /*_height*/)
+{
+}
+
+void RenderInterface::drawCone(double /*_radius*/, double /*_height*/)
 {
 }
 

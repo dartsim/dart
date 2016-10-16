@@ -46,6 +46,7 @@
 
 #include "dart/common/Uri.hpp"
 #include "dart/common/ResourceRetriever.hpp"
+#include "dart/utils/urdf/URDFTypes.hpp"
 
 namespace dart {
 namespace utils {
@@ -62,7 +63,7 @@ public:
   /// Copy over a standard urdfEntity
   Entity(const urdf::Entity& urdfEntity);
 
-  boost::shared_ptr<urdf::ModelInterface> model;
+  urdf_shared_ptr<urdf::ModelInterface> model;
   urdf::Pose origin;
   urdf::Twist twist;
 

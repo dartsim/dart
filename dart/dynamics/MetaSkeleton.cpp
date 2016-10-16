@@ -938,6 +938,24 @@ Eigen::VectorXd MetaSkeleton::getJointConstraintImpulses() const
 }
 
 //==============================================================================
+double MetaSkeleton::computeLagrangian() const
+{
+  return computeKineticEnergy() - computePotentialEnergy();
+}
+
+//==============================================================================
+double MetaSkeleton::getKineticEnergy() const
+{
+  return computeKineticEnergy();
+}
+
+//==============================================================================
+double MetaSkeleton::getPotentialEnergy() const
+{
+  return computePotentialEnergy();
+}
+
+//==============================================================================
 MetaSkeleton::MetaSkeleton()
   : onNameChanged(mNameChangedSignal)
 {

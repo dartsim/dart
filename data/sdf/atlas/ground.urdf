@@ -13,7 +13,7 @@
                 <box size="25 0.05 25" />
             </geometry>
         </visual>
-        <collision group="default">
+        <collision>
             <origin xyz="0 -0.95 0" rpy="0 -0 0" />
             <geometry>
                 <box size="25 0.05 25" />

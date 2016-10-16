@@ -69,41 +69,53 @@ Eigen::Matrix3d quatSecondDeriv(const Eigen::Quaterniond& _q,
                                 int _el1, int _el2);
 
 //------------------------------------------------------------------------------
-/// \brief Get a transformation matrix given by the Euler XYX angle.
+/// \brief Given Euler XYX angles, return a 3x3 rotation matrix, which is
+/// equivalent to RotX(angle(0)) * RotY(angle(1)) * RotX(angle(2)).
 Eigen::Matrix3d eulerXYXToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Get a transformation matrix given by the Euler XYZ angle.
+/// \brief Given EulerXYZ angles, return a 3x3 rotation matrix, which is
+/// equivalent to RotX(angle(0)) * RotY(angle(1)) * RotZ(angle(2)).
 Eigen::Matrix3d eulerXYZToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Get a transformation matrix given by the Euler XZX angle.
+/// \brief Given EulerXZX angles, return a 3x3 rotation matrix, which is
+/// equivalent to RotX(angle(0)) * RotZ(angle(1)) * RotX(angle(2)).
 Eigen::Matrix3d eulerXZXToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Get a transformation matrix given by the Euler XZY angle.
+/// \brief Given EulerXZY angles, return a 3x3 rotation matrix, which is
+/// equivalent to RotX(angle(0)) * RotZ(angle(1)) * RotY(angle(2)).
 Eigen::Matrix3d eulerXZYToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Get a transformation matrix given by the Euler YXY angle.
+/// \brief Given EulerYXY angles, return a 3x3 rotation matrix, which is
+/// equivalent to RotY(angle(0)) * RotX(angle(1)) * RotY(angle(2)).
 Eigen::Matrix3d eulerYXYToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Get a transformation matrix given by the Euler YXZ angle.
+/// \brief Given EulerYXZ angles, return a 3x3 rotation matrix, which is
+/// equivalent to RotY(angle(0)) * RotX(angle(1)) * RotZ(angle(2)).
 Eigen::Matrix3d eulerYXZToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Get a transformation matrix given by the Euler YZX angle.
+/// \brief Given EulerYZX angles, return a 3x3 rotation matrix, which is
+/// equivalent to RotY(angle(0)) * RotZ(angle(1)) * RotX(angle(2)).
 Eigen::Matrix3d eulerYZXToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Get a transformation matrix given by the Euler YZY angle.
+/// \brief Given EulerYZY angles, return a 3x3 rotation matrix, which is
+/// equivalent to RotY(angle(0)) * RotZ(angle(1)) * RotY(angle(2)).
 Eigen::Matrix3d eulerYZYToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Get a transformation matrix given by the Euler ZXY angle.
+/// \brief Given EulerZXY angles, return a 3x3 rotation matrix, which is
+/// equivalent to RotZ(angle(0)) * RotX(angle(1)) * RotY(angle(2)).
 Eigen::Matrix3d eulerZXYToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief get a transformation matrix given by the Euler ZYX angle,
+/// \brief Given EulerZYX angles, return a 3x3 rotation matrix, which is
+/// equivalent to RotZ(angle(0)) * RotY(angle(1)) * RotX(angle(2)).
 /// singularity : angle[1] = -+ 0.5*PI
 Eigen::Matrix3d eulerZYXToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Get a transformation matrix given by the Euler ZXZ angle.
+/// \brief Given EulerZXZ angles, return a 3x3 rotation matrix, which is
+/// equivalent to RotZ(angle(0)) * RotX(angle(1)) * RotZ(angle(2)).
 Eigen::Matrix3d eulerZXZToMatrix(const Eigen::Vector3d& _angle);
 
-/// \brief Get a transformation matrix given by the Euler ZYZ angle,
+/// \brief Given EulerZYZ angles, return a 3x3 rotation matrix, which is
+/// equivalent to RotZ(angle(0)) * RotY(angle(1)) * RotZ(angle(2)).
 /// singularity : angle[1] = 0, PI
 Eigen::Matrix3d eulerZYZToMatrix(const Eigen::Vector3d& _angle);
 
@@ -432,7 +444,7 @@ Eigen::Isometry3d computeTransform(const Eigen::Vector3d& axis,
                                    AxisType axisType = AxisType::AXIS_X);
 
 /// Generate frame given origin and z-axis
-DEPRECATED(6.0)
+DART_DEPRECATED(6.0)
 Eigen::Isometry3d getFrameOriginAxisZ(const Eigen::Vector3d& _origin,
                                       const Eigen::Vector3d& _axisZ);
 

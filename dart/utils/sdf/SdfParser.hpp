@@ -42,7 +42,7 @@ namespace utils {
 
 namespace SdfParser {
 
-DEPRECATED(6.0)
+DART_DEPRECATED(6.0)
 simulation::WorldPtr readSdfFile(
     const common::Uri& fileUri,
     const common::ResourceRetrieverPtr& retriever = nullptr);

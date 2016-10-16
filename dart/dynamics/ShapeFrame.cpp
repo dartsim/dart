@@ -75,7 +75,7 @@ ShapeFrameProperties::ShapeFrameProperties(const ShapePtr& shape)
 
 //==============================================================================
 VisualAspect::VisualAspect(const PropertiesData& properties)
-  : VisualAspect::BaseClass(properties)
+  : VisualAspect::Base(properties)
 {
   // Do nothing
 }
@@ -174,7 +174,7 @@ bool CollisionAspect::isCollidable() const
 //==============================================================================
 DynamicsAspect::DynamicsAspect(
     const PropertiesData& properties)
-  : BaseClass(properties)
+  : Base(properties)
 {
   // Do nothing
 }

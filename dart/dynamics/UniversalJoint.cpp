@@ -48,8 +48,9 @@ UniversalJoint::~UniversalJoint()
 //==============================================================================
 void UniversalJoint::setProperties(const Properties& _properties)
 {
-  MultiDofJoint<2>::setProperties(
-        static_cast<const MultiDofJoint<2>::Properties&>(_properties));
+  GenericJoint<math::R2Space>::setProperties(
+        static_cast<const GenericJoint<math::R2Space>::Properties&>(
+          _properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -69,7 +70,7 @@ void UniversalJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 UniversalJoint::Properties UniversalJoint::getUniversalJointProperties() const
 {
-  return Properties(getMultiDofJointProperties(), mAspectProperties);
+  return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -164,7 +165,7 @@ UniversalJoint::UniversalJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createUniversalJointAspect(properties);
-  createMultiDofJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 

@@ -33,14 +33,16 @@
 
 #include <iostream>
 
+#include "dart/external/odelcpsolver/lcp.h"
+
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/lcpsolver/lcp.h"
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
@@ -99,8 +101,8 @@ SoftContactConstraint::SoftContactConstraint(
   // Select colling point mass based on trimesh ID
   if (mSoftBodyNode1)
   {
-    if (contact.collisionObject1->getShape()->getShapeType()
-        == dynamics::Shape::SOFT_MESH)
+    if (contact.collisionObject1->getShape()->getType()
+        == dynamics::SoftMeshShape::getStaticType())
     {
       mPointMass1 = selectCollidingPointMass(mSoftBodyNode1, contact.point,
                                              contact.triID1);
@@ -109,8 +111,8 @@ SoftContactConstraint::SoftContactConstraint(
   }
   if (mSoftBodyNode2)
   {
-    if (contact.collisionObject2->getShape()->getShapeType()
-        == dynamics::Shape::SOFT_MESH)
+    if (contact.collisionObject2->getShape()->getType()
+        == dynamics::SoftMeshShape::getStaticType())
     {
       mPointMass2 = selectCollidingPointMass(mSoftBodyNode2, contact.point,
                                              contact.triID2);

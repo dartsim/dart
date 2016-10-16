@@ -49,7 +49,7 @@
 #include "dart/common/Subject.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/collision/Option.hpp"
+#include "dart/collision/CollisionOption.hpp"
 #include "dart/simulation/Recording.hpp"
 
 namespace dart {
@@ -172,7 +172,7 @@ public:
   //--------------------------------------------------------------------------
 
   /// Deprecated. Please use checkCollision(~) instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   bool checkCollision(bool checkAllCollisions);
 
   /// Perform collision checking with 'option' over all the feasible collision

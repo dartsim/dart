@@ -340,12 +340,12 @@ inline Eigen::Vector3d Red()
   return Eigen::Vector3d(0.9, 0.1, 0.1);
 }
 
-inline Eigen::Vector3d Fuschia()
+inline Eigen::Vector3d Fuchsia()
 {
   return Eigen::Vector3d(1.0, 0.0, 0.5);
 }
 
-inline Eigen::Vector4d Fuschia(double alpha)
+inline Eigen::Vector4d Fuchsia(double alpha)
 {
   return Eigen::Vector4d(1.0, 0.0, 0.5, alpha);
 }

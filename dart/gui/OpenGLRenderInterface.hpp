@@ -80,9 +80,12 @@ public:
     void compileList(dynamics::Shape* _shape);
     GLuint compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh);
 
+    void drawSphere(double _radius) override;
     void drawEllipsoid(const Eigen::Vector3d& _size) override;
     void drawCube(const Eigen::Vector3d& _size) override;
     void drawCylinder(double _radius, double _height) override;
+    void drawCapsule(double radius, double height) override;
+    void drawCone(double radius, double height) override;
     void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) override;
     void drawSoftMesh(const aiMesh* mesh) override;
     void drawList(GLuint index) override;

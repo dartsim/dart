@@ -2,11 +2,29 @@
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
-include_directories(SYSTEM ${NLOPT_INCLUDE_DIRS})
+# Set local target name
+set(target_name ${PROJECT_NAME}-optimizer-ipopt)
+set(component_name optimizer-ipopt)
 
-# Library
-dart_add_library(dart-optimizer-ipopt ${srcs} ${hdrs})
-target_link_libraries(dart-optimizer-ipopt dart ${IPOPT_LIBRARIES})
+# Add target
+dart_add_library(${target_name} ${hdrs} ${srcs})
+target_include_directories(
+  ${target_name} SYSTEM
+  PUBLIC ${IPOPT_INCLUDE_DIRS}
+)
+target_link_libraries(
+  ${target_name}
+  dart
+  ${IPOPT_LIBRARIES}
+)
+
+# Component
+add_component(${PROJECT_NAME} ${component_name})
+add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
+
+# Coverage test
+dart_coveralls_add(${hdrs} ${srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_ipopt headers" ${hdrs})
@@ -27,8 +45,3 @@ install(
   DESTINATION include/dart/optimizer/ipopt
   COMPONENT headers
 )
-install(TARGETS dart-optimizer-ipopt EXPORT DARTTargets DESTINATION lib)
-
-# Coverage test files
-set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"
-    CACHE INTERNAL "files for coverage tests")

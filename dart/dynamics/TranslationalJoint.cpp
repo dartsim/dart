@@ -41,8 +41,8 @@ namespace dynamics {
 
 //==============================================================================
 TranslationalJoint::Properties::Properties(
-    const MultiDofJoint<3>::Properties& _properties)
-  : MultiDofJoint<3>::Properties(_properties)
+    const Base::Properties& _properties)
+  : Base::Properties(_properties)
 {
   // Do nothing
 }
@@ -62,18 +62,19 @@ Eigen::Matrix<double, 6, 3> TranslationalJoint::getRelativeJacobianStatic(
 }
 
 //==============================================================================
-TranslationalJoint::Properties TranslationalJoint::getTranslationalJointProperties() const
+TranslationalJoint::Properties
+TranslationalJoint::getTranslationalJointProperties() const
 {
-  return getMultiDofJointProperties();
+  return getGenericJointProperties();
 }
 
 //==============================================================================
 TranslationalJoint::TranslationalJoint(const Properties& properties)
-  : MultiDofJoint<3>(properties)
+  : Base(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
-  createMultiDofJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 

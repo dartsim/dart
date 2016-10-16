@@ -50,15 +50,17 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MultiSphereShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/SingleDofJoint.hpp"
-#include "dart/dynamics/MultiDofJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
@@ -74,30 +76,6 @@
 #include "dart/utils/XmlHelpers.hpp"
 
 namespace dart {
-
-namespace dynamics {
-class BodyNode;
-class Shape;
-class Skeleton;
-class Joint;
-class WeldJoint;
-class PrismaticJoint;
-class RevoluteJoint;
-class ScrewJoint;
-class UniversalJoint;
-class BallJoint;
-class EulerXYZJoint;
-class EulerJoint;
-class TranslationalJoint;
-class PlanarJoint;
-class FreeJoint;
-class Marker;
-} // namespace dynamics
-
-namespace simulation {
-class World;
-} // namespace simulation
-
 namespace utils {
 
 namespace {
@@ -624,8 +602,8 @@ void readAspects(
       {
         for (auto& shapeNode : bodyNode->getShapeNodes())
         {
-          auto shapeType = shapeNode->getShape()->getShapeType();
-          if (dynamics::Shape::SOFT_MESH == shapeType)
+          const auto& shapeType = shapeNode->getShape()->getType();
+          if (dynamics::SoftMeshShape::getStaticType() == shapeType)
             continue;
 
           auto mass = bodyNode->getMass();
@@ -1173,7 +1151,16 @@ SkelBodyNode readSoftBodyNode(
 
     // geometry
     tinyxml2::XMLElement* geometryEle = getElement(softShapeEle, "geometry");
-    if (hasElement(geometryEle, "box"))
+    if (hasElement(geometryEle, "sphere"))
+    {
+      tinyxml2::XMLElement* sphereEle = getElement(geometryEle, "sphere");
+      const auto radius = getValueDouble(sphereEle, "radius");
+      const auto nSlices = getValueUInt(sphereEle, "num_slices");
+      const auto nStacks = getValueUInt(sphereEle, "num_stacks");
+      newSoftBodyNode = dynamics::SoftBodyNodeHelper::makeSphereProperties(
+            radius, nSlices, nStacks, totalMass);
+    }
+    else if (hasElement(geometryEle, "box"))
     {
       tinyxml2::XMLElement* boxEle = getElement(geometryEle, "box");
       Eigen::Vector3d size  = getValueVector3d(boxEle, "size");
@@ -1185,8 +1172,8 @@ SkelBodyNode readSoftBodyNode(
     {
       tinyxml2::XMLElement* ellipsoidEle = getElement(geometryEle, "ellipsoid");
       Eigen::Vector3d size = getValueVector3d(ellipsoidEle, "size");
-      double nSlices       = getValueDouble(ellipsoidEle, "num_slices");
-      double nStacks       = getValueDouble(ellipsoidEle, "num_stacks");
+      const auto nSlices   = getValueUInt(ellipsoidEle, "num_slices");
+      const auto nStacks   = getValueUInt(ellipsoidEle, "num_stacks");
       newSoftBodyNode = dynamics::SoftBodyNodeHelper::makeEllipsoidProperties(
             size,
             nSlices,
@@ -1259,7 +1246,13 @@ dynamics::ShapePtr readShape(
   assert(hasElement(vizEle, "geometry"));
   tinyxml2::XMLElement* geometryEle = getElement(vizEle, "geometry");
 
-  if (hasElement(geometryEle, "box"))
+  if (hasElement(geometryEle, "sphere"))
+  {
+    tinyxml2::XMLElement* sphereEle    = getElement(geometryEle, "sphere");
+    const auto            radius       = getValueDouble(sphereEle, "radius");
+    newShape = dynamics::ShapePtr(new dynamics::SphereShape(radius));
+  }
+  else if (hasElement(geometryEle, "box"))
   {
     tinyxml2::XMLElement* boxEle       = getElement(geometryEle, "box");
     Eigen::Vector3d       size         = getValueVector3d(boxEle, "size");
@@ -1277,6 +1270,20 @@ dynamics::ShapePtr readShape(
     double                radius       = getValueDouble(cylinderEle, "radius");
     double                height       = getValueDouble(cylinderEle, "height");
     newShape = dynamics::ShapePtr(new dynamics::CylinderShape(radius, height));
+  }
+  else if (hasElement(geometryEle, "capsule"))
+  {
+    tinyxml2::XMLElement* capsuleEle   = getElement(geometryEle, "capsule");
+    double                radius       = getValueDouble(capsuleEle, "radius");
+    double                height       = getValueDouble(capsuleEle, "height");
+    newShape = dynamics::ShapePtr(new dynamics::CapsuleShape(radius, height));
+  }
+  else if (hasElement(geometryEle, "cone"))
+  {
+    tinyxml2::XMLElement* coneEle      = getElement(geometryEle, "cone");
+    double                radius       = getValueDouble(coneEle, "radius");
+    double                height       = getValueDouble(coneEle, "height");
+    newShape = dynamics::ShapePtr(new dynamics::ConeShape(radius, height));
   }
   else if (hasElement(geometryEle, "plane"))
   {
@@ -1296,6 +1303,23 @@ dynamics::ShapePtr readShape(
              << "plane shape. DART will use 0.0." << std::endl;
       newShape = dynamics::ShapePtr(new dynamics::PlaneShape(normal, 0.0));
     }
+  }
+  else if (hasElement(geometryEle, "multi_sphere"))
+  {
+    tinyxml2::XMLElement* multiSphereEle = getElement(geometryEle, "multi_sphere");
+
+    ElementEnumerator xmlSpheres(multiSphereEle, "sphere");
+    dynamics::MultiSphereShape::Spheres spheres;
+    while (xmlSpheres.next())
+    {
+      const double radius = getValueDouble(xmlSpheres.get(), "radius");
+      const Eigen::Vector3d position
+          = getValueVector3d(xmlSpheres.get(), "position");
+
+      spheres.emplace_back(radius, position);
+    }
+
+    newShape = dynamics::ShapePtr(new dynamics::MultiSphereShape(spheres));
   }
   else if (hasElement(geometryEle, "mesh"))
   {
@@ -1560,8 +1584,8 @@ void setDofLimitAttributes(tinyxml2::XMLElement* _dofElement,
 }
 
 //==============================================================================
-// This structure exists to allow a common interface for setting values in both
-// SingleDofJoint::Properties and MultiDofJoint::Properties
+// This structure exists to allow a common interface for setting values in
+// GenericJoint::Properties
 struct DofProxy
 {
   std::size_t index;
@@ -1590,44 +1614,6 @@ struct DofProxy
 
   bool* preserveName;
   std::string* name;
-
-  DofProxy(dynamics::SingleDofJoint::Properties& properties,
-           SkelJoint& joint, std::size_t _index,
-           const std::string& jointName)
-    : index(_index),
-      valid(true),
-
-      lowerPosition(&properties.mPositionLowerLimit),
-      upperPosition(&properties.mPositionUpperLimit),
-      initalPosition(&properties.mInitialPosition),
-
-      lowerVelocity(&properties.mVelocityLowerLimit),
-      upperVelocity(&properties.mVelocityUpperLimit),
-      initialVelocity(&properties.mInitialVelocity),
-
-      lowerAcceleration(&properties.mAccelerationLowerLimit),
-      upperAcceleration(&properties.mAccelerationUpperLimit),
-      initialAcceleration(&joint.acceleration.data()[0]),
-
-      lowerForce(&properties.mForceLowerLimit),
-      upperForce(&properties.mForceUpperLimit),
-      initialForce(&joint.force.data()[0]),
-
-      springStiffness(&properties.mSpringStiffness),
-      restPosition(&properties.mRestPosition),
-      dampingCoefficient(&properties.mDampingCoefficient),
-      friction(&properties.mFriction),
-
-      preserveName(&properties.mPreserveDofName),
-      name(&properties.mDofName)
-  {
-    if(index > 0)
-    {
-      dterr << "[SkelParser] Joint named [" << jointName << "] has a dof "
-            << "element (" << index << ") which is out of bounds (max 0)\n";
-      valid = false;
-    }
-  }
 
   template <typename PropertyType>
   DofProxy(PropertyType& properties,
@@ -1941,7 +1927,7 @@ JointPropPtr readRevoluteJoint(
     assert(0);
   }
 
-  readJointDynamicsAndLimit<dynamics::SingleDofJoint::Properties>(
+  readJointDynamicsAndLimit<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   //--------------------------------------------------------------------------
@@ -1952,7 +1938,7 @@ JointPropPtr readRevoluteJoint(
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
     _joint.position = ipos;
-    properties.mInitialPosition = ipos[0];
+    properties.mInitialPositions[0] = ipos[0];
   }
 
   //--------------------------------------------------------------------------
@@ -1963,10 +1949,10 @@ JointPropPtr readRevoluteJoint(
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
     _joint.velocity = ivel;
-    properties.mInitialVelocity = ivel[0];
+    properties.mInitialVelocities[0] = ivel[0];
   }
 
-  readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
+  readAllDegreesOfFreedom<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   return Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
@@ -2000,7 +1986,7 @@ JointPropPtr readPrismaticJoint(
     assert(0);
   }
 
-  readJointDynamicsAndLimit<dynamics::SingleDofJoint::Properties>(
+  readJointDynamicsAndLimit<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   //--------------------------------------------------------------------------
@@ -2011,7 +1997,7 @@ JointPropPtr readPrismaticJoint(
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
     _joint.position = ipos;
-    properties.mInitialPosition = ipos[0];
+    properties.mInitialPositions[0] = ipos[0];
   }
 
   //--------------------------------------------------------------------------
@@ -2022,10 +2008,10 @@ JointPropPtr readPrismaticJoint(
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
     _joint.velocity = ivel;
-    properties.mInitialVelocity = ivel[0];
+    properties.mInitialVelocities[0] = ivel[0];
   }
 
-  readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
+  readAllDegreesOfFreedom<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   return Eigen::make_aligned_shared<dynamics::PrismaticJoint::Properties>(
@@ -2066,7 +2052,7 @@ JointPropPtr readScrewJoint(
     assert(0);
   }
 
-  readJointDynamicsAndLimit<dynamics::SingleDofJoint::Properties>(
+  readJointDynamicsAndLimit<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   //--------------------------------------------------------------------------
@@ -2077,7 +2063,7 @@ JointPropPtr readScrewJoint(
     Eigen::VectorXd ipos = Eigen::VectorXd(1);
     ipos << init_pos;
     _joint.position = ipos;
-    properties.mInitialPosition = ipos[0];
+    properties.mInitialPositions[0] = ipos[0];
   }
 
   //--------------------------------------------------------------------------
@@ -2088,10 +2074,10 @@ JointPropPtr readScrewJoint(
     Eigen::VectorXd ivel = Eigen::VectorXd(1);
     ivel << init_vel;
     _joint.velocity = ivel;
-    properties.mInitialVelocity = ivel[0];
+    properties.mInitialVelocities[0] = ivel[0];
   }
 
-  readAllDegreesOfFreedom<dynamics::SingleDofJoint::Properties>(
+  readAllDegreesOfFreedom<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
   return Eigen::make_aligned_shared<dynamics::ScrewJoint::Properties>(

@@ -35,15 +35,11 @@
 #include <memory>
 
 #include "dart/math/Helpers.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/BodyNode.hpp"
-
-#define REPORT_UNSUPPORTED_SHAPES(shape1, shape2)\
-  dterr << "[DARTCollisionDetector] Attempting to check for an "\
-        << "unsupported shape pair: [" << typeid(*shape1).name()\
-        << "] - [" << typeid(*shape2).name() << "]. Returning false.\n";
 
 namespace dart {
 namespace collision {
@@ -1258,93 +1254,120 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
   // TODO(JS): We could make the contact point computation as optional for
   // the case that we want only binary check.
 
-  const auto& shape0 = o1->getShape();
-  const auto& shape1 = o2->getShape();
-  const Eigen::Isometry3d& T0 = o1->getTransform();
-  const Eigen::Isometry3d& T1 = o2->getTransform();
+  const auto& shape1 = o1->getShape();
+  const auto& shape2 = o2->getShape();
 
-  auto type0 = shape0->getShapeType();
-  auto type1 = shape1->getShapeType();
+  const auto& shapeType1 = shape1->getType();
+  const auto& shapeType2 = shape2->getType();
 
-  switch (type0)
+  const Eigen::Isometry3d& T1 = o1->getTransform();
+  const Eigen::Isometry3d& T2 = o2->getTransform();
+
+  if (dynamics::SphereShape::getStaticType() == shapeType1)
   {
-    case dynamics::Shape::BOX:
+    const auto* sphere0
+        = static_cast<const dynamics::SphereShape*>(shape1.get());
+
+    if (dynamics::SphereShape::getStaticType() == shapeType2)
     {
-      const auto* box0 = static_cast<const dynamics::BoxShape*>(shape0.get());
+      const auto* sphere1
+          = static_cast<const dynamics::SphereShape*>(shape2.get());
 
-      switch (type1)
-      {
-        case dynamics::Shape::BOX:
-        {
-          const auto* box1
-              = static_cast<const dynamics::BoxShape*>(shape1.get());
-
-          return collideBoxBox(o1, o2,
-                               box0->getSize(), T0,
-                               box1->getSize(), T1,
-                               result);
-        }
-        case dynamics::Shape::ELLIPSOID:
-        {
-          const auto* ellipsoid1
-              = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
-
-          return collideBoxSphere(o1, o2,
-                                  box0->getSize(), T0,
-                                  ellipsoid1->getSize()[0] * 0.5, T1,
-                                  result);
-        }
-        default:
-        {
-          REPORT_UNSUPPORTED_SHAPES(shape0, shape1);
-          return false;
-        }
-      }
-
-      break;
+      return collideSphereSphere(
+            o1, o2, sphere0->getRadius(), T1, sphere1->getRadius(), T2, result);
     }
-    case dynamics::Shape::ELLIPSOID:
+    else if (dynamics::BoxShape::getStaticType() == shapeType2)
     {
-      const auto* ellipsoid0
-          = static_cast<const dynamics::EllipsoidShape*>(shape0.get());
+      const auto* box1
+          = static_cast<const dynamics::BoxShape*>(shape2.get());
 
-      switch (type1)
-      {
-        case dynamics::Shape::BOX:
-        {
-          const auto* box1
-              = static_cast<const dynamics::BoxShape*>(shape1.get());
-
-          return collideSphereBox(o1, o2,
-                                  ellipsoid0->getSize()[0] * 0.5, T0,
-                                  box1->getSize(), T1,
-                                  result);
-        }
-        case dynamics::Shape::ELLIPSOID:
-        {
-          const auto* ellipsoid1
-              = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
-
-          return collideSphereSphere(o1, o2,
-                                     ellipsoid0->getSize()[0] * 0.5, T0,
-                                     ellipsoid1->getSize()[0] * 0.5, T1,
-                                     result);
-        }
-        default:
-        {
-          REPORT_UNSUPPORTED_SHAPES(shape0, shape1);
-          return false;
-        }
-      }
-
-      break;
+      return collideSphereBox(
+            o1, o2, sphere0->getRadius(), T1, box1->getSize(), T2, result);
     }
-    default:
+    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
     {
-      REPORT_UNSUPPORTED_SHAPES(shape0, shape1);
-      return false;
+      const auto* ellipsoid1
+          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+
+      return collideSphereSphere(o1, o2,
+                                 sphere0->getRadius(), T1,
+                                 ellipsoid1->getSize()[0] * 0.5, T2,
+                                 result);
     }
   }
+  else if (dynamics::BoxShape::getStaticType() == shapeType1)
+  {
+    const auto* box0 = static_cast<const dynamics::BoxShape*>(shape1.get());
+
+    if (dynamics::SphereShape::getStaticType() == shapeType2)
+    {
+      const auto* sphere1
+          = static_cast<const dynamics::SphereShape*>(shape2.get());
+
+      return collideBoxSphere(
+            o1, o2, box0->getSize(), T1, sphere1->getRadius(), T2, result);
+    }
+    else if (dynamics::BoxShape::getStaticType() == shapeType2)
+    {
+      const auto* box1
+          = static_cast<const dynamics::BoxShape*>(shape2.get());
+
+      return collideBoxBox(o1, o2,
+                           box0->getSize(), T1,
+                           box1->getSize(), T2,
+                           result);
+    }
+    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
+    {
+      const auto* ellipsoid1
+          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+
+      return collideBoxSphere(o1, o2,
+                              box0->getSize(), T1,
+                              ellipsoid1->getSize()[0] * 0.5, T2,
+                              result);
+    }
+  }
+  else if (dynamics::EllipsoidShape::getStaticType() == shapeType1)
+  {
+    const auto* ellipsoid0
+        = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
+
+    if (dynamics::SphereShape::getStaticType() == shapeType2)
+    {
+      const auto* sphere1
+          = static_cast<const dynamics::SphereShape*>(shape2.get());
+
+      return collideSphereSphere(o1, o2,
+                                 ellipsoid0->getSize()[0] * 0.5, T1,
+                                 sphere1->getRadius(), T2,
+                                 result);
+    }
+    else if (dynamics::BoxShape::getStaticType() == shapeType2)
+    {
+      const auto* box1
+          = static_cast<const dynamics::BoxShape*>(shape2.get());
+
+      return collideSphereBox(o1, o2,
+                              ellipsoid0->getSize()[0] * 0.5, T1,
+                              box1->getSize(), T2,
+                              result);
+    }
+    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
+    {
+      const auto* ellipsoid1
+          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
+
+      return collideSphereSphere(o1, o2,
+                                 ellipsoid0->getSize()[0] * 0.5, T1,
+                                 ellipsoid1->getSize()[0] * 0.5, T2,
+                                 result);
+    }
+  }
+
+  dterr << "[DARTCollisionDetector] Attempting to check for an "
+        << "unsupported shape pair: [" << shape1->getType()
+        << "] - [" << shape2->getType() << "]. Returning false.\n";
 
   return false;
 }
