@@ -2216,6 +2216,8 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
                                      mSoftBodyNodes.end(), soft),
                          mSoftBodyNodes.end());
   }
+
+  updateTotalMass();
 }
 
 //==============================================================================
@@ -3713,30 +3715,26 @@ void Skeleton::computeImpulseForwardDynamics()
 }
 
 //==============================================================================
-double Skeleton::getKineticEnergy() const
+double Skeleton::computeKineticEnergy() const
 {
   double KE = 0.0;
 
-  for (std::vector<BodyNode*>::const_iterator it = mSkelCache.mBodyNodes.begin();
-       it != mSkelCache.mBodyNodes.end(); ++it)
-  {
-    KE += (*it)->getKineticEnergy();
-  }
+  for (auto* bodyNode : mSkelCache.mBodyNodes)
+    KE += bodyNode->computeKineticEnergy();
 
   assert(KE >= 0.0 && "Kinetic energy should be positive value.");
   return KE;
 }
 
 //==============================================================================
-double Skeleton::getPotentialEnergy() const
+double Skeleton::computePotentialEnergy() const
 {
   double PE = 0.0;
 
-  for (std::vector<BodyNode*>::const_iterator it = mSkelCache.mBodyNodes.begin();
-       it != mSkelCache.mBodyNodes.end(); ++it)
+  for (auto* bodyNode : mSkelCache.mBodyNodes)
   {
-    PE += (*it)->getPotentialEnergy(mAspectProperties.mGravity);
-    PE += (*it)->getParentJoint()->getPotentialEnergy();
+    PE += bodyNode->computePotentialEnergy(mAspectProperties.mGravity);
+    PE += bodyNode->getParentJoint()->computePotentialEnergy();
   }
 
   return PE;

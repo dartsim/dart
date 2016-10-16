@@ -50,8 +50,8 @@ RevoluteJoint::~RevoluteJoint()
 //==============================================================================
 void RevoluteJoint::setProperties(const Properties& _properties)
 {
-  SingleDofJoint::setProperties(
-        static_cast<const SingleDofJoint::Properties&>(_properties));
+  GenericJoint<math::R1Space>::setProperties(
+        static_cast<const GenericJoint<math::R1Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -70,7 +70,7 @@ void RevoluteJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 RevoluteJoint::Properties RevoluteJoint::getRevoluteJointProperties() const
 {
-  return Properties(getSingleDofJointProperties(), mAspectProperties);
+  return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -136,13 +136,28 @@ const Eigen::Vector3d& RevoluteJoint::getAxis() const
 }
 
 //==============================================================================
+GenericJoint<math::R1Space>::JacobianMatrix
+RevoluteJoint::getRelativeJacobianStatic(
+    const GenericJoint<math::R1Space>::Vector& /*positions*/) const
+{
+  GenericJoint<math::R1Space>::JacobianMatrix jacobian
+      = math::AdTAngular(
+        Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis());
+
+  // Verification
+  assert(!math::isNan(jacobian));
+
+  return jacobian;
+}
+
+//==============================================================================
 RevoluteJoint::RevoluteJoint(const Properties& properties)
   : detail::RevoluteJointBase(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createRevoluteJointAspect(properties);
-  createSingleDofJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 
@@ -153,10 +168,18 @@ Joint* RevoluteJoint::clone() const
 }
 
 //==============================================================================
+void RevoluteJoint::updateDegreeOfFreedomNames()
+{
+  // Same name as the joint it belongs to.
+  if (!mDofs[0]->isNamePreserved())
+    mDofs[0]->setName(Joint::mAspectProperties.mName, false);
+}
+
+//==============================================================================
 void RevoluteJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
-       * math::expAngular(getAxis() * getPositionStatic())
+       * math::expAngular(getAxis() * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -167,13 +190,7 @@ void RevoluteJoint::updateRelativeTransform() const
 void RevoluteJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if(_mandatory)
-  {
-    mJacobian = math::AdTAngular(
-          Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis());
-
-    // Verification
-    assert(!math::isNan(mJacobian));
-  }
+    mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================

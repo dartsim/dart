@@ -39,6 +39,7 @@
 #include <Eigen/StdVector>
 
 #include "dart/config.hpp"
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/Signal.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/math/Geometry.hpp"
@@ -706,12 +707,12 @@ public:
   /// this status is set by the constraint solver during dynamics simulation but
   /// not by collision detector.
   /// \param[in] True if this body node is colliding.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void setColliding(bool _isColliding);
 
   /// Return whether this body node is set to be colliding with other objects.
   /// \return True if this body node is colliding.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   bool isColliding();
 
   /// Add applying linear Cartesian forces to this node
@@ -802,11 +803,22 @@ public:
   // Energies
   //----------------------------------------------------------------------------
 
+  /// Return Lagrangian of this body
+  double computeLagrangian(const Eigen::Vector3d& gravity) const;
+
   /// Return kinetic energy.
+  DART_DEPRECATED(6.1)
   virtual double getKineticEnergy() const;
 
+  /// Return kinetic energy
+  double computeKineticEnergy() const;
+
   /// Return potential energy.
+  DART_DEPRECATED(6.1)
   virtual double getPotentialEnergy(const Eigen::Vector3d& _gravity) const;
+
+  /// Return potential energy.
+  double computePotentialEnergy(const Eigen::Vector3d& gravity) const;
 
   /// Return linear momentum.
   Eigen::Vector3d getLinearMomentum() const;
@@ -1030,7 +1042,7 @@ protected:
   static std::size_t msBodyNodeCount;
 
   /// Whether the node is currently in collision with another node.
-  /// \deprecated DEPRECATED(6.0) See #670 for more detail.
+  /// \deprecated DART_DEPRECATED(6.0) See #670 for more detail.
   bool mIsColliding;
 
   //--------------------------------------------------------------------------

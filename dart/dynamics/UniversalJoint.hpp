@@ -108,7 +108,7 @@ protected:
   // Documentation inherited
   Joint* clone() const override;
 
-  using MultiDofJoint::getRelativeJacobianStatic;
+  using GenericJoint<math::R2Space>::getRelativeJacobianStatic;
 
   // Documentation inherited
   void updateDegreeOfFreedomNames() override;

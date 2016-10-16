@@ -45,10 +45,23 @@ PlaneShape::PlaneShape(const Eigen::Vector3d& _normal, double _offset)
 //==============================================================================
 PlaneShape::PlaneShape(const Eigen::Vector3d& _normal,
                        const Eigen::Vector3d& _point)
-  : Shape(PLANE),
+  : Shape(),
     mNormal(_normal.normalized()),
     mOffset(mNormal.dot(_point))
 {
+}
+
+//==============================================================================
+const std::string& PlaneShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& PlaneShape::getStaticType()
+{
+  static const std::string type("PlaneShape");
+  return type;
 }
 
 //==============================================================================

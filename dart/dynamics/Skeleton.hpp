@@ -208,7 +208,7 @@ public:
   void setProperties(const AspectProperties& properties);
 
   /// Get the Properties of this Skeleton
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const AspectProperties& getSkeletonProperties() const;
 
   /// Set the AspectProperties of this Skeleton
@@ -220,13 +220,13 @@ public:
   /// Get name.
   const std::string& getName() const override;
 
-  /// Deprecated. Please use enableSelfCollision() and setAdjacentBodyCheck()
-  /// instead.
-  DEPRECATED(6.0)
+  /// Deprecated. Please use enableSelfCollisionCheck() and
+  /// setAdjacentBodyCheck() instead.
+  DART_DEPRECATED(6.0)
   void enableSelfCollision(bool enableAdjacentBodyCheck = false);
 
   /// Deprecated. Please use disableSelfCollisionCheck() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void disableSelfCollision();
 
   /// Set whether to check self-collision.
@@ -820,13 +820,13 @@ public:
   void notifySupportUpdate(std::size_t _treeIdx);
 
   // Documentation inherited
-  double getKineticEnergy() const override;
+  double computeKineticEnergy() const override;
 
   // Documentation inherited
-  double getPotentialEnergy() const override;
+  double computePotentialEnergy() const override;
 
   // Documentation inherited
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void clearCollidingBodies() override;
 
   /// \}
@@ -899,8 +899,7 @@ public:
   friend class BodyNode;
   friend class SoftBodyNode;
   friend class Joint;
-  friend class SingleDofJoint;
-  template<std::size_t> friend class MultiDofJoint;
+  template<class> friend class GenericJoint;
   friend class DegreeOfFreedom;
   friend class Node;
   friend class ShapeNode;

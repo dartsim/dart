@@ -263,13 +263,13 @@ public:
   void clearInternalForces() override;
 
   // Documentation inherited
-  double getKineticEnergy() const override;
+  double computeKineticEnergy() const override;
 
   // Documentation inherited
-  double getPotentialEnergy() const override;
+  double computePotentialEnergy() const override;
 
   // Documentation inherited
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void clearCollidingBodies() override;
 
   /// \}

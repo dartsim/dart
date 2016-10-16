@@ -51,8 +51,8 @@ bool CompositeResourceRetriever::addSchemaRetriever(
 {
   if(!_resourceRetriever)
   {
-    dterr << "[CompositeResourceRetriever::addSchemaRetriever] Recieved nullptr"
-             " ResourceRetriever; skipping this entry.\n"; 
+    dterr << "[CompositeResourceRetriever::addSchemaRetriever] Receieved"
+             " nullptr ResourceRetriever; skipping this entry.\n";
     return false;
   }
 

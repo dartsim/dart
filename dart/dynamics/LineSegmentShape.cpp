@@ -58,7 +58,7 @@ LineSegmentShape::LineSegmentShape(float _thickness)
 LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& _v1,
                                    const Eigen::Vector3d& _v2,
                                    float _thickness)
-  : Shape(LINE_SEGMENT),
+  : Shape(),
     mThickness(_thickness)
 {
   if (_thickness <= 0.0f)
@@ -73,6 +73,19 @@ LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& _v1,
   addVertex(_v2);
   updateVolume();
   mVariance = DYNAMIC_VERTICES;
+}
+
+//==============================================================================
+const std::string& LineSegmentShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& LineSegmentShape::getStaticType()
+{
+  static const std::string type("LineSegmentShape");
+  return type;
 }
 
 //==============================================================================

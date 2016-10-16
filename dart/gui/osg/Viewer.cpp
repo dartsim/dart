@@ -701,6 +701,9 @@ bool Viewer::disableDragAndDrop(DragAndDrop* _dnd)
   if(disableDragAndDrop(dynamic_cast<InteractiveFrameDnD*>(_dnd)))
     return true;
 
+  if(disableDragAndDrop(dynamic_cast<BodyNodeDnD*>(_dnd)))
+    return true;
+
   return false;
 }
 
@@ -761,6 +764,9 @@ bool Viewer::disableDragAndDrop(InteractiveFrameDnD* _dnd)
 //==============================================================================
 bool Viewer::disableDragAndDrop(BodyNodeDnD* _dnd)
 {
+  if(nullptr == _dnd)
+    return false;
+
   std::map<dart::dynamics::BodyNode*, BodyNodeDnD*>::iterator it =
       mBodyNodeDnDMap.find(_dnd->getBodyNode());
   if(it == mBodyNodeDnDMap.end())
