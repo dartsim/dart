@@ -42,7 +42,7 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
-BodyNodeVariationalIntegratorState::BodyNodeVariationalIntegratorState()
+BodyNodeViRiqnDrneaState::BodyNodeViRiqnDrneaState()
 {
   // Do nothing
 }
@@ -50,14 +50,14 @@ BodyNodeVariationalIntegratorState::BodyNodeVariationalIntegratorState()
 } // namespace detail
 
 //==============================================================================
-BodyNodeVariationalIntegrator::BodyNodeVariationalIntegrator(
+BodyNodeViRiqnDrnea::BodyNodeViRiqnDrnea(
     const StateData& state)
 {
   mState = state;
 }
 
 //==============================================================================
-JointVariationalIntegrator* BodyNodeVariationalIntegrator::getJointVi()
+JointVariationalIntegrator* BodyNodeViRiqnDrnea::getJointVi()
 {
   auto* bodyNode = mComposite;
   auto* joint = bodyNode->getParentJoint();
@@ -68,14 +68,14 @@ JointVariationalIntegrator* BodyNodeVariationalIntegrator::getJointVi()
 
 //==============================================================================
 const JointVariationalIntegrator*
-BodyNodeVariationalIntegrator::getJointVi() const
+BodyNodeViRiqnDrnea::getJointVi() const
 {
-  return const_cast<const BodyNodeVariationalIntegrator*>(
+  return const_cast<const BodyNodeViRiqnDrnea*>(
         this)->getJointVi();
 }
 
 //==============================================================================
-void BodyNodeVariationalIntegrator::initialize(double timeStep)
+void BodyNodeViRiqnDrnea::initialize(double timeStep)
 {
   auto* bodyNode = mComposite;
 
@@ -90,7 +90,7 @@ void BodyNodeVariationalIntegrator::initialize(double timeStep)
 }
 
 //==============================================================================
-void BodyNodeVariationalIntegrator::setComposite(
+void BodyNodeViRiqnDrnea::setComposite(
     common::Composite* newComposite)
 {
   Base::setComposite(newComposite);
@@ -115,7 +115,7 @@ void BodyNodeVariationalIntegrator::setComposite(
   }
   else
   {
-    dterr << "[BodyNodeVariationalIntegrator::setComposite] Attempting to "
+    dterr << "[BodyNodeViRiqnDrnea::setComposite] Attempting to "
           << "create VI aspect for unsupported joint type '"
           << joint->getType() << "'.\n";
     assert(false);
@@ -123,7 +123,7 @@ void BodyNodeVariationalIntegrator::setComposite(
 }
 
 //==============================================================================
-void BodyNodeVariationalIntegrator::updateNextTransform()
+void BodyNodeViRiqnDrnea::updateNextTransform()
 {
   auto* bodyNode = mComposite;
   auto* joint = bodyNode->getParentJoint();
@@ -133,7 +133,7 @@ void BodyNodeVariationalIntegrator::updateNextTransform()
 }
 
 //==============================================================================
-void BodyNodeVariationalIntegrator::updateNextVelocity(double timeStep)
+void BodyNodeViRiqnDrnea::updateNextVelocity(double timeStep)
 {
   auto* bodyNode = mComposite;
   auto* parentBodyNode = bodyNode->getParentBodyNode();
@@ -143,7 +143,7 @@ void BodyNodeVariationalIntegrator::updateNextVelocity(double timeStep)
   if (parentBodyNode)
   {
     auto parentBodyNodeVi
-        = parentBodyNode->get<BodyNodeVariationalIntegrator>();
+        = parentBodyNode->get<BodyNodeViRiqnDrnea>();
     assert(parentBodyNodeVi);
 
     mState.mDeltaWorldTransform
@@ -175,7 +175,7 @@ static Eigen::Vector6d computeSpatialGravityForce(
 }
 
 //==============================================================================
-void BodyNodeVariationalIntegrator::evaluateDel(
+void BodyNodeViRiqnDrnea::evaluateDel(
     const Eigen::Vector3d& gravity, double timeStep)
 {
   auto* bodyNode = mComposite;
@@ -200,7 +200,7 @@ void BodyNodeVariationalIntegrator::evaluateDel(
   for (auto i = 0u; i < bodyNode->getNumChildBodyNodes(); ++i)
   {
     auto* childBodyNode = bodyNode->getChildBodyNode(i);
-    auto* childBodyNodeVi = childBodyNode->get<BodyNodeVariationalIntegrator>();
+    auto* childBodyNodeVi = childBodyNode->get<BodyNodeViRiqnDrnea>();
 
     mState.mParentImpulse += math::dAdInvT(
           childBodyNode->getParentJoint()->getRelativeTransform(),
@@ -211,13 +211,13 @@ void BodyNodeVariationalIntegrator::evaluateDel(
 }
 
 //==============================================================================
-void BodyNodeVariationalIntegrator::updateNextTransformDeriv()
+void BodyNodeViRiqnDrnea::updateNextTransformDeriv()
 {
 
 }
 
 //==============================================================================
-void BodyNodeVariationalIntegrator::updateNextVelocityDeriv(double /*timeStep*/)
+void BodyNodeViRiqnDrnea::updateNextVelocityDeriv(double /*timeStep*/)
 {
 
 }

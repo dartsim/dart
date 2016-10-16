@@ -46,7 +46,7 @@ namespace simulation {
 void WorldVariationalIntegrator::prestep()
 {
   for (auto& skel : mSkeletons)
-    skel->createAspect<dynamics::SkeletonVariationalIntegrator>();
+    skel->createAspect<dynamics::SkeletonViRiqnDrnea>();
 }
 
 //==============================================================================
@@ -58,7 +58,7 @@ void WorldVariationalIntegrator::step(bool /*resetCommand*/)
     if (!skel->isMobile())
       continue;
 
-    auto vi = skel->get<dynamics::SkeletonVariationalIntegrator>();
+    auto vi = skel->get<dynamics::SkeletonViRiqnDrnea>();
     assert(vi);
     vi->integrate();
   }

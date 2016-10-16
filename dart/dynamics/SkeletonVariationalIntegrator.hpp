@@ -44,29 +44,29 @@ namespace dynamics {
 
 namespace detail {
 
-struct SkeletonVariationalIntegratorState
+struct SkeletonViRiqnDrneaState
 {
   /// Constructor
-  SkeletonVariationalIntegratorState();
+  SkeletonViRiqnDrneaState();
 
   /// Destructor
-  virtual ~SkeletonVariationalIntegratorState() = default;
+  virtual ~SkeletonViRiqnDrneaState() = default;
 };
 
 }  // namespace detail
 
 //==============================================================================
-class SkeletonVariationalIntegrator final :
+class SkeletonViRiqnDrnea final :
     public common::AspectWithState<
-        SkeletonVariationalIntegrator,
-        detail::SkeletonVariationalIntegratorState,
+        SkeletonViRiqnDrnea,
+        detail::SkeletonViRiqnDrneaState,
         Skeleton>
 {
 public:
 
   using Base = common::AspectWithState<
-      SkeletonVariationalIntegrator,
-      detail::SkeletonVariationalIntegratorState,
+      SkeletonViRiqnDrnea,
+      detail::SkeletonViRiqnDrneaState,
       Skeleton>;
 
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
@@ -79,9 +79,9 @@ public:
     Tolerance
   };
 
-  SkeletonVariationalIntegrator(const StateData& state = StateData());
+  SkeletonViRiqnDrnea(const StateData& state = StateData());
 
-  SkeletonVariationalIntegrator(const SkeletonVariationalIntegrator&) = delete;
+  SkeletonViRiqnDrnea(const SkeletonViRiqnDrnea&) = delete;
 
   void initialize();
 

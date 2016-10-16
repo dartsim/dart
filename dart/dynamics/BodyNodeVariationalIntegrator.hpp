@@ -44,17 +44,17 @@ class JointVariationalIntegrator;
 
 namespace detail {
 
-struct BodyNodeVariationalIntegratorState
+struct BodyNodeViRiqnDrneaState
 {
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// Constructor
-  BodyNodeVariationalIntegratorState();
+  BodyNodeViRiqnDrneaState();
 
   /// Destructor
-  virtual ~BodyNodeVariationalIntegratorState() = default;
+  virtual ~BodyNodeViRiqnDrneaState() = default;
 
   /// The prediction of the transform for the next discrete time (k+1)
   Eigen::Isometry3d mNextWorldTransform{Eigen::Isometry3d::Identity()};
@@ -82,28 +82,28 @@ struct BodyNodeVariationalIntegratorState
 }  // namespace detail
 
 //==============================================================================
-class BodyNodeVariationalIntegrator final :
+class BodyNodeViRiqnDrnea final :
     public common::AspectWithState<
-        BodyNodeVariationalIntegrator,
-        detail::BodyNodeVariationalIntegratorState,
+        BodyNodeViRiqnDrnea,
+        detail::BodyNodeViRiqnDrneaState,
         BodyNode>
 {
 public:
 
-  friend class SkeletonVariationalIntegrator;
+  friend class SkeletonViRiqnDrnea;
 
   using Base = common::AspectWithState<
-      BodyNodeVariationalIntegrator,
-      detail::BodyNodeVariationalIntegratorState,
+      BodyNodeViRiqnDrnea,
+      detail::BodyNodeViRiqnDrneaState,
       BodyNode>;
 
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  BodyNodeVariationalIntegrator(const StateData& state = StateData());
+  BodyNodeViRiqnDrnea(const StateData& state = StateData());
 
-  BodyNodeVariationalIntegrator(const BodyNodeVariationalIntegrator&) = delete;
+  BodyNodeViRiqnDrnea(const BodyNodeViRiqnDrnea&) = delete;
 
   JointVariationalIntegrator* getJointVi();
   const JointVariationalIntegrator* getJointVi() const;

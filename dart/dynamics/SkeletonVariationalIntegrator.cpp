@@ -42,7 +42,7 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
-SkeletonVariationalIntegratorState::SkeletonVariationalIntegratorState()
+SkeletonViRiqnDrneaState::SkeletonViRiqnDrneaState()
 {
   // Do nothing
 }
@@ -50,52 +50,52 @@ SkeletonVariationalIntegratorState::SkeletonVariationalIntegratorState()
 } // namespace detail
 
 //==============================================================================
-SkeletonVariationalIntegrator::SkeletonVariationalIntegrator(
+SkeletonViRiqnDrnea::SkeletonViRiqnDrnea(
     const StateData& state)
 {
   mState = state;
 }
 
 //==============================================================================
-void SkeletonVariationalIntegrator::initialize()
+void SkeletonViRiqnDrnea::initialize()
 {
   auto* skel = mComposite;
 
   for (auto* bodyNode : skel->getBodyNodes())
   {
-    auto* aspect = bodyNode->get<BodyNodeVariationalIntegrator>();
+    auto* aspect = bodyNode->get<BodyNodeViRiqnDrnea>();
     assert(aspect);
     aspect->initialize(skel->getTimeStep());
   }
 }
 
 //==============================================================================
-void SkeletonVariationalIntegrator::setTolerance(double tol)
+void SkeletonViRiqnDrnea::setTolerance(double tol)
 {
   mTolerance = tol;
 }
 
 //==============================================================================
-double SkeletonVariationalIntegrator::getTolerance() const
+double SkeletonViRiqnDrnea::getTolerance() const
 {
   return mTolerance;
 }
 
 //==============================================================================
-void SkeletonVariationalIntegrator::setMaxIternation(std::size_t iter)
+void SkeletonViRiqnDrnea::setMaxIternation(std::size_t iter)
 {
   mMaxIteration = iter;
 }
 
 //==============================================================================
-std::size_t SkeletonVariationalIntegrator::getMaxIteration() const
+std::size_t SkeletonViRiqnDrnea::getMaxIteration() const
 {
   return mMaxIteration;
 }
 
 //==============================================================================
-SkeletonVariationalIntegrator::TerminalCondition
-SkeletonVariationalIntegrator::integrate()
+SkeletonViRiqnDrnea::TerminalCondition
+SkeletonViRiqnDrnea::integrate()
 {
   auto* skel = mComposite;
 
@@ -143,7 +143,7 @@ SkeletonVariationalIntegrator::integrate()
 }
 
 //==============================================================================
-void SkeletonVariationalIntegrator::setComposite(
+void SkeletonViRiqnDrnea::setComposite(
     common::Composite* newComposite)
 {
   Base::setComposite(newComposite);
@@ -157,19 +157,19 @@ void SkeletonVariationalIntegrator::setComposite(
 
   for (auto* bodyNode : skel->getBodyNodes())
   {
-    auto* aspect = bodyNode->getOrCreateAspect<BodyNodeVariationalIntegrator>();
+    auto* aspect = bodyNode->getOrCreateAspect<BodyNodeViRiqnDrnea>();
     aspect->initialize(skel->getTimeStep());
   }
 }
 
 //==============================================================================
-void SkeletonVariationalIntegrator::loseComposite(common::Composite* oldComposite)
+void SkeletonViRiqnDrnea::loseComposite(common::Composite* oldComposite)
 {
   Base::loseComposite(oldComposite);
 }
 
 //==============================================================================
-void SkeletonVariationalIntegrator::setPrevPositions(
+void SkeletonViRiqnDrnea::setPrevPositions(
     const Eigen::VectorXd& prevPositions)
 {
   auto* skel = mComposite;
@@ -178,7 +178,7 @@ void SkeletonVariationalIntegrator::setPrevPositions(
   auto index = 0u;
   for (auto* bodyNode : skel->getBodyNodes())
   {
-    auto* aspect = bodyNode->get<BodyNodeVariationalIntegrator>();
+    auto* aspect = bodyNode->get<BodyNodeViRiqnDrnea>();
     assert(aspect);
     auto* joint = bodyNode->getParentJoint();
     const auto numDofs = joint->getNumDofs();
@@ -191,7 +191,7 @@ void SkeletonVariationalIntegrator::setPrevPositions(
 }
 
 //==============================================================================
-Eigen::VectorXd SkeletonVariationalIntegrator::getPrevPositions() const
+Eigen::VectorXd SkeletonViRiqnDrnea::getPrevPositions() const
 {
   auto* skel = mComposite;
   const auto numDofs = skel->getNumDofs();
@@ -202,7 +202,7 @@ Eigen::VectorXd SkeletonVariationalIntegrator::getPrevPositions() const
   auto index = 0u;
   for (auto* bodyNode : skel->getBodyNodes())
   {
-    auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+    auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
     assert(bodyNodeVi);
     auto* jointVi = bodyNodeVi->getJointVi();
     const auto numJointDofs = bodyNode->getParentJoint()->getNumDofs();
@@ -216,7 +216,7 @@ Eigen::VectorXd SkeletonVariationalIntegrator::getPrevPositions() const
 }
 
 //==============================================================================
-void SkeletonVariationalIntegrator::setNextPositions(
+void SkeletonViRiqnDrnea::setNextPositions(
     const Eigen::VectorXd& nextPositions)
 {
   auto* skel = mComposite;
@@ -225,7 +225,7 @@ void SkeletonVariationalIntegrator::setNextPositions(
   auto index = 0u;
   for (auto* bodyNode : skel->getBodyNodes())
   {
-    auto* aspect = bodyNode->get<BodyNodeVariationalIntegrator>();
+    auto* aspect = bodyNode->get<BodyNodeViRiqnDrnea>();
     assert(aspect);
     auto* joint = bodyNode->getParentJoint();
     const auto numDofs = joint->getNumDofs();
@@ -238,7 +238,7 @@ void SkeletonVariationalIntegrator::setNextPositions(
 }
 
 //==============================================================================
-Eigen::VectorXd SkeletonVariationalIntegrator::evaluateDel(
+Eigen::VectorXd SkeletonViRiqnDrnea::evaluateDel(
     const Eigen::VectorXd& nextPositions)
 {
   // Implementation of Algorithm 2 of "A linear-time variational integrator for
@@ -253,7 +253,7 @@ Eigen::VectorXd SkeletonVariationalIntegrator::evaluateDel(
   // Forward recursion: line 1 to 5 of Algorithm 2
   for (auto* bodyNode : skel->getBodyNodes())
   {
-    auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+    auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
     assert(bodyNodeVi);
 
     bodyNodeVi->updateNextTransform();
@@ -265,7 +265,7 @@ Eigen::VectorXd SkeletonVariationalIntegrator::evaluateDel(
        it != skel->getBodyNodes().rend(); ++it)
   {
     auto* bodyNode = *it;
-    auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+    auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
 
     bodyNodeVi->evaluateDel(gravity, timeStep);
   }
@@ -274,7 +274,7 @@ Eigen::VectorXd SkeletonVariationalIntegrator::evaluateDel(
 }
 
 //==============================================================================
-Eigen::MatrixXd SkeletonVariationalIntegrator::evaluateDelDeriv(
+Eigen::MatrixXd SkeletonViRiqnDrnea::evaluateDelDeriv(
     const Eigen::VectorXd& /*nextPositions*/)
 {
   // Implementation of Algorithm 4 of "A linear-time variational integrator for
@@ -296,7 +296,7 @@ Eigen::MatrixXd SkeletonVariationalIntegrator::evaluateDelDeriv(
     // Forward recursion: line 1 to 5 of Algorithm 4
     for (auto* bodyNode : skel->getBodyNodes())
     {
-      auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+      auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
       assert(bodyNodeVi);
 
       bodyNodeVi->updateNextTransformDeriv();
@@ -308,7 +308,7 @@ Eigen::MatrixXd SkeletonVariationalIntegrator::evaluateDelDeriv(
     //       it != skel->getBodyNodes().rend(); ++it)
     //  {
     //    auto* bodyNode = *it;
-    //    auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+    //    auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
 
     //    bodyNodeVi->evaluateDel(gravity, timeStep);
     //  }
@@ -319,7 +319,7 @@ Eigen::MatrixXd SkeletonVariationalIntegrator::evaluateDelDeriv(
 }
 
 //==============================================================================
-Eigen::VectorXd SkeletonVariationalIntegrator::getError() const
+Eigen::VectorXd SkeletonViRiqnDrnea::getError() const
 {
   auto* skel = mComposite;
   const auto numDofs = skel->getNumDofs();
@@ -329,7 +329,7 @@ Eigen::VectorXd SkeletonVariationalIntegrator::getError() const
   auto index = 0u;
   for (auto* bodyNode : skel->getBodyNodes())
   {
-    auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+    auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
     assert(bodyNodeVi);
     auto* jointVi = bodyNodeVi->getJointVi();
     const auto numJointDofs = bodyNode->getParentJoint()->getNumDofs();
@@ -343,7 +343,7 @@ Eigen::VectorXd SkeletonVariationalIntegrator::getError() const
 }
 
 //==============================================================================
-void SkeletonVariationalIntegrator::stepForward(
+void SkeletonViRiqnDrnea::stepForward(
     const Eigen::VectorXd& nextPositions)
 {
   auto* skel = mComposite;
@@ -366,7 +366,7 @@ void SkeletonVariationalIntegrator::stepForward(
   // Update previous spatial velocity and momentum of the bodies
   for (auto* bodyNode : skel->getBodyNodes())
   {
-    auto* bodyNodeVi = bodyNode->get<BodyNodeVariationalIntegrator>();
+    auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
     assert(bodyNodeVi);
 
     bodyNodeVi->mState.mPreAverageVelocity

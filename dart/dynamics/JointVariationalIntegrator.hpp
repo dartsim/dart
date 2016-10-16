@@ -47,8 +47,8 @@ class JointVariationalIntegrator: public common::CompositeTrackingAspect<Joint>
 {
 public:
 
-  friend class SkeletonVariationalIntegrator;
-  friend class BodyNodeVariationalIntegrator;
+  friend class SkeletonViRiqnDrnea;
+  friend class BodyNodeViRiqnDrnea;
 
   using Base = common::CompositeTrackingAspect<Joint>;
 
@@ -77,8 +77,8 @@ public:
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  friend class SkeletonVariationalIntegrator;
-  friend class BodyNodeVariationalIntegrator;
+  friend class SkeletonViRiqnDrnea;
+  friend class BodyNodeViRiqnDrnea;
 
   using Base = JointVariationalIntegrator;
 

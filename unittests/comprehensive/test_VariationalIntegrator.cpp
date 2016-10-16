@@ -42,10 +42,10 @@ dynamics::SkeletonPtr createRandomSkeleton();
 dynamics::SkeletonPtr createRandomSkeletonWithBallJoints();
 
 //==============================================================================
-TEST(VariationalIntegrator, SkeletonVariationalIntegrator)
+TEST(VariationalIntegrator, SkeletonViRiqnDrnea)
 {
   auto skel = createRandomSkeleton();
-  auto vi = skel->createAspect<dynamics::SkeletonVariationalIntegrator>();
+  auto vi = skel->createAspect<dynamics::SkeletonViRiqnDrnea>();
 
   const auto numDofs = skel->getNumDofs();
   Eigen::VectorXd randomPos = Eigen::VectorXd::Random(numDofs);
@@ -63,7 +63,7 @@ TEST(VariationalIntegrator, Basic)
 #endif
 
   auto skel = createRandomSkeleton();
-  auto vi = skel->createAspect<dynamics::SkeletonVariationalIntegrator>();
+  auto vi = skel->createAspect<dynamics::SkeletonViRiqnDrnea>();
 
   for (auto i = 0u; i < numSteps; ++i)
     vi->integrate();
