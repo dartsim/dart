@@ -29,8 +29,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_JOINTVARIATIONALINTEGRATOR_HPP_
-#define DART_DYNAMICS_JOINTVARIATIONALINTEGRATOR_HPP_
+#ifndef DART_DYNAMICS_JOINTVINEWTONDRNEA_HPP_
+#define DART_DYNAMICS_JOINTVINEWTONDRNEA_HPP_
 
 #include <Eigen/Dense>
 
@@ -43,7 +43,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-class JointVariationalIntegrator: public common::CompositeTrackingAspect<Joint>
+class JointViNewtonDrnea: public common::CompositeTrackingAspect<Joint>
 {
 public:
 
@@ -71,7 +71,7 @@ protected:
 
 //==============================================================================
 template <typename ConfigSpaceT>
-class GenericJointVariationalIntegrator : public JointVariationalIntegrator
+class GenericJointViNewtonDrnea : public JointViNewtonDrnea
 {
 public:
 
@@ -80,18 +80,18 @@ public:
   friend class SkeletonViRiqnDrnea;
   friend class BodyNodeViRiqnDrnea;
 
-  using Base = JointVariationalIntegrator;
+  using Base = JointViNewtonDrnea;
 
   using Vector = typename ConfigSpaceT::Vector;
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
-  GenericJointVariationalIntegrator()
+  GenericJointViNewtonDrnea()
   {
     // Do nothing
   }
 
-  GenericJointVariationalIntegrator(
-      const GenericJointVariationalIntegrator&) = delete;
+  GenericJointViNewtonDrnea(
+      const GenericJointViNewtonDrnea&) = delete;
 
   void initialize(double timeStep) override
   {
@@ -166,8 +166,8 @@ private:
 };
 
 //==============================================================================
-class RevoluteJointVariationalIntegrator final :
-    public GenericJointVariationalIntegrator<math::R1Space>
+class RevoluteJointViNewtonDrnea final :
+    public GenericJointViNewtonDrnea<math::R1Space>
 {
 public:
 
@@ -184,4 +184,4 @@ protected:
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_JOINTVARIATIONALINTEGRATOR_HPP_
+#endif  // DART_DYNAMICS_JOINTVINEWTONDRNEA_HPP_

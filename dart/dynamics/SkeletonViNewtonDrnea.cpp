@@ -29,12 +29,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SkeletonVariationalIntegrator.hpp"
+#include "dart/dynamics/SkeletonViNewtonDrnea.hpp"
 
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BodyNodeVariationalIntegrator.hpp"
-#include "dart/dynamics/JointVariationalIntegrator.hpp"
+#include "dart/dynamics/JointViRiqnDrnea.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -42,7 +42,7 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
-SkeletonViRiqnDrneaState::SkeletonViRiqnDrneaState()
+SkeletonViNewtonDrneaState::SkeletonViNewtonDrneaState()
 {
   // Do nothing
 }
@@ -50,14 +50,14 @@ SkeletonViRiqnDrneaState::SkeletonViRiqnDrneaState()
 } // namespace detail
 
 //==============================================================================
-SkeletonViRiqnDrnea::SkeletonViRiqnDrnea(
+SkeletonViNewtonDrnea::SkeletonViNewtonDrnea(
     const StateData& state)
 {
   mState = state;
 }
 
 //==============================================================================
-void SkeletonViRiqnDrnea::initialize()
+void SkeletonViNewtonDrnea::initialize()
 {
   auto* skel = mComposite;
 
@@ -70,32 +70,32 @@ void SkeletonViRiqnDrnea::initialize()
 }
 
 //==============================================================================
-void SkeletonViRiqnDrnea::setTolerance(double tol)
+void SkeletonViNewtonDrnea::setTolerance(double tol)
 {
   mTolerance = tol;
 }
 
 //==============================================================================
-double SkeletonViRiqnDrnea::getTolerance() const
+double SkeletonViNewtonDrnea::getTolerance() const
 {
   return mTolerance;
 }
 
 //==============================================================================
-void SkeletonViRiqnDrnea::setMaxIternation(std::size_t iter)
+void SkeletonViNewtonDrnea::setMaxIternation(std::size_t iter)
 {
   mMaxIteration = iter;
 }
 
 //==============================================================================
-std::size_t SkeletonViRiqnDrnea::getMaxIteration() const
+std::size_t SkeletonViNewtonDrnea::getMaxIteration() const
 {
   return mMaxIteration;
 }
 
 //==============================================================================
-SkeletonViRiqnDrnea::TerminalCondition
-SkeletonViRiqnDrnea::integrate()
+SkeletonViNewtonDrnea::TerminalCondition
+SkeletonViNewtonDrnea::integrate()
 {
   auto* skel = mComposite;
 
@@ -143,7 +143,7 @@ SkeletonViRiqnDrnea::integrate()
 }
 
 //==============================================================================
-void SkeletonViRiqnDrnea::setComposite(
+void SkeletonViNewtonDrnea::setComposite(
     common::Composite* newComposite)
 {
   Base::setComposite(newComposite);
@@ -163,13 +163,13 @@ void SkeletonViRiqnDrnea::setComposite(
 }
 
 //==============================================================================
-void SkeletonViRiqnDrnea::loseComposite(common::Composite* oldComposite)
+void SkeletonViNewtonDrnea::loseComposite(common::Composite* oldComposite)
 {
   Base::loseComposite(oldComposite);
 }
 
 //==============================================================================
-void SkeletonViRiqnDrnea::setPrevPositions(
+void SkeletonViNewtonDrnea::setPrevPositions(
     const Eigen::VectorXd& prevPositions)
 {
   auto* skel = mComposite;
@@ -191,7 +191,7 @@ void SkeletonViRiqnDrnea::setPrevPositions(
 }
 
 //==============================================================================
-Eigen::VectorXd SkeletonViRiqnDrnea::getPrevPositions() const
+Eigen::VectorXd SkeletonViNewtonDrnea::getPrevPositions() const
 {
   auto* skel = mComposite;
   const auto numDofs = skel->getNumDofs();
@@ -216,7 +216,7 @@ Eigen::VectorXd SkeletonViRiqnDrnea::getPrevPositions() const
 }
 
 //==============================================================================
-void SkeletonViRiqnDrnea::setNextPositions(
+void SkeletonViNewtonDrnea::setNextPositions(
     const Eigen::VectorXd& nextPositions)
 {
   auto* skel = mComposite;
@@ -238,7 +238,7 @@ void SkeletonViRiqnDrnea::setNextPositions(
 }
 
 //==============================================================================
-Eigen::VectorXd SkeletonViRiqnDrnea::evaluateDel(
+Eigen::VectorXd SkeletonViNewtonDrnea::evaluateDel(
     const Eigen::VectorXd& nextPositions)
 {
   // Implementation of Algorithm 2 of "A linear-time variational integrator for
@@ -274,7 +274,7 @@ Eigen::VectorXd SkeletonViRiqnDrnea::evaluateDel(
 }
 
 //==============================================================================
-Eigen::MatrixXd SkeletonViRiqnDrnea::evaluateDelDeriv(
+Eigen::MatrixXd SkeletonViNewtonDrnea::evaluateDelDeriv(
     const Eigen::VectorXd& /*nextPositions*/)
 {
   // Implementation of Algorithm 4 of "A linear-time variational integrator for
@@ -319,7 +319,7 @@ Eigen::MatrixXd SkeletonViRiqnDrnea::evaluateDelDeriv(
 }
 
 //==============================================================================
-Eigen::VectorXd SkeletonViRiqnDrnea::getError() const
+Eigen::VectorXd SkeletonViNewtonDrnea::getError() const
 {
   auto* skel = mComposite;
   const auto numDofs = skel->getNumDofs();
@@ -343,7 +343,7 @@ Eigen::VectorXd SkeletonViRiqnDrnea::getError() const
 }
 
 //==============================================================================
-void SkeletonViRiqnDrnea::stepForward(
+void SkeletonViNewtonDrnea::stepForward(
     const Eigen::VectorXd& nextPositions)
 {
   auto* skel = mComposite;

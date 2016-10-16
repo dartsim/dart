@@ -34,7 +34,7 @@
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
-#include "dart/dynamics/JointVariationalIntegrator.hpp"
+#include "dart/dynamics/JointViRiqnDrnea.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -57,17 +57,17 @@ BodyNodeViRiqnDrnea::BodyNodeViRiqnDrnea(
 }
 
 //==============================================================================
-JointVariationalIntegrator* BodyNodeViRiqnDrnea::getJointVi()
+JointViRiqnDrnea* BodyNodeViRiqnDrnea::getJointVi()
 {
   auto* bodyNode = mComposite;
   auto* joint = bodyNode->getParentJoint();
-  assert(joint->get<JointVariationalIntegrator>());
+  assert(joint->get<JointViRiqnDrnea>());
 
-  return joint->get<JointVariationalIntegrator>();
+  return joint->get<JointViRiqnDrnea>();
 }
 
 //==============================================================================
-const JointVariationalIntegrator*
+const JointViRiqnDrnea*
 BodyNodeViRiqnDrnea::getJointVi() const
 {
   return const_cast<const BodyNodeViRiqnDrnea*>(
@@ -85,8 +85,8 @@ void BodyNodeViRiqnDrnea::initialize(double timeStep)
   mState.mPrevMomentum = math::dexp_inv_transpose(V*timeStep, G*V);
 
   auto* joint = bodyNode->getParentJoint();
-  assert(joint->get<JointVariationalIntegrator>());
-  joint->get<JointVariationalIntegrator>()->initialize(timeStep);
+  assert(joint->get<JointViRiqnDrnea>());
+  joint->get<JointViRiqnDrnea>()->initialize(timeStep);
 }
 
 //==============================================================================
@@ -108,10 +108,10 @@ void BodyNodeViRiqnDrnea::setComposite(
   auto* joint = bodyNode->getParentJoint();
   if (joint->is<RevoluteJoint>())
   {
-    JointVariationalIntegrator* revVI
-        = new RevoluteJointVariationalIntegrator();
+    JointViRiqnDrnea* revVI
+        = new RevoluteJointViRiqnDrnea();
     joint->set(revVI);
-    assert(joint->get<JointVariationalIntegrator>());
+    assert(joint->get<JointViRiqnDrnea>());
   }
   else
   {
@@ -127,7 +127,7 @@ void BodyNodeViRiqnDrnea::updateNextTransform()
 {
   auto* bodyNode = mComposite;
   auto* joint = bodyNode->getParentJoint();
-  auto* jointAspect = joint->get<JointVariationalIntegrator>();
+  auto* jointAspect = joint->get<JointViRiqnDrnea>();
 
   jointAspect->updateNextRelativeTransform();
 }
@@ -138,7 +138,7 @@ void BodyNodeViRiqnDrnea::updateNextVelocity(double timeStep)
   auto* bodyNode = mComposite;
   auto* parentBodyNode = bodyNode->getParentBodyNode();
   auto* joint = bodyNode->getParentJoint();
-  auto* jointAspect = joint->get<JointVariationalIntegrator>();
+  auto* jointAspect = joint->get<JointViRiqnDrnea>();
 
   if (parentBodyNode)
   {
@@ -180,7 +180,7 @@ void BodyNodeViRiqnDrnea::evaluateDel(
 {
   auto* bodyNode = mComposite;
   auto* joint = bodyNode->getParentJoint();
-  auto* jointAspect = joint->get<JointVariationalIntegrator>();
+  auto* jointAspect = joint->get<JointViRiqnDrnea>();
 
   const Eigen::Matrix6d& G = bodyNode->getInertia().getSpatialTensor();
 

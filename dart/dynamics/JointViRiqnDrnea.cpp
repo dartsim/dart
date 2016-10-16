@@ -29,15 +29,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/JointVariationalIntegrator.hpp"
+#include "dart/dynamics/JointViRiqnDrnea.hpp"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-std::unique_ptr<common::Aspect> RevoluteJointVariationalIntegrator::cloneAspect() const
+std::unique_ptr<common::Aspect> RevoluteJointViRiqnDrnea::cloneAspect() const
 {
-  auto newAspect = common::make_unique<RevoluteJointVariationalIntegrator>();
+  auto newAspect = common::make_unique<RevoluteJointViRiqnDrnea>();
 
   // TODO(JS): copy necessary member variables
 
@@ -46,7 +46,7 @@ std::unique_ptr<common::Aspect> RevoluteJointVariationalIntegrator::cloneAspect(
 }
 
 //==============================================================================
-void RevoluteJointVariationalIntegrator::updateNextRelativeTransform()
+void RevoluteJointViRiqnDrnea::updateNextRelativeTransform()
 {
   assert(dynamic_cast<RevoluteJoint*>(mComposite));
   auto* revJoint = static_cast<RevoluteJoint*>(mComposite);
