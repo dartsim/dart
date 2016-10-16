@@ -38,6 +38,7 @@
 
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/EndEffector.h"
+#include "dart/dynamics/Joint.h"
 
 namespace dart {
 namespace constraint {
@@ -181,6 +182,27 @@ static void addDampedPseudoInverseToGradient(
 }
 
 //==============================================================================
+static void convertJacobianMethodOutputToGradient(
+    Eigen::Map<Eigen::VectorXd>& grad,
+    const std::weak_ptr<dynamics::HierarchicalIK>& mIK)
+{
+  const dart::dynamics::SkeletonPtr& skel = mIK.lock()->getSkeleton();
+  skel->setVelocities(grad);
+
+  const Eigen::VectorXd mInitialPositionsCache = skel->getPositions();
+
+  for(size_t i=0; i < skel->getNumJoints(); ++i)
+    skel->getJoint(i)->integratePositions(1.0);
+
+  // Clear out the velocities so we don't interfere with other Jacobian methods
+  for(size_t i=0; i < skel->getNumDofs(); ++i)
+    skel->setVelocity(i, 0.0);
+
+  grad = skel->getPositions();
+  grad -= mInitialPositionsCache;
+}
+
+//==============================================================================
 void BalanceConstraint::evalGradient(const Eigen::VectorXd& _x,
                                      Eigen::Map<Eigen::VectorXd> _grad)
 {
@@ -255,7 +277,7 @@ void BalanceConstraint::evalGradient(const Eigen::VectorXd& _x,
       }
       else
       {
-        mNullSpaceCache.setZero();
+        mNullSpaceCache.setZero(nDofs, nDofs);
       }
 
       size_t numEE = skel->getNumEndEffectors();
@@ -292,7 +314,7 @@ void BalanceConstraint::evalGradient(const Eigen::VectorXd& _x,
       }
       else
       {
-        mNullSpaceCache.setZero();
+        mNullSpaceCache.setZero(nDofs, nDofs);
       }
 
       for(size_t i=0; i<2; ++i)
@@ -321,6 +343,8 @@ void BalanceConstraint::evalGradient(const Eigen::VectorXd& _x,
       }
     }
   }
+
+  convertJacobianMethodOutputToGradient(_grad, mIK);
 }
 
 //==============================================================================

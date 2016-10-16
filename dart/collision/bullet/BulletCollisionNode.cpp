@@ -34,6 +34,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+// Must be included before any Bullet headers.
+#include "dart/config.h"
+
 #include "dart/collision/bullet/BulletCollisionNode.h"
 
 #include <iostream>
@@ -148,8 +151,8 @@ BulletCollisionNode::BulletCollisionNode(dynamics::BodyNode* _bodyNode)
       {
         const dynamics::MeshShape* shapeMesh
             = static_cast<const dynamics::MeshShape*>(shape.get());
-        btConvexTriangleMeshShape* btMesh = _createMesh(shapeMesh->getScale(),
-                                                        shapeMesh->getMesh());
+        btGImpactMeshShape* btMesh = _createMesh(shapeMesh->getScale(),
+                                                 shapeMesh->getMesh());
         btCollisionObject* btCollObj = new btCollisionObject();
 
         // Add user data
@@ -208,7 +211,7 @@ btCollisionObject*BulletCollisionNode::getBulletCollisionObject(int _i)
 }
 
 //==============================================================================
-btConvexTriangleMeshShape* _createMesh(const Eigen::Vector3d& _scale,
+btGImpactMeshShape* _createMesh(const Eigen::Vector3d& _scale,
                                        const aiScene* _mesh)
 {
   btTriangleMesh* btMesh = new btTriangleMesh();
@@ -230,8 +233,8 @@ btConvexTriangleMeshShape* _createMesh(const Eigen::Vector3d& _scale,
     }
   }
 
-  btConvexTriangleMeshShape* btMeshShape =
-      new btConvexTriangleMeshShape(btMesh);
+  btGImpactMeshShape* btMeshShape = new btGImpactMeshShape(btMesh);
+  btMeshShape->updateBound();
 
   return btMeshShape;
 }

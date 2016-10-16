@@ -1,3 +1,35 @@
+### Version 5.1.4 (2016-10-14)
+
+1. Fixed inconsistent frame rate of GlutWindow
+    * [Pull request #794](https://github.com/dartsim/dart/pull/794)
+
+### Version 5.1.3 (2016-10-07)
+
+1. Updated to support Bullet built with double precision (backport of [#660](https://github.com/dartsim/dart/pull/660))
+    * [Pull request #777](https://github.com/dartsim/dart/pull/777)
+
+1. Modified to use btGImpactMeshShape instead of btConvexTriangleMeshShape for mesh
+    * [Pull request #764](https://github.com/dartsim/dart/pull/764)
+
+1. Updated to support FCL 0.5 and tinyxml 4.0 (backport of [#749](https://github.com/dartsim/dart/pull/749))
+    * [Pull request #759](https://github.com/dartsim/dart/pull/759)
+
+### Version 5.1.2 (2016-04-25)
+
+1. Fixed inverse kinematics (backporting)
+    * [Pull request #684](https://github.com/dartsim/dart/pull/684)
+
+1. Fixed aligned memory allocation with Eigen objects in loading meshes
+    * [Pull request #606](https://github.com/dartsim/dart/pull/606)
+
+1. Fixed incorrect applying joint constraint impulses (backporting)
+    * [Pull request #579](https://github.com/dartsim/dart/pull/579)
+
+1. Fixed some build and packaging issues
+    * [Pull request #559](https://github.com/dartsim/dart/pull/559)
+    * [Pull request #595](https://github.com/dartsim/dart/pull/595)
+    * [Pull request #696](https://github.com/dartsim/dart/pull/696)
+
 ### Version 5.1.1 (2015-11-06)
 
 1. Add bullet dependency to package.xml
@@ -294,6 +326,17 @@
 
 1. Added specification of minimum dependency version
     * [Pull request #306](https://github.com/dartsim/dart/pull/306)
+
+### Version 4.3.6 (2016-04-16)
+
+1. Fixed duplicate entries in Skeleton::mBodyNodes causing segfault in destructor
+    * [Issue #671](https://github.com/dartsim/dart/issues/671)
+    * [Pull request #672](https://github.com/dartsim/dart/pull/672)
+
+### Version 4.3.5 (2016-01-09)
+
+1. Fixed incorrect applying of joint constraint impulses (backported from 6.0.0)
+    * [Pull request #578](https://github.com/dartsim/dart/pull/578)
 
 ### Version 4.3.4 (2015-01-24)
 

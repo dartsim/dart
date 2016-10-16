@@ -42,6 +42,23 @@
 #include <fcl/math/matrix_3f.h>
 #include <fcl/math/transform.h>
 
+#define FCL_VERSION_AT_LEAST(x,y,z) \
+  (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \
+  (FCL_MINOR_VERSION > y || (FCL_MINOR_VERSION >= y && \
+  FCL_PATCH_VERSION >= z))))
+
+#define FCL_MAJOR_MINOR_VERSION_AT_MOST(x,y) \
+   (FCL_MAJOR_VERSION < x || (FCL_MAJOR_VERSION <= x && \
+   (FCL_MINOR_VERSION < y || (FCL_MINOR_VERSION <= y))))
+
+#if FCL_VERSION_AT_LEAST(0,5,0)
+template <class T> using fcl_shared_ptr = std::shared_ptr<T>;
+template <class T> using fcl_weak_ptr = std::weak_ptr<T>;
+#else
+template <class T> using fcl_shared_ptr = boost::shared_ptr<T>;
+template <class T> using fcl_weak_ptr = boost::weak_ptr<T>;
+#endif
+
 namespace dart {
 namespace collision {
 

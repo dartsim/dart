@@ -20,7 +20,7 @@
                     <color>0.95 0.95 0.95</color>
                 </visualization_shape>
                 <collision_shape>
-                    <transformation>0 -0.005 0 0 0 0</transformation>
+                    <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <box>
                             <size>10 0.01 10</size>
@@ -180,7 +180,7 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <mesh>
-                            <file_name>../obj/foot.obj</file_name>
+                            <file_name>../../obj/foot.obj</file_name>
                             <scale>1.0 1.0 1.0</scale>
                         </mesh>
                     </geometry>
@@ -190,7 +190,7 @@
                     <transformation>0 0 0 0 0 0</transformation>
                     <geometry>
                         <mesh>
-                            <file_name>../obj/foot.obj</file_name>
+                            <file_name>../../obj/foot.obj</file_name>
                             <scale>1.0 1.0 1.0</scale>
                         </mesh>
                     </geometry>

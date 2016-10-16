@@ -46,6 +46,7 @@
 #cmakedefine HAVE_IPOPT 1
 #cmakedefine HAVE_SNOPT 1
 #cmakedefine HAVE_BULLET_COLLISION 1
+#cmakedefine HAVE_FLANN 1
 
 #define DART_ROOT_PATH "@CMAKE_SOURCE_DIR@/"
 #define DART_DATA_PATH "@CMAKE_SOURCE_DIR@/data/"
@@ -53,5 +54,13 @@
 // See #451
 #cmakedefine ASSIMP_AISCENE_CTOR_DTOR_DEFINED 1
 #cmakedefine ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED 1
+
+// Workaround for the fact that Bullet does not add the definition to
+// BULLET_DEFINITIONS or generate a #cmakedefine header.
+#cmakedefine BT_USE_DOUBLE_PRECISION
+
+// Workaround for the fact that Bullet does not add the definition to
+// BULLET_DEFINITIONS or generate a #cmakedefine header.
+#cmakedefine BT_USE_DOUBLE_PRECISION
 
 #endif // #ifndef DART_CONFIG_H_

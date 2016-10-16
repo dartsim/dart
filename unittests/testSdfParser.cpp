@@ -76,6 +76,19 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
 }
 
 //==============================================================================
+TEST(SdfParser, LoadMesh)
+{
+  // Check if the parser can load mesh shape without any problems and the
+  // world can simulate it successfully.
+  auto world(new World);
+  auto skel = SdfParser::readSkeleton(DART_DATA_PATH"/sdf/test/mesh.sdf");
+  world->addSkeleton(skel);
+
+  for (auto i = 0u; i < 100; ++i)
+    world->step();
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);

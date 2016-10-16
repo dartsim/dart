@@ -38,9 +38,37 @@
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/DegreeOfFreedom.h"
 #include "dart/dynamics/SimpleFrame.h"
+#include "dart/dynamics/Joint.h"
 
 namespace dart {
 namespace dynamics {
+
+//==============================================================================
+static void convertJacobianMethodOutputToGradient(
+    Eigen::VectorXd& grad, const std::vector<size_t>& dofs,
+    InverseKinematics* mIK)
+{
+  const SkeletonPtr& skel = mIK->getNode()->getSkeleton();
+  const Eigen::VectorXd mInitialPositionsCache = skel->getPositions(dofs);
+
+  for(size_t i=0; i < dofs.size(); ++i)
+    skel->getDof(dofs[i])->setVelocity(grad[i]);
+  // Velocities of unused DOFs should already be set to zero.
+
+  for(size_t i=0; i < dofs.size(); ++i)
+  {
+    Joint* joint = skel->getDof(dofs[i])->getJoint();
+    joint->integratePositions(1.0);
+
+    // Reset this joint's velocities to zero to avoid double-integrating
+    const size_t numJointDofs = joint->getNumDofs();
+    for(size_t j=0; j < numJointDofs; ++j)
+      joint->setVelocity(j, 0.0);
+  }
+
+  grad = skel->getPositions(dofs);
+  grad -= mInitialPositionsCache;
+}
 
 //==============================================================================
 InverseKinematicsPtr InverseKinematics::create(JacobianNode* _node)
@@ -92,16 +120,25 @@ bool InverseKinematics::solve(bool _applySolution)
     bounds[i] = skel->getDof(mDofs[i])->getPositionUpperLimit();
   mProblem->setUpperBounds(bounds);
 
+  // Many GradientMethod implementations use Joint::integratePositions, so we
+  // need to clear out any velocities that might be in the Skeleton and then
+  // reset those velocities later.
+  Eigen::VectorXd originalVelocities = skel->getVelocities();
+  for(size_t i=0; i < skel->getNumDofs(); ++i)
+    skel->getDof(i)->setVelocity(0.0);
+
   if(_applySolution)
   {
     bool wasSolved = mSolver->solve();
     setPositions(mProblem->getOptimalSolution());
+    skel->setVelocities(originalVelocities);
     return wasSolved;
   }
 
   Eigen::VectorXd originalPositions = getPositions();
   bool wasSolved = mSolver->solve();
   setPositions(originalPositions);
+  skel->setVelocities(originalVelocities);
   return wasSolved;
 }
 
@@ -650,6 +687,7 @@ void InverseKinematics::JacobianDLS::computeGradient(
             J.transpose()*J).inverse() * J.transpose() * _error;
   }
 
+  convertJacobianMethodOutputToGradient(_grad, mIK->getDofs(), mIK);
   applyWeights(_grad);
   clampGradient(_grad);
 }
@@ -690,6 +728,7 @@ void InverseKinematics::JacobianTranspose::computeGradient(
   const math::Jacobian& J = mIK->computeJacobian();
   _grad = J.transpose() * _error;
 
+  convertJacobianMethodOutputToGradient(_grad, mIK->getDofs(), mIK);
   applyWeights(_grad);
   clampGradient(_grad);
 }

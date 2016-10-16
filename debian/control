@@ -1,4 +1,4 @@
-Source: dart
+Source: dart5
 Priority: extra
 Maintainer: Jeongseok Lee <jslee02@gmail.com>
 Build-Depends: debhelper (>= 9),
@@ -18,7 +18,7 @@ Build-Depends: debhelper (>= 9),
                libboost-regex-dev (>= 1.54.0-4ubuntu3),
                libopenthreads-dev,
                libopenscenegraph-dev
-Standards-Version: 3.9.6
+Standards-Version: 3.9.7
 Section: libs
 Homepage: http://dartsim.github.io/
 Vcs-Git: git://github.com/dartsim/dart.git

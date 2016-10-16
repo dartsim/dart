@@ -1,7 +1,11 @@
 #===============================================================================
 # CMake settings
 #===============================================================================
-cmake_minimum_required(VERSION 2.8.6 FATAL_ERROR)
+if(MSVC)
+  cmake_minimum_required(VERSION 3.1.3)
+else()
+  cmake_minimum_required(VERSION 2.8.6)
+endif()
 
 # Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
 # became default in CMake 3.0. Explicitly setting this policy is necessary to
@@ -41,7 +45,7 @@ project(dart)
 
 set(DART_MAJOR_VERSION "5")
 set(DART_MINOR_VERSION "1")
-set(DART_PATCH_VERSION "1")
+set(DART_PATCH_VERSION "4")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "flann, ccd, fcl")
@@ -154,6 +158,8 @@ if(ASSIMP_FOUND)
 
   # Check for missing symbols in ASSIMP (see #451)
   include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_DEFINITIONS "")
+  set(CMAKE_REQUIRED_FLAGS "")
   set(CMAKE_REQUIRED_INCLUDES ${ASSIMP_INCLUDE_DIRS})
   set(CMAKE_REQUIRED_LIBRARIES ${ASSIMP_LIBRARIES})
 
@@ -214,7 +220,7 @@ endif()
 
 # Boost
 set(DART_MIN_BOOST_VERSION 1.46.0 CACHE INTERNAL "Boost min version requirement" FORCE)
-if(MSVC OR MSVC90 OR MSVC10)
+if(MSVC)
   add_definitions(-DBOOST_ALL_NO_LIB)
 endif()
 add_definitions(-DBOOST_TEST_DYN_LINK)
@@ -247,12 +253,14 @@ if(NOT BUILD_CORE_ONLY)
   find_package(FLANN 1.8.4 QUIET)
   if(FLANN_FOUND)
     message(STATUS "Looking for FLANN - ${FLANN_VERSION} found")
+    set(HAVE_FLANN TRUE)
   else()
     if(FLANN_VERSION)
       message(SEND_ERROR "Looking for FLANN - ${FLANN_VERSION} found, ${PROJECT_NAME} requires 1.8.4 or greater.")
     else()
       message(SEND_ERROR "Looking for FLANN - NOT found, please install libflann-dev")
     endif()
+    set(HAVE_FLANN FALSE)
   endif()
 
   # TINYXML
@@ -351,21 +359,43 @@ else()
   set(HAVE_SHARK FALSE)
 endif()
 
-# BulletCollision
-if(UNIX)
-  pkg_check_modules(BULLET bullet>=2.81 QUIET)
-  if(NOT BULLET_FOUND)
-     pkg_check_modules(BULLET bullet2.82>=2.82 QUIET)
-  endif()
-else()
-  find_package(Bullet COMPONENTS BulletMath BulletCollision QUIET)
-endif()
+# Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
+# CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
+# with Bullet, which uses relative paths and may break transitive dependencies.
+find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
+
 if(BULLET_FOUND)
-  message(STATUS "Looking for BulletCollision - ${BULLET_VERSION} found")
+  # Test whether Bullet was built with double precision. If so, we need to
+  # define the BT_USE_DOUBLE_PRECISION pre-processor directive before including
+  # any Bullet headers. This is a workaround for the fact that Bullet does not
+  # add the definition to BULLET_DEFINITIONS or generate a #cmakedefine header.
+  include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_FLAGS "")
+  set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
+  set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
+  set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
+  check_cxx_source_compiles(
+    "
+    #include <btBulletCollisionCommon.h>
+    int main()
+    {
+      btVector3 v(0., 0., 1.);
+      btStaticPlaneShape planeShape(v, 0.);
+      return 0;
+    }
+    "
+    BT_USE_DOUBLE_PRECISION
+  )
+
+  if(BT_USE_DOUBLE_PRECISION)
+    message(STATUS "Looking for Bullet - found (double precision)")
+  else()
+    message(STATUS "Looking for Bullet - found (single precision)")
+  endif()
+
   set(HAVE_BULLET_COLLISION TRUE)
-  add_definitions(-DHAVE_BULLET_COLLISION)
 else()
-  message(STATUS "Looking for BulletCollision - NOT found, please install libbullet-dev")
+  message(STATUS "Looking for Bullet - NOT found, please install libbullet-dev")
   set(HAVE_BULLET_COLLISION FALSE)
 endif()
 
@@ -402,6 +432,7 @@ endif()
 
 if(NOT BUILD_CORE_ONLY)
   set(DART_DEPENDENCIES ${urdfdom_LIBRARIES}
+                        ${FLANN_LIBRARIES}
                         ${TINYXML_LIBRARIES}
                         ${TINYXML2_LIBRARIES}
   )
@@ -420,7 +451,6 @@ include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
 include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
 if(HAVE_BULLET_COLLISION)
   include_directories(SYSTEM ${BULLET_INCLUDE_DIRS})
-  add_definitions(${BULLET_CFLAGS})
 endif()
 
 if(NOT BUILD_CORE_ONLY)
@@ -441,15 +471,19 @@ endif()
 
 include_directories("${CMAKE_BINARY_DIR}")
 
+set(DART_INCLUDE_DIRS
+    "${CMAKE_INSTALL_PREFIX}/include"
+    "${EIGEN3_INCLUDE_DIRS}")
+if(HAVE_BULLET_COLLISION)
+  list(APPEND DART_INCLUDE_DIRS "${BULLET_INCLUDE_DIRS}")
+endif()
+
 #===============================================================================
 # Link directories
 #===============================================================================
 link_directories("${CMAKE_BINARY_DIR}/lib")
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 link_directories(${Boost_LIBRARY_DIRS})
-if(HAVE_BULLET_COLLISION)
-  link_directories("${BULLET_LIBRARY_DIRS}")
-endif()
 
 #===============================================================================
 # Check for non-case-sensitive filesystems
@@ -467,8 +501,8 @@ endif()
 #===============================================================================
 if(MSVC)
   # Visual Studio enables c++11 support by default
-  if(NOT MSVC12)
-    message(FATAL_ERROR "${PROJECT_NAME} requires VS 2013 or greater.")
+  if(MSVC_VERSION VERSION_LESS 1800)
+    message(FATAL_ERROR "${PROJECT_NAME} requires VS 2015 or greater.")
   endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP4")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /INCREMENTAL:NO")

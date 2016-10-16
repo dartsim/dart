@@ -1,0 +1,915 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" assignedExecutableTargets="true" buildAllGenerated="true">
+    <generated>
+      <config projectName="dart" targetName="osgDragAndDrop" />
+      <config projectName="dart" targetName="testFileInfoWorld" />
+      <config projectName="dart" targetName="osgDart" />
+      <config projectName="dart" targetName="dart-optimizer-ipopt" />
+      <config projectName="dart" targetName="mixedChain" />
+      <config projectName="dart" targetName="bipedStand" />
+      <config projectName="dart" targetName="jointConstraints" />
+      <config projectName="dart" targetName="osgSoftBodies" />
+      <config projectName="dart" targetName="tutorialBiped-Finished" />
+      <config projectName="dart" targetName="speedTest" />
+      <config projectName="dart" targetName="atlasSimbicon" />
+      <config projectName="dart" targetName="testInverseKinematics" />
+      <config projectName="dart" targetName="osgOperationalSpaceControl" />
+      <config projectName="dart" targetName="vehicle" />
+      <config projectName="dart" targetName="testNameManagement" />
+      <config projectName="dart" targetName="softBodies" />
+      <config projectName="dart" targetName="uninstall" />
+      <config projectName="dart" targetName="rigidLoop" />
+      <config projectName="dart" targetName="testSoftDynamics" />
+      <config projectName="dart" targetName="testSignal" />
+      <config projectName="dart" targetName="osgAtlasPuppet" />
+      <config projectName="dart" targetName="rigidChain" />
+      <config projectName="dart" targetName="testConstraint" />
+      <config projectName="dart" targetName="testJoints" />
+      <config projectName="dart" targetName="testSdfParser" />
+      <config projectName="dart" targetName="testBuilding" />
+      <config projectName="dart" targetName="testCollision" />
+      <config projectName="dart" targetName="dart" />
+      <config projectName="dart" targetName="testSubscriptions" />
+      <config projectName="dart" targetName="testUri" />
+      <config projectName="dart" targetName="gtest_main" />
+      <config projectName="dart" targetName="addDeleteSkels" />
+      <config projectName="dart" targetName="dart-optimizer-nlopt" />
+      <config projectName="dart" targetName="rigidBodies" />
+      <config projectName="dart" targetName="gtest" />
+      <config projectName="dart" targetName="testMath" />
+      <config projectName="dart" targetName="operationalSpaceControl" />
+      <config projectName="dart" targetName="tutorialCollisions" />
+      <config projectName="dart" targetName="testGeometry" />
+      <config projectName="dart" targetName="testSkelParser" />
+      <config projectName="dart" targetName="tutorialDominoes-Finished" />
+      <config projectName="dart" targetName="testCompositeResourceRetriever" />
+      <config projectName="dart" targetName="rigidCubes" />
+      <config projectName="dart" targetName="dart-core" />
+      <config projectName="dart" targetName="testDartLoader" />
+      <config projectName="dart" targetName="testUtilities" />
+      <config projectName="dart" targetName="hybridDynamics" />
+      <config projectName="dart" targetName="testPackageResourceRetriever" />
+      <config projectName="dart" targetName="rigidShapes" />
+      <config projectName="dart" targetName="testOptimizer" />
+      <config projectName="dart" targetName="simpleFrames" />
+      <config projectName="dart" targetName="testWorld" />
+      <config projectName="dart" targetName="tutorialCollisions-Finished" />
+      <config projectName="dart" targetName="testCommon" />
+      <config projectName="dart" targetName="tutorialDominoes" />
+      <config projectName="dart" targetName="tutorialBiped" />
+      <config projectName="dart" targetName="testDynamics" />
+      <config projectName="dart" targetName="testForwardKinematics" />
+      <config projectName="dart" targetName="testFrames" />
+      <config projectName="dart" targetName="tutorialMultiPendulum" />
+      <config projectName="dart" targetName="tutorialMultiPendulum-Finished" />
+      <config projectName="dart" targetName="testNearestNeighbor" />
+      <config projectName="dart" targetName="testLocalResourceRetriever" />
+      <config projectName="dart" targetName="hardcodedDesign" />
+      <config projectName="dart" targetName="testSkeleton" />
+    </generated>
+  </component>
+  <component name="CMakeSettings" AUTO_RELOAD="false" GENERATION_PASS_SYSTEM_ENVIRONMENT="true">
+    <ADDITIONAL_GENERATION_ENVIRONMENT>
+      <envs />
+    </ADDITIONAL_GENERATION_ENVIRONMENT>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="162c2729-d5fb-466c-9d3e-a82f190bed3e" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/apps/rigidBodies/MyWorld.cpp" afterPath="$PROJECT_DIR$/apps/rigidBodies/MyWorld.cpp" />
+    </list>
+    <ignored path="DART.iws" />
+    <ignored path=".idea/workspace.xml" />
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="TRACKING_ENABLED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CreatePatchCommitExecutor">
+    <option name="PATCH_PATH" value="" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
+  <component name="FavoritesManager">
+    <favorites_list name="DART" />
+  </component>
+  <component name="FileEditorManager">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file leaf-file-name="Main.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/apps/rigidBodies/Main.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="450">
+              <caret line="25" column="51" selection-start-line="25" selection-start-column="51" selection-end-line="25" selection-end-column="51" />
+              <folding>
+                <element signature="e#0#22#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MyWorld.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/apps/rigidBodies/MyWorld.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="144">
+              <caret line="248" column="12" selection-start-line="248" selection-start-column="12" selection-end-line="248" selection-end-column="12" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="RigidBody.h" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/apps/rigidBodies/RigidBody.h">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="180">
+              <caret line="12" column="8" selection-start-line="12" selection-start-column="8" selection-end-line="12" selection-end-column="8" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="CollisionInterface.cpp" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/apps/rigidBodies/CollisionInterface.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="162">
+              <caret line="9" column="58" selection-start-line="9" selection-start-column="58" selection-end-line="9" selection-end-column="58" />
+              <folding>
+                <element signature="e#0#31#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/apps/rigidBodies/Main.cpp" />
+        <option value="$PROJECT_DIR$/apps/rigidBodies/MyWorld.cpp" />
+        <option value="$PROJECT_DIR$/apps/rigidBodies/RigidBody.h" />
+      </list>
+    </option>
+  </component>
+  <component name="JsBuildToolGruntFileManager" detection-done="true" sorting="DEFINITION_ORDER" />
+  <component name="JsBuildToolPackageJson" detection-done="true" sorting="DEFINITION_ORDER" />
+  <component name="JsGulpfileManager">
+    <detection-done>true</detection-done>
+    <sorting>DEFINITION_ORDER</sorting>
+  </component>
+  <component name="OCFindUsagesOptions" text="false" ivars="false" properties="true" derivedClasses="false" />
+  <component name="ProjectFrameBounds">
+    <option name="x" value="1337" />
+    <option name="y" value="24" />
+    <option name="width" value="1863" />
+    <option name="height" value="1056" />
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="false">
+    <OptionsSetting value="true" id="Add" />
+    <OptionsSetting value="true" id="Remove" />
+    <OptionsSetting value="true" id="Checkout" />
+    <OptionsSetting value="true" id="Update" />
+    <OptionsSetting value="true" id="Status" />
+    <OptionsSetting value="true" id="Edit" />
+    <ConfirmationsSetting value="0" id="Add" />
+    <ConfirmationsSetting value="0" id="Remove" />
+  </component>
+  <component name="ProjectView">
+    <navigator currentView="ProjectPane" proportions="" version="1">
+      <flattenPackages />
+      <showMembers />
+      <showModules />
+      <showLibraryContents />
+      <hideEmptyPackages />
+      <abbreviatePackageNames />
+      <autoscrollToSource />
+      <autoscrollFromSource />
+      <sortByType />
+      <manualOrder />
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="DART" />
+              <option name="myItemType" value="com.jetbrains.cidr.projectView.CidrFilesViewHelper$MyProjectTreeStructure$1" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="DART" />
+              <option name="myItemType" value="com.jetbrains.cidr.projectView.CidrFilesViewHelper$MyProjectTreeStructure$1" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="DART" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="DART" />
+              <option name="myItemType" value="com.jetbrains.cidr.projectView.CidrFilesViewHelper$MyProjectTreeStructure$1" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="DART" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="apps" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="DART" />
+              <option name="myItemType" value="com.jetbrains.cidr.projectView.CidrFilesViewHelper$MyProjectTreeStructure$1" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="DART" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="apps" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="rigidBodies" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+        </subPane>
+      </pane>
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+    <property name="settings.editor.splitter.proportion" value="0.2" />
+  </component>
+  <component name="RunManager" selected="Application.rigidBodies">
+    <configuration default="true" type="CMakeGoogleTestRunConfigurationType" factoryName="Google Test" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="uninstall" CONFIG_NAME="Debug" TEST_MODE="SUITE_TEST">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="uninstall" CONFIG_NAME="Debug">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="true" type="JavascriptDebugType" factoryName="JavaScript Debug">
+      <method />
+    </configuration>
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="DART" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="Tox" factoryName="Tox">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="DART" />
+      <method />
+    </configuration>
+    <configuration default="true" type="js.build_tools.gulp" factoryName="Gulp.js">
+      <node-interpreter>project</node-interpreter>
+      <node-options />
+      <gulpfile />
+      <tasks />
+      <arguments />
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="true" type="js.build_tools.npm" factoryName="npm">
+      <command value="run-script" />
+      <scripts />
+      <node-interpreter value="project" />
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Attests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="DART" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Doctests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="DART" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Nosetests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="DART" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="PARAMS" value="" />
+      <option name="USE_PARAM" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Unittests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="DART" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="PUREUNITTEST" value="true" />
+      <option name="PARAMS" value="" />
+      <option name="USE_PARAM" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="py.test">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="DART" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="testToRun" value="" />
+      <option name="keywords" value="" />
+      <option name="params" value="" />
+      <option name="USE_PARAM" value="false" />
+      <option name="USE_KEYWORD" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="Build All" type="CMakeRunConfiguration" factoryName="Application" WORKING_DIR="" PASS_PARENT_ENVS_2="true" CONFIG_NAME="Release" EXPLICIT_BUILD_TARGET_NAME="all">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="uninstall" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="uninstall" CONFIG_NAME="Debug">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="addDeleteSkels" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="addDeleteSkels" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="addDeleteSkels">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="atlasSimbicon" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="atlasSimbicon" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="atlasSimbicon">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="bipedStand" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="bipedStand" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="bipedStand">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="hardcodedDesign" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="hardcodedDesign" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="hardcodedDesign">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="hybridDynamics" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="hybridDynamics" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="hybridDynamics">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="jointConstraints" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="jointConstraints" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="jointConstraints">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="mixedChain" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="mixedChain" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="mixedChain">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="operationalSpaceControl" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="operationalSpaceControl" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="operationalSpaceControl">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="rigidBodies" type="CMakeRunConfiguration" factoryName="Application" WORKING_DIR="" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="rigidBodies" CONFIG_NAME="Release" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="rigidBodies">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="rigidChain" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="rigidChain" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="rigidChain">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="rigidCubes" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="rigidCubes" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="rigidCubes">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="rigidLoop" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="rigidLoop" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="rigidLoop">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="rigidShapes" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="rigidShapes" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="rigidShapes">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="simpleFrames" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="simpleFrames" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="simpleFrames">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="softBodies" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="softBodies" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="softBodies">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="speedTest" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="speedTest" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="speedTest">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="vehicle" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="vehicle" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="vehicle">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="dart" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="dart" CONFIG_NAME="Debug">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="dart-core" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="dart-core" CONFIG_NAME="Debug">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="dart-optimizer-ipopt" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="dart-optimizer-ipopt" CONFIG_NAME="Debug">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="dart-optimizer-nlopt" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="dart-optimizer-nlopt" CONFIG_NAME="Debug">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="osgDart" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="osgDart" CONFIG_NAME="Debug">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="osgAtlasPuppet" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="osgAtlasPuppet" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="osgAtlasPuppet">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="osgDragAndDrop" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="osgDragAndDrop" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="osgDragAndDrop">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="osgOperationalSpaceControl" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="osgOperationalSpaceControl" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="osgOperationalSpaceControl">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="osgSoftBodies" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="osgSoftBodies" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="osgSoftBodies">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="tutorialBiped" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="tutorialBiped" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="tutorialBiped">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="tutorialBiped-Finished" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="tutorialBiped-Finished" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="tutorialBiped-Finished">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="tutorialCollisions" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="tutorialCollisions" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="tutorialCollisions">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="tutorialCollisions-Finished" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="tutorialCollisions-Finished" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="tutorialCollisions-Finished">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="tutorialDominoes" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="tutorialDominoes" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="tutorialDominoes">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="tutorialDominoes-Finished" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="tutorialDominoes-Finished" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="tutorialDominoes-Finished">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="tutorialMultiPendulum" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="tutorialMultiPendulum" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="tutorialMultiPendulum">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="tutorialMultiPendulum-Finished" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="tutorialMultiPendulum-Finished" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="tutorialMultiPendulum-Finished">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="gtest" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="gtest" CONFIG_NAME="Debug">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="gtest_main" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="gtest_main" CONFIG_NAME="Debug">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testBuilding" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testBuilding" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testBuilding">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testCollision" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testCollision" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testCollision">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testCommon" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testCommon" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testCommon">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testCompositeResourceRetriever" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testCompositeResourceRetriever" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testCompositeResourceRetriever">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testConstraint" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testConstraint" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testConstraint">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testDartLoader" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testDartLoader" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testDartLoader">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testDynamics" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testDynamics" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testDynamics">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testFileInfoWorld" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testFileInfoWorld" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testFileInfoWorld">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testForwardKinematics" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testForwardKinematics" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testForwardKinematics">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testFrames" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testFrames" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testFrames">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testGeometry" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testGeometry" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testGeometry">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testInverseKinematics" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testInverseKinematics" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testInverseKinematics">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testJoints" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testJoints" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testJoints">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testLocalResourceRetriever" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testLocalResourceRetriever" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testLocalResourceRetriever">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testMath" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testMath" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testMath">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testNameManagement" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testNameManagement" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testNameManagement">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testNearestNeighbor" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testNearestNeighbor" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testNearestNeighbor">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testOptimizer" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testOptimizer" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testOptimizer">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testPackageResourceRetriever" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testPackageResourceRetriever" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testPackageResourceRetriever">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testSdfParser" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testSdfParser" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testSdfParser">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testSignal" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testSignal" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testSignal">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testSkeleton" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testSkeleton" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testSkeleton">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testSkelParser" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testSkelParser" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testSkelParser">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testSoftDynamics" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testSoftDynamics" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testSoftDynamics">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testSubscriptions" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testSubscriptions" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testSubscriptions">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testUri" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testUri" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testUri">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testUtilities" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testUtilities" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testUtilities">
+      <envs />
+      <method />
+    </configuration>
+    <configuration default="false" name="testWorld" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="dart" TARGET_NAME="testWorld" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="dart" RUN_TARGET_NAME="testWorld">
+      <envs />
+      <method />
+    </configuration>
+    <list size="66">
+      <item index="0" class="java.lang.String" itemvalue="Application.Build All" />
+      <item index="1" class="java.lang.String" itemvalue="Application.uninstall" />
+      <item index="2" class="java.lang.String" itemvalue="Application.addDeleteSkels" />
+      <item index="3" class="java.lang.String" itemvalue="Application.atlasSimbicon" />
+      <item index="4" class="java.lang.String" itemvalue="Application.bipedStand" />
+      <item index="5" class="java.lang.String" itemvalue="Application.hardcodedDesign" />
+      <item index="6" class="java.lang.String" itemvalue="Application.hybridDynamics" />
+      <item index="7" class="java.lang.String" itemvalue="Application.jointConstraints" />
+      <item index="8" class="java.lang.String" itemvalue="Application.mixedChain" />
+      <item index="9" class="java.lang.String" itemvalue="Application.operationalSpaceControl" />
+      <item index="10" class="java.lang.String" itemvalue="Application.rigidBodies" />
+      <item index="11" class="java.lang.String" itemvalue="Application.rigidChain" />
+      <item index="12" class="java.lang.String" itemvalue="Application.rigidCubes" />
+      <item index="13" class="java.lang.String" itemvalue="Application.rigidLoop" />
+      <item index="14" class="java.lang.String" itemvalue="Application.rigidShapes" />
+      <item index="15" class="java.lang.String" itemvalue="Application.simpleFrames" />
+      <item index="16" class="java.lang.String" itemvalue="Application.softBodies" />
+      <item index="17" class="java.lang.String" itemvalue="Application.speedTest" />
+      <item index="18" class="java.lang.String" itemvalue="Application.vehicle" />
+      <item index="19" class="java.lang.String" itemvalue="Application.dart" />
+      <item index="20" class="java.lang.String" itemvalue="Application.dart-core" />
+      <item index="21" class="java.lang.String" itemvalue="Application.dart-optimizer-ipopt" />
+      <item index="22" class="java.lang.String" itemvalue="Application.dart-optimizer-nlopt" />
+      <item index="23" class="java.lang.String" itemvalue="Application.osgDart" />
+      <item index="24" class="java.lang.String" itemvalue="Application.osgAtlasPuppet" />
+      <item index="25" class="java.lang.String" itemvalue="Application.osgDragAndDrop" />
+      <item index="26" class="java.lang.String" itemvalue="Application.osgOperationalSpaceControl" />
+      <item index="27" class="java.lang.String" itemvalue="Application.osgSoftBodies" />
+      <item index="28" class="java.lang.String" itemvalue="Application.tutorialBiped" />
+      <item index="29" class="java.lang.String" itemvalue="Application.tutorialBiped-Finished" />
+      <item index="30" class="java.lang.String" itemvalue="Application.tutorialCollisions" />
+      <item index="31" class="java.lang.String" itemvalue="Application.tutorialCollisions-Finished" />
+      <item index="32" class="java.lang.String" itemvalue="Application.tutorialDominoes" />
+      <item index="33" class="java.lang.String" itemvalue="Application.tutorialDominoes-Finished" />
+      <item index="34" class="java.lang.String" itemvalue="Application.tutorialMultiPendulum" />
+      <item index="35" class="java.lang.String" itemvalue="Application.tutorialMultiPendulum-Finished" />
+      <item index="36" class="java.lang.String" itemvalue="Application.gtest" />
+      <item index="37" class="java.lang.String" itemvalue="Application.gtest_main" />
+      <item index="38" class="java.lang.String" itemvalue="Application.testBuilding" />
+      <item index="39" class="java.lang.String" itemvalue="Application.testCollision" />
+      <item index="40" class="java.lang.String" itemvalue="Application.testCommon" />
+      <item index="41" class="java.lang.String" itemvalue="Application.testCompositeResourceRetriever" />
+      <item index="42" class="java.lang.String" itemvalue="Application.testConstraint" />
+      <item index="43" class="java.lang.String" itemvalue="Application.testDartLoader" />
+      <item index="44" class="java.lang.String" itemvalue="Application.testDynamics" />
+      <item index="45" class="java.lang.String" itemvalue="Application.testFileInfoWorld" />
+      <item index="46" class="java.lang.String" itemvalue="Application.testForwardKinematics" />
+      <item index="47" class="java.lang.String" itemvalue="Application.testFrames" />
+      <item index="48" class="java.lang.String" itemvalue="Application.testGeometry" />
+      <item index="49" class="java.lang.String" itemvalue="Application.testInverseKinematics" />
+      <item index="50" class="java.lang.String" itemvalue="Application.testJoints" />
+      <item index="51" class="java.lang.String" itemvalue="Application.testLocalResourceRetriever" />
+      <item index="52" class="java.lang.String" itemvalue="Application.testMath" />
+      <item index="53" class="java.lang.String" itemvalue="Application.testNameManagement" />
+      <item index="54" class="java.lang.String" itemvalue="Application.testNearestNeighbor" />
+      <item index="55" class="java.lang.String" itemvalue="Application.testOptimizer" />
+      <item index="56" class="java.lang.String" itemvalue="Application.testPackageResourceRetriever" />
+      <item index="57" class="java.lang.String" itemvalue="Application.testSdfParser" />
+      <item index="58" class="java.lang.String" itemvalue="Application.testSignal" />
+      <item index="59" class="java.lang.String" itemvalue="Application.testSkeleton" />
+      <item index="60" class="java.lang.String" itemvalue="Application.testSkelParser" />
+      <item index="61" class="java.lang.String" itemvalue="Application.testSoftDynamics" />
+      <item index="62" class="java.lang.String" itemvalue="Application.testSubscriptions" />
+      <item index="63" class="java.lang.String" itemvalue="Application.testUri" />
+      <item index="64" class="java.lang.String" itemvalue="Application.testUtilities" />
+      <item index="65" class="java.lang.String" itemvalue="Application.testWorld" />
+    </list>
+  </component>
+  <component name="ShelveChangesManager" show_recycled="false">
+    <option name="remove_strategy" value="false" />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="162c2729-d5fb-466c-9d3e-a82f190bed3e" name="Default" comment="" />
+      <created>1476494266324</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1476494266324</updated>
+      <workItem from="1476494269088" duration="410000" />
+      <workItem from="1476494722600" duration="8000" />
+      <workItem from="1476494946752" duration="9000" />
+      <workItem from="1476495112655" duration="10000" />
+      <workItem from="1476495143386" duration="3799000" />
+      <workItem from="1476642560747" duration="1196000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TimeTrackingManager">
+    <option name="totallyTimeSpent" value="5432000" />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="1337" y="24" width="1863" height="1056" extended-state="6" />
+    <editor active="true" />
+    <layout>
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.19207485" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3006263" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="CMake" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="LuaJ" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.14718163" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.20308201" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32985386" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.18877271" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.23173277" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+    </layout>
+  </component>
+  <component name="Vcs.Log.UiProperties">
+    <option name="RECENTLY_FILTERED_USER_GROUPS">
+      <collection />
+    </option>
+    <option name="RECENTLY_FILTERED_BRANCH_GROUPS">
+      <collection />
+    </option>
+  </component>
+  <component name="VcsContentAnnotationSettings">
+    <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager />
+    <watches-manager />
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/apps/rigidBodies/Main.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="450">
+          <caret line="25" column="51" selection-start-line="25" selection-start-column="51" selection-end-line="25" selection-end-column="51" />
+          <folding>
+            <element signature="e#0#22#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/apps/rigidBodies/MyWorld.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/apps/rigidBodies/Main.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#22#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/apps/rigidBodies/Main.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#22#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/apps/rigidBodies/Main.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#22#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/apps/rigidBodies/Main.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#22#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/apps/rigidBodies/Main.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="450">
+          <caret line="25" column="51" selection-start-line="25" selection-start-column="51" selection-end-line="25" selection-end-column="51" />
+          <folding>
+            <element signature="e#0#22#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/apps/rigidBodies/CollisionInterface.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/apps/rigidBodies/CollisionInterface.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="162">
+          <caret line="9" column="58" selection-start-line="9" selection-start-column="58" selection-end-line="9" selection-end-column="58" />
+          <folding>
+            <element signature="e#0#31#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/apps/rigidBodies/MyWorld.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="144">
+          <caret line="248" column="12" selection-start-line="248" selection-start-column="12" selection-end-line="248" selection-end-column="12" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/apps/rigidBodies/RigidBody.h">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="180">
+          <caret line="12" column="8" selection-start-line="12" selection-start-column="8" selection-end-line="12" selection-end-column="8" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>

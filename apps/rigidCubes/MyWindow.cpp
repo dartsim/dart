@@ -62,17 +62,13 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
   switch (_key) {
     case ' ':  // use space key to play or stop the motion
       mSimulating = !mSimulating;
-      if (mSimulating) {
+      if (mSimulating)
         mPlay = false;
-        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-      }
       break;
     case 'p':  // playBack
       mPlay = !mPlay;
-      if (mPlay) {
+      if (mPlay)
         mSimulating = false;
-        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-      }
       break;
     case '[':  // step backward
       if (!mSimulating) {
