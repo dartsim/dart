@@ -290,7 +290,7 @@ if(NOT BUILD_CORE_ONLY)
   # urdfdom
   find_package(urdfdom QUIET)
   if(urdfdom_FOUND)
-    message(STATUS "Looking for urdfdom - found")
+    message(STATUS "Looking for urdfdom - ${urdfdom_headers_VERSION} found")
   else()
     message(SEND_ERROR "Looking for urdfdom - NOT found, please install liburdfdom-dev")
   endif()

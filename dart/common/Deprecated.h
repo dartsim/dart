@@ -34,10 +34,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/config.h"
-
 #ifndef DART_COMMON_DEPRECATED_H_
 #define DART_COMMON_DEPRECATED_H_
+
+#include "dart/config.h"
 
 //==============================================================================
 // Deprecated is used for backward compatibility between different minor
