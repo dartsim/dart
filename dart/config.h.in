@@ -28,6 +28,18 @@
   (DART_MAJOR_VERSION < x || (DART_MAJOR_VERSION <= x && \
   (DART_MINOR_VERSION < y || (DART_MINOR_VERSION <= y))))
 
+/* urdfdom_headers Version number */
+// We define the version numbers of urdfdom_headers here since it doesn't expose
+// the version numbers itself in source level.
+#define URDFDOM_HEADERS_MAJOR_VERSION @urdfdom_headers_VERSION_MAJOR@
+#define URDFDOM_HEADERS_MINOR_VERSION @urdfdom_headers_VERSION_MINOR@
+#define URDFDOM_HEADERS_PATCH_VERSION @urdfdom_headers_VERSION_PATCH@
+
+#define URDFDOM_HEADERS_VERSION_AT_LEAST(x,y,z) \
+  (URDFDOM_HEADERS_MAJOR_VERSION > x || (URDFDOM_HEADERS_MAJOR_VERSION >= x && \
+  (URDFDOM_HEADERS_MINOR_VERSION > y || (URDFDOM_HEADERS_MINOR_VERSION >= y && \
+  URDFDOM_HEADERS_PATCH_VERSION >= z))))
+
 // Detect the compiler
 #if defined(__clang__)
   #define DART_COMPILER_CLANG

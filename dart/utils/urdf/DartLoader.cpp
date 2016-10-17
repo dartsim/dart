@@ -21,12 +21,13 @@
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/simulation/World.h"
+#include "dart/utils/urdf/URDFTypes.h"
 #include "dart/utils/urdf/urdf_world_parser.h"
-
-using ModelInterfacePtr = boost::shared_ptr<urdf::ModelInterface>;
 
 namespace dart {
 namespace utils {
+
+using ModelInterfacePtr = urdf_shared_ptr<urdf::ModelInterface>;
 
 DartLoader::DartLoader()
   : mLocalRetriever(new common::LocalResourceRetriever),

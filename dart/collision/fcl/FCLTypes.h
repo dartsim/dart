@@ -37,6 +37,7 @@
 #ifndef DART_COLLISION_FCL_FCLTTYPES_H_
 #define DART_COLLISION_FCL_FCLTTYPES_H_
 
+#include <memory>
 #include <Eigen/Dense>
 #include <fcl/math/vec_3f.h>
 #include <fcl/math/matrix_3f.h>
@@ -52,6 +53,7 @@
    (FCL_MINOR_VERSION < y || (FCL_MINOR_VERSION <= y))))
 
 #if FCL_VERSION_AT_LEAST(0,5,0)
+#include <memory>
 template <class T> using fcl_shared_ptr = std::shared_ptr<T>;
 template <class T> using fcl_weak_ptr = std::weak_ptr<T>;
 #else
