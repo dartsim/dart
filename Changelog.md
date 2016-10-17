@@ -1,3 +1,8 @@
+### Version 5.1.5 (201X-XX-XX)
+
+1. Added support of urdfdom_headers 1.0 for DART 5.1 (backport of [#766](https://github.com/dartsim/dart/pull/766))
+    * [Pull request #799](https://github.com/dartsim/dart/pull/799)
+
 ### Version 5.1.4 (2016-10-14)
 
 1. Fixed inconsistent frame rate of GlutWindow
