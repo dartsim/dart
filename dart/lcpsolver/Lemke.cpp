@@ -93,10 +93,22 @@ int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
   int maxiter = 1000;
   int err = 0;
 
-  if (_q.minCoeff() > 0) {
+  if (_q.minCoeff() >= 0) {
     // LOG(INFO) << "Trivial solution exists.";
     *_z = Eigen::VectorXd::Zero(n);
     return err;
+  }
+
+  // solve trivial case for n=1
+  if (n==1){
+    if (_M(0)>0){
+        *_z = (- _q(0)/_M(0) )*Eigen::VectorXd::Ones(n);
+        return err;
+    } else {
+        *_z = Eigen::VectorXd::Zero(n);
+        err = 4; // no solution
+        return err;
+    }
   }
 
   *_z = Eigen::VectorXd::Zero(2 * n);
