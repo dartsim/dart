@@ -110,11 +110,13 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(comprehensive)
 add_subdirectory(regression)
 add_subdirectory(unit)
+add_subdirectory(benchmark)
 
 # Print tests
 dart_get_tests(comprehensive_tests "comprehensive")
 dart_get_tests(regression_tests "regression")
 dart_get_tests(unit_tests "unit")
+dart_get_tests(benchmark_tests "benchmark")
 
 if(DART_VERBOSE)
   message(STATUS "")
@@ -128,18 +130,23 @@ if(DART_VERBOSE)
   foreach(test ${unit_tests})
     message(STATUS "Adding test: unit/${test}")
   endforeach()
+  foreach(test ${benchmark_tests})
+    message(STATUS "Adding test: benchmark/${test}")
+  endforeach()
 else()
   list(LENGTH comprehensive_tests comprehensive_tests_len)
   list(LENGTH regression_tests regression_tests_len)
   list(LENGTH unit_tests unit_tests_len)
+  list(LENGTH benchmark_tests benchmark_tests_len)
   math(
     EXPR tests_len
-    "${comprehensive_tests_len} + ${regression_tests_len} + ${unit_tests_len}"
+    "${comprehensive_tests_len} + ${regression_tests_len} + ${unit_tests_len} + ${benchmark_tests_len}"
   )
   message(STATUS "Adding ${tests_len} tests ("
       "comprehensive: ${comprehensive_tests_len}, "
       "regression: ${regression_tests_len}, "
-      "unit: ${unit_tests_len}"
+      "unit: ${unit_tests_len}, "
+      "benchmark: ${benchmark_tests_len}"
       ")"
   )
 endif()
@@ -147,5 +154,6 @@ endif()
 # Add custom target to build all the tests as a single target
 add_custom_target(
   tests
-  DEPENDS ${tests} ${comprehensive_tests} ${regression_tests} ${unit_tests}
+  DEPENDS
+    ${comprehensive_tests} ${regression_tests} ${unit_tests} ${benchmark_tests}
 )
