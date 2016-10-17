@@ -29,12 +29,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/BodyNodeVariationalIntegrator.hpp"
+#include "dart/experimental/BodyNodeViRiqnDrnea.hpp"
 
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
-#include "dart/dynamics/JointViRiqnDrnea.hpp"
+#include "dart/experimental/JointViRiqnDrnea.hpp"
 
 namespace dart {
 namespace dynamics {

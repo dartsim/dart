@@ -14,12 +14,6 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * This code incorporates portions of Open Dynamics Engine
- *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
- *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
- *     Garage, Inc. All rights reserved.), which were released under
- *     the same BSD license as below
- *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -35,37 +29,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/WorldVariationalIntegrator.hpp"
-
-#include "dart/experimental/SkeletonViRiqnDrnea.hpp"
+#include "dart/experimental/JointViRiqnSvi.hpp"
 
 namespace dart {
-namespace simulation {
+namespace dynamics {
 
 //==============================================================================
-void WorldVariationalIntegrator::prestep()
+std::unique_ptr<common::Aspect> RevoluteJointViRiqnSvi::cloneAspect() const
 {
-  for (auto& skel : mSkeletons)
-    skel->createAspect<dynamics::SkeletonViRiqnDrnea>();
+  auto newAspect = common::make_unique<RevoluteJointViRiqnSvi>();
+
+  // TODO(JS): copy necessary member variables
+
+  return std::move(newAspect);
+  // GCC 4.8.5 can't compile with 'return newAspect'.
 }
 
 //==============================================================================
-void WorldVariationalIntegrator::step(bool /*resetCommand*/)
+void RevoluteJointViRiqnSvi::updateNextRelativeTransform()
 {
-  // Integrate velocity for unconstrained skeletons
-  for (auto& skel : mSkeletons)
-  {
-    if (!skel->isMobile())
-      continue;
+  assert(dynamic_cast<RevoluteJoint*>(mComposite));
+  auto* revJoint = static_cast<RevoluteJoint*>(mComposite);
 
-    auto vi = skel->get<dynamics::SkeletonViRiqnDrnea>();
-    assert(vi);
-    vi->integrate();
-  }
+  mNextTransform
+      = revJoint->getTransformFromParentBodyNode()
+      * Eigen::AngleAxisd(mNextPositions[0], revJoint->getAxis())
+      * revJoint->getTransformFromChildBodyNode().inverse();
 
-  mTime += mTimeStep;
-  mFrame++;
+  // Verification
+  assert(math::verifyTransform(mNextTransform));
 }
 
-}  // namespace simulation
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

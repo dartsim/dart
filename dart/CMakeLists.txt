@@ -105,6 +105,8 @@ if(OPENGL_FOUND AND GLUT_FOUND AND BULLET_FOUND)
   add_subdirectory(gui)
 endif()
 
+add_subdirectory(experimental)
+
 # Print building component
 get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
 if(DART_VERBOSE)

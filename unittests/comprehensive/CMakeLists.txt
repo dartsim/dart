@@ -6,7 +6,6 @@ dart_add_test("comprehensive" test_Differentials)
 dart_add_test("comprehensive" test_Frames)
 dart_add_test("comprehensive" test_InverseKinematics)
 dart_add_test("comprehensive" test_NameManagement)
-dart_add_test("comprehensive" test_VariationalIntegrator)
 
 if(TARGET dart-collision-bullet)
 
@@ -43,3 +42,6 @@ if(TARGET dart-utils-urdf)
   target_link_libraries(test_ForwardKinematics dart-utils-urdf)
 
 endif()
+
+dart_add_test("comprehensive" test_VariationalIntegrator)
+target_link_libraries(test_VariationalIntegrator dart-experimental)

@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/JointViRiqnDrnea.hpp"
+#include "dart/experimental/JointViRiqnDrnea.hpp"
 
 namespace dart {
 namespace dynamics {

@@ -29,8 +29,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_JOINTVINEWTONDRNEA_HPP_
-#define DART_DYNAMICS_JOINTVINEWTONDRNEA_HPP_
+#ifndef DART_DYNAMICS_JOINTVIRIQNSVI_HPP_
+#define DART_DYNAMICS_JOINTVIRIQNSVI_HPP_
 
 #include <Eigen/Dense>
 
@@ -43,12 +43,12 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-class JointViNewtonDrnea: public common::CompositeTrackingAspect<Joint>
+class JointViRiqnSvi: public common::CompositeTrackingAspect<Joint>
 {
 public:
 
-  friend class SkeletonViRiqnDrnea;
-  friend class BodyNodeViRiqnDrnea;
+  friend class SkeletonViRiqnSvi;
+  friend class BodyNodeViRiqnSvi;
 
   using Base = common::CompositeTrackingAspect<Joint>;
 
@@ -71,27 +71,27 @@ protected:
 
 //==============================================================================
 template <typename ConfigSpaceT>
-class GenericJointViNewtonDrnea : public JointViNewtonDrnea
+class GenericJointViRiqnSvi : public JointViRiqnSvi
 {
 public:
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  friend class SkeletonViRiqnDrnea;
-  friend class BodyNodeViRiqnDrnea;
+  friend class SkeletonViRiqnSvi;
+  friend class BodyNodeViRiqnSvi;
 
-  using Base = JointViNewtonDrnea;
+  using Base = JointViRiqnSvi;
 
   using Vector = typename ConfigSpaceT::Vector;
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
-  GenericJointViNewtonDrnea()
+  GenericJointViRiqnSvi()
   {
     // Do nothing
   }
 
-  GenericJointViNewtonDrnea(
-      const GenericJointViNewtonDrnea&) = delete;
+  GenericJointViRiqnSvi(
+      const GenericJointViRiqnSvi&) = delete;
 
   void initialize(double timeStep) override
   {
@@ -166,8 +166,8 @@ private:
 };
 
 //==============================================================================
-class RevoluteJointViNewtonDrnea final :
-    public GenericJointViNewtonDrnea<math::R1Space>
+class RevoluteJointViRiqnSvi final :
+    public GenericJointViRiqnSvi<math::R1Space>
 {
 public:
 
@@ -184,4 +184,4 @@ protected:
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_JOINTVINEWTONDRNEA_HPP_
+#endif  // DART_DYNAMICS_JOINTVIRIQNSVI_HPP_

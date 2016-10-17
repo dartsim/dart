@@ -29,8 +29,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BODYNODEVARIATIONALINTEGRATOR_HPP_
-#define DART_DYNAMICS_BODYNODEVARIATIONALINTEGRATOR_HPP_
+#ifndef DART_DYNAMICS_SKELETONVINEWTONSVI_HPP_
+#define DART_DYNAMICS_SKELETONVINEWTONSVI_HPP_
 
 #include <Eigen/Dense>
 
@@ -40,95 +40,92 @@
 namespace dart {
 namespace dynamics {
 
-class JointViRiqnDrnea;
+//class Skeleton;
 
 namespace detail {
 
-struct BodyNodeViRiqnDrneaState
+struct SkeletonViNewtonSviState
 {
-  using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   /// Constructor
-  BodyNodeViRiqnDrneaState();
+  SkeletonViNewtonSviState();
 
   /// Destructor
-  virtual ~BodyNodeViRiqnDrneaState() = default;
-
-  /// The prediction of the transform for the next discrete time (k+1)
-  Eigen::Isometry3d mNextWorldTransform{Eigen::Isometry3d::Identity()};
-
-  /// The relative transform of the next transform relative to the current
-  /// transform.
-  Eigen::Isometry3d mDeltaWorldTransform{Eigen::Isometry3d::Identity()};
-
-  /// Discrete spatial velocity for the duration of (k-1, k).
-  Eigen::Vector6d mPreAverageVelocity{Eigen::Vector6d::Zero()};
-
-  /// Discrete spatial velocity for the duration of (k, k+1).
-  Eigen::Vector6d mPostAverageVelocity{Eigen::Vector6d::Zero()};
-
-  /// Discrete spatial momentum for the duration of (k-1, k).
-  Eigen::Vector6d mPrevMomentum{Eigen::Vector6d::Zero()};
-
-  /// Discrete spatial momentum for the duration of (k, k+1).
-  Eigen::Vector6d mPostMomentum{Eigen::Vector6d::Zero()};
-
-  /// Spatial impulse transmitted from the parent BodyNode.
-  Eigen::Vector6d mParentImpulse{Eigen::Vector6d::Zero()};
+  virtual ~SkeletonViNewtonSviState() = default;
 };
 
 }  // namespace detail
 
 //==============================================================================
-class BodyNodeViRiqnDrnea final :
+class SkeletonViNewtonSvi final :
     public common::AspectWithState<
-        BodyNodeViRiqnDrnea,
-        detail::BodyNodeViRiqnDrneaState,
-        BodyNode>
+        SkeletonViNewtonSvi,
+        detail::SkeletonViNewtonSviState,
+        Skeleton>
 {
 public:
 
-  friend class SkeletonViRiqnDrnea;
-
   using Base = common::AspectWithState<
-      BodyNodeViRiqnDrnea,
-      detail::BodyNodeViRiqnDrneaState,
-      BodyNode>;
+      SkeletonViNewtonSvi,
+      detail::SkeletonViNewtonSviState,
+      Skeleton>;
 
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  enum TerminalCondition
+  {
+    Invalid,
+    StaticSkeleton,
+    MaximumIteration,
+    Tolerance
+  };
 
-  BodyNodeViRiqnDrnea(const StateData& state = StateData());
+  SkeletonViNewtonSvi(const StateData& state = StateData());
 
-  BodyNodeViRiqnDrnea(const BodyNodeViRiqnDrnea&) = delete;
+  SkeletonViNewtonSvi(const SkeletonViNewtonSvi&) = delete;
 
-  JointViRiqnDrnea* getJointVi();
-  const JointViRiqnDrnea* getJointVi() const;
+  void initialize();
 
-  void initialize(double timeStep);
+  void setTolerance(double tol);
+
+  double getTolerance() const;
+
+  void setMaxIternation(std::size_t iter);
+
+  std::size_t getMaxIteration() const;
+
+  TerminalCondition integrate();
 
 protected:
 
   void setComposite(common::Composite* newComposite) override;
 
-  void updateNextTransform();
-  void updateNextVelocity(double timeStep);
+  void loseComposite(common::Composite* oldComposite) override;
 
-  void evaluateDel(const Eigen::Vector3d& gravity, double timeStep);
+  void setPrevPositions(const Eigen::VectorXd& prevPositions);
 
-  /// \{ \name Derivative
+  Eigen::VectorXd getPrevPositions() const;
 
-  void updateNextTransformDeriv();
-  void updateNextVelocityDeriv(double timeStep);
+  void setNextPositions(const Eigen::VectorXd& nextPositions);
 
-  /// \}
+  /// Evaluate forced discrete Euler-Lagrange (DEL) equation given next
+  /// configurations.
+  Eigen::VectorXd evaluateDel(const Eigen::VectorXd& nextPositions);
+
+public: Eigen::MatrixXd evaluateDelDeriv(const Eigen::VectorXd& nextPositions);
+
+  Eigen::VectorXd getError() const;
+
+  void stepForward(const Eigen::VectorXd& nextPositions);
+
+protected:
+
+  double mTolerance{1e-9};
+
+  std::size_t mMaxIteration{30u};
 
 };
 
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_BODYNODEVARIATIONALINTEGRATOR_HPP_
+#endif  // DART_DYNAMICS_SKELETONVINEWTONSVI_HPP_
