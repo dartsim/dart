@@ -34,7 +34,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
-#include "TestHelpers.hpp"
+#include <test/TestHelpers.hpp>
 
 #include "dart/common/Console.hpp"
 #include "dart/math/Geometry.hpp"

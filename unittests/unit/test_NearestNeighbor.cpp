@@ -12,7 +12,7 @@
 #if HAVE_FLANN
 #include <flann/flann.hpp>
 #endif // HAVE_FLANN
-#include "TestHelpers.hpp"
+#include <test/TestHelpers.hpp>
 
 /* ********************************************************************************************* */
 #if HAVE_FLANN
