@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/WorldVariationalIntegrator.hpp"
+#include "dart/experimental/WorldVariationalIntegrator.hpp"
 
 #include "dart/experimental/SkeletonViRiqnDrnea.hpp"
 

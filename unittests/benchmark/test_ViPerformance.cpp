@@ -33,17 +33,12 @@
 #include <gtest/gtest.h>
 #include <dart/dart.hpp>
 #include <dart/experimental/experimental.hpp>
-#include "TestHelpers.hpp"
+#include <test/TestHelpers.hpp>
 
 using namespace dart;
 
-void setRandomState(const dynamics::SkeletonPtr& skel);
-
-dynamics::SkeletonPtr createRandomSkeleton();
-dynamics::SkeletonPtr createRandomSkeletonWithBallJoints();
-
 //==============================================================================
-TEST(VariationalIntegrator, SkeletonViRiqnDrnea)
+TEST(ViPerformance, SkeletonViRiqnDrnea)
 {
 }
 
@@ -52,54 +47,4 @@ int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
-}
-
-//==============================================================================
-//
-//                              Implementations
-//
-//==============================================================================
-
-//==============================================================================
-void setRandomState(const dynamics::SkeletonPtr& skel)
-{
-  const auto pi = math::constantsd::pi();
-  const auto numDofs = skel->getNumDofs();
-  const auto posLower = pi * -0.5;
-  const auto posUpper = pi *  0.5;
-  const auto velLower = pi * -0.5;
-  const auto velUpper = pi *  0.5;
-
-  for (auto i = 0u; i < numDofs; ++i)
-  {
-    auto dof = skel->getDof(i);
-
-    const auto pos = math::random(posLower, posUpper);
-    const auto vel = math::random(velLower, velUpper);
-
-    dof->setPosition(pos);
-    dof->setVelocity(vel);
-  }
-}
-
-//==============================================================================
-SkeletonPtr createRandomSkeleton()
-{
-  const auto numLinks = 25u;
-  const auto l = 1.5;
-  auto skel = createNLinkRobot(numLinks, Eigen::Vector3d(0.3, 0.3, l), DOF_ROLL);
-  setRandomState(skel);
-
-  return skel;
-}
-
-//==============================================================================
-SkeletonPtr createRandomSkeletonWithBallJoints()
-{
-  const auto numLinks = 25u;
-  const auto l = 1.5;
-  auto skel = createNLinkRobot(numLinks, Eigen::Vector3d(0.3, 0.3, l), DOF_ROLL);
-  setRandomState(skel);
-
-  return skel;
 }

@@ -33,7 +33,7 @@
 #include <gtest/gtest.h>
 #include <dart/dart.hpp>
 #include <dart/experimental/experimental.hpp>
-#include "TestHelpers.hpp"
+#include <test/TestHelpers.hpp>
 
 using namespace dart;
 

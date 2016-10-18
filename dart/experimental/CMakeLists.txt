@@ -8,15 +8,7 @@ set(component_name experimental)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})
-target_include_directories(
-  ${target_name} SYSTEM
-  PUBLIC ${FLANN_INCLUDE_DIRS}
-)
-target_link_libraries(
-  ${target_name}
-  dart
-  ${FLANN_LIBRARIES}
-)
+target_link_libraries(${target_name} dart)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
