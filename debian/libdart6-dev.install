@@ -1,6 +1,7 @@
 usr/include/dart/dart.hpp
 usr/include/dart/config.hpp
 usr/include/dart/collision/*.*
+usr/include/dart/collision/detal/*.*
 usr/include/dart/collision/dart/*
 usr/include/dart/collision/fcl/*
 usr/include/dart/common/*
@@ -17,4 +18,3 @@ usr/share/dart/cmake/DARTConfigVersion.cmake
 usr/share/dart/cmake/dart_dartTargets.cmake
 usr/share/dart/cmake/dart_dartTargets-*.cmake
 usr/share/dart/cmake/dart_dartComponent.cmake
-
