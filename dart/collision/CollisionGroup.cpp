@@ -169,11 +169,27 @@ bool CollisionGroup::collide(
 
 //==============================================================================
 bool CollisionGroup::collide(
-    CollisionGroup* other,
+    CollisionGroup* otherGroup,
     const CollisionOption& option,
     CollisionResult* result)
 {
-  return mCollisionDetector->collide(this, other, option, result);
+  return mCollisionDetector->collide(this, otherGroup, option, result);
+}
+
+//==============================================================================
+double CollisionGroup::distance(
+    const DistanceOption& option, DistanceResult* result)
+{
+  return mCollisionDetector->distance(this, option, result);
+}
+
+//==============================================================================
+double CollisionGroup::distance(
+    CollisionGroup* otherGroup,
+    const DistanceOption& option,
+    DistanceResult* result)
+{
+  return mCollisionDetector->distance(this, otherGroup, option, result);
 }
 
 //==============================================================================

@@ -43,6 +43,7 @@ class PrismaticJoint : public detail::PrismaticJointBase
 public:
 
   friend class Skeleton;
+  using Base = detail::PrismaticJointBase;
   using UniqueProperties = detail::PrismaticJointUniqueProperties;
   using Properties = detail::PrismaticJointProperties;
 
@@ -89,6 +90,10 @@ public:
   ///
   const Eigen::Vector3d& getAxis() const;
 
+  // Documentation inherited
+  GenericJoint<math::R1Space>::JacobianMatrix getRelativeJacobianStatic(
+      const GenericJoint<math::R1Space>::Vector& positions) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -96,6 +101,9 @@ protected:
 
   // Documentation inherited
   Joint* clone() const override;
+
+  // Documentation inherited
+  void updateDegreeOfFreedomNames() override;
 
   // Documentation inherited
   void updateRelativeTransform() const override;

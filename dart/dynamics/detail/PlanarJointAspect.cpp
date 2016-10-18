@@ -136,10 +136,10 @@ void PlanarJointUniqueProperties::setArbitraryPlane(
 
 //==============================================================================
 PlanarJointProperties::PlanarJointProperties(
-    const MultiDofJoint<3>::Properties& _multiDofProperties,
-    const PlanarJointUniqueProperties& _planarProperties)
-  : MultiDofJoint<3>::Properties(_multiDofProperties),
-    PlanarJointUniqueProperties(_planarProperties)
+    const GenericJoint<math::R3Space>::Properties& genericJointProperties,
+    const PlanarJointUniqueProperties& planarProperties)
+  : GenericJoint<math::R3Space>::Properties(genericJointProperties),
+    PlanarJointUniqueProperties(planarProperties)
 {
   // Do nothing
 }

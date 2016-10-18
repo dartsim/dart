@@ -47,6 +47,19 @@ CylinderShape::CylinderShape(double _radius, double _height)
   updateVolume();
 }
 
+//==============================================================================
+const std::string& CylinderShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& CylinderShape::getStaticType()
+{
+  static const std::string type("CylinderShape");
+  return type;
+}
+
 double CylinderShape::getRadius() const {
   return mRadius;
 }

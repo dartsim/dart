@@ -758,26 +758,26 @@ void ReferentialSkeleton::clearInternalForces()
 }
 
 //==============================================================================
-double ReferentialSkeleton::getKineticEnergy() const
+double ReferentialSkeleton::computeKineticEnergy() const
 {
   double KE = 0.0;
 
   for(const BodyNode* bn : mRawBodyNodes)
-    KE += bn->getKineticEnergy();
+    KE += bn->computeKineticEnergy();
 
   assert( KE >= 0.0 && "Kinetic Energy should always be zero or greater");
   return KE;
 }
 
 //==============================================================================
-double ReferentialSkeleton::getPotentialEnergy() const
+double ReferentialSkeleton::computePotentialEnergy() const
 {
   double PE = 0.0;
 
   for(const BodyNode* bn : mRawBodyNodes)
   {
-    PE += bn->getPotentialEnergy(bn->getSkeleton()->getGravity());
-    PE += bn->getParentJoint()->getPotentialEnergy();
+    PE += bn->computePotentialEnergy(bn->getSkeleton()->getGravity());
+    PE += bn->getParentJoint()->computePotentialEnergy();
   }
 
   return PE;

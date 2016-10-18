@@ -54,6 +54,12 @@ public:
   /// \brief Destructor.
   virtual ~SoftMeshShape();
 
+  // Documentation inherited.
+  const std::string& getType() const override;
+
+  /// Returns shape type for this class
+  static const std::string& getStaticType();
+
   /// \brief
   const aiMesh* getAssimpMesh() const;
 

@@ -2510,6 +2510,26 @@ void SoftBodyNodeHelper::setSinglePointMass(SoftBodyNode* _softBodyNode,
 }
 
 //==============================================================================
+SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeSphereProperties(
+    double _radius,
+    std::size_t _nSlices,
+    std::size_t _nStacks,
+    double _totalMass,
+    double _vertexStiffness,
+    double _edgeStiffness,
+    double _dampingCoeff)
+{
+  return makeEllipsoidProperties(
+        Eigen::Vector3d::Constant(_radius*2.0),
+        _nSlices,
+        _nStacks,
+        _totalMass,
+        _vertexStiffness,
+        _edgeStiffness,
+        _dampingCoeff);
+}
+
+//==============================================================================
 SoftBodyNode::UniqueProperties SoftBodyNodeHelper::makeEllipsoidProperties(
     const Eigen::Vector3d& _size,
     std::size_t _nSlices,

@@ -1,21 +1,42 @@
 # Search all header and source files
-file(GLOB hdrs "*.hpp" "*.h")
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
-include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
-include_directories(SYSTEM ${GLUT_INCLUDE_DIR})
+# Set local target name
+set(target_name ${PROJECT_NAME}-gui)
+set(component_name gui)
 
-# Add subdirectories
-if(HAVE_OPENSCENEGRAPH)
-  add_subdirectory(osg)
-endif(HAVE_OPENSCENEGRAPH)
+# Add target
+dart_add_library(${target_name} ${hdrs} ${srcs})
+target_include_directories(
+  ${target_name} SYSTEM
+  PUBLIC
+    ${OPENGL_INCLUDE_DIR}
+    ${GLUT_INCLUDE_DIR}
+)
+target_link_libraries(
+  ${target_name}
+  PUBLIC
+    dart-utils
+    ${GLUT_LIBRARY}
+    ${OPENGL_LIBRARIES}
+    ${PROJECT_NAME}-external-lodepng
+    ${PROJECT_NAME}-external-imgui
+)
 
-set(dart_gui_hdrs ${dart_gui_hdrs} ${hdrs})
-set(dart_gui_srcs ${dart_gui_srcs} ${srcs})
+# Component
+add_component(${PROJECT_NAME} ${component_name})
+add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+add_component_dependencies(
+  ${PROJECT_NAME}
+  ${component_name}
+  utils
+  external-lodepng
+  external-imgui
+)
 
-# Library
-dart_add_library(dart-gui ${srcs} ${hdrs})
-target_link_libraries(dart-gui dart-utils ${GLUT_LIBRARY} ${OPENGL_LIBRARIES})
+# Coverage test
+dart_coveralls_add(${hdrs} ${srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})
@@ -39,8 +60,8 @@ install(
   DESTINATION include/dart/gui
   COMPONENT headers
 )
-install(TARGETS dart-gui EXPORT DARTTargets DESTINATION lib)
 
-# Coverage test files
-set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"
-    CACHE INTERNAL "files for coverage tests")
+# Add subdirectories
+if(HAVE_OPENSCENEGRAPH)
+  add_subdirectory(osg)
+endif(HAVE_OPENSCENEGRAPH)

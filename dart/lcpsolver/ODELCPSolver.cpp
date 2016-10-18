@@ -33,10 +33,11 @@
 
 #include <cstdio>
 
+#include "dart/external/odelcpsolver/lcp.h"
+#include "dart/external/odelcpsolver/misc.h"
+
 #include "dart/common/StlHelpers.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
-#include "dart/lcpsolver/lcp.h"
-#include "dart/lcpsolver/misc.h"
 
 namespace dart {
 namespace lcpsolver {
