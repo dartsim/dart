@@ -32,6 +32,7 @@
 #include "dart/collision/dart/PrimitiveShapeAlgorithms.hpp"
 
 #include "dart/collision/dart/CollideSphereSphere.hpp"
+#include "dart/collision/dart/CollideSphereBox.hpp"
 #include "dart/collision/dart/CollideBoxBox.hpp"
 #include "dart/collision/dart/CollideHalfspaceSphere.hpp"
 
@@ -40,24 +41,44 @@ namespace collision {
 
 //==============================================================================
 template <>
-void
-PrimitiveShapeAlgorithms::collide(const dynamics::SphereShape& shapeA,
-                                  const Eigen::Isometry3d& tfA,
-                                  const dynamics::SphereShape& shapeB,
-                                  const Eigen::Isometry3d& tfB,
-                                  NarrowPhaseCallback* callback)
+void PrimitiveShapeAlgorithms::collide(const dynamics::SphereShape& shapeA,
+                                       const Eigen::Isometry3d& tfA,
+                                       const dynamics::SphereShape& shapeB,
+                                       const Eigen::Isometry3d& tfB,
+                                       NarrowPhaseCallback* callback)
 {
   collideSphereSphere(shapeA, tfA, shapeB, tfB, callback);
 }
 
 //==============================================================================
 template <>
-void
-PrimitiveShapeAlgorithms::collide(const dynamics::BoxShape& shapeA,
-                                  const Eigen::Isometry3d& tfA,
-                                  const dynamics::BoxShape& shapeB,
-                                  const Eigen::Isometry3d& tfB,
-                                  NarrowPhaseCallback* callback)
+void PrimitiveShapeAlgorithms::collide(const dynamics::SphereShape& shapeA,
+                                       const Eigen::Isometry3d& tfA,
+                                       const dynamics::BoxShape& shapeB,
+                                       const Eigen::Isometry3d& tfB,
+                                       NarrowPhaseCallback* callback)
+{
+  collideSphereBox(shapeA, tfA, shapeB, tfB, callback);
+}
+
+//==============================================================================
+template <>
+void PrimitiveShapeAlgorithms::collide(const dynamics::BoxShape& shapeA,
+                                       const Eigen::Isometry3d& tfA,
+                                       const dynamics::SphereShape& shapeB,
+                                       const Eigen::Isometry3d& tfB,
+                                       NarrowPhaseCallback* callback)
+{
+  collideBoxSphere(shapeA, tfA, shapeB, tfB, callback);
+}
+
+//==============================================================================
+template <>
+void PrimitiveShapeAlgorithms::collide(const dynamics::BoxShape& shapeA,
+                                       const Eigen::Isometry3d& tfA,
+                                       const dynamics::BoxShape& shapeB,
+                                       const Eigen::Isometry3d& tfB,
+                                       NarrowPhaseCallback* callback)
 {
   collideBoxBox(shapeA, tfA, shapeB, tfB, callback);
 }

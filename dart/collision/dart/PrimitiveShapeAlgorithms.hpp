@@ -106,7 +106,7 @@ public:
 // Sp: Sphere
 // Ci: Cubic
 // El: Ellipsoid
-// Cu: Cuboid
+// Cu: Cuboid (Box)
 // Ca: Capsule
 // Cy: Cylinder
 // Co: Cone
@@ -125,7 +125,7 @@ public:
 //----+----+----+----+----+----+----+----+----+----+----+----+----+----
 // Ha |----|----|----|----|    | O  |    |    |    |    |    |    |
 //----+----+----+----+----+----+----+----+----+----+----+----+----+----
-// Sp |----|----|----|----|----| O  |    |    |    |    |    |    |
+// Sp |----|----|----|----|----| O  |    |    | O  |    |    |    |
 //----+----+----+----+----+----+----+----+----+----+----+----+----+----
 // Ci |----|----|----|----|----|----|    |    |    |    |    |    |
 //----+----+----+----+----+----+----+----+----+----+----+----+----+----
@@ -145,6 +145,22 @@ public:
 //==============================================================================
 template <>
 void PrimitiveShapeAlgorithms::collide(const dynamics::SphereShape& shapeA,
+                                       const Eigen::Isometry3d& tfA,
+                                       const dynamics::SphereShape& shapeB,
+                                       const Eigen::Isometry3d& tfB,
+                                       NarrowPhaseCallback* callback);
+
+//==============================================================================
+template <>
+void PrimitiveShapeAlgorithms::collide(const dynamics::SphereShape& shapeA,
+                                       const Eigen::Isometry3d& tfA,
+                                       const dynamics::BoxShape& shapeB,
+                                       const Eigen::Isometry3d& tfB,
+                                       NarrowPhaseCallback* callback);
+
+//==============================================================================
+template <>
+void PrimitiveShapeAlgorithms::collide(const dynamics::BoxShape& shapeA,
                                        const Eigen::Isometry3d& tfA,
                                        const dynamics::SphereShape& shapeB,
                                        const Eigen::Isometry3d& tfB,
