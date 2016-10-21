@@ -67,9 +67,15 @@ Shape::~Shape()
 }
 
 //==============================================================================
+const math::Aabb& Shape::getAabb() const
+{
+  return mBoundingBox;
+}
+
+//==============================================================================
 const math::BoundingBox& Shape::getBoundingBox() const
 {
-    return mBoundingBox;
+  return getAabb();
 }
 
 //==============================================================================

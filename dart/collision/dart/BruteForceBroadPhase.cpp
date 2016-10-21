@@ -29,66 +29,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/dart/BruteForceBroadPhase.hpp"
 
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/collision/CollisionObject.hpp"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-CollisionDetector* CollisionObject::getCollisionDetector()
+const std::string& BruteForceBroadPhase::getType() const
 {
-  return mCollisionDetector;
+  return getStaticType();
 }
 
 //==============================================================================
-const CollisionDetector* CollisionObject::getCollisionDetector() const
+const std::string& BruteForceBroadPhase::getStaticType()
 {
-  return mCollisionDetector;
+  static std::string type{"BruteForceBroadPhase"};
+  return type;
 }
 
 //==============================================================================
-const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
+void BruteForceBroadPhase::addObject(CollisionObject* object)
 {
-  return mShapeFrame;
+  // TODO(JS): check duplicity
+  mCollisionObjects.push_back(object);
 }
 
 //==============================================================================
-dynamics::ConstShapePtr CollisionObject::getShape() const
+void BruteForceBroadPhase::updateOverlappingPairs()
 {
-  return mShapeFrame->getShape();
+  // TODO(JS):
+  // - Use filter
+  // - Skip for object whoes body node is the same
+  // - check duplicity of the pair
+
+  for (auto itA = mCollisionObjects.cbegin(); itA != mCollisionObjects.cend();
+       ++itA)
+  {
+    for (auto itB = itA + 1; itB != mCollisionObjects.cend(); ++itB)
+    {
+      if ((*itA)->getAabb().overlapsWith((*itB)->getAabb()))
+      {
+        mOverlappingPairs.push_back(std::make_pair(*itA, *itB));
+      }
+    }
+  }
 }
 
-//==============================================================================
-void CollisionObject::updateAabb()
-{
-  mAabb.setTransformed(getShape()->getAabb(), getTransform());
-}
-
-//==============================================================================
-const math::Aabb& CollisionObject::getAabb() const
-{
-  return mAabb;
-}
-
-//==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
-{
-  return mShapeFrame->getWorldTransform();
-}
-
-//==============================================================================
-CollisionObject::CollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector),
-    mShapeFrame(shapeFrame)
-{
-  assert(mCollisionDetector);
-  assert(mShapeFrame);
-}
-
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

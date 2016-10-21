@@ -34,6 +34,9 @@
 
 #include "dart/collision/CollisionGroup.hpp"
 
+#include "dart/collision/dart/BroadPhaseAlgorithm.hpp"
+#include "dart/collision/dart/NarrowPhaseAlgorithms.hpp"
+
 namespace dart {
 namespace collision {
 
@@ -50,6 +53,19 @@ public:
 
   /// Destructor
   virtual ~DARTCollisionGroup() = default;
+
+  void collideInGroup();
+
+  /// Return collision detection engine associated with this CollisionGroup
+  DARTCollisionDetectorPtr getDARTCollisionDetector();
+
+  /// Return (const) collision detection engine associated with this
+  /// CollisionGroup
+  ConstDARTCollisionDetectorPtr getDARTCollisionDetector() const;
+
+  bool collide(
+      const CollisionOption& option = CollisionOption(false, 1u, nullptr),
+      CollisionResult* result = nullptr) override;
 
 protected:
 
@@ -76,6 +92,10 @@ protected:
 
   /// CollisionObjects added to this DARTCollisionGroup
   std::vector<CollisionObject*> mCollisionObjects;
+
+  std::unique_ptr<BroadPhaseAlgorithm> mBroadPhaseAlgorithm;
+
+  std::vector<OverlappingPair> mOverlappingPairsInContact;
 
 };
 

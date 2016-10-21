@@ -630,9 +630,11 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
 
   auto group1 = cd->createCollisionGroup(simpleFrame1.get());
   auto group2 = cd->createCollisionGroup(simpleFrame2.get());
+  auto group3 = cd->createCollisionGroup(group1.get(), group2.get());
 
   EXPECT_EQ(group1->getNumShapeFrames(), 1u);
   EXPECT_EQ(group2->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group3->getNumShapeFrames(), 2u);
 
   collision::CollisionOption option;
   option.enableContact = true;
@@ -643,6 +645,10 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
   simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
   result.clear();
   EXPECT_FALSE(group1->collide(group2.get(), option, &result));
+  EXPECT_TRUE(result.getNumContacts() == 0u);
+
+  result.clear();
+  EXPECT_FALSE(group3->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() == 0u);
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
@@ -666,6 +672,10 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
     EXPECT_TRUE(result.getContact(0).normal.isApprox(
                   -Eigen::Vector3d::UnitX(), tol));
   }
+
+  result.clear();
+  EXPECT_TRUE(group3->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() == 1u);
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d::Zero());

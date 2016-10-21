@@ -29,66 +29,58 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.hpp"
-
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/math/Ray.hpp"
 
 namespace dart {
-namespace collision {
+namespace math {
 
 //==============================================================================
-CollisionDetector* CollisionObject::getCollisionDetector()
+Ray::Ray(const Eigen::Vector3d& from, const Eigen::Vector3d& to, double fraction)
+  : from(from), to(to), fraction(fraction)
 {
-  return mCollisionDetector;
+  // Do nothing
 }
 
 //==============================================================================
-const CollisionDetector* CollisionObject::getCollisionDetector() const
+Ray::Ray(const Ray& ray)
+  : from(ray.from), to(ray.to), fraction(ray.fraction)
 {
-  return mCollisionDetector;
+  // Do nothing
 }
 
 //==============================================================================
-const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
+Ray::Ray(Ray&& ray)
+  : from(std::move(ray.from)), to(std::move(ray.to)),
+    fraction(std::move(ray.fraction))
 {
-  return mShapeFrame;
+  // Do nothing
 }
 
 //==============================================================================
-dynamics::ConstShapePtr CollisionObject::getShape() const
+Ray& Ray::operator=(const Ray& ray)
 {
-  return mShapeFrame->getShape();
+  if (&ray != this)
+  {
+    from = ray.from;
+    to = ray.to;
+    fraction = ray.fraction;
+  }
+
+  return *this;
 }
 
 //==============================================================================
-void CollisionObject::updateAabb()
+Ray& Ray::operator=(Ray&& ray)
 {
-  mAabb.setTransformed(getShape()->getAabb(), getTransform());
+  if (&ray != this)
+  {
+    from = std::move(ray.from);
+    to = std::move(ray.to);
+    fraction = std::move(ray.fraction);
+  }
+
+  return *this;
 }
 
-//==============================================================================
-const math::Aabb& CollisionObject::getAabb() const
-{
-  return mAabb;
-}
-
-//==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
-{
-  return mShapeFrame->getWorldTransform();
-}
-
-//==============================================================================
-CollisionObject::CollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector),
-    mShapeFrame(shapeFrame)
-{
-  assert(mCollisionDetector);
-  assert(mShapeFrame);
-}
-
-}  // namespace collision
+}  // namespace math
 }  // namespace dart

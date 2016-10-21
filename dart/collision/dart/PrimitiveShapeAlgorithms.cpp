@@ -29,66 +29,62 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/dart/PrimitiveShapeAlgorithms.hpp"
 
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/collision/dart/CollideSphereSphere.hpp"
+#include "dart/collision/dart/CollideBoxBox.hpp"
+#include "dart/collision/dart/CollideHalfspaceSphere.hpp"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-CollisionDetector* CollisionObject::getCollisionDetector()
+template <>
+void
+PrimitiveShapeAlgorithms::collide(const dynamics::SphereShape& shapeA,
+                                  const Eigen::Isometry3d& tfA,
+                                  const dynamics::SphereShape& shapeB,
+                                  const Eigen::Isometry3d& tfB,
+                                  NarrowPhaseCallback* callback)
 {
-  return mCollisionDetector;
+  collideSphereSphere(shapeA, tfA, shapeB, tfB, callback);
 }
 
 //==============================================================================
-const CollisionDetector* CollisionObject::getCollisionDetector() const
+template <>
+void
+PrimitiveShapeAlgorithms::collide(const dynamics::BoxShape& shapeA,
+                                  const Eigen::Isometry3d& tfA,
+                                  const dynamics::BoxShape& shapeB,
+                                  const Eigen::Isometry3d& tfB,
+                                  NarrowPhaseCallback* callback)
 {
-  return mCollisionDetector;
+  collideBoxBox(shapeA, tfA, shapeB, tfB, callback);
 }
 
 //==============================================================================
-const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
-{
-  return mShapeFrame;
-}
+//template <>
+//inline std::size_t
+//PrimitiveShapeAlgorithms::collide(const Halfspace& shapeA,
+//                                  const Eigen::Isometry3d& tfA,
+//                                  const dynamics::SphereShape& shapeB,
+//                                  const Eigen::Isometry3d& tfB,
+//                                  NarrowPhaseCallback* callback)
+//{
+//  return collideHalfspaceSphere(shapeA, tfA, shapeB, tfB, callback);
+//}
 
 //==============================================================================
-dynamics::ConstShapePtr CollisionObject::getShape() const
-{
-  return mShapeFrame->getShape();
-}
+//template <>
+//inline std::size_t
+//PrimitiveShapeAlgorithms::collide(const dynamics::SphereShape& shapeA,
+//                                  const Eigen::Isometry3d& tfA,
+//                                  const Halfspace& shapeB,
+//                                  const Eigen::Isometry3d& tfB,
+//                                  NarrowPhaseCallback* callback)
+//{
+//  return collideSphereHalfspace(shapeA, tfA, shapeB, tfB, callback);
+//}
 
-//==============================================================================
-void CollisionObject::updateAabb()
-{
-  mAabb.setTransformed(getShape()->getAabb(), getTransform());
-}
-
-//==============================================================================
-const math::Aabb& CollisionObject::getAabb() const
-{
-  return mAabb;
-}
-
-//==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
-{
-  return mShapeFrame->getWorldTransform();
-}
-
-//==============================================================================
-CollisionObject::CollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector),
-    mShapeFrame(shapeFrame)
-{
-  assert(mCollisionDetector);
-  assert(mShapeFrame);
-}
-
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

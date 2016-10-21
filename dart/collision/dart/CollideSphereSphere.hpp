@@ -29,66 +29,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.hpp"
+#ifndef DART_COLLISION_DART_COLLIDESPHERESPHERE_HPP_
+#define DART_COLLISION_DART_COLLIDESPHERESPHERE_HPP_
 
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/collision/dart/NarrowPhaseAlgorithms.hpp"
 
 namespace dart {
 namespace collision {
 
-//==============================================================================
-CollisionDetector* CollisionObject::getCollisionDetector()
+/// Sphere-sphere contact point policy
+enum class SphereSpherePolicy
 {
-  return mCollisionDetector;
-}
+  PointOfInternalDivision,
+  MiddleOfIntersect
+};
+// TODO: detail
 
-//==============================================================================
-const CollisionDetector* CollisionObject::getCollisionDetector() const
-{
-  return mCollisionDetector;
-}
+template <SphereSpherePolicy ContactPointPolicy =
+              SphereSpherePolicy::PointOfInternalDivision>
+void collideSphereSphere(const dynamics::SphereShape& sphereA,
+                        const Eigen::Isometry3d& tfA,
+                        const dynamics::SphereShape& sphereB,
+                        const Eigen::Isometry3d& tfB,
+                        NarrowPhaseCallback* callback);
 
-//==============================================================================
-const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
-{
-  return mShapeFrame;
-}
+template <>
+void collideSphereSphere<SphereSpherePolicy::PointOfInternalDivision>(
+    const dynamics::SphereShape& sphereA,
+    const Eigen::Isometry3d& tfA,
+    const dynamics::SphereShape& sphereB,
+    const Eigen::Isometry3d& tfB,
+    NarrowPhaseCallback* callback);
 
-//==============================================================================
-dynamics::ConstShapePtr CollisionObject::getShape() const
-{
-  return mShapeFrame->getShape();
-}
-
-//==============================================================================
-void CollisionObject::updateAabb()
-{
-  mAabb.setTransformed(getShape()->getAabb(), getTransform());
-}
-
-//==============================================================================
-const math::Aabb& CollisionObject::getAabb() const
-{
-  return mAabb;
-}
-
-//==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
-{
-  return mShapeFrame->getWorldTransform();
-}
-
-//==============================================================================
-CollisionObject::CollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector),
-    mShapeFrame(shapeFrame)
-{
-  assert(mCollisionDetector);
-  assert(mShapeFrame);
-}
+template <>
+void collideSphereSphere<SphereSpherePolicy::MiddleOfIntersect>(
+    const dynamics::SphereShape& sphereA,
+    const Eigen::Isometry3d& tfA,
+    const dynamics::SphereShape& sphereB,
+    const Eigen::Isometry3d& tfB,
+    NarrowPhaseCallback* callback);
 
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_DART_COLLIDESPHERESPHERE_HPP_

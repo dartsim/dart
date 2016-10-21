@@ -32,6 +32,9 @@
 #ifndef DART_DYNAMICS_LINESEGMENTSHAPE_HPP_
 #define DART_DYNAMICS_LINESEGMENTSHAPE_HPP_
 
+#include <vector>
+
+#include "dart/math/MathTypes.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {

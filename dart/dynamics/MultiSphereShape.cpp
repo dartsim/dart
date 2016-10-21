@@ -113,13 +113,13 @@ const MultiSphereShape::Spheres& MultiSphereShape::getSpheres() const
 Eigen::Matrix3d MultiSphereShape::computeInertia(double mass) const
 {
   // Use bounding box to represent the mesh
-  return BoxShape::computeInertia(mBoundingBox.computeFullExtents(), mass);
+  return BoxShape::computeInertia(mBoundingBox.getExtent(), mass);
 }
 
 //==============================================================================
 void MultiSphereShape::updateVolume()
 {
-  mVolume = BoxShape::computeVolume(mBoundingBox.computeFullExtents());
+  mVolume = BoxShape::computeVolume(mBoundingBox.getExtent());
 }
 
 //==============================================================================

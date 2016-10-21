@@ -29,66 +29,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/dart/NarrowPhaseAlgorithms.hpp"
 
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/collision/dart/PrimitiveShapeAlgorithms.hpp"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-CollisionDetector* CollisionObject::getCollisionDetector()
+const NarrowPhaseAlgorithms::CollisionFunction&
+NarrowPhaseAlgorithms::getAlgorithm(
+    dynamics::Shape::ShapeType typeA, dynamics::Shape::ShapeType typeB) const
 {
-  return mCollisionDetector;
+  return mTable[typeA][typeB];
 }
 
 //==============================================================================
-const CollisionDetector* CollisionObject::getCollisionDetector() const
+DefaultNarrowPhaseAlgorithms::DefaultNarrowPhaseAlgorithms()
 {
-  return mCollisionDetector;
+  for (auto i = 0; i < dynamics::Shape::COUNT; ++i)
+    mTable[i].fill(nullptr);
+
+  mTable[dynamics::Shape::ShapeType::SPHERE]
+        [dynamics::Shape::ShapeType::SPHERE] =
+            &PrimitiveShapeAlgorithms::collide<
+      dynamics::SphereShape, dynamics::SphereShape>;
+
+  mTable[dynamics::Shape::ShapeType::BOX]
+        [dynamics::Shape::ShapeType::BOX] =
+            &PrimitiveShapeAlgorithms::collide<
+      dynamics::BoxShape, dynamics::BoxShape>;
 }
 
-//==============================================================================
-const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
-{
-  return mShapeFrame;
-}
-
-//==============================================================================
-dynamics::ConstShapePtr CollisionObject::getShape() const
-{
-  return mShapeFrame->getShape();
-}
-
-//==============================================================================
-void CollisionObject::updateAabb()
-{
-  mAabb.setTransformed(getShape()->getAabb(), getTransform());
-}
-
-//==============================================================================
-const math::Aabb& CollisionObject::getAabb() const
-{
-  return mAabb;
-}
-
-//==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
-{
-  return mShapeFrame->getWorldTransform();
-}
-
-//==============================================================================
-CollisionObject::CollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector),
-    mShapeFrame(shapeFrame)
-{
-  assert(mCollisionDetector);
-  assert(mShapeFrame);
-}
-
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

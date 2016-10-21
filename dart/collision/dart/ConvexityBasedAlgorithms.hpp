@@ -29,66 +29,34 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.hpp"
+#ifndef DART_COLLISION_DART_CONVEXITYBASEDALGORITHMS_HPP_
+#define DART_COLLISION_DART_CONVEXITYBASEDALGORITHMS_HPP_
 
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/collision/dart/NarrowPhaseAlgorithms.hpp"
 
 namespace dart {
+
+namespace dynamics {
+class Shape;
+} // namespace dynamics
+
 namespace collision {
 
-//==============================================================================
-CollisionDetector* CollisionObject::getCollisionDetector()
+class ConvexityBasedAlgorithms
 {
-  return mCollisionDetector;
-}
-
-//==============================================================================
-const CollisionDetector* CollisionObject::getCollisionDetector() const
-{
-  return mCollisionDetector;
-}
-
-//==============================================================================
-const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
-{
-  return mShapeFrame;
-}
-
-//==============================================================================
-dynamics::ConstShapePtr CollisionObject::getShape() const
-{
-  return mShapeFrame->getShape();
-}
-
-//==============================================================================
-void CollisionObject::updateAabb()
-{
-  mAabb.setTransformed(getShape()->getAabb(), getTransform());
-}
-
-//==============================================================================
-const math::Aabb& CollisionObject::getAabb() const
-{
-  return mAabb;
-}
-
-//==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
-{
-  return mShapeFrame->getWorldTransform();
-}
-
-//==============================================================================
-CollisionObject::CollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector),
-    mShapeFrame(shapeFrame)
-{
-  assert(mCollisionDetector);
-  assert(mShapeFrame);
-}
+public:
+  template <typename ShapeA, typename ShapeB>
+  static void collide(const ShapeA& /*shapeA*/,
+                      const Eigen::Isometry3d& /*tfA*/,
+                      const ShapeB& /*shapeB*/,
+                      const Eigen::Isometry3d& /*tfB*/,
+                      NarrowPhaseCallback* callback = nullptr)
+  {
+    // TODO(JS): implement
+  }
+};
 
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_DART_CONVEXITYBASEDALGORITHMS_HPP_

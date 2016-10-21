@@ -1972,17 +1972,5 @@ Eigen::Vector2d computeClosestPointOnSupportPolygon(std::size_t& _index1, std::s
   return result;
 }
 
-BoundingBox::BoundingBox() :
-        mMin(0, 0, 0), mMax(0, 0, 0)
-{
-
-}
-BoundingBox::BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max) :
-        mMin(min), mMax(max)
-{
-
-}
-
-
 }  // namespace math
 }  // namespace dart

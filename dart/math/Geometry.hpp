@@ -569,35 +569,6 @@ Eigen::Vector2d computeClosestPointOnSupportPolygon(
     const Eigen::Vector2d& _p,
     const SupportPolygon& _support);
 
-
-// Represents a bounding box with minimum and maximum coordinates.
-class BoundingBox {
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-        BoundingBox();
-        BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max);
-
-        inline const Eigen::Vector3d& getMin() const {  return mMin; }
-        inline const Eigen::Vector3d& getMax() const { return mMax; }
-
-        inline void setMin(const Eigen::Vector3d& min) { mMin = min; }
-        inline void setMax(const Eigen::Vector3d& max) { mMax = max; }
-
-        // \brief Centroid of the bounding box (i.e average of min and max)
-        inline Eigen::Vector3d computeCenter() const { return (mMax + mMin) * 0.5; }
-        // \brief Coordinates of the maximum corner with respect to the centroid.
-        inline Eigen::Vector3d computeHalfExtents() const { return (mMax - mMin) * 0.5; }
-        // \brief Length of each of the sides of the bounding box.
-        inline Eigen::Vector3d computeFullExtents() const { return (mMax - mMin); }
-
-    protected:
-        // \brief minimum coordinates of the bounding box
-        Eigen::Vector3d mMin;
-        // \brief maximum coordinates of the bounding box
-        Eigen::Vector3d mMax;
-};
-
 }  // namespace math
 }  // namespace dart
 

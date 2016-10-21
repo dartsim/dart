@@ -34,6 +34,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/math/Aabb.hpp"
 #include "dart/collision/SmartPointer.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
@@ -61,6 +62,11 @@ public:
   /// Return the associated Shape
   dynamics::ConstShapePtr getShape() const;
 
+  void updateAabb();
+
+  /// Return the AABB of the associated Shape
+  const math::Aabb& getAabb() const;
+
   /// Return the transformation of this CollisionObject in world coordinates
   const Eigen::Isometry3d& getTransform() const;
 
@@ -82,6 +88,8 @@ protected:
 
   /// ShapeFrame
   const dynamics::ShapeFrame* mShapeFrame;
+
+  math::Aabb mAabb;
 
 };
 

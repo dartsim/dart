@@ -29,66 +29,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.hpp"
+#ifndef DART_COLLISION_DART_BRUTEFORCEBROADPHASE_HPP_
+#define DART_COLLISION_DART_BRUTEFORCEBROADPHASE_HPP_
 
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include <string>
+#include <vector>
+
+#include "dart/collision/dart/BroadPhaseAlgorithm.hpp"
 
 namespace dart {
 namespace collision {
 
-//==============================================================================
-CollisionDetector* CollisionObject::getCollisionDetector()
-{
-  return mCollisionDetector;
-}
+class CollisionObject;
 
-//==============================================================================
-const CollisionDetector* CollisionObject::getCollisionDetector() const
+class BruteForceBroadPhase : public BroadPhaseAlgorithm
 {
-  return mCollisionDetector;
-}
+public:
 
-//==============================================================================
-const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
-{
-  return mShapeFrame;
-}
+  BruteForceBroadPhase() = default;
 
-//==============================================================================
-dynamics::ConstShapePtr CollisionObject::getShape() const
-{
-  return mShapeFrame->getShape();
-}
+  virtual ~BruteForceBroadPhase() = default;
 
-//==============================================================================
-void CollisionObject::updateAabb()
-{
-  mAabb.setTransformed(getShape()->getAabb(), getTransform());
-}
+  const std::string& getType() const override;
 
-//==============================================================================
-const math::Aabb& CollisionObject::getAabb() const
-{
-  return mAabb;
-}
+  static const std::string& getStaticType();
 
-//==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
-{
-  return mShapeFrame->getWorldTransform();
-}
+  void addObject(CollisionObject* object) override;
 
-//==============================================================================
-CollisionObject::CollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector),
-    mShapeFrame(shapeFrame)
-{
-  assert(mCollisionDetector);
-  assert(mShapeFrame);
-}
+  void updateOverlappingPairs() override;
+
+protected:
+
+  std::vector<CollisionObject*> mCollisionObjects;
+
+};
 
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_DART_BRUTEFORCEBROADPHASE_HPP_

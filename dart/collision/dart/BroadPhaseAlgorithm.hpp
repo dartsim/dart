@@ -29,66 +29,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.hpp"
+#ifndef DART_COLLISION_DART_BROADPHASEALGORITHM_HPP_
+#define DART_COLLISION_DART_BROADPHASEALGORITHM_HPP_
 
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include <string>
+#include <vector>
 
 namespace dart {
 namespace collision {
 
-//==============================================================================
-CollisionDetector* CollisionObject::getCollisionDetector()
-{
-  return mCollisionDetector;
-}
+class CollisionObject;
 
-//==============================================================================
-const CollisionDetector* CollisionObject::getCollisionDetector() const
-{
-  return mCollisionDetector;
-}
+using OverlappingPair = std::pair<CollisionObject*, CollisionObject*>;
 
-//==============================================================================
-const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
+class BroadPhaseAlgorithm
 {
-  return mShapeFrame;
-}
+public:
 
-//==============================================================================
-dynamics::ConstShapePtr CollisionObject::getShape() const
-{
-  return mShapeFrame->getShape();
-}
+  BroadPhaseAlgorithm() = default;
 
-//==============================================================================
-void CollisionObject::updateAabb()
-{
-  mAabb.setTransformed(getShape()->getAabb(), getTransform());
-}
+  virtual ~BroadPhaseAlgorithm() = default;
 
-//==============================================================================
-const math::Aabb& CollisionObject::getAabb() const
-{
-  return mAabb;
-}
+  virtual const std::string& getType() const = 0;
 
-//==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
-{
-  return mShapeFrame->getWorldTransform();
-}
+  virtual void addObject(CollisionObject* object) = 0;
 
-//==============================================================================
-CollisionObject::CollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector),
-    mShapeFrame(shapeFrame)
-{
-  assert(mCollisionDetector);
-  assert(mShapeFrame);
-}
+  virtual void updateOverlappingPairs() = 0;
+
+  const std::vector<OverlappingPair>& getOverlappingPairs() const
+  {
+    return mOverlappingPairs;
+  }
+
+protected:
+
+  std::vector<OverlappingPair> mOverlappingPairs;
+  // TODO(JS): consider using map for faster seraching
+};
 
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_DART_BROADPHASEALGORITHM_HPP_

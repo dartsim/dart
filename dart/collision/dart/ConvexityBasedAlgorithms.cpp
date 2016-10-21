@@ -29,34 +29,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
-
-#include <Eigen/Dense>
-
-#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/dart/ConvexityBasedAlgorithms.hpp"
 
 namespace dart {
 namespace collision {
 
-class DARTCollisionObject : public CollisionObject
-{
-public:
 
-  friend class DARTCollisionDetector;
-
-protected:
-
-  /// Constructor
-  DARTCollisionObject(CollisionDetector* collisionDetector,
-                      const dynamics::ShapeFrame* shapeFrame);
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-};
-
-}  // namespace collision
-}  // namespace dart
-
-#endif  // DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
+} // namespace collision
+} // namespace dart

@@ -32,6 +32,7 @@
 #include "dart/dynamics/Frame.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {

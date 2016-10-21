@@ -38,7 +38,7 @@
 
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/Subject.hpp"
-#include "dart/math/Geometry.hpp"
+#include "dart/math/Aabb.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
@@ -61,7 +61,8 @@ public:
     MESH,
     SOFT_MESH,
     LINE_SEGMENT,
-    UNSUPPORTED
+    UNSUPPORTED, // TODO(JS): remove
+    COUNT
   };
 
   /// DataVariance can be used by renderers to determine whether it should
@@ -108,7 +109,14 @@ public:
   /// \brief Get the bounding box of the shape in its local coordinate frame.
   ///        The dimension will be automatically determined by the sub-classes
   ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
+  DART_DEPRECATED(6.2)
   const math::BoundingBox& getBoundingBox() const;
+
+  /// Get the AABB of the shape in its local coordinate frame. The dimension
+  /// will be automatically determined by the sub-classes such as BoxShape,
+  /// EllipsoidShape, CylinderShape, and MeshShape.
+  const math::Aabb& getAabb() const;
+  // TODO(JS): rename to getLocalAabb?
 
   /// \brief
   virtual Eigen::Matrix3d computeInertia(double mass) const = 0;
@@ -126,8 +134,9 @@ public:
   int getID() const;
 
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
-  DART_DEPRECATED(6.1)
+  //DART_DEPRECATED(6.1)
   ShapeType getShapeType() const;
+  // TODO(JS): Switch to use enum for shape type
 
   /// Set the data variance of this shape. Use the DataVariance to indicate what
   /// kind of shape information might change during run time so that renderers

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
@@ -29,17 +29,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/DARTCollide.hpp"
-#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/dart/CollideBoxBox.hpp"
 
-#include <memory>
-
-#include "dart/math/Helpers.hpp"
-#include "dart/dynamics/SphereShape.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
-#include "dart/dynamics/CylinderShape.hpp"
-#include "dart/dynamics/BodyNode.hpp"
+#include "dart/math/Constants.hpp"
 
 namespace dart {
 namespace collision {
@@ -121,7 +113,7 @@ inline void dMULTIPLY1_331(double *A, const double *B, const double *C)
 // n must be in the range [1..8]. m must be in the range [1..n]. i0 must be
 // in the range [0..n-1].
 
-static void cullPoints (int n, double p[], int m, int i0, int iret[])
+void cullPoints (int n, double p[], int m, int i0, int iret[])
 {
   // compute the centroid of the polygon in cx,cy
   int i,j;
@@ -179,7 +171,7 @@ static void cullPoints (int n, double p[], int m, int i0, int iret[])
   }
 }
 
-static void dLineClosestApproach (const dVector3 pa, const dVector3 ua,
+void dLineClosestApproach (const dVector3 pa, const dVector3 ua,
                            const dVector3 pb, const dVector3 ub,
                            double *alpha, double *beta)
 {
@@ -203,7 +195,7 @@ static void dLineClosestApproach (const dVector3 pa, const dVector3 ua,
   }
 }
 
-static int intersectRectQuad (double h[2], double p[8], double ret[16])
+int intersectRectQuad (double h[2], double p[8], double ret[16])
 {
   // q (and r) contain nq (and nr) coordinate points for the current (and
   // chopped) polygons
@@ -277,7 +269,7 @@ done:
 // in a piecewise fashion from t=0 to t=1, stopping at the point where
 // d|D(t)|^2/dt crosses from negative to positive.
 
-static void dClosestLineBoxPoints (const dVector3 p1, const dVector3 p2,
+void dClosestLineBoxPoints (const dVector3 p1, const dVector3 p2,
                             const dVector3 c, const dMatrix3 R,
                             const dVector3 side,
                             dVector3 lret, dVector3 bret)
@@ -414,10 +406,11 @@ got_answer:
 // `contact' and `skip' are the contact array information provided to the
 // collision functions. this function only fills in the position and depth
 // fields.
-static int dBoxBox(CollisionObject* o1, CollisionObject* o2,
-            const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
-            const dVector3 p2, const dMatrix3 R2, const dVector3 side2,
-            CollisionResult& result)
+void dBoxBox(const dynamics::Shape* shapeA,
+             const dynamics::Shape* shapeB,
+             const dVector3 p1, const dMatrix3 R1, const dVector3 side1,
+             const dVector3 p2, const dMatrix3 R2, const dVector3 side2,
+             NarrowPhaseCallback* callback)
 {
   const double fudge_factor = 1.05;
   dVector3 p,pp,normalC = {0.0, 0.0, 0.0, 0.0};
@@ -515,8 +508,8 @@ static int dBoxBox(CollisionObject* o1, CollisionObject* o2,
 
 #undef TST
 
-  if (!code) return 0;
-  if (s > 0.0) return 0;
+  if (!code) return;
+  if (s > 0.0) return;
 
   // if we get to this point, the boxes interpenetrate. compute the normal
   // in global coordinates.
@@ -580,15 +573,10 @@ static int dBoxBox(CollisionObject* o1, CollisionObject* o2,
       point_vec << 0.5*(pa[0]+pb[0]), 0.5*(pa[1]+pb[1]), 0.5*(pa[2]+pb[2]);
       penetration = -s;
 
-      Contact contact;
-      contact.collisionObject1 = o1;
-      contact.collisionObject2 = o2;
-      contact.point = point_vec;
-      contact.normal = normal;
-      contact.penetrationDepth = penetration;
-      result.addContact(contact);
+      if (callback->notifyContact(shapeA, shapeB, point_vec, normal, penetration))
+        return;
     }
-    return 1;
+    return;
   }
 
   // okay, we have a face-something intersection (because the separating
@@ -721,7 +709,7 @@ static int dBoxBox(CollisionObject* o1, CollisionObject* o2,
   // intersect the incident and reference faces
   double ret[16];
   int n = intersectRectQuad (rect,quad,ret);
-  if (n < 1) return 0;		// this should never happen
+  if (n < 1) return;		// this should never happen
 
   // convert the intersection points into reference-face coordinates,
   // and compute the contact position and depth for each point. only keep
@@ -750,7 +738,7 @@ static int dBoxBox(CollisionObject* o1, CollisionObject* o2,
       cnum++;
     }
   }
-  if (cnum < 1) return 0;	// this should never happen
+  if (cnum < 1) return;	// this should never happen
 
   // we can't generate more contacts than we actually have
   int maxc = 4;
@@ -763,13 +751,8 @@ static int dBoxBox(CollisionObject* o1, CollisionObject* o2,
     {
       point_vec << point[j*3+0] + pa[0], point[j*3+1] + pa[1], point[j*3+2] + pa[2];
 
-      Contact contact;
-      contact.collisionObject1 = o1;
-      contact.collisionObject2 = o2;
-      contact.point = point_vec;
-      contact.normal = normal;
-      contact.penetrationDepth = dep[j];
-      result.addContact(contact);
+      if (callback->notifyContact(shapeA, shapeB, point_vec, normal, dep[j]))
+        return;
     }
   }
   else {
@@ -792,584 +775,36 @@ static int dBoxBox(CollisionObject* o1, CollisionObject* o2,
     {
       point_vec << point[iret[j]*3+0] + pa[0], point[iret[j]*3+1] + pa[1], point[iret[j]*3+2] + pa[2];
 
-      Contact contact;
-      contact.collisionObject1 = o1;
-      contact.collisionObject2 = o2;
-      contact.point = point_vec;
-      contact.normal = normal;
-      contact.penetrationDepth = dep[iret[j]];
-      result.addContact(contact);
+      if (callback->notifyContact(shapeA, shapeB, point_vec, normal, dep[iret[j]]))
+        return;
     }
   }
-  return cnum;
 }
 
-int collideBoxBox(CollisionObject* o1, CollisionObject* o2,
-                  const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
-                  const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
-                  CollisionResult& result)
+//==============================================================================
+void collideBoxBox(
+    const dynamics::BoxShape& boxA, const Eigen::Isometry3d& tfA,
+    const dynamics::BoxShape& boxB, const Eigen::Isometry3d& tfB,
+    NarrowPhaseCallback* callback)
 {
   dVector3 halfSize0;
   dVector3 halfSize1;
 
-  convVector(0.5 * size0, halfSize0);
-  convVector(0.5 * size1, halfSize1);
+  convVector(0.5 * boxA.getSize(), halfSize0);
+  convVector(0.5 * boxB.getSize(), halfSize1);
 
   dMatrix3 R0, R1;
 
-  convMatrix(T0, R0);
-  convMatrix(T1, R1);
+  convMatrix(tfA, R0);
+  convMatrix(tfB, R1);
 
   dVector3 p0;
   dVector3 p1;
 
-  convVector(T0.translation(), p0);
-  convVector(T1.translation(), p1);
+  convVector(tfA.translation(), p0);
+  convVector(tfB.translation(), p1);
 
-  return dBoxBox(o1, o2, p1, R1, halfSize1, p0, R0, halfSize0, result);
-}
-
-int	collideBoxSphere(CollisionObject* o1, CollisionObject* o2,
-                     const Eigen::Vector3d& size0, const Eigen::Isometry3d& T0,
-                     const double& r1, const Eigen::Isometry3d& T1,
-                     CollisionResult& result)
-{
-  Eigen::Vector3d halfSize = 0.5 * size0;
-  bool inside_box = true;
-
-  // clipping a center of the sphere to a boundary of the box
-  //Vec3 c0(&T0[9]);
-  Eigen::Vector3d c0 = T1.translation();
-  Eigen::Vector3d p = T0.inverse() * c0;
-
-  if (p[0] < -halfSize[0]) { p[0] = -halfSize[0]; inside_box = false; }
-  if (p[0] >  halfSize[0]) { p[0] =  halfSize[0]; inside_box = false; }
-
-  if (p[1] < -halfSize[1]) { p[1] = -halfSize[1]; inside_box = false; }
-  if (p[1] >  halfSize[1]) { p[1] =  halfSize[1]; inside_box = false; }
-
-  if (p[2] < -halfSize[2]) { p[2] = -halfSize[2]; inside_box = false; }
-  if (p[2] >  halfSize[2]) { p[2] =  halfSize[2]; inside_box = false; }
-
-
-  Eigen::Vector3d normal(0.0, 0.0, 0.0);
-  double penetration;
-
-  if ( inside_box )
-  {
-    // find nearest side from the sphere center
-    double min = halfSize[0] - std::abs(p[0]);
-    double tmin = halfSize[1] - std::abs(p[1]);
-    int idx = 0;
-
-    if ( tmin < min )
-    {
-      min = tmin;
-      idx = 1;
-    }
-    tmin = halfSize[2] - std::abs(p[2]);
-    if ( tmin < min )
-    {
-      min = tmin;
-      idx = 2;
-    }
-
-    //normal[idx] = (p[idx] > 0.0 ? 1.0 : -1.0);
-    normal[idx] = (p[idx] > 0.0 ? -1.0 : 1.0);
-    normal = T0.linear() * normal;
-    penetration = min + r1;
-
-    Contact contact;
-    contact.collisionObject1 = o1;
-    contact.collisionObject2 = o2;
-    contact.point = c0;
-    contact.normal = normal;
-    contact.penetrationDepth = penetration;
-    result.addContact(contact);
-    return 1;
-  }
-
-  Eigen::Vector3d contactpt = T0 * p;
-  //normal = c0 - contactpt;
-  normal = contactpt - c0;
-  double mag = normal.norm();
-  penetration = r1 - mag;
-
-  if (penetration < 0.0)
-  {
-    return 0;
-  }
-
-  if (mag > DART_COLLISION_EPS)
-  {
-    normal *= (1.0/mag);
-
-    Contact contact;
-    contact.collisionObject1 = o1;
-    contact.collisionObject2 = o2;
-    contact.point = contactpt;
-    contact.normal = normal;
-    contact.penetrationDepth = penetration;
-    result.addContact(contact);
-  }
-  else
-  {
-    double min = halfSize[0] - std::abs(p[0]);
-    double tmin = halfSize[1] - std::abs(p[1]);
-    int idx = 0;
-
-    if ( tmin < min )
-    {
-      min = tmin;
-      idx = 1;
-    }
-    tmin = halfSize[2] - std::abs(p[2]);
-    if ( tmin < min )
-    {
-      min = tmin;
-      idx = 2;
-    }
-    normal.setZero();
-    //normal[idx] = (p[idx] > 0.0 ? 1.0 : -1.0);
-    normal[idx] = (p[idx] > 0.0 ? -1.0 : 1.0);
-    normal = T0.linear() * normal;
-
-    Contact contact;
-    contact.collisionObject1 = o1;
-    contact.collisionObject2 = o2;
-    contact.point = contactpt;
-    contact.normal = normal;
-    contact.penetrationDepth = penetration;
-    result.addContact(contact);
-  }
-  return 1;
-}
-
-int collideSphereBox(CollisionObject* o1, CollisionObject* o2,
-                     const double& r0, const Eigen::Isometry3d& T0,
-                     const Eigen::Vector3d& size1, const Eigen::Isometry3d& T1,
-                     CollisionResult& result)
-{
-  Eigen::Vector3d size = 0.5 * size1;
-  bool inside_box = true;
-
-  // clipping a center of the sphere to a boundary of the box
-  Eigen::Vector3d c0 = T0.translation();
-  Eigen::Vector3d p = T1.inverse() * c0;
-
-  if (p[0] < -size[0]) { p[0] = -size[0]; inside_box = false; }
-  if (p[0] >  size[0]) { p[0] =  size[0]; inside_box = false; }
-
-  if (p[1] < -size[1]) { p[1] = -size[1]; inside_box = false; }
-  if (p[1] >  size[1]) { p[1] =  size[1]; inside_box = false; }
-
-  if (p[2] < -size[2]) { p[2] = -size[2]; inside_box = false; }
-  if (p[2] >  size[2]) { p[2] =  size[2]; inside_box = false; }
-
-
-  Eigen::Vector3d normal(0.0, 0.0, 0.0);
-  double penetration;
-
-  if ( inside_box )
-  {
-    // find nearest side from the sphere center
-    double min = size[0] - std::abs(p[0]);
-    double tmin = size[1] - std::abs(p[1]);
-    int idx = 0;
-
-    if ( tmin < min )
-    {
-      min = tmin;
-      idx = 1;
-    }
-    tmin = size[2] - std::abs(p[2]);
-    if ( tmin < min )
-    {
-      min = tmin;
-      idx = 2;
-    }
-
-    normal[idx] = (p[idx] > 0.0 ? 1.0 : -1.0);
-    normal = T1.linear() * normal;
-    penetration = min + r0;
-
-    Contact contact;
-    contact.collisionObject1 = o1;
-    contact.collisionObject2 = o2;
-    contact.point = c0;
-    contact.normal = normal;
-    contact.penetrationDepth = penetration;
-    result.addContact(contact);
-    return 1;
-  }
-
-
-  Eigen::Vector3d contactpt = T1 * p;
-  normal = c0 - contactpt;
-  double mag = normal.norm();
-  penetration = r0 - mag;
-
-  if (penetration < 0.0)
-  {
-    return 0;
-  }
-
-  if (mag > DART_COLLISION_EPS)
-  {
-    normal *= (1.0/mag);
-
-    Contact contact;
-    contact.collisionObject1 = o1;
-    contact.collisionObject2 = o2;
-    contact.point = contactpt;
-    contact.normal = normal;
-    contact.penetrationDepth = penetration;
-    result.addContact(contact);
-  }
-  else
-  {
-    double min = size[0] - std::abs(p[0]);
-    double tmin = size[1] - std::abs(p[1]);
-    int idx = 0;
-
-    if ( tmin < min )
-    {
-      min = tmin;
-      idx = 1;
-    }
-    tmin = size[2] - std::abs(p[2]);
-    if ( tmin < min )
-    {
-      min = tmin;
-      idx = 2;
-    }
-    normal.setZero();
-    normal[idx] = (p[idx] > 0.0 ? 1.0 : -1.0);
-    normal = T1.linear() * normal;
-
-    Contact contact;
-    contact.collisionObject1 = o1;
-    contact.collisionObject2 = o2;
-    contact.point = contactpt;
-    contact.normal = normal;
-    contact.penetrationDepth = penetration;
-    result.addContact(contact);
-  }
-  return 1;
-}
-
-int collideSphereSphere(CollisionObject* o1, CollisionObject* o2, const double& _r0, const Eigen::Isometry3d& c0,
-                        const double& _r1, const Eigen::Isometry3d& c1,
-                        CollisionResult& result)
-{
-  double r0 = _r0;
-  double r1 = _r1;
-  double rsum = r0 + r1;
-  Eigen::Vector3d normal = c0.translation() - c1.translation();
-  double normal_sqr = normal.squaredNorm();
-
-  if ( normal_sqr > rsum * rsum )
-  {
-    return 0;
-  }
-
-  r0 /= rsum;
-  r1 /= rsum;
-
-  Eigen::Vector3d point = r1 * c0.translation() + r0 * c1.translation();
-  double penetration;
-
-  if (normal_sqr < DART_COLLISION_EPS)
-  {
-    normal.setZero();
-    penetration = rsum;
-
-    Contact contact;
-    contact.collisionObject1 = o1;
-    contact.collisionObject2 = o2;
-    contact.point = point;
-    contact.normal = normal;
-    contact.penetrationDepth = penetration;
-    result.addContact(contact);
-    return 1;
-  }
-
-  normal_sqr = sqrt(normal_sqr);
-  normal *= (1.0/normal_sqr);
-  penetration = rsum - normal_sqr;
-
-  Contact contact;
-  contact.collisionObject1 = o1;
-  contact.collisionObject2 = o2;
-  contact.point = point;
-  contact.normal = normal;
-  contact.penetrationDepth = penetration;
-  result.addContact(contact);
-  return 1;
-
-}
-
-int collideCylinderSphere(CollisionObject* o1, CollisionObject* o2, const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
-                          const double& sphere_rad, const Eigen::Isometry3d& T1,
-                          CollisionResult& result)
-{
-  Eigen::Vector3d center = T0.inverse() * T1.translation();
-
-  double dist = sqrt(center[0] * center[0] + center[1] * center[1]);
-
-  if ( dist < cyl_rad && std::abs(center[2]) < half_height + sphere_rad )
-  {
-    Contact contact;
-    contact.collisionObject1 = o1;
-    contact.collisionObject2 = o2;
-    contact.penetrationDepth = 0.5 * (half_height + sphere_rad - math::sign(center[2]) * center[2]);
-    contact.point = T0 * Eigen::Vector3d(center[0], center[1], half_height - contact.penetrationDepth);
-    contact.normal = T0.linear() * Eigen::Vector3d(0.0, 0.0, math::sign(center[2]));
-    result.addContact(contact);
-    return 1;
-  }
-  else
-  {
-    double penetration = 0.5 * (cyl_rad + sphere_rad - dist);
-    if ( penetration > 0.0 )
-    {
-      if ( std::abs(center[2]) > half_height )
-      {
-        Eigen::Vector3d point = (Eigen::Vector3d(center[0], center[1], 0.0).normalized());
-        point *= cyl_rad;
-        point[2] = math::sign(center[2]) * half_height;
-        Eigen::Vector3d normal = point - center;
-        penetration = sphere_rad - normal.norm();
-        normal = (T0.linear() * normal).normalized();
-        point = T0 * point;
-
-        if (penetration > 0.0)
-        {
-          Contact contact;
-          contact.collisionObject1 = o1;
-          contact.collisionObject2 = o2;
-          contact.point = point;
-          contact.normal = normal;
-          contact.penetrationDepth = penetration;
-          result.addContact(contact);
-          return 1;
-        }
-      }
-      else // if( center[2] >= -half_height && center[2] <= half_height )
-      {
-        Eigen::Vector3d point = (Eigen::Vector3d(center[0], center[1], 0.0)).normalized();
-        Eigen::Vector3d normal = -(T0.linear() * point);
-        point *= (cyl_rad - penetration);
-        point[2] = center[2];
-        point = T0 * point;
-
-        Contact contact;
-        contact.collisionObject1 = o1;
-        contact.collisionObject2 = o2;
-        contact.point = point;
-        contact.normal = normal;
-        contact.penetrationDepth = penetration;
-        result.addContact(contact);
-        return 1;
-      }
-    }
-  }
-  return 0;
-}
-
-int collideCylinderPlane(CollisionObject* o1, CollisionObject* o2, const double& cyl_rad, const double& half_height, const Eigen::Isometry3d& T0,
-                         const Eigen::Vector3d& plane_normal, const Eigen::Isometry3d& T1,
-                         CollisionResult& result)
-{
-  Eigen::Vector3d normal = T1.linear() * plane_normal;
-  Eigen::Vector3d Rx = T0.linear().rightCols(1);
-  Eigen::Vector3d Ry = normal - normal.dot(Rx) * Rx;
-  double mag = Ry.norm();
-  Ry.normalize();
-  if (mag < DART_COLLISION_EPS)
-  {
-    if (std::abs(Rx[2]) > 1.0 - DART_COLLISION_EPS)
-      Ry = Eigen::Vector3d::UnitX();
-    else
-      Ry = (Eigen::Vector3d(Rx[1], -Rx[0], 0.0)).normalized();
-  }
-
-  Eigen::Vector3d Rz = Rx.cross(Ry);
-  Eigen::Isometry3d T;
-  T.linear().col(0) = Rx;
-  T.linear().col(1) = Ry;
-  T.linear().col(2) = Rz;
-  T.translation() = T0.translation();
-
-  Eigen::Vector3d nn = T.linear().transpose() * normal;
-  Eigen::Vector3d pn = T.inverse() * T1.translation();
-
-  // four corners c0 = ( -h/2, -r ), c1 = ( +h/2, -r ), c2 = ( +h/2, +r ), c3 = ( -h/2, +r )
-  Eigen::Vector3d c[4] = {
-    Eigen::Vector3d(-half_height, -cyl_rad, 0.0),
-    Eigen::Vector3d(+half_height, -cyl_rad, 0.0),
-    Eigen::Vector3d(+half_height, +cyl_rad, 0.0),
-    Eigen::Vector3d(-half_height, +cyl_rad, 0.0) };
-
-  double depth[4] = { (pn - c[0]).dot(nn), (pn - c[1]).dot(nn), (pn - c[2]).dot(nn), (pn - c[3]).dot(nn) };
-
-  double penetration = -1.0;
-  int found = -1;
-  for (int i = 0; i < 4; i++)
-  {
-    if (depth[i] > penetration)
-    {
-      penetration = depth[i];
-      found = i;
-    }
-  }
-
-  Eigen::Vector3d point;
-
-  if (std::abs(depth[found] - depth[(found+1)%4]) < DART_COLLISION_EPS)
-    point = T * (0.5 * (c[found] + c[(found+1)%4]));
-  else if (std::abs(depth[found] - depth[(found+3)%4]) < DART_COLLISION_EPS)
-    point = T * (0.5 * (c[found] + c[(found+3)%4]));
-  else
-    point = T * c[found];
-
-  if (penetration > 0.0)
-  {
-    Contact contact;
-    contact.collisionObject1 = o1;
-    contact.collisionObject2 = o2;
-    contact.point = point;
-    contact.normal = normal;
-    contact.penetrationDepth = penetration;
-    result.addContact(contact);
-    return 1;
-  }
-
-  return 0;
-}
-
-//==============================================================================
-int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
-{
-  // TODO(JS): We could make the contact point computation as optional for
-  // the case that we want only binary check.
-
-  const auto& shape1 = o1->getShape();
-  const auto& shape2 = o2->getShape();
-
-  const auto& shapeType1 = shape1->getType();
-  const auto& shapeType2 = shape2->getType();
-
-  const Eigen::Isometry3d& T1 = o1->getTransform();
-  const Eigen::Isometry3d& T2 = o2->getTransform();
-
-  if (dynamics::SphereShape::getStaticType() == shapeType1)
-  {
-    const auto* sphere0
-        = static_cast<const dynamics::SphereShape*>(shape1.get());
-
-    if (dynamics::SphereShape::getStaticType() == shapeType2)
-    {
-      const auto* sphere1
-          = static_cast<const dynamics::SphereShape*>(shape2.get());
-
-      return collideSphereSphere(
-            o1, o2, sphere0->getRadius(), T1, sphere1->getRadius(), T2, result);
-    }
-    else if (dynamics::BoxShape::getStaticType() == shapeType2)
-    {
-      const auto* box1
-          = static_cast<const dynamics::BoxShape*>(shape2.get());
-
-      return collideSphereBox(
-            o1, o2, sphere0->getRadius(), T1, box1->getSize(), T2, result);
-    }
-    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
-    {
-      const auto* ellipsoid1
-          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
-
-      return collideSphereSphere(o1, o2,
-                                 sphere0->getRadius(), T1,
-                                 ellipsoid1->getSize()[0] * 0.5, T2,
-                                 result);
-    }
-  }
-  else if (dynamics::BoxShape::getStaticType() == shapeType1)
-  {
-    const auto* box0 = static_cast<const dynamics::BoxShape*>(shape1.get());
-
-    if (dynamics::SphereShape::getStaticType() == shapeType2)
-    {
-      const auto* sphere1
-          = static_cast<const dynamics::SphereShape*>(shape2.get());
-
-      return collideBoxSphere(
-            o1, o2, box0->getSize(), T1, sphere1->getRadius(), T2, result);
-    }
-    else if (dynamics::BoxShape::getStaticType() == shapeType2)
-    {
-      const auto* box1
-          = static_cast<const dynamics::BoxShape*>(shape2.get());
-
-      return collideBoxBox(o1, o2,
-                           box0->getSize(), T1,
-                           box1->getSize(), T2,
-                           result);
-    }
-    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
-    {
-      const auto* ellipsoid1
-          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
-
-      return collideBoxSphere(o1, o2,
-                              box0->getSize(), T1,
-                              ellipsoid1->getSize()[0] * 0.5, T2,
-                              result);
-    }
-  }
-  else if (dynamics::EllipsoidShape::getStaticType() == shapeType1)
-  {
-    const auto* ellipsoid0
-        = static_cast<const dynamics::EllipsoidShape*>(shape1.get());
-
-    if (dynamics::SphereShape::getStaticType() == shapeType2)
-    {
-      const auto* sphere1
-          = static_cast<const dynamics::SphereShape*>(shape2.get());
-
-      return collideSphereSphere(o1, o2,
-                                 ellipsoid0->getSize()[0] * 0.5, T1,
-                                 sphere1->getRadius(), T2,
-                                 result);
-    }
-    else if (dynamics::BoxShape::getStaticType() == shapeType2)
-    {
-      const auto* box1
-          = static_cast<const dynamics::BoxShape*>(shape2.get());
-
-      return collideSphereBox(o1, o2,
-                              ellipsoid0->getSize()[0] * 0.5, T1,
-                              box1->getSize(), T2,
-                              result);
-    }
-    else if (dynamics::EllipsoidShape::getStaticType() == shapeType2)
-    {
-      const auto* ellipsoid1
-          = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
-
-      return collideSphereSphere(o1, o2,
-                                 ellipsoid0->getSize()[0] * 0.5, T1,
-                                 ellipsoid1->getSize()[0] * 0.5, T2,
-                                 result);
-    }
-  }
-
-  dterr << "[DARTCollisionDetector] Attempting to check for an "
-        << "unsupported shape pair: [" << shape1->getType()
-        << "] - [" << shape2->getType() << "]. Returning false.\n";
-
-  return false;
+  dBoxBox(&boxA, &boxB, p1, R1, halfSize1, p0, R0, halfSize0, callback);
 }
 
 } // namespace collision

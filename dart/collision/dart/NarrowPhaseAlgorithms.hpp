@@ -29,66 +29,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.hpp"
+#ifndef DART_COLLISION_DART_NARROWPHASEALGORITHMS_HPP_
+#define DART_COLLISION_DART_NARROWPHASEALGORITHMS_HPP_
 
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include <Eigen/Dense>
+
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
+#include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace collision {
 
-//==============================================================================
-CollisionDetector* CollisionObject::getCollisionDetector()
+struct NarrowPhaseCallback
 {
-  return mCollisionDetector;
-}
+  /// Return true if no more this function needs to be called.
+  virtual bool notifyContact(const dynamics::Shape* shapeA,
+                             const dynamics::Shape* shapeB,
+                             const Eigen::Vector3d& point,
+                             const Eigen::Vector3d& normal,
+                             double depth) = 0;
+};
 
-//==============================================================================
-const CollisionDetector* CollisionObject::getCollisionDetector() const
+class NarrowPhaseAlgorithms
 {
-  return mCollisionDetector;
-}
+public:
+  using CollisionFunction =
+      void (*)(const dynamics::Shape* shape1,
+               const Eigen::Isometry3d& tf1,
+               const dynamics::Shape* shape2,
+               const Eigen::Isometry3d& tf2,
+               NarrowPhaseCallback* callback);
 
-//==============================================================================
-const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
-{
-  return mShapeFrame;
-}
+  virtual ~NarrowPhaseAlgorithms() = default;
 
-//==============================================================================
-dynamics::ConstShapePtr CollisionObject::getShape() const
-{
-  return mShapeFrame->getShape();
-}
+  const CollisionFunction& getAlgorithm(
+      dynamics::Shape::ShapeType typeA,
+      dynamics::Shape::ShapeType typeB) const;
 
-//==============================================================================
-void CollisionObject::updateAabb()
-{
-  mAabb.setTransformed(getShape()->getAabb(), getTransform());
-}
+protected:
+  NarrowPhaseAlgorithms() = default;
 
-//==============================================================================
-const math::Aabb& CollisionObject::getAabb() const
-{
-  return mAabb;
-}
+  std::array<
+      std::array<CollisionFunction, dynamics::Shape::COUNT>,
+      dynamics::Shape::COUNT
+  > mTable;
+};
 
-//==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
+class DefaultNarrowPhaseAlgorithms : public NarrowPhaseAlgorithms
 {
-  return mShapeFrame->getWorldTransform();
-}
-
-//==============================================================================
-CollisionObject::CollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector),
-    mShapeFrame(shapeFrame)
-{
-  assert(mCollisionDetector);
-  assert(mShapeFrame);
-}
+public:
+  DefaultNarrowPhaseAlgorithms();
+};
+// TODO(JS): move out this to a separate file
 
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_DART_NARROWPHASEALGORITHM_HPP_

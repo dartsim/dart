@@ -29,66 +29,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionObject.hpp"
+#ifndef DART_COLLISION_DART_COLLIDEBOXBOX_HPP_
+#define DART_COLLISION_DART_COLLIDEBOXBOX_HPP_
 
-#include "dart/collision/CollisionDetector.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/collision/dart/NarrowPhaseAlgorithms.hpp"
 
 namespace dart {
 namespace collision {
 
-//==============================================================================
-CollisionDetector* CollisionObject::getCollisionDetector()
-{
-  return mCollisionDetector;
-}
-
-//==============================================================================
-const CollisionDetector* CollisionObject::getCollisionDetector() const
-{
-  return mCollisionDetector;
-}
-
-//==============================================================================
-const dynamics::ShapeFrame* CollisionObject::getShapeFrame() const
-{
-  return mShapeFrame;
-}
-
-//==============================================================================
-dynamics::ConstShapePtr CollisionObject::getShape() const
-{
-  return mShapeFrame->getShape();
-}
-
-//==============================================================================
-void CollisionObject::updateAabb()
-{
-  mAabb.setTransformed(getShape()->getAabb(), getTransform());
-}
-
-//==============================================================================
-const math::Aabb& CollisionObject::getAabb() const
-{
-  return mAabb;
-}
-
-//==============================================================================
-const Eigen::Isometry3d& CollisionObject::getTransform() const
-{
-  return mShapeFrame->getWorldTransform();
-}
-
-//==============================================================================
-CollisionObject::CollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame)
-  : mCollisionDetector(collisionDetector),
-    mShapeFrame(shapeFrame)
-{
-  assert(mCollisionDetector);
-  assert(mShapeFrame);
-}
+void collideBoxBox(const dynamics::BoxShape& boxA,
+                   const Eigen::Isometry3d& tfA,
+                   const dynamics::BoxShape& boxB,
+                   const Eigen::Isometry3d& tfB,
+                   NarrowPhaseCallback* callback);
 
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_DART_COLLIDEBOXBOX_HPP_

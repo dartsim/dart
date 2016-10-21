@@ -33,7 +33,9 @@
 #define DART_COLLISION_DART_DARTCOLLISIONDETECTOR_HPP_
 
 #include <vector>
+
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/dart/NarrowPhaseAlgorithms.hpp"
 
 namespace dart {
 namespace collision {
@@ -43,6 +45,8 @@ class DARTCollisionObject;
 class DARTCollisionDetector : public CollisionDetector
 {
 public:
+
+  friend class DARTCollisionGroup;
 
   static std::shared_ptr<DARTCollisionDetector> create();
 
@@ -92,6 +96,12 @@ protected:
   // Documentation inherited
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
+
+  const NarrowPhaseAlgorithms* getNarrowPhaseAlgorithms() const;
+
+protected:
+
+  std::unique_ptr<NarrowPhaseAlgorithms> mNarrowPhaseAlgorithms;
 
 };
 

@@ -123,6 +123,17 @@ bool DARTCollisionDetector::collide(
     return false;
 
   auto casted = static_cast<DARTCollisionGroup*>(group);
+
+  // TODO(JS): Modify CollisionDetector::collide() to call
+  // CollisionGroup::collide(). Reverse of the current way.
+
+  return casted->collide(option, result);
+
+  //============================================================================
+  // TODO(JS): remove blow code once the above code becomes the identical to the
+  // below code in terms of the functionality.
+  //============================================================================
+
   const auto& objects = casted->mCollisionObjects;
 
   if (objects.empty())
@@ -251,7 +262,8 @@ double DARTCollisionDetector::distance(
 
 //==============================================================================
 DARTCollisionDetector::DARTCollisionDetector()
-  : CollisionDetector()
+  : CollisionDetector(),
+    mNarrowPhaseAlgorithms(common::make_unique<DefaultNarrowPhaseAlgorithms>())
 {
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
 }
@@ -296,6 +308,13 @@ std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
 
   return std::unique_ptr<DARTCollisionObject>(
         new DARTCollisionObject(this, shapeFrame));
+}
+
+//==============================================================================
+const NarrowPhaseAlgorithms*
+DARTCollisionDetector::getNarrowPhaseAlgorithms() const
+{
+  return mNarrowPhaseAlgorithms.get();
 }
 
 

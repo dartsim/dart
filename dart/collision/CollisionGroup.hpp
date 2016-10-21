@@ -169,7 +169,7 @@ public:
   const dynamics::ShapeFrame* getShapeFrame(std::size_t index) const;
 
   /// Perform collision check within this CollisionGroup.
-  bool collide(
+  virtual bool collide(
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr);
 

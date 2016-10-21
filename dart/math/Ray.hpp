@@ -29,34 +29,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
+#ifndef DART_MATH_RAY_HPP_
+#define DART_MATH_RAY_HPP_
 
 #include <Eigen/Dense>
 
-#include "dart/collision/CollisionObject.hpp"
-
 namespace dart {
-namespace collision {
+namespace math {
 
-class DARTCollisionObject : public CollisionObject
+struct Ray
 {
-public:
+  /// Begin point of this ray
+  Eigen::Vector3d from;
 
-  friend class DARTCollisionDetector;
+  /// End point of this ray
+  Eigen::Vector3d to;
 
-protected:
+  /// Maximum fraction value in [0, 1]
+  double fraction;
 
   /// Constructor
-  DARTCollisionObject(CollisionDetector* collisionDetector,
-                      const dynamics::ShapeFrame* shapeFrame);
+  Ray(const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to, double fraction = 1.0);
 
-  // Documentation inherited
-  void updateEngineData() override;
+  /// Copy constructor
+  Ray(const Ray& ray);
 
+  /// Move constructor
+  Ray(Ray&& ray);
+
+  /// Destructor
+  ~Ray() = default;
+
+  /// Assignment operator
+  Ray& operator=(const Ray& ray);
+
+  /// Assignment operator
+  Ray& operator=(Ray&& ray);
 };
 
-}  // namespace collision
+}  // namespace math
 }  // namespace dart
 
-#endif  // DART_COLLISION_DART_DARTCOLLISIONOBJECT_HPP_
+#endif // DART_MATH_RAY_HPP_

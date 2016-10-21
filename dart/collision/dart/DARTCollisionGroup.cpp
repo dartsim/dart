@@ -32,6 +32,8 @@
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/dart/BruteForceBroadPhase.hpp"
 
 namespace dart {
 namespace collision {
@@ -39,9 +41,184 @@ namespace collision {
 //==============================================================================
 DARTCollisionGroup::DARTCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
-  : CollisionGroup(collisionDetector)
+  : CollisionGroup(collisionDetector),
+    mBroadPhaseAlgorithm(common::make_unique<BruteForceBroadPhase>())
 {
   // Do nothing
+}
+
+//==============================================================================
+void DARTCollisionGroup::collideInGroup()
+{
+  for (auto& obj : mCollisionObjects)
+    obj->updateAabb();
+  // TODO(JS): improve; an AABB could get updated more than once
+
+  mBroadPhaseAlgorithm->updateOverlappingPairs();
+
+  const auto& overlappingPairs = mBroadPhaseAlgorithm->getOverlappingPairs();
+
+  mOverlappingPairsInContact.clear();
+
+  for (const auto& pair : overlappingPairs)
+  {
+    CollisionObject* objA = pair.first;
+    CollisionObject* objB = pair.second;
+
+    // TODO(JS): filtering
+
+    const auto& algorithms = getDARTCollisionDetector()->getNarrowPhaseAlgorithms();
+    const auto& algorithm = algorithms->getAlgorithm(
+          objA->getShape()->getShapeType(),
+          objB->getShape()->getShapeType());
+
+    if (!algorithm)
+    {
+      // TODO(JS): print warning
+      return;
+    }
+
+    algorithm(
+          objA->getShape().get(), objA->getTransform(),
+          objB->getShape().get(), objB->getTransform(), nullptr);
+  }
+}
+
+//==============================================================================
+DARTCollisionDetectorPtr DARTCollisionGroup::getDARTCollisionDetector()
+{
+  return std::static_pointer_cast<DARTCollisionDetector>(
+        getCollisionDetector());
+}
+
+//==============================================================================
+ConstDARTCollisionDetectorPtr
+DARTCollisionGroup::getDARTCollisionDetector() const
+{
+  return std::static_pointer_cast<const DARTCollisionDetector>(
+        getCollisionDetector());
+}
+
+//==============================================================================
+struct ContactPointBinaryChecker : NarrowPhaseCallback
+{
+  bool mFound{false};
+
+  bool notifyContact(const dynamics::Shape* /*shapeA*/,
+                     const dynamics::Shape* /*shapeB*/,
+                     const Eigen::Vector3d& /*point*/,
+                     const Eigen::Vector3d& /*normal*/,
+                     double /*depth*/) override
+  {
+    if (!mFound)
+      mFound = true;
+
+    return true;
+  }
+};
+
+//==============================================================================
+struct ContactPointCollector : NarrowPhaseCallback
+{
+  std::vector<Contact> mContacts;
+
+  std::size_t mMaxContacts;
+
+  ContactPointCollector(std::size_t maxContacts = 1000)
+    : mMaxContacts(maxContacts)
+  {
+    // Do nothing
+  }
+
+  bool notifyContact(const dynamics::Shape* /*shapeA*/,
+                     const dynamics::Shape* /*shapeB*/,
+                     const Eigen::Vector3d& point,
+                     const Eigen::Vector3d& normal,
+                     double depth) override
+  {
+    Contact contact;
+    contact.point = point;
+    contact.normal = normal;
+    contact.penetrationDepth = depth;
+
+    mContacts.emplace_back(std::move(contact));
+
+    return false;
+  }
+};
+
+//==============================================================================
+bool DARTCollisionGroup::collide(
+    const CollisionOption& /*option*/, CollisionResult* result)
+{
+  for (auto& obj : mCollisionObjects)
+    obj->updateAabb();
+  // TODO(JS): improve; an AABB could get updated more than once
+
+  mBroadPhaseAlgorithm->updateOverlappingPairs();
+
+  const auto& overlappingPairs = mBroadPhaseAlgorithm->getOverlappingPairs();
+
+  mOverlappingPairsInContact.clear();
+
+  ContactPointBinaryChecker binaryChecker;
+  ContactPointCollector collector;
+
+  bool found = false;
+
+  for (const auto& pair : overlappingPairs)
+  {
+    collector.mContacts.clear();
+
+    CollisionObject* objA = pair.first;
+    CollisionObject* objB = pair.second;
+
+    // TODO(JS): filtering
+
+    const auto& algorithms = getDARTCollisionDetector()->getNarrowPhaseAlgorithms();
+    const auto& algorithm = algorithms->getAlgorithm(
+          objA->getShape()->getShapeType(),
+          objB->getShape()->getShapeType());
+
+    if (!algorithm)
+    {
+      // TODO(JS): print warning
+      continue;
+    }
+
+    if (!result)
+    {
+      algorithm(
+            objA->getShape().get(), objA->getTransform(),
+            objB->getShape().get(), objB->getTransform(), &binaryChecker);
+
+      if (binaryChecker.mFound)
+        return true;
+      else
+        continue;
+    }
+
+    algorithm(
+          objA->getShape().get(), objA->getTransform(),
+          objB->getShape().get(), objB->getTransform(), &collector);
+
+    for (auto& contact : collector.mContacts)
+    {
+      found = true;
+
+      if (!result)
+        continue;
+
+      contact.collisionObject1 = objA;
+      contact.collisionObject2 = objB;
+
+      result->addContact(contact);
+    }
+
+    // TODO(JS): improve the logic for early termination according to option
+  }
+
+  return found;
 }
 
 //==============================================================================
@@ -58,6 +235,9 @@ void DARTCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
   {
     mCollisionObjects.push_back(object);
   }
+  // TODO(JS): remove above
+
+  mBroadPhaseAlgorithm->addObject(object);
 }
 
 //==============================================================================

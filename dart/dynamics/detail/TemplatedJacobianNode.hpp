@@ -34,6 +34,8 @@
 
 #include "dart/dynamics/TemplatedJacobianNode.hpp"
 
+#include "dart/math/Geometry.hpp"
+
 namespace dart {
 namespace dynamics {
 
