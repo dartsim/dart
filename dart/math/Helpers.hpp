@@ -252,6 +252,11 @@ inline double random(double _min, double _max) {
                 * (_max - _min));
 }
 
+inline int random(int min, int max)
+{
+  return min + (rand() % static_cast<int>(max - min + 1));
+}
+
 template<int N>
 Eigen::Matrix<double, N, 1> randomVector(double _min, double _max)
 {

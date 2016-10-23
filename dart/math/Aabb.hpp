@@ -122,6 +122,9 @@ public:
 
   void mergeWith(const Aabb& aabb1, const Aabb& aabb2);
 
+  //void intersectWith(const Aabb& other);
+  // TODO(JS): implement
+
   static Aabb Random();
 
   bool operator==(const Aabb& other);
