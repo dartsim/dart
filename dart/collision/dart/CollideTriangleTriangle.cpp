@@ -908,10 +908,10 @@ inline int checkLineAndLine(const Eigen::Vector3d& aMin,
                             const Eigen::Vector3d& aMax,
                             const Eigen::Vector3d& bMin,
                             const Eigen::Vector3d& bMax,
-                            const double daMin,
-                            const double daMax,
-                            const double dbMin,
-                            const double dbMax,
+                            double daMin,
+                            double daMax,
+                            double dbMin,
+                            double dbMax,
                             Eigen::Vector3d& contact1,
                             Eigen::Vector3d& contact2)
 {
@@ -1012,7 +1012,7 @@ inline void computePointOnPlane(const Eigen::Vector3d& b2,
                                 Eigen::Vector3d& b32OnPlaneA)
 {
   const Eigen::Vector3d b32 = b3 - b2;
-  b32OnPlaneA.noalias() = b2;
+  b32OnPlaneA = b2;
   b32OnPlaneA.noalias() -= (db2 / n1.dot(b32)) * b32;
 }
 

@@ -211,7 +211,7 @@ Eigen::Vector3d makePointStrictlyAbovePlane(
 //}
 
 //==============================================================================
-int makeTriangleAndTriangleOneVertexIsWithinOtherTriangle(
+void makeTriangleAndTriangleOneVertexIsWithinOtherTriangle(
     Eigen::Vector3d& a1, Eigen::Vector3d& a2, Eigen::Vector3d& a3,
     Eigen::Vector3d& b1, Eigen::Vector3d& b2, Eigen::Vector3d& b3,
     Eigen::Vector3d& contact1)
@@ -236,8 +236,6 @@ int makeTriangleAndTriangleOneVertexIsWithinOtherTriangle(
 #endif
 
   contact1 = b1;
-
-  return 1;
 }
 
 //==============================================================================
