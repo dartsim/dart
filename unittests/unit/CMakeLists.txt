@@ -1,4 +1,5 @@
 dart_add_test("unit" test_Aspect)
+dart_add_test("unit" test_DynamicBvTree)
 dart_add_test("unit" test_GenericJoints)
 dart_add_test("unit" test_Geometry)
 dart_add_test("unit" test_LocalResourceRetriever)

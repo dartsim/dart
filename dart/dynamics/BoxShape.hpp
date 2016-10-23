@@ -39,6 +39,13 @@ namespace dynamics {
 
 class BoxShape : public Shape {
 public:
+
+  template <typename... Args>
+  static std::shared_ptr<BoxShape> createShared(Args&&... args)
+  {
+    return std::make_shared<BoxShape>(std::forward<Args>(args)...);
+  }
+
   /// \brief Constructor.
   explicit BoxShape(const Eigen::Vector3d& _size);
 
