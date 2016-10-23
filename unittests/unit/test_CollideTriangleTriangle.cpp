@@ -242,7 +242,7 @@ void makeTriangleAndTriangleOneVertexIsWithinOtherTriangle(
 TEST(CollideTriangleTriangle, Basic)
 {
 #ifdef NDEBUG
-  const auto numTests = 1e+5;
+  const auto numTests = 5e+4;
 #else
   const auto numTests = 1e+2;
 #endif
@@ -271,20 +271,37 @@ TEST(CollideTriangleTriangle, Basic)
   t.start();
   for (auto i = 0; i < numTests; ++i)
   {
-    /*const auto numContacts = */collision::collideTriangleTriangle(
+    const auto numContacts = collision::collideTriangleTriangle(
           a1[i], a2[i], a3[i], b1[i], b2[i], b3[i],
           contact1[i], contact2[i], contact3[i]);
 
-//    EXPECT_TRUE(numContacts == 1);
-//    EXPECT_TRUE(contact1[i].isApprox(expectedPoint1[i]));
-
-//    if (numContacts != 1u)
-//    {
-//      std::cout << i << ": " << numContacts << " contacts"<< std::endl;
-//    }
+    EXPECT_TRUE(numContacts == 1);
+    EXPECT_TRUE(contact1[i].isApprox(expectedPoint1[i]));
   }
   t.stop();
   std::cout << "total time (sec): " << t.getLastElapsedTime() << std::endl;
+}
+
+//==============================================================================
+TEST(CollideTriangleTriangle, EdgeContact)
+{
+  Eigen::Vector3d P1(0, 0, 0);
+  Eigen::Vector3d P2(2, 0, 0);
+  Eigen::Vector3d P3(0, 2, 0);
+
+  Eigen::Vector3d Q1(0, 0, 0);
+  Eigen::Vector3d Q2(1, 0, 0);
+  Eigen::Vector3d Q3(0, 0, 1);
+
+  Eigen::Vector3d contact_points[3];
+
+  auto res = collision::collideTriangleTriangle(
+        P1, P2, P3, Q1, Q2, Q3,
+        contact_points[0], contact_points[1], contact_points[2]);
+
+  EXPECT_TRUE(res == 2);
+  EXPECT_TRUE(contact_points[0].isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_TRUE(contact_points[1].isApprox(Eigen::Vector3d(1, 0, 0)));
 }
 
 //==============================================================================

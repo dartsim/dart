@@ -189,6 +189,7 @@ inline int case4AndCase4(
     Eigen::Vector3d& contact1,
     Eigen::Vector3d& contact2);
 
+//==============================================================================
 int collideTriangleTriangle(
     const Eigen::Vector3d& a1,
     const Eigen::Vector3d& a2,
