@@ -214,7 +214,7 @@ Eigen::Vector3d makePointStrictlyAbovePlane(
 void makeTriangleAndTriangleOneVertexIsWithinOtherTriangle(
     Eigen::Vector3d& a1, Eigen::Vector3d& a2, Eigen::Vector3d& a3,
     Eigen::Vector3d& b1, Eigen::Vector3d& b2, Eigen::Vector3d& b3,
-    Eigen::Vector3d& contact1)
+    Eigen::Vector3d* contacts)
 {
   makeRandomTriangle(a1, a2, a3);
 
@@ -235,11 +235,29 @@ void makeTriangleAndTriangleOneVertexIsWithinOtherTriangle(
   assert(std::abs(dot3 - dot4) < 1e-6);
 #endif
 
-  contact1 = b1;
+  contacts[0] = b1;
 }
 
 //==============================================================================
-TEST(CollideTriangleTriangle, Basic)
+void makeColinear(
+    Eigen::Vector3d& a1, Eigen::Vector3d& a2, Eigen::Vector3d& a3,
+    Eigen::Vector3d& b1, Eigen::Vector3d& b2, Eigen::Vector3d& b3,
+    Eigen::Vector3d* contacts)
+{
+  a1.setZero();
+  a2 << 2.0, 0.0, 0.0;
+  a3 << 0.0, 2.0, 0.0;
+
+  b1.setZero();
+  b2 << math::random(0.1, 2.0), 0.0, 0.0;
+  b3 << 0.0, -1.0, 0.0;
+
+  contacts[0] = b1;
+  contacts[1] = b2;
+}
+
+//==============================================================================
+TEST(CollideTriangleTriangle, VariousRandomTests)
 {
 #ifdef NDEBUG
   const auto numTests = 5e+4;
@@ -253,33 +271,29 @@ TEST(CollideTriangleTriangle, Basic)
   std::vector<Eigen::Vector3d> b1(numTests);
   std::vector<Eigen::Vector3d> b2(numTests);
   std::vector<Eigen::Vector3d> b3(numTests);
-  std::vector<Eigen::Vector3d> contact1(numTests);
-  std::vector<Eigen::Vector3d> contact2(numTests);
-  std::vector<Eigen::Vector3d> contact3(numTests);
-  std::vector<Eigen::Vector3d> expectedPoint1(numTests);
-  std::vector<Eigen::Vector3d> expectedPoint2(numTests);
-  std::vector<Eigen::Vector3d> expectedPoint3(numTests);
+  std::vector<Eigen::Vector3d[3]> contacts(numTests);
+  std::vector<Eigen::Vector3d[3]> expectedPoints(numTests);
+
+  int numContacts;
 
   for (auto i = 0; i < numTests; ++i)
   {
     makeTriangleAndTriangleOneVertexIsWithinOtherTriangle(
-          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], expectedPoint1[i]);
-  }
-
-  common::Timer t;
-
-  t.start();
-  for (auto i = 0; i < numTests; ++i)
-  {
-    const auto numContacts = collision::collideTriangleTriangle(
-          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i],
-          contact1[i], contact2[i], contact3[i]);
-
+          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], expectedPoints[i]);
+    numContacts = collision::collideTriangleTriangle(
+          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], contacts[i]);
     EXPECT_TRUE(numContacts == 1);
-    EXPECT_TRUE(contact1[i].isApprox(expectedPoint1[i]));
+    EXPECT_TRUE(contacts[i][0].isApprox(expectedPoints[i][0]));
+
+    // Colinear
+    makeColinear(a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], expectedPoints[i]);
+    numContacts = collision::collideTriangleTriangle(
+          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], contacts[i]);
+    EXPECT_TRUE(numContacts == 2);
+//    EXPECT_TRUE(contacts[i][0].isApprox(expectedPoints[i][0]));
+//    EXPECT_TRUE(contacts[i][0].isApprox(expectedPoints[i][1]));
+//    EXPECT_TRUE(contacts[i][0].isApprox(expectedPoints[i][2]));
   }
-  t.stop();
-  std::cout << "total time (sec): " << t.getLastElapsedTime() << std::endl;
 }
 
 //==============================================================================
@@ -296,12 +310,87 @@ TEST(CollideTriangleTriangle, EdgeContact)
   Eigen::Vector3d contact_points[3];
 
   auto res = collision::collideTriangleTriangle(
-        P1, P2, P3, Q1, Q2, Q3,
-        contact_points[0], contact_points[1], contact_points[2]);
+        P1, P2, P3, Q1, Q2, Q3, contact_points);
 
   EXPECT_TRUE(res == 2);
   EXPECT_TRUE(contact_points[0].isApprox(Eigen::Vector3d::Zero()));
   EXPECT_TRUE(contact_points[1].isApprox(Eigen::Vector3d(1, 0, 0)));
+}
+
+//==============================================================================
+TEST(CollideTriangleTriangle, ColinearCases)
+{
+  Eigen::Vector3d a1(0, 0, 0);
+  Eigen::Vector3d a2(2, 0, 0);
+  Eigen::Vector3d a3(0, 2, 0);
+
+  Eigen::Vector3d b1(0, 0, 0);
+  Eigen::Vector3d b2(1, 0, 0);
+  Eigen::Vector3d b3(0, -1, 0);
+
+  Eigen::Vector3d contact_points[3];
+
+  auto res = collision::collideTriangleTriangle(
+        a1, a2, a3, b1, b2, b3, contact_points);
+
+  EXPECT_TRUE(res == 2);
+//  EXPECT_TRUE(contact_points[0].isApprox(Eigen::Vector3d::Zero()));
+//  EXPECT_TRUE(contact_points[1].isApprox(Eigen::Vector3d(1, 0, 0)));
+}
+
+//==============================================================================
+TEST(CollideTriangleTriangle, Performance)
+{
+#ifdef NDEBUG
+  const auto numTests = 5e+4;
+#else
+  const auto numTests = 1e+2;
+#endif
+
+  std::vector<Eigen::Vector3d> a1(numTests);
+  std::vector<Eigen::Vector3d> a2(numTests);
+  std::vector<Eigen::Vector3d> a3(numTests);
+  std::vector<Eigen::Vector3d> b1(numTests);
+  std::vector<Eigen::Vector3d> b2(numTests);
+  std::vector<Eigen::Vector3d> b3(numTests);
+  std::vector<Eigen::Vector3d[3]> contacts(numTests);
+  std::vector<Eigen::Vector3d[3]> expectedPoints(numTests);
+
+  common::Timer t;
+
+  for (auto i = 0; i < numTests; ++i)
+  {
+    makeTriangleAndTriangleOneVertexIsWithinOtherTriangle(
+          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], expectedPoints[i]);
+  }
+  t.start();
+  for (auto i = 0; i < numTests; ++i)
+  {
+    const auto numContacts = collision::collideTriangleTriangle(
+          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], contacts[i]);
+
+    EXPECT_TRUE(numContacts == 1);
+    EXPECT_TRUE(contacts[i][0].isApprox(expectedPoints[i][0]));
+  }
+  t.stop();
+  std::cout << "total time (sec): " << t.getLastElapsedTime() << std::endl;
+
+  for (auto i = 0; i < numTests; ++i)
+  {
+    makeColinear(a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], expectedPoints[i]);
+  }
+  t.start();
+  for (auto i = 0; i < numTests; ++i)
+  {
+    const auto numContacts = collision::collideTriangleTriangle(
+          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], contacts[i]);
+
+//    EXPECT_TRUE(numContacts == 2);
+//    EXPECT_TRUE(contacts[i][0].isApprox(expectedPoints[i][0]));
+//    EXPECT_TRUE(contacts[i][1].isApprox(expectedPoints[i][1]));
+  }
+  t.stop();
+  std::cout << "total time (sec): " << t.getLastElapsedTime() << std::endl;
 }
 
 //==============================================================================

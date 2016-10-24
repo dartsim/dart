@@ -41,18 +41,27 @@ namespace collision {
 
 namespace v1 {
 
-int collideTriangleTriangle(
-    const Eigen::Vector3d& a1,
-    const Eigen::Vector3d& a2,
-    const Eigen::Vector3d& a3,
-    const Eigen::Vector3d& b1,
-    const Eigen::Vector3d& b2,
-    const Eigen::Vector3d& b3,
-    Eigen::Vector3d& contact1,
-    Eigen::Vector3d& contact2,
-    Eigen::Vector3d& contact3);
+//template <bool ReturnAllContacts = true>
+//int collideTriangleTriangle(
+//    const Eigen::Vector3d& a1,
+//    const Eigen::Vector3d& a2,
+//    const Eigen::Vector3d& a3,
+//    const Eigen::Vector3d& b1,
+//    const Eigen::Vector3d& b2,
+//    const Eigen::Vector3d& b3,
+//    Eigen::Vector3d* contacts);
 
-} // namespace v2
+int collideTriangleTriangle(
+    const Eigen::Vector3d& A1,
+    const Eigen::Vector3d& A2,
+    const Eigen::Vector3d& A3,
+    const Eigen::Vector3d& B1,
+    const Eigen::Vector3d& B2,
+    const Eigen::Vector3d& B3,
+    Eigen::Vector3d* contacts,
+    const bool returnAllContacts = true);
+
+} // namespace v1
 
 inline namespace stable {
   using v1::collideTriangleTriangle;
@@ -60,5 +69,7 @@ inline namespace stable {
 
 }  // namespace collision
 }  // namespace dart
+
+//#include "dart/collision/dart/CollideTriangleTriangleImpl.hpp"
 
 #endif  // DART_COLLISION_DART_COLLIDETRIANGLETRIANGLE_HPP_

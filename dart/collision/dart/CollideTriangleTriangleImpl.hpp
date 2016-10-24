@@ -29,6 +29,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef DART_COLLISION_DART_DETAIL_COLLIDETRIANGLETRIANGLE_HPP_
+#define DART_COLLISION_DART_DETAIL_COLLIDETRIANGLETRIANGLE_HPP_
+
 #include "dart/collision/dart/CollideTriangleTriangle.hpp"
 
 #include "dart/math/Constants.hpp"
@@ -969,14 +972,14 @@ inline int planeCase2(const Eigen::Vector3d& A1,
 }
 
 //==============================================================================
+template <bool ReturnAllContacts>
 inline int planeCase3(
     const Eigen::Vector3d& A1,
     const Eigen::Vector3d& A2,
     const Eigen::Vector3d& B1,
     const double ua1, const double va1,
     const double ua2, const double va2,
-    Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
+    Eigen::Vector3d* contacts)
 {
   assert(ua1 >= 0.0);
   assert(va1 >= 0.0);
@@ -1001,15 +1004,11 @@ inline int planeCase3(
       contacts[0] = A1;
       contacts[1] = A2;
 
-      if (!returnAllContacts) // (returnAllContacts == 3)
+      if (!ReturnAllContacts) // (maxNumContacts == 3)
       {
         contacts[2] = B1;
         return 3;
       }
-
-      // TODO(JS): compute intersect point1 for contacts[2]
-      contacts[3] = B1;
-      return 4;
 
     }
     // A2 is on (B3-B2)
@@ -1020,18 +1019,7 @@ inline int planeCase3(
     // A2 is strictly inside triangle B
     else
     {
-      contacts[0] = A1;
-      contacts[1] = A2;
 
-      if (!returnAllContacts) // (returnAllContacts == 3)
-      {
-        contacts[2] = B1;
-        return 3;
-      }
-
-      // TODO(JS): compute intersect point1 for contacts[2]
-      contacts[3] = B1;
-      return 4;
     }
   }
   // A1 is on (B3-B1)
@@ -1117,8 +1105,8 @@ inline int planeCase3(
 //  contacts[1] = A2;
 //  contacts[2] = B1;
 
-//  assert(returnAllContacts >= 3);
-//  if (returnAllContacts < 4)
+//  assert(maxNumContacts >= 3);
+//  if (maxNumContacts < 4)
 //    return 3;
 
 //  // TODO(JS): implementation
@@ -1177,6 +1165,7 @@ inline int coplanarAooo(const Eigen::Vector3d& A1,
 }
 
 //==============================================================================
+template <bool ReturnAllContacts>
 inline int coplanarAoox(
     const Eigen::Vector3d& A1,
     const Eigen::Vector3d& A2,
@@ -1200,8 +1189,7 @@ inline int coplanarAoox(
     const double ub2, const double vb2,
     const double ub3, const double vb3,
     const int index,
-    Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
+    Eigen::Vector3d* contacts)
 {
   if (inB1)
   {
@@ -1242,7 +1230,8 @@ inline int coplanarAoox(
         // B: (O, X, X)
 
         // Case 3
-        return planeCase3(A1, A2, B1, ua1, va1, ua2, va2, contacts, returnAllContacts);
+        return planeCase3<ReturnAllContacts>(
+              A1, A2, B1, ua1, va1, ua2, va2, contacts);
       }
     }
   }
@@ -1289,6 +1278,7 @@ inline int coplanarAoox(
 }
 
 //==============================================================================
+template <bool ReturnAllContacts>
 inline int coplanarAoxx(
     const Eigen::Vector3d& A1,
     const Eigen::Vector3d& A2,
@@ -1309,8 +1299,7 @@ inline int coplanarAoxx(
     const double ub2, const double vb2,
     const double ub3, const double vb3,
     const int index,
-    Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
+    Eigen::Vector3d* contacts)
 {
   if (inB1)
   {
@@ -1358,7 +1347,8 @@ inline int coplanarAoxx(
         // B: (X, 0, 0)
 
         // Case 3 (switch A and B)
-        return planeCase3(B2, B3, A1, ub2, vb2, ub3, vb3, contacts, returnAllContacts);
+        return planeCase3<ReturnAllContacts>(
+              B2, B3, A1, ub2, vb2, ub3, vb3, contacts);
       }
       else
       {
@@ -1389,6 +1379,7 @@ inline int coplanarAoxx(
 }
 
 //==============================================================================
+template <bool ReturnAllContacts>
 inline int coplanarAxxx(
     const Eigen::Vector3d& A1,
     const Eigen::Vector3d& A2,
@@ -1409,8 +1400,7 @@ inline int coplanarAxxx(
     const double ub2, const double vb2,
     const double ub3, const double vb3,
     const int index,
-    Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
+    Eigen::Vector3d* contacts)
 {
   if (inB1)
   {
@@ -1489,6 +1479,7 @@ inline int coplanarAxxx(
 }
 
 //==============================================================================
+template <bool ReturnAllContacts>
 inline int coplanar2dCcw(
     const Eigen::Vector3d& A1,
     const Eigen::Vector3d& A2,
@@ -1503,8 +1494,7 @@ inline int coplanar2dCcw(
     const Eigen::Vector2d& b2,
     const Eigen::Vector2d& b3,
     const int index,
-    Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
+    Eigen::Vector3d* contacts)
 {
   const Eigen::Vector2d b21 = b2 - b1;
   const Eigen::Vector2d b31 = b3 - b1;
@@ -1556,12 +1546,13 @@ inline int coplanar2dCcw(
       else
       {
         // A: (O, O, X)
-        return coplanarAoox(A1, A2, A3, B1, B2, B3,
-                            a1, a2, a3, b1, b2, b3,
-                            inB1, inB2, inB3,
-                            ua1, va1, ua2, va2, ua3, va3,
-                            ub1, vb1, ub2, vb2, ub3, vb3,
-                            index, contacts, returnAllContacts);
+        return coplanarAoox<ReturnAllContacts>(
+              A1, A2, A3, B1, B2, B3,
+              a1, a2, a3, b1, b2, b3,
+              inB1, inB2, inB3,
+              ua1, va1, ua2, va2, ua3, va3,
+              ub1, vb1, ub2, vb2, ub3, vb3,
+              index, contacts);
       }
     }
     else
@@ -1569,21 +1560,23 @@ inline int coplanar2dCcw(
       if (inA3)
       {
         // A: (O, X, O)
-        return coplanarAoox(A3, A1, A2, B1, B2, B3,
-                            a3, a1, a2, b1, b2, b3,
-                            inB1, inB2, inB3,
-                            ua3, va3, ua1, va1, ua2, va2,
-                            ub1, vb1, ub2, vb2, ub3, vb3,
-                            index, contacts, returnAllContacts);
+        return coplanarAoox<ReturnAllContacts>(
+              A3, A1, A2, B1, B2, B3,
+              a3, a1, a2, b1, b2, b3,
+              inB1, inB2, inB3,
+              ua3, va3, ua1, va1, ua2, va2,
+              ub1, vb1, ub2, vb2, ub3, vb3,
+              index, contacts);
       }
       else
       {
         // A: (O, X, X)
-        return coplanarAoxx(A1, A2, A3, B1, B2, B3,
-                            a1, a2, a3, b1, b2, b3,
-                            inB1, inB2, inB3,
-                            ub1, vb1, ub2, vb2, ub3, vb3,
-                            index, contacts, returnAllContacts);
+        return coplanarAoxx<ReturnAllContacts>(
+              A1, A2, A3, B1, B2, B3,
+              a1, a2, a3, b1, b2, b3,
+              inB1, inB2, inB3,
+              ub1, vb1, ub2, vb2, ub3, vb3,
+              index, contacts);
       }
     }
   }
@@ -1594,21 +1587,23 @@ inline int coplanar2dCcw(
       if (inA3)
       {
         // A: (X, 0, 0)
-        return coplanarAoox(A2, A3, A1, B1, B2, B3,
-                            a2, a3, a1, b1, b2, b3,
-                            inB1, inB2, inB3,
-                            ua2, va2, ua3, va3, ua1, va1,
-                            ub1, vb1, ub2, vb2, ub3, vb3,
-                            index, contacts, returnAllContacts);
+        return coplanarAoox<ReturnAllContacts>(
+              A2, A3, A1, B1, B2, B3,
+              a2, a3, a1, b1, b2, b3,
+              inB1, inB2, inB3,
+              ua2, va2, ua3, va3, ua1, va1,
+              ub1, vb1, ub2, vb2, ub3, vb3,
+              index, contacts);
       }
       else
       {
         // A: (X, 0, X)
-        return coplanarAoxx(A2, A3, A1, B1, B2, B3,
-                            a2, a3, a1, b1, b2, b3,
-                            inB1, inB2, inB3,
-                            ub1, vb1, ub2, vb2, ub3, vb3,
-                            index, contacts, returnAllContacts);
+        return coplanarAoxx<ReturnAllContacts>(
+              A2, A3, A1, B1, B2, B3,
+              a2, a3, a1, b1, b2, b3,
+              inB1, inB2, inB3,
+              ub1, vb1, ub2, vb2, ub3, vb3,
+              index, contacts);
       }
     }
     else
@@ -1616,26 +1611,29 @@ inline int coplanar2dCcw(
       if (inA3)
       {
         // A: (X, X, 0)
-        return coplanarAoxx(A3, A1, A2, B1, B2, B3,
-                            a3, a1, a2, b1, b2, b3,
-                            inB1, inB2, inB3,
-                            ub1, vb1, ub2, vb2, ub3, vb3,
-                            index, contacts, returnAllContacts);
+        return coplanarAoxx<ReturnAllContacts>(
+              A3, A1, A2, B1, B2, B3,
+              a3, a1, a2, b1, b2, b3,
+              inB1, inB2, inB3,
+              ub1, vb1, ub2, vb2, ub3, vb3,
+              index, contacts);
       }
       else
       {
         // A: (X, X, X)
-        return coplanarAxxx(A1, A2, A3, B1, B2, B3,
-                            a1, a2, a3, b1, b2, b3,
-                            inB1, inB2, inB3,
-                            ub1, vb1, ub2, vb2, ub3, vb3,
-                            index, contacts, returnAllContacts);
+        return coplanarAxxx<ReturnAllContacts>(
+              A1, A2, A3, B1, B2, B3,
+              a1, a2, a3, b1, b2, b3,
+              inB1, inB2, inB3,
+              ub1, vb1, ub2, vb2, ub3, vb3,
+              index, contacts);
       }
     }
   }
 }
 
 //==============================================================================
+template <bool ReturnAllContacts>
 inline int coplanar2d(
     const Eigen::Vector3d& A1,
     const Eigen::Vector3d& A2,
@@ -1652,42 +1650,42 @@ inline int coplanar2d(
     const bool ccwA,
     const bool ccwB,
     const int index,
-    Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
+    Eigen::Vector3d* contacts)
 {
   if (ccwA)
   {
     if (ccwB)
     {
-      return coplanar2dCcw(
+      return coplanar2dCcw<ReturnAllContacts>(
             A1, A2, A3, B1, B2, B3,
-            a1, a2, a3, b1, b2, b3, index, contacts, returnAllContacts);
+            a1, a2, a3, b1, b2, b3, index, contacts);
     }
     else
     {
-      return coplanar2dCcw(
+      return coplanar2dCcw<ReturnAllContacts>(
             A1, A2, A3, B3, B2, B1,
-            a1, a2, a3, b3, b2, b1, index, contacts, returnAllContacts);
+            a1, a2, a3, b3, b2, b1, index, contacts);
     }
   }
   else
   {
     if (ccwB)
     {
-      return coplanar2dCcw(
+      return coplanar2dCcw<ReturnAllContacts>(
             A3, A2, A1, B1, B2, B3,
-            a3, a2, a1, b1, b2, b3, index, contacts, returnAllContacts);
+            a3, a2, a1, b1, b2, b3, index, contacts);
     }
     else
     {
-      return coplanar2dCcw(
+      return coplanar2dCcw<ReturnAllContacts>(
             A3, A2, A1, B3, B2, B1,
-            a3, a2, a1, b3, b2, b1, index, contacts, returnAllContacts);
+            a3, a2, a1, b3, b2, b1, index, contacts);
     }
   }
 }
 
 //==============================================================================
+template <bool ReturnAllContacts>
 inline int coplanar3d(
     const Eigen::Vector3d& A1,
     const Eigen::Vector3d& A2,
@@ -1697,8 +1695,7 @@ inline int coplanar3d(
     const Eigen::Vector3d& B3,
     const Eigen::Vector3d& N1,
     const Eigen::Vector3d& N2,
-    Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
+    Eigen::Vector3d* contacts)
 {
   Eigen::Vector2d a1;
   Eigen::Vector2d a2;
@@ -1777,15 +1774,16 @@ inline int coplanar3d(
     }
   }
 
-  return coplanar2d(
+  return coplanar2d<ReturnAllContacts>(
         A1, A2, A3, B1, B2, B3,
         a1, a2, a3, b1, b2, b3,
         ccwA, ccwB,
         index,
-        contacts, returnAllContacts);
+        contacts);
 }
 
 //==============================================================================
+template <bool ReturnAllContacts>
 int collideTriangleTriangle(
     const Eigen::Vector3d& A1,
     const Eigen::Vector3d& A2,
@@ -1793,11 +1791,8 @@ int collideTriangleTriangle(
     const Eigen::Vector3d& B1,
     const Eigen::Vector3d& B2,
     const Eigen::Vector3d& B3,
-    Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
+    Eigen::Vector3d* contacts)
 {
-  assert(returnAllContacts >= 3 && returnAllContacts <= 6);
-
   Eigen::Vector3d v1 = B2 - B1;
   Eigen::Vector3d v2 = B3 - B2;
   Eigen::Vector3d N2 = v1.cross(v2);
@@ -1946,18 +1941,27 @@ int collideTriangleTriangle(
     {
       // (0, 0, +): Case 2
       if (da3 > DART_TRIANGLE_TRIANGLE_EPS)
+      {
         return case2And(A1, A2, B1, B2, B3, contacts, N1, db1, db2, db3);
+      }
       // (0, 0, -): Case 2
       else if (da3 < -DART_TRIANGLE_TRIANGLE_EPS)
+      {
         return case2And(A1, A2, B1, B2, B3, contacts, N1, db1, db2, db3);
+      }
       // (0, 0, 0): Coplanar case
       else
-        return coplanar3d(A1, A2, A3, B1, B2, B3, N1, N2, contacts, returnAllContacts);
+      {
+        return coplanar3d<ReturnAllContacts>(
+              A1, A2, A3, B1, B2, B3, N1, N2, contacts);
+      }
     }
   }
 }
 
 } // namespace v1
 
-} // namespace collision
-} // namespace dart
+}  // namespace collision
+}  // namespace dart
+
+#endif  // DART_COLLISION_DART_DETAIL_COLLIDETRIANGLETRIANGLE_HPP_
