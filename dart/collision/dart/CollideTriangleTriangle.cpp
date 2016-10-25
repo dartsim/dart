@@ -41,48 +41,64 @@ namespace collision {
 namespace v1 {
 
 //==============================================================================
-inline int checkPointAndLine(const Eigen::Vector3d& a1,
-                             const Eigen::Vector3d& b1,
-                             const Eigen::Vector3d& b2,
-                             Eigen::Vector3d* contacts)
+inline int checkColinearPointAndLine(const Eigen::Vector3d& A1,
+                                     const Eigen::Vector3d& B1,
+                                     const Eigen::Vector3d& B2,
+                                     Eigen::Vector3d* contacts)
 {
-  const Eigen::Vector3d b21 = b2 - b1;
+  // We assume that A1, B1, B2 are on the same line (colinear), and check if
+  // A1 is placed between B1 and B2.
+
+  const Eigen::Vector3d B12 = B2 - B1;
 
 #ifndef NDEBUG
-  Eigen::Vector3d b1a1 = b1 - a1;
-  Eigen::Vector3d b2a1 = b2 - a1;
+  // Check if A1, B1, B3 are in a same line
+  Eigen::Vector3d A1B1 = B1 - A1;
+  Eigen::Vector3d A1B2 = B2 - A1;
 
-  Eigen::Vector3d cross1 = b21.cross(b1a1);
-  Eigen::Vector3d cross2 = b21.cross(b2a1);
+  Eigen::Vector3d cross1 = B12.cross(A1B1);
+  Eigen::Vector3d cross2 = B12.cross(A1B2);
 
   assert(cross1.norm() < DART_TRIANGLE_TRIANGLE_EPS);
   assert(cross2.norm() < DART_TRIANGLE_TRIANGLE_EPS);
 #endif
 
-  const auto dot = (a1 - b1).dot(b21);
+  // Check if A1 is left side of the line of B1B2:
+  // A1 (non-zero distance) B1-------------B2
+  const Eigen::Vector3d B1A1 = A1 - B1;
+  const auto dot = (B1A1).dot(B12);
   if (dot < 0.0)
     return 0;
 
-  const auto squaredLength = b21.squaredNorm();
+  // Check if A1 is right side of the line of B1B2:
+  // B1-------------B2 (non-zero distance) A1
+  const auto squaredLength = B12.squaredNorm();
   if (dot > squaredLength)
     return 0;
 
-  contacts[0] = a1;
+  // Otherwise A1 is on the line of B1B2:
+  // B1-------A1--------------B2
+  contacts[0] = A1;
 
   return 1;
 }
 
 //==============================================================================
-inline int checkColinearLines(const Eigen::Vector3d& aMin,
-                              const Eigen::Vector3d& aMax,
-                              const Eigen::Vector3d& bMin,
-                              const Eigen::Vector3d& bMax,
+inline int checkColinearLines(const Eigen::Vector3d& AMin,
+                              const Eigen::Vector3d& AMax,
+                              const Eigen::Vector3d& BMin,
+                              const Eigen::Vector3d& BMax,
                               const double daMin,
                               const double daMax,
                               double dbMin,
                               double dbMax,
                               Eigen::Vector3d* contacts)
 {
+  // We assume that AMin, AMax, BMin, and BMax are on the same line (colinear),
+  // and check if there exists intersection between line AMin-AMax and
+  // BMin-BMax. Note that AMin <= AMax and BMin <= BMax as the variable names
+  // say.
+
   if (dbMin < daMin)
   {
     if (dbMax < daMin)
@@ -95,19 +111,19 @@ inline int checkColinearLines(const Eigen::Vector3d& aMin,
 
       if (dbMax - daMin < DART_TRIANGLE_TRIANGLE_EPS)
       {
-        contacts[0] = aMin;  // or bMax or 0.5*(aMin+bMax)
+        contacts[0] = AMin;  // or bMax or 0.5*(aMin+bMax)
         return 1;
       }
 
-      contacts[0] = aMin;
-      contacts[1] = bMax;
+      contacts[0] = AMin;
+      contacts[1] = BMax;
       return 2;
     }
     else
     {
       // collision: (aMin, aMax)
-      contacts[0] = aMin;
-      contacts[1] = aMax;
+      contacts[0] = AMin;
+      contacts[1] = AMax;
       return 2;
     }
   }
@@ -116,8 +132,8 @@ inline int checkColinearLines(const Eigen::Vector3d& aMin,
     if (dbMax < daMax)
     {
       // collision: (bMin, bMax)
-      contacts[0] = bMin;
-      contacts[1] = bMax;
+      contacts[0] = BMin;
+      contacts[1] = BMax;
       return 2;
     }
     else
@@ -126,12 +142,12 @@ inline int checkColinearLines(const Eigen::Vector3d& aMin,
 
       if (daMax - dbMin < DART_TRIANGLE_TRIANGLE_EPS)
       {
-        contacts[0] = aMax; // or bMin or 0.5*(aMax+bMin)
+        contacts[0] = AMax; // or bMin or 0.5*(aMax+bMin)
         return 1;
       }
 
-      contacts[0] = bMin;
-      contacts[1] = aMax;
+      contacts[0] = BMin;
+      contacts[1] = AMax;
       return 2;
     }
   }
@@ -142,55 +158,78 @@ inline int checkColinearLines(const Eigen::Vector3d& aMin,
 }
 
 //==============================================================================
-inline int checkColinearLines(const Eigen::Vector3d& a1,
-                            const Eigen::Vector3d& a2,
-                            const Eigen::Vector3d& b1,
-                            const Eigen::Vector3d& b2,
-                            Eigen::Vector3d* contacts)
+inline int checkColinearLines(const Eigen::Vector3d& A1,
+                              const Eigen::Vector3d& A2,
+                              const Eigen::Vector3d& B1,
+                              const Eigen::Vector3d& B2,
+                              Eigen::Vector3d* contacts)
 {
-  const Eigen::Vector3d a21 = a2 - a1;
+  const Eigen::Vector3d A12 = A2 - A1;
 
-  const auto da1 = a21.dot(a1);
-  const auto da2 = a21.dot(a2);
-  const auto db1 = a21.dot(b1);
-  const auto db2 = a21.dot(b2);
+  const auto da1 = A12.dot(A1);
+  const auto da2 = A12.dot(A2);
+  const auto db1 = A12.dot(B1);
+  const auto db2 = A12.dot(B2);
 
   if (da1 < da2)
   {
     if (db1 < db2)
-      return checkColinearLines(a1, a2, b1, b2, da1, da2, db1, db2, contacts);
+      return checkColinearLines(A1, A2, B1, B2, da1, da2, db1, db2, contacts);
     else
-      return checkColinearLines(a1, a2, b2, b1, da1, da2, db2, db1, contacts);
+      return checkColinearLines(A1, A2, B2, B1, da1, da2, db2, db1, contacts);
   }
   else
   {
     if (db1 < db2)
-      return checkColinearLines(a2, a1, b1, b2, da2, da1, db1, db2, contacts);
+      return checkColinearLines(A2, A1, B1, B2, da2, da1, db1, db2, contacts);
     else
-      return checkColinearLines(a2, a1, b2, b1, da2, da1, db2, db1, contacts);
+      return checkColinearLines(A2, A1, B2, B1, da2, da1, db2, db1, contacts);
   }
 }
 
 //==============================================================================
-inline void computePointOnPlane(const Eigen::Vector3d& b2,
-                                const Eigen::Vector3d& b3,
-                                const Eigen::Vector3d& n1,
+inline void computePointOnPlane(const Eigen::Vector3d& B2,
+                                const Eigen::Vector3d& B3,
+                                const Eigen::Vector3d& N1,
                                 const double db2,
-                                Eigen::Vector3d& b32OnPlaneA)
+                                Eigen::Vector3d& B23OnPlaneA)
 {
-  const Eigen::Vector3d b32 = b3 - b2;
-  b32OnPlaneA = b2;
-  b32OnPlaneA.noalias() -= (db2 / n1.dot(b32)) * b32;
+  const Eigen::Vector3d B23 = B3 - B2;
+  B23OnPlaneA = B2;
+  B23OnPlaneA.noalias() -= (db2 / N1.dot(B23)) * B23;
 }
 
 //==============================================================================
-inline int case1AndCase1(const Eigen::Vector3d& a1,
-                         const Eigen::Vector3d& b1,
+inline int case1AndCase1(const Eigen::Vector3d& A1,
+                         const Eigen::Vector3d& B1,
                          Eigen::Vector3d* contacts)
 {
-  if (a1 == b1) // TODO(JS): ((a1 - b1).squaredNorm() < eps*eps) ?
+  //             _______________________
+  //            |                       |
+  //            |                       |
+  //            |                       |
+  //            |                       |_____
+  //            |                       |    /
+  //            |         ____          |   /
+  //            |        |   /          |  /
+  //            |        |  /           | /
+  //            |        | /            |/
+  //            |________|/_____________| ________\ Axis
+  //           /   A1 /|  B1           /|         /
+  //          /      / |              / |
+  //         /      /  |             /  |
+  //        /      /___|            /   |
+  //       /                       /    |
+  //      /_______________________/     |
+  //   Plane A  |                       |
+  //            |                       |
+  //            |_______________________| Plane B
+  //
+  // We now check if A1 and B1 intersect.
+
+  if (A1 == B1) // TODO(JS): ((a1 - b1).squaredNorm() < eps*eps) ?
   {
-    contacts[0] = a1;
+    contacts[0] = A1;
     return 1;
   }
 
@@ -198,184 +237,323 @@ inline int case1AndCase1(const Eigen::Vector3d& a1,
 }
 
 //==============================================================================
-inline int case1AndCase2(const Eigen::Vector3d& a1,
-                         const Eigen::Vector3d& b1,
-                         const Eigen::Vector3d& b2,
+inline int case1AndCase2(const Eigen::Vector3d& A1,
+                         const Eigen::Vector3d& B1,
+                         const Eigen::Vector3d& B2,
                          Eigen::Vector3d* contacts)
 {
-  return checkPointAndLine(a1, b1, b2, contacts);
+  //             _______________________
+  //            |                       |
+  //            |                       |
+  //            |        B3             |
+  //            |        |\             |_____
+  //            |        | \            |    /
+  //            |        |  \           |   /
+  //            |        |   \          |  /
+  //            |        |    \         | /
+  //            |        | B1  \ B2     |/
+  //            |________|______\_______| ________\ Axis
+  //           /   A1 /|               /|         /
+  //          /      / |              / |
+  //         /      /  |             /  |
+  //        /      /___|            /   |
+  //       /                       /    |
+  //      /_______________________/     |
+  //   Plane A  |                       |
+  //            |                       |
+  //            |_______________________| Plane B
+  //
+  // We now check if A1 and B1-B2 intersect.
+
+  return checkColinearPointAndLine(A1, B1, B2, contacts);
 }
 
 //==============================================================================
-inline int case1AndCase3(const Eigen::Vector3d& a1,
-                  const Eigen::Vector3d& b1,
-                  const Eigen::Vector3d& b2,
-                  const Eigen::Vector3d& b3,
-                  const Eigen::Vector3d& n1,
-                  const double db2,
-                  Eigen::Vector3d* contacts)
+inline int case1AndCase3(
+    const Eigen::Vector3d& A1,
+    const Eigen::Vector3d& B1,
+    const Eigen::Vector3d& B2,
+    const Eigen::Vector3d& B3,
+    const Eigen::Vector3d& N1,
+    const double db2,
+    Eigen::Vector3d* contacts)
 {
-  Eigen::Vector3d b32OnPlaneA;
-  computePointOnPlane(b2, b3, n1, db2, b32OnPlaneA);
+  //             _______________________
+  //            |                       |
+  //            |                       |
+  //            |        B2             |
+  //            |        |\             |_____
+  //            |        | \            |    /
+  //            |        |  \           |   /
+  //            |        |   \          |  /
+  //            |        |    \         | /
+  //            |        | B23OnAxis    |/
+  //            |________|______\_______| ________\ Axis
+  //           /   A1 /| :      .  B1  /|         /
+  //          /      / | :     .      / |
+  //         /      /  | :    .      /  |
+  //        /      /___| :   .      /   |
+  //       /             :  .      /    |
+  //      /______________:________/     |
+  //   Plane A  |        |/             |
+  //            |      B3               |
+  //            |_______________________| Plane B
+  //
+  // We now check if A1 and B1-B23OnAxis intersect.
 
-  return checkPointAndLine(a1, b1, b32OnPlaneA, contacts);
+  Eigen::Vector3d B23OnAxis;
+  computePointOnPlane(B2, B3, N1, db2, B23OnAxis);
+
+  return checkColinearPointAndLine(A1, B1, B23OnAxis, contacts);
 }
 
 //==============================================================================
 inline int case1AndCase4(
-    const Eigen::Vector3d& a1,
-    const Eigen::Vector3d& b1,
-    const Eigen::Vector3d& b2,
-    const Eigen::Vector3d& b3,
-    const Eigen::Vector3d& n1,
+    const Eigen::Vector3d& A1,
+    const Eigen::Vector3d& B1,
+    const Eigen::Vector3d& B2,
+    const Eigen::Vector3d& B3,
+    const Eigen::Vector3d& N1,
     const double db1,
     Eigen::Vector3d* contacts)
 {
-  Eigen::Vector3d b21OnPlaneA;
-  Eigen::Vector3d b31OnPlaneA;
-  computePointOnPlane(b1, b2, n1, db1, b21OnPlaneA);
-  computePointOnPlane(b1, b3, n1, db1, b31OnPlaneA);
+  //             _______________________
+  //            |                       |
+  //            |                       |
+  //            |        B1             |
+  //            |        |\             |_____
+  //            |        | \            |    /
+  //            |        |  \           |   /
+  //            |        |   \          |  /
+  //            |        |    \         | /
+  //            |     A1 | B12OnAxis    |/
+  //            |________|______\_______| ________\ Axis
+  //           /      /| :       . B13OnAxis      /
+  //          /      / | :        .   / |
+  //         /      /  | :         . /  |
+  //        /      /___| :          /   |
+  //       /             :         / \  |
+  //      /______________:________/   \ |
+  //   Plane A  |        |_____________\| B3
+  //            |      B2               |
+  //            |_______________________| Plane B
+  //
+  // We now check if A1 and B12OnAxis-B23OnAxis intersect.
+
+  Eigen::Vector3d B12OnPlaneA;
+  Eigen::Vector3d B13OnPlaneA;
+  computePointOnPlane(B1, B2, N1, db1, B12OnPlaneA);
+  computePointOnPlane(B1, B3, N1, db1, B13OnPlaneA);
 
 #ifndef NDEBUG
-  auto tmp1 = n1.dot(b21OnPlaneA);
-  auto tmp2 = n1.dot(b31OnPlaneA);
-  auto tmp3 = n1.dot(a1);
+  auto tmp1 = N1.dot(b21OnPlaneA);
+  auto tmp2 = N1.dot(b31OnPlaneA);
+  auto tmp3 = N1.dot(A1);
 
   assert(std::abs(tmp1 - tmp2) < DART_TRIANGLE_TRIANGLE_EPS);
   assert(std::abs(tmp2 - tmp3) < DART_TRIANGLE_TRIANGLE_EPS);
 #endif
 
-  return checkPointAndLine(a1, b21OnPlaneA, b31OnPlaneA, contacts);
+  return checkColinearPointAndLine(A1, B12OnPlaneA, B13OnPlaneA, contacts);
 }
 
 //==============================================================================
 inline int case2AndCase2(
-    const Eigen::Vector3d& a1,
-    const Eigen::Vector3d& a2,
-    const Eigen::Vector3d& b1,
-    const Eigen::Vector3d& b2,
+    const Eigen::Vector3d& A1,
+    const Eigen::Vector3d& A2,
+    const Eigen::Vector3d& B1,
+    const Eigen::Vector3d& B2,
     Eigen::Vector3d* contacts)
 {
-  return checkColinearLines(a1, a2, b1, b2, contacts);
+  return checkColinearLines(A1, A2, B1, B2, contacts);
 }
 
 //==============================================================================
 inline int case2AndCase3(
-    const Eigen::Vector3d& a1,
-    const Eigen::Vector3d& a2,
-    const Eigen::Vector3d& b1,
-    const Eigen::Vector3d& b2,
-    const Eigen::Vector3d& b3,
-    const Eigen::Vector3d& n1,
+    const Eigen::Vector3d& A1,
+    const Eigen::Vector3d& A2,
+    const Eigen::Vector3d& B1,
+    const Eigen::Vector3d& B2,
+    const Eigen::Vector3d& B3,
+    const Eigen::Vector3d& N1,
     const double db2,
     Eigen::Vector3d* contacts)
 {
   Eigen::Vector3d b32OnPlaneA;
-  computePointOnPlane(b2, b3, n1, db2, b32OnPlaneA);
+  computePointOnPlane(B2, B3, N1, db2, b32OnPlaneA);
 
-  return checkColinearLines(a1, a2, b1, b32OnPlaneA, contacts);
+  return checkColinearLines(A1, A2, B1, b32OnPlaneA, contacts);
 }
 
 //==============================================================================
 inline int case2AndCase4(
-    const Eigen::Vector3d& a1,
-    const Eigen::Vector3d& a2,
-    const Eigen::Vector3d& b1,
-    const Eigen::Vector3d& b2,
-    const Eigen::Vector3d& b3,
-    const Eigen::Vector3d& n1,
+    const Eigen::Vector3d& A1,
+    const Eigen::Vector3d& A2,
+    const Eigen::Vector3d& B1,
+    const Eigen::Vector3d& B2,
+    const Eigen::Vector3d& B3,
+    const Eigen::Vector3d& N1,
     const double db1,
     Eigen::Vector3d* contacts)
 {
   Eigen::Vector3d b21OnPlaneA;
   Eigen::Vector3d b31OnPlaneA;
-  computePointOnPlane(b1, b2, n1, db1, b21OnPlaneA);
-  computePointOnPlane(b1, b3, n1, db1, b31OnPlaneA);
+  computePointOnPlane(B1, B2, N1, db1, b21OnPlaneA);
+  computePointOnPlane(B1, B3, N1, db1, b31OnPlaneA);
 
-  return checkColinearLines(a1, a2, b21OnPlaneA, b31OnPlaneA, contacts);
+  return checkColinearLines(A1, A2, b21OnPlaneA, b31OnPlaneA, contacts);
 }
 
 //==============================================================================
 inline int case3AndCase3(
-    const Eigen::Vector3d& a1,
-    const Eigen::Vector3d& a2,
-    const Eigen::Vector3d& a3,
-    const Eigen::Vector3d& b1,
-    const Eigen::Vector3d& b2,
-    const Eigen::Vector3d& b3,
-    const Eigen::Vector3d& n1,
-    const Eigen::Vector3d& n2,
+    const Eigen::Vector3d& A1,
+    const Eigen::Vector3d& A2,
+    const Eigen::Vector3d& A3,
+    const Eigen::Vector3d& B1,
+    const Eigen::Vector3d& B2,
+    const Eigen::Vector3d& B3,
+    const Eigen::Vector3d& N1,
+    const Eigen::Vector3d& N2,
     const double da2, const double db2,
     Eigen::Vector3d* contacts)
 {
-  Eigen::Vector3d a32OnPlaneB;
-  computePointOnPlane(a2, a3, n2, da2, a32OnPlaneB);
+  //             _______________________
+  //            |                       |
+  //            |                       |
+  //            |        B2             |
+  //            |        |\             |_____
+  //            |        | \            |    /
+  //            |     A2 |  \           |   /
+  //            |     .: |   \          |  /
+  //            |    . : |    \         | /
+  //         A23OnAxis : | B23OnAxis    |/
+  //            |______:_|______\_______| ________\ Axis
+  //           /A1 \   | :      / B1   /|         /
+  //          /     \  | :     /      / |
+  //         /       \ | :    /      /  |
+  //        /         \| :   /      /   |
+  //       /          A3 :  /      /    |
+  //      /______________:_/______/     |
+  //   Plane A  |        |/             |
+  //            |        B3             |
+  //            |_______________________| Plane B
+  //
+  // We now check if A1-A23OnAxis and B1-B23OnAxis intersect.
 
-  Eigen::Vector3d b32OnPlaneA;
-  computePointOnPlane(b2, b3, n1, db2, b32OnPlaneA);
+  Eigen::Vector3d A23OnPlaneB;
+  computePointOnPlane(A2, A3, N2, da2, A23OnPlaneB);
 
-  return checkColinearLines(a1, a32OnPlaneB, b1, b32OnPlaneA, contacts);
+  Eigen::Vector3d B23OnPlaneA;
+  computePointOnPlane(B2, B3, N1, db2, B23OnPlaneA);
+
+  return checkColinearLines(A1, A23OnPlaneB, B1, B23OnPlaneA, contacts);
 }
 
 //==============================================================================
 inline int case3AndCase4(
-    const Eigen::Vector3d& a1, // 0
-    const Eigen::Vector3d& a2, // +/-
-    const Eigen::Vector3d& a3, // -/+
-    const Eigen::Vector3d& b1, // +/-
-    const Eigen::Vector3d& b2, // -/+
-    const Eigen::Vector3d& b3, // -/+
-    const Eigen::Vector3d& n1,
-    const Eigen::Vector3d& n2,
+    const Eigen::Vector3d& A1, // 0
+    const Eigen::Vector3d& A2, // +/-
+    const Eigen::Vector3d& A3, // -/+
+    const Eigen::Vector3d& B1, // +/-
+    const Eigen::Vector3d& B2, // -/+
+    const Eigen::Vector3d& B3, // -/+
+    const Eigen::Vector3d& N1,
+    const Eigen::Vector3d& N2,
     const double da2,
     const double db1,
     Eigen::Vector3d* contacts)
 {
-  Eigen::Vector3d a32OnPlaneB;
-  computePointOnPlane(a2, a3, n2, da2, a32OnPlaneB);
+  //             _______________________
+  //            |                       |
+  //            |                       |
+  //            |        B1             |
+  //            |        |\             |_____
+  //            |        | \            |    /
+  //            |     A2 |  \           |   /
+  //            |     .: |   \          |  /
+  //            |    . : |    \         | /
+  //         A23OnAxis : | B12OnAxis    |/
+  //            |______:_|______\_______| ________\ Axis
+  //           /A1 \   | :       . B13OnAxis      /
+  //          /     \  | :        .   / |
+  //         /       \ | :         . /  |
+  //        /         \| :          /   |
+  //       /          A3 :         / \  |
+  //      /______________:________/   \ |
+  //   Plane A  |        |_____________\| B3
+  //            |      B2               |
+  //            |_______________________| Plane B
+  //
+  // We now check if A1-A23OnAxis and B12OnAxis-B23OnAxis intersect.
 
-  Eigen::Vector3d b21OnPlaneA;
-  Eigen::Vector3d b31OnPlaneA;
-  computePointOnPlane(b1, b2, n1, db1, b21OnPlaneA);
-  computePointOnPlane(b1, b3, n1, db1, b31OnPlaneA);
+  Eigen::Vector3d A23OnPlaneB;
+  computePointOnPlane(A2, A3, N2, da2, A23OnPlaneB);
 
-  return checkColinearLines(a1, a32OnPlaneB, b21OnPlaneA, b31OnPlaneA, contacts);
+  Eigen::Vector3d B12OnPlaneA;
+  Eigen::Vector3d B13OnPlaneA;
+  computePointOnPlane(B1, B2, N1, db1, B12OnPlaneA);
+  computePointOnPlane(B1, B3, N1, db1, B13OnPlaneA);
+
+  return checkColinearLines(A1, A23OnPlaneB, B12OnPlaneA, B13OnPlaneA, contacts);
 }
 
 //==============================================================================
 inline int case4AndCase4(
-    const Eigen::Vector3d& a1,
-    const Eigen::Vector3d& a2,
-    const Eigen::Vector3d& a3,
-    const Eigen::Vector3d& b1,
-    const Eigen::Vector3d& b2,
-    const Eigen::Vector3d& b3,
-    const Eigen::Vector3d& n1,
-    const Eigen::Vector3d& n2,
+    const Eigen::Vector3d& A1,
+    const Eigen::Vector3d& A2,
+    const Eigen::Vector3d& A3,
+    const Eigen::Vector3d& B1,
+    const Eigen::Vector3d& B2,
+    const Eigen::Vector3d& B3,
+    const Eigen::Vector3d& N1,
+    const Eigen::Vector3d& N2,
     const double da1,
     const double db1,
     Eigen::Vector3d* contacts)
 {
-  Eigen::Vector3d a21OnPlaneB;
-  Eigen::Vector3d a31OnPlaneB;
-  computePointOnPlane(a1, a2, n2, da1, a21OnPlaneB);
-  computePointOnPlane(a1, a3, n2, da1, a31OnPlaneB);
+  //             _______________________
+  //            |                       |
+  //            |                       |
+  //            |        B1             |
+  //            |        |\             |_____
+  //            |        | \            |    /
+  //            |     A1 |  \           |   /
+  //            |     .: |   \          |  /
+  //            |    . : |    \         | /
+  //       A13OnAxis   : | B12OnAxis    |/
+  //            |______:_|______\_______| ________\ Axis
+  //  A12OnAxis   /    | :       . B13OnAxis      /
+  //          /  /     | :        .   / |
+  //         /  /      | :         . /  |
+  //        /  /_______| :          /   |
+  //       / A2       A3 :         / \  |
+  //      /______________:________/   \ |
+  //   Plane A  |        |_____________\| B3
+  //            |      B2               |
+  //            |_______________________| Plane B
+  //
+  // We now check if A12OnAxis-A13OnAxis and B12OnAxis-B23OnAxis intersect.
 
-  Eigen::Vector3d b21OnPlaneA;
-  Eigen::Vector3d b31OnPlaneA;
-  computePointOnPlane(b1, b2, n1, db1, b21OnPlaneA);
-  computePointOnPlane(b1, b3, n1, db1, b31OnPlaneA);
+  Eigen::Vector3d A12OnAxis;
+  Eigen::Vector3d A13OnAxis;
+  computePointOnPlane(A1, A2, N2, da1, A12OnAxis);
+  computePointOnPlane(A1, A3, N2, da1, A13OnAxis);
+
+  Eigen::Vector3d B12OnAxis;
+  Eigen::Vector3d B13OnAxis;
+  computePointOnPlane(B1, B2, N1, db1, B12OnAxis);
+  computePointOnPlane(B1, B3, N1, db1, B13OnAxis);
 
   return checkColinearLines(
-        a21OnPlaneB, a31OnPlaneB, b21OnPlaneA, b31OnPlaneA, contacts);
+        A12OnAxis, A13OnAxis, B12OnAxis, B13OnAxis, contacts);
 }
 
 //==============================================================================
-inline int case1And(const Eigen::Vector3d& a1,
-                    const Eigen::Vector3d& b1,
-                    const Eigen::Vector3d& b2,
-                    const Eigen::Vector3d& b3,
-                    const Eigen::Vector3d& n1,
+inline int case1And(const Eigen::Vector3d& A1,
+                    const Eigen::Vector3d& B1,
+                    const Eigen::Vector3d& B2,
+                    const Eigen::Vector3d& B3,
+                    const Eigen::Vector3d& N1,
                     const double db1, const double db2, const double db3,
                     Eigen::Vector3d* contacts)
 {
@@ -385,34 +563,34 @@ inline int case1And(const Eigen::Vector3d& a1,
     {
       // (+, +, -): Case 4
       if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase4(a1, b3, b1, b2, n1, db3, contacts);
+        return case1AndCase4(A1, B3, B1, B2, N1, db3, contacts);
       // (+, +, 0): Case 1
       else
-        return case1AndCase1(a1, b3, contacts);
+        return case1AndCase1(A1, B3, contacts);
     }
     else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
     {
       // (+, -, +): Case 4
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase4(a1, b2, b3, b1, n1, db2, contacts);
+        return case1AndCase4(A1, B2, B3, B1, N1, db2, contacts);
       // (+, -, -): Case 4
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase4(a1, b1, b2, b3, n1, db1, contacts);
+        return case1AndCase4(A1, B1, B2, B3, N1, db1, contacts);
       // (+, -, 0): Case 3
       else
-        return case1AndCase3(a1, b3, b1, b2, n1, db1, contacts);
+        return case1AndCase3(A1, B3, B1, B2, N1, db1, contacts);
     }
     else
     {
       // (+, 0, +): Case 1
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase1(a1, b2, contacts);
+        return case1AndCase1(A1, B2, contacts);
       // (+, 0, -): Case 3
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase3(a1, b2, b3, b1, n1, db3, contacts);
+        return case1AndCase3(A1, B2, B3, B1, N1, db3, contacts);
       // (+, 0, 0): Case 2
       else
-        return case1AndCase2(a1, b2, b3, contacts);
+        return case1AndCase2(A1, B2, B3, contacts);
     }
   }
   else if (db1 < -DART_TRIANGLE_TRIANGLE_EPS)
@@ -421,34 +599,34 @@ inline int case1And(const Eigen::Vector3d& a1,
     {
       // (-, +, +): Case 4
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase4(a1, b1, b2, b3, n1, db1, contacts);
+        return case1AndCase4(A1, B1, B2, B3, N1, db1, contacts);
       // (-, +, -): Case 4
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase4(a1, b2, b3, b1, n1, db2, contacts);
+        return case1AndCase4(A1, B2, B3, B1, N1, db2, contacts);
       // (-, +, 0): Case 3
       else
-        return case1AndCase3(a1, b3, b1, b2, n1, db1, contacts);
+        return case1AndCase3(A1, B3, B1, B2, N1, db1, contacts);
     }
     else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
     {
       // (-, -, +): Case 4
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase4(a1, b3, b1, b2, n1, db3, contacts);
+        return case1AndCase4(A1, B3, B1, B2, N1, db3, contacts);
       // (-, -, 0): Case 1
       else
-        return case1AndCase1(a1, b3, contacts);
+        return case1AndCase1(A1, B3, contacts);
     }
     else
     {
       // (-, 0, +): Case 3
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase3(a1, b2, b3, b1, n1, db3, contacts);
+        return case1AndCase3(A1, B2, B3, B1, N1, db3, contacts);
       // (-, 0, -): Case 1
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase1(a1, b2, contacts);
+        return case1AndCase1(A1, B2, contacts);
       // (-, 0, 0): Case 2
       else
-        return case1AndCase2(a1, b2, b3, contacts);
+        return case1AndCase2(A1, B2, B3, contacts);
     }
   }
   else
@@ -457,34 +635,34 @@ inline int case1And(const Eigen::Vector3d& a1,
     {
       // (0, +, +): Case 1
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase1(a1, b1, contacts);
+        return case1AndCase1(A1, B1, contacts);
       // (0, +, -): Case 3
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase3(a1, b1, b2, b3, n1, db2, contacts);
+        return case1AndCase3(A1, B1, B2, B3, N1, db2, contacts);
       // (0, +, 0): Case 2
       else
-        return case1AndCase2(a1, b3, b1, contacts);
+        return case1AndCase2(A1, B3, B1, contacts);
     }
     else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
     {
       // (0, -, +): Case 3
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase3(a1, b1, b2, b3, n1, db2, contacts);
+        return case1AndCase3(A1, B1, B2, B3, N1, db2, contacts);
       // (0, -, -): Case 1
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase1(a1, b1, contacts);
+        return case1AndCase1(A1, B1, contacts);
       // (0, -, 0): Case 2
       else
-        return case1AndCase2(a1, b3, b1, contacts);
+        return case1AndCase2(A1, B3, B1, contacts);
     }
     else
     {
       // (0, 0, +): Case 2
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase2(a1, b1, b2, contacts);
+        return case1AndCase2(A1, B1, B2, contacts);
       // (0, 0, -): Case 2
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase2(a1, b1, b2, contacts);
+        return case1AndCase2(A1, B1, B2, contacts);
       // (0, 0, 0): Coplanar case
       else
       {
@@ -496,270 +674,270 @@ inline int case1And(const Eigen::Vector3d& a1,
 }
 
 //==============================================================================
-inline int case2And(const Eigen::Vector3d& a1,
-             const Eigen::Vector3d& a2,
-             const Eigen::Vector3d& b1,
-             const Eigen::Vector3d& b2,
-             const Eigen::Vector3d& b3,
-             Eigen::Vector3d* contacts,
-             const Eigen::Vector3d& n1,
-             const double db1, const double db2, const double db3)
-{
-  if (db1 > DART_TRIANGLE_TRIANGLE_EPS)
-  {
-    if (db2 > DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      // (+, +, -): Case 4
-      if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase4(a1, a2, b3, b1, b2, n1, db3, contacts);
-      // (+, +, 0): Case 1
-      else
-        return case1AndCase2(b3, a1, a2, contacts);
-    }
-    else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      // (+, -, +): Case 4
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase4(a1, a2, b2, b3, b1, n1, db2, contacts);
-      // (+, -, -): Case 4
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase4(a1, a2, b1, b2, b3, n1, db1, contacts);
-      // (+, -, 0): Case 3
-      else
-        return case2AndCase3(a1, a2, b3, b1, b2, n1, db1, contacts);
-    }
-    else
-    {
-      // (+, 0, +): Case 1
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase2(b2, a1, a2, contacts);
-      // (+, 0, -): Case 3
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase3(a1, a2, b2, b3, b1, n1, db3, contacts);
-      // (+, 0, 0): Case 2
-      else
-        return case2AndCase2(a1, a2, b2, b3, contacts);
-    }
-  }
-  else if (db1 < -DART_TRIANGLE_TRIANGLE_EPS)
-  {
-    if (db2 > DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      // (-, +, +): Case 4
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase4(a1, a2, b1, b2, b3, n1, db1, contacts);
-      // (-, +, -): Case 4
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase4(a1, a2, b2, b3, b1, n1, db2, contacts);
-      // (-, +, 0): Case 3
-      else
-        return case2AndCase3(a1, a2, b3, b1, b2, n1, db1, contacts);
-    }
-    else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      // (-, -, +): Case 4
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase4(a1, a2, b3, b1, b2, n1, db3, contacts);
-      // (-, -, 0): Case 1
-      else
-        return case1AndCase2(b3, a1, a2, contacts);
-    }
-    else
-    {
-      // (-, 0, +): Case 3
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase3(a1, a2, b2, b3, b1, n1, db3, contacts);
-      // (-, 0, -): Case 1
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase2(b2, a1, a2, contacts);
-      // (-, 0, 0): Case 2
-      else
-        return case2AndCase2(a1, a2, b2, b3, contacts);
-    }
-  }
-  else
-  {
-    if (db2 > DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      // (0, +, +): Case 1
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase2(b1, a1, a2, contacts);
-      // (0, +, -): Case 3
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase3(a1, a2, b1, b2, b3, n1, db2, contacts);
-      // (0, +, 0): Case 2
-      else
-        return case2AndCase2(a1, a2, b3, b1, contacts);
-    }
-    else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      // (0, -, +): Case 3
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase3(a1, a2, b1, b2, b3, n1, db2, contacts);
-      // (0, -, -): Case 1
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase2(b1, a1, a2, contacts);
-      // (0, -, 0): Case 2
-      else
-        return case2AndCase2(a1, a2, b3, b1, contacts);
-    }
-    else
-    {
-      // (0, 0, +): Case 2
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase2(a1, a2, b1, b2, contacts);
-      // (0, 0, -): Case 2
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase2(a1, a2, b1, b2, contacts);
-      // (0, 0, 0): Coplanar case
-      else
-      {
-        assert(false);
-        return 0;
-      }
-    }
-  }
-}
-
-//==============================================================================
-inline int case3And(const Eigen::Vector3d& a1,
-             const Eigen::Vector3d& a2,
-             const Eigen::Vector3d& a3,
-             const Eigen::Vector3d& b1,
-             const Eigen::Vector3d& b2,
-             const Eigen::Vector3d& b3,
-             Eigen::Vector3d* contacts,
-             const Eigen::Vector3d& n1,
-             const Eigen::Vector3d& n2,
-             const double da2,
-             const double db1, const double db2, const double db3)
-{
-  if (db1 > DART_TRIANGLE_TRIANGLE_EPS)
-  {
-    if (db2 > DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      // (+, +, -): Case 4
-      if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase4(a1, a2, a3, b3, b1, b2, n1, n2, da2, db3, contacts);
-      // (+, +, 0): Case 1
-      else
-        return case1AndCase3(b3, a1, a2, a3, n2, da2, contacts);
-    }
-    else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      // (+, -, +): Case 4
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase4(a1, a2, a3, b2, b3, b1, n1, n2, da2, db2, contacts);
-      // (+, -, -): Case 4
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase4(a1, a2, a3, b1, b2, b3, n1, n2, da2, db1, contacts);
-      // (+, -, 0): Case 3
-      else
-        return case3AndCase3(a1, a2, a3, b3, b1, b2, n2, n1, da2, db1, contacts);
-    }
-    else
-    {
-      // (+, 0, +): Case 1
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase3(b2, a1, a2, a3, n2, da2, contacts);
-      // (+, 0, -): Case 3
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase3(a1, a2, a3, b2, b3, b1, n2, n1, da2, db3, contacts);
-      // (+, 0, 0): Case 2
-      else
-        return case2AndCase3(b2, b3, a1, a2, a3, n2, da2, contacts);
-    }
-  }
-  else if (db1 < -DART_TRIANGLE_TRIANGLE_EPS)
-  {
-    if (db2 > DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      // (-, +, +): Case 4
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase4(a1, a2, a3, b1, b2, b3, n1, n2, da2, db1, contacts);
-      // (-, +, -): Case 4
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase4(a1, a2, a3, b2, b3, b1, n1, n2, da2, db2, contacts);
-      // (-, +, 0): Case 3
-      else
-        return case3AndCase3(a1, a2, a3, b3, b1, b2, n2, n1, da2, db1, contacts);
-    }
-    else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      // (-, -, +): Case 4
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase4(a1, a2, a3, b3, b1, b2, n1, n2, da2, db3, contacts);
-      // (-, -, 0): Case 1
-      else
-        return case1AndCase3(b3, a1, a2, a3, n2, da2, contacts);
-    }
-    else
-    {
-      // (-, 0, +): Case 3
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase3(a1, a2, a3, b2, b3, b1, n2, n1, da2, db3, contacts);
-      // (-, 0, -): Case 1
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase3(b2, a1, a2, a3, n2, da2, contacts);
-      // (-, 0, 0): Case 2
-      else
-        return case2AndCase3(b2, b3, a1, a2, a3, n2, da2, contacts);
-    }
-  }
-  else
-  {
-    if (db2 > DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      // (0, +, +): Case 1
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase3(b1, a1, a2, a3, n2, da2, contacts);
-      // (0, +, -): Case 3
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase3(a1, a2, a3, b1, b2, b3, n2, n1, da2, db2, contacts);
-      // (0, +, 0): Case 2
-      else
-        return case2AndCase3(b3, b1, a1, a2, a3, n2, da2, contacts);
-    }
-    else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      // (0, -, +): Case 3
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase3(a1, a2, a3, b1, b2, b3, n2, n1, da2, db2, contacts);
-      // (0, -, -): Case 1
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase3(b1, a1, a2, a3, n2, da2, contacts);
-      // (0, -, 0): Case 2
-      else
-        return case2AndCase3(b3, b1, a1, a2, a3, n2, da2, contacts);
-    }
-    else
-    {
-      // (0, 0, +): Case 2
-      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase3(b1, b2, a1, a2, a3, n2, da2, contacts);
-      // (0, 0, -): Case 2
-      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase3(b1, b2, a1, a2, a3, n2, da2, contacts);
-      // (0, 0, 0): Coplanar case
-      else
-      {
-        assert(false);
-        return 0;
-      }
-    }
-  }
-}
-
-//==============================================================================
-inline int case4And(const Eigen::Vector3d& a1,
-                    const Eigen::Vector3d& a2,
-                    const Eigen::Vector3d& a3,
-                    const Eigen::Vector3d& b1,
-                    const Eigen::Vector3d& b2,
-                    const Eigen::Vector3d& b3,
+inline int case2And(const Eigen::Vector3d& A1,
+                    const Eigen::Vector3d& A2,
+                    const Eigen::Vector3d& B1,
+                    const Eigen::Vector3d& B2,
+                    const Eigen::Vector3d& B3,
                     Eigen::Vector3d* contacts,
-                    const Eigen::Vector3d& n1,
-                    const Eigen::Vector3d& n2,
+                    const Eigen::Vector3d& N1,
+                    const double db1, const double db2, const double db3)
+{
+  if (db1 > DART_TRIANGLE_TRIANGLE_EPS)
+  {
+    if (db2 > DART_TRIANGLE_TRIANGLE_EPS)
+    {
+      // (+, +, -): Case 4
+      if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase4(A1, A2, B3, B1, B2, N1, db3, contacts);
+      // (+, +, 0): Case 1
+      else
+        return case1AndCase2(B3, A1, A2, contacts);
+    }
+    else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
+    {
+      // (+, -, +): Case 4
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase4(A1, A2, B2, B3, B1, N1, db2, contacts);
+      // (+, -, -): Case 4
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase4(A1, A2, B1, B2, B3, N1, db1, contacts);
+      // (+, -, 0): Case 3
+      else
+        return case2AndCase3(A1, A2, B3, B1, B2, N1, db1, contacts);
+    }
+    else
+    {
+      // (+, 0, +): Case 1
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case1AndCase2(B2, A1, A2, contacts);
+      // (+, 0, -): Case 3
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase3(A1, A2, B2, B3, B1, N1, db3, contacts);
+      // (+, 0, 0): Case 2
+      else
+        return case2AndCase2(A1, A2, B2, B3, contacts);
+    }
+  }
+  else if (db1 < -DART_TRIANGLE_TRIANGLE_EPS)
+  {
+    if (db2 > DART_TRIANGLE_TRIANGLE_EPS)
+    {
+      // (-, +, +): Case 4
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase4(A1, A2, B1, B2, B3, N1, db1, contacts);
+      // (-, +, -): Case 4
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase4(A1, A2, B2, B3, B1, N1, db2, contacts);
+      // (-, +, 0): Case 3
+      else
+        return case2AndCase3(A1, A2, B3, B1, B2, N1, db1, contacts);
+    }
+    else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
+    {
+      // (-, -, +): Case 4
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase4(A1, A2, B3, B1, B2, N1, db3, contacts);
+      // (-, -, 0): Case 1
+      else
+        return case1AndCase2(B3, A1, A2, contacts);
+    }
+    else
+    {
+      // (-, 0, +): Case 3
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase3(A1, A2, B2, B3, B1, N1, db3, contacts);
+      // (-, 0, -): Case 1
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case1AndCase2(B2, A1, A2, contacts);
+      // (-, 0, 0): Case 2
+      else
+        return case2AndCase2(A1, A2, B2, B3, contacts);
+    }
+  }
+  else
+  {
+    if (db2 > DART_TRIANGLE_TRIANGLE_EPS)
+    {
+      // (0, +, +): Case 1
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case1AndCase2(B1, A1, A2, contacts);
+      // (0, +, -): Case 3
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase3(A1, A2, B1, B2, B3, N1, db2, contacts);
+      // (0, +, 0): Case 2
+      else
+        return case2AndCase2(A1, A2, B3, B1, contacts);
+    }
+    else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
+    {
+      // (0, -, +): Case 3
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase3(A1, A2, B1, B2, B3, N1, db2, contacts);
+      // (0, -, -): Case 1
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case1AndCase2(B1, A1, A2, contacts);
+      // (0, -, 0): Case 2
+      else
+        return case2AndCase2(A1, A2, B3, B1, contacts);
+    }
+    else
+    {
+      // (0, 0, +): Case 2
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase2(A1, A2, B1, B2, contacts);
+      // (0, 0, -): Case 2
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase2(A1, A2, B1, B2, contacts);
+      // (0, 0, 0): Coplanar case
+      else
+      {
+        assert(false);
+        return 0;
+      }
+    }
+  }
+}
+
+//==============================================================================
+inline int case3And(const Eigen::Vector3d& A1,
+                    const Eigen::Vector3d& A2,
+                    const Eigen::Vector3d& A3,
+                    const Eigen::Vector3d& B1,
+                    const Eigen::Vector3d& B2,
+                    const Eigen::Vector3d& B3,
+                    Eigen::Vector3d* contacts,
+                    const Eigen::Vector3d& N1,
+                    const Eigen::Vector3d& N2,
+                    const double da2,
+                    const double db1, const double db2, const double db3)
+{
+  if (db1 > DART_TRIANGLE_TRIANGLE_EPS)
+  {
+    if (db2 > DART_TRIANGLE_TRIANGLE_EPS)
+    {
+      // (+, +, -): Case 4
+      if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case3AndCase4(A1, A2, A3, B3, B1, B2, N1, N2, da2, db3, contacts);
+      // (+, +, 0): Case 1
+      else
+        return case1AndCase3(B3, A1, A2, A3, N2, da2, contacts);
+    }
+    else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
+    {
+      // (+, -, +): Case 4
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case3AndCase4(A1, A2, A3, B2, B3, B1, N1, N2, da2, db2, contacts);
+      // (+, -, -): Case 4
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case3AndCase4(A1, A2, A3, B1, B2, B3, N1, N2, da2, db1, contacts);
+      // (+, -, 0): Case 3
+      else
+        return case3AndCase3(A1, A2, A3, B3, B1, B2, N2, N1, da2, db1, contacts);
+    }
+    else
+    {
+      // (+, 0, +): Case 1
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case1AndCase3(B2, A1, A2, A3, N2, da2, contacts);
+      // (+, 0, -): Case 3
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case3AndCase3(A1, A2, A3, B2, B3, B1, N2, N1, da2, db3, contacts);
+      // (+, 0, 0): Case 2
+      else
+        return case2AndCase3(B2, B3, A1, A2, A3, N2, da2, contacts);
+    }
+  }
+  else if (db1 < -DART_TRIANGLE_TRIANGLE_EPS)
+  {
+    if (db2 > DART_TRIANGLE_TRIANGLE_EPS)
+    {
+      // (-, +, +): Case 4
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case3AndCase4(A1, A2, A3, B1, B2, B3, N1, N2, da2, db1, contacts);
+      // (-, +, -): Case 4
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case3AndCase4(A1, A2, A3, B2, B3, B1, N1, N2, da2, db2, contacts);
+      // (-, +, 0): Case 3
+      else
+        return case3AndCase3(A1, A2, A3, B3, B1, B2, N2, N1, da2, db1, contacts);
+    }
+    else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
+    {
+      // (-, -, +): Case 4
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case3AndCase4(A1, A2, A3, B3, B1, B2, N1, N2, da2, db3, contacts);
+      // (-, -, 0): Case 1
+      else
+        return case1AndCase3(B3, A1, A2, A3, N2, da2, contacts);
+    }
+    else
+    {
+      // (-, 0, +): Case 3
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case3AndCase3(A1, A2, A3, B2, B3, B1, N2, N1, da2, db3, contacts);
+      // (-, 0, -): Case 1
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case1AndCase3(B2, A1, A2, A3, N2, da2, contacts);
+      // (-, 0, 0): Case 2
+      else
+        return case2AndCase3(B2, B3, A1, A2, A3, N2, da2, contacts);
+    }
+  }
+  else
+  {
+    if (db2 > DART_TRIANGLE_TRIANGLE_EPS)
+    {
+      // (0, +, +): Case 1
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case1AndCase3(B1, A1, A2, A3, N2, da2, contacts);
+      // (0, +, -): Case 3
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case3AndCase3(A1, A2, A3, B1, B2, B3, N2, N1, da2, db2, contacts);
+      // (0, +, 0): Case 2
+      else
+        return case2AndCase3(B3, B1, A1, A2, A3, N2, da2, contacts);
+    }
+    else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
+    {
+      // (0, -, +): Case 3
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case3AndCase3(A1, A2, A3, B1, B2, B3, N2, N1, da2, db2, contacts);
+      // (0, -, -): Case 1
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case1AndCase3(B1, A1, A2, A3, N2, da2, contacts);
+      // (0, -, 0): Case 2
+      else
+        return case2AndCase3(B3, B1, A1, A2, A3, N2, da2, contacts);
+    }
+    else
+    {
+      // (0, 0, +): Case 2
+      if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase3(B1, B2, A1, A2, A3, N2, da2, contacts);
+      // (0, 0, -): Case 2
+      else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
+        return case2AndCase3(B1, B2, A1, A2, A3, N2, da2, contacts);
+      // (0, 0, 0): Coplanar case
+      else
+      {
+        assert(false);
+        return 0;
+      }
+    }
+  }
+}
+
+//==============================================================================
+inline int case4And(const Eigen::Vector3d& A1,
+                    const Eigen::Vector3d& A2,
+                    const Eigen::Vector3d& A3,
+                    const Eigen::Vector3d& B1,
+                    const Eigen::Vector3d& B2,
+                    const Eigen::Vector3d& B3,
+                    Eigen::Vector3d* contacts,
+                    const Eigen::Vector3d& N1,
+                    const Eigen::Vector3d& N2,
                     const double da1,
                     const double db1, const double db2, const double db3)
 {
@@ -769,34 +947,34 @@ inline int case4And(const Eigen::Vector3d& a1,
     {
       // (+, +, -): Case 4
       if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case4AndCase4(a1, a2, a3, b3, b1, b2, n1, n2, da1, db3, contacts);
+        return case4AndCase4(A1, A2, A3, B3, B1, B2, N1, N2, da1, db3, contacts);
       // (+, +, 0): Case 1
       else
-        return case1AndCase4(b3, a1, a2, a3, n2, da1, contacts);
+        return case1AndCase4(B3, A1, A2, A3, N2, da1, contacts);
     }
     else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
     {
       // (+, -, +): Case 4
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case4AndCase4(a1, a2, a3, b2, b3, b1, n1, n2, da1, db2, contacts);
+        return case4AndCase4(A1, A2, A3, B2, B3, B1, N1, N2, da1, db2, contacts);
       // (+, -, -): Case 4
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case4AndCase4(a1, a2, a3, b1, b2, b3, n1, n2, da1, db1, contacts);
+        return case4AndCase4(A1, A2, A3, B1, B2, B3, N1, N2, da1, db1, contacts);
       // (+, -, 0): Case 3
       else
-        return case3AndCase4(b3, b1, b2, a1, a2, a3, n2, n1, db1, da1, contacts);
+        return case3AndCase4(B3, B1, B2, A1, A2, A3, N2, N1, db1, da1, contacts);
     }
     else
     {
       // (+, 0, +): Case 1
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase4(b2, a1, a2, a3, n2, da1, contacts);
+        return case1AndCase4(B2, A1, A2, A3, N2, da1, contacts);
       // (+, 0, -): Case 3
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase4(b2, b3, b1, a1, a2, a3, n2, n1, db3, da1, contacts);
+        return case3AndCase4(B2, B3, B1, A1, A2, A3, N2, N1, db3, da1, contacts);
       // (+, 0, 0): Case 2
       else
-        return case2AndCase4(b2, b3, a1, a2, a3, n2, da1, contacts);
+        return case2AndCase4(B2, B3, A1, A2, A3, N2, da1, contacts);
     }
   }
   else if (db1 < -DART_TRIANGLE_TRIANGLE_EPS)
@@ -805,34 +983,34 @@ inline int case4And(const Eigen::Vector3d& a1,
     {
       // (-, +, +): Case 4
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case4AndCase4(a1, a2, a3, b1, b2, b3, n1, n2, da1, db1, contacts);
+        return case4AndCase4(A1, A2, A3, B1, B2, B3, N1, N2, da1, db1, contacts);
       // (-, +, -): Case 4
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case4AndCase4(a1, a2, a3, b2, b3, b1, n1, n2, da1, db2, contacts);
+        return case4AndCase4(A1, A2, A3, B2, B3, B1, N1, N2, da1, db2, contacts);
       // (-, +, 0): Case 3
       else
-        return case3AndCase4(b3, b1, b2, a1, a2, a3, n2, n1, db1, da1, contacts);
+        return case3AndCase4(B3, B1, B2, A1, A2, A3, N2, N1, db1, da1, contacts);
     }
     else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
     {
       // (-, -, +): Case 4
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case4AndCase4(a1, a2, a3, b3, b1, b2, n1, n2, da1, db3, contacts);
+        return case4AndCase4(A1, A2, A3, B3, B1, B2, N1, N2, da1, db3, contacts);
       // (-, -, 0): Case 1
       else
-        return case1AndCase4(b3, a1, a2, a3, n2, da1, contacts);
+        return case1AndCase4(B3, A1, A2, A3, N2, da1, contacts);
     }
     else
     {
       // (-, 0, +): Case 3
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase4(b2, b3, b1, a1, a2, a3, n2, n1, db3, da1, contacts);
+        return case3AndCase4(B2, B3, B1, A1, A2, A3, N2, N1, db3, da1, contacts);
       // (-, 0, -): Case 1
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase4(b2, a1, a2, a3, n2, da1, contacts);
+        return case1AndCase4(B2, A1, A2, A3, N2, da1, contacts);
       // (-, 0, 0): Case 2
       else
-        return case2AndCase4(b2, b3, a1, a2, a3, n2, da1, contacts);
+        return case2AndCase4(B2, B3, A1, A2, A3, N2, da1, contacts);
     }
   }
   else
@@ -841,34 +1019,34 @@ inline int case4And(const Eigen::Vector3d& a1,
     {
       // (0, +, +): Case 1
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase4(b1, a1, a2, a3, n2, da1, contacts);
+        return case1AndCase4(B1, A1, A2, A3, N2, da1, contacts);
       // (0, +, -): Case 3
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase4(b1, b2, b3, a1, a2, a3, n2, n1, db2, da1, contacts);
+        return case3AndCase4(B1, B2, B3, A1, A2, A3, N2, N1, db2, da1, contacts);
       // (0, +, 0): Case 2
       else
-        return case2AndCase4(b3, b1, a1, a2, a3, n2, da1, contacts);
+        return case2AndCase4(B3, B1, A1, A2, A3, N2, da1, contacts);
     }
     else if (db2 < -DART_TRIANGLE_TRIANGLE_EPS)
     {
       // (0, -, +): Case 3
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case3AndCase4(b1, b2, b3, a1, a2, a3, n2, n1, db2, da1, contacts);
+        return case3AndCase4(B1, B2, B3, A1, A2, A3, N2, N1, db2, da1, contacts);
       // (0, -, -): Case 1
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1AndCase4(b1, a1, a2, a3, n2, da1, contacts);
+        return case1AndCase4(B1, A1, A2, A3, N2, da1, contacts);
       // (0, -, 0): Case 2
       else
-        return case2AndCase4(b3, b1, a1, a2, a3, n2, da1, contacts);
+        return case2AndCase4(B3, B1, A1, A2, A3, N2, da1, contacts);
     }
     else
     {
       // (0, 0, +): Case 2
       if (db3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase4(b1, b2, a1, a2, a3, n2, da1, contacts);
+        return case2AndCase4(B1, B2, A1, A2, A3, N2, da1, contacts);
       // (0, 0, -): Case 2
       else if (db3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case2AndCase4(b1, b2, a1, a2, a3, n2, da1, contacts);
+        return case2AndCase4(B1, B2, A1, A2, A3, N2, da1, contacts);
       // (0, 0, 0): Coplanar case
       else
       {
@@ -1345,6 +1523,8 @@ int coplanar3d(
     const Eigen::Vector3d& B3,
     const Eigen::Vector3d& N1,
     Eigen::Vector3d* contacts,
+    Eigen::Vector3d& normal,
+    double& penetrationDepth,
     const bool returnAllContacts)
 {
   Eigen::Vector2d a1;
@@ -1403,6 +1583,9 @@ int coplanar3d(
     }
   }
 
+  normal = -N1;
+  penetrationDepth = 0.0;
+
   return coplanar2d(
         A1, A2, A3, B1, B2, B3,
         a1, a2, a3, b1, b2, b3,
@@ -1410,16 +1593,19 @@ int coplanar3d(
 }
 
 //==============================================================================
-int collideTriangleTriangle(
-    const Eigen::Vector3d& A1,
+int collideTriangleTriangle(const Eigen::Vector3d& A1,
     const Eigen::Vector3d& A2,
     const Eigen::Vector3d& A3,
     const Eigen::Vector3d& B1,
     const Eigen::Vector3d& B2,
     const Eigen::Vector3d& B3,
     Eigen::Vector3d* contacts,
+    Eigen::Vector3d& normal,
+    double& penetrationDepth,
     const bool returnAllContacts)
 {
+  int numContacts;
+
   Eigen::Vector3d v1 = B2 - B1;
   Eigen::Vector3d v2 = B3 - B2;
   Eigen::Vector3d N2 = v1.cross(v2);
@@ -1472,34 +1658,34 @@ int collideTriangleTriangle(
     {
       // (+, +, -): Case 4
       if (da3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case4And(A3, A1, A2, B1, B2, B3, contacts, N1, N2, da3, db1, db2, db3);
+        numContacts = case4And(A3, A1, A2, B1, B2, B3, contacts, N1, N2, da3, db1, db2, db3);
       // (+, +, 0): Case 1
       else
-        return case1And(A3, B1, B2, B3, N1, db1, db2, db3, contacts);
+        numContacts = case1And(A3, B1, B2, B3, N1, db1, db2, db3, contacts);
     }
     else if (da2 < -DART_TRIANGLE_TRIANGLE_EPS)
     {
       // (+, -, +): Case 4
       if (da3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case4And(A2, A3, A1, B1, B2, B3, contacts, N1, N2, da2, db1, db2, db3);
+        numContacts = case4And(A2, A3, A1, B1, B2, B3, contacts, N1, N2, da2, db1, db2, db3);
       // (+, -, -): Case 4
       else if (da3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case4And(A1, A2, A3, B1, B2, B3, contacts, N1, N2, da1, db1, db2, db3);
+        numContacts = case4And(A1, A2, A3, B1, B2, B3, contacts, N1, N2, da1, db1, db2, db3);
       // (+, -, 0): Case 3
       else
-        return case3And(A3, A1, A2, B1, B2, B3, contacts, N1, N2, da1, db1, db2, db3);
+        numContacts = case3And(A3, A1, A2, B1, B2, B3, contacts, N1, N2, da1, db1, db2, db3);
     }
     else
     {
       // (+, 0, +): Case 1
       if (da3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1And(A2, B1, B2, B3, N1, db1, db2, db3, contacts);
+        numContacts = case1And(A2, B1, B2, B3, N1, db1, db2, db3, contacts);
       // (+, 0, -): Case 3
       else if (da3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case3And(A2, A3, A1, B1, B2, B3, contacts, N1, N2, da3, db1, db2, db3);
+        numContacts = case3And(A2, A3, A1, B1, B2, B3, contacts, N1, N2, da3, db1, db2, db3);
       // (+, 0, 0): Case 2
       else
-        return case2And(A2, A3, B1, B2, B3, contacts, N1, db1, db2, db3);
+        numContacts = case2And(A2, A3, B1, B2, B3, contacts, N1, db1, db2, db3);
     }
   }
   else if (da1 < -DART_TRIANGLE_TRIANGLE_EPS)
@@ -1508,34 +1694,34 @@ int collideTriangleTriangle(
     {
       // (-, +, +): Case 4
       if (da3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case4And(A1, A2, A3, B1, B2, B3, contacts, N1, N2, da1, db1, db2, db3);
+        numContacts = case4And(A1, A2, A3, B1, B2, B3, contacts, N1, N2, da1, db1, db2, db3);
       // (-, +, -): Case 4
       else if (da3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case4And(A2, A3, A1, B1, B2, B3, contacts, N1, N2, da2, db1, db2, db3);
+        numContacts = case4And(A2, A3, A1, B1, B2, B3, contacts, N1, N2, da2, db1, db2, db3);
       // (-, +, 0): Case 3
       else
-        return case3And(A3, A1, A2, B1, B2, B3, contacts, N1, N2, da1, db1, db2, db3);
+        numContacts = case3And(A3, A1, A2, B1, B2, B3, contacts, N1, N2, da1, db1, db2, db3);
     }
     else if (da2 < -DART_TRIANGLE_TRIANGLE_EPS)
     {
       // (-, -, +): Case 4
       if (da3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case4And(A3, A1, A2, B1, B2, B3, contacts, N1, N2, da3, db1, db2, db3);
+        numContacts = case4And(A3, A1, A2, B1, B2, B3, contacts, N1, N2, da3, db1, db2, db3);
       // (-, -, 0): Case 1
       else
-        return case1And(A3, B1, B2, B3, N1, db1, db2, db3, contacts);
+        numContacts = case1And(A3, B1, B2, B3, N1, db1, db2, db3, contacts);
     }
     else
     {
       // (-, 0, +): Case 3
       if (da3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case3And(A2, A3, A1, B1, B2, B3, contacts, N1, N2, da3, db1, db2, db3);
+        numContacts = case3And(A2, A3, A1, B1, B2, B3, contacts, N1, N2, da3, db1, db2, db3);
       // (-, 0, -): Case 1
       else if (da3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1And(A2, B1, B2, B3, N1, db1, db2, db3, contacts);
+        numContacts = case1And(A2, B1, B2, B3, N1, db1, db2, db3, contacts);
       // (-, 0, 0): Case 2
       else
-        return case2And(A2, A3, B1, B2, B3, contacts, N1, db1, db2, db3);
+        numContacts = case2And(A2, A3, B1, B2, B3, contacts, N1, db1, db2, db3);
     }
   }
   else
@@ -1544,39 +1730,76 @@ int collideTriangleTriangle(
     {
       // (0, +, +): Case 1
       if (da3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case1And(A1, B1, B2, B3, N1, db1, db2, db3, contacts);
+        numContacts = case1And(A1, B1, B2, B3, N1, db1, db2, db3, contacts);
       // (0, +, -): Case 3
       else if (da3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case3And(A1, A2, A3, B1, B2, B3, contacts, N1, N2, da2, db1, db2, db3);
+        numContacts = case3And(A1, A2, A3, B1, B2, B3, contacts, N1, N2, da2, db1, db2, db3);
       // (0, +, 0): Case 2
       else
-        return case2And(A3, A1, B1, B2, B3, contacts, N1, db1, db2, db3);
+        numContacts = case2And(A3, A1, B1, B2, B3, contacts, N1, db1, db2, db3);
     }
     else if (da2 < -DART_TRIANGLE_TRIANGLE_EPS)
     {
       // (0, -, +): Case 3
       if (da3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case3And(A1, A2, A3, B1, B2, B3, contacts, N1, N2, da2, db1, db2, db3);
+        numContacts = case3And(A1, A2, A3, B1, B2, B3, contacts, N1, N2, da2, db1, db2, db3);
       // (0, -, -): Case 1
       else if (da3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case1And(A1, B1, B2, B3, N1, db1, db2, db3, contacts);
+        numContacts = case1And(A1, B1, B2, B3, N1, db1, db2, db3, contacts);
       // (0, -, 0): Case 2
       else
-        return case2And(A3, A1, B1, B2, B3, contacts, N1, db1, db2, db3);
+        numContacts = case2And(A3, A1, B1, B2, B3, contacts, N1, db1, db2, db3);
     }
     else
     {
       // (0, 0, +): Case 2
       if (da3 > DART_TRIANGLE_TRIANGLE_EPS)
-        return case2And(A1, A2, B1, B2, B3, contacts, N1, db1, db2, db3);
+        numContacts = case2And(A1, A2, B1, B2, B3, contacts, N1, db1, db2, db3);
       // (0, 0, -): Case 2
       else if (da3 < -DART_TRIANGLE_TRIANGLE_EPS)
-        return case2And(A1, A2, B1, B2, B3, contacts, N1, db1, db2, db3);
+        numContacts = case2And(A1, A2, B1, B2, B3, contacts, N1, db1, db2, db3);
       // (0, 0, 0): Coplanar case
       else
-        return coplanar3d(A1, A2, A3, B1, B2, B3, N1, contacts, returnAllContacts);
+        return coplanar3d(
+              A1, A2, A3, B1, B2, B3, N1,
+              contacts, normal, penetrationDepth, returnAllContacts);
     }
   }
+
+//  if (numContacts)
+//  {
+//    const auto invNorm1 = 1.0 / N1.norm();
+//    const auto invNorm2 = 1.0 / N2.norm();
+
+//    double maxDepthA = std::numeric_limits<double>::max();
+//    if (da1 <= 0.0 && maxDepthA > da1)
+//        maxDepthA = da1;
+//    if (da2 <= 0.0 && maxDepthA > da2)
+//        maxDepthA = da2;
+//    if (da3 <= 0.0 && maxDepthA > da3)
+//        maxDepthA = da3;
+//    maxDepthA = maxDepthA * invNorm1;
+
+//    double maxDepthB = std::numeric_limits<double>::max();
+//    if (db1 <= 0.0 && maxDepthB > db1)
+//        maxDepthA = da1;
+//    if (db2 <= 0.0 && maxDepthB > db2)
+//        maxDepthA = da2;
+//    if (db3 <= 0.0 && maxDepthB > db3)
+//        maxDepthA = da3;
+//    maxDepthA = maxDepthA * invNorm1;
+
+//    if (maxDepthA < maxDepthB)
+//    {
+
+//    }
+//    else
+//    {
+
+//    }
+//  }
+
+  return numContacts;
 }
 
 } // namespace v1

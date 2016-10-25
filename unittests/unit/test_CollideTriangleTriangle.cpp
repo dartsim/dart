@@ -274,6 +274,9 @@ TEST(CollideTriangleTriangle, VariousRandomTests)
   std::vector<Eigen::Vector3d[6]> contacts(numTests);
   std::vector<Eigen::Vector3d[6]> expectedPoints(numTests);
 
+  std::vector<Eigen::Vector3d> normal(numTests);
+  std::vector<double> depth(numTests);
+
   int numContacts;
 
   for (auto i = 0; i < numTests; ++i)
@@ -281,14 +284,16 @@ TEST(CollideTriangleTriangle, VariousRandomTests)
     makeTriangleAndTriangleOneVertexIsWithinOtherTriangle(
           a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], expectedPoints[i]);
     numContacts = collision::collideTriangleTriangle(
-          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], contacts[i]);
+          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i],
+          contacts[i], normal[i], depth[i]);
     EXPECT_TRUE(numContacts == 1);
     EXPECT_TRUE(contacts[i][0].isApprox(expectedPoints[i][0]));
 
     // Colinear
     makeColinear(a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], expectedPoints[i]);
     numContacts = collision::collideTriangleTriangle(
-          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], contacts[i]);
+          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i],
+          contacts[i], normal[i], depth[i]);
     EXPECT_TRUE(numContacts == 2);
 //    EXPECT_TRUE(contacts[i][0].isApprox(expectedPoints[i][0]));
 //    EXPECT_TRUE(contacts[i][0].isApprox(expectedPoints[i][1]));
@@ -308,9 +313,11 @@ TEST(CollideTriangleTriangle, EdgeContact)
   Eigen::Vector3d Q3(0, 0, 1);
 
   Eigen::Vector3d contact_points[6];
+  Eigen::Vector3d normal;
+  double depth;
 
   auto res = collision::collideTriangleTriangle(
-        P1, P2, P3, Q1, Q2, Q3, contact_points);
+        P1, P2, P3, Q1, Q2, Q3, contact_points, normal, depth);
 
   EXPECT_TRUE(res == 2);
   EXPECT_TRUE(contact_points[0].isApprox(Eigen::Vector3d::Zero()));
@@ -329,6 +336,8 @@ TEST(CollideTriangleTriangle, Colinear)
   Eigen::Vector3d b3(0, -1, 0);
 
   Eigen::Vector3d contact_points[6];
+  Eigen::Vector3d normal;
+  double depth;
 
   int numContacts;
 
@@ -343,7 +352,7 @@ TEST(CollideTriangleTriangle, Colinear)
   b2 << 1, 0, 0;
   b3 << 0, -1, 0;
   numContacts = collision::collideTriangleTriangle(
-        a1, a2, a3, b1, b2, b3, contact_points);
+        a1, a2, a3, b1, b2, b3, contact_points, normal, depth);
   EXPECT_TRUE(numContacts == 2);
 //  EXPECT_TRUE(contact_points[0].isApprox(Eigen::Vector3d::Zero()));
 //  EXPECT_TRUE(contact_points[1].isApprox(Eigen::Vector3d(1, 0, 0)));
@@ -360,7 +369,7 @@ TEST(CollideTriangleTriangle, Colinear)
   b3 << -1, 0, 0;
 
   numContacts = collision::collideTriangleTriangle(
-        a1, a2, a3, b1, b2, b3, contact_points);
+        a1, a2, a3, b1, b2, b3, contact_points, normal, depth);
   EXPECT_TRUE(numContacts == 3);
 
   //----------------------------------------------------------------------------
@@ -375,7 +384,7 @@ TEST(CollideTriangleTriangle, Colinear)
   b3 << -1, -2, 0;
 
   numContacts = collision::collideTriangleTriangle(
-        a1, a2, a3, b1, b2, b3, contact_points);
+        a1, a2, a3, b1, b2, b3, contact_points, normal, depth);
   EXPECT_TRUE(numContacts == 1);
   EXPECT_TRUE(contact_points[0].isApprox(Eigen::Vector3d::Zero()));
 
@@ -391,7 +400,7 @@ TEST(CollideTriangleTriangle, Colinear)
   b3 << 2, -1, 0;
 
   numContacts = collision::collideTriangleTriangle(
-        a1, a2, a3, b1, b2, b3, contact_points);
+        a1, a2, a3, b1, b2, b3, contact_points, normal, depth);
   EXPECT_TRUE(numContacts == 3);
 
   //----------------------------------------------------------------------------
@@ -406,7 +415,7 @@ TEST(CollideTriangleTriangle, Colinear)
   b3 << 1, -2, 0;
 
   numContacts = collision::collideTriangleTriangle(
-        a1, a2, a3, b1, b2, b3, contact_points);
+        a1, a2, a3, b1, b2, b3, contact_points, normal, depth);
   EXPECT_TRUE(numContacts == 4);
 
   //----------------------------------------------------------------------------
@@ -421,7 +430,7 @@ TEST(CollideTriangleTriangle, Colinear)
   b3 << 1, -2, 0;
 
   numContacts = collision::collideTriangleTriangle(
-        a1, a2, a3, b1, b2, b3, contact_points);
+        a1, a2, a3, b1, b2, b3, contact_points, normal, depth);
   EXPECT_TRUE(numContacts == 5);
 
   //----------------------------------------------------------------------------
@@ -436,7 +445,7 @@ TEST(CollideTriangleTriangle, Colinear)
   b3 << 1, -2, 0;
 
   numContacts = collision::collideTriangleTriangle(
-        a1, a2, a3, b1, b2, b3, contact_points);
+        a1, a2, a3, b1, b2, b3, contact_points, normal, depth);
   EXPECT_TRUE(numContacts == 6);
 }
 
@@ -458,6 +467,9 @@ TEST(CollideTriangleTriangle, Performance)
   std::vector<Eigen::Vector3d[6]> contacts(numTests);
   std::vector<Eigen::Vector3d[6]> expectedPoints(numTests);
 
+  std::vector<Eigen::Vector3d> normal(numTests);
+  std::vector<double> depth(numTests);
+
   common::Timer t;
 
   for (auto i = 0; i < numTests; ++i)
@@ -469,7 +481,8 @@ TEST(CollideTriangleTriangle, Performance)
   for (auto i = 0; i < numTests; ++i)
   {
     const auto numContacts = collision::collideTriangleTriangle(
-          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], contacts[i]);
+          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i],
+          contacts[i], normal[i], depth[i]);
 
     EXPECT_TRUE(numContacts == 1);
     EXPECT_TRUE(contacts[i][0].isApprox(expectedPoints[i][0]));
@@ -485,7 +498,8 @@ TEST(CollideTriangleTriangle, Performance)
   for (auto i = 0; i < numTests; ++i)
   {
     const auto numContacts = collision::collideTriangleTriangle(
-          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], contacts[i]);
+          a1[i], a2[i], a3[i], b1[i], b2[i], b3[i],
+          contacts[i], normal[i], depth[i]);
 
     EXPECT_TRUE(numContacts == 2);
 //    EXPECT_TRUE(contacts[i][0].isApprox(expectedPoints[i][0]));

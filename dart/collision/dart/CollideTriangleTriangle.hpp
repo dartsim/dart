@@ -49,6 +49,8 @@ int collideTriangleTriangle(
     const Eigen::Vector3d& B2,
     const Eigen::Vector3d& B3,
     Eigen::Vector3d* contacts,
+    Eigen::Vector3d& normal,
+    double& penetrationDepth,
     const bool returnAllContacts = true);
 
 int coplanar3d(
@@ -60,6 +62,8 @@ int coplanar3d(
     const Eigen::Vector3d& B3,
     const Eigen::Vector3d& N1,
     Eigen::Vector3d* contacts,
+    Eigen::Vector3d& normal,
+    double& penetrationDepth,
     const bool returnAllContacts);
 
 } // namespace v1
