@@ -1336,7 +1336,7 @@ inline int coplanar2d(
 }
 
 //==============================================================================
-inline int coplanar3d(
+int coplanar3d(
     const Eigen::Vector3d& A1,
     const Eigen::Vector3d& A2,
     const Eigen::Vector3d& A3,
@@ -1574,7 +1574,6 @@ int collideTriangleTriangle(
         return case2And(A1, A2, B1, B2, B3, contacts, N1, db1, db2, db3);
       // (0, 0, 0): Coplanar case
       else
-        //return coplanar3d(A1, A2, A3, B1, B2, B3, N1, N2, contacts, returnAllContacts);
         return coplanar3d(A1, A2, A3, B1, B2, B3, N1, contacts, returnAllContacts);
     }
   }
