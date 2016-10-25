@@ -880,15 +880,6 @@ inline int case4And(const Eigen::Vector3d& a1,
 }
 
 //==============================================================================
-inline double orient2d(const Eigen::Vector2d& a,
-                       const Eigen::Vector2d& b,
-                       const Eigen::Vector2d& c)
-{
-  // Returns 2d vector cross product of (a - c) and (b - c)
-  return ((a[0] - c[0]) * (b[1] - c[1]) - (a[1] - c[1]) * (b[0] - c[0]));
-}
-
-//==============================================================================
 inline double cross2d(const Eigen::Vector2d& u, const Eigen::Vector2d& v)
 {
   return ((u[0]) * (v[1]) - (u[1]) * (v[0]));
@@ -913,578 +904,15 @@ inline void checkCrossingLines(
 
   const auto invCrossLines = 1.0 / crossLines;
 
-  const auto t = cross2d(a1b1, b12) * invCrossLines;
-  if (0.0 >= t || t >= 1.0)
-    return;
-
   const auto u = cross2d(a1b1, a12) * invCrossLines;
   if (0.0 >= u || u >= 1.0)
     return;
 
+  const auto t = cross2d(a1b1, b12) * invCrossLines;
+  if (0.0 >= t || t >= 1.0)
+    return;
+
   contacts[numContacts++] = A1 + t * A12;
-}
-
-//==============================================================================
-inline int planeCase1(const Eigen::Vector3d& A1,
-                      const Eigen::Vector3d& A2,
-                      const Eigen::Vector3d& A3,
-                      Eigen::Vector3d* contacts)
-{
-  contacts[0] = A1;
-  contacts[1] = A2;
-  contacts[2] = A3;
-  return 3;
-}
-
-//==============================================================================
-inline int planeCase2(const Eigen::Vector3d& A1,
-                      const Eigen::Vector3d& A2,
-                      Eigen::Vector3d* contacts)
-{
-  contacts[0] = A1;
-  contacts[1] = A2;
-  return 2;
-}
-
-//==============================================================================
-inline int planeCase3(
-    const Eigen::Vector3d& A1,
-    const Eigen::Vector3d& A2,
-    const Eigen::Vector3d& B1,
-    const double ua1, const double va1,
-    const double ua2, const double va2,
-    const double ub1, const double vb1,
-    Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
-{
-  assert(ua1 >= 0.0);
-  assert(va1 >= 0.0);
-  assert(ua2 >= 0.0);
-  assert(va2 >= 0.0);
-  assert(ua1 + va1 <= 1.0);
-  assert(ua2 + va2 <= 1.0);
-
-  if (ub1 < DART_TRIANGLE_TRIANGLE_EPS)
-  {
-
-  }
-  else if (vb1 < DART_TRIANGLE_TRIANGLE_EPS)
-  {
-
-  }
-  else if ((1.0 - (ub1 + vb1)) < DART_TRIANGLE_TRIANGLE_EPS)
-  {
-
-  }
-  else
-  {
-
-  }
-
-  // A1 is on (B2-B1)
-  if (ua1 < DART_TRIANGLE_TRIANGLE_EPS)
-  {
-    // A2 is on (B2-B1)
-    if (ua2 < DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      contacts[0] = A1;
-      contacts[1] = A2;
-      return 2;
-    }
-    // A2 is on (B3-B1)
-    else if (va2 < DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      contacts[0] = A1;
-      contacts[1] = A2;
-
-      if (!returnAllContacts) // (returnAllContacts == 3)
-      {
-        contacts[2] = B1;
-        return 3;
-      }
-
-      // TODO(JS): compute intersect point1 for contacts[2]
-      contacts[3] = B1;
-      return 4;
-
-    }
-    // A2 is on (B3-B2)
-    else if ((1.0 - (ua2 + va2)) < DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      contacts[0] = A2;
-    }
-    // A2 is strictly inside triangle B
-    else
-    {
-      contacts[0] = A1;
-      contacts[1] = A2;
-
-      if (!returnAllContacts) // (returnAllContacts == 3)
-      {
-        contacts[2] = B1;
-        return 3;
-      }
-
-      // TODO(JS): compute intersect point1 for contacts[2]
-      contacts[3] = B1;
-      return 4;
-    }
-  }
-  // A1 is on (B3-B1)
-  else if (va1 < DART_TRIANGLE_TRIANGLE_EPS)
-  {
-    // A2 is on (B2-B1)
-    if (ua2 < DART_TRIANGLE_TRIANGLE_EPS)
-    {
-
-    }
-    // A2 is on (B3-B1)
-    else if (va2 < DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      contacts[0] = A1;
-      contacts[1] = A2;
-      return 2;
-    }
-    // A2 is on (B3-B2)
-    else if ((1.0 - (ua2 + va2)) < DART_TRIANGLE_TRIANGLE_EPS)
-    {
-
-    }
-    // A2 is strictly inside triangle B
-    else
-    {
-
-    }
-  }
-  // A1 is on (B3-B2)
-  else if ((1.0 - (ua1 + va1)) < DART_TRIANGLE_TRIANGLE_EPS)
-  {
-    // A2 is on (B2-B1)
-    if (ua2 < DART_TRIANGLE_TRIANGLE_EPS)
-    {
-
-    }
-    // A2 is on (B3-B1)
-    else if (va2 < DART_TRIANGLE_TRIANGLE_EPS)
-    {
-
-    }
-    // A2 is on (B3-B2)
-    else if ((1.0 - (ua2 + va2)) < DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      contacts[0] = A1;
-      contacts[1] = A2;
-      return 2;
-    }
-    // A2 is strictly inside triangle B
-    else
-    {
-
-    }
-  }
-  // A1 is strictly inside triangle B
-  else
-  {
-    // A2 is on (B2-B1)
-    if (ua2 < DART_TRIANGLE_TRIANGLE_EPS)
-    {
-      contacts[0] = A1;
-      contacts[1] = A2;
-      return 2;
-    }
-    // A2 is on (B3-B1)
-    else if (va2 < DART_TRIANGLE_TRIANGLE_EPS)
-    {
-
-    }
-    // A2 is on (B3-B2)
-    else if ((1.0 - (ua2 + va2)) < DART_TRIANGLE_TRIANGLE_EPS)
-    {
-
-    }
-    // A2 is strictly inside triangle B
-    else
-    {
-
-    }
-  }
-
-//  contacts[0] = A1;
-//  contacts[1] = A2;
-//  contacts[2] = B1;
-
-//  assert(returnAllContacts >= 3);
-//  if (returnAllContacts < 4)
-//    return 3;
-
-//  // TODO(JS): implementation
-//  // TODO(JS): consider absolute margin rather than proportional
-//  if (std::abs(ua1 + va1 - 1.0) < DART_TRIANGLE_TRIANGLE_EPS)
-//  {
-//    contacts[1] = A1;
-//  }
-
-  return 0;
-}
-
-//==============================================================================
-inline int planeCase4()
-{
-  return 0;
-}
-
-//==============================================================================
-inline int planeCase5()
-{
-  return 0;
-}
-
-//==============================================================================
-inline int planeCase6()
-{
-  return 0;
-}
-
-//==============================================================================
-inline int planeCase7()
-{
-  return 0;
-}
-
-//==============================================================================
-inline int planeCase8()
-{
-  return 0;
-}
-
-//==============================================================================
-inline int planeCase9()
-{
-  return 0;
-}
-
-//==============================================================================
-inline int coplanarAooo(const Eigen::Vector3d& A1,
-                        const Eigen::Vector3d& A2,
-                        const Eigen::Vector3d& A3,
-                        Eigen::Vector3d* contacts)
-{
-  return planeCase1(A1, A2, A3, contacts);
-}
-
-//==============================================================================
-inline int coplanarAoox(
-    const Eigen::Vector3d& A1,
-    const Eigen::Vector3d& A2,
-    const Eigen::Vector3d& A3,
-    const Eigen::Vector3d& B1,
-    const Eigen::Vector3d& B2,
-    const Eigen::Vector3d& B3,
-    const Eigen::Vector2d& a1,
-    const Eigen::Vector2d& a2,
-    const Eigen::Vector2d& a3,
-    const Eigen::Vector2d& b1,
-    const Eigen::Vector2d& b2,
-    const Eigen::Vector2d& b3,
-    const bool inB1,
-    const bool inB2,
-    const bool inB3,
-    const double ua1, const double va1,
-    const double ua2, const double va2,
-    const double ua3, const double va3,
-    const double ub1, const double vb1,
-    const double ub2, const double vb2,
-    const double ub3, const double vb3,
-    const int index,
-    Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
-{
-  if (inB1)
-  {
-    if (inB2)
-    {
-      if (inB3)
-      {
-        // B: (O, O, O)
-
-        // Case 1 (switch A and B)
-        return planeCase1(B1, B2, B3, contacts);
-      }
-      else
-      {
-        // B: (O, O, X)
-
-        assert((A1.isApprox(B1) && A2.isApprox(B2)) ||
-               (A1.isApprox(B2) && A2.isApprox(B1)));
-
-        // Case 2
-        return planeCase2(A1, A2, contacts); // or return B1, B2
-      }
-    }
-    else
-    {
-      if (inB3)
-      {
-        // B: (O, X, O)
-
-        assert((A1.isApprox(B3) && A2.isApprox(B1)) ||
-               (A1.isApprox(B1) && A2.isApprox(B3)));
-
-        // Case 2
-        return planeCase2(A1, A2, contacts); // or return B3, B1
-      }
-      else
-      {
-        // B: (O, X, X)
-
-        // Case 3
-        return planeCase3(A1, A2, B1, ua1, va1, ua2, va2, ub1, vb1, contacts, returnAllContacts);
-      }
-    }
-  }
-  else
-  {
-    if (inB2)
-    {
-      if (inB3)
-      {
-        // B: (X, 0, 0)
-
-        assert((A1.isApprox(B2) && A2.isApprox(B3)) ||
-               (A1.isApprox(B3) && A2.isApprox(B2)));
-
-        // Case 2
-        return planeCase2(A1, A2, contacts); // or return B2, B3
-      }
-      else
-      {
-        // B: (X, 0, X)
-
-        // Case 3
-        return 0;
-      }
-    }
-    else
-    {
-      if (inB3)
-      {
-        // B: (X, X, 0)
-
-        // Case 3
-        return 0;
-      }
-      else
-      {
-        // B: (X, X, X)
-
-        // Case 4
-        return 0;
-      }
-    }
-  }
-}
-
-//==============================================================================
-inline int coplanarAoxx(
-    const Eigen::Vector3d& A1,
-    const Eigen::Vector3d& A2,
-    const Eigen::Vector3d& A3,
-    const Eigen::Vector3d& B1,
-    const Eigen::Vector3d& B2,
-    const Eigen::Vector3d& B3,
-    const Eigen::Vector2d& a1,
-    const Eigen::Vector2d& a2,
-    const Eigen::Vector2d& a3,
-    const Eigen::Vector2d& b1,
-    const Eigen::Vector2d& b2,
-    const Eigen::Vector2d& b3,
-    const bool inB1,
-    const bool inB2,
-    const bool inB3,
-    const double ua1, const double va1,
-    const double ua2, const double va2,
-    const double ua3, const double va3,
-    const double ub1, const double vb1,
-    const double ub2, const double vb2,
-    const double ub3, const double vb3,
-    const int index,
-    Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
-{
-  if (inB1)
-  {
-    if (inB2)
-    {
-      if (inB3)
-      {
-        // B: (O, O, O)
-
-        // Case 1 (switch A and B)
-        return planeCase1(B1, B2, B3, contacts);
-      }
-      else
-      {
-        // B: (O, O, X)
-
-        // Case 3 (switch A and B)
-        return 0;
-      }
-    }
-    else
-    {
-      if (inB3)
-      {
-        // B: (O, X, O)
-
-        // Case 3 (switch A and B)
-        return 0;
-      }
-      else
-      {
-        // B: (O, X, X)
-
-        // Case 5
-        return 0;
-      }
-    }
-  }
-  else
-  {
-    if (inB2)
-    {
-      if (inB3)
-      {
-        // B: (X, 0, 0)
-
-        // Case 3 (switch A and B)
-        return planeCase3(B2, B3, A1, ub2, vb2, ub3, vb3, ua1, va1, contacts, returnAllContacts);
-      }
-      else
-      {
-        // B: (X, 0, X)
-
-        // Case 5
-        return 0;
-      }
-    }
-    else
-    {
-      if (inB3)
-      {
-        // B: (X, X, 0)
-
-        // Case 5
-        return 0;
-      }
-      else
-      {
-        // B: (X, X, X)
-
-        // Case 6 or 7
-        return 0;
-      }
-    }
-  }
-}
-
-//==============================================================================
-inline int coplanarAxxx(
-    const Eigen::Vector3d& A1,
-    const Eigen::Vector3d& A2,
-    const Eigen::Vector3d& A3,
-    const Eigen::Vector3d& B1,
-    const Eigen::Vector3d& B2,
-    const Eigen::Vector3d& B3,
-    const Eigen::Vector2d& a1,
-    const Eigen::Vector2d& a2,
-    const Eigen::Vector2d& a3,
-    const Eigen::Vector2d& b1,
-    const Eigen::Vector2d& b2,
-    const Eigen::Vector2d& b3,
-    const bool inB1,
-    const bool inB2,
-    const bool inB3,
-    const double ub1, const double vb1,
-    const double ub2, const double vb2,
-    const double ub3, const double vb3,
-    const int index,
-    Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
-{
-  if (inB1)
-  {
-    if (inB2)
-    {
-      if (inB3)
-      {
-        // B: (O, O, O)
-
-        // Case 1 (switch A and B)
-        return planeCase1(B1, B2, B3, contacts);
-      }
-      else
-      {
-        // B: (O, O, X)
-
-        // Case 4 (switch A and B)
-        return 0;
-      }
-    }
-    else
-    {
-      if (inB3)
-      {
-        // B: (O, X, O)
-
-        // Case 4 (switch A and B)
-        return 0;
-      }
-      else
-      {
-        // B: (O, X, X)
-
-        // Case 6 or 7 (switch A and B)
-        return 0;
-      }
-    }
-  }
-  else
-  {
-    if (inB2)
-    {
-      if (inB3)
-      {
-        // B: (X, 0, 0)
-
-        // Case 4 (switch A and B)
-        return 0;
-      }
-      else
-      {
-        // B: (X, 0, X)
-
-        // Case 6 or 7 (switch A and B)
-        return 0;
-      }
-    }
-    else
-    {
-      if (inB3)
-      {
-        // B: (X, X, 0)
-
-        // Case 6 or 7 (switch A and B)
-        return 0;
-      }
-      else
-      {
-        // B: (X, X, X)
-
-        // Case 8 or 9 (switch A and B)
-        return 0;
-      }
-    }
-  }
 }
 
 //==============================================================================
@@ -1658,28 +1086,19 @@ inline int coplanar2d(
     const Eigen::Vector2d& b2,
     const Eigen::Vector2d& b3,
     Eigen::Vector3d* contacts,
-    const bool returnAllContacts)
+    const bool /*returnAllContacts*/)
 {
   int numContacts = 0;
 
-  const Eigen::Vector2d b21 = b2 - b1;
-  const Eigen::Vector2d b31 = b3 - b1;
+  const Eigen::Vector2d b12 = b2 - b1;
+  const Eigen::Vector2d b13 = b3 - b1;
 
-  const Eigen::Vector2d a1b1 = a1 - b1;
-  const Eigen::Vector2d a2b1 = a2 - b1;
-  const Eigen::Vector2d a3b1 = a3 - b1;
+  const Eigen::Vector2d b1a1 = a1 - b1;
+  const Eigen::Vector2d b1a2 = a2 - b1;
+  const Eigen::Vector2d b1a3 = a3 - b1;
 
-  double ua1;
-  double ua2;
-  double ua3;
-
-  double va1;
-  double va2;
-  double va3;
-
-  const bool inA1 = checkPointInTriangle(b21, b31, a1b1, ua1, va1);
-  const bool inA2 = checkPointInTriangle(b21, b31, a2b1, ua2, va2);
-  const bool inA3 = checkPointInTriangle(b21, b31, a3b1, ua3, va3);
+  double u;
+  double v;
 
   bool inB1 = false;
   bool inB2 = false;
@@ -1695,32 +1114,35 @@ inline int coplanar2d(
   bool needCheckA31B23 = true;
   bool needCheckA31B31 = true;
 
+  const bool inA1 = checkPointInTriangle(b12, b13, b1a1, u, v);
   if (inA1)
   {
     contacts[numContacts++] = A1;
-    updateVertexCheckNecessity(ua1, va1, inB1, inB2, inB3);
+    updateVertexCheckNecessity(u, v, inB1, inB2, inB3);
     updateEdgeCheckNecessity(
-          ua1, va1,
+          u, v,
           needCheckA12B12, needCheckA12B23, needCheckA12B31,
           needCheckA31B12, needCheckA31B23, needCheckA31B31);
   }
 
+  const bool inA2 = checkPointInTriangle(b12, b13, b1a2, u, v);
   if (inA2)
   {
     contacts[numContacts++] = A2;
-    updateVertexCheckNecessity(ua2, va2, inB1, inB2, inB3);
+    updateVertexCheckNecessity(u, v, inB1, inB2, inB3);
     updateEdgeCheckNecessity(
-          ua2, va2,
+          u, v,
           needCheckA23B12, needCheckA23B23, needCheckA23B31,
           needCheckA12B12, needCheckA12B23, needCheckA12B31);
   }
 
+  const bool inA3 = checkPointInTriangle(b12, b13, b1a3, u, v);
   if (inA3)
   {
     contacts[numContacts++] = A3;
-    updateVertexCheckNecessity(ua3, va3, inB1, inB2, inB3);
+    updateVertexCheckNecessity(u, v, inB1, inB2, inB3);
     updateEdgeCheckNecessity(
-          ua3, va3,
+          u, v,
           needCheckA31B12, needCheckA31B23, needCheckA31B31,
           needCheckA23B12, needCheckA23B23, needCheckA23B31);
 
@@ -1728,29 +1150,21 @@ inline int coplanar2d(
       return numContacts;
   }
 
-  const Eigen::Vector2d a21 = a2 - a1;
-  const Eigen::Vector2d a31 = a3 - a1;
-
-  double ub1;
-  double ub2;
-  double ub3;
-
-  double vb1;
-  double vb2;
-  double vb3;
+  const Eigen::Vector2d a12 = a2 - a1;
+  const Eigen::Vector2d a13 = a3 - a1;
 
   const int numContactsOnA = numContacts;
 
   if (!inB1)
   {
     const Eigen::Vector2d b1a1 = b1 - a1;
-    inB1 = checkPointInTriangle(a21, a31, b1a1, ub1, vb1);
+    inB1 = checkPointInTriangle(a12, a13, b1a1, u, v);
 
     if (inB1)
     {
       contacts[numContacts++] = B1;
       updateEdgeCheckNecessity(
-            ub1, vb1,
+            u, v,
             needCheckA12B12, needCheckA23B12, needCheckA31B12,
             needCheckA12B31, needCheckA23B31, needCheckA31B31);
     }
@@ -1759,13 +1173,13 @@ inline int coplanar2d(
   if (!inB2)
   {
     const Eigen::Vector2d b2a1 = b2 - a1;
-    inB2 = checkPointInTriangle(a21, a31, b2a1, ub2, vb2);
+    inB2 = checkPointInTriangle(a12, a13, b2a1, u, v);
 
     if (inB2)
     {
       contacts[numContacts++] = B2;
       updateEdgeCheckNecessity(
-            ub2, vb2,
+            u, v,
             needCheckA12B23, needCheckA23B23, needCheckA31B23,
             needCheckA12B12, needCheckA23B12, needCheckA31B12);
     }
@@ -1774,21 +1188,22 @@ inline int coplanar2d(
   if (!inB3)
   {
     const Eigen::Vector2d b3a1 = b3 - a1;
-    inB3 = checkPointInTriangle(a21, a31, b3a1, ub3, vb3);
+    inB3 = checkPointInTriangle(a12, a13, b3a1, u, v);
 
     if (inB3)
     {
       contacts[numContacts++] = B3;
       updateEdgeCheckNecessity(
-            ub3, vb3,
+            u, v,
             needCheckA12B31, needCheckA23B31, needCheckA31B31,
             needCheckA12B23, needCheckA23B23, needCheckA31B23);
-    }
 
-    if ((numContacts - numContactsOnA) == 3)
-    {
-      assert(numContactsOnA == 0);
-      return numContacts;
+      const int numContactsOnB = numContacts - numContactsOnA;
+      if (numContactsOnB == 3)
+      {
+        assert(numContactsOnA == 0);
+        return numContacts;
+      }
     }
   }
 
@@ -1918,60 +1333,7 @@ inline int coplanar2d(
   }
 
   return numContacts;
-
 }
-
-//==============================================================================
-//inline int coplanar2d(
-//    const Eigen::Vector3d& A1,
-//    const Eigen::Vector3d& A2,
-//    const Eigen::Vector3d& A3,
-//    const Eigen::Vector3d& B1,
-//    const Eigen::Vector3d& B2,
-//    const Eigen::Vector3d& B3,
-//    const Eigen::Vector2d& a1,
-//    const Eigen::Vector2d& a2,
-//    const Eigen::Vector2d& a3,
-//    const Eigen::Vector2d& b1,
-//    const Eigen::Vector2d& b2,
-//    const Eigen::Vector2d& b3,
-//    const bool ccwA,
-//    const bool ccwB,
-//    const int index,
-//    Eigen::Vector3d* contacts,
-//    const bool returnAllContacts)
-//{
-//  if (ccwA)
-//  {
-//    if (ccwB)
-//    {
-//      return coplanar2dCcw(
-//            A1, A2, A3, B1, B2, B3,
-//            a1, a2, a3, b1, b2, b3, index, contacts, returnAllContacts);
-//    }
-//    else
-//    {
-//      return coplanar2dCcw(
-//            A1, A2, A3, B3, B2, B1,
-//            a1, a2, a3, b3, b2, b1, index, contacts, returnAllContacts);
-//    }
-//  }
-//  else
-//  {
-//    if (ccwB)
-//    {
-//      return coplanar2dCcw(
-//            A3, A2, A1, B1, B2, B3,
-//            a3, a2, a1, b1, b2, b3, index, contacts, returnAllContacts);
-//    }
-//    else
-//    {
-//      return coplanar2dCcw(
-//            A3, A2, A1, B3, B2, B1,
-//            a3, a2, a1, b3, b2, b1, index, contacts, returnAllContacts);
-//    }
-//  }
-//}
 
 //==============================================================================
 inline int coplanar3d(
@@ -1982,7 +1344,6 @@ inline int coplanar3d(
     const Eigen::Vector3d& B2,
     const Eigen::Vector3d& B3,
     const Eigen::Vector3d& N1,
-//    const Eigen::Vector3d& N2,
     Eigen::Vector3d* contacts,
     const bool returnAllContacts)
 {
@@ -1996,9 +1357,6 @@ inline int coplanar3d(
   int index;
   N1.cwiseAbs().maxCoeff(&index);
 
-//  bool ccwA = true;
-//  bool ccwB = true;
-
   switch (index)
   {
     case 0:
@@ -2010,12 +1368,6 @@ inline int coplanar3d(
       b1 = B1.tail<2>();
       b2 = B2.tail<2>();
       b3 = B3.tail<2>();
-
-//      if (N1[0] < 0.0)
-//        ccwA = false;
-
-//      if (N2[0] < 0.0)
-//        ccwB = false;
 
       break;
     }
@@ -2035,12 +1387,6 @@ inline int coplanar3d(
       b3[0] = B3[0];
       b3[1] = B3[1];
 
-//      if (N1[1] < 0.0)
-//        ccwA = false;
-
-//      if (N2[1] < 0.0)
-//        ccwB = false;
-
       break;
     }
     default:
@@ -2053,28 +1399,13 @@ inline int coplanar3d(
       b2 = B2.head<2>();
       b3 = B3.head<2>();
 
-//      if (N1[2] < 0.0)
-//        ccwA = false;
-
-//      if (N2[2] < 0.0)
-//        ccwB = false;
-
       break;
     }
   }
 
-//  return coplanar2d(
-//        A1, A2, A3, B1, B2, B3,
-//        a1, a2, a3, b1, b2, b3,
-//        ccwA, ccwB,
-//        index,
-//        contacts, returnAllContacts);
-
   return coplanar2d(
         A1, A2, A3, B1, B2, B3,
         a1, a2, a3, b1, b2, b3,
-//        ccwA, ccwB,
-//        index,
         contacts, returnAllContacts);
 }
 

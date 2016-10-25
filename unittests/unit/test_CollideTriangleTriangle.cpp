@@ -271,8 +271,8 @@ TEST(CollideTriangleTriangle, VariousRandomTests)
   std::vector<Eigen::Vector3d> b1(numTests);
   std::vector<Eigen::Vector3d> b2(numTests);
   std::vector<Eigen::Vector3d> b3(numTests);
-  std::vector<Eigen::Vector3d[3]> contacts(numTests);
-  std::vector<Eigen::Vector3d[3]> expectedPoints(numTests);
+  std::vector<Eigen::Vector3d[6]> contacts(numTests);
+  std::vector<Eigen::Vector3d[6]> expectedPoints(numTests);
 
   int numContacts;
 
@@ -307,7 +307,7 @@ TEST(CollideTriangleTriangle, EdgeContact)
   Eigen::Vector3d Q2(1, 0, 0);
   Eigen::Vector3d Q3(0, 0, 1);
 
-  Eigen::Vector3d contact_points[3];
+  Eigen::Vector3d contact_points[6];
 
   auto res = collision::collideTriangleTriangle(
         P1, P2, P3, Q1, Q2, Q3, contact_points);
@@ -318,7 +318,7 @@ TEST(CollideTriangleTriangle, EdgeContact)
 }
 
 //==============================================================================
-TEST(CollideTriangleTriangle, ColinearCases)
+TEST(CollideTriangleTriangle, Colinear)
 {
   Eigen::Vector3d a1(0, 0, 0);
   Eigen::Vector3d a2(2, 0, 0);
@@ -328,14 +328,116 @@ TEST(CollideTriangleTriangle, ColinearCases)
   Eigen::Vector3d b2(1, 0, 0);
   Eigen::Vector3d b3(0, -1, 0);
 
-  Eigen::Vector3d contact_points[3];
+  Eigen::Vector3d contact_points[6];
 
-  auto res = collision::collideTriangleTriangle(
+  int numContacts;
+
+  //----------------------------------------------------------------------------
+  // Case
+  //----------------------------------------------------------------------------
+  a1 << 0, 0, 0;
+  a2 << 2, 0, 0;
+  a3 << 0, 2, 0;
+
+  b1 << 0, 0, 0;
+  b2 << 1, 0, 0;
+  b3 << 0, -1, 0;
+  numContacts = collision::collideTriangleTriangle(
         a1, a2, a3, b1, b2, b3, contact_points);
-
-  EXPECT_TRUE(res == 2);
+  EXPECT_TRUE(numContacts == 2);
 //  EXPECT_TRUE(contact_points[0].isApprox(Eigen::Vector3d::Zero()));
 //  EXPECT_TRUE(contact_points[1].isApprox(Eigen::Vector3d(1, 0, 0)));
+
+  //----------------------------------------------------------------------------
+  // Case: big triangle A completely enclose triangle B (expect 3 points)
+  //----------------------------------------------------------------------------
+  a1 << 2, -1, 0;
+  a2 << 0, 2, 0;
+  a3 << -2, -1, 0;
+
+  b1 << 1, 0, 0;
+  b2 << 0, 1, 0;
+  b3 << -1, 0, 0;
+
+  numContacts = collision::collideTriangleTriangle(
+        a1, a2, a3, b1, b2, b3, contact_points);
+  EXPECT_TRUE(numContacts == 3);
+
+  //----------------------------------------------------------------------------
+  // Case: butterfly (contact at origin)
+  //----------------------------------------------------------------------------
+  a1 << 0, 0, 0;
+  a2 << 1, 2, 0;
+  a3 << 1, -2, 0;
+
+  b1 << 0, 0, 0;
+  b2 << -1, 2, 0;
+  b3 << -1, -2, 0;
+
+  numContacts = collision::collideTriangleTriangle(
+        a1, a2, a3, b1, b2, b3, contact_points);
+  EXPECT_TRUE(numContacts == 1);
+  EXPECT_TRUE(contact_points[0].isApprox(Eigen::Vector3d::Zero()));
+
+  //----------------------------------------------------------------------------
+  // Case: folded butterfly (contact at origin)
+  //----------------------------------------------------------------------------
+  a1 << 0, 0, 0;
+  a2 << 1, 2, 0;
+  a3 << 1, -2, 0;
+
+  b1 << 0, 0, 0;
+  b2 << 2, 1, 0;
+  b3 << 2, -1, 0;
+
+  numContacts = collision::collideTriangleTriangle(
+        a1, a2, a3, b1, b2, b3, contact_points);
+  EXPECT_TRUE(numContacts == 3);
+
+  //----------------------------------------------------------------------------
+  // Case: star with missing head and bottom (expect 4 points)
+  //----------------------------------------------------------------------------
+  a1 << 1, 0, 0;
+  a2 << -1, 2, 0;
+  a3 << -1, -2, 0;
+
+  b1 << -1, 0, 0;
+  b2 << 1, 2, 0;
+  b3 << 1, -2, 0;
+
+  numContacts = collision::collideTriangleTriangle(
+        a1, a2, a3, b1, b2, b3, contact_points);
+  EXPECT_TRUE(numContacts == 4);
+
+  //----------------------------------------------------------------------------
+  // Case: star with one missing head (expect 5 points)
+  //----------------------------------------------------------------------------
+  a1 << 2, 0, 0;
+  a2 << -1, 2, 0;
+  a3 << -1, -2, 0;
+
+  b1 << -1, 0, 0;
+  b2 << 1, 2, 0;
+  b3 << 1, -2, 0;
+
+  numContacts = collision::collideTriangleTriangle(
+        a1, a2, a3, b1, b2, b3, contact_points);
+  EXPECT_TRUE(numContacts == 5);
+
+  //----------------------------------------------------------------------------
+  // Case: star (expect 6 points)
+  //----------------------------------------------------------------------------
+  a1 << 2, 0, 0;
+  a2 << -1, 2, 0;
+  a3 << -1, -2, 0;
+
+  b1 << -2, 0, 0;
+  b2 << 1, 2, 0;
+  b3 << 1, -2, 0;
+
+  numContacts = collision::collideTriangleTriangle(
+        a1, a2, a3, b1, b2, b3, contact_points);
+  EXPECT_TRUE(numContacts == 6);
 }
 
 //==============================================================================
@@ -353,8 +455,8 @@ TEST(CollideTriangleTriangle, Performance)
   std::vector<Eigen::Vector3d> b1(numTests);
   std::vector<Eigen::Vector3d> b2(numTests);
   std::vector<Eigen::Vector3d> b3(numTests);
-  std::vector<Eigen::Vector3d[3]> contacts(numTests);
-  std::vector<Eigen::Vector3d[3]> expectedPoints(numTests);
+  std::vector<Eigen::Vector3d[6]> contacts(numTests);
+  std::vector<Eigen::Vector3d[6]> expectedPoints(numTests);
 
   common::Timer t;
 
@@ -385,7 +487,7 @@ TEST(CollideTriangleTriangle, Performance)
     const auto numContacts = collision::collideTriangleTriangle(
           a1[i], a2[i], a3[i], b1[i], b2[i], b3[i], contacts[i]);
 
-//    EXPECT_TRUE(numContacts == 2);
+    EXPECT_TRUE(numContacts == 2);
 //    EXPECT_TRUE(contacts[i][0].isApprox(expectedPoints[i][0]));
 //    EXPECT_TRUE(contacts[i][1].isApprox(expectedPoints[i][1]));
   }
