@@ -90,8 +90,8 @@ inline int checkColinearLines(const Eigen::Vector3d& AMin,
                               const Eigen::Vector3d& BMax,
                               const double daMin,
                               const double daMax,
-                              double dbMin,
-                              double dbMax,
+                              const double dbMin,
+                              const double dbMax,
                               Eigen::Vector3d* contacts)
 {
   // We assume that AMin, AMax, BMin, and BMax are on the same line (colinear),
@@ -346,8 +346,8 @@ inline int case1AndCase4(
   computePointOnPlane(B1, B3, N1, db1, B13OnPlaneA);
 
 #ifndef NDEBUG
-  auto tmp1 = N1.dot(b21OnPlaneA);
-  auto tmp2 = N1.dot(b31OnPlaneA);
+  auto tmp1 = N1.dot(B12OnPlaneA);
+  auto tmp2 = N1.dot(B13OnPlaneA);
   auto tmp3 = N1.dot(A1);
 
   assert(std::abs(tmp1 - tmp2) < DART_TRIANGLE_TRIANGLE_EPS);
@@ -1094,45 +1094,16 @@ inline void checkCrossingLines(
 }
 
 //==============================================================================
-inline bool checkPointInTriangle(
-    const Eigen::Vector2d& A,
-    const Eigen::Vector2d& B,
-    const Eigen::Vector2d& C,
-    const Eigen::Vector2d& P)
-{
-  // Compute vectors
-  const Eigen::Vector2d v0 = C - A;
-  const Eigen::Vector2d v1 = B - A;
-  const Eigen::Vector2d v2 = P - A;
-
-  // Compute dot products
-  const auto dot00 = v0.dot(v0);
-  const auto dot01 = v0.dot(v1);
-  const auto dot02 = v0.dot(v2);
-  const auto dot11 = v1.dot(v1);
-  const auto dot12 = v1.dot(v2);
-
-  // Compute barycentric coordinates
-  const auto invDenom = 1.0 / (dot00 * dot11 - dot01 * dot01);
-  const auto u = (dot11 * dot02 - dot01 * dot12) * invDenom;
-  const auto v = (dot00 * dot12 - dot01 * dot02) * invDenom;
-
-  // Check if point is in triangle
-  return (u >= 0.0) && (v >= 0.0) && (u + v <= 1.0);
-}
-
-//==============================================================================
-// (u, v)
+// (uv)
 // - (0, 0): p is on a
 // - (1, 0): p is on b
 // - (0, 1); p is on c
 // - otherwise: p is strictly inside of the triangle (a, b, c)
-inline int checkPointInTriangle(
+inline bool checkPointInTriangle(
     const Eigen::Vector2d& vb,
     const Eigen::Vector2d& vc,
     const Eigen::Vector2d& vp,
-    double& u,
-    double& v)
+    Eigen::Vector2d& uv)
 {
   // References:
   // - http://blackpawn.com/texts/pointinpoly/default.html
@@ -1147,28 +1118,28 @@ inline int checkPointInTriangle(
 
   // Compute barycentric coordinates
   const auto invDenom = 1.0 / (dot00 * dot11 - dot01 * dot01);
-  u = (dot11 * dot02 - dot01 * dot12) * invDenom;
-  v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+  uv[0] = (dot11 * dot02 - dot01 * dot12) * invDenom;
+  uv[1] = (dot00 * dot12 - dot01 * dot02) * invDenom;
 
   // Check if point is in triangle
-  return (u >= 0.0) && (v >= 0.0) && (u + v <= 1.0);
+  return (uv[0] >= 0.0) && (uv[1] >= 0.0) && (uv.sum() <= 1.0);
 
   // TODO(JS): consider margin
 }
 
 //==============================================================================
 inline void updateVertexCheckNecessity(
-    const double u, const double v,
+    const Eigen::Vector2d& uv,
     bool& inB1, bool& inB2, bool& inB3)
 {
-  if (u < DART_TRIANGLE_TRIANGLE_EPS)
+  if (uv[0] < DART_TRIANGLE_TRIANGLE_EPS)
   {
-    if (v < DART_TRIANGLE_TRIANGLE_EPS)
+    if (uv[1] < DART_TRIANGLE_TRIANGLE_EPS)
     {
       // P is at the vertex 1 of other triangle
       inB1 = true;
     }
-    else if (1.0 - v < DART_TRIANGLE_TRIANGLE_EPS)
+    else if (1.0 - uv[1] < DART_TRIANGLE_TRIANGLE_EPS)
     {
       // P is at the vertex 3 of other triangle
       inB3 = true;
@@ -1176,7 +1147,7 @@ inline void updateVertexCheckNecessity(
   }
   else
   {
-    if (v < DART_TRIANGLE_TRIANGLE_EPS)
+    if (uv[1] < DART_TRIANGLE_TRIANGLE_EPS)
     {
       // P is at the vertex 2 of other triangle
       inB2 = true;
@@ -1186,13 +1157,13 @@ inline void updateVertexCheckNecessity(
 
 //==============================================================================
 inline void updateEdgeCheckNecessity(
-    const double u, const double v,
+    const Eigen::Vector2d& uv,
     bool& needA12B12, bool& needA12B23, bool& needA12B31,
     bool& needA31B12, bool& needA31B23, bool& needA31B31)
 {
-  if (u < DART_TRIANGLE_TRIANGLE_EPS)
+  if (uv[0] < DART_TRIANGLE_TRIANGLE_EPS)
   {
-    if (v < DART_TRIANGLE_TRIANGLE_EPS)
+    if (uv[1] < DART_TRIANGLE_TRIANGLE_EPS)
     {
       // P is at V1
       needA12B12 = false;
@@ -1201,7 +1172,7 @@ inline void updateEdgeCheckNecessity(
       needA31B12 = false;
       needA31B31 = false;
     }
-    else if (1.0 - v < DART_TRIANGLE_TRIANGLE_EPS)
+    else if (1.0 - uv[1] < DART_TRIANGLE_TRIANGLE_EPS)
     {
       // P is at V3
       needA12B31 = false;
@@ -1218,9 +1189,9 @@ inline void updateEdgeCheckNecessity(
       needA31B31 = false;
     }
   }
-  else if (1 - u < DART_TRIANGLE_TRIANGLE_EPS)
+  else if (1 - uv[0] < DART_TRIANGLE_TRIANGLE_EPS)
   {
-    if (v < DART_TRIANGLE_TRIANGLE_EPS)
+    if (uv[1] < DART_TRIANGLE_TRIANGLE_EPS)
     {
       // P is at V2
       needA12B23 = false;
@@ -1232,14 +1203,14 @@ inline void updateEdgeCheckNecessity(
   }
   else
   {
-    if (v < DART_TRIANGLE_TRIANGLE_EPS)
+    if (uv[1] < DART_TRIANGLE_TRIANGLE_EPS)
     {
       // P is on Edge V1V2
       needA12B12 = false;
 
       needA31B12 = false;
     }
-    else if (1.0 - (u + v) < DART_TRIANGLE_TRIANGLE_EPS)
+    else if (1.0 - uv.sum() < DART_TRIANGLE_TRIANGLE_EPS)
     {
       // P is on Edge V2V3
       needA12B23 = false;
@@ -1275,8 +1246,7 @@ inline int coplanar2d(
   const Eigen::Vector2d b1a2 = a2 - b1;
   const Eigen::Vector2d b1a3 = a3 - b1;
 
-  double u;
-  double v;
+  Eigen::Vector2d uv;
 
   bool inB1 = false;
   bool inB2 = false;
@@ -1292,35 +1262,35 @@ inline int coplanar2d(
   bool needCheckA31B23 = true;
   bool needCheckA31B31 = true;
 
-  const bool inA1 = checkPointInTriangle(b12, b13, b1a1, u, v);
+  const bool inA1 = checkPointInTriangle(b12, b13, b1a1, uv);
   if (inA1)
   {
     contacts[numContacts++] = A1;
-    updateVertexCheckNecessity(u, v, inB1, inB2, inB3);
+    updateVertexCheckNecessity(uv, inB1, inB2, inB3);
     updateEdgeCheckNecessity(
-          u, v,
+          uv,
           needCheckA12B12, needCheckA12B23, needCheckA12B31,
           needCheckA31B12, needCheckA31B23, needCheckA31B31);
   }
 
-  const bool inA2 = checkPointInTriangle(b12, b13, b1a2, u, v);
+  const bool inA2 = checkPointInTriangle(b12, b13, b1a2, uv);
   if (inA2)
   {
     contacts[numContacts++] = A2;
-    updateVertexCheckNecessity(u, v, inB1, inB2, inB3);
+    updateVertexCheckNecessity(uv, inB1, inB2, inB3);
     updateEdgeCheckNecessity(
-          u, v,
+          uv,
           needCheckA23B12, needCheckA23B23, needCheckA23B31,
           needCheckA12B12, needCheckA12B23, needCheckA12B31);
   }
 
-  const bool inA3 = checkPointInTriangle(b12, b13, b1a3, u, v);
+  const bool inA3 = checkPointInTriangle(b12, b13, b1a3, uv);
   if (inA3)
   {
     contacts[numContacts++] = A3;
-    updateVertexCheckNecessity(u, v, inB1, inB2, inB3);
+    updateVertexCheckNecessity(uv, inB1, inB2, inB3);
     updateEdgeCheckNecessity(
-          u, v,
+          uv,
           needCheckA31B12, needCheckA31B23, needCheckA31B31,
           needCheckA23B12, needCheckA23B23, needCheckA23B31);
 
@@ -1336,13 +1306,13 @@ inline int coplanar2d(
   if (!inB1)
   {
     const Eigen::Vector2d b1a1 = b1 - a1;
-    inB1 = checkPointInTriangle(a12, a13, b1a1, u, v);
+    inB1 = checkPointInTriangle(a12, a13, b1a1, uv);
 
     if (inB1)
     {
       contacts[numContacts++] = B1;
       updateEdgeCheckNecessity(
-            u, v,
+            uv,
             needCheckA12B12, needCheckA23B12, needCheckA31B12,
             needCheckA12B31, needCheckA23B31, needCheckA31B31);
     }
@@ -1351,13 +1321,13 @@ inline int coplanar2d(
   if (!inB2)
   {
     const Eigen::Vector2d b2a1 = b2 - a1;
-    inB2 = checkPointInTriangle(a12, a13, b2a1, u, v);
+    inB2 = checkPointInTriangle(a12, a13, b2a1, uv);
 
     if (inB2)
     {
       contacts[numContacts++] = B2;
       updateEdgeCheckNecessity(
-            u, v,
+            uv,
             needCheckA12B23, needCheckA23B23, needCheckA31B23,
             needCheckA12B12, needCheckA23B12, needCheckA31B12);
     }
@@ -1366,13 +1336,13 @@ inline int coplanar2d(
   if (!inB3)
   {
     const Eigen::Vector2d b3a1 = b3 - a1;
-    inB3 = checkPointInTriangle(a12, a13, b3a1, u, v);
+    inB3 = checkPointInTriangle(a12, a13, b3a1, uv);
 
     if (inB3)
     {
       contacts[numContacts++] = B3;
       updateEdgeCheckNecessity(
-            u, v,
+            uv,
             needCheckA12B31, needCheckA23B31, needCheckA31B31,
             needCheckA12B23, needCheckA23B23, needCheckA31B23);
 
@@ -1514,7 +1484,7 @@ inline int coplanar2d(
 }
 
 //==============================================================================
-int coplanar3d(
+inline int coplanar3d(
     const Eigen::Vector3d& A1,
     const Eigen::Vector3d& A2,
     const Eigen::Vector3d& A3,
