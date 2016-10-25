@@ -66,6 +66,23 @@ int coplanar3d(
     double& penetrationDepth,
     const bool returnAllContacts);
 
+bool collideTriangleTriangle(
+    const Eigen::Vector3d& A1,
+    const Eigen::Vector3d& A2,
+    const Eigen::Vector3d& A3,
+    const Eigen::Vector3d& B1,
+    const Eigen::Vector3d& B2,
+    const Eigen::Vector3d& B3);
+
+bool coplanar3d(
+    const Eigen::Vector3d& A1,
+    const Eigen::Vector3d& A2,
+    const Eigen::Vector3d& A3,
+    const Eigen::Vector3d& B1,
+    const Eigen::Vector3d& B2,
+    const Eigen::Vector3d& B3,
+    const Eigen::Vector3d& N1);
+
 } // namespace v1
 
 inline namespace stable {
