@@ -258,24 +258,40 @@ public:
 
     newDomino->setPositions(x);
 
-    // Look through the collisions to see if any dominoes are penetrating
-    // something
-    auto collisionEngine = mWorld->getConstraintSolver()->getCollisionDetector();
+    // Check if the new domino collides with anything in the world.
+    // Get the collision frames of all things in the world
     auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
+    
+    // Create a new collision group which only contains the new domino
+    auto collisionEngine = mWorld->getConstraintSolver()->getCollisionDetector();    
     auto newGroup = collisionEngine->createCollisionGroup(newDomino.get());
-
-    dart::collision::CollisionOption option;
-    dart::collision::CollisionResult result;
+    
+    // Remove the floor from all things in the world, because the floor
+    // will always collide with the new domino.
+    collisionGroup->removeShapeFramesOf(mFloor.get());
+    
+    // Now check if the new domino collides with all the remaining things in
+    // the world.
     bool dominoCollision
-        = collisionGroup->collide(newGroup.get(), option, &result);
+        = collisionGroup->collide(newGroup.get());
+    
+    // Put the floor back to all things in the world, otherwise the dominos
+    // will fall to neverland once the simulation starts.
+    collisionGroup->addShapeFramesOf(mFloor.get());
 
     // If the new domino is not penetrating an existing one
     if(!dominoCollision)
     {
+      mWorld->addSkeleton(newDomino);
       // Record the latest domino addition
       mAngles.push_back(angle);
       mDominoes.push_back(newDomino);
       mTotalAngle += angle;
+    }
+    else
+    {
+      std::cout << "The new domino would penetrate something. I will not add"    << std::endl;
+      std::cout << "it to the world. Remove some dominos with 'd' and try again" << std::endl;
     }
   }
 
