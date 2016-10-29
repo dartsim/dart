@@ -1,5 +1,8 @@
 ### Version 5.1.5 (201X-XX-XX)
 
+1. Fixed Lemke LCP solver for several failing cases
+    * [Pull request #808](https://github.com/dartsim/dart/pull/808)
+
 1. Increase minimum required Ipopt version to 3.11.9
     * [Pull request #800](https://github.com/dartsim/dart/pull/800)
 
