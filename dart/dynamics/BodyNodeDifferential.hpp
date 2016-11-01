@@ -96,6 +96,9 @@ public:
   void updateSpatialVelocityHessians();
   // TODO(JS): apply automatic updating method
 
+  const GradientMatrix& getSpatialVelocityDerivativeWrtPositions() const;
+  const GradientMatrix& getSpatialVelocityDerivativeWrtVelocities() const;
+
   Eigen::Vector6d getBodyVelocityGradientWrtQ(
       std::size_t indexInSkeleton) const;
 
@@ -132,11 +135,29 @@ public:
   Eigen::MatrixXd computeLagrangianHessianWrtPositionsVelocities() const;
   Eigen::MatrixXd computeLagrangianHessianWrtVelocitiesVelocities() const;
 
+  void dirtySpatialVelocityDerivativeWrtPositions();
+  void dirtySpatialVelocityDerivativeWrtVelocities();
+  // TODO(JS): rename to dirtySpatialVelocityDerivative();
+
   void print();
 
 protected:
 
   void setComposite(common::Composite* newComposite) override;
+
+protected:
+
+  GradientMatrix mV_q;
+  GradientMatrix mV_dq;
+
+  std::vector<GradientMatrix> mV_q_q;
+  std::vector<GradientMatrix> mV_q_dq;
+  std::vector<GradientMatrix> mV_dq_dq;
+
+  mutable bool mNeedSpatialVelocityDerivativeWrtPositionsUpdate{true};
+  mutable bool mNeedSpatialVelocityDerivativeWrtVelocitiesUpdate{true};
+
+
 };
 
 }  // namespace dynamics

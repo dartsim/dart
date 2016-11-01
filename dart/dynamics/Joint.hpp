@@ -40,6 +40,7 @@
 #include "dart/common/Subject.hpp"
 #include "dart/common/VersionCounter.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
+#include "dart/common/Signal.hpp"
 #include "dart/math/MathTypes.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 #include "dart/dynamics/detail/JointAspect.hpp"
@@ -89,6 +90,10 @@ public:
 
   /// Default actuator type
   static const ActuatorType DefaultActuatorType;
+
+  using PositionUpdatedSignal
+      = common::Signal<void(
+          const Joint*, std::size_t index, double oldVal, double newVal)>;
 
   Joint(const Joint&) = delete;
 
@@ -952,7 +957,14 @@ protected:
   /// since the last position or velocity change
   mutable bool mIsRelativeJacobianTimeDerivDirty;
 
+  /// Position updated signal
+  PositionUpdatedSignal mPositionUpdatedSignal;
+
 public:
+
+  /// Slot register for position updated signal
+  common::SlotRegister<PositionUpdatedSignal>
+      onPositionUpdatedAdded{mPositionUpdatedSignal};
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
