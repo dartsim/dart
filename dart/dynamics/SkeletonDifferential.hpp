@@ -93,13 +93,15 @@ public:
 
   SkeletonDifferential(const SkeletonDifferential&) = delete;
 
-  void updateBodyVelocityGradients();
+  void updateSpatialVelocityGradients();
+  void updateBodyVelocityHessians();
 
-  void updateLagrangianGradientWrtPositions();
+  const Eigen::VectorXd& computeLagrangianGradientWrtPositions();
+  const Eigen::VectorXd& computeLagrangianGradientWrtVelocities();
 
-  Eigen::VectorXd computeLagrangianGradientWrtPositions();
-
-  Eigen::VectorXd computeLagrangianGradientWrtVelocities();
+  const Eigen::MatrixXd& computeLagrangianHessianWrtPositionsPositions();
+  const Eigen::MatrixXd& computeLagrangianHessianWrtPositionsVelocities();
+  const Eigen::MatrixXd& computeLagrangianHessianWrtVelocitiesVelocities();
 
   GradientMatrix getBodyVelocityGradientWrtQ(
       std::size_t bodyNodeIndexInSkeleton) const;

@@ -54,34 +54,88 @@ SkeletonDifferential::SkeletonDifferential(const StateData& state)
 }
 
 //==============================================================================
-void SkeletonDifferential::updateBodyVelocityGradients()
+void SkeletonDifferential::updateSpatialVelocityGradients()
 {
   for (auto* bodyNode : mComposite->getBodyNodes())
+    bodyNode->get<BodyNodeDifferential>()->updateSpatialVelocityGradients();
+}
+
+//==============================================================================
+void SkeletonDifferential::updateBodyVelocityHessians()
+{
+  for (auto* bodyNode : mComposite->getBodyNodes())
+    bodyNode->get<BodyNodeDifferential>()->updateSpatialVelocityHessians();
+}
+
+//==============================================================================
+const Eigen::VectorXd&
+SkeletonDifferential::computeLagrangianGradientWrtPositions()
+{
+  updateSpatialVelocityGradients();
+  // TODO(JS): separate into V/q and V/dq
+
+  mState.mDM_GradientOfLagrangian_q.setZero();
+
+  for (auto* bodyNode : mComposite->getBodyNodes())
   {
-    bodyNode->get<BodyNodeDifferential>()->updateBodyVelocityGradients();
+    auto bodyNodeDifferential = bodyNode->get<BodyNodeDifferential>();
+    mState.mDM_GradientOfLagrangian_q
+        += bodyNodeDifferential->computeLagrangianGradientWrtPositions();
   }
-}
 
-//==============================================================================
-void SkeletonDifferential::updateLagrangianGradientWrtPositions()
-{
-  updateBodyVelocityGradients();
-}
-
-//==============================================================================
-Eigen::VectorXd SkeletonDifferential::computeLagrangianGradientWrtPositions()
-{
-  updateLagrangianGradientWrtPositions();
-
-  // TODO(JS): not implemented
   return mState.mDM_GradientOfLagrangian_q;
 }
 
 //==============================================================================
-Eigen::VectorXd SkeletonDifferential::computeLagrangianGradientWrtVelocities()
+const Eigen::VectorXd&
+SkeletonDifferential::computeLagrangianGradientWrtVelocities()
 {
-  // TODO(JS): not implemented
-  return Eigen::VectorXd::Zero(mComposite->getNumDofs());
+  updateSpatialVelocityGradients();
+  // TODO(JS): separate into V/q and V/dq
+
+  mState.mDM_GradientOfLagrangian_dq.setZero();
+
+  for (auto* bodyNode : mComposite->getBodyNodes())
+  {
+    auto bodyNodeDifferential = bodyNode->get<BodyNodeDifferential>();
+    mState.mDM_GradientOfLagrangian_dq
+        += bodyNodeDifferential->computeLagrangianGradientWrtVelocities();
+  }
+
+  return mState.mDM_GradientOfLagrangian_dq;
+}
+
+//==============================================================================
+const Eigen::MatrixXd&
+SkeletonDifferential::computeLagrangianHessianWrtPositionsPositions()
+{
+  updateSpatialVelocityGradients();
+  // TODO(JS): separate into V/q and V/dq
+
+  mState.mDM_GradientOfLagrangian_dq.setZero();
+
+  for (auto* bodyNode : mComposite->getBodyNodes())
+  {
+    auto bodyNodeDifferential = bodyNode->get<BodyNodeDifferential>();
+    mState.mDM_GradientOfLagrangian_dq
+        += bodyNodeDifferential->computeLagrangianGradientWrtVelocities();
+  }
+
+  return mState.mDM_HessianOfLagrangian_q_q;
+}
+
+//==============================================================================
+const Eigen::MatrixXd&
+SkeletonDifferential::computeLagrangianHessianWrtPositionsVelocities()
+{
+  return mState.mDM_HessianOfLagrangian_q_dq;
+}
+
+//==============================================================================
+const Eigen::MatrixXd&
+SkeletonDifferential::computeLagrangianHessianWrtVelocitiesVelocities()
+{
+  return mState.mDM_HessianOfLagrangian_dq_dq;
 }
 
 //==============================================================================
@@ -175,7 +229,7 @@ Eigen::Vector6d SkeletonDifferential::getBodyVelocityGradientWrtDQ(
 //==============================================================================
 void SkeletonDifferential::print()
 {
-  updateBodyVelocityGradients();
+  updateSpatialVelocityGradients();
 
   for (auto* bodyNode : mComposite->getBodyNodes())
   {

@@ -88,12 +88,12 @@ public:
 
   /// Update the gradients of spatial body velocities with respect to both of
   /// joint positions and velocities.
-  void updateBodyVelocityGradients();
+  void updateSpatialVelocityGradients();
   // TODO(JS): apply automatic updating method
 
   /// Update the Hessians of spatial body velocities with respect to both of
   /// joint positions and velocities.
-  void updateSpatialVelocityHessian();
+  void updateSpatialVelocityHessians();
   // TODO(JS): apply automatic updating method
 
   Eigen::Vector6d getBodyVelocityGradientWrtQ(
@@ -117,6 +117,20 @@ public:
       const Joint* withRespectTo) const;
 
   GradientMatrix getBodyVelocityGradientWrtDQ() const;
+
+  Eigen::VectorXd computeKineticEnergyGradientWrtPositions() const;
+  Eigen::VectorXd computeKineticEnergyGradientWrtVelocities() const;
+
+  Eigen::VectorXd computeLagrangianGradientWrtPositions() const;
+  Eigen::VectorXd computeLagrangianGradientWrtVelocities() const;
+
+  Eigen::MatrixXd computeKineticEnergyHessianWrtPositionsPositions() const;
+  Eigen::MatrixXd computeKineticEnergyHessianWrtPositionsVelocities() const;
+  Eigen::MatrixXd computeKineticEnergyHessianWrtVelocitiesVelocities() const;
+
+  Eigen::MatrixXd computeLagrangianHessianWrtPositionsPositions() const;
+  Eigen::MatrixXd computeLagrangianHessianWrtPositionsVelocities() const;
+  Eigen::MatrixXd computeLagrangianHessianWrtVelocitiesVelocities() const;
 
   void print();
 
