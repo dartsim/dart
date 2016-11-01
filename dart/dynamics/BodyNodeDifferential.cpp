@@ -51,10 +51,10 @@ BodyNodeDifferentialState::BodyNodeDifferentialState()
 } // namespace detail
 
 //==============================================================================
-BodyNodeDifferential::BodyNodeDifferential(const StateData& state)
-{
-  mState = state;
-}
+//BodyNodeDifferential::BodyNodeDifferential(const StateData& state)
+//{
+//  mState = state;
+//}
 
 //==============================================================================
 void BodyNodeDifferential::updateSpatialVelocityGradients()
@@ -68,20 +68,20 @@ void BodyNodeDifferential::updateSpatialVelocityGradients()
     const auto* thisParentBodyNodeDifferential
         = thisParentBodyNode->get<BodyNodeDifferential>();
 
-    mState.mV_q
+    mV_q
         = math::AdInvTJac(
           thisJoint->getRelativeTransform(),
-          thisParentBodyNodeDifferential->mState.mV_q);
+          thisParentBodyNodeDifferential->mV_q);
 
-    mState.mV_dq
+    mV_dq
         = math::AdInvTJac(
           thisJoint->getRelativeTransform(),
-          thisParentBodyNodeDifferential->mState.mV_dq);
+          thisParentBodyNodeDifferential->mV_dq);
   }
   else
   {
-    mState.mV_q.setZero();
-    mState.mV_dq.setZero();
+    mV_q.setZero();
+    mV_dq.setZero();
   }
 
   const auto numDofs = thisJoint->getNumDofs();
@@ -93,11 +93,11 @@ void BodyNodeDifferential::updateSpatialVelocityGradients()
 
   assert(thisJoint->getRelativeJacobian().rows() == 6);
   assert(thisJoint->getRelativeJacobian().cols() == numDofs);
-  mState.mV_q.block(0, index, 6, numDofs)
+  mV_q.block(0, index, 6, numDofs)
       += math::adJac(thisBodyNode->getSpatialVelocity(),
                      thisJoint->getRelativeJacobian());
 
-  mState.mV_dq.block(0, index, 6, numDofs) += thisJoint->getRelativeJacobian();
+  mV_dq.block(0, index, 6, numDofs) += thisJoint->getRelativeJacobian();
 }
 
 //==============================================================================
@@ -115,14 +115,13 @@ BodyNodeDifferential::getSpatialVelocityDerivativeWrtPositions() const
       const auto* thisParentBodyNodeDifferential
           = thisParentBodyNode->get<BodyNodeDifferential>();
 
-      mState.mV_q
-          = math::AdInvTJac(
+      mV_q = math::AdInvTJac(
             thisJoint->getRelativeTransform(),
-            thisParentBodyNodeDifferential->mState.mV_q);
+            thisParentBodyNodeDifferential->mV_q);
     }
     else
     {
-      mState.mV_q.setZero();
+      mV_q.setZero();
     }
 
     const auto numDofs = thisJoint->getNumDofs();
@@ -132,7 +131,7 @@ BodyNodeDifferential::getSpatialVelocityDerivativeWrtPositions() const
 
       assert(thisJoint->getRelativeJacobian().rows() == 6);
       assert(thisJoint->getRelativeJacobian().cols() == numDofs);
-      mState.mV_q.block(0, index, 6, numDofs)
+      mV_q.block(0, index, 6, numDofs)
           += math::adJac(thisBodyNode->getSpatialVelocity(),
                          thisJoint->getRelativeJacobian());
     }
@@ -140,7 +139,7 @@ BodyNodeDifferential::getSpatialVelocityDerivativeWrtPositions() const
     mNeedSpatialVelocityDerivativeWrtPositionsUpdate = false;
   }
 
-  return mState.mV_q;
+  return mV_q;
 }
 
 //==============================================================================
@@ -158,14 +157,14 @@ BodyNodeDifferential::getSpatialVelocityDerivativeWrtVelocities() const
       const auto* thisParentBodyNodeDifferential
           = thisParentBodyNode->get<BodyNodeDifferential>();
 
-      mState.mV_dq
+      mV_dq
           = math::AdInvTJac(
             thisJoint->getRelativeTransform(),
-            thisParentBodyNodeDifferential->mState.mV_dq);
+            thisParentBodyNodeDifferential->mV_dq);
     }
     else
     {
-      mState.mV_dq.setZero();
+      mV_dq.setZero();
     }
 
     const auto numDofs = thisJoint->getNumDofs();
@@ -175,13 +174,13 @@ BodyNodeDifferential::getSpatialVelocityDerivativeWrtVelocities() const
 
       assert(thisJoint->getRelativeJacobian().rows() == 6);
       assert(thisJoint->getRelativeJacobian().cols() == numDofs);
-      mState.mV_dq.block(0, index, 6, numDofs) += thisJoint->getRelativeJacobian();
+      mV_dq.block(0, index, 6, numDofs) += thisJoint->getRelativeJacobian();
     }
 
     mNeedSpatialVelocityDerivativeWrtVelocitiesUpdate = false;
   }
 
-  return mState.mV_dq;
+  return mV_dq;
 }
 
 //==============================================================================
@@ -199,26 +198,26 @@ void BodyNodeDifferential::updateSpatialVelocityHessians()
     const auto* thisParentBodyNodeDifferential
         = thisParentBodyNode->get<BodyNodeDifferential>();
 
-    mState.mV_q_q[rowIndex]
+    mV_q_q[rowIndex]
         = math::AdInvTJac(
           thisJoint->getRelativeTransform(),
-          thisParentBodyNodeDifferential->mState.mV_q_q[rowIndex]);
+          thisParentBodyNodeDifferential->mV_q_q[rowIndex]);
 
-    mState.mV_q_dq[rowIndex]
+    mV_q_dq[rowIndex]
         = math::AdInvTJac(
           thisJoint->getRelativeTransform(),
-          thisParentBodyNodeDifferential->mState.mV_q_dq[rowIndex]);
+          thisParentBodyNodeDifferential->mV_q_dq[rowIndex]);
 
-    mState.mV_dq_dq[rowIndex]
+    mV_dq_dq[rowIndex]
         = math::AdInvTJac(
           thisJoint->getRelativeTransform(),
-          thisParentBodyNodeDifferential->mState.mV_dq_dq[rowIndex]);
+          thisParentBodyNodeDifferential->mV_dq_dq[rowIndex]);
   }
   else
   {
-    mState.mV_q_q[rowIndex].setZero();
-    mState.mV_q_dq[rowIndex].setZero();
-    mState.mV_dq_dq[rowIndex].setZero();
+    mV_q_q[rowIndex].setZero();
+    mV_q_dq[rowIndex].setZero();
+    mV_dq_dq[rowIndex].setZero();
   }
 
   const auto numDofs = thisJoint->getNumDofs();
@@ -228,24 +227,24 @@ void BodyNodeDifferential::updateSpatialVelocityHessians()
 
   const auto index = thisJoint->getDof(0)->getIndexInSkeleton();
 
-  mState.mV_q.block(0, index, 6, numDofs)
+  mV_q.block(0, index, 6, numDofs)
       += math::adJac(thisBodyNode->getSpatialVelocity(),
                      thisJoint->getRelativeJacobian());
 
-  mState.mV_dq.block(0, index, 6, numDofs) += thisJoint->getRelativeJacobian();
+  mV_dq.block(0, index, 6, numDofs) += thisJoint->getRelativeJacobian();
 
   Eigen::Vector6d temp_q_q = Eigen::Vector6d::Zero();
   Eigen::Vector6d temp_q_dq = Eigen::Vector6d::Zero();
 
 //  if (getIndexInSkeleton() == rowIndex)
 //  {
-//    temp_q_q += mState.mV_q[colIndex];
-//    temp_q_dq += mState.mV_dq[colIndex];
+//    temp_q_q += mV_q[colIndex];
+//    temp_q_dq += mV_dq[colIndex];
 //  }
 
 //  if (getIndexInSkeleton() == colIndex)
 //  {
-//    temp_q_q += mState.mV_q[rowIndex];
+//    temp_q_q += mV_q[rowIndex];
 //  }
 
 //  if (getIndexInSkeleton() == rowIndex && getIndexInSkeleton() == colIndex)
@@ -254,11 +253,11 @@ void BodyNodeDifferential::updateSpatialVelocityHessians()
 //        += math::ad(thisJoint->getLocalJacobian(), getSpatialVelocity());
 //  }
 
-//  mState.mV_q_q[rowIndex][colIndex]
+//  mV_q_q[rowIndex][colIndex]
 //      -= math::ad(thisJoint->getLocalJacobian(), temp_q_q);
-//  mState.mV_q_dq[rowIndex][colIndex]
+//  mV_q_dq[rowIndex][colIndex]
 //      -= math::ad(thisJoint->getLocalJacobian(), temp_q_dq);
-//  assert(mState.mV_dq_dq[rowIndex][colIndex] == Eigen::Vector6d::Zero());
+//  assert(mV_dq_dq[rowIndex][colIndex] == Eigen::Vector6d::Zero());
 }
 
 //==============================================================================
@@ -266,7 +265,7 @@ Eigen::Vector6d
 BodyNodeDifferential::getBodyVelocityGradientWrtQ(
     std::size_t indexInSkeleton) const
 {
-  return mState.mV_q.col(indexInSkeleton);
+  return mV_q.col(indexInSkeleton);
 }
 
 //==============================================================================
@@ -287,14 +286,14 @@ BodyNodeDifferential::getBodyVelocityGradientWrtQ(
   const auto index = withRespectTo->getIndexInSkeleton(0);
   const auto numDofs = withRespectTo->getNumDofs();
 
-  return mState.mV_q.block(0, index, 6, numDofs);
+  return mV_q.block(0, index, 6, numDofs);
 }
 
 //==============================================================================
 BodyNodeDifferential::GradientMatrix
 BodyNodeDifferential::getBodyVelocityGradientWrtQ() const
 {
-  return mState.mV_q;
+  return mV_q;
 }
 
 //==============================================================================
@@ -302,7 +301,7 @@ Eigen::Vector6d
 BodyNodeDifferential::getBodyVelocityGradientWrtDQ(
     std::size_t indexInSkeleton) const
 {
-  return mState.mV_dq.col(indexInSkeleton);
+  return mV_dq.col(indexInSkeleton);
 }
 
 //==============================================================================
@@ -323,14 +322,14 @@ BodyNodeDifferential::getBodyVelocityGradientWrtDQ(
   const auto index = withRespectTo->getIndexInSkeleton(0);
   const auto numDofs = withRespectTo->getNumDofs();
 
-  return mState.mV_dq.block(0, index, 6, numDofs);
+  return mV_dq.block(0, index, 6, numDofs);
 }
 
 //==============================================================================
 BodyNodeDifferential::GradientMatrix
 BodyNodeDifferential::getBodyVelocityGradientWrtDQ() const
 {
-  return mState.mV_dq;
+  return mV_dq;
 }
 
 //==============================================================================
@@ -341,7 +340,7 @@ BodyNodeDifferential::computeKineticEnergyGradientWrtPositions() const
   const Eigen::Matrix6d& G = thisBodyNode->getInertia().getSpatialTensor();
   const Eigen::Vector6d& V = thisBodyNode->getSpatialVelocity();
 
-  return V.transpose() * G * mState.mV_q;
+  return V.transpose() * G * mV_q;
 }
 
 //==============================================================================
@@ -352,7 +351,7 @@ BodyNodeDifferential::computeKineticEnergyGradientWrtVelocities() const
   const Eigen::Matrix6d& G = thisBodyNode->getInertia().getSpatialTensor();
   const Eigen::Vector6d& V = thisBodyNode->getSpatialVelocity();
 
-  return V.transpose() * G * mState.mV_dq;
+  return V.transpose() * G * mV_dq;
 }
 
 //==============================================================================
@@ -426,7 +425,7 @@ void BodyNodeDifferential::dirtySpatialVelocityDerivativeWrtVelocities()
 //==============================================================================
 void BodyNodeDifferential::print()
 {
-  std::cout << mState.mV_q << std::endl;;
+  std::cout << mV_q << std::endl;;
 }
 
 //==============================================================================
@@ -440,18 +439,18 @@ void BodyNodeDifferential::setComposite(common::Composite* newComposite)
 
   assert(skeleton);
 
-  mState.mV_q.resize(6, numDofs);
-  mState.mV_dq.resize(6, numDofs);
+  mV_q.resize(6, numDofs);
+  mV_dq.resize(6, numDofs);
 
-  mState.mV_q_q.resize(numDofs);
-  mState.mV_q_dq.resize(numDofs);
-  mState.mV_dq_dq.resize(numDofs);
+  mV_q_q.resize(numDofs);
+  mV_q_dq.resize(numDofs);
+  mV_dq_dq.resize(numDofs);
 
   for (auto i = 0u; i < numDofs; ++i)
   {
-    mState.mV_q_q[i].resize(6, numDofs);
-    mState.mV_q_dq[i].resize(6, numDofs);
-    mState.mV_dq_dq[i].resize(6, numDofs);
+    mV_q_q[i].resize(6, numDofs);
+    mV_q_dq[i].resize(6, numDofs);
+    mV_dq_dq[i].resize(6, numDofs);
   }
 
   // TODO(JS): These should be updated when the structure of skeleton is

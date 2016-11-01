@@ -66,23 +66,24 @@ struct BodyNodeDifferentialState
 
 //==============================================================================
 class BodyNodeDifferential final :
-    public common::AspectWithState<
-        BodyNodeDifferential,
-        detail::BodyNodeDifferentialState,
-        BodyNode>
+    public common::CompositeTrackingAspect<BodyNode>
 {
 public:
 
   friend class SkeletonDifferential;
 
-  using Base = common::AspectWithState<
-      BodyNodeDifferential,
-      detail::BodyNodeDifferentialState,
-      BodyNode>;
+  using Base = common::CompositeTrackingAspect<BodyNode>;
 
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
-  BodyNodeDifferential(const StateData& state = StateData());
+  std::unique_ptr<Aspect> cloneAspect() const override
+  {
+    return nullptr;
+  }
+
+//  BodyNodeDifferential(const StateData& state = StateData());
+
+  BodyNodeDifferential() = default;
 
   BodyNodeDifferential(const BodyNodeDifferential&) = delete;
 
@@ -147,12 +148,12 @@ protected:
 
 protected:
 
-  GradientMatrix mV_q;
-  GradientMatrix mV_dq;
+  mutable GradientMatrix mV_q;
+  mutable GradientMatrix mV_dq;
 
-  std::vector<GradientMatrix> mV_q_q;
-  std::vector<GradientMatrix> mV_q_dq;
-  std::vector<GradientMatrix> mV_dq_dq;
+  mutable std::vector<GradientMatrix> mV_q_q;
+  mutable std::vector<GradientMatrix> mV_q_dq;
+  mutable std::vector<GradientMatrix> mV_dq_dq;
 
   mutable bool mNeedSpatialVelocityDerivativeWrtPositionsUpdate{true};
   mutable bool mNeedSpatialVelocityDerivativeWrtVelocitiesUpdate{true};
