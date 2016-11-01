@@ -888,24 +888,14 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
     _vel[i] = 0.0;
 
     if (mPointMass1)
-    {
       _vel[i] -= mJacobians1[i].tail<3>().dot(mPointMass1->getBodyVelocity());
-    }
     else
-    {
-      if (mBodyNode1->isReactive())
-        _vel[i] -= mJacobians1[i].dot(mBodyNode1->getSpatialVelocity());
-    }
+      _vel[i] -= mJacobians1[i].dot(mBodyNode1->getSpatialVelocity());
 
     if (mPointMass2)
-    {
       _vel[i] -= mJacobians2[i].tail<3>().dot(mPointMass2->getBodyVelocity());
-    }
     else
-    {
-      if (mBodyNode2->isReactive())
-        _vel[i] -= mJacobians2[i].dot(mBodyNode2->getSpatialVelocity());
-    }
+      _vel[i] -= mJacobians2[i].dot(mBodyNode2->getSpatialVelocity());
 
 //    std::cout << "_relVel[i + _idx]: " << _relVel[i + _idx] << std::endl;
   }
