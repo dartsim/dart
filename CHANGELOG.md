@@ -2,6 +2,12 @@
 
 ### DART 6.2.0 (201X-XX-XX)
 
+### DART 6.1.2 (2016-XX-XX)
+
+* Dynamics
+
+  * Fixed bug of ContactConstraint with kinematic joints: [#809](https://github.com/dartsim/dart/pull/809)
+
 ### DART 6.1.1 (2016-10-14)
 
 * Build
