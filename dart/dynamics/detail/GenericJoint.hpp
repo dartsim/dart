@@ -478,6 +478,7 @@ void GenericJoint<ConfigSpaceT>::setPosition(size_t index, double position)
   // Note: It would not make much sense to use setPositionsStatic() here
   this->mAspectState.mPositions[index] = position;
   this->notifyPositionUpdate();
+  this->mPositionUpdatedSignal.raise(this);
 }
 
 //==============================================================================
@@ -659,6 +660,7 @@ void GenericJoint<ConfigSpaceT>::setPositionsStatic(const Vector& positions)
 
   this->mAspectState.mPositions = positions;
   this->notifyPositionUpdate();
+  this->mPositionUpdatedSignal.raise(this);
 }
 
 //==============================================================================
@@ -679,6 +681,7 @@ void GenericJoint<ConfigSpaceT>::setVelocitiesStatic(
 
   this->mAspectState.mVelocities = velocities;
   this->notifyVelocityUpdate();
+  this->mVelocityUpdatedSignal.raise(this);
 }
 
 //==============================================================================
@@ -739,6 +742,7 @@ void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
   // Note: It would not make much sense to use setVelocitiesStatic() here
   this->mAspectState.mVelocities[index] = velocity;
   this->notifyVelocityUpdate();
+  this->mVelocityUpdatedSignal.raise(this);
 
   if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
     this->mAspectState.mCommands[index] = this->getVelocitiesStatic()[index];

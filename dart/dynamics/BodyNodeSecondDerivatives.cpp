@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/BodyNodeDifferential.hpp"
+#include "dart/dynamics/BodyNodeSecondDerivatives.hpp"
 
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -37,72 +37,15 @@
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
 //==============================================================================
-BodyNodeDifferentialState::BodyNodeDifferentialState()
-  : mV_q_q(std::vector<GradientMatrix>()),
-    mV_q_dq(std::vector<GradientMatrix>()),
-    mV_dq_dq(std::vector<GradientMatrix>())
+std::unique_ptr<common::Aspect> BodyNodeSecondDerivatives::cloneAspect() const
 {
-  // Do nothing
-}
-
-} // namespace detail
-
-//==============================================================================
-//BodyNodeDifferential::BodyNodeDifferential(const StateData& state)
-//{
-//  mState = state;
-//}
-
-//==============================================================================
-void BodyNodeDifferential::updateSpatialVelocityGradients()
-{
-  const auto* thisBodyNode = mComposite;
-  const auto* thisJoint = thisBodyNode->getParentJoint();
-  const auto* thisParentBodyNode = thisBodyNode->getParentBodyNode();
-
-  if (thisParentBodyNode)
-  {
-    const auto* thisParentBodyNodeDifferential
-        = thisParentBodyNode->get<BodyNodeDifferential>();
-
-    mV_q
-        = math::AdInvTJac(
-          thisJoint->getRelativeTransform(),
-          thisParentBodyNodeDifferential->mV_q);
-
-    mV_dq
-        = math::AdInvTJac(
-          thisJoint->getRelativeTransform(),
-          thisParentBodyNodeDifferential->mV_dq);
-  }
-  else
-  {
-    mV_q.setZero();
-    mV_dq.setZero();
-  }
-
-  const auto numDofs = thisJoint->getNumDofs();
-
-  if (numDofs == 0)
-    return;
-
-  const auto index = thisJoint->getDof(0)->getIndexInSkeleton();
-
-  assert(thisJoint->getRelativeJacobian().rows() == 6);
-  assert(thisJoint->getRelativeJacobian().cols() == numDofs);
-  mV_q.block(0, index, 6, numDofs)
-      += math::adJac(thisBodyNode->getSpatialVelocity(),
-                     thisJoint->getRelativeJacobian());
-
-  mV_dq.block(0, index, 6, numDofs) += thisJoint->getRelativeJacobian();
+  return common::make_unique<BodyNodeSecondDerivatives>();
 }
 
 //==============================================================================
-const BodyNodeDifferential::GradientMatrix&
-BodyNodeDifferential::getSpatialVelocityDerivativeWrtPositions() const
+const BodyNodeSecondDerivatives::GradientMatrix&
+BodyNodeSecondDerivatives::getSpatialVelocityDerivativeWrtPositions() const
 {
   if (mNeedSpatialVelocityDerivativeWrtPositionsUpdate)
   {
@@ -112,12 +55,12 @@ BodyNodeDifferential::getSpatialVelocityDerivativeWrtPositions() const
 
     if (thisParentBodyNode)
     {
-      const auto* thisParentBodyNodeDifferential
-          = thisParentBodyNode->get<BodyNodeDifferential>();
+      const auto* thisParentBodyNodeSecondDerivatives
+          = thisParentBodyNode->get<BodyNodeSecondDerivatives>();
 
       mV_q = math::AdInvTJac(
             thisJoint->getRelativeTransform(),
-            thisParentBodyNodeDifferential->mV_q);
+            thisParentBodyNodeSecondDerivatives->mV_q);
     }
     else
     {
@@ -130,7 +73,8 @@ BodyNodeDifferential::getSpatialVelocityDerivativeWrtPositions() const
       const auto index = thisJoint->getDof(0)->getIndexInSkeleton();
 
       assert(thisJoint->getRelativeJacobian().rows() == 6);
-      assert(thisJoint->getRelativeJacobian().cols() == numDofs);
+      assert(thisJoint->getRelativeJacobian().cols()
+             == static_cast<int>(numDofs));
       mV_q.block(0, index, 6, numDofs)
           += math::adJac(thisBodyNode->getSpatialVelocity(),
                          thisJoint->getRelativeJacobian());
@@ -143,8 +87,8 @@ BodyNodeDifferential::getSpatialVelocityDerivativeWrtPositions() const
 }
 
 //==============================================================================
-const BodyNodeDifferential::GradientMatrix&
-BodyNodeDifferential::getSpatialVelocityDerivativeWrtVelocities() const
+const BodyNodeSecondDerivatives::GradientMatrix&
+BodyNodeSecondDerivatives::getSpatialVelocityDerivativeWrtVelocities() const
 {
   if (mNeedSpatialVelocityDerivativeWrtVelocitiesUpdate)
   {
@@ -154,13 +98,13 @@ BodyNodeDifferential::getSpatialVelocityDerivativeWrtVelocities() const
 
     if (thisParentBodyNode)
     {
-      const auto* thisParentBodyNodeDifferential
-          = thisParentBodyNode->get<BodyNodeDifferential>();
+      const auto* thisParentBodyNodeSecondDerivatives
+          = thisParentBodyNode->get<BodyNodeSecondDerivatives>();
 
       mV_dq
           = math::AdInvTJac(
             thisJoint->getRelativeTransform(),
-            thisParentBodyNodeDifferential->mV_dq);
+            thisParentBodyNodeSecondDerivatives->mV_dq);
     }
     else
     {
@@ -173,7 +117,8 @@ BodyNodeDifferential::getSpatialVelocityDerivativeWrtVelocities() const
       const auto index = thisJoint->getDof(0)->getIndexInSkeleton();
 
       assert(thisJoint->getRelativeJacobian().rows() == 6);
-      assert(thisJoint->getRelativeJacobian().cols() == numDofs);
+      assert(thisJoint->getRelativeJacobian().cols()
+             == static_cast<int>(numDofs));
       mV_dq.block(0, index, 6, numDofs) += thisJoint->getRelativeJacobian();
     }
 
@@ -184,7 +129,7 @@ BodyNodeDifferential::getSpatialVelocityDerivativeWrtVelocities() const
 }
 
 //==============================================================================
-void BodyNodeDifferential::updateSpatialVelocityHessians()
+void BodyNodeSecondDerivatives::updateSpatialVelocityHessians()
 {
   int rowIndex;
   int colIndex;
@@ -195,23 +140,23 @@ void BodyNodeDifferential::updateSpatialVelocityHessians()
 
   if (thisParentBodyNode)
   {
-    const auto* thisParentBodyNodeDifferential
-        = thisParentBodyNode->get<BodyNodeDifferential>();
+    const auto* thisParentBodyNodeSecondDerivatives
+        = thisParentBodyNode->get<BodyNodeSecondDerivatives>();
 
     mV_q_q[rowIndex]
         = math::AdInvTJac(
           thisJoint->getRelativeTransform(),
-          thisParentBodyNodeDifferential->mV_q_q[rowIndex]);
+          thisParentBodyNodeSecondDerivatives->mV_q_q[rowIndex]);
 
     mV_q_dq[rowIndex]
         = math::AdInvTJac(
           thisJoint->getRelativeTransform(),
-          thisParentBodyNodeDifferential->mV_q_dq[rowIndex]);
+          thisParentBodyNodeSecondDerivatives->mV_q_dq[rowIndex]);
 
     mV_dq_dq[rowIndex]
         = math::AdInvTJac(
           thisJoint->getRelativeTransform(),
-          thisParentBodyNodeDifferential->mV_dq_dq[rowIndex]);
+          thisParentBodyNodeSecondDerivatives->mV_dq_dq[rowIndex]);
   }
   else
   {
@@ -262,79 +207,65 @@ void BodyNodeDifferential::updateSpatialVelocityHessians()
 
 //==============================================================================
 Eigen::Vector6d
-BodyNodeDifferential::getBodyVelocityGradientWrtQ(
+BodyNodeSecondDerivatives::getSpatialVelocityDerivativeWrtPositions(
     std::size_t indexInSkeleton) const
 {
-  return mV_q.col(indexInSkeleton);
+  return getSpatialVelocityDerivativeWrtPositions().col(indexInSkeleton);
 }
 
 //==============================================================================
 Eigen::Vector6d
-BodyNodeDifferential::getBodyVelocityGradientWrtQ(
+BodyNodeSecondDerivatives::getSpatialVelocityDerivativeWrtPositions(
     const DegreeOfFreedom* withRespectTo) const
 {
   const auto index = withRespectTo->getIndexInSkeleton();
 
-  return getBodyVelocityGradientWrtQ(index);
+  return getSpatialVelocityDerivativeWrtPositions(index);
 }
 
 //==============================================================================
-BodyNodeDifferential::GradientMatrix
-BodyNodeDifferential::getBodyVelocityGradientWrtQ(
+BodyNodeSecondDerivatives::GradientMatrix
+BodyNodeSecondDerivatives::getSpatialVelocityDerivativeWrtPositions(
     const Joint* withRespectTo) const
 {
   const auto index = withRespectTo->getIndexInSkeleton(0);
   const auto numDofs = withRespectTo->getNumDofs();
 
-  return mV_q.block(0, index, 6, numDofs);
-}
-
-//==============================================================================
-BodyNodeDifferential::GradientMatrix
-BodyNodeDifferential::getBodyVelocityGradientWrtQ() const
-{
-  return mV_q;
+  return getSpatialVelocityDerivativeWrtPositions().block(0, index, 6, numDofs);
 }
 
 //==============================================================================
 Eigen::Vector6d
-BodyNodeDifferential::getBodyVelocityGradientWrtDQ(
+BodyNodeSecondDerivatives::getSpatialVelocityDerivativeWrtVelocities(
     std::size_t indexInSkeleton) const
 {
-  return mV_dq.col(indexInSkeleton);
+  return getSpatialVelocityDerivativeWrtVelocities().col(indexInSkeleton);
 }
 
 //==============================================================================
 Eigen::Vector6d
-BodyNodeDifferential::getBodyVelocityGradientWrtDQ(
+BodyNodeSecondDerivatives::getSpatialVelocityDerivativeWrtVelocities(
     const DegreeOfFreedom* withRespectTo) const
 {
   const auto index = withRespectTo->getIndexInSkeleton();
 
-  return getBodyVelocityGradientWrtDQ(index);
+  return getSpatialVelocityDerivativeWrtVelocities(index);
 }
 
 //==============================================================================
-BodyNodeDifferential::GradientMatrix
-BodyNodeDifferential::getBodyVelocityGradientWrtDQ(
+BodyNodeSecondDerivatives::GradientMatrix
+BodyNodeSecondDerivatives::getSpatialVelocityDerivativeWrtVelocities(
     const Joint* withRespectTo) const
 {
   const auto index = withRespectTo->getIndexInSkeleton(0);
   const auto numDofs = withRespectTo->getNumDofs();
 
-  return mV_dq.block(0, index, 6, numDofs);
-}
-
-//==============================================================================
-BodyNodeDifferential::GradientMatrix
-BodyNodeDifferential::getBodyVelocityGradientWrtDQ() const
-{
-  return mV_dq;
+  return getSpatialVelocityDerivativeWrtVelocities().block(0, index, 6, numDofs);
 }
 
 //==============================================================================
 Eigen::VectorXd
-BodyNodeDifferential::computeKineticEnergyGradientWrtPositions() const
+BodyNodeSecondDerivatives::computeKineticEnergyDerivativeWrtPositions() const
 {
   const BodyNode* thisBodyNode = mComposite;
   const Eigen::Matrix6d& G = thisBodyNode->getInertia().getSpatialTensor();
@@ -345,7 +276,7 @@ BodyNodeDifferential::computeKineticEnergyGradientWrtPositions() const
 
 //==============================================================================
 Eigen::VectorXd
-BodyNodeDifferential::computeKineticEnergyGradientWrtVelocities() const
+BodyNodeSecondDerivatives::computeKineticEnergyDerivativeWrtVelocities() const
 {
   const BodyNode* thisBodyNode = mComposite;
   const Eigen::Matrix6d& G = thisBodyNode->getInertia().getSpatialTensor();
@@ -356,80 +287,80 @@ BodyNodeDifferential::computeKineticEnergyGradientWrtVelocities() const
 
 //==============================================================================
 Eigen::VectorXd
-BodyNodeDifferential::computeLagrangianGradientWrtPositions() const
+BodyNodeSecondDerivatives::computeLagrangianDerivativeWrtPositions() const
 {
-  return computeKineticEnergyGradientWrtPositions();
+  return computeKineticEnergyDerivativeWrtPositions();
 }
 
 //==============================================================================
 Eigen::VectorXd
-BodyNodeDifferential::computeLagrangianGradientWrtVelocities() const
+BodyNodeSecondDerivatives::computeLagrangianDerivativeWrtVelocities() const
 {
-  return computeKineticEnergyGradientWrtVelocities();
+  return computeKineticEnergyDerivativeWrtVelocities();
 }
 
 //==============================================================================
 Eigen::MatrixXd
-BodyNodeDifferential::computeKineticEnergyHessianWrtPositionsPositions() const
-{
-
-}
-
-//==============================================================================
-Eigen::MatrixXd
-BodyNodeDifferential::computeKineticEnergyHessianWrtPositionsVelocities() const
+BodyNodeSecondDerivatives::computeKineticEnergyHessianWrtPositions() const
 {
 
 }
 
 //==============================================================================
 Eigen::MatrixXd
-BodyNodeDifferential::computeKineticEnergyHessianWrtVelocitiesVelocities() const
+BodyNodeSecondDerivatives::computeKineticEnergyHessianWrtPositionsVelocities() const
 {
 
 }
 
 //==============================================================================
 Eigen::MatrixXd
-BodyNodeDifferential::computeLagrangianHessianWrtPositionsPositions() const
+BodyNodeSecondDerivatives::computeKineticEnergyHessianWrtVelocities() const
 {
-  return computeKineticEnergyHessianWrtPositionsPositions();
+
 }
 
 //==============================================================================
 Eigen::MatrixXd
-BodyNodeDifferential::computeLagrangianHessianWrtPositionsVelocities() const
+BodyNodeSecondDerivatives::computeLagrangianHessianWrtPositions() const
+{
+  return computeKineticEnergyHessianWrtPositions();
+}
+
+//==============================================================================
+Eigen::MatrixXd
+BodyNodeSecondDerivatives::computeLagrangianHessianWrtPositionsVelocities() const
 {
   return computeKineticEnergyHessianWrtPositionsVelocities();
 }
 
 //==============================================================================
 Eigen::MatrixXd
-BodyNodeDifferential::computeLagrangianHessianWrtVelocitiesVelocities() const
+BodyNodeSecondDerivatives::computeLagrangianHessianWrtVelocities() const
 {
-  return computeKineticEnergyHessianWrtVelocitiesVelocities();
+  return computeKineticEnergyHessianWrtVelocities();
 }
 
 //==============================================================================
-void BodyNodeDifferential::dirtySpatialVelocityDerivativeWrtPositions()
-{
-
-}
-
-//==============================================================================
-void BodyNodeDifferential::dirtySpatialVelocityDerivativeWrtVelocities()
+void BodyNodeSecondDerivatives::dirtySpatialVelocityDerivativeWrtPositions()
 {
 
 }
 
 //==============================================================================
-void BodyNodeDifferential::print()
+void BodyNodeSecondDerivatives::dirtySpatialVelocityDerivativeWrtVelocities()
+{
+
+}
+
+//==============================================================================
+void BodyNodeSecondDerivatives::print()
 {
   std::cout << mV_q << std::endl;;
 }
 
 //==============================================================================
-void BodyNodeDifferential::setComposite(common::Composite* newComposite)
+void BodyNodeSecondDerivatives::setComposite(common::Composite* newComposite)
 {
   Base::setComposite(newComposite);
 

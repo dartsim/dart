@@ -29,28 +29,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_SKELETONDIFFERENTIAL_HPP_
-#define DART_DYNAMICS_SKELETONDIFFERENTIAL_HPP_
+#ifndef DART_DYNAMICS_SKELETONSECONDDERIVATIVES_HPP_
+#define DART_DYNAMICS_SKELETONSECONDDERIVATIVES_HPP_
 
 #include <Eigen/Dense>
 
 #include "dart/common/AspectWithVersion.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SkeletonDerivatives.hpp"
 
 namespace dart {
 namespace dynamics {
 
-//class Skeleton;
-
 namespace detail {
 
-struct SkeletonLagrangianAspectState
+struct SkeletonSecondDerivativesState
 {
   /// Constructor
-  SkeletonLagrangianAspectState();
+  SkeletonSecondDerivativesState();
 
   /// Destructor
-  virtual ~SkeletonLagrangianAspectState() = default;
+  virtual ~SkeletonSecondDerivativesState() = default;
 
   Eigen::VectorXd mDM_GradientKineticEnergy_q;
   Eigen::VectorXd mDM_GradientKineticEnergy_dq;
@@ -72,60 +71,28 @@ struct SkeletonLagrangianAspectState
 }  // namespace detail
 
 //==============================================================================
-class SkeletonDifferential final :
+class SkeletonSecondDerivatives final :
     public common::AspectWithState<
-        SkeletonDifferential,
-        detail::SkeletonLagrangianAspectState,
+        SkeletonSecondDerivatives,
+        detail::SkeletonSecondDerivativesState,
         Skeleton>
 {
 public:
 
   using Base = common::AspectWithState<
-      SkeletonDifferential,
-      detail::SkeletonLagrangianAspectState,
+      SkeletonSecondDerivatives,
+      detail::SkeletonSecondDerivativesState,
       Skeleton>;
 
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
-//  SkeletonLagrangianAspect(const PropertiesData& properties = PropertiesData());
+  SkeletonSecondDerivatives(const StateData& state = StateData());
 
-  SkeletonDifferential(const StateData& state = StateData());
+  SkeletonSecondDerivatives(const SkeletonSecondDerivatives&) = delete;
 
-  SkeletonDifferential(const SkeletonDifferential&) = delete;
-
-  void updateSpatialVelocityGradients();
-  void updateBodyVelocityHessians();
-
-  const Eigen::VectorXd& computeLagrangianGradientWrtPositions();
-  const Eigen::VectorXd& computeLagrangianGradientWrtVelocities();
-
-  const Eigen::MatrixXd& computeLagrangianHessianWrtPositionsPositions();
+  const Eigen::MatrixXd& computeLagrangianHessianWrtPositions();
   const Eigen::MatrixXd& computeLagrangianHessianWrtPositionsVelocities();
-  const Eigen::MatrixXd& computeLagrangianHessianWrtVelocitiesVelocities();
-
-  GradientMatrix getBodyVelocityGradientWrtQ(
-      std::size_t bodyNodeIndexInSkeleton) const;
-
-  Eigen::Vector6d getBodyVelocityGradientWrtQ(
-      std::size_t bodyNodeIndexInSkeleton,
-      std::size_t withRespectTo) const;
-
-  Eigen::Vector6d getBodyVelocityGradientWrtQ(
-      std::size_t bodyNodeIndexInSkeleton,
-      const DegreeOfFreedom* withRespectTo) const;
-
-  GradientMatrix getBodyVelocityGradientWrtDQ(
-      std::size_t bodyNodeIndexInSkeleton) const;
-
-  Eigen::Vector6d getBodyVelocityGradientWrtDQ(
-      std::size_t bodyNodeIndexInSkeleton,
-      std::size_t withRespectTo) const;
-
-  Eigen::Vector6d getBodyVelocityGradientWrtDQ(
-      std::size_t bodyNodeIndexInSkeleton,
-      const DegreeOfFreedom* withRespectTo) const;
-
-  void print();
+  const Eigen::MatrixXd& computeLagrangianHessianWrtVelocities();
 
 protected:
 
@@ -133,10 +100,13 @@ protected:
 
   void loseComposite(common::Composite* oldComposite) override;
 
+protected:
+
+  SkeletonDerivatives* mSkeletonDerivatives;
 
 };
 
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_SKELETONDIFFERENTIAL_HPP_
+#endif  // DART_DYNAMICS_SKELETONSECONDDERIVATIVES_HPP_

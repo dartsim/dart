@@ -29,10 +29,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SkeletonDifferential.hpp"
+#include "dart/dynamics/SkeletonDerivatives.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/BodyNodeDifferential.hpp"
+#include "dart/dynamics/BodyNodeDerivatives.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -40,7 +40,7 @@ namespace dynamics {
 namespace detail {
 
 //==============================================================================
-SkeletonLagrangianAspectState::SkeletonLagrangianAspectState()
+SkeletonDerivativesState::SkeletonDerivativesState()
 {
   // Do nothing
 }
@@ -48,39 +48,22 @@ SkeletonLagrangianAspectState::SkeletonLagrangianAspectState()
 } // namespace detail
 
 //==============================================================================
-SkeletonDifferential::SkeletonDifferential(const StateData& state)
+SkeletonDerivatives::SkeletonDerivatives(const StateData& state)
 {
   mState = state;
 }
 
 //==============================================================================
-void SkeletonDifferential::updateSpatialVelocityGradients()
-{
-  for (auto* bodyNode : mComposite->getBodyNodes())
-    bodyNode->get<BodyNodeDifferential>()->updateSpatialVelocityGradients();
-}
-
-//==============================================================================
-void SkeletonDifferential::updateBodyVelocityHessians()
-{
-  for (auto* bodyNode : mComposite->getBodyNodes())
-    bodyNode->get<BodyNodeDifferential>()->updateSpatialVelocityHessians();
-}
-
-//==============================================================================
 const Eigen::VectorXd&
-SkeletonDifferential::computeLagrangianGradientWrtPositions()
+SkeletonDerivatives::computeLagrangianDerivativeWrtPositions()
 {
-  updateSpatialVelocityGradients();
-  // TODO(JS): separate into V/q and V/dq
-
   mState.mDM_GradientOfLagrangian_q.setZero();
 
   for (auto* bodyNode : mComposite->getBodyNodes())
   {
-    auto bodyNodeDifferential = bodyNode->get<BodyNodeDifferential>();
+    auto bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
     mState.mDM_GradientOfLagrangian_q
-        += bodyNodeDifferential->computeLagrangianGradientWrtPositions();
+        += bodyNodeDerivative->computeLagrangianDerivativeWrtPositions();
   }
 
   return mState.mDM_GradientOfLagrangian_q;
@@ -88,157 +71,124 @@ SkeletonDifferential::computeLagrangianGradientWrtPositions()
 
 //==============================================================================
 const Eigen::VectorXd&
-SkeletonDifferential::computeLagrangianGradientWrtVelocities()
+SkeletonDerivatives::computeLagrangianDerivativeWrtVelocities()
 {
-  updateSpatialVelocityGradients();
-  // TODO(JS): separate into V/q and V/dq
-
   mState.mDM_GradientOfLagrangian_dq.setZero();
 
   for (auto* bodyNode : mComposite->getBodyNodes())
   {
-    auto bodyNodeDifferential = bodyNode->get<BodyNodeDifferential>();
+    auto bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
     mState.mDM_GradientOfLagrangian_dq
-        += bodyNodeDifferential->computeLagrangianGradientWrtVelocities();
+        += bodyNodeDerivative->computeLagrangianDerivativeWrtVelocities();
   }
 
   return mState.mDM_GradientOfLagrangian_dq;
 }
 
 //==============================================================================
-const Eigen::MatrixXd&
-SkeletonDifferential::computeLagrangianHessianWrtPositionsPositions()
+const Eigen::VectorXd&
+SkeletonDerivatives::computeLagrangianGradientWrtPositions()
 {
-  updateSpatialVelocityGradients();
-  // TODO(JS): separate into V/q and V/dq
-
-  mState.mDM_GradientOfLagrangian_dq.setZero();
-
-  for (auto* bodyNode : mComposite->getBodyNodes())
-  {
-    auto bodyNodeDifferential = bodyNode->get<BodyNodeDifferential>();
-    mState.mDM_GradientOfLagrangian_dq
-        += bodyNodeDifferential->computeLagrangianGradientWrtVelocities();
-  }
-
-  return mState.mDM_HessianOfLagrangian_q_q;
+  return computeLagrangianDerivativeWrtPositions();
 }
 
 //==============================================================================
-const Eigen::MatrixXd&
-SkeletonDifferential::computeLagrangianHessianWrtPositionsVelocities()
+const Eigen::VectorXd&
+SkeletonDerivatives::computeLagrangianGradientWrtVelocities()
 {
-  return mState.mDM_HessianOfLagrangian_q_dq;
+  return computeLagrangianGradientWrtPositions();
 }
 
 //==============================================================================
-const Eigen::MatrixXd&
-SkeletonDifferential::computeLagrangianHessianWrtVelocitiesVelocities()
-{
-  return mState.mDM_HessianOfLagrangian_dq_dq;
-}
-
-//==============================================================================
-SkeletonDifferential::GradientMatrix
-SkeletonDifferential::getBodyVelocityGradientWrtQ(
+SkeletonDerivatives::GradientMatrix
+SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
     std::size_t bodyNodeIndexInSkeleton) const
 {
   // TODO(JS): emit warning if the index is not valid
   const auto* bodyNode = mComposite->getBodyNode(bodyNodeIndexInSkeleton);
-  const auto* bodyNodeDifferential = bodyNode->get<BodyNodeDifferential>();
+  const auto* bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
 
-  assert(bodyNodeDifferential);
+  assert(bodyNodeDerivative);
 
-  return bodyNodeDifferential->getBodyVelocityGradientWrtQ();
+  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtPositions();
 }
 
 //==============================================================================
-Eigen::Vector6d SkeletonDifferential::getBodyVelocityGradientWrtQ(
+Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
     std::size_t bodyNodeIndexInSkeleton,
     std::size_t withRespectTo) const
 {
   // TODO(JS): emit warning if the index is not valid
   const auto* bodyNode = mComposite->getBodyNode(bodyNodeIndexInSkeleton);
-  const auto* bodyNodeDifferential = bodyNode->get<BodyNodeDifferential>();
+  const auto* bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
 
-  assert(bodyNodeDifferential);
+  assert(bodyNodeDerivative);
 
-  return bodyNodeDifferential->getBodyVelocityGradientWrtQ(
+  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtPositions(
         withRespectTo);
 }
 
 //==============================================================================
-Eigen::Vector6d SkeletonDifferential::getBodyVelocityGradientWrtQ(
+Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
     std::size_t bodyNodeIndexInSkeleton,
     const DegreeOfFreedom* withRespectTo) const
 {
   // TODO(JS): emit warning if the index is not valid
   const auto* bodyNode = mComposite->getBodyNode(bodyNodeIndexInSkeleton);
-  const auto* bodyNodeDifferential = bodyNode->get<BodyNodeDifferential>();
+  const auto* bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
 
-  assert(bodyNodeDifferential);
+  assert(bodyNodeDerivative);
 
-  return bodyNodeDifferential->getBodyVelocityGradientWrtQ(
+  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtPositions(
         withRespectTo);
 }
 
 //==============================================================================
-SkeletonDifferential::GradientMatrix
-SkeletonDifferential::getBodyVelocityGradientWrtDQ(
+SkeletonDerivatives::GradientMatrix
+SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
     std::size_t bodyNodeIndexInSkeleton) const
 {
   // TODO(JS): emit warning if the index is not valid
   const auto* bodyNode = mComposite->getBodyNode(bodyNodeIndexInSkeleton);
-  const auto* bodyNodeDifferential = bodyNode->get<BodyNodeDifferential>();
+  const auto* bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
 
-  assert(bodyNodeDifferential);
+  assert(bodyNodeDerivative);
 
-  return bodyNodeDifferential->getBodyVelocityGradientWrtDQ();
+  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtVelocities();
 }
 
 //==============================================================================
-Eigen::Vector6d SkeletonDifferential::getBodyVelocityGradientWrtDQ(
+Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
     std::size_t bodyNodeIndexInSkeleton,
     std::size_t withRespectTo) const
 {
   // TODO(JS): emit warning if the index is not valid
   const auto* bodyNode = mComposite->getBodyNode(bodyNodeIndexInSkeleton);
-  const auto* bodyNodeDifferential = bodyNode->get<BodyNodeDifferential>();
+  const auto* bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
 
-  assert(bodyNodeDifferential);
+  assert(bodyNodeDerivative);
 
-  return bodyNodeDifferential->getBodyVelocityGradientWrtDQ(
+  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtVelocities(
         withRespectTo);
 }
 
 //==============================================================================
-Eigen::Vector6d SkeletonDifferential::getBodyVelocityGradientWrtDQ(
+Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
     std::size_t bodyNodeIndexInSkeleton,
     const DegreeOfFreedom* withRespectTo) const
 {
   // TODO(JS): emit warning if the index is not valid
   const auto* bodyNode = mComposite->getBodyNode(bodyNodeIndexInSkeleton);
-  const auto* bodyNodeDifferential = bodyNode->get<BodyNodeDifferential>();
+  const auto* bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
 
-  assert(bodyNodeDifferential);
+  assert(bodyNodeDerivative);
 
-  return bodyNodeDifferential->getBodyVelocityGradientWrtDQ(
+  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtVelocities(
         withRespectTo);
 }
 
 //==============================================================================
-void SkeletonDifferential::print()
-{
-  updateSpatialVelocityGradients();
-
-  for (auto* bodyNode : mComposite->getBodyNodes())
-  {
-    bodyNode->get<BodyNodeDifferential>()->print();
-  }
-}
-
-//==============================================================================
-void SkeletonDifferential::setComposite(common::Composite* newComposite)
+void SkeletonDerivatives::setComposite(common::Composite* newComposite)
 {
   Base::setComposite(newComposite);
 
@@ -249,28 +199,19 @@ void SkeletonDifferential::setComposite(common::Composite* newComposite)
 
   mState.mDM_GradientKineticEnergy_q.resize(numDofs);
   mState.mDM_GradientKineticEnergy_dq.resize(numDofs);
-  mState.mDM_HessianKineticEnergy_q_q.resize(numDofs, numDofs);
-  mState.mDM_HessianKineticEnergy_q_dq.resize(numDofs, numDofs);
-  mState.mDM_HessianKineticEnergy_dq_dq.resize(numDofs, numDofs);
 
   mState.mDM_GradientOfLagrangian_q.resize(numDofs);
   mState.mDM_GradientOfLagrangian_dq.resize(numDofs);
-  mState.mDM_HessianOfLagrangian_q_q.resize(numDofs, numDofs);
-  mState.mDM_HessianOfLagrangian_q_dq.resize(numDofs, numDofs);
-  mState.mDM_HessianOfLagrangian_dq_dq.resize(numDofs, numDofs);
 
   mState.mDM_D2LD.resize(numDofs);
   mState.mDM_D1LD.resize(numDofs);
-  mState.mDM_D2D1LD.resize(numDofs, numDofs);
 
   for (auto* bodyNode : skel->getBodyNodes())
-  {
-    bodyNode->createAspect<BodyNodeDifferential>();
-  }
+    bodyNode->getOrCreateAspect<BodyNodeDerivatives>();
 }
 
 //==============================================================================
-void SkeletonDifferential::loseComposite(common::Composite* oldComposite)
+void SkeletonDerivatives::loseComposite(common::Composite* oldComposite)
 {
   Base::loseComposite(oldComposite);
 }

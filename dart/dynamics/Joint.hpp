@@ -91,9 +91,8 @@ public:
   /// Default actuator type
   static const ActuatorType DefaultActuatorType;
 
-  using PositionUpdatedSignal
-      = common::Signal<void(
-          const Joint*, std::size_t index, double oldVal, double newVal)>;
+  using PositionUpdatedSignal = common::Signal<void(const Joint* joint)>;
+  using VelocityUpdatedSignal = PositionUpdatedSignal;
 
   Joint(const Joint&) = delete;
 
@@ -960,11 +959,18 @@ protected:
   /// Position updated signal
   PositionUpdatedSignal mPositionUpdatedSignal;
 
+  /// Velocity updated signal
+  PositionUpdatedSignal mVelocityUpdatedSignal;
+
 public:
 
   /// Slot register for position updated signal
   common::SlotRegister<PositionUpdatedSignal>
       onPositionUpdatedAdded{mPositionUpdatedSignal};
+
+  /// Slot register for position updated signal
+  common::SlotRegister<VelocityUpdatedSignal>
+      onVelocityUpdatedAdded{mVelocityUpdatedSignal};
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

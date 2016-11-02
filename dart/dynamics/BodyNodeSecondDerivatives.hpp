@@ -29,8 +29,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_BODYNODEDIFFERENTIAL_HPP_
-#define DART_DYNAMICS_BODYNODEDIFFERENTIAL_HPP_
+#ifndef DART_DYNAMICS_BODYNODESECONDDERIVATIVES_HPP_
+#define DART_DYNAMICS_BODYNODESECONDDERIVATIVES_HPP_
 
 #include <Eigen/Dense>
 
@@ -40,57 +40,22 @@
 namespace dart {
 namespace dynamics {
 
-//class Skeleton;
-
-namespace detail {
-
-struct BodyNodeDifferentialState
-{
-  using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
-
-  GradientMatrix mV_q;
-  GradientMatrix mV_dq;
-
-  std::vector<GradientMatrix> mV_q_q;
-  std::vector<GradientMatrix> mV_q_dq;
-  std::vector<GradientMatrix> mV_dq_dq;
-
-  /// Constructor
-  BodyNodeDifferentialState();
-
-  /// Destructor
-  virtual ~BodyNodeDifferentialState() = default;
-};
-
-}  // namespace detail
-
-//==============================================================================
-class BodyNodeDifferential final :
+class BodyNodeSecondDerivatives final :
     public common::CompositeTrackingAspect<BodyNode>
 {
 public:
 
-  friend class SkeletonDifferential;
+  friend class SkeletonDerivatives;
 
   using Base = common::CompositeTrackingAspect<BodyNode>;
-
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
-  std::unique_ptr<Aspect> cloneAspect() const override
-  {
-    return nullptr;
-  }
+  BodyNodeSecondDerivatives() = default;
 
-//  BodyNodeDifferential(const StateData& state = StateData());
+  BodyNodeSecondDerivatives(const BodyNodeSecondDerivatives&) = delete;
 
-  BodyNodeDifferential() = default;
-
-  BodyNodeDifferential(const BodyNodeDifferential&) = delete;
-
-  /// Update the gradients of spatial body velocities with respect to both of
-  /// joint positions and velocities.
-  void updateSpatialVelocityGradients();
-  // TODO(JS): apply automatic updating method
+  // Documentation inherited
+  std::unique_ptr<Aspect> cloneAspect() const override;
 
   /// Update the Hessians of spatial body velocities with respect to both of
   /// joint positions and velocities.
@@ -100,41 +65,37 @@ public:
   const GradientMatrix& getSpatialVelocityDerivativeWrtPositions() const;
   const GradientMatrix& getSpatialVelocityDerivativeWrtVelocities() const;
 
-  Eigen::Vector6d getBodyVelocityGradientWrtQ(
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
       std::size_t indexInSkeleton) const;
 
-  Eigen::Vector6d getBodyVelocityGradientWrtQ(
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
       const DegreeOfFreedom* withRespectTo) const;
 
-  GradientMatrix getBodyVelocityGradientWrtQ(
+  GradientMatrix getSpatialVelocityDerivativeWrtPositions(
       const Joint* withRespectTo) const;
 
-  GradientMatrix getBodyVelocityGradientWrtQ() const;
-
-  Eigen::Vector6d getBodyVelocityGradientWrtDQ(
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
       std::size_t indexInSkeleton) const;
 
-  Eigen::Vector6d getBodyVelocityGradientWrtDQ(
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
       const DegreeOfFreedom* withRespectTo) const;
 
-  GradientMatrix getBodyVelocityGradientWrtDQ(
+  GradientMatrix getSpatialVelocityDerivativeWrtVelocities(
       const Joint* withRespectTo) const;
 
-  GradientMatrix getBodyVelocityGradientWrtDQ() const;
+  Eigen::VectorXd computeKineticEnergyDerivativeWrtPositions() const;
+  Eigen::VectorXd computeKineticEnergyDerivativeWrtVelocities() const;
 
-  Eigen::VectorXd computeKineticEnergyGradientWrtPositions() const;
-  Eigen::VectorXd computeKineticEnergyGradientWrtVelocities() const;
+  Eigen::VectorXd computeLagrangianDerivativeWrtPositions() const;
+  Eigen::VectorXd computeLagrangianDerivativeWrtVelocities() const;
 
-  Eigen::VectorXd computeLagrangianGradientWrtPositions() const;
-  Eigen::VectorXd computeLagrangianGradientWrtVelocities() const;
-
-  Eigen::MatrixXd computeKineticEnergyHessianWrtPositionsPositions() const;
+  Eigen::MatrixXd computeKineticEnergyHessianWrtPositions() const;
   Eigen::MatrixXd computeKineticEnergyHessianWrtPositionsVelocities() const;
-  Eigen::MatrixXd computeKineticEnergyHessianWrtVelocitiesVelocities() const;
+  Eigen::MatrixXd computeKineticEnergyHessianWrtVelocities() const;
 
-  Eigen::MatrixXd computeLagrangianHessianWrtPositionsPositions() const;
+  Eigen::MatrixXd computeLagrangianHessianWrtPositions() const;
   Eigen::MatrixXd computeLagrangianHessianWrtPositionsVelocities() const;
-  Eigen::MatrixXd computeLagrangianHessianWrtVelocitiesVelocities() const;
+  Eigen::MatrixXd computeLagrangianHessianWrtVelocities() const;
 
   void dirtySpatialVelocityDerivativeWrtPositions();
   void dirtySpatialVelocityDerivativeWrtVelocities();
@@ -158,10 +119,9 @@ protected:
   mutable bool mNeedSpatialVelocityDerivativeWrtPositionsUpdate{true};
   mutable bool mNeedSpatialVelocityDerivativeWrtVelocitiesUpdate{true};
 
-
 };
 
 }  // namespace dynamics
 }  // namespace dart
 
-#endif  // DART_DYNAMICS_BODYNODEDIFFERENTIAL_HPP_
+#endif  // DART_DYNAMICS_BODYNODESECONDDERIVATIVES_HPP_
