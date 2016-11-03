@@ -23,5 +23,3 @@ install(
   DESTINATION include/dart/lcpsolver
   COMPONENT headers
 )
-
-dart_format_add(${hdrs} ${srcs})
