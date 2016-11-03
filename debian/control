@@ -258,7 +258,7 @@ Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          libdart6-dev,
          libdart6-optimizer-ipopt (= ${binary:Version}),
-         coinor-libipopt-dev
+         coinor-libipopt-dev (>= 3.11.9)
 Description: Dynamic Animation and Robotics Toolkit - Optimizer-ipopt Component Development Files
  DART is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data

@@ -281,10 +281,7 @@ bool DartTNLP::eval_f(Ipopt::Index _n,
   const std::shared_ptr<Problem>& problem = mSolver->getProblem();
 
   Eigen::Map<const Eigen::VectorXd> x(_x, _n);
-  mObjValue = problem->getObjective()->eval(
-        static_cast<const Eigen::VectorXd&>(x));
-  // TODO(MXG): Remove this static cast once the
-  // Eigen::Map<const Eigen::VectorXd>& version of the function is removed
+  mObjValue = problem->getObjective()->eval(x);
 
   _obj_value = mObjValue;
 
@@ -301,8 +298,7 @@ bool DartTNLP::eval_grad_f(Ipopt::Index _n,
 
   Eigen::Map<const Eigen::VectorXd> x(_x, _n);
   Eigen::Map<Eigen::VectorXd> grad(_grad_f, _n);
-  problem->getObjective()->evalGradient(
-        static_cast<const Eigen::VectorXd&>(x), grad);
+  problem->getObjective()->evalGradient(x, grad);
 
   return true;
 }
@@ -390,8 +386,7 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
     for (std::size_t i = 0; i < problem->getNumEqConstraints(); ++i)
     {
       new (&grad)Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
-      problem->getEqConstraint(i)->evalGradient(
-            static_cast<const Eigen::VectorXd&>(x), grad);
+      problem->getEqConstraint(i)->evalGradient(x, grad);
       idx += _n;
     }
 
@@ -399,8 +394,7 @@ bool DartTNLP::eval_jac_g(Ipopt::Index _n,
     for (std::size_t i = 0; i < problem->getNumIneqConstraints(); ++i)
     {
       new (&grad)Eigen::Map<Eigen::VectorXd>(_values + idx, _n);
-      problem->getIneqConstraint(i)->evalGradient(
-            static_cast<const Eigen::VectorXd&>(x), grad);
+      problem->getIneqConstraint(i)->evalGradient(x, grad);
       idx += _n;
     }
   }
