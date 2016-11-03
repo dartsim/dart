@@ -42,14 +42,19 @@
 namespace dart {
 namespace lcpsolver {
 
+//==============================================================================
 ODELCPSolver::ODELCPSolver()
 {
+  // Do nothing
 }
 
+//==============================================================================
 ODELCPSolver::~ODELCPSolver()
 {
+  // Do nothing
 }
 
+//==============================================================================
 bool ODELCPSolver::Solve(
     const Eigen::MatrixXd& _A,
     const Eigen::VectorXd& _b,
@@ -140,6 +145,7 @@ bool ODELCPSolver::Solve(
   }
 }
 
+//==============================================================================
 void ODELCPSolver::transferToODEFormulation(
     const Eigen::MatrixXd& _A,
     const Eigen::VectorXd& _b,
@@ -186,6 +192,7 @@ void ODELCPSolver::transferToODEFormulation(
         AIntermediate.col(_numContacts * (_numDir + 2) + i);
 }
 
+//==============================================================================
 void ODELCPSolver::transferSolFromODEFormulation(
     const Eigen::VectorXd& _x,
     Eigen::VectorXd* _xOut,
@@ -209,6 +216,7 @@ void ODELCPSolver::transferSolFromODEFormulation(
     (*_xOut)[_numContacts * (2 + _numDir) + i] = _x[_numContacts * 3 + i];
 }
 
+//==============================================================================
 bool ODELCPSolver::checkIfSolution(
     const Eigen::MatrixXd& _A,
     const Eigen::VectorXd& _b,

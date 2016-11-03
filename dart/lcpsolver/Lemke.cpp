@@ -1,14 +1,8 @@
 /*
- * Copyright (c) 2011-2015, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>,
- *            Yunfei Bai <byf1658@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,11 +29,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/lcpsolver/Lemke.hpp"
+
 #include <cmath>
 #include <iostream>
 #include <vector>
 
-#include "dart/lcpsolver/Lemke.hpp"
 #include "dart/math/Helpers.hpp"
 
 #ifndef isnan
@@ -107,6 +102,7 @@ namespace lcpsolver {
 //  return temp;
 // }
 
+//==============================================================================
 int Lemke(
     const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z)
 {
@@ -384,6 +380,7 @@ int Lemke(
   return err;
 }
 
+//==============================================================================
 bool validate(
     const Eigen::MatrixXd& _M,
     const Eigen::VectorXd& _z,
