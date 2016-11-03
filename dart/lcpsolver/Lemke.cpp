@@ -39,8 +39,8 @@
 #include <iostream>
 #include <vector>
 
-#include "dart/math/Helpers.h"
-#include "dart/lcpsolver/Lemke.h"
+#include "dart/math/Helpers.hpp"
+#include "dart/lcpsolver/Lemke.hpp"
 
 #ifndef isnan
 # define isnan(x) \
@@ -141,10 +141,10 @@ Eigen::MatrixXd B = -Eigen::MatrixXd::Identity(n, n);
 
 if (!bas.empty()) {
     Eigen::MatrixXd B_copy = B;
-    for (size_t i = 0; i < bas.size(); ++i) {
+    for (std::size_t i = 0; i < bas.size(); ++i) {
         B.col(i) = _M.col(bas[i]);
     }
-    for (size_t i = 0; i < nonbas.size(); ++i) {
+    for (std::size_t i = 0; i < nonbas.size(); ++i) {
         B.col(bas.size() + i) = B_copy.col(nonbas[i]);
     }
     // TODO: check the condition number to return err = 3
@@ -162,7 +162,7 @@ if (!bas.empty()) {
 // Check if initial basis provides solution
 if (x.minCoeff() >=0 ) {
     Eigen::VectorXd __z = Eigen::VectorXd::Zero(2 * n);
-    for (size_t i = 0; i < bas.size(); ++i) {
+    for (std::size_t i = 0; i < bas.size(); ++i) {
         (__z).row(bas[i]) = x.row(i);
     }
     (*_z) = __z.head(n);
@@ -173,7 +173,7 @@ if (x.minCoeff() >=0 ) {
 Eigen::VectorXd minuxX = -x;
 int lvindex;
 double tval = minuxX.maxCoeff(&lvindex);
-for (size_t i = 0; i < nonbas.size(); ++i) {
+for (std::size_t i = 0; i < nonbas.size(); ++i) {
     bas.push_back(nonbas[i] + n);
 }
 leaving = bas[lvindex];
@@ -216,16 +216,16 @@ for (iter = 0; iter < maxiter; ++iter) {
         break;
     }
 
-    size_t jSize = j.size();
+    std::size_t jSize = j.size();
     Eigen::VectorXd minRatio(jSize);
-    for (size_t i = 0; i < jSize; ++i) {
+    for (std::size_t i = 0; i < jSize; ++i) {
         minRatio[i] = (x[j[i]] + zer_tol) / d[j[i]];
     }
     double theta = minRatio.minCoeff();
 
     std::vector<int> tmpJ;
     std::vector<double> tmpd;
-    for (size_t i = 0; i < jSize; ++i) {
+    for (std::size_t i = 0; i < jSize; ++i) {
         if (x[j[i]] / d[j[i]] <= theta) {
             tmpJ.push_back(j[i]);
             tmpd.push_back(d[j[i]]);
@@ -252,7 +252,7 @@ for (iter = 0; iter < maxiter; ++iter) {
     lvindex = -1;
 
     // Check if artificial among these
-    for (size_t i = 0; i < jSize; ++i) {
+    for (std::size_t i = 0; i < jSize; ++i) {
         if (bas[j[i]] == t)
             lvindex = i;
     }
@@ -262,7 +262,7 @@ for (iter = 0; iter < maxiter; ++iter) {
     } else {
         theta = tmpd[0];
         lvindex = 0;
-        for (size_t i = 0; i < jSize; ++i) {
+        for (std::size_t i = 0; i < jSize; ++i) {
             if (tmpd[i] - theta > piv_tol) {  // Bubble sorting
                 theta = tmpd[i];
                 lvindex = i;
@@ -299,7 +299,7 @@ if (iter >= maxiter && leaving != t) {
 }
 
 if (err == 0) {
-    for (size_t i = 0; i < bas.size(); ++i) {
+    for (std::size_t i = 0; i < bas.size(); ++i) {
         if (bas[i] < _z->size()) {
             (*_z)[bas[i]] = x[i];
         }
