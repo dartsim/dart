@@ -37,52 +37,6 @@
 
 #include "dart/math/Helpers.hpp"
 
-#ifndef isnan
-#define isnan(x)                                                               \
-  (sizeof(x) == sizeof(long double)                                            \
-       ? isnan_ld(x)                                                           \
-       : sizeof(x) == sizeof(double) ? isnan_d(x) : isnan_f(x))
-
-static inline int isnan_f(float _x)
-{
-  return _x != _x;
-}
-
-static inline int isnan_d(double _x)
-{
-  return _x != _x;
-}
-
-static inline int isnan_ld(long double _x)
-{
-  return _x != _x;
-}
-
-#endif
-
-#ifndef isinf
-#define isinf(x)                                                               \
-  (sizeof(x) == sizeof(long double)                                            \
-       ? isinf_ld(x)                                                           \
-       : sizeof(x) == sizeof(double) ? isinf_d(x) : isinf_f(x))
-
-static inline int isinf_f(float _x)
-{
-  return !isnan(_x) && isnan(_x - _x);
-}
-
-static inline int isinf_d(double _x)
-{
-  return !isnan(_x) && isnan(_x - _x);
-}
-
-static inline int isinf_ld(long double _x)
-{
-  return !isnan(_x) && isnan(_x - _x);
-}
-
-#endif
-
 namespace dart {
 namespace lcpsolver {
 
