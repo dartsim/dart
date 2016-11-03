@@ -36,6 +36,7 @@
 
 #include "dart/common/AspectWithVersion.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/BodyNodeDerivatives.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -48,7 +49,8 @@ public:
   friend class SkeletonDerivatives;
 
   using Base = common::CompositeTrackingAspect<BodyNode>;
-  using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
+  using SpatialVelocityDerivative = Eigen::Matrix<double, 6, Eigen::Dynamic>;
+  using SpatialVelocitySecondDerivative = std::vector<SpatialVelocityDerivative>;
 
   BodyNodeSecondDerivatives() = default;
 
@@ -57,13 +59,11 @@ public:
   // Documentation inherited
   std::unique_ptr<Aspect> cloneAspect() const override;
 
-  /// Update the Hessians of spatial body velocities with respect to both of
-  /// joint positions and velocities.
-  void updateSpatialVelocityHessians();
-  // TODO(JS): apply automatic updating method
+  //----------------------------------------------------------------------------
+  /// \{ \name Derivative of spatial velocity
+  //----------------------------------------------------------------------------
 
-  const GradientMatrix& getSpatialVelocityDerivativeWrtPositions() const;
-  const GradientMatrix& getSpatialVelocityDerivativeWrtVelocities() const;
+  const SpatialVelocityDerivative& getSpatialVelocityDerivativeWrtPositions() const;
 
   Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
       std::size_t indexInSkeleton) const;
@@ -71,8 +71,10 @@ public:
   Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
       const DegreeOfFreedom* withRespectTo) const;
 
-  GradientMatrix getSpatialVelocityDerivativeWrtPositions(
+  SpatialVelocityDerivative getSpatialVelocityDerivativeWrtPositions(
       const Joint* withRespectTo) const;
+
+  const SpatialVelocityDerivative& getSpatialVelocityDerivativeWrtVelocities() const;
 
   Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
       std::size_t indexInSkeleton) const;
@@ -80,8 +82,25 @@ public:
   Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
       const DegreeOfFreedom* withRespectTo) const;
 
-  GradientMatrix getSpatialVelocityDerivativeWrtVelocities(
+  SpatialVelocityDerivative getSpatialVelocityDerivativeWrtVelocities(
       const Joint* withRespectTo) const;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Second derivative of spatial velocity
+  //----------------------------------------------------------------------------
+
+  const SpatialVelocitySecondDerivative&
+  getSpatialVelocitySecondDerivativeWrtPositions() const;
+
+  const SpatialVelocitySecondDerivative&
+  getSpatialVelocitySecondDerivativeWrtPositionsVelocities() const;
+
+  const SpatialVelocitySecondDerivative&
+  getSpatialVelocitySecondDerivativeWrtVelocities() const;
+
+  /// \}
 
   Eigen::VectorXd computeKineticEnergyDerivativeWrtPositions() const;
   Eigen::VectorXd computeKineticEnergyDerivativeWrtVelocities() const;
@@ -101,23 +120,21 @@ public:
   void dirtySpatialVelocityDerivativeWrtVelocities();
   // TODO(JS): rename to dirtySpatialVelocityDerivative();
 
-  void print();
-
 protected:
 
   void setComposite(common::Composite* newComposite) override;
 
 protected:
 
-  mutable GradientMatrix mV_q;
-  mutable GradientMatrix mV_dq;
+  BodyNodeDerivatives* mBodyNodeDerivatives{nullptr};
 
-  mutable std::vector<GradientMatrix> mV_q_q;
-  mutable std::vector<GradientMatrix> mV_q_dq;
-  mutable std::vector<GradientMatrix> mV_dq_dq;
+  mutable std::vector<SpatialVelocityDerivative> mV_q_q;
+  mutable std::vector<SpatialVelocityDerivative> mV_q_dq;
+  mutable std::vector<SpatialVelocityDerivative> mV_dq_dq;
 
-  mutable bool mNeedSpatialVelocityDerivativeWrtPositionsUpdate{true};
-  mutable bool mNeedSpatialVelocityDerivativeWrtVelocitiesUpdate{true};
+  mutable bool mNeedSpatialVelocitySecondDerivativeWrtPositionsUpdate{true};
+  mutable bool mNeedSpatialVelocitySecondDerivativeWrtPositionsVelocitiesUpdate{true};
+  mutable bool mNeedSpatialVelocitySecondDerivativeWrtVelocitiesUpdate{true};
 
 };
 

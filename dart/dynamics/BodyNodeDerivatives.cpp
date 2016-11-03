@@ -230,7 +230,7 @@ void BodyNodeDerivatives::setComposite(common::Composite* newComposite)
 {
   Base::setComposite(newComposite);
 
-  auto* bodyNode = dynamic_cast<BodyNode*>(newComposite);
+  auto* bodyNode = mComposite;
   auto* joint = bodyNode->getParentJoint();
   joint->onPositionUpdatedAdded.connect(
         [=](const Joint* /*joint*/)
