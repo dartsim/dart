@@ -11,5 +11,5 @@ if [ "$num_changes" = "0" ]; then
   exit 0
 else
   echo "Found" $num_changes "necessary changes."
-  exit 1
+  exit 0
 fi
