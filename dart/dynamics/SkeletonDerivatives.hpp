@@ -40,15 +40,69 @@
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
-struct SkeletonDerivativesState
+//==============================================================================
+class SkeletonDerivatives final :
+    public common::CompositeTrackingAspect<Skeleton>
 {
-  /// Constructor
-  SkeletonDerivativesState();
+public:
 
-  /// Destructor
-  virtual ~SkeletonDerivativesState() = default;
+  using Base = common::CompositeTrackingAspect<Skeleton>;
+  using SpatialVelocityDerivative = Eigen::Matrix<double, 6, Eigen::Dynamic>;
+
+  SkeletonDerivatives() = default;
+
+  SkeletonDerivatives(const SkeletonDerivatives&) = delete;
+
+  // Documentation inherited
+  std::unique_ptr<Aspect> cloneAspect() const override;
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Derivatives of spatial velocities of bodies
+  //----------------------------------------------------------------------------
+
+  SpatialVelocityDerivative getSpatialVelocityDerivativeWrtPositions(
+      std::size_t bodyNodeIndexInSkeleton) const;
+
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
+      std::size_t bodyNodeIndexInSkeleton,
+      std::size_t withRespectTo) const;
+
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
+      std::size_t bodyNodeIndexInSkeleton,
+      const DegreeOfFreedom* withRespectTo) const;
+
+  SpatialVelocityDerivative getSpatialVelocityDerivativeWrtVelocities(
+      std::size_t bodyNodeIndexInSkeleton) const;
+
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
+      std::size_t bodyNodeIndexInSkeleton,
+      std::size_t withRespectTo) const;
+
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
+      std::size_t bodyNodeIndexInSkeleton,
+      const DegreeOfFreedom* withRespectTo) const;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Gradients of Lagrangian
+  //----------------------------------------------------------------------------
+
+  /// Compute and return the first derivative of the Lagrangian with respect to
+  /// the generalized coordinates.
+  const Eigen::VectorXd& computeLagrangianGradientWrtPositions();
+
+  /// Compute and return the first derivative of the Lagrangian with respect to
+  /// the generalized velocities.
+  const Eigen::VectorXd& computeLagrangianGradientWrtVelocities();
+
+  /// \}
+
+protected:
+
+  void setComposite(common::Composite* newComposite) override;
+
+protected:
 
   Eigen::VectorXd mDM_GradientKineticEnergy_q;
   Eigen::VectorXd mDM_GradientKineticEnergy_dq;
@@ -58,73 +112,6 @@ struct SkeletonDerivativesState
 
   Eigen::VectorXd mDM_D2LD;
   Eigen::VectorXd mDM_D1LD;
-};
-
-}  // namespace detail
-
-//==============================================================================
-class SkeletonDerivatives final :
-    public common::AspectWithState<
-        SkeletonDerivatives,
-        detail::SkeletonDerivativesState,
-        Skeleton>
-{
-public:
-
-  using Base = common::AspectWithState<
-      SkeletonDerivatives,
-      detail::SkeletonDerivativesState,
-      Skeleton>;
-
-  using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
-
-//  SkeletonLagrangianAspect(const PropertiesData& properties = PropertiesData());
-
-  SkeletonDerivatives(const StateData& state = StateData());
-
-  SkeletonDerivatives(const SkeletonDerivatives&) = delete;
-
-  /// Compute and return the first derivative of the Lagrangian with respect to
-  /// the generalized coordinates.
-  const Eigen::VectorXd& computeLagrangianDerivativeWrtPositions();
-
-  /// Compute and return the first derivative of the Lagrangian with respect to
-  /// the generalized velocities.
-  const Eigen::VectorXd& computeLagrangianDerivativeWrtVelocities();
-
-  /// Identical to computeLagrangianDerivativeWrtPositions()
-  const Eigen::VectorXd& computeLagrangianGradientWrtPositions();
-
-  /// Identical to computeLagrangianDerivativeWrtVelocities()
-  const Eigen::VectorXd& computeLagrangianGradientWrtVelocities();
-
-  GradientMatrix getSpatialVelocityDerivativeWrtPositions(
-      std::size_t bodyNodeIndexInSkeleton) const;
-
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
-      std::size_t bodyNodeIndexInSkeleton,
-      std::size_t withRespectTo) const;
-
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
-      std::size_t bodyNodeIndexInSkeleton,
-      const DegreeOfFreedom* withRespectTo) const;
-
-  GradientMatrix getSpatialVelocityDerivativeWrtVelocities(
-      std::size_t bodyNodeIndexInSkeleton) const;
-
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
-      std::size_t bodyNodeIndexInSkeleton,
-      std::size_t withRespectTo) const;
-
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
-      std::size_t bodyNodeIndexInSkeleton,
-      const DegreeOfFreedom* withRespectTo) const;
-
-protected:
-
-  void setComposite(common::Composite* newComposite) override;
-
-  void loseComposite(common::Composite* oldComposite) override;
 
 };
 

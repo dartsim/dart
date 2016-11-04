@@ -41,25 +41,25 @@ void setRandomState(const dynamics::SkeletonPtr& skel);
 
 SkeletonPtr createRandomSkeleton();
 
-Eigen::VectorXd computeNumericalLagrangianDerivativeWrtPositions(
+Eigen::VectorXd computeNumericalLagrangianGradientWrtPositions(
     const dynamics::SkeletonPtr& skel,
     double delta = 1e-12);
 
-Eigen::VectorXd computeNumericalLagrangianDerivativeWrtVelocities(
+Eigen::VectorXd computeNumericalLagrangianGradientWrtVelocities(
     const dynamics::SkeletonPtr& skel,
     double delta = 1e-12);
 
-Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositionsQ(
+Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositions(
     const dynamics::SkeletonPtr& skel,
-    double delta = 1e-12);
+    double delta = 1e-6);
 
-Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositionsDQ(
+Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositionsVelocities(
     const dynamics::SkeletonPtr& skel,
-    double delta = 1e-12);
+    double delta = 1e-6);
 
-Eigen::MatrixXd computeNumericalLagrangianHessianWrtVelocitiesDQ(
+Eigen::MatrixXd computeNumericalLagrangianHessianWrtVelocities(
     const dynamics::SkeletonPtr& skel,
-    double delta = 1e-12);
+    double delta = 1e-6);
 
 // Compute gradients of spatial velocities of bodies with respect to the joint
 // positions using finite difference method
@@ -159,19 +159,19 @@ TEST(Derivatives, LagragianDerivatives)
   auto* skelComposite = skelDeriv->getComposite();
   EXPECT_TRUE(skelComposite != nullptr);
 
-  auto lagGradWrtPositions = skelDeriv->computeLagrangianDerivativeWrtPositions();
-  auto lagGradWrtPositionsNumerical = computeNumericalLagrangianDerivativeWrtPositions(skel);
+  auto lagGradWrtPositions = skelDeriv->computeLagrangianGradientWrtPositions();
+  auto lagGradWrtPositionsNumerical = computeNumericalLagrangianGradientWrtPositions(skel);
   EXPECT_TRUE(lagGradWrtPositions.isApprox(lagGradWrtPositionsNumerical, 1e-2));
 
-  auto lagGradWrtVelocities = skelDeriv->computeLagrangianDerivativeWrtVelocities();
-  auto lagGradWrtVelocitiesNumerical = computeNumericalLagrangianDerivativeWrtVelocities(skel);
+  auto lagGradWrtVelocities = skelDeriv->computeLagrangianGradientWrtVelocities();
+  auto lagGradWrtVelocitiesNumerical = computeNumericalLagrangianGradientWrtVelocities(skel);
   EXPECT_TRUE(lagGradWrtVelocities.isApprox(lagGradWrtVelocitiesNumerical, 1e-2));
 }
 
 //==============================================================================
 TEST(Derivatives, LagragianSecondDerivatives)
 {
-  auto skel = createNLinkPendulum(5);
+  auto skel = createNLinkPendulum(2);
   skel->setGravity(Eigen::Vector3d::Zero());
   setRandomState(skel);
 
@@ -181,13 +181,17 @@ TEST(Derivatives, LagragianSecondDerivatives)
   auto* skelComposite = skelDeriv->getComposite();
   EXPECT_TRUE(skelComposite != nullptr);
 
-  auto lagHessianGradWrtPositions = skelDeriv->computeLagrangianHessianWrtPositions();
-  auto lagHessianWrtPositionsNumerical = computeNumericalLagrangianHessianWrtPositionsQ(skel);
-//  EXPECT_TRUE(lagHessianGradWrtPositions.isApprox(lagHessianWrtPositionsNumerical, 1e-2));
+  auto lagrangianHessianWrtPositions = skelDeriv->computeLagrangianHessianWrtPositions();
+  auto lagrangianHessianWrtPositionsNumerical = computeNumericalLagrangianHessianWrtPositions(skel);
+  EXPECT_TRUE(lagrangianHessianWrtPositions.isApprox(lagrangianHessianWrtPositionsNumerical, 1e-2));
 
-//  auto lagHessianWrtVelocities = skelDeriv->computeLagrangianHessianWrtVelocities();
-//  auto lagHessianWrtVelocitiesNumerical = computeNumericalLagrangianHessianWrtVelocitiesDQ(skel);
-//  EXPECT_TRUE(lagHessianWrtVelocities.isApprox(lagHessianWrtVelocitiesNumerical, 1e-2));
+  auto lagrangianHessianWrtPositionsVelocities = skelDeriv->computeLagrangianHessianWrtPositionsVelocities();
+  auto lagrangianHessianWrtPositionsVelocitiesNumerical = computeNumericalLagrangianHessianWrtPositionsVelocities(skel);
+  EXPECT_TRUE(lagrangianHessianWrtPositionsVelocities.isApprox(lagrangianHessianWrtPositionsVelocitiesNumerical, 1e-2));
+
+  auto lagrangianHessianWrtVelocities = skelDeriv->computeLagrangianHessianWrtVelocities();
+  auto lagrangianHessianWrtVelocitiesNumerical = computeNumericalLagrangianHessianWrtVelocities(skel);
+  EXPECT_TRUE(lagrangianHessianWrtVelocities.isApprox(lagrangianHessianWrtVelocitiesNumerical, 1e-2));
 }
 
 //==============================================================================
@@ -237,7 +241,7 @@ SkeletonPtr createRandomSkeleton()
 }
 
 //==============================================================================
-Eigen::VectorXd computeNumericalLagrangianDerivativeWrtPositions(
+Eigen::VectorXd computeNumericalLagrangianGradientWrtPositions(
     const dynamics::SkeletonPtr& skel, double delta)
 {
   const auto numDofs = skel->getNumDofs();
@@ -260,7 +264,7 @@ Eigen::VectorXd computeNumericalLagrangianDerivativeWrtPositions(
 }
 
 //==============================================================================
-Eigen::VectorXd computeNumericalLagrangianDerivativeWrtVelocities(
+Eigen::VectorXd computeNumericalLagrangianGradientWrtVelocities(
     const dynamics::SkeletonPtr& skel, double delta)
 {
   const auto numDofs = skel->getNumDofs();
@@ -283,7 +287,7 @@ Eigen::VectorXd computeNumericalLagrangianDerivativeWrtVelocities(
 }
 
 //==============================================================================
-Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositionsQ(
+Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositions(
     const dynamics::SkeletonPtr& skel, double delta)
 {
   const auto numDofs = skel->getNumDofs();
@@ -294,10 +298,10 @@ Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositionsQ(
   for (auto i = 0u; i < numDofs; ++i)
   {
     Eigen::VectorXd grad1
-        = computeNumericalLagrangianDerivativeWrtPositions(skel, delta);
+        = computeNumericalLagrangianGradientWrtPositions(skel, delta);
     skel->setPosition(i, oldPositions[i] + delta);
     Eigen::VectorXd grad2
-        = computeNumericalLagrangianDerivativeWrtPositions(skel, delta);
+        = computeNumericalLagrangianGradientWrtPositions(skel, delta);
     skel->setPosition(i, oldPositions[i]);
     hessian.col(i) = (grad2 - grad1) / delta;
   }
@@ -308,32 +312,55 @@ Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositionsQ(
 }
 
 //==============================================================================
-Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositionsDQ(
+Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositionsVelocities(
     const dynamics::SkeletonPtr& skel, double delta)
 {
   const auto numDofs = skel->getNumDofs();
   Eigen::MatrixXd hessian = Eigen::MatrixXd::Zero(numDofs, numDofs);
 
+  const Eigen::VectorXd oldPositions = skel->getPositions();
   const Eigen::VectorXd oldVelocities = skel->getVelocities();
+
+  const auto L = skel->computeLagrangian();
 
   for (auto i = 0u; i < numDofs; ++i)
   {
-    Eigen::VectorXd grad1
-        = computeNumericalLagrangianDerivativeWrtPositions(skel, delta);
-    skel->setVelocity(i, oldVelocities[i] + delta);
-    Eigen::VectorXd grad2
-        = computeNumericalLagrangianDerivativeWrtPositions(skel, delta);
-    skel->setVelocity(i, oldVelocities[i]);
-    hessian.col(i) = (grad2 - grad1) / delta;
+    Eigen::VectorXd iPos = oldPositions;
+    iPos[i] += delta;
+    skel->setPositions(iPos);
+    const auto Li = skel->computeLagrangian();
+    skel->setPositions(oldPositions);
+
+    for (auto j = 0u; j < numDofs; ++j)
+    {
+      Eigen::VectorXd jVel = oldVelocities;
+      jVel[j] += delta;
+      skel->setVelocities(jVel);
+      const auto Lj = skel->computeLagrangian();
+      skel->setVelocities(oldVelocities);
+
+//      iPos = oldPositions;
+//      iPos[i] += delta;
+//      jVel = oldVelocities;
+//      jVel[j] += delta;
+      skel->setPositions(iPos);
+      skel->setVelocities(jVel);
+      const auto Lij = skel->computeLagrangian();
+      skel->setPositions(oldPositions);
+      skel->setVelocities(oldVelocities);
+
+      hessian(i, j) = (Lij - Li - Lj + L) / (delta*delta);
+    }
   }
 
+  skel->setPositions(oldPositions);
   skel->setVelocities(oldVelocities);
 
   return hessian;
 }
 
 //==============================================================================
-Eigen::MatrixXd computeNumericalLagrangianHessianWrtVelocitiesDQ(
+Eigen::MatrixXd computeNumericalLagrangianHessianWrtVelocities(
     const dynamics::SkeletonPtr& skel, double delta)
 {
   const auto numDofs = skel->getNumDofs();
@@ -344,10 +371,10 @@ Eigen::MatrixXd computeNumericalLagrangianHessianWrtVelocitiesDQ(
   for (auto i = 0u; i < numDofs; ++i)
   {
     Eigen::VectorXd grad1
-        = computeNumericalLagrangianDerivativeWrtVelocities(skel, delta);
+        = computeNumericalLagrangianGradientWrtVelocities(skel, delta);
     skel->setVelocity(i, oldVelocities[i] + delta);
     Eigen::VectorXd grad2
-        = computeNumericalLagrangianDerivativeWrtVelocities(skel, delta);
+        = computeNumericalLagrangianGradientWrtVelocities(skel, delta);
     skel->setVelocity(i, oldVelocities[i]);
     hessian.col(i) = (grad2 - grad1) / delta;
   }

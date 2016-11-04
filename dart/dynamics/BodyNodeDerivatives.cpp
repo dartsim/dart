@@ -191,7 +191,7 @@ BodyNodeDerivatives::getSpatialVelocityDerivativeWrtVelocities(
 
 //==============================================================================
 Eigen::VectorXd
-BodyNodeDerivatives::computeKineticEnergyDerivativeWrtPositions() const
+BodyNodeDerivatives::computeKineticEnergyGradientWrtPositions() const
 {
   const BodyNode* thisBodyNode = mComposite;
   const Eigen::Matrix6d& G = thisBodyNode->getInertia().getSpatialTensor();
@@ -202,7 +202,7 @@ BodyNodeDerivatives::computeKineticEnergyDerivativeWrtPositions() const
 
 //==============================================================================
 Eigen::VectorXd
-BodyNodeDerivatives::computeKineticEnergyDerivativeWrtVelocities() const
+BodyNodeDerivatives::computeKineticEnergyGradientWrtVelocities() const
 {
   const BodyNode* thisBodyNode = mComposite;
   const Eigen::Matrix6d& G = thisBodyNode->getInertia().getSpatialTensor();
@@ -213,16 +213,16 @@ BodyNodeDerivatives::computeKineticEnergyDerivativeWrtVelocities() const
 
 //==============================================================================
 Eigen::VectorXd
-BodyNodeDerivatives::computeLagrangianDerivativeWrtPositions() const
+BodyNodeDerivatives::computeLagrangianGradientWrtPositions() const
 {
-  return computeKineticEnergyDerivativeWrtPositions();
+  return computeKineticEnergyGradientWrtPositions();
 }
 
 //==============================================================================
 Eigen::VectorXd
-BodyNodeDerivatives::computeLagrangianDerivativeWrtVelocities() const
+BodyNodeDerivatives::computeLagrangianGradientWrtVelocities() const
 {
-  return computeKineticEnergyDerivativeWrtVelocities();
+  return computeKineticEnergyGradientWrtVelocities();
 }
 
 //==============================================================================

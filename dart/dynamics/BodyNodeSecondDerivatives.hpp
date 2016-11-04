@@ -102,11 +102,21 @@ public:
 
   /// \}
 
-  Eigen::VectorXd computeKineticEnergyDerivativeWrtPositions() const;
-  Eigen::VectorXd computeKineticEnergyDerivativeWrtVelocities() const;
+  //----------------------------------------------------------------------------
+  /// \{ \name Gradients of Lagrangian
+  //----------------------------------------------------------------------------
 
-  Eigen::VectorXd computeLagrangianDerivativeWrtPositions() const;
-  Eigen::VectorXd computeLagrangianDerivativeWrtVelocities() const;
+  Eigen::VectorXd computeKineticEnergyGradientWrtPositions() const;
+  Eigen::VectorXd computeKineticEnergyGradientWrtVelocities() const;
+
+  Eigen::VectorXd computeLagrangianGradientWrtPositions() const;
+  Eigen::VectorXd computeLagrangianGradientWrtVelocities() const;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Hessians of Lagrangian
+  //----------------------------------------------------------------------------
 
   Eigen::MatrixXd computeKineticEnergyHessianWrtPositions() const;
   Eigen::MatrixXd computeKineticEnergyHessianWrtPositionsVelocities() const;
@@ -116,13 +126,14 @@ public:
   Eigen::MatrixXd computeLagrangianHessianWrtPositionsVelocities() const;
   Eigen::MatrixXd computeLagrangianHessianWrtVelocities() const;
 
-  void dirtySpatialVelocityDerivativeWrtPositions();
-  void dirtySpatialVelocityDerivativeWrtVelocities();
-  // TODO(JS): rename to dirtySpatialVelocityDerivative();
+  /// \}
 
 protected:
 
   void setComposite(common::Composite* newComposite) override;
+
+  void dirtySpatialVelocitySecondDerivativeWrtPositions();
+  void dirtySpatialVelocitySecondDerivativeWrtPositionsVelocities();
 
 protected:
 
@@ -134,7 +145,6 @@ protected:
 
   mutable bool mNeedSpatialVelocitySecondDerivativeWrtPositionsUpdate{true};
   mutable bool mNeedSpatialVelocitySecondDerivativeWrtPositionsVelocitiesUpdate{true};
-  mutable bool mNeedSpatialVelocitySecondDerivativeWrtVelocitiesUpdate{true};
 
 };
 

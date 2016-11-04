@@ -88,14 +88,14 @@ public:
   // TODO(JS): Derivative of spatial acceleration
 
   //----------------------------------------------------------------------------
-  /// \{ \name Derivative of Lagrangian
+  /// \{ \name Gradients of Lagrangian
   //----------------------------------------------------------------------------
 
-  Eigen::VectorXd computeKineticEnergyDerivativeWrtPositions() const;
-  Eigen::VectorXd computeKineticEnergyDerivativeWrtVelocities() const;
+  Eigen::VectorXd computeKineticEnergyGradientWrtPositions() const;
+  Eigen::VectorXd computeKineticEnergyGradientWrtVelocities() const;
 
-  Eigen::VectorXd computeLagrangianDerivativeWrtPositions() const;
-  Eigen::VectorXd computeLagrangianDerivativeWrtVelocities() const;
+  Eigen::VectorXd computeLagrangianGradientWrtPositions() const;
+  Eigen::VectorXd computeLagrangianGradientWrtVelocities() const;
 
   /// \}
 
@@ -105,7 +105,6 @@ protected:
 
   void dirtySpatialVelocityDerivativeWrtPositions();
   void dirtySpatialVelocityDerivativeWrtVelocities();
-  // TODO(JS): rename to dirtySpatialVelocityDerivative();
 
 protected:
 

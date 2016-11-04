@@ -37,70 +37,47 @@
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
 //==============================================================================
-SkeletonDerivativesState::SkeletonDerivativesState()
+std::unique_ptr<common::Aspect> SkeletonDerivatives::cloneAspect() const
 {
-  // Do nothing
-}
-
-} // namespace detail
-
-//==============================================================================
-SkeletonDerivatives::SkeletonDerivatives(const StateData& state)
-{
-  mState = state;
-}
-
-//==============================================================================
-const Eigen::VectorXd&
-SkeletonDerivatives::computeLagrangianDerivativeWrtPositions()
-{
-  mState.mDM_GradientOfLagrangian_q.setZero();
-
-  for (auto* bodyNode : mComposite->getBodyNodes())
-  {
-    auto bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
-    mState.mDM_GradientOfLagrangian_q
-        += bodyNodeDerivative->computeLagrangianDerivativeWrtPositions();
-  }
-
-  return mState.mDM_GradientOfLagrangian_q;
-}
-
-//==============================================================================
-const Eigen::VectorXd&
-SkeletonDerivatives::computeLagrangianDerivativeWrtVelocities()
-{
-  mState.mDM_GradientOfLagrangian_dq.setZero();
-
-  for (auto* bodyNode : mComposite->getBodyNodes())
-  {
-    auto bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
-    mState.mDM_GradientOfLagrangian_dq
-        += bodyNodeDerivative->computeLagrangianDerivativeWrtVelocities();
-  }
-
-  return mState.mDM_GradientOfLagrangian_dq;
+  // TODO(JS): not implemented
+  return common::make_unique<SkeletonDerivatives>();
 }
 
 //==============================================================================
 const Eigen::VectorXd&
 SkeletonDerivatives::computeLagrangianGradientWrtPositions()
 {
-  return computeLagrangianDerivativeWrtPositions();
+  mDM_GradientOfLagrangian_q.setZero();
+
+  for (auto* bodyNode : mComposite->getBodyNodes())
+  {
+    auto bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
+    mDM_GradientOfLagrangian_q
+        += bodyNodeDerivative->computeLagrangianGradientWrtPositions();
+  }
+
+  return mDM_GradientOfLagrangian_q;
 }
 
 //==============================================================================
 const Eigen::VectorXd&
 SkeletonDerivatives::computeLagrangianGradientWrtVelocities()
 {
-  return computeLagrangianGradientWrtPositions();
+  mDM_GradientOfLagrangian_dq.setZero();
+
+  for (auto* bodyNode : mComposite->getBodyNodes())
+  {
+    auto bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
+    mDM_GradientOfLagrangian_dq
+        += bodyNodeDerivative->computeLagrangianGradientWrtVelocities();
+  }
+
+  return mDM_GradientOfLagrangian_dq;
 }
 
 //==============================================================================
-SkeletonDerivatives::GradientMatrix
+SkeletonDerivatives::SpatialVelocityDerivative
 SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
     std::size_t bodyNodeIndexInSkeleton) const
 {
@@ -144,7 +121,7 @@ Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
 }
 
 //==============================================================================
-SkeletonDerivatives::GradientMatrix
+SkeletonDerivatives::SpatialVelocityDerivative
 SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
     std::size_t bodyNodeIndexInSkeleton) const
 {
@@ -197,23 +174,17 @@ void SkeletonDerivatives::setComposite(common::Composite* newComposite)
 
   assert(skel);
 
-  mState.mDM_GradientKineticEnergy_q.resize(numDofs);
-  mState.mDM_GradientKineticEnergy_dq.resize(numDofs);
+  mDM_GradientKineticEnergy_q.resize(numDofs);
+  mDM_GradientKineticEnergy_dq.resize(numDofs);
 
-  mState.mDM_GradientOfLagrangian_q.resize(numDofs);
-  mState.mDM_GradientOfLagrangian_dq.resize(numDofs);
+  mDM_GradientOfLagrangian_q.resize(numDofs);
+  mDM_GradientOfLagrangian_dq.resize(numDofs);
 
-  mState.mDM_D2LD.resize(numDofs);
-  mState.mDM_D1LD.resize(numDofs);
+  mDM_D2LD.resize(numDofs);
+  mDM_D1LD.resize(numDofs);
 
   for (auto* bodyNode : skel->getBodyNodes())
     bodyNode->getOrCreateAspect<BodyNodeDerivatives>();
-}
-
-//==============================================================================
-void SkeletonDerivatives::loseComposite(common::Composite* oldComposite)
-{
-  Base::loseComposite(oldComposite);
 }
 
 } // namespace dynamics

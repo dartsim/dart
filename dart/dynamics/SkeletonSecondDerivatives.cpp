@@ -38,50 +38,59 @@
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
 //==============================================================================
-SkeletonSecondDerivativesState::SkeletonSecondDerivativesState()
+std::unique_ptr<common::Aspect> SkeletonSecondDerivatives::cloneAspect() const
 {
-  // Do nothing
-}
-
-} // namespace detail
-
-//==============================================================================
-SkeletonSecondDerivatives::SkeletonSecondDerivatives(const StateData& state)
-{
-  mState = state;
+  // TODO(JS): not implemented
+  return common::make_unique<SkeletonSecondDerivatives>();
 }
 
 //==============================================================================
 const Eigen::MatrixXd&
 SkeletonSecondDerivatives::computeLagrangianHessianWrtPositions()
 {
-  mState.mDM_GradientOfLagrangian_dq.setZero();
+  mDM_HessianOfLagrangian_q_q.setZero();
 
   for (auto* bodyNode : mComposite->getBodyNodes())
   {
-    auto bodyNodeDerivative = bodyNode->get<BodyNodeSecondDerivatives>();
-    mState.mDM_HessianOfLagrangian_q_q
-        += bodyNodeDerivative->computeLagrangianHessianWrtPositions();
+    auto bodyNode2ndDeriv = bodyNode->get<BodyNodeSecondDerivatives>();
+    mDM_HessianOfLagrangian_q_q
+        += bodyNode2ndDeriv->computeLagrangianHessianWrtPositions();
   }
 
-  return mState.mDM_HessianOfLagrangian_q_q;
+  return mDM_HessianOfLagrangian_q_q;
 }
 
 //==============================================================================
 const Eigen::MatrixXd&
 SkeletonSecondDerivatives::computeLagrangianHessianWrtPositionsVelocities()
 {
-  return mState.mDM_HessianOfLagrangian_q_dq;
+  mDM_HessianOfLagrangian_q_dq.setZero();
+
+  for (auto* bodyNode : mComposite->getBodyNodes())
+  {
+    auto bodyNode2ndDeriv = bodyNode->get<BodyNodeSecondDerivatives>();
+    mDM_HessianOfLagrangian_q_dq
+        += bodyNode2ndDeriv->computeLagrangianHessianWrtPositionsVelocities();
+  }
+
+  return mDM_HessianOfLagrangian_q_dq;
 }
 
 //==============================================================================
 const Eigen::MatrixXd&
 SkeletonSecondDerivatives::computeLagrangianHessianWrtVelocities()
 {
-  return mState.mDM_HessianOfLagrangian_dq_dq;
+  mDM_HessianOfLagrangian_dq_dq.setZero();
+
+  for (auto* bodyNode : mComposite->getBodyNodes())
+  {
+    auto bodyNode2ndDeriv = bodyNode->get<BodyNodeSecondDerivatives>();
+    mDM_HessianOfLagrangian_dq_dq
+        += bodyNode2ndDeriv->computeLagrangianHessianWrtVelocities();
+  }
+
+  return mDM_HessianOfLagrangian_dq_dq;
 }
 
 //==============================================================================
@@ -96,24 +105,18 @@ void SkeletonSecondDerivatives::setComposite(common::Composite* newComposite)
 
   const auto numDofs = skel->getNumDofs();
 
-  mState.mDM_HessianKineticEnergy_q_q.resize(numDofs, numDofs);
-  mState.mDM_HessianKineticEnergy_q_dq.resize(numDofs, numDofs);
-  mState.mDM_HessianKineticEnergy_dq_dq.resize(numDofs, numDofs);
+  mDM_HessianKineticEnergy_q_q.resize(numDofs, numDofs);
+  mDM_HessianKineticEnergy_q_dq.resize(numDofs, numDofs);
+  mDM_HessianKineticEnergy_dq_dq.resize(numDofs, numDofs);
 
-  mState.mDM_HessianOfLagrangian_q_q.resize(numDofs, numDofs);
-  mState.mDM_HessianOfLagrangian_q_dq.resize(numDofs, numDofs);
-  mState.mDM_HessianOfLagrangian_dq_dq.resize(numDofs, numDofs);
+  mDM_HessianOfLagrangian_q_q.resize(numDofs, numDofs);
+  mDM_HessianOfLagrangian_q_dq.resize(numDofs, numDofs);
+  mDM_HessianOfLagrangian_dq_dq.resize(numDofs, numDofs);
 
-  mState.mDM_D2D1LD.resize(numDofs, numDofs);
+  mDM_D2D1LD.resize(numDofs, numDofs);
 
   for (auto* bodyNode : skel->getBodyNodes())
     bodyNode->getOrCreateAspect<BodyNodeSecondDerivatives>();
-}
-
-//==============================================================================
-void SkeletonSecondDerivatives::loseComposite(common::Composite* oldComposite)
-{
-  Base::loseComposite(oldComposite);
 }
 
 } // namespace dynamics

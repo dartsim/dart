@@ -41,15 +41,37 @@
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
-struct SkeletonSecondDerivativesState
+class SkeletonSecondDerivatives final :
+    public common::CompositeTrackingAspect<Skeleton>
 {
-  /// Constructor
-  SkeletonSecondDerivativesState();
+public:
 
-  /// Destructor
-  virtual ~SkeletonSecondDerivativesState() = default;
+  using Base = common::CompositeTrackingAspect<Skeleton>;
+
+  SkeletonSecondDerivatives() = default;
+
+  SkeletonSecondDerivatives(const SkeletonSecondDerivatives&) = delete;
+
+  // Documentation inherited
+  std::unique_ptr<Aspect> cloneAspect() const override;
+
+  //----------------------------------------------------------------------------
+  /// \{ \name Hessians of Lagrangian
+  //----------------------------------------------------------------------------
+
+  const Eigen::MatrixXd& computeLagrangianHessianWrtPositions();
+  const Eigen::MatrixXd& computeLagrangianHessianWrtPositionsVelocities();
+  const Eigen::MatrixXd& computeLagrangianHessianWrtVelocities();
+
+  /// \}
+
+protected:
+
+  void setComposite(common::Composite* newComposite) override;
+
+protected:
+
+  SkeletonDerivatives* mSkeletonDerivatives;
 
   Eigen::VectorXd mDM_GradientKineticEnergy_q;
   Eigen::VectorXd mDM_GradientKineticEnergy_dq;
@@ -66,43 +88,6 @@ struct SkeletonSecondDerivativesState
   Eigen::VectorXd mDM_D2LD;
   Eigen::VectorXd mDM_D1LD;
   Eigen::MatrixXd mDM_D2D1LD;
-};
-
-}  // namespace detail
-
-//==============================================================================
-class SkeletonSecondDerivatives final :
-    public common::AspectWithState<
-        SkeletonSecondDerivatives,
-        detail::SkeletonSecondDerivativesState,
-        Skeleton>
-{
-public:
-
-  using Base = common::AspectWithState<
-      SkeletonSecondDerivatives,
-      detail::SkeletonSecondDerivativesState,
-      Skeleton>;
-
-  using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
-
-  SkeletonSecondDerivatives(const StateData& state = StateData());
-
-  SkeletonSecondDerivatives(const SkeletonSecondDerivatives&) = delete;
-
-  const Eigen::MatrixXd& computeLagrangianHessianWrtPositions();
-  const Eigen::MatrixXd& computeLagrangianHessianWrtPositionsVelocities();
-  const Eigen::MatrixXd& computeLagrangianHessianWrtVelocities();
-
-protected:
-
-  void setComposite(common::Composite* newComposite) override;
-
-  void loseComposite(common::Composite* oldComposite) override;
-
-protected:
-
-  SkeletonDerivatives* mSkeletonDerivatives;
 
 };
 
