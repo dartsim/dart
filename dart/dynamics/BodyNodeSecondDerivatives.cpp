@@ -310,7 +310,7 @@ BodyNodeSecondDerivatives::computeKineticEnergyHessianWrtPositions() const
   Eigen::MatrixXd hessian = V_q.transpose() * G * V_q;
 
   const auto& V_q_q = getSpatialVelocitySecondDerivativeWrtPositions();
-  const Eigen::MatrixXd VTG = V.transpose() * G;
+  const Eigen::Matrix<double, 1, 6> VTG = V.transpose() * G;
   for (auto i = 0u; i < numSkelDofs; ++i)
     hessian.row(i).noalias() += VTG * V_q_q[i];
 
@@ -332,10 +332,10 @@ BodyNodeSecondDerivatives::computeKineticEnergyHessianWrtPositionsVelocities() c
   const BodyNodeSecondDerivatives::SpatialVelocityDerivative& V_dq
       = getSpatialVelocityDerivativeWrtVelocities();
 
-  Eigen::MatrixXd hessian = V_dq.transpose() * G * V_q;
+  Eigen::MatrixXd hessian = V_q.transpose() * G * V_dq;
 
   const auto& V_q_dq = getSpatialVelocitySecondDerivativeWrtPositionsVelocities();
-  const Eigen::MatrixXd VTG = V.transpose() * G;
+  const Eigen::Matrix<double, 1, 6> VTG = V.transpose() * G;
   for (auto i = 0u; i < numSkelDofs; ++i)
     hessian.row(i).noalias() += VTG * V_q_dq[i];
 
