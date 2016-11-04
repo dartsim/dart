@@ -2,6 +2,10 @@
 
 ### DART 6.2.0 (201X-XX-XX)
 
+* Math
+
+  * Fixed Lemke LCP solver (#808 for DART 6): [#812](https://github.com/dartsim/dart/pull/812)
+
 * Misc
 
   * Added CMake targets for code formatting using clang-format: [#811](https://github.com/dartsim/dart/pull/811)
