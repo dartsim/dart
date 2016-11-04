@@ -419,13 +419,13 @@ get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
 list(LENGTH formatting_files formatting_files_length)
 message(STATUS "Formatting on ${formatting_files_length} source files.")
 
-if (CLANG_FORMAT_EXECUTABLE)
+if(CLANG_FORMAT_EXECUTABLE)
 
   if(DART_VERBOSE)
     message(STATUS "Looking for clang-format - found")
   endif()
 
-  if (formatting_files)
+  if(formatting_files)
     add_custom_target(format
                       COMMAND ${CMAKE_COMMAND} -E echo "Formatting ${formatting_files_length} files... "
                       COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i ${formatting_files}
@@ -441,10 +441,10 @@ if (CLANG_FORMAT_EXECUTABLE)
                       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart)
   else()
     add_custom_target(format
-                      COMMAND ${CMAKE_COMMAND} -E echo "Not found any source files to format.")
+                      COMMAND ${CMAKE_COMMAND} -E echo "Warning: Not found any source files to format.")
 
     add_custom_target(check-format
-                      COMMAND ${CMAKE_COMMAND} -E echo "Not found any source files to check.")
+                      COMMAND ${CMAKE_COMMAND} -E echo "Warning: Not found any source files to check.")
   endif()
 
 else()
