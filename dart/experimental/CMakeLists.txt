@@ -37,3 +37,5 @@ install(
   DESTINATION include/dart/experimental
   COMPONENT headers
 )
+
+dart_format_add(${hdrs} ${srcs})

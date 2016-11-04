@@ -67,5 +67,5 @@ void WorldVariationalIntegrator::step(bool /*resetCommand*/)
   mFrame++;
 }
 
-}  // namespace simulation
-}  // namespace dart
+} // namespace simulation
+} // namespace dart

@@ -40,11 +40,10 @@
 namespace dart {
 namespace dynamics {
 
-class BodyNodeDerivatives final :
-    public common::CompositeTrackingAspect<BodyNode>
+class BodyNodeDerivatives final
+    : public common::CompositeTrackingAspect<BodyNode>
 {
 public:
-
   friend class SkeletonDerivatives;
 
   using Base = common::CompositeTrackingAspect<BodyNode>;
@@ -63,25 +62,25 @@ public:
 
   const GradientMatrix& getSpatialVelocityDerivativeWrtPositions() const;
 
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
-      std::size_t indexInSkeleton) const;
+  Eigen::Vector6d
+  getSpatialVelocityDerivativeWrtPositions(std::size_t indexInSkeleton) const;
 
   Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
       const DegreeOfFreedom* withRespectTo) const;
 
-  GradientMatrix getSpatialVelocityDerivativeWrtPositions(
-      const Joint* withRespectTo) const;
+  GradientMatrix
+  getSpatialVelocityDerivativeWrtPositions(const Joint* withRespectTo) const;
 
   const GradientMatrix& getSpatialVelocityDerivativeWrtVelocities() const;
 
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
-      std::size_t indexInSkeleton) const;
+  Eigen::Vector6d
+  getSpatialVelocityDerivativeWrtVelocities(std::size_t indexInSkeleton) const;
 
   Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
       const DegreeOfFreedom* withRespectTo) const;
 
-  GradientMatrix getSpatialVelocityDerivativeWrtVelocities(
-      const Joint* withRespectTo) const;
+  GradientMatrix
+  getSpatialVelocityDerivativeWrtVelocities(const Joint* withRespectTo) const;
 
   /// \}
 
@@ -100,14 +99,12 @@ public:
   /// \}
 
 protected:
-
   void setComposite(common::Composite* newComposite) override;
 
   void dirtySpatialVelocityDerivativeWrtPositions();
   void dirtySpatialVelocityDerivativeWrtVelocities();
 
 protected:
-
   /// \warning Do not use directly! Use
   /// getSpatialVelocityDerivativeWrtPositions() to access this quantity.
   mutable GradientMatrix mV_q{GradientMatrix()};
@@ -128,10 +125,9 @@ protected:
   mutable bool mNeedSpatialVelocityDerivativeWrtVelocitiesUpdate{true};
   mutable bool mNeedSpatialAccelerationDerivativeWrtPositionsUpdate{true};
   mutable bool mNeedSpatialAccelerationDerivativeWrtVelocitiesUpdate{true};
-
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_BODYNODEDERIVATIVES_HPP_
+#endif // DART_DYNAMICS_BODYNODEDERIVATIVES_HPP_

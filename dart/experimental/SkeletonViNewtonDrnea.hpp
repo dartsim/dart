@@ -40,7 +40,7 @@
 namespace dart {
 namespace dynamics {
 
-//class Skeleton;
+// class Skeleton;
 
 namespace detail {
 
@@ -53,21 +53,18 @@ struct SkeletonViNewtonDrneaState
   virtual ~SkeletonViNewtonDrneaState() = default;
 };
 
-}  // namespace detail
+} // namespace detail
 
 //==============================================================================
-class SkeletonViNewtonDrnea final :
-    public common::AspectWithState<
-        SkeletonViNewtonDrnea,
-        detail::SkeletonViNewtonDrneaState,
-        Skeleton>
+class SkeletonViNewtonDrnea final
+    : public common::AspectWithState<SkeletonViNewtonDrnea,
+                                     detail::SkeletonViNewtonDrneaState,
+                                     Skeleton>
 {
 public:
-
-  using Base = common::AspectWithState<
-      SkeletonViNewtonDrnea,
-      detail::SkeletonViNewtonDrneaState,
-      Skeleton>;
+  using Base = common::AspectWithState<SkeletonViNewtonDrnea,
+                                       detail::SkeletonViNewtonDrneaState,
+                                       Skeleton>;
 
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
@@ -96,7 +93,6 @@ public:
   TerminalCondition integrate();
 
 protected:
-
   void setComposite(common::Composite* newComposite) override;
 
   void loseComposite(common::Composite* oldComposite) override;
@@ -111,21 +107,20 @@ protected:
   /// configurations.
   Eigen::VectorXd evaluateDel(const Eigen::VectorXd& nextPositions);
 
-public: Eigen::MatrixXd evaluateDelDeriv(const Eigen::VectorXd& nextPositions);
+public:
+  Eigen::MatrixXd evaluateDelDeriv(const Eigen::VectorXd& nextPositions);
 
   Eigen::VectorXd getError() const;
 
   void stepForward(const Eigen::VectorXd& nextPositions);
 
 protected:
-
   double mTolerance{1e-9};
 
   std::size_t mMaxIteration{30u};
-
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_SKELETONVINEWTONDRNEA_HPP_
+#endif // DART_DYNAMICS_SKELETONVINEWTONDRNEA_HPP_

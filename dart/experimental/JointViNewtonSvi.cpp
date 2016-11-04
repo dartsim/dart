@@ -51,10 +51,9 @@ void RevoluteJointViNewtonSvi::updateNextRelativeTransform()
   assert(dynamic_cast<RevoluteJoint*>(mComposite));
   auto* revJoint = static_cast<RevoluteJoint*>(mComposite);
 
-  mNextTransform
-      = revJoint->getTransformFromParentBodyNode()
-      * Eigen::AngleAxisd(mNextPositions[0], revJoint->getAxis())
-      * revJoint->getTransformFromChildBodyNode().inverse();
+  mNextTransform = revJoint->getTransformFromParentBodyNode()
+                   * Eigen::AngleAxisd(mNextPositions[0], revJoint->getAxis())
+                   * revJoint->getTransformFromChildBodyNode().inverse();
 
   // Verification
   assert(math::verifyTransform(mNextTransform));

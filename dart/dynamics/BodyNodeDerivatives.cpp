@@ -31,8 +31,8 @@
 
 #include "dart/dynamics/BodyNodeDerivatives.hpp"
 
-#include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -59,8 +59,8 @@ BodyNodeDerivatives::getSpatialVelocityDerivativeWrtPositions() const
           = thisParentBodyNode->get<BodyNodeDerivatives>();
 
       mV_q = math::AdInvTJac(
-            thisJoint->getRelativeTransform(),
-            parentDerivatives->getSpatialVelocityDerivativeWrtPositions());
+          thisJoint->getRelativeTransform(),
+          parentDerivatives->getSpatialVelocityDerivativeWrtPositions());
     }
     else
     {
@@ -73,11 +73,10 @@ BodyNodeDerivatives::getSpatialVelocityDerivativeWrtPositions() const
       const auto index = thisJoint->getDof(0)->getIndexInSkeleton();
 
       assert(thisJoint->getRelativeJacobian().rows() == 6);
-      assert(thisJoint->getRelativeJacobian().cols()
-             == static_cast<int>(numDofs));
-      mV_q.block(0, index, 6, numDofs).noalias()
-          += math::adJac(thisBodyNode->getSpatialVelocity(),
-                         thisJoint->getRelativeJacobian());
+      assert(
+          thisJoint->getRelativeJacobian().cols() == static_cast<int>(numDofs));
+      mV_q.block(0, index, 6, numDofs).noalias() += math::adJac(
+          thisBodyNode->getSpatialVelocity(), thisJoint->getRelativeJacobian());
 
       mV_q.block(0, index, 6, numDofs).noalias()
           += thisJoint->getRelativeJacobianTimeDeriv();
@@ -90,16 +89,14 @@ BodyNodeDerivatives::getSpatialVelocityDerivativeWrtPositions() const
 }
 
 //==============================================================================
-Eigen::Vector6d
-BodyNodeDerivatives::getSpatialVelocityDerivativeWrtPositions(
+Eigen::Vector6d BodyNodeDerivatives::getSpatialVelocityDerivativeWrtPositions(
     std::size_t indexInSkeleton) const
 {
   return getSpatialVelocityDerivativeWrtPositions().col(indexInSkeleton);
 }
 
 //==============================================================================
-Eigen::Vector6d
-BodyNodeDerivatives::getSpatialVelocityDerivativeWrtPositions(
+Eigen::Vector6d BodyNodeDerivatives::getSpatialVelocityDerivativeWrtPositions(
     const DegreeOfFreedom* withRespectTo) const
 {
   const auto index = withRespectTo->getIndexInSkeleton();
@@ -134,8 +131,8 @@ BodyNodeDerivatives::getSpatialVelocityDerivativeWrtVelocities() const
           = thisParentBodyNode->get<BodyNodeDerivatives>();
 
       mV_dq = math::AdInvTJac(
-            thisJoint->getRelativeTransform(),
-            parentDerivatives->getSpatialVelocityDerivativeWrtVelocities());
+          thisJoint->getRelativeTransform(),
+          parentDerivatives->getSpatialVelocityDerivativeWrtVelocities());
     }
     else
     {
@@ -148,8 +145,8 @@ BodyNodeDerivatives::getSpatialVelocityDerivativeWrtVelocities() const
       const auto index = thisJoint->getDof(0)->getIndexInSkeleton();
 
       assert(thisJoint->getRelativeJacobian().rows() == 6);
-      assert(thisJoint->getRelativeJacobian().cols()
-             == static_cast<int>(numDofs));
+      assert(
+          thisJoint->getRelativeJacobian().cols() == static_cast<int>(numDofs));
       mV_dq.block(0, index, 6, numDofs).noalias()
           += thisJoint->getRelativeJacobian();
     }
@@ -161,16 +158,14 @@ BodyNodeDerivatives::getSpatialVelocityDerivativeWrtVelocities() const
 }
 
 //==============================================================================
-Eigen::Vector6d
-BodyNodeDerivatives::getSpatialVelocityDerivativeWrtVelocities(
+Eigen::Vector6d BodyNodeDerivatives::getSpatialVelocityDerivativeWrtVelocities(
     std::size_t indexInSkeleton) const
 {
   return getSpatialVelocityDerivativeWrtVelocities().col(indexInSkeleton);
 }
 
 //==============================================================================
-Eigen::Vector6d
-BodyNodeDerivatives::getSpatialVelocityDerivativeWrtVelocities(
+Eigen::Vector6d BodyNodeDerivatives::getSpatialVelocityDerivativeWrtVelocities(
     const DegreeOfFreedom* withRespectTo) const
 {
   const auto index = withRespectTo->getIndexInSkeleton();
@@ -186,7 +181,8 @@ BodyNodeDerivatives::getSpatialVelocityDerivativeWrtVelocities(
   const auto index = withRespectTo->getIndexInSkeleton(0);
   const auto numDofs = withRespectTo->getNumDofs();
 
-  return getSpatialVelocityDerivativeWrtVelocities().block(0, index, 6, numDofs);
+  return getSpatialVelocityDerivativeWrtVelocities().block(
+      0, index, 6, numDofs);
 }
 
 //==============================================================================
@@ -232,17 +228,13 @@ void BodyNodeDerivatives::setComposite(common::Composite* newComposite)
 
   auto* bodyNode = mComposite;
   auto* joint = bodyNode->getParentJoint();
-  joint->onPositionUpdatedAdded.connect(
-        [=](const Joint* /*joint*/)
-        {
-          this->dirtySpatialVelocityDerivativeWrtPositions();
-          this->dirtySpatialVelocityDerivativeWrtVelocities();
-        } );
-  joint->onVelocityUpdatedAdded.connect(
-        [=](const Joint* /*joint*/)
-        {
-          this->dirtySpatialVelocityDerivativeWrtPositions();
-        } );
+  joint->onPositionUpdatedAdded.connect([=](const Joint* /*joint*/) {
+    this->dirtySpatialVelocityDerivativeWrtPositions();
+    this->dirtySpatialVelocityDerivativeWrtVelocities();
+  });
+  joint->onVelocityUpdatedAdded.connect([=](const Joint* /*joint*/) {
+    this->dirtySpatialVelocityDerivativeWrtPositions();
+  });
 
   const auto skeleton = bodyNode->getSkeleton();
   const auto numDofs = skeleton->getNumDofs();

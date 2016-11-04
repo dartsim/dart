@@ -49,13 +49,12 @@ class WorldVariationalIntegrator : public World
 public:
   void prestep();
   void step(bool resetCommand = true) override;
-
 };
 
 using WorldVariationalIntegratorPtr
     = std::shared_ptr<WorldVariationalIntegrator>;
 
-}  // namespace simulation
-}  // namespace dart
+} // namespace simulation
+} // namespace dart
 
-#endif  // DART_SIMULATION_WORLDVARIATIONALINTEGRATOR_HPP_
+#endif // DART_SIMULATION_WORLDVARIATIONALINTEGRATOR_HPP_

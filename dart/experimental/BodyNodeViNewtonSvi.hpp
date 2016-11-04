@@ -79,23 +79,20 @@ struct BodyNodeViNewtonSviState
   Eigen::Vector6d mParentImpulse{Eigen::Vector6d::Zero()};
 };
 
-}  // namespace detail
+} // namespace detail
 
 //==============================================================================
-class BodyNodeViNewtonSvi final :
-    public common::AspectWithState<
-        BodyNodeViNewtonSvi,
-        detail::BodyNodeViNewtonSviState,
-        BodyNode>
+class BodyNodeViNewtonSvi final
+    : public common::AspectWithState<BodyNodeViNewtonSvi,
+                                     detail::BodyNodeViNewtonSviState,
+                                     BodyNode>
 {
 public:
-
   friend class SkeletonViNewtonSvi;
 
-  using Base = common::AspectWithState<
-      BodyNodeViNewtonSvi,
-      detail::BodyNodeViNewtonSviState,
-      BodyNode>;
+  using Base = common::AspectWithState<BodyNodeViNewtonSvi,
+                                       detail::BodyNodeViNewtonSviState,
+                                       BodyNode>;
 
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
@@ -111,7 +108,6 @@ public:
   void initialize(double timeStep);
 
 protected:
-
   void setComposite(common::Composite* newComposite) override;
 
   void updateNextTransform();
@@ -125,10 +121,9 @@ protected:
   void updateNextVelocityDeriv(double timeStep);
 
   /// \}
-
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_BODYNODEVINEWTONSVI_HPP_
+#endif // DART_DYNAMICS_BODYNODEVINEWTONSVI_HPP_

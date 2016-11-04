@@ -31,8 +31,8 @@
 
 #include "dart/experimental/SkeletonViNewtonDrnea.hpp"
 
-#include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/experimental/BodyNodeViNewtonDrnea.hpp"
 #include "dart/experimental/JointViNewtonDrnea.hpp"
 
@@ -50,8 +50,7 @@ SkeletonViNewtonDrneaState::SkeletonViNewtonDrneaState()
 } // namespace detail
 
 //==============================================================================
-SkeletonViNewtonDrnea::SkeletonViNewtonDrnea(
-    const StateData& state)
+SkeletonViNewtonDrnea::SkeletonViNewtonDrnea(const StateData& state)
 {
   mState = state;
 }
@@ -94,8 +93,7 @@ std::size_t SkeletonViNewtonDrnea::getMaxIteration() const
 }
 
 //==============================================================================
-SkeletonViNewtonDrnea::TerminalCondition
-SkeletonViNewtonDrnea::integrate()
+SkeletonViNewtonDrnea::TerminalCondition SkeletonViNewtonDrnea::integrate()
 {
   auto* skel = mComposite;
 
@@ -116,7 +114,7 @@ SkeletonViNewtonDrnea::integrate()
 
   //  Eigen::VectorXd qNext = qCurr;
   Eigen::VectorXd qNext = skel->getPositionDifferences(
-        ddq*dt*dt + skel->getPositionDifferences(qCurr, qPrev), -qCurr);
+      ddq * dt * dt + skel->getPositionDifferences(qCurr, qPrev), -qCurr);
 
   cond = MaximumIteration;
   for (auto i = 0u; i < mMaxIteration; ++i)
@@ -143,17 +141,16 @@ SkeletonViNewtonDrnea::integrate()
 }
 
 //==============================================================================
-void SkeletonViNewtonDrnea::setComposite(
-    common::Composite* newComposite)
+void SkeletonViNewtonDrnea::setComposite(common::Composite* newComposite)
 {
   Base::setComposite(newComposite);
 
   auto* skel = mComposite;
-//  const auto numDofs = skel->getNumDofs();
+  //  const auto numDofs = skel->getNumDofs();
 
   assert(skel);
 
-//  mState.mDM_GradientKineticEnergy_q.resize(numDofs);
+  //  mState.mDM_GradientKineticEnergy_q.resize(numDofs);
 
   for (auto* bodyNode : skel->getBodyNodes())
   {
@@ -184,7 +181,7 @@ void SkeletonViNewtonDrnea::setPrevPositions(
     const auto numDofs = joint->getNumDofs();
 
     aspect->getJointVi()->setPrevPositions(
-          prevPositions.segment(index, numDofs));
+        prevPositions.segment(index, numDofs));
 
     index += numDofs;
   }
@@ -231,15 +228,15 @@ void SkeletonViNewtonDrnea::setNextPositions(
     const auto numDofs = joint->getNumDofs();
 
     aspect->getJointVi()->setNextPositions(
-          nextPositions.segment(index, numDofs));
+        nextPositions.segment(index, numDofs));
 
     index += numDofs;
   }
 }
 
 //==============================================================================
-Eigen::VectorXd SkeletonViNewtonDrnea::evaluateDel(
-    const Eigen::VectorXd& nextPositions)
+Eigen::VectorXd
+SkeletonViNewtonDrnea::evaluateDel(const Eigen::VectorXd& nextPositions)
 {
   // Implementation of Algorithm 2 of "A linear-time variational integrator for
   // multibody systems" (WAFR 2016).
@@ -262,7 +259,8 @@ Eigen::VectorXd SkeletonViNewtonDrnea::evaluateDel(
 
   // Backward recursion: line 6 to 9 of Algorithm 2
   for (auto it = skel->getBodyNodes().rbegin();
-       it != skel->getBodyNodes().rend(); ++it)
+       it != skel->getBodyNodes().rend();
+       ++it)
   {
     auto* bodyNode = *it;
     auto* bodyNodeVi = bodyNode->get<BodyNodeViNewtonDrnea>();
@@ -286,9 +284,9 @@ Eigen::MatrixXd SkeletonViNewtonDrnea::evaluateDelDeriv(
   Eigen::MatrixXd J(numDofs, numDofs);
 
   const auto timeStep = skel->getTimeStep();
-//  const Eigen::Vector3d& gravity = skel->getGravity();
+  //  const Eigen::Vector3d& gravity = skel->getGravity();
 
-  //setNextPositions(nextPositions);
+  // setNextPositions(nextPositions);
 
   for (auto i = 0u; i < numDofs; ++i)
   {
@@ -312,7 +310,6 @@ Eigen::MatrixXd SkeletonViNewtonDrnea::evaluateDelDeriv(
 
     //    bodyNodeVi->evaluateDel(gravity, timeStep);
     //  }
-
   }
 
   return J;
@@ -343,14 +340,13 @@ Eigen::VectorXd SkeletonViNewtonDrnea::getError() const
 }
 
 //==============================================================================
-void SkeletonViNewtonDrnea::stepForward(
-    const Eigen::VectorXd& nextPositions)
+void SkeletonViNewtonDrnea::stepForward(const Eigen::VectorXd& nextPositions)
 {
   auto* skel = mComposite;
   const auto timeStep = skel->getTimeStep();
 
   // Update previous/current positions and velocities
-  //setVelocities( (qNext - getPositions()) / getTimeStep() );
+  // setVelocities( (qNext - getPositions()) / getTimeStep() );
   skel->setVelocities(
       skel->getPositionDifferences(nextPositions, skel->getPositions())
       / timeStep);

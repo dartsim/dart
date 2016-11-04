@@ -31,8 +31,8 @@
 
 #include "dart/experimental/SkeletonViNewtonSvi.hpp"
 
-#include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/experimental/BodyNodeViNewtonSvi.hpp"
 #include "dart/experimental/JointViNewtonSvi.hpp"
 
@@ -50,8 +50,7 @@ SkeletonViNewtonSviState::SkeletonViNewtonSviState()
 } // namespace detail
 
 //==============================================================================
-SkeletonViNewtonSvi::SkeletonViNewtonSvi(
-    const StateData& state)
+SkeletonViNewtonSvi::SkeletonViNewtonSvi(const StateData& state)
 {
   mState = state;
 }
@@ -94,8 +93,7 @@ std::size_t SkeletonViNewtonSvi::getMaxIteration() const
 }
 
 //==============================================================================
-SkeletonViNewtonSvi::TerminalCondition
-SkeletonViNewtonSvi::integrate()
+SkeletonViNewtonSvi::TerminalCondition SkeletonViNewtonSvi::integrate()
 {
   auto* skel = mComposite;
 
@@ -116,7 +114,7 @@ SkeletonViNewtonSvi::integrate()
 
   //  Eigen::VectorXd qNext = qCurr;
   Eigen::VectorXd qNext = skel->getPositionDifferences(
-        ddq*dt*dt + skel->getPositionDifferences(qCurr, qPrev), -qCurr);
+      ddq * dt * dt + skel->getPositionDifferences(qCurr, qPrev), -qCurr);
 
   cond = MaximumIteration;
   for (auto i = 0u; i < mMaxIteration; ++i)
@@ -143,17 +141,16 @@ SkeletonViNewtonSvi::integrate()
 }
 
 //==============================================================================
-void SkeletonViNewtonSvi::setComposite(
-    common::Composite* newComposite)
+void SkeletonViNewtonSvi::setComposite(common::Composite* newComposite)
 {
   Base::setComposite(newComposite);
 
   auto* skel = mComposite;
-//  const auto numDofs = skel->getNumDofs();
+  //  const auto numDofs = skel->getNumDofs();
 
   assert(skel);
 
-//  mState.mDM_GradientKineticEnergy_q.resize(numDofs);
+  //  mState.mDM_GradientKineticEnergy_q.resize(numDofs);
 
   for (auto* bodyNode : skel->getBodyNodes())
   {
@@ -169,8 +166,7 @@ void SkeletonViNewtonSvi::loseComposite(common::Composite* oldComposite)
 }
 
 //==============================================================================
-void SkeletonViNewtonSvi::setPrevPositions(
-    const Eigen::VectorXd& prevPositions)
+void SkeletonViNewtonSvi::setPrevPositions(const Eigen::VectorXd& prevPositions)
 {
   auto* skel = mComposite;
   assert(skel->getNumDofs() == static_cast<std::size_t>(prevPositions.size()));
@@ -184,7 +180,7 @@ void SkeletonViNewtonSvi::setPrevPositions(
     const auto numDofs = joint->getNumDofs();
 
     aspect->getJointVi()->setPrevPositions(
-          prevPositions.segment(index, numDofs));
+        prevPositions.segment(index, numDofs));
 
     index += numDofs;
   }
@@ -216,8 +212,7 @@ Eigen::VectorXd SkeletonViNewtonSvi::getPrevPositions() const
 }
 
 //==============================================================================
-void SkeletonViNewtonSvi::setNextPositions(
-    const Eigen::VectorXd& nextPositions)
+void SkeletonViNewtonSvi::setNextPositions(const Eigen::VectorXd& nextPositions)
 {
   auto* skel = mComposite;
   assert(skel->getNumDofs() == static_cast<std::size_t>(nextPositions.size()));
@@ -231,15 +226,15 @@ void SkeletonViNewtonSvi::setNextPositions(
     const auto numDofs = joint->getNumDofs();
 
     aspect->getJointVi()->setNextPositions(
-          nextPositions.segment(index, numDofs));
+        nextPositions.segment(index, numDofs));
 
     index += numDofs;
   }
 }
 
 //==============================================================================
-Eigen::VectorXd SkeletonViNewtonSvi::evaluateDel(
-    const Eigen::VectorXd& nextPositions)
+Eigen::VectorXd
+SkeletonViNewtonSvi::evaluateDel(const Eigen::VectorXd& nextPositions)
 {
   // Implementation of Algorithm 2 of "A linear-time variational integrator for
   // multibody systems" (WAFR 2016).
@@ -262,7 +257,8 @@ Eigen::VectorXd SkeletonViNewtonSvi::evaluateDel(
 
   // Backward recursion: line 6 to 9 of Algorithm 2
   for (auto it = skel->getBodyNodes().rbegin();
-       it != skel->getBodyNodes().rend(); ++it)
+       it != skel->getBodyNodes().rend();
+       ++it)
   {
     auto* bodyNode = *it;
     auto* bodyNodeVi = bodyNode->get<BodyNodeViNewtonSvi>();
@@ -274,8 +270,8 @@ Eigen::VectorXd SkeletonViNewtonSvi::evaluateDel(
 }
 
 //==============================================================================
-Eigen::MatrixXd SkeletonViNewtonSvi::evaluateDelDeriv(
-    const Eigen::VectorXd& /*nextPositions*/)
+Eigen::MatrixXd
+SkeletonViNewtonSvi::evaluateDelDeriv(const Eigen::VectorXd& /*nextPositions*/)
 {
   // Implementation of Algorithm 4 of "A linear-time variational integrator for
   // multibody systems" (WAFR 2016).
@@ -286,9 +282,9 @@ Eigen::MatrixXd SkeletonViNewtonSvi::evaluateDelDeriv(
   Eigen::MatrixXd J(numDofs, numDofs);
 
   const auto timeStep = skel->getTimeStep();
-//  const Eigen::Vector3d& gravity = skel->getGravity();
+  //  const Eigen::Vector3d& gravity = skel->getGravity();
 
-  //setNextPositions(nextPositions);
+  // setNextPositions(nextPositions);
 
   for (auto i = 0u; i < numDofs; ++i)
   {
@@ -312,7 +308,6 @@ Eigen::MatrixXd SkeletonViNewtonSvi::evaluateDelDeriv(
 
     //    bodyNodeVi->evaluateDel(gravity, timeStep);
     //  }
-
   }
 
   return J;
@@ -343,14 +338,13 @@ Eigen::VectorXd SkeletonViNewtonSvi::getError() const
 }
 
 //==============================================================================
-void SkeletonViNewtonSvi::stepForward(
-    const Eigen::VectorXd& nextPositions)
+void SkeletonViNewtonSvi::stepForward(const Eigen::VectorXd& nextPositions)
 {
   auto* skel = mComposite;
   const auto timeStep = skel->getTimeStep();
 
   // Update previous/current positions and velocities
-  //setVelocities( (qNext - getPositions()) / getTimeStep() );
+  // setVelocities( (qNext - getPositions()) / getTimeStep() );
   skel->setVelocities(
       skel->getPositionDifferences(nextPositions, skel->getPositions())
       / timeStep);

@@ -31,8 +31,8 @@
 
 #include "dart/experimental/BodyNodeViRiqnDrnea.hpp"
 
-#include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/experimental/JointViRiqnDrnea.hpp"
 
@@ -50,8 +50,7 @@ BodyNodeViRiqnDrneaState::BodyNodeViRiqnDrneaState()
 } // namespace detail
 
 //==============================================================================
-BodyNodeViRiqnDrnea::BodyNodeViRiqnDrnea(
-    const StateData& state)
+BodyNodeViRiqnDrnea::BodyNodeViRiqnDrnea(const StateData& state)
 {
   mState = state;
 }
@@ -67,11 +66,9 @@ JointViRiqnDrnea* BodyNodeViRiqnDrnea::getJointVi()
 }
 
 //==============================================================================
-const JointViRiqnDrnea*
-BodyNodeViRiqnDrnea::getJointVi() const
+const JointViRiqnDrnea* BodyNodeViRiqnDrnea::getJointVi() const
 {
-  return const_cast<const BodyNodeViRiqnDrnea*>(
-        this)->getJointVi();
+  return const_cast<const BodyNodeViRiqnDrnea*>(this)->getJointVi();
 }
 
 //==============================================================================
@@ -82,7 +79,7 @@ void BodyNodeViRiqnDrnea::initialize(double timeStep)
   const Eigen::Matrix6d& G = bodyNode->getInertia().getSpatialTensor();
   const Eigen::Vector6d& V = bodyNode->getSpatialVelocity();
 
-  mState.mPrevMomentum = math::dexp_inv_transpose(V*timeStep, G*V);
+  mState.mPrevMomentum = math::dexp_inv_transpose(V * timeStep, G * V);
 
   auto* joint = bodyNode->getParentJoint();
   assert(joint->get<JointViRiqnDrnea>());
@@ -90,15 +87,14 @@ void BodyNodeViRiqnDrnea::initialize(double timeStep)
 }
 
 //==============================================================================
-void BodyNodeViRiqnDrnea::setComposite(
-    common::Composite* newComposite)
+void BodyNodeViRiqnDrnea::setComposite(common::Composite* newComposite)
 {
   Base::setComposite(newComposite);
 
   auto* bodyNode = mComposite;
   auto skeleton = bodyNode->getSkeleton();
-//  const auto numDofs = skeleton->getNumDofs();
-//  const auto timeStep = skeleton->getTimeStep();
+  //  const auto numDofs = skeleton->getNumDofs();
+  //  const auto timeStep = skeleton->getTimeStep();
 
   assert(skeleton);
 
@@ -108,16 +104,15 @@ void BodyNodeViRiqnDrnea::setComposite(
   auto* joint = bodyNode->getParentJoint();
   if (joint->is<RevoluteJoint>())
   {
-    JointViRiqnDrnea* revVI
-        = new RevoluteJointViRiqnDrnea();
+    JointViRiqnDrnea* revVI = new RevoluteJointViRiqnDrnea();
     joint->set(revVI);
     assert(joint->get<JointViRiqnDrnea>());
   }
   else
   {
     dterr << "[BodyNodeViRiqnDrnea::setComposite] Attempting to "
-          << "create VI aspect for unsupported joint type '"
-          << joint->getType() << "'.\n";
+          << "create VI aspect for unsupported joint type '" << joint->getType()
+          << "'.\n";
     assert(false);
   }
 }
@@ -142,20 +137,18 @@ void BodyNodeViRiqnDrnea::updateNextVelocity(double timeStep)
 
   if (parentBodyNode)
   {
-    auto parentBodyNodeVi
-        = parentBodyNode->get<BodyNodeViRiqnDrnea>();
+    auto parentBodyNodeVi = parentBodyNode->get<BodyNodeViRiqnDrnea>();
     assert(parentBodyNodeVi);
 
     mState.mDeltaWorldTransform
         = joint->getRelativeTransform().inverse()
-        * parentBodyNodeVi->mState.mDeltaWorldTransform
-        * jointAspect->mNextTransform;
+          * parentBodyNodeVi->mState.mDeltaWorldTransform
+          * jointAspect->mNextTransform;
   }
   else
   {
     mState.mDeltaWorldTransform
-        = joint->getRelativeTransform().inverse()
-        * jointAspect->mNextTransform;
+        = joint->getRelativeTransform().inverse() * jointAspect->mNextTransform;
   }
 
   mState.mPostAverageVelocity
@@ -185,16 +178,16 @@ void BodyNodeViRiqnDrnea::evaluateDel(
   const Eigen::Matrix6d& G = bodyNode->getInertia().getSpatialTensor();
 
   mState.mPostMomentum = math::dexp_inv_transpose(
-        mState.mPostAverageVelocity*timeStep, G*mState.mPostAverageVelocity);
+      mState.mPostAverageVelocity * timeStep, G * mState.mPostAverageVelocity);
 
   const Eigen::Isometry3d expHPrevVelocity
-      = math::expMap(timeStep*mState.mPreAverageVelocity);
+      = math::expMap(timeStep * mState.mPreAverageVelocity);
 
   mState.mParentImpulse
       = mState.mPostMomentum
-      - math::dAdT(expHPrevVelocity, mState.mPrevMomentum)
-      - computeSpatialGravityForce(bodyNode->getTransform(), G, gravity)
-        * timeStep;
+        - math::dAdT(expHPrevVelocity, mState.mPrevMomentum)
+        - computeSpatialGravityForce(bodyNode->getTransform(), G, gravity)
+              * timeStep;
   // TODO(JS): subtract external force * timeStep to parentImpulse
 
   for (auto i = 0u; i < bodyNode->getNumChildBodyNodes(); ++i)
@@ -203,8 +196,8 @@ void BodyNodeViRiqnDrnea::evaluateDel(
     auto* childBodyNodeVi = childBodyNode->get<BodyNodeViRiqnDrnea>();
 
     mState.mParentImpulse += math::dAdInvT(
-          childBodyNode->getParentJoint()->getRelativeTransform(),
-          childBodyNodeVi->mState.mParentImpulse);
+        childBodyNode->getParentJoint()->getRelativeTransform(),
+        childBodyNodeVi->mState.mParentImpulse);
   }
 
   jointAspect->evaluateDel(mState.mParentImpulse, timeStep);
@@ -213,13 +206,11 @@ void BodyNodeViRiqnDrnea::evaluateDel(
 //==============================================================================
 void BodyNodeViRiqnDrnea::updateNextTransformDeriv()
 {
-
 }
 
 //==============================================================================
 void BodyNodeViRiqnDrnea::updateNextVelocityDeriv(double /*timeStep*/)
 {
-
 }
 
 } // namespace dynamics

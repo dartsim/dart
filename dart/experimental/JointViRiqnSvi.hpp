@@ -43,10 +43,9 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-class JointViRiqnSvi: public common::CompositeTrackingAspect<Joint>
+class JointViRiqnSvi : public common::CompositeTrackingAspect<Joint>
 {
 public:
-
   friend class SkeletonViRiqnSvi;
   friend class BodyNodeViRiqnSvi;
 
@@ -54,9 +53,7 @@ public:
 
   virtual void initialize(double timeStep) = 0;
 
-
 protected:
-
   virtual void setPrevPositions(const Eigen::VectorXd& prevPositions) = 0;
   virtual Eigen::VectorXd getPrevPositions() const = 0;
   virtual void setNextPositions(const Eigen::VectorXd& nextPositions) = 0;
@@ -66,7 +63,6 @@ protected:
 
   /// Transform for the next configuration
   Eigen::Isometry3d mNextTransform{Eigen::Isometry3d::Identity()};
-
 };
 
 //==============================================================================
@@ -74,7 +70,6 @@ template <typename ConfigSpaceT>
 class GenericJointViRiqnSvi : public JointViRiqnSvi
 {
 public:
-
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   friend class SkeletonViRiqnSvi;
@@ -90,8 +85,7 @@ public:
     // Do nothing
   }
 
-  GenericJointViRiqnSvi(
-      const GenericJointViRiqnSvi&) = delete;
+  GenericJointViRiqnSvi(const GenericJointViRiqnSvi&) = delete;
 
   void initialize(double timeStep) override
   {
@@ -109,7 +103,6 @@ public:
   }
 
 protected:
-
   void setComposite(common::Composite* newComposite) override
   {
     Base::setComposite(newComposite);
@@ -117,20 +110,19 @@ protected:
 
   void setPrevPositions(const Eigen::VectorXd& prevPositions) override
   {
-    assert(mComposite->getNumDofs()
+    assert(
+        mComposite->getNumDofs()
         == static_cast<std::size_t>(prevPositions.size()));
 
     mPrevPositions = prevPositions;
   }
 
-  Eigen::VectorXd getPrevPositions() const override
-  {
-    return mPrevPositions;
-  }
+  Eigen::VectorXd getPrevPositions() const override { return mPrevPositions; }
 
   void setNextPositions(const Eigen::VectorXd& nextPositions) override
   {
-    assert(mComposite->getNumDofs()
+    assert(
+        mComposite->getNumDofs()
         == static_cast<std::size_t>(nextPositions.size()));
 
     mNextPositions = nextPositions;
@@ -144,13 +136,9 @@ protected:
     mFdel -= timeStep * genJoint->getForcesStatic();
   }
 
-  Eigen::VectorXd getError() const override
-  {
-    return mFdel;
-  }
+  Eigen::VectorXd getError() const override { return mFdel; }
 
 protected:
-
   Vector mPrevPositions{Vector::Zero()};
   Vector mNextPositions{Vector::Zero()};
   Vector mFdel{Vector::Zero()};
@@ -162,26 +150,21 @@ private:
 
     return static_cast<GenericJoint<ConfigSpaceT>*>(mComposite);
   }
-
 };
 
 //==============================================================================
-class RevoluteJointViRiqnSvi final :
-    public GenericJointViRiqnSvi<math::R1Space>
+class RevoluteJointViRiqnSvi final : public GenericJointViRiqnSvi<math::R1Space>
 {
 public:
-
   // Documentation inherited
   std::unique_ptr<Aspect> cloneAspect() const override;
 
 protected:
-
   // Documentation inherited
   void updateNextRelativeTransform() override;
-
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_JOINTVIRIQNSVI_HPP_
+#endif // DART_DYNAMICS_JOINTVIRIQNSVI_HPP_

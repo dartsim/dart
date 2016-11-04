@@ -79,23 +79,20 @@ struct BodyNodeViRiqnDrneaState
   Eigen::Vector6d mParentImpulse{Eigen::Vector6d::Zero()};
 };
 
-}  // namespace detail
+} // namespace detail
 
 //==============================================================================
-class BodyNodeViRiqnDrnea final :
-    public common::AspectWithState<
-        BodyNodeViRiqnDrnea,
-        detail::BodyNodeViRiqnDrneaState,
-        BodyNode>
+class BodyNodeViRiqnDrnea final
+    : public common::AspectWithState<BodyNodeViRiqnDrnea,
+                                     detail::BodyNodeViRiqnDrneaState,
+                                     BodyNode>
 {
 public:
-
   friend class SkeletonViRiqnDrnea;
 
-  using Base = common::AspectWithState<
-      BodyNodeViRiqnDrnea,
-      detail::BodyNodeViRiqnDrneaState,
-      BodyNode>;
+  using Base = common::AspectWithState<BodyNodeViRiqnDrnea,
+                                       detail::BodyNodeViRiqnDrneaState,
+                                       BodyNode>;
 
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
@@ -111,7 +108,6 @@ public:
   void initialize(double timeStep);
 
 protected:
-
   void setComposite(common::Composite* newComposite) override;
 
   void updateNextTransform();
@@ -125,10 +121,9 @@ protected:
   void updateNextVelocityDeriv(double timeStep);
 
   /// \}
-
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_BODYNODEVIRIQNDRNEA_HPP_
+#endif // DART_DYNAMICS_BODYNODEVIRIQNDRNEA_HPP_

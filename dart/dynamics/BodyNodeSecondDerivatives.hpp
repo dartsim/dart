@@ -35,22 +35,22 @@
 #include <Eigen/Dense>
 
 #include "dart/common/AspectWithVersion.hpp"
-#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/BodyNodeDerivatives.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class BodyNodeSecondDerivatives final :
-    public common::CompositeTrackingAspect<BodyNode>
+class BodyNodeSecondDerivatives final
+    : public common::CompositeTrackingAspect<BodyNode>
 {
 public:
-
   friend class SkeletonDerivatives;
 
   using Base = common::CompositeTrackingAspect<BodyNode>;
   using SpatialVelocityDerivative = Eigen::Matrix<double, 6, Eigen::Dynamic>;
-  using SpatialVelocitySecondDerivative = std::vector<SpatialVelocityDerivative>;
+  using SpatialVelocitySecondDerivative
+      = std::vector<SpatialVelocityDerivative>;
 
   BodyNodeSecondDerivatives() = default;
 
@@ -63,27 +63,29 @@ public:
   /// \{ \name Derivative of spatial velocity
   //----------------------------------------------------------------------------
 
-  const SpatialVelocityDerivative& getSpatialVelocityDerivativeWrtPositions() const;
+  const SpatialVelocityDerivative&
+  getSpatialVelocityDerivativeWrtPositions() const;
 
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
-      std::size_t indexInSkeleton) const;
+  Eigen::Vector6d
+  getSpatialVelocityDerivativeWrtPositions(std::size_t indexInSkeleton) const;
 
   Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
       const DegreeOfFreedom* withRespectTo) const;
 
-  SpatialVelocityDerivative getSpatialVelocityDerivativeWrtPositions(
-      const Joint* withRespectTo) const;
+  SpatialVelocityDerivative
+  getSpatialVelocityDerivativeWrtPositions(const Joint* withRespectTo) const;
 
-  const SpatialVelocityDerivative& getSpatialVelocityDerivativeWrtVelocities() const;
+  const SpatialVelocityDerivative&
+  getSpatialVelocityDerivativeWrtVelocities() const;
 
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
-      std::size_t indexInSkeleton) const;
+  Eigen::Vector6d
+  getSpatialVelocityDerivativeWrtVelocities(std::size_t indexInSkeleton) const;
 
   Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
       const DegreeOfFreedom* withRespectTo) const;
 
-  SpatialVelocityDerivative getSpatialVelocityDerivativeWrtVelocities(
-      const Joint* withRespectTo) const;
+  SpatialVelocityDerivative
+  getSpatialVelocityDerivativeWrtVelocities(const Joint* withRespectTo) const;
 
   /// \}
 
@@ -129,14 +131,12 @@ public:
   /// \}
 
 protected:
-
   void setComposite(common::Composite* newComposite) override;
 
   void dirtySpatialVelocitySecondDerivativeWrtPositions();
   void dirtySpatialVelocitySecondDerivativeWrtPositionsVelocities();
 
 protected:
-
   BodyNodeDerivatives* mBodyNodeDerivatives{nullptr};
 
   mutable std::vector<SpatialVelocityDerivative> mV_q_q;
@@ -144,11 +144,11 @@ protected:
   mutable std::vector<SpatialVelocityDerivative> mV_dq_dq;
 
   mutable bool mNeedSpatialVelocitySecondDerivativeWrtPositionsUpdate{true};
-  mutable bool mNeedSpatialVelocitySecondDerivativeWrtPositionsVelocitiesUpdate{true};
-
+  mutable bool mNeedSpatialVelocitySecondDerivativeWrtPositionsVelocitiesUpdate{
+      true};
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_BODYNODESECONDDERIVATIVES_HPP_
+#endif // DART_DYNAMICS_BODYNODESECONDDERIVATIVES_HPP_
