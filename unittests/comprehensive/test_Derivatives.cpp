@@ -78,32 +78,32 @@ computeNumericalSpatialVelocityDerivativesWrtVelocities(
     double delta = 1e-12);
 
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocityHessiansWrtPositionsQ(
+computeNumericalBodyVelocitySecondDerivativeWrtPositions(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
-    double delta = 1e-12);
+    double delta = 1e-6);
 
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocityHessiansWrtPositionsDQ(
+computeNumericalBodyVelocitySecondDerivativeWrtPositionsVelocities(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
-    double delta = 1e-12);
+    double delta = 1e-6);
 
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocityHessiansDQQ(
+computeNumericalBodyVelocitySecondDerivativeWrtVelocitiesPositions(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
-    double delta = 1e-12);
+    double delta = 1e-6);
 
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocityHessiansWrtVelocitiesDQ(
+computeNumericalBodyVelocitySecondDerivativeWrtVelocities(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
-    double delta = 1e-12);
+    double delta = 1e-6);
 
 //==============================================================================
 TEST(Derivatives, SpatialVelocityDerivatives)
@@ -118,19 +118,19 @@ TEST(Derivatives, SpatialVelocityDerivatives)
   for (auto indexWrt = 0u; indexWrt < skel->getNumDofs(); ++indexWrt)
   {
     bodyVelocityGradients_q_fd
-        = computeNumericalSpatialVelocityDerivativesWrtPositions(skel, indexWrt, 1e-12);
+        = computeNumericalSpatialVelocityDerivativesWrtPositions(skel, indexWrt);
     bodyVelocityGradients_dq_fd
-        = computeNumericalSpatialVelocityDerivativesWrtVelocities(skel, indexWrt, 1e-12);
+        = computeNumericalSpatialVelocityDerivativesWrtVelocities(skel, indexWrt);
 
     for (auto i = 0u; i < skel->getNumDofs(); ++i)
     {
-      const auto* bodyNodeDiff
+      const auto* bodyNodeDeriv
           = skel->getBodyNode(i)->get<BodyNodeDerivatives>();
 
       JacobianMatrix bodyVelocityGradient_q_analytical
-          = bodyNodeDiff->getSpatialVelocityDerivativeWrtPositions(indexWrt);
+          = bodyNodeDeriv->getSpatialVelocityDerivativeWrtPositions(indexWrt);
       JacobianMatrix bodyVelocityGradient_dq_analytical
-          = bodyNodeDiff->getSpatialVelocityDerivativeWrtVelocities(indexWrt);
+          = bodyNodeDeriv->getSpatialVelocityDerivativeWrtVelocities(indexWrt);
 
       EXPECT_TRUE(bodyVelocityGradients_q_fd[i].isApprox(
                     bodyVelocityGradient_q_analytical, 1e-1));
@@ -141,7 +141,7 @@ TEST(Derivatives, SpatialVelocityDerivatives)
 }
 
 //==============================================================================
-TEST(Derivatives, BodyVelocityHessians)
+TEST(Derivatives, BodyVelocitySecondDerivative)
 {
   // TODO(JS): not implemented yet
 }
@@ -450,7 +450,7 @@ computeNumericalSpatialVelocityDerivativesWrtVelocities(
 
 //==============================================================================
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocityHessiansWrtPositionsQ(
+computeNumericalBodyVelocitySecondDerivativeWrtPositions(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
@@ -511,7 +511,7 @@ computeNumericalBodyVelocityHessiansWrtPositionsQ(
 
 //==============================================================================
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocityHessiansWrtPositionsDQ(
+computeNumericalBodyVelocitySecondDerivativeWrtPositionsVelocities(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
@@ -576,19 +576,19 @@ computeNumericalBodyVelocityHessiansWrtPositionsDQ(
 
 //==============================================================================
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocityHessiansDQQ(
+computeNumericalBodyVelocitySecondDerivativeWrtVelocitiesPositions(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
     double delta)
 {
-  return computeNumericalBodyVelocityHessiansWrtPositionsDQ(
+  return computeNumericalBodyVelocitySecondDerivativeWrtPositionsVelocities(
         skel, withRespectTo2, withRespectTo1, delta);
 }
 
 //==============================================================================
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocityHessiansWrtVelocitiesDQ(
+computeNumericalBodyVelocitySecondDerivativeWrtVelocities(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
