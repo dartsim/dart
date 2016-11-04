@@ -38,7 +38,8 @@ namespace dart {
 namespace lcpsolver {
 
 /// \brief
-class ODELCPSolver {
+class ODELCPSolver
+{
 public:
   /// \brief
   ODELCPSolver();
@@ -47,36 +48,40 @@ public:
   virtual ~ODELCPSolver();
 
   /// \brief
-  bool Solve(const Eigen::MatrixXd& _A,
-             const Eigen::VectorXd& _b,
-             Eigen::VectorXd* _x,
-             int numContacts,
-             double mu = 0,
-             int numDir = 0,
-             bool bUseODESolver = false);
+  bool Solve(
+      const Eigen::MatrixXd& _A,
+      const Eigen::VectorXd& _b,
+      Eigen::VectorXd* _x,
+      int numContacts,
+      double mu = 0,
+      int numDir = 0,
+      bool bUseODESolver = false);
 
 private:
   /// \brief
-  void transferToODEFormulation(const Eigen::MatrixXd& _A,
-                                const Eigen::VectorXd& _b,
-                                Eigen::MatrixXd* _AOut,
-                                Eigen::VectorXd* _bOut,
-                                int _numDir,
-                                int _numContacts);
+  void transferToODEFormulation(
+      const Eigen::MatrixXd& _A,
+      const Eigen::VectorXd& _b,
+      Eigen::MatrixXd* _AOut,
+      Eigen::VectorXd* _bOut,
+      int _numDir,
+      int _numContacts);
 
   /// \brief
-  void transferSolFromODEFormulation(const Eigen::VectorXd& _x,
-                                     Eigen::VectorXd* _xOut,
-                                     int _numDir,
-                                     int _numContacts);
+  void transferSolFromODEFormulation(
+      const Eigen::VectorXd& _x,
+      Eigen::VectorXd* _xOut,
+      int _numDir,
+      int _numContacts);
 
   /// \brief
-  bool checkIfSolution(const Eigen::MatrixXd& _A,
-                       const Eigen::VectorXd& _b,
-                       const Eigen::VectorXd& _x);
+  bool checkIfSolution(
+      const Eigen::MatrixXd& _A,
+      const Eigen::VectorXd& _b,
+      const Eigen::VectorXd& _x);
 };
 
-}  // namespace lcpsolver
-}  // namespace dart
+} // namespace lcpsolver
+} // namespace dart
 
-#endif  // DART_LCPSOLVER_ODELCPSOLVER_HPP_
+#endif // DART_LCPSOLVER_ODELCPSOLVER_HPP_

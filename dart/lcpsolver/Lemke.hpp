@@ -38,14 +38,16 @@ namespace dart {
 namespace lcpsolver {
 
 /// \brief
-int Lemke(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q,
-          Eigen::VectorXd* _z);
+int Lemke(
+    const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z);
 
 /// \brief
-bool validate(const Eigen::MatrixXd& _M, const Eigen::VectorXd& _z,
-              const Eigen::VectorXd& _q);
+bool validate(
+    const Eigen::MatrixXd& _M,
+    const Eigen::VectorXd& _z,
+    const Eigen::VectorXd& _q);
 
-}  // namespace lcpsolver
-}  // namespace dart
+} // namespace lcpsolver
+} // namespace dart
 
-#endif  // DART_LCPSOLVER_LEMKE_HPP_
+#endif // DART_LCPSOLVER_LEMKE_HPP_
