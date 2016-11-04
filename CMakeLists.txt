@@ -425,19 +425,29 @@ if (CLANG_FORMAT_EXECUTABLE)
     message(STATUS "Looking for clang-format - found")
   endif()
 
-  add_custom_target(format
-                    COMMAND ${CMAKE_COMMAND} -E echo "Formatting code... "
-                    COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i ${formatting_files}
-                    COMMAND ${CMAKE_COMMAND} -E echo "Done."
-                    DEPENDS ${CLANG_FORMAT_EXECUTABLE}
-                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart)
+  if ("${formatting_files}")
+    add_custom_target(format
+                      COMMAND ${CMAKE_COMMAND} -E echo "Formatting ${formatting_files_length} files... "
+                      COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i ${formatting_files}
+                      COMMAND ${CMAKE_COMMAND} -E echo "Done."
+                      DEPENDS ${CLANG_FORMAT_EXECUTABLE}
+                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart)
 
-  add_custom_target(check-format
-                    COMMAND ${CMAKE_COMMAND} -E echo "Checking code format... "
-                    COMMAND ${CMAKE_SOURCE_DIR}/tools/check_format.sh ${CLANG_FORMAT_EXECUTABLE} ${formatting_files}
-                    COMMAND ${CMAKE_COMMAND} -E echo "Done."
-                    DEPENDS ${CLANG_FORMAT_EXECUTABLE}
-                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart)
+    add_custom_target(check-format
+                      COMMAND ${CMAKE_COMMAND} -E echo "Checking ${formatting_files_length} files... "
+                      COMMAND ${CMAKE_SOURCE_DIR}/tools/check_format.sh ${CLANG_FORMAT_EXECUTABLE} ${formatting_files}
+                      COMMAND ${CMAKE_COMMAND} -E echo "Done."
+                      DEPENDS ${CLANG_FORMAT_EXECUTABLE}
+                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart)
+  else()
+    add_custom_target(format
+                      COMMAND ${CMAKE_COMMAND} -E echo "Formatting ${formatting_files_length} files... "
+                      COMMAND ${CMAKE_COMMAND} -E echo "Done.")
+
+    add_custom_target(check-format
+                      COMMAND ${CMAKE_COMMAND} -E echo "Checking ${formatting_files_length} files... "
+                      COMMAND ${CMAKE_COMMAND} -E echo "Done.")
+  endif()
 
 else()
 
