@@ -425,7 +425,7 @@ if (CLANG_FORMAT_EXECUTABLE)
     message(STATUS "Looking for clang-format - found")
   endif()
 
-  if ("${formatting_files}")
+  if (formatting_files)
     add_custom_target(format
                       COMMAND ${CMAKE_COMMAND} -E echo "Formatting ${formatting_files_length} files... "
                       COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i ${formatting_files}
@@ -441,12 +441,10 @@ if (CLANG_FORMAT_EXECUTABLE)
                       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart)
   else()
     add_custom_target(format
-                      COMMAND ${CMAKE_COMMAND} -E echo "Formatting ${formatting_files_length} files... "
-                      COMMAND ${CMAKE_COMMAND} -E echo "Done.")
+                      COMMAND ${CMAKE_COMMAND} -E echo "Not found any source files to format.")
 
     add_custom_target(check-format
-                      COMMAND ${CMAKE_COMMAND} -E echo "Checking ${formatting_files_length} files... "
-                      COMMAND ${CMAKE_COMMAND} -E echo "Done.")
+                      COMMAND ${CMAKE_COMMAND} -E echo "Not found any source files to check.")
   endif()
 
 else()
