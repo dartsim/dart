@@ -41,11 +41,10 @@
 namespace dart {
 namespace dynamics {
 
-class SkeletonSecondDerivatives final :
-    public common::CompositeTrackingAspect<Skeleton>
+class SkeletonSecondDerivatives final
+    : public common::CompositeTrackingAspect<Skeleton>
 {
 public:
-
   using Base = common::CompositeTrackingAspect<Skeleton>;
 
   SkeletonSecondDerivatives() = default;
@@ -66,11 +65,9 @@ public:
   /// \}
 
 protected:
-
   void setComposite(common::Composite* newComposite) override;
 
 protected:
-
   SkeletonDerivatives* mSkeletonDerivatives;
 
   Eigen::VectorXd mDM_GradientKineticEnergy_q;
@@ -88,10 +85,9 @@ protected:
   Eigen::VectorXd mDM_D2LD;
   Eigen::VectorXd mDM_D1LD;
   Eigen::MatrixXd mDM_D2D1LD;
-
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_SKELETONSECONDDERIVATIVES_HPP_
+#endif // DART_DYNAMICS_SKELETONSECONDDERIVATIVES_HPP_

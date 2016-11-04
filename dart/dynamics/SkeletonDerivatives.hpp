@@ -41,11 +41,10 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-class SkeletonDerivatives final :
-    public common::CompositeTrackingAspect<Skeleton>
+class SkeletonDerivatives final
+    : public common::CompositeTrackingAspect<Skeleton>
 {
 public:
-
   using Base = common::CompositeTrackingAspect<Skeleton>;
   using SpatialVelocityDerivative = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
@@ -64,8 +63,7 @@ public:
       std::size_t bodyNodeIndexInSkeleton) const;
 
   Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
-      std::size_t bodyNodeIndexInSkeleton,
-      std::size_t withRespectTo) const;
+      std::size_t bodyNodeIndexInSkeleton, std::size_t withRespectTo) const;
 
   Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
       std::size_t bodyNodeIndexInSkeleton,
@@ -75,8 +73,7 @@ public:
       std::size_t bodyNodeIndexInSkeleton) const;
 
   Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
-      std::size_t bodyNodeIndexInSkeleton,
-      std::size_t withRespectTo) const;
+      std::size_t bodyNodeIndexInSkeleton, std::size_t withRespectTo) const;
 
   Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
       std::size_t bodyNodeIndexInSkeleton,
@@ -99,11 +96,9 @@ public:
   /// \}
 
 protected:
-
   void setComposite(common::Composite* newComposite) override;
 
 protected:
-
   Eigen::VectorXd mDM_GradientKineticEnergy_q;
   Eigen::VectorXd mDM_GradientKineticEnergy_dq;
 
@@ -112,10 +107,9 @@ protected:
 
   Eigen::VectorXd mDM_D2LD;
   Eigen::VectorXd mDM_D1LD;
-
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_SKELETONDERIVATIVES_HPP_
+#endif // DART_DYNAMICS_SKELETONDERIVATIVES_HPP_

@@ -92,8 +92,7 @@ SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
 
 //==============================================================================
 Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
-    std::size_t bodyNodeIndexInSkeleton,
-    std::size_t withRespectTo) const
+    std::size_t bodyNodeIndexInSkeleton, std::size_t withRespectTo) const
 {
   // TODO(JS): emit warning if the index is not valid
   const auto* bodyNode = mComposite->getBodyNode(bodyNodeIndexInSkeleton);
@@ -102,7 +101,7 @@ Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
   assert(bodyNodeDerivative);
 
   return bodyNodeDerivative->getSpatialVelocityDerivativeWrtPositions(
-        withRespectTo);
+      withRespectTo);
 }
 
 //==============================================================================
@@ -117,7 +116,7 @@ Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
   assert(bodyNodeDerivative);
 
   return bodyNodeDerivative->getSpatialVelocityDerivativeWrtPositions(
-        withRespectTo);
+      withRespectTo);
 }
 
 //==============================================================================
@@ -136,8 +135,7 @@ SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
 
 //==============================================================================
 Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
-    std::size_t bodyNodeIndexInSkeleton,
-    std::size_t withRespectTo) const
+    std::size_t bodyNodeIndexInSkeleton, std::size_t withRespectTo) const
 {
   // TODO(JS): emit warning if the index is not valid
   const auto* bodyNode = mComposite->getBodyNode(bodyNodeIndexInSkeleton);
@@ -146,7 +144,7 @@ Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
   assert(bodyNodeDerivative);
 
   return bodyNodeDerivative->getSpatialVelocityDerivativeWrtVelocities(
-        withRespectTo);
+      withRespectTo);
 }
 
 //==============================================================================
@@ -161,7 +159,7 @@ Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
   assert(bodyNodeDerivative);
 
   return bodyNodeDerivative->getSpatialVelocityDerivativeWrtVelocities(
-        withRespectTo);
+      withRespectTo);
 }
 
 //==============================================================================
