@@ -1,12 +1,28 @@
 ## DART 6
 
-### DART 6.1.1 (201X-XX-XX)
+### DART 6.2.0 (201X-XX-XX)
+
+* Misc
+
+  * Added CMake targets for code formatting using clang-format: [#811](https://github.com/dartsim/dart/pull/811)
+
+### DART 6.1.2 (2016-XX-XX)
+
+* Dynamics
+
+  * Fixed bug of ContactConstraint with kinematic joints: [#809](https://github.com/dartsim/dart/pull/809)
+
+### DART 6.1.1 (2016-10-14)
 
 * Build
 
   * Modified to build DART without SIMD options by default: [#790](https://github.com/dartsim/dart/pull/790)
   * Modified to build external libraries as separately build targets: [#787](https://github.com/dartsim/dart/pull/787)
   * Modified to export CMake target files separately per target: [#786](https://github.com/dartsim/dart/pull/786)
+
+* Misc
+
+  * Updated lodepng up to version 20160501 : [#791](https://github.com/dartsim/dart/pull/791)
 
 ### DART 6.1.0 (2016-10-07)
 
@@ -166,6 +182,16 @@
   * Removed version check for Bullet: [#636](https://github.com/dartsim/dart/pull/636), [#625](https://github.com/dartsim/dart/issues/625)
 
 ## DART 5
+
+### Version 5.1.5 (201X-XX-XX)
+
+1. Added support of urdfdom_headers 1.0 for DART 5.1 (backport of [#766](https://github.com/dartsim/dart/pull/766))
+    * [Pull request #799](https://github.com/dartsim/dart/pull/799)
+
+### Version 5.1.4 (2016-10-14)
+
+1. Fixed inconsistent frame rate of GlutWindow
+    * [Pull request #794](https://github.com/dartsim/dart/pull/794)
 
 ### Version 5.1.3 (2016-10-07)
 

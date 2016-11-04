@@ -46,6 +46,7 @@ public:
   GlutWindow();
   virtual ~GlutWindow();
 
+  /// \warning This function should be called once.
   virtual void initWindow(int _w, int _h, const char* _name);
 
   // callback functions

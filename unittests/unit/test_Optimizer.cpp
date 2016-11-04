@@ -177,9 +177,6 @@ TEST(Optimizer, BasicNlopt)
 #if HAVE_IPOPT
 TEST(Optimizer, BasicIpopt)
 {
-  dterr << "Ipopt does not pass this test yet. Please see #153.";
-  return;
-
   std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
 
   prob->setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));

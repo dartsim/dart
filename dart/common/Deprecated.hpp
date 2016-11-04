@@ -29,10 +29,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/config.hpp"
-
 #ifndef DART_COMMON_DEPRECATED_HPP_
 #define DART_COMMON_DEPRECATED_HPP_
+
+#include "dart/config.hpp"
 
 //==============================================================================
 // Deprecated is used for backward compatibility between different minor
@@ -45,7 +45,7 @@
   #define DART_FORCEINLINE __attribute__((always_inline))
 #elif defined(_MSC_VER)
   #define DART_DEPRECATED(version) __declspec(deprecated)
-  #define DART_FORCEINLINE __DART_FORCEINLINE
+  #define DART_FORCEINLINE _forceinline
 #else
   #define DART_DEPRECATED(version) ()
   #define DART_FORCEINLINE
