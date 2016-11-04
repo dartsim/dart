@@ -60,27 +60,27 @@ public:
   /// \{ \name Derivative of spatial velocity
   //----------------------------------------------------------------------------
 
-  const GradientMatrix& getSpatialVelocityDerivativeWrtPositions() const;
+  const GradientMatrix& getSpatialVelocityDerivativeWrtPos() const;
 
   Eigen::Vector6d
-  getSpatialVelocityDerivativeWrtPositions(std::size_t indexInSkeleton) const;
+  getSpatialVelocityDerivativeWrtPos(std::size_t indexInSkeleton) const;
 
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtPos(
       const DegreeOfFreedom* withRespectTo) const;
 
   GradientMatrix
-  getSpatialVelocityDerivativeWrtPositions(const Joint* withRespectTo) const;
+  getSpatialVelocityDerivativeWrtPos(const Joint* withRespectTo) const;
 
-  const GradientMatrix& getSpatialVelocityDerivativeWrtVelocities() const;
+  const GradientMatrix& getSpatialVelocityDerivativeWrtVel() const;
 
   Eigen::Vector6d
-  getSpatialVelocityDerivativeWrtVelocities(std::size_t indexInSkeleton) const;
+  getSpatialVelocityDerivativeWrtVel(std::size_t indexInSkeleton) const;
 
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtVel(
       const DegreeOfFreedom* withRespectTo) const;
 
   GradientMatrix
-  getSpatialVelocityDerivativeWrtVelocities(const Joint* withRespectTo) const;
+  getSpatialVelocityDerivativeWrtVel(const Joint* withRespectTo) const;
 
   /// \}
 
@@ -90,41 +90,41 @@ public:
   /// \{ \name Gradients of Lagrangian
   //----------------------------------------------------------------------------
 
-  Eigen::VectorXd computeKineticEnergyGradientWrtPositions() const;
-  Eigen::VectorXd computeKineticEnergyGradientWrtVelocities() const;
+  Eigen::VectorXd computeKineticEnergyGradientWrtPos() const;
+  Eigen::VectorXd computeKineticEnergyGradientWrtVel() const;
 
-  Eigen::VectorXd computeLagrangianGradientWrtPositions() const;
-  Eigen::VectorXd computeLagrangianGradientWrtVelocities() const;
+  Eigen::VectorXd computeLagrangianGradientWrtPos() const;
+  Eigen::VectorXd computeLagrangianGradientWrtVel() const;
 
   /// \}
 
 protected:
   void setComposite(common::Composite* newComposite) override;
 
-  void dirtySpatialVelocityDerivativeWrtPositions();
-  void dirtySpatialVelocityDerivativeWrtVelocities();
+  void dirtySpatialVelocityDerivativeWrtPos();
+  void dirtySpatialVelocityDerivativeWrtVel();
 
 protected:
   /// \warning Do not use directly! Use
-  /// getSpatialVelocityDerivativeWrtPositions() to access this quantity.
+  /// getSpatialVelocityDerivativeWrtPos() to access this quantity.
   mutable GradientMatrix mV_q{GradientMatrix()};
 
   /// \warning Do not use directly! Use
-  /// getSpatialVelocityDerivativeWrtVelocities() to access this quantity.
+  /// getSpatialVelocityDerivativeWrtVel() to access this quantity.
   mutable GradientMatrix mV_dq{GradientMatrix()};
 
   /// \warning Do not use directly! Use
-  /// getSpatialVelocityDerivativeWrtPositions() to access this quantity.
+  /// getSpatialVelocityDerivativeWrtPos() to access this quantity.
   mutable GradientMatrix mdV_q{GradientMatrix()};
 
   /// \warning Do not use directly! Use
-  /// getSpatialVelocityDerivativeWrtVelocities() to access this quantity.
+  /// getSpatialVelocityDerivativeWrtVel() to access this quantity.
   mutable GradientMatrix mdV_dq{GradientMatrix()};
 
-  mutable bool mNeedSpatialVelocityDerivativeWrtPositionsUpdate{true};
-  mutable bool mNeedSpatialVelocityDerivativeWrtVelocitiesUpdate{true};
-  mutable bool mNeedSpatialAccelerationDerivativeWrtPositionsUpdate{true};
-  mutable bool mNeedSpatialAccelerationDerivativeWrtVelocitiesUpdate{true};
+  mutable bool mNeedSpatialVelocityDerivativeWrtPosUpdate{true};
+  mutable bool mNeedSpatialVelocityDerivativeWrtVelUpdate{true};
+  mutable bool mNeedSpatialAccelerationDerivativeWrtPosUpdate{true};
+  mutable bool mNeedSpatialAccelerationDerivativeWrtVelUpdate{true};
 };
 
 } // namespace dynamics

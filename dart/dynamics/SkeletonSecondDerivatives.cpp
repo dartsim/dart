@@ -46,51 +46,51 @@ std::unique_ptr<common::Aspect> SkeletonSecondDerivatives::cloneAspect() const
 }
 
 //==============================================================================
-const Eigen::MatrixXd&
-SkeletonSecondDerivatives::computeLagrangianHessianWrtPositions()
+Eigen::MatrixXd
+SkeletonSecondDerivatives::computeLagrangianHessianWrtPosPos() const
 {
-  mDM_HessianOfLagrangian_q_q.setZero();
+  const auto numDofs = mComposite->getNumDofs();
+  Eigen::MatrixXd hessian = Eigen::MatrixXd::Zero(numDofs, numDofs);
 
-  for (auto* bodyNode : mComposite->getBodyNodes())
+  for (const auto* bodyNode : mComposite->getBodyNodes())
   {
     auto bodyNode2ndDeriv = bodyNode->get<BodyNodeSecondDerivatives>();
-    mDM_HessianOfLagrangian_q_q
-        += bodyNode2ndDeriv->computeLagrangianHessianWrtPositions();
+    hessian += bodyNode2ndDeriv->computeLagrangianHessianWrtPosPos();
   }
 
-  return mDM_HessianOfLagrangian_q_q;
+  return hessian;
 }
 
 //==============================================================================
-const Eigen::MatrixXd&
-SkeletonSecondDerivatives::computeLagrangianHessianWrtPositionsVelocities()
+Eigen::MatrixXd
+SkeletonSecondDerivatives::computeLagrangianHessianWrtPosVel() const
 {
-  mDM_HessianOfLagrangian_q_dq.setZero();
+  const auto numDofs = mComposite->getNumDofs();
+  Eigen::MatrixXd hessian = Eigen::MatrixXd::Zero(numDofs, numDofs);
 
-  for (auto* bodyNode : mComposite->getBodyNodes())
+  for (const auto* bodyNode : mComposite->getBodyNodes())
   {
     auto bodyNode2ndDeriv = bodyNode->get<BodyNodeSecondDerivatives>();
-    mDM_HessianOfLagrangian_q_dq
-        += bodyNode2ndDeriv->computeLagrangianHessianWrtPositionsVelocities();
+    hessian += bodyNode2ndDeriv->computeLagrangianHessianWrtPosVel();
   }
 
-  return mDM_HessianOfLagrangian_q_dq;
+  return hessian;
 }
 
 //==============================================================================
-const Eigen::MatrixXd&
-SkeletonSecondDerivatives::computeLagrangianHessianWrtVelocities()
+Eigen::MatrixXd
+SkeletonSecondDerivatives::computeLagrangianHessianWrtVelVel() const
 {
-  mDM_HessianOfLagrangian_dq_dq.setZero();
+  const auto numDofs = mComposite->getNumDofs();
+  Eigen::MatrixXd hessian = Eigen::MatrixXd::Zero(numDofs, numDofs);
 
-  for (auto* bodyNode : mComposite->getBodyNodes())
+  for (const auto* bodyNode : mComposite->getBodyNodes())
   {
     auto bodyNode2ndDeriv = bodyNode->get<BodyNodeSecondDerivatives>();
-    mDM_HessianOfLagrangian_dq_dq
-        += bodyNode2ndDeriv->computeLagrangianHessianWrtVelocities();
+    hessian += bodyNode2ndDeriv->computeLagrangianHessianWrtVelVel();
   }
 
-  return mDM_HessianOfLagrangian_dq_dq;
+  return hessian;
 }
 
 //==============================================================================
@@ -102,18 +102,6 @@ void SkeletonSecondDerivatives::setComposite(common::Composite* newComposite)
   assert(skel);
 
   mSkeletonDerivatives = skel->getOrCreateAspect<SkeletonDerivatives>();
-
-  const auto numDofs = skel->getNumDofs();
-
-  mDM_HessianKineticEnergy_q_q.resize(numDofs, numDofs);
-  mDM_HessianKineticEnergy_q_dq.resize(numDofs, numDofs);
-  mDM_HessianKineticEnergy_dq_dq.resize(numDofs, numDofs);
-
-  mDM_HessianOfLagrangian_q_q.resize(numDofs, numDofs);
-  mDM_HessianOfLagrangian_q_dq.resize(numDofs, numDofs);
-  mDM_HessianOfLagrangian_dq_dq.resize(numDofs, numDofs);
-
-  mDM_D2D1LD.resize(numDofs, numDofs);
 
   for (auto* bodyNode : skel->getBodyNodes())
     bodyNode->getOrCreateAspect<BodyNodeSecondDerivatives>();

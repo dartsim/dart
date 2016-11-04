@@ -45,8 +45,7 @@ std::unique_ptr<common::Aspect> SkeletonDerivatives::cloneAspect() const
 }
 
 //==============================================================================
-const Eigen::VectorXd&
-SkeletonDerivatives::computeLagrangianGradientWrtPositions()
+const Eigen::VectorXd& SkeletonDerivatives::computeLagrangianGradientWrtPos()
 {
   mDM_GradientOfLagrangian_q.setZero();
 
@@ -54,15 +53,14 @@ SkeletonDerivatives::computeLagrangianGradientWrtPositions()
   {
     auto bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
     mDM_GradientOfLagrangian_q
-        += bodyNodeDerivative->computeLagrangianGradientWrtPositions();
+        += bodyNodeDerivative->computeLagrangianGradientWrtPos();
   }
 
   return mDM_GradientOfLagrangian_q;
 }
 
 //==============================================================================
-const Eigen::VectorXd&
-SkeletonDerivatives::computeLagrangianGradientWrtVelocities()
+const Eigen::VectorXd& SkeletonDerivatives::computeLagrangianGradientWrtVel()
 {
   mDM_GradientOfLagrangian_dq.setZero();
 
@@ -70,7 +68,7 @@ SkeletonDerivatives::computeLagrangianGradientWrtVelocities()
   {
     auto bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
     mDM_GradientOfLagrangian_dq
-        += bodyNodeDerivative->computeLagrangianGradientWrtVelocities();
+        += bodyNodeDerivative->computeLagrangianGradientWrtVel();
   }
 
   return mDM_GradientOfLagrangian_dq;
@@ -78,7 +76,7 @@ SkeletonDerivatives::computeLagrangianGradientWrtVelocities()
 
 //==============================================================================
 SkeletonDerivatives::SpatialVelocityDerivative
-SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
+SkeletonDerivatives::getSpatialVelocityDerivativeWrtPos(
     std::size_t bodyNodeIndexInSkeleton) const
 {
   // TODO(JS): emit warning if the index is not valid
@@ -87,11 +85,11 @@ SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
 
   assert(bodyNodeDerivative);
 
-  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtPositions();
+  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtPos();
 }
 
 //==============================================================================
-Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
+Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtPos(
     std::size_t bodyNodeIndexInSkeleton, std::size_t withRespectTo) const
 {
   // TODO(JS): emit warning if the index is not valid
@@ -100,12 +98,11 @@ Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
 
   assert(bodyNodeDerivative);
 
-  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtPositions(
-      withRespectTo);
+  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtPos(withRespectTo);
 }
 
 //==============================================================================
-Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
+Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtPos(
     std::size_t bodyNodeIndexInSkeleton,
     const DegreeOfFreedom* withRespectTo) const
 {
@@ -115,13 +112,12 @@ Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtPositions(
 
   assert(bodyNodeDerivative);
 
-  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtPositions(
-      withRespectTo);
+  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtPos(withRespectTo);
 }
 
 //==============================================================================
 SkeletonDerivatives::SpatialVelocityDerivative
-SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
+SkeletonDerivatives::getSpatialVelocityDerivativeWrtVel(
     std::size_t bodyNodeIndexInSkeleton) const
 {
   // TODO(JS): emit warning if the index is not valid
@@ -130,11 +126,11 @@ SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
 
   assert(bodyNodeDerivative);
 
-  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtVelocities();
+  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtVel();
 }
 
 //==============================================================================
-Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
+Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtVel(
     std::size_t bodyNodeIndexInSkeleton, std::size_t withRespectTo) const
 {
   // TODO(JS): emit warning if the index is not valid
@@ -143,12 +139,11 @@ Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
 
   assert(bodyNodeDerivative);
 
-  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtVelocities(
-      withRespectTo);
+  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtVel(withRespectTo);
 }
 
 //==============================================================================
-Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
+Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtVel(
     std::size_t bodyNodeIndexInSkeleton,
     const DegreeOfFreedom* withRespectTo) const
 {
@@ -158,8 +153,7 @@ Eigen::Vector6d SkeletonDerivatives::getSpatialVelocityDerivativeWrtVelocities(
 
   assert(bodyNodeDerivative);
 
-  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtVelocities(
-      withRespectTo);
+  return bodyNodeDerivative->getSpatialVelocityDerivativeWrtVel(withRespectTo);
 }
 
 //==============================================================================

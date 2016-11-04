@@ -41,23 +41,23 @@ void setRandomState(const dynamics::SkeletonPtr& skel);
 
 SkeletonPtr createRandomSkeleton();
 
-Eigen::VectorXd computeNumericalLagrangianGradientWrtPositions(
+Eigen::VectorXd computeNumericalLagrangianGradientWrtPos(
     const dynamics::SkeletonPtr& skel,
     double delta = 1e-12);
 
-Eigen::VectorXd computeNumericalLagrangianGradientWrtVelocities(
+Eigen::VectorXd computeNumericalLagrangianGradientWrtVel(
     const dynamics::SkeletonPtr& skel,
     double delta = 1e-12);
 
-Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositions(
+Eigen::MatrixXd computeNumericalLagrangianHessianWrtPosPos(
     const dynamics::SkeletonPtr& skel,
     double delta = 1e-6);
 
-Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositionsVelocities(
+Eigen::MatrixXd computeNumericalLagrangianHessianWrtPosVel(
     const dynamics::SkeletonPtr& skel,
     double delta = 1e-6);
 
-Eigen::MatrixXd computeNumericalLagrangianHessianWrtVelocities(
+Eigen::MatrixXd computeNumericalLagrangianHessianWrtVelVel(
     const dynamics::SkeletonPtr& skel,
     double delta = 1e-6);
 
@@ -78,28 +78,28 @@ computeNumericalSpatialVelocityDerivativesWrtVelocities(
     double delta = 1e-12);
 
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocitySecondDerivativeWrtPositions(
+computeNumericalBodyVelocitySecondDerivativeWrtPos(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
     double delta = 1e-6);
 
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocitySecondDerivativeWrtPositionsVelocities(
+computeNumericalBodyVelocitySecondDerivativeWrtPosVel(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
     double delta = 1e-6);
 
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocitySecondDerivativeWrtVelocitiesPositions(
+computeNumericalBodyVelocitySecondDerivativeWrtVelPositions(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
     double delta = 1e-6);
 
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocitySecondDerivativeWrtVelocities(
+computeNumericalBodyVelocitySecondDerivativeWrtVel(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
@@ -128,9 +128,9 @@ TEST(Derivatives, SpatialVelocityDerivatives)
           = skel->getBodyNode(i)->get<BodyNodeDerivatives>();
 
       JacobianMatrix bodyVelocityGradient_q_analytical
-          = bodyNodeDeriv->getSpatialVelocityDerivativeWrtPositions(indexWrt);
+          = bodyNodeDeriv->getSpatialVelocityDerivativeWrtPos(indexWrt);
       JacobianMatrix bodyVelocityGradient_dq_analytical
-          = bodyNodeDeriv->getSpatialVelocityDerivativeWrtVelocities(indexWrt);
+          = bodyNodeDeriv->getSpatialVelocityDerivativeWrtVel(indexWrt);
 
       EXPECT_TRUE(bodyVelocityGradients_q_fd[i].isApprox(
                     bodyVelocityGradient_q_analytical, 1e-1));
@@ -147,7 +147,7 @@ TEST(Derivatives, BodyVelocitySecondDerivative)
 }
 
 //==============================================================================
-TEST(Derivatives, LagragianDerivatives)
+TEST(Derivatives, LagrangianGradient)
 {
   auto skel = createNLinkPendulum(5);
   skel->setGravity(Eigen::Vector3d::Zero());
@@ -159,19 +159,19 @@ TEST(Derivatives, LagragianDerivatives)
   auto* skelComposite = skelDeriv->getComposite();
   EXPECT_TRUE(skelComposite != nullptr);
 
-  auto lagGradWrtPositions = skelDeriv->computeLagrangianGradientWrtPositions();
-  auto lagGradWrtPositionsNumerical = computeNumericalLagrangianGradientWrtPositions(skel);
+  auto lagGradWrtPositions = skelDeriv->computeLagrangianGradientWrtPos();
+  auto lagGradWrtPositionsNumerical = computeNumericalLagrangianGradientWrtPos(skel);
   EXPECT_TRUE(lagGradWrtPositions.isApprox(lagGradWrtPositionsNumerical, 1e-2));
 
-  auto lagGradWrtVelocities = skelDeriv->computeLagrangianGradientWrtVelocities();
-  auto lagGradWrtVelocitiesNumerical = computeNumericalLagrangianGradientWrtVelocities(skel);
+  auto lagGradWrtVelocities = skelDeriv->computeLagrangianGradientWrtVel();
+  auto lagGradWrtVelocitiesNumerical = computeNumericalLagrangianGradientWrtVel(skel);
   EXPECT_TRUE(lagGradWrtVelocities.isApprox(lagGradWrtVelocitiesNumerical, 1e-2));
 }
 
 //==============================================================================
-TEST(Derivatives, LagragianSecondDerivatives)
+void testLagrangianHessians(std::size_t numDofs)
 {
-  auto skel = createNLinkPendulum(2);
+  auto skel = createNLinkPendulum(numDofs);
   skel->setGravity(Eigen::Vector3d::Zero());
   setRandomState(skel);
 
@@ -181,17 +181,29 @@ TEST(Derivatives, LagragianSecondDerivatives)
   auto* skelComposite = skelDeriv->getComposite();
   EXPECT_TRUE(skelComposite != nullptr);
 
-  auto lagrangianHessianWrtPositions = skelDeriv->computeLagrangianHessianWrtPositions();
-  auto lagrangianHessianWrtPositionsNumerical = computeNumericalLagrangianHessianWrtPositions(skel);
-  EXPECT_TRUE(lagrangianHessianWrtPositions.isApprox(lagrangianHessianWrtPositionsNumerical, 1e-2));
+  auto lagrangianHessianWrtPosPos = skelDeriv->computeLagrangianHessianWrtPosPos();
+  auto lagrangianHessianWrtPosPosNumerical = computeNumericalLagrangianHessianWrtPosPos(skel);
+  EXPECT_TRUE(lagrangianHessianWrtPosPos.isApprox(lagrangianHessianWrtPosPosNumerical, 1e-2));
 
-  auto lagrangianHessianWrtPositionsVelocities = skelDeriv->computeLagrangianHessianWrtPositionsVelocities();
-  auto lagrangianHessianWrtPositionsVelocitiesNumerical = computeNumericalLagrangianHessianWrtPositionsVelocities(skel);
-  EXPECT_TRUE(lagrangianHessianWrtPositionsVelocities.isApprox(lagrangianHessianWrtPositionsVelocitiesNumerical, 1e-2));
+  auto lagrangianHessianWrtPosVel = skelDeriv->computeLagrangianHessianWrtPosVel();
+  auto lagrangianHessianWrtPosVelNumerical = computeNumericalLagrangianHessianWrtPosVel(skel);
+  EXPECT_TRUE(lagrangianHessianWrtPosVel.isApprox(lagrangianHessianWrtPosVelNumerical, 1e-2));
 
-  auto lagrangianHessianWrtVelocities = skelDeriv->computeLagrangianHessianWrtVelocities();
-  auto lagrangianHessianWrtVelocitiesNumerical = computeNumericalLagrangianHessianWrtVelocities(skel);
-  EXPECT_TRUE(lagrangianHessianWrtVelocities.isApprox(lagrangianHessianWrtVelocitiesNumerical, 1e-2));
+  auto lagrangianHessianWrtVelVel = skelDeriv->computeLagrangianHessianWrtVelVel();
+  auto lagrangianHessianWrtVelVelNumerical = computeNumericalLagrangianHessianWrtVelVel(skel);
+  EXPECT_TRUE(lagrangianHessianWrtVelVel.isApprox(lagrangianHessianWrtVelVelNumerical, 1e-2));
+}
+
+//==============================================================================
+TEST(Derivatives, LagrangianHessians)
+{
+  testLagrangianHessians(1);
+  testLagrangianHessians(2);
+  testLagrangianHessians(5);
+  testLagrangianHessians(10);
+#ifdef NDEBUG
+  testLagrangianHessians(25);
+#endif
 }
 
 //==============================================================================
@@ -241,7 +253,7 @@ SkeletonPtr createRandomSkeleton()
 }
 
 //==============================================================================
-Eigen::VectorXd computeNumericalLagrangianGradientWrtPositions(
+Eigen::VectorXd computeNumericalLagrangianGradientWrtPos(
     const dynamics::SkeletonPtr& skel, double delta)
 {
   const auto numDofs = skel->getNumDofs();
@@ -264,7 +276,7 @@ Eigen::VectorXd computeNumericalLagrangianGradientWrtPositions(
 }
 
 //==============================================================================
-Eigen::VectorXd computeNumericalLagrangianGradientWrtVelocities(
+Eigen::VectorXd computeNumericalLagrangianGradientWrtVel(
     const dynamics::SkeletonPtr& skel, double delta)
 {
   const auto numDofs = skel->getNumDofs();
@@ -287,7 +299,7 @@ Eigen::VectorXd computeNumericalLagrangianGradientWrtVelocities(
 }
 
 //==============================================================================
-Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositions(
+Eigen::MatrixXd computeNumericalLagrangianHessianWrtPosPos(
     const dynamics::SkeletonPtr& skel, double delta)
 {
   const auto numDofs = skel->getNumDofs();
@@ -298,10 +310,10 @@ Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositions(
   for (auto i = 0u; i < numDofs; ++i)
   {
     Eigen::VectorXd grad1
-        = computeNumericalLagrangianGradientWrtPositions(skel, delta);
+        = computeNumericalLagrangianGradientWrtPos(skel, delta);
     skel->setPosition(i, oldPositions[i] + delta);
     Eigen::VectorXd grad2
-        = computeNumericalLagrangianGradientWrtPositions(skel, delta);
+        = computeNumericalLagrangianGradientWrtPos(skel, delta);
     skel->setPosition(i, oldPositions[i]);
     hessian.col(i) = (grad2 - grad1) / delta;
   }
@@ -312,7 +324,7 @@ Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositions(
 }
 
 //==============================================================================
-Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositionsVelocities(
+Eigen::MatrixXd computeNumericalLagrangianHessianWrtPosVel(
     const dynamics::SkeletonPtr& skel, double delta)
 {
   const auto numDofs = skel->getNumDofs();
@@ -360,7 +372,7 @@ Eigen::MatrixXd computeNumericalLagrangianHessianWrtPositionsVelocities(
 }
 
 //==============================================================================
-Eigen::MatrixXd computeNumericalLagrangianHessianWrtVelocities(
+Eigen::MatrixXd computeNumericalLagrangianHessianWrtVelVel(
     const dynamics::SkeletonPtr& skel, double delta)
 {
   const auto numDofs = skel->getNumDofs();
@@ -371,10 +383,10 @@ Eigen::MatrixXd computeNumericalLagrangianHessianWrtVelocities(
   for (auto i = 0u; i < numDofs; ++i)
   {
     Eigen::VectorXd grad1
-        = computeNumericalLagrangianGradientWrtVelocities(skel, delta);
+        = computeNumericalLagrangianGradientWrtVel(skel, delta);
     skel->setVelocity(i, oldVelocities[i] + delta);
     Eigen::VectorXd grad2
-        = computeNumericalLagrangianGradientWrtVelocities(skel, delta);
+        = computeNumericalLagrangianGradientWrtVel(skel, delta);
     skel->setVelocity(i, oldVelocities[i]);
     hessian.col(i) = (grad2 - grad1) / delta;
   }
@@ -450,7 +462,7 @@ computeNumericalSpatialVelocityDerivativesWrtVelocities(
 
 //==============================================================================
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocitySecondDerivativeWrtPositions(
+computeNumericalBodyVelocitySecondDerivativeWrtPos(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
@@ -469,9 +481,9 @@ computeNumericalBodyVelocitySecondDerivativeWrtPositions(
   for (auto i = 0u; i < numBodies; ++i)
   {
     bodyVelocityGradient1A[i]
-        = skelDeriv->getSpatialVelocityDerivativeWrtPositions(withRespectTo1);
+        = skelDeriv->getSpatialVelocityDerivativeWrtPos(withRespectTo1);
     bodyVelocityGradient2A[i]
-        = skelDeriv->getSpatialVelocityDerivativeWrtPositions(withRespectTo2);
+        = skelDeriv->getSpatialVelocityDerivativeWrtPos(withRespectTo2);
   }
 
   Eigen::aligned_vector<Eigen::Vector6d> bodyVelocityGradient1B(numBodies);
@@ -487,14 +499,14 @@ computeNumericalBodyVelocitySecondDerivativeWrtPositions(
   for (auto i = 0u; i < numBodies; ++i)
   {
     bodyVelocityGradient1B[i]
-        = skelDeriv->getSpatialVelocityDerivativeWrtPositions(withRespectTo1);
+        = skelDeriv->getSpatialVelocityDerivativeWrtPos(withRespectTo1);
   }
 
   skel->setPositions(positions2B);
   for (auto i = 0u; i < numBodies; ++i)
   {
     bodyVelocityGradient2B[i]
-        = skelDeriv->getSpatialVelocityDerivativeWrtPositions(withRespectTo2);
+        = skelDeriv->getSpatialVelocityDerivativeWrtPos(withRespectTo2);
   }
 
   for (auto i = 0u; i < numBodies; ++i)
@@ -511,7 +523,7 @@ computeNumericalBodyVelocitySecondDerivativeWrtPositions(
 
 //==============================================================================
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocitySecondDerivativeWrtPositionsVelocities(
+computeNumericalBodyVelocitySecondDerivativeWrtPosVel(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
@@ -531,9 +543,9 @@ computeNumericalBodyVelocitySecondDerivativeWrtPositionsVelocities(
   for (auto i = 0u; i < numBodies; ++i)
   {
     bodyVelocityGradient1A[i]
-        = skelDeriv->getSpatialVelocityDerivativeWrtPositions(withRespectTo1);
+        = skelDeriv->getSpatialVelocityDerivativeWrtPos(withRespectTo1);
     bodyVelocityGradient2A[i]
-        = skelDeriv->getSpatialVelocityDerivativeWrtVelocities(withRespectTo2);
+        = skelDeriv->getSpatialVelocityDerivativeWrtVel(withRespectTo2);
   }
 
   Eigen::aligned_vector<Eigen::Vector6d> bodyVelocityGradient1B(numBodies);
@@ -550,7 +562,7 @@ computeNumericalBodyVelocitySecondDerivativeWrtPositionsVelocities(
   for (auto i = 0u; i < numBodies; ++i)
   {
     bodyVelocityGradient1B[i]
-        = skelDeriv->getSpatialVelocityDerivativeWrtPositions(withRespectTo1);
+        = skelDeriv->getSpatialVelocityDerivativeWrtPos(withRespectTo1);
   }
 
   skel->setPositions(positions1B);
@@ -558,7 +570,7 @@ computeNumericalBodyVelocitySecondDerivativeWrtPositionsVelocities(
   for (auto i = 0u; i < numBodies; ++i)
   {
     bodyVelocityGradient2B[i]
-        = skelDeriv->getSpatialVelocityDerivativeWrtVelocities(withRespectTo2);
+        = skelDeriv->getSpatialVelocityDerivativeWrtVel(withRespectTo2);
   }
 
   for (auto i = 0u; i < numBodies; ++i)
@@ -576,19 +588,19 @@ computeNumericalBodyVelocitySecondDerivativeWrtPositionsVelocities(
 
 //==============================================================================
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocitySecondDerivativeWrtVelocitiesPositions(
+computeNumericalBodyVelocitySecondDerivativeWrtVelPositions(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
     double delta)
 {
-  return computeNumericalBodyVelocitySecondDerivativeWrtPositionsVelocities(
+  return computeNumericalBodyVelocitySecondDerivativeWrtPosVel(
         skel, withRespectTo2, withRespectTo1, delta);
 }
 
 //==============================================================================
 Eigen::aligned_vector<Eigen::Vector6d>
-computeNumericalBodyVelocitySecondDerivativeWrtVelocities(
+computeNumericalBodyVelocitySecondDerivativeWrtVel(
     const dynamics::SkeletonPtr& skel,
     std::size_t withRespectTo1,
     std::size_t withRespectTo2,
@@ -607,9 +619,9 @@ computeNumericalBodyVelocitySecondDerivativeWrtVelocities(
   for (auto i = 0u; i < numDofs; ++i)
   {
     bodyVelocityGradient1A[i]
-        = skelDeriv->getSpatialVelocityDerivativeWrtPositions(withRespectTo1);
+        = skelDeriv->getSpatialVelocityDerivativeWrtPos(withRespectTo1);
     bodyVelocityGradient2A[i]
-        = skelDeriv->getSpatialVelocityDerivativeWrtPositions(withRespectTo2);
+        = skelDeriv->getSpatialVelocityDerivativeWrtPos(withRespectTo2);
   }
 
   Eigen::aligned_vector<Eigen::Vector6d> bodyVelocityGradient1B(numDofs);
@@ -625,14 +637,14 @@ computeNumericalBodyVelocitySecondDerivativeWrtVelocities(
   for (auto i = 0u; i < numDofs; ++i)
   {
     bodyVelocityGradient1B[i]
-        = skelDeriv->getSpatialVelocityDerivativeWrtVelocities(withRespectTo1);
+        = skelDeriv->getSpatialVelocityDerivativeWrtVel(withRespectTo1);
   }
 
   skel->setVelocities(velocities2B);
   for (auto i = 0u; i < numDofs; ++i)
   {
     bodyVelocityGradient2B[i]
-        = skelDeriv->getSpatialVelocityDerivativeWrtVelocities(withRespectTo2);
+        = skelDeriv->getSpatialVelocityDerivativeWrtVel(withRespectTo2);
   }
 
   for (auto i = 0u; i < numDofs; ++i)

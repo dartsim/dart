@@ -58,9 +58,9 @@ public:
   /// \{ \name Hessians of Lagrangian
   //----------------------------------------------------------------------------
 
-  const Eigen::MatrixXd& computeLagrangianHessianWrtPositions();
-  const Eigen::MatrixXd& computeLagrangianHessianWrtPositionsVelocities();
-  const Eigen::MatrixXd& computeLagrangianHessianWrtVelocities();
+  Eigen::MatrixXd computeLagrangianHessianWrtPosPos() const;
+  Eigen::MatrixXd computeLagrangianHessianWrtPosVel() const;
+  Eigen::MatrixXd computeLagrangianHessianWrtVelVel() const;
 
   /// \}
 
@@ -69,22 +69,6 @@ protected:
 
 protected:
   SkeletonDerivatives* mSkeletonDerivatives;
-
-  Eigen::VectorXd mDM_GradientKineticEnergy_q;
-  Eigen::VectorXd mDM_GradientKineticEnergy_dq;
-  Eigen::MatrixXd mDM_HessianKineticEnergy_q_q;
-  Eigen::MatrixXd mDM_HessianKineticEnergy_q_dq;
-  Eigen::MatrixXd mDM_HessianKineticEnergy_dq_dq;
-
-  Eigen::VectorXd mDM_GradientOfLagrangian_q;
-  Eigen::VectorXd mDM_GradientOfLagrangian_dq;
-  Eigen::MatrixXd mDM_HessianOfLagrangian_q_q;
-  Eigen::MatrixXd mDM_HessianOfLagrangian_q_dq;
-  Eigen::MatrixXd mDM_HessianOfLagrangian_dq_dq;
-
-  Eigen::VectorXd mDM_D2LD;
-  Eigen::VectorXd mDM_D1LD;
-  Eigen::MatrixXd mDM_D2D1LD;
 };
 
 } // namespace dynamics

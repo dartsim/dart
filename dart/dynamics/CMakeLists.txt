@@ -30,3 +30,20 @@ install(
   DESTINATION include/dart/dynamics/detail
   COMPONENT headers
 )
+
+get_filename_component(formatting_file "BodyNodeDerivatives.hpp" ABSOLUTE)
+dart_format_add(${formatting_file})
+get_filename_component(formatting_file "BodyNodeDerivatives.cpp" ABSOLUTE)
+dart_format_add(${formatting_file})
+get_filename_component(formatting_file "BodyNodeSecondDerivatives.hpp" ABSOLUTE)
+dart_format_add(${formatting_file})
+get_filename_component(formatting_file "BodyNodeSecondDerivatives.cpp" ABSOLUTE)
+dart_format_add(${formatting_file})
+get_filename_component(formatting_file "SkeletonDerivatives.hpp" ABSOLUTE)
+dart_format_add(${formatting_file})
+get_filename_component(formatting_file "SkeletonDerivatives.cpp" ABSOLUTE)
+dart_format_add(${formatting_file})
+get_filename_component(formatting_file "SkeletonSecondDerivatives.hpp" ABSOLUTE)
+dart_format_add(${formatting_file})
+get_filename_component(formatting_file "SkeletonSecondDerivatives.cpp" ABSOLUTE)
+dart_format_add(${formatting_file})

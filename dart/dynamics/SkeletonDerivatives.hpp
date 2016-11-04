@@ -59,23 +59,23 @@ public:
   /// \{ \name Derivatives of spatial velocities of bodies
   //----------------------------------------------------------------------------
 
-  SpatialVelocityDerivative getSpatialVelocityDerivativeWrtPositions(
-      std::size_t bodyNodeIndexInSkeleton) const;
+  SpatialVelocityDerivative
+  getSpatialVelocityDerivativeWrtPos(std::size_t bodyNodeIndexInSkeleton) const;
 
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtPos(
       std::size_t bodyNodeIndexInSkeleton, std::size_t withRespectTo) const;
 
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtPositions(
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtPos(
       std::size_t bodyNodeIndexInSkeleton,
       const DegreeOfFreedom* withRespectTo) const;
 
-  SpatialVelocityDerivative getSpatialVelocityDerivativeWrtVelocities(
-      std::size_t bodyNodeIndexInSkeleton) const;
+  SpatialVelocityDerivative
+  getSpatialVelocityDerivativeWrtVel(std::size_t bodyNodeIndexInSkeleton) const;
 
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtVel(
       std::size_t bodyNodeIndexInSkeleton, std::size_t withRespectTo) const;
 
-  Eigen::Vector6d getSpatialVelocityDerivativeWrtVelocities(
+  Eigen::Vector6d getSpatialVelocityDerivativeWrtVel(
       std::size_t bodyNodeIndexInSkeleton,
       const DegreeOfFreedom* withRespectTo) const;
 
@@ -87,11 +87,11 @@ public:
 
   /// Compute and return the first derivative of the Lagrangian with respect to
   /// the generalized coordinates.
-  const Eigen::VectorXd& computeLagrangianGradientWrtPositions();
+  const Eigen::VectorXd& computeLagrangianGradientWrtPos();
 
   /// Compute and return the first derivative of the Lagrangian with respect to
   /// the generalized velocities.
-  const Eigen::VectorXd& computeLagrangianGradientWrtVelocities();
+  const Eigen::VectorXd& computeLagrangianGradientWrtVel();
 
   /// \}
 
