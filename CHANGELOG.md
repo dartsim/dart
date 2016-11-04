@@ -12,7 +12,7 @@
 
 * Misc
 
-  * Added CMake targets for code formatting using clang-format: [#811](https://github.com/dartsim/dart/pull/811)
+  * Added CMake targets for code formatting using clang-format: [#811](https://github.com/dartsim/dart/pull/811), [#817](https://github.com/dartsim/dart/pull/817)
 
 ### DART 6.1.2 (2016-XX-XX)
 
