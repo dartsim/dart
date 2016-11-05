@@ -774,7 +774,7 @@ TEST(Skeleton, ZeroDofJointConstraintForces)
   BodyNode* bn = skel->createJointAndBodyNodePair<RevoluteJoint>().second;
   BodyNode* zeroDof1 = skel->createJointAndBodyNodePair<WeldJoint>(bn).second;
   bn = skel->createJointAndBodyNodePair<PrismaticJoint>(zeroDof1).second;
-  skel->createJointAndBodyNodePair<WeldJoint>(bn).second;
+  skel->createJointAndBodyNodePair<WeldJoint>(bn);
 
   const auto numSkelDofs = skel->getNumDofs();
   for (auto& bodyNode : skel->getBodyNodes())
