@@ -261,6 +261,10 @@ function(dart_format_add)
   dart_property_add(DART_FORMAT_FILES ${ARGN})
 endfunction()
 
+function(dart_clang_tidy_add)
+  dart_property_add(DART_CLANG_TIDY_FILES ${ARGN})
+endfunction()
+
 #===============================================================================
 # Add sub-directories
 #===============================================================================
@@ -417,7 +421,7 @@ find_program(
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
 list(LENGTH formatting_files formatting_files_length)
-message(STATUS "Formatting on ${formatting_files_length} source files.")
+message(STATUS "Formatting ${formatting_files_length} source files using clang-format.")
 
 if(CLANG_FORMAT_EXECUTABLE)
 
@@ -450,6 +454,91 @@ if(CLANG_FORMAT_EXECUTABLE)
 else()
 
   message(STATUS "Looking for clang-format - NOT found, please install clang-format to enable automatic code formatting")
+
+endif()
+
+#===============================================================================
+# clang-tidy
+#===============================================================================
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ clang-tidy ]")
+endif()
+
+find_program(
+  CLANG_TIDY_EXECUTABLE
+  NAMES clang-tidy clang-tidy-3.8
+)
+
+get_property(clang_tidy_files GLOBAL PROPERTY DART_CLANG_TIDY_FILES)
+list(LENGTH clang_tidy_files clang_tidy_files_length)
+message(
+  STATUS
+  "Checking ${clang_tidy_files_length} source files using clang-tidy."
+)
+
+if(CLANG_TIDY_EXECUTABLE)
+
+  if(DART_VERBOSE)
+    message(STATUS "Looking for clang-tidy - found")
+  endif()
+
+  if(clang_tidy_files)
+    add_custom_target(
+      clang-tidy
+      COMMAND
+        ${CLANG_TIDY_EXECUTABLE}
+        ${clang_tidy_files}
+        -config=''
+        --
+        -std=c++11
+        -I${EIGEN3_INCLUDE_DIRS}
+        -I${CCD_INCLUDE_DIRS}
+        -I${FCL_INCLUDE_DIRS}
+        -I${ASSIMP_INCLUDE_DIRS}
+        -I${Boost_INCLUDE_DIRS}
+      DEPENDS ${CLANG_TIDY_EXECUTABLE}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart
+    )
+    add_custom_target(
+      clang-tidy-fix
+      COMMAND
+        ${CLANG_TIDY_EXECUTABLE}
+        ${clang_tidy_files}
+        -config=''
+        -fix
+        --
+        -std=c++11
+        -I${EIGEN3_INCLUDE_DIRS}
+        -I${CCD_INCLUDE_DIRS}
+        -I${FCL_INCLUDE_DIRS}
+        -I${ASSIMP_INCLUDE_DIRS}
+        -I${Boost_INCLUDE_DIRS}
+      DEPENDS ${CLANG_TIDY_EXECUTABLE}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart
+    )
+  else()
+    add_custom_target(
+      clang-tidy
+      COMMAND
+        ${CMAKE_COMMAND}
+        -E echo "Warning: Not found any source files to run clang-tidy."
+    )
+    add_custom_target(
+      clang-tidy
+      COMMAND
+        ${CMAKE_COMMAND}
+        -E echo "Warning: Not found any source files to run clang-tidy-fix."
+    )
+  endif()
+
+else()
+
+  message(
+    STATUS
+    "Looking for clang-tidy - NOT found, please install clang-tidy to enable
+    static code analyzing using clang-tidy."
+  )
 
 endif()
 
