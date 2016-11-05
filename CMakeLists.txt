@@ -467,7 +467,7 @@ endif()
 
 find_program(
   CLANG_TIDY_EXECUTABLE
-  NAMES clang-tidy clang-tidy-3.8
+  NAMES clang-tidy clang-tidy-3.9 clang-tidy-3.8
 )
 
 get_property(clang_tidy_files GLOBAL PROPERTY DART_CLANG_TIDY_FILES)
@@ -525,7 +525,7 @@ if(CLANG_TIDY_EXECUTABLE)
         -E echo "Warning: Not found any source files to run clang-tidy."
     )
     add_custom_target(
-      clang-tidy
+      clang-tidy-fix
       COMMAND
         ${CMAKE_COMMAND}
         -E echo "Warning: Not found any source files to run clang-tidy-fix."
