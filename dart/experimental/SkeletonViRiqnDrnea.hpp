@@ -40,31 +40,11 @@
 namespace dart {
 namespace dynamics {
 
-// class Skeleton;
-
-namespace detail {
-
-struct SkeletonViRiqnDrneaState
-{
-  /// Constructor
-  SkeletonViRiqnDrneaState();
-
-  /// Destructor
-  virtual ~SkeletonViRiqnDrneaState() = default;
-};
-
-} // namespace detail
-
-//==============================================================================
 class SkeletonViRiqnDrnea final
-    : public common::AspectWithState<SkeletonViRiqnDrnea,
-                                     detail::SkeletonViRiqnDrneaState,
-                                     Skeleton>
+    : public common::CompositeTrackingAspect<Skeleton>
 {
 public:
-  using Base = common::AspectWithState<SkeletonViRiqnDrnea,
-                                       detail::SkeletonViRiqnDrneaState,
-                                       Skeleton>;
+  using Base = common::CompositeTrackingAspect<Skeleton>;
 
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
@@ -76,9 +56,12 @@ public:
     Tolerance
   };
 
-  SkeletonViRiqnDrnea(const StateData& state = StateData());
+  SkeletonViRiqnDrnea() = default;
 
   SkeletonViRiqnDrnea(const SkeletonViRiqnDrnea&) = delete;
+
+  // Documentation inherited
+  std::unique_ptr<Aspect> cloneAspect() const override;
 
   void initialize();
 

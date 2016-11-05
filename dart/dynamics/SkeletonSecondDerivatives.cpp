@@ -46,6 +46,20 @@ std::unique_ptr<common::Aspect> SkeletonSecondDerivatives::cloneAspect() const
 }
 
 //==============================================================================
+Eigen::VectorXd
+SkeletonSecondDerivatives::computeLagrangianGradientWrtPos() const
+{
+  return mSkeletonDerivatives->computeLagrangianGradientWrtPos();
+}
+
+//==============================================================================
+Eigen::VectorXd
+SkeletonSecondDerivatives::computeLagrangianGradientWrtVel() const
+{
+  return mSkeletonDerivatives->computeLagrangianGradientWrtVel();
+}
+
+//==============================================================================
 Eigen::MatrixXd
 SkeletonSecondDerivatives::computeLagrangianHessianWrtPosPos() const
 {

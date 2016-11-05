@@ -39,20 +39,11 @@
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
 //==============================================================================
-SkeletonViRiqnSviState::SkeletonViRiqnSviState()
+std::unique_ptr<common::Aspect> SkeletonViRiqnSvi::cloneAspect() const
 {
-  // Do nothing
-}
-
-} // namespace detail
-
-//==============================================================================
-SkeletonViRiqnSvi::SkeletonViRiqnSvi(const StateData& state)
-{
-  mState = state;
+  // TODO(JS): Not implemented
+  return common::make_unique<SkeletonViRiqnSvi>();
 }
 
 //==============================================================================
@@ -236,9 +227,6 @@ void SkeletonViRiqnSvi::setNextPositions(const Eigen::VectorXd& nextPositions)
 Eigen::VectorXd
 SkeletonViRiqnSvi::evaluateDel(const Eigen::VectorXd& nextPositions)
 {
-  // Implementation of Algorithm 2 of "A linear-time variational integrator for
-  // multibody systems" (WAFR 2016).
-
   auto* skel = mComposite;
   const auto timeStep = skel->getTimeStep();
   const Eigen::Vector3d& gravity = skel->getGravity();
@@ -363,8 +351,8 @@ void SkeletonViRiqnSvi::stepForward(const Eigen::VectorXd& nextPositions)
     auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnSvi>();
     assert(bodyNodeVi);
 
-    bodyNodeVi->mState.mPreAverageVelocity
-        = bodyNodeVi->mState.mPostAverageVelocity;
+    bodyNodeVi->mState.mPreAverageSpatialVelocity
+        = bodyNodeVi->mState.mPostAverageSpatialVelocity;
     bodyNodeVi->mState.mPrevMomentum = bodyNodeVi->mState.mPostMomentum;
   }
 }

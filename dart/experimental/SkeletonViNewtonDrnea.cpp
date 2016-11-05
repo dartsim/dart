@@ -365,8 +365,8 @@ void SkeletonViNewtonDrnea::stepForward(const Eigen::VectorXd& nextPositions)
     auto* bodyNodeVi = bodyNode->get<BodyNodeViNewtonDrnea>();
     assert(bodyNodeVi);
 
-    bodyNodeVi->mState.mPreAverageVelocity
-        = bodyNodeVi->mState.mPostAverageVelocity;
+    bodyNodeVi->mState.mPreAverageSpatialVelocity
+        = bodyNodeVi->mState.mPostAverageSpatialVelocity;
     bodyNodeVi->mState.mPrevMomentum = bodyNodeVi->mState.mPostMomentum;
   }
 }

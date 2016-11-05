@@ -31,6 +31,8 @@
 
 #include "dart/experimental/JointViRiqnDrnea.hpp"
 
+#include "dart/experimental/BodyNodeViRiqnDrnea.hpp"
+
 namespace dart {
 namespace dynamics {
 
@@ -46,17 +48,82 @@ std::unique_ptr<common::Aspect> RevoluteJointViRiqnDrnea::cloneAspect() const
 }
 
 //==============================================================================
-void RevoluteJointViRiqnDrnea::updateNextRelativeTransform()
+void RevoluteJointViRiqnDrnea::updateNextRelativeTransform() const
 {
   assert(dynamic_cast<RevoluteJoint*>(mComposite));
   auto* revJoint = static_cast<RevoluteJoint*>(mComposite);
 
-  mNextTransform = revJoint->getTransformFromParentBodyNode()
-                   * Eigen::AngleAxisd(mNextPositions[0], revJoint->getAxis())
-                   * revJoint->getTransformFromChildBodyNode().inverse();
+  mNextRelativeTransform
+      = revJoint->getTransformFromParentBodyNode()
+        * Eigen::AngleAxisd(mNextPositions[0], revJoint->getAxis())
+        * revJoint->getTransformFromChildBodyNode().inverse();
 
   // Verification
-  assert(math::verifyTransform(mNextTransform));
+  assert(math::verifyTransform(mNextRelativeTransform));
+}
+
+//==============================================================================
+void JointViRiqnDrnea::notifyNextPositionUpdated()
+{
+  if (getChildBodyNode())
+    getChildBodyNodeVi()->notifyNextPositionUpdated();
+
+  mNeedNextRelativeTransformUpdate = true;
+}
+
+//==============================================================================
+const Eigen::Isometry3d& JointViRiqnDrnea::getNextRelativeTransform() const
+{
+  if (mNeedNextRelativeTransformUpdate)
+  {
+    updateNextRelativeTransform();
+
+    mNeedNextRelativeTransformUpdate = false;
+  }
+
+  return mNextRelativeTransform;
+}
+
+//==============================================================================
+Joint* JointViRiqnDrnea::getJoint()
+{
+  return mComposite;
+}
+
+//==============================================================================
+const Joint* JointViRiqnDrnea::getJoint() const
+{
+  return mComposite;
+}
+
+//==============================================================================
+BodyNode* JointViRiqnDrnea::getChildBodyNode()
+{
+  return getJoint()->getChildBodyNode();
+}
+
+//==============================================================================
+const BodyNode* JointViRiqnDrnea::getChildBodyNode() const
+{
+  return getJoint()->getChildBodyNode();
+}
+
+//==============================================================================
+BodyNodeViRiqnDrnea* JointViRiqnDrnea::getChildBodyNodeVi()
+{
+  if (getChildBodyNode() == nullptr)
+    return nullptr;
+
+  return getJoint()->getChildBodyNode()->get<BodyNodeViRiqnDrnea>();
+}
+
+//==============================================================================
+const BodyNodeViRiqnDrnea* JointViRiqnDrnea::getChildBodyNodeVi() const
+{
+  if (getChildBodyNode() == nullptr)
+    return nullptr;
+
+  return getJoint()->getChildBodyNode()->get<BodyNodeViRiqnDrnea>();
 }
 
 } // namespace dynamics

@@ -36,6 +36,7 @@
  */
 
 #include "dart/dart.hpp"
+#include "dart/experimental/experimental.hpp"
 #include "MyWindow.hpp"
 
 using namespace Eigen;

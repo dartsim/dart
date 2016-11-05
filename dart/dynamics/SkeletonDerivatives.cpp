@@ -45,33 +45,33 @@ std::unique_ptr<common::Aspect> SkeletonDerivatives::cloneAspect() const
 }
 
 //==============================================================================
-const Eigen::VectorXd& SkeletonDerivatives::computeLagrangianGradientWrtPos()
+Eigen::VectorXd SkeletonDerivatives::computeLagrangianGradientWrtPos() const
 {
-  mDM_GradientOfLagrangian_q.setZero();
+  const auto numDofs = mComposite->getNumDofs();
+  Eigen::VectorXd gradient = Eigen::VectorXd::Zero(numDofs);
 
-  for (auto* bodyNode : mComposite->getBodyNodes())
+  for (const auto* bodyNode : mComposite->getBodyNodes())
   {
     auto bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
-    mDM_GradientOfLagrangian_q
-        += bodyNodeDerivative->computeLagrangianGradientWrtPos();
+    gradient += bodyNodeDerivative->computeLagrangianGradientWrtPos();
   }
 
-  return mDM_GradientOfLagrangian_q;
+  return gradient;
 }
 
 //==============================================================================
-const Eigen::VectorXd& SkeletonDerivatives::computeLagrangianGradientWrtVel()
+Eigen::VectorXd SkeletonDerivatives::computeLagrangianGradientWrtVel() const
 {
-  mDM_GradientOfLagrangian_dq.setZero();
+  const auto numDofs = mComposite->getNumDofs();
+  Eigen::VectorXd gradient = Eigen::VectorXd::Zero(numDofs);
 
-  for (auto* bodyNode : mComposite->getBodyNodes())
+  for (const auto* bodyNode : mComposite->getBodyNodes())
   {
     auto bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
-    mDM_GradientOfLagrangian_dq
-        += bodyNodeDerivative->computeLagrangianGradientWrtVel();
+    gradient += bodyNodeDerivative->computeLagrangianGradientWrtVel();
   }
 
-  return mDM_GradientOfLagrangian_dq;
+  return gradient;
 }
 
 //==============================================================================
@@ -162,18 +162,7 @@ void SkeletonDerivatives::setComposite(common::Composite* newComposite)
   Base::setComposite(newComposite);
 
   auto* skel = mComposite;
-  const auto numDofs = skel->getNumDofs();
-
   assert(skel);
-
-  mDM_GradientKineticEnergy_q.resize(numDofs);
-  mDM_GradientKineticEnergy_dq.resize(numDofs);
-
-  mDM_GradientOfLagrangian_q.resize(numDofs);
-  mDM_GradientOfLagrangian_dq.resize(numDofs);
-
-  mDM_D2LD.resize(numDofs);
-  mDM_D1LD.resize(numDofs);
 
   for (auto* bodyNode : skel->getBodyNodes())
     bodyNode->getOrCreateAspect<BodyNodeDerivatives>();

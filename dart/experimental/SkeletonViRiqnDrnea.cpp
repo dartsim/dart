@@ -39,20 +39,11 @@
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
 //==============================================================================
-SkeletonViRiqnDrneaState::SkeletonViRiqnDrneaState()
+std::unique_ptr<common::Aspect> SkeletonViRiqnDrnea::cloneAspect() const
 {
-  // Do nothing
-}
-
-} // namespace detail
-
-//==============================================================================
-SkeletonViRiqnDrnea::SkeletonViRiqnDrnea(const StateData& state)
-{
-  mState = state;
+  // TODO(JS): Not implemented
+  return common::make_unique<SkeletonViRiqnDrnea>();
 }
 
 //==============================================================================
@@ -251,8 +242,8 @@ SkeletonViRiqnDrnea::evaluateDel(const Eigen::VectorXd& nextPositions)
     auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
     assert(bodyNodeVi);
 
-    bodyNodeVi->updateNextTransform();
-    bodyNodeVi->updateNextVelocity(timeStep);
+    //    bodyNodeVi->updateNextTransform();
+    //    bodyNodeVi->updateNextVelocity(timeStep);
   }
 
   // Backward recursion: line 6 to 9 of Algorithm 2
@@ -295,8 +286,8 @@ SkeletonViRiqnDrnea::evaluateDelDeriv(const Eigen::VectorXd& /*nextPositions*/)
       auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
       assert(bodyNodeVi);
 
-      bodyNodeVi->updateNextTransformDeriv();
-      bodyNodeVi->updateNextVelocityDeriv(timeStep);
+      //      bodyNodeVi->updateNextTransformDeriv();
+      //      bodyNodeVi->updateNextVelocityDeriv(timeStep);
     }
 
     //  // Backward recursion: line 6 to 9 of Algorithm 2
@@ -363,8 +354,8 @@ void SkeletonViRiqnDrnea::stepForward(const Eigen::VectorXd& nextPositions)
     auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
     assert(bodyNodeVi);
 
-    bodyNodeVi->mState.mPreAverageVelocity
-        = bodyNodeVi->mState.mPostAverageVelocity;
+    bodyNodeVi->mState.mPreAverageSpatialVelocity
+        = bodyNodeVi->getPostAverageSpatialVelocity();
     bodyNodeVi->mState.mPrevMomentum = bodyNodeVi->mState.mPostMomentum;
   }
 }
