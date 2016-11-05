@@ -2092,9 +2092,13 @@ void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
   }
 
   // Project the spatial quantity to generalized coordinates
-  std::size_t iStart = mParentJoint->getIndexInTree(0);
-  _generalized.segment(iStart, mParentJoint->getNumDofs())
-      = mParentJoint->getSpatialToGeneralized(mArbitrarySpatial);
+  const auto numDofs = mParentJoint->getNumDofs();
+  if (numDofs > 0u)
+  {
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    _generalized.segment(iStart, numDofs)
+        = mParentJoint->getSpatialToGeneralized(mArbitrarySpatial);
+  }
 }
 
 //==============================================================================

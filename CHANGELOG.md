@@ -6,6 +6,10 @@
 
   * Fixed bug of ContactConstraint with kinematic joints: [#809](https://github.com/dartsim/dart/pull/809)
 
+* Misc
+
+  * Fixed that ZeroDofJoint::getIndexInTree was called: [#818](https://github.com/dartsim/dart/pull/818)
+
 ### DART 6.1.1 (2016-10-14)
 
 * Build
