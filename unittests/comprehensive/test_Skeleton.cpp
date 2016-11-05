@@ -765,6 +765,26 @@ TEST(Skeleton, ZeroDofJointInReferential)
   EXPECT_FALSE(branch->getIndexOf(zeroDof2) == INVALID_INDEX);
 }
 
+TEST(Skeleton, ZeroDofJointConstraintForces)
+{
+  // This is a regression test which makes sure that the BodyNodes of
+  // ZeroDofJoints will be correctly aggregate constraint forces.
+  SkeletonPtr skel = Skeleton::create();
+
+  BodyNode* bn = skel->createJointAndBodyNodePair<RevoluteJoint>().second;
+  BodyNode* zeroDof1 = skel->createJointAndBodyNodePair<WeldJoint>(bn).second;
+  bn = skel->createJointAndBodyNodePair<PrismaticJoint>(zeroDof1).second;
+  BodyNode* zeroDof2 = skel->createJointAndBodyNodePair<WeldJoint>(bn).second;
+
+  const auto numSkelDofs = skel->getNumDofs();
+  for (auto& bodyNode : skel->getBodyNodes())
+    bodyNode->setConstraintImpulse(Eigen::Vector6d::Random());
+
+  // Make sure this does not cause seg-fault
+  Eigen::VectorXd constraintForces = skel->getConstraintForces();
+  EXPECT_EQ(constraintForces.size(), static_cast<int>(numSkelDofs));
+}
+
 TEST(Skeleton, Referential)
 {
   std::vector<SkeletonPtr> skeletons = getSkeletons();
