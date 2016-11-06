@@ -56,20 +56,18 @@ struct BodyNodeViRiqnDrneaState
   /// Destructor
   virtual ~BodyNodeViRiqnDrneaState() = default;
 
-  mutable bool mNeedWorldTransformDisplacementUpdate{true};
-
-  mutable bool mNeedmPostAverageSpatialVelocityUpdate{true};
+  /// The prediction of the transform for the next discrete time (k+1)
+  Eigen::Isometry3d mNextWorldTransform{Eigen::Isometry3d::Identity()};
 
   /// The relative transform of the next transform relative to the current
   /// transform.
-  mutable Eigen::Isometry3d mWorldTransformDisplacement{
-      Eigen::Isometry3d::Identity()};
+  Eigen::Isometry3d mDeltaWorldTransform{Eigen::Isometry3d::Identity()};
 
   /// Discrete spatial velocity for the duration of (k-1, k).
-  Eigen::Vector6d mPreAverageSpatialVelocity{Eigen::Vector6d::Zero()};
+  Eigen::Vector6d mPreAverageVelocity{Eigen::Vector6d::Zero()};
 
   /// Discrete spatial velocity for the duration of (k, k+1).
-  mutable Eigen::Vector6d mPostAverageSpatialVelocity{Eigen::Vector6d::Zero()};
+  Eigen::Vector6d mPostAverageVelocity{Eigen::Vector6d::Zero()};
 
   /// Discrete spatial momentum for the duration of (k-1, k).
   Eigen::Vector6d mPrevMomentum{Eigen::Vector6d::Zero()};
@@ -109,15 +107,20 @@ public:
 
   void initialize(double timeStep);
 
-  void notifyNextPositionUpdated();
-
-  const Eigen::Isometry3d& getWorldTransformDisplacement() const;
-  const Eigen::Vector6d& getPostAverageSpatialVelocity() const;
-
 protected:
   void setComposite(common::Composite* newComposite) override;
 
+  void updateNextTransform();
+  void updateNextVelocity(double timeStep);
+
   void evaluateDel(const Eigen::Vector3d& gravity, double timeStep);
+
+  /// \{ \name Derivative
+
+  void updateNextTransformDeriv();
+  void updateNextVelocityDeriv(double timeStep);
+
+  /// \}
 };
 
 } // namespace dynamics

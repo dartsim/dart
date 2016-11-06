@@ -61,13 +61,13 @@ struct BodyNodeViNewtonSviState
 
   /// The relative transform of the next transform relative to the current
   /// transform.
-  Eigen::Isometry3d mWorldTransformDisplacement{Eigen::Isometry3d::Identity()};
+  Eigen::Isometry3d mDeltaWorldTransform{Eigen::Isometry3d::Identity()};
 
   /// Discrete spatial velocity for the duration of (k-1, k).
-  Eigen::Vector6d mPreAverageSpatialVelocity{Eigen::Vector6d::Zero()};
+  Eigen::Vector6d mPreAverageVelocity{Eigen::Vector6d::Zero()};
 
   /// Discrete spatial velocity for the duration of (k, k+1).
-  Eigen::Vector6d mPostAverageSpatialVelocity{Eigen::Vector6d::Zero()};
+  Eigen::Vector6d mPostAverageVelocity{Eigen::Vector6d::Zero()};
 
   /// Discrete spatial momentum for the duration of (k-1, k).
   Eigen::Vector6d mPrevMomentum{Eigen::Vector6d::Zero()};

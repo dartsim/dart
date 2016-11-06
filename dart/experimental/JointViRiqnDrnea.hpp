@@ -42,8 +42,6 @@
 namespace dart {
 namespace dynamics {
 
-class BodyNodeViRiqnDrnea;
-
 //==============================================================================
 class JointViRiqnDrnea : public common::CompositeTrackingAspect<Joint>
 {
@@ -59,32 +57,12 @@ protected:
   virtual void setPrevPositions(const Eigen::VectorXd& prevPositions) = 0;
   virtual Eigen::VectorXd getPrevPositions() const = 0;
   virtual void setNextPositions(const Eigen::VectorXd& nextPositions) = 0;
-  virtual void updateNextRelativeTransform() const = 0;
+  virtual void updateNextRelativeTransform() = 0;
   virtual void evaluateDel(const Eigen::Vector6d& force, double timeStep) = 0;
   virtual Eigen::VectorXd getError() const = 0;
 
-  void notifyNextPositionUpdated();
-
-  const Eigen::Isometry3d& getNextRelativeTransform() const;
-
-  Joint* getJoint();
-
-  const Joint* getJoint() const;
-
-  BodyNode* getChildBodyNode();
-
-  const BodyNode* getChildBodyNode() const;
-
-  BodyNodeViRiqnDrnea* getChildBodyNodeVi();
-
-  const BodyNodeViRiqnDrnea* getChildBodyNodeVi() const;
-
-protected:
-  mutable bool mNeedNextRelativeTransformUpdate{true};
-
   /// Transform for the next configuration
-  mutable Eigen::Isometry3d mNextRelativeTransform{
-      Eigen::Isometry3d::Identity()};
+  Eigen::Isometry3d mNextTransform{Eigen::Isometry3d::Identity()};
 };
 
 //==============================================================================
@@ -148,8 +126,6 @@ protected:
         == static_cast<std::size_t>(nextPositions.size()));
 
     mNextPositions = nextPositions;
-
-    notifyNextPositionUpdated();
   }
 
   void evaluateDel(const Eigen::Vector6d& force, double timeStep) override
@@ -186,7 +162,7 @@ public:
 
 protected:
   // Documentation inherited
-  void updateNextRelativeTransform() const override;
+  void updateNextRelativeTransform() override;
 };
 
 } // namespace dynamics

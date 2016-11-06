@@ -87,16 +87,26 @@ public:
 
   /// Compute and return the first derivative of the Lagrangian with respect to
   /// the generalized coordinates.
-  Eigen::VectorXd computeLagrangianGradientWrtPos() const;
+  const Eigen::VectorXd& computeLagrangianGradientWrtPos();
 
   /// Compute and return the first derivative of the Lagrangian with respect to
   /// the generalized velocities.
-  Eigen::VectorXd computeLagrangianGradientWrtVel() const;
+  const Eigen::VectorXd& computeLagrangianGradientWrtVel();
 
   /// \}
 
 protected:
   void setComposite(common::Composite* newComposite) override;
+
+protected:
+  Eigen::VectorXd mDM_GradientKineticEnergy_q;
+  Eigen::VectorXd mDM_GradientKineticEnergy_dq;
+
+  Eigen::VectorXd mDM_GradientOfLagrangian_q;
+  Eigen::VectorXd mDM_GradientOfLagrangian_dq;
+
+  Eigen::VectorXd mDM_D2LD;
+  Eigen::VectorXd mDM_D1LD;
 };
 
 } // namespace dynamics

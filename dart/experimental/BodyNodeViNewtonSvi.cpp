@@ -140,19 +140,19 @@ void BodyNodeViNewtonSvi::updateNextVelocity(double timeStep)
     auto parentBodyNodeVi = parentBodyNode->get<BodyNodeViNewtonSvi>();
     assert(parentBodyNodeVi);
 
-    mState.mWorldTransformDisplacement
+    mState.mDeltaWorldTransform
         = joint->getRelativeTransform().inverse()
-          * parentBodyNodeVi->mState.mWorldTransformDisplacement
+          * parentBodyNodeVi->mState.mDeltaWorldTransform
           * jointAspect->mNextTransform;
   }
   else
   {
-    mState.mWorldTransformDisplacement
+    mState.mDeltaWorldTransform
         = joint->getRelativeTransform().inverse() * jointAspect->mNextTransform;
   }
 
-  mState.mPostAverageSpatialVelocity
-      = math::logMap(mState.mWorldTransformDisplacement) / timeStep;
+  mState.mPostAverageVelocity
+      = math::logMap(mState.mDeltaWorldTransform) / timeStep;
 }
 
 //==============================================================================
@@ -178,11 +178,10 @@ void BodyNodeViNewtonSvi::evaluateDel(
   const Eigen::Matrix6d& G = bodyNode->getInertia().getSpatialTensor();
 
   mState.mPostMomentum = math::dexp_inv_transpose(
-      mState.mPostAverageSpatialVelocity * timeStep,
-      G * mState.mPostAverageSpatialVelocity);
+      mState.mPostAverageVelocity * timeStep, G * mState.mPostAverageVelocity);
 
   const Eigen::Isometry3d expHPrevVelocity
-      = math::expMap(timeStep * mState.mPreAverageSpatialVelocity);
+      = math::expMap(timeStep * mState.mPreAverageVelocity);
 
   mState.mParentImpulse
       = mState.mPostMomentum

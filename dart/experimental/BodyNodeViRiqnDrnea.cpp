@@ -87,74 +87,6 @@ void BodyNodeViRiqnDrnea::initialize(double timeStep)
 }
 
 //==============================================================================
-void BodyNodeViRiqnDrnea::notifyNextPositionUpdated()
-{
-  if (mState.mNeedWorldTransformDisplacementUpdate)
-    return;
-
-  mState.mNeedWorldTransformDisplacementUpdate = true;
-  mState.mNeedmPostAverageSpatialVelocityUpdate = true;
-
-  auto* bodyNode = mComposite;
-  for (auto i = 0u; i < bodyNode->getNumChildBodyNodes(); ++i)
-  {
-    auto* childBodyNode = bodyNode->getChildBodyNode(i);
-    childBodyNode->get<BodyNodeViRiqnDrnea>()->notifyNextPositionUpdated();
-  }
-}
-
-//==============================================================================
-const Eigen::Isometry3d&
-BodyNodeViRiqnDrnea::getWorldTransformDisplacement() const
-{
-  if (mState.mNeedWorldTransformDisplacementUpdate)
-  {
-    auto* bodyNode = mComposite;
-    auto* parentBodyNode = bodyNode->getParentBodyNode();
-    auto* joint = bodyNode->getParentJoint();
-    auto* jointAspect = joint->get<JointViRiqnDrnea>();
-
-    if (parentBodyNode)
-    {
-      auto parentBodyNodeVi = parentBodyNode->get<BodyNodeViRiqnDrnea>();
-      assert(parentBodyNodeVi);
-
-      mState.mWorldTransformDisplacement
-          = joint->getRelativeTransform().inverse()
-            * parentBodyNodeVi->getWorldTransformDisplacement()
-            * jointAspect->getNextRelativeTransform();
-    }
-    else
-    {
-      mState.mWorldTransformDisplacement
-          = joint->getRelativeTransform().inverse()
-            * jointAspect->getNextRelativeTransform();
-    }
-
-    mState.mNeedWorldTransformDisplacementUpdate = false;
-  }
-
-  return mState.mWorldTransformDisplacement;
-}
-
-//==============================================================================
-const Eigen::Vector6d&
-BodyNodeViRiqnDrnea::getPostAverageSpatialVelocity() const
-{
-  if (mState.mNeedmPostAverageSpatialVelocityUpdate)
-  {
-    const auto timeStep = mComposite->getSkeleton()->getTimeStep();
-
-    mState.mPostAverageSpatialVelocity
-        = math::logMap(getWorldTransformDisplacement()) / timeStep;
-
-    mState.mNeedmPostAverageSpatialVelocityUpdate = false;
-  }
-
-  return mState.mPostAverageSpatialVelocity;
-}
-
-//==============================================================================
 void BodyNodeViRiqnDrnea::setComposite(common::Composite* newComposite)
 {
   Base::setComposite(newComposite);
@@ -186,6 +118,44 @@ void BodyNodeViRiqnDrnea::setComposite(common::Composite* newComposite)
 }
 
 //==============================================================================
+void BodyNodeViRiqnDrnea::updateNextTransform()
+{
+  auto* bodyNode = mComposite;
+  auto* joint = bodyNode->getParentJoint();
+  auto* jointAspect = joint->get<JointViRiqnDrnea>();
+
+  jointAspect->updateNextRelativeTransform();
+}
+
+//==============================================================================
+void BodyNodeViRiqnDrnea::updateNextVelocity(double timeStep)
+{
+  auto* bodyNode = mComposite;
+  auto* parentBodyNode = bodyNode->getParentBodyNode();
+  auto* joint = bodyNode->getParentJoint();
+  auto* jointAspect = joint->get<JointViRiqnDrnea>();
+
+  if (parentBodyNode)
+  {
+    auto parentBodyNodeVi = parentBodyNode->get<BodyNodeViRiqnDrnea>();
+    assert(parentBodyNodeVi);
+
+    mState.mDeltaWorldTransform
+        = joint->getRelativeTransform().inverse()
+          * parentBodyNodeVi->mState.mDeltaWorldTransform
+          * jointAspect->mNextTransform;
+  }
+  else
+  {
+    mState.mDeltaWorldTransform
+        = joint->getRelativeTransform().inverse() * jointAspect->mNextTransform;
+  }
+
+  mState.mPostAverageVelocity
+      = math::logMap(mState.mDeltaWorldTransform) / timeStep;
+}
+
+//==============================================================================
 static Eigen::Vector6d computeSpatialGravityForce(
     const Eigen::Isometry3d& T,
     const Eigen::Matrix6d& inertiaTensor,
@@ -208,11 +178,10 @@ void BodyNodeViRiqnDrnea::evaluateDel(
   const Eigen::Matrix6d& G = bodyNode->getInertia().getSpatialTensor();
 
   mState.mPostMomentum = math::dexp_inv_transpose(
-      getPostAverageSpatialVelocity() * timeStep,
-      G * getPostAverageSpatialVelocity());
+      mState.mPostAverageVelocity * timeStep, G * mState.mPostAverageVelocity);
 
   const Eigen::Isometry3d expHPrevVelocity
-      = math::expMap(timeStep * mState.mPreAverageSpatialVelocity);
+      = math::expMap(timeStep * mState.mPreAverageVelocity);
 
   mState.mParentImpulse
       = mState.mPostMomentum
@@ -232,6 +201,16 @@ void BodyNodeViRiqnDrnea::evaluateDel(
   }
 
   jointAspect->evaluateDel(mState.mParentImpulse, timeStep);
+}
+
+//==============================================================================
+void BodyNodeViRiqnDrnea::updateNextTransformDeriv()
+{
+}
+
+//==============================================================================
+void BodyNodeViRiqnDrnea::updateNextVelocityDeriv(double /*timeStep*/)
+{
 }
 
 } // namespace dynamics
