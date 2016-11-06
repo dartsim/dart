@@ -55,12 +55,26 @@ public:
   std::unique_ptr<Aspect> cloneAspect() const override;
 
   //----------------------------------------------------------------------------
+  /// \{ \name Gradients of Lagrangian
+  //----------------------------------------------------------------------------
+
+  /// Compute and return the first derivative of the Lagrangian with respect to
+  /// the generalized coordinates.
+  Eigen::VectorXd computeLagrangianGradientWrtPos() const;
+
+  /// Compute and return the first derivative of the Lagrangian with respect to
+  /// the generalized velocities.
+  Eigen::VectorXd computeLagrangianGradientWrtVel() const;
+
+  /// \}
+
+  //----------------------------------------------------------------------------
   /// \{ \name Hessians of Lagrangian
   //----------------------------------------------------------------------------
 
-  Eigen::MatrixXd computeLagrangianHessianWrtPosPos() const;
-  Eigen::MatrixXd computeLagrangianHessianWrtPosVel() const;
-  Eigen::MatrixXd computeLagrangianHessianWrtVelVel() const;
+  const Eigen::MatrixXd& computeLagrangianHessianWrtPosPos() const;
+  const Eigen::MatrixXd& computeLagrangianHessianWrtPosVel() const;
+  const Eigen::MatrixXd& computeLagrangianHessianWrtVelVel() const;
 
   /// \}
 
@@ -69,6 +83,10 @@ protected:
 
 protected:
   SkeletonDerivatives* mSkeletonDerivatives;
+
+  mutable Eigen::MatrixXd mLagrangianHessianWrtPosPos;
+  mutable Eigen::MatrixXd mLagrangianHessianWrtPosVel;
+  mutable Eigen::MatrixXd mLagrangianHessianWrtVelVel;
 };
 
 } // namespace dynamics

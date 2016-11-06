@@ -47,31 +47,31 @@ std::unique_ptr<common::Aspect> SkeletonDerivatives::cloneAspect() const
 //==============================================================================
 const Eigen::VectorXd& SkeletonDerivatives::computeLagrangianGradientWrtPos()
 {
-  mDM_GradientOfLagrangian_q.setZero();
+  mLagrangianGradientWrtPos.setZero();
 
   for (auto* bodyNode : mComposite->getBodyNodes())
   {
     auto bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
-    mDM_GradientOfLagrangian_q
+    mLagrangianGradientWrtPos
         += bodyNodeDerivative->computeLagrangianGradientWrtPos();
   }
 
-  return mDM_GradientOfLagrangian_q;
+  return mLagrangianGradientWrtPos;
 }
 
 //==============================================================================
 const Eigen::VectorXd& SkeletonDerivatives::computeLagrangianGradientWrtVel()
 {
-  mDM_GradientOfLagrangian_dq.setZero();
+  mLagrangianGradientWrtVel.setZero();
 
   for (auto* bodyNode : mComposite->getBodyNodes())
   {
     auto bodyNodeDerivative = bodyNode->get<BodyNodeDerivatives>();
-    mDM_GradientOfLagrangian_dq
+    mLagrangianGradientWrtVel
         += bodyNodeDerivative->computeLagrangianGradientWrtVel();
   }
 
-  return mDM_GradientOfLagrangian_dq;
+  return mLagrangianGradientWrtVel;
 }
 
 //==============================================================================
@@ -166,14 +166,11 @@ void SkeletonDerivatives::setComposite(common::Composite* newComposite)
 
   assert(skel);
 
-  mDM_GradientKineticEnergy_q.resize(numDofs);
-  mDM_GradientKineticEnergy_dq.resize(numDofs);
+  mKineticEnergyGradientWrtPos.resize(numDofs);
+  mKineticEnergyGradientWrtVel.resize(numDofs);
 
-  mDM_GradientOfLagrangian_q.resize(numDofs);
-  mDM_GradientOfLagrangian_dq.resize(numDofs);
-
-  mDM_D2LD.resize(numDofs);
-  mDM_D1LD.resize(numDofs);
+  mLagrangianGradientWrtPos.resize(numDofs);
+  mLagrangianGradientWrtVel.resize(numDofs);
 
   for (auto* bodyNode : skel->getBodyNodes())
     bodyNode->getOrCreateAspect<BodyNodeDerivatives>();

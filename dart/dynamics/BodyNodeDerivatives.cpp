@@ -40,6 +40,7 @@ namespace dynamics {
 //==============================================================================
 std::unique_ptr<common::Aspect> BodyNodeDerivatives::cloneAspect() const
 {
+  // TODO(JS): Not implemented
   return common::make_unique<BodyNodeDerivatives>();
 }
 

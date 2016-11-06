@@ -99,14 +99,11 @@ protected:
   void setComposite(common::Composite* newComposite) override;
 
 protected:
-  Eigen::VectorXd mDM_GradientKineticEnergy_q;
-  Eigen::VectorXd mDM_GradientKineticEnergy_dq;
+  Eigen::VectorXd mKineticEnergyGradientWrtPos;
+  Eigen::VectorXd mKineticEnergyGradientWrtVel;
 
-  Eigen::VectorXd mDM_GradientOfLagrangian_q;
-  Eigen::VectorXd mDM_GradientOfLagrangian_dq;
-
-  Eigen::VectorXd mDM_D2LD;
-  Eigen::VectorXd mDM_D1LD;
+  Eigen::VectorXd mLagrangianGradientWrtPos;
+  Eigen::VectorXd mLagrangianGradientWrtVel;
 };
 
 } // namespace dynamics

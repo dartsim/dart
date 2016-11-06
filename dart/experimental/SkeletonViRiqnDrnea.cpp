@@ -39,20 +39,11 @@
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
 //==============================================================================
-SkeletonViRiqnDrneaState::SkeletonViRiqnDrneaState()
+std::unique_ptr<common::Aspect> SkeletonViRiqnDrnea::cloneAspect() const
 {
-  // Do nothing
-}
-
-} // namespace detail
-
-//==============================================================================
-SkeletonViRiqnDrnea::SkeletonViRiqnDrnea(const StateData& state)
-{
-  mState = state;
+  // TODO(JS): Not implemented
+  return common::make_unique<SkeletonViRiqnDrnea>();
 }
 
 //==============================================================================
@@ -150,7 +141,7 @@ void SkeletonViRiqnDrnea::setComposite(common::Composite* newComposite)
 
   assert(skel);
 
-  //  mState.mDM_GradientKineticEnergy_q.resize(numDofs);
+  //  mState.mKineticEnergyGradientWrtPos.resize(numDofs);
 
   for (auto* bodyNode : skel->getBodyNodes())
   {
@@ -363,8 +354,8 @@ void SkeletonViRiqnDrnea::stepForward(const Eigen::VectorXd& nextPositions)
     auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
     assert(bodyNodeVi);
 
-    bodyNodeVi->mState.mPreAverageVelocity
-        = bodyNodeVi->mState.mPostAverageVelocity;
+    bodyNodeVi->mState.mPreAverageSpatialVelocity
+        = bodyNodeVi->mState.mPostAverageSpatialVelocity;
     bodyNodeVi->mState.mPrevMomentum = bodyNodeVi->mState.mPostMomentum;
   }
 }

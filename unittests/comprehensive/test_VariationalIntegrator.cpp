@@ -58,16 +58,23 @@ TEST(VariationalIntegrator, SkeletonViRiqnDrnea)
 TEST(VariationalIntegrator, Basic)
 {
 #ifdef NDEBUG
-  auto numSteps = 1e+3;
+  auto numSteps = 5e+3;
 #else
   auto numSteps = 1e+2;
 #endif
 
   auto skel = createRandomSkeleton();
   auto vi = skel->createAspect<dynamics::SkeletonViRiqnDrnea>();
+  auto E0 = skel->computeTotalEnergy();
 
   for (auto i = 0u; i < numSteps; ++i)
     vi->integrate();
+
+  auto E1 = skel->computeTotalEnergy();
+  auto errorInPercentage = (E1 - E0)/E0 * 100.0;
+
+  // The error should be less than 5.0%
+  EXPECT_LT(errorInPercentage, 5.0);
 }
 
 //==============================================================================
