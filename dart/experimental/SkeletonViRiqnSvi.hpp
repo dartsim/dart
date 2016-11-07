@@ -36,35 +36,15 @@
 
 #include "dart/common/AspectWithVersion.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SkeletonDerivatives.hpp"
 
 namespace dart {
 namespace dynamics {
 
-// class Skeleton;
-
-namespace detail {
-
-struct SkeletonViRiqnSviState
-{
-  /// Constructor
-  SkeletonViRiqnSviState();
-
-  /// Destructor
-  virtual ~SkeletonViRiqnSviState() = default;
-};
-
-} // namespace detail
-
-//==============================================================================
-class SkeletonViRiqnSvi final
-    : public common::AspectWithState<SkeletonViRiqnSvi,
-                                     detail::SkeletonViRiqnSviState,
-                                     Skeleton>
+class SkeletonViRiqnSvi final : public common::CompositeTrackingAspect<Skeleton>
 {
 public:
-  using Base = common::AspectWithState<SkeletonViRiqnSvi,
-                                       detail::SkeletonViRiqnSviState,
-                                       Skeleton>;
+  using Base = common::CompositeTrackingAspect<Skeleton>;
 
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
@@ -76,9 +56,12 @@ public:
     Tolerance
   };
 
-  SkeletonViRiqnSvi(const StateData& state = StateData());
+  SkeletonViRiqnSvi() = default;
 
   SkeletonViRiqnSvi(const SkeletonViRiqnSvi&) = delete;
+
+  // Documentation inherited
+  std::unique_ptr<Aspect> cloneAspect() const override;
 
   void initialize();
 
@@ -92,10 +75,8 @@ public:
 
   TerminalCondition integrate();
 
-protected:
+//protected:
   void setComposite(common::Composite* newComposite) override;
-
-  void loseComposite(common::Composite* oldComposite) override;
 
   void setPrevPositions(const Eigen::VectorXd& prevPositions);
 
@@ -107,17 +88,24 @@ protected:
   /// configurations.
   Eigen::VectorXd evaluateDel(const Eigen::VectorXd& nextPositions);
 
+  const Eigen::VectorXd& getD2Ld() const;
+
 public:
   Eigen::MatrixXd evaluateDelDeriv(const Eigen::VectorXd& nextPositions);
-
-  Eigen::VectorXd getError() const;
 
   void stepForward(const Eigen::VectorXd& nextPositions);
 
 protected:
+  SkeletonDerivatives* mSkeletonDerivatives{nullptr};
+
   double mTolerance{1e-9};
 
   std::size_t mMaxIteration{30u};
+
+  mutable bool mNeedD2LdUpdate{true};
+
+  mutable Eigen::VectorXd mD2Ld{Eigen::VectorXd()};
+  mutable Eigen::VectorXd mD1Ld{Eigen::VectorXd()};
 };
 
 } // namespace dynamics

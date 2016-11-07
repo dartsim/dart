@@ -47,19 +47,6 @@ std::unique_ptr<common::Aspect> SkeletonViRiqnDrnea::cloneAspect() const
 }
 
 //==============================================================================
-void SkeletonViRiqnDrnea::initialize()
-{
-  auto* skel = mComposite;
-
-  for (auto* bodyNode : skel->getBodyNodes())
-  {
-    auto* aspect = bodyNode->get<BodyNodeViRiqnDrnea>();
-    assert(aspect);
-    aspect->initialize(skel->getTimeStep());
-  }
-}
-
-//==============================================================================
 void SkeletonViRiqnDrnea::setTolerance(double tol)
 {
   mTolerance = tol;
@@ -101,11 +88,12 @@ SkeletonViRiqnDrnea::TerminalCondition SkeletonViRiqnDrnea::integrate()
   skel->computeForwardDynamics();
   const Eigen::VectorXd ddq = skel->getAccelerations();
   const Eigen::VectorXd qCurr = skel->getPositions();
-  const Eigen::VectorXd qPrev = getPrevPositions();
+  const Eigen::VectorXd dq = skel->getVelocities();
 
   //  Eigen::VectorXd qNext = qCurr;
-  Eigen::VectorXd qNext = skel->getPositionDifferences(
-      ddq * dt * dt + skel->getPositionDifferences(qCurr, qPrev), -qCurr);
+  Eigen::VectorXd qNext = (dt*dt)*ddq + qCurr + dt*dq;
+  //Eigen::VectorXd qNext = skel->getPositionDifferences(
+  //    ddq * dt * dt + skel->getPositionDifferences(qCurr, qPrev), -qCurr);
 
   cond = MaximumIteration;
   for (auto i = 0u; i < mMaxIteration; ++i)
@@ -144,62 +132,7 @@ void SkeletonViRiqnDrnea::setComposite(common::Composite* newComposite)
   //  mState.mKineticEnergyGradientWrtPos.resize(numDofs);
 
   for (auto* bodyNode : skel->getBodyNodes())
-  {
-    auto* aspect = bodyNode->getOrCreateAspect<BodyNodeViRiqnDrnea>();
-    aspect->initialize(skel->getTimeStep());
-  }
-}
-
-//==============================================================================
-void SkeletonViRiqnDrnea::loseComposite(common::Composite* oldComposite)
-{
-  Base::loseComposite(oldComposite);
-}
-
-//==============================================================================
-void SkeletonViRiqnDrnea::setPrevPositions(const Eigen::VectorXd& prevPositions)
-{
-  auto* skel = mComposite;
-  assert(skel->getNumDofs() == static_cast<std::size_t>(prevPositions.size()));
-
-  auto index = 0u;
-  for (auto* bodyNode : skel->getBodyNodes())
-  {
-    auto* aspect = bodyNode->get<BodyNodeViRiqnDrnea>();
-    assert(aspect);
-    auto* joint = bodyNode->getParentJoint();
-    const auto numDofs = joint->getNumDofs();
-
-    aspect->getJointVi()->setPrevPositions(
-        prevPositions.segment(index, numDofs));
-
-    index += numDofs;
-  }
-}
-
-//==============================================================================
-Eigen::VectorXd SkeletonViRiqnDrnea::getPrevPositions() const
-{
-  auto* skel = mComposite;
-  const auto numDofs = skel->getNumDofs();
-
-  Eigen::VectorXd positions;
-  positions.resize(numDofs);
-
-  auto index = 0u;
-  for (auto* bodyNode : skel->getBodyNodes())
-  {
-    auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
-    assert(bodyNodeVi);
-    auto* jointVi = bodyNodeVi->getJointVi();
-    const auto numJointDofs = bodyNode->getParentJoint()->getNumDofs();
-
-    positions.segment(index, numJointDofs) = jointVi->getPrevPositions();
-
-    index += numJointDofs;
-  }
-
-  return positions;
+    bodyNode->getOrCreateAspect<BodyNodeViRiqnDrnea>();
 }
 
 //==============================================================================
@@ -342,7 +275,6 @@ void SkeletonViRiqnDrnea::stepForward(const Eigen::VectorXd& nextPositions)
   // TODO(JS): the displacement of geometric joints (e.g., BallJoint and
   // FreeJoint) should be calculated on the geometric space rather than
   // Euclidean space.
-  setPrevPositions(skel->getPositions());
   skel->setPositions(nextPositions);
   // q, dq should be updated to get proper prediction from the continuous
   // forward dynamics algorithm.
@@ -354,9 +286,9 @@ void SkeletonViRiqnDrnea::stepForward(const Eigen::VectorXd& nextPositions)
     auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnDrnea>();
     assert(bodyNodeVi);
 
-    bodyNodeVi->mState.mPreAverageSpatialVelocity
-        = bodyNodeVi->mState.mPostAverageSpatialVelocity;
-    bodyNodeVi->mState.mPrevMomentum = bodyNodeVi->mState.mPostMomentum;
+    bodyNodeVi->mPreAverageSpatialVelocity
+        = bodyNodeVi->mPostAverageSpatialVelocity;
+    bodyNodeVi->mPrevMomentum = bodyNodeVi->mPostMomentum;
   }
 }
 

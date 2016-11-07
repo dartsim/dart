@@ -143,12 +143,12 @@ void BodyNodeViNewtonSvi::updateNextVelocity(double timeStep)
     mState.mWorldTransformDisplacement
         = joint->getRelativeTransform().inverse()
           * parentBodyNodeVi->mState.mWorldTransformDisplacement
-          * jointAspect->mNextTransform;
+          * jointAspect->mNextRelativeTransform;
   }
   else
   {
     mState.mWorldTransformDisplacement
-        = joint->getRelativeTransform().inverse() * jointAspect->mNextTransform;
+        = joint->getRelativeTransform().inverse() * jointAspect->mNextRelativeTransform;
   }
 
   mState.mPostAverageSpatialVelocity

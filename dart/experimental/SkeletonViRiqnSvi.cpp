@@ -39,20 +39,11 @@
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
 //==============================================================================
-SkeletonViRiqnSviState::SkeletonViRiqnSviState()
+std::unique_ptr<common::Aspect> SkeletonViRiqnSvi::cloneAspect() const
 {
-  // Do nothing
-}
-
-} // namespace detail
-
-//==============================================================================
-SkeletonViRiqnSvi::SkeletonViRiqnSvi(const StateData& state)
-{
-  mState = state;
+  // TODO(JS): Not implemented
+  return common::make_unique<SkeletonViRiqnSvi>();
 }
 
 //==============================================================================
@@ -152,17 +143,13 @@ void SkeletonViRiqnSvi::setComposite(common::Composite* newComposite)
 
   //  mState.mKineticEnergyGradientWrtPos.resize(numDofs);
 
+  mSkeletonDerivatives = skel->getOrCreateAspect<SkeletonDerivatives>();
+
   for (auto* bodyNode : skel->getBodyNodes())
   {
     auto* aspect = bodyNode->getOrCreateAspect<BodyNodeViRiqnSvi>();
     aspect->initialize(skel->getTimeStep());
   }
-}
-
-//==============================================================================
-void SkeletonViRiqnSvi::loseComposite(common::Composite* oldComposite)
-{
-  Base::loseComposite(oldComposite);
 }
 
 //==============================================================================
@@ -236,37 +223,67 @@ void SkeletonViRiqnSvi::setNextPositions(const Eigen::VectorXd& nextPositions)
 Eigen::VectorXd
 SkeletonViRiqnSvi::evaluateDel(const Eigen::VectorXd& nextPositions)
 {
-  // Implementation of Algorithm 2 of "A linear-time variational integrator for
-  // multibody systems" (WAFR 2016).
-
   auto* skel = mComposite;
   const auto timeStep = skel->getTimeStep();
-  const Eigen::Vector3d& gravity = skel->getGravity();
 
-  setNextPositions(nextPositions);
+  const Eigen::VectorXd currentPositions = skel->getPositions();
+  const Eigen::VectorXd currentVelocities = skel->getVelocities();
 
-  // Forward recursion: line 1 to 5 of Algorithm 2
-  for (auto* bodyNode : skel->getBodyNodes())
+  const Eigen::VectorXd approxPositions
+      = (currentPositions + nextPositions) / 2.0;
+  const Eigen::VectorXd approxVelocities
+      = (nextPositions - currentPositions) / timeStep;
+
+  skel->setPositions(approxPositions);
+  skel->setVelocities(approxVelocities);
+
+  const Eigen::VectorXd& L_q
+      = mSkeletonDerivatives->computeLagrangianGradientWrtPos();
+  const Eigen::VectorXd& L_dq
+      = mSkeletonDerivatives->computeLagrangianGradientWrtVel();
+
+  mD1Ld = (0.5*timeStep)*L_q - L_dq;
+
+  const Eigen::VectorXd F = skel->getForces();
+
+  skel->setPositions(currentPositions);
+  skel->setVelocities(currentVelocities);
+
+  return -getD2Ld() - mD1Ld + timeStep * F;
+}
+
+//==============================================================================
+const Eigen::VectorXd& SkeletonViRiqnSvi::getD2Ld() const
+{
+//  if (mNeedD2LdUpdate)
   {
-    auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnSvi>();
-    assert(bodyNodeVi);
+    auto* skel = mComposite;
+    const auto timeStep = skel->getTimeStep();
 
-    bodyNodeVi->updateNextTransform();
-    bodyNodeVi->updateNextVelocity(timeStep);
+    const Eigen::VectorXd currentPositions = skel->getPositions();
+    const Eigen::VectorXd currentVelocities = skel->getVelocities();
+
+    const Eigen::VectorXd approxPositions
+        = currentPositions - (timeStep / 2.0) * currentVelocities;
+    // const Eigen::VectorXd approxVelocities = currentVelocities;
+
+    skel->setPositions(approxPositions);
+    // skel->setVelocities(approxVelocities);
+
+    const Eigen::VectorXd& L_q
+        = mSkeletonDerivatives->computeLagrangianGradientWrtPos();
+    const Eigen::VectorXd& L_dq
+        = mSkeletonDerivatives->computeLagrangianGradientWrtVel();
+
+    mD2Ld = (0.5*timeStep)*L_q + L_dq;
+
+    skel->setPositions(currentPositions);
+    // skel->setVelocities(currentVelocities);
+
+    mNeedD2LdUpdate = false;
   }
 
-  // Backward recursion: line 6 to 9 of Algorithm 2
-  for (auto it = skel->getBodyNodes().rbegin();
-       it != skel->getBodyNodes().rend();
-       ++it)
-  {
-    auto* bodyNode = *it;
-    auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnSvi>();
-
-    bodyNodeVi->evaluateDel(gravity, timeStep);
-  }
-
-  return getError();
+  return mD2Ld;
 }
 
 //==============================================================================
@@ -314,30 +331,6 @@ SkeletonViRiqnSvi::evaluateDelDeriv(const Eigen::VectorXd& /*nextPositions*/)
 }
 
 //==============================================================================
-Eigen::VectorXd SkeletonViRiqnSvi::getError() const
-{
-  auto* skel = mComposite;
-  const auto numDofs = skel->getNumDofs();
-
-  Eigen::VectorXd fdel(numDofs);
-
-  auto index = 0u;
-  for (auto* bodyNode : skel->getBodyNodes())
-  {
-    auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnSvi>();
-    assert(bodyNodeVi);
-    auto* jointVi = bodyNodeVi->getJointVi();
-    const auto numJointDofs = bodyNode->getParentJoint()->getNumDofs();
-
-    fdel.segment(index, numJointDofs) = jointVi->getError();
-
-    index += numJointDofs;
-  }
-
-  return fdel;
-}
-
-//==============================================================================
 void SkeletonViRiqnSvi::stepForward(const Eigen::VectorXd& nextPositions)
 {
   auto* skel = mComposite;
@@ -357,16 +350,7 @@ void SkeletonViRiqnSvi::stepForward(const Eigen::VectorXd& nextPositions)
   // forward dynamics algorithm.
   // TODO(JS): improve the performance here
 
-  // Update previous spatial velocity and momentum of the bodies
-  for (auto* bodyNode : skel->getBodyNodes())
-  {
-    auto* bodyNodeVi = bodyNode->get<BodyNodeViRiqnSvi>();
-    assert(bodyNodeVi);
-
-    bodyNodeVi->mState.mPreAverageSpatialVelocity
-        = bodyNodeVi->mState.mPostAverageSpatialVelocity;
-    bodyNodeVi->mState.mPrevMomentum = bodyNodeVi->mState.mPostMomentum;
-  }
+  mD2Ld = mD1Ld;
 }
 
 } // namespace dynamics

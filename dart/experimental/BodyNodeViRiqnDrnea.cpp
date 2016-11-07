@@ -39,20 +39,11 @@
 namespace dart {
 namespace dynamics {
 
-namespace detail {
-
 //==============================================================================
-BodyNodeViRiqnDrneaState::BodyNodeViRiqnDrneaState()
+std::unique_ptr<common::Aspect> BodyNodeViRiqnDrnea::cloneAspect() const
 {
-  // Do nothing
-}
-
-} // namespace detail
-
-//==============================================================================
-BodyNodeViRiqnDrnea::BodyNodeViRiqnDrnea(const StateData& state)
-{
-  mState = state;
+  // TODO(JS): Not implemented
+  return common::make_unique<BodyNodeViRiqnDrnea>();
 }
 
 //==============================================================================
@@ -69,21 +60,6 @@ JointViRiqnDrnea* BodyNodeViRiqnDrnea::getJointVi()
 const JointViRiqnDrnea* BodyNodeViRiqnDrnea::getJointVi() const
 {
   return const_cast<const BodyNodeViRiqnDrnea*>(this)->getJointVi();
-}
-
-//==============================================================================
-void BodyNodeViRiqnDrnea::initialize(double timeStep)
-{
-  auto* bodyNode = mComposite;
-
-  const Eigen::Matrix6d& G = bodyNode->getInertia().getSpatialTensor();
-  const Eigen::Vector6d& V = bodyNode->getSpatialVelocity();
-
-  mState.mPrevMomentum = math::dexp_inv_transpose(V * timeStep, G * V);
-
-  auto* joint = bodyNode->getParentJoint();
-  assert(joint->get<JointViRiqnDrnea>());
-  joint->get<JointViRiqnDrnea>()->initialize(timeStep);
 }
 
 //==============================================================================
@@ -140,19 +116,36 @@ void BodyNodeViRiqnDrnea::updateNextVelocity(double timeStep)
     auto parentBodyNodeVi = parentBodyNode->get<BodyNodeViRiqnDrnea>();
     assert(parentBodyNodeVi);
 
-    mState.mWorldTransformDisplacement
+    mWorldTransformDisplacement
         = joint->getRelativeTransform().inverse()
-          * parentBodyNodeVi->mState.mWorldTransformDisplacement
-          * jointAspect->mNextTransform;
+          * parentBodyNodeVi->mWorldTransformDisplacement
+          * jointAspect->mNextRelativeTransform;
   }
   else
   {
-    mState.mWorldTransformDisplacement
-        = joint->getRelativeTransform().inverse() * jointAspect->mNextTransform;
+    mWorldTransformDisplacement
+        = joint->getRelativeTransform().inverse() * jointAspect->mNextRelativeTransform;
   }
 
-  mState.mPostAverageSpatialVelocity
-      = math::logMap(mState.mWorldTransformDisplacement) / timeStep;
+  mPostAverageSpatialVelocity
+      = math::logMap(mWorldTransformDisplacement) / timeStep;
+}
+
+//==============================================================================
+const Eigen::Vector6d& BodyNodeViRiqnDrnea::getPrevMomentum() const
+{
+  if (mNeedPrevMomentumUpdate)
+  {
+    auto* bodyNode = mComposite;
+    const auto timeStep = bodyNode->getSkeleton()->getTimeStep();
+    const Eigen::Matrix6d& G = bodyNode->getInertia().getSpatialTensor();
+    const Eigen::Vector6d& V = bodyNode->getSpatialVelocity();
+    mPrevMomentum = math::dexp_inv_transpose(V * timeStep, G * V);
+
+    mNeedPrevMomentumUpdate = false;
+  }
+
+  return mPrevMomentum;
 }
 
 //==============================================================================
@@ -177,16 +170,16 @@ void BodyNodeViRiqnDrnea::evaluateDel(
 
   const Eigen::Matrix6d& G = bodyNode->getInertia().getSpatialTensor();
 
-  mState.mPostMomentum = math::dexp_inv_transpose(
-      mState.mPostAverageSpatialVelocity * timeStep,
-      G * mState.mPostAverageSpatialVelocity);
+  mPostMomentum = math::dexp_inv_transpose(
+      mPostAverageSpatialVelocity * timeStep,
+      G * mPostAverageSpatialVelocity);
 
   const Eigen::Isometry3d expHPrevVelocity
-      = math::expMap(timeStep * mState.mPreAverageSpatialVelocity);
+      = math::expMap(timeStep * mPreAverageSpatialVelocity);
 
-  mState.mParentImpulse
-      = mState.mPostMomentum
-        - math::dAdT(expHPrevVelocity, mState.mPrevMomentum)
+  mParentImpulse
+      = mPostMomentum
+        - math::dAdT(expHPrevVelocity, getPrevMomentum())
         - computeSpatialGravityForce(bodyNode->getTransform(), G, gravity)
               * timeStep;
   // TODO(JS): subtract external force * timeStep to parentImpulse
@@ -196,12 +189,12 @@ void BodyNodeViRiqnDrnea::evaluateDel(
     auto* childBodyNode = bodyNode->getChildBodyNode(i);
     auto* childBodyNodeVi = childBodyNode->get<BodyNodeViRiqnDrnea>();
 
-    mState.mParentImpulse += math::dAdInvT(
+    mParentImpulse += math::dAdInvT(
         childBodyNode->getParentJoint()->getRelativeTransform(),
-        childBodyNodeVi->mState.mParentImpulse);
+        childBodyNodeVi->mParentImpulse);
   }
 
-  jointAspect->evaluateDel(mState.mParentImpulse, timeStep);
+  jointAspect->evaluateDel(mParentImpulse, timeStep);
 }
 
 //==============================================================================

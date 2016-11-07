@@ -42,19 +42,48 @@ namespace dynamics {
 
 class JointViRiqnDrnea;
 
-namespace detail {
-
-struct BodyNodeViRiqnDrneaState
+class BodyNodeViRiqnDrnea final
+    : public common::CompositeTrackingAspect<BodyNode>
 {
+public:
+  friend class SkeletonViRiqnDrnea;
+
+  using Base = common::CompositeTrackingAspect<BodyNode>;
+
   using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  /// Constructor
-  BodyNodeViRiqnDrneaState();
+  BodyNodeViRiqnDrnea() = default;
 
-  /// Destructor
-  virtual ~BodyNodeViRiqnDrneaState() = default;
+  BodyNodeViRiqnDrnea(const BodyNodeViRiqnDrnea&) = delete;
+
+  // Documentation inherited
+  std::unique_ptr<Aspect> cloneAspect() const override;
+
+  JointViRiqnDrnea* getJointVi();
+  const JointViRiqnDrnea* getJointVi() const;
+
+protected:
+  void setComposite(common::Composite* newComposite) override;
+
+  void updateNextTransform();
+  void updateNextVelocity(double timeStep);
+
+  const Eigen::Vector6d& getPrevMomentum() const;
+
+  void evaluateDel(const Eigen::Vector3d& gravity, double timeStep);
+
+  /// \{ \name Derivative
+
+  void updateNextTransformDeriv();
+  void updateNextVelocityDeriv(double timeStep);
+
+  /// \}
+
+protected:
+
+  mutable bool mNeedPrevMomentumUpdate{true};
 
   /// The prediction of the transform for the next discrete time (k+1)
   Eigen::Isometry3d mNextWorldTransform{Eigen::Isometry3d::Identity()};
@@ -70,57 +99,13 @@ struct BodyNodeViRiqnDrneaState
   Eigen::Vector6d mPostAverageSpatialVelocity{Eigen::Vector6d::Zero()};
 
   /// Discrete spatial momentum for the duration of (k-1, k).
-  Eigen::Vector6d mPrevMomentum{Eigen::Vector6d::Zero()};
+  mutable Eigen::Vector6d mPrevMomentum{Eigen::Vector6d::Zero()};
 
   /// Discrete spatial momentum for the duration of (k, k+1).
   Eigen::Vector6d mPostMomentum{Eigen::Vector6d::Zero()};
 
   /// Spatial impulse transmitted from the parent BodyNode.
   Eigen::Vector6d mParentImpulse{Eigen::Vector6d::Zero()};
-};
-
-} // namespace detail
-
-//==============================================================================
-class BodyNodeViRiqnDrnea final
-    : public common::AspectWithState<BodyNodeViRiqnDrnea,
-                                     detail::BodyNodeViRiqnDrneaState,
-                                     BodyNode>
-{
-public:
-  friend class SkeletonViRiqnDrnea;
-
-  using Base = common::AspectWithState<BodyNodeViRiqnDrnea,
-                                       detail::BodyNodeViRiqnDrneaState,
-                                       BodyNode>;
-
-  using GradientMatrix = Eigen::Matrix<double, 6, Eigen::Dynamic>;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-  BodyNodeViRiqnDrnea(const StateData& state = StateData());
-
-  BodyNodeViRiqnDrnea(const BodyNodeViRiqnDrnea&) = delete;
-
-  JointViRiqnDrnea* getJointVi();
-  const JointViRiqnDrnea* getJointVi() const;
-
-  void initialize(double timeStep);
-
-protected:
-  void setComposite(common::Composite* newComposite) override;
-
-  void updateNextTransform();
-  void updateNextVelocity(double timeStep);
-
-  void evaluateDel(const Eigen::Vector3d& gravity, double timeStep);
-
-  /// \{ \name Derivative
-
-  void updateNextTransformDeriv();
-  void updateNextVelocityDeriv(double timeStep);
-
-  /// \}
 };
 
 } // namespace dynamics

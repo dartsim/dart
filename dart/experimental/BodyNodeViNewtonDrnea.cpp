@@ -80,10 +80,6 @@ void BodyNodeViNewtonDrnea::initialize(double timeStep)
   const Eigen::Vector6d& V = bodyNode->getSpatialVelocity();
 
   mState.mPrevMomentum = math::dexp_inv_transpose(V * timeStep, G * V);
-
-  auto* joint = bodyNode->getParentJoint();
-  assert(joint->get<JointViNewtonDrnea>());
-  joint->get<JointViNewtonDrnea>()->initialize(timeStep);
 }
 
 //==============================================================================
@@ -143,12 +139,12 @@ void BodyNodeViNewtonDrnea::updateNextVelocity(double timeStep)
     mState.mWorldTransformDisplacement
         = joint->getRelativeTransform().inverse()
           * parentBodyNodeVi->mState.mWorldTransformDisplacement
-          * jointAspect->mNextTransform;
+          * jointAspect->mNextRelativeTransform;
   }
   else
   {
     mState.mWorldTransformDisplacement
-        = joint->getRelativeTransform().inverse() * jointAspect->mNextTransform;
+        = joint->getRelativeTransform().inverse() * jointAspect->mNextRelativeTransform;
   }
 
   mState.mPostAverageSpatialVelocity

@@ -110,11 +110,12 @@ SkeletonViNewtonDrnea::TerminalCondition SkeletonViNewtonDrnea::integrate()
   skel->computeForwardDynamics();
   const Eigen::VectorXd ddq = skel->getAccelerations();
   const Eigen::VectorXd qCurr = skel->getPositions();
-  const Eigen::VectorXd qPrev = getPrevPositions();
+  const Eigen::VectorXd dq = skel->getVelocities();
 
   //  Eigen::VectorXd qNext = qCurr;
-  Eigen::VectorXd qNext = skel->getPositionDifferences(
-      ddq * dt * dt + skel->getPositionDifferences(qCurr, qPrev), -qCurr);
+  Eigen::VectorXd qNext = (dt*dt)*ddq + qCurr + dt*dq;
+  //Eigen::VectorXd qNext = skel->getPositionDifferences(
+  //    ddq * dt * dt + skel->getPositionDifferences(qCurr, qPrev), -qCurr);
 
   cond = MaximumIteration;
   for (auto i = 0u; i < mMaxIteration; ++i)
@@ -157,59 +158,6 @@ void SkeletonViNewtonDrnea::setComposite(common::Composite* newComposite)
     auto* aspect = bodyNode->getOrCreateAspect<BodyNodeViNewtonDrnea>();
     aspect->initialize(skel->getTimeStep());
   }
-}
-
-//==============================================================================
-void SkeletonViNewtonDrnea::loseComposite(common::Composite* oldComposite)
-{
-  Base::loseComposite(oldComposite);
-}
-
-//==============================================================================
-void SkeletonViNewtonDrnea::setPrevPositions(
-    const Eigen::VectorXd& prevPositions)
-{
-  auto* skel = mComposite;
-  assert(skel->getNumDofs() == static_cast<std::size_t>(prevPositions.size()));
-
-  auto index = 0u;
-  for (auto* bodyNode : skel->getBodyNodes())
-  {
-    auto* aspect = bodyNode->get<BodyNodeViNewtonDrnea>();
-    assert(aspect);
-    auto* joint = bodyNode->getParentJoint();
-    const auto numDofs = joint->getNumDofs();
-
-    aspect->getJointVi()->setPrevPositions(
-        prevPositions.segment(index, numDofs));
-
-    index += numDofs;
-  }
-}
-
-//==============================================================================
-Eigen::VectorXd SkeletonViNewtonDrnea::getPrevPositions() const
-{
-  auto* skel = mComposite;
-  const auto numDofs = skel->getNumDofs();
-
-  Eigen::VectorXd positions;
-  positions.resize(numDofs);
-
-  auto index = 0u;
-  for (auto* bodyNode : skel->getBodyNodes())
-  {
-    auto* bodyNodeVi = bodyNode->get<BodyNodeViNewtonDrnea>();
-    assert(bodyNodeVi);
-    auto* jointVi = bodyNodeVi->getJointVi();
-    const auto numJointDofs = bodyNode->getParentJoint()->getNumDofs();
-
-    positions.segment(index, numJointDofs) = jointVi->getPrevPositions();
-
-    index += numJointDofs;
-  }
-
-  return positions;
 }
 
 //==============================================================================
@@ -353,7 +301,6 @@ void SkeletonViNewtonDrnea::stepForward(const Eigen::VectorXd& nextPositions)
   // TODO(JS): the displacement of geometric joints (e.g., BallJoint and
   // FreeJoint) should be calculated on the geometric space rather than
   // Euclidean space.
-  setPrevPositions(skel->getPositions());
   skel->setPositions(nextPositions);
   // q, dq should be updated to get proper prediction from the continuous
   // forward dynamics algorithm.

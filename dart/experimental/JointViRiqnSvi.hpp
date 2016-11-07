@@ -62,7 +62,7 @@ protected:
   virtual Eigen::VectorXd getError() const = 0;
 
   /// Transform for the next configuration
-  Eigen::Isometry3d mNextTransform{Eigen::Isometry3d::Identity()};
+  Eigen::Isometry3d mNextRelativeTransform{Eigen::Isometry3d::Identity()};
 };
 
 //==============================================================================

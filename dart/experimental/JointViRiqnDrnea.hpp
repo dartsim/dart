@@ -51,18 +51,14 @@ public:
 
   using Base = common::CompositeTrackingAspect<Joint>;
 
-  virtual void initialize(double timeStep) = 0;
-
 protected:
-  virtual void setPrevPositions(const Eigen::VectorXd& prevPositions) = 0;
-  virtual Eigen::VectorXd getPrevPositions() const = 0;
   virtual void setNextPositions(const Eigen::VectorXd& nextPositions) = 0;
   virtual void updateNextRelativeTransform() = 0;
   virtual void evaluateDel(const Eigen::Vector6d& force, double timeStep) = 0;
   virtual Eigen::VectorXd getError() const = 0;
 
   /// Transform for the next configuration
-  Eigen::Isometry3d mNextTransform{Eigen::Isometry3d::Identity()};
+  Eigen::Isometry3d mNextRelativeTransform{Eigen::Isometry3d::Identity()};
 };
 
 //==============================================================================
@@ -87,37 +83,11 @@ public:
 
   GenericJointViRiqnDrnea(const GenericJointViRiqnDrnea&) = delete;
 
-  void initialize(double timeStep) override
-  {
-    auto* genJoint = getGenericJoint();
-
-    const Vector oldPositions = genJoint->getPositionsStatic();
-    const Vector oldVelocities = genJoint->getVelocitiesStatic();
-
-    genJoint->setVelocitiesStatic(-oldVelocities);
-    genJoint->integratePositions(timeStep);
-    mPrevPositions = genJoint->getPositionsStatic();
-
-    genJoint->setVelocitiesStatic(oldVelocities);
-    genJoint->setPositionsStatic(oldPositions);
-  }
-
 protected:
   void setComposite(common::Composite* newComposite) override
   {
     Base::setComposite(newComposite);
   }
-
-  void setPrevPositions(const Eigen::VectorXd& prevPositions) override
-  {
-    assert(
-        mComposite->getNumDofs()
-        == static_cast<std::size_t>(prevPositions.size()));
-
-    mPrevPositions = prevPositions;
-  }
-
-  Eigen::VectorXd getPrevPositions() const override { return mPrevPositions; }
 
   void setNextPositions(const Eigen::VectorXd& nextPositions) override
   {
@@ -139,7 +109,6 @@ protected:
   Eigen::VectorXd getError() const override { return mFdel; }
 
 protected:
-  Vector mPrevPositions{Vector::Zero()};
   Vector mNextPositions{Vector::Zero()};
   Vector mFdel{Vector::Zero()};
 

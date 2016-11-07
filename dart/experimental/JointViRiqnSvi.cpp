@@ -51,12 +51,12 @@ void RevoluteJointViRiqnSvi::updateNextRelativeTransform()
   assert(dynamic_cast<RevoluteJoint*>(mComposite));
   auto* revJoint = static_cast<RevoluteJoint*>(mComposite);
 
-  mNextTransform = revJoint->getTransformFromParentBodyNode()
+  mNextRelativeTransform = revJoint->getTransformFromParentBodyNode()
                    * Eigen::AngleAxisd(mNextPositions[0], revJoint->getAxis())
                    * revJoint->getTransformFromChildBodyNode().inverse();
 
   // Verification
-  assert(math::verifyTransform(mNextTransform));
+  assert(math::verifyTransform(mNextRelativeTransform));
 }
 
 } // namespace dynamics

@@ -95,12 +95,6 @@ public:
 protected:
   void setComposite(common::Composite* newComposite) override;
 
-  void loseComposite(common::Composite* oldComposite) override;
-
-  void setPrevPositions(const Eigen::VectorXd& prevPositions);
-
-  Eigen::VectorXd getPrevPositions() const;
-
   void setNextPositions(const Eigen::VectorXd& nextPositions);
 
   /// Evaluate forced discrete Euler-Lagrange (DEL) equation given next

@@ -39,8 +39,8 @@ using namespace dart;
 
 void setRandomState(const dynamics::SkeletonPtr& skel);
 
-dynamics::SkeletonPtr createRandomSkeleton();
-dynamics::SkeletonPtr createRandomSkeletonWithBallJoints();
+dynamics::SkeletonPtr createRandomSkeleton(std::size_t numBodies = 25u);
+dynamics::SkeletonPtr createRandomSkeletonWithBallJoints(std::size_t numBodies = 25u);
 
 //==============================================================================
 TEST(VariationalIntegrator, SkeletonViRiqnDrnea)
@@ -55,17 +55,23 @@ TEST(VariationalIntegrator, SkeletonViRiqnDrnea)
 }
 
 //==============================================================================
-TEST(VariationalIntegrator, Basic)
+template <typename Integrator>
+void testEnergyBehavior()
 {
 #ifdef NDEBUG
-  auto numSteps = 5e+3;
+  auto numSteps = 1e+4;
 #else
-  auto numSteps = 1e+2;
+  auto numSteps = 1e+1;
 #endif
 
-  auto skel = createRandomSkeleton();
-  auto vi = skel->createAspect<dynamics::SkeletonViRiqnDrnea>();
+  auto skel = createRandomSkeleton(25u);
+  ////
+  skel->setGravity(Eigen::Vector3d::Zero());
+  ////
+  auto vi = skel->createAspect<Integrator>();
   auto E0 = skel->computeTotalEnergy();
+
+  vi->setMaxIternation(3u);
 
   for (auto i = 0u; i < numSteps; ++i)
     vi->integrate();
@@ -73,8 +79,77 @@ TEST(VariationalIntegrator, Basic)
   auto E1 = skel->computeTotalEnergy();
   auto errorInPercentage = (E1 - E0)/E0 * 100.0;
 
+  std::cout << "E0: " << E0 << std::endl;
+  std::cout << "E1: " << E1 << std::endl;
+  std::cout << "E(%): " << errorInPercentage << std::endl;
+
   // The error should be less than 5.0%
   EXPECT_LT(errorInPercentage, 5.0);
+}
+
+//==============================================================================
+TEST(VariationalIntegrator, EnergyBehavior)
+{
+  common::Timer t;
+
+//  t.start();
+//  testEnergyBehavior<dynamics::SkeletonViRiqnSvi>();
+//  t.stop();
+//  std::cout << "RIQN + SVI  : " << t.getLastElapsedTime() << " (sec)" << std::endl;
+
+  t.start();
+  testEnergyBehavior<dynamics::SkeletonViRiqnDrnea>();
+  t.stop();
+  std::cout << "RIQN + DRNEA: " << t.getLastElapsedTime() << " (sec)" << std::endl;
+}
+
+//==============================================================================
+TEST(VariationalIntegrator, CompareVariationalIntegrators)
+{
+#ifdef NDEBUG
+  auto numSteps = 1e+3;
+#else
+  auto numSteps = 1e+1;
+#endif
+
+  const auto numBodies = 2u;
+
+  auto skel = createRandomSkeleton(numBodies);
+  ////
+  skel->setGravity(Eigen::Vector3d::Zero());
+  ////
+
+  auto skelSvi = skel->clone();
+  auto skelDrnea = skel->clone();
+
+  auto E0Svi = skelSvi->computeTotalEnergy();
+  auto E0Drnea = skelDrnea->computeTotalEnergy();
+  EXPECT_NEAR(E0Svi, E0Drnea, 1e-9);
+
+  auto viSvi = skelSvi->createAspect<dynamics::SkeletonViRiqnSvi>();
+  auto viDrnea = skelDrnea->createAspect<dynamics::SkeletonViRiqnDrnea>();
+
+  Eigen::VectorXd posSvi = skelSvi->getPositions();
+  Eigen::VectorXd posDrnea = skelDrnea->getPositions();
+
+  Eigen::VectorXd velSvi = skelSvi->getVelocities();
+  Eigen::VectorXd velDrnea = skelDrnea->getVelocities();
+
+  Eigen::VectorXd randomPositions = Eigen::VectorXd::Random(numBodies);
+  Eigen::VectorXd randomVelocities = Eigen::VectorXd::Random(numBodies);
+
+  skelSvi->setPositions(randomPositions);
+  skelDrnea->setPositions(randomPositions);
+
+  skelSvi->setVelocities(randomVelocities);
+  skelDrnea->setVelocities(randomVelocities);
+
+  const Eigen::VectorXd positions = skelSvi->getPositions();
+
+  Eigen::VectorXd delSvi = viSvi->evaluateDel(positions);
+  Eigen::VectorXd delDrnea = viDrnea->evaluateDel(positions);
+
+  EXPECT_TRUE(delSvi.isApprox(delDrnea, 1e-4));
 }
 
 //==============================================================================
@@ -113,22 +188,20 @@ void setRandomState(const dynamics::SkeletonPtr& skel)
 }
 
 //==============================================================================
-SkeletonPtr createRandomSkeleton()
+SkeletonPtr createRandomSkeleton(std::size_t numBodies)
 {
-  const auto numLinks = 25u;
   const auto l = 1.5;
-  auto skel = createNLinkRobot(numLinks, Eigen::Vector3d(0.3, 0.3, l), DOF_ROLL);
+  auto skel = createNLinkRobot(numBodies, Eigen::Vector3d(0.3, 0.3, l), DOF_ROLL);
   setRandomState(skel);
 
   return skel;
 }
 
 //==============================================================================
-SkeletonPtr createRandomSkeletonWithBallJoints()
+SkeletonPtr createRandomSkeletonWithBallJoints(std::size_t numBodies)
 {
-  const auto numLinks = 25u;
   const auto l = 1.5;
-  auto skel = createNLinkRobot(numLinks, Eigen::Vector3d(0.3, 0.3, l), DOF_ROLL);
+  auto skel = createNLinkRobot(numBodies, Eigen::Vector3d(0.3, 0.3, l), DOF_ROLL);
   setRandomState(skel);
 
   return skel;

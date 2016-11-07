@@ -63,8 +63,6 @@ public:
   // Documentation inherited
   std::unique_ptr<Aspect> cloneAspect() const override;
 
-  void initialize();
-
   void setTolerance(double tol);
 
   double getTolerance() const;
@@ -75,14 +73,8 @@ public:
 
   TerminalCondition integrate();
 
-protected:
+//protected:
   void setComposite(common::Composite* newComposite) override;
-
-  void loseComposite(common::Composite* oldComposite) override;
-
-  void setPrevPositions(const Eigen::VectorXd& prevPositions);
-
-  Eigen::VectorXd getPrevPositions() const;
 
   void setNextPositions(const Eigen::VectorXd& nextPositions);
 
