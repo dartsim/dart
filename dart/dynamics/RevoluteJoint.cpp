@@ -200,5 +200,18 @@ void RevoluteJoint::updateRelativeJacobianTimeDeriv() const
   assert(mJacobianDeriv == Eigen::Vector6d::Zero());
 }
 
+//==============================================================================
+void RevoluteJoint::updateNextRelativeTransform()
+{
+  auto* revJoint = this;
+
+  mNextRelativeTransform = revJoint->getTransformFromParentBodyNode()
+                   * Eigen::AngleAxisd(mNextPositions[0], revJoint->getAxis())
+                   * revJoint->getTransformFromChildBodyNode().inverse();
+
+  // Verification
+  assert(math::verifyTransform(mNextRelativeTransform));
+}
+
 }  // namespace dynamics
 }  // namespace dart

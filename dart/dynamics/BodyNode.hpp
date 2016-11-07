@@ -61,6 +61,7 @@ class DegreeOfFreedom;
 class Shape;
 class EndEffector;
 class Marker;
+class JointViRiqnDrnea;
 
 /// BodyNode class represents a single node of the skeleton.
 ///
@@ -1206,6 +1207,37 @@ private:
   /// it never gets destroyed.
   std::shared_ptr<NodeDestructor> mSelfDestructor;
 
+public:
+  void updateNextTransform();
+  void updateNextVelocity(double timeStep);
+
+  const Eigen::Vector6d& getPrevMomentum() const;
+
+  void evaluateDel(const Eigen::Vector3d& gravity, double timeStep);
+
+  mutable bool mNeedPrevMomentumUpdate{true};
+
+  /// The prediction of the transform for the next discrete time (k+1)
+  Eigen::Isometry3d mNextWorldTransform{Eigen::Isometry3d::Identity()};
+
+  /// The relative transform of the next transform relative to the current
+  /// transform.
+  Eigen::Isometry3d mWorldTransformDisplacement{Eigen::Isometry3d::Identity()};
+
+  /// Discrete spatial velocity for the duration of (k-1, k).
+  Eigen::Vector6d mPreAverageSpatialVelocity{Eigen::Vector6d::Zero()};
+
+  /// Discrete spatial velocity for the duration of (k, k+1).
+  Eigen::Vector6d mPostAverageSpatialVelocity{Eigen::Vector6d::Zero()};
+
+  /// Discrete spatial momentum for the duration of (k-1, k).
+  mutable Eigen::Vector6d mPrevMomentum{Eigen::Vector6d::Zero()};
+
+  /// Discrete spatial momentum for the duration of (k, k+1).
+  Eigen::Vector6d mPostMomentum{Eigen::Vector6d::Zero()};
+
+  /// Spatial impulse transmitted from the parent BodyNode.
+  Eigen::Vector6d mParentImpulse{Eigen::Vector6d::Zero()};
 };
 
 }  // namespace dynamics

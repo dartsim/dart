@@ -1239,6 +1239,27 @@ public:
   std::size_t mUnionIndex;
 
 public:
+
+  enum TerminalCondition
+  {
+    Invalid,
+    StaticSkeleton,
+    MaximumIteration,
+    Tolerance
+  };
+  void setTolerance(double tol) { mTolerance = tol; }
+  double getTolerance() const { return mTolerance; }
+  void setMaxIternation(std::size_t iter) { mMaxIteration = iter; }
+  std::size_t getMaxIteration() const { return mMaxIteration; }
+  TerminalCondition integrate();
+  void setNextPositions(const Eigen::VectorXd& nextPositions);
+  Eigen::VectorXd evaluateDel(const Eigen::VectorXd& nextPositions);
+  Eigen::VectorXd getError() const;
+  void stepForward(const Eigen::VectorXd& nextPositions);
+  double mTolerance{1e-9};
+  std::size_t mMaxIteration{30u};
+
+public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

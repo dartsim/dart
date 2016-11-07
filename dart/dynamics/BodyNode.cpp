@@ -2452,5 +2452,101 @@ void BodyNode::updateWorldJacobianClassicDeriv() const
   mIsWorldJacobianClassicDerivDirty = false;
 }
 
+//==============================================================================
+void BodyNode::updateNextTransform()
+{
+  auto* bodyNode = this;
+  auto* joint = bodyNode->getParentJoint();
+
+  joint->updateNextRelativeTransform();
+}
+
+//==============================================================================
+void BodyNode::updateNextVelocity(double timeStep)
+{
+  auto* bodyNode = this;
+  auto* parentBodyNode = bodyNode->getParentBodyNode();
+  auto* joint = bodyNode->getParentJoint();
+
+  if (parentBodyNode)
+  {
+    mWorldTransformDisplacement
+        = joint->getRelativeTransform().inverse()
+          * parentBodyNode->mWorldTransformDisplacement
+          * joint->mNextRelativeTransform;
+  }
+  else
+  {
+    mWorldTransformDisplacement
+        = joint->getRelativeTransform().inverse() * joint->mNextRelativeTransform;
+  }
+
+  mPostAverageSpatialVelocity
+      = math::logMap(mWorldTransformDisplacement) / timeStep;
+}
+
+//==============================================================================
+const Eigen::Vector6d&BodyNode::getPrevMomentum() const
+{
+  if (mNeedPrevMomentumUpdate)
+  {
+    auto* bodyNode = this;
+    const auto timeStep = bodyNode->getSkeleton()->getTimeStep();
+    const Eigen::Matrix6d& G = bodyNode->getInertia().getSpatialTensor();
+    const Eigen::Vector6d& V = bodyNode->getSpatialVelocity();
+    mPrevMomentum = math::dexp_inv_transpose(V * timeStep, G * V);
+
+    mNeedPrevMomentumUpdate = false;
+  }
+
+  return mPrevMomentum;
+}
+
+//==============================================================================
+static Eigen::Vector6d computeSpatialGravityForce(
+    const Eigen::Isometry3d& T,
+    const Eigen::Matrix6d& inertiaTensor,
+    const Eigen::Vector3d& gravityAcceleration)
+{
+  const Eigen::Matrix6d& I = inertiaTensor;
+  const Eigen::Vector3d& g = gravityAcceleration;
+
+  return I * math::AdInvRLinear(T, g);
+}
+
+//==============================================================================
+void BodyNode::evaluateDel(const Eigen::Vector3d& gravity, double timeStep)
+{
+  auto* bodyNode = this;
+  auto* joint = bodyNode->getParentJoint();
+
+  const Eigen::Matrix6d& G = bodyNode->getInertia().getSpatialTensor();
+
+  mPostMomentum = math::dexp_inv_transpose(
+      mPostAverageSpatialVelocity * timeStep,
+      G * mPostAverageSpatialVelocity);
+
+  const Eigen::Isometry3d expHPrevVelocity
+      = math::expMap(timeStep * mPreAverageSpatialVelocity);
+
+  mParentImpulse
+      = mPostMomentum
+        - math::dAdT(expHPrevVelocity, getPrevMomentum())
+        - computeSpatialGravityForce(bodyNode->getTransform(), G, gravity)
+              * timeStep;
+  // TODO(JS): subtract external force * timeStep to parentImpulse
+
+  for (auto i = 0u; i < bodyNode->getNumChildBodyNodes(); ++i)
+  {
+    auto* childBodyNode = bodyNode->getChildBodyNode(i);
+
+    mParentImpulse += math::dAdInvT(
+        childBodyNode->getParentJoint()->getRelativeTransform(),
+        childBodyNode->mParentImpulse);
+  }
+
+  joint->evaluateDel(mParentImpulse, timeStep);
+}
+
 }  // namespace dynamics
 }  // namespace dart

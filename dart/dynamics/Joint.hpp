@@ -964,6 +964,16 @@ protected:
 
 public:
 
+  virtual void setNextPositions(const Eigen::VectorXd& nextPositions) {}
+  virtual void updateNextRelativeTransform() {}
+  virtual void evaluateDel(const Eigen::Vector6d& /*force*/, double /*timeStep*/) {}
+  virtual Eigen::VectorXd getError() const { return Eigen::VectorXd::Zero(getNumDofs()); }
+
+  /// Transform for the next configuration
+  Eigen::Isometry3d mNextRelativeTransform{Eigen::Isometry3d::Identity()};
+
+public:
+
   /// Slot register for position updated signal
   common::SlotRegister<PositionUpdatedSignal>
       onPositionUpdatedAdded{mPositionUpdatedSignal};

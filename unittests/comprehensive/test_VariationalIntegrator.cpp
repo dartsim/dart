@@ -71,10 +71,10 @@ void testEnergyBehavior()
   auto vi = skel->createAspect<Integrator>();
   auto E0 = skel->computeTotalEnergy();
 
-  vi->setMaxIternation(3u);
+//  skel->setMaxIternation(3u);
 
   for (auto i = 0u; i < numSteps; ++i)
-    vi->integrate();
+    skel->integrate();
 
   auto E1 = skel->computeTotalEnergy();
   auto errorInPercentage = (E1 - E0)/E0 * 100.0;

@@ -115,6 +115,10 @@ protected:
   void updateRelativeJacobianTimeDeriv() const override;
 
 public:
+  // Documentation inherited
+  void updateNextRelativeTransform() override;
+
+public:
 
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

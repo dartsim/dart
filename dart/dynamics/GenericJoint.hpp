@@ -776,6 +776,32 @@ private:
   void updateConstrainedTermsKinematic(double timeStep);
 
   /// \}
+
+public:
+
+  void setNextPositions(const Eigen::VectorXd& nextPositions) override
+  {
+    assert(
+        this->getNumDofs()
+        == static_cast<std::size_t>(nextPositions.size()));
+
+    mNextPositions = nextPositions;
+  }
+
+  void evaluateDel(const Eigen::Vector6d& force, double timeStep) override
+  {
+    auto* genJoint = this;
+
+    mFdel = genJoint->getRelativeJacobianStatic().transpose() * force;
+    mFdel -= timeStep * genJoint->getForcesStatic();
+  }
+
+  Eigen::VectorXd getError() const override { return mFdel; }
+
+protected:
+  Vector mNextPositions{Vector::Zero()};
+  Vector mFdel{Vector::Zero()};
+
 };
 
 } // namespace dynamics

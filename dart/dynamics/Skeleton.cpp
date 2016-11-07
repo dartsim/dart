@@ -3925,5 +3925,156 @@ Skeleton::DirtyFlags::DirtyFlags()
   // Do nothing
 }
 
+//==============================================================================
+Skeleton::TerminalCondition Skeleton::integrate()
+{
+  auto* skel = this;
+
+  TerminalCondition cond = Invalid;
+
+  // Skip immobile or 0-dof skeleton
+  if (!skel->isMobile() || skel->getNumDofs() == 0u)
+    return StaticSkeleton;
+
+  const auto squaredTolerance = mTolerance * mTolerance;
+  const auto dt = skel->getTimeStep();
+
+  // Initial guess
+  skel->computeForwardDynamics();
+  const Eigen::VectorXd ddq = skel->getAccelerations();
+  const Eigen::VectorXd qCurr = skel->getPositions();
+  const Eigen::VectorXd dq = skel->getVelocities();
+
+  //  Eigen::VectorXd qNext = qCurr;
+  Eigen::VectorXd qNext = (dt*dt)*ddq + qCurr + dt*dq;
+  //Eigen::VectorXd qNext = skel->getPositionDifferences(
+  //    ddq * dt * dt + skel->getPositionDifferences(qCurr, qPrev), -qCurr);
+
+  cond = MaximumIteration;
+  for (auto i = 0u; i < mMaxIteration; ++i)
+  {
+    const Eigen::VectorXd error = evaluateDel(qNext);
+    auto squaredNorm = error.squaredNorm();
+
+    if (squaredNorm <= squaredTolerance)
+    {
+      cond = Tolerance;
+      break;
+    }
+
+    skel->setJointConstraintImpulses(-dt * error);
+    skel->computeImpulseForwardDynamics();
+    const Eigen::VectorXd delV = skel->getVelocityChanges();
+    qNext = qNext + delV;
+    // TODO: generalize for non Eucleadian joint spaces as well
+  }
+
+  stepForward(qNext);
+
+  return cond;
+}
+
+//==============================================================================
+void Skeleton::setNextPositions(const Eigen::VectorXd& nextPositions)
+{
+  auto* skel = this;
+  assert(skel->getNumDofs() == static_cast<std::size_t>(nextPositions.size()));
+
+  auto index = 0u;
+  for (auto* bodyNode : skel->getBodyNodes())
+  {
+    assert(bodyNode);
+    auto* joint = bodyNode->getParentJoint();
+    const auto numDofs = joint->getNumDofs();
+
+    joint->setNextPositions(nextPositions.segment(index, numDofs));
+
+    index += numDofs;
+  }
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::evaluateDel(const Eigen::VectorXd& nextPositions)
+{
+  // Implementation of Algorithm 2 of "A linear-time variational integrator for
+  // multibody systems" (WAFR 2016).
+
+  auto* skel = this;
+  const auto timeStep = skel->getTimeStep();
+  const Eigen::Vector3d& gravity = skel->getGravity();
+
+  setNextPositions(nextPositions);
+
+  // Forward recursion: line 1 to 5 of Algorithm 2
+  for (auto* bodyNode : skel->getBodyNodes())
+  {
+    assert(bodyNode);
+    bodyNode->updateNextTransform();
+    bodyNode->updateNextVelocity(timeStep);
+  }
+
+  // Backward recursion: line 6 to 9 of Algorithm 2
+  for (auto it = skel->getBodyNodes().rbegin();
+       it != skel->getBodyNodes().rend();
+       ++it)
+  {
+    auto* bodyNode = *it;
+    bodyNode->evaluateDel(gravity, timeStep);
+  }
+
+  return getError();
+}
+
+//==============================================================================
+Eigen::VectorXd Skeleton::getError() const
+{
+  auto* skel = this;
+  const auto numDofs = skel->getNumDofs();
+
+  Eigen::VectorXd fdel(numDofs);
+
+  auto index = 0u;
+  for (auto* bodyNode : skel->getBodyNodes())
+  {
+    assert(bodyNode);
+    auto* joint = bodyNode->getParentJoint();
+    const auto numJointDofs = bodyNode->getParentJoint()->getNumDofs();
+
+    fdel.segment(index, numJointDofs) = joint->getError();
+
+    index += numJointDofs;
+  }
+
+  return fdel;
+}
+
+//==============================================================================
+void Skeleton::stepForward(const Eigen::VectorXd& nextPositions)
+{
+  auto* skel = this;
+  const auto timeStep = skel->getTimeStep();
+
+  // Update previous/current positions and velocities
+  // setVelocities( (qNext - getPositions()) / getTimeStep() );
+  skel->setVelocities(
+      skel->getPositionDifferences(nextPositions, skel->getPositions())
+      / timeStep);
+  // TODO(JS): the displacement of geometric joints (e.g., BallJoint and
+  // FreeJoint) should be calculated on the geometric space rather than
+  // Euclidean space.
+  skel->setPositions(nextPositions);
+  // q, dq should be updated to get proper prediction from the continuous
+  // forward dynamics algorithm.
+  // TODO(JS): improve the performance here
+
+  // Update previous spatial velocity and momentum of the bodies
+  for (auto* bodyNode : skel->getBodyNodes())
+  {
+    bodyNode->mPreAverageSpatialVelocity
+        = bodyNode->mPostAverageSpatialVelocity;
+    bodyNode->mPrevMomentum = bodyNode->mPostMomentum;
+  }
+}
+
 }  // namespace dynamics
 }  // namespace dart
