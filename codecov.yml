@@ -1,1 +1,5 @@
+coverage:
+  ignore:
+  - unittests/.*
+
 comment: off
