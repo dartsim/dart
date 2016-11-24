@@ -1,5 +1,5 @@
 coverage:
   ignore:
-  - unittests/*
+    - "unittests"
 
 comment: off
