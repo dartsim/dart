@@ -40,7 +40,9 @@ namespace dynamics {
 class EllipsoidShape : public Shape {
 public:
   /// \brief Constructor.
-  explicit EllipsoidShape(const Eigen::Vector3d& _size);
+  explicit EllipsoidShape(const Eigen::Vector3d& diameters);
+  // TODO(JS): In order to follow the commonly used convention, change the
+  // constructor to take radii instead of diameters in DART 7.
 
   /// \brief Destructor.
   virtual ~EllipsoidShape();
@@ -51,11 +53,21 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  /// \brief Set size of this box.
+  /// \brief Set diameters of this ellipsoid.
+  /// \deprecated Deprecated in 6.2. Please use setRadii() instead.
+  DART_DEPRECATED(6.2)
   void setSize(const Eigen::Vector3d& _size);
 
-  /// \brief Get size of this box.
+  /// \brief Get diameters of this ellipsoid.
+  /// \deprecated Deprecated in 6.2. Please use getRadii() instead.
+  DART_DEPRECATED(6.2)
   const Eigen::Vector3d& getSize() const;
+
+  /// Set radii of this ellipsoid.
+  void setRadii(const Eigen::Vector3d& radii);
+
+  /// Get radii of this ellipsoid.
+  const Eigen::Vector3d getRadii() const;
 
   /// \brief Compute volume from given properties
   static double computeVolume(const Eigen::Vector3d& size);

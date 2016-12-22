@@ -36,12 +36,17 @@
 namespace dart {
 namespace dynamics {
 
-EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& _size)
-  : Shape(ELLIPSOID) {
-  setSize(_size);
+//==============================================================================
+EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& diameters)
+  : Shape(ELLIPSOID)
+{
+  setSize(diameters);
 }
 
-EllipsoidShape::~EllipsoidShape() {
+//==============================================================================
+EllipsoidShape::~EllipsoidShape()
+{
+  // Do nothing
 }
 
 //==============================================================================
@@ -69,6 +74,18 @@ void EllipsoidShape::setSize(const Eigen::Vector3d& _size) {
 
 const Eigen::Vector3d&EllipsoidShape::getSize() const {
   return mSize;
+}
+
+//==============================================================================
+void EllipsoidShape::setRadii(const Eigen::Vector3d& radii)
+{
+  mSize = radii * 2.0;
+}
+
+//==============================================================================
+const Eigen::Vector3d EllipsoidShape::getRadii() const
+{
+  return mSize / 2.0;
 }
 
 //==============================================================================
