@@ -157,8 +157,8 @@ void OpenGLRenderInterface::drawSphere(double radius)
   gluSphere(quadObj, radius, slices, stacks);
 }
 
-void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _size) {
-    glScaled(_size(0), _size(1), _size(2));
+void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _diameters) {
+    glScaled(_diameters(0), _diameters(1), _diameters(2));
 
     drawSphere(0.5);
 }

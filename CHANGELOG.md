@@ -5,7 +5,7 @@
 * Math
 
   * Fixed Lemke LCP solver (#808 for DART 6): [#812](https://github.com/dartsim/dart/pull/812)
-  * Added accessors for radii of EllipsoidShape and deprecated accessors for size (diameters): [#829][#829](https://github.com/dartsim/dart/pull/xxx)
+  * Added accessors for diameters and radii of EllipsoidShape, and deprecated EllipsoidShape::get/setSize() [#829][#829](https://github.com/dartsim/dart/pull/xxx)
 
 * GUI
 
