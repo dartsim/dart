@@ -700,6 +700,7 @@ protected:
   std::string mName;
 
   bool mNeedPartialAccelerationUpdate;
+  // TODO(JS): Rename this to mIsPartialAccelerationDirty in DART 7
 
   SoftBodyNode* mParentSoftBodyNode;
 

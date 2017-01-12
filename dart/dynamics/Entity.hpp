@@ -173,12 +173,15 @@ protected:
 
   /// Does this Entity need a Transform update
   mutable bool mNeedTransformUpdate;
+  // TODO(JS): Rename this to mIsTransformDirty in DART 7
 
   /// Does this Entity need a Velocity update
   mutable bool mNeedVelocityUpdate;
+  // TODO(JS): Rename this to mIsVelocityDirty in DART 7
 
   /// Does this Entity need an Acceleration update
   mutable bool mNeedAccelerationUpdate;
+  // TODO(JS): Rename this to mIsAccelerationDirty in DART 7
 
   /// Frame changed signal
   FrameChangedSignal mFrameChangedSignal;

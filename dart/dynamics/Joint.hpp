@@ -925,18 +925,22 @@ protected:
   /// True iff this joint's position has changed since the last call to
   /// getRelativeTransform()
   mutable bool mNeedTransformUpdate;
+  // TODO(JS): Rename this to mIsTransformDirty in DART 7
 
   /// True iff this joint's position or velocity has changed since the last call
   /// to getRelativeSpatialVelocity()
   mutable bool mNeedSpatialVelocityUpdate;
+  // TODO(JS): Rename this to mIsSpatialVelocityDirty in DART 7
 
   /// True iff this joint's position, velocity, or acceleration has changed
   /// since the last call to getRelativeSpatialAcceleration()
   mutable bool mNeedSpatialAccelerationUpdate;
+  // TODO(JS): Rename this to mIsSpatialAccelerationDirty in DART 7
 
   /// True iff this joint's position, velocity, or acceleration has changed
   /// since the last call to getRelativePrimaryAcceleration()
   mutable bool mNeedPrimaryAccelerationUpdate;
+  // TODO(JS): Rename this to mIsPrimaryAccelerationDirty in DART 7
 
   /// True iff this joint's relative Jacobian has not been updated since the last
   /// position change
