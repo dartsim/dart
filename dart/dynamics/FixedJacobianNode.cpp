@@ -44,8 +44,8 @@ void FixedJacobianNode::setRelativeTransform(
     return;
 
   FixedFrame::setRelativeTransform(newRelativeTf);
-  notifyJacobianUpdate();
-  notifyJacobianDerivUpdate();
+  dirtyJacobian();
+  dirtyJacobianDeriv();
 }
 
 //==============================================================================

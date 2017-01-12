@@ -152,10 +152,18 @@ public:
   virtual void refreshData();
 
   /// Notify that the alpha of this shape has updated
+  DART_DEPRECATED(6.2)
   virtual void notifyAlphaUpdate(double alpha);
 
+  /// Notify that the alpha of this shape has updated
+  virtual void notifyAlphaUpdated(double alpha);
+
   /// Notify that the color (rgba) of this shape has updated
+  DART_DEPRECATED(6.2)
   virtual void notifyColorUpdate(const Eigen::Vector4d& color);
+
+  /// Notify that the color (rgba) of this shape has updated
+  virtual void notifyColorUpdated(const Eigen::Vector4d& color);
 
 protected:
 

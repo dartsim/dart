@@ -814,10 +814,19 @@ public:
 
   /// Notify that the articulated inertia and everything that depends on it
   /// needs to be updated
+  DART_DEPRECATED(6.2)
   void notifyArticulatedInertiaUpdate(std::size_t _treeIdx);
 
+  /// Notify that the articulated inertia and everything that depends on it
+  /// needs to be updated
+  void dirtyArticulatedInertia(std::size_t _treeIdx);
+
   /// Notify that the support polygon of a tree needs to be updated
+  DART_DEPRECATED(6.2)
   void notifySupportUpdate(std::size_t _treeIdx);
+
+  /// Notify that the support polygon of a tree needs to be updated
+  void dirtySupportPolygon(std::size_t _treeIdx);
 
   // Documentation inherited
   double computeKineticEnergy() const override;

@@ -49,7 +49,7 @@ EndEffectorProperties::EndEffectorProperties(const Eigen::Isometry3d& defaultTf)
 void SupportUpdate(Support* support)
 {
   if(EndEffector* ee = support->getComposite())
-    ee->getSkeleton()->notifySupportUpdate(ee->getTreeIndex());
+    ee->getSkeleton()->dirtySupportPolygon(ee->getTreeIndex());
 }
 
 } // namespace detail
@@ -138,16 +138,16 @@ void EndEffector::resetRelativeTransform()
 }
 
 //==============================================================================
-void EndEffector::notifyTransformUpdate()
+void EndEffector::dirtyTransform()
 {
   if(!mNeedTransformUpdate)
   {
     const SkeletonPtr& skel = getSkeleton();
     if(skel)
-      skel->notifySupportUpdate(getTreeIndex());
+      skel->dirtySupportPolygon(getTreeIndex());
   }
 
-  Frame::notifyTransformUpdate();
+  Frame::dirtyTransform();
 }
 
 //==============================================================================

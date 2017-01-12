@@ -130,6 +130,12 @@ bool Entity::isFrame() const
 //==============================================================================
 void Entity::notifyTransformUpdate()
 {
+  dirtyTransform();
+}
+
+//==============================================================================
+void Entity::dirtyTransform()
+{
   mNeedTransformUpdate = true;
 
   // The actual transform hasn't updated yet. But when its getter is called,
@@ -146,6 +152,12 @@ bool Entity::needsTransformUpdate() const
 //==============================================================================
 void Entity::notifyVelocityUpdate()
 {
+  dirtyVelocity();
+}
+
+//==============================================================================
+void Entity::dirtyVelocity()
+{
   mNeedVelocityUpdate = true;
 
   // The actual velocity hasn't updated yet. But when its getter is called,
@@ -161,6 +173,12 @@ bool Entity::needsVelocityUpdate() const
 
 //==============================================================================
 void Entity::notifyAccelerationUpdate()
+{
+  dirtyAcceleration();
+}
+
+//==============================================================================
+void Entity::dirtyAcceleration()
 {
   mNeedAccelerationUpdate = true;
 
@@ -242,7 +260,7 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
       mParentFrame->mChildEntities.insert(this);
       mParentFrame->processNewEntity(this);
     }
-    notifyTransformUpdate();
+    dirtyTransform();
   }
 
   if(mParentFrame)

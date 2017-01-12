@@ -113,20 +113,38 @@ public:
   /// suitable for temporary objects.
   bool isQuiet() const;
 
-  /// Notify this Entity that its parent Frame's pose has changed
+  /// Notify the transformation update of this Entity that its parent Frame's
+  /// pose is needed
+  DART_DEPRECATED(6.2)
   virtual void notifyTransformUpdate();
+
+  /// Notify the transformation update of this Entity that its parent Frame's
+  /// pose is needed
+  virtual void dirtyTransform();
 
   /// Returns true iff a transform update is needed for this Entity
   bool needsTransformUpdate() const;
 
-  /// Notify this Entity that its parent Frame's velocity has changed
+  /// Notify the velocity update of this Entity that its parent Frame's velocity
+  /// is needed
+  DART_DEPRECATED(6.2)
   virtual void notifyVelocityUpdate();
+
+  /// Notify the velocity update of this Entity that its parent Frame's velocity
+  /// is needed
+  virtual void dirtyVelocity();
 
   /// Returns true iff a velocity update is needed for this Entity
   bool needsVelocityUpdate() const;
 
-  /// Notify this Entity that its parent Frame's acceleration has changed
+  /// Notify the acceleration of this Entity that its parent Frame's
+  /// acceleration is needed
+  DART_DEPRECATED(6.2)
   virtual void notifyAccelerationUpdate();
+
+  /// Notify the acceleration of this Entity that its parent Frame's
+  /// acceleration is needed
+  virtual void dirtyAcceleration();
 
   /// Returns true iff an acceleration update is needed for this Entity
   bool needsAccelerationUpdate() const;

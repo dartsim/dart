@@ -85,7 +85,7 @@ public:
   virtual void update();
 
   // Documentation inherited
-  void notifyAlphaUpdate(double alpha) override;
+  void notifyAlphaUpdated(double alpha) override;
 
   /// \brief
   void setMesh(

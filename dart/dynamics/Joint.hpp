@@ -634,14 +634,26 @@ public:
   /// \{ \name Update Notifiers
   //----------------------------------------------------------------------------
 
-  /// Notify that a position update is needed
+  /// Notify that a position has updated
+  DART_DEPRECATED(6.2)
   void notifyPositionUpdate();
 
-  /// Notify that a velocity update is needed
+  /// Notify that a position has updated
+  void notifyPositionUpdated();
+
+  /// Notify that a velocity has updated
+  DART_DEPRECATED(6.2)
   void notifyVelocityUpdate();
 
-  /// Notify that an acceleration update is needed
+  /// Notify that a velocity has updated
+  void notifyVelocityUpdated();
+
+  /// Notify that an acceleration has updated
+  DART_DEPRECATED(6.2)
   void notifyAccelerationUpdate();
+
+  /// Notify that an acceleration has updated
+  void notifyAccelerationUpdated();
 
   /// \}
 

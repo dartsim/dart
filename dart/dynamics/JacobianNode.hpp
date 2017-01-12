@@ -263,11 +263,21 @@ public:
 
   /// Notify this BodyNode and all its descendents that their Jacobians need to
   /// be updated.
+  DART_DEPRECATED(6.2)
   void notifyJacobianUpdate();
+
+  /// Notify this BodyNode and all its descendents that their Jacobians need to
+  /// be updated.
+  void dirtyJacobian();
 
   /// Notify this BodyNode and all its descendents that their Jacobian
   /// derivatives need to be updated.
+  DART_DEPRECATED(6.2)
   void notifyJacobianDerivUpdate();
+
+  /// Notify this BodyNode and all its descendents that their Jacobian
+  /// derivatives need to be updated.
+  void dirtyJacobianDeriv();
 
 protected:
 

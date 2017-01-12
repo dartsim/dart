@@ -33,6 +33,7 @@
 #define DART_COMMON_DETAIL_ASPECTWITHVERSION_HPP_
 
 #include "dart/common/Aspect.hpp"
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/StlHelpers.hpp"
 
 namespace dart {
@@ -151,7 +152,11 @@ public:
   std::size_t incrementVersion();
 
   /// Call UpdateProperties(this) and incrementVersion()
+  DART_DEPRECATED(6.2)
   void notifyPropertiesUpdate();
+
+  /// Call UpdateProperties(this) and incrementVersion()
+  void notifyPropertiesUpdated();
 
 protected:
 
@@ -286,7 +291,7 @@ void AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
 setProperties(const PropertiesData& properties)
 {
   static_cast<PropertiesData&>(mProperties) = properties;
-  this->notifyPropertiesUpdate();
+  this->notifyPropertiesUpdated();
 }
 
 //==============================================================================
@@ -328,6 +333,16 @@ template <class BaseT, class DerivedT, typename PropertiesData,
 void AspectWithVersionedProperties<
     BaseT, DerivedT, PropertiesData,
     CompositeT, updateProperties>::notifyPropertiesUpdate()
+{
+  notifyPropertiesUpdated();
+}
+
+//==============================================================================
+template <class BaseT, class DerivedT, typename PropertiesData,
+          class CompositeT, void (*updateProperties)(DerivedT*)>
+void AspectWithVersionedProperties<
+    BaseT, DerivedT, PropertiesData,
+    CompositeT, updateProperties>::notifyPropertiesUpdated()
 {
   UpdateProperties(static_cast<Derived*>(this));
   this->incrementVersion();

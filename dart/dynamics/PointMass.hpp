@@ -685,9 +685,9 @@ public:
   void clearPartialAccelerationNotice();
   void clearAccelerationNotice();
 
-  void notifyTransformUpdate() override;
-  void notifyVelocityUpdate() override;
-  void notifyAccelerationUpdate() override;
+  void dirtyTransform() override;
+  void dirtyVelocity() override;
+  void dirtyAcceleration() override;
 
   // Documentation inherited
   const std::string& setName(const std::string& _name) override;

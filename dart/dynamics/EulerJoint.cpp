@@ -124,7 +124,7 @@ void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
   if (_renameDofs)
     updateDegreeOfFreedomNames();
 
-  Joint::notifyPositionUpdate();
+  Joint::notifyPositionUpdated();
   updateRelativeJacobian(true);
   Joint::incrementVersion();
 }

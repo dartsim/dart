@@ -65,7 +65,7 @@ void PlanarJoint::setProperties(const UniqueProperties& _properties)
 void PlanarJoint::setAspectProperties(const AspectProperties& properties)
 {
   mAspectProperties = properties;
-  Joint::notifyPositionUpdate();
+  Joint::notifyPositionUpdated();
   updateRelativeJacobian(true);
   Joint::incrementVersion();
 }
@@ -127,7 +127,7 @@ void PlanarJoint::setXYPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -137,7 +137,7 @@ void PlanarJoint::setYZPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -147,7 +147,7 @@ void PlanarJoint::setZXPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -159,7 +159,7 @@ void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================

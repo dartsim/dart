@@ -76,7 +76,7 @@ void FixedFrame::setRelativeTransform(const Eigen::Isometry3d& transform)
     return;
 
   mAspectProperties.mRelativeTf = transform;
-  notifyTransformUpdate();
+  dirtyTransform();
   incrementVersion();
 }
 

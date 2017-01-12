@@ -175,7 +175,7 @@ void MeshShape::update()
 }
 
 //==============================================================================
-void MeshShape::notifyAlphaUpdate(double alpha)
+void MeshShape::notifyAlphaUpdated(double alpha)
 {
   for(std::size_t i=0; i<mMesh->mNumMeshes; ++i)
   {
