@@ -344,6 +344,13 @@ public:
   /// _treeIdx
   const BodyNode* getRootBodyNode(std::size_t _treeIdx = 0) const;
 
+  /// Get the root Joint of the tree whose index in this Skeleton is treeIdx
+  Joint* getRootJoint(std::size_t treeIdx = 0u);
+
+  /// Get the const root Joint of the tree whose index in this Skeleton is
+  /// treeIdx
+  const Joint* getRootJoint(std::size_t treeIdx = 0u) const;
+
   // Documentation inherited
   BodyNode* getBodyNode(std::size_t _idx) override;
 

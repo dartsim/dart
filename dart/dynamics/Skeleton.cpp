@@ -797,6 +797,23 @@ const BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx) const
 }
 
 //==============================================================================
+Joint* Skeleton::getRootJoint(std::size_t treeIdx)
+{
+  auto rootBodyNode = getRootBodyNode(treeIdx);
+
+  if (rootBodyNode)
+    return rootBodyNode->getParentJoint();
+
+  return nullptr;
+}
+
+//==============================================================================
+const Joint* Skeleton::getRootJoint(std::size_t treeIdx) const
+{
+  return const_cast<Skeleton*>(this)->getRootJoint(treeIdx);
+}
+
+//==============================================================================
 BodyNode* Skeleton::getBodyNode(std::size_t _idx)
 {
   return common::getVectorObjectIfAvailable<BodyNode*>(
