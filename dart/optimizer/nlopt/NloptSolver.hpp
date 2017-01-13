@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
