@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -91,9 +91,9 @@ void AboutWidget::render()
   ImGui::Begin("About DART", &mIsVisible, ImGuiWindowFlags_AlwaysAutoResize);
   //ImGui::Text("HIT %s", Version::asString().c_str());
   ImGui::Separator();
-  ImGui::Text("Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation");
+  ImGui::Text("Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation");
   ImGui::Text("Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation");
-  ImGui::Text("Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University");
+  ImGui::Text("Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University");
   ImGui::Text("DART is licensed under the BSD 2 Clause License.");
   ImGui::Separator();
   ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
