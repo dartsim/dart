@@ -463,13 +463,16 @@ fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
 
   for (int i = 0; i < 112; i++)
   {
-    p1 = fcl::Vec3f(v[f[i][0]][0] * _sizeX,
+    p1 = fcl::Vec3f(
+        v[f[i][0]][0] * _sizeX,
         v[f[i][0]][1] * _sizeY,
         v[f[i][0]][2] * _sizeZ);
-    p2 = fcl::Vec3f(v[f[i][1]][0] * _sizeX,
+    p2 = fcl::Vec3f(
+        v[f[i][1]][0] * _sizeX,
         v[f[i][1]][1] * _sizeY,
         v[f[i][1]][2] * _sizeZ);
-    p3 = fcl::Vec3f(v[f[i][2]][0] * _sizeX,
+    p3 = fcl::Vec3f(
+        v[f[i][2]][0] * _sizeX,
         v[f[i][2]][1] * _sizeY,
         v[f[i][2]][2] * _sizeZ);
 
@@ -951,19 +954,21 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
 
     auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
-    const Eigen::Vector3d& size = ellipsoid->getSize();
+    const Eigen::Vector3d& radii = ellipsoid->getRadii();
 
     if (FCLCollisionDetector::PRIMITIVE == type)
     {
 #if FCL_VERSION_AT_LEAST(0,4,0)
-      geom = new fcl::Ellipsoid(FCLTypes::convertVector3(size * 0.5));
+      geom = new fcl::Ellipsoid(FCLTypes::convertVector3(radii));
 #else
-      geom = createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]);
+      geom = createEllipsoid<fcl::OBBRSS>(
+          radii[0]*2.0, radii[1]*2.0, radii[2]*2.0);
 #endif
     }
     else
     {
-      geom = createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]);
+      geom = createEllipsoid<fcl::OBBRSS>(
+          radii[0]*2.0, radii[1]*2.0, radii[2]*2.0);
     }
   }
   else if (CylinderShape::getStaticType() == shapeType)

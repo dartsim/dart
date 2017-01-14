@@ -420,7 +420,7 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   else if (shape->is<EllipsoidShape>())
   {
     const auto* ellipsoid = static_cast<const EllipsoidShape*>(shape);
-    mRI->drawEllipsoid(ellipsoid->getSize());
+    mRI->drawEllipsoid(ellipsoid->getDiameters());
   }
   else if (shape->is<CylinderShape>())
   {

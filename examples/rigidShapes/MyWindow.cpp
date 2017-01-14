@@ -129,7 +129,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'w':  // Spawn an ellipsoid
     case 'W':
     {
-      spawnEllipsoid(getRandomTransform(), math::randomVector<3>(0.05, 0.25));
+      spawnEllipsoid(getRandomTransform(), math::randomVector<3>(0.025, 0.125));
       break;
     }
     case 'e':  // Spawn an cylinder
@@ -191,7 +191,7 @@ void MyWindow::spawnEllipsoid(const Eigen::Isometry3d& _T,
 {
   dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
 
-  dynamics::ShapePtr newShape(new dynamics::EllipsoidShape(_radii));
+  dynamics::ShapePtr newShape(new dynamics::EllipsoidShape(_radii*2.0));
 
   dynamics::BodyNode::Properties bodyProp;
   bodyProp.mName = "ellipsoid_link";
