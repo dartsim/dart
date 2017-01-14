@@ -685,9 +685,9 @@ public:
   void clearPartialAccelerationNotice();
   void clearAccelerationNotice();
 
-  void notifyTransformUpdate() override;
-  void notifyVelocityUpdate() override;
-  void notifyAccelerationUpdate() override;
+  void dirtyTransform() override;
+  void dirtyVelocity() override;
+  void dirtyAcceleration() override;
 
   // Documentation inherited
   const std::string& setName(const std::string& _name) override;
@@ -700,6 +700,7 @@ protected:
   std::string mName;
 
   bool mNeedPartialAccelerationUpdate;
+  // TODO(JS): Rename this to mIsPartialAccelerationDirty in DART 7
 
   SoftBodyNode* mParentSoftBodyNode;
 

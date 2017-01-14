@@ -160,7 +160,7 @@ void SoftBodyNode::setAspectState(const AspectState& state)
     return;
 
   mAspectState = state;
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -259,7 +259,7 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
   // called on this BodyNode, but that happens after construction is finished.
   mAspectProperties = _properties;
   configurePointMasses(softNode);
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -335,7 +335,7 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
   }
 
   incrementVersion();
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================

@@ -63,7 +63,7 @@ ArrowShape::ArrowShape(const Eigen::Vector3d& _tail,
   instantiate(_resolution);
   configureArrow(mTail, mHead, mProperties);
   setColorMode(MeshShape::COLOR_INDEX);
-  notifyColorUpdate(_color);
+  notifyColorUpdated(_color);
 }
 
 //==============================================================================
@@ -92,7 +92,7 @@ void ArrowShape::setProperties(const Properties& _properties)
 }
 
 //==============================================================================
-void ArrowShape::notifyColorUpdate(const Eigen::Vector4d& _color)
+void ArrowShape::notifyColorUpdated(const Eigen::Vector4d& _color)
 {
   for(std::size_t i=0; i<mMesh->mNumMeshes; ++i)
   {

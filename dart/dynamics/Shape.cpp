@@ -142,13 +142,25 @@ void Shape::refreshData()
 }
 
 //==============================================================================
-void Shape::notifyAlphaUpdate(double /*alpha*/)
+void Shape::notifyAlphaUpdate(double alpha)
+{
+  notifyAlphaUpdated(alpha);
+}
+
+//==============================================================================
+void Shape::notifyAlphaUpdated(double /*alpha*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void Shape::notifyColorUpdate(const Eigen::Vector4d& /*color*/)
+void Shape::notifyColorUpdate(const Eigen::Vector4d& color)
+{
+  notifyColorUpdated(color);
+}
+
+//==============================================================================
+void Shape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 {
   // Do nothing
 }

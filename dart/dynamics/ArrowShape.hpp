@@ -85,7 +85,7 @@ public:
   void setProperties(const Properties& _properties);
 
   /// Set the color of this arrow
-  void notifyColorUpdate(const Eigen::Vector4d& _color) override;
+  void notifyColorUpdated(const Eigen::Vector4d& _color) override;
 
   /// Get the properties of this arrow
   const Properties& getProperties() const;

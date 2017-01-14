@@ -832,23 +832,36 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void notifyTransformUpdate() override;
+  void dirtyTransform() override;
 
   // Documentation inherited
-  void notifyVelocityUpdate() override;
+  void dirtyVelocity() override;
 
   // Documentation inherited
-  void notifyAccelerationUpdate() override;
+  void dirtyAcceleration() override;
 
   /// Notify the Skeleton that the tree of this BodyNode needs an articulated
   /// inertia update
+  DART_DEPRECATED(6.2)
   void notifyArticulatedInertiaUpdate();
 
+  /// Notify the Skeleton that the tree of this BodyNode needs an articulated
+  /// inertia update
+  void dirtyArticulatedInertia();
+
   /// Tell the Skeleton that the external forces need to be updated
+  DART_DEPRECATED(6.2)
   void notifyExternalForcesUpdate();
 
+  /// Tell the Skeleton that the external forces need to be updated
+  void dirtyExternalForces();
+
   /// Tell the Skeleton that the coriolis forces need to be update
+  DART_DEPRECATED(6.2)
   void notifyCoriolisUpdate();
+
+  /// Tell the Skeleton that the coriolis forces need to be update
+  void dirtyCoriolisForces();
 
   //----------------------------------------------------------------------------
   // Friendship

@@ -12,6 +12,7 @@
 
 * Misc
 
+  * Modified the member function names pertain to lazy evaluation to be more relevant to their functionalities: [#833](https://github.com/dartsim/dart/pull/833)
   * Added Skeleton::getRootJoint(): [#832](https://github.com/dartsim/dart/pull/832)
   * Added CMake targets for code formatting using clang-format: [#811](https://github.com/dartsim/dart/pull/811), [#817](https://github.com/dartsim/dart/pull/817)
 

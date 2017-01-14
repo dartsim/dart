@@ -144,7 +144,7 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void notifyTransformUpdate() override;
+  void dirtyTransform() override;
 
   /// \}
 

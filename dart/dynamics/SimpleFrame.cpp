@@ -159,21 +159,21 @@ void SimpleFrame::setRelativeTransform(
     const Eigen::Isometry3d& _newRelTransform)
 {
   mRelativeTf = _newRelTransform;
-  notifyTransformUpdate();
+  dirtyTransform();
 }
 
 //==============================================================================
 void SimpleFrame::setRelativeTranslation(const Eigen::Vector3d& _newTranslation)
 {
   mRelativeTf.translation() = _newTranslation;
-  notifyTransformUpdate();
+  dirtyTransform();
 }
 
 //==============================================================================
 void SimpleFrame::setRelativeRotation(const Eigen::Matrix3d& _newRotation)
 {
   mRelativeTf.linear() = _newRotation;
-  notifyTransformUpdate();
+  dirtyTransform();
 }
 
 //==============================================================================
@@ -212,7 +212,7 @@ void SimpleFrame::setRelativeSpatialVelocity(
     const Eigen::Vector6d& _newSpatialVelocity)
 {
   mRelativeVelocity = _newSpatialVelocity;
-  notifyVelocityUpdate();
+  dirtyVelocity();
 }
 
 //==============================================================================
@@ -237,7 +237,7 @@ void SimpleFrame::setRelativeSpatialAcceleration(
     const Eigen::Vector6d &_newSpatialAcceleration)
 {
   mRelativeAcceleration = _newSpatialAcceleration;
-  notifyAccelerationUpdate();
+  dirtyAcceleration();
 }
 
 //==============================================================================

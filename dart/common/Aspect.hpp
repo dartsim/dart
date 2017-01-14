@@ -177,7 +177,7 @@ protected:
 
 //==============================================================================
 #define DART_COMMON_SET_ASPECT_PROPERTY( Type, Name )\
-  DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM( Type, Name, notifyPropertiesUpdate )
+  DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM( Type, Name, notifyPropertiesUpdated )
 
 //==============================================================================
 #define DART_COMMON_GET_ASPECT_PROPERTY( Type, Name )\

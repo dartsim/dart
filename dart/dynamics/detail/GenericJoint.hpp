@@ -477,7 +477,7 @@ void GenericJoint<ConfigSpaceT>::setPosition(size_t index, double position)
 
   // Note: It would not make much sense to use setPositionsStatic() here
   this->mAspectState.mPositions[index] = position;
-  this->notifyPositionUpdate();
+  this->notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -658,7 +658,7 @@ void GenericJoint<ConfigSpaceT>::setPositionsStatic(const Vector& positions)
     return;
 
   this->mAspectState.mPositions = positions;
-  this->notifyPositionUpdate();
+  this->notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -678,7 +678,7 @@ void GenericJoint<ConfigSpaceT>::setVelocitiesStatic(
     return;
 
   this->mAspectState.mVelocities = velocities;
-  this->notifyVelocityUpdate();
+  this->notifyVelocityUpdated();
 }
 
 //==============================================================================
@@ -697,7 +697,7 @@ void GenericJoint<ConfigSpaceT>::setAccelerationsStatic(const Vector& accels)
     return;
 
   this->mAspectState.mAccelerations = accels;
-  this->notifyAccelerationUpdate();
+  this->notifyAccelerationUpdated();
 }
 
 //==============================================================================
@@ -723,7 +723,7 @@ void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
 
   // Note: It would not make much sense to use setVelocitiesStatic() here
   this->mAspectState.mVelocities[index] = velocity;
-  this->notifyVelocityUpdate();
+  this->notifyVelocityUpdated();
 
   if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
     this->mAspectState.mCommands[index] = this->getVelocitiesStatic()[index];
@@ -905,7 +905,7 @@ void GenericJoint<ConfigSpaceT>::setAcceleration(
 
   // Note: It would not make much sense to use setAccelerationsStatic() here
   this->mAspectState.mAccelerations[index] = acceleration;
-  this->notifyAccelerationUpdate();
+  this->notifyAccelerationUpdated();
 
   if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
     this->mAspectState.mCommands[index] = this->getAccelerationsStatic()[index];
