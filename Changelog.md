@@ -1,4 +1,4 @@
-### Version 5.1.5 (201X-XX-XX)
+### Version 5.1.5 (2017-01-20)
 
 1. Fixed Lemke LCP solver for several failing cases
     * [Pull request #808](https://github.com/dartsim/dart/pull/808)
