@@ -1,3 +1,11 @@
+dart5 (5.1.5) unstable; urgency=medium
+
+  * Added support of urdfdom_headers 1.0 for DART 5.1 (backport of #766)
+  * Increase minimum required Ipopt version to 3.11.9
+  * Fixed Lemke LCP solver for several failing cases
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Fri, 20 Jan 2017 23:59:00 -0500
+
 dart5 (5.1.4) unstable; urgency=medium
 
   * Fixed inconsistent frame rate of GlutWindow
