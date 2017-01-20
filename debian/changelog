@@ -1,3 +1,10 @@
+dart6 (6.1.2) unstable; urgency=medium
+
+  * Fixed bug of ContactConstraint with kinematic joints
+  * Fixed that ZeroDofJoint::getIndexInTree was called
+
+ -- Jeongseok Lee <jslee02@gmail.com>  Fri, 13 Jan 2017 23:59:00 -0500
+
 dart6 (6.1.1) unstable; urgency=medium
 
   * Modified to build DART without SIMD options by default
