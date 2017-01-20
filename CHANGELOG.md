@@ -1,6 +1,6 @@
 ## DART 6
 
-### DART 6.1.2 (2016-XX-XX)
+### DART 6.1.2 (2017-01-13)
 
 * Dynamics
 
