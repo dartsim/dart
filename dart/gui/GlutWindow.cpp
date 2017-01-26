@@ -83,7 +83,7 @@ void GlutWindow::initWindow(int _w, int _h, const char* _name) {
   mWinWidth = _w;
   mWinHeight = _h;
 
-  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
+  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE | GLUT_ACCUM);
   glutInitWindowPosition(150, 100);
   glutInitWindowSize(_w, _h);
   mWinIDs.push_back(glutCreateWindow(_name));
