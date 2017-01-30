@@ -29,6 +29,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/utils/sdf/SdfParser.hpp"
+
 #include <map>
 #include <iostream>
 #include <fstream>
@@ -60,7 +62,8 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
 #include "dart/utils/XmlHelpers.hpp"
-#include "dart/utils/sdf/SdfParser.hpp"
+#include "dart/utils/CompositeResourceRetriever.hpp"
+#include "dart/utils/SampleResourceRetriever.hpp"
 
 namespace dart {
 namespace utils {
@@ -1500,9 +1503,19 @@ common::ResourceRetrieverPtr getRetriever(
   const common::ResourceRetrieverPtr& retriever)
 {
   if(retriever)
+  {
     return retriever;
+  }
   else
-    return std::make_shared<common::LocalResourceRetriever>();
+  {
+    auto newRetriever = std::make_shared<utils::CompositeResourceRetriever>();
+    newRetriever->addSchemaRetriever(
+          "file", std::make_shared<common::LocalResourceRetriever>());
+    newRetriever->addSchemaRetriever(
+          "sample", SampleResourceRetriever::create());
+
+    return newRetriever;
+  }
 }
 
 } // anonymous namespace

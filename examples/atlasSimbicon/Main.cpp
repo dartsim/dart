@@ -31,10 +31,10 @@
 
 #include <iostream>
 
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 
-#include "examples/atlasSimbicon/MyWindow.hpp"
-#include "examples/atlasSimbicon/Controller.hpp"
+#include "MyWindow.hpp"
+#include "Controller.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -52,9 +52,7 @@ int main(int argc, char* argv[])
   // Load ground and Atlas robot and add them to the world
   DartLoader urdfLoader;
   SkeletonPtr ground = urdfLoader.parseSkeleton(
-        DART_DATA_PATH"sdf/atlas/ground.urdf");
-//  SkeletonPtr atlas = SoftSdfParser::readSkeleton(
-//        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.sdf");
+        "sample://data/sdf/atlas/ground.urdf");
   SkeletonPtr atlas = SdfParser::readSkeleton(
         DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
   myWorld->addSkeleton(atlas);

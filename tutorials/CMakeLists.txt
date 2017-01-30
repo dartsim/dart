@@ -1,11 +1,21 @@
-file(GLOB tutorials_src "*.cpp")
-list(SORT tutorials_src)
+# A list of tutorials
+set_property(DIRECTORY PROPERTY FOLDER Tutorials)
 
-foreach(tutorial ${tutorials_src})
-  get_filename_component(tutorial_base ${tutorial} NAME_WE)
+# Automatically identify all directories in the tutorials folder
+file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*")
+set(directories "")
+foreach(child ${children})
+  if(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")
 
-  add_executable(${tutorial_base} ${tutorial})
-  target_link_libraries(${tutorial_base} dart dart-gui dart-utils-urdf)
+      file(GLOB srcs "${CMAKE_CURRENT_LIST_DIR}/${child}/*.cpp")
 
-  dart_add_tutorial(${tutorial_base})
-endforeach(tutorial)
+      if(srcs)
+        add_executable(${child} ${srcs})
+        target_link_libraries(${child} dart dart-utils-urdf dart-gui)
+        dart_add_tutorial(${child})
+      else()
+        add_subdirectory(${child})
+      endif()
+
+  endif()
+endforeach()

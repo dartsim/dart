@@ -49,7 +49,7 @@ namespace utils {
 ///
 /// Example of a sample data URI:
 /// @code
-/// "example://data/skel/shapes.skel"
+/// "sample://data/skel/shapes.skel"
 ///                 \______________/
 ///                        |
 ///             file path with respect to

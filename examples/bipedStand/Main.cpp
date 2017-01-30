@@ -32,9 +32,9 @@
 #include <iostream>
 #include <vector>
 
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 
-#include "examples/bipedStand/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 int main(int argc, char* argv[]) {
   // create and initialize the world

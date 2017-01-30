@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/jointConstraints/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 using namespace dart;
 using namespace math;

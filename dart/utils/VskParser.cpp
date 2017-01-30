@@ -42,6 +42,8 @@
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/dynamics/dynamics.hpp"
+#include "dart/utils/CompositeResourceRetriever.hpp"
+#include "dart/utils/SampleResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 
 #define SCALE_VSK 1.0e-3
@@ -1022,9 +1024,19 @@ common::ResourceRetrieverPtr getRetriever(
   const common::ResourceRetrieverPtr& retriever)
 {
   if(retriever)
+  {
     return retriever;
+  }
   else
-    return std::make_shared<common::LocalResourceRetriever>();
+  {
+    auto newRetriever = std::make_shared<utils::CompositeResourceRetriever>();
+    newRetriever->addSchemaRetriever(
+          "file", std::make_shared<common::LocalResourceRetriever>());
+    newRetriever->addSchemaRetriever(
+          "sample", SampleResourceRetriever::create());
+
+    return newRetriever;
+  }
 }
 
 } // anonymous namespace

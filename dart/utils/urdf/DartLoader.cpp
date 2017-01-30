@@ -52,6 +52,7 @@
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/simulation/World.hpp"
+#include "dart/utils/SampleResourceRetriever.hpp"
 #include "dart/utils/urdf/URDFTypes.hpp"
 #include "dart/utils/urdf/urdf_world_parser.hpp"
 
@@ -67,6 +68,7 @@ DartLoader::DartLoader()
 {
   mRetriever->addSchemaRetriever("file", mLocalRetriever);
   mRetriever->addSchemaRetriever("package", mPackageRetriever);
+  mRetriever->addSchemaRetriever("sample", SampleResourceRetriever::create());
 }
 
 void DartLoader::addPackageDirectory(const std::string& _packageName,

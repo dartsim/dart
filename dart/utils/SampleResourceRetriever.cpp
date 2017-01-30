@@ -107,7 +107,7 @@ bool SampleResourceRetriever::resolveDataUri(
   const common::Uri& uri,
   std::string& relativePath) const
 {
-  if (uri.mScheme.get_value_or("example") != "example")
+  if (uri.mScheme.get_value_or("sample") != "sample")
     return false;
 
   if (!uri.mAuthority)

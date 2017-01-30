@@ -36,7 +36,7 @@
  * @brief Simple example of a skeleton created from scratch.
  */
 
-#include "examples/hardcodedDesign/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 void MyWindow::draw() {
   glDisable(GL_LIGHTING);

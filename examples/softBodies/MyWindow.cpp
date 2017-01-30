@@ -35,7 +35,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/softBodies/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 #define FORCE_ON_RIGIDBODY 25.0;
 #define FORCE_ON_VERTEX 1.00;

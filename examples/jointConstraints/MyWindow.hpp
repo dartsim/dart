@@ -35,10 +35,10 @@
 #include <Eigen/Dense>
 #include <stdarg.h>
 
-#include "examples/jointConstraints/Controller.hpp"
+#include "Controller.hpp"
 
-#include "dart/dart.hpp"
-#include "dart/gui/gui.hpp"
+#include <dart/dart.hpp>
+#include <dart/gui/gui.hpp>
 
 class MyWindow : public dart::gui::SimWindow
 {

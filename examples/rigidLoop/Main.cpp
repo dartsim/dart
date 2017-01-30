@@ -29,9 +29,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 
-#include "examples/rigidLoop/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 using namespace dart;
 using namespace math;
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
   // load a skeleton file
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
-    = utils::SkelParser::readWorld(DART_DATA_PATH"/skel/chain.skel");
+    = utils::SkelParser::readWorld("sample://data/skel/chain.skel");
   assert(myWorld != nullptr);
     
   // create and initialize the world

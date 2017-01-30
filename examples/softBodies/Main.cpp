@@ -37,9 +37,9 @@
 
 #include <iostream>
 
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 
-#include "examples/softBodies/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {

@@ -36,7 +36,7 @@
  */
 
 #include <iostream>
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 #include "MyWindow.hpp"
 
 #include <fcl/config.h>

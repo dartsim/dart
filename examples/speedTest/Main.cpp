@@ -32,7 +32,7 @@
 #include <chrono>
 #include <numeric>
 
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 #include "dart/utils/utils.hpp"
 
 double testForwardKinematicSpeed(dart::dynamics::SkeletonPtr skel,

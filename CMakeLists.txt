@@ -29,6 +29,11 @@ set(INCLUDE_INSTALL_DIR "include")
 set(LIBRARY_INSTALL_DIR "lib")
 set(CONFIG_INSTALL_DIR "share/${PROJECT_NAME}/cmake")
 
+if(WIN32)
+    set()
+else()
+endif()
+
 set(DART_DATA_INSTALL_REL_PATH "share/doc/${PROJECT_NAME}")
 
 set(CMAKE_DEBUG_POSTFIX "d")
@@ -46,6 +51,8 @@ initialize_component_helpers(${PROJECT_NAME})
 if(WIN32)
   set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix" FORCE)
 endif()
+
+message(STATUS "CMAKE_INSTALL_DOCDIR: ${CMAKE_INSTALL_DOCDIR}")
 
 #===============================================================================
 # Project settings
