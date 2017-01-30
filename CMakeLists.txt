@@ -29,6 +29,8 @@ set(INCLUDE_INSTALL_DIR "include")
 set(LIBRARY_INSTALL_DIR "lib")
 set(CONFIG_INSTALL_DIR "share/${PROJECT_NAME}/cmake")
 
+set(DART_DATA_INSTALL_REL_PATH "share/doc/${PROJECT_NAME}")
+
 set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -377,6 +379,13 @@ install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 
 # Install a Catkin 'package.xml' file. This is required by REP-136.
 install(FILES package.xml DESTINATION share/${PROJECT_NAME})
+
+#===============================================================================
+# Install Misc.
+#===============================================================================
+
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data"
+  DESTINATION ${DART_DATA_INSTALL_REL_PATH})
 
 #===============================================================================
 # Uninstall
