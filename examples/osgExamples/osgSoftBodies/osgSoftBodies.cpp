@@ -212,7 +212,7 @@ int main()
   using namespace dart::dynamics;
 
   dart::simulation::WorldPtr world =
-      dart::utils::SkelParser::readWorld(DART_DATA_PATH"skel/softBodies.skel");
+      dart::utils::SkelParser::readWorld("file://sample/skel/softBodies.skel");
 
   osg::ref_ptr<RecordingWorld> node = new RecordingWorld(world);
 

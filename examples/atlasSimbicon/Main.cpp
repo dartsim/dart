@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
   SkeletonPtr ground = urdfLoader.parseSkeleton(
         "file://sample/sdf/atlas/ground.urdf");
   SkeletonPtr atlas = SdfParser::readSkeleton(
-        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
+        "file://sample/sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
   myWorld->addSkeleton(atlas);
   myWorld->addSkeleton(ground);
 

@@ -46,35 +46,35 @@ using namespace math;
 using namespace dynamics;
 using namespace simulation;
 
-std::vector<std::string> getFileList()
+std::vector<common::Uri> getFileList()
 {
-  std::vector<std::string> fileList;
-  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  std::vector<common::Uri> fileList;
+  fileList.push_back("file://sample/skel/test/chainwhipa.skel");
+  fileList.push_back("file://sample/skel/test/single_pendulum.skel");
+  fileList.push_back("file://sample/skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back("file://sample/skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back("file://sample/skel/test/double_pendulum.skel");
+  fileList.push_back("file://sample/skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back("file://sample/skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back("file://sample/skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back("file://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back("file://sample/skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back("file://sample/skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back("file://sample/skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back("file://sample/skel/test/simple_tree_structure.skel");
+  fileList.push_back("file://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back("file://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back("file://sample/skel/test/tree_structure.skel");
+  fileList.push_back("file://sample/skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back("file://sample/skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back("file://sample/skel/fullbody1.skel");
 
   return fileList;
 }
 
 std::vector<SkeletonPtr> getSkeletons()
 {
-  std::vector<std::string> fileList = getFileList();
+  const auto fileList = getFileList();
 
   std::vector<WorldPtr> worlds;
   for(std::size_t i=0; i<fileList.size(); ++i)

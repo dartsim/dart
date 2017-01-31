@@ -299,7 +299,7 @@ protected:
 SkeletonPtr loadBiped()
 {
   // Create the world with a skeleton
-  WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/biped.skel");
+  WorldPtr world = SkelParser::readWorld("file://sample/skel/biped.skel");
   assert(world != nullptr);
 
   SkeletonPtr biped = world->getSkeleton("biped");
@@ -337,7 +337,7 @@ void setInitialPose(SkeletonPtr biped)
 void modifyBipedWithSkateboard(SkeletonPtr biped)
 {
   // Load the Skeleton from a file
-  WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/skateboard.skel");
+  WorldPtr world = SkelParser::readWorld("file://sample/skel/skateboard.skel");
 
   SkeletonPtr skateboard = world->getSkeleton(0);
   

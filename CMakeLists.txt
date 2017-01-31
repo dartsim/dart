@@ -29,12 +29,9 @@ set(INCLUDE_INSTALL_DIR "include")
 set(LIBRARY_INSTALL_DIR "lib")
 set(CONFIG_INSTALL_DIR "share/${PROJECT_NAME}/cmake")
 
-if(WIN32)
-    set()
-else()
-endif()
-
-set(DART_DATA_INSTALL_REL_PATH "share/doc/${PROJECT_NAME}")
+# Set relative location to install additional documentation (sample data,
+# examples, and tutorials)
+set(DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH "share/doc/${PROJECT_NAME}")
 
 set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -51,8 +48,6 @@ initialize_component_helpers(${PROJECT_NAME})
 if(WIN32)
   set(CMAKE_INSTALL_PREFIX "C:/Golems" CACHE PATH "Install prefix" FORCE)
 endif()
-
-message(STATUS "CMAKE_INSTALL_DOCDIR: ${CMAKE_INSTALL_DOCDIR}")
 
 #===============================================================================
 # Project settings
@@ -388,11 +383,20 @@ install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 install(FILES package.xml DESTINATION share/${PROJECT_NAME})
 
 #===============================================================================
-# Install Misc.
+# Install sample data, examples, and tutorials
 #===============================================================================
 
+# Sample data
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data"
-  DESTINATION ${DART_DATA_INSTALL_REL_PATH})
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH})
+
+# Examples source
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/examples"
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH})
+
+# Tutorials source
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tutorials"
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH})
 
 #===============================================================================
 # Uninstall

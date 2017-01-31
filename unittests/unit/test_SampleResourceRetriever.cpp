@@ -35,12 +35,21 @@
 using namespace dart;
 
 //==============================================================================
-TEST(SampleResourceRetriever, SkelFileExists)
+TEST(SampleResourceRetriever, ExistsAndRetrieve)
 {
   auto retriever = utils::SampleResourceRetriever::create();
+
+  EXPECT_FALSE(retriever->exists("unknown://test"));
+  EXPECT_FALSE(retriever->exists("unknown://sample/test"));
+  EXPECT_FALSE(retriever->exists("file://unknown/test"));
+  EXPECT_FALSE(retriever->exists("file://sample/does/not/exist"));
   EXPECT_TRUE(retriever->exists("file://sample/skel/shapes.skel"));
-  auto sampleData = retriever->retrieve("file://sample/skel/shapes.skel");
-  EXPECT_TRUE(sampleData != nullptr);
+
+  EXPECT_EQ(nullptr, retriever->retrieve("unknown://test"));
+  EXPECT_EQ(nullptr, retriever->retrieve("unknown://sample/test"));
+  EXPECT_EQ(nullptr, retriever->retrieve("file://unknown/test"));
+  EXPECT_EQ(nullptr, retriever->retrieve("file://sample/does/not/exist"));
+  EXPECT_NE(nullptr, retriever->retrieve("file://sample/skel/shapes.skel"));
 }
 
 //==============================================================================

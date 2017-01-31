@@ -151,7 +151,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
   }
 
   std::shared_ptr<urdf_parsing::World> worldInterface =
-      urdf_parsing::parseWorldURDF(_urdfString, _baseUri);
+      urdf_parsing::parseWorldURDF(_urdfString, _baseUri, resourceRetriever);
 
   if(!worldInterface)
   {
