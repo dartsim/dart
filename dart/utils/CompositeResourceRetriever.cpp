@@ -88,6 +88,9 @@ common::ResourcePtr CompositeResourceRetriever::retrieve(
     = getRetrievers(_uri);
   for(const common::ResourceRetrieverPtr& resourceRetriever : retrievers)
   {
+    if(!resourceRetriever->exists(_uri))
+      continue;
+
     if(common::ResourcePtr resource = resourceRetriever->retrieve(_uri))
       return resource;
   }

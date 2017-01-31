@@ -74,7 +74,6 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/Marker.hpp"
 #include "dart/utils/XmlHelpers.hpp"
-#include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/SampleResourceRetriever.hpp"
 
 namespace dart {
@@ -2408,19 +2407,9 @@ common::ResourceRetrieverPtr getRetriever(
   const common::ResourceRetrieverPtr& _retriever)
 {
   if(_retriever)
-  {
     return _retriever;
-  }
   else
-  {
-    auto newRetriever = std::make_shared<utils::CompositeResourceRetriever>();
-    newRetriever->addSchemaRetriever(
-          "file", std::make_shared<common::LocalResourceRetriever>());
-    newRetriever->addSchemaRetriever(
-          "file", SampleResourceRetriever::create());
-
-    return newRetriever;
-  }
+    return SampleResourceRetriever::create();
 }
 
 } // anonymous namespace

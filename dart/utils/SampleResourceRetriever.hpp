@@ -86,8 +86,7 @@ private:
 
   void addDataDirectory(const std::string& packageDirectory);
 
-  bool resolveDataUri(const common::Uri& uri,
-    std::string& relativePath) const;
+  bool resolveDataUri(const common::Uri& uri, std::string& relativePath) const;
 
 private:
   common::ResourceRetrieverPtr mLocalRetriever;

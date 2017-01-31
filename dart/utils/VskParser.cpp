@@ -42,7 +42,6 @@
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/dynamics/dynamics.hpp"
-#include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/SampleResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 
@@ -1024,19 +1023,9 @@ common::ResourceRetrieverPtr getRetriever(
   const common::ResourceRetrieverPtr& retriever)
 {
   if(retriever)
-  {
     return retriever;
-  }
   else
-  {
-    auto newRetriever = std::make_shared<utils::CompositeResourceRetriever>();
-    newRetriever->addSchemaRetriever(
-          "file", std::make_shared<common::LocalResourceRetriever>());
-    newRetriever->addSchemaRetriever(
-          "file", SampleResourceRetriever::create());
-
-    return newRetriever;
-  }
+    return SampleResourceRetriever::create();
 }
 
 } // anonymous namespace

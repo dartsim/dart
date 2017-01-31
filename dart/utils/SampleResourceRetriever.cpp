@@ -54,14 +54,23 @@ bool SampleResourceRetriever::exists(const common::Uri& uri)
   if (!resolveDataUri(uri, relativePath))
     return false;
 
-  for (const auto& dataPath : mDataDirectories)
+  if (uri.mAuthority.get() == "sample")
   {
-    common::Uri fileUri;
-    fileUri.fromPath(dataPath + relativePath);
+    for (const auto& dataPath : mDataDirectories)
+    {
+      common::Uri fileUri;
+      fileUri.fromPath(dataPath + relativePath);
 
-    if (mLocalRetriever->exists(fileUri))
+      if (mLocalRetriever->exists(fileUri))
+        return true;
+    }
+  }
+  else
+  {
+    if (mLocalRetriever->exists(uri))
       return true;
   }
+
   return false;
 }
 
@@ -72,14 +81,29 @@ common::ResourcePtr SampleResourceRetriever::retrieve(const common::Uri& uri)
   if (!resolveDataUri(uri, relativePath))
     return nullptr;
 
-  for (const auto& dataPath : mDataDirectories)
+  if (uri.mAuthority.get() == "sample")
   {
-    common::Uri fileUri;
-    fileUri.fromPath(dataPath + relativePath);
+    for (const auto& dataPath : mDataDirectories)
+    {
+      common::Uri fileUri;
+      fileUri.fromPath(dataPath + relativePath);
 
-    if (const auto resource = mLocalRetriever->retrieve(fileUri))
+      if(!mLocalRetriever->exists(fileUri))
+        continue;
+
+      if (const auto resource = mLocalRetriever->retrieve(fileUri))
+        return resource;
+    }
+  }
+  else
+  {
+    if(!mLocalRetriever->exists(uri))
+      return nullptr;
+
+    if (const auto resource = mLocalRetriever->retrieve(uri))
       return resource;
   }
+
   return nullptr;
 }
 
@@ -109,13 +133,6 @@ bool SampleResourceRetriever::resolveDataUri(
 {
   if (uri.mScheme.get_value_or("file") != "file")
     return false;
-
-  if (uri.mAuthority.get() != "sample")
-  {
-    dtwarn << "[SampleResourceRetriever::resolveDataUri] Invalid URI: The "
-           << "authority of '" << uri.toString() << "' should be 'example'.\n";
-    return false;
-  }
 
   if (!uri.mPath)
   {

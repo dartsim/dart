@@ -68,6 +68,8 @@ namespace gui {
 
 SimWindow::SimWindow()
   : Win3D() {
+  mWorld = std::make_shared<simulation::World>();
+
   mBackground[0] = 1.0;
   mBackground[1] = 1.0;
   mBackground[2] = 1.0;
