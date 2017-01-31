@@ -88,18 +88,12 @@ common::ResourcePtr SampleResourceRetriever::retrieve(const common::Uri& uri)
       common::Uri fileUri;
       fileUri.fromPath(dataPath + relativePath);
 
-      if(!mLocalRetriever->exists(fileUri))
-        continue;
-
       if (const auto resource = mLocalRetriever->retrieve(fileUri))
         return resource;
     }
   }
   else
   {
-    if(!mLocalRetriever->exists(uri))
-      return nullptr;
-
     if (const auto resource = mLocalRetriever->retrieve(uri))
       return resource;
   }
