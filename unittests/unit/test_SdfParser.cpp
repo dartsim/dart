@@ -98,7 +98,7 @@ TEST(SdfParser, ParsingSDFFiles)
 
   // Create another list of sdf files to test with where the sdf files contains
   // Skeleton
-  std::vector<std::string> skeletonFiles;
+  std::vector<common::Uri> skeletonFiles;
   skeletonFiles.push_back("sample://data/sdf/atlas/atlas_v3_no_head.sdf");
   skeletonFiles.push_back("sample://data/sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
 

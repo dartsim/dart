@@ -38,7 +38,7 @@
 namespace dart {
 namespace utils {
 
-/// Retrieve resources from sample data URI.
+/// Retrieve local resources from sample data URI.
 ///
 /// SampleResourceRetriever searches files in the following order:
 /// 1) DART_DATA_LOCAL_PATH: path to the data directory in source

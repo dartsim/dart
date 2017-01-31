@@ -44,15 +44,15 @@ namespace SdfParser {
 
 DART_DEPRECATED(6.0)
 simulation::WorldPtr readSdfFile(
-    const common::Uri& fileUri,
+    const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
 simulation::WorldPtr readWorld(
-    const common::Uri& fileUri,
+    const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
 dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& fileUri,
+    const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
 } // namespace SdfParser
