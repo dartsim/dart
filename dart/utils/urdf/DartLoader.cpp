@@ -68,7 +68,7 @@ DartLoader::DartLoader()
 {
   mRetriever->addSchemaRetriever("file", mLocalRetriever);
   mRetriever->addSchemaRetriever("package", mPackageRetriever);
-  mRetriever->addSchemaRetriever("sample", SampleResourceRetriever::create());
+  mRetriever->addSchemaRetriever("file", SampleResourceRetriever::create());
 }
 
 void DartLoader::addPackageDirectory(const std::string& _packageName,

@@ -38,23 +38,28 @@
 namespace dart {
 namespace utils {
 
-/// Retrieve local resources from sample data URI.
+///
+/// Retrieve local resources from sample data files given file URI. The scheme
+/// and authority should be "file" and "sample", respectively.
+///
+/// Example of a sample data URI:
+/// @code
+/// "file://sample/skel/shapes.skel"
+///                \______________/
+///                       |
+///            file path with respect to
+///            the sample data directory
+/// @endcode
 ///
 /// SampleResourceRetriever searches files in the following order:
 /// 1) DART_DATA_LOCAL_PATH: path to the data directory in source
 ///    (e.g., [DART_SRC_ROOT]/data/).
 /// 2) DART_DATA_GLOBAL_PATH: path to the data directory installed at a system
-///    directory. The location can be varied depending on OS
-///    (e.g., Linux: /usr/local/share/doc/dart/data/).
+///    directory. The location can be varied depending on OS.
+///    (e.g., Linux: /usr/local/share/doc/dart/data/)
+/// where DART_DATA_LOCAL_PATH and DART_DATA_GLOBAL_PATH are defined in
+/// config.hpp that are determined in CMake time.
 ///
-/// Example of a sample data URI:
-/// @code
-/// "sample://data/skel/shapes.skel"
-///                 \______________/
-///                        |
-///             file path with respect to
-///                the data directory
-/// @endcode
 class SampleResourceRetriever : public common::ResourceRetriever
 {
 public:

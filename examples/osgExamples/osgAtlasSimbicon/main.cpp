@@ -44,9 +44,9 @@ int main()
 
   // Load ground and Atlas robot and add them to the world
   dart::utils::DartLoader urdfLoader;
-  auto ground = urdfLoader.parseSkeleton("sample://data/sdf/atlas/ground.urdf");
+  auto ground = urdfLoader.parseSkeleton("file://sample/sdf/atlas/ground.urdf");
   auto atlas = dart::utils::SdfParser::readSkeleton(
-        "sample://data/sdf/atlas/atlas_v3_no_head.sdf");
+        "file://sample/sdf/atlas/atlas_v3_no_head.sdf");
   world->addSkeleton(ground);
   world->addSkeleton(atlas);
 

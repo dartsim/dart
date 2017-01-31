@@ -511,7 +511,7 @@ SkeletonPtr createAtlas()
   // Parse in the atlas model
   DartLoader urdf;
   SkeletonPtr atlas =
-      urdf.parseSkeleton("sample://data/sdf/atlas/atlas_v3_no_head.urdf");
+      urdf.parseSkeleton("file://sample/sdf/atlas/atlas_v3_no_head.urdf");
 
   // Add a box to the root node to make it easier to click and drag
   double scale = 0.25;

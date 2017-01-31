@@ -38,8 +38,8 @@ using namespace dart;
 TEST(SampleResourceRetriever, SkelFileExists)
 {
   auto retriever = utils::SampleResourceRetriever::create();
-  EXPECT_TRUE(retriever->exists("sample://data/skel/shapes.skel"));
-  auto sampleData = retriever->retrieve("sample://data/skel/shapes.skel");
+  EXPECT_TRUE(retriever->exists("file://sample/skel/shapes.skel"));
+  auto sampleData = retriever->retrieve("file://sample/skel/shapes.skel");
   EXPECT_TRUE(sampleData != nullptr);
 }
 

@@ -1499,7 +1499,7 @@ common::ResourceRetrieverPtr getRetriever(
     newRetriever->addSchemaRetriever(
           "file", std::make_shared<common::LocalResourceRetriever>());
     newRetriever->addSchemaRetriever(
-          "sample", SampleResourceRetriever::create());
+          "file", SampleResourceRetriever::create());
 
     return newRetriever;
   }

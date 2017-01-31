@@ -107,10 +107,10 @@ bool SampleResourceRetriever::resolveDataUri(
   const common::Uri& uri,
   std::string& relativePath) const
 {
-  if (uri.mScheme.get_value_or("sample") != "sample")
+  if (uri.mScheme.get_value_or("file") != "file")
     return false;
 
-  if (!uri.mAuthority)
+  if (uri.mAuthority.get() != "sample")
   {
     dtwarn << "[SampleResourceRetriever::resolveDataUri] Invalid URI: The "
            << "authority of '" << uri.toString() << "' should be 'example'.\n";

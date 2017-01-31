@@ -301,7 +301,7 @@ TEST(SkelParser, PlanarJoint)
 TEST(SKEL_PARSER, JointActuatorType)
 {
   WorldPtr world = SkelParser::readWorld(
-      "sample://data/skel/test/joint_actuator_type_test.skel");
+      "file://sample/skel/test/joint_actuator_type_test.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
@@ -334,7 +334,7 @@ TEST(SKEL_PARSER, JointActuatorType)
 TEST(SkelParser, DofAttributes)
 {
   WorldPtr world = SkelParser::readWorld(
-      "sample://data/skel/test/dof_attribute_test.skel");
+      "file://sample/skel/test/dof_attribute_test.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
@@ -412,7 +412,7 @@ TEST(SkelParser, JointDynamicsElements)
 {
   WorldPtr world
       = SkelParser::readWorld(
-        "sample://data/skel/test/joint_dynamics_elements_test.skel");
+        "file://sample/skel/test/joint_dynamics_elements_test.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
