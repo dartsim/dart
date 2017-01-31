@@ -392,11 +392,14 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data"
 
 # Examples source
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/examples"
-  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH})
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH}
+  PATTERN "examples/CMakeLists.txt" EXCLUDE
+  PATTERN "examples/osgExamples/CMakeLists.txt" EXCLUDE)
 
 # Tutorials source
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tutorials"
-  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH})
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH}
+  PATTERN "tutorials/CMakeLists.txt" EXCLUDE)
 
 #===============================================================================
 # Uninstall
