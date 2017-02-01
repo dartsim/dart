@@ -75,10 +75,10 @@ using BodyPropPtr = std::shared_ptr<dynamics::BodyNode::Properties>;
 
 struct SDFBodyNode
 {
-    BodyPropPtr properties;
-    Eigen::Isometry3d initTransform;
-    std::string type;
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  BodyPropPtr properties;
+  Eigen::Isometry3d initTransform;
+  std::string type;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 using JointPropPtr = std::shared_ptr<dynamics::Joint::Properties>;
@@ -97,21 +97,25 @@ using BodyMap = Eigen::aligned_map<std::string, SDFBodyNode>;
 // Maps a child BodyNode to the properties of its parent Joint
 using JointMap = std::map<std::string, SDFJoint>;
 
-simulation::WorldPtr readWorld(tinyxml2::XMLElement* worldElement,
+simulation::WorldPtr readWorld(
+    tinyxml2::XMLElement* worldElement,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
-void readPhysics(tinyxml2::XMLElement* physicsElement,
-                 simulation::WorldPtr world);
+void readPhysics(
+    tinyxml2::XMLElement* physicsElement,
+    simulation::WorldPtr world);
 
-dynamics::SkeletonPtr readSkeleton(tinyxml2::XMLElement* skeletonElement,
+dynamics::SkeletonPtr readSkeleton(
+    tinyxml2::XMLElement* skeletonElement,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
-bool createPair(dynamics::SkeletonPtr skeleton,
-                dynamics::BodyNode* parent,
-                const SDFJoint& newJoint,
-                const SDFBodyNode& newBody);
+bool createPair(
+    dynamics::SkeletonPtr skeleton,
+    dynamics::BodyNode* parent,
+    const SDFJoint& newJoint,
+    const SDFBodyNode& newBody);
 
 enum NextResult
 {
@@ -156,8 +160,8 @@ dynamics::SoftBodyNode::UniqueProperties readSoftBodyProperties(
     tinyxml2::XMLElement* softBodyNodeElement);
 
 dynamics::ShapePtr readShape(tinyxml2::XMLElement* shapelement,
-        const common::Uri& baseUri,
-        const common::ResourceRetrieverPtr& retriever);
+    const common::Uri& baseUri,
+    const common::ResourceRetrieverPtr& retriever);
 
 dynamics::ShapeNode* readShapeNode(
     dynamics::BodyNode* bodyNode,
@@ -171,17 +175,20 @@ void readMaterial(
     tinyxml2::XMLElement* materialEle,
     dynamics::ShapeNode* shapeNode);
 
-void readVisualizationShapeNode(dynamics::BodyNode* bodyNode,
+void readVisualizationShapeNode(
+    dynamics::BodyNode* bodyNode,
     tinyxml2::XMLElement* vizShapeNodeEle,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
-void readCollisionShapeNode(dynamics::BodyNode* bodyNode,
+void readCollisionShapeNode(
+    dynamics::BodyNode* bodyNode,
     tinyxml2::XMLElement* collShapeNodeEle,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
 
-void readAspects(const dynamics::SkeletonPtr& skeleton,
+void readAspects(
+    const dynamics::SkeletonPtr& skeleton,
     tinyxml2::XMLElement* skeletonElement,
     const common::Uri& baseUri,
     const common::ResourceRetrieverPtr& retriever);
@@ -191,7 +198,8 @@ JointMap readAllJoints(
     const Eigen::Isometry3d& skeletonFrame,
     const BodyMap& sdfBodyNodes);
 
-SDFJoint readJoint(tinyxml2::XMLElement* jointElement,
+SDFJoint readJoint(
+    tinyxml2::XMLElement* jointElement,
     const BodyMap& bodies,
     const Eigen::Isometry3d& skeletonFrame);
 
@@ -211,12 +219,12 @@ dynamics::PrismaticJoint::Properties readPrismaticJoint(
     const std::string& name);
 
 dynamics::ScrewJoint::Properties readScrewJoint(
-        tinyxml2::XMLElement* jointElement,
+    tinyxml2::XMLElement* jointElement,
     const Eigen::Isometry3d& parentModelFrame,
     const std::string& name);
 
 dynamics::UniversalJoint::Properties readUniversalJoint(
-        tinyxml2::XMLElement* jointElement,
+    tinyxml2::XMLElement* jointElement,
     const Eigen::Isometry3d& parentModelFrame,
     const std::string& name);
 
