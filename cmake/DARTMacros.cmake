@@ -27,6 +27,22 @@ macro(dart_get_filename_components _var _cacheDesc)
 endmacro()
 
 #===============================================================================
+# Generate directory list of ${curdir}
+# Usage:
+#   dart_get_subdir_list(var curdir)
+#===============================================================================
+macro(dart_get_subdir_list var curdir)
+    file(GLOB children RELATIVE ${curdir} "${curdir}/*")
+    set(dirlist "")
+    foreach(child ${children})
+        if(IS_DIRECTORY ${curdir}/${child})
+            LIST(APPEND dirlist ${child})
+        endif()
+    endforeach()
+    set(${var} ${dirlist})
+endmacro()
+
+#===============================================================================
 # Generate header file list to a cached list.
 # Usage:
 #   dart_generate_include_header_list(_var _target_dir _cacheDesc [headers...])

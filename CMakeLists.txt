@@ -296,9 +296,18 @@ if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
       message(STATUS "Adding ${examples_length} examples")
     endif(DART_VERBOSE)
 
-    # Add a "tutorials" target to build tutorials.
-    add_subdirectory(tutorials EXCLUDE_FROM_ALL)
+    # Add tutorial targets
+    dart_get_subdir_list(tutorial_subdirs ${CMAKE_CURRENT_LIST_DIR}/tutorials)
+    foreach(child ${tutorial_subdirs})
+      if(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/tutorials/${child}")
+        file(GLOB srcs "${CMAKE_CURRENT_LIST_DIR}/tutorials/${child}/*.cpp")
+        add_executable(${child} EXCLUDE_FROM_ALL ${srcs})
+        target_link_libraries(${child} dart dart-utils-urdf dart-gui)
+        dart_add_tutorial(${child})
+      endif()
+    endforeach()
 
+    # Add a "tutorials" target to build tutorials.
     get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
     add_custom_target(tutorials DEPENDS ${tutorials})
 

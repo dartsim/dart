@@ -1,21 +1,12 @@
-# A list of tutorials
-set_property(DIRECTORY PROPERTY FOLDER Tutorials)
+cmake_minimum_required(VERSION 2.8.12)
 
-# Automatically identify all directories in the tutorials folder
-file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*")
-set(directories "")
-foreach(child ${children})
-  if(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")
+project(dart-tutorials)
 
-      file(GLOB srcs "${CMAKE_CURRENT_LIST_DIR}/${child}/*.cpp")
-
-      if(srcs)
-        add_executable(${child} ${srcs})
-        target_link_libraries(${child} dart dart-utils-urdf dart-gui)
-        dart_add_tutorial(${child})
-      else()
-        add_subdirectory(${child})
-      endif()
-
-  endif()
-endforeach()
+add_subdirectory(tutorialBiped)
+add_subdirectory(tutorialBiped-Finished)
+add_subdirectory(tutorialCollisions)
+add_subdirectory(tutorialCollisions-Finished)
+add_subdirectory(tutorialDominoes)
+add_subdirectory(tutorialDominoes-Finished)
+add_subdirectory(tutorialMultiPendulum)
+add_subdirectory(tutorialMultiPendulum-Finished)
