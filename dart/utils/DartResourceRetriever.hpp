@@ -28,8 +28,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_SAMPLERESOURCERETRIEVER_HPP_
-#define DART_UTILS_SAMPLERESOURCERETRIEVER_HPP_
+#ifndef DART_UTILS_DARTRESOURCERETRIEVER_HPP_
+#define DART_UTILS_DARTRESOURCERETRIEVER_HPP_
 
 #include <unordered_map>
 #include <vector>
@@ -44,14 +44,14 @@ namespace utils {
 ///
 /// Example of a sample data URI:
 /// @code
-/// "file://sample/skel/shapes.skel"
+/// "dart://sample/skel/shapes.skel"
 ///                \______________/
 ///                       |
 ///            file path with respect to
 ///            the sample data directory
 /// @endcode
 ///
-/// SampleResourceRetriever searches files in the following order:
+/// DartResourceRetriever searches files in the following order:
 /// 1) DART_DATA_LOCAL_PATH: path to the data directory in source
 ///    (e.g., [DART_SRC_ROOT]/data/).
 /// 2) DART_DATA_GLOBAL_PATH: path to the data directory installed at a system
@@ -60,21 +60,21 @@ namespace utils {
 /// where DART_DATA_LOCAL_PATH and DART_DATA_GLOBAL_PATH are defined in
 /// config.hpp that are determined in CMake time.
 ///
-class SampleResourceRetriever : public common::ResourceRetriever
+class DartResourceRetriever : public common::ResourceRetriever
 {
 public:
   template <typename... Args>
-  static std::shared_ptr<SampleResourceRetriever> create(Args&&... args)
+  static std::shared_ptr<DartResourceRetriever> create(Args&&... args)
   {
-    return std::make_shared<SampleResourceRetriever>(
+    return std::make_shared<DartResourceRetriever>(
           std::forward<Args>(args)...);
   }
 
   /// Constructor.
-  SampleResourceRetriever();
+  DartResourceRetriever();
 
   /// Destructor.
-  virtual ~SampleResourceRetriever() = default;
+  virtual ~DartResourceRetriever() = default;
 
   // Documentation inherited.
   bool exists(const common::Uri& uri) override;
@@ -94,9 +94,9 @@ private:
   std::vector<std::string> mDataDirectories;
 };
 
-using SampleResourceRetrieverPtr = std::shared_ptr<SampleResourceRetriever>;
+using DartResourceRetrieverPtr = std::shared_ptr<DartResourceRetriever>;
 
 } // namespace utils
 } // namespace dart
 
-#endif // ifndef DART_UTILS_SAMPLERESOURCERETRIEVER_HPP_
+#endif // ifndef DART_UTILS_DARTRESOURCERETRIEVER_HPP_

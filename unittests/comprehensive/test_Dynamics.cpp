@@ -120,25 +120,25 @@ protected:
 void DynamicsTest::SetUp()
 {
   // Create a list of skel files to test with
-  fileList.push_back("file://sample/skel/test/chainwhipa.skel");
-  fileList.push_back("file://sample/skel/test/single_pendulum.skel");
-  fileList.push_back("file://sample/skel/test/single_pendulum_euler_joint.skel");
-  fileList.push_back("file://sample/skel/test/single_pendulum_ball_joint.skel");
-  fileList.push_back("file://sample/skel/test/double_pendulum.skel");
-  fileList.push_back("file://sample/skel/test/double_pendulum_euler_joint.skel");
-  fileList.push_back("file://sample/skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back("file://sample/skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back("file://sample/skel/test/serial_chain_eulerxyz_joint.skel");
-  fileList.push_back("file://sample/skel/test/serial_chain_ball_joint.skel");
-  fileList.push_back("file://sample/skel/test/serial_chain_ball_joint_20.skel");
-  fileList.push_back("file://sample/skel/test/serial_chain_ball_joint_40.skel");
-  fileList.push_back("file://sample/skel/test/simple_tree_structure.skel");
-  fileList.push_back("file://sample/skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back("file://sample/skel/test/simple_tree_structure_ball_joint.skel");
-  fileList.push_back("file://sample/skel/test/tree_structure.skel");
-  fileList.push_back("file://sample/skel/test/tree_structure_euler_joint.skel");
-  fileList.push_back("file://sample/skel/test/tree_structure_ball_joint.skel");
-  fileList.push_back("file://sample/skel/fullbody1.skel");
+  fileList.push_back("dart://sample/skel/test/chainwhipa.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/fullbody1.skel");
 
   // Create a list of reference frames to use during tests
   refFrames.push_back(new SimpleFrame(Frame::World(), "refFrame1"));
@@ -1954,12 +1954,12 @@ TEST_F(DynamicsTest, compareEquationsOfMotion)
     // TODO(JS): Following skel files, which contain euler joints couldn't
     //           pass EQUATIONS_OF_MOTION, are disabled.
     const auto uri = getList()[i];
-    if (uri.toString() == "file://sample/skel/test/double_pendulum_euler_joint.skel"
-        || uri.toString() == "file://sample/skel/test/chainwhipa.skel"
-        || uri.toString() == "file://sample/skel/test/serial_chain_eulerxyz_joint.skel"
-        || uri.toString() == "file://sample/skel/test/simple_tree_structure_euler_joint.skel"
-        || uri.toString() == "file://sample/skel/test/tree_structure_euler_joint.skel"
-        || uri.toString() == "file://sample/skel/fullbody1.skel")
+    if (uri.toString() == "dart://sample/skel/test/double_pendulum_euler_joint.skel"
+        || uri.toString() == "dart://sample/skel/test/chainwhipa.skel"
+        || uri.toString() == "dart://sample/skel/test/serial_chain_eulerxyz_joint.skel"
+        || uri.toString() == "dart://sample/skel/test/simple_tree_structure_euler_joint.skel"
+        || uri.toString() == "dart://sample/skel/test/tree_structure_euler_joint.skel"
+        || uri.toString() == "dart://sample/skel/fullbody1.skel")
     {
         continue;
     }
@@ -2033,7 +2033,7 @@ TEST_F(DynamicsTest, HybridDynamics)
 
   // Load world and skeleton
   WorldPtr world = utils::SkelParser::readWorld(
-      "file://sample/skel/test/hybrid_dynamics_test.skel");
+      "dart://sample/skel/test/hybrid_dynamics_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);

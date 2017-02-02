@@ -467,7 +467,7 @@ SkeletonPtr createManipulator()
   // Load the Skeleton from a file
   dart::utils::DartLoader loader;
   SkeletonPtr manipulator =
-      loader.parseSkeleton("file://sample/urdf/KR5/KR5 sixx R650.urdf");
+      loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   manipulator->setName("manipulator");
 
   // Position its base in a reasonable way

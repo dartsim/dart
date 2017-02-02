@@ -24,8 +24,8 @@ if(TARGET dart-utils)
   dart_add_test("unit" test_CompositeResourceRetriever)
   target_link_libraries(test_CompositeResourceRetriever dart-utils)
 
-  dart_add_test("unit" test_SampleResourceRetriever)
-  target_link_libraries(test_SampleResourceRetriever dart-utils)
+  dart_add_test("unit" test_DartResourceRetriever)
+  target_link_libraries(test_DartResourceRetriever dart-utils)
 
   dart_add_test("unit" test_FileInfoWorld)
   target_link_libraries(test_FileInfoWorld dart-utils)

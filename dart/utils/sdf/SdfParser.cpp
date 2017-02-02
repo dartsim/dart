@@ -62,7 +62,8 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
 #include "dart/utils/XmlHelpers.hpp"
-#include "dart/utils/SampleResourceRetriever.hpp"
+#include "dart/utils/CompositeResourceRetriever.hpp"
+#include "dart/utils/DartResourceRetriever.hpp"
 
 namespace dart {
 namespace utils {
@@ -1496,10 +1497,20 @@ dynamics::BallJoint::Properties readBallJoint(
 common::ResourceRetrieverPtr getRetriever(
   const common::ResourceRetrieverPtr& retriever)
 {
-  if(retriever)
+  if (retriever)
+  {
     return retriever;
+  }
   else
-    return SampleResourceRetriever::create();
+  {
+    auto newRetriever = std::make_shared<utils::CompositeResourceRetriever>();
+    newRetriever->addSchemaRetriever(
+          "file", std::make_shared<common::LocalResourceRetriever>());
+    newRetriever->addSchemaRetriever(
+          "dart", DartResourceRetriever::create());
+
+    return DartResourceRetriever::create();
+  }
 }
 
 } // anonymous namespace

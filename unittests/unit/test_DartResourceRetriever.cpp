@@ -30,26 +30,26 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "dart/utils/SampleResourceRetriever.hpp"
+#include "dart/utils/DartResourceRetriever.hpp"
 
 using namespace dart;
 
 //==============================================================================
-TEST(SampleResourceRetriever, ExistsAndRetrieve)
+TEST(DartResourceRetriever, ExistsAndRetrieve)
 {
-  auto retriever = utils::SampleResourceRetriever::create();
+  auto retriever = utils::DartResourceRetriever::create();
 
   EXPECT_FALSE(retriever->exists("unknown://test"));
   EXPECT_FALSE(retriever->exists("unknown://sample/test"));
-  EXPECT_FALSE(retriever->exists("file://unknown/test"));
-  EXPECT_FALSE(retriever->exists("file://sample/does/not/exist"));
-  EXPECT_TRUE(retriever->exists("file://sample/skel/shapes.skel"));
+  EXPECT_FALSE(retriever->exists("dart://unknown/test"));
+  EXPECT_FALSE(retriever->exists("dart://sample/does/not/exist"));
+  EXPECT_TRUE(retriever->exists("dart://sample/skel/shapes.skel"));
 
   EXPECT_EQ(nullptr, retriever->retrieve("unknown://test"));
   EXPECT_EQ(nullptr, retriever->retrieve("unknown://sample/test"));
-  EXPECT_EQ(nullptr, retriever->retrieve("file://unknown/test"));
-  EXPECT_EQ(nullptr, retriever->retrieve("file://sample/does/not/exist"));
-  EXPECT_NE(nullptr, retriever->retrieve("file://sample/skel/shapes.skel"));
+  EXPECT_EQ(nullptr, retriever->retrieve("dart://unknown/test"));
+  EXPECT_EQ(nullptr, retriever->retrieve("dart://sample/does/not/exist"));
+  EXPECT_NE(nullptr, retriever->retrieve("dart://sample/skel/shapes.skel"));
 }
 
 //==============================================================================

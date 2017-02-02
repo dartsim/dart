@@ -164,25 +164,25 @@ void print_results(const std::vector<double>& result)
 std::vector<std::string> getSceneFiles()
 {
   std::vector<std::string> scenes;
-  scenes.push_back("file://sample/skel/test/chainwhipa.skel");
-  scenes.push_back("file://sample/skel/test/single_pendulum.skel");
-  scenes.push_back("file://sample/skel/test/single_pendulum_euler_joint.skel");
-  scenes.push_back("file://sample/skel/test/single_pendulum_ball_joint.skel");
-  scenes.push_back("file://sample/skel/test/double_pendulum.skel");
-  scenes.push_back("file://sample/skel/test/double_pendulum_euler_joint.skel");
-  scenes.push_back("file://sample/skel/test/double_pendulum_ball_joint.skel");
-  scenes.push_back("file://sample/skel/test/serial_chain_revolute_joint.skel");
-  scenes.push_back("file://sample/skel/test/serial_chain_eulerxyz_joint.skel");
-  scenes.push_back("file://sample/skel/test/serial_chain_ball_joint.skel");
-  scenes.push_back("file://sample/skel/test/serial_chain_ball_joint_20.skel");
-  scenes.push_back("file://sample/skel/test/serial_chain_ball_joint_40.skel");
-  scenes.push_back("file://sample/skel/test/simple_tree_structure.skel");
-  scenes.push_back("file://sample/skel/test/simple_tree_structure_euler_joint.skel");
-  scenes.push_back("file://sample/skel/test/simple_tree_structure_ball_joint.skel");
-  scenes.push_back("file://sample/skel/test/tree_structure.skel");
-  scenes.push_back("file://sample/skel/test/tree_structure_euler_joint.skel");
-  scenes.push_back("file://sample/skel/test/tree_structure_ball_joint.skel");
-  scenes.push_back("file://sample/skel/fullbody1.skel");
+  scenes.push_back("dart://sample/skel/test/chainwhipa.skel");
+  scenes.push_back("dart://sample/skel/test/single_pendulum.skel");
+  scenes.push_back("dart://sample/skel/test/single_pendulum_euler_joint.skel");
+  scenes.push_back("dart://sample/skel/test/single_pendulum_ball_joint.skel");
+  scenes.push_back("dart://sample/skel/test/double_pendulum.skel");
+  scenes.push_back("dart://sample/skel/test/double_pendulum_euler_joint.skel");
+  scenes.push_back("dart://sample/skel/test/double_pendulum_ball_joint.skel");
+  scenes.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  scenes.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  scenes.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
+  scenes.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
+  scenes.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
+  scenes.push_back("dart://sample/skel/test/simple_tree_structure.skel");
+  scenes.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  scenes.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  scenes.push_back("dart://sample/skel/test/tree_structure.skel");
+  scenes.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
+  scenes.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
+  scenes.push_back("dart://sample/skel/fullbody1.skel");
 
   return scenes;
 }

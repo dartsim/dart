@@ -28,7 +28,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/SampleResourceRetriever.hpp"
+#include "dart/utils/DartResourceRetriever.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -40,7 +40,7 @@ namespace dart {
 namespace utils {
 
 //==============================================================================
-SampleResourceRetriever::SampleResourceRetriever()
+DartResourceRetriever::DartResourceRetriever()
   : mLocalRetriever(std::make_shared<common::LocalResourceRetriever>())
 {
   addDataDirectory(DART_DATA_LOCAL_PATH);
@@ -48,7 +48,7 @@ SampleResourceRetriever::SampleResourceRetriever()
 }
 
 //==============================================================================
-bool SampleResourceRetriever::exists(const common::Uri& uri)
+bool DartResourceRetriever::exists(const common::Uri& uri)
 {
   std::string relativePath;
   if (!resolveDataUri(uri, relativePath))
@@ -75,7 +75,7 @@ bool SampleResourceRetriever::exists(const common::Uri& uri)
 }
 
 //==============================================================================
-common::ResourcePtr SampleResourceRetriever::retrieve(const common::Uri& uri)
+common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri)
 {
   std::string relativePath;
   if (!resolveDataUri(uri, relativePath))
@@ -102,7 +102,7 @@ common::ResourcePtr SampleResourceRetriever::retrieve(const common::Uri& uri)
 }
 
 //==============================================================================
-void SampleResourceRetriever::addDataDirectory(
+void DartResourceRetriever::addDataDirectory(
     const std::string& dataDirectory)
 {
   // Strip a trailing slash.
@@ -121,16 +121,16 @@ void SampleResourceRetriever::addDataDirectory(
 }
 
 //==============================================================================
-bool SampleResourceRetriever::resolveDataUri(
+bool DartResourceRetriever::resolveDataUri(
   const common::Uri& uri,
   std::string& relativePath) const
 {
-  if (uri.mScheme.get_value_or("file") != "file")
+  if (uri.mScheme.get_value_or("dart") != "dart")
     return false;
 
   if (!uri.mPath)
   {
-    dtwarn << "[SampleResourceRetriever::resolveDataUri] Failed extracting"
+    dtwarn << "[DartResourceRetriever::resolveDataUri] Failed extracting"
               " relative path from URI '" << uri.toString() << "'.\n";
     return false;
   }

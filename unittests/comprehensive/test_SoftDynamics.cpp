@@ -117,7 +117,7 @@ protected:
 //==============================================================================
 void SoftDynamicsTest::SetUp()
 {
-  list.push_back("file://sample/skel/test/test_drop_box.skel");
+  list.push_back("dart://sample/skel/test/test_drop_box.skel");
 }
 
 //==============================================================================

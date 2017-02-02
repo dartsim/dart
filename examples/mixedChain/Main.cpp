@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
-          "file://sample/skel/test/test_articulated_bodies_10bodies.skel");
+          "dart://sample/skel/test/test_articulated_bodies_10bodies.skel");
   assert(myWorld != nullptr);
 
   int dof = myWorld->getSkeleton(1)->getNumDofs();

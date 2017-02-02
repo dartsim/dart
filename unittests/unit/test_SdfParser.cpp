@@ -52,7 +52,7 @@ TEST(SdfParser, SDFSingleBodyWithoutJoint)
   // Regression test for #444
   WorldPtr world
       = SdfParser::readWorld(
-            "file://sample/sdf/test/single_bodynode_skeleton.world");
+            "dart://sample/sdf/test/single_bodynode_skeleton.world");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel = world->getSkeleton(0);
@@ -77,12 +77,12 @@ TEST(SdfParser, ParsingSDFFiles)
 
   // Create a list of sdf files to test with where the sdf files contains World
   std::vector<std::string> worldFiles;
-  worldFiles.push_back("file://sample/sdf/benchmark.world");
-  worldFiles.push_back("file://sample/sdf/double_pendulum.world");
-  worldFiles.push_back("file://sample/sdf/double_pendulum_with_base.world");
-  worldFiles.push_back("file://sample/sdf/empty.world");
-  worldFiles.push_back("file://sample/sdf/ground.world");
-  worldFiles.push_back("file://sample/sdf/test/single_bodynode_skeleton.world");
+  worldFiles.push_back("dart://sample/sdf/benchmark.world");
+  worldFiles.push_back("dart://sample/sdf/double_pendulum.world");
+  worldFiles.push_back("dart://sample/sdf/double_pendulum_with_base.world");
+  worldFiles.push_back("dart://sample/sdf/empty.world");
+  worldFiles.push_back("dart://sample/sdf/ground.world");
+  worldFiles.push_back("dart://sample/sdf/test/single_bodynode_skeleton.world");
 
   std::vector<WorldPtr> worlds;
   for (const auto& worldFile : worldFiles)
@@ -99,8 +99,8 @@ TEST(SdfParser, ParsingSDFFiles)
   // Create another list of sdf files to test with where the sdf files contains
   // Skeleton
   std::vector<common::Uri> skeletonFiles;
-  skeletonFiles.push_back("file://sample/sdf/atlas/atlas_v3_no_head.sdf");
-  skeletonFiles.push_back("file://sample/sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
+  skeletonFiles.push_back("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+  skeletonFiles.push_back("dart://sample/sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
 
   auto world = std::make_shared<World>();
   std::vector<SkeletonPtr> skeletons;
@@ -122,7 +122,7 @@ TEST(SdfParser, ParsingSDFFiles)
 //==============================================================================
 TEST(SdfParser, ReadMaterial)
 {
-  std::string sdf_filename = "file://sample/sdf/quad.sdf";
+  std::string sdf_filename = "dart://sample/sdf/quad.sdf";
   SkeletonPtr skeleton = SdfParser::readSkeleton(sdf_filename);
   EXPECT_TRUE(nullptr != skeleton);  auto bodynode = skeleton->getBodyNode(0);
 

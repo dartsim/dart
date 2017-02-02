@@ -42,7 +42,8 @@
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/dynamics/dynamics.hpp"
-#include "dart/utils/SampleResourceRetriever.hpp"
+#include "dart/utils/CompositeResourceRetriever.hpp"
+#include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 
 #define SCALE_VSK 1.0e-3
@@ -1022,10 +1023,20 @@ void tokenize(const std::string& str,
 common::ResourceRetrieverPtr getRetriever(
   const common::ResourceRetrieverPtr& retriever)
 {
-  if(retriever)
+  if (retriever)
+  {
     return retriever;
+  }
   else
-    return SampleResourceRetriever::create();
+  {
+    auto newRetriever = std::make_shared<utils::CompositeResourceRetriever>();
+    newRetriever->addSchemaRetriever(
+          "file", std::make_shared<common::LocalResourceRetriever>());
+    newRetriever->addSchemaRetriever(
+          "dart", DartResourceRetriever::create());
+
+    return DartResourceRetriever::create();
+  }
 }
 
 } // anonymous namespace
