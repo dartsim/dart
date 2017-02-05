@@ -66,7 +66,7 @@ struct UniversalJointProperties :
   template <typename... Args>
   static std::shared_ptr<UniversalJointProperties> createShared(Args&&... args)
   {
-    return Eigen::make_aligned_shared<UniversalJointProperties>(
+    return common::make_aligned_shared<UniversalJointProperties>(
         std::forward<Args>(args)...);
   }
 

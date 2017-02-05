@@ -72,7 +72,7 @@ struct EulerJointProperties :
   template <typename... Args>
   static std::shared_ptr<EulerJointProperties> createShared(Args&&... args)
   {
-    return Eigen::make_aligned_shared<EulerJointProperties>(
+    return common::make_aligned_shared<EulerJointProperties>(
         std::forward<Args>(args)...);
   }
 

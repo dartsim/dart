@@ -54,7 +54,7 @@ public:
     template <typename... Args>
     static std::shared_ptr<Properties> createShared(Args&&... args)
     {
-      return Eigen::make_aligned_shared<Properties>(
+      return common::make_aligned_shared<Properties>(
           std::forward<Args>(args)...);
     }
 

@@ -35,6 +35,8 @@
 #include <memory>
 #include <vector>
 
+#include "dart/common/Memory.hpp"
+
 namespace dart {
 namespace common {
 
@@ -83,6 +85,11 @@ class MakeCloneable : public Base, public Mixin
 public:
 
   using Data = Mixin;
+
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  DART_DEFINE_CREATE_ALIGNED_SHARED(MakeCloneable)
 
   /// Default constructor. Uses the default constructor of Mixin
   MakeCloneable();

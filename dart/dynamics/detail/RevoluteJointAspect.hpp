@@ -65,7 +65,7 @@ struct RevoluteJointProperties :
   template <typename... Args>
   static std::shared_ptr<RevoluteJointProperties> createShared(Args&&... args)
   {
-    return Eigen::make_aligned_shared<RevoluteJointProperties>(
+    return common::make_aligned_shared<RevoluteJointProperties>(
         std::forward<Args>(args)...);
   }
 

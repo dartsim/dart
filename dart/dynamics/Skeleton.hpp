@@ -1237,10 +1237,6 @@ public:
 
   ///
   std::size_t mUnionIndex;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

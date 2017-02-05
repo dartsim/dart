@@ -112,7 +112,7 @@ struct PlanarJointProperties :
   template <typename... Args>
   static std::shared_ptr<PlanarJointProperties> createShared(Args&&... args)
   {
-    return Eigen::make_aligned_shared<PlanarJointProperties>(
+    return common::make_aligned_shared<PlanarJointProperties>(
         std::forward<Args>(args)...);
   }
 

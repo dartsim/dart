@@ -69,7 +69,7 @@ struct ScrewJointProperties : GenericJoint<math::R1Space>::Properties,
   template <typename... Args>
   static std::shared_ptr<ScrewJointProperties> createShared(Args&&... args)
   {
-    return Eigen::make_aligned_shared<ScrewJointProperties>(
+    return common::make_aligned_shared<ScrewJointProperties>(
         std::forward<Args>(args)...);
   }
 

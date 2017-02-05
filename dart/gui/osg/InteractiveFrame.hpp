@@ -114,7 +114,7 @@ public:
   template <typename... Args>
   static std::shared_ptr<InteractiveFrame> createShared(Args&&... args)
   {
-    return Eigen::make_aligned_shared<InteractiveFrame>(
+    return common::make_aligned_shared<InteractiveFrame>(
         std::forward<Args>(args)...);
   }
 

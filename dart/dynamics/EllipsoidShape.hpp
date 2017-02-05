@@ -77,10 +77,6 @@ protected:
 private:
   /// \brief Size of this ellipsoid
   Eigen::Vector3d mSize;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

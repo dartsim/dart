@@ -65,7 +65,7 @@ struct PrismaticJointProperties :
   template <typename... Args>
   static std::shared_ptr<PrismaticJointProperties> createShared(Args&&... args)
   {
-    return Eigen::make_aligned_shared<PrismaticJointProperties>(
+    return common::make_aligned_shared<PrismaticJointProperties>(
         std::forward<Args>(args)...);
   }
 

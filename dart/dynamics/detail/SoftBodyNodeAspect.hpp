@@ -110,7 +110,7 @@ struct SoftBodyNodeProperties
   template <typename... Args>
   static std::shared_ptr<SoftBodyNodeProperties> createShared(Args&&... args)
   {
-    return Eigen::make_aligned_shared<SoftBodyNodeProperties>(
+    return common::make_aligned_shared<SoftBodyNodeProperties>(
         std::forward<Args>(args)...);
   }
 

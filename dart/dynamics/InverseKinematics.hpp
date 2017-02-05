@@ -1227,7 +1227,7 @@ public:
   static std::shared_ptr<InverseKinematics::Objective>
   createShared(Args&&... args)
   {
-    return Eigen::make_aligned_shared<InverseKinematics::Objective>(
+    return common::make_aligned_shared<InverseKinematics::Objective>(
           std::forward<Args>(args)...);
   }
 
@@ -1257,6 +1257,7 @@ protected:
 
   /// Cache for the null space SVD
   Eigen::JacobiSVD<math::Jacobian> mSVDCache;
+  // TODO(JS): Need to define aligned operator new for this?
 
   /// Cache for the null space
   Eigen::MatrixXd mNullSpaceCache;

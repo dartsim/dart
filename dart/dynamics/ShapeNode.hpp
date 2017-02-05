@@ -113,6 +113,8 @@ public:
   // Documentation inherited
   const ShapeNode* asShapeNode() const override;
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 protected:
 
   /// Constructor used by the Skeleton class
