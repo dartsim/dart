@@ -124,8 +124,8 @@ find_package(NLOPT 2.4.1 QUIET)
 dart_check_optional_package(NLOPT "dart-optimizer-nlopt" "nlopt" "2.4.1")
 
 # IPOPT
-find_package(IPOPT 3.11.4 QUIET)
-dart_check_optional_package(IPOPT "dart-optimizer-ipopt" "ipopt" "3.11.4")
+find_package(IPOPT 3.11.9 QUIET)
+dart_check_optional_package(IPOPT "dart-optimizer-ipopt" "ipopt" "3.11.9")
 
 # Shark
 find_package(SHARK QUIET)

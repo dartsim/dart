@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -763,6 +763,26 @@ TEST(Skeleton, ZeroDofJointInReferential)
   EXPECT_EQ(branch->getNumBodyNodes(), skel->getNumBodyNodes());
   EXPECT_FALSE(branch->getIndexOf(zeroDof1) == INVALID_INDEX);
   EXPECT_FALSE(branch->getIndexOf(zeroDof2) == INVALID_INDEX);
+}
+
+TEST(Skeleton, ZeroDofJointConstraintForces)
+{
+  // This is a regression test which makes sure that the BodyNodes of
+  // ZeroDofJoints will be correctly aggregate constraint forces.
+  SkeletonPtr skel = Skeleton::create();
+
+  BodyNode* bn = skel->createJointAndBodyNodePair<RevoluteJoint>().second;
+  BodyNode* zeroDof1 = skel->createJointAndBodyNodePair<WeldJoint>(bn).second;
+  bn = skel->createJointAndBodyNodePair<PrismaticJoint>(zeroDof1).second;
+  skel->createJointAndBodyNodePair<WeldJoint>(bn);
+
+  const auto numSkelDofs = skel->getNumDofs();
+  for (auto& bodyNode : skel->getBodyNodes())
+    bodyNode->setConstraintImpulse(Eigen::Vector6d::Random());
+
+  // Make sure this does not cause seg-fault
+  Eigen::VectorXd constraintForces = skel->getConstraintForces();
+  EXPECT_EQ(constraintForces.size(), static_cast<int>(numSkelDofs));
 }
 
 TEST(Skeleton, Referential)

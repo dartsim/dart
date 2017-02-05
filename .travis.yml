@@ -31,6 +31,9 @@ install:
 script:
   - 'ci/script.sh'
 
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+
 after_failure: 
   - cat Testing/Temporary/LastTest.log
   - cat Testing/Temporary/LastTestsFailed.log

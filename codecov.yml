@@ -1,0 +1,6 @@
+coverage:
+  ignore:
+    - "unittests"
+    - "dart/external"
+
+comment: off

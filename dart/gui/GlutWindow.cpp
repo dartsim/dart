@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -83,7 +83,7 @@ void GlutWindow::initWindow(int _w, int _h, const char* _name) {
   mWinWidth = _w;
   mWinHeight = _h;
 
-  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
+  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE | GLUT_ACCUM);
   glutInitWindowPosition(150, 100);
   glutInitWindowSize(_w, _h);
   mWinIDs.push_back(glutCreateWindow(_name));
@@ -107,6 +107,9 @@ void GlutWindow::initWindow(int _w, int _h, const char* _name) {
 #endif
   // TODO: Disabled use of GL_MULTISAMPLE for Windows. Please see #411 for the
   // detail.
+
+  glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+  // Note: We book the timer id 0 for the main rendering purpose.
 }
 
 void GlutWindow::reshape(int _w, int _h) {

@@ -51,8 +51,8 @@ endif()
 
 # If you change the version, please update the <version> tag in package.xml.
 set(DART_MAJOR_VERSION "6")
-set(DART_MINOR_VERSION "1")
-set(DART_PATCH_VERSION "1")
+set(DART_MINOR_VERSION "2")
+set(DART_PATCH_VERSION "0")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "eigen, ccd, fcl, assimp, boost")
@@ -257,6 +257,10 @@ function(dart_add_tutorial)
   dart_property_add(DART_TUTORIALS ${ARGN})
 endfunction(dart_add_tutorial)
 
+function(dart_format_add)
+  dart_property_add(DART_FORMAT_FILES ${ARGN})
+endfunction()
+
 #===============================================================================
 # Add sub-directories
 #===============================================================================
@@ -396,6 +400,57 @@ if(DART_COVERALLS)
 
   coveralls_setup("${sources}" ${DART_COVERALLS_UPLOAD}
     "${PROJECT_SOURCE_DIR}/cmake")
+endif()
+
+#===============================================================================
+# Code Formatting
+#===============================================================================
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ Code Formatting ]")
+endif()
+
+find_program(
+  CLANG_FORMAT_EXECUTABLE
+  NAMES clang-format clang-format-3.9 clang-format-3.8
+)
+
+get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
+list(LENGTH formatting_files formatting_files_length)
+message(STATUS "Formatting on ${formatting_files_length} source files.")
+
+if(CLANG_FORMAT_EXECUTABLE)
+
+  if(DART_VERBOSE)
+    message(STATUS "Looking for clang-format - found")
+  endif()
+
+  if(formatting_files)
+    add_custom_target(format
+                      COMMAND ${CMAKE_COMMAND} -E echo "Formatting ${formatting_files_length} files... "
+                      COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i ${formatting_files}
+                      COMMAND ${CMAKE_COMMAND} -E echo "Done."
+                      DEPENDS ${CLANG_FORMAT_EXECUTABLE}
+                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart)
+
+    add_custom_target(check-format
+                      COMMAND ${CMAKE_COMMAND} -E echo "Checking ${formatting_files_length} files... "
+                      COMMAND ${CMAKE_SOURCE_DIR}/tools/check_format.sh ${CLANG_FORMAT_EXECUTABLE} ${formatting_files}
+                      COMMAND ${CMAKE_COMMAND} -E echo "Done."
+                      DEPENDS ${CLANG_FORMAT_EXECUTABLE}
+                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart)
+  else()
+    add_custom_target(format
+                      COMMAND ${CMAKE_COMMAND} -E echo "Warning: Not found any source files to format.")
+
+    add_custom_target(check-format
+                      COMMAND ${CMAKE_COMMAND} -E echo "Warning: Not found any source files to check.")
+  endif()
+
+else()
+
+  message(STATUS "Looking for clang-format - NOT found, please install clang-format to enable automatic code formatting")
+
 endif()
 
 #===============================================================================

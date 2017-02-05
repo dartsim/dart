@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -237,12 +237,10 @@ double NloptSolver::_nlopt_func(unsigned _n,
   if (_gradient)
   {
     Eigen::Map<Eigen::VectorXd> grad(_gradient, _n);
-    fn->evalGradient(static_cast<const Eigen::VectorXd&>(x), grad);
+    fn->evalGradient(x, grad);
   }
 
-  return fn->eval(static_cast<const Eigen::VectorXd&>(x));
-  // TODO(MXG): Remove the static_casts once the old eval() functions are
-  // removed and there is no longer ambiguity.
+  return fn->eval(x);
 }
 
 //==============================================================================

@@ -22,7 +22,7 @@ Build-Depends: debhelper (>= 9),
                libboost-regex-dev (>= 1.54.0-4ubuntu3),
                libopenthreads-dev,
                libopenscenegraph-dev
-Standards-Version: 3.9.7
+Standards-Version: 3.9.8
 Section: libs
 Homepage: http://dartsim.github.io/
 Vcs-Git: git://github.com/dartsim/dart.git
@@ -33,10 +33,11 @@ Section: libs
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: dear imgui (AKA ImGui), is a bloat-free graphical user interface 
-library for C++. It outputs optimized vertex buffers that you can render anytime
-in your 3D-pipeline enabled application. It is fast, portable, renderer agnostic
-and self-contained (no external dependencies).
+Description: dear imgui (AKA ImGui) - Shared Files
+ dear imgui (AKA ImGui), is a bloat-free graphical user interface library for
+ C++. It outputs optimized vertex buffers that you can render anytime in your
+ 3D-pipeline enabled application. It is fast, portable, renderer agnostic and
+ self-contained (no external dependencies).
 
 Package: libdart6-external-imgui-dev
 Section: libdevel
@@ -44,19 +45,21 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          libdart6-external-imgui (= ${binary:Version})
-Description: dear imgui (AKA ImGui), is a bloat-free graphical user interface 
-library for C++. It outputs optimized vertex buffers that you can render anytime
-in your 3D-pipeline enabled application. It is fast, portable, renderer agnostic
-and self-contained (no external dependencies).
+Description: dear imgui (AKA ImGui) - Development
+ dear imgui (AKA ImGui), is a bloat-free graphical user interface library for
+ C++. It outputs optimized vertex buffers that you can render anytime in your
+ 3D-pipeline enabled application. It is fast, portable, renderer agnostic and
+ self-contained (no external dependencies).
 
 Package: libdart6-external-lodepng
 Section: libs
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: LodePNG is a PNG image decoder and encoder, all in one, no
-dependency or linkage to zlib or libpng required. It's made for C (ISO C90), and
-has a C++ wrapper with a more convenient interface on top.
+Description: LodePNG - Shared Files
+ LodePNG is a PNG image decoder and encoder, all in one, no dependency or
+ linkage to zlib or libpng required. It's made for C (ISO C90), and has a C++
+ wrapper with a more convenient interface on top.
 
 Package: libdart6-external-lodepng-dev
 Section: libdevel
@@ -64,20 +67,21 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          libdart6-external-lodepng (= ${binary:Version})
-Description: LodePNG is a PNG image decoder and encoder, all in one, no
-dependency or linkage to zlib or libpng required. It's made for C (ISO C90), and
-has a C++ wrapper with a more convenient interface on top.
+Description: LodePNG - Development Files
+ LodePNG is a PNG image decoder and encoder, all in one, no dependency or
+ linkage to zlib or libpng required. It's made for C (ISO C90), and has a C++
+ wrapper with a more convenient interface on top.
 
 Package: libdart6-external-odelcpsolver
 Section: libs
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: ODE is a free, industrial quality library for simulating 
-articulated rigid body dynamics - for example ground vehicles, legged creatures,
-and moving objects in VR environments. It is fast, flexible, robust and platform
-independent, with advanced joints, contact with friction, and built-in collision
-detection.
+Description: Open Dynamics Engine - Shared Library
+ ODE is a free, industrial quality library for simulating articulated rigid body
+ dynamics - for example ground vehicles, legged creatures, and moving objects in
+ VR environments. It is fast, flexible, robust and platform independent, with
+ advanced joints, contact with friction, and built-in collision detection.
 
 Package: libdart6-external-odelcpsolver-dev
 Section: libdevel
@@ -85,11 +89,11 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          libdart6-external-odelcpsolver (= ${binary:Version})
-Description: ODE is a free, industrial quality library for simulating 
-articulated rigid body dynamics - for example ground vehicles, legged creatures,
-and moving objects in VR environments. It is fast, flexible, robust and platform
-independent, with advanced joints, contact with friction, and built-in collision
-detection.
+Description: Open Dynamics Engine - Development Files
+ ODE is a free, industrial quality library for simulating articulated rigid body
+ dynamics - for example ground vehicles, legged creatures, and moving objects in
+ VR environments. It is fast, flexible, robust and platform independent, with
+ advanced joints, contact with friction, and built-in collision detection.
 
 Package: libdart6
 Section: libs
@@ -254,7 +258,7 @@ Pre-Depends: ${misc:Pre-Depends}
 Depends: ${misc:Depends},
          libdart6-dev,
          libdart6-optimizer-ipopt (= ${binary:Version}),
-         coinor-libipopt-dev
+         coinor-libipopt-dev (>= 3.11.9)
 Description: Dynamic Animation and Robotics Toolkit - Optimizer-ipopt Component Development Files
  DART is a collaborative, cross-platform, open source library created by the
  Georgia Tech Graphics Lab and Humanoid Robotics Lab. The library provides data

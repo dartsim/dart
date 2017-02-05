@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -170,7 +170,7 @@ PointMass::PointMass(SoftBodyNode* _softBodyNode)
     mNotifier(_softBodyNode->mNotifier)
 {
   assert(mParentSoftBodyNode != nullptr);
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -316,7 +316,7 @@ void PointMass::setPosition(std::size_t _index, double _position)
   assert(_index < 3);
 
   getState().mPositions[_index] = _position;
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -331,7 +331,7 @@ double PointMass::getPosition(std::size_t _index) const
 void PointMass::setPositions(const Vector3d& _positions)
 {
   getState().mPositions = _positions;
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -344,7 +344,7 @@ const Vector3d& PointMass::getPositions() const
 void PointMass::resetPositions()
 {
   getState().mPositions.setZero();
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -353,7 +353,7 @@ void PointMass::setVelocity(std::size_t _index, double _velocity)
   assert(_index < 3);
 
   getState().mVelocities[_index] = _velocity;
-  mNotifier->notifyVelocityUpdate();
+  mNotifier->dirtyVelocity();
 }
 
 //==============================================================================
@@ -368,7 +368,7 @@ double PointMass::getVelocity(std::size_t _index) const
 void PointMass::setVelocities(const Vector3d& _velocities)
 {
   getState().mVelocities = _velocities;
-  mNotifier->notifyVelocityUpdate();
+  mNotifier->dirtyVelocity();
 }
 
 //==============================================================================
@@ -381,7 +381,7 @@ const Vector3d& PointMass::getVelocities() const
 void PointMass::resetVelocities()
 {
   getState().mVelocities.setZero();
-  mNotifier->notifyVelocityUpdate();
+  mNotifier->dirtyVelocity();
 }
 
 //==============================================================================
@@ -390,7 +390,7 @@ void PointMass::setAcceleration(std::size_t _index, double _acceleration)
   assert(_index < 3);
 
   getState().mAccelerations[_index] = _acceleration;
-  mNotifier->notifyAccelerationUpdate();
+  mNotifier->dirtyAcceleration();
 }
 
 //==============================================================================
@@ -405,7 +405,7 @@ double PointMass::getAcceleration(std::size_t _index) const
 void PointMass::setAccelerations(const Eigen::Vector3d& _accelerations)
 {
   getState().mAccelerations = _accelerations;
-  mNotifier->notifyAccelerationUpdate();
+  mNotifier->dirtyAcceleration();
 }
 
 //==============================================================================
@@ -426,7 +426,7 @@ const Vector3d& PointMass::getPartialAccelerations() const
 void PointMass::resetAccelerations()
 {
   getState().mAccelerations.setZero();
-  mNotifier->notifyAccelerationUpdate();
+  mNotifier->dirtyAcceleration();
 }
 
 //==============================================================================
@@ -600,7 +600,7 @@ void PointMass::setRestingPosition(const Eigen::Vector3d& _p)
 
   mRest = _p;
   mParentSoftBodyNode->incrementVersion();
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -1116,29 +1116,29 @@ void PointMassNotifier::clearAccelerationNotice()
 }
 
 //==============================================================================
-void PointMassNotifier::notifyTransformUpdate()
+void PointMassNotifier::dirtyTransform()
 {
   mNeedTransformUpdate = true;
   mNeedVelocityUpdate = true;
   mNeedPartialAccelerationUpdate = true;
   mNeedAccelerationUpdate = true;
 
-  mParentSoftBodyNode->notifyArticulatedInertiaUpdate();
-  mParentSoftBodyNode->notifyExternalForcesUpdate();
+  mParentSoftBodyNode->dirtyArticulatedInertia();
+  mParentSoftBodyNode->dirtyExternalForces();
 }
 
 //==============================================================================
-void PointMassNotifier::notifyVelocityUpdate()
+void PointMassNotifier::dirtyVelocity()
 {
   mNeedVelocityUpdate = true;
   mNeedPartialAccelerationUpdate = true;
   mNeedAccelerationUpdate = true;
 
-  mParentSoftBodyNode->notifyCoriolisUpdate();
+  mParentSoftBodyNode->dirtyCoriolisForces();
 }
 
 //==============================================================================
-void PointMassNotifier::notifyAccelerationUpdate()
+void PointMassNotifier::dirtyAcceleration()
 {
   mNeedAccelerationUpdate = true;
 }

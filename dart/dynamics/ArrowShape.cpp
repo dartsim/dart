@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -63,7 +63,7 @@ ArrowShape::ArrowShape(const Eigen::Vector3d& _tail,
   instantiate(_resolution);
   configureArrow(mTail, mHead, mProperties);
   setColorMode(MeshShape::COLOR_INDEX);
-  notifyColorUpdate(_color);
+  notifyColorUpdated(_color);
 }
 
 //==============================================================================
@@ -92,7 +92,7 @@ void ArrowShape::setProperties(const Properties& _properties)
 }
 
 //==============================================================================
-void ArrowShape::notifyColorUpdate(const Eigen::Vector4d& _color)
+void ArrowShape::notifyColorUpdated(const Eigen::Vector4d& _color)
 {
   for(std::size_t i=0; i<mMesh->mNumMeshes; ++i)
   {

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -97,6 +97,12 @@ JacobianNode::JacobianNode(BodyNode* bn)
 //==============================================================================
 void JacobianNode::notifyJacobianUpdate()
 {
+  dirtyJacobian();
+}
+
+//==============================================================================
+void JacobianNode::dirtyJacobian()
+{
   // mIsWorldJacobianDirty depends on mIsBodyJacobianDirty, so we only need to
   // check mIsBodyJacobianDirty if we want to terminate.
   if(mIsBodyJacobianDirty)
@@ -106,11 +112,17 @@ void JacobianNode::notifyJacobianUpdate()
   mIsWorldJacobianDirty = true;
 
   for(JacobianNode* child : mChildJacobianNodes)
-    child->notifyJacobianUpdate();
+    child->dirtyJacobian();
 }
 
 //==============================================================================
 void JacobianNode::notifyJacobianDerivUpdate()
+{
+  dirtyJacobianDeriv();
+}
+
+//==============================================================================
+void JacobianNode::dirtyJacobianDeriv()
 {
   // These two flags are independent of each other, so we must check that both
   // are true if we want to terminate early.
@@ -121,7 +133,7 @@ void JacobianNode::notifyJacobianDerivUpdate()
   mIsWorldJacobianClassicDerivDirty = true;
 
   for(JacobianNode* child : mChildJacobianNodes)
-    child->notifyJacobianDerivUpdate();
+    child->dirtyJacobianDeriv();
 }
 
 } // namespace dynamics

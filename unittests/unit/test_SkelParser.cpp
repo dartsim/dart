@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -479,7 +479,7 @@ TEST(SkelParser, Shapes)
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
   EXPECT_TRUE(shape->is<EllipsoidShape>());
   auto ellipsoidShape = std::static_pointer_cast<EllipsoidShape>(shape);
-  EXPECT_EQ(ellipsoidShape->getSize(), Eigen::Vector3d(0.05, 0.10, 0.15));
+  EXPECT_EQ(ellipsoidShape->getDiameters(), Eigen::Vector3d(0.05, 0.10, 0.15));
 
   // Cylinder
   skel = world->getSkeleton("cylinder skeleton");
