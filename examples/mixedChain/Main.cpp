@@ -37,9 +37,9 @@
 
 #include <iostream>
 
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 
-#include "examples/mixedChain/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
-          DART_DATA_PATH"skel/test/test_articulated_bodies_10bodies.skel");
+          "dart://sample/skel/test/test_articulated_bodies_10bodies.skel");
   assert(myWorld != nullptr);
 
   int dof = myWorld->getSkeleton(1)->getNumDofs();

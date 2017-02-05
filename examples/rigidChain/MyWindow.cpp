@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/rigidChain/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 MyWindow::MyWindow() : SimWindow() {
 }

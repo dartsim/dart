@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/bipedStand/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();

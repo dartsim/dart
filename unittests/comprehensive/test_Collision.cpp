@@ -1107,7 +1107,7 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
 
   // Load world and skeleton
   WorldPtr world = SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/collision_of_prescribed_joints_test.skel");
+        "dart://sample/skel/test/collision_of_prescribed_joints_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);

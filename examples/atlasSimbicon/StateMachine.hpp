@@ -37,7 +37,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 
 class State;
 

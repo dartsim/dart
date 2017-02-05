@@ -386,7 +386,7 @@ TEST_F(JOINTS, COMMAND_LIMIT)
 {
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_limit_test.skel");
+        "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
@@ -428,7 +428,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
 
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_limit_test.skel");
+        "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -503,7 +503,7 @@ void testJointCoulombFrictionForce(double _timeStep)
 
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_friction_test.skel");
+        "dart://sample/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -816,7 +816,7 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_friction_test.skel");
+        "dart://sample/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));

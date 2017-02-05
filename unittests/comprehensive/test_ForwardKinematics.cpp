@@ -178,7 +178,7 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
 
   dart::utils::DartLoader loader;
   SkeletonPtr skeleton1 =
-      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+      loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
   SkeletonPtr skeleton2 = skeleton1->clone();
 
@@ -219,7 +219,7 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_END_EFFECTOR_CHANGE)
 
   dart::utils::DartLoader loader;
   SkeletonPtr skeleton1 =
-      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+      loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
   BodyNode* last_bn1 = skeleton1->getBodyNode(skeleton1->getNumBodyNodes()-1);
   EndEffector* ee1 = last_bn1->createEndEffector();

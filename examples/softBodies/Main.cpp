@@ -37,9 +37,9 @@
 
 #include <iostream>
 
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 
-#include "examples/softBodies/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
-        DART_DATA_PATH"skel/softBodies.skel");
+        "dart://sample/skel/softBodies.skel");
   assert(myWorld != nullptr);
 
   for(std::size_t i=0; i<myWorld->getNumSkeletons(); ++i)

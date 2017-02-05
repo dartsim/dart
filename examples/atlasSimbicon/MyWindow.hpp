@@ -32,10 +32,10 @@
 #ifndef EXAMPLES_ATLASSIMBICON_MYWINDOW_HPP_
 #define EXAMPLES_ATLASSIMBICON_MYWINDOW_HPP_
 
-#include "dart/dart.hpp"
-#include "dart/gui/gui.hpp"
+#include <dart/dart.hpp>
+#include <dart/gui/gui.hpp>
 
-#include "examples/atlasSimbicon/Controller.hpp"
+#include "Controller.hpp"
 
 /// \brief class MyWindow
 class MyWindow : public dart::gui::SimWindow

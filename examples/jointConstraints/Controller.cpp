@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/jointConstraints/Controller.hpp"
+#include "Controller.hpp"
 
 using namespace dart;
 using namespace dynamics;
