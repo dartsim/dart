@@ -32,8 +32,8 @@
 #include <cassert>
 #include <iostream>
 
-#include "dart/common/Console.hpp"
 #include "dart/common/Composite.hpp"
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace common {
@@ -50,21 +50,24 @@ namespace common {
 /// that is being filled with data already has an instance of the data for a
 /// particular Object type, it will perform a copy instead of a clone to improve
 /// performance.
-template <typename ObjectType, class DataType,
-          const DataType* (ObjectType::*getData)() const,
-          typename ObjectMap = std::map< std::type_index, std::unique_ptr<ObjectType> >,
-          typename DataMap = std::map< std::type_index, std::unique_ptr<DataType> > >
-static void extractDataFromObjectTypeMap(
-    DataMap& dataMap, const ObjectMap& objectMap)
+template <
+    typename ObjectType,
+    class DataType,
+    const DataType* (ObjectType::*getData)() const,
+    typename ObjectMap = std::map<std::type_index, std::unique_ptr<ObjectType>>,
+    typename DataMap   = std::map<std::type_index, std::unique_ptr<DataType>>>
+static void extractDataFromObjectTypeMap(DataMap&         dataMap,
+                                         const ObjectMap& objectMap)
 {
-  // This method allows us to avoid dynamic allocation (cloning) whenever possible.
-  for(const auto& object : objectMap)
+  // This method allows us to avoid dynamic allocation (cloning) whenever
+  // possible.
+  for (const auto& object : objectMap)
   {
-    if(nullptr == object.second)
+    if (nullptr == object.second)
       continue;
 
     const DataType* data = (object.second.get()->*getData)();
-    if(data)
+    if (data)
     {
       // Attempt to insert a nullptr to see whether this data exists while also
       // creating an iterator to it if it did not already exist. This allows us
@@ -74,13 +77,13 @@ static void extractDataFromObjectTypeMap(
       std::pair<typename DataMap::iterator, bool> insertion =
           dataMap.insert(typename DataMap::value_type(object.first, nullptr));
 
-      typename DataMap::iterator& it = insertion.first;
-      const bool existed = !insertion.second;
+      typename DataMap::iterator& it      = insertion.first;
+      const bool                  existed = !insertion.second;
 
-      if(existed)
+      if (existed)
       {
         // The entry already existed
-        if(it->second)
+        if (it->second)
         {
           // The entry was not a nullptr, so we can do an efficient copy
           it->second->copy(*data);
@@ -110,28 +113,30 @@ static void extractDataFromObjectTypeMap(
 /// This function will take a type map of Data and pass its contents into the
 /// Objects contained in an ObjectMap for each corresponding Object type which
 /// is available.
-template <typename ObjectType, class DataType,
-          void (ObjectType::*setData)(const DataType&),
-          typename ObjectMap = std::map< std::type_index, std::unique_ptr<ObjectType> >,
-          typename DataMap = std::map< std::type_index, std::unique_ptr<DataType> > >
-static void setObjectsFromDataTypeMap(
-    ObjectMap& objectMap, const DataMap& dataMap)
+template <
+    typename ObjectType,
+    class DataType,
+    void (ObjectType::*setData)(const DataType&),
+    typename ObjectMap = std::map<std::type_index, std::unique_ptr<ObjectType>>,
+    typename DataMap   = std::map<std::type_index, std::unique_ptr<DataType>>>
+static void setObjectsFromDataTypeMap(ObjectMap&     objectMap,
+                                      const DataMap& dataMap)
 {
-  typename ObjectMap::iterator objects = objectMap.begin();
-  typename DataMap::const_iterator data = dataMap.begin();
+  typename ObjectMap::iterator     objects = objectMap.begin();
+  typename DataMap::const_iterator data    = dataMap.begin();
 
-  while( objectMap.end() != objects && dataMap.end() != data )
+  while (objectMap.end() != objects && dataMap.end() != data)
   {
-    if( objects->first == data->first )
+    if (objects->first == data->first)
     {
       ObjectType* object = objects->second.get();
-      if(object && data->second)
+      if (object && data->second)
         (object->*setData)(*data->second);
 
       ++objects;
       ++data;
     }
-    else if( objects->first < data->first )
+    else if (objects->first < data->first)
     {
       ++objects;
     }
@@ -146,7 +151,7 @@ static void setObjectsFromDataTypeMap(
 void Composite::setCompositeState(const State& newStates)
 {
   setObjectsFromDataTypeMap<Aspect, Aspect::State, &Aspect::setAspectState>(
-        mAspectMap, newStates.getMap());
+      mAspectMap, newStates.getMap());
 }
 
 //==============================================================================
@@ -163,15 +168,16 @@ void Composite::copyCompositeStateTo(State& outgoingStates) const
 {
   auto& states = outgoingStates.getMap();
   extractDataFromObjectTypeMap<Aspect, Aspect::State, &Aspect::getAspectState>(
-        states, mAspectMap);
+      states, mAspectMap);
 }
 
 //==============================================================================
 void Composite::setCompositeProperties(const Properties& newProperties)
 {
-  setObjectsFromDataTypeMap<
-      Aspect, Aspect::Properties, &Aspect::setAspectProperties>(
-        mAspectMap, newProperties.getMap());
+  setObjectsFromDataTypeMap<Aspect,
+                            Aspect::Properties,
+                            &Aspect::setAspectProperties>(
+      mAspectMap, newProperties.getMap());
 }
 
 //==============================================================================
@@ -184,18 +190,19 @@ Composite::Properties Composite::getCompositeProperties() const
 }
 
 //==============================================================================
-void Composite::copyCompositePropertiesTo(
-    Properties& outgoingProperties) const
+void Composite::copyCompositePropertiesTo(Properties& outgoingProperties) const
 {
   auto& properties = outgoingProperties.getMap();
-  extractDataFromObjectTypeMap<Aspect, Aspect::Properties, &Aspect::getAspectProperties>(
-        properties, mAspectMap);
+  extractDataFromObjectTypeMap<Aspect,
+                               Aspect::Properties,
+                               &Aspect::getAspectProperties>(properties,
+                                                             mAspectMap);
 }
 
 //==============================================================================
 void Composite::duplicateAspects(const Composite* fromComposite)
 {
-  if(nullptr == fromComposite)
+  if (nullptr == fromComposite)
   {
     dterr << "[Composite::duplicateAspects] You have asked to duplicate the "
           << "Aspects of a nullptr, which is not allowed!\n";
@@ -203,32 +210,32 @@ void Composite::duplicateAspects(const Composite* fromComposite)
     return;
   }
 
-  if(this == fromComposite)
+  if (this == fromComposite)
     return;
 
   const AspectMap& otherMap = fromComposite->mAspectMap;
 
-  AspectMap::iterator receiving = mAspectMap.begin();
-  AspectMap::const_iterator incoming = otherMap.begin();
+  AspectMap::iterator       receiving = mAspectMap.begin();
+  AspectMap::const_iterator incoming  = otherMap.begin();
 
-  while( otherMap.end() != incoming )
+  while (otherMap.end() != incoming)
   {
-    if( mAspectMap.end() == receiving )
+    if (mAspectMap.end() == receiving)
     {
       // If we've reached the end of this Composite's AspectMap, then we should
       // just add each entry
       _set(incoming->first, incoming->second.get());
       ++incoming;
     }
-    else if( receiving->first == incoming->first )
+    else if (receiving->first == incoming->first)
     {
-      if(incoming->second)
+      if (incoming->second)
         _set(incoming->first, incoming->second.get());
 
       ++receiving;
       ++incoming;
     }
-    else if( receiving->first < incoming->first)
+    else if (receiving->first < incoming->first)
     {
       ++receiving;
     }
@@ -245,7 +252,7 @@ void Composite::duplicateAspects(const Composite* fromComposite)
 //==============================================================================
 void Composite::matchAspects(const Composite* otherComposite)
 {
-  if(nullptr == otherComposite)
+  if (nullptr == otherComposite)
   {
     dterr << "[Composite::matchAspects] You have asked to match the Aspects "
           << "of a nullptr, which is not allowed!\n";
@@ -253,7 +260,7 @@ void Composite::matchAspects(const Composite* otherComposite)
     return;
   }
 
-  for(auto& aspect : mAspectMap)
+  for (auto& aspect : mAspectMap)
     aspect.second = nullptr;
 
   duplicateAspects(otherComposite);
@@ -262,21 +269,21 @@ void Composite::matchAspects(const Composite* otherComposite)
 //==============================================================================
 void Composite::addToComposite(Aspect* aspect)
 {
-  if(aspect)
+  if (aspect)
     aspect->setComposite(this);
 }
 
 //==============================================================================
 void Composite::removeFromComposite(Aspect* aspect)
 {
-  if(aspect)
+  if (aspect)
     aspect->loseComposite(this);
 }
 
 //==============================================================================
 void Composite::_set(std::type_index type_idx, const Aspect* aspect)
 {
-  if(aspect)
+  if (aspect)
   {
     mAspectMap[type_idx] = aspect->cloneAspect();
     addToComposite(mAspectMap[type_idx].get());

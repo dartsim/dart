@@ -50,14 +50,12 @@ class Subject;
 class Observer
 {
 public:
-
   friend class Subject;
 
   /// Destructor will notify all Subjects that it is destructing
   virtual ~Observer();
 
 protected:
-
   /// Called whenever a Subject is destroyed (or sends out a destruction
   /// notification). Override handleDestructionNotification() in order to
   /// customize your class's response to destruction notifications.
@@ -78,7 +76,6 @@ protected:
 
   /// List of current Subjects for this Observer
   std::set<const Subject*> mSubjects;
-
 };
 
 } // namespace dart

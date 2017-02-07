@@ -56,14 +56,12 @@ class Observer;
 class Subject
 {
 public:
-
   friend class Observer;
 
   /// Destructor will notify all Observers that it is destructing
   virtual ~Subject();
 
 protected:
-
   /// Send a destruction notification to all Observers. This will cause all
   /// Observers to behave as if this Subject has been permanently deleted, so it
   /// should only be called when that behavior is desired.
@@ -77,7 +75,6 @@ protected:
 
   /// List of current Observers
   mutable std::set<Observer*> mObservers;
-
 };
 
 } // namespace common

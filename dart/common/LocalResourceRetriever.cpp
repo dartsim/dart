@@ -29,12 +29,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-#include <fstream>
-#include "dart/common/Console.hpp"
-#include "dart/common/Uri.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Console.hpp"
 #include "dart/common/LocalResource.hpp"
+#include "dart/common/Uri.hpp"
+#include <fstream>
+#include <iostream>
 
 namespace dart {
 namespace common {
@@ -44,7 +44,7 @@ bool LocalResourceRetriever::exists(const Uri& _uri)
 {
   // Open and close the file to check if it exists. It would be more efficient
   // to stat() it, but that is not portable.
-  if(_uri.mScheme.get_value_or("file") != "file")
+  if (_uri.mScheme.get_value_or("file") != "file")
     return false;
   else if (!_uri.mPath)
     return false;
@@ -55,15 +55,15 @@ bool LocalResourceRetriever::exists(const Uri& _uri)
 //==============================================================================
 common::ResourcePtr LocalResourceRetriever::retrieve(const Uri& _uri)
 {
-  if(_uri.mScheme.get_value_or("file") != "file")
+  if (_uri.mScheme.get_value_or("file") != "file")
     return nullptr;
   else if (!_uri.mPath)
     return nullptr;
 
-  const auto resource
-      = std::make_shared<LocalResource>(_uri.getFilesystemPath());
+  const auto resource =
+      std::make_shared<LocalResource>(_uri.getFilesystemPath());
 
-  if(resource->isGood())
+  if (resource->isGood())
     return resource;
   else
     return nullptr;

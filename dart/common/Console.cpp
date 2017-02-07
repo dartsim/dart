@@ -49,12 +49,12 @@ std::ostream& colorErr(const std::string& _msg,
 {
   int index = _file.find_last_of("/") + 1;
 
-  std::cerr << "\033[1;" << _color << "m" << _msg << " [" <<
-               _file.substr(index , _file.size() - index) <<
-               ":" << _line << "]\033[0m ";
+  std::cerr << "\033[1;" << _color << "m" << _msg << " ["
+            << _file.substr(index, _file.size() - index) << ":" << _line
+            << "]\033[0m ";
 
   return std::cerr;
 }
 
-}  // namespace common
-}  // namespace dart
+} // namespace common
+} // namespace dart

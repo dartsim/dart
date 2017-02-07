@@ -37,11 +37,11 @@
 // -- Standard shared/weak pointers --
 // Define a typedef for const and non-const version of shared_ptr and weak_ptr
 // for the class X
-#define DART_COMMON_MAKE_SHARED_WEAK( X )\
-  class X ;\
-  typedef std::shared_ptr< X >       X ## Ptr;\
-  typedef std::shared_ptr< const X > Const ## X ## Ptr;\
-  typedef std::weak_ptr< X >         Weak ## X ## Ptr;\
-  typedef std::weak_ptr< const X >   WeakConst ## X ## Ptr;
+#define DART_COMMON_MAKE_SHARED_WEAK(X)                                        \
+  class X;                                                                     \
+  typedef std::shared_ptr<X>       X##Ptr;                                     \
+  typedef std::shared_ptr<const X> Const##X##Ptr;                              \
+  typedef std::weak_ptr<X>         Weak##X##Ptr;                               \
+  typedef std::weak_ptr<const X>   WeakConst##X##Ptr;
 
 #endif // DART_COMMON_SMARTPOINTER_HPP_

@@ -32,8 +32,8 @@
 #ifndef DART_COMMON_CONSOLE_HPP_
 #define DART_COMMON_CONSOLE_HPP_
 
-#include <string>
 #include <ostream>
+#include <string>
 
 /// \brief Output a message
 #define dtmsg (dart::common::colorMsg("Msg", 32))
@@ -56,10 +56,10 @@ std::ostream& colorMsg(const std::string& _msg, int _color);
 /// \brief
 std::ostream& colorErr(const std::string& _msg,
                        const std::string& _file,
-                       unsigned int _line,
-                       int _color);
+                       unsigned int       _line,
+                       int                _color);
 
-}  // namespace common
-}  // namespace dart
+} // namespace common
+} // namespace dart
 
-#endif  // DART_COMMON_CONSOLE_HPP_
+#endif // DART_COMMON_CONSOLE_HPP_

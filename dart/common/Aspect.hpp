@@ -45,12 +45,12 @@ class Composite;
 class Aspect
 {
 public:
-
   friend class Composite;
 
   /// If your Aspect has a State, then that State class should inherit this
   /// Aspect::State class. This allows us to safely serialize, store, and clone
-  /// the states of arbitrary Aspect extensions. If your Aspect is stateless, then
+  /// the states of arbitrary Aspect extensions. If your Aspect is stateless,
+  /// then
   /// you do not have to worry about extending this class, because
   /// Aspect::getState() will simply return a nullptr by default, which is taken
   /// to indicate that it is stateless.
@@ -60,14 +60,17 @@ public:
   /// stored in Composite::Properties. Typically Properties are values that
   /// only change rarely if ever, whereas State contains values that might
   /// change as often as every time step.
-  class State : public Cloneable<State> { };
+  class State : public Cloneable<State>
+  {
+  };
 
   /// Use the MakeState class to easily create a State extension from an
   /// existing class or struct.
   template <class Mixin>
   using MakeState = MakeCloneable<State, Mixin>;
 
-  /// If your Aspect has Properties, then that Properties class should inherit this
+  /// If your Aspect has Properties, then that Properties class should inherit
+  /// this
   /// Aspect::Properties class. This allows us to safely serialize, store, and
   /// clone the properties of arbitrary Aspect extensions. If your Aspect has no
   /// properties, then you do not have to worry about extending this class,
@@ -79,7 +82,9 @@ public:
   /// stored in Composite::Properties. Typically Properties are values that
   /// only change rarely if ever, whereas State contains values that might
   /// change as often as every time step.
-  class Properties : public Cloneable<Properties> { };
+  class Properties : public Cloneable<Properties>
+  {
+  };
 
   /// Use the MakeProperties class to easily create a Properties extension
   /// from an existing class or struct.
@@ -107,11 +112,11 @@ public:
   virtual const Properties* getAspectProperties() const;
 
 protected:
-
   /// This function will be triggered (1) after the Aspect has been created
   /// [transfer will be false] and (2) after the Aspect has been transferred
   /// to a new Composite [transfer will be true]. You should override this
-  /// function if your Aspect requires special handling in either of those cases.
+  /// function if your Aspect requires special handling in either of those
+  /// cases.
   /// By default, this function does nothing.
   virtual void setComposite(Composite* newComposite);
 
@@ -127,7 +132,6 @@ template <class CompositeType>
 class CompositeTrackingAspect : public Aspect
 {
 public:
-
   /// Default constructor
   CompositeTrackingAspect();
 
@@ -141,7 +145,6 @@ public:
   bool hasComposite() const;
 
 protected:
-
   /// Grab the new Composite
   void setComposite(Composite* newComposite) override;
 
@@ -150,44 +153,61 @@ protected:
 
   /// Pointer to the current Composite of this Aspect
   CompositeType* mComposite;
-
 };
 
 } // namespace common
 } // namespace dart
 
 //==============================================================================
-#define DART_COMMON_ASPECT_PROPERTY_CONSTRUCTOR( ClassName, UpdatePropertiesMacro )\
-  ClassName (const ClassName &) = delete;\
-  inline ClassName (const PropertiesData& properties = PropertiesData())\
-    : AspectWithVersionedProperties< Base, Derived, PropertiesData, CompositeType, UpdatePropertiesMacro>(properties) { }
+#define DART_COMMON_ASPECT_PROPERTY_CONSTRUCTOR(ClassName,                     \
+                                                UpdatePropertiesMacro)         \
+  ClassName(const ClassName&) = delete;                                        \
+  inline ClassName(const PropertiesData& properties = PropertiesData())        \
+    : AspectWithVersionedProperties<Base,                                      \
+                                    Derived,                                   \
+                                    PropertiesData,                            \
+                                    CompositeType,                             \
+                                    UpdatePropertiesMacro>(properties)         \
+  {                                                                            \
+  }
 
 //==============================================================================
-#define DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(ClassName)\
-  ClassName (const ClassName &) = delete;\
-  inline ClassName (const StateData& state = StateData(), const PropertiesData& properties = PropertiesData())\
-    : AspectImpl(state, properties) { }\
-  inline ClassName (const PropertiesData& properties, const StateData state = StateData())\
-    : AspectImpl(properties, state) { }
+#define DART_COMMON_ASPECT_STATE_PROPERTY_CONSTRUCTORS(ClassName)              \
+  ClassName(const ClassName&) = delete;                                        \
+  inline ClassName(const StateData&      state      = StateData(),             \
+                   const PropertiesData& properties = PropertiesData())        \
+    : AspectImpl(state, properties)                                            \
+  {                                                                            \
+  }                                                                            \
+  inline ClassName(const PropertiesData& properties,                           \
+                   const StateData       state = StateData())                  \
+    : AspectImpl(properties, state)                                            \
+  {                                                                            \
+  }
 
 //==============================================================================
-#define DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM( Type, Name, Update )\
-  inline void set ## Name (const Type & value)\
-  { mProperties.m ## Name = value; Update(); }
+#define DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM(Type, Name, Update)             \
+  inline void set##Name(const Type& value)                                     \
+  {                                                                            \
+    mProperties.m##Name = value;                                               \
+    Update();                                                                  \
+  }
 
 //==============================================================================
-#define DART_COMMON_SET_ASPECT_PROPERTY( Type, Name )\
-  DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM( Type, Name, notifyPropertiesUpdated )
+#define DART_COMMON_SET_ASPECT_PROPERTY(Type, Name)                            \
+  DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM(Type, Name, notifyPropertiesUpdated)
 
 //==============================================================================
-#define DART_COMMON_GET_ASPECT_PROPERTY( Type, Name )\
-  inline const Type& get ## Name () const\
-  { return mProperties.m ## Name; }
+#define DART_COMMON_GET_ASPECT_PROPERTY(Type, Name)                            \
+  inline const Type& get##Name() const                                         \
+  {                                                                            \
+    return mProperties.m##Name;                                                \
+  }
 
 //==============================================================================
-#define DART_COMMON_SET_GET_ASPECT_PROPERTY( Type, Name )\
-  DART_COMMON_SET_ASPECT_PROPERTY( Type, Name )\
-  DART_COMMON_GET_ASPECT_PROPERTY( Type, Name )
+#define DART_COMMON_SET_GET_ASPECT_PROPERTY(Type, Name)                        \
+  DART_COMMON_SET_ASPECT_PROPERTY(Type, Name)                                  \
+  DART_COMMON_GET_ASPECT_PROPERTY(Type, Name)
 
 #include "dart/common/detail/Aspect.hpp"
 

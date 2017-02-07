@@ -32,10 +32,10 @@
 #ifndef DART_COMMON_RESOURCERETRIEVER_HPP_
 #define DART_COMMON_RESOURCERETRIEVER_HPP_
 
-#include <memory>
-#include <string>
 #include "dart/common/Resource.hpp"
 #include "dart/common/Uri.hpp"
+#include <memory>
+#include <string>
 
 namespace dart {
 namespace common {

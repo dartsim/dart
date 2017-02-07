@@ -52,7 +52,7 @@ Timer::Timer(const std::string& _name)
 {
 #ifdef _WIN32
   mTimer.start.QuadPart = 0;
-  mTimer.stop.QuadPart = 0;
+  mTimer.stop.QuadPart  = 0;
   QueryPerformanceFrequency(&mFrequency);
 #else
   mStartedTime = 0.0;
@@ -69,8 +69,8 @@ Timer::~Timer()
 #ifdef _WIN32
 double Timer::_convLIToSecs(const LARGE_INTEGER& _L)
 {
-  return (static_cast<double>(_L.QuadPart)
-          / static_cast<double>(mFrequency.QuadPart));
+  return (static_cast<double>(_L.QuadPart) /
+          static_cast<double>(mFrequency.QuadPart));
 }
 #endif
 
@@ -94,11 +94,11 @@ void Timer::stop()
 #ifdef _WIN32
   QueryPerformanceCounter(&mTimer.stop);
   LARGE_INTEGER time;
-  time.QuadPart = mTimer.stop.QuadPart - mTimer.start.QuadPart;
+  time.QuadPart    = mTimer.stop.QuadPart - mTimer.start.QuadPart;
   mLastElapsedTime = _convLIToSecs(time);
 #else
   gettimeofday(&mTimeVal, nullptr);
-  mStoppedTime = mTimeVal.tv_sec + (mTimeVal.tv_usec / 1.0e+6);
+  mStoppedTime     = mTimeVal.tv_sec + (mTimeVal.tv_usec / 1.0e+6);
   mLastElapsedTime = mStoppedTime - mStartedTime;
 #endif
   mTotalElapsedTime += mLastElapsedTime;
@@ -111,12 +111,12 @@ double Timer::getElapsedTime()
   LARGE_INTEGER timenow;
   QueryPerformanceCounter(&timenow);
   LARGE_INTEGER time;
-  time.QuadPart = timenow.QuadPart - mTimer.start.QuadPart;
+  time.QuadPart    = timenow.QuadPart - mTimer.start.QuadPart;
   mLastElapsedTime = _convLIToSecs(time);
 #else
   gettimeofday(&mTimeVal, nullptr);
-  mLastElapsedTime = mTimeVal.tv_sec + (mTimeVal.tv_usec / 1.0e+6)
-                     - mStartedTime;
+  mLastElapsedTime =
+      mTimeVal.tv_sec + (mTimeVal.tv_usec / 1.0e+6) - mStartedTime;
 #endif
   return mLastElapsedTime;
 }
@@ -146,15 +146,16 @@ void Timer::print()
   {
     std::cout << "Timer [" << mName << "] : " << std::endl
               << "Last elapsed : " << mLastElapsedTime << "; "
-              << "Total time : " << " "
-              << mTotalElapsedTime << "; "
+              << "Total time : "
+              << " " << mTotalElapsedTime << "; "
               << "Total count : " << mCount << "; "
               << "Average time : " << mTotalElapsedTime / mCount << " "
               << "FPS : " << mCount / mTotalElapsedTime << " hz " << std::endl;
   }
   else
   {
-    std::cout << "Timer [" << mName << "] doesn't have any record." << std::endl;
+    std::cout << "Timer [" << mName << "] doesn't have any record."
+              << std::endl;
   }
 }
 
@@ -166,8 +167,8 @@ double Timer::getWallTime()
   LARGE_INTEGER ticks;
   QueryPerformanceFrequency(&ticksPerSecond);
   QueryPerformanceCounter(&ticks);
-  return static_cast<double>(ticks.QuadPart)
-      / static_cast<double>(ticksPerSecond.QuadPart);
+  return static_cast<double>(ticks.QuadPart) /
+         static_cast<double>(ticksPerSecond.QuadPart);
 #else
   // Initialize the lastUpdateTime with the current time in seconds
   timeval timeVal;
@@ -176,5 +177,5 @@ double Timer::getWallTime()
 #endif
 }
 
-}  // namespace common
-}  // namespace dart
+} // namespace common
+} // namespace dart
