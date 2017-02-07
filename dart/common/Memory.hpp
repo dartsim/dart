@@ -34,143 +34,148 @@
 
 #include <memory>
 
-#include <Eigen/Core>
-
-#include "dart/config.hpp"
-
-#ifdef __GNUC__
-  #define DART_ALIGNED(v) __attribute__ ((aligned(v)))
-#elif defined(_MSC_VER)
-  #define DART_ALIGNED(v) __declspec(align(v))
-#else
-  #define DART_ALIGNED(v)
-#endif
-
-#define DART_DEFINE_CREATE_UNIQUE(class_name)\
-  /** Create unique instance of this class. */\
-  template <typename... Args>\
-  static std::unique_ptr<class_name> createUnique(Args&&... args)\
-  {\
-    return ::dart::common::make_unique<class_name>(std::forward<Args>(args)...);\
-  }
-
-#define DART_DEFINE_CREATE_SHARED(class_name)\
-  /** Create shared instance of this class. */\
-  template <typename... Args>\
-  static std::shared_ptr<class_name> createShared(Args&&... args)\
-  {\
-    return ::std::make_shared<class_name>(std::forward<Args>(args)...);\
-  }
-
-#define DART_DEFINE_CREATE_ALIGNED_SHARED(class_name)\
-  /** Create shared instance of this class. */\
-  template <typename... Args>\
-  static std::shared_ptr<class_name> createShared(Args&&... args)\
-  {\
-    return ::dart::common::make_aligned_shared<class_name>(\
-        std::forward<Args>(args)...);\
-  }
-
-#define DART_DEFINE_CREATE(class_name)\
-    DART_DEFINE_CREATE_SHARED(class_name)\
-    DART_DEFINE_CREATE_UNIQUE(class_name)
-
-#if DART_ENABLE_SIMD
-  #define DART_DEFINE_CREATE_ALIGNED(class_name)\
-      DART_DEFINE_CREATE_ALIGNED_SHARED(class_name)\
-      DART_DEFINE_CREATE_UNIQUE(class_name)
-#else
-  #define DART_DEFINE_CREATE_ALIGNED(class_name)\
-      DART_DEFINE_CREATE_SHARED(class_name)\
-      DART_DEFINE_CREATE_UNIQUE(class_name)
-#endif
-
 namespace dart {
 namespace common {
 
-#if EIGEN_VERSION_AT_LEAST(3,2,1)
-
-namespace detail {
-
-/// Aligned allocator that is compatible with c++11
-// Ref: https://bitbucket.org/eigen/eigen/commits/f5b7700
-// TODO: Remove this and use Eigen::aligned_allocator once new version of Eigen
-// is released with above commit.
-template <class T>
-class aligned_allocator_cpp11 : public std::allocator<T>
-{
-public:
-  typedef std::size_t     size_type;
-  typedef std::ptrdiff_t  difference_type;
-  typedef T*              pointer;
-  typedef const T*        const_pointer;
-  typedef T&              reference;
-  typedef const T&        const_reference;
-  typedef T               value_type;
-
-  template <class U>
-  struct rebind
-  {
-    typedef aligned_allocator_cpp11<U> other;
-  };
-
-  aligned_allocator_cpp11()
-    : std::allocator<T>() {}
-
-  aligned_allocator_cpp11(const aligned_allocator_cpp11& other)
-    : std::allocator<T>(other) {}
-
-  template <class U>
-  aligned_allocator_cpp11(const aligned_allocator_cpp11<U>& other)
-    : std::allocator<T>(other) {}
-
-  ~aligned_allocator_cpp11() {}
-
-  pointer allocate(size_type num, const void* /*hint*/ = 0)
-  {
-    Eigen::internal::check_size_for_overflow<T>(num);
-    return static_cast<pointer>( Eigen::internal::aligned_malloc(num * sizeof(T)) );
-  }
-
-  void deallocate(pointer p, size_type /*num*/)
-  {
-    Eigen::internal::aligned_free(p);
-  }
-};
-
-} // namespace detail
-
 template <typename _Tp, typename... _Args>
-inline std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
-{
-  typedef typename std::remove_const<_Tp>::type _Tp_nc;
-  return std::allocate_shared<_Tp>(detail::aligned_allocator_cpp11<_Tp_nc>(),
-                                   std::forward<_Args>(__args)...);
-}
+std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args);
 
-#else
-
-template <typename _Tp, typename... _Args>
-inline std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
-{
-  typedef typename std::remove_const<_Tp>::type _Tp_nc;
-  return std::allocate_shared<_Tp>(Eigen::aligned_allocator<_Tp_nc>(),
-                                   std::forward<_Args>(__args)...);
-}
-
-#endif // EIGEN_VERSION_AT_LEAST(3,2,1)
-
-//==============================================================================
 template<typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args)
-{
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-// TODO(JS): This is a stopgap solution as it was omitted from C++11 as "partly
-// an oversight". This can be replaced by std::make_unique<T> of the standard
-// library when we migrate to using C++14.
+std::unique_ptr<T> make_unique(Args&&... args);
 
 } // namespace common
 } // namespace dart
+
+#define DART_SHARED_PTR_CREATE_FUNCTION_NAME createShared
+#define DART_UNIQUE_PTR_CREATE_FUNCTION_NAME createUnique
+
+// Define static creator function that returns a smart pointer to an object
+#define _DART_DEFINE_OBJECT_CREATOR(                                           \
+    class_name, func_name, ptr_type, creator)                                  \
+  template <typename... Args>                                                  \
+  static ptr_type<class_name> func_name(Args&&... args)                        \
+  {                                                                            \
+    return creator<class_name>(std::forward<Args>(args)...);                   \
+  }
+
+// Define static creator function that returns a smart pointer to an object with
+// protected constructor
+#define _DART_DEFINE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(                        \
+    class_name, func_name, ptr_type, creator)                                  \
+private:                                                                       \
+  struct private_structure                                                     \
+  {                                                                            \
+    explicit private_structure()                                               \
+    {                                                                          \
+    }                                                                          \
+  };                                                                           \
+                                                                               \
+public:                                                                        \
+  template <typename... Args>                                                  \
+  class_name(const private_structure&, Args&&... args)                         \
+    : class_name(std::forward<Args>(args)...)                                  \
+  {                                                                            \
+  }                                                                            \
+  template <typename... Args>                                                  \
+  static ptr_type<class_name> func_name(Args&&... args)                        \
+  {                                                                            \
+    return creator<class_name>(                                                \
+        private_structure{}, std::forward<Args>(args)...);                     \
+  }
+
+// Define static creator function that returns std::shared_ptr to an object.
+// This static functions will be defined: createShared()
+#define DART_DEFINE_SHARED_OBJECT_CREATOR(class_name)                          \
+  _DART_DEFINE_OBJECT_CREATOR(                                                 \
+      class_name,                                                              \
+      DART_SHARED_PTR_CREATE_FUNCTION_NAME,                                    \
+      std::shared_ptr,                                                         \
+      std::make_shared)
+
+// Define static creator function that returns std::shared_ptr to an object
+// where the constructor is protected.
+// This static functions will be defined: createShared()
+#define DART_DEFINE_SHARED_OBJECT_CREATOR_FOR_PROTECTED_CTOR(class_name)       \
+  _DART_DEFINE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(                              \
+      class_name,                                                              \
+      DART_SHARED_PTR_CREATE_FUNCTION_NAME,                                    \
+      std::shared_ptr,                                                         \
+      std::make_shared)
+
+// Define static creator function that returns std::shared_ptr to an object
+// requires aligned memory allocation.
+// This static functions will be defined: createShared()
+#define DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(class_name)                  \
+  _DART_DEFINE_OBJECT_CREATOR(                                                 \
+      class_name,                                                              \
+      DART_SHARED_PTR_CREATE_FUNCTION_NAME,                                    \
+      std::shared_ptr,                                                         \
+      ::dart::common::make_aligned_shared)
+
+// Define static creator function that returns std::shared_ptr to an object
+// requires aligned memory allocation where the constructor is protected.
+// This static functions will be defined: createShared()
+#define DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR_FOR_PROTECTED_CTOR(          \
+      class_name)                                                              \
+  _DART_DEFINE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(                              \
+      class_name,                                                              \
+      DART_SHARED_PTR_CREATE_FUNCTION_NAME,                                    \
+      std::shared_ptr,                                                         \
+      ::dart::common::make_aligned_shared)
+
+// Define static creator function that returns std::unique_ptr to an object
+#define DART_DEFINE_UNIQUE_OBJECT_CREATOR(class_name)                          \
+  _DART_DEFINE_OBJECT_CREATOR(                                                 \
+      class_name,                                                              \
+      DART_UNIQUE_PTR_CREATE_FUNCTION_NAME,                                    \
+      std::unique_ptr,                                                         \
+      ::dart::common::make_unique)
+
+// Define static creator function that returns std::unique_ptr to an object
+// where the constructor is protected
+#define DART_DEFINE_UNIQUE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(class_name)       \
+  _DART_DEFINE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(                              \
+      class_name,                                                              \
+      DART_UNIQUE_PTR_CREATE_FUNCTION_NAME,                                    \
+      std::unique_ptr,                                                         \
+      ::dart::common::make_unique)
+
+// Define two static creator functions that returns std::unique_ptr and
+// std::unique_ptr, respectively, to an object
+#define DART_DEFINE_OBJECT_CREATORS(class_name)                                \
+  DART_DEFINE_SHARED_OBJECT_CREATOR(class_name)                                \
+  DART_DEFINE_UNIQUE_OBJECT_CREATOR(class_name)
+
+// Define two static creator functions that returns std::unique_ptr and
+// std::unique_ptr, respectively, to an object where the constructor is
+// protected
+#define DART_DEFINE_OBJECT_CREATORS_FOR_PROTECTED_CTOR(X)                      \
+  DART_DEFINE_SHARED_OBJECT_CREATOR_FOR_PROTECTED_CTOR(X)                      \
+  DART_DEFINE_UNIQUE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(X)
+
+// Define two static creator functions that returns std::unique_ptr and
+// std::unique_ptr, respectively, to an object
+#if DART_ENABLE_SIMD
+  #define DART_DEFINE_ALIGNED_OBJECT_CREATORS(class_name)                      \
+    DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(class_name)                      \
+    DART_DEFINE_UNIQUE_OBJECT_CREATOR(class_name)
+#else
+  #define DART_DEFINE_ALIGNED_OBJECT_CREATORS(class_name)                      \
+    DART_DEFINE_OBJECT_CREATORS(class_name)
+#endif
+
+// Define two static creator functions that returns std::unique_ptr and
+// std::unique_ptr, respectively, to an object where the constructor is
+// protected
+#if DART_ENABLE_SIMD
+  #define DART_DEFINE_ALIGNED_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)   \
+    DART_DEFINE_CREATE_ALIGNED_PTR_SHARED_FOR_PROTECTED_CTOR(class_name)       \
+    DART_DEFINE_UNIQUE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(class_name)
+#else
+  #define DART_DEFINE_ALIGNED_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)   \
+    DART_DEFINE_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)
+#endif
+
+#include "dart/common/detail/Memory-impl.hpp"
 
 #endif // DART_COMMON_MEMORY_HPP_

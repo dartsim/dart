@@ -89,7 +89,7 @@ public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  DART_DEFINE_CREATE_ALIGNED_SHARED(MakeCloneable)
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(MakeCloneable)
 
   /// Default constructor. Uses the default constructor of Mixin
   MakeCloneable();
