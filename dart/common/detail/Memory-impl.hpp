@@ -38,6 +38,8 @@
 
 #if EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
 #include "dart/common/detail/AlignedAllocator.hpp"
+#else
+#include<Eigen/StdVector>
 #endif
 
 namespace dart {
