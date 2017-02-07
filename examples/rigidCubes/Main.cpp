@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -31,14 +31,14 @@
 
 #include <iostream>
 
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 
-#include "examples/rigidCubes/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 int main(int argc, char* argv[]) {
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"/skel/cubes.skel");
+      = dart::utils::SkelParser::readWorld("file://sample/skel/cubes.skel");
   assert(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);

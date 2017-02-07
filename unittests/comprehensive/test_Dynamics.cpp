@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -52,8 +52,8 @@ using namespace dart;
 class DynamicsTest : public ::testing::Test
 {
 public:
-  // Get Skel file list to test.
-  const std::vector<std::string>& getList() const;
+  // Get Skel file URI to test.
+  const std::vector<common::Uri>& getList() const;
 
   // Get reference frames
   const std::vector<SimpleFrame*>& getRefFrames() const;
@@ -71,47 +71,47 @@ public:
 
   // Compare velocities computed by recursive method, Jacobian, and finite
   // difference.
-  void testJacobians(const std::string& _fileName);
+  void testJacobians(const common::Uri& uri);
 
   // Compare velocities and accelerations with actual vaules and approximates
   // using finite differece method.
-  void testFiniteDifferenceGeneralizedCoordinates(const std::string& _fileName);
+  void testFiniteDifferenceGeneralizedCoordinates(const common::Uri& uri);
 
   // Compare spatial velocities computed by forward kinematics and finite
   // difference.
-  void testFiniteDifferenceBodyNodeVelocity(const std::string& _fileName);
+  void testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri);
 
   // Compare accelerations computed by recursive method, Jacobian, and finite
   // difference.
-  void testFiniteDifferenceBodyNodeAcceleration(const std::string& _fileName);
+  void testFiniteDifferenceBodyNodeAcceleration(const common::Uri& uri);
 
   // Test if the recursive forward kinematics algorithm computes
   // transformations, spatial velocities, and spatial accelerations correctly.
-  void testForwardKinematics(const std::string& _fileName);
+  void testForwardKinematics(const common::Uri& uri);
 
   // Compare dynamics terms in equations of motion such as mass matrix, mass
   // inverse matrix, Coriolis force vector, gravity force vector, and external
   // force vector.
-  void compareEquationsOfMotion(const std::string& _fileName);
+  void compareEquationsOfMotion(const common::Uri& uri);
 
   // Test skeleton's COM and its related quantities.
-  void testCenterOfMass(const std::string& _fileName);
+  void testCenterOfMass(const common::Uri& uri);
 
   // Test if the com acceleration is equal to the gravity
-  void testCenterOfMassFreeFall(const std::string& _fileName);
+  void testCenterOfMassFreeFall(const common::Uri& uri);
 
   //
-  void testConstraintImpulse(const std::string& _fileName);
+  void testConstraintImpulse(const common::Uri& uri);
 
   // Test impulse based dynamics
-  void testImpulseBasedDynamics(const std::string& _fileName);
+  void testImpulseBasedDynamics(const common::Uri& uri);
 
 protected:
   // Sets up the test fixture.
   void SetUp() override;
 
   // Skel file list.
-  std::vector<std::string> fileList;
+  std::vector<common::Uri> fileList;
 
   std::vector<SimpleFrame*> refFrames;
 };
@@ -120,25 +120,25 @@ protected:
 void DynamicsTest::SetUp()
 {
   // Create a list of skel files to test with
-  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  fileList.push_back("dart://sample/skel/test/chainwhipa.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/fullbody1.skel");
 
   // Create a list of reference frames to use during tests
   refFrames.push_back(new SimpleFrame(Frame::World(), "refFrame1"));
@@ -150,7 +150,7 @@ void DynamicsTest::SetUp()
 }
 
 //==============================================================================
-const std::vector<std::string>& DynamicsTest::getList() const
+const std::vector<common::Uri>& DynamicsTest::getList() const
 {
   return fileList;
 }
@@ -560,7 +560,7 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
 }
 
 //==============================================================================
-void DynamicsTest::testJacobians(const std::string& _fileName)
+void DynamicsTest::testJacobians(const common::Uri& uri)
 {
   using namespace std;
   using namespace Eigen;
@@ -586,7 +586,7 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
   Vector3d gravity(0.0, -9.81, 0.0);
 
   // load skeleton
-  WorldPtr world = SkelParser::readWorld(_fileName);
+  WorldPtr world = SkelParser::readWorld(uri);
   assert(world != nullptr);
   world->setGravity(gravity);
 
@@ -677,7 +677,7 @@ void DynamicsTest::testJacobians(const std::string& _fileName)
 
 //==============================================================================
 void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
-    const std::string& _fileName)
+    const common::Uri& uri)
 {
   using namespace std;
   using namespace Eigen;
@@ -704,7 +704,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
   double TOLERANCE = 5e-4;
 
   // load skeleton
-  WorldPtr world = SkelParser::readWorld(_fileName);
+  WorldPtr world = SkelParser::readWorld(uri);
   assert(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
@@ -778,8 +778,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
 }
 
 //==============================================================================
-void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(
-    const std::string& _fileName)
+void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
 {
   using namespace std;
   using namespace Eigen;
@@ -808,7 +807,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(
   const double tol = timeStep * 1e+2;
 
   // load skeleton
-  WorldPtr world = SkelParser::readWorld(_fileName);
+  WorldPtr world = SkelParser::readWorld(uri);
   assert(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
@@ -876,7 +875,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(
 
 //==============================================================================
 void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
-    const std::string& _fileName)
+    const common::Uri& uri)
 {
   using namespace std;
   using namespace Eigen;
@@ -903,7 +902,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
   double timeStep = 1.0e-6;
 
   // load skeleton
-  WorldPtr world = SkelParser::readWorld(_fileName);
+  WorldPtr world = SkelParser::readWorld(uri);
   assert(world != nullptr);
   world->setGravity(gravity);
   world->setTimeStep(timeStep);
@@ -1155,9 +1154,9 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
 }
 
 //==============================================================================
-void DynamicsTest::testForwardKinematics(const std::string& fileName)
+void DynamicsTest::testForwardKinematics(const common::Uri& uri)
 {
-  auto world = utils::SkelParser::readWorld(fileName);
+  auto world = utils::SkelParser::readWorld(uri);
   EXPECT_TRUE(world != nullptr);
 
   auto numSkeletons = world->getNumSkeletons();
@@ -1169,7 +1168,7 @@ void DynamicsTest::testForwardKinematics(const std::string& fileName)
 }
 
 //==============================================================================
-void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
+void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
 {
   using namespace std;
   using namespace Eigen;
@@ -1202,7 +1201,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(_fileName);
+  myWorld = utils::SkelParser::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1381,7 +1380,7 @@ void DynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
 
       if(failure)
       {
-        std::cout << "Failure occurred in the World of file: " << _fileName
+        std::cout << "Failure occurred in the World of file: " << uri.toString()
                   << "\nWith Skeleton named: " << skel->getName() << "\n\n";
       }
     }
@@ -1446,7 +1445,7 @@ void compareCOMJacobianToFk(const SkeletonPtr& skel,
 }
 
 //==============================================================================
-void DynamicsTest::testCenterOfMass(const std::string& _fileName)
+void DynamicsTest::testCenterOfMass(const common::Uri& uri)
 {
   using namespace std;
   using namespace Eigen;
@@ -1479,7 +1478,7 @@ void DynamicsTest::testCenterOfMass(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(_fileName);
+  myWorld = utils::SkelParser::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1602,7 +1601,7 @@ void compareCOMAccelerationToGravity(SkeletonPtr skel,
 }
 
 //==============================================================================
-void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
+void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
 {
   using namespace std;
   using namespace Eigen;
@@ -1640,7 +1639,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(_fileName);
+  myWorld = utils::SkelParser::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1717,7 +1716,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const std::string& _fileName)
 }
 
 //==============================================================================
-void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
+void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
 {
   using namespace std;
   using namespace Eigen;
@@ -1744,7 +1743,7 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(_fileName);
+  myWorld = utils::SkelParser::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1811,7 +1810,7 @@ void DynamicsTest::testConstraintImpulse(const std::string& _fileName)
 }
 
 //==============================================================================
-void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
+void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
 {
   using namespace std;
   using namespace Eigen;
@@ -1840,7 +1839,7 @@ void DynamicsTest::testImpulseBasedDynamics(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(_fileName);
+  myWorld = utils::SkelParser::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1914,7 +1913,7 @@ TEST_F(DynamicsTest, testJacobians)
   for (std::size_t i = 0; i < getList().size(); ++i)
   {
 #ifndef NDEBUG
-    dtdbg << getList()[i] << std::endl;
+    dtdbg << getList()[i].toString() << std::endl;
 #endif
     testJacobians(getList()[i]);
   }
@@ -1926,7 +1925,7 @@ TEST_F(DynamicsTest, testFiniteDifference)
   for (std::size_t i = 0; i < getList().size(); ++i)
   {
 #if BUILD_TYPE_DEBUG
-    dtdbg << getList()[i] << std::endl;
+    dtdbg << getList()[i].toString() << std::endl;
 #endif
     testFiniteDifferenceGeneralizedCoordinates(getList()[i]);
     testFiniteDifferenceBodyNodeVelocity(getList()[i]);
@@ -1940,7 +1939,7 @@ TEST_F(DynamicsTest, testForwardKinematics)
   for (std::size_t i = 0; i < getList().size(); ++i)
   {
 #ifndef NDEBUG
-    dtdbg << getList()[i] << std::endl;
+    dtdbg << getList()[i].toString() << std::endl;
 #endif
     testForwardKinematics(getList()[i]);
   }
@@ -1954,20 +1953,20 @@ TEST_F(DynamicsTest, compareEquationsOfMotion)
     ////////////////////////////////////////////////////////////////////////////
     // TODO(JS): Following skel files, which contain euler joints couldn't
     //           pass EQUATIONS_OF_MOTION, are disabled.
-    std::string skelFileName = getList()[i];
-    if (skelFileName == DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel"
-        || skelFileName == DART_DATA_PATH"skel/test/chainwhipa.skel"
-        || skelFileName == DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel"
-        || skelFileName == DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel"
-        || skelFileName == DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel"
-        || skelFileName == DART_DATA_PATH"skel/fullbody1.skel")
+    const auto uri = getList()[i];
+    if (uri.toString() == "dart://sample/skel/test/double_pendulum_euler_joint.skel"
+        || uri.toString() == "dart://sample/skel/test/chainwhipa.skel"
+        || uri.toString() == "dart://sample/skel/test/serial_chain_eulerxyz_joint.skel"
+        || uri.toString() == "dart://sample/skel/test/simple_tree_structure_euler_joint.skel"
+        || uri.toString() == "dart://sample/skel/test/tree_structure_euler_joint.skel"
+        || uri.toString() == "dart://sample/skel/fullbody1.skel")
     {
         continue;
     }
     ////////////////////////////////////////////////////////////////////////////
 
 #ifndef NDEBUG
-    dtdbg << getList()[i] << std::endl;
+    dtdbg << getList()[i].toString() << std::endl;
 #endif
     compareEquationsOfMotion(getList()[i]);
   }
@@ -1979,7 +1978,7 @@ TEST_F(DynamicsTest, testCenterOfMass)
   for (std::size_t i = 0; i < getList().size(); ++i)
   {
 #ifndef NDEBUG
-    dtdbg << getList()[i] << std::endl;
+    dtdbg << getList()[i].toString() << std::endl;
 #endif
     testCenterOfMass(getList()[i]);
   }
@@ -1991,7 +1990,7 @@ TEST_F(DynamicsTest, testCenterOfMassFreeFall)
   for (std::size_t i = 0; i < getList().size(); ++i)
   {
 #ifndef NDEBUG
-    dtdbg << getList()[i] << std::endl;
+    dtdbg << getList()[i].toString() << std::endl;
 #endif
     testCenterOfMassFreeFall(getList()[i]);
   }
@@ -2003,7 +2002,7 @@ TEST_F(DynamicsTest, testConstraintImpulse)
   for (std::size_t i = 0; i < getList().size(); ++i)
   {
 #ifndef NDEBUG
-    dtdbg << getList()[i] << std::endl;
+    dtdbg << getList()[i].toString() << std::endl;
 #endif
     testConstraintImpulse(getList()[i]);
   }
@@ -2015,7 +2014,7 @@ TEST_F(DynamicsTest, testImpulseBasedDynamics)
   for (std::size_t i = 0; i < getList().size(); ++i)
   {
 #ifndef NDEBUG
-    dtdbg << getList()[i] << std::endl;
+    dtdbg << getList()[i].toString() << std::endl;
 #endif
     testImpulseBasedDynamics(getList()[i]);
   }
@@ -2034,7 +2033,7 @@ TEST_F(DynamicsTest, HybridDynamics)
 
   // Load world and skeleton
   WorldPtr world = utils::SkelParser::readWorld(
-      DART_DATA_PATH"/skel/test/hybrid_dynamics_test.skel");
+      "dart://sample/skel/test/hybrid_dynamics_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);

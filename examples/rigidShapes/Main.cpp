@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -36,7 +36,7 @@
  */
 
 #include <iostream>
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 #include "MyWindow.hpp"
 
 #include <fcl/config.h>
@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
   // load a skeleton file
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld(DART_DATA_PATH"skel/shapes.skel");
+      = dart::utils::SkelParser::readWorld("dart://sample/skel/shapes.skel");
   assert(myWorld != NULL);
 
   // create a window and link it to the world

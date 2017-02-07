@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -343,6 +343,13 @@ public:
   /// Get the const root BodyNode of the tree whose index in this Skeleton is
   /// _treeIdx
   const BodyNode* getRootBodyNode(std::size_t _treeIdx = 0) const;
+
+  /// Get the root Joint of the tree whose index in this Skeleton is treeIdx
+  Joint* getRootJoint(std::size_t treeIdx = 0u);
+
+  /// Get the const root Joint of the tree whose index in this Skeleton is
+  /// treeIdx
+  const Joint* getRootJoint(std::size_t treeIdx = 0u) const;
 
   // Documentation inherited
   BodyNode* getBodyNode(std::size_t _idx) override;
@@ -814,10 +821,19 @@ public:
 
   /// Notify that the articulated inertia and everything that depends on it
   /// needs to be updated
+  DART_DEPRECATED(6.2)
   void notifyArticulatedInertiaUpdate(std::size_t _treeIdx);
 
+  /// Notify that the articulated inertia and everything that depends on it
+  /// needs to be updated
+  void dirtyArticulatedInertia(std::size_t _treeIdx);
+
   /// Notify that the support polygon of a tree needs to be updated
+  DART_DEPRECATED(6.2)
   void notifySupportUpdate(std::size_t _treeIdx);
+
+  /// Notify that the support polygon of a tree needs to be updated
+  void dirtySupportPolygon(std::size_t _treeIdx);
 
   // Documentation inherited
   double computeKineticEnergy() const override;

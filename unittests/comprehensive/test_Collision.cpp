@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -1107,7 +1107,7 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
 
   // Load world and skeleton
   WorldPtr world = SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/collision_of_prescribed_joints_test.skel");
+        "dart://sample/skel/test/collision_of_prescribed_joints_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);

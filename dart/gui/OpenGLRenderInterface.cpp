@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -157,8 +157,8 @@ void OpenGLRenderInterface::drawSphere(double radius)
   gluSphere(quadObj, radius, slices, stacks);
 }
 
-void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _size) {
-    glScaled(_size(0), _size(1), _size(2));
+void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _diameters) {
+    glScaled(_diameters(0), _diameters(1), _diameters(2));
 
     drawSphere(0.5);
 }

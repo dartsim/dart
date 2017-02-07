@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -46,35 +46,35 @@ using namespace math;
 using namespace dynamics;
 using namespace simulation;
 
-std::vector<std::string> getFileList()
+std::vector<common::Uri> getFileList()
 {
-  std::vector<std::string> fileList;
-  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  std::vector<common::Uri> fileList;
+  fileList.push_back("dart://sample/skel/test/chainwhipa.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/fullbody1.skel");
 
   return fileList;
 }
 
 std::vector<SkeletonPtr> getSkeletons()
 {
-  std::vector<std::string> fileList = getFileList();
+  const auto fileList = getFileList();
 
   std::vector<WorldPtr> worlds;
   for(std::size_t i=0; i<fileList.size(); ++i)
@@ -763,6 +763,26 @@ TEST(Skeleton, ZeroDofJointInReferential)
   EXPECT_EQ(branch->getNumBodyNodes(), skel->getNumBodyNodes());
   EXPECT_FALSE(branch->getIndexOf(zeroDof1) == INVALID_INDEX);
   EXPECT_FALSE(branch->getIndexOf(zeroDof2) == INVALID_INDEX);
+}
+
+TEST(Skeleton, ZeroDofJointConstraintForces)
+{
+  // This is a regression test which makes sure that the BodyNodes of
+  // ZeroDofJoints will be correctly aggregate constraint forces.
+  SkeletonPtr skel = Skeleton::create();
+
+  BodyNode* bn = skel->createJointAndBodyNodePair<RevoluteJoint>().second;
+  BodyNode* zeroDof1 = skel->createJointAndBodyNodePair<WeldJoint>(bn).second;
+  bn = skel->createJointAndBodyNodePair<PrismaticJoint>(zeroDof1).second;
+  skel->createJointAndBodyNodePair<WeldJoint>(bn);
+
+  const auto numSkelDofs = skel->getNumDofs();
+  for (auto& bodyNode : skel->getBodyNodes())
+    bodyNode->setConstraintImpulse(Eigen::Vector6d::Random());
+
+  // Make sure this does not cause seg-fault
+  Eigen::VectorXd constraintForces = skel->getConstraintForces();
+  EXPECT_EQ(constraintForces.size(), static_cast<int>(numSkelDofs));
 }
 
 TEST(Skeleton, Referential)

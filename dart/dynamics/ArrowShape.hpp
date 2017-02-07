@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -85,7 +85,7 @@ public:
   void setProperties(const Properties& _properties);
 
   /// Set the color of this arrow
-  void notifyColorUpdate(const Eigen::Vector4d& _color) override;
+  void notifyColorUpdated(const Eigen::Vector4d& _color) override;
 
   /// Get the properties of this arrow
   const Properties& getProperties() const;

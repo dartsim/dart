@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -117,7 +117,7 @@ protected:
 //==============================================================================
 void SoftDynamicsTest::SetUp()
 {
-  list.push_back(DART_DATA_PATH"skel/test/test_drop_box.skel");
+  list.push_back("dart://sample/skel/test/test_drop_box.skel");
 }
 
 //==============================================================================

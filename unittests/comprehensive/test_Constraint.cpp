@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -66,25 +66,25 @@ protected:
 //==============================================================================
 void ConstraintTest::SetUp()
 {
-  list.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  list.push_back("dart://sample/skel/test/chainwhipa.skel");
+  list.push_back("dart://sample/skel/test/single_pendulum.skel");
+  list.push_back("dart://sample/skel/test/single_pendulum_euler_joint.skel");
+  list.push_back("dart://sample/skel/test/single_pendulum_ball_joint.skel");
+  list.push_back("dart://sample/skel/test/double_pendulum.skel");
+  list.push_back("dart://sample/skel/test/double_pendulum_euler_joint.skel");
+  list.push_back("dart://sample/skel/test/double_pendulum_ball_joint.skel");
+  list.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  list.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  list.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
+  list.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
+  list.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
+  list.push_back("dart://sample/skel/test/simple_tree_structure.skel");
+  list.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  list.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  list.push_back("dart://sample/skel/test/tree_structure.skel");
+  list.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
+  list.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
+  list.push_back("dart://sample/skel/fullbody1.skel");
 }
 
 //==============================================================================

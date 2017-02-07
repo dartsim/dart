@@ -27,6 +27,22 @@ macro(dart_get_filename_components _var _cacheDesc)
 endmacro()
 
 #===============================================================================
+# Generate directory list of ${curdir}
+# Usage:
+#   dart_get_subdir_list(var curdir)
+#===============================================================================
+macro(dart_get_subdir_list var curdir)
+    file(GLOB children RELATIVE ${curdir} "${curdir}/*")
+    set(dirlist "")
+    foreach(child ${children})
+        if(IS_DIRECTORY ${curdir}/${child})
+            LIST(APPEND dirlist ${child})
+        endif()
+    endforeach()
+    set(${var} ${dirlist})
+endmacro()
+
+#===============================================================================
 # Generate header file list to a cached list.
 # Usage:
 #   dart_generate_include_header_list(_var _target_dir _cacheDesc [headers...])
@@ -103,4 +119,39 @@ function(dart_check_optional_package variable component dependency)
     endif()
     return()
   endif()
+endfunction()
+
+#===============================================================================
+function(dart_add_custom_target rel_dir property_name)
+  set(abs_dir "${CMAKE_CURRENT_LIST_DIR}/${rel_dir}")
+
+  if(NOT IS_DIRECTORY ${abs_dir})
+    message(SEND_ERROR "Failed to find directory: ${abs_dir}")
+  endif()
+
+  # Use the directory name as the executable name
+  get_filename_component(target_name ${rel_dir} NAME)
+
+  file(GLOB hdrs "${abs_dir}/*.hpp")
+  file(GLOB srcs "${abs_dir}/*.cpp")
+  if(srcs)
+    add_executable(${target_name} EXCLUDE_FROM_ALL ${hdrs} ${srcs})
+    target_link_libraries(${target_name} ${ARGN})
+    dart_property_add(${property_name} ${target_name})
+  endif()
+endfunction()
+
+#===============================================================================
+function(dart_add_example rel_dir)
+  dart_add_custom_target(${rel_dir} DART_EXAMPLES ${ARGN})
+endfunction()
+
+#===============================================================================
+function(dart_add_tutorial rel_dir)
+  dart_add_custom_target(${rel_dir} DART_TUTORIALS ${ARGN})
+endfunction(dart_add_tutorial)
+
+#===============================================================================
+function(dart_format_add)
+  dart_property_add(DART_FORMAT_FILES ${ARGN})
 endfunction()

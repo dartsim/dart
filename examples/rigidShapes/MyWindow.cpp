@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -129,7 +129,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'w':  // Spawn an ellipsoid
     case 'W':
     {
-      spawnEllipsoid(getRandomTransform(), math::randomVector<3>(0.05, 0.25));
+      spawnEllipsoid(getRandomTransform(), math::randomVector<3>(0.025, 0.125));
       break;
     }
     case 'e':  // Spawn an cylinder
@@ -191,7 +191,7 @@ void MyWindow::spawnEllipsoid(const Eigen::Isometry3d& _T,
 {
   dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
 
-  dynamics::ShapePtr newShape(new dynamics::EllipsoidShape(_radii));
+  dynamics::ShapePtr newShape(new dynamics::EllipsoidShape(_radii*2.0));
 
   dynamics::BodyNode::Properties bodyProp;
   bodyProp.mName = "ellipsoid_link";

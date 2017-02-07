@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -160,7 +160,7 @@ void SoftBodyNode::setAspectState(const AspectState& state)
     return;
 
   mAspectState = state;
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -259,7 +259,7 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
   // called on this BodyNode, but that happens after construction is finished.
   mAspectProperties = _properties;
   configurePointMasses(softNode);
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -335,7 +335,7 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
   }
 
   incrementVersion();
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================

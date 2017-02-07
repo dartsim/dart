@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -121,7 +121,7 @@ bool UniversalJoint::isCyclic(std::size_t _index) const
 void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 {
   mAspectProperties.mAxis[0] = _axis;
-  Joint::notifyPositionUpdate();
+  Joint::notifyPositionUpdated();
   Joint::incrementVersion();
 }
 
@@ -129,7 +129,7 @@ void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
 {
   mAspectProperties.mAxis[1] = _axis;
-  Joint::notifyPositionUpdate();
+  Joint::notifyPositionUpdated();
   Joint::incrementVersion();
 }
 

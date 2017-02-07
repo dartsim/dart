@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -40,49 +40,49 @@ TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)
 {
   DartLoader loader;
   EXPECT_EQ(nullptr,
-    loader.parseSkeleton(DART_DATA_PATH"skel/test/does_not_exist.urdf"));
+    loader.parseSkeleton("dart://sample/skel/test/does_not_exist.urdf"));
 }
 
 TEST(DartLoader, parseSkeleton_InvalidUrdfReturnsNull)
 {
   DartLoader loader;
   EXPECT_EQ(nullptr,
-    loader.parseSkeleton(DART_DATA_PATH"urdf/test/invalid.urdf)"));
+    loader.parseSkeleton("dart://sample/urdf/test/invalid.urdf)"));
 }
 
 TEST(DartLoader, parseSkeleton_MissingMeshReturnsNull)
 {
   DartLoader loader;
   EXPECT_EQ(nullptr,
-    loader.parseSkeleton(DART_DATA_PATH"urdf/test/missing_mesh.urdf"));
+    loader.parseSkeleton("dart://sample/urdf/test/missing_mesh.urdf"));
 }
 
 TEST(DartLoader, parseSkeleton_InvalidMeshReturnsNull)
 {
   DartLoader loader;
   EXPECT_EQ(nullptr,
-    loader.parseSkeleton(DART_DATA_PATH"urdf/test/invalid_mesh.urdf"));
+    loader.parseSkeleton("dart://sample/urdf/test/invalid_mesh.urdf"));
 }
 
 TEST(DartLoader, parseSkeleton_MissingPackageReturnsNull)
 {
   DartLoader loader;
   EXPECT_EQ(nullptr,
-    loader.parseSkeleton(DART_DATA_PATH"urdf/test/missing_package.urdf"));
+    loader.parseSkeleton("dart://sample/urdf/test/missing_package.urdf"));
 }
 
 TEST(DartLoader, parseSkeleton_LoadsPrimitiveGeometry)
 {
   DartLoader loader;
   EXPECT_TRUE(nullptr !=
-    loader.parseSkeleton(DART_DATA_PATH"urdf/test/primitive_geometry.urdf"));
+    loader.parseSkeleton("dart://sample/urdf/test/primitive_geometry.urdf"));
 }
 
 TEST(DartLoader, parseWorld)
 {
   DartLoader loader;
   EXPECT_TRUE(nullptr !=
-      loader.parseWorld(DART_DATA_PATH"urdf/test/testWorld.urdf"));
+      loader.parseWorld("dart://sample/urdf/test/testWorld.urdf"));
 }
 
 int main(int argc, char* argv[])

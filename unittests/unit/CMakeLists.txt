@@ -1,6 +1,8 @@
 dart_add_test("unit" test_Aspect)
+dart_add_test("unit" test_ContactConstraint)
 dart_add_test("unit" test_GenericJoints)
 dart_add_test("unit" test_Geometry)
+dart_add_test("unit" test_Lemke)
 dart_add_test("unit" test_LocalResourceRetriever)
 dart_add_test("unit" test_Math)
 dart_add_test("unit" test_Optimizer)
@@ -21,6 +23,9 @@ if(TARGET dart-utils)
 
   dart_add_test("unit" test_CompositeResourceRetriever)
   target_link_libraries(test_CompositeResourceRetriever dart-utils)
+
+  dart_add_test("unit" test_DartResourceRetriever)
+  target_link_libraries(test_DartResourceRetriever dart-utils)
 
   dart_add_test("unit" test_FileInfoWorld)
   target_link_libraries(test_FileInfoWorld dart-utils)

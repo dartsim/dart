@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -719,7 +719,7 @@ void Skeleton::setTimeStep(double _timeStep)
   mAspectProperties.mTimeStep = _timeStep;
 
   for(std::size_t i=0; i<mTreeCache.size(); ++i)
-    notifyArticulatedInertiaUpdate(i);
+    dirtyArticulatedInertia(i);
 }
 
 //==============================================================================
@@ -734,7 +734,7 @@ void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
   mAspectProperties.mGravity = _gravity;
   SET_ALL_FLAGS(mGravityForces);
   SET_ALL_FLAGS(mCoriolisAndGravityForces);
-  ON_ALL_TREES(notifySupportUpdate);
+  ON_ALL_TREES(dirtySupportPolygon);
 }
 
 //==============================================================================
@@ -794,6 +794,23 @@ BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx)
 const BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx) const
 {
   return const_cast<Skeleton*>(this)->getRootBodyNode(_treeIdx);
+}
+
+//==============================================================================
+Joint* Skeleton::getRootJoint(std::size_t treeIdx)
+{
+  auto rootBodyNode = getRootBodyNode(treeIdx);
+
+  if (rootBodyNode)
+    return rootBodyNode->getParentJoint();
+
+  return nullptr;
+}
+
+//==============================================================================
+const Joint* Skeleton::getRootJoint(std::size_t treeIdx) const
+{
+  return const_cast<Skeleton*>(this)->getRootJoint(treeIdx);
 }
 
 //==============================================================================
@@ -2557,7 +2574,7 @@ void Skeleton::updateCacheDimensions(std::size_t _treeIdx)
   updateCacheDimensions(mTreeCache[_treeIdx]);
   updateCacheDimensions(mSkelCache);
 
-  notifyArticulatedInertiaUpdate(_treeIdx);
+  dirtyArticulatedInertia(_treeIdx);
 }
 
 //==============================================================================
@@ -3492,6 +3509,12 @@ void Skeleton::clearInternalForces()
 //==============================================================================
 void Skeleton::notifyArticulatedInertiaUpdate(std::size_t _treeIdx)
 {
+  dirtyArticulatedInertia(_treeIdx);
+}
+
+//==============================================================================
+void Skeleton::dirtyArticulatedInertia(std::size_t _treeIdx)
+{
   SET_FLAG(_treeIdx, mArticulatedInertia);
   SET_FLAG(_treeIdx, mMassMatrix);
   SET_FLAG(_treeIdx, mAugMassMatrix);
@@ -3504,6 +3527,12 @@ void Skeleton::notifyArticulatedInertiaUpdate(std::size_t _treeIdx)
 
 //==============================================================================
 void Skeleton::notifySupportUpdate(std::size_t _treeIdx)
+{
+  dirtySupportPolygon(_treeIdx);
+}
+
+//==============================================================================
+void Skeleton::dirtySupportPolygon(std::size_t _treeIdx)
 {
   SET_FLAG(_treeIdx, mSupport);
 }

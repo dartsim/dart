@@ -80,7 +80,7 @@ public:
 };
 
 std::shared_ptr<World> parseWorldURDF(const std::string &xml_string,
-    const dart::common::Uri& _baseUri);
+    const dart::common::Uri& _baseUri, const common::ResourceRetrieverPtr& retriever);
 
 } // namespace urdf_parsing
 } // namespace utils

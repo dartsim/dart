@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -37,9 +37,9 @@
 
 #include <iostream>
 
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 
-#include "examples/softBodies/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
-        DART_DATA_PATH"skel/softBodies.skel");
+        "dart://sample/skel/softBodies.skel");
   assert(myWorld != nullptr);
 
   for(std::size_t i=0; i<myWorld->getNumSkeletons(); ++i)

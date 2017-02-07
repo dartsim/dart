@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -152,10 +152,18 @@ public:
   virtual void refreshData();
 
   /// Notify that the alpha of this shape has updated
+  DART_DEPRECATED(6.2)
   virtual void notifyAlphaUpdate(double alpha);
 
+  /// Notify that the alpha of this shape has updated
+  virtual void notifyAlphaUpdated(double alpha);
+
   /// Notify that the color (rgba) of this shape has updated
+  DART_DEPRECATED(6.2)
   virtual void notifyColorUpdate(const Eigen::Vector4d& color);
+
+  /// Notify that the color (rgba) of this shape has updated
+  virtual void notifyColorUpdated(const Eigen::Vector4d& color);
 
 protected:
 

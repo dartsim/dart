@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -123,11 +123,11 @@ void Win3D::click(int _button, int _state, int _x, int _y) {
     } else if (_button == 3 && _state == GLUT_DOWN) {  // mouse wheel up
       // each scroll generates a down and an immediate up,
       // so ignore ups
-      mZoom += 0.1;
+      mZoom += mZoom * 0.1;
     } else if (_button == 4 && _state == GLUT_DOWN) {  // mouse wheel down?
       // each scroll generates a down and an immediate up,
       // so ignore ups
-      mZoom -= 0.1;
+      mZoom -= mZoom * 0.1;
     }
     mMouseX = _x;
     mMouseY = _y;
@@ -152,7 +152,7 @@ void Win3D::drag(int _x, int _y) {
   }
   if (mTranslate) {
     Eigen::Matrix3d rot = mTrackBall.getRotationMatrix();
-    mTrans += rot.transpose()*Eigen::Vector3d(deltaX, -deltaY, 0.0);
+    mTrans += (1 / mZoom) * rot.transpose()*Eigen::Vector3d(deltaX, -deltaY, 0.0);
   }
   if (mZooming) {
     mZoom += deltaY*0.01;
@@ -224,7 +224,6 @@ void Win3D::initGL() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-  glEnable(GL_POLYGON_SMOOTH);
   glShadeModel(GL_SMOOTH);
   glPolygonMode(GL_FRONT, GL_FILL);
 }
