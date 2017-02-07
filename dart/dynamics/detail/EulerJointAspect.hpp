@@ -68,13 +68,7 @@ struct EulerJointProperties :
     GenericJoint<math::R3Space>::Properties,
     EulerJointUniqueProperties
 {
-  /// Create shared instance of this class
-  template <typename... Args>
-  static std::shared_ptr<EulerJointProperties> createShared(Args&&... args)
-  {
-    return common::make_aligned_shared<EulerJointProperties>(
-        std::forward<Args>(args)...);
-  }
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(EulerJointProperties)
 
   /// Composed constructor
   EulerJointProperties(

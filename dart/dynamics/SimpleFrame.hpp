@@ -50,13 +50,8 @@ namespace dynamics {
 class SimpleFrame : public Detachable, public ShapeFrame
 {
 public:
-  /// Create shared instance of this class
-  template <typename... Args>
-  static std::shared_ptr<SimpleFrame> createShared(Args&&... args)
-  {
-    return common::make_aligned_shared<SimpleFrame>(
-        std::forward<Args>(args)...);
-  }
+
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(SimpleFrame)
 
   /// Constructor
   explicit SimpleFrame(Frame* _refFrame,

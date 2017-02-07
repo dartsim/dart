@@ -62,13 +62,7 @@ struct UniversalJointProperties :
     GenericJoint<math::R2Space>::Properties,
     UniversalJointUniqueProperties
 {
-  /// Create shared instance of this class
-  template <typename... Args>
-  static std::shared_ptr<UniversalJointProperties> createShared(Args&&... args)
-  {
-    return common::make_aligned_shared<UniversalJointProperties>(
-        std::forward<Args>(args)...);
-  }
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(UniversalJointProperties)
 
   UniversalJointProperties(
       const GenericJoint<math::R2Space>::Properties& genericJointProperties =

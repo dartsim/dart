@@ -52,13 +52,7 @@ public:
 
   struct Properties : Base::Properties
   {
-    /// Create shared instance of this class
-    template <typename... Args>
-    static std::shared_ptr<Properties> createShared(Args&&... args)
-    {
-      return common::make_aligned_shared<Properties>(
-          std::forward<Args>(args)...);
-    }
+    DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
 
     Properties(const Base::Properties& properties = Base::Properties());
 
