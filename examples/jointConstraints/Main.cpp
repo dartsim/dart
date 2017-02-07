@@ -29,12 +29,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/jointConstraints/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 #include <iostream>
 
-#include "dart/dart.hpp"
-#include "dart/gui/gui.hpp"
+#include <dart/dart.hpp>
+#include <dart/gui/gui.hpp>
 
 using namespace dart;
 using namespace dynamics;
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
   // load a skeleton file
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(DART_DATA_PATH"skel/fullbody1.skel");
+      = utils::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
   assert(myWorld != nullptr);
 
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);

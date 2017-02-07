@@ -32,8 +32,8 @@
 #ifndef EXAMPLES_OPERATIONALSPACECONTROL_MYWINDOW_HPP_
 #define EXAMPLES_OPERATIONALSPACECONTROL_MYWINDOW_HPP_
 
-#include "dart/dart.hpp"
-#include "dart/gui/gui.hpp"
+#include <dart/dart.hpp>
+#include <dart/gui/gui.hpp>
 
 #include "Controller.hpp"
 

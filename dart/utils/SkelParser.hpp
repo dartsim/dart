@@ -56,7 +56,7 @@ namespace SkelParser {
 
   /// Read Skeleton from skel file
   dynamics::SkeletonPtr readSkeleton(
-    const common::Uri& fileUri,
+    const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
 } // namespace SkelParser

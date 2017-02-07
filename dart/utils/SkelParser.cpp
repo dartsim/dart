@@ -74,6 +74,8 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/Marker.hpp"
 #include "dart/utils/XmlHelpers.hpp"
+#include "dart/utils/CompositeResourceRetriever.hpp"
+#include "dart/utils/DartResourceRetriever.hpp"
 
 namespace dart {
 namespace utils {
@@ -421,7 +423,7 @@ simulation::WorldPtr SkelParser::readWorld(
     return nullptr;
   }
 
-  return ::dart::utils:: readWorld(worldElement, _uri, retriever);
+  return ::dart::utils::readWorld(worldElement, _uri, retriever);
 }
 
 //==============================================================================
@@ -451,21 +453,21 @@ simulation::WorldPtr SkelParser::readWorldXML(
 
 //==============================================================================
 dynamics::SkeletonPtr SkelParser::readSkeleton(
-  const common::Uri& _fileUri,
-  const common::ResourceRetrieverPtr& _retriever)
+  const common::Uri& uri,
+  const common::ResourceRetrieverPtr& nullOrRetriever)
 {
-  const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
+  const common::ResourceRetrieverPtr retriever = getRetriever(nullOrRetriever);
 
   //--------------------------------------------------------------------------
   // Load xml and create Document
-  tinyxml2::XMLDocument _dartFile;
+  tinyxml2::XMLDocument dartFile;
   try
   {
-    openXMLFile(_dartFile, _fileUri, retriever);
+    openXMLFile(dartFile, uri, retriever);
   }
   catch(std::exception const& e)
   {
-    std::cout << "LoadFile [" << _fileUri.toString() << "] Fails: "
+    std::cout << "LoadFile [" << uri.toString() << "] Fails: "
               << e.what() << std::endl;
     return nullptr;
   }
@@ -473,10 +475,10 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   //--------------------------------------------------------------------------
   // Load DART
   tinyxml2::XMLElement* skelElement = nullptr;
-  skelElement = _dartFile.FirstChildElement("skel");
+  skelElement = dartFile.FirstChildElement("skel");
   if (skelElement == nullptr)
   {
-    dterr << "Skel file[" << _fileUri.toString()
+    dterr << "Skel file[" << uri.toString()
           << "] does not contain <skel> as the element.\n";
     return nullptr;
   }
@@ -487,14 +489,14 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   skeletonElement = skelElement->FirstChildElement("skeleton");
   if (skeletonElement == nullptr)
   {
-    dterr << "Skel file[" << _fileUri.toString()
+    dterr << "Skel file[" << uri.toString()
           << "] does not contain <skeleton> element "
           <<"under <skel> element.\n";
     return nullptr;
   }
 
   dynamics::SkeletonPtr newSkeleton = ::dart::utils:: readSkeleton(
-    skeletonElement, _fileUri, retriever);
+    skeletonElement, uri, retriever);
 
   return newSkeleton;
 }
@@ -743,7 +745,7 @@ simulation::WorldPtr readWorld(
   while (SkeletonElements.next())
   {
     dynamics::SkeletonPtr newSkeleton
-        = ::dart::utils:: readSkeleton(SkeletonElements.get(), _baseUri, _retriever);
+        = ::dart::utils::readSkeleton(SkeletonElements.get(), _baseUri, _retriever);
 
     newWorld->addSkeleton(newSkeleton);
   }
@@ -2397,9 +2399,19 @@ common::ResourceRetrieverPtr getRetriever(
   const common::ResourceRetrieverPtr& _retriever)
 {
   if(_retriever)
+  {
     return _retriever;
+  }
   else
-    return std::make_shared<common::LocalResourceRetriever>();
+  {
+    auto newRetriever = std::make_shared<utils::CompositeResourceRetriever>();
+    newRetriever->addSchemaRetriever(
+          "file", std::make_shared<common::LocalResourceRetriever>());
+    newRetriever->addSchemaRetriever(
+          "dart", DartResourceRetriever::create());
+
+    return DartResourceRetriever::create();
+  }
 }
 
 } // anonymous namespace

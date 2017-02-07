@@ -29,9 +29,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/atlasSimbicon/StateMachine.hpp"
+#include "StateMachine.hpp"
 
-#include "examples/atlasSimbicon/State.hpp"
+#include "State.hpp"
 
 // Macro for functions not implemented yet
 #define NOT_YET(FUNCTION) std::cout << #FUNCTION\

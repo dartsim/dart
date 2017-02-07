@@ -30,7 +30,7 @@
  */
 
 #include <iostream>
-#include "dart/dart.hpp"
+#include <dart/dart.hpp>
 #include "MyWindow.hpp"
 
 int main(int argc, char* argv[])
@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
       = dart::utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/fullbody1.skel");
+        "dart://sample/skel/fullbody1.skel");
   assert(myWorld != nullptr);
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
   myWorld->setGravity(gravity);

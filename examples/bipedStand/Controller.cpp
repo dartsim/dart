@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/bipedStand/Controller.hpp"
+#include "Controller.hpp"
 
 Controller::Controller(dart::dynamics::SkeletonPtr _skel,
                        double _t) {

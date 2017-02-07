@@ -29,11 +29,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/atlasSimbicon/Controller.hpp"
+#include "Controller.hpp"
 
-#include "examples/atlasSimbicon/State.hpp"
-#include "examples/atlasSimbicon/StateMachine.hpp"
-#include "examples/atlasSimbicon/TerminalCondition.hpp"
+#include "State.hpp"
+#include "StateMachine.hpp"
+#include "TerminalCondition.hpp"
 
 using namespace std;
 

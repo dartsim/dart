@@ -29,6 +29,10 @@ set(INCLUDE_INSTALL_DIR "include")
 set(LIBRARY_INSTALL_DIR "lib")
 set(CONFIG_INSTALL_DIR "share/${PROJECT_NAME}/cmake")
 
+# Set relative location to install additional documentation (sample data,
+# examples, and tutorials)
+set(DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH "share/doc/${PROJECT_NAME}")
+
 set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -247,21 +251,6 @@ if(DART_VERBOSE)
 endif(DART_VERBOSE)
 
 #===============================================================================
-# Helper Functions
-#===============================================================================
-function(dart_add_example)
-  dart_property_add(DART_EXAMPLES ${ARGN})
-endfunction(dart_add_example)
-
-function(dart_add_tutorial)
-  dart_property_add(DART_TUTORIALS ${ARGN})
-endfunction(dart_add_tutorial)
-
-function(dart_format_add)
-  dart_property_add(DART_FORMAT_FILES ${ARGN})
-endfunction()
-
-#===============================================================================
 # Add sub-directories
 #===============================================================================
 
@@ -275,9 +264,36 @@ if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
 
   if (OPENGL_FOUND AND HAVE_GLUT)
 
-    # Add an "examples" target to build examples.
-    add_subdirectory(examples EXCLUDE_FROM_ALL)
+    # Add example targets
+    dart_add_example(examples/addDeleteSkels dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/atlasSimbicon dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/bipedStand dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/hardcodedDesign dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/hybridDynamics dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/jointConstraints dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/mixedChain dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/operationalSpaceControl dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/rigidChain dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/rigidLoop dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/rigidShapes dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/simpleFrames dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/softBodies dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/speedTest dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/vehicle dart dart-utils-urdf dart-gui)
 
+    if(HAVE_OPENSCENEGRAPH)
+      dart_add_example(examples/osgExamples/osgAtlasPuppet dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgAtlasSimbicon dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgDragAndDrop dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgEmpty dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgHuboPuppet dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgImGui dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgOperationalSpaceControl dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgSoftBodies dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgTinkertoy dart dart-utils-urdf dart-gui-osg)
+    endif()
+
+    # Add an "examples" target to build examples.
     get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
     add_custom_target(examples DEPENDS ${examples})
 
@@ -292,9 +308,17 @@ if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
       message(STATUS "Adding ${examples_length} examples")
     endif(DART_VERBOSE)
 
-    # Add a "tutorials" target to build tutorials.
-    add_subdirectory(tutorials EXCLUDE_FROM_ALL)
+    # Add tutorial targets
+    dart_add_tutorial(tutorials/tutorialBiped dart-utils-urdf dart-gui)
+    dart_add_tutorial(tutorials/tutorialBiped-Finished dart-utils-urdf dart-gui)
+    dart_add_tutorial(tutorials/tutorialCollisions dart-utils-urdf dart-gui)
+    dart_add_tutorial(tutorials/tutorialCollisions-Finished dart-utils-urdf dart-gui)
+    dart_add_tutorial(tutorials/tutorialDominoes dart-utils-urdf dart-gui)
+    dart_add_tutorial(tutorials/tutorialDominoes-Finished dart-utils-urdf dart-gui)
+    dart_add_tutorial(tutorials/tutorialMultiPendulum dart-utils-urdf dart-gui)
+    dart_add_tutorial(tutorials/tutorialMultiPendulum-Finished dart-utils-urdf dart-gui)
 
+    # Add a "tutorials" target to build tutorials.
     get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
     add_custom_target(tutorials DEPENDS ${tutorials})
 
@@ -377,6 +401,22 @@ install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 
 # Install a Catkin 'package.xml' file. This is required by REP-136.
 install(FILES package.xml DESTINATION share/${PROJECT_NAME})
+
+#===============================================================================
+# Install sample data, examples, and tutorials
+#===============================================================================
+
+# Sample data
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data"
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH})
+
+# Examples source
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/examples"
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH})
+
+# Tutorials source
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tutorials"
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH})
 
 #===============================================================================
 # Uninstall

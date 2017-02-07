@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/operationalSpaceControl/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 #include <iostream>
 

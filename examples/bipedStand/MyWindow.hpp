@@ -36,10 +36,10 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dart.hpp"
-#include "dart/gui/gui.hpp"
+#include <dart/dart.hpp>
+#include <dart/gui/gui.hpp>
 
-#include "examples/bipedStand/Controller.hpp"
+#include "Controller.hpp"
 
 class MyWindow : public dart::gui::SimWindow {
 public:
