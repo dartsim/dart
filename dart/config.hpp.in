@@ -2,6 +2,8 @@
 #ifndef DART_CONFIG_HPP_
 #define DART_CONFIG_HPP_
 
+#include <Eigen/Core>
+
 /* Version number */
 #define DART_MAJOR_VERSION @DART_MAJOR_VERSION@
 #define DART_MINOR_VERSION @DART_MINOR_VERSION@
@@ -27,6 +29,11 @@
 #define DART_MAJOR_MINOR_VERSION_AT_MOST(x,y) \
   (DART_MAJOR_VERSION < x || (DART_MAJOR_VERSION <= x && \
   (DART_MINOR_VERSION < y || (DART_MINOR_VERSION <= y))))
+
+#define EIGEN_VERSION_AT_MOST(x,y,z) \
+  (EIGEN_WORLD_VERSION < x || (EIGEN_WORLD_VERSION <= x && \
+  (EIGEN_MAJOR_VERSION < y || (EIGEN_MAJOR_VERSION <= y && \
+  EIGEN_MINOR_VERSION <= z))))
 
 /* urdfdom_headers Version number */
 // We define the version numbers of urdfdom_headers here since it doesn't expose

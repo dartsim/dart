@@ -36,11 +36,6 @@
 #include <Eigen/Core>
 #include "dart/config.hpp"
 
-#define EIGEN_VERSION_AT_MOST(x,y,z) \
-  (EIGEN_WORLD_VERSION < x || (EIGEN_WORLD_VERSION <= x && \
-  (EIGEN_MAJOR_VERSION < y || (EIGEN_MAJOR_VERSION <= y && \
-  EIGEN_MINOR_VERSION <= z))))
-
 #if EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
 #include "dart/common/detail/AlignedAllocator.hpp"
 #endif
