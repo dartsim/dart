@@ -68,6 +68,8 @@ struct EulerJointProperties :
     GenericJoint<math::R3Space>::Properties,
     EulerJointUniqueProperties
 {
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(EulerJointProperties)
+
   /// Composed constructor
   EulerJointProperties(
       const GenericJoint<math::R3Space>::Properties& genericJointProperties =

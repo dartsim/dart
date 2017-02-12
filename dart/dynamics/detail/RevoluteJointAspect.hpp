@@ -61,6 +61,8 @@ struct RevoluteJointProperties :
     GenericJoint<math::R1Space>::Properties,
     RevoluteJointUniqueProperties
 {
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(RevoluteJointProperties)
+
   RevoluteJointProperties(
       const GenericJoint<math::R1Space>::Properties& genericJointProperties =
           GenericJoint<math::R1Space>::Properties(),

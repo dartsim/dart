@@ -62,6 +62,8 @@ struct UniversalJointProperties :
     GenericJoint<math::R2Space>::Properties,
     UniversalJointUniqueProperties
 {
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(UniversalJointProperties)
+
   UniversalJointProperties(
       const GenericJoint<math::R2Space>::Properties& genericJointProperties =
           GenericJoint<math::R2Space>::Properties(),

@@ -660,10 +660,6 @@ protected:
   Eigen::Vector3d mImpF;
 
   PointMassNotifier* mNotifier;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //struct PointMassPair

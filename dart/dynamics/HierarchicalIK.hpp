@@ -347,10 +347,6 @@ protected:
 
   /// The set of modules being used by this CompositeIK
   std::unordered_set< std::shared_ptr<InverseKinematics> > mModuleSet;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// The WholeBodyIK class provides an interface for simultaneously solving all
@@ -378,10 +374,6 @@ protected:
 
   /// Constructor
   WholeBodyIK(const SkeletonPtr& _skel);
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } // namespace dynamics

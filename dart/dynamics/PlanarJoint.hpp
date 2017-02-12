@@ -151,10 +151,6 @@ protected:
 
   // Documentation inherited
   void updateRelativeJacobianTimeDeriv() const override;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

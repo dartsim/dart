@@ -48,8 +48,8 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd,
     return;
   }
 
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new EllipsoidShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new EllipsoidShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -145,8 +145,8 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd,
     return;
   }
 
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new EllipsoidShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new EllipsoidShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -243,8 +243,8 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
     return;
   }
 
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new EllipsoidShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new EllipsoidShape(Eigen::Vector3d(0.5, 0.5, 0.5)));

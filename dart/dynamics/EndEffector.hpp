@@ -156,11 +156,6 @@ protected:
   // Documentation inherited
   Node* cloneNode(BodyNode* _parent) const override;
 
-public:
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
 };
 
 } // namespace dynamics

@@ -50,7 +50,10 @@ public:
 
   struct Properties : ZeroDofJoint::Properties
   {
+    DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
+
     Properties(const Joint::Properties& _properties = Joint::Properties());
+
     virtual ~Properties() = default;
   };
 
@@ -106,10 +109,6 @@ protected:
 
   // Documentation inherited
   void updateRelativeJacobianTimeDeriv() const override;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

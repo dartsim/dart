@@ -51,6 +51,8 @@ class SimpleFrame : public Detachable, public ShapeFrame
 {
 public:
 
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(SimpleFrame)
+
   /// Constructor
   explicit SimpleFrame(Frame* _refFrame,
     const std::string& _name = "simple_frame",

@@ -468,7 +468,7 @@ dynamics::SkeletonPtr readSkeleton(
       // create it
       SDFJoint rootJoint;
       rootJoint.properties =
-          Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
+          dynamics::FreeJoint::Properties::createShared(
             dynamics::Joint::Properties("root", body->second.initTransform));
       rootJoint.type = "free";
 
@@ -768,14 +768,14 @@ SDFBodyNode readBodyNode(
     auto softProperties = readSoftBodyProperties(bodyNodeElement);
 
     sdfBodyNode.properties =
-        Eigen::make_aligned_shared<dynamics::SoftBodyNode::Properties>(
+        dynamics::SoftBodyNode::Properties::createShared(
           properties, softProperties);
     sdfBodyNode.type = "soft";
   }
   else
   {
     sdfBodyNode.properties =
-        Eigen::make_aligned_shared<dynamics::BodyNode::Properties>(properties);
+        dynamics::BodyNode::Properties::createShared(properties);
     sdfBodyNode.type = "";
   }
 
@@ -946,7 +946,7 @@ dynamics::ShapePtr readShape(
     const aiScene* model = dynamics::MeshShape::loadMesh(meshUri, _retriever);
 
     if (model)
-      newShape = Eigen::make_aligned_shared<dynamics::MeshShape>(
+      newShape = std::make_shared<dynamics::MeshShape>(
         scale, model, meshUri, _retriever);
     else
     {
@@ -1209,27 +1209,27 @@ SDFJoint readJoint(tinyxml2::XMLElement* _jointElement,
 
   if (type == std::string("fixed"))
     newJoint.properties =
-        Eigen::make_aligned_shared<dynamics::WeldJoint::Properties>(
+        dynamics::WeldJoint::Properties::createShared(
           readWeldJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("prismatic"))
     newJoint.properties =
-        Eigen::make_aligned_shared<dynamics::PrismaticJoint::Properties>(
+        dynamics::PrismaticJoint::Properties::createShared(
           readPrismaticJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("revolute"))
     newJoint.properties =
-        Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
+        dynamics::RevoluteJoint::Properties::createShared(
           readRevoluteJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("screw"))
     newJoint.properties =
-        Eigen::make_aligned_shared<dynamics::ScrewJoint::Properties>(
+        dynamics::ScrewJoint::Properties::createShared(
           readScrewJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("revolute2"))
     newJoint.properties =
-        Eigen::make_aligned_shared<dynamics::UniversalJoint::Properties>(
+        dynamics::UniversalJoint::Properties::createShared(
           readUniversalJoint(_jointElement, parentModelFrame, name));
   if (type == std::string("ball"))
     newJoint.properties =
-        Eigen::make_aligned_shared<dynamics::BallJoint::Properties>(
+        dynamics::BallJoint::Properties::createShared(
           readBallJoint(_jointElement, parentModelFrame, name));
 
   newJoint.type = type;

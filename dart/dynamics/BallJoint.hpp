@@ -50,8 +50,10 @@ public:
 
   struct Properties : Base::Properties
   {
-    Properties(const Base::Properties& properties
-               = Base::Properties());
+    DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
+
+    Properties(const Base::Properties& properties = Base::Properties());
+
     virtual ~Properties() = default;
   };
 

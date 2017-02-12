@@ -50,6 +50,8 @@ public:
 
   struct Properties : Base::Properties
   {
+    DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(Properties)
+
     Properties(const Base::Properties& _properties =
         Base::Properties());
 
@@ -97,10 +99,6 @@ protected:
 
   // Documentation inherited
   void updateRelativeJacobianTimeDeriv() const override;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

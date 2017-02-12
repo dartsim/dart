@@ -159,7 +159,7 @@ int main()
 
   // Create some coordinate axes for the user's reference
   dart::gui::osg::InteractiveFramePtr coordinates =
-      Eigen::make_aligned_shared<dart::gui::osg::InteractiveFrame>(
+      dart::gui::osg::InteractiveFrame::createShared(
         dart::dynamics::Frame::World(), "coordinates",
         Eigen::Isometry3d::Identity(), 0.2);
 

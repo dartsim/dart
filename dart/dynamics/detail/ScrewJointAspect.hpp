@@ -65,6 +65,8 @@ struct ScrewJointUniqueProperties
 struct ScrewJointProperties : GenericJoint<math::R1Space>::Properties,
                     ScrewJointUniqueProperties
 {
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(ScrewJointProperties)
+
   ScrewJointProperties(
       const GenericJoint<math::R1Space>::Properties& genericJointProperties =
           GenericJoint<math::R1Space>::Properties(),

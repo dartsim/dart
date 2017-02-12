@@ -1465,7 +1465,7 @@ void InverseKinematics::resetProblem(bool _clearSeeds)
   if(_clearSeeds)
     mProblem->clearAllSeeds();
 
-  mProblem->setObjective(Eigen::make_aligned_shared<Objective>(this));
+  mProblem->setObjective(Objective::createShared(this));
   mProblem->addEqConstraint(std::make_shared<Constraint>(this));
 
   mProblem->setDimension(mDofs.size());

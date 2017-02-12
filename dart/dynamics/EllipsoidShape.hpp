@@ -100,10 +100,6 @@ protected:
 private:
   /// \brief Diameters of this ellipsoid
   Eigen::Vector3d mDiameters;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

@@ -1222,6 +1222,8 @@ class InverseKinematics::Objective final :
 {
 public:
 
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(InverseKinematics::Objective)
+
   /// Constructor
   Objective(InverseKinematics* _ik);
 
@@ -1248,6 +1250,7 @@ protected:
 
   /// Cache for the null space SVD
   Eigen::JacobiSVD<math::Jacobian> mSVDCache;
+  // TODO(JS): Need to define aligned operator new for this?
 
   /// Cache for the null space
   Eigen::MatrixXd mNullSpaceCache;

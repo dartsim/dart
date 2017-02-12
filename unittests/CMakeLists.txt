@@ -147,5 +147,5 @@ endif()
 # Add custom target to build all the tests as a single target
 add_custom_target(
   tests
-  DEPENDS ${tests} ${comprehensive_tests} ${regression_tests} ${unit_tests}
+  DEPENDS ${comprehensive_tests} ${regression_tests} ${unit_tests}
 )

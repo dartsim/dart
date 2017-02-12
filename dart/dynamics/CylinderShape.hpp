@@ -39,9 +39,6 @@ namespace dynamics {
 
 class CylinderShape : public Shape {
 public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   /// \brief Constructor.
   CylinderShape(double _radius, double _height);
 

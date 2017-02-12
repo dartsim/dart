@@ -106,6 +106,8 @@ struct SoftBodyNodeUniqueProperties
 struct SoftBodyNodeProperties
     : BodyNode::Properties, SoftBodyNodeUniqueProperties
 {
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(SoftBodyNodeProperties)
+
   SoftBodyNodeProperties(
       const BodyNode::Properties& _bodyProperties = BodyNode::Properties(),
       const SoftBodyNodeUniqueProperties& _softProperties =

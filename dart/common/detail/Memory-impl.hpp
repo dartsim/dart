@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
@@ -29,55 +29,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_HPP_
+#ifndef DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
+#define DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
 
-#include <string>
+#include <memory>
+#include <Eigen/Core>
+#include "dart/config.hpp"
 
-#include <Eigen/Dense>
-
-#include "dart/dynamics/GenericJoint.hpp"
+#if EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
+#include "dart/common/detail/AlignedAllocator.hpp"
+#else
+#include<Eigen/StdVector>
+#endif
 
 namespace dart {
-namespace dynamics {
-
-class PrismaticJoint;
-
-namespace detail {
+namespace common {
 
 //==============================================================================
-struct PrismaticJointUniqueProperties
+template <typename _Tp, typename... _Args>
+std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
 {
-  Eigen::Vector3d mAxis;
+  typedef typename std::remove_const<_Tp>::type _Tp_nc;
 
-  PrismaticJointUniqueProperties(
-      const Eigen::Vector3d& _axis = Eigen::Vector3d::UnitZ());
-
-  virtual ~PrismaticJointUniqueProperties() = default;
-};
+#if EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
+  return std::allocate_shared<_Tp>(detail::aligned_allocator_cpp11<_Tp_nc>(),
+                                   std::forward<_Args>(__args)...);
+#else
+  return std::allocate_shared<_Tp>(Eigen::aligned_allocator<_Tp_nc>(),
+                                   std::forward<_Args>(__args)...);
+#endif // EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
+}
 
 //==============================================================================
-struct PrismaticJointProperties :
-    GenericJoint<math::R1Space>::Properties,
-    PrismaticJointUniqueProperties
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args)
 {
-  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(PrismaticJointProperties)
+  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+// TODO(JS): This is a stopgap solution as it was omitted from C++11 as "partly
+// an oversight". This can be replaced by std::make_unique<T> of the standard
+// library when we migrate to using C++14.
 
-  PrismaticJointProperties(
-      const GenericJoint<math::R1Space>::Properties& genericJointProperties =
-          GenericJoint<math::R1Space>::Properties(),
-      const PrismaticJointUniqueProperties& prismaticProperties =
-          PrismaticJointUniqueProperties());
-
-  virtual ~PrismaticJointProperties() = default;
-};
-
-//==============================================================================
-using PrismaticJointBase = common::EmbedPropertiesOnTopOf<
-    PrismaticJoint, PrismaticJointUniqueProperties, GenericJoint<math::R1Space> >;
-
-} // namespace detail
-} // namespace dynamics
+} // namespace common
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_PRISMATICJOINTASPECT_HPP_
+#endif // DART_COMMON_DETAIL_MEMORY_IMPL_HPP_

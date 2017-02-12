@@ -108,6 +108,8 @@ struct PlanarJointProperties :
     GenericJoint<math::R3Space>::Properties,
     PlanarJointUniqueProperties
 {
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(PlanarJointProperties)
+
   PlanarJointProperties(
       const GenericJoint<math::R3Space>::Properties& genericJointProperties =
           GenericJoint<math::R3Space>::Properties(),

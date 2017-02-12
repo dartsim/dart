@@ -110,6 +110,7 @@ protected:
 class InteractiveFrame : public dart::dynamics::SimpleFrame
 {
 public:
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(InteractiveFrame)
 
   /// Constructor
   InteractiveFrame(
