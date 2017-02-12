@@ -46,8 +46,9 @@ std::unique_ptr<T> make_unique(Args&&... args);
 } // namespace common
 } // namespace dart
 
-#define DART_SHARED_PTR_CREATE_FUNCTION_NAME createShared
-#define DART_UNIQUE_PTR_CREATE_FUNCTION_NAME createUnique
+#define DART_RAW_PTR_CREATOR_NAME create
+#define DART_SHARED_PTR_CREATOR_NAME createShared
+#define DART_UNIQUE_PTR_CREATOR_NAME createUnique
 
 // Define static creator function that returns a smart pointer to an object
 #define _DART_DEFINE_OBJECT_CREATOR(                                           \
@@ -83,39 +84,48 @@ public:                                                                        \
         private_structure{}, std::forward<Args>(args)...);                     \
   }
 
-// Define static creator function that returns std::shared_ptr to an object.
+// Define static creator function that returns a raw pointer to the object.
+// This static functions will be defined: create()
+#define DART_DEFINE_RAW_OBJECT_CREATOR(class_name)                             \
+  template <typename... Args>                                                  \
+  static class_name* DART_RAW_PTR_CREATOR_NAME(Args&&... args)                 \
+  {                                                                            \
+    return new class_name(std::forward<Args>(args)...);                        \
+  }
+
+// Define static creator function that returns std::shared_ptr to the object.
 // This static functions will be defined: createShared()
 #define DART_DEFINE_SHARED_OBJECT_CREATOR(class_name)                          \
   /*! Create shared instance of this class */                                  \
   _DART_DEFINE_OBJECT_CREATOR(                                                 \
       class_name,                                                              \
-      DART_SHARED_PTR_CREATE_FUNCTION_NAME,                                    \
+      DART_SHARED_PTR_CREATOR_NAME,                                            \
       std::shared_ptr,                                                         \
       std::make_shared)
 
-// Define static creator function that returns std::shared_ptr to an object
+// Define static creator function that returns std::shared_ptr to the object
 // where the constructor is protected.
 // This static functions will be defined: createShared()
 #define DART_DEFINE_SHARED_OBJECT_CREATOR_FOR_PROTECTED_CTOR(class_name)       \
   /*! Create shared instance of this class */                                  \
   _DART_DEFINE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(                              \
       class_name,                                                              \
-      DART_SHARED_PTR_CREATE_FUNCTION_NAME,                                    \
+      DART_SHARED_PTR_CREATOR_NAME,                                            \
       std::shared_ptr,                                                         \
       std::make_shared)
 
-// Define static creator function that returns std::shared_ptr to an object
+// Define static creator function that returns std::shared_ptr to the object
 // requires aligned memory allocation.
 // This static functions will be defined: createShared()
 #define DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(class_name)                  \
   /*! Create shared instance of this class */                                  \
   _DART_DEFINE_OBJECT_CREATOR(                                                 \
       class_name,                                                              \
-      DART_SHARED_PTR_CREATE_FUNCTION_NAME,                                    \
+      DART_SHARED_PTR_CREATOR_NAME,                                            \
       std::shared_ptr,                                                         \
       ::dart::common::make_aligned_shared)
 
-// Define static creator function that returns std::shared_ptr to an object
+// Define static creator function that returns std::shared_ptr to the object
 // requires aligned memory allocation where the constructor is protected.
 // This static functions will be defined: createShared()
 #define DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR_FOR_PROTECTED_CTOR(          \
@@ -123,44 +133,44 @@ public:                                                                        \
   /*! Create shared instance of this class */                                  \
   _DART_DEFINE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(                              \
       class_name,                                                              \
-      DART_SHARED_PTR_CREATE_FUNCTION_NAME,                                    \
+      DART_SHARED_PTR_CREATOR_NAME,                                            \
       std::shared_ptr,                                                         \
       ::dart::common::make_aligned_shared)
 
-// Define static creator function that returns std::unique_ptr to an object
-#define DART_DEFINE_UNIQUE_OBJECT_CREATOR(class_name)                          \
+// Define static creator function that returns std::unique_ptr to the object
+#define DART_DEFINE_UNIQUE_OBJECT_CREATOR(class_name)     duke                 \
   /*! Create unique instance of this class */                                  \
   _DART_DEFINE_OBJECT_CREATOR(                                                 \
       class_name,                                                              \
-      DART_UNIQUE_PTR_CREATE_FUNCTION_NAME,                                    \
+      DART_UNIQUE_PTR_CREATOR_NAME,                                            \
       std::unique_ptr,                                                         \
       ::dart::common::make_unique)
 
-// Define static creator function that returns std::unique_ptr to an object
+// Define static creator function that returns std::unique_ptr to the object
 // where the constructor is protected
 #define DART_DEFINE_UNIQUE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(class_name)       \
   /*! Create unique instance of this class */                                  \
   _DART_DEFINE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(                              \
       class_name,                                                              \
-      DART_UNIQUE_PTR_CREATE_FUNCTION_NAME,                                    \
+      DART_UNIQUE_PTR_CREATOR_NAME,                                            \
       std::unique_ptr,                                                         \
       ::dart::common::make_unique)
 
 // Define two static creator functions that returns std::unique_ptr and
-// std::unique_ptr, respectively, to an object
+// std::unique_ptr, respectively, to the object
 #define DART_DEFINE_OBJECT_CREATORS(class_name)                                \
   DART_DEFINE_SHARED_OBJECT_CREATOR(class_name)                                \
   DART_DEFINE_UNIQUE_OBJECT_CREATOR(class_name)
 
 // Define two static creator functions that returns std::unique_ptr and
-// std::unique_ptr, respectively, to an object where the constructor is
+// std::unique_ptr, respectively, to the object where the constructor is
 // protected
 #define DART_DEFINE_OBJECT_CREATORS_FOR_PROTECTED_CTOR(X)                      \
   DART_DEFINE_SHARED_OBJECT_CREATOR_FOR_PROTECTED_CTOR(X)                      \
   DART_DEFINE_UNIQUE_OBJECT_CREATOR_FOR_PROTECTED_CTOR(X)
 
 // Define two static creator functions that returns std::unique_ptr and
-// std::unique_ptr, respectively, to an object
+// std::unique_ptr, respectively, to the object
 #if DART_ENABLE_SIMD
   #define DART_DEFINE_ALIGNED_OBJECT_CREATORS(class_name)                      \
     DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(class_name)                      \
@@ -171,7 +181,7 @@ public:                                                                        \
 #endif
 
 // Define two static creator functions that returns std::unique_ptr and
-// std::unique_ptr, respectively, to an object where the constructor is
+// std::unique_ptr, respectively, to the object where the constructor is
 // protected
 #if DART_ENABLE_SIMD
   #define DART_DEFINE_ALIGNED_OBJECT_CREATORS_FOR_PROTECTED_CTOR(class_name)   \
