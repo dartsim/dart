@@ -70,6 +70,12 @@ Solver::Solver(std::shared_ptr<Problem> _problem)
 }
 
 //==============================================================================
+std::shared_ptr<Solver> Solver::clone() const
+{
+  return cloneShared();
+}
+
+//==============================================================================
 void Solver::setProperties(const Properties& _properties)
 {
   setProblem(_properties.mProblem);

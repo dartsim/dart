@@ -240,7 +240,7 @@ public:
   void attemptToCreateDomino(double angle)
   {
     // Create a new domino
-    SkeletonPtr newDomino = mFirstDomino->clone();
+    SkeletonPtr newDomino = mFirstDomino->cloneShared();
     newDomino->setName("domino #" + std::to_string(mDominoes.size() + 1));
 
     const SkeletonPtr& lastDomino = mDominoes.size() > 0 ?

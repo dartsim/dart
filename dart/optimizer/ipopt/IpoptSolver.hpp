@@ -73,7 +73,7 @@ public:
   std::string getType() const override;
 
   // Documentation inherited
-  std::shared_ptr<Solver> clone() const override;
+  std::shared_ptr<Solver> cloneShared() const override;
 
   /// Get the application interface for this IpoptSolver
   const Ipopt::SmartPtr<Ipopt::IpoptApplication>& getApplication();

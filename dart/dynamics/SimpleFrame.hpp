@@ -74,7 +74,14 @@ public:
   /// Create a new SimpleFrame with the same world transform, velocity, and
   /// acceleration as this one. _refFrame will be used as the reference Frame
   /// of the new SimpleFrame.
+  DART_DEPRECATED(6.2)
   std::shared_ptr<SimpleFrame> clone(Frame* _refFrame = Frame::World()) const;
+
+  /// Create a new SimpleFrame with the same world transform, velocity, and
+  /// acceleration as this one. _refFrame will be used as the reference Frame
+  /// of the new SimpleFrame.
+  std::shared_ptr<SimpleFrame> cloneShared(
+      Frame* _refFrame = Frame::World()) const;
 
   /// Make the world transform, world velocity, and world acceleration of this
   /// SimpleFrame match another Frame. The _refFrame argument will be the new

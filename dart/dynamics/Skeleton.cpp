@@ -390,11 +390,23 @@ Skeleton::~Skeleton()
 //==============================================================================
 SkeletonPtr Skeleton::clone() const
 {
-  return clone(getName());
+  return cloneShared();
+}
+
+//==============================================================================
+SkeletonPtr Skeleton::cloneShared() const
+{
+  return cloneShared(getName());
 }
 
 //==============================================================================
 SkeletonPtr Skeleton::clone(const std::string& cloneName) const
+{
+  return cloneShared(cloneName);
+}
+
+//==============================================================================
+SkeletonPtr Skeleton::cloneShared(const std::string& cloneName) const
 {
   SkeletonPtr skelClone = Skeleton::create(cloneName);
 
@@ -428,7 +440,7 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
     // structure, then there is no guarantee that it will continue to work
     // correctly.
     if(getBodyNode(i)->getIK())
-      newBody->mIK = getBodyNode(i)->getIK()->clone(newBody);
+      newBody->mIK = getBodyNode(i)->getIK()->cloneShared(newBody);
 
     skelClone->registerBodyNode(newBody);
   }
@@ -1331,7 +1343,7 @@ std::shared_ptr<const WholeBodyIK> Skeleton::getIK() const
 //==============================================================================
 const std::shared_ptr<WholeBodyIK>& Skeleton::createIK()
 {
-  mWholeBodyIK = WholeBodyIK::create(mPtr.lock());
+  mWholeBodyIK = WholeBodyIK::createShared(mPtr.lock());
   return mWholeBodyIK;
 }
 

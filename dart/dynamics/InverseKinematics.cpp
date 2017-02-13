@@ -135,6 +135,12 @@ static std::shared_ptr<optimizer::Function> cloneIkFunc(
 //==============================================================================
 InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
 {
+  return cloneShared(_newNode);
+}
+
+//==============================================================================
+InverseKinematicsPtr InverseKinematics::cloneShared(JacobianNode* _newNode) const
+{
   std::shared_ptr<InverseKinematics> newIK(new InverseKinematics(_newNode));
   newIK->setActive(isActive());
   newIK->setHierarchyLevel(getHierarchyLevel());
@@ -156,9 +162,9 @@ InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
   if(nullptr != newIK->mAnalytical)
     newIK->mAnalytical->constructDofMap();
 
-  newIK->mErrorMethod = mErrorMethod->clone(newIK.get());
+  newIK->mErrorMethod = mErrorMethod->cloneUnique(newIK.get());
 
-  newIK->setSolver(mSolver->clone());
+  newIK->setSolver(mSolver->cloneShared());
 
   const std::shared_ptr<optimizer::Problem>& newProblem = newIK->getProblem();
   newProblem->setObjective( cloneIkFunc(mProblem->getObjective(),newIK.get()) );
@@ -202,6 +208,13 @@ InverseKinematics::ErrorMethod::ErrorMethod(
     mErrorP(_properties)
 {
   // Do nothing
+}
+
+//==============================================================================
+std::unique_ptr<dart::dynamics::InverseKinematics::ErrorMethod>
+InverseKinematics::ErrorMethod::clone(InverseKinematics* _newIK) const
+{
+  return cloneUnique(_newIK);
 }
 
 //==============================================================================
@@ -435,7 +448,7 @@ InverseKinematics::TaskSpaceRegion::TaskSpaceRegion(
 
 //==============================================================================
 std::unique_ptr<InverseKinematics::ErrorMethod>
-InverseKinematics::TaskSpaceRegion::clone(InverseKinematics* _newIK) const
+InverseKinematics::TaskSpaceRegion::cloneUnique(InverseKinematics* _newIK) const
 {
   return common::make_unique<TaskSpaceRegion>(
       _newIK, getTaskSpaceRegionProperties());

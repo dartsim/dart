@@ -172,7 +172,7 @@ Node* EndEffector::cloneNode(BodyNode* _parent) const
   ee->copy(this);
 
   if(mIK)
-    ee->mIK = mIK->clone(ee);
+    ee->mIK = mIK->cloneShared(ee);
 
   return ee;
 }

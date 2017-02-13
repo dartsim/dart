@@ -136,7 +136,7 @@ public:
   std::string getType() const override;
 
   // Documentation inherited
-  std::shared_ptr<Solver> clone() const override;
+  std::shared_ptr<Solver> cloneShared() const override;
 
   /// Set the Properties of this GradientDescentSolver
   void setProperties(const Properties& _properties);

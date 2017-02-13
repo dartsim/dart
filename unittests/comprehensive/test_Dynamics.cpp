@@ -602,7 +602,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
       // For the second half of the tests, scramble up the Skeleton
       if(j > ceil(nTestItr/2))
       {
-        SkeletonPtr copy = skeleton->clone();
+        SkeletonPtr copy = skeleton->cloneShared();
         std::size_t maxNode = skeleton->getNumBodyNodes()-1;
         BodyNode* bn1 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
         BodyNode* bn2 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
@@ -1498,7 +1498,7 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
       // For the second half of the tests, scramble up the Skeleton
       if(j > ceil(nRandomItr/2))
       {
-        SkeletonPtr copy = skeleton->clone();
+        SkeletonPtr copy = skeleton->cloneShared();
         std::size_t maxNode = skeleton->getNumBodyNodes()-1;
         BodyNode* bn1 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
         BodyNode* bn2 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));

@@ -76,7 +76,12 @@ public:
   bool solve(Eigen::VectorXd& positions, bool _applySolution = true);
 
   /// Clone this HierarchicalIK module
+  DART_DEPRECATED(6.2)
   virtual std::shared_ptr<HierarchicalIK> clone(
+      const SkeletonPtr& _newSkel) const;
+
+  /// Clone this HierarchicalIK module
+  virtual std::shared_ptr<HierarchicalIK> cloneShared(
       const SkeletonPtr& _newSkel) const = 0;
 
   /// This class should be inherited by optimizer::Function classes that have a
@@ -91,7 +96,12 @@ public:
   public:
 
     /// Enable this function to be cloned to a new IK module.
+    DART_DEPRECATED(6.2)
     virtual optimizer::FunctionPtr clone(
+        const std::shared_ptr<HierarchicalIK>& _newIK);
+
+    /// Enable this function to be cloned to a new IK module.
+    virtual optimizer::FunctionPtr cloneShared(
         const std::shared_ptr<HierarchicalIK>& _newIK) const = 0;
 
     /// Virtual destructor
@@ -197,11 +207,11 @@ protected:
     virtual ~Objective() = default;
 
     // Documentation inherited
-    optimizer::FunctionPtr clone(
+    optimizer::FunctionPtr cloneShared(
         const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     // Documentation inherited
-    double eval(const Eigen::VectorXd &_x) override;
+    double eval(const Eigen::VectorXd& _x) override;
 
     // Documentation inherited
     void evalGradient(const Eigen::VectorXd& _x,
@@ -232,7 +242,7 @@ protected:
     virtual ~Constraint() = default;
 
     // Documentation inherited
-    optimizer::FunctionPtr clone(
+    optimizer::FunctionPtr cloneShared(
         const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     // Documentation inherited
@@ -316,11 +326,15 @@ public:
   typedef std::unordered_set< std::shared_ptr<const InverseKinematics> > ConstModuleSet;
 
   /// Create a CompositeIK module
+  DART_DEPRECATED(6.2)
   static std::shared_ptr<CompositeIK> create(const SkeletonPtr& _skel);
 
+  /// Create a CompositeIK module
+  static std::shared_ptr<CompositeIK> createShared(const SkeletonPtr& _skel);
+
   // Documentation inherited
-  std::shared_ptr<HierarchicalIK> clone(
-      const SkeletonPtr &_newSkel) const override;
+  std::shared_ptr<HierarchicalIK> cloneShared(
+      const SkeletonPtr& _newSkel) const override;
 
   /// Same as clone(), but passes back a more complete type
   virtual std::shared_ptr<CompositeIK> cloneCompositeIK(
@@ -357,14 +371,23 @@ class WholeBodyIK : public HierarchicalIK
 public:
 
   /// Create a WholeBodyIK
+  DART_DEPRECATED(6.2)
   static std::shared_ptr<WholeBodyIK> create(const SkeletonPtr& _skel);
 
+  /// Create a WholeBodyIK
+  static std::shared_ptr<WholeBodyIK> createShared(const SkeletonPtr& _skel);
+
   // Documentation inherited
-  std::shared_ptr<HierarchicalIK> clone(
+  std::shared_ptr<HierarchicalIK> cloneShared(
       const SkeletonPtr &_newSkel) const override;
 
   /// Same as clone(), but produces a more complete type
+  DART_DEPRECATED(6.2)
   virtual std::shared_ptr<WholeBodyIK> cloneWholeBodyIK(
+      const SkeletonPtr& _newSkel) const;
+
+  /// Same as clone(), but produces a more complete type
+  virtual std::shared_ptr<WholeBodyIK> cloneSharedWholeBodyIK(
       const SkeletonPtr& _newSkel) const;
 
   // Documentation inherited

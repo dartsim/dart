@@ -118,7 +118,7 @@ TEST(Skeleton, Restructuring)
     index = std::min(index, skeletons.size()-1);
     SkeletonPtr skeleton = skeletons[index];
     EXPECT_TRUE(skeleton->checkIndexingConsistency());
-    SkeletonPtr original = skeleton->clone();
+    SkeletonPtr original = skeleton->cloneShared();
     EXPECT_TRUE(original->checkIndexingConsistency());
 
     std::size_t maxNode = skeleton->getNumBodyNodes()-1;
@@ -739,7 +739,7 @@ TEST(Skeleton, CloneNodeOrdering)
   skel->getBodyNode(0)->createEndEffector("another_manip");
   skel->getBodyNode(2)->createEndEffector("yet_another_manip");
 
-  SkeletonPtr clone = skel->clone();
+  SkeletonPtr clone = skel->cloneShared();
 
   for(std::size_t i=0; i < skel->getNumEndEffectors(); ++i)
   {

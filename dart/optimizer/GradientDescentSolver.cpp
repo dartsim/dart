@@ -293,7 +293,7 @@ std::string GradientDescentSolver::getType() const
 }
 
 //==============================================================================
-std::shared_ptr<Solver> GradientDescentSolver::clone() const
+std::shared_ptr<Solver> GradientDescentSolver::cloneShared() const
 {
   return std::make_shared<GradientDescentSolver>(
         getGradientDescentProperties());

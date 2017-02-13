@@ -180,7 +180,7 @@ Node* ShapeNode::cloneNode(BodyNode* parent) const
   shapeNode->copy(this);
 
   if(mIK)
-    shapeNode->mIK = mIK->clone(shapeNode);
+    shapeNode->mIK = mIK->cloneShared(shapeNode);
 
   return shapeNode;
 }

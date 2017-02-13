@@ -1377,7 +1377,7 @@ int main()
   Eigen::VectorXd positions = hubo->getPositions();
   // We make a clone to test whether the cloned version behaves the exact same
   // as the original version.
-  hubo = hubo->clone("hubo_copy");
+  hubo = hubo->cloneShared("hubo_copy");
   hubo->setPositions(positions);
 
   world->addSkeleton(hubo);

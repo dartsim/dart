@@ -92,7 +92,7 @@ public:
   virtual ~BalanceConstraint() = default;
 
   // Documentation inherited
-  optimizer::FunctionPtr clone(
+  optimizer::FunctionPtr cloneShared(
       const std::shared_ptr<dynamics::HierarchicalIK>& _newIK) const override;
 
   // Documentation inherited

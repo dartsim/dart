@@ -159,10 +159,18 @@ public:
   Skeleton& operator=(const Skeleton& _other) = delete;
 
   /// Create an identical clone of this Skeleton.
+  DART_DEPRECATED(6.2)
   SkeletonPtr clone() const;
 
+  /// Create an identical clone of this Skeleton.
+  SkeletonPtr cloneShared() const;
+
   /// Create an identical clone of this Skeleton, except that it has a new name.
+  DART_DEPRECATED(6.2)
   SkeletonPtr clone(const std::string& cloneName) const;
+
+  /// Create an identical clone of this Skeleton, except that it has a new name.
+  SkeletonPtr cloneShared(const std::string& cloneName) const;
 
   /// \}
 

@@ -155,7 +155,7 @@ Node* Marker::cloneNode(BodyNode* parent) const
   marker->duplicateAspects(this);
 
   if(mIK)
-    marker->mIK = mIK->clone(marker);
+    marker->mIK = mIK->cloneShared(marker);
 
   return marker;
 }

@@ -97,6 +97,12 @@ const std::string& SimpleFrame::getName() const
 //==============================================================================
 SimpleFramePtr SimpleFrame::clone(Frame* _refFrame) const
 {
+  return cloneShared(_refFrame);
+}
+
+//==============================================================================
+SimpleFramePtr SimpleFrame::cloneShared(Frame* _refFrame) const
+{
   return SimpleFramePtr(new SimpleFrame(*this, _refFrame));
 }
 

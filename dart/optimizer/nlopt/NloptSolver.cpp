@@ -193,7 +193,7 @@ std::string NloptSolver::getType() const
 }
 
 //==============================================================================
-std::shared_ptr<Solver> NloptSolver::clone() const
+std::shared_ptr<Solver> NloptSolver::cloneShared() const
 {
   return std::make_shared<NloptSolver>(getSolverProperties(), getAlgorithm());
 }

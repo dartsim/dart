@@ -107,6 +107,20 @@ bool HierarchicalIK::solve(Eigen::VectorXd& positions, bool _applySolution)
 }
 
 //==============================================================================
+std::shared_ptr<HierarchicalIK> HierarchicalIK::clone(
+    const SkeletonPtr& _newSkel) const
+{
+  return cloneShared(_newSkel);
+}
+
+//==============================================================================
+optimizer::FunctionPtr HierarchicalIK::Function::clone(
+    const std::shared_ptr<HierarchicalIK>& _newIK)
+{
+  return cloneShared(_newIK);
+}
+
+//==============================================================================
 void HierarchicalIK::setObjective(
     const std::shared_ptr<optimizer::Function>& _objective)
 {
@@ -359,7 +373,7 @@ HierarchicalIK::Objective::Objective(const std::shared_ptr<HierarchicalIK>& _ik)
 }
 
 //==============================================================================
-optimizer::FunctionPtr HierarchicalIK::Objective::clone(
+optimizer::FunctionPtr HierarchicalIK::Objective::cloneShared(
     const std::shared_ptr<HierarchicalIK>& _newIK) const
 {
   return std::make_shared<Objective>(_newIK);
@@ -435,7 +449,8 @@ HierarchicalIK::Constraint::Constraint(const std::shared_ptr<HierarchicalIK>& _i
 }
 
 //==============================================================================
-optimizer::FunctionPtr HierarchicalIK::Constraint::clone(const std::shared_ptr<HierarchicalIK>& _newIK) const
+optimizer::FunctionPtr HierarchicalIK::Constraint::cloneShared(
+    const std::shared_ptr<HierarchicalIK>& _newIK) const
 {
   return std::make_shared<Constraint>(_newIK);
 }
@@ -561,7 +576,7 @@ void HierarchicalIK::initialize(const std::shared_ptr<HierarchicalIK> my_ptr)
 }
 
 //==============================================================================
-static std::shared_ptr<optimizer::Function> cloneIkFunc(
+static std::shared_ptr<optimizer::Function> cloneSharedIkFunc(
     const std::shared_ptr<optimizer::Function>& _function,
     const std::shared_ptr<HierarchicalIK>& _ik)
 {
@@ -569,7 +584,7 @@ static std::shared_ptr<optimizer::Function> cloneIkFunc(
       std::dynamic_pointer_cast<HierarchicalIK::Function>(_function);
 
   if(ikFunc)
-    return ikFunc->clone(_ik);
+    return ikFunc->cloneShared(_ik);
 
   return _function;
 }
@@ -578,21 +593,21 @@ static std::shared_ptr<optimizer::Function> cloneIkFunc(
 void HierarchicalIK::copyOverSetup(
     const std::shared_ptr<HierarchicalIK>& _otherIK) const
 {
-  _otherIK->setSolver(mSolver->clone());
+  _otherIK->setSolver(mSolver->cloneShared());
 
   const std::shared_ptr<optimizer::Problem>& newProblem =
       _otherIK->getProblem();
-  newProblem->setObjective( cloneIkFunc(mProblem->getObjective(), _otherIK) );
+  newProblem->setObjective( cloneSharedIkFunc(mProblem->getObjective(), _otherIK) );
 
   newProblem->removeAllEqConstraints();
   for(std::size_t i=0; i < mProblem->getNumEqConstraints(); ++i)
     newProblem->addEqConstraint(
-          cloneIkFunc(mProblem->getEqConstraint(i), _otherIK));
+          cloneSharedIkFunc(mProblem->getEqConstraint(i), _otherIK));
 
   newProblem->removeAllIneqConstraints();
   for(std::size_t i=0; i < mProblem->getNumIneqConstraints(); ++i)
     newProblem->addIneqConstraint(
-          cloneIkFunc(mProblem->getIneqConstraint(i), _otherIK));
+          cloneSharedIkFunc(mProblem->getIneqConstraint(i), _otherIK));
 
   newProblem->getSeeds() = mProblem->getSeeds();
 }
@@ -600,13 +615,19 @@ void HierarchicalIK::copyOverSetup(
 //==============================================================================
 std::shared_ptr<CompositeIK> CompositeIK::create(const SkeletonPtr& _skel)
 {
+  return createShared(_skel);
+}
+
+//==============================================================================
+std::shared_ptr<CompositeIK> CompositeIK::createShared(const SkeletonPtr& _skel)
+{
   std::shared_ptr<CompositeIK> ik(new CompositeIK(_skel));
   ik->initialize(ik);
   return ik;
 }
 
 //==============================================================================
-std::shared_ptr<HierarchicalIK> CompositeIK::clone(
+std::shared_ptr<HierarchicalIK> CompositeIK::cloneShared(
     const SkeletonPtr& _newSkel) const
 {
   return cloneCompositeIK(_newSkel);
@@ -616,7 +637,7 @@ std::shared_ptr<HierarchicalIK> CompositeIK::clone(
 std::shared_ptr<CompositeIK> CompositeIK::cloneCompositeIK(
     const SkeletonPtr& _newSkel) const
 {
-  std::shared_ptr<CompositeIK> newComposite = create(_newSkel);
+  std::shared_ptr<CompositeIK> newComposite = createShared(_newSkel);
   copyOverSetup(newComposite);
 
   for( const std::shared_ptr<InverseKinematics>& ik : mModuleSet )
@@ -635,7 +656,7 @@ std::shared_ptr<CompositeIK> CompositeIK::cloneCompositeIK(
 
     if(node)
     {
-      newComposite->addModule(ik->clone(node));
+      newComposite->addModule(ik->cloneShared(node));
     }
   }
 
@@ -712,23 +733,36 @@ CompositeIK::CompositeIK(const SkeletonPtr& _skel)
 //==============================================================================
 std::shared_ptr<WholeBodyIK> WholeBodyIK::create(const SkeletonPtr& _skel)
 {
+  return createShared(_skel);
+}
+
+//==============================================================================
+std::shared_ptr<WholeBodyIK> WholeBodyIK::createShared(const SkeletonPtr& _skel)
+{
   std::shared_ptr<WholeBodyIK> ik(new WholeBodyIK(_skel));
   ik->initialize(ik);
   return ik;
 }
 
 //==============================================================================
-std::shared_ptr<HierarchicalIK> WholeBodyIK::clone(
+std::shared_ptr<HierarchicalIK> WholeBodyIK::cloneShared(
     const SkeletonPtr& _newSkel) const
 {
-  return cloneWholeBodyIK(_newSkel);
+  return cloneSharedWholeBodyIK(_newSkel);
 }
 
 //==============================================================================
 std::shared_ptr<WholeBodyIK> WholeBodyIK::cloneWholeBodyIK(
     const SkeletonPtr& _newSkel) const
 {
-  std::shared_ptr<WholeBodyIK> newIK = create(_newSkel);
+  return cloneSharedWholeBodyIK(_newSkel);
+}
+
+//==============================================================================
+std::shared_ptr<WholeBodyIK> WholeBodyIK::cloneSharedWholeBodyIK(
+    const SkeletonPtr& _newSkel) const
+{
+  std::shared_ptr<WholeBodyIK> newIK = createShared(_newSkel);
   copyOverSetup(newIK);
   return newIK;
 }
@@ -806,4 +840,3 @@ WholeBodyIK::WholeBodyIK(const SkeletonPtr& _skel)
 
 } // namespace dynamics
 } // namespace dart
-

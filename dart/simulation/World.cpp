@@ -82,6 +82,12 @@ World::~World()
 //==============================================================================
 WorldPtr World::clone() const
 {
+  return cloneShared();
+}
+
+//==============================================================================
+WorldPtr World::cloneShared() const
+{
   WorldPtr worldClone(new World(mName));
 
   worldClone->setGravity(mGravity);
@@ -94,13 +100,14 @@ WorldPtr World::clone() const
   // Clone and add each Skeleton
   for(std::size_t i=0; i<mSkeletons.size(); ++i)
   {
-    worldClone->addSkeleton(mSkeletons[i]->clone());
+    worldClone->addSkeleton(mSkeletons[i]->cloneShared());
   }
 
   // Clone and add each SimpleFrame
   for(std::size_t i=0; i<mSimpleFrames.size(); ++i)
   {
-    worldClone->addSimpleFrame(mSimpleFrames[i]->clone(mSimpleFrames[i]->getParentFrame()));
+    worldClone->addSimpleFrame(
+          mSimpleFrames[i]->cloneShared(mSimpleFrames[i]->getParentFrame()));
   }
 
   // For each newly cloned SimpleFrame, try to make its parent Frame be one of

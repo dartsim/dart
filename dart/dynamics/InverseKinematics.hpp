@@ -139,7 +139,14 @@ public:
   /// Problem that inherit InverseKinematics::Function will be adapted to the
   /// new IK module. Any generic optimizer::Function will just be copied over
   /// by pointer instead of being cloned.
+  DART_DEPRECATED(6.2)
   InverseKinematicsPtr clone(JacobianNode* _newNode) const;
+
+  /// Clone this IK module, but targeted at a new Node. Any Functions in the
+  /// Problem that inherit InverseKinematics::Function will be adapted to the
+  /// new IK module. Any generic optimizer::Function will just be copied over
+  /// by pointer instead of being cloned.
+  InverseKinematicsPtr cloneShared(JacobianNode* _newNode) const;
 
   // For the definitions of these classes, see the bottom of this header
   class Function;
@@ -523,7 +530,11 @@ public:
   virtual ~ErrorMethod() = default;
 
   /// Enable this ErrorMethod to be cloned to a new IK module.
-  virtual std::unique_ptr<ErrorMethod> clone(
+  DART_DEPRECATED(6.2)
+  virtual std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const;
+
+  /// Enable this ErrorMethod to be cloned to a new IK module.
+  virtual std::unique_ptr<ErrorMethod> cloneUnique(
       InverseKinematics* _newIK) const = 0;
 
   /// Override this function with your implementation of the error vector
@@ -696,7 +707,8 @@ public:
   virtual ~TaskSpaceRegion() = default;
 
   // Documentation inherited
-  std::unique_ptr<ErrorMethod> clone(InverseKinematics* _newIK) const override;
+  std::unique_ptr<ErrorMethod> cloneUnique(
+      InverseKinematics* _newIK) const override;
 
   // Documentation inherited
   Eigen::Isometry3d computeDesiredTransform(

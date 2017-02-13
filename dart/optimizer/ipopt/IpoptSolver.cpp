@@ -117,7 +117,7 @@ std::string IpoptSolver::getType() const
 }
 
 //==============================================================================
-std::shared_ptr<Solver> IpoptSolver::clone() const
+std::shared_ptr<Solver> IpoptSolver::cloneShared() const
 {
   std::shared_ptr<IpoptSolver> newSolver(
         new IpoptSolver(getSolverProperties(), mIpoptApp->clone()));

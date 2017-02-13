@@ -67,7 +67,7 @@ public:
   std::string getType() const override;
 
   // Documentation inherited
-  std::shared_ptr<Solver> clone() const override;
+  std::shared_ptr<Solver> cloneShared() const override;
 
   /// Copy the Properties of another NloptSolver
   void copy(const NloptSolver& _other);

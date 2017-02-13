@@ -193,7 +193,7 @@ TEST(World, Cloning)
     std::vector<dart::simulation::WorldPtr> clones;
     clones.push_back(original);
     for(std::size_t j=1; j<5; ++j)
-      clones.push_back(clones[j-1]->clone());
+      clones.push_back(clones[j-1]->cloneShared());
 
 #ifndef NDEBUG // Debug mode
     std::size_t numIterations = 3;
@@ -288,7 +288,7 @@ TEST(World, ValidatingClones)
     clones.push_back(original);
     for(std::size_t j=1; j<5; ++j)
     {
-      clones.push_back(clones[j-1]->clone());
+      clones.push_back(clones[j-1]->cloneShared());
 
       auto originalCD
           = original->getConstraintSolver()->getCollisionDetector();

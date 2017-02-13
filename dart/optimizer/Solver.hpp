@@ -37,6 +37,8 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Deprecated.hpp"
+
 namespace dart {
 namespace optimizer {
 
@@ -107,7 +109,11 @@ public:
   virtual std::string getType() const = 0;
 
   /// Create an identical clone of this Solver
-  virtual std::shared_ptr<Solver> clone() const = 0;
+  DART_DEPRECATED(6.2)
+  virtual std::shared_ptr<Solver> clone() const;
+
+  /// Create an identical clone of this Solver
+  virtual std::shared_ptr<Solver> cloneShared() const = 0;
 
   /// Set the generic Properties of this Solver
   void setProperties(const Properties& _properties);
