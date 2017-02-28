@@ -1,3 +1,9 @@
+## How to Contribute to DART?
+
+[Opening a GitHub pull request](https://help.github.com/articles/about-pull-requests/) would be the best way. Please make sure that your code follows DART conventions.
+
+The code doesn't need to be perfect right away, feel free to post work-in-progress versions to get the discussion started.
+
 ## DART Contributors
 
  Name                                               | Contributions
