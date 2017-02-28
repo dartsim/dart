@@ -1509,7 +1509,7 @@ common::ResourceRetrieverPtr getRetriever(
     newRetriever->addSchemaRetriever(
           "dart", DartResourceRetriever::create());
 
-    return DartResourceRetriever::create();
+    return newRetriever;
   }
 }
 
