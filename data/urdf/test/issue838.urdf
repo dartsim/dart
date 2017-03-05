@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 
 <robot name="issue838">
-  <!-- end of arm links/joints -->
+
   <material name="Blue">
     <color rgba="0 0 0.8 1"/>
   </material>
