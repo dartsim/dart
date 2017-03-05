@@ -38,14 +38,13 @@ TEST(Issue838, MaterialParsing)
 {
   dart::utils::DartLoader loader;
   dart::dynamics::SkeletonPtr skeleton =
-      loader.parseSkeleton("dart://sample/urdf/test/testWorld.urdf");
+      loader.parseSkeleton("dart://sample/urdf/test/issue838.urdf");
   EXPECT_TRUE(nullptr != skeleton);
 
-  std::vector<Eigen::Vector4d> colors = {
-    Eigen::Vector4d(0.0, 0.0, 0.8, 1.0),
-    Eigen::Vector4d(1.0, 0.0, 0.0, 1.0),
-    Eigen::Vector4d(1.0, 1.0, 0.0, 1.0)
-  };
+  std::vector<Eigen::Vector4d> colors;
+  colors.push_back(Eigen::Vector4d(0.0, 0.0, 0.8, 1.0));
+  colors.push_back(Eigen::Vector4d(1.0, 0.0, 0.0, 1.0));
+  colors.push_back(Eigen::Vector4d(1.0, 1.0, 0.0, 1.0));
 
   EXPECT_EQ(colors.size(), skeleton->getNumBodyNodes());
 
