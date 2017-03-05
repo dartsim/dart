@@ -225,7 +225,8 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
       }
 
       const auto result
-          = createShapeNodes(root, rootNode, _baseUri, _resourceRetriever);
+          = createShapeNodes(_model, root, rootNode,
+                             _baseUri, _resourceRetriever);
       if(!result)
         return nullptr;
     }
@@ -245,7 +246,8 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     rootNode = pair.second;
 
     const auto result
-        = createShapeNodes(root, rootNode, _baseUri, _resourceRetriever);
+        = createShapeNodes(_model, root, rootNode,
+                           _baseUri, _resourceRetriever);
     if(!result)
       return nullptr;
   }
@@ -253,7 +255,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   for(std::size_t i = 0; i < root->child_links.size(); i++)
   {
     if (!createSkeletonRecursive(
-           skeleton, root->child_links[i].get(), rootNode,
+           _model, skeleton, root->child_links[i].get(), rootNode,
            _baseUri, _resourceRetriever))
       return nullptr;
 
@@ -263,6 +265,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
 }
 
 bool DartLoader::createSkeletonRecursive(
+  const urdf::ModelInterface* model,
   dynamics::SkeletonPtr _skel,
   const urdf::Link* _lk,
   dynamics::BodyNode* _parentNode,
@@ -280,13 +283,15 @@ bool DartLoader::createSkeletonRecursive(
   if(!node)
     return false;
 
-  const auto result = createShapeNodes(_lk, node, _baseUri, _resourceRetriever);
+  const auto result = createShapeNodes(
+        model, _lk, node, _baseUri, _resourceRetriever);
+
   if(!result)
     return false;
   
   for(std::size_t i = 0; i < _lk->child_links.size(); ++i)
   {
-    if (!createSkeletonRecursive(_skel, _lk->child_links[i].get(), node,
+    if (!createSkeletonRecursive(model, _skel, _lk->child_links[i].get(), node,
                                  _baseUri, _resourceRetriever))
       return false;
   }
@@ -459,24 +464,29 @@ bool DartLoader::createDartNodeProperties(
   return true;
 }
 
-void setMaterial(dynamics::VisualAspect* visualAspect, const urdf::Visual* viz)
+void setMaterial(
+  const urdf::ModelInterface* model,
+  dynamics::VisualAspect* visualAspect,
+  const urdf::Visual* viz)
 {
   if(viz->material)
   {
-    visualAspect->setColor(Eigen::Vector3d(viz->material->color.r,
-                                          viz->material->color.g,
-                                          viz->material->color.b));
-  }
-}
+    urdf::Color urdf_color = viz->material->color;
 
-void setMaterial(dynamics::ShapePtr /*_shape*/,
-                 const urdf::Collision* /*_col*/)
-{
-  // Do nothing
+    const auto& m_it = model->materials_.find(viz->material_name);
+    if(m_it != model->materials_.end())
+      urdf_color = m_it->second->color;
+
+    Eigen::Vector4d color(urdf_color.r, urdf_color.g,
+                          urdf_color.b, urdf_color.a);
+
+    visualAspect->setColor(color);
+  }
 }
 
 //==============================================================================
 bool DartLoader::createShapeNodes(
+  const urdf::ModelInterface* model,
   const urdf::Link* lk,
   dynamics::BodyNode* bodyNode,
   const common::Uri& baseUri,
@@ -492,7 +502,7 @@ bool DartLoader::createShapeNodes(
     {
       auto shapeNode = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(shape);
       shapeNode->setRelativeTransform(toEigen(visual->origin));
-      setMaterial(shapeNode->getVisualAspect(), visual.get());
+      setMaterial(model, shapeNode->getVisualAspect(), visual.get());
     }
     else
     {

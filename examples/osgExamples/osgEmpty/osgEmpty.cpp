@@ -31,6 +31,7 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
+#include <dart/utils/urdf/DartLoader.hpp>
 
 //==============================================================================
 class CustomWorldNode : public dart::gui::osg::WorldNode
