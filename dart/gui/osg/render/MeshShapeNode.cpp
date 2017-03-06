@@ -541,6 +541,8 @@ void MeshShapeGeometry::extractData(bool firstTime)
     if(mNormals->size() != mAiMesh->mNumVertices)
       mNormals->resize(mAiMesh->mNumVertices);
 
+    const Eigen::Vector3d s = mMeshShape->getScale();
+
     for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
     {
       const aiVector3D& v = mAiMesh->mVertices[i];
@@ -549,7 +551,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
       if(mAiMesh->mNormals)
       {
         const aiVector3D& n = mAiMesh->mNormals[i];
-        (*mNormals)[i] = ::osg::Vec3(n.x, n.y, n.z);
+        (*mNormals)[i] = ::osg::Vec3(n.x*s[0], n.y*s[1], n.z*s[2]);
       }
       // TODO(MXG): Consider computing normals for meshes that don't come with
       // normal data per vertex

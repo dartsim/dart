@@ -99,7 +99,7 @@ protected:
   /// Pointer to the WorldNode that this ShapeFrameNode belongs to
   WorldNode* mWorldNode;
 
-  render::ShapeNode* mShapeNode;
+  render::ShapeNode* mRenderShapeNode;
 
   /// True iff this ShapeFrameNode has been utilized on the latest update.
   /// If it has not, that is an indication that it is no longer being
