@@ -204,7 +204,7 @@ void ScrewJoint::updateRelativeTransform() const
 
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = getAxis();
-  S.tail<3>() = getAxis()*getPitch() / 2.0_pi;
+  S.tail<3>() = getAxis() * getPitch() / 2.0_pi;
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * math::expMap(S * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
