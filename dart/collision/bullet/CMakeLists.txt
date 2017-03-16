@@ -1,13 +1,15 @@
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
+file(GLOB detail_hdrs "detail/*.hpp")
+file(GLOB detail_srcs "detail/*.cpp")
 
 # Set local target name
 set(target_name ${PROJECT_NAME}-collision-bullet)
 set(component_name collision-bullet)
 
 # Add target
-dart_add_library(${target_name} ${hdrs} ${srcs})
+dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})
 target_include_directories(
   ${target_name} SYSTEM
   PUBLIC ${BULLET_INCLUDE_DIRS}

@@ -42,6 +42,7 @@
 #include "dart/collision/bullet/BulletTypes.hpp"
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
+#include "dart/collision/bullet/BulletCollisionDispatcher.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SphereShape.hpp"
@@ -125,7 +126,6 @@ Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
                        const BulletCollisionObject::UserData* userData2);
 
 void convertContacts(btCollisionWorld* collWorld,
-                     BulletOverlapFilterCallback* overlapFilterCallback,
                      const CollisionOption& option,
                      CollisionResult& result);
 
@@ -219,6 +219,42 @@ static bool isCollision(btCollisionWorld* world)
 }
 
 //==============================================================================
+void filterOutCollisions(
+    btCollisionWorld* collWorld, const std::shared_ptr<CollisionFilter>& filter)
+{
+  assert(collWorld);
+
+  auto dispatcher = static_cast<BulletCustomCollisionDispatcher*>(
+      collWorld->getDispatcher());
+  assert(dispatcher);
+
+  auto numManifolds = dispatcher->getNumManifolds();
+
+  std::vector<btPersistentManifold*> manifoldsToRelease;
+
+  for (auto i = 0; i < numManifolds; ++i)
+  {
+    auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
+    const auto bulletCollObj0 = contactManifold->getBody0();
+    const auto bulletCollObj1 = contactManifold->getBody1();
+
+    const auto userPointer0 = static_cast<BulletCollisionObject::UserData*>(
+        bulletCollObj0->getUserPointer());
+    const auto userPointer1 = static_cast<BulletCollisionObject::UserData*>(
+        bulletCollObj1->getUserPointer());
+
+    const auto btCollObj0 = userPointer0->collisionObject;
+    const auto btCollObj1 = userPointer1->collisionObject;
+
+    if (filter && !filter->needCollision(btCollObj0, btCollObj1))
+      manifoldsToRelease.push_back(contactManifold);
+  }
+
+  for (const auto& manifold : manifoldsToRelease)
+    dispatcher->clearManifold(manifold);
+}
+
+//==============================================================================
 bool BulletCollisionDetector::collide(
     CollisionGroup* group,
     const CollisionOption& option,
@@ -233,37 +269,26 @@ bool BulletCollisionDetector::collide(
   if (!checkGroupValidity(this, group))
     return false;
 
-  // TODO(JS): It seems, when new BulletOverlapFilterCallback is set to
-  // btCollisionWorld, bullet doesn't update the list of collision pairs that
-  // was generated before. Also, there is no way to update the list manually.
-  // Please report us if it's not true.
-  //
-  // In order to have filtered pairs in btCollisionWorld, we instead create a
-  // new btCollisionWorld (by creating new BulletCollisionGroup) and add the
-  // collision objects to the new btCollisionWorld so that the filter prevents
-  // btCollisionWorld to generate unnecessary pairs, which is very inefficient
-  // way.
+  auto castedGroup = static_cast<BulletCollisionGroup*>(group);
+  auto collisionWorld = castedGroup->getBulletCollisionWorld();
+  auto dispatcher = static_cast<BulletCustomCollisionDispatcher*>(
+      collisionWorld->getDispatcher());
+  dispatcher->setFilter(option.collisionFilter);
 
-  mGroupForFiltering.reset(new BulletCollisionGroup(shared_from_this()));
-  auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
-  auto bulletPairCache = bulletCollisionWorld->getPairCache();
-  auto filterCallback = new BulletOverlapFilterCallback(option, result);
-  bulletPairCache->setOverlapFilterCallback(filterCallback);
+  filterOutCollisions(collisionWorld, option.collisionFilter);
 
-  mGroupForFiltering->addShapeFramesOf(group);
-  mGroupForFiltering->updateEngineData();
-
-  bulletCollisionWorld->performDiscreteCollisionDetection();
+  castedGroup->updateEngineData();
+  collisionWorld->performDiscreteCollisionDetection();
 
   if (result)
   {
-    convertContacts(bulletCollisionWorld, filterCallback, option, *result);
+    convertContacts(collisionWorld, option, *result);
 
     return result->isCollision();
   }
   else
   {
-    return isCollision(bulletCollisionWorld);
+    return isCollision(collisionWorld);
   }
 }
 
@@ -304,7 +329,7 @@ bool BulletCollisionDetector::collide(
 
   if (result)
   {
-    convertContacts(bulletCollisionWorld, filterCallback, option, *result);
+    convertContacts(bulletCollisionWorld, option, *result);
 
     return result->isCollision();
   }
@@ -587,13 +612,13 @@ Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
 //==============================================================================
 void convertContacts(
     btCollisionWorld* collWorld,
-    BulletOverlapFilterCallback* overlapFilterCallback,
     const CollisionOption& option,
     CollisionResult& result)
 {
   assert(collWorld);
 
-  auto dispatcher = collWorld->getDispatcher();
+  auto dispatcher = static_cast<BulletCustomCollisionDispatcher*>(
+      collWorld->getDispatcher());
   assert(dispatcher);
 
   auto numManifolds = dispatcher->getNumManifolds();
@@ -622,7 +647,7 @@ void convertContacts(
 
       if (result.getNumContacts() >= option.maxNumContacts)
       {
-        overlapFilterCallback->done = true;
+        dispatcher->setDone(true);
         return;
       }
     }
