@@ -46,6 +46,13 @@ namespace dart {
 namespace common {
 
 //==============================================================================
+template <typename T, typename... Args>
+std::shared_ptr<T> make_shared(Args&&... args)
+{
+  return detail::MakeSharedImpl<T, Args...>::run(std::forward<Args>(args)...);
+}
+
+//==============================================================================
 template <typename _Tp, typename... _Args>
 std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
 {

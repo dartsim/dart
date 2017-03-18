@@ -28,33 +28,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-#include <gtest/gtest.h>
-#include "dart/utils/DartResourceRetriever.hpp"
+#ifndef DART_COMMON_CREATE_HPP_
+#define DART_COMMON_CREATE_HPP_
 
-using namespace dart;
+#include <memory>
+#include "dart/common/detail/Create.hpp"
 
-//==============================================================================
-TEST(DartResourceRetriever, ExistsAndRetrieve)
-{
-  auto retriever = utils::DartResourceRetriever::createShared();
+#define DART_DEFINE_GENERIC_CREATOR(class_name)                                \
+  template <template <typename...> class Container, typename... Args>          \
+  static Container<class_name> create(Args&&... args)                          \
+  {                                                                            \
+    return ::dart::common::detail::CreateImpl<                                 \
+       Container, class_name, Args...>::run(std::forward<Args>(args)...);      \
+  }
 
-  EXPECT_FALSE(retriever->exists("unknown://test"));
-  EXPECT_FALSE(retriever->exists("unknown://sample/test"));
-  EXPECT_FALSE(retriever->exists("dart://unknown/test"));
-  EXPECT_FALSE(retriever->exists("dart://sample/does/not/exist"));
-  EXPECT_TRUE(retriever->exists("dart://sample/skel/shapes.skel"));
+#define DART_DEFINE_STD_UNIQUE_PTR_CREATOR(class_name, func_name)              \
+  template <typename... Args>                                                  \
+  static std::unique_ptr<class_name> func_name(Args&&... args)                 \
+  {                                                                            \
+    return create<std::unique_ptr>(std::forward<Args>(args)...);               \
+  }
 
-  EXPECT_EQ(nullptr, retriever->retrieve("unknown://test"));
-  EXPECT_EQ(nullptr, retriever->retrieve("unknown://sample/test"));
-  EXPECT_EQ(nullptr, retriever->retrieve("dart://unknown/test"));
-  EXPECT_EQ(nullptr, retriever->retrieve("dart://sample/does/not/exist"));
-  EXPECT_NE(nullptr, retriever->retrieve("dart://sample/skel/shapes.skel"));
-}
+#define DART_DEFINE_STD_SHARED_PTR_CREATOR(class_name, func_name)              \
+  template <typename... Args>                                                  \
+  static std::shared_ptr<class_name> func_name(Args&&... args)                 \
+  {                                                                            \
+    return create<std::shared_ptr>(std::forward<Args>(args)...);               \
+  }
 
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+#endif // DART_COMMON_CREATE_HPP_

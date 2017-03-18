@@ -1507,9 +1507,9 @@ common::ResourceRetrieverPtr getRetriever(
     newRetriever->addSchemaRetriever(
           "file", std::make_shared<common::LocalResourceRetriever>());
     newRetriever->addSchemaRetriever(
-          "dart", DartResourceRetriever::create());
+          "dart", DartResourceRetriever::createShared());
 
-    return DartResourceRetriever::create();
+    return DartResourceRetriever::createShared();
   }
 }
 

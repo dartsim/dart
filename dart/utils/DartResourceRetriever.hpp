@@ -34,6 +34,7 @@
 #include <unordered_map>
 #include <vector>
 #include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/Create.hpp"
 
 namespace dart {
 namespace utils {
@@ -63,12 +64,9 @@ namespace utils {
 class DartResourceRetriever : public common::ResourceRetriever
 {
 public:
-  template <typename... Args>
-  static std::shared_ptr<DartResourceRetriever> create(Args&&... args)
-  {
-    return std::make_shared<DartResourceRetriever>(
-          std::forward<Args>(args)...);
-  }
+  DART_DEFINE_GENERIC_CREATOR(DartResourceRetriever)
+  DART_DEFINE_STD_UNIQUE_PTR_CREATOR(DartResourceRetriever, createUnique)
+  DART_DEFINE_STD_SHARED_PTR_CREATOR(DartResourceRetriever, createShared)
 
   /// Constructor.
   DartResourceRetriever();

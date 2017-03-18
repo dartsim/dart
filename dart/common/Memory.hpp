@@ -33,15 +33,19 @@
 #define DART_COMMON_MEMORY_HPP_
 
 #include <memory>
+#include "dart/common/detail/MakeShared.hpp"
 
 namespace dart {
 namespace common {
 
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args);
+
 template <typename _Tp, typename... _Args>
 std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args);
 
-template<typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args);
+template <typename T, typename... Args>
+std::shared_ptr<T> make_shared(Args&&... args);
 
 } // namespace common
 } // namespace dart

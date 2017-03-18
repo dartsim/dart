@@ -28,33 +28,50 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
-#include <gtest/gtest.h>
-#include "dart/utils/DartResourceRetriever.hpp"
+#ifndef DART_COMMON_DETAIL_CREATE_HPP_
+#define DART_COMMON_DETAIL_CREATE_HPP_
 
-using namespace dart;
+#include <memory>
+#include <Eigen/Core>
+#include "dart/config.hpp"
+#include "dart/common/Memory.hpp"
 
-//==============================================================================
-TEST(DartResourceRetriever, ExistsAndRetrieve)
+namespace dart {
+namespace common {
+namespace detail {
+
+// Generic version
+template <template <typename...> class Container, typename T, typename... Args>
+struct CreateImpl
 {
-  auto retriever = utils::DartResourceRetriever::createShared();
+  static Container<T, Args...> run(Args&&... args)
+  {
+    return Container<T, Args...>(new T(std::forward<Args>(args)...));
+  }
+};
 
-  EXPECT_FALSE(retriever->exists("unknown://test"));
-  EXPECT_FALSE(retriever->exists("unknown://sample/test"));
-  EXPECT_FALSE(retriever->exists("dart://unknown/test"));
-  EXPECT_FALSE(retriever->exists("dart://sample/does/not/exist"));
-  EXPECT_TRUE(retriever->exists("dart://sample/skel/shapes.skel"));
-
-  EXPECT_EQ(nullptr, retriever->retrieve("unknown://test"));
-  EXPECT_EQ(nullptr, retriever->retrieve("unknown://sample/test"));
-  EXPECT_EQ(nullptr, retriever->retrieve("dart://unknown/test"));
-  EXPECT_EQ(nullptr, retriever->retrieve("dart://sample/does/not/exist"));
-  EXPECT_NE(nullptr, retriever->retrieve("dart://sample/skel/shapes.skel"));
-}
-
-//==============================================================================
-int main(int argc, char* argv[])
+// Specialized for std::shared_ptr
+template <typename T, typename... Args>
+struct CreateImpl<std::shared_ptr, T, Args...>
 {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+  static std::shared_ptr<T> run(Args&&... args)
+  {
+    return MakeSharedImpl<T, Args...>::run(std::forward<Args>(args)...);
+  }
+};
+
+// Specialized for std::unique_ptr
+template <typename T, typename... Args>
+struct CreateImpl<std::unique_ptr, T, Args...>
+{
+  static std::unique_ptr<T> run(Args&&... args)
+  {
+    return make_unique<T, Args...>(std::forward<Args>(args)...);
+  }
+};
+
+} // namespace detail
+} // namespace common
+} // namespace dart
+
+#endif // DART_COMMON_DETAIL_MEMORY_IMPL_HPP_
