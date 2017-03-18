@@ -6,3 +6,4 @@ Visit the [DART website](http://dartsim.github.io/) for more information
 * Installation: [Ubuntu](http://dartsim.github.io/install_dart_on_ubuntu.html) | [macOS](http://dartsim.github.io/install_dart_on_mac.html) | [Windows](http://dartsim.github.io/install_dart_on_windows.html)
 * [Tutorials](http://dartsim.github.io/tutorials_introduction.html)
 * [API Documentation](http://dartsim.github.io/dart/)
+* Python bindings: [PyDart2](https://github.com/sehoonha/pydart2)

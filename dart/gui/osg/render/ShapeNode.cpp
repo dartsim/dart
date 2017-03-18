@@ -47,7 +47,8 @@ ShapeNode::ShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
     mUtilized(true)
 {
   mShapeFrame = mParentShapeFrameNode->getShapeFrame();
-  mVisualAspect = mShapeFrame->getVisualAspect(true);
+  mVisualAspect = mShapeFrame->getVisualAspect();
+  assert(mVisualAspect);
 }
 
 //==============================================================================

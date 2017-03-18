@@ -131,6 +131,7 @@ private:
       const common::ResourceRetrieverPtr& _resourceRetriever);
 
     static bool createSkeletonRecursive(
+      const urdf::ModelInterface* model,
       dynamics::SkeletonPtr _skel,
       const urdf::Link* _lk,
       dynamics::BodyNode* _parent,
@@ -157,6 +158,7 @@ private:
       const common::ResourceRetrieverPtr& _resourceRetriever);
 
     static bool createShapeNodes(
+      const urdf::ModelInterface* model,
       const urdf::Link* lk,
       dynamics::BodyNode* bodyNode,
       const common::Uri& baseUri,
