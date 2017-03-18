@@ -1293,10 +1293,3 @@ TEST(MATH, PerformanceComparisonOfAdTJac)
   // Note: The best function for dynamic size Jacobian is AdTJac2, and the best
   //       function for fixed size Jacobian is AdTJac3
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

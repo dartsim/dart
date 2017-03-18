@@ -525,10 +525,3 @@ TEST(SkelParser, Shapes)
   skel = world->getSkeleton("mesh skeleton");
   EXPECT_NE(skel, nullptr);
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

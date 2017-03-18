@@ -71,9 +71,13 @@ function(dart_add_test test_type target_name) # ARGN for source files
     "${DART_TEST_OUT_DIR}/${test_type}/${target_name}")
 
   if(MSVC)
-    target_link_libraries(${target_name} dart optimized gtest debug gtestd)
+    target_link_libraries(${target_name}
+        dart
+        optimized gtest debug gtestd
+        optimized gtest_main debug gtest_maind
+    )
   else()
-    target_link_libraries(${target_name} dart gtest)
+    target_link_libraries(${target_name} dart gtest gtest_main)
   endif()
 
   set_target_properties(

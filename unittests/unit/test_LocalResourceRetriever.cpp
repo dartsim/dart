@@ -155,9 +155,3 @@ TEST(LocalResourceRetriever, retrieve_ResourceOperations)
   ASSERT_EQ(1u, resource->read(buffer.data(), content.size(), 1));
   EXPECT_STREQ(content.c_str(), buffer.data());
 }
-
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

@@ -737,11 +737,3 @@ TEST(FRAMES, CHILDHOOD)
 
   EXPECT_TRUE(F1.getNumChildFrames() == 1);
 }
-
-int main(int argc, char* argv[])
-{
-  srand(271828); // Seed with an arbitrary fixed integer. Don't seed with time,
-                 // because it will produce different numbers between runs.
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
