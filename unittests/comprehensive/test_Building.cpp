@@ -107,10 +107,3 @@ TEST(BUILDING, BASIC)
   for (int i = 0; i < nSteps; ++i)
       world->step();
 }
-
-/******************************************************************************/
-int main(int argc, char* argv[])
-{
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
-}

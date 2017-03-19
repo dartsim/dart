@@ -76,10 +76,3 @@ TEST(Concurrency, FrameDeletion)
   EXPECT_EQ(Frame::World()->getNumChildEntities(), 0);
   EXPECT_EQ(Frame::World()->getNumChildFrames(), 0);
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

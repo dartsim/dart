@@ -185,9 +185,3 @@ TEST(CompositeResourceRetriever, retrieve_DefaultResourceRetrieverSucceeds_Retur
   EXPECT_TRUE(retriever3->mExists.empty());
   EXPECT_TRUE(retriever3->mRetrieve.empty());
 }
-
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

@@ -2129,10 +2129,3 @@ TEST_F(DynamicsTest, HybridDynamics)
     EXPECT_NEAR(command(i,4), output(i,4), tol);
   }
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

@@ -49,9 +49,3 @@ TEST(NEAREST_NEIGHBOR, 2D) {
     EXPECT_TRUE(equality);
 }
 #endif // HAVE_FLANN
-
-/* ********************************************************************************************* */
-int main(int argc, char* argv[]) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

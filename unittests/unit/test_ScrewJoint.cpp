@@ -70,11 +70,3 @@ TEST(ScrewJoint, ThreadPitch)
   expectedDiff = axis*pitch*angle/2.0_pi;
   EXPECT_TRUE(diff.isApprox(expectedDiff));
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
-
