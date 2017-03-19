@@ -99,10 +99,3 @@ TEST(VskParser, SingleStepSimulations)
   EXPECT_EQ(world->getNumSkeletons(), 1u);
   world->step();
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

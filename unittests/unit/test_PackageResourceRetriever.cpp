@@ -236,9 +236,3 @@ TEST(PackageResourceRetriever, retrieve_FallsBackOnSecondUri)
   EXPECT_EQ(expected1, mockRetriever->mRetrieve[0]);
   EXPECT_EQ(expected2, mockRetriever->mRetrieve[1]);
 }
-
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

@@ -1174,11 +1174,3 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
     EXPECT_NEAR(joint6->getAcceleration(0), 0.0, tol);
   }
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
-
