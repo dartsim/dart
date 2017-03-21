@@ -12,7 +12,6 @@ bullet
 flann
 boost
 eigen
-tinyxml
 tinyxml2
 libccd
 nlopt

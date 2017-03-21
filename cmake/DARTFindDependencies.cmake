@@ -197,10 +197,6 @@ dart_check_optional_package(FLANN "dart-planning" "flann" "1.8.4")
 # Dependencies for dart-utils
 #-----------------------------
 
-# TINYXML
-find_package(TINYXML 2.6.2 QUIET)
-dart_check_optional_package(TINYXML "dart-utils" "tinyxml" "2.6.2")
-
 # TINYXML2
 find_package(TINYXML2 QUIET)
 dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")

@@ -25,13 +25,11 @@ dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_utils_headers} ${dart_uti
 target_include_directories(
   ${target_name} SYSTEM
   PUBLIC
-    ${TINYXML_INCLUDE_DIRS}
     ${TINYXML2_INCLUDE_DIRS}
 )
 target_link_libraries(
   ${target_name}
   dart-collision-bullet
-  ${TINYXML_LIBRARIES}
   ${TINYXML2_LIBRARIES}
 )
 

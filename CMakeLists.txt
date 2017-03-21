@@ -263,7 +263,7 @@ endfunction(dart_add_tutorial)
 
 add_subdirectory(dart)
 
-if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
+if(TINYXML2_FOUND AND BULLET_FOUND)
 
   # Add a "tests" target to build unit tests.
   enable_testing()

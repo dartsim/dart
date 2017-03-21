@@ -41,8 +41,6 @@
 #include <algorithm>
 #include <iostream>
 
-#include <tinyxml.h>
-
 #include <urdf_parser/urdf_parser.h>
 #include <urdf_model/model.h>
 #include <urdf_world/world.h>

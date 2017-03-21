@@ -52,7 +52,7 @@ install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
 # dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
 # dart-optimizer-nlopt - {dart}, optimizer/nlopt, [nlopt]
 # dart-collision-bullet - {dart}, collision/bullet, [bullet]
-# dart-utils - {dart-collision-bullet}, utils, utils/sdf, [tinyxml, tinyxml2]
+# dart-utils - {dart-collision-bullet}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
 # dart-gui - {dart}, gui, [opengl, glut]
 # dart-gui-osg - {dart-gui}, gui/osg, gui/osg/render, [openscenegraph]
@@ -97,7 +97,7 @@ if(FLANN_FOUND)
   add_subdirectory(planning)
 endif()
 
-if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
+if(TINYXML2_FOUND AND BULLET_FOUND)
   add_subdirectory(utils)
 endif()
 
