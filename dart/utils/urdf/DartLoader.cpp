@@ -24,6 +24,7 @@
 #include "dart/dynamics/CylinderShape.h"
 #include "dart/dynamics/MeshShape.h"
 #include "dart/simulation/World.h"
+#include "dart/utils/urdf/BackwardCompatibility.h"
 #include "dart/utils/urdf/urdf_world_parser.h"
 
 namespace dart {
@@ -34,7 +35,7 @@ namespace utils {
  */
 dynamics::Skeleton* DartLoader::parseSkeleton(std::string _urdfFileName) {
 
-    boost::shared_ptr<urdf::ModelInterface> skeletonModelPtr = urdf::parseURDF(readFileToString(_urdfFileName));
+    auto skeletonModelPtr = urdf::parseURDF(readFileToString(_urdfFileName));
     if(!skeletonModelPtr)
         return NULL;
 

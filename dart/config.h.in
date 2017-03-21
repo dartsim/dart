@@ -18,4 +18,16 @@
 #define DART_ROOT_PATH "@CMAKE_SOURCE_DIR@/"
 #define DART_DATA_PATH "@CMAKE_SOURCE_DIR@/data/"
 
+/* urdfdom_headers Version number */
+// We define the version numbers of urdfdom_headers here since it doesn't expose
+// the version numbers itself in source level.
+#define URDFDOM_HEADERS_MAJOR_VERSION @urdfdom_headers_VERSION_MAJOR@
+#define URDFDOM_HEADERS_MINOR_VERSION @urdfdom_headers_VERSION_MINOR@
+#define URDFDOM_HEADERS_PATCH_VERSION @urdfdom_headers_VERSION_PATCH@
+
+#define URDFDOM_HEADERS_VERSION_AT_LEAST(x,y,z) \
+  (URDFDOM_HEADERS_MAJOR_VERSION > x || (URDFDOM_HEADERS_MAJOR_VERSION >= x && \
+  (URDFDOM_HEADERS_MINOR_VERSION > y || (URDFDOM_HEADERS_MINOR_VERSION >= y && \
+  URDFDOM_HEADERS_PATCH_VERSION >= z))))
+
 #endif // #ifndef DART_CONFIG_H_
