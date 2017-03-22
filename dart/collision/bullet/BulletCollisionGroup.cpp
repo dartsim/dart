@@ -33,7 +33,7 @@
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
-#include "dart/collision/bullet/BulletCollisionDispatcher.hpp"
+#include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 
 namespace dart {
 namespace collision {
@@ -45,14 +45,13 @@ BulletCollisionGroup::BulletCollisionGroup(
     mBulletProadphaseAlg(new btDbvtBroadphase()),
     mBulletCollisionConfiguration(new btDefaultCollisionConfiguration()),
     mBulletDispatcher(
-      new BulletCustomCollisionDispatcher(mBulletCollisionConfiguration.get())),
+      new detail::BulletCollisionDispatcher(mBulletCollisionConfiguration.get())),
     mBulletCollisionWorld(
       new btCollisionWorld(mBulletDispatcher.get(),
                            mBulletProadphaseAlg.get(),
                            mBulletCollisionConfiguration.get()))
 {
   // Do nothing
-  mBulletCollisionWorld->getPairCache();
 }
 
 //==============================================================================

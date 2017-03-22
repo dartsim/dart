@@ -28,60 +28,60 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletCollisionDispatcher.hpp"
+#include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
 
+#include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
 //==============================================================================
-BulletCustomCollisionDispatcher::BulletCustomCollisionDispatcher(
-    btCollisionConfiguration* collisionConfiguration)
-  : btCollisionDispatcher(collisionConfiguration),
-    mDone(false),
-    mFilter(nullptr)
+BulletOverlapFilterCallback::BulletOverlapFilterCallback(
+    const std::shared_ptr<CollisionFilter>& filter)
+  : foundCollision(false),
+    done(false),
+    filter(filter)
 {
   // Do nothing
 }
 
 //==============================================================================
-void BulletCustomCollisionDispatcher::setDone(bool done)
+bool BulletOverlapFilterCallback::needBroadphaseCollision(
+    btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const
 {
-  mDone = done;
-}
-
-//==============================================================================
-void BulletCustomCollisionDispatcher::setFilter(
-    const std::shared_ptr<CollisionFilter>& filter)
-{
-  mFilter = filter;
-}
-
-//==============================================================================
-std::shared_ptr<CollisionFilter>
-BulletCustomCollisionDispatcher::getFilter() const
-{
-  return mFilter;
-}
-
-//==============================================================================
-bool BulletCustomCollisionDispatcher::needsCollision(
-    const btCollisionObject* body0, const btCollisionObject* body1)
-{
-  const auto userData0 = static_cast<BulletCollisionObject::UserData*>(
-        body0->getUserPointer());
-  const auto userData1 = static_cast<BulletCollisionObject::UserData*>(
-        body1->getUserPointer());
-
-  if (mFilter && !mFilter->needCollision(userData0->collisionObject,
-                                         userData1->collisionObject))
-  {
+  if (done)
     return false;
+
+  assert((proxy0 != nullptr && proxy1 != nullptr) &&
+         "Bullet broadphase overlapping pair proxies are nullptr");
+
+  const bool collide1
+      = proxy0->m_collisionFilterGroup & proxy1->m_collisionFilterMask;
+  const bool collide2
+      = proxy1->m_collisionFilterGroup & proxy0->m_collisionFilterMask;
+
+  bool collide = collide1 & collide2;
+
+  if (collide && filter)
+  {
+    auto object0 = static_cast<btCollisionObject*>(proxy0->m_clientObject);
+    auto object1 = static_cast<btCollisionObject*>(proxy1->m_clientObject);
+
+    auto userPtr0 = object0->getUserPointer();
+    auto userPtr1 = object1->getUserPointer();
+
+    auto userData0 = static_cast<BulletCollisionObject::UserData*>(userPtr0);
+    auto userData1 = static_cast<BulletCollisionObject::UserData*>(userPtr1);
+
+    return filter->needCollision(userData0->collisionObject,
+                                 userData1->collisionObject);
   }
 
-  return btCollisionDispatcher::needsCollision(body0, body1);
+  return collide;
 }
 
+}  // namespace detail
 }  // namespace collision
 }  // namespace dart

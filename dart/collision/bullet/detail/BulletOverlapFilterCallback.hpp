@@ -28,42 +28,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONDISPATCHER_HPP_
-#define DART_COLLISION_BULLET_BULLETCOLLISIONDISPATCHER_HPP_
+#ifndef DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
+#define DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
 
 // Must be included before any Bullet headers.
 #include "dart/config.hpp"
 
 #include <btBulletCollisionCommon.h>
 
-#include "dart/collision/CollisionFilter.hpp"
-#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
-class BulletCustomCollisionDispatcher : public btCollisionDispatcher
+struct BulletOverlapFilterCallback : public btOverlapFilterCallback
 {
-public:
-  explicit BulletCustomCollisionDispatcher(
-      btCollisionConfiguration* collisionConfiguration);
+  // Constructor
+  explicit BulletOverlapFilterCallback(
+      const std::shared_ptr<CollisionFilter>& filter = nullptr);
 
-  void setDone(bool done);
+  /// Returns true when pairs need collision
+  bool needBroadphaseCollision(
+      btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const override;
 
-  void setFilter(const std::shared_ptr<CollisionFilter>& filter);
+  /// True if at least one contact is found. This flag is used only when
+  /// mResult is nullptr; otherwise the actual collision result is in mResult.
+  bool foundCollision;
 
-  std::shared_ptr<CollisionFilter> getFilter() const;
+  /// Whether the collision iteration can stop
+  mutable bool done;
 
-  bool needsCollision(
-      const btCollisionObject* body0,const btCollisionObject* body1) override;
-
-protected:
-  bool mDone;
-
-  std::shared_ptr<CollisionFilter> mFilter;
+  std::shared_ptr<CollisionFilter> filter;
 };
 
+}  // namespace detail
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONDISPATCHER_HPP_
+#endif  // DART_COLLISION_BULLET_DETAIL_BULLETOVERLAPFILTERCALLBACK_HPP_
