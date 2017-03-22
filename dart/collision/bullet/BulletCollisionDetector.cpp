@@ -192,7 +192,7 @@ void filterOutCollisions(btCollisionWorld* world)
     const auto btCollObj0 = userData0->collisionObject;
     const auto btCollObj1 = userData1->collisionObject;
 
-    if (filter->needCollision(btCollObj0, btCollObj1))
+    if (!filter->needCollision(btCollObj0, btCollObj1))
       manifoldsToRelease.push_back(contactManifold);
   }
 
