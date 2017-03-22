@@ -1288,9 +1288,3 @@ TEST(Skeleton, Updating)
   EXPECT_FALSE(originalMass == newMass);
   EXPECT_TRUE(newMass == originalMass - removedMass);
 }
-
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

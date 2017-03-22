@@ -68,11 +68,3 @@ TEST(Common, Timer)
   EXPECT_GE(timer2.getTotalElapsedTime(), 2.0);
 #endif
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
-

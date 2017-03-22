@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,13 +28,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include <tuple>
 #include <gtest/gtest.h>
-#include <Eigen/Dense>
+#include "dart/dart.hpp"
 
-/* ********************************************************************************************* */
-int main(int argc, char* argv[]) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+using namespace dart;
+
+//==============================================================================
+TEST(ScrewJoint, ThreadPitch)
+{
+  using namespace dart::math::suffixes;
+
+  // Create single-body skeleton with a screw joint
+  auto skel = dynamics::Skeleton::create();
+  auto pair = skel->createJointAndBodyNodePair<dart::dynamics::ScrewJoint>();
+  auto screwJoint = pair.first;
+  auto bodyNode = pair.second;
+
+  // Initial settings
+  screwJoint->setPosition(0, 0.0_pi);
+  const Eigen::Vector3d axis = screwJoint->getAxis();
+  const Eigen::Vector3d pos0 = bodyNode->getTransform().translation();
+
+  auto pitch = 0.1;
+  auto angle = 1.0_pi;
+  screwJoint->setPitch(pitch);
+  EXPECT_EQ(screwJoint->getPitch(), pitch);
+  screwJoint->setPosition(0, angle);
+  Eigen::Vector3d pos1 = bodyNode->getTransform().translation();
+  Eigen::Vector3d diff = pos1 - pos0;
+  Eigen::Vector3d expectedDiff = axis*pitch*angle/2.0_pi;
+  EXPECT_TRUE(diff.isApprox(expectedDiff));
+
+  pitch = 1.23;
+  angle = 4.5_pi;
+  screwJoint->setPitch(pitch);
+  EXPECT_EQ(screwJoint->getPitch(), pitch);
+  screwJoint->setPosition(0, angle);
+  pos1 = bodyNode->getTransform().translation();
+  diff = pos1 - pos0;
+  expectedDiff = axis*pitch*angle/2.0_pi;
+  EXPECT_TRUE(diff.isApprox(expectedDiff));
 }
-/* ********************************************************************************************* */

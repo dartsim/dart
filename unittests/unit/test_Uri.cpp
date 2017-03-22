@@ -334,9 +334,3 @@ TEST(UriHelpers, getRelativeUri)
   EXPECT_EQ("http://a/b/c/g", mergedUri.toString());
 #endif
 }
-
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

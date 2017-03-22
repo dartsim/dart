@@ -247,10 +247,3 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_END_EFFECTOR_CHANGE)
 
   EXPECT_TRUE((fd_J - J).norm() < tolerance);
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
