@@ -67,6 +67,25 @@ public:
   /// Return collision detection engine type as a std::string
   virtual const std::string& getType() const = 0;
 
+  /// Returns true if the types of this CollisionDetector and the template
+  /// parameter (a CollisionDetector class) are identical. This function is a
+  /// syntactic sugar, which is identical to: (getType() ==
+  /// CollisionDetector::getStaticType()).
+  ///
+  /// Example code:
+  /// \code
+  /// auto cd = world->getConstraintSolver()->getCollisionDetector();
+  /// if (cd->is<FCLCollisionDetector>())
+  ///   std::cout << "The cd type is FCLCollisionDetector!\n";
+  /// \endcode
+  ///
+  /// \sa getType()
+  template <typename CollisionDetectorT>
+  bool is() const
+  {
+    return getType() == CollisionDetectorT::getStaticType();
+  }
+
   /// Create a collision group
   virtual std::unique_ptr<CollisionGroup> createCollisionGroup() = 0;
 

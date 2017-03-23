@@ -1,0 +1,106 @@
+<?xml version="1.0" ?>
+<skel version="1.0">
+    <world name="world 1">
+        <physics>
+            <time_step>0.002</time_step>
+            <gravity>0 -9.81 0</gravity>
+            <collision_detector>fcl</collision_detector>
+        </physics>
+        
+        <skeleton name="ground skeleton">
+            <body name="ground">
+                <transformation>0 0 0 0 0 0</transformation>
+                <visualization_shape>
+                    <transformation>0 -0.025 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>50.0 0.05 5.0</size>
+                        </box>
+                    </geometry>
+                    <color>0.95 0.95 0.95</color>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <plane>
+                            <normal>0.0 1.0 0.0</normal>
+                            <offset>0.0</offset>
+                        </plane>
+                    </geometry>
+                </collision_shape>
+            </body>
+            <joint type="weld" name="joint 1">
+                <parent>world</parent>
+                <child>ground</child>
+            </joint>
+            <mobile>false</mobile>
+            <!--body name="ground">
+                <transformation>0 -0.025 0 0 0 0</transformation>
+                <visualization_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>500.0 0.05 5.0</size>
+                        </box>
+                    </geometry>
+                    <color>0.5 0.5 0.5</color>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation>0 0 0 0 0 0</transformation>
+                    <geometry>
+                        <box>
+                            <size>500.0 0.05 5.0</size>
+                        </box>
+                    </geometry>
+                </collision_shape>
+            </body>
+            <joint type="weld" name="joint 1">
+                <parent>world</parent>
+                <child>ground</child>
+            </joint-->
+        </skeleton>
+
+        <skeleton name="hopper">
+            <body name="h_foot">
+                <transformation>0.0 0.1 0.0 0.0 0.0 0.0</transformation>
+                <inertia>
+                    <mass>5.0893801</mass>
+                    <offset>0.065 0.0 0.0</offset>
+                </inertia>
+                <visualization_shape>
+                    <transformation> 0.065 0.0 0.0 0.0 1.57 0.0</transformation>
+                    <geometry>
+                        <capsule>
+                            <height>0.39</height>
+                            <radius>0.06</radius>
+                        </capsule>
+<!--                         <cylinder>
+                            <radius>0.06</radius>
+                            <height>0.39</height>
+                        </cylinder> -->
+                    </geometry>
+                    <color>1.0 0.5 1.0</color>
+                </visualization_shape>
+                <collision_shape>
+                    <transformation> 0.065 0.0 0.0 0.0 1.57 0.0</transformation>
+                    <geometry>
+                        <capsule>
+                            <height>0.39</height>
+                            <radius>0.06</radius>
+                        </capsule>
+<!--                         <cylinder>
+                            <radius>0.06</radius>
+                            <height>0.39</height>
+                        </cylinder> -->
+                    </geometry>
+                </collision_shape>                                
+            </body>
+            
+            <joint type="free" name="j_foot">
+                <parent>world</parent>
+                <child>h_foot</child>
+            </joint>
+        </skeleton>	
+    </world>
+</skel>
+

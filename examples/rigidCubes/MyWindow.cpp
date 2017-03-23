@@ -40,9 +40,7 @@ MyWindow::~MyWindow() {
 }
 
 void MyWindow::timeStepping() {
-  mWorld->getSkeleton(1)->getBodyNode(0)->addExtForce(mForce);
   mWorld->step();
-  mForce /= 2.0;
 }
 
 void MyWindow::drawWorld() const {

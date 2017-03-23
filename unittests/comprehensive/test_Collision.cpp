@@ -62,7 +62,7 @@ public:
                        double expectedContactPoint, int _idxAxis);
     void dropWithRotation(fcl::CollisionGeometry* _object,
                           double EulerZ, double EulerY, double EulerX);
-	void printResult(const fcl::CollisionResult& _result);
+  void printResult(const fcl::CollisionResult& _result);
 };
 
 void COLLISION::unrotatedTest(fcl::CollisionGeometry* _coll1,
@@ -204,18 +204,18 @@ void COLLISION::dropWithRotation(fcl::CollisionGeometry* _object,
 
 void COLLISION::printResult(const fcl::CollisionResult& _result)
 {
-	std::cout << "====== [ RESULT ] ======" << std::endl;
-	std::cout << "The number of contacts: " << _result.numContacts() << std::endl;
+  std::cout << "====== [ RESULT ] ======" << std::endl;
+  std::cout << "The number of contacts: " << _result.numContacts() << std::endl;
 
   for (std::size_t i = 0; i < _result.numContacts(); ++i)
-	{
-		std::cout << "----- CONTACT " << i << " --------" << std::endl;
-		std::cout << "contact_points: " << _result.getContact(i).pos << std::endl;
-		std::cout << "penetration_depth: " << _result.getContact(i).penetration_depth << std::endl;
-		std::cout << "normal: " << _result.getContact(i).normal << std::endl;
-		//std::cout << std::endl;
-	}
-	std::cout << std::endl;
+  {
+    std::cout << "----- CONTACT " << i << " --------" << std::endl;
+    std::cout << "contact_points: " << _result.getContact(i).pos << std::endl;
+    std::cout << "penetration_depth: " << _result.getContact(i).penetration_depth << std::endl;
+    std::cout << "normal: " << _result.getContact(i).normal << std::endl;
+    //std::cout << std::endl;
+  }
+  std::cout << std::endl;
 }
 
 /* ********************************************************************************************* */
@@ -1172,5 +1172,142 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
     EXPECT_TRUE(joint6->isKinematic());
     EXPECT_NEAR(joint6->getVelocity(0), 0.0, tol);
     EXPECT_NEAR(joint6->getAcceleration(0), 0.0, tol);
+  }
+}
+
+//==============================================================================
+TEST_F(COLLISION, NoPenetrationOnGround)
+{
+  const std::string xmlString =
+    "<?xml version=\"1.0\"?>                                                         "
+    "<skel version=\"1.0\">                                                          "
+    "    <world name=\"world 1\">                                                    "
+    "        <physics>                                                               "
+    "            <time_step>0.002</time_step>                                        "
+    "            <gravity>0 -9.81 0</gravity>                                        "
+    "            <collision_detector>bullet</collision_detector>                     "
+    "        </physics>                                                              "
+    "                                                                                "
+    "        <skeleton name=\"ground skeleton\">                                     "
+    "            <mobile>false</mobile>                                              "
+    "            <body name=\"ground\">                                              "
+    "                <transformation>0 -0.025 0 0 0 0</transformation>               "
+    "                <visualization_shape>                                           "
+    "                    <transformation>0 0 0 0 0 0</transformation>                "
+    "                    <geometry>                                                  "
+    "                        <box>                                                   "
+    "                            <size>500.0 0.05 5.0</size>                         "
+    "                        </box>                                                  "
+    "                    </geometry>                                                 "
+    "                    <color>0.5 0.5 0.5</color>                                  "
+    "                </visualization_shape>                                          "
+    "                <collision_shape>                                               "
+    "                    <transformation>0 0 0 0 0 0</transformation>                "
+    "                    <geometry>                                                  "
+    "                        <box>                                                   "
+    "                            <size>500.0 0.05 5.0</size>                         "
+    "                        </box>                                                  "
+    "                    </geometry>                                                 "
+    "                </collision_shape>                                              "
+    "            </body>                                                             "
+    "            <joint type=\"weld\" name=\"joint 1\">                              "
+    "                <parent>world</parent>                                          "
+    "                <child>ground</child>                                           "
+    "            </joint>                                                            "
+    "        </skeleton>                                                             "
+    "                                                                                "
+    "        <skeleton name=\"hopper\">                                              "
+    "            <body name=\"h_foot\">                                              "
+    "                <transformation>0.0 0.1 0.0 0.0 0.0 0.0</transformation>        "
+    "                <inertia>                                                       "
+    "                    <mass>5.0893801</mass>                                      "
+    "                    <offset>0.065 0.0 0.0</offset>                              "
+    "                </inertia>                                                      "
+    "                <visualization_shape>                                           "
+    "                    <transformation> 0.065 0.0 0.0 0.0 1.57 0.0</transformation>"
+    "                    <geometry>                                                  "
+    "                        <capsule>                                               "
+    "                            <height>0.39</height>                               "
+    "                            <radius>0.06</radius>                               "
+    "                        </capsule>                                              "
+    "                    </geometry>                                                 "
+    "                    <color>1.0 0.5 1.0</color>                                  "
+    "                </visualization_shape>                                          "
+    "                <collision_shape>                                               "
+    "                    <transformation> 0.065 0.0 0.0 0.0 1.57 0.0</transformation>"
+    "                    <geometry>                                                  "
+    "                        <capsule>                                               "
+    "                            <height>0.39</height>                               "
+    "                            <radius>0.06</radius>                               "
+    "                        </capsule>                                              "
+    "                    </geometry>                                                 "
+    "                </collision_shape>                                              "
+    "            </body>                                                             "
+    "                                                                                "
+    "            <joint type=\"free\" name=\"j_foot\">                               "
+    "                <parent>world</parent>                                          "
+    "                <child>h_foot</child>                                           "
+    "            </joint>                                                            "
+    "        </skeleton>                                                             "
+    "    </world>                                                                    "
+    "</skel>                                                                         ";
+
+  auto world = SkelParser::readWorldXML(xmlString);
+  EXPECT_TRUE(world != nullptr);
+
+  auto cs = world->getConstraintSolver();
+  auto cd = cs->getCollisionDetector();
+  EXPECT_TRUE(cd->is<BulletCollisionDetector>());
+
+  const auto numSkels = world->getNumSkeletons();
+  EXPECT_TRUE(numSkels == 2u);
+
+  auto groundSkel = world->getSkeleton("ground skeleton");
+  auto hopperSkel = world->getSkeleton("hopper");
+  EXPECT_TRUE(groundSkel != nullptr);
+  EXPECT_TRUE(hopperSkel != nullptr);
+
+  auto hopperBody = hopperSkel->getRootBodyNode();
+  EXPECT_TRUE(hopperBody != nullptr);
+
+  // Simulation until hopper becomes stable on the ground (500 steps)
+  const auto steps = 500;
+  for (auto i = 0u; i < steps; ++i)
+    world->step();
+
+  Eigen::Vector3d hopperVel = hopperBody->getLinearVelocity();
+  EXPECT_LE(hopperVel.norm(), 3.5e-4);
+
+  //const auto collResult0 = world->getLastCollisionResult();
+  //const auto numContacts0 = collResult0.getNumContacts();
+  //const Eigen::Vector3d hopperPos0 = hopperBody->getTransform().translation();
+  for (auto i = 0u; i < 1000; ++i)
+  {
+    world->step();
+
+    //Eigen::Vector3d hopperPos = hopperBody->getTransform().translation();
+    //EXPECT_NEAR(hopperPos[0], hopperPos0[0], 1e-3);
+    //EXPECT_NEAR(hopperPos[1], hopperPos0[1], 1e-3);
+    //EXPECT_NEAR(hopperPos[2], hopperPos0[2], 1e-3);
+
+    const auto& collResult = world->getLastCollisionResult();
+    const auto numContacts = collResult.getNumContacts();
+    EXPECT_TRUE(numContacts > 0u);
+
+    for (auto i = 0u; i < numContacts; ++i)
+    {
+      //const auto& contact0 = collResult0.getContact(i);
+      const auto& contact = collResult.getContact(i);
+
+      //const auto& contactPos0 = contact0.point;
+      //const auto& contactPos = contact.point;
+
+      //EXPECT_NEAR(contactPos[1], contactPos0[1], 1e-3);
+
+      const auto& normal = contact.normal;
+      std::cout << normal.transpose() << std::endl;
+      std::cout << normal.cwiseAbs().transpose() << std::endl;
+      //EXPECT_TRUE(normal.cwiseAbs().isApprox(Eigen::Vector3d::UnitY()));
+    }
   }
 }
