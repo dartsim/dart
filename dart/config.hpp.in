@@ -65,6 +65,7 @@
 #cmakedefine01 HAVE_IPOPT
 #cmakedefine01 HAVE_SNOPT
 #cmakedefine01 HAVE_BULLET_COLLISION
+#cmakedefine01 HAVE_ODE_COLLISION
 #cmakedefine01 HAVE_FLANN
 
 #cmakedefine01 DART_ENABLE_SIMD
