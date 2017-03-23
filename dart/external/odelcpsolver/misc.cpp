@@ -20,9 +20,9 @@
  *                                                                       *
  *************************************************************************/
 
-#include "odeconfig.h"
-#include "misc.h"
-#include "matrix.h"
+#include "dart/external/odelcpsolver/odeconfig.h"
+#include "dart/external/odelcpsolver/misc.h"
+#include "dart/external/odelcpsolver/matrix.h"
 
 //****************************************************************************
 // random numbers

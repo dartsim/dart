@@ -27,8 +27,8 @@
   #include <malloc.h>
 #endif
 
-#include "common.h"
-#include "matrix.h"
+#include "dart/external/odelcpsolver/common.h"
+#include "dart/external/odelcpsolver/matrix.h"
 
 #ifndef EFFICIENT_ALIGNMENT
 #define EFFICIENT_ALIGNMENT 16

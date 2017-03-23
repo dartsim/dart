@@ -22,7 +22,7 @@
 
 /* generated code, do not edit. */
 
-#include "matrix.h"
+#include "dart/external/odelcpsolver/matrix.h"
 
 
 dReal _dDot (const dReal *a, const dReal *b, int n)
