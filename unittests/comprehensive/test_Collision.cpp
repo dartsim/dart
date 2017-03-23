@@ -41,7 +41,12 @@
 #include "dart/math/math.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/collision/collision.hpp"
-#include "dart/collision/bullet/bullet.hpp"
+#if HAVE_ODE_COLLISION
+  #include "dart/collision/ode/ode.hpp"
+#endif
+#if HAVE_BULLET_COLLISION
+  #include "dart/collision/bullet/bullet.hpp"
+#endif
 #include "dart/simulation/simulation.hpp"
 #include "dart/utils/utils.hpp"
 #include "TestHelpers.hpp"
@@ -573,12 +578,14 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_FALSE(group1->collide(group3.get()));
   EXPECT_TRUE(group2->collide(group3.get()));
   EXPECT_TRUE(group23->collide());
+#if HAVE_BULLET_COLLISION
   if (cd->getType() == BulletCollisionDetector::getStaticType())
   {
     dtwarn << "Skipping group-group test for 'bullet' collision detector. "
            << "Please see Issue #717 for the detail.\n";
   }
   else
+#endif
   {
     EXPECT_FALSE(group1->collide(group23.get()));
   }
@@ -628,11 +635,9 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
   simpleFrame1->setShape(shape1);
   simpleFrame2->setShape(shape2);
 
-  auto group1 = cd->createCollisionGroup(simpleFrame1.get());
-  auto group2 = cd->createCollisionGroup(simpleFrame2.get());
+  auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
 
-  EXPECT_EQ(group1->getNumShapeFrames(), 1u);
-  EXPECT_EQ(group2->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
 
   collision::CollisionOption option;
   option.enableContact = true;
@@ -641,14 +646,16 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+
   result.clear();
-  EXPECT_FALSE(group1->collide(group2.get(), option, &result));
+  EXPECT_FALSE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() == 0u);
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d(1.5, 0.0, 0.0));
+
   result.clear();
-  EXPECT_TRUE(group1->collide(group2.get(), option, &result));
+  EXPECT_TRUE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() == 1u);
   EXPECT_TRUE(result.getContact(0).point.isApprox(
                 Eigen::Vector3d(1.0, 0.0, 0.0), tol));
@@ -672,13 +679,13 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
   result.clear();
   if (cd->getType() == FCLCollisionDetector::getStaticType())
   {
-    EXPECT_FALSE(group1->collide(group2.get(), option, &result));
+    EXPECT_FALSE(group->collide(option, &result));
     // FCL is not able to detect collisions when an object completely (strictly)
     // contanins the other object (no collisions between the hulls)
   }
   else
   {
-    EXPECT_TRUE(group1->collide(group2.get(), option, &result));
+    EXPECT_TRUE(group->collide(option, &result));
     EXPECT_TRUE(result.getNumContacts() == 1u);
   }
   // The positions of contact point are different depending on the collision
@@ -707,6 +714,11 @@ TEST_F(COLLISION, SphereSphere)
   // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSphereSphere(fcl_mesh_fcl);
+
+#if HAVE_ODE_COLLISION
+  auto ode = OdeCollisionDetector::create();
+  testSphereSphere(ode);
+#endif
 
 #if HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
@@ -760,7 +772,7 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
   collision::CollisionOption option;
   collision::CollisionResult result;
 
-  EXPECT_TRUE(group1->collide(group2.get(), option, &result));
+  EXPECT_TRUE(groupAll->collide(option, &result));
 
   Eigen::Vector3d min = Eigen::Vector3d(-0.25, 0.25, 0.0);
   Eigen::Vector3d max = Eigen::Vector3d(0.25, 0.5, 0.0);
@@ -806,6 +818,11 @@ TEST_F(COLLISION, BoxBox)
   // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testBoxBox(fcl_mesh_fcl);
+
+#if HAVE_ODE_COLLISION
+//  auto ode = OdeCollisionDetector::create();
+//  testBoxBox(ode);
+#endif
 
 #if HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();

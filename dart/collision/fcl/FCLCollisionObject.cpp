@@ -41,7 +41,7 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-FCLCollisionObject::UserData::UserData(CollisionObject* collisionObject)
+FCLCollisionObject::UserData::UserData(FCLCollisionObject* collisionObject)
   : mCollisionObject(collisionObject)
 {
   // Do nothing

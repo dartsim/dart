@@ -154,7 +154,7 @@ protected:
   /// Claim CollisionObject associated with shapeFrame. New CollisionObject
   /// will be created if it hasn't created yet for shapeFrame.
   std::shared_ptr<CollisionObject> claimCollisionObject(
-      const dynamics::ShapeFrame* shapeFrame);
+      const dynamics::ShapeFrame* shapeFrame, const CollisionGroup* group);
 
   /// Create CollisionObject
   virtual std::unique_ptr<CollisionObject> createCollisionObject(

@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,56 +28,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#ifndef DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
+#define DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
 
-#include <fcl/collision_object.h>
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/fcl/FCLTypes.hpp"
+#include <ode/ode.h>
+
+#include "dart/collision/CollisionGroup.hpp"
 
 namespace dart {
 namespace collision {
 
-class FCLCollisionObject : public CollisionObject
+class OdeCollisionGroup : public CollisionGroup
 {
 public:
 
-  friend class FCLCollisionDetector;
-
-  struct UserData
-  {
-    FCLCollisionObject* mCollisionObject;
-
-    UserData(FCLCollisionObject* collisionObject);
-  };
-
-  /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject();
-
-  /// Return FCL collision object
-  const fcl::CollisionObject* getFCLCollisionObject() const;
-
-protected:
+  friend class OdeCollisionDetector;
 
   /// Constructor
-  FCLCollisionObject(CollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame,
-      const fcl_shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
+  OdeCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
-  // Documentation inherited
-  void updateEngineData() override;
+  /// Destructor
+  virtual ~OdeCollisionGroup() = default;
 
 protected:
 
-  /// FCL collision geometry user data
-  std::unique_ptr<UserData> mFCLCollisionObjectUserData;
+  using CollisionGroup::updateEngineData;
 
-  /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
+  // Documentation inherited
+  void initializeEngineData() override;
+
+  // Documentation inherited
+  void addCollisionObjectToEngine(CollisionObject* object) override;
+
+  // Documentation inherited
+  void addCollisionObjectsToEngine(
+      const std::vector<CollisionObject*>& collObjects) override;
+
+  // Documentation inherited
+  void removeCollisionObjectFromEngine(CollisionObject* object) override;
+
+  // Documentation inherited
+  void removeAllCollisionObjectsFromEngine() override;
+
+  // Documentation inherited
+  void updateCollisionGroupEngineData() override;
+
+  dSpaceID getOdeSpaceId() const;
+
+protected:
+
+  /// Top-level space for all sub-spaces/collisions
+  dSpaceID mSpaceId;
+
+  /// Collision attributes
+  dJointGroupID mContactGroupId;
 
 };
 
 }  // namespace collision
 }  // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#endif  // DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_

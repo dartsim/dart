@@ -69,7 +69,7 @@ void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
   if (hasShapeFrame(shapeFrame))
     return;
 
-  auto collObj = mCollisionDetector->claimCollisionObject(shapeFrame);
+  auto collObj = mCollisionDetector->claimCollisionObject(shapeFrame, this);
 
   addCollisionObjectToEngine(collObj.get());
 

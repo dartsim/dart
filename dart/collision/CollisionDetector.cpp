@@ -51,7 +51,7 @@ CollisionDetector::createCollisionGroupAsSharedPtr()
 
 //==============================================================================
 std::shared_ptr<CollisionObject> CollisionDetector::claimCollisionObject(
-    const dynamics::ShapeFrame* shapeFrame)
+    const dynamics::ShapeFrame* shapeFrame, const CollisionGroup* group)
 {
   if (!mCollisionObjectManager)
     mCollisionObjectManager.reset(new ManagerForUnsharableCollisionObjects(this));
@@ -140,7 +140,8 @@ CollisionDetector::ManagerForSharableCollisionObjects::claimCollisionObject(
 {
   const auto search = mCollisionObjectMap.find(shapeFrame);
 
-  if (mCollisionObjectMap.end() != search)
+  const auto found = mCollisionObjectMap.end() != search;
+  if (found)
   {
     const auto& collObj = search->second;
     assert(collObj.lock());
