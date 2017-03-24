@@ -100,7 +100,7 @@ struct OdeCollisionCallbackData
 std::shared_ptr<OdeCollisionDetector> OdeCollisionDetector::create()
 {
   return std::shared_ptr<OdeCollisionDetector>(
-        new OdeCollisionDetector());
+      new OdeCollisionDetector());
 }
 
 //==============================================================================
@@ -200,37 +200,14 @@ OdeCollisionDetector::OdeCollisionDetector()
 std::unique_ptr<CollisionObject> OdeCollisionDetector::createCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
-  auto odeCollGeom = claimOdeCollisionGeometry(shapeFrame->getShape());
+  auto odeCollGeom = createOdeCollisionGeometry(shapeFrame->getShape());
 
   return std::unique_ptr<OdeCollisionObject>(
         new OdeCollisionObject(this, shapeFrame, odeCollGeom));
 }
 
 //==============================================================================
-dGeomID OdeCollisionDetector::claimOdeCollisionGeometry(
-    const dynamics::ConstShapePtr& shape)
-{
-  // TODO(JS): ODE create unique geom per CollisionObject. remove this function.
-
-//  const auto search = mShapeMap.find(shape);
-
-//  const auto found = (search != mShapeMap.end());
-//  if (found)
-//  {
-//    const auto& odeGeomId = search->second;
-//    // TODO(JS): check if the geom is valid
-
-//    return odeGeomId;
-//  }
-
-  auto newOdeGeomId = createOdeCollisionGeometry(shape);
-//  mShapeMap[shape] = newOdeGeomId;
-
-  return newOdeGeomId;
-}
-
-//==============================================================================
-dWorldID OdeCollisionDetector::getWorldId() const
+dWorldID OdeCollisionDetector::getOdeWorldId() const
 {
   return mWorldId;
 }
@@ -243,6 +220,7 @@ dGeomID OdeCollisionDetector::createOdeCollisionGeometry(
   using dynamics::SphereShape;
   using dynamics::BoxShape;
   using dynamics::EllipsoidShape;
+  using dynamics::CapsuleShape;
   using dynamics::CylinderShape;
   using dynamics::PlaneShape;
   using dynamics::MeshShape;
@@ -258,14 +236,14 @@ dGeomID OdeCollisionDetector::createOdeCollisionGeometry(
 
     odeGeomId = dCreateSphere(0, radius);
   }
-  else if (BoxShape::getStaticType() == shapeType)
+  else if (shape->is<BoxShape>())
   {
     const auto box = static_cast<const BoxShape*>(shape.get());
     const Eigen::Vector3d& size = box->getSize();
 
     odeGeomId = dCreateBox(0, size.x(), size.y(), size.z());
   }
-  //else if (EllipsoidShape::getStaticType() == shapeType)
+  //else if (shape->is<EllipsoidShape>())
   //{
   //  auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
   //  const Eigen::Vector3d& radii = ellipsoid->getRadii();
@@ -274,7 +252,15 @@ dGeomID OdeCollisionDetector::createOdeCollisionGeometry(
   //
   //}
   // TODO(JS): ODE doesn't support ellipsoid
-  else if (CylinderShape::getStaticType() == shapeType)
+  else if (shape->is<CapsuleShape>())
+  {
+    const auto capsule = static_cast<const CapsuleShape*>(shape.get());
+    const auto radius = capsule->getRadius();
+    const auto height = capsule->getHeight();
+
+    odeGeomId = dCreateCapsule(0, radius, height);
+  }
+  else if (shape->is<CylinderShape>())
   {
     const auto cylinder = static_cast<const CylinderShape*>(shape.get());
     const auto radius = cylinder->getRadius();
@@ -282,13 +268,15 @@ dGeomID OdeCollisionDetector::createOdeCollisionGeometry(
 
     odeGeomId = dCreateCylinder(0, radius, height);
   }
-  else if (PlaneShape::getStaticType() == shapeType)
+  else if (shape->is<PlaneShape>())
   {
     const auto plane = static_cast<const PlaneShape*>(shape.get());
     const Eigen::Vector3d normal = plane->getNormal();
     const double offset = plane->getOffset();
 
-    odeGeomId = dCreatePlane(0, normal.x(), normal.y(), normal.z(), offset);
+    // TODO(JS): transform the normal and offset according to the transform
+    // of the parent body.
+    odeGeomId = dCreatePlane(0, normal.x(), normal.y(), normal.z(), -0.375);
   }
   //else if (MeshShape::getStaticType() == shapeType)
   //{
@@ -313,7 +301,7 @@ dGeomID OdeCollisionDetector::createOdeCollisionGeometry(
           << shapeType << "]. Creating a sphere with 0.1 radius "
           << "instead.\n";
 
-    odeGeomId = dCreateSphere(0, 0.1);
+    odeGeomId = dCreateSphere(0, 0.001);
   }
 
   return odeGeomId;
@@ -324,9 +312,6 @@ namespace {
 //==============================================================================
 void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
 {
-  assert(dGeomGetBody(o1));
-  assert(dGeomGetBody(o2));
-
   assert(!dGeomIsSpace(o1));
   assert(!dGeomIsSpace(o2));
 
@@ -335,19 +320,16 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
   if (cdData->done)
     return;
 
-  auto b1 = dGeomGetBody(o1);
-  auto b2 = dGeomGetBody(o2);
-
         auto& odeResult   = cdData->contactGeoms;
         auto* result      = cdData->result;
   const auto& option      = cdData->option;
   const auto& filter      = option.collisionFilter;
 
-  auto bdData1 = dBodyGetData(b1);
-  auto bdData2 = dBodyGetData(b2);
+  auto geomData1 = dGeomGetData(o1);
+  auto geomData2 = dGeomGetData(o2);
 
-  auto userData1 = static_cast<OdeCollisionObject::UserData*>(bdData1);
-  auto userData2 = static_cast<OdeCollisionObject::UserData*>(bdData2);
+  auto userData1 = static_cast<OdeCollisionObject::UserData*>(geomData1);
+  auto userData2 = static_cast<OdeCollisionObject::UserData*>(geomData2);
   assert(userData1);
   assert(userData2);
 
@@ -414,7 +396,7 @@ Contact convertContact(
   if (option.enableContact)
   {
     contact.point = OdeTypes::convertVector3(odeContact.pos);
-    contact.normal = -OdeTypes::convertVector3(odeContact.normal);
+    contact.normal = OdeTypes::convertVector3(odeContact.normal);
     contact.penetrationDepth = odeContact.depth;
   }
 

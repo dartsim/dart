@@ -74,7 +74,7 @@ bool distanceCallback(
     void* cdata,
     fcl::FCL_REAL& dist);
 
-void reportContacts(
+void postProcessFCL(
     const fcl::CollisionResult& fclResult,
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2,
@@ -1120,7 +1120,7 @@ bool collisionCallback(
     }
     else
     {
-      reportContacts(fclResult, o1, o2, option, *result);
+      postProcessFCL(fclResult, o1, o2, option, *result);
     }
 
     // Check satisfaction of the stopping conditions
@@ -1286,7 +1286,7 @@ void markColinearPoints(
 }
 
 //==============================================================================
-void reportContacts(
+void postProcessFCL(
     const fcl::CollisionResult& fclResult,
     fcl::CollisionObject* o1,
     fcl::CollisionObject* o2,

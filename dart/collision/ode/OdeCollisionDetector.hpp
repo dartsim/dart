@@ -98,9 +98,7 @@ protected:
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
 
-  dGeomID claimOdeCollisionGeometry(const dynamics::ConstShapePtr& shape);
-
-  dWorldID getWorldId() const;
+  dWorldID getOdeWorldId() const;
 
 protected:
 

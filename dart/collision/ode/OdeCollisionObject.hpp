@@ -66,16 +66,16 @@ protected:
   // Documentation inherited
   void updateEngineData() override;
 
-  dBodyID getBodyId() const;
-  dGeomID getGeomId() const;
+  dBodyID getOdeBodyId() const;
+  dGeomID getOdeGeomId() const;
 
 protected:
 
   /// ODE collision geometry user data
   std::unique_ptr<UserData> mOdeCollisionObjectUserData;
 
-  dBodyID mBodyId;
   dGeomID mGeomId;
+  dBodyID mBodyId;
 
 };
 

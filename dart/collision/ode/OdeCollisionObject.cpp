@@ -30,6 +30,8 @@
 
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 
+#include "dart/dynamics/PlaneShape.hpp"
+
 namespace dart {
 namespace collision {
 
@@ -59,17 +61,25 @@ OdeCollisionObject::OdeCollisionObject(
     dGeomID odeCollGeom)
   : CollisionObject(collisionDetector, shapeFrame),
     mOdeCollisionObjectUserData(new UserData(this)),
-    mGeomId(odeCollGeom)
+    mGeomId(odeCollGeom),
+    mBodyId(nullptr)
 {
-  mBodyId = dBodyCreate(collisionDetector->getWorldId());
-  dGeomSetBody(mGeomId, mBodyId);
+  // Plane of ODE is non-placable geometry and is not allowed to bind to a body.
+  if (!shapeFrame->getShape()->is<dynamics::PlaneShape>())
+  {
+    mBodyId = dBodyCreate(collisionDetector->getOdeWorldId());
+    dGeomSetBody(mGeomId, mBodyId);
+  }
 
-  dBodySetData(mBodyId, mOdeCollisionObjectUserData.get());
+  dGeomSetData(mGeomId, mOdeCollisionObjectUserData.get());
 }
 
 //==============================================================================
 void OdeCollisionObject::updateEngineData()
 {
+  if (mShapeFrame->getShape()->is<dynamics::PlaneShape>())
+    return;
+
   const Eigen::Isometry3d& tf = getTransform();
   const Eigen::Vector3d pos = tf.translation();
   const Eigen::Quaterniond rot(tf.linear());
@@ -85,13 +95,13 @@ void OdeCollisionObject::updateEngineData()
 }
 
 //==============================================================================
-dBodyID OdeCollisionObject::getBodyId() const
+dBodyID OdeCollisionObject::getOdeBodyId() const
 {
   return mBodyId;
 }
 
 //==============================================================================
-dGeomID OdeCollisionObject::getGeomId() const
+dGeomID OdeCollisionObject::getOdeGeomId() const
 {
   return mGeomId;
 }

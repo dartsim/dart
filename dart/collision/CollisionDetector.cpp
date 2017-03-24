@@ -51,7 +51,7 @@ CollisionDetector::createCollisionGroupAsSharedPtr()
 
 //==============================================================================
 std::shared_ptr<CollisionObject> CollisionDetector::claimCollisionObject(
-    const dynamics::ShapeFrame* shapeFrame, const CollisionGroup* group)
+    const dynamics::ShapeFrame* shapeFrame)
 {
   if (!mCollisionObjectManager)
     mCollisionObjectManager.reset(new ManagerForUnsharableCollisionObjects(this));

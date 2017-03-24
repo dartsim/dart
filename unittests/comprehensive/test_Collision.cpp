@@ -799,10 +799,10 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
 //==============================================================================
 TEST_F(COLLISION, BoxBox)
 {
-  auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  testBoxBox(fcl_mesh_dart);
+  //auto fcl_mesh_dart = FCLCollisionDetector::create();
+  //fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  //fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  //testBoxBox(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
   // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -820,17 +820,17 @@ TEST_F(COLLISION, BoxBox)
   // testBoxBox(fcl_mesh_fcl);
 
 #if HAVE_ODE_COLLISION
-//  auto ode = OdeCollisionDetector::create();
-//  testBoxBox(ode);
+  auto ode = OdeCollisionDetector::create();
+  testBoxBox(ode);
 #endif
 
-#if HAVE_BULLET_COLLISION
-  auto bullet = BulletCollisionDetector::create();
-  testBoxBox(bullet);
-#endif
+//#if HAVE_BULLET_COLLISION
+//  auto bullet = BulletCollisionDetector::create();
+//  testBoxBox(bullet);
+//#endif
 
-  auto dart = DARTCollisionDetector::create();
-  testBoxBox(dart);
+//  auto dart = DARTCollisionDetector::create();
+//  testBoxBox(dart);
 }
 
 //==============================================================================
@@ -891,6 +891,77 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 0u);
   EXPECT_FALSE(result.isCollision());
+}
+
+//==============================================================================
+void testCylinderCylinder(const std::shared_ptr<CollisionDetector>& cd)
+{
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
+
+  auto shape1 = std::make_shared<CapsuleShape>(1.0, 1.0);
+  auto shape2 = std::make_shared<CapsuleShape>(0.5, 1.0);
+
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+
+  auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
+
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() == 0u);
+
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() >= 1u);
+}
+
+//==============================================================================
+TEST_F(COLLISION, testCylinderCylinder)
+{
+  // auto fcl_mesh_dart = FCLCollisionDetector::create();
+  // fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testCylinderCylinder(fcl_mesh_dart);
+
+  // auto fcl_prim_fcl = FCLCollisionDetector::create();
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testCylinderCylinder(fcl_prim_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testCylinderCylinder(fcl_mesh_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testCylinderCylinder(fcl_mesh_fcl);
+
+#if HAVE_ODE_COLLISION
+  auto ode = OdeCollisionDetector::create();
+  testCylinderCylinder(ode);
+#endif
+
+#if HAVE_BULLET_COLLISION
+  auto bullet = BulletCollisionDetector::create();
+  testCylinderCylinder(bullet);
+#endif
+
+  // auto dart = DARTCollisionDetector::create();
+  // testCylinderCylinder(dart);
 }
 
 //==============================================================================
