@@ -296,7 +296,7 @@ dGeomID OdeCollisionDetector::createOdeCollisionGeometry(
 
     // TODO(JS): transform the normal and offset according to the transform
     // of the parent body.
-    odeGeomId = dCreatePlane(0, normal.x(), normal.y(), normal.z(), -0.375);
+    odeGeomId = dCreatePlane(0, normal.x(), normal.y(), normal.z(), offset);
   }
   //else if (MeshShape::getStaticType() == shapeType)
   //{

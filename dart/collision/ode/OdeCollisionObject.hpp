@@ -74,6 +74,8 @@ protected:
   dGeomID mGeomId;
 
   /// ODE body id associated with this object
+  ///
+  /// If the ODE geom type is immobile, this is nullptr.
   dBodyID mBodyId;
 };
 

@@ -46,13 +46,13 @@ OdeCollisionObject::GeomUserData::GeomUserData(
 //==============================================================================
 OdeCollisionObject::~OdeCollisionObject()
 {
-  dGeomDestroy(mGeomId);
-
   if (mBodyId)
   {
     dBodyDestroy(mBodyId);
     mBodyId = nullptr;
   }
+
+  dGeomDestroy(mGeomId);
 }
 
 //==============================================================================
@@ -83,9 +83,32 @@ OdeCollisionObject::OdeCollisionObject(
 //==============================================================================
 void OdeCollisionObject::updateEngineData()
 {
-  // If body id is nullptr, this object is immobile.
-  if (!mBodyId)
+  if (mShapeFrame->getShape()->is<dynamics::PlaneShape>())
+  {
+    // This code block is for immobile geom.
+    assert(!mBodyId);
+
+    const Eigen::Isometry3d& tf = getTransform();
+    const Eigen::Vector3d pos = tf.translation();
+    const Eigen::Matrix3d rot = tf.linear();
+
+    auto plane = static_cast<const dynamics::PlaneShape*>(
+          mShapeFrame->getShape().get());
+    const Eigen::Vector3d& normal = plane->getNormal();
+    const double offset = plane->getOffset();
+
+    const Eigen::Vector3d& normal2 = rot*normal;
+    const double offset2 = offset + pos.dot(normal2);
+
+    dGeomPlaneSetParams(
+        mGeomId, normal2.x(), normal2.y(), normal2.z(), offset2);
+
     return;
+  }
+
+  // If body id is nullptr, this object is immobile. All the immobile geom type
+  // must be handled above.
+  assert(mBodyId);
 
   const Eigen::Isometry3d& tf = getTransform();
 
