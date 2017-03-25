@@ -40,15 +40,32 @@ OdeCollisionGroup::OdeCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
   : CollisionGroup(collisionDetector)
 {
+  // This uses an internal data structure that records how each geom overlaps
+  // cells in one of several three dimensional grids. Each grid has cubical
+  // cells of side lengths 2i, where i is an integer that ranges from a minimum
+  // to a maximum value. The time required to do intersection testing for n
+  // objects is O(n) (as long as those objects are not clustered together too
+  // closely), as each object can be quickly paired with the objects around it.
+  //
+  // Source: https://www.ode-wiki.org/wiki/index.php?title=Manual:_Collision_Detection#Space_functions
   mSpaceId = dHashSpaceCreate(0);
+  assert(mSpaceId);
   dHashSpaceSetLevels(mSpaceId, -2, 8);
+}
 
-  mContactGroupId = dJointGroupCreate(0);
+//==============================================================================
+OdeCollisionGroup::~OdeCollisionGroup()
+{
+  // This is important to call this function before detroy ODE space.
+  removeAllShapeFrames();
+
+  dSpaceDestroy(mSpaceId);
 }
 
 //==============================================================================
 void OdeCollisionGroup::initializeEngineData()
 {
+  // ODE don't need to anything after a geom is added to the space.
 }
 
 //==============================================================================
@@ -79,7 +96,8 @@ void OdeCollisionGroup::addCollisionObjectsToEngine(
 void OdeCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 {
   auto casted = static_cast<OdeCollisionObject*>(object);
-
+  auto geomId = casted->getOdeGeomId();
+  dSpaceRemove(mSpaceId, geomId);
 
   initializeEngineData();
 }
@@ -87,6 +105,7 @@ void OdeCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
 //==============================================================================
 void OdeCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
+  dSpaceClean(mSpaceId);
 
   initializeEngineData();
 }
@@ -94,6 +113,7 @@ void OdeCollisionGroup::removeAllCollisionObjectsFromEngine()
 //==============================================================================
 void OdeCollisionGroup::updateCollisionGroupEngineData()
 {
+  // ODE requires nothing for this.
 }
 
 //==============================================================================

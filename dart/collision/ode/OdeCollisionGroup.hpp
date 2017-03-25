@@ -41,17 +41,15 @@ namespace collision {
 class OdeCollisionGroup : public CollisionGroup
 {
 public:
-
   friend class OdeCollisionDetector;
 
   /// Constructor
   OdeCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
   /// Destructor
-  virtual ~OdeCollisionGroup() = default;
+  virtual ~OdeCollisionGroup();
 
 protected:
-
   using CollisionGroup::updateEngineData;
 
   // Documentation inherited
@@ -73,16 +71,12 @@ protected:
   // Documentation inherited
   void updateCollisionGroupEngineData() override;
 
+  /// Returns ODE space id associated with this collision group
   dSpaceID getOdeSpaceId() const;
 
 protected:
-
   /// Top-level space for all sub-spaces/collisions
   dSpaceID mSpaceId;
-
-  /// Collision attributes
-  dJointGroupID mContactGroupId;
-
 };
 
 }  // namespace collision

@@ -772,6 +772,10 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
   collision::CollisionOption option;
   collision::CollisionResult result;
 
+  result.clear();
+  EXPECT_TRUE(group1->collide(group2.get(), option, &result));
+
+  result.clear();
   EXPECT_TRUE(groupAll->collide(option, &result));
 
   Eigen::Vector3d min = Eigen::Vector3d(-0.25, 0.25, 0.0);

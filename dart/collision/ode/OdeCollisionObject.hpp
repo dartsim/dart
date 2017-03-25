@@ -42,21 +42,15 @@ namespace collision {
 class OdeCollisionObject : public CollisionObject
 {
 public:
-
   friend class OdeCollisionDetector;
   friend class OdeCollisionGroup;
 
-  struct UserData
-  {
-    OdeCollisionObject* mCollisionObject;
+  struct GeomUserData;
 
-    UserData(OdeCollisionObject* collisionObject);
-  };
-
+  /// Destructor
   virtual ~OdeCollisionObject();
 
 protected:
-
   /// Constructor
   OdeCollisionObject(
       OdeCollisionDetector* collisionDetector,
@@ -66,17 +60,32 @@ protected:
   // Documentation inherited
   void updateEngineData() override;
 
-  dBodyID getOdeBodyId() const;
+  /// Returns the ODE geom id associated to this object
   dGeomID getOdeGeomId() const;
 
+  /// Returns the ODE body id associated to this object
+  dBodyID getOdeBodyId() const;
+
 protected:
-
   /// ODE collision geometry user data
-  std::unique_ptr<UserData> mOdeCollisionObjectUserData;
+  std::unique_ptr<GeomUserData> mOdeCollisionObjectUserData;
 
+  /// ODE geom id associated with this object
   dGeomID mGeomId;
-  dBodyID mBodyId;
 
+  /// ODE body id associated with this object
+  dBodyID mBodyId;
+};
+
+/// OdeCollisionObject::GeomUserData to be embedded to ODE geom.
+struct OdeCollisionObject::GeomUserData
+{
+  /// Collision object that will be stored in the ODE geom. This is necessary
+  /// to know which collision object is associated with the ODE geom.
+  OdeCollisionObject* mCollisionObject;
+
+  /// Constructor
+  GeomUserData(OdeCollisionObject* collisionObject);
 };
 
 } // namespace collision

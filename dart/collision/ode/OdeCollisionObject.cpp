@@ -36,7 +36,8 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-OdeCollisionObject::UserData::UserData(OdeCollisionObject* collisionObject)
+OdeCollisionObject::GeomUserData::GeomUserData(
+    OdeCollisionObject* collisionObject)
   : mCollisionObject(collisionObject)
 {
   // Do nothing
@@ -45,13 +46,13 @@ OdeCollisionObject::UserData::UserData(OdeCollisionObject* collisionObject)
 //==============================================================================
 OdeCollisionObject::~OdeCollisionObject()
 {
-  if (mBodyId)
-    dBodyDestroy(mBodyId);
-  mBodyId = nullptr;
+  dGeomDestroy(mGeomId);
 
-  if (mGeomId)
-    dGeomDestroy(mGeomId);
-  mGeomId = nullptr;
+  if (mBodyId)
+  {
+    dBodyDestroy(mBodyId);
+    mBodyId = nullptr;
+  }
 }
 
 //==============================================================================
@@ -60,11 +61,16 @@ OdeCollisionObject::OdeCollisionObject(
     const dynamics::ShapeFrame* shapeFrame,
     dGeomID odeCollGeom)
   : CollisionObject(collisionDetector, shapeFrame),
-    mOdeCollisionObjectUserData(new UserData(this)),
+    mOdeCollisionObjectUserData(new GeomUserData(this)),
     mGeomId(odeCollGeom),
     mBodyId(nullptr)
 {
-  // Plane of ODE is non-placable geometry and is not allowed to bind to a body.
+  assert(mGeomId);
+
+  // Plane of ODE is immobile geometry and is not allowed to bind to a body.
+  //
+  // TODO(JS): use ODE function that checks wether the geometry is mobile rather
+  // than checking if PlaneShape.
   if (!shapeFrame->getShape()->is<dynamics::PlaneShape>())
   {
     mBodyId = dBodyCreate(collisionDetector->getOdeWorldId());
@@ -77,21 +83,24 @@ OdeCollisionObject::OdeCollisionObject(
 //==============================================================================
 void OdeCollisionObject::updateEngineData()
 {
-  if (mShapeFrame->getShape()->is<dynamics::PlaneShape>())
+  // If body id is nullptr, this object is immobile.
+  if (!mBodyId)
     return;
 
   const Eigen::Isometry3d& tf = getTransform();
+
+  // Set position
   const Eigen::Vector3d pos = tf.translation();
+  dBodySetPosition(mBodyId, pos.x(), pos.y(), pos.z());
+
+  // Set orientation
   const Eigen::Quaterniond rot(tf.linear());
-
-  dQuaternion quat;
-  quat[0] = rot.w();
-  quat[1] = rot.x();
-  quat[2] = rot.y();
-  quat[3] = rot.z();
-
-  dGeomSetOffsetPosition(mGeomId, pos.x(), pos.y(), pos.z());
-  dGeomSetOffsetRotation(mGeomId, quat);
+  dQuaternion odeQuat;
+  odeQuat[0] = rot.w();
+  odeQuat[1] = rot.x();
+  odeQuat[2] = rot.y();
+  odeQuat[3] = rot.z();
+  dBodySetQuaternion(mBodyId, odeQuat);
 }
 
 //==============================================================================

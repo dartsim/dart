@@ -106,26 +106,30 @@ std::shared_ptr<OdeCollisionDetector> OdeCollisionDetector::create()
 //==============================================================================
 OdeCollisionDetector::~OdeCollisionDetector()
 {
+  dWorldDestroy(mWorldId);
+  mWorldId = nullptr;
 
+  dCloseODE();
 }
 
 //==============================================================================
 std::shared_ptr<CollisionDetector>
 OdeCollisionDetector::cloneWithoutCollisionObjects()
 {
-
+  return OdeCollisionDetector::create();
 }
 
 //==============================================================================
 const std::string& OdeCollisionDetector::getType() const
 {
-
+  return getStaticType();
 }
 
 //==============================================================================
 const std::string& OdeCollisionDetector::getStaticType()
 {
-
+  static const std::string type = "ode";
+  return type;
 }
 
 //==============================================================================
@@ -146,7 +150,6 @@ bool OdeCollisionDetector::collide(
   OdeCollisionCallbackData data(option, result);
   data.contactGeoms = contactCollisions;
 
-  // Do collision detection; this will add contacts to the contact group
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
 
   return data.numContacts > 0;
@@ -159,41 +162,58 @@ bool OdeCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
-  // TODO(JS): not implemented
-  return false;
+  auto odeGroup1 = static_cast<OdeCollisionGroup*>(group1);
+  odeGroup1->updateEngineData();
+
+  auto odeGroup2 = static_cast<OdeCollisionGroup*>(group2);
+  odeGroup2->updateEngineData();
+
+  OdeCollisionCallbackData data(option, result);
+  data.contactGeoms = contactCollisions;
+
+  dSpaceCollide2(
+      reinterpret_cast<dGeomID>(odeGroup1->getOdeSpaceId()),
+      reinterpret_cast<dGeomID>(odeGroup2->getOdeSpaceId()),
+      &data, CollisionCallback);
+
+  return data.numContacts > 0;
 }
 
 //==============================================================================
 double OdeCollisionDetector::distance(
-    CollisionGroup* group, const DistanceOption& option, DistanceResult* result)
+    CollisionGroup* /*group*/,
+    const DistanceOption& /*option*/,
+    DistanceResult* /*result*/)
 {
-  // TODO(JS): not implemented
+  dterr << "[OdeCollisionDetector] Distance query is not supported. "
+        << "Returning -1.0 instead.\n";
   return -1.0;
 }
 
 //==============================================================================
 double OdeCollisionDetector::distance(
-    CollisionGroup* group1,
-    CollisionGroup* group2,
-    const DistanceOption& option,
-    DistanceResult* result)
+    CollisionGroup* /*group1*/,
+    CollisionGroup* /*group2*/,
+    const DistanceOption& /*option*/,
+    DistanceResult* /*result*/)
 {
-  // TODO(JS): not implemented
+  dterr << "[OdeCollisionDetector] Distance query is not supported. "
+        << "Returning -1.0 instead.\n";
   return -1.0;
 }
 
 //==============================================================================
 OdeCollisionDetector::OdeCollisionDetector()
 {
-  //mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));
-
-  // Collision detection init
-  dInitODE2(0);
+  // Initialize ODE. dInitODE is deprecated.
+  const auto initialized = dInitODE2(0);
+  assert(initialized);
+  DART_UNUSED(initialized);
 
   dAllocateODEDataForThread(dAllocateMaskAll);
 
   mWorldId = dWorldCreate();
-  // TODO(JS): destroy world at the destructor of this class
+  assert(mWorldId);
 }
 
 //==============================================================================
@@ -328,8 +348,8 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
   auto geomData1 = dGeomGetData(o1);
   auto geomData2 = dGeomGetData(o2);
 
-  auto userData1 = static_cast<OdeCollisionObject::UserData*>(geomData1);
-  auto userData2 = static_cast<OdeCollisionObject::UserData*>(geomData2);
+  auto userData1 = static_cast<OdeCollisionObject::GeomUserData*>(geomData1);
+  auto userData2 = static_cast<OdeCollisionObject::GeomUserData*>(geomData2);
   assert(userData1);
   assert(userData2);
 
