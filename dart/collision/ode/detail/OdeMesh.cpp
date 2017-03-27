@@ -28,23 +28,47 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_ODETYPES_HPP_
-#define DART_COLLISION_ODE_ODETYPES_HPP_
+#include "dart/collision/ode/detail/OdeMesh.hpp"
 
-#include <Eigen/Eigen>
-#include <ode/ode.h>
+#include "dart/dynamics/MeshShape.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
-class OdeTypes
+//==============================================================================
+OdeMesh::OdeMesh(
+    const OdeCollisionObject* parent,
+    const aiScene* scene,
+    const Eigen::Vector3d& scale)
+  : OdeGeom(parent)
 {
-public:
-  static Eigen::Vector3d convertVector3(const dVector3& vec);
-  static void convertMatrix3(dMatrix3 out, const Eigen::Matrix3d& in);
-};
+  // fill array
 
-}  // namespace collision
-}  // namespace dart
+//  mGeomId = dCreateBox(0, size.x(), size.y(), size.z());
 
-#endif  // DART_COLLISION_ODE_ODETYPES_HPP_
+}
+
+//==============================================================================
+void fillArrays(float* mVertices, int* mIndices)
+{
+  
+}
+
+//==============================================================================
+OdeMesh::~OdeMesh()
+{
+  delete[] mVertices;
+  delete[] mIndices;
+
+  dGeomDestroy(mGeomId);
+}
+
+//==============================================================================
+void OdeMesh::updateEngineData()
+{
+}
+
+} // namespace detail
+} // namespace collision
+} // namespace dart

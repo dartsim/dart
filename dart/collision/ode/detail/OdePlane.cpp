@@ -28,23 +28,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_ODETYPES_HPP_
-#define DART_COLLISION_ODE_ODETYPES_HPP_
+#include "dart/collision/ode/detail/OdePlane.hpp"
 
-#include <Eigen/Eigen>
-#include <ode/ode.h>
+#include "dart/dynamics/PlaneShape.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
-class OdeTypes
+//==============================================================================
+OdePlane::OdePlane(
+    const OdeCollisionObject* parent,
+    const Eigen::Vector3d& normal,
+    double offset)
+  : OdeGeom(parent)
 {
-public:
-  static Eigen::Vector3d convertVector3(const dVector3& vec);
-  static void convertMatrix3(dMatrix3 out, const Eigen::Matrix3d& in);
-};
+  mGeomId = dCreatePlane(0, normal.x(), normal.y(), normal.z(), offset);
+}
 
-}  // namespace collision
-}  // namespace dart
+//==============================================================================
+OdePlane::~OdePlane()
+{
+  dGeomDestroy(mGeomId);
+}
 
-#endif  // DART_COLLISION_ODE_ODETYPES_HPP_
+//==============================================================================
+void OdePlane::updateEngineData()
+{
+  const Eigen::Isometry3d& tf = mParentCollisionObject->getTransform();
+  const Eigen::Vector3d pos = tf.translation();
+  const Eigen::Matrix3d rot = tf.linear();
+
+  auto plane = static_cast<const dynamics::PlaneShape*>(
+        mParentCollisionObject->getShape().get());
+  const Eigen::Vector3d& normal = plane->getNormal();
+  const double offset = plane->getOffset();
+
+  const Eigen::Vector3d& normal2 = rot*normal;
+  const double offset2 = offset + pos.dot(normal2);
+
+  dGeomPlaneSetParams(mGeomId, normal2.x(), normal2.y(), normal2.z(), offset2);
+}
+
+} // namespace detail
+} // namespace collision
+} // namespace dart

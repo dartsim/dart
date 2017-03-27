@@ -28,23 +28,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_ODETYPES_HPP_
-#define DART_COLLISION_ODE_ODETYPES_HPP_
+#include "dart/collision/ode/detail/OdeSphere.hpp"
 
-#include <Eigen/Eigen>
-#include <ode/ode.h>
+#include "dart/dynamics/SphereShape.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
-class OdeTypes
+//==============================================================================
+OdeSphere::OdeSphere(const OdeCollisionObject* parent, double radius)
+  : OdeGeom(parent)
 {
-public:
-  static Eigen::Vector3d convertVector3(const dVector3& vec);
-  static void convertMatrix3(dMatrix3 out, const Eigen::Matrix3d& in);
-};
+  mGeomId = dCreateSphere(0, radius);
+}
 
-}  // namespace collision
-}  // namespace dart
+//==============================================================================
+OdeSphere::~OdeSphere()
+{
+  dGeomDestroy(mGeomId);
+}
 
-#endif  // DART_COLLISION_ODE_ODETYPES_HPP_
+} // namespace detail
+} // namespace collision
+} // namespace dart

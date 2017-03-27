@@ -28,23 +28,52 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_ODETYPES_HPP_
-#define DART_COLLISION_ODE_ODETYPES_HPP_
+#include "dart/collision/ode/detail/OdeGeom.hpp"
 
-#include <Eigen/Eigen>
-#include <ode/ode.h>
+#include "dart/dynamics/PlaneShape.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
-class OdeTypes
+//==============================================================================
+OdeGeom::OdeGeom(const OdeCollisionObject* collObj)
+  : mParentCollisionObject(collObj),
+    mGeomId(nullptr) // will be set by concrete geom classes
 {
-public:
-  static Eigen::Vector3d convertVector3(const dVector3& vec);
-  static void convertMatrix3(dMatrix3 out, const Eigen::Matrix3d& in);
-};
+  // Do nothing
+}
 
-}  // namespace collision
-}  // namespace dart
+//==============================================================================
+OdeGeom::~OdeGeom()
+{
+  // Do nothing
+}
 
-#endif  // DART_COLLISION_ODE_ODETYPES_HPP_
+//==============================================================================
+const OdeCollisionObject* OdeGeom::getParentCollisionObject() const
+{
+  return mParentCollisionObject;
+}
+
+//==============================================================================
+void OdeGeom::updateEngineData()
+{
+  // Do nothing
+}
+
+//==============================================================================
+dGeomID OdeGeom::getOdeGeomId() const
+{
+  return mGeomId;
+}
+
+//==============================================================================
+bool OdeGeom::isPlaceable() const
+{
+  return true;
+}
+
+} // namespace detail
+} // namespace collision
+} // namespace dart

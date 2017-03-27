@@ -45,8 +45,6 @@ public:
   friend class OdeCollisionDetector;
   friend class OdeCollisionGroup;
 
-  struct GeomUserData;
-
   /// Destructor
   virtual ~OdeCollisionObject();
 
@@ -54,40 +52,28 @@ protected:
   /// Constructor
   OdeCollisionObject(
       OdeCollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame,
-      dGeomID odeCollGeom);
+      const dynamics::ShapeFrame* shapeFrame);
 
   // Documentation inherited
   void updateEngineData() override;
 
-  /// Returns the ODE geom id associated to this object
-  dGeomID getOdeGeomId() const;
-
   /// Returns the ODE body id associated to this object
   dBodyID getOdeBodyId() const;
 
-protected:
-  /// ODE collision geometry user data
-  std::unique_ptr<GeomUserData> mOdeCollisionObjectUserData;
+  /// Returns the ODE body id associated to this object
+  dGeomID getOdeGeomId() const;
 
-  /// ODE geom id associated with this object
-  dGeomID mGeomId;
+protected:
+  /// ODE geom
+  std::unique_ptr<detail::OdeGeom> mOdeGeom;
 
   /// ODE body id associated with this object
   ///
   /// If the ODE geom type is immobile, this is nullptr.
   dBodyID mBodyId;
-};
 
-/// OdeCollisionObject::GeomUserData to be embedded to ODE geom.
-struct OdeCollisionObject::GeomUserData
-{
-  /// Collision object that will be stored in the ODE geom. This is necessary
-  /// to know which collision object is associated with the ODE geom.
-  OdeCollisionObject* mCollisionObject;
+private:
 
-  /// Constructor
-  GeomUserData(OdeCollisionObject* collisionObject);
 };
 
 } // namespace collision

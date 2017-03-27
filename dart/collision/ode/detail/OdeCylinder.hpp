@@ -28,23 +28,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_ODETYPES_HPP_
-#define DART_COLLISION_ODE_ODETYPES_HPP_
+#ifndef DART_COLLISION_ODE_DETAIL_ODECYLINDER_HPP_
+#define DART_COLLISION_ODE_DETAIL_ODECYLINDER_HPP_
 
-#include <Eigen/Eigen>
 #include <ode/ode.h>
+
+#include "dart/collision/ode/detail/OdeGeom.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
-class OdeTypes
+class OdeCylinder : public OdeGeom
 {
 public:
-  static Eigen::Vector3d convertVector3(const dVector3& vec);
-  static void convertMatrix3(dMatrix3 out, const Eigen::Matrix3d& in);
+  /// Constructor
+  OdeCylinder(
+      const OdeCollisionObject* parent, double radius, double height);
+
+  /// Destructor
+  virtual ~OdeCylinder();
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace detail
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_ODE_ODETYPES_HPP_
+#endif  // DART_COLLISION_ODE_DETAIL_ODECYLINDER_HPP_

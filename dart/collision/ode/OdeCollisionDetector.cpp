@@ -220,111 +220,14 @@ OdeCollisionDetector::OdeCollisionDetector()
 std::unique_ptr<CollisionObject> OdeCollisionDetector::createCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
-  auto odeCollGeom = createOdeCollisionGeometry(shapeFrame->getShape());
-
   return std::unique_ptr<OdeCollisionObject>(
-        new OdeCollisionObject(this, shapeFrame, odeCollGeom));
+      new OdeCollisionObject(this, shapeFrame));
 }
 
 //==============================================================================
 dWorldID OdeCollisionDetector::getOdeWorldId() const
 {
   return mWorldId;
-}
-
-//==============================================================================
-dGeomID OdeCollisionDetector::createOdeCollisionGeometry(
-    const dynamics::ConstShapePtr& shape)
-{
-  using dynamics::Shape;
-  using dynamics::SphereShape;
-  using dynamics::BoxShape;
-  using dynamics::EllipsoidShape;
-  using dynamics::CapsuleShape;
-  using dynamics::CylinderShape;
-  using dynamics::PlaneShape;
-  using dynamics::MeshShape;
-  using dynamics::SoftMeshShape;
-
-  dGeomID odeGeomId = nullptr;
-  const auto& shapeType = shape->getType();
-
-  if (shape->is<SphereShape>())
-  {
-    const auto sphere = static_cast<const SphereShape*>(shape.get());
-    const auto radius = sphere->getRadius();
-
-    odeGeomId = dCreateSphere(0, radius);
-  }
-  else if (shape->is<BoxShape>())
-  {
-    const auto box = static_cast<const BoxShape*>(shape.get());
-    const Eigen::Vector3d& size = box->getSize();
-
-    odeGeomId = dCreateBox(0, size.x(), size.y(), size.z());
-  }
-  //else if (shape->is<EllipsoidShape>())
-  //{
-  //  auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
-  //  const Eigen::Vector3d& radii = ellipsoid->getRadii();
-  //
-  //  odeGeomId = dCreateEllipsoid(0, size.x(), size.y(), size.z());
-  //
-  //}
-  // TODO(JS): ODE doesn't support ellipsoid
-  else if (shape->is<CapsuleShape>())
-  {
-    const auto capsule = static_cast<const CapsuleShape*>(shape.get());
-    const auto radius = capsule->getRadius();
-    const auto height = capsule->getHeight();
-
-    odeGeomId = dCreateCapsule(0, radius, height);
-  }
-  else if (shape->is<CylinderShape>())
-  {
-    const auto cylinder = static_cast<const CylinderShape*>(shape.get());
-    const auto radius = cylinder->getRadius();
-    const auto height = cylinder->getHeight();
-
-    odeGeomId = dCreateCylinder(0, radius, height);
-  }
-  else if (shape->is<PlaneShape>())
-  {
-    const auto plane = static_cast<const PlaneShape*>(shape.get());
-    const Eigen::Vector3d normal = plane->getNormal();
-    const double offset = plane->getOffset();
-
-    // TODO(JS): transform the normal and offset according to the transform
-    // of the parent body.
-    odeGeomId = dCreatePlane(0, normal.x(), normal.y(), normal.z(), offset);
-  }
-  //else if (MeshShape::getStaticType() == shapeType)
-  //{
-  //  auto shapeMesh = static_cast<const MeshShape*>(shape.get());
-  //  const Eigen::Vector3d& scale = shapeMesh->getScale();
-  //  auto aiScene = shapeMesh->getMesh();
-  //
-  //  odeGeomId = dCreateTriMesh(0, ...);
-  //}
-  // TODO(SJ): not implemented
-  //else if (SoftMeshShape::getStaticType() == shapeType)
-  //{
-  //  auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
-  //  auto aiMesh = softMeshShape->getAssimpMesh();
-  //
-  //}
-  // TODO(SJ): not implemented
-  else
-  {
-    dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
-          << "Attempting to create an unsupported shape type ["
-          << shapeType << "]. Creating a sphere with 0.1 radius "
-          << "instead.\n";
-
-    odeGeomId = dCreateSphere(0, 0.001);
-  }
-
-  return odeGeomId;
 }
 
 namespace {
@@ -348,17 +251,12 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
   auto geomData1 = dGeomGetData(o1);
   auto geomData2 = dGeomGetData(o2);
 
-  auto userData1 = static_cast<OdeCollisionObject::GeomUserData*>(geomData1);
-  auto userData2 = static_cast<OdeCollisionObject::GeomUserData*>(geomData2);
-  assert(userData1);
-  assert(userData2);
-
-  auto collObj1 = userData1->mCollisionObject;
-  auto collObj2 = userData2->mCollisionObject;
+  auto collObj1 = static_cast<OdeCollisionObject*>(geomData1);
+  auto collObj2 = static_cast<OdeCollisionObject*>(geomData2);
   assert(collObj1);
   assert(collObj2);
 
-  if (filter && !filter->needCollision(collObj2, collObj1))
+  if (filter && !filter->needCollision(collObj1, collObj2))
       return;
 
   // Perform narrow-phase collision detection
@@ -369,6 +267,43 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
 
   if (result)
     reportContacts(numc, odeResult, collObj1, collObj2, option, *result);
+}
+
+//==============================================================================
+void fillArrays(const aiScene* mesh)
+{
+
+}
+
+//==============================================================================
+void createMesh(const aiScene* mesh, float scaleX, float scaleY, float scaleZ)
+{
+  assert(mesh);
+
+  auto odeTriMeshData = dGeomTriMeshDataCreate();
+
+  // Create FCL mesh from Assimp mesh
+
+  for (auto i = 0u; i < mesh->mNumMeshes; i++)
+  {
+    for (auto j = 0u; j < mesh->mMeshes[i]->mNumFaces; j++)
+    {
+//      fcl::Vec3f vertices[3];
+      for (std::size_t k = 0; k < 3; k++)
+      {
+//        mesh->mMeshes[i]->mVertices;
+        const aiVector3D& vertex
+            = mesh->mMeshes[i]->mVertices[
+              mesh->mMeshes[i]->mFaces[j].mIndices[k]];
+//        vertices[k] = fcl::Vec3f(vertex.x * scaleX,
+//                                 vertex.y * scaleY,
+//                                 vertex.z * scaleZ);
+      }
+//      model->addTriangle(vertices[0], vertices[1], vertices[2]);
+    }
+  }
+
+//  dGeomTriMeshDataBuildDouble(odeTriMeshData);
 }
 
 //==============================================================================

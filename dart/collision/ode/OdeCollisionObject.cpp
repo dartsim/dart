@@ -30,85 +30,70 @@
 
 #include "dart/collision/ode/OdeCollisionObject.hpp"
 
+#include <ode/ode.h>
+
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MultiSphereShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/collision/ode/OdeTypes.hpp"
+#include "dart/collision/ode/detail/OdeBox.hpp"
+#include "dart/collision/ode/detail/OdeCapsule.hpp"
+#include "dart/collision/ode/detail/OdeCylinder.hpp"
+#include "dart/collision/ode/detail/OdeMesh.hpp"
+#include "dart/collision/ode/detail/OdePlane.hpp"
+#include "dart/collision/ode/detail/OdeSphere.hpp"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-OdeCollisionObject::GeomUserData::GeomUserData(
-    OdeCollisionObject* collisionObject)
-  : mCollisionObject(collisionObject)
-{
-  // Do nothing
-}
+static detail::OdeGeom* createOdeGeom(
+    OdeCollisionObject* collObj, const dynamics::ShapeFrame* shapeFrame);
 
 //==============================================================================
 OdeCollisionObject::~OdeCollisionObject()
 {
   if (mBodyId)
-  {
     dBodyDestroy(mBodyId);
-    mBodyId = nullptr;
-  }
-
-  dGeomDestroy(mGeomId);
 }
 
 //==============================================================================
 OdeCollisionObject::OdeCollisionObject(
     OdeCollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame,
-    dGeomID odeCollGeom)
+    const dynamics::ShapeFrame* shapeFrame)
   : CollisionObject(collisionDetector, shapeFrame),
-    mOdeCollisionObjectUserData(new GeomUserData(this)),
-    mGeomId(odeCollGeom),
+    mOdeGeom(nullptr),
     mBodyId(nullptr)
 {
-  assert(mGeomId);
+  // Create detail::OdeGeom according to the shape type
+  mOdeGeom.reset(createOdeGeom(this, shapeFrame));
 
-  // Plane of ODE is immobile geometry and is not allowed to bind to a body.
-  //
-  // TODO(JS): use ODE function that checks wether the geometry is mobile rather
-  // than checking if PlaneShape.
-  if (!shapeFrame->getShape()->is<dynamics::PlaneShape>())
+  const auto geomId = mOdeGeom->getOdeGeomId();
+  assert(geomId);
+
+  if (mOdeGeom->isPlaceable())
   {
     mBodyId = dBodyCreate(collisionDetector->getOdeWorldId());
-    dGeomSetBody(mGeomId, mBodyId);
+    dGeomSetBody(geomId, mBodyId);
   }
-
-  dGeomSetData(mGeomId, mOdeCollisionObjectUserData.get());
 }
 
 //==============================================================================
 void OdeCollisionObject::updateEngineData()
 {
-  if (mShapeFrame->getShape()->is<dynamics::PlaneShape>())
-  {
-    // This code block is for immobile geom.
-    assert(!mBodyId);
+  mOdeGeom->updateEngineData();
 
-    const Eigen::Isometry3d& tf = getTransform();
-    const Eigen::Vector3d pos = tf.translation();
-    const Eigen::Matrix3d rot = tf.linear();
-
-    auto plane = static_cast<const dynamics::PlaneShape*>(
-          mShapeFrame->getShape().get());
-    const Eigen::Vector3d& normal = plane->getNormal();
-    const double offset = plane->getOffset();
-
-    const Eigen::Vector3d& normal2 = rot*normal;
-    const double offset2 = offset + pos.dot(normal2);
-
-    dGeomPlaneSetParams(
-        mGeomId, normal2.x(), normal2.y(), normal2.z(), offset2);
-
+  // If body id is nullptr, this object is immobile. Immobile geom doesn't need
+  // to update its pose.
+  if (!mBodyId)
     return;
-  }
-
-  // If body id is nullptr, this object is immobile. All the immobile geom type
-  // must be handled above.
-  assert(mBodyId);
 
   const Eigen::Isometry3d& tf = getTransform();
 
@@ -135,7 +120,98 @@ dBodyID OdeCollisionObject::getOdeBodyId() const
 //==============================================================================
 dGeomID OdeCollisionObject::getOdeGeomId() const
 {
-  return mGeomId;
+  return mOdeGeom->getOdeGeomId();
+}
+
+//==============================================================================
+detail::OdeGeom* createOdeGeom(
+    OdeCollisionObject* collObj, const dynamics::ShapeFrame* shapeFrame)
+{
+  using dynamics::Shape;
+  using dynamics::SphereShape;
+  using dynamics::BoxShape;
+  using dynamics::EllipsoidShape;
+  using dynamics::CapsuleShape;
+  using dynamics::CylinderShape;
+  using dynamics::PlaneShape;
+  using dynamics::MeshShape;
+  using dynamics::SoftMeshShape;
+
+  detail::OdeGeom* geom = nullptr;
+  const auto shape = shapeFrame->getShape().get();
+
+  if (shape->is<SphereShape>())
+  {
+    const auto sphere = static_cast<const SphereShape*>(shape);
+    const auto radius = sphere->getRadius();
+
+    geom = new detail::OdeSphere(collObj, radius);
+  }
+  else if (shape->is<BoxShape>())
+  {
+    const auto box = static_cast<const BoxShape*>(shape);
+    const Eigen::Vector3d& size = box->getSize();
+
+    geom = new detail::OdeBox(collObj, size);
+  }
+  //else if (shape->is<EllipsoidShape>())
+  //{
+  //  auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
+  //  const Eigen::Vector3d& radii = ellipsoid->getRadii();
+  //}
+  // TODO(JS): ODE doesn't support ellipsoid
+  else if (shape->is<CapsuleShape>())
+  {
+    const auto capsule = static_cast<const CapsuleShape*>(shape);
+    const auto radius = capsule->getRadius();
+    const auto height = capsule->getHeight();
+
+    geom = new detail::OdeCapsule(collObj, radius, height);
+  }
+  else if (shape->is<CylinderShape>())
+  {
+    const auto cylinder = static_cast<const CylinderShape*>(shape);
+    const auto radius = cylinder->getRadius();
+    const auto height = cylinder->getHeight();
+
+    geom = new detail::OdeCylinder(collObj, radius, height);
+  }
+  else if (shape->is<PlaneShape>())
+  {
+    const auto plane = static_cast<const PlaneShape*>(shape);
+    const Eigen::Vector3d normal = plane->getNormal();
+    const double offset = plane->getOffset();
+
+    geom = new detail::OdePlane(collObj, normal, offset);
+  }
+  else if (shape->is<MeshShape>())
+  {
+    auto shapeMesh = static_cast<const MeshShape*>(shape);
+    const Eigen::Vector3d& scale = shapeMesh->getScale();
+    auto aiScene = shapeMesh->getMesh();
+
+    geom = new detail::OdeMesh(collObj, aiScene, scale);
+  }
+  // TODO(SJ): not implemented
+  //else if (SoftMeshShape::getStaticType() == shapeType)
+  //{
+  //  auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
+  //  auto aiMesh = softMeshShape->getAssimpMesh();
+  //}
+  // TODO(SJ): not implemented
+  else
+  {
+    dterr << "[OdeCollisionDetector] Attempting to create an unsupported shape "
+          << "type '" << shape->getType() << "'. Creating a sphere with 0.01 "
+          << "radius instead.\n";
+
+    geom = new detail::OdeSphere(collObj, 0.01);
+  }
+
+  const auto geomId = geom->getOdeGeomId();
+  dGeomSetData(geomId, collObj);
+
+  return geom;
 }
 
 }  // namespace collision

@@ -28,23 +28,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_ODE_ODETYPES_HPP_
-#define DART_COLLISION_ODE_ODETYPES_HPP_
+#ifndef DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_
+#define DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_
 
-#include <Eigen/Eigen>
 #include <ode/ode.h>
+
+#include "dart/collision/ode/OdeCollisionObject.hpp"
+#include "dart/collision/ode/OdeCollisionDetector.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
-class OdeTypes
+class OdeGeom
 {
 public:
-  static Eigen::Vector3d convertVector3(const dVector3& vec);
-  static void convertMatrix3(dMatrix3 out, const Eigen::Matrix3d& in);
+  struct GeomUserData;
+
+  /// Constructor.
+  OdeGeom(const OdeCollisionObject* collObj);
+
+  /// Destructor.
+  virtual ~OdeGeom();
+
+  /// Returns the parent collision object.
+  const OdeCollisionObject* getParentCollisionObject() const;
+
+  // Documentation inherited.
+  virtual void updateEngineData();
+
+  /// Returns the ODE geom ID associated to this object.
+  dGeomID getOdeGeomId() const;
+
+  /// Returns true if the ODE geom is placeable.
+  virtual bool isPlaceable() const;
+
+protected:
+  /// Parent collision object
+  const OdeCollisionObject* mParentCollisionObject;
+
+  /// ODE geom ID associated with this object.
+  ///
+  /// This geom ID should be set by the concrete classes such as OdeBox and
+  /// OdeSphere.
+  dGeomID mGeomId;
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace detail
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_ODE_ODETYPES_HPP_
+#endif  // DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_

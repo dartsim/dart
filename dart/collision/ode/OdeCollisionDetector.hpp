@@ -40,11 +40,16 @@
 namespace dart {
 namespace collision {
 
+namespace detail {
+class OdeGeom;
+}
+
 class OdeCollisionDetector : public CollisionDetector
 {
 public:
 
   friend class OdeCollisionObject;
+  friend class detail::OdeGeom;
 
   static std::shared_ptr<OdeCollisionDetector> create();
 
@@ -110,11 +115,8 @@ private:
 
 private:
 
-  using ShapeMap = std::map<dynamics::ConstShapePtr, dGeomID>;
-
-  ShapeMap mShapeMap;
-
   dContactGeom contactCollisions[MAX_COLLIDE_RETURNS];
+  // TODO(JS)
 
 };
 
