@@ -9,6 +9,7 @@ cmake
 assimp
 fcl
 bullet
+ode
 flann
 boost
 eigen
