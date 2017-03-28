@@ -39,6 +39,10 @@
 namespace dart {
 namespace collision {
 
+namespace detail {
+class OdeGeom;
+} // namespace detail
+
 class OdeCollisionObject : public CollisionObject
 {
 public:
@@ -71,9 +75,6 @@ protected:
   ///
   /// If the ODE geom type is immobile, this is nullptr.
   dBodyID mBodyId;
-
-private:
-
 };
 
 } // namespace collision

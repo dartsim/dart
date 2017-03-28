@@ -40,16 +40,17 @@
 namespace dart {
 namespace collision {
 
-namespace detail {
-class OdeGeom;
-}
-
+/// OdeCollisionDetector wraps the ODE collision detector.
+///
+/// The supported collision shape types are sphere, box, capsule, cylinder,
+/// plane, and trimesh.
+///
+/// ODE additionally supports ray and heightfiled, but DART doesn't support them
+/// yet.
 class OdeCollisionDetector : public CollisionDetector
 {
 public:
-
   friend class OdeCollisionObject;
-  friend class detail::OdeGeom;
 
   static std::shared_ptr<OdeCollisionDetector> create();
 
@@ -81,13 +82,13 @@ public:
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr) override;
 
-  // Documentation inherited
+  /// \warning Not implemented yet.
   double distance(
       CollisionGroup* group,
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr) override;
 
-  // Documentation inherited
+  /// \warning Not implemented yet.
   double distance(
       CollisionGroup* group1,
       CollisionGroup* group2,
@@ -95,7 +96,6 @@ public:
       DistanceResult* result = nullptr) override;
 
 protected:
-
   /// Constructor
   OdeCollisionDetector();
 
@@ -106,7 +106,6 @@ protected:
   dWorldID getOdeWorldId() const;
 
 protected:
-
   /// Top-level world for all bodies
   dWorldID mWorldId;
 
@@ -114,9 +113,7 @@ private:
   dGeomID createOdeCollisionGeometry(const dynamics::ConstShapePtr& shape);
 
 private:
-
   dContactGeom contactCollisions[MAX_COLLIDE_RETURNS];
-
 };
 
 }  // namespace collision
