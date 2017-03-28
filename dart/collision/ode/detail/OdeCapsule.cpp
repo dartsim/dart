@@ -41,7 +41,7 @@ OdeCapsule::OdeCapsule(
     const OdeCollisionObject* parent, double radius, double height)
   : OdeGeom(parent)
 {
-  mGeomId = dCreateCylinder(0, radius, height);
+  mGeomId = dCreateCapsule(0, radius, height);
 }
 
 //==============================================================================
