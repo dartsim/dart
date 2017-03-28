@@ -41,13 +41,6 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-FCLCollisionObject::UserData::UserData(FCLCollisionObject* collisionObject)
-  : mCollisionObject(collisionObject)
-{
-  // Do nothing
-}
-
-//==============================================================================
 fcl::CollisionObject* FCLCollisionObject::getFCLCollisionObject()
 {
   return mFCLCollisionObject.get();
@@ -65,10 +58,9 @@ FCLCollisionObject::FCLCollisionObject(
     const dynamics::ShapeFrame* shapeFrame,
     const fcl_shared_ptr<fcl::CollisionGeometry>& fclCollGeom)
   : CollisionObject(collisionDetector, shapeFrame),
-    mFCLCollisionObjectUserData(new UserData(this)),
     mFCLCollisionObject(new fcl::CollisionObject(fclCollGeom))
 {
-  mFCLCollisionObject->setUserData(mFCLCollisionObjectUserData.get());
+  mFCLCollisionObject->setUserData(this);
 }
 
 //==============================================================================

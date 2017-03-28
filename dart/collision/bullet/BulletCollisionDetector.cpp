@@ -97,13 +97,12 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
       auto bulletCollObj1
           = static_cast<btCollisionObject*>(proxy1->m_clientObject);
 
-      auto userData0 = static_cast<BulletCollisionObject::UserData*>(
+      auto collObj0 = static_cast<BulletCollisionObject*>(
             bulletCollObj0->getUserPointer());
-      auto userData1 = static_cast<BulletCollisionObject::UserData*>(
+      auto collObj1 = static_cast<BulletCollisionObject*>(
             bulletCollObj1->getUserPointer());
 
-      collide = filter->needCollision(userData0->collisionObject,
-                                      userData1->collisionObject);
+      collide = filter->needCollision(collObj0, collObj1);
     }
 
     return collide;
@@ -121,8 +120,8 @@ struct BulletOverlapFilterCallback : public btOverlapFilterCallback
 };
 
 Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
-                       const BulletCollisionObject::UserData* userData1,
-                       const BulletCollisionObject::UserData* userData2);
+                       BulletCollisionObject* collObj1,
+                       BulletCollisionObject* collObj2);
 
 void convertContacts(btCollisionWorld* collWorld,
                      BulletOverlapFilterCallback* overlapFilterCallback,
@@ -567,19 +566,19 @@ namespace {
 
 //==============================================================================
 Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
-                       const BulletCollisionObject::UserData* userData1,
-                       const BulletCollisionObject::UserData* userData2)
+                       BulletCollisionObject* collObj1,
+                       BulletCollisionObject* collObj2)
 {
-  assert(userData1);
-  assert(userData2);
+  assert(collObj1);
+  assert(collObj2);
 
   Contact contact;
 
   contact.point = convertVector3(bulletManifoldPoint.getPositionWorldOnA());
   contact.normal = convertVector3(bulletManifoldPoint.m_normalWorldOnB);
   contact.penetrationDepth = -bulletManifoldPoint.m_distance1;
-  contact.collisionObject1 = userData1->collisionObject;
-  contact.collisionObject2 = userData2->collisionObject;
+  contact.collisionObject1 = collObj1;
+  contact.collisionObject2 = collObj2;
 
   return contact;
 }
@@ -607,10 +606,8 @@ void convertContacts(
     auto userPointer0 = bulletCollObj0->getUserPointer();
     auto userPointer1 = bulletCollObj1->getUserPointer();
 
-    auto userDataA
-        = static_cast<BulletCollisionObject::UserData*>(userPointer0);
-    auto userDataB
-        = static_cast<BulletCollisionObject::UserData*>(userPointer1);
+    auto collObjA = static_cast<BulletCollisionObject*>(userPointer0);
+    auto collObjB = static_cast<BulletCollisionObject*>(userPointer1);
 
     auto numContacts = contactManifold->getNumContacts();
 
@@ -618,7 +615,7 @@ void convertContacts(
     {
       auto& cp = contactManifold->getContactPoint(j);
 
-      result.addContact(convertContact(cp, userDataA, userDataB));
+      result.addContact(convertContact(cp, collObjA, collObjB));
 
       if (result.getNumContacts() >= option.maxNumContacts)
       {
