@@ -822,10 +822,10 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
 //==============================================================================
 TEST_F(COLLISION, BoxBox)
 {
-  //auto fcl_mesh_dart = FCLCollisionDetector::create();
-  //fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  //fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  //testBoxBox(fcl_mesh_dart);
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testBoxBox(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
   // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -847,13 +847,13 @@ TEST_F(COLLISION, BoxBox)
   testBoxBox(ode);
 #endif
 
-//#if HAVE_BULLET_COLLISION
-//  auto bullet = BulletCollisionDetector::create();
-//  testBoxBox(bullet);
-//#endif
+#if HAVE_BULLET_COLLISION
+  auto bullet = BulletCollisionDetector::create();
+  testBoxBox(bullet);
+#endif
 
-//  auto dart = DARTCollisionDetector::create();
-//  testBoxBox(dart);
+  auto dart = DARTCollisionDetector::create();
+  testBoxBox(dart);
 }
 
 //==============================================================================
@@ -953,10 +953,10 @@ void testCylinderCylinder(const std::shared_ptr<CollisionDetector>& cd)
 //==============================================================================
 TEST_F(COLLISION, testCylinderCylinder)
 {
-  // auto fcl_mesh_dart = FCLCollisionDetector::create();
-  // fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  // fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  // testCylinderCylinder(fcl_mesh_dart);
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testCylinderCylinder(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
   // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -1016,7 +1016,7 @@ void testCapsuleCapsule(const std::shared_ptr<CollisionDetector>& cd)
 
   result.clear();
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
-  simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.74, 0.0, 0.0));
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() >= 1u);
 }

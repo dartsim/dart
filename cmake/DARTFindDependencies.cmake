@@ -186,7 +186,7 @@ else()
 endif()
 
 # ODE
-find_package(ODE 0.13 QUIET)
+find_package(ODE 0.11 QUIET)
 dart_check_optional_package(ODE "dart-collision-ode" "ode" "0.11")
 if(ODE_FOUND)
   set(HAVE_ODE_COLLISION TRUE)
