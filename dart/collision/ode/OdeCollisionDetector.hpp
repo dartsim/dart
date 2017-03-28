@@ -116,7 +116,6 @@ private:
 private:
 
   dContactGeom contactCollisions[MAX_COLLIDE_RETURNS];
-  // TODO(JS)
 
 };
 
