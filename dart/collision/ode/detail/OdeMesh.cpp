@@ -41,32 +41,96 @@ OdeMesh::OdeMesh(
     const OdeCollisionObject* parent,
     const aiScene* scene,
     const Eigen::Vector3d& scale)
-  : OdeGeom(parent)
+  : OdeGeom(parent),
+    mOdeTriMeshDataId(nullptr)
 {
-  // fill array
+  // Fill vertices, normals, and indices in the ODE friendly data structures.
+  fillArrays(scene, scale);
 
-//  mGeomId = dCreateBox(0, size.x(), size.y(), size.z());
+  /// This will hold the vertex data of the triangle mesh
+  if (!mOdeTriMeshDataId)
+    mOdeTriMeshDataId = dGeomTriMeshDataCreate();
 
-}
+  // Build the ODE triangle mesh
+  dGeomTriMeshDataBuildDouble1(
+      mOdeTriMeshDataId,
+      mVertices.data(),
+      3*sizeof(double),
+      static_cast<int>(mVertices.size()),
+      mIndices.data(),
+      static_cast<int>(mIndices.size()),
+      3*sizeof(int),
+      mNormals.data());
 
-//==============================================================================
-void fillArrays(float* mVertices, int* mIndices)
-{
-  
+  mGeomId = dCreateTriMesh(0, mOdeTriMeshDataId, nullptr, nullptr, nullptr);
 }
 
 //==============================================================================
 OdeMesh::~OdeMesh()
 {
-  delete[] mVertices;
-  delete[] mIndices;
-
   dGeomDestroy(mGeomId);
+
+  if (mOdeTriMeshDataId)
+    dGeomTriMeshDataDestroy(mOdeTriMeshDataId);
 }
 
 //==============================================================================
 void OdeMesh::updateEngineData()
 {
+  // Do nothing
+}
+
+//==============================================================================
+void OdeMesh::fillArrays(const aiScene* scene, const Eigen::Vector3d& scale)
+{
+  mVertices.clear();
+  mNormals.clear();
+  mIndices.clear();
+
+  // Cound the total numbers of vertices and indices.
+  auto mNumVertices = 0u;
+  auto mNumIndices = 0u;
+  for (auto i = 0u; i < scene->mNumMeshes; ++i)
+  {
+    const auto mesh = scene->mMeshes[i];
+
+    mNumVertices += mesh->mNumVertices;
+    mNumIndices += mesh->mNumFaces;
+  }
+  mNumVertices *= 3u;
+  mNumIndices *= 3u;
+  // The number of indices of each face is always 3 because we use the assimp
+  // option `aiProcess_Triangulate` when loading meshes.
+
+  mVertices.resize(mNumVertices);
+  mNormals.resize(mNumVertices);
+  mIndices.resize(mNumIndices);
+
+  auto vertexIndex = 0u;
+  auto indexIndex = 0u;
+  for (auto i = 0u; i < scene->mNumMeshes; ++i)
+  {
+    const auto mesh = scene->mMeshes[i];
+
+    for (auto j = 0u; j < mesh->mNumVertices; ++j)
+    {
+      mVertices[vertexIndex] = mesh->mVertices[j].x * scale.x();
+      mNormals[vertexIndex++] = mesh->mNormals[j].x;
+
+      mVertices[vertexIndex] = mesh->mVertices[j].y * scale.y();
+      mNormals[vertexIndex++] = mesh->mNormals[j].y;
+
+      mVertices[vertexIndex] = mesh->mVertices[j].z * scale.z();
+      mNormals[vertexIndex++] = mesh->mNormals[j].z;
+    }
+
+    for (auto j = 0u; j < mesh->mNumFaces; ++j)
+    {
+      mIndices[indexIndex++] = mesh->mFaces[j].mIndices[0];
+      mIndices[indexIndex++] = mesh->mFaces[j].mIndices[1];
+      mIndices[indexIndex++] = mesh->mFaces[j].mIndices[2];
+    }
+  }
 }
 
 } // namespace detail

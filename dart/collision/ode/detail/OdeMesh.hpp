@@ -56,11 +56,22 @@ public:
   void updateEngineData() override;
 
 private:
+  void fillArrays(
+      const aiScene* scene,
+      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
+
+private:
   /// Array of vertex values.
-  float* mVertices;
+  std::vector<double> mVertices;
+
+  /// Array of normals values.
+  std::vector<double> mNormals;
 
   /// Array of index values.
-  int* mIndices;
+  std::vector<int> mIndices;
+
+  /// ODE trimesh data.
+  dTriMeshDataID mOdeTriMeshDataId;
 };
 
 } // namespace detail

@@ -154,12 +154,6 @@ detail::OdeGeom* createOdeGeom(
 
     geom = new detail::OdeBox(collObj, size);
   }
-  //else if (shape->is<EllipsoidShape>())
-  //{
-  //  auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
-  //  const Eigen::Vector3d& radii = ellipsoid->getRadii();
-  //}
-  // TODO(JS): ODE doesn't support ellipsoid
   else if (shape->is<CapsuleShape>())
   {
     const auto capsule = static_cast<const CapsuleShape*>(shape);
@@ -192,13 +186,6 @@ detail::OdeGeom* createOdeGeom(
 
     geom = new detail::OdeMesh(collObj, aiScene, scale);
   }
-  // TODO(SJ): not implemented
-  //else if (SoftMeshShape::getStaticType() == shapeType)
-  //{
-  //  auto softMeshShape = static_cast<const SoftMeshShape*>(shape);
-  //  auto aiMesh = softMeshShape->getAssimpMesh();
-  //}
-  // TODO(SJ): not implemented
   else
   {
     dterr << "[OdeCollisionDetector] Attempting to create an unsupported shape "
@@ -207,7 +194,10 @@ detail::OdeGeom* createOdeGeom(
 
     geom = new detail::OdeSphere(collObj, 0.01);
   }
+  // TODO(JS): not implemented for EllipsoidShape, ConeShape, MultiSphereShape,
+  // and SoftMeshShape.
 
+  assert(geom);
   const auto geomId = geom->getOdeGeomId();
   dGeomSetData(geomId, collObj);
 

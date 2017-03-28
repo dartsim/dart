@@ -41,7 +41,6 @@ class OdeTypes
 {
 public:
   static Eigen::Vector3d convertVector3(const dVector3& vec);
-  static void convertMatrix3(dMatrix3 out, const Eigen::Matrix3d& in);
 };
 
 }  // namespace collision

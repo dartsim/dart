@@ -270,43 +270,6 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
 }
 
 //==============================================================================
-void fillArrays(const aiScene* mesh)
-{
-
-}
-
-//==============================================================================
-void createMesh(const aiScene* mesh, float scaleX, float scaleY, float scaleZ)
-{
-  assert(mesh);
-
-  auto odeTriMeshData = dGeomTriMeshDataCreate();
-
-  // Create FCL mesh from Assimp mesh
-
-  for (auto i = 0u; i < mesh->mNumMeshes; i++)
-  {
-    for (auto j = 0u; j < mesh->mMeshes[i]->mNumFaces; j++)
-    {
-//      fcl::Vec3f vertices[3];
-      for (std::size_t k = 0; k < 3; k++)
-      {
-//        mesh->mMeshes[i]->mVertices;
-        const aiVector3D& vertex
-            = mesh->mMeshes[i]->mVertices[
-              mesh->mMeshes[i]->mFaces[j].mIndices[k]];
-//        vertices[k] = fcl::Vec3f(vertex.x * scaleX,
-//                                 vertex.y * scaleY,
-//                                 vertex.z * scaleZ);
-      }
-//      model->addTriangle(vertices[0], vertices[1], vertices[2]);
-    }
-  }
-
-//  dGeomTriMeshDataBuildDouble(odeTriMeshData);
-}
-
-//==============================================================================
 void reportContacts(
     int numContacts,
     dContactGeom* contactGeoms,
