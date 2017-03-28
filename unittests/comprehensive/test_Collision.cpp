@@ -705,7 +705,11 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
   else
   {
     EXPECT_TRUE(group->collide(option, &result));
-    EXPECT_TRUE(result.getNumContacts() == 1u);
+    EXPECT_EQ(result.getNumContacts(), 1u);
+    for (auto i = 0; i < result.getNumContacts(); ++i)
+    {
+      std::cout << "point: " << result.getContact(i).point.transpose() << std::endl;
+    }
   }
   // The positions of contact point are different depending on the collision
   // detector. More comprehensive tests need to be added.
@@ -714,10 +718,10 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
 //==============================================================================
 TEST_F(COLLISION, SphereSphere)
 {
-  auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  testSphereSphere(fcl_mesh_dart);
+//  auto fcl_mesh_dart = FCLCollisionDetector::create();
+//  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+//  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+//  testSphereSphere(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
   // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -734,18 +738,18 @@ TEST_F(COLLISION, SphereSphere)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSphereSphere(fcl_mesh_fcl);
 
-#if HAVE_ODE_COLLISION
-  auto ode = OdeCollisionDetector::create();
-  testSphereSphere(ode);
-#endif
+//#if HAVE_ODE_COLLISION
+//  auto ode = OdeCollisionDetector::create();
+//  testSphereSphere(ode);
+//#endif
 
 #if HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
   testSphereSphere(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
-  testSphereSphere(dart);
+//  auto dart = DARTCollisionDetector::create();
+//  testSphereSphere(dart);
 }
 
 //==============================================================================
