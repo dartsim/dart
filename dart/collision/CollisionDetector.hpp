@@ -258,7 +258,7 @@ private:
 };
 
 using CollisionDetectorFactory
-    = common::Factory<std::string, CollisionDetector>;
+    = common::Factory<std::string, CollisionDetector, std::shared_ptr>;
 
 }  // namespace collision
 }  // namespace dart

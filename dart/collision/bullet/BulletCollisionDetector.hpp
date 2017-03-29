@@ -130,4 +130,15 @@ private:
 }  // namespace collision
 }  // namespace dart
 
+// Register Bullet collision detector
+DART_REGISTER_CREATOR_TO_FACTORY(
+    std::string,
+    dart::collision::BulletCollisionDetector::getStaticType(),
+    dart::collision::CollisionDetector,
+    dart::collision::BulletCollisionDetector,
+    []() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
+        return dart::collision::BulletCollisionDetector::create();
+    }
+)
+
 #endif  // DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_HPP_
