@@ -154,33 +154,16 @@ void OpenGLRenderInterface::drawSphere(double radius, int slices, int stacks)
   gluSphere(quadObj, radius, slices, stacks);
 }
 
-void OpenGLRenderInterface::drawMultiSphere(
-    const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+void drawOpenCylinderConnectingTwoSpheres(
+    OpenGLRenderInterface* ri,
+    const std::pair<double, Eigen::Vector3d>& sphere0,
+    const std::pair<double, Eigen::Vector3d>& sphere1,
     int slices, int stacks)
 {
-  // Draw spheres
-  for (const auto& sphere : spheres)
-  {
-    glPushMatrix();
-    {
-      glTranslated(sphere.second.x(), sphere.second.y(), sphere.second.z());
-      drawSphere(sphere.first, slices, stacks);
-    }
-    glPopMatrix();
-  }
-
-  if (spheres.size() < 2u)
-    return;
-
-  // Draw the cylinder that connects the first and second spheres.
-  //
-  // TODO(JS): This is a workaround. The correct solution would be drawing the
-  // convex hull of the spheres but we don't have a function that computes
-  // convex hull from point cloud.
-  const auto& r0 = spheres[0].first;
-  const auto& r1 = spheres[1].first;
-  const Eigen::Vector3d& p0 = spheres[0].second;
-  const Eigen::Vector3d& p1 = spheres[1].second;
+  const auto& r0 = sphere0.first;
+  const auto& r1 = sphere1.first;
+  const Eigen::Vector3d& p0 = sphere0.second;
+  const Eigen::Vector3d& p1 = sphere1.second;
 
   const auto dist = (p0 - p1).norm();
 
@@ -206,9 +189,43 @@ void OpenGLRenderInterface::drawMultiSphere(
     glRotated(math::toDegree(aa.angle()),
               aa.axis().x(), aa.axis().y(), aa.axis().z());
 
-    drawOpenCylinder(baseRadius, topRadius, height, slices, stacks);
+    ri->drawOpenCylinder(baseRadius, topRadius, height, slices, stacks);
   }
   glPopMatrix();
+}
+
+void OpenGLRenderInterface::drawMultiSphere(
+    const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+    int slices, int stacks)
+{
+  // Draw spheres
+  for (const auto& sphere : spheres)
+  {
+    glPushMatrix();
+    {
+      glTranslated(sphere.second.x(), sphere.second.y(), sphere.second.z());
+      drawSphere(sphere.first, slices, stacks);
+    }
+    glPopMatrix();
+  }
+
+  if (spheres.size() < 2u)
+    return;
+
+  // Draw all the possible open cylinders that connects a pair of spheres in the
+  // list.
+  //
+  // TODO(JS): This is a workaround. The correct solution would be drawing the
+  // convex hull for the spheres, but we don't have a function computing convex
+  // hull yet.
+  for (auto i = 0u; i < spheres.size() - 1u; ++i)
+  {
+    for (auto j = i + 1u; j < spheres.size(); ++j)
+    {
+      drawOpenCylinderConnectingTwoSpheres(
+            this, spheres[i], spheres[j], slices, stacks);
+    }
+  }
 }
 
 void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _diameters) {
