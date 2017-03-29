@@ -156,3 +156,31 @@ TEST(Factory, Create)
   EXPECT_TRUE(FruitFactoryString::canCreate("orange"));
   EXPECT_EQ(FruitFactoryString::create("orange")->getName(), "orange");
 }
+
+//==============================================================================
+static Orange* createOrange()
+{
+  return new Orange();
+}
+
+//==============================================================================
+TEST(Factory, RegisterInVariousWays)
+{
+  using FruitFactory = common::Factory<std::string, Fruit>;
+
+  FruitFactory::unregisterAllCreators();
+
+  EXPECT_TRUE(!FruitFactory::canCreate("apple"));
+  EXPECT_TRUE(!FruitFactory::canCreate("banana"));
+  EXPECT_TRUE(!FruitFactory::canCreate("orange"));
+
+  // Default creator
+  FruitFactory::registerCreator<Apple>("apple");
+  FruitFactory::registerCreator(
+      "banana", []() -> Banana* { return new Banana(); });
+  FruitFactory::registerCreator("orange", createOrange);
+
+  EXPECT_TRUE(FruitFactory::canCreate("apple"));
+  EXPECT_TRUE(FruitFactory::canCreate("banana"));
+  EXPECT_TRUE(FruitFactory::canCreate("orange"));
+}

@@ -41,7 +41,7 @@ namespace common {
 //==============================================================================
 template <typename KeyT, typename BaseT>
 std::pair<typename Factory<KeyT, BaseT>::CreatorMap::iterator, bool>
-Factory<KeyT, BaseT>::registerObject(
+Factory<KeyT, BaseT>::registerCreator(
     const KeyT& key,
     const std::function<BaseT*()>& func)
 {
@@ -62,9 +62,25 @@ Factory<KeyT, BaseT>::registerObject(
 
 //==============================================================================
 template <typename KeyT, typename BaseT>
-void Factory<KeyT, BaseT>::unregisterObject(const KeyT& key)
+template <typename Derived>
+std::pair<typename Factory<KeyT, BaseT>::CreatorMap::iterator, bool>
+Factory<KeyT, BaseT>::registerCreator(const KeyT& key)
+{
+  return registerCreator(key, [](void) -> BaseT* { return new Derived(); });
+}
+
+//==============================================================================
+template <typename KeyT, typename BaseT>
+void Factory<KeyT, BaseT>::unregisterCreator(const KeyT& key)
 {
   getMap().erase(key);
+}
+
+//==============================================================================
+template <typename KeyT, typename BaseT>
+void Factory<KeyT, BaseT>::unregisterAllCreators()
+{
+  getMap().clear();
 }
 
 //==============================================================================
@@ -119,8 +135,7 @@ FactoryRegister<KeyT, Base, Derived>::getInstance(const KeyT& key)
 template <typename KeyT, typename Base, typename Derived>
 FactoryRegister<KeyT, Base, Derived>::FactoryRegister(const KeyT& key)
 {
-  Factory<KeyT, Base>::registerObject(
-        key, [](void) -> Base* { return new Derived(); });
+  Factory<KeyT, Base>::template registerCreator<Derived>(key);
 }
 
 //==============================================================================
@@ -128,8 +143,8 @@ template <typename KeyT, typename Base, typename Derived>
 FactoryScopedRegister<KeyT, Base, Derived>::FactoryScopedRegister(
     const KeyT& key)
 {
-  const auto result = Factory<KeyT, Base>::registerObject(
-        key, [](void) -> Base* { return new Derived(); });
+  const auto result
+      = Factory<KeyT, Base>::template registerCreator<Derived>(key);
 
   if (result.second)
     mIndex = result.first;

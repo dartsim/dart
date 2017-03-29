@@ -47,21 +47,31 @@ class Factory final
 public:
   using CreatorMap = std::map<KeyT, std::function<BaseT*()>>;
 
-  /// Registers a object creator function with the key.
+  /// Registers a object creator function with a key.
   static std::pair<typename Factory<KeyT, BaseT>::CreatorMap::iterator, bool>
-  registerObject(const KeyT& key, const std::function<BaseT*()>& func);
+  registerCreator(const KeyT& key, const std::function<BaseT*()>& func);
+
+  /// Registers the default object creator function with a key.
+  template <typename Derived>
+  static std::pair<typename Factory<KeyT, BaseT>::CreatorMap::iterator, bool>
+  registerCreator(const KeyT& key);
 
   /// Unregisters the object creator function that is registered with a key. Do
   /// nothing if there is no creator function associated with the key.
-  static void unregisterObject(const KeyT& key);
+  static void unregisterCreator(const KeyT& key);
 
-  /// Creates an object of the class that is registered with a key. Returns
-  /// nullptr if there is no object creator function associated with the key.
-  static BaseT* create(const KeyT& key);
+  /// Unregisters all the object creator functions.
+  static void unregisterAllCreators();
 
   /// Returns true if an object creator function is registered with the key.
   /// Otherwise, returns false.
   static bool canCreate(const KeyT& key);
+
+  /// Creates an object of the class that is registered with a key. Returns
+  /// nullptr if there is no object creator function associated with the key.
+  static BaseT* create(const KeyT& key);
+  // TODO(JS): Add create() for creating smart_pointers
+  // (see: https://github.com/dartsim/dart/pull/845)
 
 protected:
   /// Constructor is disabled. This class is a pure static class.
