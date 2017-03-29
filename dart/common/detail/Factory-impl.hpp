@@ -138,29 +138,6 @@ FactoryRegister<KeyT, Base, Derived>::FactoryRegister(const KeyT& key)
   Factory<KeyT, Base>::template registerCreator<Derived>(key);
 }
 
-//==============================================================================
-template <typename KeyT, typename Base, typename Derived>
-FactoryScopedRegister<KeyT, Base, Derived>::FactoryScopedRegister(
-    const KeyT& key)
-{
-  const auto result
-      = Factory<KeyT, Base>::template registerCreator<Derived>(key);
-
-  if (result.second)
-    mIndex = result.first;
-  else
-    mIndex = Factory<KeyT, Base>::getMap().end();
-}
-
-//==============================================================================
-template <typename KeyT, typename Base, typename Derived>
-FactoryScopedRegister<KeyT, Base, Derived>::~FactoryScopedRegister()
-{
-  if (mIndex != Factory<KeyT, Base>::getMap().end())
-    Factory<KeyT, Base>::getMap().erase(mIndex);
-  // Note: Passing end() to std::map::erase() is un undefined behaviour.
-}
-
 } // namespace common
 } // namespace dart
 

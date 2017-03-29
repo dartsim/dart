@@ -111,10 +111,12 @@ TEST(Factory, Create)
   EXPECT_TRUE(!FruitFactoryEnum::canCreate(OT_Orange));
 
   // Once it's registered we can create an orange.
-  DART_REGISTER_OBJECT_TO_FACTORY_IN_FUNCTION(
-      ObjectTypeEnum, OT_Orange, Fruit, Orange);
+  FruitFactoryEnum::registerCreator<Orange>(OT_Orange);
   EXPECT_TRUE(FruitFactoryEnum::canCreate(OT_Orange));
   EXPECT_EQ(FruitFactoryEnum::create(OT_Orange)->getName(), "orange");
+
+  FruitFactoryEnum::unregisterCreator(OT_Orange);
+  EXPECT_TRUE(!FruitFactoryEnum::canCreate(OT_Orange));
 
   //----------------------------------------------------------------------------
   // enum class key type
@@ -131,11 +133,13 @@ TEST(Factory, Create)
   EXPECT_TRUE(!FruitFactoryEnumClass::canCreate(ObjectTypeEnumClass::Orange));
 
   // Once it's registered we can create an orange.
-  DART_REGISTER_OBJECT_TO_FACTORY_IN_FUNCTION(
-      ObjectTypeEnumClass, ObjectTypeEnumClass::Orange, Fruit, Orange);
+  FruitFactoryEnumClass::registerCreator<Orange>(ObjectTypeEnumClass::Orange);
   EXPECT_TRUE(FruitFactoryEnumClass::canCreate(ObjectTypeEnumClass::Orange));
   EXPECT_EQ(FruitFactoryEnumClass::create(
       ObjectTypeEnumClass::Orange)->getName(), "orange");
+
+  FruitFactoryEnumClass::unregisterCreator(ObjectTypeEnumClass::Orange);
+  EXPECT_TRUE(!FruitFactoryEnumClass::canCreate(ObjectTypeEnumClass::Orange));
 
   //----------------------------------------------------------------------------
   // std::string key type
@@ -151,10 +155,12 @@ TEST(Factory, Create)
   EXPECT_TRUE(!FruitFactoryString::canCreate("orange"));
 
   // Once it's registered we can create an orange.
-  DART_REGISTER_OBJECT_TO_FACTORY_IN_FUNCTION(
-      std::string, "orange", Fruit, Orange);
+  FruitFactoryString::registerCreator<Orange>("orange");
   EXPECT_TRUE(FruitFactoryString::canCreate("orange"));
   EXPECT_EQ(FruitFactoryString::create("orange")->getName(), "orange");
+
+  FruitFactoryString::unregisterCreator("orange");
+  EXPECT_TRUE(!FruitFactoryString::canCreate("orange"));
 }
 
 //==============================================================================
@@ -164,7 +170,7 @@ static Orange* createOrange()
 }
 
 //==============================================================================
-TEST(Factory, RegisterInVariousWays)
+TEST(Factory, VariousCreatorFunctions)
 {
   using FruitFactory = common::Factory<std::string, Fruit>;
 
@@ -179,8 +185,4 @@ TEST(Factory, RegisterInVariousWays)
   FruitFactory::registerCreator(
       "banana", []() -> Banana* { return new Banana(); });
   FruitFactory::registerCreator("orange", createOrange);
-
-  EXPECT_TRUE(FruitFactory::canCreate("apple"));
-  EXPECT_TRUE(FruitFactory::canCreate("banana"));
-  EXPECT_TRUE(FruitFactory::canCreate("orange"));
 }

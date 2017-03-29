@@ -32,7 +32,6 @@
 #define DART_COMMON_FACTORY_HPP_
 
 #include <map>
-#include <string>
 #include <functional>
 
 #include "dart/common/StlHelpers.hpp"
@@ -87,12 +86,12 @@ private:
 };
 
 /// Helper class to register a object creator function.
-template <typename KeyT, typename Base, typename Derived>
+template <typename KeyT, typename BaseT, typename DerivedT>
 class FactoryRegister final
 {
 public:
   /// Returns the static instance of FactoryRegister.
-  static FactoryRegister<KeyT, Base, Derived>& getInstance(const KeyT& key);
+  static FactoryRegister<KeyT, BaseT, DerivedT>& getInstance(const KeyT& key);
 
 private:
   /// Constructor. Interanlly, this constructor registers Derived class with
@@ -100,36 +99,11 @@ private:
   FactoryRegister(const KeyT& key);
 
   /// Constructor is disabled. This class is a pure static class.
-  FactoryRegister(const FactoryRegister<KeyT, Base, Derived>&) = delete;
+  FactoryRegister(const FactoryRegister<KeyT, BaseT, DerivedT>&) = delete;
 
   /// Destructor is disabled. This class is a pure static class.
   FactoryRegister& operator=(
-      const FactoryRegister<KeyT, Base, Derived>&) = delete;
-};
-
-template <typename KeyT, typename Base, typename Derived>
-class FactoryScopedRegister final
-{
-public:
-  /// Constructor
-  FactoryScopedRegister(const KeyT& key);
-
-  /// Destructor
-  ~FactoryScopedRegister();
-
-private:
-  /// Constructor is disabled. This class is a pure static class.
-  FactoryScopedRegister(
-      const FactoryScopedRegister<KeyT, Base, Derived>&) = delete;
-
-  /// Destructor is disabled. This class is a pure static class.
-  FactoryScopedRegister& operator=(
-      const FactoryScopedRegister<KeyT, Base, Derived>&) = delete;
-
-private:
-  /// Index to the map to be used to delete the item when this class is
-  /// destructed.
-  typename Factory<KeyT, Base>::CreatorMap::iterator mIndex;
+      const FactoryRegister<KeyT, BaseT, DerivedT>&) = delete;
 };
 
 #define DART_CONCATENATE(x, y) x##y
@@ -142,26 +116,6 @@ private:
   const auto& DART_GEN_UNIQUE_NAME(factory_register)                           \
       = ::dart::common::FactoryRegister<key_type, base, derived>               \
         ::getInstance(key);            \
-  }
-
-#define DART_REGISTER_OBJECT_TO_FACTORY_IN_FUNCTION_DETAIL(                    \
-      unique_name, key_type, key, base, derived)                               \
-  const static auto& unique_name                                               \
-    = ::dart::common::FactoryRegister<key_type, base, derived>                 \
-      ::getInstance(key);                                                      \
-  DART_UNUSED(unique_name)
-
-#define DART_REGISTER_OBJECT_TO_FACTORY_IN_FUNCTION(                           \
-    key_type, key, base, derived)                                              \
-  DART_REGISTER_OBJECT_TO_FACTORY_IN_FUNCTION_DETAIL(                          \
-      DART_GEN_UNIQUE_NAME(factory_register), key_type, key, base, derived)
-
-#define DART_UNREGISTER_OBJECT_TO_FACTORY(key_type, key)                       \
-  namespace {                                                                  \
-  const FactoryUnregister<key_type, base, derived>&                            \
-  DART_GEN_UNIQUE_NAME(factory_unregister)                                     \
-      = ::dart::common::FactoryUnregister<key_type, base, derived>             \
-        ::getInstance(key);          \
   }
 
 } // namespace common
