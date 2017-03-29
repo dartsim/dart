@@ -182,7 +182,11 @@ TEST(Factory, VariousCreatorFunctions)
 
   // Default creator
   FruitFactory::registerCreator<Apple>("apple");
+
+  // Lambda function
   FruitFactory::registerCreator(
       "banana", []() -> Banana* { return new Banana(); });
+
+  // Global static function
   FruitFactory::registerCreator("orange", createOrange);
 }
