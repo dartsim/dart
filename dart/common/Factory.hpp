@@ -107,7 +107,8 @@ private:
 };
 
 #define DART_CONCATENATE(x, y) x##y
-#define DART_GEN_UNIQUE_NAME_DETAIL(x, unique_key) DART_CONCATENATE(x, unique_key)
+#define DART_GEN_UNIQUE_NAME_DETAIL(x, unique_key)                             \
+  DART_CONCATENATE(x, unique_key)
 #define DART_GEN_UNIQUE_NAME(seed_name)                                        \
   DART_GEN_UNIQUE_NAME_DETAIL(seed_name, __LINE__)
 
