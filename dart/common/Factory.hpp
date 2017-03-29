@@ -39,7 +39,18 @@
 namespace dart {
 namespace common {
 
-/// Implementation of the Factory Pattern.
+/// Implementation of the Abstract Factory Pattern.
+///
+/// Factory class is a pure static class (i.e., no need to create an instance to
+/// use this class).
+///
+/// Example:
+/// \code
+/// using CdFactory = Factory<std::string, CollisionDetector>;
+///
+/// CdFactory::registerCreator<FclCollisionDetector>("fcl");
+/// auto fclCd = CdFactory::create("fcl");
+/// \endcode
 template <typename KeyT, typename BaseT>
 class Factory final
 {
