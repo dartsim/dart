@@ -37,6 +37,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Factory.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
@@ -255,6 +256,9 @@ private:
   CollisionObjectMap mCollisionObjectMap;
 
 };
+
+using CollisionDetectorFactory
+    = common::Factory<std::string, CollisionDetector>;
 
 }  // namespace collision
 }  // namespace dart

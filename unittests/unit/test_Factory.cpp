@@ -83,16 +83,16 @@ public:
   }
 };
 
-DART_REGISTER_OBJECT_TO_FACTORY(ObjectTypeEnum, OT_Apple, Fruit, Apple)
-DART_REGISTER_OBJECT_TO_FACTORY(ObjectTypeEnum, OT_Banana, Fruit, Banana)
+DART_REGISTER_DEFAULT_UNIQUE_PTR_CREATOR_TO_FACTORY(ObjectTypeEnum, OT_Apple, Fruit, Apple)
+DART_REGISTER_DEFAULT_UNIQUE_PTR_CREATOR_TO_FACTORY(ObjectTypeEnum, OT_Banana, Fruit, Banana)
 
-DART_REGISTER_OBJECT_TO_FACTORY(
+DART_REGISTER_DEFAULT_UNIQUE_PTR_CREATOR_TO_FACTORY(
     ObjectTypeEnumClass, ObjectTypeEnumClass::Apple, Fruit, Apple)
-DART_REGISTER_OBJECT_TO_FACTORY(
+DART_REGISTER_DEFAULT_UNIQUE_PTR_CREATOR_TO_FACTORY(
     ObjectTypeEnumClass, ObjectTypeEnumClass::Banana, Fruit, Banana)
 
-DART_REGISTER_OBJECT_TO_FACTORY(std::string, "apple", Fruit, Apple)
-DART_REGISTER_OBJECT_TO_FACTORY(std::string, "banana", Fruit, Banana)
+DART_REGISTER_DEFAULT_UNIQUE_PTR_CREATOR_TO_FACTORY(std::string, "apple", Fruit, Apple)
+DART_REGISTER_DEFAULT_UNIQUE_PTR_CREATOR_TO_FACTORY(std::string, "banana", Fruit, Banana)
 
 //==============================================================================
 TEST(Factory, Create)
@@ -164,9 +164,9 @@ TEST(Factory, Create)
 }
 
 //==============================================================================
-static Orange* createOrange()
+static std::shared_ptr<Orange> createOrange()
 {
-  return new Orange();
+  return std::shared_ptr<Orange>(new Orange());
 }
 
 //==============================================================================
@@ -185,8 +185,9 @@ TEST(Factory, VariousCreatorFunctions)
 
   // Lambda function
   FruitFactory::registerCreator(
-      "banana", []() -> Banana* { return new Banana(); });
+      std::string("banana"), []() -> std::shared_ptr<Banana>
+      { return std::shared_ptr<Banana>(new Banana()); });
 
   // Global static function
-  FruitFactory::registerCreator("orange", createOrange);
+  FruitFactory::registerCreator(std::string("orange"), createOrange);
 }
