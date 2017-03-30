@@ -309,8 +309,14 @@ if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
     endif(DART_VERBOSE)
 
     # Add tutorial targets
-    dart_add_tutorial(tutorials/tutorialBiped dart-utils-urdf dart-gui)
-    dart_add_tutorial(tutorials/tutorialBiped-Finished dart-utils-urdf dart-gui)
+    if(HAVE_BULLET_COLLISION)
+      dart_add_tutorial(tutorials/tutorialBiped dart-utils-urdf dart-gui dart-collision-bullet)
+      dart_add_tutorial(tutorials/tutorialBiped-Finished dart-utils-urdf dart-gui dart-collision-bullet)
+    else()
+      dart_add_tutorial(tutorials/tutorialBiped dart-utils-urdf dart-gui)
+      dart_add_tutorial(tutorials/tutorialBiped-Finished dart-utils-urdf dart-gui)
+    endif()
+
     dart_add_tutorial(tutorials/tutorialCollisions dart-utils-urdf dart-gui)
     dart_add_tutorial(tutorials/tutorialCollisions-Finished dart-utils-urdf dart-gui)
     dart_add_tutorial(tutorials/tutorialDominoes dart-utils-urdf dart-gui)

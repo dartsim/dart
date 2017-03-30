@@ -157,7 +157,8 @@ private:
 #define DART_GEN_UNIQUE_NAME(seed_name)                                        \
   DART_GEN_UNIQUE_NAME_DETAIL(seed_name, __LINE__)
 
-#define DART_REGISTER_CREATOR_TO_FACTORY(key_type, key, base, derived, creator)\
+#define DART_REGISTER_CREATOR_TO_FACTORY(                                      \
+    key_type, key, base, derived, creator)                                     \
   namespace {                                                                  \
   const auto& DART_GEN_UNIQUE_NAME(unique_name_seed)                           \
       = dart::common::FactoryRegistrar<key_type, base, derived>                \
