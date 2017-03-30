@@ -32,7 +32,7 @@
 #define DART_COMMON_FACTORY_HPP_
 
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include <memory>
 
 #include "dart/common/StlHelpers.hpp"
@@ -62,7 +62,7 @@ public:
   using This = Factory<KeyT, BaseT, SmartPointerT>;
   using CreatorReturnType = SmartPointerT<BaseT>;
   using Creator = std::function<CreatorReturnType(Args...)>;
-  using CreatorMap = std::map<KeyT, Creator>;
+  using CreatorMap = std::unordered_map<KeyT, Creator>;
   using RegisterResult = std::pair<typename CreatorMap::iterator, bool>;
 
   /// Registers a object creator function with a key.
