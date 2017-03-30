@@ -59,10 +59,10 @@ template <typename KeyT,
 class Factory final
 {
 public:
-  using ReturnType = SmartPointerT<BaseT>;
-  using Creator = std::function<ReturnType(Args...)>;
-  using CreatorMap = std::map<KeyT, Creator>;
   using This = Factory<KeyT, BaseT, SmartPointerT>;
+  using CreatorReturnType = SmartPointerT<BaseT>;
+  using Creator = std::function<CreatorReturnType(Args...)>;
+  using CreatorMap = std::map<KeyT, Creator>;
   using RegisterResult = std::pair<typename CreatorMap::iterator, bool>;
 
   /// Registers a object creator function with a key.
@@ -85,7 +85,7 @@ public:
 
   /// Creates an object of the class that is registered with a key. Returns
   /// nullptr if there is no object creator function associated with the key.
-  static ReturnType create(const KeyT& key, Args&&... args);
+  static CreatorReturnType create(const KeyT& key, Args&&... args);
   // TODO(JS): Add create() for creating smart_pointers
   // (see: https://github.com/dartsim/dart/pull/845)
 

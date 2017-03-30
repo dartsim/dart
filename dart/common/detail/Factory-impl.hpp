@@ -93,7 +93,7 @@ typename Factory<KeyT, BaseT, SmartPointerT, Args...>::RegisterResult
 Factory<KeyT, BaseT, SmartPointerT, Args...>::registerCreator(const KeyT& key)
 {
   return registerCreator(
-      key, [](Args&&... args) -> ReturnType
+      key, [](Args&&... args) -> CreatorReturnType
   {
     return DefaultCreator<Derived, SmartPointerT, Args...>::run(
         std::forward<Args>(args)...);
@@ -138,7 +138,7 @@ template <typename KeyT,
           typename BaseT,
           template<typename...> class SmartPointerT,
           typename... Args>
-typename Factory<KeyT, BaseT, SmartPointerT, Args...>::ReturnType
+typename Factory<KeyT, BaseT, SmartPointerT, Args...>::CreatorReturnType
 Factory<KeyT, BaseT, SmartPointerT, Args...>::create(
     const KeyT& key, Args&&... args)
 {

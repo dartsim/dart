@@ -53,6 +53,10 @@ enum class ObjectTypeEnumClass
 class Fruit
 {
 public:
+  using FactoryEnum = common::Factory<ObjectTypeEnum, Fruit>;
+  using FactoryEnumClass = common::Factory<ObjectTypeEnumClass, Fruit>;
+  using FactoryString = common::Factory<std::string, Fruit>;
+
   virtual std::string getName() const = 0;
 };
 
@@ -148,67 +152,61 @@ TEST(Factory, Create)
   //----------------------------------------------------------------------------
   // enum class key type
   //----------------------------------------------------------------------------
-  using FruitFactoryEnum = common::Factory<ObjectTypeEnum, Fruit>;
+  EXPECT_TRUE(!Fruit::FactoryEnum::create(OT_None));
 
-  EXPECT_TRUE(!FruitFactoryEnum::create(OT_None));
-
-  EXPECT_TRUE(FruitFactoryEnum::canCreate(OT_Apple));
-  EXPECT_EQ(FruitFactoryEnum::create(OT_Apple)->getName(), "apple");
+  EXPECT_TRUE(Fruit::FactoryEnum::canCreate(OT_Apple));
+  EXPECT_EQ(Fruit::FactoryEnum::create(OT_Apple)->getName(), "apple");
 
   // Can't create an orange since it's not registered yet.
-  EXPECT_TRUE(!FruitFactoryEnum::canCreate(OT_Orange));
+  EXPECT_TRUE(!Fruit::FactoryEnum::canCreate(OT_Orange));
 
   // Once it's registered we can create an orange.
-  FruitFactoryEnum::registerCreator<Orange>(OT_Orange);
-  EXPECT_TRUE(FruitFactoryEnum::canCreate(OT_Orange));
-  EXPECT_EQ(FruitFactoryEnum::create(OT_Orange)->getName(), "orange");
+  Fruit::FactoryEnum::registerCreator<Orange>(OT_Orange);
+  EXPECT_TRUE(Fruit::FactoryEnum::canCreate(OT_Orange));
+  EXPECT_EQ(Fruit::FactoryEnum::create(OT_Orange)->getName(), "orange");
 
-  FruitFactoryEnum::unregisterCreator(OT_Orange);
-  EXPECT_TRUE(!FruitFactoryEnum::canCreate(OT_Orange));
+  Fruit::FactoryEnum::unregisterCreator(OT_Orange);
+  EXPECT_TRUE(!Fruit::FactoryEnum::canCreate(OT_Orange));
 
   //----------------------------------------------------------------------------
   // enum class key type
   //----------------------------------------------------------------------------
-  using FruitFactoryEnumClass = common::Factory<ObjectTypeEnumClass, Fruit>;
+  EXPECT_TRUE(!Fruit::FactoryEnumClass::create(ObjectTypeEnumClass::None));
 
-  EXPECT_TRUE(!FruitFactoryEnumClass::create(ObjectTypeEnumClass::None));
-
-  EXPECT_TRUE(FruitFactoryEnumClass::canCreate(ObjectTypeEnumClass::Apple));
-  EXPECT_EQ(FruitFactoryEnumClass::create(
+  EXPECT_TRUE(Fruit::FactoryEnumClass::canCreate(ObjectTypeEnumClass::Apple));
+  EXPECT_EQ(Fruit::FactoryEnumClass::create(
       ObjectTypeEnumClass::Apple)->getName(), "apple");
 
   // Can't create an orange since it's not registered yet.
-  EXPECT_TRUE(!FruitFactoryEnumClass::canCreate(ObjectTypeEnumClass::Orange));
+  EXPECT_TRUE(!Fruit::FactoryEnumClass::canCreate(ObjectTypeEnumClass::Orange));
 
   // Once it's registered we can create an orange.
-  FruitFactoryEnumClass::registerCreator<Orange>(ObjectTypeEnumClass::Orange);
-  EXPECT_TRUE(FruitFactoryEnumClass::canCreate(ObjectTypeEnumClass::Orange));
-  EXPECT_EQ(FruitFactoryEnumClass::create(
+  Fruit::FactoryEnumClass::registerCreator<Orange>(ObjectTypeEnumClass::Orange);
+  EXPECT_TRUE(Fruit::FactoryEnumClass::canCreate(ObjectTypeEnumClass::Orange));
+  EXPECT_EQ(Fruit::FactoryEnumClass::create(
       ObjectTypeEnumClass::Orange)->getName(), "orange");
 
-  FruitFactoryEnumClass::unregisterCreator(ObjectTypeEnumClass::Orange);
-  EXPECT_TRUE(!FruitFactoryEnumClass::canCreate(ObjectTypeEnumClass::Orange));
+  Fruit::FactoryEnumClass::unregisterCreator(ObjectTypeEnumClass::Orange);
+  EXPECT_TRUE(!Fruit::FactoryEnumClass::canCreate(ObjectTypeEnumClass::Orange));
 
   //----------------------------------------------------------------------------
   // std::string key type
   //----------------------------------------------------------------------------
-  using FruitFactoryString = common::Factory<std::string, Fruit>;
+  EXPECT_TRUE(!Fruit::FactoryString::create("none"));
 
-  EXPECT_TRUE(!FruitFactoryString::create("none"));
-
-  EXPECT_TRUE(FruitFactoryString::canCreate("apple"));
-  EXPECT_EQ(FruitFactoryString::create("apple")->getName(), "apple");
+  EXPECT_TRUE(Fruit::FactoryString::canCreate("apple"));
+  EXPECT_EQ(Fruit::FactoryString::create("apple")->getName(), "apple");
 
   // Can't create an orange since it's not registered yet.
-  EXPECT_TRUE(!FruitFactoryString::canCreate("orange"));
+  EXPECT_TRUE(!Fruit::FactoryString::canCreate("orange"));
 
   // Once it's registered we can create an orange.
-  FruitFactoryString::registerCreator<Orange>("orange");
-  EXPECT_TRUE(FruitFactoryString::canCreate("orange"));
-  EXPECT_EQ(FruitFactoryString::create("orange")->getName(), "orange");
+  Fruit::FactoryString::registerCreator<Orange>("orange");
+  EXPECT_TRUE(Fruit::FactoryString::canCreate("orange"));
+  EXPECT_EQ(Fruit::FactoryString::create("orange")->getName(), "orange");
 
-  FruitFactoryString::unregisterCreator("orange");
-  EXPECT_TRUE(!FruitFactoryString::canCreate("orange"));
+  Fruit::FactoryString::unregisterCreator("orange");
+  EXPECT_TRUE(!Fruit::FactoryString::canCreate("orange"));
 }
 
 //==============================================================================
@@ -239,7 +237,6 @@ TEST(Factory, VariousCreatorFunctions)
   // Global static function
   FruitFactory::registerCreator(std::string("orange"), createOrange);
 }
-
 
 //==============================================================================
 TEST(Factory, CreateWithArguments)
