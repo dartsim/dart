@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/MultiSphereShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/math/Helpers.hpp"
@@ -39,33 +39,33 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-MultiSphereShape::MultiSphereShape(const Spheres& spheres)
+MultiSphereConvexHullShape::MultiSphereConvexHullShape(const Spheres& spheres)
   : Shape(MULTISPHERE)
 {
   addSpheres(spheres);
 }
 
 //==============================================================================
-MultiSphereShape::~MultiSphereShape()
+MultiSphereConvexHullShape::~MultiSphereConvexHullShape()
 {
   // Do nothing
 }
 
 //==============================================================================
-const std::string& MultiSphereShape::getType() const
+const std::string& MultiSphereConvexHullShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& MultiSphereShape::getStaticType()
+const std::string& MultiSphereConvexHullShape::getStaticType()
 {
-  static const std::string type("MultiSphereShape");
+  static const std::string type("MultiSphereConvexHullShape");
   return type;
 }
 
 //==============================================================================
-void MultiSphereShape::addSpheres(const MultiSphereShape::Spheres& spheres)
+void MultiSphereConvexHullShape::addSpheres(const MultiSphereConvexHullShape::Spheres& spheres)
 {
   mSpheres.insert(mSpheres.end(), spheres.begin(), spheres.end());
 
@@ -74,7 +74,7 @@ void MultiSphereShape::addSpheres(const MultiSphereShape::Spheres& spheres)
 }
 
 //==============================================================================
-void MultiSphereShape::addSphere(const MultiSphereShape::Sphere& sphere)
+void MultiSphereConvexHullShape::addSphere(const MultiSphereConvexHullShape::Sphere& sphere)
 {
   mSpheres.push_back(sphere);
 
@@ -83,13 +83,13 @@ void MultiSphereShape::addSphere(const MultiSphereShape::Sphere& sphere)
 }
 
 //==============================================================================
-void MultiSphereShape::addSphere(double radius, const Eigen::Vector3d& position)
+void MultiSphereConvexHullShape::addSphere(double radius, const Eigen::Vector3d& position)
 {
   addSphere(std::make_pair(radius, position));
 }
 
 //==============================================================================
-void MultiSphereShape::removeAllSpheres()
+void MultiSphereConvexHullShape::removeAllSpheres()
 {
   mSpheres.clear();
 
@@ -98,32 +98,32 @@ void MultiSphereShape::removeAllSpheres()
 }
 
 //==============================================================================
-std::size_t MultiSphereShape::getNumSpheres() const
+std::size_t MultiSphereConvexHullShape::getNumSpheres() const
 {
   return mSpheres.size();
 }
 
 //==============================================================================
-const MultiSphereShape::Spheres& MultiSphereShape::getSpheres() const
+const MultiSphereConvexHullShape::Spheres& MultiSphereConvexHullShape::getSpheres() const
 {
   return mSpheres;
 }
 
 //==============================================================================
-Eigen::Matrix3d MultiSphereShape::computeInertia(double mass) const
+Eigen::Matrix3d MultiSphereConvexHullShape::computeInertia(double mass) const
 {
   // Use bounding box to represent the mesh
   return BoxShape::computeInertia(mBoundingBox.computeFullExtents(), mass);
 }
 
 //==============================================================================
-void MultiSphereShape::updateVolume()
+void MultiSphereConvexHullShape::updateVolume()
 {
   mVolume = BoxShape::computeVolume(mBoundingBox.computeFullExtents());
 }
 
 //==============================================================================
-void MultiSphereShape::updateBoundingBoxDim()
+void MultiSphereConvexHullShape::updateBoundingBoxDim()
 {
   Eigen::Vector3d min
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());

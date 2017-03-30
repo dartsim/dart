@@ -53,7 +53,7 @@
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/MultiSphereShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
@@ -401,7 +401,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   using dynamics::CapsuleShape;
   using dynamics::ConeShape;
   using dynamics::PlaneShape;
-  using dynamics::MultiSphereShape;
+  using dynamics::MultiSphereConvexHullShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
 
@@ -482,11 +482,11 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     bulletCollisionShape = new btStaticPlaneShape(
           convertVector3(normal), offset);
   }
-  else if (shape->is<MultiSphereShape>())
+  else if (shape->is<MultiSphereConvexHullShape>())
   {
-    assert(dynamic_cast<const MultiSphereShape*>(shape.get()));
+    assert(dynamic_cast<const MultiSphereConvexHullShape*>(shape.get()));
 
-    const auto multiSphere = static_cast<const MultiSphereShape*>(shape.get());
+    const auto multiSphere = static_cast<const MultiSphereConvexHullShape*>(shape.get());
     const auto numSpheres = multiSphere->getNumSpheres();
     const auto& spheres = multiSphere->getSpheres();
 
