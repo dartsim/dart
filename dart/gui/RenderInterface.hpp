@@ -90,10 +90,12 @@ public:
     virtual void transform(const Eigen::Isometry3d& _transform); //glMultMatrix
     virtual void scale(const Eigen::Vector3d& _scale); //glScale
 
-    virtual void drawSphere(double _radius);
+    virtual void drawSphere(double radius, int slices = 16, int stacks = 16);
+    virtual void drawMultiSphere(const std::vector<std::pair<double, Eigen::Vector3d>>& spheres, int slices = 16, int stacks = 16);
     virtual void drawEllipsoid(const Eigen::Vector3d& _size);
     virtual void drawCube(const Eigen::Vector3d& _size);
-    virtual void drawCylinder(double _radius, double _height);
+    virtual void drawOpenCylinder(double baseRadius, double topRadius, double height, int slices = 16, int stacks = 16);
+    virtual void drawCylinder(double _radius, double _height, int slices = 16, int stacks = 16);
     virtual void drawCapsule(double _radius, double _height);
     virtual void drawCone(double _radius, double _height);
     virtual void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh);

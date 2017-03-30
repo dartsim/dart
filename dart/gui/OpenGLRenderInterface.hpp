@@ -80,10 +80,12 @@ public:
     void compileList(dynamics::Shape* _shape);
     GLuint compileList(const Eigen::Vector3d& _scale, const aiScene* _mesh);
 
-    void drawSphere(double _radius) override;
+    void drawSphere(double radius, int slices = 16, int stacks = 16) override;
+    void drawMultiSphere(const std::vector<std::pair<double, Eigen::Vector3d>>& spheres, int slices = 16, int stacks = 16) override;
     void drawEllipsoid(const Eigen::Vector3d& _diameters) override;
     void drawCube(const Eigen::Vector3d& _size) override;
-    void drawCylinder(double _radius, double _height) override;
+    void drawOpenCylinder(double baseRadius, double topRadius, double height, int slices = 16, int stacks = 16) override;
+    void drawCylinder(double _radius, double _height, int slices = 16, int stacks = 16) override;
     void drawCapsule(double radius, double height) override;
     void drawCone(double radius, double height) override;
     void drawMesh(const Eigen::Vector3d& _scale, const aiScene* _mesh) override;
