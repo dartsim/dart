@@ -1178,10 +1178,10 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
 //==============================================================================
 TEST_F(COLLISION, Factory)
 {
-  EXPECT_TRUE(collision::CollisionDetectorFactory::canCreate("fcl"));
-  EXPECT_TRUE(collision::CollisionDetectorFactory::canCreate("dart"));
+  EXPECT_TRUE(collision::CollisionDetector::Factory::canCreate("fcl"));
+  EXPECT_TRUE(collision::CollisionDetector::Factory::canCreate("dart"));
 #if HAVE_BULLET_COLLISION
-  EXPECT_TRUE(collision::CollisionDetectorFactory::canCreate("bullet"));
+  EXPECT_TRUE(collision::CollisionDetector::Factory::canCreate("bullet"));
 #else
   EXPECT_TRUE(!collision::CollisionDetectorFactory::canCreate("bullet"));
 #endif

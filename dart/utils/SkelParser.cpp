@@ -696,7 +696,7 @@ simulation::WorldPtr readWorld(
 
       if (cdType == "fcl_mesh")
       {
-        collision_detector = collision::CollisionDetectorFactory::create("fcl");
+        collision_detector = collision::CollisionDetector::Factory::create("fcl");
         auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
               collision_detector);
         cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
@@ -705,7 +705,7 @@ simulation::WorldPtr readWorld(
       }
       else if (cdType == "fcl")
       {
-        collision_detector = collision::CollisionDetectorFactory::create("fcl");
+        collision_detector = collision::CollisionDetector::Factory::create("fcl");
         auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
               collision_detector);
         cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
@@ -714,7 +714,7 @@ simulation::WorldPtr readWorld(
       }
       else
       {
-        collision_detector = collision::CollisionDetectorFactory::create(cdType);
+        collision_detector = collision::CollisionDetector::Factory::create(cdType);
       }
 
       if (!collision_detector)
@@ -726,7 +726,7 @@ simulation::WorldPtr readWorld(
 
     if (!collision_detector)
     {
-      collision_detector = collision::CollisionDetectorFactory::create("fcl");
+      collision_detector = collision::CollisionDetector::Factory::create("fcl");
       auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
             collision_detector);
       cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);

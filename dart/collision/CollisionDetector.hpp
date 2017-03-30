@@ -58,6 +58,9 @@ public:
   friend class CollisionObject;
   friend class CollisionGroup;
 
+  using Factory
+      = common::Factory<std::string, CollisionDetector, std::shared_ptr>;
+
   /// Destructor
   virtual ~CollisionDetector() = default;
 
@@ -256,9 +259,6 @@ private:
   CollisionObjectMap mCollisionObjectMap;
 
 };
-
-using CollisionDetectorFactory
-    = common::Factory<std::string, CollisionDetector, std::shared_ptr>;
 
 }  // namespace collision
 }  // namespace dart

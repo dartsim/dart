@@ -138,7 +138,8 @@ DART_REGISTER_CREATOR_TO_FACTORY(
     dart::collision::BulletCollisionDetector,
     []() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
         return dart::collision::BulletCollisionDetector::create();
-    }
+    },
+    std::shared_ptr
 )
 
 #endif  // DART_COLLISION_BULLET_BULLETCOLLISIONDETECTOR_HPP_

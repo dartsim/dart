@@ -83,6 +83,54 @@ public:
   }
 };
 
+class City
+{
+public:
+  using Factory = common::Factory<std::string, City, std::shared_ptr, int>;
+
+  City(int year) : mYear(year) {}
+
+  virtual std::string getName() const = 0;
+
+  int getYear() const { return mYear; }
+
+protected:
+  int mYear;
+};
+
+class Atlanta : public City
+{
+public:
+  Atlanta(int year) : City(year) {}
+
+  std::string getName() const override
+  {
+    return "Atlanta";
+  }
+};
+
+class Pittsburgh : public City
+{
+public:
+  Pittsburgh(int year) : City(year) {}
+
+  std::string getName() const override
+  {
+    return "Pittsburgh";
+  }
+};
+
+class Seattle : public City
+{
+public:
+  Seattle(int year) : City(year) {}
+
+  std::string getName() const override
+  {
+    return "Seattle";
+  }
+};
+
 DART_REGISTER_DEFAULT_UNIQUE_PTR_CREATOR_TO_FACTORY(ObjectTypeEnum, OT_Apple, Fruit, Apple)
 DART_REGISTER_DEFAULT_UNIQUE_PTR_CREATOR_TO_FACTORY(ObjectTypeEnum, OT_Banana, Fruit, Banana)
 
@@ -190,4 +238,23 @@ TEST(Factory, VariousCreatorFunctions)
 
   // Global static function
   FruitFactory::registerCreator(std::string("orange"), createOrange);
+}
+
+
+//==============================================================================
+TEST(Factory, CreateWithArguments)
+{
+  City::Factory::registerCreator<Atlanta>("Atlanta");
+  City::Factory::registerCreator<Pittsburgh>("Pittsburgh");
+  City::Factory::registerCreator<Seattle>("Seattle");
+  EXPECT_TRUE(City::Factory::canCreate("Atlanta"));
+  EXPECT_TRUE(City::Factory::canCreate("Pittsburgh"));
+  EXPECT_TRUE(City::Factory::canCreate("Seattle"));
+
+  auto atlanta = City::Factory::create("Atlanta", 2013);
+  auto pittsburgh = City::Factory::create("Pittsburgh", 2016);
+  auto seatle = City::Factory::create("Seattle", 2017);
+  EXPECT_TRUE(atlanta->getYear() == 2013);
+  EXPECT_TRUE(pittsburgh->getYear() == 2016);
+  EXPECT_TRUE(seatle->getYear() == 2017);
 }

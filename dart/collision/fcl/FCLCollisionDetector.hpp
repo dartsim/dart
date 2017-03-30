@@ -204,7 +204,8 @@ DART_REGISTER_CREATOR_TO_FACTORY(
     dart::collision::FCLCollisionDetector,
     []() -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
         return dart::collision::FCLCollisionDetector::create();
-    }
+    },
+    std::shared_ptr
 )
 
 #endif  // DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_HPP_
