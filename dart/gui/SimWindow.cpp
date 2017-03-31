@@ -51,7 +51,7 @@
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/MultiSphereShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
@@ -404,7 +404,7 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   using dynamics::CapsuleShape;
   using dynamics::ConeShape;
   using dynamics::PlaneShape;
-  using dynamics::MultiSphereShape;
+  using dynamics::MultiSphereConvexHullShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
   using dynamics::LineSegmentShape;
@@ -439,9 +439,9 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
     const auto* cone = static_cast<const ConeShape*>(shape);
     mRI->drawCone(cone->getRadius(), cone->getHeight());
   }
-  else if (shape->is<MultiSphereShape>())
+  else if (shape->is<MultiSphereConvexHullShape>())
   {
-    const auto* multiSphere = static_cast<const MultiSphereShape*>(shape);
+    const auto* multiSphere = static_cast<const MultiSphereConvexHullShape*>(shape);
     mRI->drawMultiSphere(multiSphere->getSpheres());
   }
   else if (shape->is<MeshShape>())

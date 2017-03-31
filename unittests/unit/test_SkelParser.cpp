@@ -512,8 +512,8 @@ TEST(SkelParser, Shapes)
   skel = world->getSkeleton("multi sphere skeleton");
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
-  EXPECT_TRUE(shape->is<MultiSphereShape>());
-  auto multiSphereShape = std::static_pointer_cast<MultiSphereShape>(shape);
+  EXPECT_TRUE(shape->is<MultiSphereConvexHullShape>());
+  auto multiSphereShape = std::static_pointer_cast<MultiSphereConvexHullShape>(shape);
   EXPECT_EQ(multiSphereShape->getNumSpheres(), 2u);
   const auto& spheres = multiSphereShape->getSpheres();
   EXPECT_EQ(spheres[0].first, 0.05);

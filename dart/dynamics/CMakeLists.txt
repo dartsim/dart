@@ -8,6 +8,8 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "dynamics headers" ${hdrs})
+# TODO: remove below line once the files are completely removed.
+list(REMOVE_ITEM header_names "MultiSphereShape.hpp")
 dart_generate_include_header_list(
   dynamics_headers
   "dart/dynamics/"

@@ -59,7 +59,7 @@
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/MultiSphereShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
@@ -248,10 +248,10 @@ void ShapeFrameNode::createShapeNode(
     else
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
   }
-  else if(shape->is<MultiSphereShape>())
+  else if(shape->is<MultiSphereConvexHullShape>())
   {
-    std::shared_ptr<MultiSphereShape> ms =
-        std::dynamic_pointer_cast<MultiSphereShape>(shape);
+    std::shared_ptr<MultiSphereConvexHullShape> ms =
+        std::dynamic_pointer_cast<MultiSphereConvexHullShape>(shape);
     if(ms)
       mRenderShapeNode = new render::MultiSphereShapeNode(ms, this);
     else
