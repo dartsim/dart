@@ -33,7 +33,7 @@
 #define DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_HPP_
 
 #include <vector>
-#include <fcl/collision_object.h>
+#include <fcl/narrowphase/collision_object.h>
 #include <boost/weak_ptr.hpp> // This should be removed once we migrate to fcl 0.5
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/fcl/FCLTypes.hpp"
@@ -144,7 +144,7 @@ protected:
 
   /// Return fcl::CollisionGeometry associated with give Shape. New
   /// fcl::CollisionGeome will be created if it hasn't created yet.
-  fcl_shared_ptr<fcl::CollisionGeometry> claimFCLCollisionGeometry(
+  fcl_shared_ptr<fcl::CollisionGeometry<double>> claimFCLCollisionGeometry(
       const dynamics::ConstShapePtr& shape);
 
 protected:
@@ -164,7 +164,7 @@ private:
     FCLCollisionGeometryDeleter(FCLCollisionDetector* cd,
                                 const dynamics::ConstShapePtr& shape);
 
-    void operator()(fcl::CollisionGeometry* geom) const;
+    void operator()(fcl::CollisionGeometry<double>* geom) const;
 
   private:
 
@@ -176,7 +176,7 @@ private:
 
   /// Create fcl::CollisionGeometry with the custom deleter
   /// FCLCollisionGeometryDeleter
-  fcl_shared_ptr<fcl::CollisionGeometry> createFCLCollisionGeometry(
+  fcl_shared_ptr<fcl::CollisionGeometry<double>> createFCLCollisionGeometry(
       const dynamics::ConstShapePtr& shape,
       FCLCollisionDetector::PrimitiveShape type,
       const FCLCollisionGeometryDeleter& deleter);
@@ -184,7 +184,7 @@ private:
 private:
 
   using ShapeMap = std::map<dynamics::ConstShapePtr,
-                            fcl_weak_ptr<fcl::CollisionGeometry>>;
+                            fcl_weak_ptr<fcl::CollisionGeometry<double>>>;
   // TODO(JS): FCL replaced all the use of boost in version 0.5. Once we migrate
   // to 0.5 or greater, this also should be changed to
   // std::weak_ptr<fcl::CollisionGeometry>

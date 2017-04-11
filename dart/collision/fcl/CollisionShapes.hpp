@@ -34,7 +34,8 @@
 
 #include <cmath>
 #include <assimp/scene.h>
-#include <fcl/BVH/BVH_model.h>
+#include <fcl/geometry/bvh/BVH_model.h>
+#include <fcl/math/bv/utility.h>
 
 namespace dart {
 namespace collision {

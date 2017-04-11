@@ -41,7 +41,7 @@ namespace collision {
 FCLCollisionGroup::FCLCollisionGroup(
     const CollisionDetectorPtr& collisionDetector)
   : CollisionGroup(collisionDetector),
-    mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager())
+    mBroadPhaseAlg(new fcl::DynamicAABBTreeCollisionManager<double>())
 {
   // Do nothing
 }

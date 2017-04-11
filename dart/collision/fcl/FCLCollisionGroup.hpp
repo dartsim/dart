@@ -48,7 +48,7 @@ public:
 
   friend class FCLCollisionDetector;
 
-  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager;
+  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager<double>;
 
   /// Constructor
   FCLCollisionGroup(const CollisionDetectorPtr& collisionDetector);

@@ -1217,7 +1217,7 @@ protected:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-  mutable Eigen::aligned_vector<DataCache> mTreeCache;
+  mutable dart::aligned_vector<DataCache> mTreeCache;
 
   mutable DataCache mSkelCache;
 

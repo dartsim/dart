@@ -128,7 +128,7 @@ void RenderInterface::drawList(unsigned int /*indeX*/)
 }
 
 void RenderInterface::drawLineSegments(const std::vector<Eigen::Vector3d>&,
-                                       const Eigen::aligned_vector<Eigen::Vector2i>&)
+                                       const dart::aligned_vector<Eigen::Vector2i>&)
 {
 }
 

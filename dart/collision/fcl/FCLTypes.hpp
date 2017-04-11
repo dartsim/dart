@@ -33,9 +33,6 @@
 #define DART_COLLISION_FCL_FCLTTYPES_HPP_
 
 #include <Eigen/Dense>
-#include <fcl/math/vec_3f.h>
-#include <fcl/math/matrix_3f.h>
-#include <fcl/math/transform.h>
 
 #define FCL_VERSION_AT_LEAST(x,y,z) \
   (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \
@@ -46,6 +43,16 @@
   (FCL_MAJOR_VERSION < x || (FCL_MAJOR_VERSION <= x && \
   (FCL_MINOR_VERSION < y || (FCL_MINOR_VERSION <= y))))
 
+#include <fcl/config.h>
+
+#if FCL_VERSION_AT_LEAST(0,6,0)
+#include <fcl/math/geometry.h>
+#else
+#include <fcl/math/vec_3f.h>
+#include <fcl/math/matrix_3f.h>
+#include <fcl/math/transform.h>
+#endif
+
 #if FCL_VERSION_AT_LEAST(0,5,0)
 #include <memory>
 template <class T> using fcl_shared_ptr = std::shared_ptr<T>;
@@ -55,6 +62,15 @@ template <class T> using fcl_shared_ptr = boost::shared_ptr<T>;
 template <class T> using fcl_weak_ptr = boost::weak_ptr<T>;
 #endif
 
+namespace fcl
+{
+#if FCL_VERSION_AT_LEAST(0,6,0)
+// Do nothing
+#else
+typedef Vec3d Vector3d;
+#endif
+}
+
 namespace dart {
 namespace collision {
 
@@ -62,16 +78,13 @@ class FCLTypes
 {
 public:
   /// Convert FCL vector3 type to Eigen vector3 type
-  static Eigen::Vector3d convertVector3(const fcl::Vec3f& _vec);
-
-  /// Convert Eigen vector3 type to FCL vector3 type
-  static fcl::Vec3f convertVector3(const Eigen::Vector3d& _vec);
+  static Eigen::Vector3d convertVector3(const fcl::Vector3d& _vec);
 
   /// Convert FCL matrix3x3 type to Eigen matrix3x3 type
-  static fcl::Matrix3f convertMatrix3x3(const Eigen::Matrix3d& _R);
+  static fcl::Matrix3d convertMatrix3x3(const Eigen::Matrix3d& _R);
 
   /// Convert FCL transformation type to Eigen transformation type
-  static fcl::Transform3f convertTransform(const Eigen::Isometry3d& _T);
+  static fcl::Transform3d convertTransform(const Eigen::Isometry3d& _T);
 };
 
 }  // namespace collision

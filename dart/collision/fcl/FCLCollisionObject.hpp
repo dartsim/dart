@@ -32,7 +32,7 @@
 #ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
 #define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
 
-#include <fcl/collision_object.h>
+#include <fcl/narrowphase/collision_object.h>
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/fcl/FCLTypes.hpp"
 
@@ -55,17 +55,17 @@ public:
   };
 
   /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject();
+  fcl::CollisionObject<double>* getFCLCollisionObject();
 
   /// Return FCL collision object
-  const fcl::CollisionObject* getFCLCollisionObject() const;
+  const fcl::CollisionObject<double>* getFCLCollisionObject() const;
 
 protected:
 
   /// Constructor
   FCLCollisionObject(CollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame,
-      const fcl_shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
+      const fcl_shared_ptr<fcl::CollisionGeometry<double>>& fclCollGeom);
 
   // Documentation inherited
   void updateEngineData() override;
@@ -76,7 +76,7 @@ protected:
   std::unique_ptr<UserData> mFCLCollisionObjectUserData;
 
   /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
+  std::unique_ptr<fcl::CollisionObject<double>> mFCLCollisionObject;
 
 };
 
