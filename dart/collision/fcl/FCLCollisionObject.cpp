@@ -31,8 +31,6 @@
 
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 
-#include <fcl/geometry/bvh/BVH_model.h>
-
 #include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
@@ -48,13 +46,13 @@ FCLCollisionObject::UserData::UserData(CollisionObject* collisionObject)
 }
 
 //==============================================================================
-fcl::CollisionObject<double>* FCLCollisionObject::getFCLCollisionObject()
+dart::fcl::CollisionObject* FCLCollisionObject::getFCLCollisionObject()
 {
   return mFCLCollisionObject.get();
 }
 
 //==============================================================================
-const fcl::CollisionObject<double>* FCLCollisionObject::getFCLCollisionObject() const
+const dart::fcl::CollisionObject* FCLCollisionObject::getFCLCollisionObject() const
 {
   return mFCLCollisionObject.get();
 }
@@ -63,10 +61,10 @@ const fcl::CollisionObject<double>* FCLCollisionObject::getFCLCollisionObject() 
 FCLCollisionObject::FCLCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame,
-    const fcl_shared_ptr<fcl::CollisionGeometry<double>>& fclCollGeom)
+    const fcl_shared_ptr<dart::fcl::CollisionGeometry>& fclCollGeom)
   : CollisionObject(collisionDetector, shapeFrame),
     mFCLCollisionObjectUserData(new UserData(this)),
-    mFCLCollisionObject(new fcl::CollisionObject<double>(fclCollGeom))
+    mFCLCollisionObject(new dart::fcl::CollisionObject(fclCollGeom))
 {
   mFCLCollisionObject->setUserData(mFCLCollisionObjectUserData.get());
 }
@@ -91,24 +89,24 @@ void FCLCollisionObject::updateEngineData()
     // TODO(JS): update function be called by somewhere out of here.
 
 #if FCL_VERSION_AT_LEAST(0,3,0)
-    auto collGeom = const_cast<fcl::CollisionGeometry<double>*>(
+    auto collGeom = const_cast<dart::fcl::CollisionGeometry*>(
           mFCLCollisionObject->collisionGeometry().get());
 #else
-    fcl::CollisionGeometry<double>* collGeom
-        = const_cast<fcl::CollisionGeometry<double>*>(
+    dart::fcl::CollisionGeometry* collGeom
+        = const_cast<dart::fcl::CollisionGeometry*>(
           mFCLCollisionObject->getCollisionGeometry());
 #endif
-    assert(dynamic_cast<fcl::BVHModel<fcl::OBBRSS<double>>*>(collGeom));
-    auto bvhModel = static_cast<fcl::BVHModel<fcl::OBBRSS<double>>*>(collGeom);
+    assert(dynamic_cast<fcl::BVHModel<dart::fcl::OBBRSS>*>(collGeom));
+    auto bvhModel = static_cast<fcl::BVHModel<dart::fcl::OBBRSS>*>(collGeom);
 
     bvhModel->beginUpdateModel();
     for (auto i = 0u; i < mesh->mNumFaces; ++i)
     {
-      fcl::Vector3d vertices[3];
+      dart::fcl::Vector3 vertices[3];
       for (auto j = 0u; j < 3; ++j)
       {
         const auto& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
-        vertices[j] = fcl::Vector3d(vertex.x, vertex.y, vertex.z);
+        vertices[j] = dart::fcl::Vector3(vertex.x, vertex.y, vertex.z);
       }
       bvhModel->updateTriangle(vertices[0], vertices[1], vertices[2]);
     }

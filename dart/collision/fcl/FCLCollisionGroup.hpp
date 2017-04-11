@@ -32,9 +32,8 @@
 #ifndef DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_
 #define DART_COLLISION_FCL_FCLCOLLISIONGROUP_HPP_
 
-#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
-
 #include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/fcl/FCLTypes.hpp"
 
 namespace dart {
 namespace collision {
@@ -48,7 +47,7 @@ public:
 
   friend class FCLCollisionDetector;
 
-  using FCLCollisionManager = fcl::DynamicAABBTreeCollisionManager<double>;
+  using FCLCollisionManager = dart::fcl::DynamicAABBTreeCollisionManager;
 
   /// Constructor
   FCLCollisionGroup(const CollisionDetectorPtr& collisionDetector);

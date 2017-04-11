@@ -47,11 +47,28 @@
 
 #if FCL_VERSION_AT_LEAST(0,6,0)
 #include <fcl/math/geometry.h>
+
+#include <fcl/geometry/bvh/BVH_model.h>
+#include <fcl/geometry/geometric_shape_to_BVH_model.h>
+#include <fcl/math/bv/OBBRSS.h>
+#include <fcl/math/bv/utility.h>
+#include <fcl/narrowphase/collision.h>
+#include <fcl/narrowphase/collision_object.h>
+#include <fcl/narrowphase/distance.h>
 #else
 #include <fcl/math/vec_3f.h>
 #include <fcl/math/matrix_3f.h>
 #include <fcl/math/transform.h>
+
+#include <fcl/BV/OBBRSS.h>
+#include <fcl/BVH/BVH_model.h>
+#include <fcl/collision.h>
+#include <fcl/collision_data.h>
+#include <fcl/collision_object.h>
+#include <fcl/distance.h>
 #endif
+#include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
+
 
 #if FCL_VERSION_AT_LEAST(0,5,0)
 #include <memory>
@@ -62,30 +79,89 @@ template <class T> using fcl_shared_ptr = boost::shared_ptr<T>;
 template <class T> using fcl_weak_ptr = boost::weak_ptr<T>;
 #endif
 
+namespace dart
+{
 namespace fcl
 {
 #if FCL_VERSION_AT_LEAST(0,6,0)
-// Do nothing
+// Geometric fundamentals
+typedef ::fcl::Vector3<double> Vector3;
+typedef ::fcl::Matrix3<double> Matrix3;
+typedef ::fcl::Transform3<double> Transform3;
+// Geometric primitives
+typedef ::fcl::Box<double> Box;
+typedef ::fcl::Cylinder<double> Cylinder;
+typedef ::fcl::Ellipsoid<double> Ellipsoid;
+typedef ::fcl::Halfspace<double> Halfspace;
+typedef ::fcl::Sphere<double> Sphere;
+// Collision objects
+typedef ::fcl::CollisionObject<double> CollisionObject;
+typedef ::fcl::CollisionGeometry<double> CollisionGeometry;
+typedef ::fcl::DynamicAABBTreeCollisionManager<double> DynamicAABBTreeCollisionManager;
+typedef ::fcl::OBBRSS<double> OBBRSS;
+typedef ::fcl::CollisionRequest<double> CollisionRequest;
+typedef ::fcl::CollisionResult<double> CollisionResult;
+typedef ::fcl::DistanceRequest<double> DistanceRequest;
+typedef ::fcl::DistanceResult<double> DistanceResult;
+typedef ::fcl::Contact<double> Contact;
 #else
-typedef Vec3d Vector3d;
+// Geometric fundamentals
+typedef ::fcl::Vec3f Vector3;
+typedef ::fcl::Matrix3f Matrix3;
+typedef ::fcl::Transform3f Transform3;
+// Geometric primitives
+typedef ::fcl::Box Box;
+typedef ::fcl::Cylinder Cylinder;
+typedef ::fcl::Halfspace Halfspace;
+typedef ::fcl::Sphere Sphere;
+// Collision objects
+typedef ::fcl::CollisionObject CollisionObject;
+typedef ::fcl::CollisionGeometry CollisionGeometry;
+typedef ::fcl::DynamicAABBTreeCollisionManager DynamicAABBTreeCollisionManager;
+typedef ::fcl::OBBRSS OBBRSS;
+typedef ::fcl::CollisionRequest CollisionRequest;
+typedef ::fcl::CollisionResult CollisionResult;
+typedef ::fcl::DistanceRequest DistanceRequest;
+typedef ::fcl::DistanceResult DistanceResult;
+typedef ::fcl::Contact Contact;
 #endif
-}
 
-namespace dart {
-namespace collision {
+#if FCL_VERSION_AT_LEAST(0,4,0) && !FCL_VERSION_AT_LEAST(0,6,0)
+typedef ::fcl::Ellipsoid Ellipsoid;
+#endif
+
+using ::fcl::GJKSolverType;
+
+template<typename BV>
+using BVHModel = ::fcl::BVHModel<BV>;
+
+} // namespace dart::fcl
+
+namespace collision
+{
 
 class FCLTypes
 {
 public:
+#if !FCL_VERSION_AT_LEAST(0,6,0)
+  /// Convert Eigen vector3 type to FCL vector3 type
+  static dart::fcl::Vector3 convertVector3(const Eigen::Vector3d& _vec);
+#endif
   /// Convert FCL vector3 type to Eigen vector3 type
-  static Eigen::Vector3d convertVector3(const fcl::Vector3d& _vec);
+  static Eigen::Vector3d convertVector3(const dart::fcl::Vector3& _vec);
 
   /// Convert FCL matrix3x3 type to Eigen matrix3x3 type
-  static fcl::Matrix3d convertMatrix3x3(const Eigen::Matrix3d& _R);
+  static dart::fcl::Matrix3 convertMatrix3x3(const Eigen::Matrix3d& _R);
 
   /// Convert FCL transformation type to Eigen transformation type
-  static fcl::Transform3d convertTransform(const Eigen::Isometry3d& _T);
+  static dart::fcl::Transform3 convertTransform(const Eigen::Isometry3d& _T);
 };
+
+#if FCL_VERSION_AT_LEAST(0,6,0)
+#define FCL_TRANSFORM(t,v) (t) * (v)
+#else
+#define FCL_TRANSFORM(t,v) (t).transform((v))
+#endif
 
 }  // namespace collision
 }  // namespace dart

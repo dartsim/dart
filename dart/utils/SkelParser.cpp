@@ -115,7 +115,7 @@ struct SkelJoint
 };
 
 // first: BodyNode name | second: BodyNode information
-using BodyMap = Eigen::aligned_map<std::string, SkelBodyNode>;
+using BodyMap = dart::aligned_map<std::string, SkelBodyNode>;
 
 // first: Child BodyNode name | second: Joint information
 using JointMap = std::map<std::string, SkelJoint>;
