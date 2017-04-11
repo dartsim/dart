@@ -18,7 +18,7 @@ find_package(CCD 1.4.0 REQUIRED)
 dart_check_required_package(CCD "libccd")
 
 # FCL
-find_package(FCL 0.6.0 REQUIRED)
+find_package(FCL 0.2.9 REQUIRED)
 dart_check_required_package(FCL "fcl")
 
 
