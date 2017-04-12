@@ -548,13 +548,13 @@ dart::fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
                    - deltaRadius * (static_cast<float>(j + 1) / _stacks);
 
       p1 = dart::fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i],
-                      zLow);
+                              zLow);
       p2 = dart::fcl::Vector3(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1],
-                      zLow);
+                              zLow);
       p3 = dart::fcl::Vector3(radiusHigh * sinCache[i], radiusHigh * cosCache[i],
-                      zHigh);
+                              zHigh);
       p4 = dart::fcl::Vector3(radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1],
-                      zHigh);
+                              zHigh);
 
       model->addTriangle(p1, p2, p3);
       model->addTriangle(p2, p3, p4);
@@ -599,8 +599,8 @@ dart::fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
             = _mesh->mMeshes[i]->mVertices[
               _mesh->mMeshes[i]->mFaces[j].mIndices[k]];
         vertices[k] = dart::fcl::Vector3(vertex.x * _scaleX,
-                                 vertex.y * _scaleY,
-                                 vertex.z * _scaleZ);
+                                         vertex.y * _scaleY,
+                                         vertex.z * _scaleZ);
       }
       model->addTriangle(vertices[0], vertices[1], vertices[2]);
     }

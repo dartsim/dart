@@ -32,6 +32,8 @@
 #ifndef DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 #define DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 
+#include "dart/collision/fcl/FCLTypes.hpp"
+
 #include <cmath>
 #include <assimp/scene.h>
 
@@ -41,21 +43,21 @@ namespace collision {
 template<class BV>
 dart::fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
                                     const aiScene* _mesh,
-                                    const dart::fcl::Transform3d& _transform) {
+                                    const dart::fcl::Transform3& _transform) {
   assert(_mesh);
   dart::fcl::BVHModel<BV>* model = new dart::fcl::BVHModel<BV>;
   model->beginModel();
 
   for (unsigned int i = 0; i < _mesh->mNumMeshes; i++) {
     for (unsigned int j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++) {
-      dart::fcl::Vector3d vertices[3];
+      dart::fcl::Vector3 vertices[3];
       for (unsigned int k = 0; k < 3; k++) {
         const aiVector3D& vertex
             = _mesh->mMeshes[i]->mVertices[
                   _mesh->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = dart::fcl::Vector3d(vertex.x * _scaleX,
-                                    vertex.y * _scaleY,
-                                    vertex.z * _scaleZ);
+        vertices[k] = dart::fcl::Vector3(vertex.x * _scaleX,
+                                          vertex.y * _scaleY,
+                                          vertex.z * _scaleZ);
         vertices[k] = _transform * (vertices[k]);
       }
       model->addTriangle(vertices[0], vertices[1], vertices[2]);
@@ -68,7 +70,7 @@ dart::fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
 
 template<class BV>
 dart::fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ,
-                                         const dart::fcl::Transform3d& _transform) {
+                                         const dart::fcl::Transform3& _transform) {
   float v[59][3] = {
     {0, 0, 0},
     {0.135299, -0.461940, -0.135299},
@@ -246,22 +248,22 @@ dart::fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _size
   };
 
   dart::fcl::BVHModel<BV>* model = new dart::fcl::BVHModel<BV>;
-  dart::fcl::Vector3d p1, p2, p3;
+  dart::fcl::Vector3 p1, p2, p3;
   model->beginModel();
 
   for (int i = 0; i < 112; i++) {
-    p1 = dart::fcl::Vector3d(v[f[i][0]][0] * _sizeX,
-                       v[f[i][0]][1] * _sizeY,
-                       v[f[i][0]][2] * _sizeZ);
-    p2 = dart::fcl::Vector3d(v[f[i][1]][0] * _sizeX,
-                       v[f[i][1]][1] * _sizeY,
-                       v[f[i][1]][2] * _sizeZ);
-    p3 = dart::fcl::Vector3d(v[f[i][2]][0] * _sizeX,
-                       v[f[i][2]][1] * _sizeY,
-                       v[f[i][2]][2] * _sizeZ);
-    p1 = _transform * (p1);
-    p2 = _transform * (p2);
-    p3 = _transform * (p3);
+    p1 = dart::fcl::Vector3(v[f[i][0]][0] * _sizeX,
+                            v[f[i][0]][1] * _sizeY,
+                            v[f[i][0]][2] * _sizeZ);
+    p2 = dart::fcl::Vector3(v[f[i][1]][0] * _sizeX,
+                            v[f[i][1]][1] * _sizeY,
+                            v[f[i][1]][2] * _sizeZ);
+    p3 = dart::fcl::Vector3(v[f[i][2]][0] * _sizeX,
+                            v[f[i][2]][1] * _sizeY,
+                            v[f[i][2]][2] * _sizeZ);
+    p1 = FCL_TRANSFORM(_transform, p1);
+    p2 = FCL_TRANSFORM(_transform, p2);
+    p3 = FCL_TRANSFORM(_transform, p3);
     model->addTriangle(p1, p2, p3);
   }
   model->endModel();
@@ -271,7 +273,7 @@ dart::fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _size
 // Create a cube mesh for collision detection
 template<class BV>
 dart::fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ,
-                                    const dart::fcl::Transform3d& _transform) {
+                                    const dart::fcl::Transform3& _transform) {
 //  float n[6][3] = {
 //    {-1.0, 0.0, 0.0},
 //    {0.0, 1.0, 0.0},
@@ -298,23 +300,23 @@ dart::fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ,
   v[1][2] = v[2][2] = v[5][2] = v[6][2] = _sizeZ / 2;
 
   dart::fcl::BVHModel<BV>* model = new dart::fcl::BVHModel<BV>;
-  dart::fcl::Vector3d p1, p2, p3;
+  dart::fcl::Vector3 p1, p2, p3;
   model->beginModel();
 
   for (int i = 0; i < 6; i++) {
-    p1 = dart::fcl::Vector3d(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
-    p2 = dart::fcl::Vector3d(v[faces[i][1]][0], v[faces[i][1]][1], v[faces[i][1]][2]);
-    p3 = dart::fcl::Vector3d(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
-    p1 = _transform * (p1);
-    p2 = _transform * (p2);
-    p3 = _transform * (p3);
+    p1 = dart::fcl::Vector3(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
+    p2 = dart::fcl::Vector3(v[faces[i][1]][0], v[faces[i][1]][1], v[faces[i][1]][2]);
+    p3 = dart::fcl::Vector3(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
+    p1 = FCL_TRANSFORM(_transform, p1);
+    p2 = FCL_TRANSFORM(_transform, p2);
+    p3 = FCL_TRANSFORM(_transform, p3);
     model->addTriangle(p1, p2, p3);
-    p1 = dart::fcl::Vector3d(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
-    p2 = dart::fcl::Vector3d(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
-    p3 = dart::fcl::Vector3d(v[faces[i][3]][0], v[faces[i][3]][1], v[faces[i][3]][2]);
-    p1 = _transform * (p1);
-    p2 = _transform * (p2);
-    p3 = _transform * (p3);
+    p1 = dart::fcl::Vector3(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
+    p2 = dart::fcl::Vector3(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
+    p3 = dart::fcl::Vector3(v[faces[i][3]][0], v[faces[i][3]][1], v[faces[i][3]][2]);
+    p1 = FCL_TRANSFORM(_transform, p1);
+    p2 = FCL_TRANSFORM(_transform, p2);
+    p3 = FCL_TRANSFORM(_transform, p3);
     model->addTriangle(p1, p2, p3);
   }
   model->endModel();
@@ -324,7 +326,7 @@ dart::fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ,
 template<class BV>
 dart::fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
                                         double _height, int _slices, int _stacks,
-                                        const dart::fcl::Transform3d& _transform) {
+                                        const dart::fcl::Transform3& _transform) {
   const int CACHE_SIZE = 240;
 
   int i, j;
@@ -361,7 +363,7 @@ dart::fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
   cosCache[_slices] = cosCache[0];
 
   dart::fcl::BVHModel<BV>* model = new dart::fcl::BVHModel<BV>;
-  dart::fcl::Vector3d p1, p2, p3, p4;
+  dart::fcl::Vector3 p1, p2, p3, p4;
 
   model->beginModel();
 
@@ -370,13 +372,13 @@ dart::fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
   costemp = cosCache[0];
   radiusLow = _baseRadius;
   zLow = zBase;
-  p1 = dart::fcl::Vector3d(radiusLow * sintemp, radiusLow * costemp, zLow);
-  p1 = _transform * (p1);
+  p1 = dart::fcl::Vector3(radiusLow * sintemp, radiusLow * costemp, zLow);
+  p1 = FCL_TRANSFORM(_transform, p1);
   for (i = 1; i < _slices; i++) {
-    p2 = dart::fcl::Vector3d(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
-    p3 = dart::fcl::Vector3d(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
-    p2 = _transform * (p2);
-    p3 = _transform * (p3);
+    p2 = dart::fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+    p3 = dart::fcl::Vector3(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+    p2 = FCL_TRANSFORM(_transform, p2);
+    p3 = FCL_TRANSFORM(_transform, p3);
     model->addTriangle(p1, p2, p3);
 
     Eigen::Vector3d v(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
@@ -392,18 +394,18 @@ dart::fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
       radiusHigh = _baseRadius
                    - deltaRadius * (static_cast<float>(j + 1) / _stacks);
 
-      p1 = dart::fcl::Vector3d(radiusLow * sinCache[i], radiusLow * cosCache[i],
-                               zLow);
-      p2 = dart::fcl::Vector3d(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1],
-                               zLow);
-      p3 = dart::fcl::Vector3d(radiusHigh * sinCache[i], radiusHigh * cosCache[i],
-                               zHigh);
-      p4 = dart::fcl::Vector3d(radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1],
-                               zHigh);
-      p1 = _transform * (p1);
-      p2 = _transform * (p2);
-      p3 = _transform * (p3);
-      p4 = _transform * (p4);
+      p1 = dart::fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i],
+                              zLow);
+      p2 = dart::fcl::Vector3(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1],
+                              zLow);
+      p3 = dart::fcl::Vector3(radiusHigh * sinCache[i], radiusHigh * cosCache[i],
+                              zHigh);
+      p4 = dart::fcl::Vector3(radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1],
+                              zHigh);
+      p1 = FCL_TRANSFORM(_transform, p1);
+      p2 = FCL_TRANSFORM(_transform, p2);
+      p3 = FCL_TRANSFORM(_transform, p3);
+      p4 = FCL_TRANSFORM(_transform, p4);
 
       model->addTriangle(p1, p2, p3);
       model->addTriangle(p2, p3, p4);
@@ -415,13 +417,13 @@ dart::fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
   costemp = cosCache[0];
   radiusLow = _topRadius;
   zLow = zBase + _height;
-  p1 = dart::fcl::Vector3d(radiusLow * sintemp, radiusLow * costemp, zLow);
-  p1 = _transform * (p1);
+  p1 = dart::fcl::Vector3(radiusLow * sintemp, radiusLow * costemp, zLow);
+  p1 = FCL_TRANSFORM(_transform, p1);
   for (i = 1; i < _slices; i++) {
-    p2 = dart::fcl::Vector3d(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
-    p3 = dart::fcl::Vector3d(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
-    p2 = _transform * (p2);
-    p3 = _transform * (p3);
+    p2 = dart::fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+    p3 = dart::fcl::Vector3(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+    p2 = FCL_TRANSFORM(_transform, p2);
+    p3 = FCL_TRANSFORM(_transform, p3);
     model->addTriangle(p1, p2, p3);
   }
 
