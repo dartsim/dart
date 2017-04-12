@@ -157,6 +157,13 @@ public:
   static dart::fcl::Transform3 convertTransform(const Eigen::Isometry3d& _T);
 };
 
+double length(const dart::fcl::Vector3& t);
+dart::fcl::Vector3 getTranslation(const dart::fcl::Transform3& T);
+void setTranslation(dart::fcl::Transform3& T, const dart::fcl::Vector3& t);
+dart::fcl::Matrix3 getRotation(const dart::fcl::Transform3& T);
+void setRotation(dart::fcl::Transform3& T, const dart::fcl::Matrix3& R);
+void setEulerZYX(dart::fcl::Matrix3& rot, const double eulerX, const double eulerY, const double eulerZ);
+
 #if FCL_VERSION_AT_LEAST(0,6,0)
 #define FCL_TRANSFORM(t,v) (t) * (v)
 #else
