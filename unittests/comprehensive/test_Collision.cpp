@@ -706,7 +706,7 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
   {
     EXPECT_TRUE(group->collide(option, &result));
     EXPECT_EQ(result.getNumContacts(), 1u);
-    for (auto i = 0; i < result.getNumContacts(); ++i)
+    for (auto i = 0u; i < result.getNumContacts(); ++i)
     {
       std::cout << "point: " << result.getContact(i).point.transpose() << std::endl;
     }
