@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,44 +28,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/collision/ode/detail/OdePlane.hpp"
 
-#include "dart/collision/bullet/BulletTypes.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
 //==============================================================================
-btCollisionObject* BulletCollisionObject::getBulletCollisionObject()
+OdePlane::OdePlane(
+    const OdeCollisionObject* parent,
+    const Eigen::Vector3d& normal,
+    double offset)
+  : OdeGeom(parent)
 {
-  return mBulletCollisionObject.get();
+  mGeomId = dCreatePlane(0, normal.x(), normal.y(), normal.z(), offset);
 }
 
 //==============================================================================
-const btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
+OdePlane::~OdePlane()
 {
-  return mBulletCollisionObject.get();
+  dGeomDestroy(mGeomId);
 }
 
 //==============================================================================
-BulletCollisionObject::BulletCollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame,
-    btCollisionShape* bulletCollisionShape)
-  : CollisionObject(collisionDetector, shapeFrame),
-    mBulletCollisionObject(new btCollisionObject())
+void OdePlane::updateEngineData()
 {
-  mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
-  mBulletCollisionObject->setUserPointer(this);
+  const Eigen::Isometry3d& tf = mParentCollisionObject->getTransform();
+  const Eigen::Vector3d pos = tf.translation();
+  const Eigen::Matrix3d rot = tf.linear();
+
+  auto plane = static_cast<const dynamics::PlaneShape*>(
+        mParentCollisionObject->getShape().get());
+  const Eigen::Vector3d& normal = plane->getNormal();
+  const double offset = plane->getOffset();
+
+  const Eigen::Vector3d& normal2 = rot*normal;
+  const double offset2 = offset + pos.dot(normal2);
+
+  dGeomPlaneSetParams(mGeomId, normal2.x(), normal2.y(), normal2.z(), offset2);
 }
 
-//==============================================================================
-void BulletCollisionObject::updateEngineData()
-{
-  mBulletCollisionObject->setWorldTransform(
-      convertTransform(mShapeFrame->getWorldTransform()));
-}
-
-}  // namespace collision
-}  // namespace dart
+} // namespace detail
+} // namespace collision
+} // namespace dart

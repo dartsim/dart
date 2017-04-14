@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,44 +28,58 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
+#ifndef DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
+#define DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_
 
-#include "dart/collision/bullet/BulletTypes.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include <ode/ode.h>
+
+#include "dart/collision/CollisionGroup.hpp"
 
 namespace dart {
 namespace collision {
 
-//==============================================================================
-btCollisionObject* BulletCollisionObject::getBulletCollisionObject()
+class OdeCollisionGroup : public CollisionGroup
 {
-  return mBulletCollisionObject.get();
-}
+public:
+  friend class OdeCollisionDetector;
 
-//==============================================================================
-const btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
-{
-  return mBulletCollisionObject.get();
-}
+  /// Constructor
+  OdeCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
-//==============================================================================
-BulletCollisionObject::BulletCollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame,
-    btCollisionShape* bulletCollisionShape)
-  : CollisionObject(collisionDetector, shapeFrame),
-    mBulletCollisionObject(new btCollisionObject())
-{
-  mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
-  mBulletCollisionObject->setUserPointer(this);
-}
+  /// Destructor
+  virtual ~OdeCollisionGroup();
 
-//==============================================================================
-void BulletCollisionObject::updateEngineData()
-{
-  mBulletCollisionObject->setWorldTransform(
-      convertTransform(mShapeFrame->getWorldTransform()));
-}
+protected:
+  using CollisionGroup::updateEngineData;
+
+  // Documentation inherited
+  void initializeEngineData() override;
+
+  // Documentation inherited
+  void addCollisionObjectToEngine(CollisionObject* object) override;
+
+  // Documentation inherited
+  void addCollisionObjectsToEngine(
+      const std::vector<CollisionObject*>& collObjects) override;
+
+  // Documentation inherited
+  void removeCollisionObjectFromEngine(CollisionObject* object) override;
+
+  // Documentation inherited
+  void removeAllCollisionObjectsFromEngine() override;
+
+  // Documentation inherited
+  void updateCollisionGroupEngineData() override;
+
+  /// Returns ODE space id associated with this collision group
+  dSpaceID getOdeSpaceId() const;
+
+protected:
+  /// Top-level space for all sub-spaces/collisions
+  dSpaceID mSpaceId;
+};
 
 }  // namespace collision
 }  // namespace dart
+
+#endif  // DART_COLLISION_ODE_ODECOLLISIONGROUP_HPP_

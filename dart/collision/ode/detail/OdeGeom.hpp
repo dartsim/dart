@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,46 +28,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#ifndef DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_
+#define DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_
 
-#include <fcl/collision_object.h>
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/fcl/FCLTypes.hpp"
+#include <ode/ode.h>
+
+#include "dart/collision/ode/OdeCollisionObject.hpp"
+#include "dart/collision/ode/OdeCollisionDetector.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
-class FCLCollisionObject : public CollisionObject
+class OdeGeom
 {
 public:
+  struct GeomUserData;
 
-  friend class FCLCollisionDetector;
+  /// Constructor.
+  OdeGeom(const OdeCollisionObject* collObj);
 
-  /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject();
+  /// Destructor.
+  virtual ~OdeGeom();
 
-  /// Return FCL collision object
-  const fcl::CollisionObject* getFCLCollisionObject() const;
+  /// Returns the parent collision object.
+  const OdeCollisionObject* getParentCollisionObject() const;
+
+  // Documentation inherited.
+  virtual void updateEngineData();
+
+  /// Returns the ODE geom ID associated to this object.
+  dGeomID getOdeGeomId() const;
+
+  /// Returns true if the ODE geom is placeable.
+  virtual bool isPlaceable() const;
 
 protected:
+  /// Parent collision object
+  const OdeCollisionObject* mParentCollisionObject;
 
-  /// Constructor
-  FCLCollisionObject(CollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame,
-      const fcl_shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-protected:
-
-  /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
-
+  /// ODE geom ID associated with this object.
+  ///
+  /// This geom ID should be set by the concrete classes such as OdeBox and
+  /// OdeSphere.
+  dGeomID mGeomId;
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace detail
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#endif  // DART_COLLISION_ODE_DETAIL_ODEGEOM_HPP_

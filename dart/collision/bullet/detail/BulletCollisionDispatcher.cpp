@@ -73,16 +73,13 @@ bool BulletCollisionDispatcher::needsCollision(
   if (mDone)
     return false;
 
-  const auto userData0 = static_cast<BulletCollisionObject::UserData*>(
-        body0->getUserPointer());
-  const auto userData1 = static_cast<BulletCollisionObject::UserData*>(
-        body1->getUserPointer());
+  const auto collObj0
+      = static_cast<BulletCollisionObject*>(body0->getUserPointer());
+  const auto collObj1
+      = static_cast<BulletCollisionObject*>(body1->getUserPointer());
 
-  if (mFilter && !mFilter->needCollision(userData0->collisionObject,
-                                         userData1->collisionObject))
-  {
+  if (mFilter && !mFilter->needCollision(collObj0, collObj1))
     return false;
-  }
 
   return btCollisionDispatcher::needsCollision(body0, body1);
 }

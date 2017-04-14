@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,46 +28,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#ifndef DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
+#define DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_
 
-#include <fcl/collision_object.h>
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/fcl/FCLTypes.hpp"
+#include <ode/ode.h>
+#include <assimp/scene.h>
+
+#include "dart/collision/ode/detail/OdeGeom.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
-class FCLCollisionObject : public CollisionObject
+class OdeMesh : public OdeGeom
 {
 public:
-
-  friend class FCLCollisionDetector;
-
-  /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject();
-
-  /// Return FCL collision object
-  const fcl::CollisionObject* getFCLCollisionObject() const;
-
-protected:
-
   /// Constructor
-  FCLCollisionObject(CollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame,
-      const fcl_shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
+  OdeMesh(
+    const OdeCollisionObject* parent,
+    const aiScene* scene,
+    const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
+
+  /// Destructor
+  virtual ~OdeMesh();
 
   // Documentation inherited
   void updateEngineData() override;
 
-protected:
+private:
+  void fillArrays(
+      const aiScene* scene,
+      const Eigen::Vector3d& scale = Eigen::Vector3d::Ones());
 
-  /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
+private:
+  /// Array of vertex values.
+  std::vector<double> mVertices;
 
+  /// Array of normals values.
+  std::vector<double> mNormals;
+
+  /// Array of index values.
+  std::vector<int> mIndices;
+
+  /// ODE trimesh data.
+  dTriMeshDataID mOdeTriMeshDataId;
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace detail
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#endif  // DART_COLLISION_ODE_DETAIL_ODEMESH_HPP_

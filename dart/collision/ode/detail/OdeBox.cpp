@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,44 +28,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/collision/ode/detail/OdeBox.hpp"
 
-#include "dart/collision/bullet/BulletTypes.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
 //==============================================================================
-btCollisionObject* BulletCollisionObject::getBulletCollisionObject()
+OdeBox::OdeBox(const OdeCollisionObject* parent, const Eigen::Vector3d& size)
+  : OdeGeom(parent)
 {
-  return mBulletCollisionObject.get();
+  mGeomId = dCreateBox(0, size.x(), size.y(), size.z());
 }
 
 //==============================================================================
-const btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
+OdeBox::~OdeBox()
 {
-  return mBulletCollisionObject.get();
+  dGeomDestroy(mGeomId);
 }
 
-//==============================================================================
-BulletCollisionObject::BulletCollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame,
-    btCollisionShape* bulletCollisionShape)
-  : CollisionObject(collisionDetector, shapeFrame),
-    mBulletCollisionObject(new btCollisionObject())
-{
-  mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
-  mBulletCollisionObject->setUserPointer(this);
-}
-
-//==============================================================================
-void BulletCollisionObject::updateEngineData()
-{
-  mBulletCollisionObject->setWorldTransform(
-      convertTransform(mShapeFrame->getWorldTransform()));
-}
-
-}  // namespace collision
-}  // namespace dart
+} // namespace detail
+} // namespace collision
+} // namespace dart

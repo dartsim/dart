@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,44 +28,52 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/collision/ode/detail/OdeGeom.hpp"
 
-#include "dart/collision/bullet/BulletTypes.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
 //==============================================================================
-btCollisionObject* BulletCollisionObject::getBulletCollisionObject()
+OdeGeom::OdeGeom(const OdeCollisionObject* collObj)
+  : mParentCollisionObject(collObj),
+    mGeomId(nullptr) // will be set by concrete geom classes
 {
-  return mBulletCollisionObject.get();
+  // Do nothing
 }
 
 //==============================================================================
-const btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
+OdeGeom::~OdeGeom()
 {
-  return mBulletCollisionObject.get();
+  // Do nothing
 }
 
 //==============================================================================
-BulletCollisionObject::BulletCollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame,
-    btCollisionShape* bulletCollisionShape)
-  : CollisionObject(collisionDetector, shapeFrame),
-    mBulletCollisionObject(new btCollisionObject())
+const OdeCollisionObject* OdeGeom::getParentCollisionObject() const
 {
-  mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
-  mBulletCollisionObject->setUserPointer(this);
+  return mParentCollisionObject;
 }
 
 //==============================================================================
-void BulletCollisionObject::updateEngineData()
+void OdeGeom::updateEngineData()
 {
-  mBulletCollisionObject->setWorldTransform(
-      convertTransform(mShapeFrame->getWorldTransform()));
+  // Do nothing
 }
 
-}  // namespace collision
-}  // namespace dart
+//==============================================================================
+dGeomID OdeGeom::getOdeGeomId() const
+{
+  return mGeomId;
+}
+
+//==============================================================================
+bool OdeGeom::isPlaceable() const
+{
+  return true;
+}
+
+} // namespace detail
+} // namespace collision
+} // namespace dart

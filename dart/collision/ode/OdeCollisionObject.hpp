@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,46 +28,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#ifndef DART_COLLISION_ODE_ODECOLLISIONOBJECT_HPP_
+#define DART_COLLISION_ODE_ODECOLLISIONOBJECT_HPP_
 
-#include <fcl/collision_object.h>
+#include <ode/ode.h>
+
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/fcl/FCLTypes.hpp"
+#include "dart/collision/ode/OdeCollisionDetector.hpp"
 
 namespace dart {
 namespace collision {
 
-class FCLCollisionObject : public CollisionObject
+namespace detail {
+class OdeGeom;
+} // namespace detail
+
+class OdeCollisionObject : public CollisionObject
 {
 public:
+  friend class OdeCollisionDetector;
+  friend class OdeCollisionGroup;
 
-  friend class FCLCollisionDetector;
-
-  /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject();
-
-  /// Return FCL collision object
-  const fcl::CollisionObject* getFCLCollisionObject() const;
+  /// Destructor
+  virtual ~OdeCollisionObject();
 
 protected:
-
   /// Constructor
-  FCLCollisionObject(CollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame,
-      const fcl_shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
+  OdeCollisionObject(
+      OdeCollisionDetector* collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame);
 
   // Documentation inherited
   void updateEngineData() override;
 
+  /// Returns the ODE body id associated to this object
+  dBodyID getOdeBodyId() const;
+
+  /// Returns the ODE body id associated to this object
+  dGeomID getOdeGeomId() const;
+
 protected:
+  /// ODE geom
+  std::unique_ptr<detail::OdeGeom> mOdeGeom;
 
-  /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
-
+  /// ODE body id associated with this object
+  ///
+  /// If the ODE geom type is immobile, this is nullptr.
+  dBodyID mBodyId;
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#endif  // DART_COLLISION_ODE_ODECOLLISIONOBJECT_HPP_

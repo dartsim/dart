@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,46 +28,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#ifndef DART_COLLISION_ODE_DETAIL_ODEBOX_HPP_
+#define DART_COLLISION_ODE_DETAIL_ODEBOX_HPP_
 
-#include <fcl/collision_object.h>
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/fcl/FCLTypes.hpp"
+#include <ode/ode.h>
+
+#include "dart/collision/ode/detail/OdeGeom.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
-class FCLCollisionObject : public CollisionObject
+class OdeBox : public OdeGeom
 {
 public:
-
-  friend class FCLCollisionDetector;
-
-  /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject();
-
-  /// Return FCL collision object
-  const fcl::CollisionObject* getFCLCollisionObject() const;
-
-protected:
-
   /// Constructor
-  FCLCollisionObject(CollisionDetector* collisionDetector,
-      const dynamics::ShapeFrame* shapeFrame,
-      const fcl_shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
+  OdeBox(const OdeCollisionObject* parent, const Eigen::Vector3d& size);
 
-  // Documentation inherited
-  void updateEngineData() override;
-
-protected:
-
-  /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
-
+  /// Destructor
+  virtual ~OdeBox();
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace detail
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
+#endif  // DART_COLLISION_ODE_DETAIL_ODEBOX_HPP_

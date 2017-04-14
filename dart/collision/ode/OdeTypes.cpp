@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,43 +28,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
-
-#include "dart/collision/bullet/BulletTypes.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/collision/ode/OdeTypes.hpp"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-btCollisionObject* BulletCollisionObject::getBulletCollisionObject()
+Eigen::Vector3d OdeTypes::convertVector3(const dVector3& vec)
 {
-  return mBulletCollisionObject.get();
-}
-
-//==============================================================================
-const btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
-{
-  return mBulletCollisionObject.get();
-}
-
-//==============================================================================
-BulletCollisionObject::BulletCollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame,
-    btCollisionShape* bulletCollisionShape)
-  : CollisionObject(collisionDetector, shapeFrame),
-    mBulletCollisionObject(new btCollisionObject())
-{
-  mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
-  mBulletCollisionObject->setUserPointer(this);
-}
-
-//==============================================================================
-void BulletCollisionObject::updateEngineData()
-{
-  mBulletCollisionObject->setWorldTransform(
-      convertTransform(mShapeFrame->getWorldTransform()));
+  return Eigen::Vector3d(vec[0], vec[1], vec[2]);
 }
 
 }  // namespace collision
