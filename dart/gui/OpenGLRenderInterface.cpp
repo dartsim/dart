@@ -143,11 +143,8 @@ void OpenGLRenderInterface::scale(const Eigen::Vector3d& _scale) {
     glScaled(_scale[0], _scale[1], _scale[2]);
 }
 
-void OpenGLRenderInterface::drawSphere(double radius)
+void OpenGLRenderInterface::drawSphere(double radius, int slices, int stacks)
 {
-  GLint slices = 16;
-  GLint stacks = 16;
-
   // Code taken from glut/lib/glut_shapes.c
   QUAD_OBJ_INIT;
   gluQuadricDrawStyle(quadObj, GLU_FILL);
@@ -155,6 +152,80 @@ void OpenGLRenderInterface::drawSphere(double radius)
   //gluQuadricTexture(quadObj, GL_TRUE);
 
   gluSphere(quadObj, radius, slices, stacks);
+}
+
+void drawOpenCylinderConnectingTwoSpheres(
+    OpenGLRenderInterface* ri,
+    const std::pair<double, Eigen::Vector3d>& sphere0,
+    const std::pair<double, Eigen::Vector3d>& sphere1,
+    int slices, int stacks)
+{
+  const auto& r0 = sphere0.first;
+  const auto& r1 = sphere1.first;
+  const Eigen::Vector3d& p0 = sphere0.second;
+  const Eigen::Vector3d& p1 = sphere1.second;
+
+  const auto dist = (p0 - p1).norm();
+
+  if (dist < std::numeric_limits<double>::epsilon())
+    return;
+
+  const Eigen::Vector3d zAxis = (p1 - p0).normalized();
+
+  const auto r0r1 = r0 - r1;
+  const auto theta = std::acos(r0r1/dist);
+  const auto baseRadius = r0*std::sin(theta);
+  const auto topRadius = r1*std::sin(theta);
+  const Eigen::Vector3d baseCenter = p0 + r0*std::cos(theta)*zAxis;
+  const Eigen::Vector3d topCenter = p1 + r1*std::cos(theta)*zAxis;
+  const Eigen::Vector3d center = 0.5*(baseCenter + topCenter);
+  const auto height = (topCenter - baseCenter).norm();
+  const Eigen::AngleAxisd aa(Eigen::Quaterniond().setFromTwoVectors(
+      Eigen::Vector3d::UnitZ(), zAxis));
+
+  glPushMatrix();
+  {
+    glTranslated(center.x(), center.y(), center.z());
+    glRotated(math::toDegree(aa.angle()),
+              aa.axis().x(), aa.axis().y(), aa.axis().z());
+
+    ri->drawOpenCylinder(baseRadius, topRadius, height, slices, stacks);
+  }
+  glPopMatrix();
+}
+
+void OpenGLRenderInterface::drawMultiSphere(
+    const std::vector<std::pair<double, Eigen::Vector3d>>& spheres,
+    int slices, int stacks)
+{
+  // Draw spheres
+  for (const auto& sphere : spheres)
+  {
+    glPushMatrix();
+    {
+      glTranslated(sphere.second.x(), sphere.second.y(), sphere.second.z());
+      drawSphere(sphere.first, slices, stacks);
+    }
+    glPopMatrix();
+  }
+
+  if (spheres.size() < 2u)
+    return;
+
+  // Draw all the possible open cylinders that connects a pair of spheres in the
+  // list.
+  //
+  // TODO(JS): This is a workaround. The correct solution would be drawing the
+  // convex hull for the spheres, but we don't have a function computing convex
+  // hull yet.
+  for (auto i = 0u; i < spheres.size() - 1u; ++i)
+  {
+    for (auto j = i + 1u; j < spheres.size(); ++j)
+    {
+      drawOpenCylinderConnectingTwoSpheres(
+            this, spheres[i], spheres[j], slices, stacks);
+    }
+  }
 }
 
 void OpenGLRenderInterface::drawEllipsoid(const Eigen::Vector3d& _diameters) {
@@ -208,28 +279,49 @@ void OpenGLRenderInterface::drawCube(const Eigen::Vector3d& _size) {
     //glut/lib/glut_shapes.c
 }
 
-void OpenGLRenderInterface::drawCylinder(double _radius, double _height) {
-    glScaled(_radius, _radius, _height);
+//==============================================================================
+void OpenGLRenderInterface::drawOpenCylinder(
+    double baseRadius, double topRadius, double height, int slices, int stacks)
+{
+  glPushMatrix();
 
-    GLdouble radius = 1;
-    GLdouble height = 1;
-    GLint slices = 16;
-    GLint stacks = 16;
+  // Graphics assumes Cylinder is centered at CoM
+  // gluCylinder places base at z = 0 and top at z = height
+  glTranslated(0.0, 0.0, -0.5*height);
 
-    // Graphics assumes Cylinder is centered at CoM
-    // gluCylinder places base at z = 0 and top at z = height
-    glTranslated(0.0, 0.0, -0.5);
+  // Code taken from glut/lib/glut_shapes.c
+  QUAD_OBJ_INIT;
+  gluQuadricDrawStyle(quadObj, GLU_FILL);
+  gluQuadricNormals(quadObj, GLU_SMOOTH);
+  //gluQuadricTexture(quadObj, GL_TRUE);
 
-    // Code taken from glut/lib/glut_shapes.c
-    QUAD_OBJ_INIT;
-    gluQuadricDrawStyle(quadObj, GLU_FILL);
-    gluQuadricNormals(quadObj, GLU_SMOOTH);
-    //gluQuadricTexture(quadObj, GL_TRUE);
+  // glut/lib/glut_shapes.c
+  gluCylinder(quadObj, baseRadius, topRadius, height, slices, stacks);
 
-    gluCylinder(quadObj, radius, radius, height, slices, stacks); //glut/lib/glut_shapes.c
-    gluDisk(quadObj, 0, radius, slices, stacks);
-    glTranslated(0.0,0.0,1.0);
-    gluDisk(quadObj, 0, radius, slices, stacks);
+  glPopMatrix();
+}
+
+//==============================================================================
+void OpenGLRenderInterface::drawCylinder(
+    double radius, double height, int slices, int stacks)
+{
+  drawOpenCylinder(radius, radius, height, slices, stacks);
+
+  glPushMatrix();
+
+  glScaled(radius, radius, height);
+
+  QUAD_OBJ_INIT;
+  gluQuadricDrawStyle(quadObj, GLU_FILL);
+  gluQuadricNormals(quadObj, GLU_SMOOTH);
+  //gluQuadricTexture(quadObj, GL_TRUE);
+
+  glTranslated(0.0, 0.0, 0.5);
+  gluDisk(quadObj, 0, 1, slices, stacks);
+  glTranslated(0.0, 0.0, -1.0);
+  gluDisk(quadObj, 0, 1, slices, stacks);
+
+  glPopMatrix();
 }
 
 //==============================================================================
@@ -318,11 +410,9 @@ void OpenGLRenderInterface::drawCapsule(double radius, double height)
   gluQuadricNormals(quadObj, GLU_SMOOTH);
 
   gluCylinder(quadObj, radius, radius, height, slices, stacks); //glut/lib/glut_shapes.c
-  gluDisk(quadObj, 0, radius, slices, stacks);
-  glTranslated(0.0, 0.0, height);
-  gluDisk(quadObj, 0, radius, slices, stacks);
 
   // Upper hemisphere
+  glTranslated(0.0, 0.0, height);
   drawOpenDome(radius, slices, stacks);
 
   // Lower hemisphere

@@ -101,8 +101,13 @@ void RenderInterface::scale(const Eigen::Vector3d& /*_scale*/)
 {
 }
 
-void RenderInterface::drawSphere(double /*_radius*/)
+void RenderInterface::drawSphere(double /*_radius*/, int /*slices*/, int /*stacks*/)
 {
+}
+
+void RenderInterface::drawMultiSphere(const std::vector<std::pair<double, Eigen::Vector3d>>& /*spheres*/, int /*slices*/, int /*stacks*/)
+{
+  // Do nothing
 }
 
 void RenderInterface::drawEllipsoid(const Eigen::Vector3d& /*_size*/)
@@ -136,7 +141,11 @@ void RenderInterface::drawCube(const Eigen::Vector3d& /*_size*/)
 {
 }
 
-void RenderInterface::drawCylinder(double /*_radius*/, double /*_height*/)
+void RenderInterface::drawOpenCylinder(double /*baseRadius*/, double /*topRadius*/, double /*height*/, int /*slices*/, int /*stacks*/)
+{
+}
+
+void RenderInterface::drawCylinder(double /*_radius*/, double /*_height*/, int /*slices*/, int /*stacks*/)
 {
 }
 

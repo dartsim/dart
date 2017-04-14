@@ -57,7 +57,7 @@
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/MultiSphereShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -1311,7 +1311,7 @@ dynamics::ShapePtr readShape(
     tinyxml2::XMLElement* multiSphereEle = getElement(geometryEle, "multi_sphere");
 
     ElementEnumerator xmlSpheres(multiSphereEle, "sphere");
-    dynamics::MultiSphereShape::Spheres spheres;
+    dynamics::MultiSphereConvexHullShape::Spheres spheres;
     while (xmlSpheres.next())
     {
       const double radius = getValueDouble(xmlSpheres.get(), "radius");
@@ -1321,7 +1321,7 @@ dynamics::ShapePtr readShape(
       spheres.emplace_back(radius, position);
     }
 
-    newShape = dynamics::ShapePtr(new dynamics::MultiSphereShape(spheres));
+    newShape = dynamics::ShapePtr(new dynamics::MultiSphereConvexHullShape(spheres));
   }
   else if (hasElement(geometryEle, "mesh"))
   {

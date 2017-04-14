@@ -182,6 +182,12 @@ void ConstraintSolver::removeAllConstraints()
 }
 
 //==============================================================================
+void ConstraintSolver::clearLastCollisionResult()
+{
+  mCollisionResult.clear();
+}
+
+//==============================================================================
 void ConstraintSolver::setTimeStep(double _timeStep)
 {
   assert(_timeStep > 0.0 && "Time step should be positive value.");
