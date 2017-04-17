@@ -31,6 +31,7 @@
 #include "dart/common/Resource.hpp"
 
 #include <string>
+#include <exception>
 #include "dart/common/Console.hpp"
 
 namespace dart {
@@ -42,14 +43,10 @@ std::string Resource::readAll()
   std::string content;
   content.resize(getSize());
   const auto result = read(&content.front(), content.size(), 1);
-  // C++11 guarantees that std::string has contiguous storage.
+  // Safe because std::string is guaranteed to be contiguous in C++11.
 
   if (result != 1)
-  {
-    dterr << "[Resource] Failed to read data from a resource. "
-          << "Returning an empty string.\n";
-    return std::string();
-  }
+    throw std::runtime_error("Failed reading data from a resource.");
 
   return content;
 }

@@ -79,6 +79,7 @@ public:
   /// Reads all remaining data from this resource, and returns it as a string.
   ///
   /// \return The string retrieved from the resource.
+  /// \throw std::runtime_error when failed to read sucessfully.
   std::string readAll();
 };
 

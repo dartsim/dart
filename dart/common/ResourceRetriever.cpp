@@ -30,6 +30,7 @@
 
 #include "dart/common/ResourceRetriever.hpp"
 
+#include <sstream>
 #include "dart/common/Console.hpp"
 
 namespace dart {
@@ -42,9 +43,9 @@ std::string ResourceRetriever::readAll(const Uri& uri)
 
   if (!resource)
   {
-    dterr << "[ResourceRetriever] Failed to retrieve a resource from '"
-          << uri.toString() << "'. Returning an empty string.\n";
-    return std::string();
+    std::stringstream ss;
+    ss << "Failed retrieving a resource from '" << uri.toString() << "'.";
+    throw std::runtime_error(ss.str());
   }
 
   return resource->readAll();

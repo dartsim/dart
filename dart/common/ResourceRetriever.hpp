@@ -57,6 +57,7 @@ public:
   ///
   /// \param[in] uri URI to the resource to be retrieved.
   /// \return The string retrieved from the resource.
+  /// \throw std::runtime_error when failed to read sucessfully.
   std::string readAll(const Uri& uri);
 
   // We don't const-qualify for exists, retrieve, and readAll here. Derived
