@@ -149,25 +149,7 @@ std::shared_ptr<World> parseWorldURDF(
         entity.uri = absoluteUri;
 
         // Parse model
-        const common::ResourcePtr resource = retriever->retrieve(absoluteUri);
-        if(!resource)
-        {
-          dtwarn << "[openXMLFile] Failed opening URI '"
-                 << absoluteUri.toString() << "'.\n";
-          throw std::runtime_error("Failed opening URI.");
-        }
-
-        // C++11 guarantees that std::string has contiguous storage.
-        const std::size_t size = resource->getSize();
-        std::string xml_model_string;
-        xml_model_string.resize(size);
-        if(resource->read(&xml_model_string.front(), size, 1) != 1)
-        {
-          dtwarn << "[openXMLFile] Failed reading from URI '"
-                 << absoluteUri.toString() << "'.\n";
-          throw std::runtime_error("Failed reading from URI.");
-        }
-
+        const auto xml_model_string = retriever->readAll(absoluteUri);
         entity.model = urdf::parseURDF( xml_model_string );
 
         if( !entity.model )
