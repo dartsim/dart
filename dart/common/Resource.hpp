@@ -75,6 +75,12 @@ public:
   /// \param[in] _count Number of elements, each of _size bytes.
   /// \note This method has the same API as the standard fread function.
   virtual std::size_t read(void *_buffer, std::size_t _size, std::size_t _count) = 0;
+
+  /// Reads all data from this resource, and returns it as a string.
+  ///
+  /// \return The string retrieved from the resource.
+  /// \throw std::runtime_error when failed to read sucessfully.
+  virtual std::string readAll();
 };
 
 using ResourcePtr = std::shared_ptr<Resource>;
