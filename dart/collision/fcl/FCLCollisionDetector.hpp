@@ -33,7 +33,6 @@
 #define DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_HPP_
 
 #include <vector>
-#include <fcl/collision_object.h>
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/fcl/FCLTypes.hpp"
 

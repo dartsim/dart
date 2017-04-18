@@ -56,7 +56,6 @@ FCLCollisionObject::FCLCollisionObject(
     const dynamics::ShapeFrame* shapeFrame,
     const fcl_shared_ptr<dart::fcl::CollisionGeometry>& fclCollGeom)
   : CollisionObject(collisionDetector, shapeFrame),
-    mFCLCollisionObjectUserData(new UserData(this)),
     mFCLCollisionObject(new dart::fcl::CollisionObject(fclCollGeom))
 {
   mFCLCollisionObject->setUserData(this);
