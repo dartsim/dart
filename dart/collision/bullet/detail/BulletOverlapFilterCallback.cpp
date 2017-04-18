@@ -72,11 +72,10 @@ bool BulletOverlapFilterCallback::needBroadphaseCollision(
     auto userPtr0 = object0->getUserPointer();
     auto userPtr1 = object1->getUserPointer();
 
-    auto userData0 = static_cast<BulletCollisionObject::UserData*>(userPtr0);
-    auto userData1 = static_cast<BulletCollisionObject::UserData*>(userPtr1);
+    const auto collObj0 = static_cast<BulletCollisionObject*>(userPtr0);
+    const auto collObj1 = static_cast<BulletCollisionObject*>(userPtr1);
 
-    return filter->needCollision(userData0->collisionObject,
-                                 userData1->collisionObject);
+    return filter->needCollision(collObj0, collObj1);
   }
 
   return collide;

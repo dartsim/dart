@@ -38,13 +38,6 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-BulletCollisionObject::UserData::UserData(CollisionObject* collisionObject)
-  : collisionObject(collisionObject)
-{
-  // Do nothing
-}
-
-//==============================================================================
 btCollisionObject* BulletCollisionObject::getBulletCollisionObject()
 {
   return mBulletCollisionObject.get();
@@ -62,11 +55,10 @@ BulletCollisionObject::BulletCollisionObject(
     const dynamics::ShapeFrame* shapeFrame,
     btCollisionShape* bulletCollisionShape)
   : CollisionObject(collisionDetector, shapeFrame),
-    mBulletCollisionObjectUserData(new UserData(this)),
     mBulletCollisionObject(new btCollisionObject())
 {
   mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
-  mBulletCollisionObject->setUserPointer(mBulletCollisionObjectUserData.get());
+  mBulletCollisionObject->setUserPointer(this);
 }
 
 //==============================================================================

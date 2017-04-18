@@ -186,6 +186,15 @@ else()
   set(HAVE_BULLET_COLLISION FALSE)
 endif()
 
+# ODE
+find_package(ODE 0.11 QUIET)
+dart_check_optional_package(ODE "dart-collision-ode" "ode" "0.11")
+if(ODE_FOUND)
+  set(HAVE_ODE_COLLISION TRUE)
+else()
+  set(HAVE_ODE_COLLISION FALSE)
+endif()
+
 #--------------------------------
 # Dependencies for dart-planning
 #--------------------------------

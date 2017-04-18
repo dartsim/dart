@@ -33,7 +33,7 @@
 #define DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_HPP_
 
 #include <vector>
-#include <boost/weak_ptr.hpp> // This should be removed once we migrate to fcl 0.5
+#include <fcl/collision_object.h>
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/fcl/FCLTypes.hpp"
 
@@ -184,9 +184,6 @@ private:
 
   using ShapeMap = std::map<dynamics::ConstShapePtr,
                             fcl_weak_ptr<dart::fcl::CollisionGeometry>>;
-  // TODO(JS): FCL replaced all the use of boost in version 0.5. Once we migrate
-  // to 0.5 or greater, this also should be changed to
-  // std::weak_ptr<fcl::CollisionGeometry>
 
   ShapeMap mShapeMap;
 

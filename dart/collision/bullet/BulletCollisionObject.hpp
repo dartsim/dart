@@ -48,13 +48,6 @@ class BulletCollisionObject : public CollisionObject
 {
 public:
 
-  struct UserData
-  {
-    CollisionObject* collisionObject;
-
-    UserData(CollisionObject* collisionObject);
-  };
-
   friend class BulletCollisionDetector;
 
   /// Return Bullet collision object
@@ -74,9 +67,6 @@ protected:
   void updateEngineData() override;
 
 protected:
-
-  /// Bullet collision geometry user data
-  std::unique_ptr<UserData> mBulletCollisionObjectUserData;
 
   /// Bullet collision object
   std::unique_ptr<btCollisionObject> mBulletCollisionObject;

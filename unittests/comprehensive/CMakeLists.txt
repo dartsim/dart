@@ -17,6 +17,9 @@ if(TARGET dart-utils)
 
   dart_add_test("comprehensive" test_Collision)
   target_link_libraries(test_Collision dart-utils)
+  if(TARGET dart-collision-ode)
+    target_link_libraries(test_Collision dart-collision-ode)
+  endif()
 
   dart_add_test("comprehensive" test_Dynamics)
   target_link_libraries(test_Dynamics dart-utils)

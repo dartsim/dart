@@ -38,20 +38,11 @@
 namespace dart {
 namespace collision {
 
-class CollisionObject;
-
 class FCLCollisionObject : public CollisionObject
 {
 public:
 
   friend class FCLCollisionDetector;
-
-  struct UserData
-  {
-    CollisionObject* mCollisionObject;
-
-    UserData(CollisionObject* collisionObject);
-  };
 
   /// Return FCL collision object
   dart::fcl::CollisionObject* getFCLCollisionObject();
@@ -70,9 +61,6 @@ protected:
   void updateEngineData() override;
 
 protected:
-
-  /// FCL collision geometry user data
-  std::unique_ptr<UserData> mFCLCollisionObjectUserData;
 
   /// FCL collision object
   std::unique_ptr<dart::fcl::CollisionObject> mFCLCollisionObject;
