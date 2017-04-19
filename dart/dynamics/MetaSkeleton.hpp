@@ -95,19 +95,19 @@ public:
   /// Get const BodyNode whose index is _idx
   virtual const BodyNode* getBodyNode(std::size_t _idx) const = 0;
 
-  /// Returns the joint of given name.
+  /// Returns the body node of given name.
   ///
   /// When there are multiple body nodes with the same name, returns the first
-  /// joint, which is implementation dependent, and prints a warning.
+  /// body node, which is implementation dependent, and prints a warning.
   ///
   /// \param[in] name The body node name that want to search.
   /// \return The body node of given name.
   virtual BodyNode* getBodyNode(const std::string& name) = 0;
 
-  /// Returns the joint of given name.
+  /// Returns the body node of given name.
   ///
   /// When there are multiple body nodes with the same name, returns the first
-  /// joint, which is implementation dependent, and prints a warning.
+  /// body node, which is implementation dependent, and prints a warning.
   ///
   /// \param[in] name The body node name that want to search.
   /// \return The body node of given name.
