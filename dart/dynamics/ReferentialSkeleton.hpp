@@ -79,10 +79,23 @@ public:
   const BodyNode* getBodyNode(std::size_t _idx) const override;
 
   // Documentation inherited
+  BodyNode* getBodyNode(const std::string& name) override;
+
+  // Documentation inherited
+  const BodyNode* getBodyNode(const std::string& name) const override;
+
+  // Documentation inherited
   const std::vector<BodyNode*>& getBodyNodes() override;
 
   // Documentation inherited
   const std::vector<const BodyNode*>& getBodyNodes() const override;
+
+  // Documentation inherited
+  std::vector<BodyNode*> getBodyNodes(const std::string& name) override;
+
+  // Documentation inherited
+  std::vector<const BodyNode*> getBodyNodes(
+      const std::string& name) const override;
 
   // Documentation inherited
   std::size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
@@ -95,6 +108,24 @@ public:
 
   // Documentation inherited
   const Joint* getJoint(std::size_t _idx) const override;
+
+  // Documentation inherited
+  Joint* getJoint(const std::string& name) override;
+
+  // Documentation inherited
+  const Joint* getJoint(const std::string& name) const override;
+
+  // Documentation inherited
+  std::vector<Joint*> getJoints() override;
+
+  // Documentation inherited
+  std::vector<const Joint*> getJoints() const override;
+
+  // Documentation inherited
+  std::vector<Joint*> getJoints(const std::string& name) override;
+
+  // Documentation inherited
+  std::vector<const Joint*> getJoints(const std::string& name) const override;
 
   // Documentation inherited
   std::size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;

@@ -77,6 +77,30 @@ const BodyNode* ReferentialSkeleton::getBodyNode(std::size_t _idx) const
 }
 
 //==============================================================================
+BodyNode* ReferentialSkeleton::getBodyNode(const std::string& name)
+{
+  auto result = std::find_if(
+      mBodyNodes.begin(),
+      mBodyNodes.end(),
+      [&](const BodyNodePtr& joint)
+      {
+        return (joint->getName() == name);
+      });
+  const auto found = result != mBodyNodes.end();
+
+  if (found)
+    return *result;
+  else
+    return nullptr;
+}
+
+//==============================================================================
+const BodyNode* ReferentialSkeleton::getBodyNode(const std::string& name) const
+{
+  return const_cast<ReferentialSkeleton*>(this)->getBodyNode(name);
+}
+
+//==============================================================================
 template <class T1, class T2>
 static std::vector<T2>& convertVector(const std::vector<T1>& t1_vec,
                                       std::vector<T2>& t2_vec)
@@ -101,6 +125,36 @@ const std::vector<const BodyNode*>& ReferentialSkeleton::getBodyNodes() const
 {
   return convertVector<BodyNodePtr, const BodyNode*>(
         mBodyNodes, mRawConstBodyNodes);
+}
+
+//==============================================================================
+std::vector<BodyNode*> ReferentialSkeleton::getBodyNodes(
+    const std::string& name)
+{
+  std::vector<BodyNode*> bodyNodes;
+
+  for (const auto& bodyNode : mBodyNodes)
+  {
+    if (bodyNode->getName() == name)
+      bodyNodes.push_back(bodyNode.get());
+  }
+
+  return bodyNodes;
+}
+
+//==============================================================================
+std::vector<const BodyNode*> ReferentialSkeleton::getBodyNodes(
+    const std::string& name) const
+{
+  std::vector<const BodyNode*> bodyNodes;
+
+  for (const auto& bodyNode : mBodyNodes)
+  {
+    if (bodyNode->getName() == name)
+      bodyNodes.push_back(bodyNode.get());
+  }
+
+  return bodyNodes;
 }
 
 //==============================================================================
@@ -151,6 +205,81 @@ Joint* ReferentialSkeleton::getJoint(std::size_t _idx)
 const Joint* ReferentialSkeleton::getJoint(std::size_t _idx) const
 {
   return common::getVectorObjectIfAvailable<JointPtr>(_idx, mJoints);
+}
+
+//==============================================================================
+Joint* ReferentialSkeleton::getJoint(const std::string& name)
+{
+  auto result = std::find_if(
+      mJoints.begin(),
+      mJoints.end(),
+      [&](const JointPtr& joint)
+      {
+        return (joint->getName() == name);
+      });
+  const auto found = result != mJoints.end();
+
+  if (found)
+    return *result;
+  else
+    return nullptr;
+}
+
+//==============================================================================
+const Joint* ReferentialSkeleton::getJoint(const std::string& name) const
+{
+  return const_cast<ReferentialSkeleton*>(this)->getJoint(name);
+}
+
+//==============================================================================
+std::vector<Joint*> ReferentialSkeleton::getJoints()
+{
+  std::vector<Joint*> joints;
+  joints.reserve(mJoints.size());
+  for (const auto& joint : mJoints)
+    joints.emplace_back(joint.get());
+
+  return joints;
+}
+
+//==============================================================================
+std::vector<const Joint*> ReferentialSkeleton::getJoints() const
+{
+  std::vector<const Joint*> joints;
+  joints.reserve(mJoints.size());
+  for (const auto& joint : mJoints)
+    joints.emplace_back(joint.get());
+
+  return joints;
+}
+
+//==============================================================================
+std::vector<Joint*> ReferentialSkeleton::getJoints(const std::string& name)
+{
+  std::vector<Joint*> joints;
+
+  for (const auto& joint : mJoints)
+  {
+    if (joint->getName() == name)
+      joints.push_back(joint.get());
+  }
+
+  return joints;
+}
+
+//==============================================================================
+std::vector<const Joint*> ReferentialSkeleton::getJoints(
+    const std::string& name) const
+{
+  std::vector<const Joint*> joints;
+
+  for (const auto& joint : mJoints)
+  {
+    if (joint->getName() == name)
+      joints.push_back(joint.get());
+  }
+
+  return joints;
 }
 
 //==============================================================================
