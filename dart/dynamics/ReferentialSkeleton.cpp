@@ -79,19 +79,28 @@ const BodyNode* ReferentialSkeleton::getBodyNode(std::size_t _idx) const
 //==============================================================================
 BodyNode* ReferentialSkeleton::getBodyNode(const std::string& name)
 {
-  auto result = std::find_if(
-      mBodyNodes.begin(),
-      mBodyNodes.end(),
-      [&](const BodyNodePtr& joint)
-      {
-        return (joint->getName() == name);
-      });
-  const auto found = result != mBodyNodes.end();
+  BodyNode* bodyNodeFound = nullptr;
 
-  if (found)
-    return *result;
-  else
-    return nullptr;
+  for (const auto& bodyNode : mBodyNodes)
+  {
+    if (bodyNode->getName() == name)
+    {
+      if (!bodyNodeFound)
+      {
+        bodyNodeFound = bodyNode.get();
+      }
+      else
+      {
+        dtwarn << "[ReferentialSkeleton] This ReferentialSkeleton contains "
+               << "more than one body node with name '" << name
+               << "'. Returning the first body node found.\n";
+
+        return bodyNodeFound;
+      }
+    }
+  }
+
+  return bodyNodeFound;
 }
 
 //==============================================================================
@@ -210,19 +219,28 @@ const Joint* ReferentialSkeleton::getJoint(std::size_t _idx) const
 //==============================================================================
 Joint* ReferentialSkeleton::getJoint(const std::string& name)
 {
-  auto result = std::find_if(
-      mJoints.begin(),
-      mJoints.end(),
-      [&](const JointPtr& joint)
-      {
-        return (joint->getName() == name);
-      });
-  const auto found = result != mJoints.end();
+  Joint* jointFound = nullptr;
 
-  if (found)
-    return *result;
-  else
-    return nullptr;
+  for (const auto& joint : mJoints)
+  {
+    if (joint->getName() == name)
+    {
+      if (!jointFound)
+      {
+        jointFound = joint.get();
+      }
+      else
+      {
+        dtwarn << "[ReferentialSkeleton] This ReferentialSkeleton contains "
+               << "more than one joint with name '" << name << "'. Returning "
+               << "the first joint found.\n";
+
+        return jointFound;
+      }
+    }
+  }
+
+  return jointFound;
 }
 
 //==============================================================================
