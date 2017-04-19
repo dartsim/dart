@@ -63,8 +63,8 @@ namespace collision {
 namespace {
 
 Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
-                       const BulletCollisionObject::UserData* userData1,
-                       const BulletCollisionObject::UserData* userData2);
+                       BulletCollisionObject* collObj1,
+                       BulletCollisionObject* collObj2);
 
 void reportContacts(btCollisionWorld* collWorld,
                      const CollisionOption& option,
@@ -181,18 +181,13 @@ void filterOutCollisions(btCollisionWorld* world)
     const auto body0 = contactManifold->getBody0();
     const auto body1 = contactManifold->getBody1();
 
-    const auto userPointer0 = body0->getUserPointer();
-    const auto userPointer1 = body1->getUserPointer();
+    const auto userPtr0 = body0->getUserPointer();
+    const auto userPtr1 = body1->getUserPointer();
 
-    const auto userData0
-        = static_cast<BulletCollisionObject::UserData*>(userPointer0);
-    const auto userData1
-        = static_cast<BulletCollisionObject::UserData*>(userPointer1);
+    const auto collObj0 = static_cast<BulletCollisionObject*>(userPtr0);
+    const auto collObj1 = static_cast<BulletCollisionObject*>(userPtr1);
 
-    const auto btCollObj0 = userData0->collisionObject;
-    const auto btCollObj1 = userData1->collisionObject;
-
-    if (!filter->needCollision(btCollObj0, btCollObj1))
+    if (!filter->needCollision(collObj0, collObj1))
       manifoldsToRelease.push_back(contactManifold);
   }
 
@@ -541,19 +536,19 @@ namespace {
 
 //==============================================================================
 Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
-                       const BulletCollisionObject::UserData* userData1,
-                       const BulletCollisionObject::UserData* userData2)
+                       BulletCollisionObject* collObj1,
+                       BulletCollisionObject* collObj2)
 {
-  assert(userData1);
-  assert(userData2);
+  assert(collObj1);
+  assert(collObj2);
 
   Contact contact;
 
   contact.point = convertVector3(bulletManifoldPoint.getPositionWorldOnA());
   contact.normal = convertVector3(bulletManifoldPoint.m_normalWorldOnB);
   contact.penetrationDepth = -bulletManifoldPoint.m_distance1;
-  contact.collisionObject1 = userData1->collisionObject;
-  contact.collisionObject2 = userData2->collisionObject;
+  contact.collisionObject1 = collObj1;
+  contact.collisionObject2 = collObj2;
 
   return contact;
 }
@@ -582,17 +577,15 @@ void reportContacts(
     const auto userPointer0 = body0->getUserPointer();
     const auto userPointer1 = body1->getUserPointer();
 
-    const auto userData0
-        = static_cast<BulletCollisionObject::UserData*>(userPointer0);
-    const auto userData1
-        = static_cast<BulletCollisionObject::UserData*>(userPointer1);
+    const auto collObj0 = static_cast<BulletCollisionObject*>(userPointer0);
+    const auto collObj1 = static_cast<BulletCollisionObject*>(userPointer1);
 
     const auto numContacts = contactManifold->getNumContacts();
 
     for (auto j = 0; j < numContacts; ++j)
     {
       const auto& cp = contactManifold->getContactPoint(j);
-      result.addContact(convertContact(cp, userData0, userData1));
+      result.addContact(convertContact(cp, collObj0, collObj1));
 
       // No need to check further collisions
       if (result.getNumContacts() >= option.maxNumContacts)

@@ -105,6 +105,19 @@ TEST(LocalResourceRetriever, retrieve_Path)
   ASSERT_TRUE(resource != nullptr);
 }
 
+TEST(LocalResourceRetriever, readAll)
+{
+  LocalResourceRetriever retriever;
+  auto resource = retriever.retrieve(DART_DATA_PATH "test/hello_world.txt");
+  ASSERT_TRUE(resource != nullptr);
+
+  auto content = resource->readAll();
+  ASSERT_TRUE(content == std::string("Hello World"));
+
+  ASSERT_TRUE(retriever.readAll(DART_DATA_PATH "test/hello_world.txt")
+              == std::string("Hello World"));
+}
+
 TEST(LocalResourceRetriever, retrieve_ResourceOperations)
 {
   const std::string content = "Hello World";

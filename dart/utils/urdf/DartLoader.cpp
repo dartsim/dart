@@ -311,10 +311,7 @@ bool DartLoader::readFileToString(
   if (!resource)
     return false;
 
-  // Safe because std::string is guaranteed to be contiguous in C++11.
-  const std::size_t size = resource->getSize();
-  _output.resize(size);
-  resource->read(&_output.front(), size, 1);
+  _output = _resourceRetriever->readAll(_uri);
 
   return true;
 }

@@ -25,8 +25,8 @@
 
 #include <math.h>
 
-#include "odeconfig.h"
-#include "error.h"
+#include "dart/external/odelcpsolver/odeconfig.h"
+#include "dart/external/odelcpsolver/error.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -25,7 +25,7 @@
 #ifndef _ODE_MISC_H_
 #define _ODE_MISC_H_
 
-#include "common.h"
+#include "dart/external/odelcpsolver/common.h"
 
 
 #ifdef __cplusplus

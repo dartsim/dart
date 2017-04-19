@@ -1088,15 +1088,8 @@ bool collisionCallback(
   // Filtering
   if (filter)
   {
-    auto userData1
-        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-    auto userData2
-        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-    assert(userData1);
-    assert(userData2);
-
-    auto collisionObject1 = userData1->mCollisionObject;
-    auto collisionObject2 = userData2->mCollisionObject;
+    auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+    auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
     assert(collisionObject1);
     assert(collisionObject2);
 
@@ -1164,15 +1157,8 @@ bool distanceCallback(
   // Filtering
   if (filter)
   {
-    auto userData1
-        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-    auto userData2
-        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-    assert(userData1);
-    assert(userData2);
-
-    auto collisionObject1 = userData1->mCollisionObject;
-    auto collisionObject2 = userData2->mCollisionObject;
+    auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+    auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
     assert(collisionObject1);
     assert(collisionObject2);
 
@@ -1358,19 +1344,12 @@ void postProcessDART(
   {
     const auto& c = fclResult.getContact(i);
 
-    auto userData1
-        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-    auto userData2
-        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-    assert(userData1);
-    assert(userData2);
-
     // for each pair of intersecting triangles, we create two contact points
     Contact pair1;
     Contact pair2;
 
-    pair1.collisionObject1 = userData1->mCollisionObject;
-    pair1.collisionObject2 = userData2->mCollisionObject;
+    pair1.collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+    pair1.collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
 
     if (option.enableContact)
     {
@@ -1460,17 +1439,10 @@ void interpreteDistanceResult(
   result.minDistance
       = std::max(fclResult.min_distance, option.distanceLowerBound);
 
-  const auto* userData1
-      = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-  const auto* userData2
-      = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-  assert(userData1);
-  assert(userData2);
-  assert(userData1->mCollisionObject);
-  assert(userData2->mCollisionObject);
-
-  result.shapeFrame1 = userData1->mCollisionObject->getShapeFrame();
-  result.shapeFrame2 = userData2->mCollisionObject->getShapeFrame();
+  result.shapeFrame1
+      = static_cast<FCLCollisionObject*>(o1->getUserData())->getShapeFrame();
+  result.shapeFrame2
+      = static_cast<FCLCollisionObject*>(o2->getUserData())->getShapeFrame();
 
   if (option.enableNearestPoints)
   {
@@ -1629,14 +1601,8 @@ Contact convertContact(const fcl::Contact& fclContact,
 {
   Contact contact;
 
-  auto userData1
-      = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-  auto userData2
-      = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-  assert(userData1);
-  assert(userData2);
-  contact.collisionObject1 = userData1->mCollisionObject;
-  contact.collisionObject2 = userData2->mCollisionObject;
+  contact.collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+  contact.collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
 
   if (option.enableContact)
   {
