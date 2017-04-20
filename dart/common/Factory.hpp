@@ -102,17 +102,6 @@ private:
   CreatorMap mCreatorMap;
 };
 
-/// The default creator. Specialize this template class for smart pointer types
-/// other than std::unique_ptr and std::shared_ptr.
-template <typename T, typename HeldT, typename... Args>
-struct DefaultCreator
-{
-  static HeldT run(Args&&... args)
-  {
-    return HeldT(new T(std::forward<Args>(args)...));
-  }
-};
-
 /// Helper class to register a object creator function to the Singleton.
 template <typename KeyT,
           typename BaseT,
@@ -122,10 +111,10 @@ template <typename KeyT,
 class FactoryRegistrar final
 {
 public:
+  using This = FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT>;
   using FactoryType = Factory<KeyT, BaseT, HeldT, Args...>;
   using SingletonFactory = Singleton<FactoryType>;
   using Creator = typename FactoryType::Creator;
-  using This = FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT>;
 
   /// Constructor. Interanlly, this constructor registers Derived class with
   /// the key and the default creator function.

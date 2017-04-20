@@ -39,6 +39,42 @@
 namespace dart {
 namespace common {
 
+namespace detail {
+
+//==============================================================================
+/// The default creator. Specialize this template class for smart pointer types
+/// other than std::unique_ptr and std::shared_ptr.
+template <typename T, typename HeldT, typename... Args>
+struct DefaultCreator
+{
+  static HeldT run(Args&&... args)
+  {
+    return HeldT(new T(std::forward<Args>(args)...));
+  }
+};
+
+//==============================================================================
+template <typename T, typename... Args>
+struct DefaultCreator<T, std::unique_ptr<T>, Args...>
+{
+  static std::unique_ptr<T> run(Args&&... args)
+  {
+    return dart::common::make_unique<T>(std::forward<Args>(args)...);
+  }
+};
+
+//==============================================================================
+template <typename T, typename... Args>
+struct DefaultCreator<T, std::shared_ptr<T>, Args...>
+{
+  static std::shared_ptr<T> run(Args&&... args)
+  {
+    return std::make_shared<T>(std::forward<Args>(args)...);
+  }
+};
+
+} // namespace detail
+
 //==============================================================================
 // std::hash doesn't support enum type. This is an workaround for it.
 // Reference: http://stackoverflow.com/a/24847480
@@ -79,7 +115,7 @@ void Factory<KeyT, BaseT, HeldT, Args...>::registerCreator(
       key,
       [](Args&&... args) -> HeldT
       {
-        return DefaultCreator<Derived, HeldT, Args...>::run(
+        return detail::DefaultCreator<Derived, HeldT, Args...>::run(
             std::forward<Args>(args)...);
       }
   );
@@ -141,26 +177,6 @@ HeldT Factory<KeyT, BaseT, HeldT, Args...>::create(
 
   return it->second(std::forward<Args>(args)...);
 }
-
-//==============================================================================
-template <typename T, typename... Args>
-struct DefaultCreator<T, std::unique_ptr<T>, Args...>
-{
-  static std::unique_ptr<T> run(Args&&... args)
-  {
-    return dart::common::make_unique<T>(std::forward<Args>(args)...);
-  }
-};
-
-//==============================================================================
-template <typename T, typename... Args>
-struct DefaultCreator<T, std::shared_ptr<T>, Args...>
-{
-  static std::shared_ptr<T> run(Args&&... args)
-  {
-    return std::make_shared<T>(std::forward<Args>(args)...);
-  }
-};
 
 //==============================================================================
 template <typename KeyT,
