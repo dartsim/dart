@@ -1373,12 +1373,12 @@ TEST_F(COLLISION, Factory)
 #if HAVE_BULLET_COLLISION
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("bullet"));
 #else
-  EXPECT_TRUE(!collision::CollisionDetectorFactory::canCreate("bullet"));
+  EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("bullet"));
 #endif
 
 #if HAVE_ODE_COLLISION
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("ode"));
 #else
-  EXPECT_TRUE(!collision::CollisionDetectorFactory::canCreate("ode"));
+  EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("ode"));
 #endif
 }
