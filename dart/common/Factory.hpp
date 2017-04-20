@@ -47,7 +47,8 @@ namespace common {
 /// \code
 /// using CdFactory = Factory<std::string, CollisionDetector>;
 ///
-/// CdFactory::registerCreator<FclCollisionDetector>("fcl");
+/// auto factory = CdFactory();
+/// factory.registerCreator<FclCollisionDetector>("fcl");
 /// auto fclCd = CdFactory::create("fcl");
 /// \endcode
 template <typename KeyT,

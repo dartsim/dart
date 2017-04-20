@@ -28,56 +28,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SINGLETON_HPP_
-#define DART_COMMON_SINGLETON_HPP_
+#ifndef DART_COMMON_DETAIL_SINGLETON_HPP_
+#define DART_COMMON_DETAIL_SINGLETON_HPP_
+
+#include "dart/common/Singleton.hpp"
+
+#include <utility>
 
 namespace dart {
 namespace common {
 
-/// Singleton template class
-///
-/// \note This singleton is not thread safe. For use of thread safe singleton,
-/// use static initialization as:
-///
-/// // Singletone class Engine
-/// class Engine : public Singleton<Engine> {};
-///
-/// // Call before main() and use theT only instead of calling getSingleton()
-/// static T& theT = T::getSingleton();
-template<typename T>
-class Singleton
+//==============================================================================
+template <typename T> T* Singleton<T>::mInstance = nullptr;
+
+//==============================================================================
+template <typename T>
+template <typename... Args>
+T& Singleton<T>::getSingleton(Args... _args)
 {
-public:
-  /// Returns reference of the singleton
-  template <typename... Args>
-  static T& getSingleton(Args... _args);
+  // http://stackoverflow.com/questions/1008019/c-singleton-design-pattern
 
-  /// Returns pointer of the singleton
-  template <typename ... Args>
-  static T* getSingletonPtr(Args... _args);
+  // Guaranteed to be destroyed and instantiated on first use.
+  if (mInstance == nullptr)
+  {
+    static T instance(std::forward<Args>(_args)...);
+    mInstance = &instance;
+  }
 
-protected:
-  /// Constructor
-  Singleton() = default;
+  return *mInstance;
+}
 
-  /// Destructor
-  virtual ~Singleton() = default;
-
-private:
-  /// Don't implement copy constructor
-  Singleton(const T&) = delete;
-
-  /// Don't assignment operator
-  const T& operator=(const T&) = delete;
-
-private:
-  /// Singleton instance
-  static T* mInstance;
-};
+//==============================================================================
+template <typename T>
+template <typename ... Args>
+T* Singleton<T>::getSingletonPtr(Args... _args)
+{
+  return &getSingleton(std::forward<Args>(_args)...);
+}
 
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/Singleton-impl.hpp"
-
-#endif // DART_COMMON_SINGLETON_HPP_
+#endif // DART_COMMON_DETAIL_SINGLETON_HPP_
