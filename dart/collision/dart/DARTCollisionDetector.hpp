@@ -93,21 +93,11 @@ protected:
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
 
+private:
+  static Registrar<DARTCollisionDetector> mRegistrar;
 };
 
 }  // namespace collision
 }  // namespace dart
-
-// Register DART collision detector
-DART_REGISTER_CREATOR_TO_FACTORY(
-    std::string,
-    dart::collision::DARTCollisionDetector::getStaticType(),
-    dart::collision::CollisionDetector,
-    dart::collision::DARTCollisionDetector,
-    []() -> std::shared_ptr<dart::collision::DARTCollisionDetector> {
-        return dart::collision::DARTCollisionDetector::create();
-    },
-    std::shared_ptr
-)
 
 #endif  // DART_COLLISION_DART_DARTCOLLISIONDETECTOR_HPP_

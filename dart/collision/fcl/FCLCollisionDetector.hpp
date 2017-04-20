@@ -187,21 +187,10 @@ private:
 
   ShapeMap mShapeMap;
 
+  static Registrar<FCLCollisionDetector> mRegistrar;
 };
 
 }  // namespace collision
 }  // namespace dart
-
-// Register FCL collision detector
-DART_REGISTER_CREATOR_TO_FACTORY(
-    std::string,
-    dart::collision::FCLCollisionDetector::getStaticType(),
-    dart::collision::CollisionDetector,
-    dart::collision::FCLCollisionDetector,
-    []() -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
-        return dart::collision::FCLCollisionDetector::create();
-    },
-    std::shared_ptr
-)
 
 #endif  // DART_COLLISION_FCL_FCLCOLLISIONDETECTOR_HPP_

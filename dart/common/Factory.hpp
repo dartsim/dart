@@ -36,14 +36,12 @@
 #include <memory>
 
 #include "dart/common/StlHelpers.hpp"
+#include "dart/common/Singleton.hpp"
 
 namespace dart {
 namespace common {
 
 /// Implementation of the Abstract Factory Pattern.
-///
-/// Factory class is a pure static class (i.e., no need to create an instance to
-/// use this class).
 ///
 /// Example:
 /// \code
@@ -54,138 +52,89 @@ namespace common {
 /// \endcode
 template <typename KeyT,
           typename BaseT,
-          template<typename...> class SmartPointerT = std::shared_ptr,
+          typename HeldT = std::shared_ptr<BaseT>,
           typename... Args>
-class Factory final
+class Factory
 {
 public:
-  using This = Factory<KeyT, BaseT, SmartPointerT>;
-  using CreatorReturnType = SmartPointerT<BaseT>;
+  using This = Factory<KeyT, BaseT, HeldT>;
+  using CreatorReturnType = HeldT;
   using Creator = std::function<CreatorReturnType(Args...)>;
   using CreatorMap = std::unordered_map<KeyT, Creator>;
   using RegisterResult = std::pair<typename CreatorMap::iterator, bool>;
 
+  /// Default constructor.
+  Factory() = default;
+
+  /// Destructor
+  virtual ~Factory() = default;
+
   /// Registers a object creator function with a key.
-  static RegisterResult registerCreator(const KeyT& key, Creator creator);
+  void registerCreator(const KeyT& key, Creator creator);
 
   /// Registers the default object creator function with a key.
   template <typename Derived>
-  static RegisterResult registerCreator(const KeyT& key);
+  void registerCreator(const KeyT& key);
 
   /// Unregisters the object creator function that is registered with a key. Do
   /// nothing if there is no creator function associated with the key.
-  static void unregisterCreator(const KeyT& key);
+  void unregisterCreator(const KeyT& key);
 
   /// Unregisters all the object creator functions.
-  static void unregisterAllCreators();
+  void unregisterAllCreators();
 
   /// Returns true if an object creator function is registered with the key.
   /// Otherwise, returns false.
-  static bool canCreate(const KeyT& key);
+  bool canCreate(const KeyT& key);
 
   /// Creates an object of the class that is registered with a key. Returns
   /// nullptr if there is no object creator function associated with the key.
-  static CreatorReturnType create(const KeyT& key, Args&&... args);
+  CreatorReturnType create(const KeyT& key, Args&&... args);
   // TODO(JS): Add create() for creating smart_pointers
   // (see: https://github.com/dartsim/dart/pull/845)
 
-protected:
-  /// Constructor is disabled. This class is a pure static class.
-  Factory() = delete;
-
-  /// Destructor is disabled. This class is a pure static class.
-  ~Factory() = delete;
-
 private:
-  /// Returns the object creator function map. A static map is created when this
-  /// function is firstly called.
-  static CreatorMap& getMap();
+  /// Object creator function map.
+  CreatorMap mCreatorMap;
 };
 
 /// The default creator. Specialize this template class for smart pointer types
 /// other than std::unique_ptr and std::shared_ptr.
-template <typename T,
-          template<typename...> class SmartPointerT = std::shared_ptr,
-          typename... Args>
+template <typename T, typename HeldT, typename... Args>
 struct DefaultCreator
 {
-  static SmartPointerT<T> run(Args&&... args)
+  static HeldT run(Args&&... args)
   {
-    return SmartPointerT<T>(new T(std::forward<Args>(args)...));
+    return HeldT(new T(std::forward<Args>(args)...));
   }
 };
 
-/// Helper class to register a object creator function.
+/// Helper class to register a object creator function to the Singleton.
 template <typename KeyT,
           typename BaseT,
           typename DerivedT,
-          template<typename...> class SmartPointerT = std::shared_ptr,
+          typename HeldT = std::shared_ptr<BaseT>,
           typename... Args>
 class FactoryRegistrar final
 {
 public:
-  using FactoryType = Factory<KeyT, BaseT, SmartPointerT>;
+  using FactoryType = Factory<KeyT, BaseT, HeldT, Args...>;
+  using SingletonFactory = Singleton<FactoryType>;
   using Creator = typename FactoryType::Creator;
-  using This = FactoryRegistrar<KeyT, BaseT, DerivedT, SmartPointerT>;
+  using This = FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT>;
 
-  /// Returns the static instance of FactoryRegistrar.
-  static This& getInstance(
-      const KeyT& key,
-      Creator creator = []()
-          -> decltype(DefaultCreator<DerivedT, SmartPointerT>::run())
-      {
-        return DefaultCreator<DerivedT, SmartPointerT>::run();
-      });
-
-private:
   /// Constructor. Interanlly, this constructor registers Derived class with
   /// the key and the default creator function.
   FactoryRegistrar(const KeyT& key, Creator creator);
 
   /// Constructor. Interanlly, this constructor registers Derived class with
   /// the key and the default creator function.
-  FactoryRegistrar(const KeyT& key);
+  explicit FactoryRegistrar(const KeyT& key);
 
-  /// Constructor is disabled. This class is a pure static class.
-  FactoryRegistrar(const This&) = delete;
-
-  /// Destructor is disabled. This class is a pure static class.
-  FactoryRegistrar& operator=(const This&) = delete;
+private:
+  /// Default create function
+  static HeldT create(Args&&... args);
 };
-
-#define DART_CONCATENATE(x, y) x##y
-
-#define DART_GEN_UNIQUE_NAME_DETAIL(x, unique_key)                             \
-  DART_CONCATENATE(x, unique_key)
-
-#define DART_GEN_UNIQUE_NAME(seed_name)                                        \
-  DART_GEN_UNIQUE_NAME_DETAIL(seed_name, __LINE__)
-
-#define DART_REGISTER_CREATOR_TO_FACTORY(                                      \
-    key_type, key, base, derived, creator, smart_ptr_type)                     \
-  namespace {                                                                  \
-  const auto& DART_GEN_UNIQUE_NAME(unique_name_seed)                           \
-      = dart::common::FactoryRegistrar<key_type, base, derived, smart_ptr_type>\
-        ::getInstance(key, creator);                                           \
-  }
-
-#define DART_REGISTER_DEFAULT_CREATOR_TO_FACTORY(                              \
-    key_type, key, base, derived, smart_ptr_type)                              \
-  namespace {                                                                  \
-  const auto& DART_GEN_UNIQUE_NAME(unique_name_seed)                           \
-      = dart::common::FactoryRegistrar<key_type, base, derived>                \
-        ::getInstance(key);                                                    \
-  }
-
-#define DART_REGISTER_DEFAULT_UNIQUE_PTR_CREATOR_TO_FACTORY(                   \
-    key_type, key, base, derived)                                              \
-  DART_REGISTER_DEFAULT_CREATOR_TO_FACTORY(                                    \
-      key_type, key, base, derived, std::unique_ptr)
-
-#define DART_REGISTER_DEFAULT_SHARED_PTR_CREATOR_TO_FACTORY(                   \
-    key_type, key, base, derived)                                              \
-  DART_REGISTER_DEFAULT_CREATOR_TO_FACTORY(                                    \
-      key_type, key, base, derived, std::shared_ptr)
 
 } // namespace common
 } // namespace dart

@@ -42,109 +42,78 @@ namespace common {
 //==============================================================================
 template <typename KeyT,
           typename BaseT,
-          template<typename...> class SmartPointerT,
+          typename HeldT,
           typename... Args>
-typename Factory<KeyT, BaseT, SmartPointerT, Args...>::RegisterResult
-Factory<KeyT, BaseT, SmartPointerT, Args...>::registerCreator(
+void Factory<KeyT, BaseT, HeldT, Args...>::registerCreator(
     const KeyT& key, Creator creator)
 {
-  const auto result = getMap().insert(std::make_pair(key, creator));
-
-  const auto inserted = result.second;
-  if (!inserted)
-  {
-    dtwarn << "[Factory] An object creator fuction for the object of '"
-           << typeid(BaseT).name() << "' class with the key (type: '"
-           << typeid(KeyT).name() << "') is already registered. "
-           << "Register is ignored.\n";
-    // TODO(JS): Print the key if the << operator is defined.
-  }
-
-  return result;
+  mCreatorMap[key] = std::move(creator);
 }
-
-//==============================================================================
-template <typename T, typename... Args>
-struct DefaultCreator<T, std::unique_ptr, Args...>
-{
-  static std::unique_ptr<T> run(Args&&... args)
-  {
-    return dart::common::make_unique<T>(std::forward<Args>(args)...);
-  }
-};
-
-//==============================================================================
-template <typename T, typename... Args>
-struct DefaultCreator<T, std::shared_ptr, Args...>
-{
-  static std::shared_ptr<T> run(Args&&... args)
-  {
-    return std::make_shared<T>(std::forward<Args>(args)...);
-  }
-};
 
 //==============================================================================
 template <typename KeyT,
           typename BaseT,
-          template<typename...> class SmartPointerT,
+          typename HeldT,
           typename... Args>
 template <typename Derived>
-typename Factory<KeyT, BaseT, SmartPointerT, Args...>::RegisterResult
-Factory<KeyT, BaseT, SmartPointerT, Args...>::registerCreator(const KeyT& key)
-{
-  return registerCreator(
-      key, [](Args&&... args) -> CreatorReturnType
-  {
-    return DefaultCreator<Derived, SmartPointerT, Args...>::run(
-        std::forward<Args>(args)...);
-  });
-}
-
-//==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          template<typename...> class SmartPointerT,
-          typename... Args>
-void Factory<KeyT, BaseT, SmartPointerT, Args...>::unregisterCreator(
+void Factory<KeyT, BaseT, HeldT, Args...>::registerCreator(
     const KeyT& key)
 {
-  getMap().erase(key);
+  return registerCreator(
+      key,
+      [](Args&&... args) -> CreatorReturnType
+      {
+        return DefaultCreator<Derived, HeldT, Args...>::run(
+            std::forward<Args>(args)...);
+      }
+  );
 }
 
 //==============================================================================
 template <typename KeyT,
           typename BaseT,
-          template<typename...> class SmartPointerT,
+          typename HeldT,
           typename... Args>
-void Factory<KeyT, BaseT, SmartPointerT, Args...>::unregisterAllCreators()
+void Factory<KeyT, BaseT, HeldT, Args...>::unregisterCreator(
+    const KeyT& key)
 {
-  getMap().clear();
+  mCreatorMap.erase(key);
 }
 
 //==============================================================================
 template <typename KeyT,
           typename BaseT,
-          template<typename...> class SmartPointerT,
+          typename HeldT,
           typename... Args>
-bool Factory<KeyT, BaseT, SmartPointerT, Args...>::canCreate(const KeyT& key)
+void Factory<KeyT, BaseT, HeldT, Args...>::unregisterAllCreators()
 {
-  const auto it = getMap().find(key);
-
-  return (it != getMap().end());
+  mCreatorMap.clear();
 }
 
 //==============================================================================
 template <typename KeyT,
           typename BaseT,
-          template<typename...> class SmartPointerT,
+          typename HeldT,
           typename... Args>
-typename Factory<KeyT, BaseT, SmartPointerT, Args...>::CreatorReturnType
-Factory<KeyT, BaseT, SmartPointerT, Args...>::create(
+bool Factory<KeyT, BaseT, HeldT, Args...>::canCreate(const KeyT& key)
+{
+  const auto it = mCreatorMap.find(key);
+
+  return (it != mCreatorMap.end());
+}
+
+//==============================================================================
+template <typename KeyT,
+          typename BaseT,
+          typename HeldT,
+          typename... Args>
+typename Factory<KeyT, BaseT, HeldT, Args...>::CreatorReturnType
+Factory<KeyT, BaseT, HeldT, Args...>::create(
     const KeyT& key, Args&&... args)
 {
-  const auto it = getMap().find(key);
+  const auto it = mCreatorMap.find(key);
 
-  const auto found = (it != getMap().end());
+  const auto found = (it != mCreatorMap.end());
   if (!found)
   {
     dtwarn << "[Factory] Failed to create an object of '"
@@ -159,56 +128,60 @@ Factory<KeyT, BaseT, SmartPointerT, Args...>::create(
 }
 
 //==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          template<typename...> class SmartPointerT,
-          typename... Args>
-typename Factory<KeyT, BaseT, SmartPointerT, Args...>::CreatorMap&
-Factory<KeyT, BaseT, SmartPointerT, Args...>::getMap()
+template <typename T, typename... Args>
+struct DefaultCreator<T, std::unique_ptr<T>, Args...>
 {
-  static CreatorMap map;
+  static std::unique_ptr<T> run(Args&&... args)
+  {
+    return dart::common::make_unique<T>(std::forward<Args>(args)...);
+  }
+};
 
-  return map;
-}
+//==============================================================================
+template <typename T, typename... Args>
+struct DefaultCreator<T, std::shared_ptr<T>, Args...>
+{
+  static std::shared_ptr<T> run(Args&&... args)
+  {
+    return std::make_shared<T>(std::forward<Args>(args)...);
+  }
+};
 
 //==============================================================================
 template <typename KeyT,
           typename BaseT,
           typename DerivedT,
-          template<typename...> class SmartPointerT,
+          typename HeldT,
           typename... Args>
-FactoryRegistrar<KeyT, BaseT, DerivedT, SmartPointerT>&
-FactoryRegistrar<KeyT, BaseT, DerivedT, SmartPointerT, Args...>::
-getInstance(const KeyT& key, Creator creator)
-{
-  static FactoryRegistrar<KeyT, BaseT, DerivedT, SmartPointerT> instance(key, creator);
-
-  return instance;
-}
-
-//==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          typename DerivedT,
-          template<typename...> class SmartPointerT,
-          typename... Args>
-FactoryRegistrar<KeyT, BaseT, DerivedT, SmartPointerT, Args...>::
+FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT, Args...>::
 FactoryRegistrar(const KeyT& key, Creator creator)
 {
-  Factory<KeyT, BaseT, SmartPointerT, Args...>::registerCreator(key, creator);
+  SingletonFactory::getSingleton().registerCreator(key, creator);
 }
 
 //==============================================================================
 template <typename KeyT,
           typename BaseT,
           typename DerivedT,
-          template<typename...> class SmartPointerT,
+          typename HeldT,
           typename... Args>
-FactoryRegistrar<KeyT, BaseT, DerivedT, SmartPointerT, Args...>::
+FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT, Args...>::
 FactoryRegistrar(const KeyT& key)
 {
-  Factory<KeyT, BaseT, SmartPointerT, Args...>::
-      template registerCreator<DerivedT>(key);
+  SingletonFactory::getSingleton().template registerCreator<DerivedT>(key);
+}
+
+//==============================================================================
+template <typename KeyT,
+          typename BaseT,
+          typename DerivedT,
+          typename HeldT,
+          typename... Args>
+HeldT
+FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT, Args...>::create(
+    Args&&... args)
+{
+  return DefaultCreator<DerivedT, Args...>::run(std::forward<Args>(args)...);
 }
 
 } // namespace common

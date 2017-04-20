@@ -651,6 +651,16 @@ tinyxml2::XMLElement* checkFormatAndGetWorldElement(
 }
 
 //==============================================================================
+static std::shared_ptr<collision::CollisionDetector>
+createFclMeshCollisionDetector()
+{
+  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
+  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
+  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
+}
+
+//==============================================================================
 simulation::WorldPtr readWorld(
   tinyxml2::XMLElement* _worldElement,
   const common::Uri& _baseUri,
@@ -696,16 +706,12 @@ simulation::WorldPtr readWorld(
 
       if (cdType == "fcl_mesh")
       {
-        collision_detector = collision::CollisionDetector::Factory::create("fcl");
-        auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-              collision_detector);
-        cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-        cd->setContactPointComputationMethod(
-              collision::FCLCollisionDetector::DART);
+        collision_detector = createFclMeshCollisionDetector();
       }
       else if (cdType == "fcl")
       {
-        collision_detector = collision::CollisionDetector::Factory::create("fcl");
+        collision_detector
+            = collision::CollisionDetector::getFactory()->create("fcl");
         auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
               collision_detector);
         cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
@@ -714,7 +720,8 @@ simulation::WorldPtr readWorld(
       }
       else
       {
-        collision_detector = collision::CollisionDetector::Factory::create(cdType);
+        collision_detector
+            = collision::CollisionDetector::getFactory()->create(cdType);
       }
 
       if (!collision_detector)
@@ -725,14 +732,7 @@ simulation::WorldPtr readWorld(
     }
 
     if (!collision_detector)
-    {
-      collision_detector = collision::CollisionDetector::Factory::create("fcl");
-      auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-            collision_detector);
-      cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-      cd->setContactPointComputationMethod(
-            collision::FCLCollisionDetector::DART);
-    }
+      collision_detector = createFclMeshCollisionDetector();
 
     newWorld->getConstraintSolver()->setCollisionDetector(collision_detector);
   }
