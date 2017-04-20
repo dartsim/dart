@@ -97,6 +97,14 @@ struct OdeCollisionCallbackData
 } // anonymous namespace
 
 //==============================================================================
+OdeCollisionDetector::Registrar<OdeCollisionDetector>
+OdeCollisionDetector::mRegistrar{
+  OdeCollisionDetector::getStaticType(),
+  []() -> std::shared_ptr<dart::collision::OdeCollisionDetector> {
+      return dart::collision::OdeCollisionDetector::create();
+  }};
+
+//==============================================================================
 std::shared_ptr<OdeCollisionDetector> OdeCollisionDetector::create()
 {
   return std::shared_ptr<OdeCollisionDetector>(
