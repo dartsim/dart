@@ -593,12 +593,3 @@ TEST(LIE_GROUP_OPERATORS, ADJOINT_MAPPINGS)
             EXPECT_NEAR(dad_V_F(j), dadV_Matrix_F(j), LIE_GROUP_OPT_TOL);
     }
 }
-
-/******************************************************************************/
-int main(int argc, char* argv[])
-{
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
-}
-
-

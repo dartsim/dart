@@ -417,10 +417,3 @@ TEST(NameManagement, JointDegreeOfFreedom)
   EXPECT_TRUE( joint->getDof(1)->getName() == "j_bicep_left_y" );
   EXPECT_TRUE( joint->getDof(2)->getName() == "j_bicep_left_z" );
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

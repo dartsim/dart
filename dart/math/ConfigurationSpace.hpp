@@ -43,8 +43,8 @@ namespace math {
 template <std::size_t Dimension>
 struct RealVectorSpace
 {
-  enum : std::size_t { NumDofs = Dimension };
-  enum : int { NumDofsEigen = Dimension };
+  static constexpr std::size_t NumDofs = Dimension;
+  static constexpr int NumDofsEigen = static_cast<int>(Dimension);
 
   using TangentSpace = RealVectorSpace<NumDofs>;
 
@@ -63,8 +63,8 @@ using R3Space = RealVectorSpace<3u>;
 //==============================================================================
 struct SO3Space
 {
-  enum : std::size_t { NumDofs = 3u };
-  enum : int { NumDofsEigen = 3 };
+  static constexpr std::size_t NumDofs = 3u;
+  static constexpr int NumDofsEigen = 3;
 
   using TangentSpace = RealVectorSpace<NumDofs>;
 
@@ -78,8 +78,8 @@ struct SO3Space
 //==============================================================================
 struct SE3Space
 {
-  enum : std::size_t { NumDofs = 6u };
-  enum : int { NumDofsEigen = 6 };
+  static constexpr std::size_t NumDofs = 6u;
+  static constexpr int NumDofsEigen = 6;
 
   using TangentSpace = RealVectorSpace<NumDofs>;
 

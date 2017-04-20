@@ -84,9 +84,3 @@ TEST(DartLoader, parseWorld)
   EXPECT_TRUE(nullptr !=
       loader.parseWorld("dart://sample/urdf/test/testWorld.urdf"));
 }
-
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

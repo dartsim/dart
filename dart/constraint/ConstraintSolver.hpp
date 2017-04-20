@@ -92,6 +92,9 @@ public:
   /// Remove all constraints
   void removeAllConstraints();
 
+  /// Clears the last collision result
+  void clearLastCollisionResult();
+
   /// Set time step
   void setTimeStep(double _timeStep);
 

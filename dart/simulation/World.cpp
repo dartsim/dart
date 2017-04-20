@@ -155,6 +155,7 @@ void World::reset()
   mTime = 0.0;
   mFrame = 0;
   mRecording->clear();
+  mConstraintSolver->clearLastCollisionResult();
 }
 
 //==============================================================================

@@ -977,9 +977,3 @@ TEST(Aspect, Embedded)
   EmbeddedStateComposite s_constructed(state);
   EXPECT_EQ(s_constructed.get<EmbeddedStateComposite::Aspect>()->getState(), state);
 }
-
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
