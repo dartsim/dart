@@ -658,6 +658,8 @@ createFclMeshCollisionDetector()
   auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
   fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
   fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
+
+  return fcl;
 }
 
 //==============================================================================
