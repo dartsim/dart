@@ -40,6 +40,22 @@ namespace dart {
 namespace common {
 
 //==============================================================================
+// std::hash doesn't support enum type. This is an workaround for it.
+// Reference: http://stackoverflow.com/a/24847480
+template <typename KeyT,
+          typename BaseT,
+          typename HeldT,
+          typename... Args>
+struct Factory<KeyT, BaseT, HeldT, Args...>::EnumClassHash
+{
+  template <typename T>
+  std::size_t operator()(T t) const
+  {
+    return static_cast<std::size_t>(t);
+  }
+};
+
+//==============================================================================
 template <typename KeyT,
           typename BaseT,
           typename HeldT,
@@ -61,7 +77,7 @@ void Factory<KeyT, BaseT, HeldT, Args...>::registerCreator(
 {
   return registerCreator(
       key,
-      [](Args&&... args) -> CreatorReturnType
+      [](Args&&... args) -> HeldT
       {
         return DefaultCreator<Derived, HeldT, Args...>::run(
             std::forward<Args>(args)...);
@@ -107,8 +123,7 @@ template <typename KeyT,
           typename BaseT,
           typename HeldT,
           typename... Args>
-typename Factory<KeyT, BaseT, HeldT, Args...>::CreatorReturnType
-Factory<KeyT, BaseT, HeldT, Args...>::create(
+HeldT Factory<KeyT, BaseT, HeldT, Args...>::create(
     const KeyT& key, Args&&... args)
 {
   const auto it = mCreatorMap.find(key);

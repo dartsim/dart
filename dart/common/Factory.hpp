@@ -58,11 +58,14 @@ template <typename KeyT,
 class Factory
 {
 public:
+  struct EnumClassHash;
+
   using This = Factory<KeyT, BaseT, HeldT>;
-  using CreatorReturnType = HeldT;
-  using Creator = std::function<CreatorReturnType(Args...)>;
-  using CreatorMap = std::unordered_map<KeyT, Creator>;
-  using RegisterResult = std::pair<typename CreatorMap::iterator, bool>;
+  using Creator = std::function<HeldT(Args...)>;
+  template <typename Key>
+  using HashType = typename std::conditional<
+      std::is_enum<Key>::value, EnumClassHash, std::hash<Key>>::type;
+  using CreatorMap = std::unordered_map<KeyT, Creator, HashType<KeyT>>;
 
   /// Default constructor.
   Factory() = default;
@@ -90,7 +93,7 @@ public:
 
   /// Creates an object of the class that is registered with a key. Returns
   /// nullptr if there is no object creator function associated with the key.
-  CreatorReturnType create(const KeyT& key, Args&&... args);
+  HeldT create(const KeyT& key, Args&&... args);
   // TODO(JS): Add create() for creating smart_pointers
   // (see: https://github.com/dartsim/dart/pull/845)
 
