@@ -130,10 +130,6 @@ public:
   /// Constructor. Interanlly, this constructor registers Derived class with
   /// the key and the default creator function.
   explicit FactoryRegistrar(const KeyT& key);
-
-private:
-  /// Default create function
-  static HeldT create(Args&&... args);
 };
 
 } // namespace common

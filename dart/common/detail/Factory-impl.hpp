@@ -171,19 +171,6 @@ FactoryRegistrar(const KeyT& key)
   SingletonFactory::getSingleton().template registerCreator<DerivedT>(key);
 }
 
-//==============================================================================
-template <typename KeyT,
-          typename BaseT,
-          typename DerivedT,
-          typename HeldT,
-          typename... Args>
-HeldT
-FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT, Args...>::create(
-    Args&&... args)
-{
-  return DefaultCreator<DerivedT, Args...>::run(std::forward<Args>(args)...);
-}
-
 } // namespace common
 } // namespace dart
 
