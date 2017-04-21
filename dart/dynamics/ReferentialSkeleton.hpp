@@ -78,10 +78,20 @@ public:
   // Documentation inherited
   const BodyNode* getBodyNode(std::size_t _idx) const override;
 
-  // Documentation inherited
+  /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  ///
+  /// \note This ReferentialSkeleton can contain multiple BodyNodes with the
+  /// same name when this ReferentialSkeleton contains BodyNodes from multiple
+  /// Skeletons. In this case, this function returns the first one, which is
+  /// implementation dependent, and prints a warning.
   BodyNode* getBodyNode(const std::string& name) override;
 
-  // Documentation inherited
+  /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  ///
+  /// \note This ReferentialSkeleton can contain multiple BodyNodes with the
+  /// same name when this ReferentialSkeleton contains BodyNodes from multiple
+  /// Skeletons. In this case, this function returns the first one, which is
+  /// implementation dependent, and prints a warning.
   const BodyNode* getBodyNode(const std::string& name) const override;
 
   // Documentation inherited

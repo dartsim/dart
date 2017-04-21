@@ -381,10 +381,16 @@ public:
   // Documentation inherited
   const std::vector<const BodyNode*>& getBodyNodes() const override;
 
-  // Documentation inherited
+  /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  ///
+  /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
+  /// So this function returns a single BodyNode.
   std::vector<BodyNode*> getBodyNodes(const std::string& name) override;
 
-  // Documentation inherited
+  /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  ///
+  /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
+  /// So this function returns a single BodyNode.
   std::vector<const BodyNode*> getBodyNodes(
       const std::string& name) const override;
 
@@ -418,10 +424,16 @@ public:
   // Documentation inherited
   std::vector<const Joint*> getJoints() const override;
 
-  // Documentation inherited
+  /// \copydoc MetaSkeleton::getJoints(const std::string&).
+  ///
+  /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
+  /// So this function returns a single Joint.
   std::vector<Joint*> getJoints(const std::string& name) override;
 
-  // Documentation inherited
+  /// \copydoc MetaSkeleton::getJoints(const std::string&).
+  ///
+  /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
+  /// So this function returns a single Joint.
   std::vector<const Joint*> getJoints(const std::string& name) const override;
 
   // Documentation inherited

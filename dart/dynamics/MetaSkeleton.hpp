@@ -95,19 +95,23 @@ public:
   /// Get const BodyNode whose index is _idx
   virtual const BodyNode* getBodyNode(std::size_t _idx) const = 0;
 
-  /// Returns the body node of given name.
+  /// Returns the BodyNode of given name.
   ///
-  /// When there are multiple body nodes with the same name, returns the first
-  /// body node, which is implementation dependent, and prints a warning.
+  /// This MetaSkeleton can contain multiple BodyNodes with the same name when
+  /// this MetaSkeleton contains BodyNodes from multiple Skeletons. In this
+  /// case, this function returns the first one, which is implementation
+  /// dependent, and prints a warning.
   ///
   /// \param[in] name The body node name that want to search.
   /// \return The body node of given name.
   virtual BodyNode* getBodyNode(const std::string& name) = 0;
 
-  /// Returns the body node of given name.
+  /// Returns the BodyNode of given name.
   ///
-  /// When there are multiple body nodes with the same name, returns the first
-  /// body node, which is implementation dependent, and prints a warning.
+  /// This MetaSkeleton can contain multiple BodyNodes with the same name when
+  /// this MetaSkeleton contains BodyNodes from multiple Skeletons. In this
+  /// case, this function returns the first one, which is implementation
+  /// dependent, and prints a warning.
   ///
   /// \param[in] name The body node name that want to search.
   /// \return The body node of given name.
@@ -119,12 +123,20 @@ public:
   /// Get all the BodyNodes that are held by this MetaSkeleton
   virtual const std::vector<const BodyNode*>& getBodyNodes() const = 0;
 
-  /// Returns all the body nodes of given name.
+  /// Returns all the BodyNodes of given name.
+  ///
+  /// This MetaSkeleton can contain multiple BodyNodes with the same name when
+  /// this MetaSkeleton contains BodyNodes from multiple Skeletons.
+  ///
   /// \param[in] name The body node name that want to search.
   /// \return The list of body nodes of given name.
   virtual std::vector<BodyNode*> getBodyNodes(const std::string& name) = 0;
 
-  /// Returns all the body nodes of given name.
+  /// Returns all the BodyNodes of given name.
+  ///
+  /// This MetaSkeleton can contain multiple BodyNodes with the same name when
+  /// this MetaSkeleton contains BodyNodes from multiple Skeletons.
+  ///
   /// \param[in] name The body node name that want to search.
   /// \return The list of body nodes of given name.
   virtual std::vector<const BodyNode*> getBodyNodes(
@@ -145,10 +157,12 @@ public:
   /// Get const Joint whose index is _idx
   virtual const Joint* getJoint(std::size_t _idx) const = 0;
 
-  /// Returns the joint of given name.
+  /// Returns the Joint of given name.
   ///
-  /// When there are multiple joints with the same name, returns the first
-  /// joint, which is implementation dependent, and prints a warning.
+  /// This MetaSkeleton can contain multiple Joints with the same name when
+  /// this MetaSkeleton contains Joints from multiple Skeletons. In this
+  /// case, this function returns the first one, which is implementation
+  /// dependent, and prints a warning.
   ///
   /// \param[in] name The joint name that want to search.
   /// \return The joint of given name.
@@ -156,8 +170,10 @@ public:
 
   /// Returns the joint of given name.
   ///
-  /// When there are multiple joints with the same name, returns the first
-  /// joint, which is implementation dependent, and prints a warning.
+  /// This MetaSkeleton can contain multiple Joints with the same name when
+  /// this MetaSkeleton contains Joints from multiple Skeletons. In this
+  /// case, this function returns the first one, which is implementation
+  /// dependent, and prints a warning.
   ///
   /// \param[in] name The joint name that want to search.
   /// \return The joint of given name.
@@ -169,12 +185,20 @@ public:
   /// Returns all the joints that are held by this MetaSkeleton.
   virtual std::vector<const Joint*> getJoints() const = 0;
 
-  /// Returns all the joint of given name.
+  /// Returns all the Joint of given name.
+  ///
+  /// This MetaSkeleton can contain multiple Joints with the same name when
+  /// this MetaSkeleton contains Joints from multiple Skeletons.
+  ///
   /// \param[in] name The joint name that want to search.
   /// \return The list of joints of given name.
   virtual std::vector<Joint*> getJoints(const std::string& name) = 0;
 
-  /// Returns all the joint of given name.
+  /// Returns all the Joint of given name.
+  ///
+  /// This MetaSkeleton can contain multiple Joints with the same name when
+  /// this MetaSkeleton contains Joints from multiple Skeletons.
+  ///
   /// \param[in] name The joint name that want to search.
   /// \return The list of joints of given name.
   virtual std::vector<const Joint*> getJoints(
