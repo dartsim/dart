@@ -1290,7 +1290,7 @@ TEST(Skeleton, Updating)
 }
 
 //==============================================================================
-TEST(Skeleton, GetJoint)
+TEST(Skeleton, GetJointsAndBodyNodes)
 {
   auto skelA = Skeleton::create();
   auto skelB = Skeleton::create();
@@ -1347,6 +1347,25 @@ TEST(Skeleton, GetJoint)
   jointB1->setName("joint1");
   jointB2->setName("joint2");
 
+  EXPECT_TRUE(bodyNodeA0 == skelA->getBodyNode(bodyNodeA0->getName()));
+  EXPECT_TRUE(bodyNodeA1 == skelA->getBodyNode(bodyNodeA1->getName()));
+  EXPECT_TRUE(bodyNodeA2 == skelA->getBodyNode(bodyNodeA2->getName()));
+
+  EXPECT_TRUE(bodyNodeB0 == skelB->getBodyNode(bodyNodeB0->getName()));
+  EXPECT_TRUE(bodyNodeB1 == skelB->getBodyNode(bodyNodeB1->getName()));
+  EXPECT_TRUE(bodyNodeB2 == skelB->getBodyNode(bodyNodeB2->getName()));
+
+  EXPECT_TRUE(skelA->getBodyNodes("wrong name").empty());
+  EXPECT_TRUE(skelB->getBodyNodes("wrong name").empty());
+
+  EXPECT_TRUE(skelA->getBodyNodes(bodyNodeA0->getName()).size() == 1u);
+  EXPECT_TRUE(skelA->getBodyNodes(bodyNodeA1->getName()).size() == 1u);
+  EXPECT_TRUE(skelA->getBodyNodes(bodyNodeA2->getName()).size() == 1u);
+
+  EXPECT_TRUE(skelB->getBodyNodes(bodyNodeB0->getName()).size() == 1u);
+  EXPECT_TRUE(skelB->getBodyNodes(bodyNodeB1->getName()).size() == 1u);
+  EXPECT_TRUE(skelB->getBodyNodes(bodyNodeB2->getName()).size() == 1u);
+
   EXPECT_TRUE(jointA0 == skelA->getJoint(jointA0->getName()));
   EXPECT_TRUE(jointA1 == skelA->getJoint(jointA1->getName()));
   EXPECT_TRUE(jointA2 == skelA->getJoint(jointA2->getName()));
@@ -1354,6 +1373,9 @@ TEST(Skeleton, GetJoint)
   EXPECT_TRUE(jointB0 == skelB->getJoint(jointB0->getName()));
   EXPECT_TRUE(jointB1 == skelB->getJoint(jointB1->getName()));
   EXPECT_TRUE(jointB2 == skelB->getJoint(jointB2->getName()));
+
+  EXPECT_TRUE(skelA->getJoints("wrong name").empty());
+  EXPECT_TRUE(skelB->getJoints("wrong name").empty());
 
   EXPECT_TRUE(skelA->getJoints(jointA0->getName()).size() == 1u);
   EXPECT_TRUE(skelA->getJoints(jointA1->getName()).size() == 1u);
@@ -1368,6 +1390,8 @@ TEST(Skeleton, GetJoint)
   group->addBodyNode(bodyNodeB0);
   group->addJoint(jointA0);
   group->addJoint(jointB0);
+  EXPECT_TRUE(group->getJoints("wrong name").empty());
+  EXPECT_TRUE(group->getBodyNodes("wrong name").empty());
   EXPECT_TRUE(group->getBodyNode("bodyNode0") == bodyNodeA0
               || group->getBodyNode("bodyNode0") == bodyNodeB0);
   EXPECT_TRUE(group->getJoint("joint0") == jointA0
