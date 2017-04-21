@@ -543,6 +543,17 @@ if(DOXYGEN_FOUND)
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
   )
 
+  # Add the "view_docs" target that opens the generated API documentation.
+  if(APPLE)
+    set(OPEN_COMMAND "open")
+  else()
+    set(OPEN_COMMAND "xdg-open")
+  endif()
+
+  add_custom_target(view_docs "${OPEN_COMMAND}" "${DOXYGEN_HTML_INDEX}"
+    DEPENDS "${DOXYGEN_HTML_INDEX}"
+    COMMENT "Opening documentation in a web browser.")
+
 endif()
 
 #===============================================================================
