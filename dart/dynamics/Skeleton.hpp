@@ -363,10 +363,10 @@ public:
   /// Get const SoftBodyNode whose index is _idx
   const SoftBodyNode* getSoftBodyNode(std::size_t _idx) const;
 
-  /// Get body node whose name is _name
+  // Documentation inherited
   BodyNode* getBodyNode(const std::string& name) override;
 
-  /// Get const body node whose name is _name
+  // Documentation inherited
   const BodyNode* getBodyNode(const std::string& name) const override;
 
   /// Get soft body node whose name is _name
@@ -384,13 +384,15 @@ public:
   /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
   ///
   /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
-  /// So this function returns a single BodyNode.
+  /// So this function returns the single BodyNode of the given name if it
+  /// exists.
   std::vector<BodyNode*> getBodyNodes(const std::string& name) override;
 
   /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
   ///
   /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
-  /// So this function returns a single BodyNode.
+  /// So this function returns the single BodyNode of the given name if it
+  /// exists.
   std::vector<const BodyNode*> getBodyNodes(
       const std::string& name) const override;
 
@@ -427,13 +429,13 @@ public:
   /// \copydoc MetaSkeleton::getJoints(const std::string&).
   ///
   /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
-  /// So this function returns a single Joint.
+  /// So this function returns the single Joint of the given name if it exists.
   std::vector<Joint*> getJoints(const std::string& name) override;
 
   /// \copydoc MetaSkeleton::getJoints(const std::string&).
   ///
   /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
-  /// So this function returns a single Joint.
+  /// So this function returns the single Joint of the given name if it exists.
   std::vector<const Joint*> getJoints(const std::string& name) const override;
 
   // Documentation inherited
