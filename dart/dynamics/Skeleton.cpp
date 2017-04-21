@@ -892,14 +892,24 @@ const std::vector<const BodyNode*>& Skeleton::getBodyNodes() const
 //==============================================================================
 std::vector<BodyNode*> Skeleton::getBodyNodes(const std::string& name)
 {
-  return {getBodyNode(name)};
+  auto bodyNode = getBodyNode(name);
+
+  if (bodyNode)
+    return {bodyNode};
+  else
+    return std::vector<BodyNode*>();
 }
 
 //==============================================================================
 std::vector<const BodyNode*> Skeleton::getBodyNodes(
     const std::string& name) const
 {
-  return {getBodyNode(name)};
+  const auto bodyNode = getBodyNode(name);
+
+  if (bodyNode)
+    return {bodyNode};
+  else
+    return std::vector<const BodyNode*>();
 }
 
 //==============================================================================
@@ -1028,15 +1038,23 @@ std::vector<const Joint*> Skeleton::getJoints() const
 //==============================================================================
 std::vector<Joint*> Skeleton::getJoints(const std::string& name)
 {
-  // Joint names in a skeleton are guaranteed to be unique.
-  return {getJoint(name)};
+  auto joint = getJoint(name);
+
+  if (joint)
+    return {joint};
+  else
+    return std::vector<Joint*>();
 }
 
 //==============================================================================
 std::vector<const Joint*> Skeleton::getJoints(const std::string& name) const
 {
-  // Joint names in a skeleton are guaranteed to be unique.
-  return {getJoint(name)};
+  const auto joint = getJoint(name);
+
+  if (joint)
+    return {joint};
+  else
+    return std::vector<const Joint*>();
 }
 
 //==============================================================================
