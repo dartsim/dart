@@ -578,6 +578,7 @@ message(STATUS "Run 'make' to build all the components")
 message(STATUS "Run 'make tests' to build all the unittests")
 message(STATUS "Run 'make examples' to build all the examples")
 message(STATUS "Run 'make tutorials' to build all the tutorials")
+message(STATUS "Run 'make view_docs' to see the API documentation")
 
 #===============================================================================
 # END
