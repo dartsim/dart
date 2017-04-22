@@ -30,6 +30,7 @@
  */
 
 #include <dart/dart.hpp>
+#include <dart/utils/utils.hpp>
 #include <dart/gui/gui.hpp>
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"

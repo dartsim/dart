@@ -1,4 +1,8 @@
 # Dependency checks
+if (NOT TARGET dart-utils)
+  return()
+endif()
+
 find_package(OpenGL QUIET)
 dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
 

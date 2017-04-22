@@ -59,6 +59,8 @@ dart_coveralls_add(${hdrs} ${srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "utils_urdf headers" ${hdrs})
+# TODO: remove below line once the files are completely removed.
+list(REMOVE_ITEM header_names "URDFTypes.hpp")
 dart_generate_include_header_list(
   utils_urdf_headers
   "dart/utils/urdf/"

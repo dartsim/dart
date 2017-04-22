@@ -1,4 +1,7 @@
 # Dependency checks
+if (NOT TARGET dart-gui)
+  return()
+endif()
 
 # OpenSceneGraph
 if(DART_BUILD_GUI_OSG)
