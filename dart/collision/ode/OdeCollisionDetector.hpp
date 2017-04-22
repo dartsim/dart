@@ -114,6 +114,7 @@ private:
 
 private:
   dContactGeom contactCollisions[MAX_COLLIDE_RETURNS];
+  static Registrar<OdeCollisionDetector> mRegistrar;
 };
 
 }  // namespace collision

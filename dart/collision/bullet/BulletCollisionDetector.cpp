@@ -81,6 +81,14 @@ btCollisionShape* createBulletCollisionShapeFromAssimpMesh(const aiMesh* mesh);
 } // anonymous namespace
 
 //==============================================================================
+BulletCollisionDetector::Registrar<BulletCollisionDetector>
+BulletCollisionDetector::mRegistrar{
+  BulletCollisionDetector::getStaticType(),
+  []() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
+      return dart::collision::BulletCollisionDetector::create();
+  }};
+
+//==============================================================================
 std::shared_ptr<BulletCollisionDetector> BulletCollisionDetector::create()
 {
   return std::shared_ptr<BulletCollisionDetector>(

@@ -125,6 +125,7 @@ private:
 
   std::unique_ptr<BulletCollisionGroup> mGroupForFiltering;
 
+  static Registrar<BulletCollisionDetector> mRegistrar;
 };
 
 }  // namespace collision

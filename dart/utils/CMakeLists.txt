@@ -37,7 +37,7 @@ target_include_directories(
 )
 target_link_libraries(
   ${target_name}
-  dart-collision-bullet
+  dart
   ${TINYXML_LIBRARIES}
   ${TINYXML2_LIBRARIES}
 )
@@ -45,7 +45,7 @@ target_link_libraries(
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} collision-bullet)
+add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
 
 # Coverage test
 dart_coveralls_add(${hdrs} ${srcs} ${dart_utils_headers} ${dart_utils_sources})
