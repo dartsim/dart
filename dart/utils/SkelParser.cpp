@@ -41,9 +41,6 @@
 #include "dart/config.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/collision/CollisionObject.hpp"
-#if HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
-#endif
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
@@ -654,6 +651,18 @@ tinyxml2::XMLElement* checkFormatAndGetWorldElement(
 }
 
 //==============================================================================
+static std::shared_ptr<collision::CollisionDetector>
+createFclMeshCollisionDetector()
+{
+  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
+  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
+  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
+
+  return fcl;
+}
+
+//==============================================================================
 simulation::WorldPtr readWorld(
   tinyxml2::XMLElement* _worldElement,
   const common::Uri& _baseUri,
@@ -695,46 +704,37 @@ simulation::WorldPtr readWorld(
 
     if (hasElement(physicsElement, "collision_detector"))
     {
-      std::string strCD = getValueString(physicsElement, "collision_detector");
+      const auto cdType = getValueString(physicsElement, "collision_detector");
 
-      if (strCD == "fcl_mesh")
+      if (cdType == "fcl_mesh")
       {
-        collision_detector = collision::FCLCollisionDetector::create();
-        auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-              collision_detector);
-        cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-        cd->setContactPointComputationMethod(
-              collision::FCLCollisionDetector::DART);
+        collision_detector = createFclMeshCollisionDetector();
       }
-      else if (strCD == "fcl")
+      else if (cdType == "fcl")
       {
-        collision_detector = collision::FCLCollisionDetector::create();
+        collision_detector
+            = collision::CollisionDetector::getFactory()->create("fcl");
         auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
               collision_detector);
         cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
         cd->setContactPointComputationMethod(
               collision::FCLCollisionDetector::DART);
       }
-      else if (strCD == "dart")
-        collision_detector = collision::DARTCollisionDetector::create();
-#if HAVE_BULLET_COLLISION
-      else if (strCD == "bullet")
-        collision_detector = collision::BulletCollisionDetector::create();
-#endif
       else
-        dtwarn << "Unknown collision detector[" << strCD << "]. "
+      {
+        collision_detector
+            = collision::CollisionDetector::getFactory()->create(cdType);
+      }
+
+      if (!collision_detector)
+      {
+        dtwarn << "Unknown collision detector[" << cdType << "]. "
                << "Default collision detector[fcl_mesh] will be loaded.\n";
+      }
     }
 
     if (!collision_detector)
-    {
-      collision_detector = collision::FCLCollisionDetector::create();
-      auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-            collision_detector);
-      cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-      cd->setContactPointComputationMethod(
-            collision::FCLCollisionDetector::DART);
-    }
+      collision_detector = createFclMeshCollisionDetector();
 
     newWorld->getConstraintSolver()->setCollisionDetector(collision_detector);
   }

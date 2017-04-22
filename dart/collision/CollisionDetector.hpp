@@ -37,6 +37,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Factory.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
@@ -56,6 +57,18 @@ public:
 
   friend class CollisionObject;
   friend class CollisionGroup;
+
+  using Factory = common::Factory<
+      std::string, CollisionDetector, std::shared_ptr<CollisionDetector>>;
+
+  using SingletonFactory = common::Singleton<Factory>;
+
+  template <typename Derived>
+  using Registrar = common::FactoryRegistrar<
+      std::string, CollisionDetector, Derived, std::shared_ptr<CollisionDetector>>;
+
+  /// Returns the singleton factory.
+  static Factory* getFactory();
 
   /// Destructor
   virtual ~CollisionDetector() = default;

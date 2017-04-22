@@ -1363,3 +1363,22 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
     EXPECT_NEAR(joint6->getAcceleration(0), 0.0, tol);
   }
 }
+
+//==============================================================================
+TEST_F(COLLISION, Factory)
+{
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("fcl"));
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
+
+#if HAVE_BULLET_COLLISION
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("bullet"));
+#else
+  EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("bullet"));
+#endif
+
+#if HAVE_ODE_COLLISION
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("ode"));
+#else
+  EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("ode"));
+#endif
+}
