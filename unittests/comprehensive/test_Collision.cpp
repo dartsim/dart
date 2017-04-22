@@ -1376,7 +1376,7 @@ TEST_F(COLLISION, Factory)
   EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("bullet"));
 #endif
 
-#if HAVE_ODE_COLLISION
+#if HAVE_ODE
   EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("ode"));
 #else
   EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("ode"));
