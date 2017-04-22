@@ -1288,3 +1288,118 @@ TEST(Skeleton, Updating)
   EXPECT_FALSE(originalMass == newMass);
   EXPECT_TRUE(newMass == originalMass - removedMass);
 }
+
+//==============================================================================
+TEST(Skeleton, GetJointsAndBodyNodes)
+{
+  auto skelA = Skeleton::create();
+  auto skelB = Skeleton::create();
+
+  BodyNode* bodyNodeA0;
+  BodyNode* bodyNodeA1;
+  BodyNode* bodyNodeA2;
+
+  BodyNode* bodyNodeB0;
+  BodyNode* bodyNodeB1;
+  BodyNode* bodyNodeB2;
+
+  Joint* jointA0;
+  Joint* jointA1;
+  Joint* jointA2;
+
+  Joint* jointB0;
+  Joint* jointB1;
+  Joint* jointB2;
+
+  std::tie(jointA0, bodyNodeA0)
+      = skelA->createJointAndBodyNodePair<FreeJoint>();
+  std::tie(jointA1, bodyNodeA1)
+      = skelA->createJointAndBodyNodePair<FreeJoint>(bodyNodeA0);
+  std::tie(jointA2, bodyNodeA2)
+      = skelA->createJointAndBodyNodePair<FreeJoint>(bodyNodeA1);
+
+  std::tie(jointB0, bodyNodeB0)
+      = skelB->createJointAndBodyNodePair<FreeJoint>();
+  std::tie(jointB1, bodyNodeB1)
+      = skelB->createJointAndBodyNodePair<FreeJoint>(bodyNodeB0);
+  std::tie(jointB2, bodyNodeB2)
+      = skelB->createJointAndBodyNodePair<FreeJoint>(bodyNodeB1);
+
+  EXPECT_TRUE(skelA->getNumBodyNodes() == 3u);
+  EXPECT_TRUE(skelB->getNumBodyNodes() == 3u);
+
+  EXPECT_TRUE(skelA->getJoints().size() == 3u);
+  EXPECT_TRUE(skelB->getJoints().size() == 3u);
+
+  bodyNodeA0->setName("bodyNode0");
+  bodyNodeA1->setName("bodyNode1");
+  bodyNodeA2->setName("bodyNode2");
+
+  bodyNodeB0->setName("bodyNode0");
+  bodyNodeB1->setName("bodyNode1");
+  bodyNodeB2->setName("bodyNode2");
+
+  jointA0->setName("joint0");
+  jointA1->setName("joint1");
+  jointA2->setName("joint2");
+
+  jointB0->setName("joint0");
+  jointB1->setName("joint1");
+  jointB2->setName("joint2");
+
+  EXPECT_TRUE(bodyNodeA0 == skelA->getBodyNode(bodyNodeA0->getName()));
+  EXPECT_TRUE(bodyNodeA1 == skelA->getBodyNode(bodyNodeA1->getName()));
+  EXPECT_TRUE(bodyNodeA2 == skelA->getBodyNode(bodyNodeA2->getName()));
+
+  EXPECT_TRUE(bodyNodeB0 == skelB->getBodyNode(bodyNodeB0->getName()));
+  EXPECT_TRUE(bodyNodeB1 == skelB->getBodyNode(bodyNodeB1->getName()));
+  EXPECT_TRUE(bodyNodeB2 == skelB->getBodyNode(bodyNodeB2->getName()));
+
+  EXPECT_TRUE(skelA->getBodyNodes("wrong name").empty());
+  EXPECT_TRUE(skelB->getBodyNodes("wrong name").empty());
+
+  EXPECT_TRUE(skelA->getBodyNodes(bodyNodeA0->getName()).size() == 1u);
+  EXPECT_TRUE(skelA->getBodyNodes(bodyNodeA1->getName()).size() == 1u);
+  EXPECT_TRUE(skelA->getBodyNodes(bodyNodeA2->getName()).size() == 1u);
+
+  EXPECT_TRUE(skelB->getBodyNodes(bodyNodeB0->getName()).size() == 1u);
+  EXPECT_TRUE(skelB->getBodyNodes(bodyNodeB1->getName()).size() == 1u);
+  EXPECT_TRUE(skelB->getBodyNodes(bodyNodeB2->getName()).size() == 1u);
+
+  EXPECT_TRUE(jointA0 == skelA->getJoint(jointA0->getName()));
+  EXPECT_TRUE(jointA1 == skelA->getJoint(jointA1->getName()));
+  EXPECT_TRUE(jointA2 == skelA->getJoint(jointA2->getName()));
+
+  EXPECT_TRUE(jointB0 == skelB->getJoint(jointB0->getName()));
+  EXPECT_TRUE(jointB1 == skelB->getJoint(jointB1->getName()));
+  EXPECT_TRUE(jointB2 == skelB->getJoint(jointB2->getName()));
+
+  EXPECT_TRUE(skelA->getJoints("wrong name").empty());
+  EXPECT_TRUE(skelB->getJoints("wrong name").empty());
+
+  EXPECT_TRUE(skelA->getJoints(jointA0->getName()).size() == 1u);
+  EXPECT_TRUE(skelA->getJoints(jointA1->getName()).size() == 1u);
+  EXPECT_TRUE(skelA->getJoints(jointA2->getName()).size() == 1u);
+
+  EXPECT_TRUE(skelB->getJoints(jointB0->getName()).size() == 1u);
+  EXPECT_TRUE(skelB->getJoints(jointB1->getName()).size() == 1u);
+  EXPECT_TRUE(skelB->getJoints(jointB2->getName()).size() == 1u);
+
+  auto group = Group::create();
+  group->addBodyNode(bodyNodeA0);
+  group->addBodyNode(bodyNodeB0);
+  group->addJoint(jointA0);
+  group->addJoint(jointB0);
+  EXPECT_TRUE(group->getJoints("wrong name").empty());
+  EXPECT_TRUE(group->getBodyNodes("wrong name").empty());
+  EXPECT_TRUE(group->getBodyNode("bodyNode0") == bodyNodeA0
+              || group->getBodyNode("bodyNode0") == bodyNodeB0);
+  EXPECT_TRUE(group->getJoint("joint0") == jointA0
+              || group->getJoint("joint0") == jointB0);
+  EXPECT_EQ(group->getBodyNodes("bodyNode0").size(), 2u);
+  EXPECT_EQ(group->getBodyNodes("bodyNode1").size(), 0u);
+  EXPECT_EQ(group->getBodyNodes("bodyNode2").size(), 0u);
+  EXPECT_EQ(group->getJoints("joint0").size(), 2u);
+  EXPECT_EQ(group->getJoints("joint1").size(), 0u);
+  EXPECT_EQ(group->getJoints("joint2").size(), 0u);
+}
