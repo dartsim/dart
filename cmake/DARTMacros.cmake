@@ -101,7 +101,7 @@ function(dart_check_required_package variable dependency)
 endfunction()
 
 #===============================================================================
-function(dart_check_optional_package variable component dependency)
+macro(dart_check_optional_package variable component dependency)
   if(${${variable}_FOUND})
     set(HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
     if(DART_VERBOSE)
@@ -119,7 +119,7 @@ function(dart_check_optional_package variable component dependency)
     endif()
     return()
   endif()
-endfunction()
+endmacro()
 
 #===============================================================================
 function(dart_add_custom_target rel_dir property_name)
