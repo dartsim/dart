@@ -1,3 +1,7 @@
+# Dependency checks
+find_package(NLOPT 2.4.1 QUIET)
+dart_check_optional_package(NLOPT "dart-optimizer-nlopt" "nlopt" "2.4.1")
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")

@@ -42,9 +42,5 @@ install(
 # Add subdirectories
 add_subdirectory(dart)
 add_subdirectory(fcl)
-if(HAVE_ODE_COLLISION)
-  add_subdirectory(ode)
-endif()
-if(HAVE_BULLET_COLLISION)
-  add_subdirectory(bullet)
-endif()
+add_subdirectory(ode)
+add_subdirectory(bullet)

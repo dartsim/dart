@@ -1,3 +1,22 @@
+# Dependency checks
+find_package(OpenGL QUIET)
+dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
+
+if(WIN32 AND NOT CYGWIN)
+  set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
+  set(GLUT_LIBRARIES glut32)
+  set(HAVE_GLUT TRUE)
+else()
+  find_package(GLUT QUIET)
+  dart_check_optional_package(GLUT "dart-gui" "freeglut3")
+  if(GLUT_FOUND)
+    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
+    set(HAVE_GLUT TRUE)
+  else()
+    set(HAVE_GLUT FALSE)
+  endif()
+endif()
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -38,11 +57,11 @@ add_component_dependencies(
 # Coverage test
 dart_coveralls_add(${hdrs} ${srcs})
 
+# Add subdirectories
+add_subdirectory(osg)
+
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})
-if(HAVE_OPENSCENEGRAPH)
-  list(APPEND header_names "osg/osg.hpp")
-endif(HAVE_OPENSCENEGRAPH)
 dart_generate_include_header_list(
   gui_headers
   "dart/gui/"
@@ -60,8 +79,3 @@ install(
   DESTINATION include/dart/gui
   COMPONENT headers
 )
-
-# Add subdirectories
-if(HAVE_OPENSCENEGRAPH)
-  add_subdirectory(osg)
-endif(HAVE_OPENSCENEGRAPH)

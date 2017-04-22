@@ -31,7 +31,7 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif
 
@@ -307,7 +307,7 @@ int main(int argc, char* argv[])
   WorldPtr world = std::make_shared<World>();
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   world->getConstraintSolver()->setCollisionDetector(
       dart::collision::BulletCollisionDetector::create());
 #endif

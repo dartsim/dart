@@ -41,10 +41,10 @@
 #include "dart/math/math.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/collision/collision.hpp"
-#if HAVE_ODE_COLLISION
+#if HAVE_ODE
   #include "dart/collision/ode/ode.hpp"
 #endif
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif
 #include "dart/simulation/simulation.hpp"
@@ -578,7 +578,7 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_FALSE(group1->collide(group3.get()));
   EXPECT_TRUE(group2->collide(group3.get()));
   EXPECT_TRUE(group23->collide());
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   if (cd->getType() == BulletCollisionDetector::getStaticType())
   {
     dtwarn << "Skipping group-group test for 'bullet' collision detector. "
@@ -614,7 +614,7 @@ TEST_F(COLLISION, SimpleFrames)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSimpleFrames(fcl_mesh_fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testSimpleFrames(bullet);
 #endif
@@ -741,12 +741,12 @@ TEST_F(COLLISION, SphereSphere)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSphereSphere(fcl_mesh_fcl);
 
-//#if HAVE_ODE_COLLISION
+//#if HAVE_ODE
 //  auto ode = OdeCollisionDetector::create();
 //  testSphereSphere(ode);
 //#endif
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testSphereSphere(bullet);
 #endif
@@ -849,12 +849,12 @@ TEST_F(COLLISION, BoxBox)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testBoxBox(fcl_mesh_fcl);
 
-#if HAVE_ODE_COLLISION
+#if HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   testBoxBox(ode);
 #endif
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testBoxBox(bullet);
 #endif
@@ -980,12 +980,12 @@ TEST_F(COLLISION, testCylinderCylinder)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testCylinderCylinder(fcl_mesh_fcl);
 
-#if HAVE_ODE_COLLISION
+#if HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   testCylinderCylinder(ode);
 #endif
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testCylinderCylinder(bullet);
 #endif
@@ -1051,12 +1051,12 @@ TEST_F(COLLISION, testCapsuleCapsule)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testCapsuleCapsule(fcl_mesh_fcl);
 
-#if HAVE_ODE_COLLISION
+#if HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   testCapsuleCapsule(ode);
 #endif
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testCapsuleCapsule(bullet);
 #endif
@@ -1088,7 +1088,7 @@ TEST_F(COLLISION, Options)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testOptions(fcl_mesh_fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testOptions(bullet);
 #endif
@@ -1171,7 +1171,7 @@ TEST_F(COLLISION, Filter)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testFilter(fcl_mesh_fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testFilter(bullet);
 #endif
@@ -1273,7 +1273,7 @@ TEST_F(COLLISION, CreateCollisionGroupFromVariousObject)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testCreateCollisionGroups(fcl_mesh_fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testCreateCollisionGroups(bullet);
 #endif

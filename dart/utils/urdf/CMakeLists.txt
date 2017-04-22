@@ -1,3 +1,21 @@
+# Dependency checks
+find_package(urdfdom QUIET)
+if(urdfdom_FOUND)
+  if(DART_VERBOSE)
+    message(STATUS "Looking for urdfdom - ${urdfdom_headers_VERSION} found")
+  endif()
+else()
+  message(STATUS "Looking for urdfdom - NOT found, please install liburdfdom-dev")
+  return()
+endif()
+if(MSVC)
+  set(urdfdom_LIBRARIES optimized urdfdom_sensor      debug urdfdom_sensord
+                        optimized urdfdom_model_state debug urdfdom_model_stated
+                        optimized urdfdom_model       debug urdfdom_modeld
+                        optimized urdfdom_world       debug urdfdom_worldd
+                        optimized console_bridge      debug console_bridged)
+endif()
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -5,6 +23,19 @@ file(GLOB srcs "*.cpp")
 # Set local target name
 set(target_name ${PROJECT_NAME}-utils-urdf)
 set(component_name utils-urdf)
+
+set(DART_CONFIG_HPP_IN ${CMAKE_SOURCE_DIR}/dart/config.hpp.in)
+set(DART_CONFIG_HPP_OUT ${CMAKE_BINARY_DIR}/dart/config.hpp)
+if(DART_VERBOSE)
+  message(STATUS ${DART_CONFIG_HPP_OUT})
+endif()
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/BackwardCompatibility.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/BackwardCompatibility.hpp
+  @ONLY
+)
+install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})

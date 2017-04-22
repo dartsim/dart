@@ -1,3 +1,10 @@
+# Dependency checks
+find_package(TINYXML 2.6.2 QUIET)
+dart_check_optional_package(TINYXML "dart-utils" "tinyxml" "2.6.2")
+
+find_package(TINYXML2 QUIET)
+dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -72,6 +79,4 @@ install(
 )
 
 # Add subdirectories (components)
-if(urdfdom_FOUND)
-  add_subdirectory(urdf)
-endif()
+add_subdirectory(urdf)

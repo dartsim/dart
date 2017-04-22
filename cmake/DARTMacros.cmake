@@ -103,13 +103,13 @@ endfunction()
 #===============================================================================
 function(dart_check_optional_package variable component dependency)
   if(${${variable}_FOUND})
-    set(HAVE_${variable} TRUE PARENT_SCOPE)
+    set(HAVE_${variable} TRUE CACHE BOOL "Check if ${variable} found." FORCE)
     if(DART_VERBOSE)
       message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"
                      " found")
     endif()
   else()
-    set(HAVE_${variable} FALSE PARENT_SCOPE)
+    set(HAVE_${variable} FALSE CACHE BOOL "Check if ${variable} found." FORCE)
     if(ARGV3) # version
       message(STATUS "Looking for ${dependency} - NOT found, to use"
                      " ${component}, please install ${dependency} (>= ${ARGV3})")

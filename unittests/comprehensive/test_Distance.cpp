@@ -125,7 +125,7 @@ TEST(Distance, testBasicInterface)
   auto fcl = FCLCollisionDetector::create();
   testBasicInterface(fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testBasicInterface(bullet);
 #endif
@@ -223,7 +223,7 @@ TEST(Distance, Options)
   auto fcl = FCLCollisionDetector::create();
   testOptions(fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testOptions(bullet);
 #endif
@@ -281,7 +281,7 @@ TEST(Distance, SphereSphere)
   auto fcl = FCLCollisionDetector::create();
   testSphereSphere(fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testSphereSphere(bullet);
 #endif
