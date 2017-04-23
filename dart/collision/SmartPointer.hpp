@@ -41,13 +41,9 @@ namespace collision {
 DART_COMMON_MAKE_SHARED_WEAK(CollisionDetector)
 DART_COMMON_MAKE_SHARED_WEAK(FCLCollisionDetector)
 DART_COMMON_MAKE_SHARED_WEAK(DARTCollisionDetector)
-#if HAVE_BULLET
-  DART_COMMON_MAKE_SHARED_WEAK(BulletCollisionDetector)
-#endif
 
 DART_COMMON_MAKE_SHARED_WEAK(CollisionObject)
 DART_COMMON_MAKE_SHARED_WEAK(CollisionGroup)
-
 
 }  // namespace collision
 }  // namespace dart
