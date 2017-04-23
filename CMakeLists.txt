@@ -309,7 +309,7 @@ if(TARGET dart)
     endif(DART_VERBOSE)
 
     # Add tutorial targets
-    if(HAVE_BULLET)
+    if(TARGET dart-collision-bullet)
       dart_add_tutorial(tutorials/tutorialBiped dart-utils-urdf dart-gui dart-collision-bullet)
       dart_add_tutorial(tutorials/tutorialBiped-Finished dart-utils-urdf dart-gui dart-collision-bullet)
     else()
