@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -32,7 +32,9 @@
 #include <gtest/gtest.h>
 #include <fcl/distance.h>
 #include "dart/dart.hpp"
-#include "dart/collision/bullet/bullet.hpp"
+#if HAVE_BULLET_COLLISION
+  #include "dart/collision/bullet/bullet.hpp"
+#endif
 #include "TestHelpers.hpp"
 
 using namespace dart;
@@ -48,8 +50,8 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd,
     return;
   }
 
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new EllipsoidShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new EllipsoidShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -145,8 +147,8 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd,
     return;
   }
 
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new EllipsoidShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new EllipsoidShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -243,8 +245,8 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
     return;
   }
 
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new EllipsoidShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new EllipsoidShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -288,11 +290,4 @@ TEST(Distance, SphereSphere)
 
   auto dart = DARTCollisionDetector::create();
   testSphereSphere(dart);
-}
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

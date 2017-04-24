@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -34,7 +34,6 @@
 
 #include <vector>
 #include <fcl/collision_object.h>
-#include <boost/weak_ptr.hpp> // This should be removed once we migrate to fcl 0.5
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/fcl/FCLTypes.hpp"
 
@@ -185,12 +184,10 @@ private:
 
   using ShapeMap = std::map<dynamics::ConstShapePtr,
                             fcl_weak_ptr<fcl::CollisionGeometry>>;
-  // TODO(JS): FCL replaced all the use of boost in version 0.5. Once we migrate
-  // to 0.5 or greater, this also should be changed to
-  // std::weak_ptr<fcl::CollisionGeometry>
 
   ShapeMap mShapeMap;
 
+  static Registrar<FCLCollisionDetector> mRegistrar;
 };
 
 }  // namespace collision

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -51,7 +51,7 @@
 #include "dart/dynamics/CapsuleShape.hpp"
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/MultiSphereShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/LineSegmentShape.hpp"
@@ -68,6 +68,8 @@ namespace gui {
 
 SimWindow::SimWindow()
   : Win3D() {
+  mWorld = std::make_shared<simulation::World>();
+
   mBackground[0] = 1.0;
   mBackground[1] = 1.0;
   mBackground[2] = 1.0;
@@ -402,7 +404,7 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   using dynamics::CapsuleShape;
   using dynamics::ConeShape;
   using dynamics::PlaneShape;
-  using dynamics::MultiSphereShape;
+  using dynamics::MultiSphereConvexHullShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
   using dynamics::LineSegmentShape;
@@ -420,7 +422,7 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
   else if (shape->is<EllipsoidShape>())
   {
     const auto* ellipsoid = static_cast<const EllipsoidShape*>(shape);
-    mRI->drawEllipsoid(ellipsoid->getSize());
+    mRI->drawEllipsoid(ellipsoid->getDiameters());
   }
   else if (shape->is<CylinderShape>())
   {
@@ -437,18 +439,10 @@ void SimWindow::drawShape(const dynamics::Shape* shape,
     const auto* cone = static_cast<const ConeShape*>(shape);
     mRI->drawCone(cone->getRadius(), cone->getHeight());
   }
-  else if (shape->is<MultiSphereShape>())
+  else if (shape->is<MultiSphereConvexHullShape>())
   {
-    const auto* multiSphere = static_cast<const MultiSphereShape*>(shape);
-    const auto& spheres = multiSphere->getSpheres();
-    for (const auto& sphere : spheres)
-    {
-      glTranslated(sphere.second.x(), sphere.second.y(), sphere.second.z());
-      mRI->drawSphere(sphere.first);
-      glTranslated(-sphere.second.x(), -sphere.second.y(), -sphere.second.z());
-    }
-    // TODO(JS): This is an workaround that draws only spheres rather than the
-    // actual convex hull.
+    const auto* multiSphere = static_cast<const MultiSphereConvexHullShape*>(shape);
+    mRI->drawMultiSphere(multiSphere->getSpheres());
   }
   else if (shape->is<MeshShape>())
   {

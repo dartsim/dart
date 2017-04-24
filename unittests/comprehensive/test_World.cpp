@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -162,26 +162,26 @@ TEST(World, AddingAndRemovingSkeletons)
 TEST(World, Cloning)
 {
   // Create a list of skel files to test with
-  std::vector<std::string> fileList;
-  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  std::vector<common::Uri> fileList;
+  fileList.push_back("dart://sample/skel/test/chainwhipa.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/fullbody1.skel");
 
   std::vector<dart::simulation::WorldPtr> worlds;
   for(std::size_t i=0; i<fileList.size(); ++i)
@@ -245,26 +245,26 @@ TEST(World, Cloning)
 TEST(World, ValidatingClones)
 {
   // Create a list of skel files to test with
-  std::vector<std::string> fileList;
-  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  std::vector<common::Uri> fileList;
+  fileList.push_back("dart://sample/skel/test/chainwhipa.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/fullbody1.skel");
 
   std::vector<dart::simulation::WorldPtr> worlds;
   for(std::size_t i=0; i<fileList.size(); ++i)
@@ -301,11 +301,4 @@ TEST(World, ValidatingClones)
       EXPECT_EQ(originalCDType, cloneCDType);
     }
   }
-}
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

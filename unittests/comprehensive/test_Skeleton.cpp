@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -46,35 +46,35 @@ using namespace math;
 using namespace dynamics;
 using namespace simulation;
 
-std::vector<std::string> getFileList()
+std::vector<common::Uri> getFileList()
 {
-  std::vector<std::string> fileList;
-  fileList.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  fileList.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  std::vector<common::Uri> fileList;
+  fileList.push_back("dart://sample/skel/test/chainwhipa.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/single_pendulum_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/double_pendulum_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
+  fileList.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
+  fileList.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
+  fileList.push_back("dart://sample/skel/fullbody1.skel");
 
   return fileList;
 }
 
 std::vector<SkeletonPtr> getSkeletons()
 {
-  std::vector<std::string> fileList = getFileList();
+  const auto fileList = getFileList();
 
   std::vector<WorldPtr> worlds;
   for(std::size_t i=0; i<fileList.size(); ++i)
@@ -765,6 +765,26 @@ TEST(Skeleton, ZeroDofJointInReferential)
   EXPECT_FALSE(branch->getIndexOf(zeroDof2) == INVALID_INDEX);
 }
 
+TEST(Skeleton, ZeroDofJointConstraintForces)
+{
+  // This is a regression test which makes sure that the BodyNodes of
+  // ZeroDofJoints will be correctly aggregate constraint forces.
+  SkeletonPtr skel = Skeleton::create();
+
+  BodyNode* bn = skel->createJointAndBodyNodePair<RevoluteJoint>().second;
+  BodyNode* zeroDof1 = skel->createJointAndBodyNodePair<WeldJoint>(bn).second;
+  bn = skel->createJointAndBodyNodePair<PrismaticJoint>(zeroDof1).second;
+  skel->createJointAndBodyNodePair<WeldJoint>(bn);
+
+  const auto numSkelDofs = skel->getNumDofs();
+  for (auto& bodyNode : skel->getBodyNodes())
+    bodyNode->setConstraintImpulse(Eigen::Vector6d::Random());
+
+  // Make sure this does not cause seg-fault
+  Eigen::VectorXd constraintForces = skel->getConstraintForces();
+  EXPECT_EQ(constraintForces.size(), static_cast<int>(numSkelDofs));
+}
+
 TEST(Skeleton, Referential)
 {
   std::vector<SkeletonPtr> skeletons = getSkeletons();
@@ -1269,8 +1289,117 @@ TEST(Skeleton, Updating)
   EXPECT_TRUE(newMass == originalMass - removedMass);
 }
 
-int main(int argc, char* argv[])
+//==============================================================================
+TEST(Skeleton, GetJointsAndBodyNodes)
 {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  auto skelA = Skeleton::create();
+  auto skelB = Skeleton::create();
+
+  BodyNode* bodyNodeA0;
+  BodyNode* bodyNodeA1;
+  BodyNode* bodyNodeA2;
+
+  BodyNode* bodyNodeB0;
+  BodyNode* bodyNodeB1;
+  BodyNode* bodyNodeB2;
+
+  Joint* jointA0;
+  Joint* jointA1;
+  Joint* jointA2;
+
+  Joint* jointB0;
+  Joint* jointB1;
+  Joint* jointB2;
+
+  std::tie(jointA0, bodyNodeA0)
+      = skelA->createJointAndBodyNodePair<FreeJoint>();
+  std::tie(jointA1, bodyNodeA1)
+      = skelA->createJointAndBodyNodePair<FreeJoint>(bodyNodeA0);
+  std::tie(jointA2, bodyNodeA2)
+      = skelA->createJointAndBodyNodePair<FreeJoint>(bodyNodeA1);
+
+  std::tie(jointB0, bodyNodeB0)
+      = skelB->createJointAndBodyNodePair<FreeJoint>();
+  std::tie(jointB1, bodyNodeB1)
+      = skelB->createJointAndBodyNodePair<FreeJoint>(bodyNodeB0);
+  std::tie(jointB2, bodyNodeB2)
+      = skelB->createJointAndBodyNodePair<FreeJoint>(bodyNodeB1);
+
+  EXPECT_TRUE(skelA->getNumBodyNodes() == 3u);
+  EXPECT_TRUE(skelB->getNumBodyNodes() == 3u);
+
+  EXPECT_TRUE(skelA->getJoints().size() == 3u);
+  EXPECT_TRUE(skelB->getJoints().size() == 3u);
+
+  bodyNodeA0->setName("bodyNode0");
+  bodyNodeA1->setName("bodyNode1");
+  bodyNodeA2->setName("bodyNode2");
+
+  bodyNodeB0->setName("bodyNode0");
+  bodyNodeB1->setName("bodyNode1");
+  bodyNodeB2->setName("bodyNode2");
+
+  jointA0->setName("joint0");
+  jointA1->setName("joint1");
+  jointA2->setName("joint2");
+
+  jointB0->setName("joint0");
+  jointB1->setName("joint1");
+  jointB2->setName("joint2");
+
+  EXPECT_TRUE(bodyNodeA0 == skelA->getBodyNode(bodyNodeA0->getName()));
+  EXPECT_TRUE(bodyNodeA1 == skelA->getBodyNode(bodyNodeA1->getName()));
+  EXPECT_TRUE(bodyNodeA2 == skelA->getBodyNode(bodyNodeA2->getName()));
+
+  EXPECT_TRUE(bodyNodeB0 == skelB->getBodyNode(bodyNodeB0->getName()));
+  EXPECT_TRUE(bodyNodeB1 == skelB->getBodyNode(bodyNodeB1->getName()));
+  EXPECT_TRUE(bodyNodeB2 == skelB->getBodyNode(bodyNodeB2->getName()));
+
+  EXPECT_TRUE(skelA->getBodyNodes("wrong name").empty());
+  EXPECT_TRUE(skelB->getBodyNodes("wrong name").empty());
+
+  EXPECT_TRUE(skelA->getBodyNodes(bodyNodeA0->getName()).size() == 1u);
+  EXPECT_TRUE(skelA->getBodyNodes(bodyNodeA1->getName()).size() == 1u);
+  EXPECT_TRUE(skelA->getBodyNodes(bodyNodeA2->getName()).size() == 1u);
+
+  EXPECT_TRUE(skelB->getBodyNodes(bodyNodeB0->getName()).size() == 1u);
+  EXPECT_TRUE(skelB->getBodyNodes(bodyNodeB1->getName()).size() == 1u);
+  EXPECT_TRUE(skelB->getBodyNodes(bodyNodeB2->getName()).size() == 1u);
+
+  EXPECT_TRUE(jointA0 == skelA->getJoint(jointA0->getName()));
+  EXPECT_TRUE(jointA1 == skelA->getJoint(jointA1->getName()));
+  EXPECT_TRUE(jointA2 == skelA->getJoint(jointA2->getName()));
+
+  EXPECT_TRUE(jointB0 == skelB->getJoint(jointB0->getName()));
+  EXPECT_TRUE(jointB1 == skelB->getJoint(jointB1->getName()));
+  EXPECT_TRUE(jointB2 == skelB->getJoint(jointB2->getName()));
+
+  EXPECT_TRUE(skelA->getJoints("wrong name").empty());
+  EXPECT_TRUE(skelB->getJoints("wrong name").empty());
+
+  EXPECT_TRUE(skelA->getJoints(jointA0->getName()).size() == 1u);
+  EXPECT_TRUE(skelA->getJoints(jointA1->getName()).size() == 1u);
+  EXPECT_TRUE(skelA->getJoints(jointA2->getName()).size() == 1u);
+
+  EXPECT_TRUE(skelB->getJoints(jointB0->getName()).size() == 1u);
+  EXPECT_TRUE(skelB->getJoints(jointB1->getName()).size() == 1u);
+  EXPECT_TRUE(skelB->getJoints(jointB2->getName()).size() == 1u);
+
+  auto group = Group::create();
+  group->addBodyNode(bodyNodeA0);
+  group->addBodyNode(bodyNodeB0);
+  group->addJoint(jointA0);
+  group->addJoint(jointB0);
+  EXPECT_TRUE(group->getJoints("wrong name").empty());
+  EXPECT_TRUE(group->getBodyNodes("wrong name").empty());
+  EXPECT_TRUE(group->getBodyNode("bodyNode0") == bodyNodeA0
+              || group->getBodyNode("bodyNode0") == bodyNodeB0);
+  EXPECT_TRUE(group->getJoint("joint0") == jointA0
+              || group->getJoint("joint0") == jointB0);
+  EXPECT_EQ(group->getBodyNodes("bodyNode0").size(), 2u);
+  EXPECT_EQ(group->getBodyNodes("bodyNode1").size(), 0u);
+  EXPECT_EQ(group->getBodyNodes("bodyNode2").size(), 0u);
+  EXPECT_EQ(group->getJoints("joint0").size(), 2u);
+  EXPECT_EQ(group->getJoints("joint1").size(), 0u);
+  EXPECT_EQ(group->getJoints("joint2").size(), 0u);
 }

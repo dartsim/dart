@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -177,9 +177,6 @@ TEST(Optimizer, BasicNlopt)
 #if HAVE_IPOPT
 TEST(Optimizer, BasicIpopt)
 {
-  dterr << "Ipopt does not pass this test yet. Please see #153.";
-  return;
-
   std::shared_ptr<Problem> prob = std::make_shared<Problem>(2);
 
   prob->setLowerBounds(Eigen::Vector2d(-HUGE_VAL, 0));
@@ -301,11 +298,4 @@ TEST(Optimizer, OutStream)
   EXPECT_TRUE(compareStringAndFile(outputString, outputFile));
 
   std::remove(outputFile.c_str());
-}
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

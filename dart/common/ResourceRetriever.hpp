@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -53,11 +53,18 @@ public:
   /// \brief Return the resource specified by a URI or nullptr on failure.
   virtual ResourcePtr retrieve(const Uri& _uri) = 0;
 
-  // We don't const-qualify for exists and retrieve here. Derived classes of
-  // ResourceRetriever will be interacting with external resources that you
-  // don't necessarily have control over so we cannot guarantee that you get the
-  // same result every time with the same input Uri. Indeed, const-qualification
-  // for those functions is pointless.
+  /// Reads all data from the resource of uri, and returns it as a string.
+  ///
+  /// \param[in] uri URI to the resource to be retrieved.
+  /// \return The string retrieved from the resource.
+  /// \throw std::runtime_error when failed to read sucessfully.
+  virtual std::string readAll(const Uri& uri);
+
+  // We don't const-qualify for exists, retrieve, and readAll here. Derived
+  // classes of ResourceRetriever will be interacting with external resources
+  // that you don't necessarily have control over so we cannot guarantee that
+  // you get the same result every time with the same input Uri. Indeed,
+  // const-qualification for those functions is pointless.
 };
 
 using ResourceRetrieverPtr = std::shared_ptr<ResourceRetriever>;

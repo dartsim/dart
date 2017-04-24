@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -105,6 +105,19 @@ TEST(LocalResourceRetriever, retrieve_Path)
   ASSERT_TRUE(resource != nullptr);
 }
 
+TEST(LocalResourceRetriever, readAll)
+{
+  LocalResourceRetriever retriever;
+  auto resource = retriever.retrieve(DART_DATA_PATH "test/hello_world.txt");
+  ASSERT_TRUE(resource != nullptr);
+
+  auto content = resource->readAll();
+  ASSERT_TRUE(content == std::string("Hello World"));
+
+  ASSERT_TRUE(retriever.readAll(DART_DATA_PATH "test/hello_world.txt")
+              == std::string("Hello World"));
+}
+
 TEST(LocalResourceRetriever, retrieve_ResourceOperations)
 {
   const std::string content = "Hello World";
@@ -154,10 +167,4 @@ TEST(LocalResourceRetriever, retrieve_ResourceOperations)
   ASSERT_TRUE(resource->seek(0, Resource::SEEKTYPE_SET));
   ASSERT_EQ(1u, resource->read(buffer.data(), content.size(), 1));
   EXPECT_STREQ(content.c_str(), buffer.data());
-}
-
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

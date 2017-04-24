@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -57,7 +57,13 @@ void postProcess(CollisionObject* o1, CollisionObject* o2, const CollisionOption
 
 } // anonymous namespace
 
-
+//==============================================================================
+DARTCollisionDetector::Registrar<DARTCollisionDetector>
+DARTCollisionDetector::mRegistrar{
+  DARTCollisionDetector::getStaticType(),
+  []() -> std::shared_ptr<dart::collision::DARTCollisionDetector> {
+      return dart::collision::DARTCollisionDetector::create();
+  }};
 
 //==============================================================================
 std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()

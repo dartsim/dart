@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -38,13 +38,6 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-BulletCollisionObject::UserData::UserData(CollisionObject* collisionObject)
-  : collisionObject(collisionObject)
-{
-  // Do nothing
-}
-
-//==============================================================================
 btCollisionObject* BulletCollisionObject::getBulletCollisionObject()
 {
   return mBulletCollisionObject.get();
@@ -62,11 +55,10 @@ BulletCollisionObject::BulletCollisionObject(
     const dynamics::ShapeFrame* shapeFrame,
     btCollisionShape* bulletCollisionShape)
   : CollisionObject(collisionDetector, shapeFrame),
-    mBulletCollisionObjectUserData(new UserData(this)),
     mBulletCollisionObject(new btCollisionObject())
 {
   mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
-  mBulletCollisionObject->setUserPointer(mBulletCollisionObjectUserData.get());
+  mBulletCollisionObject->setUserPointer(this);
 }
 
 //==============================================================================

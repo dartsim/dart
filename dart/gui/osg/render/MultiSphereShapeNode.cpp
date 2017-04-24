@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -37,7 +37,7 @@
 #include "dart/gui/osg/render/MultiSphereShapeNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
 
-#include "dart/dynamics/MultiSphereShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
@@ -50,7 +50,7 @@ class MultiSphereShapeGeode : public ShapeNode, public ::osg::Geode
 {
 public:
 
-  MultiSphereShapeGeode(dart::dynamics::MultiSphereShape* shape,
+  MultiSphereShapeGeode(dart::dynamics::MultiSphereConvexHullShape* shape,
                         ShapeFrameNode* parentShapeFrame,
                         MultiSphereShapeNode* parentNode);
 
@@ -62,7 +62,7 @@ protected:
   virtual ~MultiSphereShapeGeode();
 
   MultiSphereShapeNode* mParentNode;
-  dart::dynamics::MultiSphereShape* mMultiSphereShape;
+  dart::dynamics::MultiSphereConvexHullShape* mMultiSphereShape;
   MultiSphereShapeDrawable* mDrawable;
 
 };
@@ -72,7 +72,7 @@ class MultiSphereShapeDrawable : public ::osg::ShapeDrawable
 {
 public:
 
-  MultiSphereShapeDrawable(dart::dynamics::MultiSphereShape* shape,
+  MultiSphereShapeDrawable(dart::dynamics::MultiSphereConvexHullShape* shape,
                            dart::dynamics::VisualAspect* visualAspect,
                            MultiSphereShapeGeode* parent);
 
@@ -82,7 +82,7 @@ protected:
 
   virtual ~MultiSphereShapeDrawable();
 
-  dart::dynamics::MultiSphereShape* mMultiSphereShape;
+  dart::dynamics::MultiSphereConvexHullShape* mMultiSphereShape;
   dart::dynamics::VisualAspect* mVisualAspect;
   MultiSphereShapeGeode* mParent;
 
@@ -90,7 +90,7 @@ protected:
 
 //==============================================================================
 MultiSphereShapeNode::MultiSphereShapeNode(
-    std::shared_ptr<dart::dynamics::MultiSphereShape> shape,
+    std::shared_ptr<dart::dynamics::MultiSphereConvexHullShape> shape,
     ShapeFrameNode* parent)
   : ShapeNode(shape, parent, this),
     mMultiSphereShape(shape),
@@ -135,7 +135,7 @@ MultiSphereShapeNode::~MultiSphereShapeNode()
 
 //==============================================================================
 MultiSphereShapeGeode::MultiSphereShapeGeode(
-    dart::dynamics::MultiSphereShape* shape,
+    dart::dynamics::MultiSphereConvexHullShape* shape,
     ShapeFrameNode* parentShapeFrame,
     MultiSphereShapeNode* parentNode)
   : ShapeNode(parentNode->getShape(), parentShapeFrame, this),
@@ -177,7 +177,7 @@ MultiSphereShapeGeode::~MultiSphereShapeGeode()
 
 //==============================================================================
 MultiSphereShapeDrawable::MultiSphereShapeDrawable(
-    dart::dynamics::MultiSphereShape* shape,
+    dart::dynamics::MultiSphereConvexHullShape* shape,
     dart::dynamics::VisualAspect* visualAspect,
     MultiSphereShapeGeode* parent)
   : mMultiSphereShape(shape),

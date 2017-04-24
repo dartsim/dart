@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -33,6 +33,7 @@
 
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
 
 namespace dart {
 namespace collision {
@@ -44,7 +45,7 @@ BulletCollisionGroup::BulletCollisionGroup(
     mBulletProadphaseAlg(new btDbvtBroadphase()),
     mBulletCollisionConfiguration(new btDefaultCollisionConfiguration()),
     mBulletDispatcher(
-      new btCollisionDispatcher(mBulletCollisionConfiguration.get())),
+      new detail::BulletCollisionDispatcher(mBulletCollisionConfiguration.get())),
     mBulletCollisionWorld(
       new btCollisionWorld(mBulletDispatcher.get(),
                            mBulletProadphaseAlg.get(),

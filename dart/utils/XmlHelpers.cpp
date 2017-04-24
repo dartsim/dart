@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -652,26 +652,8 @@ void openXMLFile(tinyxml2::XMLDocument& doc,
   else
     retriever = std::make_shared<common::LocalResourceRetriever>();
 
-  const common::ResourcePtr resource = retriever->retrieve(uri);
-  if(!resource)
-  {
-    dtwarn << "[openXMLFile] Failed opening URI '"
-           << uri.toString() << "'.\n";
-    throw std::runtime_error("Failed opening URI.");
-  }
-
-  // C++11 guarantees that std::string has contiguous storage.
-  const std::size_t size = resource->getSize();
-  std::string content;
-  content.resize(size);
-  if(resource->read(&content.front(), size, 1) != 1)
-  {
-    dtwarn << "[openXMLFile] Failed reading from URI '"
-           << uri.toString() << "'.\n";
-    throw std::runtime_error("Failed reading from URI.");
-  }
-
-  int const result = doc.Parse(&content.front());
+  const auto content = retriever->readAll(uri);
+  const auto result = doc.Parse(&content.front());
   if(result != tinyxml2::XML_SUCCESS)
   {
     dtwarn << "[openXMLFile] Failed parsing XML: TinyXML2 returned error"

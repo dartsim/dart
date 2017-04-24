@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -463,13 +463,16 @@ fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
 
   for (int i = 0; i < 112; i++)
   {
-    p1 = fcl::Vec3f(v[f[i][0]][0] * _sizeX,
+    p1 = fcl::Vec3f(
+        v[f[i][0]][0] * _sizeX,
         v[f[i][0]][1] * _sizeY,
         v[f[i][0]][2] * _sizeZ);
-    p2 = fcl::Vec3f(v[f[i][1]][0] * _sizeX,
+    p2 = fcl::Vec3f(
+        v[f[i][1]][0] * _sizeX,
         v[f[i][1]][1] * _sizeY,
         v[f[i][1]][2] * _sizeZ);
-    p3 = fcl::Vec3f(v[f[i][2]][0] * _sizeX,
+    p3 = fcl::Vec3f(
+        v[f[i][2]][0] * _sizeX,
         v[f[i][2]][1] * _sizeY,
         v[f[i][2]][2] * _sizeZ);
 
@@ -642,7 +645,13 @@ fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
 
 } // anonymous namespace
 
-
+//==============================================================================
+FCLCollisionDetector::Registrar<FCLCollisionDetector>
+FCLCollisionDetector::mRegistrar{
+  FCLCollisionDetector::getStaticType(),
+  []() -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
+      return dart::collision::FCLCollisionDetector::create();
+  }};
 
 //==============================================================================
 std::shared_ptr<FCLCollisionDetector> FCLCollisionDetector::create()
@@ -951,19 +960,21 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
 
     auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
-    const Eigen::Vector3d& size = ellipsoid->getSize();
+    const Eigen::Vector3d& radii = ellipsoid->getRadii();
 
     if (FCLCollisionDetector::PRIMITIVE == type)
     {
 #if FCL_VERSION_AT_LEAST(0,4,0)
-      geom = new fcl::Ellipsoid(FCLTypes::convertVector3(size * 0.5));
+      geom = new fcl::Ellipsoid(FCLTypes::convertVector3(radii));
 #else
-      geom = createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]);
+      geom = createEllipsoid<fcl::OBBRSS>(
+          radii[0]*2.0, radii[1]*2.0, radii[2]*2.0);
 #endif
     }
     else
     {
-      geom = createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]);
+      geom = createEllipsoid<fcl::OBBRSS>(
+          radii[0]*2.0, radii[1]*2.0, radii[2]*2.0);
     }
   }
   else if (CylinderShape::getStaticType() == shapeType)
@@ -1083,15 +1094,8 @@ bool collisionCallback(
   // Filtering
   if (filter)
   {
-    auto userData1
-        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-    auto userData2
-        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-    assert(userData1);
-    assert(userData2);
-
-    auto collisionObject1 = userData1->mCollisionObject;
-    auto collisionObject2 = userData2->mCollisionObject;
+    auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+    auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
     assert(collisionObject1);
     assert(collisionObject2);
 
@@ -1159,15 +1163,8 @@ bool distanceCallback(
   // Filtering
   if (filter)
   {
-    auto userData1
-        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-    auto userData2
-        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-    assert(userData1);
-    assert(userData2);
-
-    auto collisionObject1 = userData1->mCollisionObject;
-    auto collisionObject2 = userData2->mCollisionObject;
+    auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+    auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
     assert(collisionObject1);
     assert(collisionObject2);
 
@@ -1353,19 +1350,12 @@ void postProcessDART(
   {
     const auto& c = fclResult.getContact(i);
 
-    auto userData1
-        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-    auto userData2
-        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-    assert(userData1);
-    assert(userData2);
-
     // for each pair of intersecting triangles, we create two contact points
     Contact pair1;
     Contact pair2;
 
-    pair1.collisionObject1 = userData1->mCollisionObject;
-    pair1.collisionObject2 = userData2->mCollisionObject;
+    pair1.collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+    pair1.collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
 
     if (option.enableContact)
     {
@@ -1455,17 +1445,10 @@ void interpreteDistanceResult(
   result.minDistance
       = std::max(fclResult.min_distance, option.distanceLowerBound);
 
-  const auto* userData1
-      = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-  const auto* userData2
-      = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-  assert(userData1);
-  assert(userData2);
-  assert(userData1->mCollisionObject);
-  assert(userData2->mCollisionObject);
-
-  result.shapeFrame1 = userData1->mCollisionObject->getShapeFrame();
-  result.shapeFrame2 = userData2->mCollisionObject->getShapeFrame();
+  result.shapeFrame1
+      = static_cast<FCLCollisionObject*>(o1->getUserData())->getShapeFrame();
+  result.shapeFrame2
+      = static_cast<FCLCollisionObject*>(o2->getUserData())->getShapeFrame();
 
   if (option.enableNearestPoints)
   {
@@ -1624,14 +1607,8 @@ Contact convertContact(const fcl::Contact& fclContact,
 {
   Contact contact;
 
-  auto userData1
-      = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-  auto userData2
-      = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-  assert(userData1);
-  assert(userData2);
-  contact.collisionObject1 = userData1->mCollisionObject;
-  contact.collisionObject2 = userData2->mCollisionObject;
+  contact.collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+  contact.collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
 
   if (option.enableContact)
   {

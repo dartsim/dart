@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -40,7 +40,7 @@
 namespace dart {
 
 namespace dynamics {
-class MultiSphereShape;
+class MultiSphereConvexHullShape;
 } // namespace dynamics
 
 namespace gui {
@@ -55,7 +55,7 @@ class MultiSphereShapeNode : public ShapeNode, public ::osg::MatrixTransform
 public:
 
   MultiSphereShapeNode(
-      std::shared_ptr<dart::dynamics::MultiSphereShape> shape,
+      std::shared_ptr<dart::dynamics::MultiSphereConvexHullShape> shape,
       ShapeFrameNode* parent);
 
   void refresh();
@@ -65,7 +65,7 @@ protected:
 
   virtual ~MultiSphereShapeNode();
 
-  std::shared_ptr<dart::dynamics::MultiSphereShape> mMultiSphereShape;
+  std::shared_ptr<dart::dynamics::MultiSphereConvexHullShape> mMultiSphereShape;
   MultiSphereShapeGeode* mGeode;
 
 };

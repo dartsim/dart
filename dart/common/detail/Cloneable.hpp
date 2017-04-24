@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -177,7 +177,7 @@ template <typename... Args>
 ProxyCloneable<Base, OwnerT, DataT, setData, getData>::ProxyCloneable(
     Args&&... args)
   : mOwner(nullptr),
-    mData(make_unique<Data>(std::forward<Args>(args)...))
+    mData(dart::common::make_unique<Data>(std::forward<Args>(args)...))
 {
   // Do nothing
 }
@@ -278,7 +278,7 @@ void ProxyCloneable<Base, OwnerT, DataT, setData, getData>::set(
     return;
   }
 
-  mData = make_unique<Data>(std::move(data));
+  mData = dart::common::make_unique<Data>(std::move(data));
 }
 
 //==============================================================================
@@ -338,7 +338,7 @@ template <class Base, class OwnerT, class DataT,
 std::unique_ptr<Base> ProxyCloneable<
     Base, OwnerT, DataT, setData, getData>::clone() const
 {
-  return make_unique<ProxyCloneable>(get());
+  return dart::common::make_unique<ProxyCloneable>(get());
 }
 
 //==============================================================================

@@ -1,7 +1,7 @@
 #
-# Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+# Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
 # Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
-# Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+# Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
 # All rights reserved.
 #
 # This file is provided under the following "BSD-style" License:
@@ -71,9 +71,13 @@ function(dart_add_test test_type target_name) # ARGN for source files
     "${DART_TEST_OUT_DIR}/${test_type}/${target_name}")
 
   if(MSVC)
-    target_link_libraries(${target_name} dart optimized gtest debug gtestd)
+    target_link_libraries(${target_name}
+        dart
+        optimized gtest debug gtestd
+        optimized gtest_main debug gtest_maind
+    )
   else()
-    target_link_libraries(${target_name} dart gtest)
+    target_link_libraries(${target_name} dart gtest gtest_main)
   endif()
 
   set_target_properties(
@@ -147,5 +151,5 @@ endif()
 # Add custom target to build all the tests as a single target
 add_custom_target(
   tests
-  DEPENDS ${tests} ${comprehensive_tests} ${regression_tests} ${unit_tests}
+  DEPENDS ${comprehensive_tests} ${regression_tests} ${unit_tests}
 )

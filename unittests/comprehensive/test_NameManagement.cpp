@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -416,11 +416,4 @@ TEST(NameManagement, JointDegreeOfFreedom)
   EXPECT_TRUE( joint->getDof(0)->getName() == "j_bicep_left_x" );
   EXPECT_TRUE( joint->getDof(1)->getName() == "j_bicep_left_y" );
   EXPECT_TRUE( joint->getDof(2)->getName() == "j_bicep_left_z" );
-}
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

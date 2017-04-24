@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -32,10 +32,10 @@
 #ifndef EXAMPLES_ATLASSIMBICON_MYWINDOW_HPP_
 #define EXAMPLES_ATLASSIMBICON_MYWINDOW_HPP_
 
-#include "dart/dart.hpp"
-#include "dart/gui/gui.hpp"
+#include <dart/dart.hpp>
+#include <dart/gui/gui.hpp>
 
-#include "examples/atlasSimbicon/Controller.hpp"
+#include "Controller.hpp"
 
 /// \brief class MyWindow
 class MyWindow : public dart::gui::SimWindow

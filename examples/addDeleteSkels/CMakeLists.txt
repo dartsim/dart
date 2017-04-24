@@ -1,11 +1,14 @@
-###############################################################
-# This file can be used as-is in the directory of any example,#
-# however you might need to specify your own dependencies in  #
-# target_link_libraries if your app depends on more than dart #
-###############################################################
-get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
-file(GLOB ${example_name}_srcs "*.cpp" "*.hpp")
-add_executable(${example_name} ${${example_name}_srcs})
-dart_add_example(${example_name})
-target_link_libraries(${example_name} dart dart-gui)
-set_target_properties(${example_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+cmake_minimum_required(VERSION 2.8.12)
+
+project(addDeleteSkels)
+
+find_package(DART 6.1.1 REQUIRED COMPONENTS utils-urdf gui)
+
+add_compile_options(-std=c++11)
+
+include_directories(${DART_INCLUDE_DIRS})
+
+file(GLOB srcs "*.cpp" "*.hpp")
+add_executable(${PROJECT_NAME} ${srcs})
+
+target_link_libraries(${PROJECT_NAME} ${DART_LIBRARIES})

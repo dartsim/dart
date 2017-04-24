@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -178,7 +178,7 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
 
   dart::utils::DartLoader loader;
   SkeletonPtr skeleton1 =
-      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+      loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
   SkeletonPtr skeleton2 = skeleton1->clone();
 
@@ -219,7 +219,7 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_END_EFFECTOR_CHANGE)
 
   dart::utils::DartLoader loader;
   SkeletonPtr skeleton1 =
-      loader.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+      loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
   BodyNode* last_bn1 = skeleton1->getBodyNode(skeleton1->getNumBodyNodes()-1);
   EndEffector* ee1 = last_bn1->createEndEffector();
@@ -246,11 +246,4 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_END_EFFECTOR_CHANGE)
   J = standardJacobian(skeleton2, q, active_indices, ee2);
 
   EXPECT_TRUE((fd_J - J).norm() < tolerance);
-}
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

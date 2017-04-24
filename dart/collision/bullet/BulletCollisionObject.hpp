@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -48,13 +48,6 @@ class BulletCollisionObject : public CollisionObject
 {
 public:
 
-  struct UserData
-  {
-    CollisionObject* collisionObject;
-
-    UserData(CollisionObject* collisionObject);
-  };
-
   friend class BulletCollisionDetector;
 
   /// Return Bullet collision object
@@ -74,9 +67,6 @@ protected:
   void updateEngineData() override;
 
 protected:
-
-  /// Bullet collision geometry user data
-  std::unique_ptr<UserData> mBulletCollisionObjectUserData;
 
   /// Bullet collision object
   std::unique_ptr<btCollisionObject> mBulletCollisionObject;

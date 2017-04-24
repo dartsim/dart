@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -89,7 +89,7 @@ TEST(SkelParser, DataStructure)
 //==============================================================================
 TEST(SkelParser, EmptyWorld)
 {
-  WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"skel/test/empty.skel");
+  WorldPtr world = SkelParser::readWorld("dart://sample/skel/test/empty.skel");
 
   EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -107,7 +107,7 @@ TEST(SkelParser, EmptyWorld)
 TEST(SkelParser, SinglePendulum)
 {
   WorldPtr world = SkelParser::readWorld(
-        DART_DATA_PATH"skel/test/single_pendulum.skel");
+        "dart://sample/skel/test/single_pendulum.skel");
 
   EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -127,7 +127,7 @@ TEST(SkelParser, SinglePendulum)
 TEST(SkelParser, SerialChain)
 {
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
+      "dart://sample/skel/test/serial_chain_ball_joint.skel");
 
   EXPECT_TRUE(world != nullptr);
   EXPECT_EQ(world->getTimeStep(), 0.001);
@@ -150,7 +150,7 @@ TEST(SkelParser, VariousShapes)
   // world can simulate it successfully.
 
   WorldPtr world = SkelParser::readWorld(
-        DART_DATA_PATH"skel/test/test_shapes.skel");
+        "dart://sample/skel/test/test_shapes.skel");
 
   for (auto i = 0u; i < 100; ++i)
     world->step();
@@ -166,7 +166,7 @@ TEST(SkelParser, RigidAndSoftBodies)
   using namespace utils;
 
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"skel/test/test_articulated_bodies.skel");
+      "dart://sample/skel/test/test_articulated_bodies.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
@@ -191,7 +191,7 @@ TEST(SkelParser, PlanarJoint)
   using namespace utils;
 
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"skel/test/planar_joint.skel");
+      "dart://sample/skel/test/planar_joint.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton1");
@@ -301,7 +301,7 @@ TEST(SkelParser, PlanarJoint)
 TEST(SKEL_PARSER, JointActuatorType)
 {
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"/skel/test/joint_actuator_type_test.skel");
+      "dart://sample/skel/test/joint_actuator_type_test.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
@@ -334,7 +334,7 @@ TEST(SKEL_PARSER, JointActuatorType)
 TEST(SkelParser, DofAttributes)
 {
   WorldPtr world = SkelParser::readWorld(
-      DART_DATA_PATH"/skel/test/dof_attribute_test.skel");
+      "dart://sample/skel/test/dof_attribute_test.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
@@ -412,7 +412,7 @@ TEST(SkelParser, JointDynamicsElements)
 {
   WorldPtr world
       = SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_dynamics_elements_test.skel");
+        "dart://sample/skel/test/joint_dynamics_elements_test.skel");
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skel1 = world->getSkeleton("skeleton 1");
@@ -444,7 +444,7 @@ TEST(SkelParser, JointDynamicsElements)
 TEST(SkelParser, Shapes)
 {
   WorldPtr world
-      = SkelParser::readWorld(DART_DATA_PATH"/skel/test/test_shapes.skel");
+      = SkelParser::readWorld("dart://sample//skel/test/test_shapes.skel");
   EXPECT_NE(world, nullptr);
 
   const auto numSkels = world->getNumSkeletons();
@@ -479,7 +479,7 @@ TEST(SkelParser, Shapes)
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
   EXPECT_TRUE(shape->is<EllipsoidShape>());
   auto ellipsoidShape = std::static_pointer_cast<EllipsoidShape>(shape);
-  EXPECT_EQ(ellipsoidShape->getSize(), Eigen::Vector3d(0.05, 0.10, 0.15));
+  EXPECT_EQ(ellipsoidShape->getDiameters(), Eigen::Vector3d(0.05, 0.10, 0.15));
 
   // Cylinder
   skel = world->getSkeleton("cylinder skeleton");
@@ -512,8 +512,8 @@ TEST(SkelParser, Shapes)
   skel = world->getSkeleton("multi sphere skeleton");
   EXPECT_NE(skel, nullptr);
   shape = skel->getBodyNode(0)->getShapeNode(0)->getShape();
-  EXPECT_TRUE(shape->is<MultiSphereShape>());
-  auto multiSphereShape = std::static_pointer_cast<MultiSphereShape>(shape);
+  EXPECT_TRUE(shape->is<MultiSphereConvexHullShape>());
+  auto multiSphereShape = std::static_pointer_cast<MultiSphereConvexHullShape>(shape);
   EXPECT_EQ(multiSphereShape->getNumSpheres(), 2u);
   const auto& spheres = multiSphereShape->getSpheres();
   EXPECT_EQ(spheres[0].first, 0.05);
@@ -524,11 +524,4 @@ TEST(SkelParser, Shapes)
   // Mesh
   skel = world->getSkeleton("mesh skeleton");
   EXPECT_NE(skel, nullptr);
-}
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

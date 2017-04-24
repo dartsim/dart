@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -1222,6 +1222,8 @@ class InverseKinematics::Objective final :
 {
 public:
 
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(InverseKinematics::Objective)
+
   /// Constructor
   Objective(InverseKinematics* _ik);
 
@@ -1248,6 +1250,7 @@ protected:
 
   /// Cache for the null space SVD
   Eigen::JacobiSVD<math::Jacobian> mSVDCache;
+  // TODO(JS): Need to define aligned operator new for this?
 
   /// Cache for the null space
   Eigen::MatrixXd mNullSpaceCache;

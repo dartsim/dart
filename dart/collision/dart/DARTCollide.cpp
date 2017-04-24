@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -1291,7 +1291,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 
       return collideSphereSphere(o1, o2,
                                  sphere0->getRadius(), T1,
-                                 ellipsoid1->getSize()[0] * 0.5, T2,
+                                 ellipsoid1->getRadii()[0], T2,
                                  result);
     }
   }
@@ -1324,7 +1324,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
 
       return collideBoxSphere(o1, o2,
                               box0->getSize(), T1,
-                              ellipsoid1->getSize()[0] * 0.5, T2,
+                              ellipsoid1->getRadii()[0], T2,
                               result);
     }
   }
@@ -1339,7 +1339,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           = static_cast<const dynamics::SphereShape*>(shape2.get());
 
       return collideSphereSphere(o1, o2,
-                                 ellipsoid0->getSize()[0] * 0.5, T1,
+                                 ellipsoid0->getRadii()[0], T1,
                                  sphere1->getRadius(), T2,
                                  result);
     }
@@ -1349,7 +1349,7 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           = static_cast<const dynamics::BoxShape*>(shape2.get());
 
       return collideSphereBox(o1, o2,
-                              ellipsoid0->getSize()[0] * 0.5, T1,
+                              ellipsoid0->getRadii()[0], T1,
                               box1->getSize(), T2,
                               result);
     }
@@ -1359,8 +1359,8 @@ int collide(CollisionObject* o1, CollisionObject* o2, CollisionResult& result)
           = static_cast<const dynamics::EllipsoidShape*>(shape2.get());
 
       return collideSphereSphere(o1, o2,
-                                 ellipsoid0->getSize()[0] * 0.5, T1,
-                                 ellipsoid1->getSize()[0] * 0.5, T2,
+                                 ellipsoid0->getRadii()[0], T1,
+                                 ellipsoid1->getRadii()[0], T2,
                                  result);
     }
   }

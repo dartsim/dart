@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -41,7 +41,12 @@
 #include "dart/math/math.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/collision/collision.hpp"
-#include "dart/collision/bullet/bullet.hpp"
+#if HAVE_ODE_COLLISION
+  #include "dart/collision/ode/ode.hpp"
+#endif
+#if HAVE_BULLET_COLLISION
+  #include "dart/collision/bullet/bullet.hpp"
+#endif
 #include "dart/simulation/simulation.hpp"
 #include "dart/utils/utils.hpp"
 #include "TestHelpers.hpp"
@@ -505,9 +510,9 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 //==============================================================================
 void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
 {
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame3 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame3 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
@@ -573,12 +578,14 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_FALSE(group1->collide(group3.get()));
   EXPECT_TRUE(group2->collide(group3.get()));
   EXPECT_TRUE(group23->collide());
+#if HAVE_BULLET_COLLISION
   if (cd->getType() == BulletCollisionDetector::getStaticType())
   {
     dtwarn << "Skipping group-group test for 'bullet' collision detector. "
            << "Please see Issue #717 for the detail.\n";
   }
   else
+#endif
   {
     EXPECT_FALSE(group1->collide(group23.get()));
   }
@@ -620,19 +627,17 @@ TEST_F(COLLISION, SimpleFrames)
 void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
                       double tol = 1e-12)
 {
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new SphereShape(1.0));
   ShapePtr shape2(new SphereShape(0.5));
   simpleFrame1->setShape(shape1);
   simpleFrame2->setShape(shape2);
 
-  auto group1 = cd->createCollisionGroup(simpleFrame1.get());
-  auto group2 = cd->createCollisionGroup(simpleFrame2.get());
+  auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
 
-  EXPECT_EQ(group1->getNumShapeFrames(), 1u);
-  EXPECT_EQ(group2->getNumShapeFrames(), 1u);
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
 
   collision::CollisionOption option;
   option.enableContact = true;
@@ -641,45 +646,73 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+
+  //----------------------------------------------------------------------------
+  // Test 1: No contact
+  //----------------------------------------------------------------------------
+
   result.clear();
-  EXPECT_FALSE(group1->collide(group2.get(), option, &result));
+  EXPECT_FALSE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() == 0u);
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d(1.5, 0.0, 0.0));
+
+  //----------------------------------------------------------------------------
+  // Test 2: Point contact
+  //----------------------------------------------------------------------------
+
   result.clear();
-  EXPECT_TRUE(group1->collide(group2.get(), option, &result));
+  EXPECT_TRUE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() == 1u);
-  EXPECT_TRUE(result.getContact(0).point.isApprox(
-                Eigen::Vector3d(1.0, 0.0, 0.0), tol));
+
+  const auto& contact = result.getContact(0);
+
+  // Test contact location
+  EXPECT_TRUE(contact.point.isApprox(Eigen::Vector3d::UnitX(), tol));
+
+  // Test normal
+  Eigen::Vector3d expectedNormal;
+  if (result.getContact(0).collisionObject1->getShapeFrame() == simpleFrame1.get())
+    expectedNormal << -1, 0, 0;
+  else
+    expectedNormal << 1, 0, 0;
+  double tol2 = tol;
   if (cd->getType() == FCLCollisionDetector::getStaticType()
       && static_cast<FCLCollisionDetector*>(cd.get())->getPrimitiveShapeType()
          == FCLCollisionDetector::MESH)
   {
-    EXPECT_TRUE(result.getContact(0).normal.isApprox(
-                  -Eigen::Vector3d::UnitX(), tol * 1e+12));
+    tol2 *= 1e+12;
     // FCL returns less accurate contact normals for sphere-sphere since we're
     // using sphere-like rough meshes instead of analytical sphere shapes.
   }
-  else
-  {
-    EXPECT_TRUE(result.getContact(0).normal.isApprox(
-                  -Eigen::Vector3d::UnitX(), tol));
-  }
+  EXPECT_TRUE(contact.normal.isApprox(expectedNormal, tol2));
+
+  //----------------------------------------------------------------------------
+  // Test 3: Corner case of that the bigger sphere completely encloses the
+  // smaller sphere
+  //----------------------------------------------------------------------------
 
   simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
   simpleFrame2->setTranslation(Eigen::Vector3d::Zero());
   result.clear();
   if (cd->getType() == FCLCollisionDetector::getStaticType())
   {
-    EXPECT_FALSE(group1->collide(group2.get(), option, &result));
+    EXPECT_FALSE(group->collide(option, &result));
     // FCL is not able to detect collisions when an object completely (strictly)
     // contanins the other object (no collisions between the hulls)
   }
   else
   {
-    EXPECT_TRUE(group1->collide(group2.get(), option, &result));
-    EXPECT_TRUE(result.getNumContacts() == 1u);
+    EXPECT_TRUE(group->collide(option, &result));
+    // TODO(JS): BulletCollsionDetector includes a bug related to this.
+    // (see #876)
+    if (cd->getType() != BulletCollisionDetector::getStaticType())
+      EXPECT_EQ(result.getNumContacts(), 1u);
+    for (auto i = 0u; i < result.getNumContacts(); ++i)
+    {
+      std::cout << "point: " << result.getContact(i).point.transpose() << std::endl;
+    }
   }
   // The positions of contact point are different depending on the collision
   // detector. More comprehensive tests need to be added.
@@ -688,10 +721,10 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
 //==============================================================================
 TEST_F(COLLISION, SphereSphere)
 {
-  auto fcl_mesh_dart = FCLCollisionDetector::create();
-  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-  testSphereSphere(fcl_mesh_dart);
+//  auto fcl_mesh_dart = FCLCollisionDetector::create();
+//  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+//  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+//  testSphereSphere(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
   // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -708,13 +741,18 @@ TEST_F(COLLISION, SphereSphere)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSphereSphere(fcl_mesh_fcl);
 
+//#if HAVE_ODE_COLLISION
+//  auto ode = OdeCollisionDetector::create();
+//  testSphereSphere(ode);
+//#endif
+
 #if HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
   testSphereSphere(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
-  testSphereSphere(dart);
+//  auto dart = DARTCollisionDetector::create();
+//  testSphereSphere(dart);
 }
 
 //==============================================================================
@@ -734,8 +772,8 @@ bool checkBoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max,
 void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
                 double tol = 1e-12)
 {
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -760,7 +798,11 @@ void testBoxBox(const std::shared_ptr<CollisionDetector>& cd,
   collision::CollisionOption option;
   collision::CollisionResult result;
 
+  result.clear();
   EXPECT_TRUE(group1->collide(group2.get(), option, &result));
+
+  result.clear();
+  EXPECT_TRUE(groupAll->collide(option, &result));
 
   Eigen::Vector3d min = Eigen::Vector3d(-0.25, 0.25, 0.0);
   Eigen::Vector3d max = Eigen::Vector3d(0.25, 0.5, 0.0);
@@ -807,6 +849,11 @@ TEST_F(COLLISION, BoxBox)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testBoxBox(fcl_mesh_fcl);
 
+#if HAVE_ODE_COLLISION
+  auto ode = OdeCollisionDetector::create();
+  testBoxBox(ode);
+#endif
+
 #if HAVE_BULLET_COLLISION
   auto bullet = BulletCollisionDetector::create();
   testBoxBox(bullet);
@@ -819,9 +866,9 @@ TEST_F(COLLISION, BoxBox)
 //==============================================================================
 void testOptions(const std::shared_ptr<CollisionDetector>& cd)
 {
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame3 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame3 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new BoxShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -874,6 +921,148 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 0u);
   EXPECT_FALSE(result.isCollision());
+}
+
+//==============================================================================
+void testCylinderCylinder(const std::shared_ptr<CollisionDetector>& cd)
+{
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
+
+  auto shape1 = std::make_shared<CylinderShape>(1.0, 1.0);
+  auto shape2 = std::make_shared<CylinderShape>(0.5, 1.0);
+
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+
+  auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
+
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() == 0u);
+
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.75, 0.0, 0.0));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() >= 1u);
+}
+
+//==============================================================================
+TEST_F(COLLISION, testCylinderCylinder)
+{
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testCylinderCylinder(fcl_mesh_dart);
+
+  // auto fcl_prim_fcl = FCLCollisionDetector::create();
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testCylinderCylinder(fcl_prim_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testCylinderCylinder(fcl_mesh_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testCylinderCylinder(fcl_mesh_fcl);
+
+#if HAVE_ODE_COLLISION
+  auto ode = OdeCollisionDetector::create();
+  testCylinderCylinder(ode);
+#endif
+
+#if HAVE_BULLET_COLLISION
+  auto bullet = BulletCollisionDetector::create();
+  testCylinderCylinder(bullet);
+#endif
+
+  // auto dart = DARTCollisionDetector::create();
+  // testCylinderCylinder(dart);
+}
+
+//==============================================================================
+void testCapsuleCapsule(const std::shared_ptr<CollisionDetector>& cd)
+{
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
+
+  auto shape1 = std::make_shared<CapsuleShape>(1.0, 1.0);
+  auto shape2 = std::make_shared<CapsuleShape>(0.5, 1.0);
+
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+
+  auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
+
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(2.0, 0.0, 0.0));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() == 0u);
+
+  result.clear();
+  simpleFrame1->setTranslation(Eigen::Vector3d::Zero());
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.74, 0.0, 0.0));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() >= 1u);
+}
+
+//==============================================================================
+TEST_F(COLLISION, testCapsuleCapsule)
+{
+  // auto fcl_mesh_dart = FCLCollisionDetector::create();
+  // fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testCapsuleCapsule(fcl_mesh_dart);
+
+  // auto fcl_prim_fcl = FCLCollisionDetector::create();
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testCapsuleCapsule(fcl_prim_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testCapsuleCapsule(fcl_mesh_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testCapsuleCapsule(fcl_mesh_fcl);
+
+#if HAVE_ODE_COLLISION
+  auto ode = OdeCollisionDetector::create();
+  testCapsuleCapsule(ode);
+#endif
+
+#if HAVE_BULLET_COLLISION
+  auto bullet = BulletCollisionDetector::create();
+  testCapsuleCapsule(bullet);
+#endif
+
+  // auto dart = DARTCollisionDetector::create();
+  // testCapsuleCapsule(dart);
 }
 
 //==============================================================================
@@ -1107,7 +1296,7 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
 
   // Load world and skeleton
   WorldPtr world = SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/collision_of_prescribed_joints_test.skel");
+        "dart://sample/skel/test/collision_of_prescribed_joints_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);
   EXPECT_NEAR(world->getTimeStep(), timeStep, tol);
@@ -1176,9 +1365,20 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
 }
 
 //==============================================================================
-int main(int argc, char* argv[])
+TEST_F(COLLISION, Factory)
 {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("fcl"));
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
 
+#if HAVE_BULLET_COLLISION
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("bullet"));
+#else
+  EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("bullet"));
+#endif
+
+#if HAVE_ODE_COLLISION
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("ode"));
+#else
+  EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("ode"));
+#endif
+}

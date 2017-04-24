@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
  * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -101,8 +101,13 @@ void RenderInterface::scale(const Eigen::Vector3d& /*_scale*/)
 {
 }
 
-void RenderInterface::drawSphere(double /*_radius*/)
+void RenderInterface::drawSphere(double /*_radius*/, int /*slices*/, int /*stacks*/)
 {
+}
+
+void RenderInterface::drawMultiSphere(const std::vector<std::pair<double, Eigen::Vector3d>>& /*spheres*/, int /*slices*/, int /*stacks*/)
+{
+  // Do nothing
 }
 
 void RenderInterface::drawEllipsoid(const Eigen::Vector3d& /*_size*/)
@@ -136,7 +141,11 @@ void RenderInterface::drawCube(const Eigen::Vector3d& /*_size*/)
 {
 }
 
-void RenderInterface::drawCylinder(double /*_radius*/, double /*_height*/)
+void RenderInterface::drawOpenCylinder(double /*baseRadius*/, double /*topRadius*/, double /*height*/, int /*slices*/, int /*stacks*/)
+{
+}
+
+void RenderInterface::drawCylinder(double /*_radius*/, double /*_height*/, int /*slices*/, int /*stacks*/)
 {
 }
 
