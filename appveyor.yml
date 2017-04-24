@@ -23,16 +23,6 @@ environment:
       BOOST_ROOT: "C:\\Libraries\\boost_1_59_0"
       BOOST_LIBRARYDIR: "C:\\Libraries\\boost_1_59_0\\lib64-msvc-14.0"
 
-    - image: Visual Studio 2015
-      GENERATOR: "Visual Studio 14 2015"
-      BOOST_ROOT: "C:\\Libraries\\boost_1_59_0"
-      BOOST_LIBRARYDIR: "C:\\Libraries\\boost_1_59_0\\lib32-msvc-14.0"
-
-    - image: Visual Studio 2015
-      GENERATOR: "Visual Studio 14 2015 Win64"
-      BOOST_ROOT: "C:\\Libraries\\boost_1_59_0"
-      BOOST_LIBRARYDIR: "C:\\Libraries\\boost_1_59_0\\lib64-msvc-14.0"
-
 # build configuration, i.e. Debug, Release, etc.
 configuration:
   - Debug
