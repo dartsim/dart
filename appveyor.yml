@@ -12,6 +12,7 @@ platform:
 # Check updates at here: https://www.appveyor.com/docs/build-environment/#boost
 environment:
   TOOLSET: LLVM-vs2014
+  # We cannot use LLVM toolset for now because the boost installed on the server is built not for LLVM.
   MSVC_DEFAULT_OPTIONS: ON
   BOOST_ROOT: C:\\Libraries\\boost_1_63_0
   matrix:
@@ -52,10 +53,6 @@ install:
 
 # scripts to run before build
 before_build:
-  - cmd: dir C:\Libraries
-  - cmd: dir C:\Libraries\boost_1_63_0
-  - cmd: dir C:\Libraries\boost_1_63_0\lib32-msvc-14.0
-  - cmd: dir C:\Libraries\boost_1_63_0\libs
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
