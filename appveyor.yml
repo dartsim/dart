@@ -63,13 +63,12 @@ install:
 # scripts to run before build
 before_build:
   - cmd: dir C:\Libraries\boost_1_59_0
+  - cmd: dir C:\Libraries\boost_1_59_0\lib32-msvc-14.0
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
   # We generate project files for Visual Studio 12 because the boost binaries installed on the test server are for Visual Studio 12.
-  - cmd: if "%platform%"=="Win32" set CMAKE_GENERATOR_NAME=Visual Studio 14 2015
-  - cmd: if "%platform%"=="x64"   set CMAKE_GENERATOR_NAME=Visual Studio 14 2015 Win64
-  - cmd: cmake -G "%CMAKE_GENERATOR_NAME%" -T "LLVM-vs2014" -DCMAKE_BUILD_TYPE=%configuration% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" ..
+  - cmd: cmake -G "%GENERATOR%" -T "LLVM-vs2014" -DCMAKE_BUILD_TYPE=%configuration% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" ..
 
 build:
   project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project
