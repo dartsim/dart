@@ -15,13 +15,13 @@ environment:
   matrix:
     - image: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015"
-      BOOST_ROOT: "C:\\Libraries\\boost_1_59_0"
-      BOOST_LIBRARYDIR: "C:\\Libraries\\boost_1_59_0\\lib32-msvc-14.0"
+      BOOST_ROOT: "C:\\Libraries\\boost_1_63_0"
+      BOOST_LIBRARYDIR: "C:\\Libraries\\boost_1_63_0\\lib32-msvc-14.0"
 
     - image: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015 Win64"
-      BOOST_ROOT: "C:\\Libraries\\boost_1_59_0"
-      BOOST_LIBRARYDIR: "C:\\Libraries\\boost_1_59_0\\lib64-msvc-14.0"
+      BOOST_ROOT: "C:\\Libraries\\boost_1_63_0"
+      BOOST_LIBRARYDIR: "C:\\Libraries\\boost_1_63_0\\lib64-msvc-14.0"
 
 # build configuration, i.e. Debug, Release, etc.
 configuration:
@@ -52,6 +52,7 @@ install:
 
 # scripts to run before build
 before_build:
+  - cmd: dir C:\Libraries
   - cmd: dir C:\Libraries\boost_1_59_0
   - cmd: dir C:\Libraries\boost_1_59_0\lib32-msvc-14.0
   - cmd: cd C:\projects\dart
