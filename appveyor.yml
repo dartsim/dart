@@ -46,6 +46,7 @@ install:
 
 # scripts to run before build
 before_build:
+  - cmd: dir C:\Libraries\boost_1_59_0
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
