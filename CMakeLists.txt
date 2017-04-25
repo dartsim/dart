@@ -256,13 +256,13 @@ endif(DART_VERBOSE)
 
 add_subdirectory(dart)
 
-if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
+if(TARGET dart)
 
   # Add a "tests" target to build unit tests.
   enable_testing()
   add_subdirectory(unittests EXCLUDE_FROM_ALL)
 
-  if (OPENGL_FOUND AND HAVE_GLUT)
+  if (TARGET dart-utils-urdf AND TARGET dart-gui)
 
     # Add example targets
     dart_add_example(examples/addDeleteSkels dart dart-utils-urdf dart-gui)
@@ -281,7 +281,7 @@ if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
     dart_add_example(examples/speedTest dart dart-utils-urdf dart-gui)
     dart_add_example(examples/vehicle dart dart-utils-urdf dart-gui)
 
-    if(HAVE_OPENSCENEGRAPH)
+    if(TARGET dart-gui-osg)
       dart_add_example(examples/osgExamples/osgAtlasPuppet dart dart-utils-urdf dart-gui-osg)
       dart_add_example(examples/osgExamples/osgAtlasSimbicon dart dart-utils-urdf dart-gui-osg)
       dart_add_example(examples/osgExamples/osgDragAndDrop dart dart-utils-urdf dart-gui-osg)
@@ -309,7 +309,7 @@ if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
     endif(DART_VERBOSE)
 
     # Add tutorial targets
-    if(HAVE_BULLET_COLLISION)
+    if(TARGET dart-collision-bullet)
       dart_add_tutorial(tutorials/tutorialBiped dart-utils-urdf dart-gui dart-collision-bullet)
       dart_add_tutorial(tutorials/tutorialBiped-Finished dart-utils-urdf dart-gui dart-collision-bullet)
     else()

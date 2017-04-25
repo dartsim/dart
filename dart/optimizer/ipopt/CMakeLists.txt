@@ -1,3 +1,7 @@
+# Dependency checks
+find_package(IPOPT 3.11.9 QUIET)
+dart_check_optional_package(IPOPT "dart-optimizer-ipopt" "ipopt" "3.11.9")
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
