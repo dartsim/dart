@@ -30,10 +30,8 @@
  */
 
 #include <dart/dart.hpp>
+#include <dart/utils/utils.hpp>
 #include <dart/gui/gui.hpp>
-#if HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/bullet.hpp"
-#endif
 
 const double default_speed_increment = 0.5;
 
@@ -307,10 +305,11 @@ int main(int argc, char* argv[])
   WorldPtr world = std::make_shared<World>();
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
-#if HAVE_BULLET_COLLISION
-  world->getConstraintSolver()->setCollisionDetector(
-      dart::collision::BulletCollisionDetector::create());
-#endif
+  if (dart::collision::CollisionDetector::getFactory()->canCreate("bullet"))
+  {
+    world->getConstraintSolver()->setCollisionDetector(
+      dart::collision::CollisionDetector::getFactory()->create("bullet"));
+  }
   
   world->addSkeleton(floor);
   world->addSkeleton(biped);

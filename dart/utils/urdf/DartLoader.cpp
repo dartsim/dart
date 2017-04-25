@@ -53,7 +53,7 @@
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
-#include "dart/utils/urdf/URDFTypes.hpp"
+#include "dart/utils/urdf/BackwardCompatibility.hpp"
 #include "dart/utils/urdf/urdf_world_parser.hpp"
 
 namespace dart {

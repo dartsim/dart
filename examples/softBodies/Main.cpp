@@ -38,6 +38,7 @@
 #include <iostream>
 
 #include <dart/dart.hpp>
+#include <dart/utils/utils.hpp>
 
 #include "MyWindow.hpp"
 
