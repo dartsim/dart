@@ -52,6 +52,12 @@
 
 const bool debug = false;
 
+namespace urdf {
+
+bool parsePose(urdf::Pose &pose, TiXmlElement* xml);
+
+} // namespace urdf
+
 namespace dart {
 namespace utils {
 namespace urdf_parsing {
