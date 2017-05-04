@@ -48,6 +48,12 @@ endif()
 if(TARGET dart-utils-urdf)
   dart_add_test("unit" test_DartLoader)
   target_link_libraries(test_DartLoader dart-utils-urdf)
+
+  dart_add_test("unit" test_Ikfast)
+  target_link_libraries(test_Ikfast dart-utils-urdf)
+
+  dart_add_library(ikfast_test ikfast71.Transform6D.4_6_9_10_11_12_f8.cpp)
+  target_compile_definitions(ikfast_test PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
 endif()
 
 if(TARGET dart-planning)

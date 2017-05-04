@@ -1,7 +1,7 @@
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
-file(GLOB detail_hdrs "detail/*.hpp")
+file(GLOB detail_hdrs "detail/*.h" "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 dart_add_core_headers(${hdrs} ${detail_hdrs})
 dart_add_core_sources(${srcs} ${detail_srcs})

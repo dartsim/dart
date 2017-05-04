@@ -826,6 +826,12 @@ public:
   /// generally not be necessary to call this function.
   void clearCache();
 
+  /// Returns the IK module that this GradientMethod belongs to.
+  InverseKinematics* getIK();
+
+  /// Returns the IK module that this GradientMethod belongs to.
+  const InverseKinematics* getIK() const;
+
 protected:
 
   /// The IK module that this GradientMethod belongs to.

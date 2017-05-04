@@ -744,6 +744,18 @@ void InverseKinematics::GradientMethod::clearCache()
 }
 
 //==============================================================================
+InverseKinematics* InverseKinematics::GradientMethod::getIK()
+{
+  return mIK;
+}
+
+//==============================================================================
+const InverseKinematics* InverseKinematics::GradientMethod::getIK() const
+{
+  return mIK;
+}
+
+//==============================================================================
 InverseKinematics::JacobianDLS::UniqueProperties::UniqueProperties(
     double damping)
   : mDamping(damping)
