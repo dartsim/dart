@@ -204,6 +204,9 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
       mJacobians1[idx].tail<3>() = bodyDirection1;
       mJacobians2[idx].tail<3>() = bodyDirection2;
 
+      assert(!dart::math::isNan(mJacobians1[idx]));
+      assert(!dart::math::isNan(mJacobians2[idx]));
+
       ++idx;
     }
   }
@@ -793,11 +796,47 @@ Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
 
   // TODO(JS): Modify following lines once _updateFirstFrictionalDirection() is
   //           implemented.
-  // If they're too close, pick another tangent (use X-axis as arbitrary vector)
+  // If they're too close (or opposing directions, or one of the vectors 0),
+  // pick another tangent (use X-axis as arbitrary vector)
   if (tangent.norm() < DART_CONTACT_CONSTRAINT_EPSILON)
+  {
     tangent = Eigen::Vector3d::UnitX().cross(_n);
+    // make sure this is not zero length, otherwise 
+    // normalization will lead to NaN values
+    if (tangent.norm() < DART_CONTACT_CONSTRAINT_EPSILON)
+    {
+      tangent = Eigen::Vector3d::UnitY().cross(_n);
+      if (tangent.norm() < DART_CONTACT_CONSTRAINT_EPSILON)
+      {
+        tangent = Eigen::Vector3d::UnitZ().cross(_n);
+        if (tangent.norm() < DART_CONTACT_CONSTRAINT_EPSILON)
+        {
+          // this can only happen if the normal is 0 length.
+          // Then just use the frictional direction.
+          tangent = Eigen::Vector3d::UnitX().cross(mFirstFrictionalDirection);
+          if (tangent.norm() < DART_CONTACT_CONSTRAINT_EPSILON)
+          {
+            tangent = Eigen::Vector3d::UnitY().cross(mFirstFrictionalDirection);
+            if (tangent.norm() < DART_CONTACT_CONSTRAINT_EPSILON)
+            {
+              tangent = Eigen::Vector3d::UnitZ().cross(mFirstFrictionalDirection);
+              if (tangent.norm() < DART_CONTACT_CONSTRAINT_EPSILON)
+              {
+                // both friction and normal must be 0 length,
+                // so just use any tangent
+                tangent = Eigen::Vector3d::UnitX();
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
+  assert(tangent.norm() > 1e-06);
   tangent.normalize();
+
+  assert(!dart::math::isNan(tangent));
 
   // Rotate the tangent around the normal to compute bases.
   // Note: a possible speedup is in place for mNumDir % 2 = 0
