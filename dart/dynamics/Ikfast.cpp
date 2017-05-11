@@ -179,25 +179,11 @@ bool Ikfast::isGood() const
 }
 
 //==============================================================================
-bool isFreeJoint(int numFreeParams, const int* freeParams, int index)
-{
-  for (auto j = 0; j < numFreeParams; ++j)
-  {
-    if (index == freeParams[j])
-      return true;
-  }
-
-  return false;
-}
-
-//==============================================================================
 void Ikfast::configure() const
 {
   const auto dofs = mIK->getNode()->getSkeleton()->getDofs();
 
   const auto ikfastNumJoints = getNumJoints();
-  const auto ikfastNumFreeParams = getNumFreeParameters();
-  const auto ikfastFreeParams = getFreeParameters();
 
   if (dofs.size() != static_cast<std::size_t>(ikfastNumJoints))
   {
@@ -208,17 +194,11 @@ void Ikfast::configure() const
   }
 
   mDofs.clear();
-  mDofs.reserve(ikfastNumJoints - ikfastNumFreeParams);
-
+  mDofs.reserve(ikfastNumJoints);
   for (auto i = 0; i < ikfastNumJoints; ++i)
-  {
-    if (isFreeJoint(ikfastNumFreeParams, ikfastFreeParams, i))
-      continue;
+    mDofs.emplace_back(dofs[i]->getIndexInSkeleton());
 
-    mDofs.push_back(dofs[i]->getIndexInSkeleton());
-  }
-
-  mFreeParams.resize(ikfastNumFreeParams);
+  mFreeParams.resize(getNumFreeParameters());
 
   mConfigured = true;
 }

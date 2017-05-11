@@ -814,6 +814,8 @@ void BodyNodeDnD::saveState()
   else
   {
     mIK = bn->createIK();
+    // TODO(JS): I guess this should be changed to:
+    // mIK = bn->getIK(true);
   }
 
   mSavedGlobalOffset = mPickedPosition - mPivot;
