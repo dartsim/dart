@@ -39,46 +39,11 @@ using namespace dart::simulation;
 class WamWorld : public dart::gui::osg::WorldNode
 {
 public:
-
-  enum MoveEnum_t
-  {
-    MOVE_Q = 0,
-    MOVE_W,
-    MOVE_E,
-    MOVE_A,
-    MOVE_S,
-    MOVE_D,
-    MOVE_F,
-    MOVE_Z,
-
-    NUM_MOVE
-  };
-
   WamWorld(WorldPtr world, SkeletonPtr robot);
 
-  void setMovement(const std::vector<bool>& moveComponents);
-
+  // Documentation inherited
   void customPreRefresh() override;
 
-  bool mAmplifyMovement;
-
 protected:
-
   SkeletonPtr mWam;
-  std::size_t iter;
-
-  EndEffectorPtr l_foot;
-  EndEffectorPtr r_foot;
-
-  EndEffectorPtr l_hand;
-  EndEffectorPtr r_hand;
-
-  std::vector<IK::Analytical::Solution> mSolutions;
-
-  Eigen::VectorXd grad;
-
-  // Order: q, w, e, a, s, d
-  std::vector<bool> mMoveComponents;
-
-  bool mAnyMovement;
 };

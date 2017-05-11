@@ -32,99 +32,13 @@
 
 //==============================================================================
 WamWorld::WamWorld(WorldPtr world, SkeletonPtr robot)
-  : dart::gui::osg::WorldNode(world),
-    mWam(robot),
-    iter(0),
-    l_foot(robot->getEndEffector("l_foot")),
-    r_foot(robot->getEndEffector("r_foot")),
-    l_hand(robot->getEndEffector("l_hand")),
-    r_hand(robot->getEndEffector("r_hand"))
+  : dart::gui::osg::WorldNode(world), mWam(robot)
 {
-  mMoveComponents.resize(NUM_MOVE, false);
-  mAnyMovement = false;
-  mAmplifyMovement = false;
-}
-
-//==============================================================================
-void WamWorld::setMovement(const std::vector<bool>& moveComponents)
-{
-  mMoveComponents = moveComponents;
-
-  mAnyMovement = false;
-
-  for (bool move : mMoveComponents)
-  {
-    if (move)
-    {
-      mAnyMovement = true;
-      break;
-    }
-  }
+  // Do nothing
 }
 
 //==============================================================================
 void WamWorld::customPreRefresh()
 {
-  if (mAnyMovement)
-  {
-    Eigen::Isometry3d old_tf = mWam->getBodyNode(0)->getWorldTransform();
-    Eigen::Isometry3d new_tf = Eigen::Isometry3d::Identity();
-    Eigen::Vector3d forward = old_tf.linear().col(0);
-    forward[2] = 0.0;
-    if (forward.norm() > 1e-10)
-      forward.normalize();
-    else
-      forward.setZero();
-
-    Eigen::Vector3d left = old_tf.linear().col(1);
-    left[2] = 0.0;
-    if (left.norm() > 1e-10)
-      left.normalize();
-    else
-      left.setZero();
-
-    const Eigen::Vector3d& up = Eigen::Vector3d::UnitZ();
-
-    double linearStep = 0.01;
-    double elevationStep = 0.2*linearStep;
-    double rotationalStep = 2.0*M_PI/180.0;
-
-    if (mAmplifyMovement)
-    {
-      linearStep *= 2.0;
-      elevationStep *= 2.0;
-      rotationalStep *= 2.0;
-    }
-
-    if (mMoveComponents[MOVE_W])
-      new_tf.translate( linearStep*forward);
-
-    if (mMoveComponents[MOVE_S])
-      new_tf.translate(-linearStep*forward);
-
-    if (mMoveComponents[MOVE_A])
-      new_tf.translate( linearStep*left);
-
-    if (mMoveComponents[MOVE_D])
-      new_tf.translate(-linearStep*left);
-
-    if (mMoveComponents[MOVE_F])
-      new_tf.translate( elevationStep*up);
-
-    if (mMoveComponents[MOVE_Z])
-      new_tf.translate(-elevationStep*up);
-
-    if (mMoveComponents[MOVE_Q])
-      new_tf.rotate(Eigen::AngleAxisd( rotationalStep, up));
-
-    if (mMoveComponents[MOVE_E])
-      new_tf.rotate(Eigen::AngleAxisd(-rotationalStep, up));
-
-    new_tf.pretranslate(old_tf.translation());
-    new_tf.rotate(old_tf.rotation());
-
-    mWam->getJoint(0)->setPositions(FreeJoint::convertToPositions(new_tf));
-  }
-
   mWam->getIK(true)->solve();
 }

@@ -30,36 +30,33 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
-#include <dart/utils/utils.hpp>
-#include <dart/utils/urdf/urdf.hpp>
 
-using namespace dart::dynamics;
-using namespace dart::simulation;
-
-class RelaxedPosture;
 class WamWorld;
 
 class InputHandler : public ::osgGA::GUIEventHandler
 {
 public:
+  InputHandler(
+      dart::gui::osg::Viewer* viewer,
+      WamWorld* teleop,
+      const dart::dynamics::SkeletonPtr& wam,
+      const dart::simulation::WorldPtr& world);
 
-  InputHandler(dart::gui::osg::Viewer* viewer, WamWorld* teleop,
-               const SkeletonPtr& wam, const WorldPtr& world);
-
-  void initialize();
-
-  bool handle(const ::osgGA::GUIEventAdapter& ea,
-              ::osgGA::GUIActionAdapter&) override;
+  // Documentation inherited
+  bool handle(
+      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override;
 
 protected:
+  void initialize();
 
+protected:
   dart::gui::osg::Viewer* mViewer;
 
-  WamWorld* mTeleop;
+  WamWorld* mWamWorld;
 
-  SkeletonPtr mWam;
+  dart::dynamics::SkeletonPtr mWam;
 
-  WorldPtr mWorld;
+  dart::simulation::WorldPtr mWorld;
 
   Eigen::VectorXd mRestConfig;
 
@@ -70,12 +67,4 @@ protected:
   std::vector< std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
 
   Eigen::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
-
-  std::shared_ptr<RelaxedPosture> mPosture;
-
-  std::shared_ptr<dart::constraint::BalanceConstraint> mBalance;
-
-  char mOptimizationKey;
-
-  std::vector<bool> mMoveComponents;
 };

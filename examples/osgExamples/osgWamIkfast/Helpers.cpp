@@ -79,11 +79,6 @@ void setStartupConfiguration(const SkeletonPtr& wam)
 //==============================================================================
 void setupEndEffectors(const SkeletonPtr& wam)
 {
-  Eigen::VectorXd rootjoint_weights = Eigen::VectorXd::Ones(7);
-  rootjoint_weights = 0.01*rootjoint_weights;
-
-  double extra_error_clamp = 0.1;
-
   Eigen::Vector3d linearBounds =
       Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
 
@@ -100,20 +95,16 @@ void setupEndEffectors(const SkeletonPtr& wam)
         Frame::World(), "lh_target");
 
   ee->getIK(true)->setTarget(wam7_target);
-  //  ee->getIK()->useWholeBody();
 
-  ee->getIK()->setGradientMethod<dart::dynamics::ImportedIkfast>("libexample_wamIkd");
-  ee->getIK()->getAnalytical()->setExtraDofUtilization(IK::Analytical::POST_ANALYTICAL);
-  ee->getIK()->getAnalytical()->setExtraErrorLengthClamp(extra_error_clamp);
-  //  ee->getIK()->getGradientMethod().setComponentWeights(rootjoint_weights);
+  std::string libName = "libexample_wamIk";
+#if DART_OS_LINUX && !NDEBUG
+  libName += "d";
+#endif
+
+  ee->getIK()->setGradientMethod<dart::dynamics::ImportedIkfast>(libName);
 
   ee->getIK()->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
   ee->getIK()->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
-
-  linearBounds[2] = 1e-8;
-
-  angularBounds[0] = 1e-8;
-  angularBounds[1] = 1e-8;
 }
 
 //==============================================================================
@@ -134,46 +125,4 @@ void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& wam)
           ee->getIK()->getTarget()))
       viewer.enableDragAndDrop(frame.get());
   }
-}
-
-//==============================================================================
-void setupWholeBodySolver(const SkeletonPtr& wam)
-{
-  std::shared_ptr<dart::optimizer::GradientDescentSolver> solver =
-      std::dynamic_pointer_cast<dart::optimizer::GradientDescentSolver>(
-        wam->getIK(true)->getSolver());
-
-  std::size_t nDofs = wam->getNumDofs();
-
-  double default_weight = 0.01;
-  Eigen::VectorXd weights = default_weight * Eigen::VectorXd::Ones(nDofs);
-  weights[2] = 0.0;
-  weights[3] = 0.0;
-  weights[4] = 0.0;
-
-  Eigen::VectorXd lower_posture = Eigen::VectorXd::Constant(nDofs,
-                                                            -std::numeric_limits<double>::infinity());
-  lower_posture[0] = -0.35;
-  lower_posture[1] = -0.35;
-  lower_posture[5] =  0.55;
-
-  Eigen::VectorXd upper_posture = Eigen::VectorXd::Constant(nDofs,
-                                                            std::numeric_limits<double>::infinity());
-  upper_posture[0] =  0.35;
-  upper_posture[1] =  0.50;
-  upper_posture[5] =  0.95;
-
-  std::shared_ptr<RelaxedPosture> objective = std::make_shared<RelaxedPosture>(
-        wam->getPositions(), lower_posture, upper_posture, weights);
-
-  wam->getIK()->setObjective(objective);
-
-  std::shared_ptr<dart::constraint::BalanceConstraint> balance =
-      std::make_shared<dart::constraint::BalanceConstraint>(wam->getIK());
-  wam->getIK()->getProblem()->addEqConstraint(balance);
-
-  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
-  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_SUPPORT);
-
-  solver->setNumMaxIterations(5);
 }

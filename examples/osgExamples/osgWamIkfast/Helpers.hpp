@@ -45,5 +45,3 @@ void setStartupConfiguration(const SkeletonPtr& wam);
 void setupEndEffectors(const SkeletonPtr& wam);
 
 void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& wam);
-
-void setupWholeBodySolver(const SkeletonPtr& wam);

@@ -39,10 +39,7 @@ InputHandler::InputHandler(
     WamWorld* teleop,
     const SkeletonPtr& wam,
     const WorldPtr& world)
-  : mViewer(viewer),
-    mTeleop(teleop),
-    mWam(wam),
-    mWorld(world)
+  : mViewer(viewer), mWamWorld(teleop), mWam(wam), mWorld(world)
 {
   initialize();
 }
@@ -63,29 +60,18 @@ void InputHandler::initialize()
       mEndEffectorIndex.push_back(i);
     }
   }
-
-  mPosture = std::dynamic_pointer_cast<RelaxedPosture>(
-        mWam->getIK(true)->getObjective());
-
-  mBalance = std::dynamic_pointer_cast<dart::constraint::BalanceConstraint>(
-        mWam->getIK(true)->getProblem()->getEqConstraint(1));
-
-  mOptimizationKey = 'r';
-
-  mMoveComponents.resize(WamWorld::NUM_MOVE, false);
 }
 
 //==============================================================================
-bool InputHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&)
+bool InputHandler::handle(
+    const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&)
 {
-  if (nullptr == mWam)
-  {
+  if (!mWam)
     return false;
-  }
 
-  if ( ::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType() )
+  if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType())
   {
-    if ( ea.getKey() == 'p' )
+    if (ea.getKey() == 'p' || ea.getKey() == 'P')
     {
       for (std::size_t i=0; i < mWam->getNumDofs(); ++i)
         std::cout << mWam->getDof(i)->getName() << ": "
@@ -93,18 +79,13 @@ bool InputHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdap
       return true;
     }
 
-    if ( ea.getKey() == 't' )
+    if (ea.getKey() == 't' || ea.getKey() == 'T')
     {
-      // Reset all the positions except for x, y, and yaw
-      for (std::size_t i=0; i < mWam->getNumDofs(); ++i)
-      {
-        if ( i < 2 || 4 < i )
-          mWam->getDof(i)->setPosition(mRestConfig[i]);
-      }
+      mWam->setPositions(mRestConfig);
       return true;
     }
 
-    if ( '1' <= ea.getKey() && ea.getKey() <= '9' )
+    if ('1' <= ea.getKey() && ea.getKey() <= '9')
     {
       std::size_t index = ea.getKey() - '1';
       if (index < mConstraintActive.size())
@@ -131,95 +112,6 @@ bool InputHandler::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdap
         }
       }
       return true;
-    }
-
-    if ( 'x' == ea.getKey() )
-    {
-      EndEffector* ee = mWam->getEndEffector("l_foot");
-      ee->getSupport()->setActive(!ee->getSupport()->isActive());
-      return true;
-    }
-
-    if ( 'c' == ea.getKey() )
-    {
-      EndEffector* ee = mWam->getEndEffector("r_foot");
-      ee->getSupport()->setActive(!ee->getSupport()->isActive());
-      return true;
-    }
-
-    if (ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L)
-      mTeleop->mAmplifyMovement = true;
-
-    switch(ea.getKey())
-    {
-      case 'w': case 'W': mMoveComponents[WamWorld::MOVE_W] = true; break;
-      case 'a': case 'A': mMoveComponents[WamWorld::MOVE_A] = true; break;
-      case 's': case 'S': mMoveComponents[WamWorld::MOVE_S] = true; break;
-      case 'd': case 'D': mMoveComponents[WamWorld::MOVE_D] = true; break;
-      case 'q': case 'Q': mMoveComponents[WamWorld::MOVE_Q] = true; break;
-      case 'e': case 'E': mMoveComponents[WamWorld::MOVE_E] = true; break;
-      case 'f': case 'F': mMoveComponents[WamWorld::MOVE_F] = true; break;
-      case 'z': case 'Z': mMoveComponents[WamWorld::MOVE_Z] = true; break;
-    }
-
-    switch(ea.getKey())
-    {
-      case 'w': case 'a': case 's': case 'd': case 'q': case 'e': case 'f': case 'z':
-      case 'W': case 'A': case 'S': case 'D': case 'Q': case 'E': case 'F': case 'Z':
-      {
-        mTeleop->setMovement(mMoveComponents);
-        return true;
-      }
-    }
-
-    if (mOptimizationKey == ea.getKey())
-    {
-      if (mPosture)
-        mPosture->enforceIdealPosture = true;
-
-      if (mBalance)
-        mBalance->setErrorMethod(dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
-
-      return true;
-    }
-  }
-
-  if ( ::osgGA::GUIEventAdapter::KEYUP == ea.getEventType() )
-  {
-    if (ea.getKey() == mOptimizationKey)
-    {
-      if (mPosture)
-        mPosture->enforceIdealPosture = false;
-
-      if (mBalance)
-        mBalance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
-
-      return true;
-    }
-
-    if (ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L)
-      mTeleop->mAmplifyMovement = false;
-
-    switch(ea.getKey())
-    {
-      case 'w': case 'W': mMoveComponents[WamWorld::MOVE_W] = false; break;
-      case 'a': case 'A': mMoveComponents[WamWorld::MOVE_A] = false; break;
-      case 's': case 'S': mMoveComponents[WamWorld::MOVE_S] = false; break;
-      case 'd': case 'D': mMoveComponents[WamWorld::MOVE_D] = false; break;
-      case 'q': case 'Q': mMoveComponents[WamWorld::MOVE_Q] = false; break;
-      case 'e': case 'E': mMoveComponents[WamWorld::MOVE_E] = false; break;
-      case 'f': case 'F': mMoveComponents[WamWorld::MOVE_F] = false; break;
-      case 'z': case 'Z': mMoveComponents[WamWorld::MOVE_Z] = false; break;
-    }
-
-    switch(ea.getKey())
-    {
-      case 'w': case 'a': case 's': case 'd': case 'q': case'e': case 'f': case 'z':
-      case 'W': case 'A': case 'S': case 'D': case 'Q': case 'E': case 'F': case 'Z':
-      {
-        mTeleop->setMovement(mMoveComponents);
-        return true;
-      }
     }
   }
 
