@@ -55,7 +55,6 @@ public:
   /// include the extension, this function will use the best guess depending on
   /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
   /// Windows).
-  /// \throw std::runtime_error upon the file loading failure.
   explicit SharedLibrary(const std::string& fileName);
 
   /// Destructor

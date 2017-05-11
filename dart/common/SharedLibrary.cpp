@@ -30,7 +30,6 @@
 
 #include "dart/common/SharedLibrary.hpp"
 
-#include <stdexcept>
 #include "dart/common/Console.hpp"
 
 #if DART_OS_LINUX

@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -40,10 +39,6 @@
 namespace dart {
 namespace dynamics {
 
-// conversions between:
-// - endeffector pose
-// - solutions
-
 // ik types
 // - Transform6D - end effector reaches desired 6D transformation
 // - Rotation3D - end effector reaches desired 3D rotation
@@ -55,10 +50,6 @@ namespace dynamics {
 // - TranslationXY2D - end effector origin reaches desired XY translation position, Z is ignored. The coordinate system with relative to the base link.
 // - TranslationLocalGlobal6D - local point on end effector origin reaches desired 3D global point. Because both local point and global point can be specified, there are 6 values.
 // - TranslationXAxisAngle4D, TranslationYAxisAngle4D, TranslationZAxisAngle4D - end effector origin reaches desired 3D translation, manipulator direction makes a specific angle with x/y/z-axis (defined in the manipulator base link’s coordinate system)
-//
-//The possible solve methods are defined by ikfast.IKFastSolver.GetSolvers()
-
-// free parameter is in the range of [0, 1]
 
 class Ikfast : public InverseKinematics::Analytical
 {
