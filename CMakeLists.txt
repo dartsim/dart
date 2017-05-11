@@ -291,6 +291,13 @@ if(TARGET dart)
       dart_add_example(examples/osgExamples/osgOperationalSpaceControl dart dart-utils-urdf dart-gui-osg)
       dart_add_example(examples/osgExamples/osgSoftBodies dart dart-utils-urdf dart-gui-osg)
       dart_add_example(examples/osgExamples/osgTinkertoy dart dart-utils-urdf dart-gui-osg)
+
+      add_library(example_wamIk examples/osgExamples/osgWamIkfast/ikfast/ikfast71.Transform6D.4_6_9_10_11_12_f8.cpp)
+      target_link_libraries(example_wamIk dart-external-ikfast)
+      target_compile_definitions(example_wamIk PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
+      target_compile_options(example_wamIk PRIVATE -w)
+
+      dart_add_example(examples/osgExamples/osgWamIkfast dart dart-utils-urdf dart-gui-osg example_wamIk)
     endif()
 
     # Add an "examples" target to build examples.
