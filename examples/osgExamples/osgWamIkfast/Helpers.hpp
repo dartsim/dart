@@ -30,18 +30,14 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
-#include <dart/utils/utils.hpp>
-#include <dart/utils/urdf/urdf.hpp>
 
-using namespace dart::dynamics;
-using namespace dart::simulation;
+dart::dynamics::SkeletonPtr createGround();
 
-SkeletonPtr createGround();
+dart::dynamics::SkeletonPtr createWam();
 
-SkeletonPtr createWam();
+void setStartupConfiguration(const dart::dynamics::SkeletonPtr& wam);
 
-void setStartupConfiguration(const SkeletonPtr& wam);
+void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam);
 
-void setupEndEffectors(const SkeletonPtr& wam);
-
-void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& wam);
+void enableDragAndDrops(
+    dart::gui::osg::Viewer& viewer, const dart::dynamics::SkeletonPtr& wam);

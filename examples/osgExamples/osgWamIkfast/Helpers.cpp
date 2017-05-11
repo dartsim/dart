@@ -30,42 +30,47 @@
 
 #include "Helpers.hpp"
 
-#include "RelaxedPosture.hpp"
+#include <dart/utils/urdf/urdf.hpp>
+#include <dart/gui/osg/osg.hpp>
 
 //==============================================================================
-SkeletonPtr createGround()
+dart::dynamics::SkeletonPtr createGround()
 {
   // Create a Skeleton to represent the ground
-  SkeletonPtr ground = Skeleton::create("ground");
+  dart::dynamics::SkeletonPtr ground
+      = dart::dynamics::Skeleton::create("ground");
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
   double thickness = 0.01;
   tf.translation() = Eigen::Vector3d(0,0,-thickness/2.0);
-  WeldJoint::Properties joint;
+  dart::dynamics::WeldJoint::Properties joint;
   joint.mT_ParentBodyToJoint = tf;
-  ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
-  ShapePtr groundShape =
-      std::make_shared<BoxShape>(Eigen::Vector3d(10,10,thickness));
+  ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(nullptr, joint);
+  dart::dynamics::ShapePtr groundShape =
+      std::make_shared<dart::dynamics::BoxShape>(
+        Eigen::Vector3d(10,10,thickness));
 
   auto shapeNode = ground->getBodyNode(0)->createShapeNodeWith<
-      VisualAspect, CollisionAspect, DynamicsAspect>(groundShape);
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(groundShape);
   shapeNode->getVisualAspect()->setColor(dart::Color::Blue(0.2));
 
   return ground;
 }
 
 //==============================================================================
-SkeletonPtr createWam()
+dart::dynamics::SkeletonPtr createWam()
 {
   dart::utils::DartLoader urdfParser;
   urdfParser.addPackageDirectory("herb_description", DART_DATA_PATH"/urdf/wam");
-  SkeletonPtr wam
+  dart::dynamics::SkeletonPtr wam
       = urdfParser.parseSkeleton(DART_DATA_PATH"/urdf/wam/wam.urdf");
 
   return wam;
 }
 
 //==============================================================================
-void setStartupConfiguration(const SkeletonPtr& wam)
+void setStartupConfiguration(const dart::dynamics::SkeletonPtr& wam)
 {
   wam->getDof("/j1")->setPosition(0.0);
   wam->getDof("/j2")->setPosition(0.0);
@@ -77,7 +82,7 @@ void setStartupConfiguration(const SkeletonPtr& wam)
 }
 
 //==============================================================================
-void setupEndEffectors(const SkeletonPtr& wam)
+void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
 {
   Eigen::Vector3d linearBounds =
       Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
@@ -88,11 +93,12 @@ void setupEndEffectors(const SkeletonPtr& wam)
   Eigen::Isometry3d tf_hand(Eigen::Isometry3d::Identity());
   tf_hand.translate(Eigen::Vector3d(0.0, 0.0, -0.09));
 
-  EndEffector* ee = wam->getBodyNode("/wam7")->createEndEffector("ee");
+  dart::dynamics::EndEffector* ee
+      = wam->getBodyNode("/wam7")->createEndEffector("ee");
   ee->setDefaultRelativeTransform(tf_hand, true);
 
   auto wam7_target = std::make_shared<dart::gui::osg::InteractiveFrame>(
-        Frame::World(), "lh_target");
+        dart::dynamics::Frame::World(), "lh_target");
 
   ee->getIK(true)->setTarget(wam7_target);
 
@@ -108,7 +114,8 @@ void setupEndEffectors(const SkeletonPtr& wam)
 }
 
 //==============================================================================
-void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& wam)
+void enableDragAndDrops(
+    dart::gui::osg::Viewer& viewer, const dart::dynamics::SkeletonPtr& wam)
 {
   // Turn on drag-and-drop for the whole Skeleton
   for (std::size_t i=0; i < wam->getNumBodyNodes(); ++i)
@@ -116,13 +123,16 @@ void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& wam)
 
   for (std::size_t i=0; i < wam->getNumEndEffectors(); ++i)
   {
-    EndEffector* ee = wam->getEndEffector(i);
+    dart::dynamics::EndEffector* ee = wam->getEndEffector(i);
     if (!ee->getIK())
       continue;
 
     // Check whether the target is an interactive frame, and add it if it is
-    if (const auto& frame = std::dynamic_pointer_cast<dart::gui::osg::InteractiveFrame>(
-          ee->getIK()->getTarget()))
+    const auto& frame
+        = std::dynamic_pointer_cast<dart::gui::osg::InteractiveFrame>(
+              ee->getIK()->getTarget());
+
+    if (frame)
       viewer.enableDragAndDrop(frame.get());
   }
 }

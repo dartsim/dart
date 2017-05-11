@@ -31,7 +31,6 @@
 #include "InputHandler.hpp"
 
 #include "WamWorld.hpp"
-#include "RelaxedPosture.hpp"
 
 //==============================================================================
 InputHandler::InputHandler(
