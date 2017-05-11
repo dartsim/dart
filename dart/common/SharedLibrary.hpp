@@ -64,12 +64,17 @@ public:
   /// Returns the file name of the shared library
   const std::string& getFileName() const;
 
-  /// Returns symbol from the shared library
-  void* getSymbol(const std::string& strName) const;
+  /// Returns true if the shared library loading was successful.
+  bool isGood() const;
+
+  /// Returns a symbol from the shared library
+  void* getSymbol(const std::string& symbolName) const;
 
 protected:
+  void load();
+
   /// Returns the last loading error
-  std::string dynlibError();
+  std::string dynlibError() const;
 
 protected:
   /// Filename of the shared library.

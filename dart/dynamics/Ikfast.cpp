@@ -31,9 +31,8 @@
 
 #include "dart/dynamics/Ikfast.hpp"
 
-#include "dart/dynamics/detail/ikfast.h"
+#include "dart/external/ikfast/ikfast.h"
 #include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/IkfastSolver.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 
 namespace dart {
@@ -42,7 +41,7 @@ namespace dynamics {
 namespace {
 
 //==============================================================================
-void toEigenTypes(
+void convertTransform(
     const IkReal* eetrans, const IkReal* eerot, Eigen::Isometry3d& tf)
 {
   tf.linear()(0, 0) = eerot[0*3+0];
@@ -59,7 +58,7 @@ void toEigenTypes(
 }
 
 //==============================================================================
-void toIkfastTypes(
+void convertTransform(
     const Eigen::Isometry3d& tf,
     std::array<IkReal, 3>& eetrans,
     std::array<IkReal, 9>& eerot)
@@ -80,24 +79,23 @@ void toIkfastTypes(
 }
 
 //==============================================================================
-void toIkfastTypes(
+void convertIkSolution(
     const Ikfast* ikfast,
+    int numJoints,
+    int numFreeParameters,
     const ikfast::IkSolutionBase<IkReal>& ikfastSolution,
     InverseKinematics::Analytical::Solution& solution)
 {
-  const auto solver = ikfast->getSolver();
   const auto ik = ikfast->getIK();
   const auto dofIndices = ik->getDofs();
-  const auto skel = ik->getNode()->getSkeleton();
-  const auto dofs = skel->getDofs();
-  // TODO(JS): simplify
+  const auto dofs = ik->getNode()->getSkeleton()->getDofs();
 
-  std::vector<IkReal> solutionValues(solver->getNumJoints());
-  std::vector<IkReal> freeValues(solver->getNumFreeParameters());
+  std::vector<IkReal> solutionValues(numJoints);
+  std::vector<IkReal> freeValues(numFreeParameters);
 
   ikfastSolution.GetSolution(solutionValues, freeValues);
 
-  bool valid = true;
+  bool limitViolated = false;
 
   solution.mConfig.resize(solutionValues.size());
   for (auto i = 0u; i < solution.mConfig.size(); ++i)
@@ -105,20 +103,28 @@ void toIkfastTypes(
     solution.mConfig[i] = solutionValues[i];
 
     if (solutionValues[i] < dofs[dofIndices[i]]->getPositionLowerLimit())
-      valid = false;
+    {
+      limitViolated = true;
+      break;
+    }
 
     if (solutionValues[i] > dofs[dofIndices[i]]->getPositionUpperLimit())
-      valid = false;
+    {
+      limitViolated = true;
+      break;
+    }
   }
 
   solution.mValidity
-      = valid ? InverseKinematics::Analytical::VALID
-              : InverseKinematics::Analytical::OUT_OF_REACH;
+      = limitViolated ? InverseKinematics::Analytical::LIMIT_VIOLATED
+                      : InverseKinematics::Analytical::VALID;
 }
 
 //==============================================================================
-void toIkfastTypes(
+void convertIkSolutions(
     const Ikfast* ikfast,
+    int numJoints,
+    int numFreeParameters,
     const ikfast::IkSolutionList<IkReal>& ikfastSolutions,
     std::vector<InverseKinematics::Analytical::Solution>& solutions)
 {
@@ -129,60 +135,71 @@ void toIkfastTypes(
   for (auto i = 0u; i < numSolutions; ++i)
   {
     const auto& ikfastSolution = ikfastSolutions.GetSolution(i);
-    toIkfastTypes(ikfast, ikfastSolution, solutions[i]);
+    convertIkSolution(
+        ikfast, numJoints, numFreeParameters, ikfastSolution, solutions[i]);
   }
 }
 
 } // namespace (anonymous)
 
 //==============================================================================
-Ikfast::Ikfast(InverseKinematics* ik,
-    const std::shared_ptr<IkfastSolver>& ikfastSolver,
+Ikfast::Ikfast(
+    InverseKinematics* ik,
     const std::string& methodName,
     const InverseKinematics::Analytical::Properties& properties)
-  : Analytical(ik, methodName, properties),
-    mSolver{ikfastSolver},
+  : Analytical{ik, methodName, properties},
     mConfigured{false}
 {
-  // Do nothing
+  setExtraDofUtilization(PRE_AND_POST_ANALYTICAL);
 }
 
 //==============================================================================
-std::unique_ptr<InverseKinematics::GradientMethod> Ikfast::clone(
-    InverseKinematics* newIK) const
+auto Ikfast::getDofs() const -> const std::vector<std::size_t>&
 {
-  return dart::common::make_unique<Ikfast>(
-        newIK, mSolver, "todo", getAnalyticalProperties());
-}
-
-//==============================================================================
-const std::vector<std::size_t>& Ikfast::getDofs() const
-{
-  if(!mConfigured)
+  if (!mConfigured)
+  {
     configure();
+
+    if (!mConfigured)
+    {
+      dtwarn << "[Ikfast::getDofs] This analytical IK was not able "
+             << "to configure properly, so it will not be able to compute "
+             << "solutions. Returning an empty list of dofs.\n";
+      assert(mDofs.empty());
+    }
+  }
 
   return mDofs;
 }
 
 //==============================================================================
-std::shared_ptr<IkfastSolver> Ikfast::getSolver() const
+bool Ikfast::isGood() const
 {
-  return mSolver;
+  return mConfigured;
+}
+
+//==============================================================================
+bool isFreeJoint(int numFreeParams, const int* freeParams, int index)
+{
+  for (auto j = 0; j < numFreeParams; ++j)
+  {
+    if (index == freeParams[j])
+      return true;
+  }
+
+  return false;
 }
 
 //==============================================================================
 void Ikfast::configure() const
 {
-  const auto metaSkeleton = mIK->getNode()->getSkeleton();
+  const auto dofs = mIK->getNode()->getSkeleton()->getDofs();
 
-  const auto dofs = metaSkeleton->getDofs();
-  const auto numDofs = dofs.size();
+  const auto ikfastNumJoints = getNumJoints();
+  const auto ikfastNumFreeParams = getNumFreeParameters();
+  const auto ikfastFreeParams = getFreeParameters();
 
-  const auto ikfastNumJoints = mSolver->getNumJoints();
-  const auto ikfastNumFreeParams = mSolver->getNumFreeParameters();
-  const auto ikfastFreeParams = mSolver->getFreeParameters();
-
-  if (numDofs != static_cast<std::size_t>(ikfastNumJoints))
+  if (dofs.size() != static_cast<std::size_t>(ikfastNumJoints))
   {
     dterr << "[Ikfast::configure] Failed to configure: "
           << "the DOFs don't agree with the target skeleton and the IKFast "
@@ -190,27 +207,18 @@ void Ikfast::configure() const
     return;
   }
 
-  for (auto i = 0u; i < numDofs; ++i)
-  {
-    bool isFreeJoint = false;
-    for (auto j = 0; j < ikfastNumFreeParams; ++j)
-    {
-      if (i == static_cast<std::size_t>(ikfastFreeParams[j]))
-      {
-        isFreeJoint = true;
-        break;
-      }
-    }
+  mDofs.clear();
+  mDofs.reserve(ikfastNumJoints - ikfastNumFreeParams);
 
-    if (isFreeJoint)
+  for (auto i = 0; i < ikfastNumJoints; ++i)
+  {
+    if (isFreeJoint(ikfastNumFreeParams, ikfastFreeParams, i))
       continue;
 
     mDofs.push_back(dofs[i]->getIndexInSkeleton());
   }
-  // Note: It is possible to be index mismatch between IKFast's joints and
-  // metaSkeleton's joints.
 
-  mExtraJointValues.resize(ikfastNumFreeParams);
+  mFreeParams.resize(ikfastNumFreeParams);
 
   mConfigured = true;
 }
@@ -234,32 +242,26 @@ auto Ikfast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
     }
   }
 
-  if (!mSolver)
-  {
-    dtwarn << "[IKFast::computeSolutions] Attempting to perform an IK without "
-           << "solver function. Returning empty solution.\n";
-    return mSolutions;
-  }
+  convertTransform(desiredBodyTf, mTargetTranspose, mTargetRotation);
 
-  toIkfastTypes(desiredBodyTf, eetrans, eerot);
+  const auto dofs = mIK->getNode()->getSkeleton()->getDofs();
+  const auto ikfastNumFreeParams = getNumFreeParameters();
+  const auto ikfastFreeParams = getFreeParameters();
+  for (auto i = 0; i < ikfastNumFreeParams; ++i)
+    mFreeParams[i] = dofs[ikfastFreeParams[i]]->getPosition();
 
   ikfast::IkSolutionList<IkReal> solutions;
-  const auto success = mSolver->computeIk(
-      eetrans.data(), eerot.data(), mExtraJointValues.data(), solutions);
+  const auto success = computeIk(
+      mTargetTranspose.data(),
+      mTargetRotation.data(),
+      mFreeParams.data(),
+      solutions);
 
   if (!success)
-  {
-//    dtwarn << "[IKFast::computeSolutions] Failed to get ik solutions using the "
-//           << "IKFast solver. Returning an empty list of solutions.\n";
     return mSolutions;
-  }
-  else
-  {
-    dtmsg << "[IKFast::computeSolutions] Solved!.\n";
-  }
 
-  // Convert solutions
-  toIkfastTypes(this, solutions, mSolutions);
+  convertIkSolutions(
+      this, getNumJoints(), getNumFreeParameters(), solutions, mSolutions);
 
   return mSolutions;
 }

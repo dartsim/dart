@@ -1090,7 +1090,8 @@ void InverseKinematics::Analytical::computeGradient(
       mIK->getErrorMethod().computeDesiredTransform(
         mIK->getNode()->getWorldTransform(), _error);
 
-  if(PRE_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
+  if((PRE_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
+      || PRE_AND_POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization)
      && mExtraDofs.size() > 0)
   {
     const double norm = _error.norm();
@@ -1133,7 +1134,8 @@ void InverseKinematics::Analytical::computeGradient(
     _grad[index] = mConfigCache[i] - bestSolution[i];
   }
 
-  if(POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
+  if((POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
+     || PRE_AND_POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization)
      && mExtraDofs.size() > 0 )
   {
     setPositions(bestSolution);

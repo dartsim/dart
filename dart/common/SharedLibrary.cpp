@@ -31,6 +31,7 @@
 #include "dart/common/SharedLibrary.hpp"
 
 #include <stdexcept>
+#include "dart/common/Console.hpp"
 
 #if DART_OS_LINUX
 
@@ -73,13 +74,60 @@ namespace common {
 SharedLibrary::SharedLibrary(const std::string& fileName)
   : mFileName(fileName), mInstance(nullptr)
 {
+  load();
+}
+
+//==============================================================================
+SharedLibrary::~SharedLibrary()
+{
+  if (!isGood())
+    return;
+
+  if (DYNLIB_UNLOAD(mInstance))
+  {
+    dterr << "[SharedLibrary::~SharedLibrary] Failed to unload library '"
+          << mFileName << "': " << dynlibError() << "\n";
+  }
+}
+
+//==============================================================================
+const std::string& SharedLibrary::getFileName() const
+{
+  return mFileName;
+}
+
+//==============================================================================
+bool SharedLibrary::isGood() const
+{
+  return (mInstance != nullptr);
+}
+
+//==============================================================================
+void* SharedLibrary::getSymbol(const std::string& symbolName) const
+{
+  if (!isGood())
+    return nullptr;
+
+  auto symbol = DYNLIB_GETSYM(mInstance, symbolName.c_str());
+
+  if (!symbol)
+  {
+    dtwarn << "[SharedLibrary::getSymbol] Failed to load a symbol '"
+           << symbolName << "'.\n";
+    return nullptr;
+  }
+
+  return static_cast<void*>(symbol);
+}
+
+//==============================================================================
+void SharedLibrary::load()
+{
   auto nameWithExtension = mFileName;
 #if DART_OS_LINUX
   // dlopen() does not add .so to the filename, like windows does for .dll
   if (nameWithExtension.find(".so") == std::string::npos)
-  {
     nameWithExtension += ".so";
-  }
 #elif DART_OS_MACOS
   // dlopen() does not add .dylib to the filename, like windows does for .dll
   if (nameWithExtension.substr(fileName.length() - 6, 6) != ".dylib")
@@ -92,7 +140,8 @@ SharedLibrary::SharedLibrary(const std::string& fileName)
     nameWithExtension += ".dll";
 #endif
 
-  mInstance = (DYNLIB_HANDLE)DYNLIB_LOAD(nameWithExtension.c_str());
+  mInstance
+      = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(nameWithExtension.c_str()));
 
 #if DART_OS_MACOS
   if (!mInstance)
@@ -101,39 +150,16 @@ SharedLibrary::SharedLibrary(const std::string& fileName)
     mInstance = (DYNLIB_HANDLE)FRAMEWORK_LOAD(nameWithExtension);
   }
 #endif
+
   if (!mInstance)
   {
-    std::string what = "Could not load dynamic library '" + nameWithExtension
-        + "': " + dynlibError();
-    throw std::runtime_error(what);
+    dterr << "[SharedLibrary::load] Failed to load dynamic library '"
+          << nameWithExtension << "': " << dynlibError() << "\n";
   }
 }
 
 //==============================================================================
-SharedLibrary::~SharedLibrary()
-{
-  if (DYNLIB_UNLOAD(mInstance))
-  {
-    std::string what = "Could not load unload library '" + mFileName + "': "
-        + dynlibError();
-    throw std::runtime_error(what);
-  }
-}
-
-//==============================================================================
-const std::string& SharedLibrary::getFileName() const
-{
-  return mFileName;
-}
-
-//==============================================================================
-void* SharedLibrary::getSymbol(const std::string& strName) const
-{
-  return (void*)DYNLIB_GETSYM(mInstance, strName.c_str());
-}
-
-//==============================================================================
-std::string SharedLibrary::dynlibError()
+std::string SharedLibrary::dynlibError() const
 {
 #if DART_OS_LINUX || DART_OS_MACOS
   return std::string(dlerror());

@@ -28,75 +28,86 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_IMPORTEDIKFASTSOLVER_HPP_
-#define DART_DYNAMICS_IMPORTEDIKFASTSOLVER_HPP_
+#ifndef DART_DYNAMICS_IMPORTEDIKFAST_HPP_
+#define DART_DYNAMICS_IMPORTEDIKFAST_HPP_
 
-#include <memory>
 #include "dart/common/SharedLibrary.hpp"
-#include "dart/dynamics/IkfastSolver.hpp"
+#include "dart/dynamics/Ikfast.hpp"
 
 namespace dart {
 namespace dynamics {
 
-/// A wrapper class of the generated IKFast code.
-class ImportedIkfastSolver : public IkfastSolver
+class ImportedIkfast : public Ikfast
 {
 public:
-  /// Constructor
-  ImportedIkfastSolver(const std::string& fileName);
-  // TODO(JS): replace with uri and retriever.
+  ImportedIkfast(
+      InverseKinematics* ik,
+      const std::string& fileName,
+      const std::string& methodName = "IKFast",
+      const Analytical::Properties& properties = Analytical::Properties());
 
-  // Documentation inherited
-  int getNumFreeParameters() override;
+  // Documentation inherited.
+  auto clone(InverseKinematics* newIK) const
+      -> std::unique_ptr<GradientMethod> override;
 
-  // Documentation inherited
-  int* getFreeParameters() override;
+protected:
+  // Documentation inherited.
+  int getNumFreeParameters() const override;
 
-  // Documentation inherited
-  int getNumJoints() override;
+  // Documentation inherited.
+  int* getFreeParameters() const override;
 
-  // Documentation inherited
-  int getIkRealSize() override;
+  // Documentation inherited.
+  int getNumJoints() const override;
 
-  // Documentation inherited
-  int getIkType() override;
+  // Documentation inherited.
+  int getIkRealSize() const override;
 
-  // Documentation inherited
+  // Documentation inherited.
+  int getIkType() const override;
+
+  // Documentation inherited.
   bool computeIk(
-      const IkReal* eetrans,
-      const IkReal* eerot,
+      const IkReal* mTargetTranspose,
+      const IkReal* mTargetRotation,
       const IkReal* pfree,
       ikfast::IkSolutionListBase<IkReal>& solutions) override;
 
-  // Documentation inherited
+  // Documentation inherited.
   const char* getKinematicsHash() override;
 
-  // Documentation inherited
+  // Documentation inherited.
   const char* getIkFastVersion() override;
+
+  // Documentation inherited.
+  void configure() const override;
 
 protected:
   using IkfastFuncGetInt = int (*)();
   using IkfastFuncGetIntPtr = int* (*)();
   using IkfastFuncComputeIk = bool (*)(
-      const IkReal* eetrans,
-      const IkReal* eerot,
+      const IkReal* mTargetTranspose,
+      const IkReal* mTargetRotation,
       const IkReal* pfree,
       ikfast::IkSolutionListBase<IkReal>& solutions);
   using IkfastFuncGetConstCharPtr = const char* (*)();
 
-  std::shared_ptr<common::SharedLibrary> mSharedLibrary;
+  /// Filename of the ikfast shared library.
+  std::string mFileName;
 
-  IkfastFuncGetInt mGetNumFreeParameters;
-  IkfastFuncGetIntPtr mGetFreeParameters;
-  IkfastFuncGetInt mGetNumJoints;
-  IkfastFuncGetInt mGetIkRealSize;
-  IkfastFuncGetInt mGetIkType;
-  IkfastFuncComputeIk mComputeIk;
-  IkfastFuncGetConstCharPtr mGetKinematicsHash;
-  IkfastFuncGetConstCharPtr mGetIkFastVersion;
+  mutable std::shared_ptr<common::SharedLibrary> mSharedLibrary;
+
+  mutable IkfastFuncGetInt mGetNumFreeParameters;
+  mutable IkfastFuncGetIntPtr mGetFreeParameters;
+  mutable IkfastFuncGetInt mGetNumJoints;
+  mutable IkfastFuncGetInt mGetIkRealSize;
+  mutable IkfastFuncGetInt mGetIkType;
+  mutable IkfastFuncComputeIk mComputeIk;
+  mutable IkfastFuncGetConstCharPtr mGetKinematicsHash;
+  mutable IkfastFuncGetConstCharPtr mGetIkFastVersion;
 };
 
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_IMPORTEDIKFASTSOLVER_HPP_
+#endif // DART_DYNAMICS_IMPORTEDIKFAST_HPP_

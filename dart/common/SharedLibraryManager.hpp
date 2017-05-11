@@ -43,6 +43,7 @@ class SharedLibrary;
 class SharedLibraryManager final : public Singleton<SharedLibraryManager>
 {
 public:
+  /// \return Pointer to the shared library on success. Otherwise, nullptr.
   std::shared_ptr<SharedLibrary> load(const std::string& fileName);
 
 protected:

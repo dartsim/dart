@@ -36,23 +36,23 @@
 using namespace dart;
 
 //==============================================================================
-TEST(Ikfast, LoadIkfastSolver)
+TEST(Ikfast, FailedToLoadSharedLibrary)
 {
-  auto solver
-      = std::make_shared<dynamics::ImportedIkfastSolver>("libikfast_testd");
-  EXPECT_NE(solver, nullptr);
+  auto skel = dynamics::Skeleton::create();
+  EXPECT_NE(skel, nullptr);
 
-  auto numFreeParams = solver->getNumFreeParameters();
-  EXPECT_EQ(numFreeParams, 1);
+  auto bodyNode
+      = skel->createJointAndBodyNodePair<dynamics::FreeJoint>().second;
 
-  auto freeParams = solver->getFreeParameters();
-  EXPECT_EQ(freeParams[0], 2);
-
-  EXPECT_EQ(solver->getNumJoints(), 7);
+  auto ee = bodyNode->createEndEffector("ee");
+  auto ik = ee->createIK();
+  auto ikfast
+      = ik->setGradientMethod<dynamics::ImportedIkfast>("name doesn't exist");
+  EXPECT_EQ(ikfast.isGood(), false);
 }
 
 //==============================================================================
-TEST(Ikfast, Wam)
+TEST(Ikfast, LoadWamArmIk)
 {
   utils::DartLoader urdfParser;
   urdfParser.addPackageDirectory("herb_description", DART_DATA_PATH"/urdf/wam");
@@ -62,21 +62,23 @@ TEST(Ikfast, Wam)
   auto wam7 = wam->getBodyNode("/wam7");
   auto ee = wam7->createEndEffector("ee");
   auto ik = ee->createIK();
-
-  auto solver
-      = std::make_shared<dynamics::ImportedIkfastSolver>("libikfast_testd");
-  EXPECT_NE(solver, nullptr);
-
   auto targetFrame
       = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
   targetFrame->setRotation(Eigen::Matrix3d::Identity());
 
   ik->setTarget(targetFrame);
   ik->setHierarchyLevel(1);
+  std::string libName = "libwamIk";
+#if DART_OS_LINUX && !NDEBUG
+  libName += "d";
+#endif
   auto ikfastGradientMethod
-      = ik->setGradientMethod<dynamics::Ikfast>(solver, std::string("ikfast"));
+      = ik->setGradientMethod<dynamics::ImportedIkfast>(libName);
   EXPECT_EQ(ikfastGradientMethod.getDofs().size(), 6);
 
   targetFrame->setTranslation(Eigen::Vector3d(0, 0, 0.5));
   ik->solve();
+//  auto solved = ik->solve();
+//  if (solved)
+//    EXPECT_TRUE(!ik->getSolutions().empty());
 }

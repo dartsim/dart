@@ -53,17 +53,10 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
       mLibraries.erase(iter);
   }
 
-  std::shared_ptr<SharedLibrary> newLib{nullptr};
-  try
-  {
-    newLib = std::make_shared<SharedLibrary>(fileName);
-  }
-  catch(std::runtime_error e)
-  {
-    dterr << "[SharedLibraryManager::load] Failed to load a shared library: "
-          << e.what() << "\n";
+  const auto newLib = std::make_shared<SharedLibrary>(fileName);
+
+  if (!newLib->isGood())
     return nullptr;
-  }
 
   mLibraries[fileName] = newLib;
 
