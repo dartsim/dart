@@ -78,10 +78,23 @@ void convertTransform(
 }
 
 //==============================================================================
+bool isFreeJoint(int numFreeParams, const int* freeParams, int index)
+{
+  for (auto i = 0; i < numFreeParams; ++i)
+  {
+    if (index == freeParams[i])
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
 void convertIkSolution(
     const Ikfast* ikfast,
     int numJoints,
     int numFreeParameters,
+    int* freeParameters,
     const ikfast::IkSolutionBase<IkReal>& ikfastSolution,
     InverseKinematics::Analytical::Solution& solution)
 {
@@ -96,10 +109,16 @@ void convertIkSolution(
 
   bool limitViolated = false;
 
-  solution.mConfig.resize(solutionValues.size());
+  const auto numActualJoints = numJoints - numFreeParameters;
+
+  solution.mConfig.resize(numActualJoints);
+  int index = 0;
   for (auto i = 0u; i < solution.mConfig.size(); ++i)
   {
-    solution.mConfig[i] = solutionValues[i];
+    if (isFreeJoint(numFreeParameters, freeParameters, i))
+      continue;
+
+    solution.mConfig[index++] = solutionValues[i];
 
     if (solutionValues[i] < dofs[dofIndices[i]]->getPositionLowerLimit())
     {
@@ -124,6 +143,7 @@ void convertIkSolutions(
     const Ikfast* ikfast,
     int numJoints,
     int numFreeParameters,
+    int* freeParameters,
     const ikfast::IkSolutionList<IkReal>& ikfastSolutions,
     std::vector<InverseKinematics::Analytical::Solution>& solutions)
 {
@@ -135,7 +155,12 @@ void convertIkSolutions(
   {
     const auto& ikfastSolution = ikfastSolutions.GetSolution(i);
     convertIkSolution(
-        ikfast, numJoints, numFreeParameters, ikfastSolution, solutions[i]);
+        ikfast,
+        numJoints,
+        numFreeParameters,
+        freeParameters,
+        ikfastSolution,
+        solutions[i]);
   }
 }
 
@@ -146,10 +171,9 @@ Ikfast::Ikfast(
     InverseKinematics* ik,
     const std::string& methodName,
     const InverseKinematics::Analytical::Properties& properties)
-  : Analytical{ik, methodName, properties},
-    mConfigured{false}
+  : Analytical{ik, methodName, properties}, mConfigured{false}
 {
-  setExtraDofUtilization(PRE_AND_POST_ANALYTICAL);
+  setExtraDofUtilization(UNUSED);
 }
 
 //==============================================================================
@@ -183,6 +207,8 @@ void Ikfast::configure() const
   const auto dofs = mIK->getNode()->getSkeleton()->getDofs();
 
   const auto ikfastNumJoints = getNumJoints();
+  const auto ikfastNumFreeJoints = getNumFreeParameters();
+  const auto ikfastActualNumJoints = ikfastNumFreeJoints - ikfastNumFreeJoints;
 
   if (dofs.size() != static_cast<std::size_t>(ikfastNumJoints))
   {
@@ -193,11 +219,14 @@ void Ikfast::configure() const
   }
 
   mDofs.clear();
-  mDofs.reserve(ikfastNumJoints);
+  mDofs.reserve(ikfastActualNumJoints);
   for (auto i = 0; i < ikfastNumJoints; ++i)
-    mDofs.emplace_back(dofs[i]->getIndexInSkeleton());
+  {
+    if (!isFreeJoint(ikfastNumFreeJoints, getFreeParameters(), i))
+      mDofs.emplace_back(dofs[i]->getIndexInSkeleton());
+  }
 
-  mFreeParams.resize(getNumFreeParameters());
+  mFreeParams.resize(ikfastNumFreeJoints);
 
   mConfigured = true;
 }
@@ -240,7 +269,12 @@ auto Ikfast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
     return mSolutions;
 
   convertIkSolutions(
-      this, getNumJoints(), getNumFreeParameters(), solutions, mSolutions);
+      this,
+      getNumJoints(),
+      getNumFreeParameters(),
+      getFreeParameters(),
+      solutions,
+      mSolutions);
 
   return mSolutions;
 }

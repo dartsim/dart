@@ -66,9 +66,10 @@ int main()
             << "Ctrl + Click:  Try to rotate a body without changing its translation\n"
             << "Shift + Click: Move a body using only its parent joint\n"
             << "1:             Toggle the interactive target of an EndEffector\n"
-            << "P:             Print the current joint values\n\n"
-            << "T:             Reset the robot to its relaxed posture\n\n"
-            << "The blue/red ball is the robot's center of mass.\n\n"
+            << "P:             Print the current joint values\n"
+            << "T:             Reset the robot to its relaxed posture\n"
+            << "The blue/red ball is the robot's center of mass.\n"
+            << "\n"
             << "Note that this is purely kinematic. Physical simulation is not allowed in this app.\n"
             << std::endl;
 
@@ -79,7 +80,7 @@ int main()
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3( 5.34,  3.00, 1.91),
       ::osg::Vec3( 0.00,  0.00, 0.50),
-      ::osg::Vec3(-0.20, -0.08, 0.98));
+      ::osg::Vec3(-0.00, -0.00, 0.98));
 
   // Reset the camera manipulator so that it starts in the new viewing position
   viewer.setCameraManipulator(viewer.getCameraManipulator());

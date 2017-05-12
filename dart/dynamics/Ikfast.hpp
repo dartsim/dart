@@ -39,18 +39,6 @@
 namespace dart {
 namespace dynamics {
 
-// ik types
-// - Transform6D - end effector reaches desired 6D transformation
-// - Rotation3D - end effector reaches desired 3D rotation
-// - Translation3D - end effector origin reaches desired 3D translation
-// - Direction3D - direction on end effector coordinate system reaches desired direction
-// - Ray4D - ray on end effector coordinate system reaches desired global ray
-// - Lookat3D - direction on end effector coordinate system points to desired 3D position
-// - TranslationDirection5D - end effector origin and direction reaches desired 3D translation and direction. Can be thought of as Ray IK where the origin of the ray must coincide.
-// - TranslationXY2D - end effector origin reaches desired XY translation position, Z is ignored. The coordinate system with relative to the base link.
-// - TranslationLocalGlobal6D - local point on end effector origin reaches desired 3D global point. Because both local point and global point can be specified, there are 6 values.
-// - TranslationXAxisAngle4D, TranslationYAxisAngle4D, TranslationZAxisAngle4D - end effector origin reaches desired 3D translation, manipulator direction makes a specific angle with x/y/z-axis (defined in the manipulator base link’s coordinate system)
-
 class Ikfast : public InverseKinematics::Analytical
 {
 public:
