@@ -69,9 +69,6 @@ add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} gui)
 
-# Coverage test
-dart_coveralls_add(${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
-
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})
 list(APPEND header_names "render/render.hpp")
