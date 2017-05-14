@@ -165,9 +165,6 @@ add_component_dependencies(
   external-odelcpsolver
 )
 
-# Coverage test
-dart_coveralls_add(${dart_core_headers} ${dart_core_sources})
-
 if(MSVC)
   set_target_properties(
     ${target} PROPERTIES
