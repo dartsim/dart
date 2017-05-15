@@ -26,8 +26,3 @@ clang-format-3.8
 lcov
 '
 
-sudo apt-get -qq --yes --force-yes install $APT
-
-# Install console_bridge
-hg clone ssh://hg@bitbucket.org/odedevs/ode
-(cd console_bridge; cmake .; make && sudo make install)
