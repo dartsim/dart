@@ -14,7 +14,6 @@ freeglut3-dev
 libxi-dev
 libxmu-dev
 libbullet-dev
-libode-dev
 libflann-dev
 libnlopt-dev
 coinor-libipopt-dev
@@ -28,3 +27,7 @@ lcov
 '
 
 sudo apt-get -qq --yes --force-yes install $APT
+
+# Install console_bridge
+hg clone ssh://hg@bitbucket.org/odedevs/ode
+(cd console_bridge; cmake .; make && sudo make install)
