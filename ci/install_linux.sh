@@ -26,3 +26,5 @@ clang-format-3.8
 lcov
 '
 
+sudo apt-get -qq --yes --force-yes install $APT
+
