@@ -187,6 +187,7 @@ private:
 
   ShapeMap mShapeMap;
 
+  static Registrar<FCLCollisionDetector> mRegistrar;
 };
 
 }  // namespace collision

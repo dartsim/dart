@@ -902,6 +902,29 @@ const std::vector<const BodyNode*>& Skeleton::getBodyNodes() const
 }
 
 //==============================================================================
+std::vector<BodyNode*> Skeleton::getBodyNodes(const std::string& name)
+{
+  auto bodyNode = getBodyNode(name);
+
+  if (bodyNode)
+    return {bodyNode};
+  else
+    return std::vector<BodyNode*>();
+}
+
+//==============================================================================
+std::vector<const BodyNode*> Skeleton::getBodyNodes(
+    const std::string& name) const
+{
+  const auto bodyNode = getBodyNode(name);
+
+  if (bodyNode)
+    return {bodyNode};
+  else
+    return std::vector<const BodyNode*>();
+}
+
+//==============================================================================
 template <class ObjectT, std::size_t (ObjectT::*getIndexInSkeleton)() const>
 static std::size_t templatedGetIndexOf(const Skeleton* _skel, const ObjectT* _obj,
                                   const std::string& _type, bool _warning)
@@ -987,15 +1010,63 @@ const Joint* Skeleton::getJoint(std::size_t _idx) const
 }
 
 //==============================================================================
-Joint* Skeleton::getJoint(const std::string& _name)
+Joint* Skeleton::getJoint(const std::string& name)
 {
-  return mNameMgrForJoints.getObject(_name);
+  return mNameMgrForJoints.getObject(name);
 }
 
 //==============================================================================
-const Joint* Skeleton::getJoint(const std::string& _name) const
+const Joint* Skeleton::getJoint(const std::string& name) const
 {
-  return mNameMgrForJoints.getObject(_name);
+  return mNameMgrForJoints.getObject(name);
+}
+
+//==============================================================================
+std::vector<Joint*> Skeleton::getJoints()
+{
+  const auto& bodyNodes = getBodyNodes();
+
+  std::vector<Joint*> joints;
+  joints.reserve(bodyNodes.size());
+  for (const auto& bodyNode : bodyNodes)
+    joints.emplace_back(bodyNode->getParentJoint());
+
+  return joints;
+}
+
+//==============================================================================
+std::vector<const Joint*> Skeleton::getJoints() const
+{
+  const auto& bodyNodes = getBodyNodes();
+
+  std::vector<const Joint*> joints;
+  joints.reserve(bodyNodes.size());
+  for (const auto& bodyNode : bodyNodes)
+    joints.emplace_back(bodyNode->getParentJoint());
+
+  return joints;
+}
+
+//==============================================================================
+std::vector<Joint*> Skeleton::getJoints(const std::string& name)
+{
+  auto joint = getJoint(name);
+
+  if (joint)
+    return {joint};
+  else
+    return std::vector<Joint*>();
+}
+
+//==============================================================================
+std::vector<const Joint*> Skeleton::getJoints(const std::string& name) const
+{
+  const auto joint = getJoint(name);
+
+  if (joint)
+    return {joint};
+  else
+    return std::vector<const Joint*>();
 }
 
 //==============================================================================

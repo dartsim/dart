@@ -1,3 +1,44 @@
+# Dependency checks
+if (NOT TARGET dart-gui)
+  return()
+endif()
+
+# OpenSceneGraph
+if(DART_BUILD_GUI_OSG)
+
+  find_package(OpenSceneGraph 3.0 QUIET
+    COMPONENTS osg osgViewer osgManipulator osgGA osgDB)
+  if(OPENSCENEGRAPH_FOUND)
+    if(DART_VERBOSE)
+      message(STATUS "Looking for OpenSceneGraph - ${OPENSCENEGRAPH_VERSION} found")
+    endif()
+    set(HAVE_OPENSCENEGRAPH TRUE)
+  else()
+    # dart-gui-osg requires both OSG and OpenThreads. This section attempts to
+    # identify which of those are missing from the building machine and offer
+    # advice to the user for getting dart-gui-osg to build.
+    find_package(OpenThreads QUIET)
+    if(OPENTHREADS_FOUND)
+      set(warning_msg "Could NOT find OpenSceneGraph")
+    else()
+      if(OSG_LIBRARY)
+        set(warning_msg "Could NOT find OpenThreads")
+      else()
+        set(warning_msg "Could NOT find OpenSceneGraph nor OpenThreads")
+      endif()
+    endif()
+    message(WARNING "${warning_msg} -- we will skip dart-gui-osg\n"
+            "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
+    set(HAVE_OPENSCENEGRAPH FALSE)
+  endif()
+
+else()
+
+  message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
+  set(HAVE_OPENSCENEGRAPH FALSE)
+
+endif()
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -27,9 +68,6 @@ target_link_libraries(
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} gui)
-
-# Coverage test
-dart_coveralls_add(${hdrs} ${srcs} ${dart_gui_osg_hdrs} ${dart_gui_osg_srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})

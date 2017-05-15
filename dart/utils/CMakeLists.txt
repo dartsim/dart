@@ -1,3 +1,10 @@
+# Dependency checks
+find_package(TINYXML 2.6.2 QUIET)
+dart_check_optional_package(TINYXML "dart-utils" "tinyxml" "2.6.2")
+
+find_package(TINYXML2 QUIET)
+dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -30,7 +37,7 @@ target_include_directories(
 )
 target_link_libraries(
   ${target_name}
-  dart-collision-bullet
+  dart
   ${TINYXML_LIBRARIES}
   ${TINYXML2_LIBRARIES}
 )
@@ -38,10 +45,7 @@ target_link_libraries(
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} collision-bullet)
-
-# Coverage test
-dart_coveralls_add(${hdrs} ${srcs} ${dart_utils_headers} ${dart_utils_sources})
+add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "utils headers" ${hdrs})
@@ -72,6 +76,4 @@ install(
 )
 
 # Add subdirectories (components)
-if(urdfdom_FOUND)
-  add_subdirectory(urdf)
-endif()
+add_subdirectory(urdf)

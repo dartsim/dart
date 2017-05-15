@@ -6,17 +6,18 @@ dart_add_test("comprehensive" test_Frames)
 dart_add_test("comprehensive" test_InverseKinematics)
 dart_add_test("comprehensive" test_NameManagement)
 
+dart_add_test("comprehensive" test_Distance)
 if(TARGET dart-collision-bullet)
-
-  dart_add_test("comprehensive" test_Distance)
   target_link_libraries(test_Distance dart-collision-bullet)
-
 endif()
 
 if(TARGET dart-utils)
 
   dart_add_test("comprehensive" test_Collision)
   target_link_libraries(test_Collision dart-utils)
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(test_Collision dart-collision-bullet)
+  endif()
   if(TARGET dart-collision-ode)
     target_link_libraries(test_Collision dart-collision-ode)
   endif()
@@ -35,12 +36,13 @@ if(TARGET dart-utils)
 
   dart_add_test("comprehensive" test_World)
   target_link_libraries(test_World dart-utils)
+  if(TARGET dart-collision-bullet)
+    target_link_libraries(test_World dart-collision-bullet)
+  endif()
 
-endif()
-
-if(TARGET dart-utils-urdf)
-
-  dart_add_test("comprehensive" test_ForwardKinematics)
-  target_link_libraries(test_ForwardKinematics dart-utils-urdf)
+  if(TARGET dart-utils-urdf)
+    dart_add_test("comprehensive" test_ForwardKinematics)
+    target_link_libraries(test_ForwardKinematics dart-utils-urdf)
+  endif()
 
 endif()

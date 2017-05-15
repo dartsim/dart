@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,12 +28,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_URDF_URDFTYPES_HPP_
-#define DART_UTILS_URDF_URDFTYPES_HPP_
+#ifndef DART_COMMON_DETAIL_SINGLETON_HPP_
+#define DART_COMMON_DETAIL_SINGLETON_HPP_
 
-#warning "This header has been deprecated in DART 6.2. "\
-  "Please include dart/utils/urdf/BackwardCompatibility.hpp intead."
+#include "dart/common/Singleton.hpp"
 
-#include "dart/utils/urdf/BackwardCompatibility.hpp"
+#include <utility>
 
-#endif // DART_UTILS_URDF_URDFTYPES_HPP_
+namespace dart {
+namespace common {
+
+//==============================================================================
+template <typename T> T* Singleton<T>::mInstance = nullptr;
+
+//==============================================================================
+template <typename T>
+template <typename... Args>
+T& Singleton<T>::getSingleton(Args... _args)
+{
+  // http://stackoverflow.com/questions/1008019/c-singleton-design-pattern
+
+  // Guaranteed to be destroyed and instantiated on first use.
+  if (mInstance == nullptr)
+  {
+    static T instance(std::forward<Args>(_args)...);
+    mInstance = &instance;
+  }
+
+  return *mInstance;
+}
+
+//==============================================================================
+template <typename T>
+template <typename ... Args>
+T* Singleton<T>::getSingletonPtr(Args... _args)
+{
+  return &getSingleton(std::forward<Args>(_args)...);
+}
+
+} // namespace common
+} // namespace dart
+
+#endif // DART_COMMON_DETAIL_SINGLETON_HPP_

@@ -95,11 +95,34 @@ public:
   /// Get const BodyNode whose index is _idx
   virtual const BodyNode* getBodyNode(std::size_t _idx) const = 0;
 
+  /// Returns the BodyNode of given name.
+  ///
+  /// \param[in] name The BodyNode name that want to search.
+  /// \return The body node of given name.
+  virtual BodyNode* getBodyNode(const std::string& name) = 0;
+
+  /// Returns the BodyNode of given name.
+  ///
+  /// \param[in] name The BodyNode name that want to search.
+  /// \return The body node of given name.
+  virtual const BodyNode* getBodyNode(const std::string& name) const = 0;
+
   /// Get all the BodyNodes that are held by this MetaSkeleton
   virtual const std::vector<BodyNode*>& getBodyNodes() = 0;
 
   /// Get all the BodyNodes that are held by this MetaSkeleton
   virtual const std::vector<const BodyNode*>& getBodyNodes() const = 0;
+
+  /// Returns all the BodyNodes of given name.
+  /// \param[in] name The BodyNode name that want to search.
+  /// \return The list of BodyNodes of given name.
+  virtual std::vector<BodyNode*> getBodyNodes(const std::string& name) = 0;
+
+  /// Returns all the BodyNodes of given name.
+  /// \param[in] name The BodyNode name that want to search.
+  /// \return The list of BodyNodes of given name.
+  virtual std::vector<const BodyNode*> getBodyNodes(
+      const std::string& name) const = 0;
 
   /// Get the index of a specific BodyNode within this ReferentialSkeleton.
   /// Returns INVALID_INDEX if it is not held in this ReferentialSkeleton.
@@ -115,6 +138,41 @@ public:
 
   /// Get const Joint whose index is _idx
   virtual const Joint* getJoint(std::size_t _idx) const = 0;
+
+  /// Returns the Joint of given name.
+  /// \param[in] name The joint name that want to search.
+  /// \return The joint of given name.
+  virtual Joint* getJoint(const std::string& name) = 0;
+
+  /// Returns the joint of given name.
+  /// \param[in] name The joint name that want to search.
+  /// \return The joint of given name.
+  virtual const Joint* getJoint(const std::string& name) const = 0;
+
+  /// Returns all the joints that are held by this MetaSkeleton.
+  virtual std::vector<Joint*> getJoints() = 0;
+
+  /// Returns all the joints that are held by this MetaSkeleton.
+  virtual std::vector<const Joint*> getJoints() const = 0;
+
+  /// Returns all the Joint of given name.
+  ///
+  /// This MetaSkeleton can contain multiple Joints with the same name when
+  /// this MetaSkeleton contains Joints from multiple Skeletons.
+  ///
+  /// \param[in] name The joint name that want to search.
+  /// \return The list of joints of given name.
+  virtual std::vector<Joint*> getJoints(const std::string& name) = 0;
+
+  /// Returns all the Joint of given name.
+  ///
+  /// This MetaSkeleton can contain multiple Joints with the same name when
+  /// this MetaSkeleton contains Joints from multiple Skeletons.
+  ///
+  /// \param[in] name The joint name that want to search.
+  /// \return The list of joints of given name.
+  virtual std::vector<const Joint*> getJoints(
+      const std::string& name) const = 0;
 
   /// Get the index of a specific Joint within this ReferentialSkeleton. Returns
   /// INVALID_INDEX if it is not held in this ReferentialSkeleton.

@@ -645,7 +645,13 @@ fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
 
 } // anonymous namespace
 
-
+//==============================================================================
+FCLCollisionDetector::Registrar<FCLCollisionDetector>
+FCLCollisionDetector::mRegistrar{
+  FCLCollisionDetector::getStaticType(),
+  []() -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
+      return dart::collision::FCLCollisionDetector::create();
+  }};
 
 //==============================================================================
 std::shared_ptr<FCLCollisionDetector> FCLCollisionDetector::create()

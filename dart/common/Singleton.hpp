@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,12 +28,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_URDF_URDFTYPES_HPP_
-#define DART_UTILS_URDF_URDFTYPES_HPP_
+#ifndef DART_COMMON_SINGLETON_HPP_
+#define DART_COMMON_SINGLETON_HPP_
 
-#warning "This header has been deprecated in DART 6.2. "\
-  "Please include dart/utils/urdf/BackwardCompatibility.hpp intead."
+namespace dart {
+namespace common {
 
-#include "dart/utils/urdf/BackwardCompatibility.hpp"
+/// Singleton template class
+///
+/// \note This singleton is not thread safe. For use of thread safe singleton,
+/// use static initialization as:
+///
+/// // Singletone class Engine
+/// class Engine : public Singleton<Engine> {};
+///
+/// // Call before main() and use theT only instead of calling getSingleton()
+/// static T& theT = T::getSingleton();
+template<typename T>
+class Singleton
+{
+public:
+  /// Returns reference of the singleton
+  template <typename... Args>
+  static T& getSingleton(Args... _args);
 
-#endif // DART_UTILS_URDF_URDFTYPES_HPP_
+  /// Returns pointer of the singleton
+  template <typename ... Args>
+  static T* getSingletonPtr(Args... _args);
+
+protected:
+  /// Constructor
+  Singleton() = default;
+
+  /// Destructor
+  virtual ~Singleton() = default;
+
+private:
+  /// Don't implement copy constructor
+  Singleton(const T&) = delete;
+
+  /// Don't assignment operator
+  const T& operator=(const T&) = delete;
+
+private:
+  /// Singleton instance
+  static T* mInstance;
+};
+
+} // namespace common
+} // namespace dart
+
+#include "dart/common/detail/Singleton-impl.hpp"
+
+#endif // DART_COMMON_SINGLETON_HPP_
