@@ -14,6 +14,7 @@ freeglut3-dev
 libxi-dev
 libxmu-dev
 libbullet-dev
+libode-dev
 libflann-dev
 libnlopt-dev
 coinor-libipopt-dev
