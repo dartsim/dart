@@ -1,21 +1,50 @@
 ## DART 6
 
-### DART 6.2.0 (201X-XX-XX)
+### [DART 6.2.0 (2017-05-15)](https://github.com/dartsim/dart/milestone/30?closed=1)
+
+* Common
+
+  * Added Factory class and applied it to collision detection creation: [#864](https://github.com/dartsim/dart/pull/864)
+  * Added readAll() to Resource and ResourceRetriever: [#875](https://github.com/dartsim/dart/pull/875)
 
 * Math
 
   * Fixed Lemke LCP solver (#808 for DART 6): [#812](https://github.com/dartsim/dart/pull/812)
   * Added accessors for diameters and radii of EllipsoidShape, and deprecated EllipsoidShape::get/setSize(): [#829](https://github.com/dartsim/dart/pull/829)
 
+* Collision Detection
+
+  * Added support of ODE collision detector: [#861](https://github.com/dartsim/dart/pull/861)
+  * Fixed incorrect collision filtering of BulletCollisionDetector: [#859](https://github.com/dartsim/dart/pull/859)
+
+* Simulation
+
+  * Fixed World didn't clear collision results on reset: [#863](https://github.com/dartsim/dart/pull/863)
+
+* Parsers
+
+  * Fixed incorrect creation of resource retriever in SkelParser and SdfParser: [#847](https://github.com/dartsim/dart/pull/847), [#849](https://github.com/dartsim/dart/pull/849)
+
 * GUI
 
-  * Fixed that GUI was rendering white lines with nvidia drivers: : [#804](https://github.com/dartsim/dart/pull/804)
+  * Added MotionBlurSimWindow: [#840](https://github.com/dartsim/dart/pull/840)
+  * Improved MultiSphereShape rendering in GLUT renderer: [#862](https://github.com/dartsim/dart/pull/862)
+  * Fixed incorrect parsing of materials and normal scaling from URDF: [#851](https://github.com/dartsim/dart/pull/851)
+  * Fixed the OSG renderer not rendering collision geometries: [#851](https://github.com/dartsim/dart/pull/851)
+  * Fixed that GUI was rendering white lines with nvidia drivers: [#805](https://github.com/dartsim/dart/pull/805)
 
 * Misc
 
-  * Modified the member function names pertain to lazy evaluation to be more relevant to their functionalities: [#833](https://github.com/dartsim/dart/pull/833)
+  * Added createShared() and createUnique() pattern: [#844](https://github.com/dartsim/dart/pull/844)
   * Added Skeleton::getRootJoint(): [#832](https://github.com/dartsim/dart/pull/832)
   * Added CMake targets for code formatting using clang-format: [#811](https://github.com/dartsim/dart/pull/811), [#817](https://github.com/dartsim/dart/pull/817)
+  * Renamed MultiSphereShape to MultiSphereConvexHullShape: [#865](https://github.com/dartsim/dart/pull/865)
+  * Modified the member function names pertain to lazy evaluation to be more relevant to their functionalities: [#833](https://github.com/dartsim/dart/pull/833)
+
+* Tutorials & Examples
+
+  * Allowed tutorials and examples to be built out of DART source tree: [#842](https://github.com/dartsim/dart/pull/842)
+  * Fixed tutorialDominoes-Finished that didn't work with the latest DART: [#807](https://github.com/dartsim/dart/pull/807)
 
 ### DART 6.1.2 (2017-01-13)
 
