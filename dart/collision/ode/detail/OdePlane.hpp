@@ -53,6 +53,9 @@ public:
 
   // Documentation inherited.
   void updateEngineData() override;
+
+  // Documentation inherited.
+  bool isPlaceable() const override;
 };
 
 } // namespace detail
