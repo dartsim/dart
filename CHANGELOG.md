@@ -1,5 +1,11 @@
 ## DART 6
 
+### DART 6.2.1 (2017-XX-XX)
+
+* Misc
+
+  * Fixed missing overriding method OdePlane::isPlaceable(): [#886](https://github.com/dartsim/dart/pull/886)
+
 ### [DART 6.2.0 (2017-05-15)](https://github.com/dartsim/dart/milestone/30?closed=1)
 
 * Common
