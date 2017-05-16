@@ -83,8 +83,7 @@ endif()
 option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF)
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
-option(DART_COVERALLS "Turn on coveralls support" OFF)
-option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
+option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 
 #===============================================================================
@@ -96,15 +95,14 @@ message(STATUS "                DART ${DART_VERSION}")
 message(STATUS "============================================")
 
 #===============================================================================
-# Coveralls settings
+# CodeCov settings
 #===============================================================================
-function(dart_coveralls_add)
-  dart_property_add(COVERALLS_SOURCES ${ARGN})
-endfunction(dart_coveralls_add)
-
-if(DART_COVERALLS)
-  include(Coveralls)
-  coveralls_turn_on_coverage()
+if(DART_CODECOV)
+  include(CodeCoverage)
+  setup_target_for_coverage(codecov ctest coverage)
+  set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage"
+  )
 endif()
 
 #===============================================================================
@@ -274,6 +272,7 @@ if(TARGET dart)
     dart_add_example(examples/mixedChain dart dart-utils-urdf dart-gui)
     dart_add_example(examples/operationalSpaceControl dart dart-utils-urdf dart-gui)
     dart_add_example(examples/rigidChain dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/rigidCubes dart dart-utils-urdf dart-gui)
     dart_add_example(examples/rigidLoop dart dart-utils-urdf dart-gui)
     dart_add_example(examples/rigidShapes dart dart-utils-urdf dart-gui)
     dart_add_example(examples/simpleFrames dart dart-utils-urdf dart-gui)
@@ -433,21 +432,6 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tutorials"
 # Ref: http://www.cmake.org/Wiki/CMake_FAQ#Can_I_do_.22make_uninstall.22_with_CMake.3F
 configure_file("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in" "${PROJECT_BINARY_DIR}/uninstall_target.cmake" IMMEDIATE @ONLY)
 add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
-
-#===============================================================================
-# Coveralls
-#===============================================================================
-# Setup the coveralls target and tell it to gather
-# coverage data for all the lib sources.
-if(DART_COVERALLS)
-  get_property(sources GLOBAL PROPERTY COVERALLS_SOURCES)
-
-  list(LENGTH sources sources_length)
-  message(STATUS "Running Coveralls on ${sources_length} source files.")
-
-  coveralls_setup("${sources}" ${DART_COVERALLS_UPLOAD}
-    "${PROJECT_SOURCE_DIR}/cmake")
-endif()
 
 #===============================================================================
 # Code Formatting

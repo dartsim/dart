@@ -58,9 +58,6 @@ add_component_dependencies(
   external-imgui
 )
 
-# Coverage test
-dart_coveralls_add(${hdrs} ${srcs})
-
 # Add subdirectories
 add_subdirectory(osg)
 
