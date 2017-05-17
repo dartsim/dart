@@ -28,8 +28,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_SHAREDLIBRARYMANAGER_HPP_
-#define DART_COMMON_SHAREDLIBRARYMANAGER_HPP_
+#ifndef DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_
+#define DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_
 
 #include <memory>
 #include <unordered_map>
@@ -40,23 +40,30 @@ namespace common {
 
 class SharedLibrary;
 
+namespace detail {
+
 class SharedLibraryManager final : public Singleton<SharedLibraryManager>
 {
 public:
-  /// \return Pointer to the shared library on success. Otherwise, nullptr.
+  /// Loads a shared library of fileName.
+  ///
+  /// \param[in] The filename of the shared library. If the filename doesn't
+  /// include the extension, this function will use the best guess depending on
+  /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
+  /// Windows).
+  /// \return Pointer to the shared library upon success. Otherwise, returns
+  /// nullptr.
   std::shared_ptr<SharedLibrary> load(const std::string& fileName);
 
 protected:
   friend class Singleton<SharedLibraryManager>;
 
-  /// Constructor
-  SharedLibraryManager() = default;
-
 protected:
   std::unordered_map<std::string, std::weak_ptr<SharedLibrary>> mLibraries;
 };
 
+} // namespace detail
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_SHAREDLIBRARYMANAGER_HPP_
+#endif // DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_

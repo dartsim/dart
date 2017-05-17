@@ -28,86 +28,75 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_IMPORTEDIKFAST_HPP_
-#define DART_DYNAMICS_IMPORTEDIKFAST_HPP_
+#ifndef DART_DYNAMICS_IKFAST_HPP_
+#define DART_DYNAMICS_IKFAST_HPP_
 
-#include "dart/common/SharedLibrary.hpp"
-#include "dart/dynamics/Ikfast.hpp"
+#include "dart/dynamics/InverseKinematics.hpp"
+
+#define IKFAST_HAS_LIBRARY
+#include "dart/external/ikfast/ikfast.h"
 
 namespace dart {
 namespace dynamics {
 
-class ImportedIkfast : public Ikfast
+class IkFast : public InverseKinematics::Analytical
 {
 public:
-  ImportedIkfast(
+  /// Constructor
+  IkFast(
       InverseKinematics* ik,
-      const std::string& fileName,
       const std::string& methodName = "IKFast",
       const Analytical::Properties& properties = Analytical::Properties());
 
   // Documentation inherited.
-  auto clone(InverseKinematics* newIK) const
-      -> std::unique_ptr<GradientMethod> override;
+  auto computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
+      -> const std::vector<InverseKinematics::Analytical::Solution>& override;
+
+  // Documentation inherited.
+  auto getDofs() const -> const std::vector<std::size_t>& override;
+
+  /// Returns true if this IkFast is ready to solve.
+  virtual bool isConfigured() const;
 
 protected:
-  // Documentation inherited.
-  int getNumFreeParameters() const override;
+  virtual int getNumFreeParameters() const = 0;
+  virtual int* getFreeParameters() const = 0;
+  virtual int getNumJoints() const = 0;
+  virtual int getIkRealSize() const = 0;
+  virtual int getIkType() const = 0;
 
-  // Documentation inherited.
-  int* getFreeParameters() const override;
-
-  // Documentation inherited.
-  int getNumJoints() const override;
-
-  // Documentation inherited.
-  int getIkRealSize() const override;
-
-  // Documentation inherited.
-  int getIkType() const override;
-
-  // Documentation inherited.
-  bool computeIk(
+  /// Computes the inverse kinematics solutions using the generated IKFast code.
+  virtual bool computeIk(
       const IkReal* mTargetTranspose,
       const IkReal* mTargetRotation,
       const IkReal* pfree,
-      ikfast::IkSolutionListBase<IkReal>& solutions) override;
+      ikfast::IkSolutionListBase<IkReal>& solutions) = 0;
 
-  // Documentation inherited.
-  const char* getKinematicsHash() override;
+  virtual const char* getKinematicsHash() = 0;
 
-  // Documentation inherited.
-  const char* getIkFastVersion() override;
+  virtual const char* getIkFastVersion() = 0;
 
-  // Documentation inherited.
-  void configure() const override;
+  /// Configure IkFast. If it's successfully configured, isGood() returns true.
+  virtual void configure() const;
 
 protected:
-  using IkfastFuncGetInt = int (*)();
-  using IkfastFuncGetIntPtr = int* (*)();
-  using IkfastFuncComputeIk = bool (*)(
-      const IkReal* mTargetTranspose,
-      const IkReal* mTargetRotation,
-      const IkReal* pfree,
-      ikfast::IkSolutionListBase<IkReal>& solutions);
-  using IkfastFuncGetConstCharPtr = const char* (*)();
+  mutable std::vector<double> mFreeParams;
 
-  /// Filename of the ikfast shared library.
-  std::string mFileName;
+  /// True if this IkFast is ready to solve.
+  mutable bool mConfigured;
 
-  mutable std::shared_ptr<common::SharedLibrary> mSharedLibrary;
+  /// Indices of the DegreeOfFreedoms associated to this IkFast.
+  mutable std::vector<std::size_t> mDofs;
 
-  mutable IkfastFuncGetInt mGetNumFreeParameters;
-  mutable IkfastFuncGetIntPtr mGetFreeParameters;
-  mutable IkfastFuncGetInt mGetNumJoints;
-  mutable IkfastFuncGetInt mGetIkRealSize;
-  mutable IkfastFuncGetInt mGetIkType;
-  mutable IkfastFuncComputeIk mComputeIk;
-  mutable IkfastFuncGetConstCharPtr mGetKinematicsHash;
-  mutable IkfastFuncGetConstCharPtr mGetIkFastVersion;
+private:
+  /// Cache data for the target rotation used by IKFast.
+  std::array<IkReal, 9> mTargetRotation;
+
+  /// Cache data for the target translation used by IKFast.
+  std::array<IkReal, 3> mTargetTranspose;
 };
 
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_IMPORTEDIKFAST_HPP_
+#endif // DART_DYNAMICS_IKFAST_HPP_

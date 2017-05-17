@@ -106,7 +106,7 @@ void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
   libName += "d";
 #endif
 
-  ee->getIK()->setGradientMethod<dart::dynamics::ImportedIkfast>(libName);
+  ee->getIK()->setGradientMethod<dart::dynamics::SharedLibraryIkFast>(libName);
 
   ee->getIK()->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
   ee->getIK()->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);

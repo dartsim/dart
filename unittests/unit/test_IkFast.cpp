@@ -28,40 +28,57 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/SharedLibraryManager.hpp"
+#include <gtest/gtest.h>
+#include <dart/dart.hpp>
+#include <dart/utils/urdf/urdf.hpp>
+#include "TestHelpers.hpp"
 
-#include "dart/common/Console.hpp"
-#include "dart/common/SharedLibrary.hpp"
-
-namespace dart {
-namespace common {
+using namespace dart;
 
 //==============================================================================
-std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
-    const std::string& fileName)
+TEST(IkFast, FailedToLoadSharedLibrary)
 {
-  const auto iter = mLibraries.find(fileName);
+  auto skel = dynamics::Skeleton::create();
+  EXPECT_NE(skel, nullptr);
 
-  const auto found = iter != mLibraries.end();
-  if (found)
-  {
-    auto lib = iter->second.lock();
+  auto bodyNode
+      = skel->createJointAndBodyNodePair<dynamics::FreeJoint>().second;
 
-    if (lib)
-      return lib;
-    else
-      mLibraries.erase(iter);
-  }
-
-  const auto newLib = std::make_shared<SharedLibrary>(fileName);
-
-  if (!newLib->isGood())
-    return nullptr;
-
-  mLibraries[fileName] = newLib;
-
-  return newLib;
+  auto ee = bodyNode->createEndEffector("ee");
+  auto ik = ee->createIK();
+  auto ikfast
+      = ik->setGradientMethod<dynamics::SharedLibraryIkFast>("name doesn't exist");
+  EXPECT_EQ(ikfast.isGood(), false);
 }
 
-} // namespace common
-} // namespace dart
+//==============================================================================
+TEST(IkFast, LoadWamArmIk)
+{
+  utils::DartLoader urdfParser;
+  urdfParser.addPackageDirectory("herb_description", DART_DATA_PATH"/urdf/wam");
+  auto wam = urdfParser.parseSkeleton(DART_DATA_PATH"/urdf/wam/wam.urdf");
+  EXPECT_NE(wam, nullptr);
+
+  auto wam7 = wam->getBodyNode("/wam7");
+  auto ee = wam7->createEndEffector("ee");
+  auto ik = ee->createIK();
+  auto targetFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  targetFrame->setRotation(Eigen::Matrix3d::Identity());
+
+  ik->setTarget(targetFrame);
+  ik->setHierarchyLevel(1);
+  std::string libName = "libwamIk";
+#if DART_OS_LINUX && !NDEBUG
+  libName += "d";
+#endif
+  auto ikfastGradientMethod
+      = ik->setGradientMethod<dynamics::SharedLibraryIkFast>(libName);
+  EXPECT_EQ(ikfastGradientMethod.getDofs().size(), 6);
+
+  targetFrame->setTranslation(Eigen::Vector3d(0, 0, 0.5));
+  ik->solve();
+//  auto solved = ik->solve();
+//  if (solved)
+//    EXPECT_TRUE(!ik->getSolutions().empty());
+}

@@ -28,7 +28,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Ikfast.hpp"
+#include "dart/dynamics/IkFast.hpp"
 
 #include "dart/external/ikfast/ikfast.h"
 #include "dart/dynamics/BodyNode.hpp"
@@ -91,7 +91,7 @@ bool isFreeJoint(int numFreeParams, const int* freeParams, int index)
 
 //==============================================================================
 void convertIkSolution(
-    const Ikfast* ikfast,
+    const IkFast* ikfast,
     int numJoints,
     int numFreeParameters,
     int* freeParameters,
@@ -140,7 +140,7 @@ void convertIkSolution(
 
 //==============================================================================
 void convertIkSolutions(
-    const Ikfast* ikfast,
+    const IkFast* ikfast,
     int numJoints,
     int numFreeParameters,
     int* freeParameters,
@@ -167,7 +167,7 @@ void convertIkSolutions(
 } // namespace (anonymous)
 
 //==============================================================================
-Ikfast::Ikfast(
+IkFast::IkFast(
     InverseKinematics* ik,
     const std::string& methodName,
     const InverseKinematics::Analytical::Properties& properties)
@@ -177,7 +177,7 @@ Ikfast::Ikfast(
 }
 
 //==============================================================================
-auto Ikfast::getDofs() const -> const std::vector<std::size_t>&
+auto IkFast::getDofs() const -> const std::vector<std::size_t>&
 {
   if (!mConfigured)
   {
@@ -185,7 +185,7 @@ auto Ikfast::getDofs() const -> const std::vector<std::size_t>&
 
     if (!mConfigured)
     {
-      dtwarn << "[Ikfast::getDofs] This analytical IK was not able "
+      dtwarn << "[IkFast::getDofs] This analytical IK was not able "
              << "to configure properly, so it will not be able to compute "
              << "solutions. Returning an empty list of dofs.\n";
       assert(mDofs.empty());
@@ -196,13 +196,13 @@ auto Ikfast::getDofs() const -> const std::vector<std::size_t>&
 }
 
 //==============================================================================
-bool Ikfast::isGood() const
+bool IkFast::isConfigured() const
 {
   return mConfigured;
 }
 
 //==============================================================================
-void Ikfast::configure() const
+void IkFast::configure() const
 {
   const auto dofs = mIK->getNode()->getSkeleton()->getDofs();
 
@@ -212,7 +212,7 @@ void Ikfast::configure() const
 
   if (dofs.size() != static_cast<std::size_t>(ikfastNumJoints))
   {
-    dterr << "[Ikfast::configure] Failed to configure: "
+    dterr << "[IkFast::configure] Failed to configure: "
           << "the DOFs don't agree with the target skeleton and the IKFast "
           << "solver's.\n";
     return;
@@ -232,7 +232,7 @@ void Ikfast::configure() const
 }
 
 //==============================================================================
-auto Ikfast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
+auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
     -> const std::vector<InverseKinematics::Analytical::Solution>&
 {
   mSolutions.clear();
@@ -243,7 +243,7 @@ auto Ikfast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
 
     if (!mConfigured)
     {
-      dtwarn << "[Ikfast::computeSolutions] This analytical IK was not able "
+      dtwarn << "[IkFast::computeSolutions] This analytical IK was not able "
              << "to configure properly, so it will not be able to compute "
              << "solutions. Returning an empty list of solutions.\n";
       return mSolutions;

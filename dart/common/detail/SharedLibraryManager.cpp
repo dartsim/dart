@@ -28,57 +28,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <gtest/gtest.h>
-#include <dart/dart.hpp>
-#include <dart/utils/urdf/urdf.hpp>
-#include "TestHelpers.hpp"
+#include "dart/common/detail/SharedLibraryManager.hpp"
 
-using namespace dart;
+#include "dart/common/SharedLibrary.hpp"
 
-//==============================================================================
-TEST(Ikfast, FailedToLoadSharedLibrary)
-{
-  auto skel = dynamics::Skeleton::create();
-  EXPECT_NE(skel, nullptr);
-
-  auto bodyNode
-      = skel->createJointAndBodyNodePair<dynamics::FreeJoint>().second;
-
-  auto ee = bodyNode->createEndEffector("ee");
-  auto ik = ee->createIK();
-  auto ikfast
-      = ik->setGradientMethod<dynamics::ImportedIkfast>("name doesn't exist");
-  EXPECT_EQ(ikfast.isGood(), false);
-}
+namespace dart {
+namespace common {
+namespace detail {
 
 //==============================================================================
-TEST(Ikfast, LoadWamArmIk)
+std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
+    const std::string& fileName)
 {
-  utils::DartLoader urdfParser;
-  urdfParser.addPackageDirectory("herb_description", DART_DATA_PATH"/urdf/wam");
-  auto wam = urdfParser.parseSkeleton(DART_DATA_PATH"/urdf/wam/wam.urdf");
-  EXPECT_NE(wam, nullptr);
+  const auto iter = mLibraries.find(fileName);
 
-  auto wam7 = wam->getBodyNode("/wam7");
-  auto ee = wam7->createEndEffector("ee");
-  auto ik = ee->createIK();
-  auto targetFrame
-      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
-  targetFrame->setRotation(Eigen::Matrix3d::Identity());
+  const auto found = iter != mLibraries.end();
+  if (found)
+  {
+    auto lib = iter->second.lock();
 
-  ik->setTarget(targetFrame);
-  ik->setHierarchyLevel(1);
-  std::string libName = "libwamIk";
-#if DART_OS_LINUX && !NDEBUG
-  libName += "d";
-#endif
-  auto ikfastGradientMethod
-      = ik->setGradientMethod<dynamics::ImportedIkfast>(libName);
-  EXPECT_EQ(ikfastGradientMethod.getDofs().size(), 6);
+    if (lib)
+      return lib;
+    else
+      mLibraries.erase(iter);
+  }
 
-  targetFrame->setTranslation(Eigen::Vector3d(0, 0, 0.5));
-  ik->solve();
-//  auto solved = ik->solve();
-//  if (solved)
-//    EXPECT_TRUE(!ik->getSolutions().empty());
+  const auto newLib = std::make_shared<SharedLibrary>(
+      SharedLibrary::ProtectedConstruction, fileName);
+
+  if (!newLib->isValid())
+    return nullptr;
+
+  mLibraries[fileName] = newLib;
+
+  return newLib;
 }
+
+} // namespace detail
+} // namespace common
+} // namespace dart

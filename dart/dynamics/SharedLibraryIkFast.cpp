@@ -28,11 +28,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ImportedIkfast.hpp"
+#include "dart/dynamics/SharedLibraryIkFast.hpp"
 
 #include <cassert>
 #include <sstream>
-#include "dart/common/SharedLibraryManager.hpp"
+
+#include "dart/common/Console.hpp"
+#include "dart/common/SharedLibrary.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
@@ -42,7 +44,7 @@ namespace {
 
 //==============================================================================
 template <typename FunctionType>
-void loadFunction(
+bool loadFunction(
     const std::shared_ptr<common::SharedLibrary>& lib,
     const std::string& symbolName,
     const std::string& fileName,
@@ -52,25 +54,26 @@ void loadFunction(
 
   if (!symbol)
   {
-    std::stringstream ss;
-    ss << "Failed to load the symbol '<<" << symbolName << "' from the file '"
-       << fileName << "'.";
-    throw std::runtime_error(ss.str());
+    dterr << "Failed to load the symbol '<<" << symbolName
+          << "' from the file '" << fileName << "'.\n";
+    return false;
   }
 
   func = reinterpret_cast<FunctionType>(symbol);
   // TODO(JS): Is there a way to check the compatibility of the symbol?
+
+  return true;
 }
 
 } // namespace (anonymous)
 
 //==============================================================================
-ImportedIkfast::ImportedIkfast(
+SharedLibraryIkFast::SharedLibraryIkFast(
     InverseKinematics* ik,
     const std::string& fileName,
     const std::string& methodName,
     const InverseKinematics::Analytical::Properties& properties)
-  : Ikfast{ik, methodName, properties},
+  : IkFast{ik, methodName, properties},
     mFileName{fileName},
     mSharedLibrary{nullptr},
     mGetNumFreeParameters{nullptr},
@@ -86,121 +89,153 @@ ImportedIkfast::ImportedIkfast(
 }
 
 //==============================================================================
-auto ImportedIkfast::clone(InverseKinematics* newIK) const
+auto SharedLibraryIkFast::clone(InverseKinematics* newIK) const
     -> std::unique_ptr<GradientMethod>
 {
-  return dart::common::make_unique<ImportedIkfast>(
+  return dart::common::make_unique<SharedLibraryIkFast>(
         newIK, mFileName, getMethodName(), getAnalyticalProperties());
 }
 
 //==============================================================================
-int ImportedIkfast::getNumFreeParameters() const
+int SharedLibraryIkFast::getNumFreeParameters() const
 {
-  assert(mGetNumFreeParameters);
-  // Shouldn't be called if this ImportedIkfast is not configured.
+  if (!mGetNumFreeParameters)
+  {
+    dterr << "[SharedLibraryIkFast::mGetNumFreeParameters] This functions hasn't "
+          << "been loaded. Returning 0.\n";
+    return 0;
+  }
 
   return mGetNumFreeParameters();
 }
 
 //==============================================================================
-int* ImportedIkfast::getFreeParameters() const
+int* SharedLibraryIkFast::getFreeParameters() const
 {
-  assert(mGetFreeParameters);
-  // Shouldn't be called if this ImportedIkfast is not configured.
+  if (!mGetFreeParameters)
+  {
+    dterr << "[SharedLibraryIkFast::mGetFreeParameters] This functions hasn't "
+          << "been loaded. Returning nullptr.\n";
+    return nullptr;
+  }
 
   return mGetFreeParameters();
 }
 
 //==============================================================================
-int ImportedIkfast::getNumJoints() const
+int SharedLibraryIkFast::getNumJoints() const
 {
-  assert(mGetNumJoints);
-  // Shouldn't be called if this ImportedIkfast is not configured.
+  if (!mGetNumJoints)
+  {
+    dterr << "[SharedLibraryIkFast::mGetNumJoints] This functions hasn't "
+          << "been loaded. Returning 0.\n";
+    return 0;
+  }
 
   return mGetNumJoints();
 }
 
 //==============================================================================
-int ImportedIkfast::getIkRealSize() const
+int SharedLibraryIkFast::getIkRealSize() const
 {
-  assert(mGetIkRealSize);
-  // Shouldn't be called if this ImportedIkfast is not configured.
+  if (!mGetIkRealSize)
+  {
+    dterr << "[SharedLibraryIkFast::mGetIkRealSize] This functions hasn't "
+          << "been loaded. Returning 0.\n";
+    return 0;
+  }
 
   return mGetIkRealSize();
 }
 
 //==============================================================================
-int ImportedIkfast::getIkType() const
+int SharedLibraryIkFast::getIkType() const
 {
-  assert(mGetIkType);
-  // Shouldn't be called if this ImportedIkfast is not configured.
+  if (!mGetIkType)
+  {
+    dterr << "[SharedLibraryIkFast::mGetIkType] This functions hasn't "
+          << "been loaded. Returning 0.\n";
+    return 0;
+  }
 
   return mGetIkType();
 }
 
 //==============================================================================
-bool ImportedIkfast::computeIk(
-    const IkReal* eetrans,
-    const IkReal* eerot,
-    const IkReal* pfree,
+bool SharedLibraryIkFast::computeIk(
+    const IkReal* targetTranspose,
+    const IkReal* targetRotation,
+    const IkReal* freeParams,
     ikfast::IkSolutionListBase<IkReal>& solutions)
 {
-  assert(mComputeIk);
-  // Shouldn't be called if this ImportedIkfast is not configured.
+  if (!mComputeIk)
+  {
+    dterr << "[SharedLibraryIkFast::mComputeIk] This functions hasn't "
+          << "been loaded. Returning false.\n";
+    return false;
+  }
 
-  return mComputeIk(eetrans, eerot, pfree, solutions);
+  return mComputeIk(targetTranspose, targetRotation, freeParams, solutions);
 }
 
 //==============================================================================
-const char* ImportedIkfast::getKinematicsHash()
+const char* SharedLibraryIkFast::getKinematicsHash()
 {
-  assert(mGetKinematicsHash);
-  // Shouldn't be called if this ImportedIkfast is not configured.
+  if (!mGetKinematicsHash)
+  {
+    dterr << "[SharedLibraryIkFast::mGetKinematicsHash] This functions hasn't "
+          << "been loaded. Returning nullptr.\n";
+    return nullptr;
+  }
 
   return mGetKinematicsHash();
 }
 
 //==============================================================================
-const char* ImportedIkfast::getIkFastVersion()
+const char* SharedLibraryIkFast::getIkFastVersion()
 {
-  assert(mGetIkFastVersion);
-  // Shouldn't be called if this ImportedIkfast is not configured.
+  if (!mGetIkFastVersion)
+  {
+    dterr << "[SharedLibraryIkFast::mGetIkFastVersion] This functions hasn't "
+          << "been loaded. Returning nullptr.\n";
+    return nullptr;
+  }
 
   return mGetIkFastVersion();
 }
 
 //==============================================================================
-void ImportedIkfast::configure() const
+void SharedLibraryIkFast::configure() const
 {
-  auto lib = common::SharedLibraryManager::getSingleton().load(mFileName);
+  auto lib = common::SharedLibrary::create(mFileName);
 
   if (!lib)
   {
-    dterr << "[ImportedIkfast] Could not load dynamic library '" << mFileName
+    dterr << "[SharedLibraryIkFast] Could not load dynamic library '" << mFileName
           << "'.\n";
     return;
   }
 
-  loadFunction<IkfastFuncGetInt>(
+  loadFunction<IkFastFuncGetInt>(
         lib, "GetNumFreeParameters", mFileName, mGetNumFreeParameters);
-  loadFunction<IkfastFuncGetIntPtr>(
+  loadFunction<IkFastFuncGetIntPtr>(
         lib, "GetFreeParameters", mFileName, mGetFreeParameters);
-  loadFunction<IkfastFuncGetInt>(
+  loadFunction<IkFastFuncGetInt>(
         lib, "GetNumJoints", mFileName, mGetNumJoints);
-  loadFunction<IkfastFuncGetInt>(
+  loadFunction<IkFastFuncGetInt>(
         lib, "GetIkRealSize", mFileName, mGetIkRealSize);
-  loadFunction<IkfastFuncGetInt>(
+  loadFunction<IkFastFuncGetInt>(
         lib, "GetIkType", mFileName, mGetIkType);
-  loadFunction<IkfastFuncComputeIk>(
+  loadFunction<IkFastFuncComputeIk>(
         lib, "ComputeIk", mFileName, mComputeIk);
-  loadFunction<IkfastFuncGetConstCharPtr>(
+  loadFunction<IkFastFuncGetConstCharPtr>(
         lib, "GetKinematicsHash", mFileName, mGetKinematicsHash);
-  loadFunction<IkfastFuncGetConstCharPtr>(
+  loadFunction<IkFastFuncGetConstCharPtr>(
         lib, "GetIkFastVersion", mFileName, mGetIkFastVersion);
 
   mSharedLibrary = lib;
 
-  Ikfast::configure();
+  IkFast::configure();
 }
 
 } // namespace dynamics

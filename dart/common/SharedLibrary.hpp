@@ -31,6 +31,7 @@
 #ifndef DART_COMMON_SHAREDLIBRARY_HPP_
 #define DART_COMMON_SHAREDLIBRARY_HPP_
 
+#include <memory>
 #include <string>
 #include "dart/common/Platform.hpp"
 
@@ -45,17 +46,41 @@
 namespace dart {
 namespace common {
 
+namespace detail {
+class SharedLibraryManager;
+} // namespace detail
+
 /// SharedLibrary is a RAII object wrapping a shared library.
 class SharedLibrary
 {
+protected:
+  enum ProtectedContructionTag
+  {
+    ProtectedConstruction
+  };
+
 public:
-  /// Constructor
+  /// Creates a SharedLibrary.
   ///
   /// \param[in] The filename of the shared library. If the filename doesn't
   /// include the extension, this function will use the best guess depending on
   /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
   /// Windows).
-  explicit SharedLibrary(const std::string& fileName);
+  /// \return Pointer to the created SharedLibrary upon success in loading.
+  /// Otherwise, returns nullptr.
+  static std::shared_ptr<SharedLibrary> create(const std::string& fileName);
+
+  /// Constructs from a filename.
+  ///
+  /// \note SharedLibrary must be constructed by create().
+  ///
+  /// \param[in] The filename of the shared library. If the filename doesn't
+  /// include the extension, this function will use the best guess depending on
+  /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
+  /// Windows).
+  /// \return Pointer to the created SharedLibrary upon success in loading.
+  /// Otherwise, returns nullptr.
+  explicit SharedLibrary(ProtectedContructionTag, const std::string& fileName);
 
   /// Destructor
   virtual ~SharedLibrary();
@@ -64,23 +89,23 @@ public:
   const std::string& getFileName() const;
 
   /// Returns true if the shared library loading was successful.
-  bool isGood() const;
+  bool isValid() const;
 
   /// Returns a symbol from the shared library
   void* getSymbol(const std::string& symbolName) const;
 
 protected:
-  void load();
+  friend class detail::SharedLibraryManager;
 
-  /// Returns the last loading error
-  std::string dynlibError() const;
-
-protected:
   /// Filename of the shared library.
   std::string mFileName;
 
   /// Handle to the loaded library.
   DYNLIB_HANDLE mInstance;
+
+private:
+  /// Returns the last loading error
+  std::string getLastError() const;
 };
 
 } // namespace common
