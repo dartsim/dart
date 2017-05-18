@@ -721,10 +721,10 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
 //==============================================================================
 TEST_F(COLLISION, SphereSphere)
 {
-//  auto fcl_mesh_dart = FCLCollisionDetector::create();
-//  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-//  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-//  testSphereSphere(fcl_mesh_dart);
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testSphereSphere(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
   // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -741,18 +741,18 @@ TEST_F(COLLISION, SphereSphere)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSphereSphere(fcl_mesh_fcl);
 
-//#if HAVE_ODE
-//  auto ode = OdeCollisionDetector::create();
-//  testSphereSphere(ode);
-//#endif
+#if HAVE_ODE
+  auto ode = OdeCollisionDetector::create();
+  testSphereSphere(ode);
+#endif
 
 #if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testSphereSphere(bullet);
 #endif
 
-//  auto dart = DARTCollisionDetector::create();
-//  testSphereSphere(dart);
+  auto dart = DARTCollisionDetector::create();
+  testSphereSphere(dart);
 }
 
 //==============================================================================
@@ -1063,6 +1063,53 @@ TEST_F(COLLISION, testCapsuleCapsule)
 
   // auto dart = DARTCollisionDetector::create();
   // testCapsuleCapsule(dart);
+}
+
+//==============================================================================
+void testPlane(const std::shared_ptr<CollisionDetector>& cd)
+{
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+
+  auto plane = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  auto sphere = std::make_shared<SphereShape>(0.5);
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  planeFrame->setShape(plane);
+  sphereFrame->setShape(sphere);
+  boxFrame->setShape(box);
+
+  auto group = cd->createCollisionGroup(
+      planeFrame.get(),
+      sphereFrame.get(),
+      boxFrame.get());
+
+  EXPECT_EQ(group->getNumShapeFrames(), 3u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  result.clear();
+  sphereFrame->setTranslation(Eigen::Vector3d(-10.0, 0.0, 1.0));
+  boxFrame->setTranslation(Eigen::Vector3d(-8.0, 0.0, 1.0));
+  EXPECT_FALSE(group->collide(option, &result));
+
+  result.clear();
+  sphereFrame->setTranslation(Eigen::Vector3d(-10.0, 0.0, 0.49));
+  boxFrame->setTranslation(Eigen::Vector3d(-8.0, 0.0, 0.49));
+  EXPECT_TRUE(group->collide(option, &result));
+}
+
+//==============================================================================
+TEST_F(COLLISION, testPlane)
+{
+#if HAVE_ODE
+  auto ode = OdeCollisionDetector::create();
+  testPlane(ode);
+#endif
 }
 
 //==============================================================================
