@@ -1116,6 +1116,9 @@ void InverseKinematics::Analytical::computeGradient(
   if(mSolutions.empty())
     return;
 
+  if(mSolutions[0].mValidity != VALID)
+    return;
+
   const Eigen::VectorXd& bestSolution = mSolutions[0].mConfig;
   mConfigCache = getPositions();
 
