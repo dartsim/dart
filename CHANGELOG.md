@@ -1,5 +1,11 @@
 ## DART 6
 
+### DART 6.3.0 (2017-XX-XX)
+
+* Kinematics
+
+  * Added IkFast support as analytic IK solver: [#887](https://github.com/dartsim/dart/pull/887)
+
 ### DART 6.2.1 (2017-XX-XX)
 
 * Misc
