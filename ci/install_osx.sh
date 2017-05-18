@@ -8,8 +8,8 @@ git
 cmake
 assimp
 fcl
-bullet
-ode --with-libccd
+bullet --with-double-precision
+ode --with-libccd --with-double-precision
 flann
 boost
 eigen
