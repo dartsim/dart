@@ -70,6 +70,12 @@ void OdePlane::updateEngineData()
   dGeomPlaneSetParams(mGeomId, normal2.x(), normal2.y(), normal2.z(), offset2);
 }
 
+//==============================================================================
+bool OdePlane::isPlaceable() const
+{
+  return false;
+}
+
 } // namespace detail
 } // namespace collision
 } // namespace dart
