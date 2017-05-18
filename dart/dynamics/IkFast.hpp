@@ -45,6 +45,8 @@ public:
   /// Constructor
   IkFast(
       InverseKinematics* ik,
+      const std::vector<std::size_t>& dofMap,
+      const std::vector<std::size_t>& freeDofMap,
       const std::string& methodName = "IKFast",
       const Analytical::Properties& properties = Analytical::Properties());
 
@@ -76,7 +78,8 @@ protected:
 
   virtual const char* getIkFastVersion() = 0;
 
-  /// Configure IkFast. If it's successfully configured, isGood() returns true.
+  /// Configure IkFast. If it's successfully configured, isConfigured() returns
+  /// true.
   virtual void configure() const;
 
 protected:
@@ -85,8 +88,13 @@ protected:
   /// True if this IkFast is ready to solve.
   mutable bool mConfigured;
 
-  /// Indices of the DegreeOfFreedoms associated to this IkFast.
+  /// Indices of the DegreeOfFreedoms associated to the variable parameters of
+  /// this IkFast.
   mutable std::vector<std::size_t> mDofs;
+
+  /// Indices of the DegreeOfFreedoms associated to the free parameters of this
+  /// IkFast.
+  mutable std::vector<std::size_t> mFreeDofs;
 
 private:
   /// Cache data for the target rotation used by IKFast.

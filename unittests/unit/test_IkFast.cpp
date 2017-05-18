@@ -47,8 +47,11 @@ TEST(IkFast, FailedToLoadSharedLibrary)
   auto ee = bodyNode->createEndEffector("ee");
   auto ik = ee->createIK();
   auto ikfast
-      = ik->setGradientMethod<dynamics::SharedLibraryIkFast>("name doesn't exist");
-  EXPECT_EQ(ikfast.isGood(), false);
+      = ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
+        "doesn't exist",
+        std::vector<std::size_t>(),
+        std::vector<std::size_t>());
+  EXPECT_EQ(ikfast.isConfigured(), false);
 }
 
 //==============================================================================
@@ -68,17 +71,36 @@ TEST(IkFast, LoadWamArmIk)
 
   ik->setTarget(targetFrame);
   ik->setHierarchyLevel(1);
-  std::string libName = "libwamIk";
+  std::string libName = "libGeneratedWamIkFast";
 #if DART_OS_LINUX && !NDEBUG
   libName += "d";
 #endif
-  auto ikfastGradientMethod
-      = ik->setGradientMethod<dynamics::SharedLibraryIkFast>(libName);
-  EXPECT_EQ(ikfastGradientMethod.getDofs().size(), 6);
+  std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};
+  std::vector<std::size_t> ikFastFreeDofs{2};
+  ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
+        libName, ikFastDofs, ikFastFreeDofs);
+  auto analytical = ik->getAnalytical();
+  EXPECT_NE(analytical, nullptr);
+  EXPECT_EQ(analytical->getDofs().size(), 6);
+
+  auto ikfast = dynamic_cast<dynamics::SharedLibraryIkFast*>(analytical);
+  EXPECT_NE(ikfast, nullptr);
 
   targetFrame->setTranslation(Eigen::Vector3d(0, 0, 0.5));
-  ik->solve();
-//  auto solved = ik->solve();
-//  if (solved)
-//    EXPECT_TRUE(!ik->getSolutions().empty());
+  auto solutions = ikfast->getSolutions(targetFrame->getTransform());
+  EXPECT_TRUE(!solutions.empty());
+
+  const auto dofs = ikfast->getDofs();
+
+  for (const auto& solution : solutions)
+  {
+    EXPECT_EQ(solution.mConfig.size(), 6);
+
+    if (solution.mValidity != InverseKinematics::Analytical::VALID)
+      continue;
+
+    wam->setPositions(dofs, solution.mConfig);
+    Eigen::Isometry3d newTf = ee->getTransform();
+    EXPECT_TRUE(equals(targetFrame->getTransform(), newTf, 1e-2));
+  }
 }

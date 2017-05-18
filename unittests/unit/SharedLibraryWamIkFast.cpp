@@ -28,7 +28,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "SharedLibraryWamIkfast.hpp"
+#include "SharedLibraryWamIkFast.hpp"
 
 #include "dart/external/ikfast/ikfast.h" // found inside share/openrave-X.Y/python/ikfast.h
 using namespace ikfast;
@@ -14902,55 +14902,57 @@ IKFAST_API const char* GetIkFastVersion() { return IKFAST_STRINGIZE(IKFAST_VERSI
 #endif
 
 //==============================================================================
-CustomIkFast::CustomIkFast(
+SharedLibraryWamIkFast::SharedLibraryWamIkFast(
     dart::dynamics::InverseKinematics* ik,
+    const std::vector<std::size_t>& dofMap,
+    const std::vector<std::size_t>& freeDofMap,
     const std::string& methodName,
     const dart::dynamics::InverseKinematics::Analytical::Properties& properties)
-  : IkFast{ik, methodName, properties}
+  : IkFast{ik, dofMap, freeDofMap, methodName, properties}
 {
   // Do nothing
 }
 
 //==============================================================================
 std::unique_ptr<dart::dynamics::InverseKinematics::GradientMethod>
-CustomIkFast::clone(dart::dynamics::InverseKinematics* newIK) const
+SharedLibraryWamIkFast::clone(dart::dynamics::InverseKinematics* newIK) const
 {
-  return dart::common::make_unique<CustomIkFast>(
-        newIK, getMethodName(), getAnalyticalProperties());
+  return dart::common::make_unique<SharedLibraryWamIkFast>(
+      newIK, mDofs, mFreeDofs, getMethodName(), getAnalyticalProperties());
 }
 
 //==============================================================================
-int CustomIkFast::getNumFreeParameters() const
+int SharedLibraryWamIkFast::getNumFreeParameters() const
 {
   return GetNumFreeParameters();
 }
 
 //==============================================================================
-int* CustomIkFast::getFreeParameters() const
+int* SharedLibraryWamIkFast::getFreeParameters() const
 {
   return GetFreeParameters();
 }
 
 //==============================================================================
-int CustomIkFast::getNumJoints() const
+int SharedLibraryWamIkFast::getNumJoints() const
 {
   return GetNumJoints();
 }
 
 //==============================================================================
-int CustomIkFast::getIkRealSize() const
+int SharedLibraryWamIkFast::getIkRealSize() const
 {
   return GetIkRealSize();
 }
 
 //==============================================================================
-int CustomIkFast::getIkType() const
+int SharedLibraryWamIkFast::getIkType() const
 {
   return GetIkType();
 }
 
 //==============================================================================
-bool CustomIkFast::computeIk(
+bool SharedLibraryWamIkFast::computeIk(
     const IkReal* targetTranspose,
     const IkReal* targetRotation,
     const IkReal* freeParams,
@@ -14960,13 +14962,13 @@ bool CustomIkFast::computeIk(
 }
 
 //==============================================================================
-const char* CustomIkFast::getKinematicsHash()
+const char* SharedLibraryWamIkFast::getKinematicsHash()
 {
   return GetKinematicsHash();
 }
 
 //==============================================================================
-const char* CustomIkFast::getIkFastVersion()
+const char* SharedLibraryWamIkFast::getIkFastVersion()
 {
   return GetIkFastVersion();
 }

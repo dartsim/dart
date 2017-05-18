@@ -93,7 +93,7 @@ public:
     virtual const std::vector<int>& GetFree() const = 0;
 
     /// \brief the dof of the solution
-    virtual const int GetDOF() const = 0;
+    virtual int GetDOF() const = 0;
 };
 
 /// \brief manages all the solutions
@@ -187,7 +187,7 @@ public:
     virtual const std::vector<int>& GetFree() const {
         return _vfree;
     }
-    virtual const int GetDOF() const {
+    virtual int GetDOF() const {
         return static_cast<int>(_vbasesol.size());
     }
 

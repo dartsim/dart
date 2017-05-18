@@ -43,6 +43,8 @@ public:
   SharedLibraryIkFast(
       InverseKinematics* ik,
       const std::string& fileName,
+      const std::vector<std::size_t>& dofMap,
+      const std::vector<std::size_t>& freeDofMap,
       const std::string& methodName = "IKFast",
       const Analytical::Properties& properties = Analytical::Properties());
 
@@ -105,6 +107,9 @@ protected:
   mutable IkFastFuncComputeIk mComputeIk;
   mutable IkFastFuncGetConstCharPtr mGetKinematicsHash;
   mutable IkFastFuncGetConstCharPtr mGetIkFastVersion;
+
+  /// Indices of the DegreeOfFreedoms associated to this IkFast.
+  mutable std::vector<std::size_t> mDofs;
 };
 
 } // namespace dynamics

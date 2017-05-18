@@ -99,8 +99,8 @@ void convertIkSolution(
     InverseKinematics::Analytical::Solution& solution)
 {
   const auto ik = ikfast->getIK();
-  const auto dofIndices = ik->getDofs();
-  const auto dofs = ik->getNode()->getSkeleton()->getDofs();
+  const auto dofIndices = ikfast->getDofs();
+  const auto skel = ik->getNode()->getSkeleton();
 
   std::vector<IkReal> solutionValues(numJoints);
   std::vector<IkReal> freeValues(numFreeParameters);
@@ -109,28 +109,30 @@ void convertIkSolution(
 
   bool limitViolated = false;
 
-  const auto numActualJoints = numJoints - numFreeParameters;
-
-  solution.mConfig.resize(numActualJoints);
-  int index = 0;
-  for (auto i = 0u; i < solution.mConfig.size(); ++i)
+  auto index = 0u;
+  solution.mConfig.resize(dofIndices.size());
+  for (auto i = 0u; i < solutionValues.size(); ++i)
   {
     if (isFreeJoint(numFreeParameters, freeParameters, i))
       continue;
 
-    solution.mConfig[index++] = solutionValues[i];
+    solution.mConfig[index] = solutionValues[i];
 
-    if (solutionValues[i] < dofs[dofIndices[i]]->getPositionLowerLimit())
+    const auto dofIndex = dofIndices[index];
+
+    if (solutionValues[i] < skel->getDof(dofIndex)->getPositionLowerLimit())
     {
       limitViolated = true;
       break;
     }
 
-    if (solutionValues[i] > dofs[dofIndices[i]]->getPositionUpperLimit())
+    if (solutionValues[i] > skel->getDof(dofIndex)->getPositionUpperLimit())
     {
       limitViolated = true;
       break;
     }
+
+    index++;
   }
 
   solution.mValidity
@@ -169,11 +171,16 @@ void convertIkSolutions(
 //==============================================================================
 IkFast::IkFast(
     InverseKinematics* ik,
+    const std::vector<std::size_t>& dofMap,
+    const std::vector<std::size_t>& freeDofMap,
     const std::string& methodName,
     const InverseKinematics::Analytical::Properties& properties)
   : Analytical{ik, methodName, properties}, mConfigured{false}
 {
   setExtraDofUtilization(UNUSED);
+
+  mDofs = dofMap;
+  mFreeDofs = freeDofMap;
 }
 
 //==============================================================================
@@ -202,31 +209,71 @@ bool IkFast::isConfigured() const
 }
 
 //==============================================================================
+bool checkDofMapValidity(
+    const InverseKinematics* ik,
+    const std::vector<std::size_t>& dofMap,
+    const std::vector<DegreeOfFreedom*>& dependentDofs,
+    const std::string& dofMapName)
+{
+  for (const auto& dof : dofMap)
+  {
+    bool found = false;
+    for (auto dependentDof : dependentDofs)
+    {
+      const auto dependentDofIndex = dependentDof->getIndexInSkeleton();
+      if (dof == dependentDofIndex)
+      {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found)
+    {
+      dterr << "[IkFast::configure] Failed to configure. An element of the "
+            << "given " << dofMapName << " '" << dof
+            << "' is not a dependent dofs of Node '" << ik->getNode()->getName()
+            << "'.\n";
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
 void IkFast::configure() const
 {
-  const auto dofs = mIK->getNode()->getSkeleton()->getDofs();
+  const auto ikFastNumJoints = getNumJoints();
+  const auto ikFastNumFreeJoints = getNumFreeParameters();
+  const auto ikFastNumNonFreeJoints = ikFastNumJoints - ikFastNumFreeJoints;
 
-  const auto ikfastNumJoints = getNumJoints();
-  const auto ikfastNumFreeJoints = getNumFreeParameters();
-  const auto ikfastActualNumJoints = ikfastNumFreeJoints - ikfastNumFreeJoints;
-
-  if (dofs.size() != static_cast<std::size_t>(ikfastNumJoints))
+  if (static_cast<std::size_t>(ikFastNumNonFreeJoints) != mDofs.size())
   {
-    dterr << "[IkFast::configure] Failed to configure: "
-          << "the DOFs don't agree with the target skeleton and the IKFast "
-          << "solver's.\n";
+    dterr << "[IkFast::configure] Failed to configure. Received a joint map of "
+          << "size '" << mDofs.size() << "' but the actual dofs IkFast is '"
+          << ikFastNumNonFreeJoints << "'.\n";
     return;
   }
 
-  mDofs.clear();
-  mDofs.reserve(ikfastActualNumJoints);
-  for (auto i = 0; i < ikfastNumJoints; ++i)
+  if (static_cast<std::size_t>(ikFastNumFreeJoints) != mFreeDofs.size())
   {
-    if (!isFreeJoint(ikfastNumFreeJoints, getFreeParameters(), i))
-      mDofs.emplace_back(dofs[i]->getIndexInSkeleton());
+    dterr << "[IkFast::configure] Failed to configure. Received a free joint "
+          << "map of size '" << mDofs.size()
+          << "' but the actual dofs IkFast is '" << ikFastNumFreeJoints
+          << "'.\n";
+    return;
   }
 
-  mFreeParams.resize(ikfastNumFreeJoints);
+  const auto dependentDofs = mIK->getNode()->getDependentDofs();
+
+  if (!checkDofMapValidity(mIK.get(), mDofs, dependentDofs, "dof map"))
+    return;
+
+  if (!checkDofMapValidity(mIK.get(), mFreeDofs, dependentDofs, "free dof map"))
+    return;
+
+  mFreeParams.resize(ikFastNumFreeJoints);
 
   mConfigured = true;
 }
@@ -253,10 +300,10 @@ auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
   convertTransform(desiredBodyTf, mTargetTranspose, mTargetRotation);
 
   const auto dofs = mIK->getNode()->getSkeleton()->getDofs();
-  const auto ikfastNumFreeParams = getNumFreeParameters();
-  const auto ikfastFreeParams = getFreeParameters();
-  for (auto i = 0; i < ikfastNumFreeParams; ++i)
-    mFreeParams[i] = dofs[ikfastFreeParams[i]]->getPosition();
+  const auto ikFastNumFreeParams = getNumFreeParameters();
+  const auto ikFastFreeParams = getFreeParameters();
+  for (auto i = 0; i < ikFastNumFreeParams; ++i)
+    mFreeParams[i] = dofs[ikFastFreeParams[i]]->getPosition();
 
   ikfast::IkSolutionList<IkReal> solutions;
   const auto success = computeIk(
@@ -265,16 +312,15 @@ auto IkFast::computeSolutions(const Eigen::Isometry3d& desiredBodyTf)
       mFreeParams.data(),
       solutions);
 
-  if (!success)
-    return mSolutions;
-
-  convertIkSolutions(
-      this,
-      getNumJoints(),
-      getNumFreeParameters(),
-      getFreeParameters(),
-      solutions,
-      mSolutions);
+  if (success)
+  {
+    convertIkSolutions(
+          this,
+          getNumJoints(),
+          getNumFreeParameters(),
+          getFreeParameters(),
+          solutions, mSolutions);
+  }
 
   return mSolutions;
 }

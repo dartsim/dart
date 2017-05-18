@@ -34,11 +34,13 @@
 #include "dart/common/SharedLibrary.hpp"
 #include "dart/dynamics/IkFast.hpp"
 
-class CustomIkFast : public dart::dynamics::IkFast
+class SharedLibraryWamIkFast : public dart::dynamics::IkFast
 {
 public:
-  CustomIkFast(
+  SharedLibraryWamIkFast(
       dart::dynamics::InverseKinematics* ik,
+      const std::vector<std::size_t>& dofMap,
+      const std::vector<std::size_t>& freeDofMap,
       const std::string& methodName = "IKFast",
       const Analytical::Properties& properties = Analytical::Properties());
 

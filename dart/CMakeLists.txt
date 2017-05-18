@@ -136,7 +136,6 @@ target_link_libraries(
     ${ASSIMP_LIBRARIES}
     ${Boost_LIBRARIES}
     ${PROJECT_NAME}-external-odelcpsolver
-  PRIVATE
     ${PROJECT_NAME}-external-ikfast
 )
 

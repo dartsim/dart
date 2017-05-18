@@ -106,7 +106,10 @@ void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
   libName += "d";
 #endif
 
-  ee->getIK()->setGradientMethod<dart::dynamics::SharedLibraryIkFast>(libName);
+  std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};
+  std::vector<std::size_t> ikFastFreeDofs{2};
+  ee->getIK()->setGradientMethod<dart::dynamics::SharedLibraryIkFast>(
+      libName, ikFastDofs, ikFastFreeDofs);
 
   ee->getIK()->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
   ee->getIK()->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
