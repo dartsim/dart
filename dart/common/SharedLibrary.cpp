@@ -33,20 +33,11 @@
 #include "dart/common/Console.hpp"
 #include "dart/common/detail/SharedLibraryManager.hpp"
 
-#if DART_OS_LINUX
+#if DART_OS_LINUX || DART_OS_MACOS
 
 #include <dlfcn.h>
 #define DYNLIB_HANDLE void*
 #define DYNLIB_LOAD(a) dlopen(a, RTLD_LAZY | RTLD_GLOBAL)
-#define DYNLIB_GETSYM(a, b) dlsym(a, b)
-#define DYNLIB_UNLOAD(a) dlclose(a)
-
-#elif DART_OS_MACOS
-
-#include <macUtils.h>
-#define DYNLIB_HANDLE void*
-#define DYNLIB_LOAD(a) mac_loadDylib(a)
-#define FRAMEWORK_LOAD(a) mac_loadFramework(a)
 #define DYNLIB_GETSYM(a, b) dlsym(a, b)
 #define DYNLIB_UNLOAD(a) dlclose(a)
 
@@ -101,14 +92,6 @@ SharedLibrary::SharedLibrary(
 
   mInstance
       = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(nameWithExtension.c_str()));
-
-#if DART_OS_MACOS
-  if (!mInstance)
-  {
-    // Try again as a framework
-    mInstance = (DYNLIB_HANDLE)FRAMEWORK_LOAD(nameWithExtension);
-  }
-#endif
 
   if (!mInstance)
   {

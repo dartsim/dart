@@ -102,7 +102,7 @@ void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
   ee->getIK(true)->setTarget(wam7_target);
 
   std::string libName = "libexample_wamIk";
-#if DART_OS_LINUX && !NDEBUG
+#if (DART_OS_LINUX || DART_OS_MACOS) && !NDEBUG
   libName += "d";
 #endif
 

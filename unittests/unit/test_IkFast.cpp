@@ -72,7 +72,7 @@ TEST(IkFast, LoadWamArmIk)
   ik->setTarget(targetFrame);
   ik->setHierarchyLevel(1);
   std::string libName = "libGeneratedWamIkFast";
-#if DART_OS_LINUX && !NDEBUG
+#if (DART_OS_LINUX || DART_OS_MACOS) && !NDEBUG
   libName += "d";
 #endif
   std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};

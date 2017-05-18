@@ -50,12 +50,12 @@ if(TARGET dart-utils-urdf)
   target_link_libraries(test_DartLoader dart-utils-urdf)
 
   dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
-  target_link_libraries(SharedLibraryWamIkFast PRIVATE dart-external-ikfast PUBLIC dart)
+  target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
   target_compile_definitions(SharedLibraryWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
   target_compile_options(SharedLibraryWamIkFast PRIVATE -w)
 
   dart_add_library(GeneratedWamIkFast GeneratedWamIkFast.cpp)
-  target_link_libraries(GeneratedWamIkFast PRIVATE dart-external-ikfast)
+  target_link_libraries(GeneratedWamIkFast PUBLIC dart)
   target_compile_definitions(GeneratedWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
   target_compile_options(GeneratedWamIkFast PRIVATE -w)
 

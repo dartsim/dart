@@ -32,6 +32,7 @@
 #define DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_
 
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include "dart/common/Singleton.hpp"
 
