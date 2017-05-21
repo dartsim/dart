@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(osgSoftBodies)
 
-find_package(DART 6.1.1 REQUIRED COMPONENTS utils-urdf gui-osg)
+find_package(DART 6.2.0 REQUIRED COMPONENTS utils-urdf gui-osg CONFIG)
 
 add_compile_options(-std=c++11)
 
