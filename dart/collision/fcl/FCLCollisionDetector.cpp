@@ -60,6 +60,8 @@
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
+#define NORMAL_EPSILON 1e-03
+
 namespace dart {
 namespace collision {
 
@@ -1370,6 +1372,12 @@ void postProcessDART(
     if (option.enableContact)
     {
       pair1.normal = FCLTypes::convertVector3(-c.normal);
+      if (pair1.normal.norm() < NORMAL_EPSILON)
+      {
+        // This is an invalid contact, as it contains a zero length normal.
+        // Skip this contact.
+        continue;
+      }
       pair1.penetrationDepth = c.penetration_depth;
       pair1.triID1 = c.b1;
       pair1.triID2 = c.b2;
