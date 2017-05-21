@@ -62,16 +62,14 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-std::shared_ptr<SharedLibrary> SharedLibrary::create(
-    const std::string& fileName)
+std::shared_ptr<SharedLibrary> SharedLibrary::create(const std::string& path)
 {
-  return detail::SharedLibraryManager::getSingleton().load(fileName);
+  return detail::SharedLibraryManager::getSingleton().load(path);
 }
 
 //==============================================================================
-SharedLibrary::SharedLibrary(
-    ProtectedContructionTag, const std::string& fileName)
-  : mFileName(fileName), mInstance(nullptr)
+SharedLibrary::SharedLibrary(ProtectedContructionTag, const std::string& path)
+  : mFileName(path), mInstance(nullptr)
 {
   auto nameWithExtension = mFileName;
 #if DART_OS_LINUX
@@ -114,7 +112,7 @@ SharedLibrary::~SharedLibrary()
 }
 
 //==============================================================================
-const std::string& SharedLibrary::getFileName() const
+const std::string& SharedLibrary::getPath() const
 {
   return mFileName;
 }

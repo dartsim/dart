@@ -41,23 +41,6 @@ namespace {
 
 //==============================================================================
 void convertTransform(
-    const IkReal* eetrans, const IkReal* eerot, Eigen::Isometry3d& tf)
-{
-  tf.linear()(0, 0) = eerot[0*3+0];
-  tf.linear()(0, 1) = eerot[0*3+1];
-  tf.linear()(0, 2) = eerot[0*3+2];
-  tf.linear()(1, 0) = eerot[1*3+0];
-  tf.linear()(1, 1) = eerot[1*3+1];
-  tf.linear()(1, 2) = eerot[1*3+2];
-  tf.linear()(2, 0) = eerot[2*3+0];
-  tf.linear()(2, 1) = eerot[2*3+1];
-  tf.linear()(2, 2) = eerot[2*3+2];
-
-  tf.translation() << eetrans[0], eetrans[1], eetrans[2];
-}
-
-//==============================================================================
-void convertTransform(
     const Eigen::Isometry3d& tf,
     std::array<IkReal, 3>& eetrans,
     std::array<IkReal, 9>& eerot)

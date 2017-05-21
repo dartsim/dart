@@ -62,31 +62,31 @@ protected:
 public:
   /// Creates a SharedLibrary.
   ///
-  /// \param[in] The filename of the shared library. If the filename doesn't
+  /// \param[in] path The path to the shared library. If the path doesn't
   /// include the extension, this function will use the best guess depending on
   /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
   /// Windows).
   /// \return Pointer to the created SharedLibrary upon success in loading.
   /// Otherwise, returns nullptr.
-  static std::shared_ptr<SharedLibrary> create(const std::string& fileName);
+  static std::shared_ptr<SharedLibrary> create(const std::string& path);
 
   /// Constructs from a filename.
   ///
   /// \note SharedLibrary must be constructed by create().
   ///
-  /// \param[in] The filename of the shared library. If the filename doesn't
+  /// \param[in] path The path to the shared library. If the path doesn't
   /// include the extension, this function will use the best guess depending on
   /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
   /// Windows).
   /// \return Pointer to the created SharedLibrary upon success in loading.
   /// Otherwise, returns nullptr.
-  explicit SharedLibrary(ProtectedContructionTag, const std::string& fileName);
+  explicit SharedLibrary(ProtectedContructionTag, const std::string& path);
 
   /// Destructor
   virtual ~SharedLibrary();
 
-  /// Returns the file name of the shared library
-  const std::string& getFileName() const;
+  /// Returns the path to the shared library file.
+  const std::string& getPath() const;
 
   /// Returns true if the shared library loading was successful.
   bool isValid() const;

@@ -38,9 +38,9 @@ namespace detail {
 
 //==============================================================================
 std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
-    const std::string& fileName)
+    const std::string& path)
 {
-  const auto iter = mLibraries.find(fileName);
+  const auto iter = mLibraries.find(path);
 
   const auto found = iter != mLibraries.end();
   if (found)
@@ -54,12 +54,12 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
   }
 
   const auto newLib = std::make_shared<SharedLibrary>(
-      SharedLibrary::ProtectedConstruction, fileName);
+      SharedLibrary::ProtectedConstruction, path);
 
   if (!newLib->isValid())
     return nullptr;
 
-  mLibraries[fileName] = newLib;
+  mLibraries[path] = newLib;
 
   return newLib;
 }

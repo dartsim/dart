@@ -46,15 +46,15 @@ namespace detail {
 class SharedLibraryManager final : public Singleton<SharedLibraryManager>
 {
 public:
-  /// Loads a shared library of fileName.
+  /// Loads the shared library with the specified path.
   ///
-  /// \param[in] The filename of the shared library. If the filename doesn't
+  /// \param[in] path The path to the shared library. If the path doesn't
   /// include the extension, this function will use the best guess depending on
   /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
   /// Windows).
   /// \return Pointer to the shared library upon success. Otherwise, returns
   /// nullptr.
-  std::shared_ptr<SharedLibrary> load(const std::string& fileName);
+  std::shared_ptr<SharedLibrary> load(const std::string& path);
 
 protected:
   friend class Singleton<SharedLibraryManager>;
