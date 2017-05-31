@@ -55,6 +55,8 @@
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
+#define NORMAL_EPSILON 1e-03
+
 namespace dart {
 namespace collision {
 
@@ -617,6 +619,13 @@ void convertContacts(
     for (auto j = 0; j < numContacts; ++j)
     {
       auto& cp = contactManifold->getContactPoint(j);
+
+      if (cp.m_normalWorldOnB.length() < NORMAL_EPSILON)
+      {
+        // This is an invalid contact, as it contains a zero length normal.
+        // Skip this contact.
+        continue;
+      }
 
       result.addContact(convertContact(cp, userDataA, userDataB));
 

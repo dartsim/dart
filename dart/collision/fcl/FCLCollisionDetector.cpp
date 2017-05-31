@@ -1299,8 +1299,17 @@ void postProcessFCL(
   // without the checkings of repeatidity and co-linearity.
   if (1u == option.maxNumContacts)
   {
-    result.addContact(convertContact(fclResult.getContact(0), o1, o2, option));
-
+    for (auto i = 0u; i < numContacts; ++i)
+    {
+      if (fclResult.getContact(i).normal.norm() > NORMAL_EPSILON)
+      {
+        // This is an valid contact, as it contains a normal which is not
+        // of zero length. We can use this contact.
+        result.addContact(convertContact(fclResult.getContact(i),
+                                         o1, o2, option));
+        break;
+      }
+    }
     return;
   }
 
@@ -1325,6 +1334,13 @@ void postProcessFCL(
   {
     if (markForDeletion[i])
       continue;
+
+    if (fclResult.getContact(i).normal.norm() < NORMAL_EPSILON)
+    {
+      // This is an invalid contact, as it contains a zero length normal.
+      // Skip this contact.
+      continue;
+    }
 
     result.addContact(convertContact(fclResult.getContact(i), o1, o2, option));
 
