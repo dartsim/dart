@@ -102,6 +102,9 @@ ChainPtr Chain::create(const Chain::Criteria& _criteria,
 ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
                        const std::string& _name)
 {
+  if (nullptr == _start || nullptr == _target)
+    return nullptr;
+
   ChainPtr chain(new Chain(_start, _target, _name));
   chain->mPtr = chain;
   return chain;
