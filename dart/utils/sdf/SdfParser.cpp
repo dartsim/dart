@@ -1268,7 +1268,7 @@ static void readAxisElement(
   Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
   if (useParentModelFrame)
   {
-    xyz = _parentModelFrame * xyz;
+    xyz = _parentModelFrame.rotation() * xyz;
   }
   axis = xyz;
 
