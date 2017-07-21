@@ -38,7 +38,8 @@ TEST(Issue895, BodyNodeSelfCollision)
 {
   const dart::dynamics::SkeletonPtr skel = dart::dynamics::Skeleton::create();
   dart::dynamics::BodyNode* bn =
-      skel->createJointAndBodyNodePair<FreeJoint>().second;;
+      skel->createJointAndBodyNodePair<FreeJoint>().second;
+  skel->enableSelfCollisionCheck();
 
   dart::dynamics::BoxShapePtr box =
       std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones());
@@ -49,15 +50,16 @@ TEST(Issue895, BodyNodeSelfCollision)
   bn->createShapeNodeWith<CollisionAspect>(box)->setRelativeTranslation(
         Eigen::Vector3d(0.5, 0.5, 0.0));
 
-  dart::collision::CollisionDetectorPtr detector =
-      dart::collision::FCLCollisionDetector::create();
+  dart::simulation::WorldPtr world =
+      std::make_shared<dart::simulation::World>();
 
-  dart::collision::CollisionGroupPtr group =
-      detector->createCollisionGroupAsSharedPtr();
+  world->addSkeleton(skel);
 
-  group->addShapeFramesOf(bn);
+  world->step();
+  const dart::collision::CollisionResult result =
+      world->getLastCollisionResult();
 
-  EXPECT_FALSE(group->collide());
+  EXPECT_EQ(result.getNumContacts(), 0u);
 }
 
 //==============================================================================
