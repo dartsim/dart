@@ -55,6 +55,9 @@ bool BodyNodeCollisionFilter::needCollision(
   auto bodyNode1 = shapeNode1->getBodyNodePtr();
   auto bodyNode2 = shapeNode2->getBodyNodePtr();
 
+  if (bodyNode1 == bodyNode2)
+    return false;
+
   if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable())
     return false;
 
