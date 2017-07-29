@@ -81,10 +81,21 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
   mKp[mSkeleton->getDof("motor_front_rightL_joint")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
   mKp[mSkeleton->getDof("motor_front_leftR_joint")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
   mKp[mSkeleton->getDof("motor_front_leftL_joint")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
+
+  mKp[mSkeleton->getDof("knee_front_rightR_link")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
+  mKp[mSkeleton->getDof("knee_front_rightL_link")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
+  mKp[mSkeleton->getDof("knee_front_leftR_link")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
+  mKp[mSkeleton->getDof("knee_front_leftL_link")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
+
   mKp[mSkeleton->getDof("motor_back_rightR_joint")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
   mKp[mSkeleton->getDof("motor_back_rightL_joint")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
   mKp[mSkeleton->getDof("motor_back_leftR_joint")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
   mKp[mSkeleton->getDof("motor_back_leftL_joint")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
+
+  mKp[mSkeleton->getDof("knee_back_rightR_link")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
+  mKp[mSkeleton->getDof("knee_back_rightL_link")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
+  mKp[mSkeleton->getDof("knee_back_leftR_link")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
+  mKp[mSkeleton->getDof("knee_back_leftL_link")->getIndexInSkeleton()] = ATLAS_DEFAULT_KP;
 
   mPelvis     = mSkeleton->getBodyNode("base_chassis_link");
 //  mLeftFoot   = mSkeleton->getBodyNode("l_foot");

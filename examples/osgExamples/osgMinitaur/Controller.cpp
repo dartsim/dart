@@ -433,8 +433,8 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   State* state0 = new State(mRobot, "0");
   State* state1 = new State(mRobot, "1");
 
-  TerminalCondition* cond0 = new TimerCondition(state0, 0.3);
-  TerminalCondition* cond1 = new TimerCondition(state1, 0.3);
+  TerminalCondition* cond0 = new TimerCondition(state0, 1.0);
+  TerminalCondition* cond1 = new TimerCondition(state1, 1.0);
 
   state0->setTerminalCondition(cond0);
   state1->setTerminalCondition(cond1);
@@ -454,48 +454,48 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
 
   // Set desired joint position
   //-- State 0
-  auto upperAngle0 = 60.00_deg;
-  auto lowerAngle0 = 90.00_deg;
+  auto upperAngle0 = 120.00_deg;
+  auto lowerAngle0 = 0.00_deg;
 
   state0->setDesiredJointPosition( "motor_front_rightR_joint", -upperAngle0);
-  state0->setDesiredJointPosition( "motor_front_rightL_joint", -upperAngle0);
+  state0->setDesiredJointPosition( "motor_front_rightL_joint", upperAngle0);
   state0->setDesiredJointPosition( "motor_front_leftR_joint",  upperAngle0);
-  state0->setDesiredJointPosition( "motor_front_leftL_joint",  upperAngle0);
-  state0->setDesiredJointPosition( "motor_back_rightR_joint",  upperAngle0);
+  state0->setDesiredJointPosition( "motor_front_leftL_joint",  -upperAngle0);
+  state0->setDesiredJointPosition( "motor_back_rightR_joint", -upperAngle0);
   state0->setDesiredJointPosition( "motor_back_rightL_joint",  upperAngle0);
-  state0->setDesiredJointPosition( "motor_back_leftR_joint", -upperAngle0);
+  state0->setDesiredJointPosition( "motor_back_leftR_joint", upperAngle0);
   state0->setDesiredJointPosition( "motor_back_leftL_joint", -upperAngle0);
 
-  state0->setDesiredJointPosition( "knee_front_rightR_link", -lowerAngle0);
-  state0->setDesiredJointPosition( "knee_front_rightL_link", -lowerAngle0);
-  state0->setDesiredJointPosition( "knee_front_leftR_link",  lowerAngle0);
-  state0->setDesiredJointPosition( "knee_front_leftL_link",  lowerAngle0);
-  state0->setDesiredJointPosition( "knee_back_rightR_link",  lowerAngle0);
-  state0->setDesiredJointPosition( "knee_back_rightL_link",  lowerAngle0);
-  state0->setDesiredJointPosition( "knee_back_leftR_link", -lowerAngle0);
-  state0->setDesiredJointPosition( "knee_back_leftL_link", -lowerAngle0);
+//  state0->setDesiredJointPosition( "knee_front_rightR_link", -lowerAngle0);
+//  state0->setDesiredJointPosition( "knee_front_rightL_link", -lowerAngle0);
+//  state0->setDesiredJointPosition( "knee_front_leftR_link",  lowerAngle0);
+//  state0->setDesiredJointPosition( "knee_front_leftL_link",  lowerAngle0);
+//  state0->setDesiredJointPosition( "knee_back_rightR_link",  lowerAngle0);
+//  state0->setDesiredJointPosition( "knee_back_rightL_link",  lowerAngle0);
+//  state0->setDesiredJointPosition( "knee_back_leftR_link", -lowerAngle0);
+//  state0->setDesiredJointPosition( "knee_back_leftL_link", -lowerAngle0);
 
   //-- State 1
-  auto upperAngle1 = 90.00_deg;
-  auto lowerAngle1 = 135.00_deg;
+  auto upperAngle1 = 0.00_deg;
+  auto lowerAngle1 = 0.00_deg;
 
-  state1->setDesiredJointPosition( "motor_front_rightR_joint", -upperAngle1);
+  state1->setDesiredJointPosition( "motor_front_rightR_joint", upperAngle1);
   state1->setDesiredJointPosition( "motor_front_rightL_joint", -upperAngle1);
-  state1->setDesiredJointPosition( "motor_front_leftR_joint",  upperAngle1);
+  state1->setDesiredJointPosition( "motor_front_leftR_joint",  -upperAngle1);
   state1->setDesiredJointPosition( "motor_front_leftL_joint",  upperAngle1);
   state1->setDesiredJointPosition( "motor_back_rightR_joint",  upperAngle1);
-  state1->setDesiredJointPosition( "motor_back_rightL_joint",  upperAngle1);
+  state1->setDesiredJointPosition( "motor_back_rightL_joint", -upperAngle1);
   state1->setDesiredJointPosition( "motor_back_leftR_joint", -upperAngle1);
-  state1->setDesiredJointPosition( "motor_back_leftL_joint", -upperAngle1);
+  state1->setDesiredJointPosition( "motor_back_leftL_joint", upperAngle1);
 
-  state1->setDesiredJointPosition( "knee_front_rightR_link", -lowerAngle1);
-  state1->setDesiredJointPosition( "knee_front_rightL_link", -lowerAngle1);
-  state1->setDesiredJointPosition( "knee_front_leftR_link",  lowerAngle1);
-  state1->setDesiredJointPosition( "knee_front_leftL_link",  lowerAngle1);
-  state1->setDesiredJointPosition( "knee_back_rightR_link",  lowerAngle1);
-  state1->setDesiredJointPosition( "knee_back_rightL_link",  lowerAngle1);
-  state1->setDesiredJointPosition( "knee_back_leftR_link", -lowerAngle1);
-  state1->setDesiredJointPosition( "knee_back_leftL_link", -lowerAngle1);
+//  state1->setDesiredJointPosition( "knee_front_rightR_link", -lowerAngle1);
+//  state1->setDesiredJointPosition( "knee_front_rightL_link", -lowerAngle1);
+//  state1->setDesiredJointPosition( "knee_front_leftR_link",  lowerAngle1);
+//  state1->setDesiredJointPosition( "knee_front_leftL_link",  lowerAngle1);
+//  state1->setDesiredJointPosition( "knee_back_rightR_link",  lowerAngle1);
+//  state1->setDesiredJointPosition( "knee_back_rightL_link",  lowerAngle1);
+//  state1->setDesiredJointPosition( "knee_back_leftR_link", -lowerAngle1);
+//  state1->setDesiredJointPosition( "knee_back_leftL_link", -lowerAngle1);
 
   sm->addState(state0);
   sm->addState(state1);

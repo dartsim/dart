@@ -41,7 +41,7 @@
 #include <dart/dart.hpp>
 
 #define ATLAS_DEFAULT_KD 1.0  // No more than 1.0
-#define ATLAS_DEFAULT_KP 1e+3
+#define ATLAS_DEFAULT_KP 1e+2
 
 #define ATLAS_DEFAULT_SAGITAL_CD 0.1
 #define ATLAS_DEFAULT_SAGITAL_CV 0.1

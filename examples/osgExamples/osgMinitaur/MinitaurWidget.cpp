@@ -44,7 +44,7 @@ MinitaurWidget::MinitaurWidget(
     mGravityAcc(mGuiGravityAcc),
     mGuiHeadlights(true),
     mGuiControlMode(2),
-    mControlMode(2)
+    mControlMode(1)
 {
   // Do nothing
 }
@@ -147,9 +147,9 @@ void MinitaurWidget::render()
         case 1:
           mNode->switchToWarmingUp();
           break;
-//        case 2:
-//          mNode->switchToNormalStrideWalking();
-//          break;
+        case 2:
+          mNode->switchToWarmingUp();
+          break;
       }
 
       mControlMode = mGuiControlMode;
