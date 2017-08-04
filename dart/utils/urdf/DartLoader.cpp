@@ -365,7 +365,10 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   }
 
   if(_jt->dynamics)
+  {
     singleDof.mDampingCoefficients[0] = _jt->dynamics->damping;
+    singleDof.mFrictions[0] = _jt->dynamics->friction;
+  }
 
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
   switch(_jt->type)
