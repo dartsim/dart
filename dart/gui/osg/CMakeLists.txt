@@ -30,12 +30,14 @@ if(DART_BUILD_GUI_OSG)
     message(WARNING "${warning_msg} -- we will skip dart-gui-osg\n"
             "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
     set(HAVE_OPENSCENEGRAPH FALSE)
+    return()
   endif()
 
 else()
 
   message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
   set(HAVE_OPENSCENEGRAPH FALSE)
+  return()
 
 endif()
 
