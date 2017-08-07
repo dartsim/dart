@@ -1,3 +1,8 @@
+### Version 5.1.6 (2017-08-08)
+
+1. Improved camera movement of OpenGL GUI: smooth zooming and translation 
+    * [Pull request #843](https://github.com/dartsim/dart/pull/808)
+
 ### Version 5.1.5 (2017-01-20)
 
 1. Fixed Lemke LCP solver for several failing cases
