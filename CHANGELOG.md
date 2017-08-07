@@ -1,12 +1,12 @@
 ## DART 6
 
-### DART 6.2.1 (2017-08-08)
+### [DART 6.2.1 (2017-08-08)](https://github.com/dartsim/dart/milestone/37?closed=1)
 
-# Collision detection
+* Collision detection
 
   * Fixed collision checking between objects from the same body node: [#894](https://github.com/dartsim/dart/pull/894)
 
-# Kinematics/Dynamics
+* Kinematics/Dynamics
 
   * Fixed transform of ScrewJoint with thread pitch: [#855](https://github.com/dartsim/dart/pull/855)
 
