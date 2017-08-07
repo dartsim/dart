@@ -1,7 +1,10 @@
 ### Version 5.1.6 (2017-08-08)
 
 1. Improved camera movement of OpenGL GUI: smooth zooming and translation 
-    * [Pull request #843](https://github.com/dartsim/dart/pull/808)
+    * [Pull request #843](https://github.com/dartsim/dart/pull/843)
+
+1. Removed debian meta files from the main DART repository
+    * [Pull request #853](https://github.com/dartsim/dart/pull/853)
 
 ### Version 5.1.5 (2017-01-20)
 
