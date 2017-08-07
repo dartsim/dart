@@ -8,6 +8,11 @@ if(DART_BUILD_GUI_OSG)
 
   find_package(OpenSceneGraph 3.0 QUIET
     COMPONENTS osg osgViewer osgManipulator osgGA osgDB)
+
+  # It seems that OPENSCENEGRAPH_FOUND will inadvertently get set to true when
+  # OpenThreads is found, even if OpenSceneGraph is not installed. This is quite
+  # possibly a bug in OSG's cmake configuration file. For now, it seems that
+  # requiring OSG_FOUND to be true as well fixes this.
   if(OPENSCENEGRAPH_FOUND AND OSG_FOUND)
     if(DART_VERBOSE)
       message(STATUS "Looking for OpenSceneGraph - ${OPENSCENEGRAPH_VERSION} found")
