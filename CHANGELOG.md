@@ -1,10 +1,30 @@
 ## DART 6
 
-### DART 6.2.1 (2017-XX-XX)
+### DART 6.2.1 (2017-08-08)
+
+# Collision detection
+
+  * Fixed collision checking between objects from the same body node: [#894](https://github.com/dartsim/dart/pull/894)
+
+# Kinematics/Dynamics
+
+  * Fixed transform of ScrewJoint with thread pitch: [#855](https://github.com/dartsim/dart/pull/855)
+
+* Parsers
+
+  * Fixed incorrect reading of <use_parent_model_frame> from SDF: [#893](https://github.com/dartsim/dart/pull/893)
+  * Fixed missing reading of joint friction from URDF: [#891](https://github.com/dartsim/dart/pull/891)
+
+* Testing
+
+  * Fixed testing ODE collision detector on macOS: [#884](https://github.com/dartsim/dart/pull/884)
+  * Removed redundant main body for each test source file: [#856](https://github.com/dartsim/dart/pull/856)
 
 * Misc
 
+  * Fixed build of examples and tutorials on macOS: [#889](https://github.com/dartsim/dart/pull/889)
   * Fixed missing overriding method OdePlane::isPlaceable(): [#886](https://github.com/dartsim/dart/pull/886)
+  * Replaced use of enum by static constexpr: [#852](https://github.com/dartsim/dart/pull/852), [#904](https://github.com/dartsim/dart/pull/904)
 
 ### [DART 6.2.0 (2017-05-15)](https://github.com/dartsim/dart/milestone/30?closed=1)
 
