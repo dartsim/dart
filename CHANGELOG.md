@@ -22,6 +22,7 @@
 
 * Misc
 
+  * Fixed build of dart-gui-osg that depends on the presence of OSG: [#898](https://github.com/dartsim/dart/pull/898)
   * Fixed build of examples and tutorials on macOS: [#889](https://github.com/dartsim/dart/pull/889)
   * Fixed missing overriding method OdePlane::isPlaceable(): [#886](https://github.com/dartsim/dart/pull/886)
   * Replaced use of enum by static constexpr: [#852](https://github.com/dartsim/dart/pull/852), [#904](https://github.com/dartsim/dart/pull/904)
