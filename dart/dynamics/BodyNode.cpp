@@ -235,9 +235,31 @@ BodyNode::~BodyNode()
 {
   // Delete all Nodes
   mNodeMap.clear();
-  mNodeDestructors.clear();
 
   delete mParentJoint;
+}
+
+//==============================================================================
+std::shared_ptr<BodyNode> BodyNode::as_shared_ptr()
+{
+  std::shared_ptr<std::shared_ptr<Skeleton>> proxy;
+
+  {
+    std::unique_lock<std::mutex> lock(mSkeletonPtrProxyGuard);
+    proxy = mSkeletonPtrProxy.lock();
+    if(!proxy)
+    {
+      proxy = std::make_shared<std::shared_ptr<Skeleton>(getSkeleton());
+    }
+  }
+
+  return std::shared_ptr<BodyNode>(proxy, this);
+}
+
+//==============================================================================
+std::shared_ptr<const BodyNode> BodyNode::as_shared_ptr() const
+{
+  return const_cast<BodyNode*>(this)->as_shared_ptr();
 }
 
 //==============================================================================
@@ -379,8 +401,8 @@ void BodyNode::matchNodes(const BodyNode* otherBodyNode)
     return;
   }
 
-  for(auto& cleaner : mNodeDestructors)
-    cleaner->getNode()->stageForRemoval();
+  for(auto& cleaner : mNodeMap)
+    cleaner->second->stageForRemoval();
 
   duplicateNodes(otherBodyNode);
 }
@@ -1259,10 +1281,6 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     onColShapeRemoved(mColShapeRemovedSignal),
     onStructuralChange(mStructuralChangeSignal)
 {
-  // Generate an inert destructor to make sure that it will not try to
-  // double-delete this BodyNode when it gets destroyed.
-  mSelfDestructor = std::shared_ptr<NodeDestructor>(new NodeDestructor(nullptr));
-  mDestructor = mSelfDestructor;
   mAmAttached = true;
 
   mParentJoint->mChildBodyNode = this;

@@ -405,8 +405,8 @@ void ConstraintSolver::updateConstraints()
           ct.collisionObject2->getShapeFrame());
 
 DART_SUPPRESS_DEPRECATED_BEGIN
-    shapeFrame1->asShapeNode()->getBodyNodePtr()->setColliding(true);
-    shapeFrame2->asShapeNode()->getBodyNodePtr()->setColliding(true);
+    shapeFrame1->asShapeNode()->getBodyNode()->setColliding(true);
+    shapeFrame2->asShapeNode()->getBodyNode()->setColliding(true);
 DART_SUPPRESS_DEPRECATED_END
 
     if (isSoftContact(ct))
@@ -589,8 +589,8 @@ bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
   assert(shapeNode1);
   assert(shapeNode2);
 
-  auto bodyNode1 = shapeNode1->getBodyNodePtr().get();
-  auto bodyNode2 = shapeNode2->getBodyNodePtr().get();
+  auto bodyNode1 = shapeNode1->getBodyNode();
+  auto bodyNode2 = shapeNode2->getBodyNode();
 
   auto bodyNode1IsSoft =
       dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode1) != nullptr;

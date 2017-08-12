@@ -56,27 +56,29 @@ public:
   /// Virtual destructor
   virtual ~JacobianNode();
 
+  DART_DYNAMICS_NODE_AS_SHARED_PTR(JacobianNode)
+
   using Node::setName;
   using Node::getName;
 
   /// Get a pointer to an IK module for this JacobianNode. If _createIfNull is
   /// true, then the IK module will be generated if one does not already exist.
-  const std::shared_ptr<InverseKinematics>& getIK(bool _createIfNull = false);
+  InverseKinematics* getIK(bool _createIfNull = false);
 
   /// Get a pointer to an IK module for this JacobianNode. The IK module will be
   /// generated if one does not already exist. This function is actually the
   /// same as getIK(true).
-  const std::shared_ptr<InverseKinematics>& getOrCreateIK();
+  InverseKinematics* getOrCreateIK();
 
   /// Get a pointer to an IK module for this JacobianNode. Because this is a
   /// const function, a new IK module cannot be created if one does not already
   /// exist.
-  std::shared_ptr<const InverseKinematics> getIK() const;
+  const InverseKinematics* getIK() const;
 
   /// Create a new IK module for this JacobianNode. If an IK module already
   /// exists in this JacobianNode, it will be destroyed and replaced by a brand
   /// new one.
-  const std::shared_ptr<InverseKinematics>& createIK();
+  InverseKinematics* createIK();
 
   /// Wipe away the IK module for this JacobianNode, leaving it as a nullptr.
   void clearIK();

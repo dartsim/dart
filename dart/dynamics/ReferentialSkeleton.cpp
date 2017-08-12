@@ -67,13 +67,15 @@ std::size_t ReferentialSkeleton::getNumBodyNodes() const
 //==============================================================================
 BodyNode* ReferentialSkeleton::getBodyNode(std::size_t _idx)
 {
-  return common::getVectorObjectIfAvailable<BodyNodePtr>(_idx, mBodyNodes);
+  return common::getVectorObjectIfAvailable<BodyNodePtr>(
+        _idx, mBodyNodes).get();
 }
 
 //==============================================================================
 const BodyNode* ReferentialSkeleton::getBodyNode(std::size_t _idx) const
 {
-  return common::getVectorObjectIfAvailable<BodyNodePtr>(_idx, mBodyNodes);
+  return common::getVectorObjectIfAvailable<BodyNodePtr>(
+        _idx, mBodyNodes).get();
 }
 
 //==============================================================================
@@ -116,7 +118,7 @@ static std::vector<T2>& convertVector(const std::vector<T1>& t1_vec,
 {
   t2_vec.resize(t1_vec.size());
   for(std::size_t i = 0; i < t1_vec.size(); ++i)
-    t2_vec[i] = t1_vec[i];
+    t2_vec[i] = t1_vec[i].get();
   return t2_vec;
 }
 
@@ -1124,7 +1126,7 @@ void ReferentialSkeleton::registerBodyNode(BodyNode* _bn)
     // index to it.
     IndexMap indexing;
 
-    mBodyNodes.push_back(_bn);
+    mBodyNodes.push_back(_bn->as_shared_ptr());
     indexing.mBodyNodeIndex = mBodyNodes.size()-1;
 
     mIndexMap[_bn] = indexing;
@@ -1135,7 +1137,7 @@ void ReferentialSkeleton::registerBodyNode(BodyNode* _bn)
 
     if(INVALID_INDEX == indexing.mBodyNodeIndex)
     {
-      mBodyNodes.push_back(_bn);
+      mBodyNodes.push_back(_bn->as_shared_ptr());
       indexing.mBodyNodeIndex = mBodyNodes.size()-1;
     }
   }
@@ -1259,7 +1261,7 @@ void ReferentialSkeleton::unregisterBodyNode(
   {
     // Re-index all the BodyNodes in this ReferentialSkeleton which came after
     // the one that was removed.
-    IndexMap& alteredIndexing = mIndexMap[mBodyNodes[i]];
+    IndexMap& alteredIndexing = mIndexMap[mBodyNodes[i].get()];
     alteredIndexing.mBodyNodeIndex = i;
   }
 
@@ -1316,7 +1318,7 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
     // Re-index all of the Joints in this ReferentialSkeleton which came after
     // the Joint that was removed.
     JointPtr alteredJoint = mJoints[i];
-    IndexMap& indexing = mIndexMap[alteredJoint.getBodyNodePtr()];
+    IndexMap& indexing = mIndexMap[alteredJoint.getBodyNodePtr().get()];
     indexing.mJointIndex = i;
   }
 
@@ -1367,7 +1369,7 @@ void ReferentialSkeleton::unregisterDegreeOfFreedom(
     // Re-index all the DOFs in this ReferentialSkeleton which came after the
     // DOF that was removed.
     DegreeOfFreedomPtr dof = mDofs[i];
-    IndexMap& indexing = mIndexMap[dof.getBodyNodePtr()];
+    IndexMap& indexing = mIndexMap[dof.getBodyNodePtr().get()];
     indexing.mDofIndices[dof.getLocalIndex()] = i;
   }
 
@@ -1389,8 +1391,8 @@ void ReferentialSkeleton::updateCaches()
 
     for(const BodyNodePtr& bn : mBodyNodes)
     {
-      mRawBodyNodes.push_back(bn);
-      mRawConstBodyNodes.push_back(bn);
+      mRawBodyNodes.push_back(bn.get());
+      mRawConstBodyNodes.push_back(bn.get());
     }
   }
 

@@ -41,8 +41,20 @@ namespace dynamics {
 //==============================================================================
 InverseKinematicsPtr InverseKinematics::create(JacobianNode* _node)
 {
-  return InverseKinematicsPtr(std::shared_ptr<InverseKinematics>(
-                                new InverseKinematics(_node)));
+  std::shared_ptr<InverseKinematics> ik(new InverseKinematics(_node));
+  ik->initialize(ik);
+
+  return ik->as_shared_ptr();
+}
+
+//==============================================================================
+InverseKinematicsPtr InverseKinematics::createForAttachment(
+    JacobianNode* _node)
+{
+  std::shared_ptr<InverseKinematics> ik(new InverseKinematics(_node));
+  ik->initialize(ik);
+
+  return ik;
 }
 
 //==============================================================================
@@ -55,10 +67,21 @@ InverseKinematics::~InverseKinematics()
 //==============================================================================
 bool InverseKinematics::solve(bool _applySolution)
 {
+  std::shared_ptr<JacobianNode> node = mNodePtr.lock();
+  if(!node)
+  {
+    dterr << "[InverseKinematics::solve] The JacobianNode that this "
+          << "InverseKinematics object used to reference is no longer "
+          << "available. This may be caused by incorrect use of the functions "
+          << "createForAttachment or cloneForAttachment. Please check if you "
+          << "are using these incorrectly.\n";
+    return false;
+  }
+
   if(nullptr == mSolver)
   {
     dtwarn << "[InverseKinematics::solve] The Solver for an InverseKinematics "
-           << "module associated with [" << mNode->getName() << "] is a "
+           << "module associated with [" << node->getName() << "] is a "
            << "nullptr. You must reset the module's Solver before you can use "
            << "it.\n";
     return false;
@@ -67,7 +90,7 @@ bool InverseKinematics::solve(bool _applySolution)
   if(nullptr == mProblem)
   {
     dtwarn << "[InverseKinematics::solve] The Problem for an InverseKinematics "
-           << "module associated with [" << mNode->getName() << "] is a "
+           << "module associated with [" << node->getName() << "] is a "
            << "nullptr. You must reset the module's Problem before you can use "
            << "it.\n";
     return false;
@@ -119,6 +142,37 @@ bool InverseKinematics::solve(Eigen::VectorXd& positions, bool _applySolution)
 }
 
 //==============================================================================
+std::shared_ptr<InverseKinematics> InverseKinematics::as_shared_ptr()
+{
+  struct InverseKinematicsAndNode
+  {
+    InverseKinematicsAndNode(
+          const std::shared_ptr<InverseKinematics>& ik,
+          const std::shared_ptr<JacobianNode>& node)
+      : mIK(ik),
+        mNode(node)
+    {
+      // Do nothing
+    }
+
+    std::shared_ptr<InverseKinematics> mIK;
+    std::shared_ptr<Node> mNode;
+  };
+
+  std::shared_ptr<InverseKinematicsAndNode> wrapper =
+      std::make_shared<InverseKinematicsAndNode>(mPtr.lock(), mNodePtr.lock());
+
+  return std::shared_ptr<InverseKinematics>(wrapper, this);
+}
+
+//==============================================================================
+std::shared_ptr<const InverseKinematics>
+InverseKinematics::as_shared_ptr() const
+{
+  return const_cast<InverseKinematics*>(this)->as_shared_ptr();
+}
+
+//==============================================================================
 static std::shared_ptr<optimizer::Function> cloneIkFunc(
     const std::shared_ptr<optimizer::Function>& _function,
     InverseKinematics* _ik)
@@ -135,7 +189,17 @@ static std::shared_ptr<optimizer::Function> cloneIkFunc(
 //==============================================================================
 InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
 {
-  std::shared_ptr<InverseKinematics> newIK(new InverseKinematics(_newNode));
+  return cloneForAttachment(_newNode)->as_shared_ptr();
+}
+
+//==============================================================================
+InverseKinematicsPtr InverseKinematics::cloneForAttachment(
+    JacobianNode* _newNode) const
+{
+  // TODO(MXG): Consider using Aspects to store the IK settings
+  std::shared_ptr<InverseKinematics> newIK =
+      InverseKinematics::create(_newNode);
+
   newIK->setActive(isActive());
   newIK->setHierarchyLevel(getHierarchyLevel());
   newIK->setDofs(getDofs());
@@ -1547,23 +1611,11 @@ std::shared_ptr<const SimpleFrame> InverseKinematics::getTarget() const
 //==============================================================================
 JacobianNode* InverseKinematics::getNode()
 {
-  return getAffiliation();
-}
-
-//==============================================================================
-const JacobianNode* InverseKinematics::getNode() const
-{
-  return getAffiliation();
-}
-
-//==============================================================================
-JacobianNode* InverseKinematics::getAffiliation()
-{
   return mNode;
 }
 
 //==============================================================================
-const JacobianNode* InverseKinematics::getAffiliation() const
+const JacobianNode* InverseKinematics::getNode() const
 {
   return mNode;
 }
@@ -1733,14 +1785,18 @@ InverseKinematics::InverseKinematics(JacobianNode* _node)
     mHierarchyLevel(0),
     mOffset(Eigen::Vector3d::Zero()),
     mHasOffset(false),
-    mNode(_node)
+    mNodePtr(_node->as_shared_ptr())
 {
-  initialize();
+  // The InverseKinematics::create(~) function MUST call initialize(~) after
+  // constructing this object.
 }
 
 //==============================================================================
-void InverseKinematics::initialize()
+void InverseKinematics::initialize(
+    const std::shared_ptr<InverseKinematics>& self)
 {
+  mPtr = self;
+
   // Default to having no objectives
   setObjective(nullptr);
   setNullSpaceObjective(nullptr);

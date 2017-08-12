@@ -52,8 +52,8 @@ bool BodyNodeCollisionFilter::needCollision(
     return true;
   // We assume that non-ShapeNode is always being checked collision.
 
-  auto bodyNode1 = shapeNode1->getBodyNodePtr();
-  auto bodyNode2 = shapeNode2->getBodyNodePtr();
+  auto bodyNode1 = shapeNode1->getBodyNode();
+  auto bodyNode2 = shapeNode2->getBodyNode();
 
   if (bodyNode1 == bodyNode2)
     return false;

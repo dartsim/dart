@@ -37,7 +37,7 @@ namespace dynamics {
 
 //==============================================================================
 Branch::Criteria::Criteria(BodyNode* _start)
-  : mStart(_start)
+  : mStart(_start->as_shared_ptr())
 {
   // Do nothing
 }
@@ -81,7 +81,7 @@ bool Branch::isStillBranch() const
 
   for(std::size_t i=0; i<mBodyNodes.size(); ++i)
   {
-    BodyNode* bn = mBodyNodes[i];
+    BodyNode* bn = mBodyNodes[i].get();
     if(bn->getNumChildBodyNodes() != mNumChildNodes[i])
       return false;
   }

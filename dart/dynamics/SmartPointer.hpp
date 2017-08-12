@@ -36,8 +36,6 @@
 #include "dart/dynamics/detail/BodyNodePtr.hpp"
 #include "dart/dynamics/detail/JointPtr.hpp"
 #include "dart/dynamics/detail/DegreeOfFreedomPtr.hpp"
-#include "dart/dynamics/detail/NodePtr.hpp"
-#include "dart/dynamics/detail/InverseKinematicsPtr.hpp"
 
 // This file is a lightweight means of providing the smart pointers which are
 // commonly used within the dart::dynamics namespace. It is 'lightweight' in the
@@ -50,8 +48,6 @@ namespace dynamics {
 
 DART_COMMON_MAKE_SHARED_WEAK(ShapeFrame)
 DART_COMMON_MAKE_SHARED_WEAK(SimpleFrame)
-
-DART_COMMON_MAKE_SHARED_WEAK(NodeDestructor)
 
 //-----------------------------------------------------------------------------
 // Skeleton Smart Pointers
@@ -91,23 +87,8 @@ DART_COMMON_MAKE_SHARED_WEAK(SoftMeshShape)
 //-----------------------------------------------------------------------------
 // BodyNode Smart Pointers
 //-----------------------------------------------------------------------------
-#define DART_DYNAMICS_MAKE_BODYNODEPTR( X )                         \
-  class X ;                                                         \
-  typedef TemplateBodyNodePtr< X >          X ## Ptr;               \
-  typedef TemplateBodyNodePtr< const X >     Const ## X ## Ptr;     \
-  typedef TemplateWeakBodyNodePtr< X >      Weak ## X ## Ptr;       \
-  typedef TemplateWeakBodyNodePtr< const X > WeakConst ## X ## Ptr;
-
-// BodyNode smart pointers
-DART_DYNAMICS_MAKE_BODYNODEPTR(BodyNode)
-// These pointers will take the form of:
-// TemplateBodyNodePtr<BodyNode>            --> BodyNodePtr
-// TemplateBodyNodePtr<const BodyNode>      --> ConstBodyNodePtr
-// TemplateWeakBodyNodePtr<BodyNode>        --> WeakBodyNodePtr
-// TemplateWeakBodyNodePtr<const BodyNode>  --> WeakConstBodyNodePtr
-
-// SoftBodyNode smart pointers
-DART_DYNAMICS_MAKE_BODYNODEPTR(SoftBodyNode)
+DART_COMMON_MAKE_SHARED_WEAK(BodyNode)
+DART_COMMON_MAKE_SHARED_WEAK(SoftBodyNode)
 
 
 //-----------------------------------------------------------------------------
@@ -141,43 +122,16 @@ DART_DYNAMICS_MAKE_BN_DEPENDENT_PTR(DegreeOfFreedom)
 //-----------------------------------------------------------------------------
 // Node Smart Pointers
 //-----------------------------------------------------------------------------
-#define DART_DYNAMICS_MAKE_NODEPTR( X )                                            \
-  class X ;                                                                        \
-  typedef TemplateNodePtr < X , BodyNode >                  X ## Ptr;              \
-  typedef TemplateNodePtr < const X , const BodyNode >      Const ## X ## Ptr;     \
-  typedef TemplateWeakNodePtr < X , BodyNode >              Weak ## X ## Ptr;      \
-  typedef TemplateWeakNodePtr < const X , const BodyNode >  WeakConst ## X ## Ptr;
-
-DART_DYNAMICS_MAKE_NODEPTR(Node)
-// These pointers will take the form of:
-// TemplateNodePtr<Node>            --> NodePtr
-// TemplateNodePtr<const Node>      --> ConstNodePtr
-// TemplateWeakNodePtr<Node>        --> WeakNodePtr
-// TemplateWeakNodePtr<const Node>  --> WeakConstNodePtr
-
-DART_DYNAMICS_MAKE_NODEPTR(JacobianNode)
-
-DART_DYNAMICS_MAKE_NODEPTR(EndEffector)
-// These pointers will take the form of:
-// TemplateNodePtr<EndEffector>             --> EndEffectorPtr
-// TemplateNodePtr<const EndEffector>       --> ConstEndEffectorPtr
-// TemplateWeakNodePtr<EndEffector>         --> WeakEndEffectorPtr
-// TemplateWeakNodePtr<const EndEffector>   --> WeakConstEndEffectorPtr
-
-DART_DYNAMICS_MAKE_NODEPTR(ShapeNode)
+DART_COMMON_MAKE_SHARED_WEAK(Node)
+DART_COMMON_MAKE_SHARED_WEAK(JacobianNode)
+DART_COMMON_MAKE_SHARED_WEAK(EndEffector)
+DART_COMMON_MAKE_SHARED_WEAK(ShapeNode)
 
 
 //-----------------------------------------------------------------------------
 // InverseKinematics Smart Pointers
 //-----------------------------------------------------------------------------
-#define DART_DYNAMICS_MAKE_IK_PTR( X )                                                              \
-  class X ;                                                                                         \
-  typedef TemplateInverseKinematicsPtr< X , JacobianNodePtr > X ## Ptr;                             \
-  typedef TemplateInverseKinematicsPtr< const X , ConstJacobianNodePtr > Const ## X ## Ptr;         \
-  typedef TemplateWeakInverseKinematicsPtr< X , JacobianNodePtr > Weak ## X ## Ptr;                 \
-  typedef TemplateWeakInverseKinematicsPtr< const X , ConstJacobianNodePtr > WeakConst ## X ## Ptr;
-
-DART_DYNAMICS_MAKE_IK_PTR(InverseKinematics)
+DART_COMMON_MAKE_SHARED_WEAK(InverseKinematics)
 
 } // namespace dynamics
 } // namespace dart

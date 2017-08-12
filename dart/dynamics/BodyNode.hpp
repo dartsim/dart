@@ -72,7 +72,6 @@ class Marker;
 class BodyNode :
     public detail::BodyNodeCompositeBase,
     public virtual BodyNodeSpecializedFor<ShapeNode, EndEffector, Marker>,
-    public SkeletonRefCountingBase,
     public TemplatedJacobianNode<BodyNode>
 {
 public:
@@ -99,6 +98,13 @@ public:
 
   /// Destructor
   virtual ~BodyNode();
+
+  /// Get a std::shared_ptr which will maintain the life of this BodyNode.
+  std::shared_ptr<BodyNode> as_shared_ptr();
+
+  /// Get a const-qualified std::shared_ptr which will maintain the life of
+  /// this BodyNode.
+  std::shared_ptr<const BodyNode> as_shared_ptr() const;
 
   /// Convert 'this' into a SoftBodyNode pointer if this BodyNode is a
   /// SoftBodyNode, otherwise return nullptr
@@ -1062,6 +1068,18 @@ protected:
   // Structural Properties
   //--------------------------------------------------------------------------
 
+  /// std::weak_ptr to the Skeleton that this BodyNode is currently belongs to.
+  std::weak_ptr<Skeleton> mSkeleton;
+
+  /// std::weak_ptr to a reference-counting pointer of the Skeleton that this
+  /// BodyNode currently belongs to. This allows us to spawn BodyNodePtrs which
+  /// remain valid, even as this BodyNode moves between Skeletons.
+  mutable std::weak_ptr<std::shared_ptr<Skeleton>> mSkeletonPtrProxy;
+
+  /// Make sure that two threads aren't trying to create or modify the proxy at
+  /// the same time
+  std::mutex mSkeletonPtrProxyGuard;
+
   /// Index of this BodyNode in its Skeleton
   std::size_t mIndexInSkeleton;
 
@@ -1212,12 +1230,6 @@ public:
   mutable common::SlotRegister<StructuralChangeSignal> onStructuralChange;
 
   /// \}
-
-private:
-
-  /// Hold onto a reference to this BodyNode's own Destructor to make sure that
-  /// it never gets destroyed.
-  std::shared_ptr<NodeDestructor> mSelfDestructor;
 
 };
 

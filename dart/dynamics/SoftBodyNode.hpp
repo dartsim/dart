@@ -59,6 +59,12 @@ public:
   virtual ~SoftBodyNode();
 
   // Documentation inherited
+  std::shared_ptr<SoftBodyNode> as_shared_ptr();
+
+  // Documentation inherited
+  std::shared_ptr<const SoftBodyNode> as_shared_ptr() const;
+
+  // Documentation inherited
   SoftBodyNode* asSoftBodyNode() override;
 
   // Documentation inherited
@@ -75,8 +81,6 @@ public:
 
   /// Set the AspectProperties of this SoftBodyNode
   void setAspectProperties(const AspectProperties& properties);
-
-  using SkeletonRefCountingBase::getSkeleton;
 
   /// Get the Properties of this SoftBodyNode
   Properties getSoftBodyNodeProperties() const;

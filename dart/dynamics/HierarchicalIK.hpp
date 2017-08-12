@@ -65,6 +65,13 @@ public:
   /// Virtual destructor
   virtual ~HierarchicalIK() = default;
 
+  /// Get a shared_ptr to this IK that will also keep the Skeleton it refers to
+  /// alive.
+  std::shared_ptr<HierarchicalIK> as_shared_ptr();
+
+  /// Const-qualified version of as_shared_ptr()
+  std::shared_ptr<const HierarchicalIK> as_shared_ptr() const;
+
   /// Solve the IK Problem. By default, the Skeleton itself will retain the
   /// solved joint positions. If you pass in false for _applySolution, then the
   /// joint positions will be return to their original positions after the
@@ -166,14 +173,6 @@ public:
 
   /// Get the Skeleton that this IK module is associated with
   ConstSkeletonPtr getSkeleton() const;
-
-  /// This is the same as getSkeleton(). It is used by the HierarchicalIKPtr to
-  /// provide a common interface for the various IK smart pointer types.
-  SkeletonPtr getAffiliation();
-
-  /// This is the same as getSkeleton(). It is used by the HierarchicalIKPtr to
-  /// provide a common interface for the various IK smart pointer types.
-  ConstSkeletonPtr getAffiliation() const;
 
   /// Clear the caches of this IK module. It should generally not be necessary
   /// to call this function.
@@ -319,6 +318,12 @@ public:
   static std::shared_ptr<CompositeIK> create(const SkeletonPtr& _skel);
 
   // Documentation inherited
+  std::shared_ptr<CompositeIK> as_shared_ptr();
+
+  // Documentation inherited
+  std::shared_ptr<const CompositeIK> as_shared_ptr() const;
+
+  // Documentation inherited
   std::shared_ptr<HierarchicalIK> clone(
       const SkeletonPtr &_newSkel) const override;
 
@@ -360,6 +365,12 @@ public:
   static std::shared_ptr<WholeBodyIK> create(const SkeletonPtr& _skel);
 
   // Documentation inherited
+  std::shared_ptr<WholeBodyIK> as_shared_ptr();
+
+  // Documentation inherited
+  std::shared_ptr<const WholeBodyIK> as_shared_ptr() const;
+
+  // Documentation inherited
   std::shared_ptr<HierarchicalIK> clone(
       const SkeletonPtr &_newSkel) const override;
 
@@ -372,8 +383,13 @@ public:
 
 protected:
 
+  friend class Skeleton;
+
   /// Constructor
   WholeBodyIK(const SkeletonPtr& _skel);
+
+  static std::shared_ptr<WholeBodyIK> _createForAttachment(
+      const std::shared_ptr<Skeleton>& _skel);
 };
 
 } // namespace dynamics

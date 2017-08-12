@@ -80,8 +80,8 @@ void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
     return;
   }
 
-  BodyNode* bn1 = mBodyNodes[_index1];
-  BodyNode* bn2 = mBodyNodes[_index2];
+  BodyNode* bn1 = mBodyNodes[_index1].get();
+  BodyNode* bn2 = mBodyNodes[_index2].get();
 
   std::unordered_map<const BodyNode*, IndexMap>::iterator it1 =
       mIndexMap.find(bn1);

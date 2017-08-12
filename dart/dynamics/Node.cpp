@@ -42,25 +42,6 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-NodeDestructor::NodeDestructor(Node* _node)
-  : mNode(_node)
-{
-  // Do nothing
-}
-
-//==============================================================================
-NodeDestructor::~NodeDestructor()
-{
-  delete mNode;
-}
-
-//==============================================================================
-Node* NodeDestructor::getNode() const
-{
-  return mNode;
-}
-
-//==============================================================================
 void Node::setNodeState(const State& /*otherState*/)
 {
   // Do nothing
@@ -98,15 +79,27 @@ void Node::copyNodePropertiesTo(
 }
 
 //==============================================================================
-BodyNodePtr Node::getBodyNodePtr()
+BodyNode* Node::getBodyNode()
 {
   return mBodyNode;
 }
 
 //==============================================================================
-ConstBodyNodePtr Node::getBodyNodePtr() const
+const BodyNode* Node::getBodyNode() const
 {
   return mBodyNode;
+}
+
+//==============================================================================
+BodyNodePtr Node::getBodyNodePtr()
+{
+  return mBodyNode->as_shared_ptr();
+}
+
+//==============================================================================
+ConstBodyNodePtr Node::getBodyNodePtr() const
+{
+  return mBodyNode->as_shared_ptr();
 }
 
 //==============================================================================
@@ -131,19 +124,6 @@ std::shared_ptr<Skeleton> Node::getSkeleton()
 std::shared_ptr<const Skeleton> Node::getSkeleton() const
 {
   return mBodyNode->getSkeleton();
-}
-
-//==============================================================================
-std::shared_ptr<NodeDestructor> Node::getOrCreateDestructor()
-{
-  std::shared_ptr<NodeDestructor> destructor = mDestructor.lock();
-  if(nullptr == destructor)
-  {
-    destructor = std::shared_ptr<NodeDestructor>(new NodeDestructor(this));
-    mDestructor = destructor;
-  }
-
-  return destructor;
 }
 
 //==============================================================================
@@ -190,6 +170,16 @@ void Node::attach()
     return;
   }
 
+  std::shared_ptr<Node> ptr = mNodePtr.lock();
+  if(!ptr)
+  {
+    dterr << "[Node::attach] This Node was not constructed as a "
+          << "std::shared_ptr. This should not be possible! Please report this "
+          << "bug!\n";
+    assert(false);
+    return;
+  }
+
   // If we are in release mode, and the Node believes it is attached, then we
   // can shortcut this procedure
 #ifdef NDEBUG
@@ -197,33 +187,37 @@ void Node::attach()
     return;
 #endif
 
-  using NodeMapPair = std::pair<std::type_index, std::vector<Node*>>;
+  // Dev note: We do this alias instead of letting std::make_pair infer the
+  // desired types below because we need to explicitly tell the compiler to cast
+  // the std::type_info produced by typeid into a std::type_index object.
+  using NodeMapPair = std::pair<
+          std::type_index,
+          std::vector<std::shared_ptr<Node>>>;
 
-  // Add empty list of Node pointers only when typeid(*this) doesn't exist.
+  // Add an empty list of Node pointers only when typeid(*this) is not already
+  // in the map.
   BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.insert(
-      NodeMapPair(typeid(*this), std::vector<Node*>())).first;
+      NodeMapPair(typeid(*this), std::vector<std::shared_ptr<Node>>())).first;
 
-  std::vector<Node*>& nodes = it->second;
-  BodyNode::NodeDestructorSet& destructors = mBodyNode->mNodeDestructors;
 
-  NodeDestructorPtr destructor = getOrCreateDestructor();
+  std::vector<std::shared_ptr<Node>>& nodes = it->second;
+
   if(INVALID_INDEX == mIndexInBodyNode)
   {
-    // If the Node was not in the map, then its destructor should not be in the set
-    assert(destructors.find(destructor) == destructors.end());
+    // It should not believe that it is attached
+    assert(!mAmAttached &&
+           "Node believes that it is attached with an invalid index!");
 
     // If this Node believes its index is invalid, then it should not exist
     // anywhere in the vector
-    assert(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
+    assert(std::find(nodes.begin(), nodes.end(), this) == nodes.end() &&
+           "Node believes it is unattached, but it is wrong!");
 
-    nodes.push_back(this);
+    nodes.push_back(ptr);
     mIndexInBodyNode = nodes.size()-1;
-
-    destructors.insert(destructor);
   }
 
   assert(std::find(nodes.begin(), nodes.end(), this) != nodes.end());
-  assert(destructors.find(destructor) != destructors.end());
 
   const SkeletonPtr& skel = mBodyNode->getSkeleton();
   if(skel)
@@ -249,36 +243,25 @@ void Node::stageForRemoval()
 #endif
 
   BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
-  NodeDestructorPtr destructor = getOrCreateDestructor();
-
-  BodyNode::NodeDestructorSet& destructors = mBodyNode->mNodeDestructors;
 
   if(mBodyNode->mNodeMap.end() == it)
   {
     // If the Node was not in the map, then its index should be invalid
     assert(INVALID_INDEX == mIndexInBodyNode);
-
-    // If the Node was not in the map, then its destructor should not be in the set
-    assert(destructors.find(destructor) == destructors.end());
     return;
   }
 
-  BodyNode::NodeDestructorSet::iterator destructor_iter = destructors.find(destructor);
-  // This Node's destructor should be in the set of destructors
-  assert(destructors.end() != destructor_iter);
-
-  std::vector<Node*>& nodes = it->second;
+  std::vector<std::shared_ptr<Node>>& nodes = it->second;
 
   // This Node's index in the vector should be referring to this Node
-  assert(nodes[mIndexInBodyNode] == this);
+  assert(nodes[mIndexInBodyNode].get() == this);
   nodes.erase(nodes.begin() + mIndexInBodyNode);
-  destructors.erase(destructor_iter);
 
   // Reset all the Node indices that have been altered
   for(std::size_t i=mIndexInBodyNode; i < nodes.size(); ++i)
     nodes[i]->mIndexInBodyNode = i;
 
-  assert(std::find(nodes.begin(), nodes.end(), this) == nodes.end());
+  assert(std::find(nodes.begin(), nodes.end(), mNodePtr.lock()) == nodes.end());
 
   const SkeletonPtr& skel = mBodyNode->getSkeleton();
   if(skel)

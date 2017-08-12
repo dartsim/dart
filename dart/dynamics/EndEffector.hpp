@@ -98,6 +98,8 @@ public:
   /// Destructor
   virtual ~EndEffector() = default;
 
+  DART_DYNAMICS_NODE_AS_SHARED_PTR(EndEffector)
+
   //----------------------------------------------------------------------------
   /// \{ \name Structural Properties
   //----------------------------------------------------------------------------

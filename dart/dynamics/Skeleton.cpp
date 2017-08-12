@@ -439,7 +439,7 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
   {
     for(const auto& node : nodeType.second)
     {
-      const BodyNode* originalBn = node->getBodyNodePtr();
+      const BodyNode* originalBn = node->getBodyNode();
       BodyNode* newBn = skelClone->getBodyNode(originalBn->getName());
       node->cloneNode(newBn)->attach();
     }
@@ -1181,17 +1181,17 @@ bool Skeleton::checkIndexingConsistency() const
     const BodyNode::NodeMap& nodeMap = bn->mNodeMap;
     for(const auto& nodeType : nodeMap)
     {
-      const std::vector<Node*>& nodes = nodeType.second;
+      const std::vector<std::shared_ptr<Node>>& nodes = nodeType.second;
       for(std::size_t k=0; k < nodes.size(); ++k)
       {
-        const Node* node = nodes[k];
-        if(node->getBodyNodePtr() != bn)
+        const Node* node = nodes[k].get();
+        if(node->getBodyNode() != bn)
         {
           dterr << "[Skeleton::checkIndexingConsistency] Node named ["
                 << node->getName() << "] (" << node << ") in Skeleton ["
                 << getName() << "] (" << this << ") is mistaken about its "
-                << "BodyNode [" << node->getBodyNodePtr()->getName() << "] ("
-                << node->getBodyNodePtr() << "). Please report this as a bug!"
+                << "BodyNode [" << node->getBodyNode()->getName() << "] ("
+                << node->getBodyNode() << "). Please report this as a bug!"
                 << std::endl;
           consistent = false;
           assert(false);
@@ -1248,10 +1248,10 @@ bool Skeleton::checkIndexingConsistency() const
     const Skeleton::NodeMap& nodeMap = mNodeMap;
     for(const auto& nodeType : nodeMap)
     {
-      const std::vector<Node*>& nodes = nodeType.second;
+      const std::vector<std::shared_ptr<Node>>& nodes = nodeType.second;
       for(std::size_t k=0; k < nodes.size(); ++k)
       {
-        const Node* node = nodes[k];
+        const Node* node = nodes[k].get();
         if(node->getSkeleton().get() != this)
         {
           dterr << "[Skeleton::checkIndexingConsistency] Node named ["
@@ -1344,17 +1344,17 @@ bool Skeleton::checkIndexingConsistency() const
 
     for(const auto& nodeType : nodeMap)
     {
-      const std::vector<Node*>& nodes = nodeType.second;
+      const std::vector<std::shared_ptr<Node>>& nodes = nodeType.second;
       for(std::size_t k=0; k < nodes.size(); ++k)
       {
-        const Node* node = nodes[k];
-        if(node->getBodyNodePtr()->mTreeIndex != i)
+        const Node* node = nodes[k].get();
+        if(node->getBodyNode()->mTreeIndex != i)
         {
           dterr << "[Skeleton::checkIndexingConsistency] Node named ["
                 << node->getName() << "] (" << node << ") in Skeleton ["
                 << getName() << "] (" << this << ") is mistaken about its "
                 << "Tree Index (" << i << "|"
-                << node->getBodyNodePtr()->mTreeIndex << "). Please report "
+                << node->getBodyNode()->mTreeIndex << "). Please report "
                 << "this as a bug!" << std::endl;
           consistent = false;
           assert(false);
@@ -1379,31 +1379,31 @@ bool Skeleton::checkIndexingConsistency() const
 }
 
 //==============================================================================
-const std::shared_ptr<WholeBodyIK>& Skeleton::getIK(bool _createIfNull)
+WholeBodyIK* Skeleton::getIK(bool _createIfNull)
 {
   if(nullptr == mWholeBodyIK && _createIfNull)
     createIK();
 
-  return mWholeBodyIK;
+  return mWholeBodyIK.get();
 }
 
 //==============================================================================
-const std::shared_ptr<WholeBodyIK>& Skeleton::getOrCreateIK()
+WholeBodyIK* Skeleton::getOrCreateIK()
 {
   return getIK(true);
 }
 
 //==============================================================================
-std::shared_ptr<const WholeBodyIK> Skeleton::getIK() const
+const WholeBodyIK* Skeleton::getIK() const
 {
-  return mWholeBodyIK;
+  return mWholeBodyIK.get();
 }
 
 //==============================================================================
-const std::shared_ptr<WholeBodyIK>& Skeleton::createIK()
+WholeBodyIK* Skeleton::createIK()
 {
-  mWholeBodyIK = WholeBodyIK::create(mPtr.lock());
-  return mWholeBodyIK;
+  mWholeBodyIK = WholeBodyIK::_createForAttachment(mPtr.lock());
+  return mWholeBodyIK.get();
 }
 
 //==============================================================================
@@ -2033,7 +2033,7 @@ void Skeleton::constructNewTree()
   for(auto& nodeType : mSpecializedTreeNodes)
   {
     const std::type_index& index = nodeType.first;
-    nodeMap[index] = std::vector<Node*>();
+    nodeMap[index] = std::vector<std::shared_ptr<Node>>();
 
     std::vector<NodeMap::iterator>* nodeVec = nodeType.second;
     nodeVec->push_back(nodeMap.find(index));
@@ -2079,6 +2079,16 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   }
 
   _newBodyNode->mSkeleton = getPtr();
+  {
+    // If anyone is performing reference-counting on this BodyNode, we must
+    // update the SkeletonPtr that their std::shared_ptrs are aliasing against.
+    std::unique_lock<std::mutex> lock(_newBodyNode->mSkeletonPtrProxyGuard);
+    std::shared_ptr<std::shared_ptr<Skeleton>> proxy =
+        _newBodyNode->mSkeletonPtrProxy.lock();
+    if(proxy)
+      (*proxy) = getPtr();
+  }
+
   _newBodyNode->mIndexInSkeleton = mSkelCache.mBodyNodes.size()-1;
   addEntryToBodyNodeNameMgr(_newBodyNode);
   registerJoint(_newBodyNode->getParentJoint());
@@ -2202,7 +2212,7 @@ void Skeleton::registerNode(Node* _newNode)
 {
   registerNode(mNodeMap, _newNode, _newNode->mIndexInSkeleton);
 
-  registerNode(mTreeNodeMaps[_newNode->getBodyNodePtr()->getTreeIndex()],
+  registerNode(mTreeNodeMaps[_newNode->getBodyNode()->getTreeIndex()],
       _newNode, _newNode->mIndexInTree);
 
   const std::type_info& info = typeid(*_newNode);
@@ -2356,7 +2366,11 @@ void Skeleton::unregisterJoint(Joint* _oldJoint)
 }
 
 //==============================================================================
-void Skeleton::unregisterNode(NodeMap& nodeMap, Node* _oldNode, std::size_t& _index)
+void Skeleton::unregisterNode(
+    NodeMap& nodeMap,
+    Node* _oldNode,
+    std::size_t& _index,
+    std::size_t Node::* _indexPointer)
 {
   NodeMap::iterator it = nodeMap.find(typeid(*_oldNode));
 
@@ -2367,11 +2381,14 @@ void Skeleton::unregisterNode(NodeMap& nodeMap, Node* _oldNode, std::size_t& _in
     return;
   }
 
-  std::vector<Node*>& nodes = it->second;
+  std::vector<std::shared_ptr<Node>>& nodes = it->second;
 
   // This Node's index in the vector should be referring to this Node
-  assert(nodes[_index] == _oldNode);
+  assert(nodes[_index].get() == _oldNode);
   nodes.erase(nodes.begin() + _index);
+
+  for(std::size_t i=_index; i < nodes.size(); ++i)
+    nodes[i].*_indexPointer = i;
 
   _index = INVALID_INDEX;
 }
@@ -2379,27 +2396,29 @@ void Skeleton::unregisterNode(NodeMap& nodeMap, Node* _oldNode, std::size_t& _in
 //==============================================================================
 void Skeleton::unregisterNode(Node* _oldNode)
 {
-  const std::size_t indexInSkel = _oldNode->mIndexInSkeleton;
-  unregisterNode(mNodeMap, _oldNode, _oldNode->mIndexInSkeleton);
+//  const std::size_t indexInSkel = _oldNode->mIndexInSkeleton;
+  unregisterNode(mNodeMap, _oldNode, _oldNode->mIndexInSkeleton,
+                 &Node::mIndexInSkeleton);
 
-  NodeMap::iterator node_it = mNodeMap.find(typeid(*_oldNode));
-  assert(mNodeMap.end() != node_it);
+//  NodeMap::iterator node_it = mNodeMap.find(typeid(*_oldNode));
+//  assert(mNodeMap.end() != node_it);
 
-  const std::vector<Node*>& skelNodes = node_it->second;
-  for(std::size_t i=indexInSkel; i < skelNodes.size(); ++i)
-    skelNodes[i]->mIndexInSkeleton = i;
+//  const std::vector<std::shared_ptr<Node>>& skelNodes = node_it->second;
+//  for(std::size_t i=indexInSkel; i < skelNodes.size(); ++i)
+//    skelNodes[i]->mIndexInSkeleton = i;
 
-  const std::size_t indexInTree = _oldNode->mIndexInTree;
-  const std::size_t treeIndex = _oldNode->getBodyNodePtr()->getTreeIndex();
-  NodeMap& treeNodeMap = mTreeNodeMaps[treeIndex];
-  unregisterNode(treeNodeMap, _oldNode, _oldNode->mIndexInTree);
+//  const std::size_t indexInTree = _oldNode->mIndexInTree;
+//  const std::size_t treeIndex = _oldNode->getBodyNode()->getTreeIndex();
+//  NodeMap& treeNodeMap = mTreeNodeMaps[treeIndex];
+  unregisterNode(treeNodeMap, _oldNode, _oldNode->mIndexInTree,
+                 &Node::mIndexInTree);
 
-  node_it = treeNodeMap.find(typeid(*_oldNode));
-  assert(treeNodeMap.end() != node_it);
+//  node_it = treeNodeMap.find(typeid(*_oldNode));
+//  assert(treeNodeMap.end() != node_it);
 
-  const std::vector<Node*>& treeNodes = node_it->second;
-  for(std::size_t i=indexInTree; i < treeNodes.size(); ++i)
-    treeNodes[i]->mIndexInTree = i;
+//  const std::vector<Node*>& treeNodes = node_it->second;
+//  for(std::size_t i=indexInTree; i < treeNodes.size(); ++i)
+//    treeNodes[i]->mIndexInTree = i;
 
   // Remove it from the NameManager, if a NameManager is being used for this
   // type.

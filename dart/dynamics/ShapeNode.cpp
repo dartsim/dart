@@ -179,8 +179,11 @@ Node* ShapeNode::cloneNode(BodyNode* parent) const
 
   shapeNode->copy(this);
 
+  // TODO(MXG): I think JacobianNode should actually be responsible for this...
+  // Although the best thing to do would be have the InverseKinematics stored in
+  // an Aspect.
   if(mIK)
-    shapeNode->mIK = mIK->clone(shapeNode);
+    shapeNode->mIK = mIK->cloneForAttachment(shapeNode);
 
   return shapeNode;
 }

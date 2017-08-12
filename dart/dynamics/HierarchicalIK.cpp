@@ -40,6 +40,49 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+namespace detail {
+
+template <typename IkType>
+std::shared_ptr<IkType> ik_as_shared_ptr(
+    const std::shared_ptr<HierarchicalIK>& basicPtr, IkType* rawPtr)
+{
+  struct HierarchicalIKAndSkeleton
+  {
+    HierarchicalIKAndSkeleton(
+        const std::shared_ptr<HierarchicalIK>& _ik,
+        const std::shared_ptr<Skeleton>& _skeleton)
+      : mIK(_ik),
+        mSkeletonPtr(_skeleton)
+    {
+      // Do nothing
+    }
+
+    std::shared_ptr<HierarchicalIK> mIK;
+    std::shared_ptr<Skeleton> mSkeletonPtr;
+  };
+
+  std::shared_ptr<HierarchicalIKAndSkeleton> wrapper =
+      std::make_shared<HierarchicalIKAndSkeleton>(
+        basicPtr, rawPtr->getSkeleton());
+
+  return std::shared_ptr<IkType>(wrapper, rawPtr);
+}
+
+} // namespace detail
+
+//==============================================================================
+std::shared_ptr<HierarchicalIK> HierarchicalIK::as_shared_ptr()
+{
+  return detail::ik_as_shared_ptr<HierarchicalIK>(mPtr.lock(), this);
+}
+
+//==============================================================================
+std::shared_ptr<const HierarchicalIK> HierarchicalIK::as_shared_ptr() const
+{
+  return detail::ik_as_shared_ptr<const HierarchicalIK>(mPtr.lock(), this);
+}
+
+//==============================================================================
 bool HierarchicalIK::solve(bool _applySolution)
 {
   if(nullptr == mSolver)
@@ -324,23 +367,11 @@ void HierarchicalIK::setPositions(const Eigen::VectorXd& _q)
 //==============================================================================
 SkeletonPtr HierarchicalIK::getSkeleton()
 {
-  return getAffiliation();
-}
-
-//==============================================================================
-ConstSkeletonPtr HierarchicalIK::getSkeleton() const
-{
-  return getAffiliation();
-}
-
-//==============================================================================
-SkeletonPtr HierarchicalIK::getAffiliation()
-{
   return mSkeleton.lock();
 }
 
 //==============================================================================
-ConstSkeletonPtr HierarchicalIK::getAffiliation() const
+ConstSkeletonPtr HierarchicalIK::getSkeleton() const
 {
   return mSkeleton.lock();
 }
@@ -602,7 +633,24 @@ std::shared_ptr<CompositeIK> CompositeIK::create(const SkeletonPtr& _skel)
 {
   std::shared_ptr<CompositeIK> ik(new CompositeIK(_skel));
   ik->initialize(ik);
-  return ik;
+
+  // as_shared_ptr() returns an aliased shared_ptr which keeps a reference count
+  // on the Skeleton in addition to the IK object. If we only returned the ik
+  // object as it was constructed, the user would have no guarantee that the
+  // Skeleton will remain alive while they use the ik object.
+  return ik->as_shared_ptr();
+}
+
+//==============================================================================
+std::shared_ptr<CompositeIK> CompositeIK::as_shared_ptr()
+{
+  return detail::ik_as_shared_ptr<CompositeIK>(mPtr.lock(), this);
+}
+
+//==============================================================================
+std::shared_ptr<const CompositeIK> CompositeIK::as_shared_ptr() const
+{
+  return detail::ik_as_shared_ptr<CompositeIK>(mPtr.lock(), this);
 }
 
 //==============================================================================
@@ -714,7 +762,19 @@ std::shared_ptr<WholeBodyIK> WholeBodyIK::create(const SkeletonPtr& _skel)
 {
   std::shared_ptr<WholeBodyIK> ik(new WholeBodyIK(_skel));
   ik->initialize(ik);
-  return ik;
+  return ik->as_shared_ptr();
+}
+
+//==============================================================================
+std::shared_ptr<WholeBodyIK> WholeBodyIK::as_shared_ptr()
+{
+  return detail::ik_as_shared_ptr<WholeBodyIK>(mPtr.lock(), this);
+}
+
+//==============================================================================
+std::shared_ptr<WholeBodyIK> WholeBodyIK::as_shared_ptr() const
+{
+  return detail::ik_as_shared_ptr<WholeBodyIK>(mPtr.lock(), this);
 }
 
 //==============================================================================
@@ -802,6 +862,18 @@ WholeBodyIK::WholeBodyIK(const SkeletonPtr& _skel)
   : HierarchicalIK(_skel)
 {
   // Do nothing
+}
+
+//==============================================================================
+static std::shared_ptr<WholeBodyIK> WholeBodyIK::_createForAttachment(
+    const std::shared_ptr<Skeleton>& _skel)
+{
+  std::shared_ptr<WholeBodyIK> ik(new WholeBodyIK(_skel));
+  ik->initialize(ik);
+
+  // We return the regular ik object here so that it can be safely held by
+  // (a.k.a. attached to) a Skeleton
+  return ik;
 }
 
 } // namespace dynamics

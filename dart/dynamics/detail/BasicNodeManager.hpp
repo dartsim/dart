@@ -44,21 +44,22 @@ namespace dart {
 namespace dynamics {
 namespace detail {
 
-class BasicNodeManagerForBodyNode
+template <typename NodeElementType>
+class BasicNodeManager
 {
 public:
 
-  using NodeMap = std::map< std::type_index, std::vector<Node*> >;
-  using NodeDestructorSet = std::unordered_set<NodeDestructorPtr>;
+  using NodeMap = std::map< std::type_index, std::vector<NodeElementType> >;
   using NodeNameMgrMap = std::map< std::type_index, common::NameManager<Node*> >;
-  using SpecializedTreeNodes = std::map<std::type_index, std::vector<NodeMap::iterator>*>;
+  using SpecializedTreeNodes =
+          std::map<std::type_index, std::vector<typename NodeMap::iterator>*>;
 
   /// Default constructor
-  BasicNodeManagerForBodyNode() = default;
+  BasicNodeManager() = default;
 
   /// Delete copy constructors and assignment operators
-  BasicNodeManagerForBodyNode(const BasicNodeManagerForBodyNode&) = delete;
-  BasicNodeManagerForBodyNode& operator=(const BasicNodeManagerForBodyNode&) = delete;
+  BasicNodeManager(const BasicNodeManager&) = delete;
+  BasicNodeManager& operator=(const BasicNodeManager&) = delete;
 
   /// Get the number of Nodes corresponding to the specified type
   template <class NodeType>
@@ -83,17 +84,18 @@ protected:
   /// Map that retrieves the Nodes of a specified type
   NodeMap mNodeMap;
 
-  /// A set for storing the Node destructors
-  NodeDestructorSet mNodeDestructors;
-
 };
 
-class BasicNodeManagerForSkeleton : public virtual BasicNodeManagerForBodyNode
+/// Skeletons should managed their Nodes as raw pointers because the Node lives
+/// are tied to their BodyNode, not their Skeleton
+class BasicNodeManagerForSkeleton : public virtual BasicNodeManager<Node*>
 {
 public:
 
-  using BasicNodeManagerForBodyNode::getNumNodes;
-  using BasicNodeManagerForBodyNode::getNode;
+  using BasicNodeManager<Node*>::getNumNodes;
+  using BasicNodeManager<Node*>::getNode;
+
+  using NodeMap = BasicNodeManager<Node*>::NodeMap;
 
   /// Get the number of Nodes of the specified type that are in the treeIndexth
   /// tree of this Skeleton
@@ -137,10 +139,11 @@ protected:
 };
 
 //==============================================================================
+template <class NodeElementType>
 template <class NodeType>
-std::size_t BasicNodeManagerForBodyNode::getNumNodes() const
+std::size_t BasicNodeManager<NodeElementType>::getNumNodes() const
 {
-  NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
+  typename NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
   if(mNodeMap.end() == it)
     return 0;
 
@@ -148,27 +151,34 @@ std::size_t BasicNodeManagerForBodyNode::getNumNodes() const
 }
 
 //==============================================================================
+template <class NodeElementType>
 template <class NodeType>
-NodeType* BasicNodeManagerForBodyNode::getNode(std::size_t index)
+NodeType* BasicNodeManager<NodeElementType>::getNode(std::size_t index)
 {
-  NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
+  typename NodeMap::const_iterator it = mNodeMap.find(typeid(NodeType));
   if(mNodeMap.end() == it)
     return nullptr;
 
+  // We use the dereference operator and then reference operator so that this
+  // function works whether NodeElementType is a raw pointer or a shared_ptr
   return static_cast<NodeType*>(
-        getVectorObjectIfAvailable(index, it->second));
+        &(*getVectorObjectIfAvailable(index, it->second)));
 }
 
 //==============================================================================
+template <class NodeElementType>
 template <class NodeType>
-const NodeType* BasicNodeManagerForBodyNode::getNode(std::size_t index) const
+const NodeType* BasicNodeManager<NodeElementType>::getNode(
+    std::size_t index) const
 {
-  return const_cast<BasicNodeManagerForBodyNode*>(this)->getNode<NodeType>(index);
+  return const_cast<BasicNodeManager<NodeElementType>*>(
+        this)->getNode<NodeType>(index);
 }
 
 //==============================================================================
+template <class NodeElementType>
 template <class NodeType>
-constexpr bool BasicNodeManagerForBodyNode::isSpecializedForNode()
+constexpr bool BasicNodeManager<NodeElementType>::isSpecializedForNode()
 {
   // When invoked through a BasicNodeManager, this should always return false.
   return false;

@@ -48,29 +48,6 @@ class BodyNode;
 class Node;
 
 //==============================================================================
-class NodeDestructor final
-{
-public:
-
-  /// Constructor
-  NodeDestructor(Node* _node);
-
-  /// Do not copy
-  NodeDestructor(const NodeDestructor& _other) = delete;
-
-  /// Non-virtual destructor (this class cannot be inherited)
-  ~NodeDestructor();
-
-  Node* getNode() const;
-
-private:
-
-  /// Node that this Destructor is responsible for
-  Node* mNode;
-
-};
-
-//==============================================================================
 /// The Node class is a base class for BodyNode and any object that attaches to
 /// a BodyNode. This base class handles ownership and reference counting for the
 /// classes that inherit it.
@@ -130,6 +107,26 @@ public:
   /// Virtual destructor
   virtual ~Node() = default;
 
+  /// Cast this Node to NodeType using dynamic_cast and return a std::shared_ptr
+  /// (or nullptr if this Node is not a NodeType) which will keep this Node and
+  /// its associated BodyNode alive and valid. Note that AccessoryNodes may
+  /// still be "detached" while being alive and valid.
+  template <typename NodeType>
+  std::shared_ptr<NodeType> as_shared_ptr();
+
+  /// Const-qualified version of as_shared_ptr<NodeType>().
+  template <typename NodeType>
+  std::shared_ptr<const NodeType> as_shared_ptr() const;
+
+  /// Non-templated version of as_shared_ptr. This function may be shadowed by
+  /// derived classes to provide more-derived std::shared_ptr types.
+  std::shared_ptr<Node> as_shared_ptr();
+
+  /// Const-qualified non-templated version of as_shared_ptr. This function may
+  /// be shadowed by derived classes to provide more-derived std::shared_ptr
+  /// types.
+  std::shared_ptr<const Node> as_shared_ptr() const;
+
   /// Set the name of this Node
   virtual const std::string& setName(const std::string& newName) = 0;
 
@@ -162,10 +159,16 @@ public:
   virtual void copyNodePropertiesTo(
       std::unique_ptr<Properties>& outputProperties) const;
 
-  /// Get a pointer to the BodyNode that this Node is associated with
+  /// Get a raw pointer to the BodyNode that this Node is associatd with
+  BodyNode* getBodyNode();
+
+  /// Get a raw pointer to the BodyNode that this Node is associatd with
+  const BodyNode* getBodyNode() const;
+
+  /// Get a shared_ptr to the BodyNode that this Node is associated with
   BodyNodePtr getBodyNodePtr();
 
-  /// Get a pointer to the BodyNode that this Node is associated with
+  /// Get a shared_ptr to the BodyNode that this Node is associated with
   ConstBodyNodePtr getBodyNodePtr() const;
 
   /// Returns true if this Node has been staged for removal from its BodyNode.
@@ -178,10 +181,6 @@ public:
 
   /// Return the Skeleton that this Node is attached to
   virtual std::shared_ptr<const Skeleton> getSkeleton() const;
-
-private:
-
-  std::shared_ptr<NodeDestructor> getOrCreateDestructor();
 
 protected:
 
@@ -203,13 +202,6 @@ protected:
   /// When all external references to the Node disappear, it will be deleted
   void stageForRemoval();
 
-  /// weak pointer to the destructor for this Node. We use a shared_ptr
-  /// "destructor" class instead of managing Nodes directly with shared_ptrs
-  /// because this scheme allows BodyNodes to circumvent the shared_ptr
-  /// management by setting the mNode member of the Destructor to a nullptr.
-  /// That way the BodyNode can never be deleted by its Destructor.
-  std::weak_ptr<NodeDestructor> mDestructor;
-
   /// Pointer to the BodyNode that this Node is attached to
   BodyNode* mBodyNode;
 
@@ -224,6 +216,9 @@ protected:
 
   /// Index of this Node within its tree
   std::size_t mIndexInTree;
+
+  /// Weak reference to this Node's std::shared_ptr
+  std::weak_ptr<Node> mNodePtr;
 };
 
 //==============================================================================

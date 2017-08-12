@@ -132,7 +132,10 @@ std::pair<JointType*, NodeType*> BodyNode::createChildJointAndBodyNodePair(
 template <class NodeType, typename ...Args>
 NodeType* BodyNode::createNode(Args&&... args)
 {
-  NodeType* node = new NodeType(this, std::forward<Args>(args)...);
+  std::shared_ptr<NodeType> node =
+      std::make_shared<NodeType>(this, std::forward<Args>(args)...);
+
+  node->mNodePtr = node;
   node->attach();
 
   return node;

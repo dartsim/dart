@@ -43,9 +43,9 @@ namespace dynamics {
 /// will ensure that the BodyNode (and by extension, Skeleton) corresponding to
 /// a DegreeOfFreedom does not get deleted. However, the DegreeOfFreedom itself
 /// will be deleted if the parent Joint of the BodyNode is changed to a Joint
-/// type that has a small number of DegreesOfFreedom than the local of the
+/// type that has a smaller number of DegreesOfFreedom than the index of the
 /// DegreeOfFreedom that this DegreeOfFreedomPtr referred to. In such a case,
-/// this will trigger and assertion in debug mode, or have a nullptr value if
+/// this will trigger an assertion in debug mode, or have a nullptr value if
 /// not in debug mode.
 template <class DegreeOfFreedomT, class BodyNodeT>
 class TemplateDegreeOfFreedomPtr
@@ -106,7 +106,7 @@ public:
   }
 
   /// Get the BodyNode that this DegreeOfFreedomPtr is tied to
-  TemplateBodyNodePtr<BodyNodeT> getBodyNodePtr() const
+  std::shared_ptr<BodyNodeT> getBodyNodePtr() const
   {
     return mBodyNodePtr;
   }
@@ -130,7 +130,7 @@ public:
       return;
     }
 
-    mBodyNodePtr = _ptr->getChildBodyNode();
+    mBodyNodePtr = _ptr->getChildBodyNode()->as_shared_ptr();
     mIndex = _ptr->getIndexInJoint();
   }
 
@@ -202,7 +202,7 @@ public:
 
 private:
   /// Reference-holding pointer to the child BodyNode of this DegreeOfFreedom
-  TemplateBodyNodePtr<BodyNodeT> mBodyNodePtr;
+  std::shared_ptr<BodyNodeT> mBodyNodePtr;
 
   /// Local index of this DegreeOfFreedom within its Joint
   std::size_t mIndex;
@@ -313,7 +313,7 @@ public:
 
 private:
   /// Weak pointer to the child BodyNode of this DegreeOfFreedom
-  TemplateWeakBodyNodePtr<BodyNodeT> mWeakBodyNode;
+  std::weak_ptr<BodyNodeT> mWeakBodyNode;
 
   /// Local index of this DegreeOfFreedom within its Joint
   std::size_t mIndex;

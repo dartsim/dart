@@ -41,6 +41,61 @@
 namespace dart {
 namespace dynamics {
 
+namespace detail {
+
+//==============================================================================
+template <class ToNodeType, class FromNodeType = ToNodeType>
+std::shared_ptr<ToNodeType> node_as_shared_ptr(
+    const std::shared_ptr<const Node>& basicPtr, FromNodeType* rawPtr)
+{
+  struct NodeAndBodyNode
+  {
+    inline NodeAndBodyNode(
+          const std::shared_ptr<const Node>& node,
+          const std::shared_ptr<const BodyNode>& bodyNode)
+      : mNodePtr(node),
+        mBodyNodePtr(bodyNode)
+    {
+      // Do nothing
+    }
+
+    const std::shared_ptr<const Node> mNodePtr;
+    const std::shared_ptr<const BodyNode> mBodyNodePtr;
+  };
+
+  ToNodeType* finalRawPtr = nullptr;
+
+  if(std::is_base_of<ToNodeType, FromNodeType>::value)
+    finalRawPtr = rawPtr;
+  else
+    finalRawPtr = dynamic_cast<ToNodeType*>(rawPtr);
+
+  if(!finalRawPtr)
+    return nullptr;
+
+  std::shared_ptr<NodeAndBodyNode> wrapper =
+      std::make_shared<NodeAndBodyNode>(basicPtr, rawPtr->getBodyNodePtr());
+
+  return std::shared_ptr<ToNodeType>(wrapper, finalRawPtr);
+}
+
+} // namespace detail
+
+//==============================================================================
+template <class NodeType>
+std::shared_ptr<NodeType> Node::as_shared_ptr()
+{
+  return detail::node_as_shared_ptr<NodeType, Node>(mNodePtr.lock(), this);
+}
+
+//==============================================================================
+template <class NodeType>
+std::shared_ptr<const NodeType> Node::as_shared_ptr() const
+{
+  return detail::node_as_shared_ptr<const NodeType, const Node>(
+        mNodePtr.lock(), this);
+}
+
 //==============================================================================
 template <class NodeType>
 std::size_t AccessoryNode<NodeType>::getIndexInBodyNode() const
@@ -331,6 +386,21 @@ void AccessoryNode<NodeType>::reattach()
 //==============================================================================
 #define DART_SKEL_SPECIALIZED_NODE_TEMPLATE( SkelType, NodeName )                      \
   DART_SKEL_SPECIALIZED_NODE_TEMPLATE_IRREGULAR( SkelType, NodeName, NodeName ## s );
+
+//==============================================================================
+/// Place this in the class definition of a Node type in order to produce a pair
+/// of as_shared_ptr functions:
+///
+/// std::shared_ptr<TypeOfNode> as_shared_ptr();
+/// std::shared_ptr<const TypeOfNode> as_shared_ptr() const;
+///
+#define DART_DYNAMICS_NODE_AS_SHARED_PTR(TypeOfNode)\
+  inline std::shared_ptr<TypeOfNode> as_shared_ptr() {\
+    return detail::node_as_shared_ptr<TypeOfNode>(mNodePtr.lock(), this);\
+  }\
+  inline std::shared_ptr<const TypeOfNode> as_shared_ptr() const {\
+    return detail::node_as_shared_ptr<const TypeOfNode>(mNodePtr.lock(), this);\
+  }
 
 
 #endif // DART_DYNAMICS_DETAIL_NODE_HPP_

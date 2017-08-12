@@ -78,6 +78,15 @@ public:
   /// Create an InverseKinematics module for a specified node
   static InverseKinematicsPtr create(JacobianNode* _node);
 
+  /// CAUTION: USE AT YOUR OWN RISK. This static function should only be used by
+  /// classes that inherit JacobianNode in order to create an InverseKinematics
+  /// object which is being held by it. The std::shared_ptr that this returns
+  /// does NOT keep a reference count for the JacobianNodePtr, so it is safe to
+  /// store inside of the JacobianNode that owns it. It is NOT safe to store
+  /// anywhere else, because the JacobianNode might be deleted, even as this
+  /// InverseKinematics object remains alive.
+  static InverseKinematicsPtr createForAttachment(JacobianNode* _node);
+
   /// Copying is not allowed
   InverseKinematics(const InverseKinematics&) = delete;
 
@@ -135,11 +144,30 @@ public:
   /// solved positions.
   bool solve(Eigen::VectorXd& positions, bool _applySolution = true);
 
+  /// Get this object as a shared_ptr which also keeps a reference count on the
+  /// JacobianNode that this IK module depends on.
+  std::shared_ptr<InverseKinematics> as_shared_ptr();
+
+  /// Const-qualified version of as_shared_ptr()
+  std::shared_ptr<const InverseKinematics> as_shared_ptr() const;
+
   /// Clone this IK module, but targeted at a new Node. Any Functions in the
   /// Problem that inherit InverseKinematics::Function will be adapted to the
   /// new IK module. Any generic optimizer::Function will just be copied over
   /// by pointer instead of being cloned.
+  ///
+  /// The InverseKinematicsPtr that this returns will hold a reference count to
+  /// the JacobianNode that it refers to, so the JacobianNode will remain alive.
   InverseKinematicsPtr clone(JacobianNode* _newNode) const;
+
+  /// CAUTION: USE AT YOUR OWN RISK. This cloning function should only be used
+  /// by classes that inherit JacobianNode in order to create an
+  /// InverseKinematics object which it will hold onto itself. The
+  /// std::shared_ptr that this returns does NOT keep a reference count for the
+  /// JacobianNodePtr, so it is safe to store inside of the JacobianNode that
+  /// owns it. It is NOT safe to store anywhere else, because the JacobianNode
+  /// might be deleted, even as this InverseKinematics object remains alive.
+  InverseKinematicsPtr cloneForAttachment(JacobianNode* _newNode) const;
 
   // For the definitions of these classes, see the bottom of this header
   class Function;
@@ -339,14 +367,6 @@ public:
   /// Get the JacobianNode that this IK module operates on.
   const JacobianNode* getNode() const;
 
-  /// This is the same as getNode(). It is used by the InverseKinematicsPtr to
-  /// provide a common interface for the various IK smart pointer types.
-  JacobianNode* getAffiliation();
-
-  /// This is the same as getNode(). It is used by the InverseKinematicsPtr to
-  /// provide a common interface for the various IK smart pointer types.
-  const JacobianNode* getAffiliation() const;
-
   /// Compute the Jacobian for this IK module's node, using the Skeleton's
   /// current joint positions and the DOFs that have been assigned to the
   /// module.
@@ -371,17 +391,19 @@ public:
 
 protected:
 
-  // For the definitions of these functions, see the bottom of this header
+  // For the definitions of these classes, see the bottom of this header
   class Objective;
   friend class Objective;
   class Constraint;
   friend class Constraint;
 
+  friend class JacobianNode;
+
   /// Constructor that accepts a JacobianNode
   InverseKinematics(JacobianNode* _node);
 
   /// Gets called during construction
-  void initialize();
+  void initialize(const std::shared_ptr<InverseKinematics>& self);
 
   /// Reset the signal connection for this IK module's target
   void resetTargetConnection();
@@ -443,7 +465,10 @@ protected:
   std::shared_ptr<SimpleFrame> mTarget;
 
   /// JacobianNode that this IK module is associated with
-  sub_ptr<JacobianNode> mNode;
+  std::weak_ptr<JacobianNode> mNodePtr;
+
+  /// Pointer to itself
+  std::weak_ptr<InverseKinematics> mPtr;
 
   /// Jacobian cache for the IK module
   mutable math::Jacobian mJacobian;

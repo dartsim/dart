@@ -139,7 +139,7 @@ void CollisionResult::addObject(CollisionObject* object)
   if(frame->isShapeNode())
   {
     const dynamics::ShapeNode* node = frame->asShapeNode();
-    mCollidingBodyNodes.insert(node->getBodyNodePtr());
+    mCollidingBodyNodes.insert(node->getBodyNode());
   }
 }
 

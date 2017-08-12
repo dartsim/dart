@@ -46,32 +46,31 @@ JacobianNode::~JacobianNode()
 }
 
 //==============================================================================
-const std::shared_ptr<InverseKinematics>&
-JacobianNode::getIK(bool _createIfNull)
+InverseKinematics* JacobianNode::getIK(bool _createIfNull)
 {
   if(nullptr == mIK && _createIfNull)
     createIK();
 
-  return mIK;
+  return mIK.get();
 }
 
 //==============================================================================
-const std::shared_ptr<InverseKinematics>& JacobianNode::getOrCreateIK()
+InverseKinematics* JacobianNode::getOrCreateIK()
 {
   return getIK(true);
 }
 
 //==============================================================================
-std::shared_ptr<const InverseKinematics> JacobianNode::getIK() const
+const InverseKinematics* JacobianNode::getIK() const
 {
   return const_cast<JacobianNode*>(this)->getIK(false);
 }
 
 //==============================================================================
-const std::shared_ptr<InverseKinematics>& JacobianNode::createIK()
+InverseKinematics* JacobianNode::createIK()
 {
-  mIK = InverseKinematics::create(this);
-  return mIK;
+  mIK = InverseKinematics::createForAttachment(this);
+  return mIK.get();
 }
 
 //==============================================================================

@@ -65,18 +65,6 @@ void Marker::setAspectProperties(const AspectProperties& properties)
 }
 
 //==============================================================================
-BodyNode* Marker::getBodyNode()
-{
-  return getBodyNodePtr();
-}
-
-//==============================================================================
-const BodyNode* Marker::getBodyNode() const
-{
-  return getBodyNodePtr();
-}
-
-//==============================================================================
 Eigen::Vector3d Marker::getLocalPosition() const
 {
   return getRelativeTransform().translation();
@@ -154,8 +142,11 @@ Node* Marker::cloneNode(BodyNode* parent) const
   Marker* marker = new Marker(parent, BasicProperties());
   marker->duplicateAspects(this);
 
+  // TODO(MXG): I think JacobianNode should actually be responsible for this...
+  // Although the best thing to do would be have the InverseKinematics stored in
+  // an Aspect.
   if(mIK)
-    marker->mIK = mIK->clone(marker);
+    marker->mIK = mIK->cloneForAttachment(marker);
 
   return marker;
 }

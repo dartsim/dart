@@ -118,6 +118,19 @@ SoftBodyNodeProperties::SoftBodyNodeProperties(
 } // namespace detail
 
 //==============================================================================
+std::shared_ptr<SoftBodyNode> SoftBodyNode::as_shared_ptr()
+{
+  return std::static_pointer_cast<SoftBodyNode>(BodyNode::as_shared_ptr());
+}
+
+//==============================================================================
+std::shared_ptr<const SoftBodyNode> SoftBodyNode::as_shared_ptr() const
+{
+  return std::static_pointer_cast<const SoftBodyNode>(
+        BodyNode::as_shared_ptr());
+}
+
+//==============================================================================
 SoftBodyNode::~SoftBodyNode()
 {
   for (std::size_t i = 0; i < mPointMasses.size(); ++i)
@@ -175,7 +188,7 @@ void SoftBodyNode::setAspectProperties(const AspectProperties& properties)
   {
     mAspectProperties.mPointProps = properties.mPointProps;
     mAspectProperties.mFaces = properties.mFaces;
-    configurePointMasses(mSoftShapeNode.lock());
+    configurePointMasses(mSoftShapeNode.lock().get());
   }
 }
 
@@ -245,14 +258,14 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
   : Entity(Frame::World(), false),
     Frame(Frame::World()),
     Base(std::make_tuple(_parentBodyNode, _parentJoint, _properties)),
-    mSoftShapeNode(nullptr)
+    mSoftShapeNode()
 {
   createSoftBodyAspect();
   mNotifier = new PointMassNotifier(this, getName()+"_PointMassNotifier");
   ShapeNode* softNode = createShapeNodeWith<
       VisualAspect, CollisionAspect, DynamicsAspect>(
         std::make_shared<SoftMeshShape>(this), getName()+"_SoftMeshShape");
-  mSoftShapeNode = softNode;
+  mSoftShapeNode = softNode->as_shared_ptr();
 
   // Dev's Note: We do this workaround (instead of just using setProperties(~))
   // because mSoftShapeNode cannot be used until init(SkeletonPtr) has been
@@ -467,7 +480,7 @@ void SoftBodyNode::removeAllPointMasses()
   mPointMasses.clear();
   mAspectProperties.mPointProps.clear();
   mAspectProperties.mFaces.clear();
-  configurePointMasses(mSoftShapeNode.lock());
+  configurePointMasses(mSoftShapeNode.lock().get());
 }
 
 //==============================================================================
@@ -476,7 +489,7 @@ PointMass* SoftBodyNode::addPointMass(const PointMass::Properties& _properties)
   mPointMasses.push_back(new PointMass(this));
   mPointMasses.back()->mIndex = mPointMasses.size()-1;
   mAspectProperties.mPointProps.push_back(_properties);
-  configurePointMasses(mSoftShapeNode.lock());
+  configurePointMasses(mSoftShapeNode.lock().get());
 
   return mPointMasses.back();
 }
@@ -496,7 +509,7 @@ void SoftBodyNode::connectPointMasses(std::size_t _idx1, std::size_t _idx2)
 void SoftBodyNode::addFace(const Eigen::Vector3i& _face)
 {
   mAspectProperties.addFace(_face);
-  configurePointMasses(mSoftShapeNode.lock());
+  configurePointMasses(mSoftShapeNode.lock().get());
 }
 
 //==============================================================================

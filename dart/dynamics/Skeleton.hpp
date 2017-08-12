@@ -64,6 +64,8 @@ public:
   using State = common::Composite::State;
   using Properties = common::Composite::Properties;
 
+  using NodeMap = detail::BasicNodeManagerForSkeleton::NodeMap;
+
   enum ConfigFlags
   {
     CONFIG_NOTHING       = 0,
@@ -480,22 +482,22 @@ public:
   /// Get a pointer to a WholeBodyIK module for this Skeleton. If _createIfNull
   /// is true, then the IK module will be generated if one does not already
   /// exist.
-  const std::shared_ptr<WholeBodyIK>& getIK(bool _createIfNull = false);
+  WholeBodyIK* getIK(bool _createIfNull = false);
 
   /// Get a pointer to a WholeBodyIK module for this Skeleton. The IK module
   /// will be generated if one does not already exist. This function is actually
   /// the same as getIK(true).
-  const std::shared_ptr<WholeBodyIK>& getOrCreateIK();
+  WholeBodyIK* getOrCreateIK();
 
   /// Get a pointer to a WholeBodyIK module for this Skeleton. Because this is a
   /// const function, a new IK module cannot be created if one does not already
   /// exist.
-  std::shared_ptr<const WholeBodyIK> getIK() const;
+  const WholeBodyIK* getIK() const;
 
   /// Create a new WholeBodyIK module for this Skeleton. If an IK module already
   /// exists in this Skeleton, it will be destroyed and replaced by a brand new
   /// one.
-  const std::shared_ptr<WholeBodyIK>& createIK();
+  WholeBodyIK* createIK();
 
   /// Wipe away the WholeBodyIK module for this Skeleton, leaving it as a
   /// nullptr
@@ -988,7 +990,8 @@ protected:
   void unregisterJoint(Joint* _oldJoint);
 
   /// Remove a Node from the Skeleton. Internal use only.
-  void unregisterNode(NodeMap& nodeMap, Node* _oldNode, std::size_t& _index);
+  void unregisterNode(NodeMap& nodeMap, Node* _oldNode, std::size_t& _index,
+                      std::size_t Node::* _indexPointer);
 
   /// Remove a Node from the Skeleton. Internal use only.
   void unregisterNode(Node* _oldNode);

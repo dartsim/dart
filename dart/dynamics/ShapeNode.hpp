@@ -71,6 +71,8 @@ public:
   /// Destructor
   virtual ~ShapeNode() = default;
 
+  DART_DYNAMICS_NODE_AS_SHARED_PTR(ShapeNode)
+
   /// Set the Properties of this ShapeNode
   void setProperties(const Properties& properties);
 

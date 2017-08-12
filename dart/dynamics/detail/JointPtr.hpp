@@ -102,7 +102,7 @@ public:
   }
 
   /// Get the BodyNode that this JointPtr is tied to
-  TemplateBodyNodePtr<BodyNodeT> getBodyNodePtr() const
+  std::shared_ptr<BodyNodeT> getBodyNodePtr() const
   {
     return mBodyNodePtr;
   }
@@ -116,7 +116,7 @@ public:
       return;
     }
 
-    mBodyNodePtr = _ptr->getChildBodyNode();
+    mBodyNodePtr = _ptr->getChildBodyNode()->as_shared_ptr();
   }
 
   //----------------------------------------------------------------------------
@@ -175,7 +175,7 @@ public:
 
 private:
   /// Reference-holding pointer to the child BodyNode of this Joint
-  TemplateBodyNodePtr<BodyNodeT> mBodyNodePtr;
+  std::shared_ptr<BodyNodeT> mBodyNodePtr;
 };
 
 /// TemplateWeakJointPtr is a templated class that enables users to create a

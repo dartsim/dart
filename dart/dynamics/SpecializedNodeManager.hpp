@@ -98,8 +98,11 @@ protected:
   /// Return true
   static constexpr bool _isSpecializedForNode(type<SpecNode>);
 
+  using SpecializedNodeIterator =
+          typename detail::BasicNodeManagerForBodyNode::NodeMap::iterator;
+
   /// Iterator that allows direct access to the specialized Nodes
-  BasicNodeManagerForBodyNode::NodeMap::iterator mSpecNodeIterator;
+  SpecializedNodeIterator mSpecNodeIterator;
 
 };
 
@@ -191,9 +194,11 @@ protected:
   /// Return true
   static constexpr bool _isSpecializedForNode(type<SpecNode>);
 
+  using TreeSpecializedNodeContainer =
+        std::vector<typename BasicNodeManagerForSkeleton::NodeMap::iterator>;
   /// std::vector of iterators that allow direct access to the specialized Nodes
   /// of each tree
-  std::vector<BasicNodeManagerForBodyNode::NodeMap::iterator> mTreeSpecNodeIterators;
+   TreeSpecializedNodeContainer mTreeSpecNodeIterators;
 
   /// Iterator that gives direct access to the name manager of the specialized
   /// Nodes

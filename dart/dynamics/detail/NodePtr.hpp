@@ -37,8 +37,6 @@
 namespace dart {
 namespace dynamics {
 
-class NodeDestructor;
-
 /// TemplateNodePtr is a templated class that enables users to create a strong
 /// reference-counting NodePtr. Holding onto a NodePtr will ensure that the
 /// BodyNode associated with a Node does not get deleted, and it will also

@@ -171,8 +171,11 @@ Node* EndEffector::cloneNode(BodyNode* _parent) const
 
   ee->copy(this);
 
+  // TODO(MXG): I think JacobianNode should actually be responsible for this...
+  // Although the best thing to do would be have the InverseKinematics stored in
+  // an Aspect.
   if(mIK)
-    ee->mIK = mIK->clone(ee);
+    ee->mIK = mIK->cloneForAttachment(ee);
 
   return ee;
 }
