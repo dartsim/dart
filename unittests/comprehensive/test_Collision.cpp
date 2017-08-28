@@ -1195,10 +1195,17 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_TRUE(group->collide());
   EXPECT_FALSE(group->collide(option));
 
+  // Test blacklist
   skel->enableSelfCollisionCheck();
   skel->enableAdjacentBodyCheck();
   bodyNodeFilter->addBodyNodePairToBlackList(body0, body1);
   EXPECT_FALSE(group->collide(option));
+  bodyNodeFilter->removeBodyNodePairFromBlackList(body0, body1);
+  EXPECT_TRUE(group->collide(option));
+  bodyNodeFilter->addBodyNodePairToBlackList(body0, body1);
+  EXPECT_FALSE(group->collide(option));
+  bodyNodeFilter->removeAllBodyNodePairsFromBlackList();
+  EXPECT_TRUE(group->collide(option));
 }
 
 //==============================================================================
