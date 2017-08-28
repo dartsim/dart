@@ -1160,10 +1160,9 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
 
   // Create a world and add the created skeleton
   auto world = std::make_shared<simulation::World>();
-  world->addSkeleton(skel);
-
-  // Get the constraint solver from the world
   auto constraintSolver = world->getConstraintSolver();
+  constraintSolver->setCollisionDetector(cd);
+  world->addSkeleton(skel);
 
   // Get the collision group from the constraint solver
   auto group = constraintSolver->getCollisionGroup();
