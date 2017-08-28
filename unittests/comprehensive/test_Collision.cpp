@@ -1158,12 +1158,19 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
   auto* body1 = pair1.second;
   body1->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
 
-  // Create a collision group from the skeleton
-  auto group = cd->createCollisionGroup(skel.get());
+  // Create a world and add the created skeleton
+  auto world = std::make_shared<simulation::World>();
+  world->addSkeleton(skel);
+
+  // Get the constraint solver from the world
+  auto constraintSolver = world->getConstraintSolver();
+
+  // Get the collision group from the constraint solver
+  auto group = constraintSolver->getCollisionGroup();
   EXPECT_EQ(group->getNumShapeFrames(), 2u);
 
   // Default collision filter for Skeleton
-  CollisionOption option;
+  auto& option = constraintSolver->getCollisionOption();
   auto bodyNodeFilter = std::make_shared<BodyNodeCollisionFilter>();
   option.collisionFilter = bodyNodeFilter;
 
