@@ -145,7 +145,7 @@ bool DARTCollisionDetector::collide(
     {
       auto* collObj2 = objects[j];
 
-      if (filter && !filter->needCollision(collObj1, collObj2))
+      if (filter && !filter->needsCollisionCheck(collObj1, collObj2))
         continue;
 
       collisionFound = checkPair(collObj1, collObj2, option, result);
@@ -207,7 +207,7 @@ bool DARTCollisionDetector::collide(
     {
       auto* collObj2 = objects2[j];
 
-      if (filter && !filter->needCollision(collObj1, collObj2))
+      if (filter && !filter->needsCollisionCheck(collObj1, collObj2))
         continue;
 
       collisionFound = checkPair(collObj1, collObj2, option, result);

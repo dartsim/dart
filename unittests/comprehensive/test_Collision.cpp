@@ -1164,7 +1164,8 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
 
   // Default collision filter for Skeleton
   CollisionOption option;
-  option.collisionFilter = std::make_shared<BodyNodeCollisionFilter>();
+  auto bodyNodeFilter = std::make_shared<BodyNodeCollisionFilter>();
+  option.collisionFilter = bodyNodeFilter;
 
   skel->enableSelfCollisionCheck();
   skel->enableAdjacentBodyCheck();
@@ -1192,6 +1193,11 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_FALSE(skel->isEnabledSelfCollisionCheck());
   EXPECT_FALSE(skel->isEnabledAdjacentBodyCheck());
   EXPECT_TRUE(group->collide());
+  EXPECT_FALSE(group->collide(option));
+
+  skel->enableSelfCollisionCheck();
+  skel->enableAdjacentBodyCheck();
+  bodyNodeFilter->addBodyNodePairToBlackList(body0, body1);
   EXPECT_FALSE(group->collide(option));
 }
 

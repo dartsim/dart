@@ -38,7 +38,125 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-bool BodyNodeCollisionFilter::needCollision(
+bool CollisionFilter::needCollision(
+    const CollisionObject* object1, const CollisionObject* object2) const
+{
+  return needsCollisionCheck(object1, object2);
+}
+
+//==============================================================================
+void CompositeCollisionFilter::addCollisionFilter(CollisionFilter* filter)
+{
+  if (!filter)
+    return;
+
+  const auto result = std::find(mFilters.begin(), mFilters.end(), filter);
+  const bool found = (result != mFilters.end());
+  if (found)
+    return;
+
+  mFilters.push_back(filter);
+}
+
+//==============================================================================
+void CompositeCollisionFilter::removeCollisionFilter(
+    const CollisionFilter* filter)
+{
+  mFilters.erase(
+        std::remove(mFilters.begin(), mFilters.end(), filter), mFilters.end());
+}
+
+//==============================================================================
+void CompositeCollisionFilter::removeAllCollisionFilters()
+{
+  mFilters.clear();
+}
+
+//==============================================================================
+bool CompositeCollisionFilter::needsCollisionCheck(
+    const CollisionObject* object1, const CollisionObject* object2) const
+{
+  for (const auto* filter : mFilters)
+  {
+    const bool needCollision = filter->needsCollisionCheck(object1, object2);
+    if (!needCollision)
+      return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
+void BodyNodeCollisionFilter::addBodyNodePairToBlackList(
+    const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
+{
+  if (!bodyNode1 || !bodyNode2)
+    return;
+
+  const auto* bodyNodeLess = bodyNode1;
+  const auto* bodyNodeGreater = bodyNode2;
+
+  if (bodyNodeLess > bodyNodeGreater)
+    std::swap(bodyNodeLess, bodyNodeGreater);
+
+  // Add the pair only when it doesn't already exist
+  const auto resultLeft = mBlackList.find(bodyNodeLess);
+  const bool foundLeft = (resultLeft != mBlackList.end());
+  if (!foundLeft)
+  {
+    mBlackList[bodyNodeLess] = {bodyNodeGreater};
+  }
+  else
+  {
+    auto& key = resultLeft->second;
+
+    const auto resultRight = key.find(bodyNodeGreater);
+    const bool foundRight = (resultRight != key.end());
+    if (!foundRight)
+      key.insert(bodyNodeGreater);
+  }
+}
+
+//==============================================================================
+void BodyNodeCollisionFilter::removeBodyNodePairFromBlackList(
+    const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
+{
+  if (!bodyNode1 || !bodyNode2)
+    return;
+
+  const auto* bodyNodeLess = bodyNode1;
+  const auto* bodyNodeGreater = bodyNode2;
+
+  if (bodyNodeLess > bodyNodeGreater)
+    std::swap(bodyNodeLess, bodyNodeGreater);
+
+  // Remove the pair only when it already exists
+  const auto resultLeft = mBlackList.find(bodyNodeLess);
+  const bool foundLeft = (resultLeft != mBlackList.end());
+  if (foundLeft)
+  {
+    auto& key = resultLeft->second;
+
+    const auto resultRight = key.find(bodyNodeGreater);
+    const bool foundRight = (resultRight != key.end());
+    if (foundRight)
+    {
+      key.erase(bodyNodeGreater);
+
+      if (key.empty())
+        mBlackList.erase(resultLeft);
+    }
+  }
+}
+
+//==============================================================================
+void BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList()
+{
+  mBlackList.clear();
+}
+
+//==============================================================================
+bool BodyNodeCollisionFilter::needsCollisionCheck(
     const collision::CollisionObject* object1,
     const collision::CollisionObject* object2) const
 {
@@ -75,6 +193,9 @@ bool BodyNodeCollisionFilter::needCollision(
     }
   }
 
+  if (existsBodyNodePairInBlacklist(bodyNode1, bodyNode2))
+    return false;
+
   return true;
 }
 
@@ -93,5 +214,31 @@ bool BodyNodeCollisionFilter::areAdjacentBodies(
   return false;
 }
 
-}  // namespace collision
-}  // namespace dart
+//==============================================================================
+bool BodyNodeCollisionFilter::existsBodyNodePairInBlacklist(
+    const dynamics::BodyNode* bodyNode1,
+    const dynamics::BodyNode* bodyNode2) const
+{
+  const auto* bodyNodeLess = bodyNode1;
+  const auto* bodyNodeGreater = bodyNode2;
+
+  if (bodyNodeLess > bodyNodeGreater)
+    std::swap(bodyNodeLess, bodyNodeGreater);
+
+  const auto resultLeft = mBlackList.find(bodyNodeLess);
+  const bool foundLeft = (resultLeft != mBlackList.end());
+  if (foundLeft)
+  {
+    auto& key = resultLeft->second;
+
+    const auto resultRight = key.find(bodyNodeGreater);
+    const bool foundRight = (resultRight != key.end());
+    if (foundRight)
+      return true;
+  }
+
+  return false;
+}
+
+} // namespace collision
+} // namespace dart

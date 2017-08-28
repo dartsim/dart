@@ -32,6 +32,12 @@
 #ifndef DART_COLLISION_COLLISIONFILTER_HPP_
 #define DART_COLLISION_COLLISIONFILTER_HPP_
 
+#include <set>
+#include <unordered_map>
+#include <vector>
+
+#include "dart/common/Deprecated.hpp"
+
 namespace dart {
 
 namespace dynamics {
@@ -42,22 +48,87 @@ namespace collision {
 
 class CollisionObject;
 
-struct CollisionFilter
+class CollisionFilter
 {
-  virtual bool needCollision(const CollisionObject* object1,
-                             const CollisionObject* object2) const = 0;
+public:
+  /// Returns true if the given two CollisionObjects should be checked by the
+  /// collision detector, false otherwise.
+  /// \deprecated Deprecated in 6.3.0. Please use needsCollisionCheck instead.
+  DART_DEPRECATED(6.3)
+  bool needCollision(
+      const CollisionObject* object1, const CollisionObject* object2) const;
+
+  /// Returns true if the given two CollisionObjects should be checked by the
+  /// collision detector, false otherwise.
+  virtual bool needsCollisionCheck(
+      const CollisionObject* object1, const CollisionObject* object2) const = 0;
 };
 
-struct BodyNodeCollisionFilter : CollisionFilter
+class CompositeCollisionFilter : public CollisionFilter
 {
-  bool needCollision(const CollisionObject* object1,
-                     const CollisionObject* object2) const override;
+public:
+  /// Adds a collision filter to this CompositeCollisionFilter.
+  void addCollisionFilter(CollisionFilter* filter);
 
+  /// Removes a collision filter from this CompositeCollisionFilter.
+  void removeCollisionFilter(const CollisionFilter* filter);
+
+  /// Removes all the collision filters from this CompositeCollisionFilter.
+  void removeAllCollisionFilters();
+
+  // Documentation inherited
+  bool needsCollisionCheck(
+      const CollisionObject* object1,
+      const CollisionObject* object2) const override;
+
+protected:
+  /// Collision filters
+  std::vector<CollisionFilter*> mFilters;
+};
+
+class BodyNodeCollisionFilter : public CollisionFilter
+{
+public:
+  /// Add a BodyNode pair to the blacklist.
+  void addBodyNodePairToBlackList(
+      const dynamics::BodyNode* bodyNode1,
+      const dynamics::BodyNode* bodyNode2);
+
+  /// Remove a BodyNode pair from the blacklist.
+  void removeBodyNodePairFromBlackList(
+      const dynamics::BodyNode* bodyNode1,
+      const dynamics::BodyNode* bodyNode2);
+
+  /// Remove all the BodyNode pairs from the blacklist.
+  void removeAllBodyNodePairsFromBlackList();
+
+  // Documentation inherited
+  bool needsCollisionCheck(
+      const CollisionObject* object1,
+      const CollisionObject* object2) const override;
+
+private:
+  /// Returns true if the two BodyNodes are adjacent BodyNodes (i.e., the two
+  /// BodyNodes are connected by a Joint).
   bool areAdjacentBodies(const dynamics::BodyNode* bodyNode1,
                          const dynamics::BodyNode* bodyNode2) const;
+
+  /// Returns true if the BodyNode pair is in the blacklist.
+  bool existsBodyNodePairInBlacklist(
+      const dynamics::BodyNode* bodyNode1,
+      const dynamics::BodyNode* bodyNode2) const;
+
+  /// List of pairs to be excluded in the collision detection.
+  ///
+  /// Each pair is stored as which the key of the std::unordered_map is not
+  /// always greater than any of elements of the associated value that is a
+  /// std::set.
+  std::unordered_map<
+      const dynamics::BodyNode*,
+      std::set<const dynamics::BodyNode*>> mBlackList;
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
 #endif  // DART_COLLISION_COLLISIONFILTER_HPP_
