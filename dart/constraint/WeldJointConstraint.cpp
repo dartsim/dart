@@ -81,8 +81,21 @@ WeldJointConstraint::WeldJointConstraint(dynamics::BodyNode* _body1,
 }
 
 //==============================================================================
+void WeldJointConstraint::setRelativeTransform(const Eigen::Isometry3d& _tf)
+{
+  mRelativeTransform = _tf;
+}
+
+//==============================================================================
+const Eigen::Isometry3d& WeldJointConstraint::getRelativeTransform() const
+{
+  return mRelativeTransform;
+}
+
+//==============================================================================
 WeldJointConstraint::~WeldJointConstraint()
 {
+  // Do nothing
 }
 
 //==============================================================================
