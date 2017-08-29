@@ -99,22 +99,16 @@ void BodyNodeCollisionFilter::addBodyNodePairToBlackList(
   if (bodyNodeLess > bodyNodeGreater)
     std::swap(bodyNodeLess, bodyNodeGreater);
 
-  // Add the pair only when it doesn't already exist
-  const auto resultLeft = mBlackList.find(bodyNodeLess);
-  const bool foundLeft = (resultLeft != mBlackList.end());
-  if (!foundLeft)
-  {
-    mBlackList[bodyNodeLess] = {bodyNodeGreater};
-  }
-  else
-  {
-    auto& key = resultLeft->second;
+  // Call insert in case an entry for bodyNodeLess doesn't exist. If it doesn't
+  // exist, it will be initialized with an empty set. If it does already exist,
+  // we will just get an iterator to the existing entry.
+  const auto it_less = mBlackList.insert(
+        std::make_pair(bodyNodeLess,
+                       std::set<const dynamics::BodyNode*>())).first;
 
-    const auto resultRight = key.find(bodyNodeGreater);
-    const bool foundRight = (resultRight != key.end());
-    if (!foundRight)
-      key.insert(bodyNodeGreater);
-  }
+  // Insert bodyNodeGreater into the set corresponding to bodyNodeLess. If the
+  // pair already existed, this will do nothing.
+  it_less->second.insert(bodyNodeGreater);
 }
 
 //==============================================================================
