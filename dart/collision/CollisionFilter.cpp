@@ -162,7 +162,7 @@ bool BodyNodeCollisionFilter::needsCollisionCheck(
 
   if (!shapeNode1 || !shapeNode2)
     return true;
-  // We assume that non-ShapeNode is always being checked collision.
+  // We assume that non-ShapeNodes are always being checked for collisions.
 
   auto bodyNode1 = shapeNode1->getBodyNodePtr();
   auto bodyNode2 = shapeNode2->getBodyNodePtr();
