@@ -120,9 +120,8 @@ private:
 
   /// List of pairs to be excluded in the collision detection.
   ///
-  /// Each pair is stored as which the key of the std::unordered_map is not
-  /// always greater than any of elements of the associated value that is a
-  /// std::set.
+  /// Each pair is stored so that the key of the std::unordered_map always has
+  /// a value less than every element in the set that is associated with it.
   std::unordered_map<
       const dynamics::BodyNode*,
       std::set<const dynamics::BodyNode*>> mBlackList;
