@@ -153,9 +153,21 @@ bool BodyNodeCollisionFilter::ignoresCollision(
   auto shapeNode1 = object1->getShapeFrame()->asShapeNode();
   auto shapeNode2 = object2->getShapeFrame()->asShapeNode();
 
-  if (!shapeNode1 || !shapeNode2)
-    return false;
-  // We assume that non-ShapeNodes are always being checked for collisions.
+  if (!shapeNode1)
+  {
+    dterr << "[BodyNodeCollisionFilter::ignoresCollision] Inappropriate "
+          << "collision filter is used for shapeNode1. This collision filter "
+          << "shouldn't be for non-ShapeNodes.\n";
+    assert(false);
+  }
+
+  if (!shapeNode2)
+  {
+    dterr << "[BodyNodeCollisionFilter::ignoresCollision] Inappropriate "
+          << "collision filter is used for shapeNode2. This collision filter "
+          << "shouldn't be for non-ShapeNodes.\n";
+    assert(false);
+  }
 
   auto bodyNode1 = shapeNode1->getBodyNodePtr();
   auto bodyNode2 = shapeNode2->getBodyNodePtr();
