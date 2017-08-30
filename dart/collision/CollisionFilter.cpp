@@ -186,7 +186,7 @@ bool BodyNodeCollisionFilter::ignoresCollision(
     }
   }
 
-  if (existsBodyNodePairInBlacklist(bodyNode1, bodyNode2))
+  if (hasBodyNodePairInBlacklist(bodyNode1, bodyNode2))
     return true;
 
   return false;
@@ -208,7 +208,7 @@ bool BodyNodeCollisionFilter::areAdjacentBodies(
 }
 
 //==============================================================================
-bool BodyNodeCollisionFilter::existsBodyNodePairInBlacklist(
+bool BodyNodeCollisionFilter::hasBodyNodePairInBlacklist(
     const dynamics::BodyNode* bodyNode1,
     const dynamics::BodyNode* bodyNode2) const
 {

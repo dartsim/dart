@@ -116,7 +116,7 @@ private:
                          const dynamics::BodyNode* bodyNode2) const;
 
   /// Returns true if the BodyNode pair is in the blacklist.
-  bool existsBodyNodePairInBlacklist(
+  bool hasBodyNodePairInBlacklist(
       const dynamics::BodyNode* bodyNode1,
       const dynamics::BodyNode* bodyNode2) const;
 
