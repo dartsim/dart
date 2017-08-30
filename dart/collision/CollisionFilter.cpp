@@ -129,16 +129,10 @@ void BodyNodeCollisionFilter::removeBodyNodePairFromBlackList(
   if (foundLeft)
   {
     auto& associatedRights = resultLeft->second;
+    associatedRights.erase(bodyNodeGreater);
 
-    const auto resultRight = associatedRights.find(bodyNodeGreater);
-    const bool foundRight = (resultRight != associatedRights.end());
-    if (foundRight)
-    {
-      associatedRights.erase(bodyNodeGreater);
-
-      if (associatedRights.empty())
-        mBlackList.erase(resultLeft);
-    }
+    if (associatedRights.empty())
+      mBlackList.erase(resultLeft);
   }
 }
 
