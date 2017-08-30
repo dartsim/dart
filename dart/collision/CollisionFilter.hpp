@@ -126,7 +126,7 @@ private:
   /// a value less than every element in the set that is associated with it.
   std::unordered_map<
       const dynamics::BodyNode*,
-      std::set<const dynamics::BodyNode*>> mBlackList;
+      std::unordered_set<const dynamics::BodyNode*>> mBlackList;
 };
 
 } // namespace collision

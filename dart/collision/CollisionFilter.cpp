@@ -101,13 +101,13 @@ void BodyNodeCollisionFilter::addBodyNodePairToBlackList(
   // Call insert in case an entry for bodyNodeLess doesn't exist. If it doesn't
   // exist, it will be initialized with an empty set. If it does already exist,
   // we will just get an iterator to the existing entry.
-  const auto it_less = mBlackList.insert(
-        std::make_pair(bodyNodeLess,
-                       std::set<const dynamics::BodyNode*>())).first;
+  const auto itLess = mBlackList.insert(
+      std::make_pair(bodyNodeLess,
+                     std::unordered_set<const dynamics::BodyNode*>())).first;
 
   // Insert bodyNodeGreater into the set corresponding to bodyNodeLess. If the
   // pair already existed, this will do nothing.
-  it_less->second.insert(bodyNodeGreater);
+  itLess->second.insert(bodyNodeGreater);
 }
 
 //==============================================================================
