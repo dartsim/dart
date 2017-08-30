@@ -45,7 +45,7 @@ bool CollisionFilter::needCollision(
 }
 
 //==============================================================================
-void CompositeCollisionFilter::addCollisionFilter(CollisionFilter* filter)
+void CompositeCollisionFilter::addCollisionFilter(const CollisionFilter* filter)
 {
   if (!filter)
     return;
@@ -55,15 +55,14 @@ void CompositeCollisionFilter::addCollisionFilter(CollisionFilter* filter)
   if (found)
     return;
 
-  mFilters.push_back(filter);
+  mFilters.insert(filter);
 }
 
 //==============================================================================
 void CompositeCollisionFilter::removeCollisionFilter(
     const CollisionFilter* filter)
 {
-  mFilters.erase(
-        std::remove(mFilters.begin(), mFilters.end(), filter), mFilters.end());
+  mFilters.erase(filter);
 }
 
 //==============================================================================

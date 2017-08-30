@@ -34,7 +34,7 @@
 
 #include <set>
 #include <unordered_map>
-#include <vector>
+#include <unordered_set>
 
 #include "dart/common/Deprecated.hpp"
 
@@ -70,7 +70,7 @@ class CompositeCollisionFilter : public CollisionFilter
 {
 public:
   /// Adds a collision filter to this CompositeCollisionFilter.
-  void addCollisionFilter(CollisionFilter* filter);
+  void addCollisionFilter(const CollisionFilter* filter);
 
   /// Removes a collision filter from this CompositeCollisionFilter.
   void removeCollisionFilter(const CollisionFilter* filter);
@@ -85,7 +85,7 @@ public:
 
 protected:
   /// Collision filters
-  std::vector<CollisionFilter*> mFilters;
+  std::unordered_set<const CollisionFilter*> mFilters;
 };
 
 class BodyNodeCollisionFilter : public CollisionFilter
