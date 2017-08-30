@@ -267,7 +267,7 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
   assert(collObj1);
   assert(collObj2);
 
-  if (filter && !filter->needsCollisionCheck(collObj1, collObj2))
+  if (filter && filter->ignoresCollision(collObj1, collObj2))
       return;
 
   // Perform narrow-phase collision detection

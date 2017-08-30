@@ -75,7 +75,7 @@ bool BulletOverlapFilterCallback::needBroadphaseCollision(
     const auto collObj0 = static_cast<BulletCollisionObject*>(userPtr0);
     const auto collObj1 = static_cast<BulletCollisionObject*>(userPtr1);
 
-    return filter->needsCollisionCheck(collObj0, collObj1);
+    return !filter->ignoresCollision(collObj0, collObj1);
   }
 
   return collide;

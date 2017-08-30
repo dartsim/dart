@@ -53,14 +53,16 @@ class CollisionFilter
 public:
   /// Returns true if the given two CollisionObjects should be checked by the
   /// collision detector, false otherwise.
-  /// \deprecated Deprecated in 6.3.0. Please use needsCollisionCheck instead.
+  /// \deprecated Deprecated in 6.3.0. Please use ignoreCollision instead. Note
+  /// that ignoreCollision returns logically opposite to what needCollision
+  /// returns.
   DART_DEPRECATED(6.3)
   bool needCollision(
       const CollisionObject* object1, const CollisionObject* object2) const;
 
   /// Returns true if the given two CollisionObjects should be checked by the
   /// collision detector, false otherwise.
-  virtual bool needsCollisionCheck(
+  virtual bool ignoresCollision(
       const CollisionObject* object1, const CollisionObject* object2) const = 0;
 };
 
@@ -77,7 +79,7 @@ public:
   void removeAllCollisionFilters();
 
   // Documentation inherited
-  bool needsCollisionCheck(
+  bool ignoresCollision(
       const CollisionObject* object1,
       const CollisionObject* object2) const override;
 
@@ -103,7 +105,7 @@ public:
   void removeAllBodyNodePairsFromBlackList();
 
   // Documentation inherited
-  bool needsCollisionCheck(
+  bool ignoresCollision(
       const CollisionObject* object1,
       const CollisionObject* object2) const override;
 

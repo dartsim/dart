@@ -41,7 +41,7 @@ namespace collision {
 bool CollisionFilter::needCollision(
     const CollisionObject* object1, const CollisionObject* object2) const
 {
-  return needsCollisionCheck(object1, object2);
+  return !ignoresCollision(object1, object2);
 }
 
 //==============================================================================
@@ -73,17 +73,17 @@ void CompositeCollisionFilter::removeAllCollisionFilters()
 }
 
 //==============================================================================
-bool CompositeCollisionFilter::needsCollisionCheck(
+bool CompositeCollisionFilter::ignoresCollision(
     const CollisionObject* object1, const CollisionObject* object2) const
 {
   for (const auto* filter : mFilters)
   {
-    const bool needCollision = filter->needsCollisionCheck(object1, object2);
-    if (!needCollision)
-      return false;
+    const bool collisionIgnored = filter->ignoresCollision(object1, object2);
+    if (collisionIgnored)
+      return true;
   }
 
-  return true;
+  return false;
 }
 
 //==============================================================================
@@ -150,47 +150,47 @@ void BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList()
 }
 
 //==============================================================================
-bool BodyNodeCollisionFilter::needsCollisionCheck(
+bool BodyNodeCollisionFilter::ignoresCollision(
     const collision::CollisionObject* object1,
     const collision::CollisionObject* object2) const
 {
   if (object1 == object2)
-    return false;
+    return true;
 
   auto shapeNode1 = object1->getShapeFrame()->asShapeNode();
   auto shapeNode2 = object2->getShapeFrame()->asShapeNode();
 
   if (!shapeNode1 || !shapeNode2)
-    return true;
+    return false;
   // We assume that non-ShapeNodes are always being checked for collisions.
 
   auto bodyNode1 = shapeNode1->getBodyNodePtr();
   auto bodyNode2 = shapeNode2->getBodyNodePtr();
 
   if (bodyNode1 == bodyNode2)
-    return false;
+    return true;
 
   if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable())
-    return false;
+    return true;
 
   if (bodyNode1->getSkeleton() == bodyNode2->getSkeleton())
   {
     auto skeleton = bodyNode1->getSkeleton();
 
     if (!skeleton->isEnabledSelfCollisionCheck())
-      return false;
+      return true;
 
     if (!skeleton->isEnabledAdjacentBodyCheck())
     {
       if (areAdjacentBodies(bodyNode1, bodyNode2))
-        return false;
+        return true;
     }
   }
 
   if (existsBodyNodePairInBlacklist(bodyNode1, bodyNode2))
-    return false;
+    return true;
 
-  return true;
+  return false;
 }
 
 //==============================================================================

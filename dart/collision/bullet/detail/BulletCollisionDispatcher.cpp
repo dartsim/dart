@@ -78,7 +78,7 @@ bool BulletCollisionDispatcher::needsCollision(
   const auto collObj1
       = static_cast<BulletCollisionObject*>(body1->getUserPointer());
 
-  if (mFilter && !mFilter->needsCollisionCheck(collObj0, collObj1))
+  if (mFilter && mFilter->ignoresCollision(collObj0, collObj1))
     return false;
 
   return btCollisionDispatcher::needsCollision(body0, body1);
