@@ -32,7 +32,6 @@
 #ifndef DART_COLLISION_COLLISIONFILTER_HPP_
 #define DART_COLLISION_COLLISIONFILTER_HPP_
 
-#include <set>
 #include <unordered_map>
 #include <unordered_set>
 
