@@ -56,7 +56,7 @@ void CompositeCollisionFilter::addCollisionFilter(const CollisionFilter* filter)
 
 //==============================================================================
 void CompositeCollisionFilter::removeCollisionFilter(
-    const CollisionFilter* filter)
+const CollisionFilter* filter)
 {
   mFilters.erase(filter);
 }
@@ -73,8 +73,7 @@ bool CompositeCollisionFilter::ignoresCollision(
 {
   for (const auto* filter : mFilters)
   {
-    const bool collisionIgnored = filter->ignoresCollision(object1, object2);
-    if (collisionIgnored)
+    if (filter->ignoresCollision(object1, object2))
       return true;
   }
 

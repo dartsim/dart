@@ -42,19 +42,21 @@ template <class T>
 class UnorderedPairs
 {
 public:
-  /// Add a pair to this container.
+  /// Adds a pair to this container.
   void addPair(const T* left, const T* right);
 
-  /// Remove a pair from this container.
+  /// Removes a pair from this container.
   void removePair(const T* left, const T* right);
 
-  /// Remove all the pairs from this container.
+  /// Removes all the pairs from this container.
   void removeAllPairs();
 
   /// Returns true if this container contains the pair.
   bool contains(const T* left, const T* right) const;
 
 private:
+  /// The actual container to store pairs.
+  ///
   /// Each pair is stored so that the key of the std::unordered_map always has
   /// a value less than every element in the std::unordered_set that is
   /// associated with it.
