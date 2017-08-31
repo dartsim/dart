@@ -47,12 +47,8 @@ bool CollisionFilter::needCollision(
 //==============================================================================
 void CompositeCollisionFilter::addCollisionFilter(const CollisionFilter* filter)
 {
+  // nullptr is not an allowed filter
   if (!filter)
-    return;
-
-  const auto result = std::find(mFilters.begin(), mFilters.end(), filter);
-  const bool found = (result != mFilters.end());
-  if (found)
     return;
 
   mFilters.insert(filter);
