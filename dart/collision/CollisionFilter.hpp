@@ -36,6 +36,7 @@
 #include <unordered_set>
 
 #include "dart/common/Deprecated.hpp"
+#include "dart/collision/detail/UnorderedPairs.hpp"
 
 namespace dart {
 
@@ -114,18 +115,8 @@ private:
   bool areAdjacentBodies(const dynamics::BodyNode* bodyNode1,
                          const dynamics::BodyNode* bodyNode2) const;
 
-  /// Returns true if the BodyNode pair is in the blacklist.
-  bool hasBodyNodePairInBlacklist(
-      const dynamics::BodyNode* bodyNode1,
-      const dynamics::BodyNode* bodyNode2) const;
-
-  /// List of pairs to be excluded in the collision detection.
-  ///
-  /// Each pair is stored so that the key of the std::unordered_map always has
-  /// a value less than every element in the set that is associated with it.
-  std::unordered_map<
-      const dynamics::BodyNode*,
-      std::unordered_set<const dynamics::BodyNode*>> mBlackList;
+  /// List of pairs to be ignored in the collision detection.
+  detail::UnorderedPairs<dynamics::BodyNode> mBodyNodeBlackList;
 };
 
 } // namespace collision

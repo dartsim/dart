@@ -85,57 +85,20 @@ bool CompositeCollisionFilter::ignoresCollision(
 void BodyNodeCollisionFilter::addBodyNodePairToBlackList(
     const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
 {
-  if (!bodyNode1 || !bodyNode2)
-    return;
-
-  const auto* bodyNodeLess = bodyNode1;
-  const auto* bodyNodeGreater = bodyNode2;
-
-  if (bodyNodeLess > bodyNodeGreater)
-    std::swap(bodyNodeLess, bodyNodeGreater);
-
-  // Call insert in case an entry for bodyNodeLess doesn't exist. If it doesn't
-  // exist, it will be initialized with an empty set. If it does already exist,
-  // we will just get an iterator to the existing entry.
-  const auto itLess = mBlackList.insert(
-      std::make_pair(bodyNodeLess,
-                     std::unordered_set<const dynamics::BodyNode*>())).first;
-
-  // Insert bodyNodeGreater into the set corresponding to bodyNodeLess. If the
-  // pair already existed, this will do nothing.
-  itLess->second.insert(bodyNodeGreater);
+  mBodyNodeBlackList.addPair(bodyNode1, bodyNode2);
 }
 
 //==============================================================================
 void BodyNodeCollisionFilter::removeBodyNodePairFromBlackList(
     const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
 {
-  if (!bodyNode1 || !bodyNode2)
-    return;
-
-  const auto* bodyNodeLess = bodyNode1;
-  const auto* bodyNodeGreater = bodyNode2;
-
-  if (bodyNodeLess > bodyNodeGreater)
-    std::swap(bodyNodeLess, bodyNodeGreater);
-
-  // Remove the pair only when it already exists
-  const auto resultLeft = mBlackList.find(bodyNodeLess);
-  const bool foundLeft = (resultLeft != mBlackList.end());
-  if (foundLeft)
-  {
-    auto& associatedRights = resultLeft->second;
-    associatedRights.erase(bodyNodeGreater);
-
-    if (associatedRights.empty())
-      mBlackList.erase(resultLeft);
-  }
+  mBodyNodeBlackList.removePair(bodyNode1, bodyNode2);
 }
 
 //==============================================================================
 void BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList()
 {
-  mBlackList.clear();
+  mBodyNodeBlackList.removeAllPairs();
 }
 
 //==============================================================================
@@ -180,7 +143,7 @@ bool BodyNodeCollisionFilter::ignoresCollision(
     }
   }
 
-  if (hasBodyNodePairInBlacklist(bodyNode1, bodyNode2))
+  if (mBodyNodeBlackList.contains(bodyNode1, bodyNode2))
     return true;
 
   return false;
@@ -196,32 +159,6 @@ bool BodyNodeCollisionFilter::areAdjacentBodies(
   {
     assert(bodyNode1->getSkeleton() == bodyNode2->getSkeleton());
     return true;
-  }
-
-  return false;
-}
-
-//==============================================================================
-bool BodyNodeCollisionFilter::hasBodyNodePairInBlacklist(
-    const dynamics::BodyNode* bodyNode1,
-    const dynamics::BodyNode* bodyNode2) const
-{
-  const auto* bodyNodeLess = bodyNode1;
-  const auto* bodyNodeGreater = bodyNode2;
-
-  if (bodyNodeLess > bodyNodeGreater)
-    std::swap(bodyNodeLess, bodyNodeGreater);
-
-  const auto resultLeft = mBlackList.find(bodyNodeLess);
-  const bool foundLeft = (resultLeft != mBlackList.end());
-  if (foundLeft)
-  {
-    auto& associatedRights = resultLeft->second;
-
-    const auto resultRight = associatedRights.find(bodyNodeGreater);
-    const bool foundRight = (resultRight != associatedRights.end());
-    if (foundRight)
-      return true;
   }
 
   return false;
