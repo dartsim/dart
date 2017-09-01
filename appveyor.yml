@@ -1,11 +1,6 @@
 # Specify version format
 version: "{build}"
 
-# build platform, i.e. Win32 (instead of x86), x64, Any CPU. This setting is optional.
-platform: 
-  #- Win32
-  - x64
-
 # specify custom environment variables
 #
 # We generate project files for Visual Studio 14 because the boost binaries installed on the test server are for Visual Studio 14.
@@ -14,15 +9,17 @@ environment:
   TOOLSET: LLVM-vs2014
   # We cannot use LLVM toolset for now because the boost installed on the server is built not for LLVM.
   MSVC_DEFAULT_OPTIONS: ON
-  BOOST_ROOT: C:\\Libraries\\boost_1_63_0
+  BOOST_ROOT: C:\\Libraries\\boost_1_64_0
   matrix:
     - image: Visual Studio 2017
       GENERATOR: Visual Studio 15 2017
-      BOOST_LIBRARYDIR: C:\\Libraries\\boost_1_63_0\\lib32-msvc-15.0
+      BOOST_LIBRARYDIR: C:\\Libraries\\boost_1_64_0\\lib32-msvc-15.0
+      platform: Win32
 
     - image: Visual Studio 2017
       GENERATOR: Visual Studio 15 2017 Win64
-      BOOST_LIBRARYDIR: C:\\Libraries\\boost_1_63_0\\lib64-msvc-15.0
+      BOOST_LIBRARYDIR: C:\\Libraries\\boost_1_64_0\\lib64-msvc-15.0
+      platform: x64
 
 # build configuration, i.e. Debug, Release, etc.
 configuration:
