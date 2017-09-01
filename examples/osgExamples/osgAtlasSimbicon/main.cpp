@@ -30,8 +30,9 @@
  */
 
 #include <dart/dart.hpp>
-#include <dart/utils/utils.hpp>
 #include <dart/gui/osg/osg.hpp>
+#include <dart/utils/utils.hpp>
+#include <dart/utils/urdf/urdf.hpp>
 
 #include "AtlasSimbiconWorldNode.hpp"
 #include "AtlasSimbiconEventHandler.hpp"

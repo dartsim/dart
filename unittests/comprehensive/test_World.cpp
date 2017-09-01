@@ -39,7 +39,7 @@
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/collision/collision.hpp"
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif
 #include "dart/simulation/World.hpp"
@@ -272,7 +272,7 @@ TEST(World, ValidatingClones)
     worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
 
     // Set non default collision detector
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
     worlds.back()->getConstraintSolver()->setCollisionDetector(
         collision::BulletCollisionDetector::create());
 #else

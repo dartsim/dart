@@ -51,6 +51,12 @@ public:
   /// Constructor that takes two bodies
   WeldJointConstraint(dynamics::BodyNode* _body1, dynamics::BodyNode* _body2);
 
+  /// Set the relative transform that this WeldJointConstraint will enforce
+  void setRelativeTransform(const Eigen::Isometry3d& _tf);
+
+  /// Get the relative transform that this WeldJointConstraint will enforce
+  const Eigen::Isometry3d& getRelativeTransform() const;
+
   /// Destructor
   virtual ~WeldJointConstraint();
 

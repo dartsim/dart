@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,12 +28,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_URDF_URDFTYPES_HPP_
-#define DART_UTILS_URDF_URDFTYPES_HPP_
+#include "dart/math/ConfigurationSpace.hpp"
 
-#warning "This header has been deprecated in DART 6.2. "\
-  "Please include dart/utils/urdf/BackwardCompatibility.hpp intead."
+namespace dart {
+namespace math {
 
-#include "dart/utils/urdf/BackwardCompatibility.hpp"
+//==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+constexpr std::size_t SO3Space::NumDofs;
+constexpr int SO3Space::NumDofsEigen;
 
-#endif // DART_UTILS_URDF_URDFTYPES_HPP_
+//==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+constexpr std::size_t SE3Space::NumDofs;
+constexpr int SE3Space::NumDofsEigen;
+
+} // namespace math
+} // namespace dart

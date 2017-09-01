@@ -1,21 +1,77 @@
 ## DART 6
 
-### DART 6.2.0 (201X-XX-XX)
+### [DART 6.2.1 (2017-08-08)](https://github.com/dartsim/dart/milestone/37?closed=1)
 
-* Math
+* Collision detection
 
-  * Fixed Lemke LCP solver (#808 for DART 6): [#812](https://github.com/dartsim/dart/pull/812)
-  * Added accessors for diameters and radii of EllipsoidShape, and deprecated EllipsoidShape::get/setSize(): [#829](https://github.com/dartsim/dart/pull/829)
+  * Fixed collision checking between objects from the same body node: [#894](https://github.com/dartsim/dart/pull/894)
 
-* GUI
+* Kinematics/Dynamics
 
-  * Fixed that GUI was rendering white lines with nvidia drivers: : [#804](https://github.com/dartsim/dart/pull/804)
+  * Fixed transform of ScrewJoint with thread pitch: [#855](https://github.com/dartsim/dart/pull/855)
+
+* Parsers
+
+  * Fixed incorrect reading of <use_parent_model_frame> from SDF: [#893](https://github.com/dartsim/dart/pull/893)
+  * Fixed missing reading of joint friction from URDF: [#891](https://github.com/dartsim/dart/pull/891)
+
+* Testing
+
+  * Fixed testing ODE collision detector on macOS: [#884](https://github.com/dartsim/dart/pull/884)
+  * Removed redundant main body for each test source file: [#856](https://github.com/dartsim/dart/pull/856)
 
 * Misc
 
-  * Modified the member function names pertain to lazy evaluation to be more relevant to their functionalities: [#833](https://github.com/dartsim/dart/pull/833)
+  * Fixed build of dart-gui-osg that depends on the presence of OSG: [#898](https://github.com/dartsim/dart/pull/898)
+  * Fixed build of examples and tutorials on macOS: [#889](https://github.com/dartsim/dart/pull/889)
+  * Fixed missing overriding method OdePlane::isPlaceable(): [#886](https://github.com/dartsim/dart/pull/886)
+  * Replaced use of enum by static constexpr: [#852](https://github.com/dartsim/dart/pull/852), [#904](https://github.com/dartsim/dart/pull/904)
+
+### [DART 6.2.0 (2017-05-15)](https://github.com/dartsim/dart/milestone/30?closed=1)
+
+* Common
+
+  * Added Factory class and applied it to collision detection creation: [#864](https://github.com/dartsim/dart/pull/864)
+  * Added readAll() to Resource and ResourceRetriever: [#875](https://github.com/dartsim/dart/pull/875)
+
+* Math
+
+  * Added accessors for diameters and radii of EllipsoidShape, and deprecated EllipsoidShape::get/setSize(): [#829](https://github.com/dartsim/dart/pull/829)
+  * Fixed Lemke LCP solver (#808 for DART 6): [#812](https://github.com/dartsim/dart/pull/812)
+
+* Collision Detection
+
+  * Added support of ODE collision detector: [#861](https://github.com/dartsim/dart/pull/861)
+  * Fixed incorrect collision filtering of BulletCollisionDetector: [#859](https://github.com/dartsim/dart/pull/859)
+
+* Simulation
+
+  * Fixed World didn't clear collision results on reset: [#863](https://github.com/dartsim/dart/pull/863)
+
+* Parsers
+
+  * Fixed incorrect creation of resource retriever in SkelParser and SdfParser: [#847](https://github.com/dartsim/dart/pull/847), [#849](https://github.com/dartsim/dart/pull/849)
+
+* GUI
+
+  * Added MotionBlurSimWindow: [#840](https://github.com/dartsim/dart/pull/840)
+  * Improved MultiSphereShape rendering in GLUT renderer: [#862](https://github.com/dartsim/dart/pull/862)
+  * Fixed incorrect parsing of materials and normal scaling from URDF: [#851](https://github.com/dartsim/dart/pull/851)
+  * Fixed the OSG renderer not rendering collision geometries: [#851](https://github.com/dartsim/dart/pull/851)
+  * Fixed that GUI was rendering white lines with nvidia drivers: [#805](https://github.com/dartsim/dart/pull/805)
+
+* Misc
+
+  * Added createShared() and createUnique() pattern: [#844](https://github.com/dartsim/dart/pull/844)
   * Added Skeleton::getRootJoint(): [#832](https://github.com/dartsim/dart/pull/832)
   * Added CMake targets for code formatting using clang-format: [#811](https://github.com/dartsim/dart/pull/811), [#817](https://github.com/dartsim/dart/pull/817)
+  * Renamed MultiSphereShape to MultiSphereConvexHullShape: [#865](https://github.com/dartsim/dart/pull/865)
+  * Modified the member function names pertain to lazy evaluation to be more relevant to their functionalities: [#833](https://github.com/dartsim/dart/pull/833)
+
+* Tutorials & Examples
+
+  * Allowed tutorials and examples to be built out of DART source tree: [#842](https://github.com/dartsim/dart/pull/842)
+  * Fixed tutorialDominoes-Finished that didn't work with the latest DART: [#807](https://github.com/dartsim/dart/pull/807)
 
 ### DART 6.1.2 (2017-01-13)
 
@@ -197,6 +253,14 @@
   * Removed version check for Bullet: [#636](https://github.com/dartsim/dart/pull/636), [#625](https://github.com/dartsim/dart/issues/625)
 
 ## DART 5
+
+### Version 5.1.6 (2017-08-08)
+
+1. Improved camera movement of OpenGL GUI: smooth zooming and translation 
+    * [Pull request #843](https://github.com/dartsim/dart/pull/843)
+
+1. Removed debian meta files from the main DART repository
+    * [Pull request #853](https://github.com/dartsim/dart/pull/853)
 
 ### Version 5.1.5 (2017-01-20)
 

@@ -32,6 +32,7 @@
 #include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
 #include <dart/utils/utils.hpp>
+#include <dart/utils/urdf/urdf.hpp>
 
 using namespace dart::common;
 using namespace dart::dynamics;

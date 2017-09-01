@@ -80,7 +80,10 @@ struct OdeCollisionCallbackData
   /// Whether the collision iteration can stop
   bool done;
 
-  int numContacts;
+  /// The total number of contacts collected by dSpaceCollide() or
+  /// dSpaceCollide2(). This field is used to determine the binary contact
+  /// result.
+  std::size_t numContacts;
 
   OdeCollisionCallbackData(
       const CollisionOption& option,
@@ -88,7 +91,7 @@ struct OdeCollisionCallbackData
     : option(option),
       result(result),
       done(false),
-      numContacts(0)
+      numContacts(0u)
   {
     // Do nothing
   }
@@ -271,7 +274,7 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
   auto numc = dCollide(
       o1, o2, MAX_COLLIDE_RETURNS, odeResult, sizeof(odeResult[0]));
 
-  cdData->numContacts = numc;
+  cdData->numContacts += numc;
 
   if (result)
     reportContacts(numc, odeResult, collObj1, collObj2, option, *result);

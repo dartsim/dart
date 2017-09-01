@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -29,12 +28,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_UTILS_URDF_URDFTYPES_HPP_
-#define DART_UTILS_URDF_URDFTYPES_HPP_
+#include <gtest/gtest.h>
+#include <TestHelpers.hpp>
+#include <dart/dart.hpp>
+#include <dart/utils/urdf/DartLoader.hpp>
 
-#warning "This header has been deprecated in DART 6.2. "\
-  "Please include dart/utils/urdf/BackwardCompatibility.hpp intead."
+//==============================================================================
+TEST(Issue895, BodyNodeSelfCollision)
+{
+  const dart::dynamics::SkeletonPtr skel = dart::dynamics::Skeleton::create();
+  dart::dynamics::BodyNode* bn =
+      skel->createJointAndBodyNodePair<FreeJoint>().second;
+  skel->enableSelfCollisionCheck();
 
-#include "dart/utils/urdf/BackwardCompatibility.hpp"
+  dart::dynamics::BoxShapePtr box =
+      std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones());
 
-#endif // DART_UTILS_URDF_URDFTYPES_HPP_
+  // Create two ShapeNodes on one BodyNode where the ShapeNodes will always be
+  // in collision
+  bn->createShapeNodeWith<CollisionAspect>(box);
+  bn->createShapeNodeWith<CollisionAspect>(box)->setRelativeTranslation(
+        Eigen::Vector3d(0.5, 0.5, 0.0));
+
+  dart::simulation::WorldPtr world =
+      std::make_shared<dart::simulation::World>();
+
+  world->addSkeleton(skel);
+
+  world->step();
+  const dart::collision::CollisionResult result =
+      world->getLastCollisionResult();
+
+  EXPECT_EQ(result.getNumContacts(), 0u);
+}
+
+//==============================================================================
+int main(int argc, char* argv[])
+{
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

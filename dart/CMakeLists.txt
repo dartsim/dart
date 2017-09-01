@@ -10,14 +10,6 @@ endif()
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
-set(DART_CONFIG_HPP_IN ${CMAKE_SOURCE_DIR}/dart/config.hpp.in)
-set(DART_CONFIG_HPP_OUT ${CMAKE_BINARY_DIR}/dart/config.hpp)
-if(DART_VERBOSE)
-  message(STATUS ${DART_CONFIG_HPP_OUT})
-endif()
-configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
-install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
-
 #===============================================================================
 # Source directories
 #===============================================================================
@@ -92,18 +84,17 @@ add_subdirectory(dynamics)
 add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(simulation)
+add_subdirectory(planning) # flann
+add_subdirectory(utils) # tinyxml, tinyxml2, bullet
+add_subdirectory(gui) # opengl, glut, bullet
 
-if(FLANN_FOUND)
-  add_subdirectory(planning)
+set(DART_CONFIG_HPP_IN ${CMAKE_SOURCE_DIR}/dart/config.hpp.in)
+set(DART_CONFIG_HPP_OUT ${CMAKE_BINARY_DIR}/dart/config.hpp)
+if(DART_VERBOSE)
+  message(STATUS ${DART_CONFIG_HPP_OUT})
 endif()
-
-if(TINYXML_FOUND AND TINYXML2_FOUND)
-  add_subdirectory(utils)
-endif()
-
-if(OPENGL_FOUND AND GLUT_FOUND)
-  add_subdirectory(gui)
-endif()
+configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
+install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
 
 # Print building component
 get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
@@ -173,9 +164,6 @@ add_component_dependencies(
   dart
   external-odelcpsolver
 )
-
-# Coverage test
-dart_coveralls_add(${dart_core_headers} ${dart_core_sources})
 
 if(MSVC)
   set_target_properties(

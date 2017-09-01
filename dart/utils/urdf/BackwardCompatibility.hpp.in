@@ -28,54 +28,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/ode/detail/OdePlane.hpp"
+#ifndef DART_UTILS_URDF_BACKWARDCOMPATIBILITY_HPP_
+#define DART_UTILS_URDF_BACKWARDCOMPATIBILITY_HPP_
 
-#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/config.hpp"
+
+/* urdfdom_headers Version number */
+// We define the version numbers of urdfdom_headers here since it doesn't expose
+// the version numbers itself in source level.
+#define URDFDOM_HEADERS_MAJOR_VERSION @urdfdom_headers_VERSION_MAJOR@
+#define URDFDOM_HEADERS_MINOR_VERSION @urdfdom_headers_VERSION_MINOR@
+#define URDFDOM_HEADERS_PATCH_VERSION @urdfdom_headers_VERSION_PATCH@
+
+#define URDFDOM_HEADERS_VERSION_AT_LEAST(x,y,z) \
+  (URDFDOM_HEADERS_MAJOR_VERSION > x || (URDFDOM_HEADERS_MAJOR_VERSION >= x && \
+  (URDFDOM_HEADERS_MINOR_VERSION > y || (URDFDOM_HEADERS_MINOR_VERSION >= y && \
+  URDFDOM_HEADERS_PATCH_VERSION >= z))))
+
+#if URDFDOM_HEADERS_VERSION_AT_LEAST(1,0,0)
+#include <memory>
+#else
+#include "boost/shared_ptr.hpp"
+#include "boost/weak_ptr.hpp"
+#endif
 
 namespace dart {
-namespace collision {
-namespace detail {
+namespace utils {
 
-//==============================================================================
-OdePlane::OdePlane(
-    const OdeCollisionObject* parent,
-    const Eigen::Vector3d& normal,
-    double offset)
-  : OdeGeom(parent)
-{
-  mGeomId = dCreatePlane(0, normal.x(), normal.y(), normal.z(), offset);
-}
+#if URDFDOM_HEADERS_VERSION_AT_LEAST(1,0,0)
+template <typename T> using urdf_shared_ptr = std::shared_ptr<T>;
+template <typename T> using urdf_weak_ptr = std::weak_ptr<T>;
+#else
+template <typename T> using urdf_shared_ptr = boost::shared_ptr<T>;
+template <typename T> using urdf_weak_ptr = boost::weak_ptr<T>;
+#endif
 
-//==============================================================================
-OdePlane::~OdePlane()
-{
-  dGeomDestroy(mGeomId);
-}
-
-//==============================================================================
-void OdePlane::updateEngineData()
-{
-  const Eigen::Isometry3d& tf = mParentCollisionObject->getTransform();
-  const Eigen::Vector3d pos = tf.translation();
-  const Eigen::Matrix3d rot = tf.linear();
-
-  auto plane = static_cast<const dynamics::PlaneShape*>(
-        mParentCollisionObject->getShape().get());
-  const Eigen::Vector3d& normal = plane->getNormal();
-  const double offset = plane->getOffset();
-
-  const Eigen::Vector3d& normal2 = rot*normal;
-  const double offset2 = offset + pos.dot(normal2);
-
-  dGeomPlaneSetParams(mGeomId, normal2.x(), normal2.y(), normal2.z(), offset2);
-}
-
-//==============================================================================
-bool OdePlane::isPlaceable() const
-{
-  return false;
-}
-
-} // namespace detail
-} // namespace collision
+} // namespace utils
 } // namespace dart
+
+#endif // DART_UTILS_URDF_BACKWARDCOMPATIBILITY_HPP_
