@@ -3,8 +3,8 @@ version: "{build}"
 
 # build platform, i.e. Win32 (instead of x86), x64, Any CPU. This setting is optional.
 platform: 
-  - Win32
-  #- x64  Disable build for x64 machine until x64 version of dart-prerequisites is ready
+  #- Win32
+  - x64
 
 # specify custom environment variables
 #
@@ -16,14 +16,6 @@ environment:
   MSVC_DEFAULT_OPTIONS: ON
   BOOST_ROOT: C:\\Libraries\\boost_1_63_0
   matrix:
-    - image: Visual Studio 2015
-      GENERATOR: Visual Studio 14 2015
-      BOOST_LIBRARYDIR: C:\\Libraries\\boost_1_63_0\\lib32-msvc-14.0
-
-    - image: Visual Studio 2015
-      GENERATOR: Visual Studio 14 2015 Win64
-      BOOST_LIBRARYDIR: C:\\Libraries\\boost_1_63_0\\lib64-msvc-14.0
-      
     - image: Visual Studio 2017
       GENERATOR: Visual Studio 15 2017
       BOOST_LIBRARYDIR: C:\\Libraries\\boost_1_63_0\\lib32-msvc-15.0
@@ -56,15 +48,38 @@ branches:
 
 # scripts that run after cloning repository
 install:
-  - ps: cd C:\projects\dart\ci
-  - ps: .\appveyor_install.ps1
-
+  - if "%platform%"=="Win32" set VCPKG_ARCH=x86-windows
+  - if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
+  
+  # clone vcpkg
+  - cd C:\projects
+  - git clone https://github.com/Microsoft/vcpkg
+  - cd vcpkg
+  
+  # build vcpkg
+  - powershell -exec bypass scripts\bootstrap.ps1
+  
+  # install pacakges
+  - git pull
+  # ---- required dependencies: eigen3, libccd, fcl, assimp (boost is already installed by appveyor)
+  - vcpkg install eigen3:%VCPKG_ARCH%
+  - vcpkg install ccd:%VCPKG_ARCH%
+  - vcpkg install fcl:%VCPKG_ARCH%
+  - vcpkg install assimp:%VCPKG_ARCH%
+  # ---- optional dependencies: bullet3, tinyxml2, freeglut, opengl
+  - vcpkg install bullet3:%VCPKG_ARCH%
+  #- vcpkg install tinyxml2:%VCPKG_ARCH% 
+  #- vcpkg install freeglut:%VCPKG_ARCH%
+  #- vcpkg install opengl:%VCPKG_ARCH%
+  
+  - vcpkg integrate install
+  
 # scripts to run before build
 before_build:
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
-  - cmd: cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%configuration% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" ..
+  - cmd: cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%configuration% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" "-DCMAKE_TOOLCHAIN_FILE=C:\projects\vcpkg\scripts\buildsystems\vcpkg.cmake" ..
 
 build:
   project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project
