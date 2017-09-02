@@ -6,7 +6,6 @@ version: "{build}"
 # We generate project files for Visual Studio 14 because the boost binaries installed on the test server are for Visual Studio 14.
 # Check updates at here: https://www.appveyor.com/docs/build-environment/#boost
 environment:
-  TOOLSET: LLVM-vs2014
   # We cannot use LLVM toolset for now because the boost installed on the server is built not for LLVM.
   MSVC_DEFAULT_OPTIONS: ON
   BOOST_ROOT: C:\\Libraries\\boost_1_64_0
