@@ -1,6 +1,8 @@
 # Specify version format
 version: "{build}"
 
+image: Visual Studio 2017
+
 # specify custom environment variables
 #
 # We generate project files for Visual Studio 14 because the boost binaries installed on the test server are for Visual Studio 14.
@@ -10,13 +12,11 @@ environment:
   MSVC_DEFAULT_OPTIONS: ON
   BOOST_ROOT: C:\\Libraries\\boost_1_64_0
   matrix:
-    - image: Visual Studio 2017
-      GENERATOR: Visual Studio 15 2017
+    - GENERATOR: Visual Studio 15 2017
       BOOST_LIBRARYDIR: C:\\Libraries\\boost_1_64_0\\lib32-msvc-15.0
       platform: Win32
 
-    - image: Visual Studio 2017
-      GENERATOR: Visual Studio 15 2017 Win64
+    - GENERATOR: Visual Studio 15 2017 Win64
       BOOST_LIBRARYDIR: C:\\Libraries\\boost_1_64_0\\lib64-msvc-15.0
       platform: x64
 
@@ -72,9 +72,8 @@ install:
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
-  #- cmd: cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%configuration% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" "-DCMAKE_TOOLCHAIN_FILE=C:\projects\vcpkg\scripts\buildsystems\vcpkg.cmake" ..
-  - cmd: cmake -DCMAKE_BUILD_TYPE=%configuration% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" "-DCMAKE_TOOLCHAIN_FILE=C:\projects\vcpkg\scripts\buildsystems\vcpkg.cmake" ..
-
+  - cmd: cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%configuration% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" "-DCMAKE_TOOLCHAIN_FILE=C:\projects\vcpkg\scripts\buildsystems\vcpkg.cmake" ..
+  
 # preserve contents of selected directories and files across project builds
 cache:
   - C:\projects\vcpkg -> appveyor.yml
