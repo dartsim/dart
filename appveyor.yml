@@ -68,13 +68,15 @@ install:
   #- vcpkg install opengl:%VCPKG_ARCH%
   
   - vcpkg integrate install
-  
-# scripts to run before build
-before_build:
+
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
   - cmd: cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%configuration% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" "-DCMAKE_TOOLCHAIN_FILE=C:\projects\vcpkg\scripts\buildsystems\vcpkg.cmake" ..
+
+# preserve contents of selected directories and files across project builds
+cache:
+  - C:\projects\vcpkg -> appveyor.yml
 
 build:
   project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project
