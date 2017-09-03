@@ -58,10 +58,10 @@ install:
   # install pacakges
   # ---- required dependencies: boost, eigen3, libccd, fcl, assimp (boost is already installed by appveyor)
   - vcpkg install boost:%VCPKG_ARCH%
-  #- vcpkg install eigen3:%VCPKG_ARCH%
-  #- vcpkg install ccd:%VCPKG_ARCH%
-  #- vcpkg install fcl:%VCPKG_ARCH%
-  #- vcpkg install assimp:%VCPKG_ARCH%
+  - vcpkg install eigen3:%VCPKG_ARCH%
+  - vcpkg install ccd:%VCPKG_ARCH%
+  - vcpkg install fcl:%VCPKG_ARCH%
+  - vcpkg install assimp:%VCPKG_ARCH%
   # ---- optional dependencies: bullet3, tinyxml2, freeglut, opengl
   #- vcpkg install bullet3:%VCPKG_ARCH%
   #- vcpkg install tinyxml2:%VCPKG_ARCH% 
@@ -78,7 +78,7 @@ install:
   - cmd: dir C:\projects\vcpkg\installed\%VCPKG_ARCH%\bin
   - cmd: dir C:\projects\vcpkg\packages\boost_%VCPKG_ARCH%\lib
   - cmd: dir C:\projects\vcpkg\packages\boost_%VCPKG_ARCH%\bin
-  - cmd: cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%configuration% -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" "-DCMAKE_TOOLCHAIN_FILE=C:\projects\vcpkg\scripts\buildsystems\vcpkg.cmake" ..
+  - cmd: cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%configuration% -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" "-DCMAKE_TOOLCHAIN_FILE=C:\projects\vcpkg\scripts\buildsystems\vcpkg.cmake" ..
   
 # preserve contents of selected directories and files across project builds
 cache:
