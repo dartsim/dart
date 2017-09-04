@@ -1,19 +1,21 @@
 # Specify version format
 version: "{build}"
 
-# Operating system (build VM template)
-os: Visual Studio 2015
-
-# build platform, i.e. Win32 (instead of x86), x64, Any CPU. This setting is optional.
-platform: 
-  - Win32
-  #- x64  Disable build for x64 machine until x64 version of dart-prerequisites is ready
+image: Visual Studio 2017
 
 # specify custom environment variables
+#
+# We generate project files for Visual Studio 14 because the boost binaries installed on the test server are for Visual Studio 14.
+# Check updates at here: https://www.appveyor.com/docs/build-environment/#boost
 environment:
+  # We cannot use LLVM toolset for now because the boost installed on the server is built not for LLVM.
   MSVC_DEFAULT_OPTIONS: ON
-  BOOST_ROOT: C:\Libraries\boost_1_59_0
-  BOOST_LIBRARYDIR: C:\Libraries\boost_1_59_0\lib32-msvc-14.0
+  matrix:
+    - GENERATOR: Visual Studio 15 2017
+      platform: Win32
+
+    - GENERATOR: Visual Studio 15 2017 Win64
+      platform: x64
 
 # build configuration, i.e. Debug, Release, etc.
 configuration:
@@ -39,25 +41,52 @@ branches:
 
 # scripts that run after cloning repository
 install:
-  - ps: cd C:\projects\dart\ci
-  - ps: .\appveyor_install.ps1
+  - if "%platform%"=="Win32" set VCPKG_ARCH=x86-windows
+  - if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
+  
+  # clone vcpkg
+  - cd C:\projects
+  - git clone https://github.com/Microsoft/vcpkg
+  - cd vcpkg
+  
+  # build vcpkg
+  - powershell -exec bypass scripts\bootstrap.ps1
+  
+  # install pacakges
+  # ---- required dependencies: eigen3, libccd, fcl, assimp, boost
+  - vcpkg install eigen3:%VCPKG_ARCH%
+  - vcpkg install ccd:%VCPKG_ARCH%
+  - vcpkg install fcl:%VCPKG_ARCH%
+  - vcpkg install assimp:%VCPKG_ARCH%
+  - vcpkg install boost:%VCPKG_ARCH%
+  # ---- optional dependencies: nlopt, ipopt, bullet3, ode, flann, tinyxml2, urdfdom_headers, urdfdom, opengl, freeglut, osg
+  #- vcpkg install nlopt:%VCPKG_ARCH%
+  #- vcpkg install ipopt:%VCPKG_ARCH%
+  - vcpkg install bullet3:%VCPKG_ARCH%
+  - vcpkg install ode:%VCPKG_ARCH%
+  - vcpkg install flann:%VCPKG_ARCH%
+  - vcpkg install tinyxml2:%VCPKG_ARCH%
+  #- vcpkg install urdfdom_headers:%VCPKG_ARCH%
+  #- vcpkg install urdfdom:%VCPKG_ARCH%
+  - vcpkg install opengl:%VCPKG_ARCH%
+  - vcpkg install freeglut:%VCPKG_ARCH%
+  - vcpkg install osg:%VCPKG_ARCH%
+  
+  - vcpkg integrate install
 
-# scripts to run before build
-before_build:
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
-  # We generate project files for Visual Studio 12 because the boost binaries installed on the test server are for Visual Studio 12.
-  - cmd: if "%platform%"=="Win32" set CMAKE_GENERATOR_NAME=Visual Studio 14 2015
-  - cmd: if "%platform%"=="x64"   set CMAKE_GENERATOR_NAME=Visual Studio 14 2015 Win64
-  - cmd: cmake -G "%CMAKE_GENERATOR_NAME%" -DCMAKE_BUILD_TYPE=%configuration% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" ..
+  - cmd: cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%configuration% -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" "-DCMAKE_TOOLCHAIN_FILE=C:\projects\vcpkg\scripts\buildsystems\vcpkg.cmake" ..
+  
+# preserve contents of selected directories and files across project builds
+cache:
+  - C:\projects\vcpkg -> appveyor.yml
 
 build: off
-#build:
-#  project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project
-#  parallel: true                           # enable MSBuild parallel builds
-#  verbosity: quiet                         # MSBuild verbosity level (quiet|minimal|normal|detailed)
+  #project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project
+  #parallel: true                           # enable MSBuild parallel builds
+  #verbosity: quiet                         # MSBuild verbosity level (quiet|minimal|normal|detailed)
 
-test: off
 #test_script:
-#  - cmd: ctest --build-config %configuration% --parallel 4 --output-on-failure
+  #- cmd: ctest --build-config %configuration% --parallel 4 --output-on-failure
