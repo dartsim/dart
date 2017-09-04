@@ -53,17 +53,24 @@ install:
   - powershell -exec bypass scripts\bootstrap.ps1
   
   # install pacakges
-  # ---- required dependencies: boost, eigen3, libccd, fcl, assimp (boost is already installed by appveyor)
-  - vcpkg install boost:%VCPKG_ARCH%
+  # ---- required dependencies: eigen3, libccd, fcl, assimp, boost
   - vcpkg install eigen3:%VCPKG_ARCH%
   - vcpkg install ccd:%VCPKG_ARCH%
   - vcpkg install fcl:%VCPKG_ARCH%
   - vcpkg install assimp:%VCPKG_ARCH%
-  # ---- optional dependencies: bullet3, tinyxml2, freeglut, opengl
+  - vcpkg install boost:%VCPKG_ARCH%
+  # ---- optional dependencies: nlopt, ipopt, bullet3, ode, flann, tinyxml2, urdfdom_headers, urdfdom, opengl, freeglut, osg
+  #- vcpkg install nlopt:%VCPKG_ARCH%
+  #- vcpkg install ipopt:%VCPKG_ARCH%
   - vcpkg install bullet3:%VCPKG_ARCH%
-  #- vcpkg install tinyxml2:%VCPKG_ARCH% 
-  #- vcpkg install freeglut:%VCPKG_ARCH%
-  #- vcpkg install opengl:%VCPKG_ARCH%
+  - vcpkg install ode:%VCPKG_ARCH%
+  - vcpkg install flann:%VCPKG_ARCH%
+  - vcpkg install tinyxml2:%VCPKG_ARCH%
+  #- vcpkg install urdfdom_headers:%VCPKG_ARCH%
+  #- vcpkg install urdfdom:%VCPKG_ARCH%
+  - vcpkg install opengl:%VCPKG_ARCH%
+  - vcpkg install freeglut:%VCPKG_ARCH%
+  - vcpkg install osg:%VCPKG_ARCH%
   
   - vcpkg integrate install
 
