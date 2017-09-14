@@ -28,59 +28,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
-
-#include "dart/collision/CollisionFilter.hpp"
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
-
-namespace dart {
-namespace collision {
-namespace detail {
+#include <gtest/gtest.h>
+#include <TestHelpers.hpp>
+#include <dart/dart.hpp>
+#include <dart/utils/urdf/DartLoader.hpp>
 
 //==============================================================================
-BulletOverlapFilterCallback::BulletOverlapFilterCallback(
-    const std::shared_ptr<CollisionFilter>& filter)
-  : foundCollision(false),
-    done(false),
-    filter(filter)
+TEST(Issue895, BodyNodeSelfCollision)
 {
-  // Do nothing
+  const dart::dynamics::SkeletonPtr skel = dart::dynamics::Skeleton::create();
+  dart::dynamics::BodyNode* bn =
+      skel->createJointAndBodyNodePair<FreeJoint>().second;
+  skel->enableSelfCollisionCheck();
+
+  dart::dynamics::BoxShapePtr box =
+      std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones());
+
+  // Create two ShapeNodes on one BodyNode where the ShapeNodes will always be
+  // in collision
+  bn->createShapeNodeWith<CollisionAspect>(box);
+  bn->createShapeNodeWith<CollisionAspect>(box)->setRelativeTranslation(
+        Eigen::Vector3d(0.5, 0.5, 0.0));
+
+  dart::simulation::WorldPtr world =
+      std::make_shared<dart::simulation::World>();
+
+  world->addSkeleton(skel);
+
+  world->step();
+  const dart::collision::CollisionResult result =
+      world->getLastCollisionResult();
+
+  EXPECT_EQ(result.getNumContacts(), 0u);
 }
 
 //==============================================================================
-bool BulletOverlapFilterCallback::needBroadphaseCollision(
-    btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const
+int main(int argc, char* argv[])
 {
-  if (done)
-    return false;
-
-  assert((proxy0 != nullptr && proxy1 != nullptr) &&
-         "Bullet broadphase overlapping pair proxies are nullptr");
-
-  const bool collide1
-      = proxy0->m_collisionFilterGroup & proxy1->m_collisionFilterMask;
-  const bool collide2
-      = proxy1->m_collisionFilterGroup & proxy0->m_collisionFilterMask;
-
-  bool collide = collide1 & collide2;
-
-  if (collide && filter)
-  {
-    auto object0 = static_cast<btCollisionObject*>(proxy0->m_clientObject);
-    auto object1 = static_cast<btCollisionObject*>(proxy1->m_clientObject);
-
-    auto userPtr0 = object0->getUserPointer();
-    auto userPtr1 = object1->getUserPointer();
-
-    const auto collObj0 = static_cast<BulletCollisionObject*>(userPtr0);
-    const auto collObj1 = static_cast<BulletCollisionObject*>(userPtr1);
-
-    return !filter->ignoresCollision(collObj0, collObj1);
-  }
-
-  return collide;
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
-
-}  // namespace detail
-}  // namespace collision
-}  // namespace dart

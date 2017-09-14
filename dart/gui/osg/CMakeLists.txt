@@ -8,11 +8,15 @@ if(DART_BUILD_GUI_OSG)
 
   find_package(OpenSceneGraph 3.0 QUIET
     COMPONENTS osg osgViewer osgManipulator osgGA osgDB)
-  if(OPENSCENEGRAPH_FOUND)
+
+  # It seems that OPENSCENEGRAPH_FOUND will inadvertently get set to true when
+  # OpenThreads is found, even if OpenSceneGraph is not installed. This is quite
+  # possibly a bug in OSG's cmake configuration file. For now, it seems that
+  # requiring OSG_FOUND to be true as well fixes this.
+  if(OPENSCENEGRAPH_FOUND AND OSG_FOUND)
     if(DART_VERBOSE)
       message(STATUS "Looking for OpenSceneGraph - ${OPENSCENEGRAPH_VERSION} found")
     endif()
-    set(HAVE_OPENSCENEGRAPH TRUE)
   else()
     # dart-gui-osg requires both OSG and OpenThreads. This section attempts to
     # identify which of those are missing from the building machine and offer
@@ -29,13 +33,13 @@ if(DART_BUILD_GUI_OSG)
     endif()
     message(WARNING "${warning_msg} -- we will skip dart-gui-osg\n"
             "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
-    set(HAVE_OPENSCENEGRAPH FALSE)
+    return()
   endif()
 
 else()
 
   message(STATUS "Skipping OpenSceneGraph (DART_BUILD_GUI_OSG == ${DART_BUILD_GUI_OSG})")
-  set(HAVE_OPENSCENEGRAPH FALSE)
+  return()
 
 endif()
 

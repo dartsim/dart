@@ -55,6 +55,18 @@ struct RealVectorSpace
   using JacobianMatrix = Eigen::Matrix<double, 6, NumDofs>;
 };
 
+//==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+template <std::size_t Dimension>
+constexpr std::size_t RealVectorSpace<Dimension>::NumDofs;
+template <std::size_t Dimension>
+constexpr int RealVectorSpace<Dimension>::NumDofsEigen;
+
 using NullSpace = RealVectorSpace<0u>;
 using R1Space = RealVectorSpace<1u>;
 using R2Space = RealVectorSpace<2u>;
@@ -91,7 +103,6 @@ struct SE3Space
 };
 
 struct MapsToManifoldPoint {};
-
 
 //==============================================================================
 template <typename SpaceT>
