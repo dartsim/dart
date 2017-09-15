@@ -60,6 +60,7 @@ protected:
   friend class Singleton<SharedLibraryManager>;
 
 protected:
+  /// Map from library path to the library instances.
   std::unordered_map<std::string, std::weak_ptr<SharedLibrary>> mLibraries;
 };
 

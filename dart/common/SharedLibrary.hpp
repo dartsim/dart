@@ -54,7 +54,7 @@ class SharedLibraryManager;
 class SharedLibrary
 {
 protected:
-  enum ProtectedContructionTag
+  enum ProtectedConstructionTag
   {
     ProtectedConstruction
   };
@@ -72,6 +72,9 @@ public:
 
   /// Constructs from a filename.
   ///
+  /// ProtectedConstructionTag is necessary to enforce creating SharedLibrary
+  /// using std::make_shared.
+  ///
   /// \note SharedLibrary must be constructed by create().
   ///
   /// \param[in] path The path to the shared library. If the path doesn't
@@ -80,9 +83,9 @@ public:
   /// Windows).
   /// \return Pointer to the created SharedLibrary upon success in loading.
   /// Otherwise, returns nullptr.
-  explicit SharedLibrary(ProtectedContructionTag, const std::string& path);
+  explicit SharedLibrary(ProtectedConstructionTag, const std::string& path);
 
-  /// Destructor
+  /// Destructor.
   virtual ~SharedLibrary();
 
   /// Returns the path to the shared library file.
@@ -91,7 +94,11 @@ public:
   /// Returns true if the shared library loading was successful.
   bool isValid() const;
 
-  /// Returns a symbol from the shared library
+  /// Returns a symbol from the shared library if it exists. Return nullptr
+  /// otherwise.
+  ///
+  /// You have to reinterpret_cast the return value to the appropriate type to
+  /// make use of the void* returned by this function.
   void* getSymbol(const std::string& symbolName) const;
 
 protected:
@@ -104,7 +111,7 @@ protected:
   DYNLIB_HANDLE mInstance;
 
 private:
-  /// Returns the last loading error
+  /// Returns the last loading error.
   std::string getLastError() const;
 };
 

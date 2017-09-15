@@ -68,24 +68,28 @@ std::shared_ptr<SharedLibrary> SharedLibrary::create(const std::string& path)
 }
 
 //==============================================================================
-SharedLibrary::SharedLibrary(ProtectedContructionTag, const std::string& path)
+void suffixIfDoNotExist(std::string& str, const std::string& suffix)
+{
+  if (str.find(suffix) == std::string::npos)
+    str += suffix;
+}
+
+//==============================================================================
+SharedLibrary::SharedLibrary(ProtectedConstructionTag, const std::string& path)
   : mFileName(path), mInstance(nullptr)
 {
   auto nameWithExtension = mFileName;
 #if DART_OS_LINUX
   // dlopen() does not add .so to the filename, like windows does for .dll
-  if (nameWithExtension.find(".so") == std::string::npos)
-    nameWithExtension += ".so";
+  suffixIfDoNotExist(nameWithExtension, ".so");
 #elif DART_OS_MACOS
   // dlopen() does not add .dylib to the filename, like windows does for .dll
-  if (nameWithExtension.substr(fileName.length() - 6, 6) != ".dylib")
-    nameWithExtension += ".dylib";
+  suffixIfDoNotExist(nameWithExtension, ".dylib");
 #elif DART_OS_WINDOWS
   // Although LoadLibraryEx will add .dll itself when you only specify the
   // library name, if you include a relative path then it does not. So, add it
   // to be sure.
-  if (nameWithExtension.substr(nameWithExtension.length() - 4, 4) != ".dll")
-    nameWithExtension += ".dll";
+  suffixIfDoNotExist(nameWithExtension, ".dll");
 #endif
 
   mInstance

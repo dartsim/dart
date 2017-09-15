@@ -47,6 +47,9 @@ std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
   {
     auto lib = iter->second.lock();
 
+    // This check could fail if all instances to the library go out of scope,
+    // since iter->second is a std::weak_ptr. In that case, we remove the
+    // destructed library from the list and create new one.
     if (lib)
       return lib;
     else
