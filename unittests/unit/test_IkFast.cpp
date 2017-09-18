@@ -75,6 +75,13 @@ TEST(IkFast, LoadWamArmIk)
 #if (DART_OS_LINUX || DART_OS_MACOS) && !NDEBUG
   libName += "d";
 #endif
+#if DART_OS_LINUX
+  libName += ".so";
+#elif DART_OS_MACOS
+  libName += ".dylib";
+#elif DART_OS_WINDOWS
+  libName += ".dll";
+#endif
   std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};
   std::vector<std::size_t> ikFastFreeDofs{2};
   ik->setGradientMethod<dynamics::SharedLibraryIkFast>(

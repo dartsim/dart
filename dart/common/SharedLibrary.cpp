@@ -62,43 +62,24 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-std::shared_ptr<SharedLibrary> SharedLibrary::create(const std::string& path)
+std::shared_ptr<SharedLibrary> SharedLibrary::create(
+    const boost::filesystem::path& path)
 {
   return detail::SharedLibraryManager::getSingleton().load(path);
 }
 
 //==============================================================================
-void suffixIfDoNotExist(std::string& str, const std::string& suffix)
+SharedLibrary::SharedLibrary(
+    ProtectedConstructionTag, const boost::filesystem::path& canonicalPath)
+  : mCanonicalPath(canonicalPath), mInstance(nullptr)
 {
-  if (str.find(suffix) == std::string::npos)
-    str += suffix;
-}
-
-//==============================================================================
-SharedLibrary::SharedLibrary(ProtectedConstructionTag, const std::string& path)
-  : mFileName(path), mInstance(nullptr)
-{
-  auto nameWithExtension = mFileName;
-#if DART_OS_LINUX
-  // dlopen() does not add .so to the filename, like windows does for .dll
-  suffixIfDoNotExist(nameWithExtension, ".so");
-#elif DART_OS_MACOS
-  // dlopen() does not add .dylib to the filename, like windows does for .dll
-  suffixIfDoNotExist(nameWithExtension, ".dylib");
-#elif DART_OS_WINDOWS
-  // Although LoadLibraryEx will add .dll itself when you only specify the
-  // library name, if you include a relative path then it does not. So, add it
-  // to be sure.
-  suffixIfDoNotExist(nameWithExtension, ".dll");
-#endif
-
   mInstance
-      = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(nameWithExtension.c_str()));
+      = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(canonicalPath.string().c_str()));
 
   if (!mInstance)
   {
     dterr << "[SharedLibrary::load] Failed to load dynamic library '"
-          << nameWithExtension << "': " << getLastError() << "\n";
+          << canonicalPath << "': " << getLastError() << "\n";
   }
 }
 
@@ -111,14 +92,14 @@ SharedLibrary::~SharedLibrary()
   if (DYNLIB_UNLOAD(mInstance))
   {
     dterr << "[SharedLibrary::~SharedLibrary] Failed to unload library '"
-          << mFileName << "': " << getLastError() << "\n";
+          << mCanonicalPath << "': " << getLastError() << "\n";
   }
 }
 
 //==============================================================================
-const std::string& SharedLibrary::getPath() const
+const boost::filesystem::path& SharedLibrary::getCanonicalPath() const
 {
-  return mFileName;
+  return mCanonicalPath;
 }
 
 //==============================================================================

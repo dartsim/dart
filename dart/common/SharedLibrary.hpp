@@ -33,6 +33,7 @@
 
 #include <memory>
 #include <string>
+#include <boost/filesystem.hpp>
 #include "dart/common/Platform.hpp"
 
 #if DART_OS_LINUX
@@ -60,36 +61,39 @@ protected:
   };
 
 public:
-  /// Creates a SharedLibrary.
+  /// Creates a SharedLibrary from a path to the shared library.
   ///
-  /// \param[in] path The path to the shared library. If the path doesn't
-  /// include the extension, this function will use the best guess depending on
-  /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
-  /// Windows).
+  /// \note SharedLibrary should be always created from this create function.
+  /// \param[in] path The path to the shared library. The path can be a relative
+  /// path or an absolute path. If the path doens't exist this function returns
+  /// nullptr. If the path exist, the path will be stored as the canonical path
+  /// where a canonical path is an absolute path that has no elements which are
+  /// symbolic links, and no dot or dot dot elements such as
+  /// "/path/../to/yourfile".
   /// \return Pointer to the created SharedLibrary upon success in loading.
   /// Otherwise, returns nullptr.
-  static std::shared_ptr<SharedLibrary> create(const std::string& path);
+  static std::shared_ptr<SharedLibrary> create(
+      const boost::filesystem::path& path);
 
-  /// Constructs from a filename.
+  /// Constructs from a path to the shared library.
   ///
+  /// This constructor is only called by detail::SharedLibraryManager.
   /// ProtectedConstructionTag is necessary to enforce creating SharedLibrary
   /// using std::make_shared.
   ///
-  /// \note SharedLibrary must be constructed by create().
-  ///
-  /// \param[in] path The path to the shared library. If the path doesn't
-  /// include the extension, this function will use the best guess depending on
-  /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
-  /// Windows).
+  /// \note Please use create() to contruct SharedLibrary instead of this
+  /// constructor.
+  /// \param[in] path The canonical path to the shared library.
   /// \return Pointer to the created SharedLibrary upon success in loading.
   /// Otherwise, returns nullptr.
-  explicit SharedLibrary(ProtectedConstructionTag, const std::string& path);
+  explicit SharedLibrary(
+      ProtectedConstructionTag, const boost::filesystem::path& path);
 
   /// Destructor.
   virtual ~SharedLibrary();
 
   /// Returns the path to the shared library file.
-  const std::string& getPath() const;
+  const boost::filesystem::path& getCanonicalPath() const;
 
   /// Returns true if the shared library loading was successful.
   bool isValid() const;
@@ -104,8 +108,10 @@ public:
 protected:
   friend class detail::SharedLibraryManager;
 
-  /// Filename of the shared library.
-  std::string mFileName;
+  /// Canonical path to the shared library where a canonical path is an absolute
+  /// path that has no elements which are symbolic links, and no dot or dot dot
+  /// elements such as "/path/../to/yourfile".
+  boost::filesystem::path mCanonicalPath;
 
   /// Handle to the loaded library.
   DYNLIB_HANDLE mInstance;
