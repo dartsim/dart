@@ -61,15 +61,18 @@ void convertTransform(
 }
 
 //==============================================================================
-bool isFreeJoint(int numFreeParams, const int* freeParams, int index)
+std::vector<bool> getFreeJointFlags(
+    int numParams, int numFreeParams, const int* freeParams)
 {
-  for (auto i = 0; i < numFreeParams; ++i)
+  std::vector<bool> flags(numParams, false);
+
+  for (int i = 0; i < numFreeParams; ++i)
   {
-    if (index == freeParams[i])
-      return true;
+    assert(freeParams[i] < numParams);
+    flags[freeParams[i]] = true;
   }
 
-  return false;
+  return flags;
 }
 
 //==============================================================================
@@ -90,13 +93,18 @@ void convertIkSolution(
 
   ikfastSolution.GetSolution(solutionValues, freeValues);
 
+  const auto freeJointFlags
+      = getFreeJointFlags(numJoints, numFreeParameters, freeParameters);
+
   bool limitViolated = false;
 
   auto index = 0u;
+  assert(solutionValues.size());
   solution.mConfig.resize(dofIndices.size());
   for (auto i = 0u; i < solutionValues.size(); ++i)
   {
-    if (isFreeJoint(numFreeParameters, freeParameters, i))
+    const auto isFreeJoint = freeJointFlags[i];
+    if (isFreeJoint)
       continue;
 
     solution.mConfig[index] = solutionValues[i];
