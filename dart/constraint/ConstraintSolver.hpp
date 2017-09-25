@@ -50,9 +50,6 @@ class ShapeNodeCollisionObject;
 
 namespace constraint {
 
-// TODO:
-//   - RootSkeleton concept
-
 /// ConstraintSolver manages constraints and computes constraint impulses
 class ConstraintSolver
 {
@@ -124,6 +121,14 @@ public:
   /// Return (const) collision group of collision objects that are added to this
   /// ConstraintSolver
   collision::ConstCollisionGroupPtr getCollisionGroup() const;
+
+  /// Returns collision option that is used for collision checkings in this
+  /// ConstraintSolver to generate contact constraints.
+  collision::CollisionOption& getCollisionOption();
+
+  /// Returns collision option that is used for collision checkings in this
+  /// ConstraintSolver to generate contact constraints.
+  const collision::CollisionOption& getCollisionOption() const;
 
   /// Return the last collision checking result
   collision::CollisionResult& getLastCollisionResult();

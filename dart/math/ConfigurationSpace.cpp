@@ -28,59 +28,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
-
-#include "dart/collision/CollisionFilter.hpp"
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/math/ConfigurationSpace.hpp"
 
 namespace dart {
-namespace collision {
-namespace detail {
+namespace math {
 
 //==============================================================================
-BulletOverlapFilterCallback::BulletOverlapFilterCallback(
-    const std::shared_ptr<CollisionFilter>& filter)
-  : foundCollision(false),
-    done(false),
-    filter(filter)
-{
-  // Do nothing
-}
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+constexpr std::size_t SO3Space::NumDofs;
+constexpr int SO3Space::NumDofsEigen;
 
 //==============================================================================
-bool BulletOverlapFilterCallback::needBroadphaseCollision(
-    btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const
-{
-  if (done)
-    return false;
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+constexpr std::size_t SE3Space::NumDofs;
+constexpr int SE3Space::NumDofsEigen;
 
-  assert((proxy0 != nullptr && proxy1 != nullptr) &&
-         "Bullet broadphase overlapping pair proxies are nullptr");
-
-  const bool collide1
-      = proxy0->m_collisionFilterGroup & proxy1->m_collisionFilterMask;
-  const bool collide2
-      = proxy1->m_collisionFilterGroup & proxy0->m_collisionFilterMask;
-
-  bool collide = collide1 & collide2;
-
-  if (collide && filter)
-  {
-    auto object0 = static_cast<btCollisionObject*>(proxy0->m_clientObject);
-    auto object1 = static_cast<btCollisionObject*>(proxy1->m_clientObject);
-
-    auto userPtr0 = object0->getUserPointer();
-    auto userPtr1 = object1->getUserPointer();
-
-    const auto collObj0 = static_cast<BulletCollisionObject*>(userPtr0);
-    const auto collObj1 = static_cast<BulletCollisionObject*>(userPtr1);
-
-    return !filter->ignoresCollision(collObj0, collObj1);
-  }
-
-  return collide;
-}
-
-}  // namespace detail
-}  // namespace collision
-}  // namespace dart
+} // namespace math
+} // namespace dart

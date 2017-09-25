@@ -260,6 +260,18 @@ collision::ConstCollisionGroupPtr ConstraintSolver::getCollisionGroup() const
 }
 
 //==============================================================================
+collision::CollisionOption& ConstraintSolver::getCollisionOption()
+{
+  return mCollisionOption;
+}
+
+//==============================================================================
+const collision::CollisionOption& ConstraintSolver::getCollisionOption() const
+{
+  return mCollisionOption;
+}
+
+//==============================================================================
 collision::CollisionResult& ConstraintSolver::getLastCollisionResult()
 {
   return mCollisionResult;

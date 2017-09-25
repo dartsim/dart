@@ -7,3 +7,4 @@ Visit the [DART website](http://dartsim.github.io/) for more information
 * [Tutorials](http://dartsim.github.io/tutorials_introduction.html)
 * [API Documentation](http://dartsim.github.io/dart/)
 * Python bindings: [PyDart2](https://github.com/sehoonha/pydart2)
+* OpenAI Gym with DART support: [DartEnv](https://github.com/DartEnv/dart-env)

@@ -1099,7 +1099,7 @@ bool collisionCallback(
     assert(collisionObject1);
     assert(collisionObject2);
 
-    if (!filter->needCollision(collisionObject2, collisionObject1))
+    if (filter->ignoresCollision(collisionObject2, collisionObject1))
       return collData->done;
   }
 
