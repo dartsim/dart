@@ -26,6 +26,9 @@ authors:
  - name: Yuting Ye
    orcid: 0000-0000-0000-0000
    affiliation: 
+ - name: Siddhartha S. Srinivasa
+   orcid: 0000-0002-5091-106X
+   affiliation: 1
  - name: Mike Stilman
    orcid: 0000-0000-0000-0000
    affiliation: 3
