@@ -256,7 +256,7 @@
                 <transformation>0.0 0.0 0.0 0.0 0.0 1.570796</transformation>
                 <parent>l-clavicle</parent>
                 <child>l-upperarm</child>
-                <axis_order>zyx</axis_order> <!-- zxy -->
+                <axis_order>zyx</axis_order> <!-- actually being zxy, see transformation -->
                 <axis>
                     <dynamics>
                         <damping>0.1</damping>
@@ -269,6 +269,7 @@
                 </axis2>
                 <axis3>
                     <limit>
+                        <!-- -120~60 deg for rotation -->
                         <lower>-2.09</lower>
                         <upper>1.0</upper>
                     </limit>
@@ -276,36 +277,9 @@
                         <damping>0.1</damping>
                     </dynamics>
                 </axis3>
-                <init_pos>0.0 -3 0.0</init_pos>
+                <init_pos>0.0 0.0 0.0</init_pos>
                 <init_vel>0 0.0 0.0</init_vel>
             </joint>
-
-<!--             <joint name="j_bicep_left" type="ball">
-                <transformation>0.0 0.0 0.0 0.0 0.0 1.570796</transformation>
-                <parent>l-clavicle</parent>
-                <child>l-upperarm</child>
-                <axis>
-                    <dynamics>
-                        <damping>1.1</damping>
-                    </dynamics>
-                </axis>
-                <axis2>
-                    <dynamics>
-                        <damping>1.1</damping>
-                    </dynamics>
-                </axis2>
-                <axis3>
-                    <limit>
-                        <lower>-2.09</lower>
-                        <upper>1.0</upper>
-                    </limit>
-                    <dynamics>
-                        <damping>1.1</damping>
-                    </dynamics>
-                </axis3>
-                <init_pos>0.5 0.8 -1.0</init_pos>
-                <init_vel>0 0.0 0.0</init_vel>
-            </joint> -->
 
             <joint name="j_forearm_left" type="revolute">
                 <transformation>0.0 0.0 0.0 0.0 0.0 0.0</transformation>
@@ -321,7 +295,7 @@
                         <damping>0.1</damping>
                     </dynamics>
                 </axis>
-                <init_pos>0.3</init_pos>
+                <init_pos>0.0</init_pos>
                 <init_vel>0</init_vel>
             </joint>
 <!--             <joint name="j_hand_left" type="weld">
