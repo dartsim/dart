@@ -588,6 +588,7 @@
                 <parent>pelvis</parent>
                 <child>l-upperleg</child>
                 <axis_order>zyx</axis_order>
+                <!-- actually being zxy, see transformation above-->
                 <axis>
                     <limit>
                         <lower>-1.570796</lower>
