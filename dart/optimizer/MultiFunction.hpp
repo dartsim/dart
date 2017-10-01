@@ -29,8 +29,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_FUNCTION_HPP_
-#define DART_OPTIMIZER_FUNCTION_HPP_
+#ifndef DART_OPTIMIZER_MULTIFUNCTION_HPP_
+#define DART_OPTIMIZER_MULTIFUNCTION_HPP_
 
 #include <vector>
 #include <memory>
@@ -41,49 +41,23 @@
 namespace dart {
 namespace optimizer {
 
-class Function
+class MultiFunction
 {
 public:
   /// Constructor
-  explicit Function(const std::string& _name = "function");
+  MultiFunction();
 
   /// Destructor
-  virtual ~Function();
+  virtual ~MultiFunction();
 
-  /// Set the name of this Function
-  virtual void setName(const std::string& _newName);
-
-  /// Get the name of this Function
-  const std::string& getName() const;
-
-  /// Evaluate and return the objective function at the point x
-  virtual double eval(const Eigen::VectorXd& _x) = 0;
-
-  /// Evaluate and return the objective function at the point x
-  virtual void evalGradient(const Eigen::VectorXd& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad);
-
-  /// Evaluate and return the objective function at the point x.
-  ///
-  /// If you have a raw array that the gradient will be passed in, then use
-  /// evalGradient(const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd>)
-  /// for better performance.
-  void evalGradient(const Eigen::VectorXd& _x, Eigen::VectorXd& _grad);
-
-  /// Evaluate and return the objective function at the point x
-  virtual void evalHessian(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess);
-
-protected:
-  /// Name of this function
-  std::string mName;
+  /// \brief Operator ()
+  virtual void operator()(const Eigen::VectorXd& _x,
+                          Eigen::Map<Eigen::VectorXd>& _f,
+                          Eigen::Map<Eigen::MatrixXd>& _grad) = 0;
 };
-
-using FunctionPtr = std::shared_ptr<Function>;
 
 } // namespace optimizer
 } // namespace dart
 
-#endif // DART_OPTIMIZER_FUNCTION_HPP_
+#endif // DART_OPTIMIZER_MULTIFUNCTION_HPP_
 

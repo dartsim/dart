@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/Function.hpp"
+#include "dart/optimizer/ModularFunction.hpp"
 
 #include "dart/common/Console.hpp"
 
@@ -37,52 +37,90 @@ namespace dart {
 namespace optimizer {
 
 //==============================================================================
-Function::Function(const std::string& _name)
-  : mName(_name)
+ModularFunction::ModularFunction(const std::string& _name)
+  : Function(_name)
+{
+  clearCostFunction();
+  clearGradientFunction();
+  clearHessianFunction();
+}
+
+//==============================================================================
+ModularFunction::~ModularFunction()
 {
   // Do nothing
 }
 
 //==============================================================================
-Function::~Function()
+double ModularFunction::eval(const Eigen::VectorXd& _x)
 {
-  // Do nothing
+  return mCostFunction(_x);
 }
 
 //==============================================================================
-void Function::setName(const std::string& _newName)
+void ModularFunction::evalGradient(const Eigen::VectorXd& _x,
+                                   Eigen::Map<Eigen::VectorXd> _grad)
 {
-  mName = _newName;
+  mGradientFunction(_x, _grad);
 }
 
 //==============================================================================
-const std::string& Function::getName() const
+void ModularFunction::evalHessian(const Eigen::VectorXd& _x,
+    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
 {
-  return mName;
+  mHessianFunction(_x, _Hess);
 }
 
 //==============================================================================
-void Function::evalGradient(const Eigen::VectorXd& /*_x*/,
-                            Eigen::Map<Eigen::VectorXd> /*_grad*/)
+void ModularFunction::setCostFunction(CostFunction _cost)
 {
-  dtwarn << "Gradient is not provided by function named [" << mName
-         << "]. Use gradient-free algorithm.\n";
+  mCostFunction = _cost;
 }
 
 //==============================================================================
-void Function::evalGradient(const Eigen::VectorXd& _x, Eigen::VectorXd& _grad)
+void ModularFunction::clearCostFunction(bool _printWarning)
 {
-  Eigen::Map<Eigen::VectorXd> tmpGrad(_grad.data(), _grad.size());
-  evalGradient(_x, tmpGrad);
+  mCostFunction = [=](const Eigen::VectorXd&)
+  {
+    if(_printWarning)
+    {
+      dterr << "A cost function has not yet been assigned to the ModularFunction "
+            << "named [" << this->mName << "]. Returning 0.0\n";
+    }
+    return 0;
+  };
 }
 
 //==============================================================================
-void Function::evalHessian(
-    const Eigen::VectorXd& /*_x*/,
-    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> /*_Hess*/)
+void ModularFunction::setGradientFunction(GradientFunction _gradient)
 {
-  dterr << "Hessian is not provided by funciton named [" << mName
-        << "]. Use Hessian-free algorithm.\n";
+  mGradientFunction = _gradient;
+}
+
+//==============================================================================
+void ModularFunction::clearGradientFunction()
+{
+  mGradientFunction = [&](const Eigen::VectorXd& _x,
+                          Eigen::Map<Eigen::VectorXd> _grad)
+  {
+    this->Function::evalGradient(_x, _grad);
+  };
+}
+
+//==============================================================================
+void ModularFunction::setHessianFunction(HessianFunction _hessian)
+{
+  mHessianFunction = _hessian;
+}
+
+//==============================================================================
+void ModularFunction::clearHessianFunction()
+{
+  mHessianFunction = [&](const Eigen::VectorXd& _x,
+                         Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
+  {
+    this->Function::evalHessian(_x, _Hess);
+  };
 }
 
 } // namespace optimizer

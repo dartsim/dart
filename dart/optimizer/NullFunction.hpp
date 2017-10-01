@@ -29,8 +29,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_FUNCTION_HPP_
-#define DART_OPTIMIZER_FUNCTION_HPP_
+#ifndef DART_OPTIMIZER_NULLFUNCTION_HPP_
+#define DART_OPTIMIZER_NULLFUNCTION_HPP_
 
 #include <vector>
 #include <memory>
@@ -38,52 +38,38 @@
 
 #include <Eigen/Dense>
 
+#include "dart/optimizer/Function.hpp"
+
 namespace dart {
 namespace optimizer {
 
-class Function
+/// NullFunction is a constant-zero Function
+class NullFunction : public Function
 {
 public:
   /// Constructor
-  explicit Function(const std::string& _name = "function");
+  explicit NullFunction(const std::string& _name = "null_function");
 
   /// Destructor
-  virtual ~Function();
+  virtual ~NullFunction();
 
-  /// Set the name of this Function
-  virtual void setName(const std::string& _newName);
+  /// eval() will always return exactly zero
+  double eval(const Eigen::VectorXd&) override;
 
-  /// Get the name of this Function
-  const std::string& getName() const;
+  /// evalGradient will always set _grad to a zero vector that matches the
+  /// dimensionality of _x
+  void evalGradient(const Eigen::VectorXd& _x,
+                    Eigen::Map<Eigen::VectorXd> _grad) override;
 
-  /// Evaluate and return the objective function at the point x
-  virtual double eval(const Eigen::VectorXd& _x) = 0;
-
-  /// Evaluate and return the objective function at the point x
-  virtual void evalGradient(const Eigen::VectorXd& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad);
-
-  /// Evaluate and return the objective function at the point x.
-  ///
-  /// If you have a raw array that the gradient will be passed in, then use
-  /// evalGradient(const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd>)
-  /// for better performance.
-  void evalGradient(const Eigen::VectorXd& _x, Eigen::VectorXd& _grad);
-
-  /// Evaluate and return the objective function at the point x
-  virtual void evalHessian(
+  /// evalHessian() will always set _Hess to a zero matrix that matches the
+  /// dimensionality of _x
+  void evalHessian(
       const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess);
-
-protected:
-  /// Name of this function
-  std::string mName;
+      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess) override;
 };
-
-using FunctionPtr = std::shared_ptr<Function>;
 
 } // namespace optimizer
 } // namespace dart
 
-#endif // DART_OPTIMIZER_FUNCTION_HPP_
+#endif // DART_OPTIMIZER_NULLFUNCTION_HPP_
 

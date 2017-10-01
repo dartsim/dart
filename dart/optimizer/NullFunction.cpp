@@ -29,61 +29,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_FUNCTION_HPP_
-#define DART_OPTIMIZER_FUNCTION_HPP_
+#include "dart/optimizer/NullFunction.hpp"
 
-#include <vector>
-#include <memory>
-#include <functional>
-
-#include <Eigen/Dense>
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace optimizer {
 
-class Function
+//==============================================================================
+NullFunction::NullFunction(const std::string& _name)
+  : Function(_name)
 {
-public:
-  /// Constructor
-  explicit Function(const std::string& _name = "function");
+  // Do nothing
+}
 
-  /// Destructor
-  virtual ~Function();
+//==============================================================================
+NullFunction::~NullFunction()
+{
+  // Do nothing
+}
 
-  /// Set the name of this Function
-  virtual void setName(const std::string& _newName);
+//==============================================================================
+double NullFunction::eval(const Eigen::VectorXd&)
+{
+  return 0;
+}
 
-  /// Get the name of this Function
-  const std::string& getName() const;
+//==============================================================================
+void NullFunction::evalGradient(const Eigen::VectorXd& _x,
+                                Eigen::Map<Eigen::VectorXd> _grad)
+{
+  _grad.resize(_x.size());
+  _grad.setZero();
+}
 
-  /// Evaluate and return the objective function at the point x
-  virtual double eval(const Eigen::VectorXd& _x) = 0;
-
-  /// Evaluate and return the objective function at the point x
-  virtual void evalGradient(const Eigen::VectorXd& _x,
-                            Eigen::Map<Eigen::VectorXd> _grad);
-
-  /// Evaluate and return the objective function at the point x.
-  ///
-  /// If you have a raw array that the gradient will be passed in, then use
-  /// evalGradient(const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd>)
-  /// for better performance.
-  void evalGradient(const Eigen::VectorXd& _x, Eigen::VectorXd& _grad);
-
-  /// Evaluate and return the objective function at the point x
-  virtual void evalHessian(
-      const Eigen::VectorXd& _x,
-      Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess);
-
-protected:
-  /// Name of this function
-  std::string mName;
-};
-
-using FunctionPtr = std::shared_ptr<Function>;
+//==============================================================================
+void NullFunction::evalHessian(
+    const Eigen::VectorXd& _x,
+    Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> _Hess)
+{
+  _Hess.resize(pow(_x.size(),2));
+  _Hess.setZero();
+}
 
 } // namespace optimizer
 } // namespace dart
-
-#endif // DART_OPTIMIZER_FUNCTION_HPP_
-
