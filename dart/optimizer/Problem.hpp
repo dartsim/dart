@@ -102,7 +102,7 @@ public:
   const Eigen::VectorXd& getUpperBounds() const;
 
   /// \brief Set minimum objective function
-  void setObjective(FunctionPtr _obj);
+  virtual void setObjective(FunctionPtr _obj);
 
   /// \brief Get objective function
   FunctionPtr getObjective() const;

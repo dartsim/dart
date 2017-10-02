@@ -37,7 +37,7 @@ namespace optimizer {
 
 //==============================================================================
 QuadraticFunction::QuadraticFunction(const std::string& name)
-  : ConvexFunction(name)
+  : Function(name)
 {
   // Do nothing
 }

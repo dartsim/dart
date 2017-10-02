@@ -1,3 +1,4 @@
+dart_add_test("unit" test_AffineExpression)
 dart_add_test("unit" test_Aspect)
 dart_add_test("unit" test_ContactConstraint)
 dart_add_test("unit" test_Factory)

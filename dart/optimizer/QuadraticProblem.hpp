@@ -28,26 +28,34 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/QuadraticFunction.hpp"
+#ifndef DART_OPTIMIZER_QUADRATICPROBLEM_HPP_
+#define DART_OPTIMIZER_QUADRATICPROBLEM_HPP_
 
-#include "dart/common/Console.hpp"
+#include <cstddef>
+#include <vector>
+
+#include <Eigen/Dense>
+
+#include "dart/optimizer/Problem.hpp"
 
 namespace dart {
 namespace optimizer {
 
-//==============================================================================
-QuadraticFunction::QuadraticFunction(const std::string& name)
-  : ConvexFunction(name)
+class QuadraticProblem : public Problem
 {
-  // Do nothing
-}
+public:
+  /// Constructor
+  explicit QuadraticProblem(std::size_t dim = 0);
 
-//==============================================================================
-double QuadraticFunction::eval(const Eigen::VectorXd& /*x*/)
-{
-  // todo
-  return 0.0;
-}
+  /// Destructor
+  virtual ~QuadraticProblem() = default;
+
+  /// Set minimum objective function
+  //void setObjective(FunctionPtr obj) override;
+};
 
 } // namespace optimizer
 } // namespace dart
+
+#endif // DART_OPTIMIZER_QUADRATICPROBLEM_HPP_
+

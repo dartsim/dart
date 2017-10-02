@@ -31,12 +31,12 @@
 #ifndef DART_OPTIMIZER_QUADRATICFUNCTION_HPP_
 #define DART_OPTIMIZER_QUADRATICFUNCTION_HPP_
 
-#include "dart/optimizer/ConvexFunction.hpp"
+#include "dart/optimizer/Function.hpp"
 
 namespace dart {
 namespace optimizer {
 
-class QuadraticFunction : public ConvexFunction
+class QuadraticFunction : public Function
 {
 public:
   /// Constructor

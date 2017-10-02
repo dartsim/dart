@@ -28,25 +28,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/optimizer/QuadraticFunction.hpp"
-
-#include "dart/common/Console.hpp"
+#include "dart/optimizer/QuadraticProblem.hpp"
 
 namespace dart {
 namespace optimizer {
 
 //==============================================================================
-QuadraticFunction::QuadraticFunction(const std::string& name)
-  : ConvexFunction(name)
+QuadraticProblem::QuadraticProblem(std::size_t dim)
+  : Problem(dim)
 {
-  // Do nothing
-}
 
-//==============================================================================
-double QuadraticFunction::eval(const Eigen::VectorXd& /*x*/)
-{
-  // todo
-  return 0.0;
 }
 
 } // namespace optimizer

@@ -28,26 +28,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_OPTIMIZER_CONVEXFUNCTION_HPP_
-#define DART_OPTIMIZER_CONVEXFUNCTION_HPP_
+#include <gtest/gtest.h>
 
-#include "dart/optimizer/Function.hpp"
+#include "TestHelpers.hpp"
 
-namespace dart {
-namespace optimizer {
+#include "dart/math/AffineExpression.hpp"
 
-class ConvexFunction : public Function
+using namespace dart::math;
+
+//==============================================================================
+TEST(AffineExpression, Operators)
 {
-public:
-  /// Constructor
-  explicit ConvexFunction(const std::string& name = "convex function");
+  AffineExpression affExpr0;
+  AffineExpression affExpr1;
 
-  /// Destructor
-  virtual ~ConvexFunction() = default;
-};
-
-} // namespace optimizer
-} // namespace dart
-
-#endif // DART_OPTIMIZER_CONVEXFUNCTION_HPP_
-
+  auto affExpr2 = affExpr0 + affExpr1;
+  EXPECT_EQ(affExpr2.getConstant(), 0.0);
+}
