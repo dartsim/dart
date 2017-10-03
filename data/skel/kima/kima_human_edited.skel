@@ -3,7 +3,7 @@
     <world name="world 1">
         <physics>
             <time_step>0.001</time_step>
-            <gravity>0 0.0 0</gravity>
+            <gravity>0 -9.8 0</gravity>
             <collision_detector>bullet</collision_detector>
         </physics>
 
