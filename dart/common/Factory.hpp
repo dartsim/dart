@@ -98,6 +98,9 @@ public:
   // (see: https://github.com/dartsim/dart/pull/845)
 
 private:
+  template <typename Derived>
+  static HeldT defaultCreator(Args&&... args);
+
   /// Object creator function map.
   CreatorMap mCreatorMap;
 };

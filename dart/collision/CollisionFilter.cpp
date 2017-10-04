@@ -38,44 +38,114 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-bool BodyNodeCollisionFilter::needCollision(
+bool CollisionFilter::needCollision(
+    const CollisionObject* object1, const CollisionObject* object2) const
+{
+  return !ignoresCollision(object1, object2);
+}
+
+//==============================================================================
+void CompositeCollisionFilter::addCollisionFilter(const CollisionFilter* filter)
+{
+  // nullptr is not an allowed filter
+  if (!filter)
+    return;
+
+  mFilters.insert(filter);
+}
+
+//==============================================================================
+void CompositeCollisionFilter::removeCollisionFilter(
+const CollisionFilter* filter)
+{
+  mFilters.erase(filter);
+}
+
+//==============================================================================
+void CompositeCollisionFilter::removeAllCollisionFilters()
+{
+  mFilters.clear();
+}
+
+//==============================================================================
+bool CompositeCollisionFilter::ignoresCollision(
+    const CollisionObject* object1, const CollisionObject* object2) const
+{
+  for (const auto* filter : mFilters)
+  {
+    if (filter->ignoresCollision(object1, object2))
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+void BodyNodeCollisionFilter::addBodyNodePairToBlackList(
+    const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
+{
+  mBodyNodeBlackList.addPair(bodyNode1, bodyNode2);
+}
+
+//==============================================================================
+void BodyNodeCollisionFilter::removeBodyNodePairFromBlackList(
+    const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
+{
+  mBodyNodeBlackList.removePair(bodyNode1, bodyNode2);
+}
+
+//==============================================================================
+void BodyNodeCollisionFilter::removeAllBodyNodePairsFromBlackList()
+{
+  mBodyNodeBlackList.removeAllPairs();
+}
+
+//==============================================================================
+bool BodyNodeCollisionFilter::ignoresCollision(
     const collision::CollisionObject* object1,
     const collision::CollisionObject* object2) const
 {
   if (object1 == object2)
-    return false;
+    return true;
 
   auto shapeNode1 = object1->getShapeFrame()->asShapeNode();
   auto shapeNode2 = object2->getShapeFrame()->asShapeNode();
 
+  // We don't filter out for non-ShapeNode because this class shouldn't have the
+  // authority to make decisions about filtering any ShapeFrames that aren't
+  // attached to a BodyNode. So here we just return false. In order to decide
+  // whether the non-ShapeNode should be ignored, please use other collision
+  // filters.
   if (!shapeNode1 || !shapeNode2)
-    return true;
-  // We assume that non-ShapeNode is always being checked collision.
+    return false;
 
   auto bodyNode1 = shapeNode1->getBodyNodePtr();
   auto bodyNode2 = shapeNode2->getBodyNodePtr();
 
   if (bodyNode1 == bodyNode2)
-    return false;
+    return true;
 
   if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable())
-    return false;
+    return true;
 
   if (bodyNode1->getSkeleton() == bodyNode2->getSkeleton())
   {
     auto skeleton = bodyNode1->getSkeleton();
 
     if (!skeleton->isEnabledSelfCollisionCheck())
-      return false;
+      return true;
 
     if (!skeleton->isEnabledAdjacentBodyCheck())
     {
       if (areAdjacentBodies(bodyNode1, bodyNode2))
-        return false;
+        return true;
     }
   }
 
-  return true;
+  if (mBodyNodeBlackList.contains(bodyNode1, bodyNode2))
+    return true;
+
+  return false;
 }
 
 //==============================================================================
@@ -93,5 +163,5 @@ bool BodyNodeCollisionFilter::areAdjacentBodies(
   return false;
 }
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart

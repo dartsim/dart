@@ -195,7 +195,7 @@ void filterOutCollisions(btCollisionWorld* world)
     const auto collObj0 = static_cast<BulletCollisionObject*>(userPtr0);
     const auto collObj1 = static_cast<BulletCollisionObject*>(userPtr1);
 
-    if (!filter->needCollision(collObj0, collObj1))
+    if (filter->ignoresCollision(collObj0, collObj1))
       manifoldsToRelease.push_back(contactManifold);
   }
 
