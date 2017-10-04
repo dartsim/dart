@@ -30,7 +30,7 @@
  */
 
 #include <dart/dart.hpp>
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
 
 #include "MyWindow.hpp"
 
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
   // load a skeleton file
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
-    = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
+    = io::SkelParser::readWorld("dart://sample/skel/chain.skel");
   assert(myWorld != nullptr);
     
   // create and initialize the world

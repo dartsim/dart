@@ -32,7 +32,7 @@
 #include <iostream>
 
 #include <dart/dart.hpp>
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
 
 #include "MyWindow.hpp"
 
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
   using namespace dart;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   // create and initialize the world
   WorldPtr myWorld = SkelParser::readWorld("dart://sample/skel/vehicle.skel");

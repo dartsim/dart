@@ -31,7 +31,7 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 const double default_domino_height = 0.3;
 const double default_domino_width = 0.4 * default_domino_height;
@@ -466,7 +466,7 @@ SkeletonPtr createFloor()
 SkeletonPtr createManipulator()
 {
   // Load the Skeleton from a file
-  dart::utils::DartLoader loader;
+  dart::io::DartLoader loader;
   SkeletonPtr manipulator =
       loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   manipulator->setName("manipulator");

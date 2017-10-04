@@ -31,10 +31,10 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "dart/utils/urdf/DartLoader.hpp"
+#include "dart/io/urdf/DartLoader.hpp"
 
 using dart::common::Uri;
-using dart::utils::DartLoader;
+using dart::io::DartLoader;
 
 TEST(DartLoader, parseSkeleton_NonExistantPathReturnsNull)
 {

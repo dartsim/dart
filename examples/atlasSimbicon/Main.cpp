@@ -32,8 +32,8 @@
 #include <iostream>
 
 #include <dart/dart.hpp>
-#include <dart/utils/utils.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/io/io.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 #include "MyWindow.hpp"
 #include "Controller.hpp"
@@ -44,7 +44,7 @@ using namespace dart::common;
 using namespace dart::math;
 using namespace dart::dynamics;
 using namespace dart::simulation;
-using namespace dart::utils;
+using namespace dart::io;
 
 int main(int argc, char* argv[])
 {

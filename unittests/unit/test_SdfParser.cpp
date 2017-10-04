@@ -38,13 +38,13 @@
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/sdf/SdfParser.hpp"
+#include "dart/io/sdf/SdfParser.hpp"
 
 using namespace dart;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
-using namespace utils;
+using namespace io;
 
 //==============================================================================
 TEST(SdfParser, SDFSingleBodyWithoutJoint)

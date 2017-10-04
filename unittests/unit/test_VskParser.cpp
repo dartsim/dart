@@ -39,13 +39,13 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/VskParser.hpp"
+#include "dart/io/VskParser.hpp"
 
 using namespace dart;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
-using namespace utils;
+using namespace io;
 
 //==============================================================================
 TEST(VskParser, EmptySkeleton)

@@ -34,7 +34,7 @@
 #include <iostream>
 
 #include <dart/dart.hpp>
-#include <dart/utils/utils.hpp>
+#include <dart/io/io.hpp>
 #include <dart/gui/gui.hpp>
 
 using namespace dart;
@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
   // load a skeleton file
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
+      = io::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
   assert(myWorld != nullptr);
 
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);

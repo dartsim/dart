@@ -34,7 +34,7 @@
 #include "kinematics/FileInfoDof.h"
 #include "kinematics/FileInfoC3D.h"
 #include "kinematics/TrfmRotateExpmap.h"
-#include "utils/Paths.h"
+#include "io/Paths.h"
 #include "math/UtilsMath.h"
 
 using namespace std;
