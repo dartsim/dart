@@ -54,7 +54,6 @@
 #cmakedefine01 HAVE_SNOPT
 #cmakedefine01 HAVE_BULLET
 #cmakedefine01 HAVE_ODE
-#cmakedefine01 HAVE_FLANN
 
 #cmakedefine01 DART_ENABLE_SIMD
 

@@ -49,8 +49,3 @@ if(TARGET dart-utils-urdf)
   dart_add_test("unit" test_DartLoader)
   target_link_libraries(test_DartLoader dart-utils-urdf)
 endif()
-
-if(TARGET dart-planning)
-  dart_add_test("unit" test_NearestNeighbor)
-  target_link_libraries(test_NearestNeighbor dart-planning)
-endif()
