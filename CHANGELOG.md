@@ -1,3 +1,11 @@
+## DART 7
+
+### DART 7.0.0 (201X-XX-XX)
+
+* Optimizer
+
+  * Changed Function::eval\[Gradient/Hessian\](...) to const function: [#928](https://github.com/dartsim/dart/pull/928)
+
 ## DART 6
 
 ### DART 6.4.0 (201X-XX-XX)
