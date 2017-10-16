@@ -32,13 +32,11 @@
 #ifndef DART_OPTIMIZER_FUNCTION_HPP_
 #define DART_OPTIMIZER_FUNCTION_HPP_
 
-#include <vector>
 #include <memory>
+#include <string>
 #include <functional>
 
 #include <Eigen/Dense>
-
-#include "dart/common/Deprecated.hpp"
 
 namespace dart {
 namespace optimizer {
