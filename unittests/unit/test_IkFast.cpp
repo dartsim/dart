@@ -55,22 +55,19 @@ TEST(IkFast, FailedToLoadSharedLibrary)
 }
 
 //==============================================================================
-TEST(IkFast, LoadWamArmIk)
+dynamics::SkeletonPtr loadWamArm()
 {
   utils::DartLoader urdfParser;
   urdfParser.addPackageDirectory("herb_description", DART_DATA_PATH"/urdf/wam");
-  auto wam = urdfParser.parseSkeleton(DART_DATA_PATH"/urdf/wam/wam.urdf");
-  EXPECT_NE(wam, nullptr);
+  auto wamArm = urdfParser.parseSkeleton(DART_DATA_PATH"/urdf/wam/wam.urdf");
+  EXPECT_NE(wamArm, nullptr);
 
-  auto wam7 = wam->getBodyNode("/wam7");
-  auto ee = wam7->createEndEffector("ee");
-  auto ik = ee->createIK();
-  auto targetFrame
-      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
-  targetFrame->setRotation(Eigen::Matrix3d::Identity());
+  return wamArm;
+}
 
-  ik->setTarget(targetFrame);
-  ik->setHierarchyLevel(1);
+//==============================================================================
+void loadWamArmIkFastSolver(InverseKinematics& ik)
+{
   std::string libName = "libGeneratedWamIkFast";
 #if (DART_OS_LINUX || DART_OS_MACOS) && !NDEBUG
   libName += "d";
@@ -84,8 +81,27 @@ TEST(IkFast, LoadWamArmIk)
 #endif
   std::vector<std::size_t> ikFastDofs{0, 1, 3, 4, 5, 6};
   std::vector<std::size_t> ikFastFreeDofs{2};
-  ik->setGradientMethod<dynamics::SharedLibraryIkFast>(
-        libName, ikFastDofs, ikFastFreeDofs);
+  ik.setGradientMethod<dynamics::SharedLibraryIkFast>(
+      libName, ikFastDofs, ikFastFreeDofs);
+}
+
+//==============================================================================
+TEST(IkFast, LoadWamArmIk)
+{
+  auto wam = loadWamArm();
+
+  auto wam7 = wam->getBodyNode("/wam7");
+  auto ee = wam7->createEndEffector("ee");
+  auto ik = ee->createIK();
+  auto targetFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  targetFrame->setRotation(Eigen::Matrix3d::Identity());
+
+  ik->setTarget(targetFrame);
+  ik->setHierarchyLevel(1);
+
+  loadWamArmIkFastSolver(*ik);
+
   auto analytical = ik->getAnalytical();
   EXPECT_NE(analytical, nullptr);
   EXPECT_EQ(analytical->getDofs().size(), 6);
@@ -110,4 +126,58 @@ TEST(IkFast, LoadWamArmIk)
     Eigen::Isometry3d newTf = ee->getTransform();
     EXPECT_TRUE(equals(targetFrame->getTransform(), newTf, 1e-2));
   }
+}
+
+//==============================================================================
+void verifySolution(
+    const dynamics::InverseKinematics& ik,
+    const dynamics::BodyNode& bodyNode)
+{
+  std::cout << "target:\n"
+            << ik.getTarget()->getTransform().matrix() << "\n";
+  std::cout << "actual:\n"
+            << bodyNode.getTransform().matrix() << "\n";
+
+  EXPECT_TRUE(equals(ik.getTarget()->getTransform().matrix(),
+                     bodyNode.getTransform().matrix(), 1e-4));
+}
+
+//==============================================================================
+TEST(IkFast, SimpleBenchmark)
+{
+  auto wamArm1 = loadWamArm();
+  auto wamArm2 = loadWamArm();
+
+  auto wamArm1_wam7 = wamArm1->getBodyNode("/wam7");
+  auto wamArm2_wam7 = wamArm2->getBodyNode("/wam7");
+
+  const auto numDofs = wamArm2_wam7->getNumDependentGenCoords();
+  std::cout << "numDofs: " << numDofs << "\n";
+
+  auto ee1 = wamArm1_wam7->createEndEffector("ee");
+  auto ee2 = wamArm2_wam7->createEndEffector("ee");
+  auto ik1 = ee1->createIK();
+  auto ik2 = ee2->createIK();
+  auto targetFrame1
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  ik1->setHierarchyLevel(1);
+  ik2->setHierarchyLevel(1);
+
+  loadWamArmIkFastSolver(*ik1);
+
+  ik2->getErrorMethod().setBounds(Eigen::VectorXd::Constant(numDofs, -1e-8),
+                                  Eigen::VectorXd::Constant(numDofs,  1e-8));
+  ik2->getSolver()->setNumMaxIterations(100);
+
+  targetFrame1->setRotation(Eigen::Matrix3d::Identity());
+  targetFrame1->setTranslation(Eigen::Vector3d(0, 0, 0.5));
+
+//  ik1->setTarget(targetFrame1);
+  ik2->setTarget(targetFrame1);
+
+  ik1->solve();
+  ik2->solve();
+
+  verifySolution(*ik1, *wamArm1_wam7);
+  verifySolution(*ik2, *wamArm2_wam7);
 }
