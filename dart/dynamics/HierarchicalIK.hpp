@@ -201,11 +201,11 @@ protected:
         const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     // Documentation inherited
-    double eval(const Eigen::VectorXd &_x) override;
+    double eval(const Eigen::VectorXd &_x) const override;
 
     // Documentation inherited
     void evalGradient(const Eigen::VectorXd& _x,
-                      Eigen::Map<Eigen::VectorXd> _grad) override;
+                      Eigen::Map<Eigen::VectorXd> _grad) const override;
 
   protected:
 
@@ -213,7 +213,7 @@ protected:
     std::weak_ptr<HierarchicalIK> mIK;
 
     /// Cache for the gradient computation
-    Eigen::VectorXd mGradCache;
+    mutable Eigen::VectorXd mGradCache;
   };
 
   /// The HierarchicalIK::Constraint Function is simply used to merge the
@@ -236,11 +236,11 @@ protected:
         const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     // Documentation inherited
-    double eval(const Eigen::VectorXd& _x) override;
+    double eval(const Eigen::VectorXd& _x) const override;
 
     // Documentation inherited
     void evalGradient(const Eigen::VectorXd& _x,
-                      Eigen::Map<Eigen::VectorXd> _grad) override;
+                      Eigen::Map<Eigen::VectorXd> _grad) const override;
 
   protected:
 
@@ -248,10 +248,10 @@ protected:
     std::weak_ptr<HierarchicalIK> mIK;
 
     /// Cache for the gradient of a level
-    Eigen::VectorXd mLevelGradCache;
+    mutable Eigen::VectorXd mLevelGradCache;
 
     /// Cache for temporary gradients
-    Eigen::VectorXd mTempGradCache;
+    mutable Eigen::VectorXd mTempGradCache;
   };
 
   /// Constructor
