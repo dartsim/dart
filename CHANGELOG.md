@@ -2,6 +2,10 @@
 
 ### DART 6.4.0 (201X-XX-XX)
 
+* License
+
+  * Added Personal Robotics Lab and Open Source Robotics Foundation as contributors: [#929](https://github.com/dartsim/dart/pull/929)
+
 ### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)
 
 * Collision detection
