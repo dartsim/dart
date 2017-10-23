@@ -49,7 +49,7 @@
   #include "dart/collision/bullet/bullet.hpp"
 #endif
 #include "dart/simulation/simulation.hpp"
-#include "dart/utils/utils.hpp"
+#include "dart/io/io.hpp"
 #include "TestHelpers.hpp"
 
 using namespace dart;
@@ -58,7 +58,7 @@ using namespace math;
 using namespace collision;
 using namespace dynamics;
 using namespace simulation;
-using namespace utils;
+using namespace io;
 
 class COLLISION : public testing::Test
 {

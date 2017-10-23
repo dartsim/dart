@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_OSG_UTILS_HPP_
-#define DART_GUI_OSG_UTILS_HPP_
+#ifndef DART_GUI_OSG_IO_HPP_
+#define DART_GUI_OSG_IO_HPP_
 
 #include <Eigen/Geometry>
 
@@ -85,4 +85,4 @@ inline Eigen::Vector4d osgToEigVec4(const ::osg::Vec4d& vec)
   return Eigen::Vector4d(vec[0], vec[1], vec[2], vec[3]);
 }
 
-#endif // DART_GUI_OSG_UTILS_HPP_
+#endif // DART_GUI_OSG_IO_HPP_
