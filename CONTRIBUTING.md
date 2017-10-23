@@ -10,6 +10,7 @@ The code doesn't need to be perfect right away, feel free to post work-in-progre
 ----------------------------------------------------|---------------
  [C. Karen Liu](https://github.com/karenliu)        | project creator, multibody dynamics, constraint resolution, tutorials
  [Mike Stilman](https://github.com/mstilman)        | project creator
+ [Siddhartha S. Srinivasa](https://github.com/siddhss5) | project advisor
  [Jeongseok Lee](https://github.com/jslee02)        | project director, multibody dynamics, constraint resolution, collision detection, tutorials
  [Michael X. Grey](https://github.com/mxgrey)       | project director, extensive API improvements, inverse kinematics, gui::osg, tutorials
  [Tobias Kunz](https://github.com/tobiaskunz)       | former project director, motion planner

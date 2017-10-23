@@ -6,6 +6,10 @@
 
   * Added IkFast support as analytic IK solver: [#887](https://github.com/dartsim/dart/pull/887)
 
+* License
+
+  * Added Personal Robotics Lab and Open Source Robotics Foundation as contributors: [#929](https://github.com/dartsim/dart/pull/929)
+
 ### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)
 
 * Collision detection
