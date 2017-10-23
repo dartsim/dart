@@ -10,14 +10,6 @@ endif()
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
-set(DART_CONFIG_HPP_IN ${CMAKE_SOURCE_DIR}/dart/config.hpp.in)
-set(DART_CONFIG_HPP_OUT ${CMAKE_BINARY_DIR}/dart/config.hpp)
-if(DART_VERBOSE)
-  message(STATUS ${DART_CONFIG_HPP_OUT})
-endif()
-configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
-install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
-
 #===============================================================================
 # Source directories
 #===============================================================================
@@ -41,7 +33,6 @@ install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
 # gui
 #   osg
 #     render
-# planning
 
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
@@ -52,11 +43,10 @@ install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
 # dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
 # dart-optimizer-nlopt - {dart}, optimizer/nlopt, [nlopt]
 # dart-collision-bullet - {dart}, collision/bullet, [bullet]
-# dart-utils - {dart-collision-bullet}, utils, utils/sdf, [tinyxml, tinyxml2]
+# dart-utils - {dart}, utils, utils/sdf, [tinyxml, tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
 # dart-gui - {dart}, gui, [opengl, glut]
 # dart-gui-osg - {dart-gui}, gui/osg, gui/osg/render, [openscenegraph]
-# dart-planning - {dart}, planning, [flann]
 
 #===============================================================================
 # Components - (dependency component), {dependency targets}
@@ -69,7 +59,6 @@ install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
 # utils-urdf - (utils), {dart-utils-urdf}
 # gui - (utils), {dart-gui}
 # gui-osg - (gui), {dart-gui-osg}
-# planning - (dart), {dart-planning}
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
@@ -92,18 +81,16 @@ add_subdirectory(dynamics)
 add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(simulation)
+add_subdirectory(utils) # tinyxml, tinyxml2, bullet
+add_subdirectory(gui) # opengl, glut, bullet
 
-if(FLANN_FOUND)
-  add_subdirectory(planning)
+set(DART_CONFIG_HPP_IN ${CMAKE_SOURCE_DIR}/dart/config.hpp.in)
+set(DART_CONFIG_HPP_OUT ${CMAKE_BINARY_DIR}/dart/config.hpp)
+if(DART_VERBOSE)
+  message(STATUS ${DART_CONFIG_HPP_OUT})
 endif()
-
-if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
-  add_subdirectory(utils)
-endif()
-
-if(OPENGL_FOUND AND GLUT_FOUND AND BULLET_FOUND)
-  add_subdirectory(gui)
-endif()
+configure_file(${DART_CONFIG_HPP_IN} ${DART_CONFIG_HPP_OUT} @ONLY)
+install(FILES ${DART_CONFIG_HPP_OUT} DESTINATION include/dart)
 
 # Print building component
 get_property(components GLOBAL PROPERTY ${PROJECT_NAME}_COMPONENTS)
@@ -173,9 +160,6 @@ add_component_dependencies(
   dart
   external-odelcpsolver
 )
-
-# Coverage test
-dart_coveralls_add(${dart_core_headers} ${dart_core_sources})
 
 if(MSVC)
   set_target_properties(

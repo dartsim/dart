@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -29,25 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Algorithm details and publications: http://www.golems.org/node/1570
-
-#ifndef DART_PLANNING_TRAJECTORY_HPP_
-#define DART_PLANNING_TRAJECTORY_HPP_
-
-#include <Eigen/Core>
+#include "dart/math/ConfigurationSpace.hpp"
 
 namespace dart {
-namespace planning {
+namespace math {
 
-class Trajectory
-{
-public:
-	virtual double getDuration() const = 0;
-	virtual Eigen::VectorXd getPosition(double time) const = 0;
-	virtual Eigen::VectorXd getVelocity(double time) const = 0;
-};
+//==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+constexpr std::size_t SO3Space::NumDofs;
+constexpr int SO3Space::NumDofsEigen;
 
-} // namespace planning
+//==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+constexpr std::size_t SE3Space::NumDofs;
+constexpr int SE3Space::NumDofsEigen;
+
+} // namespace math
 } // namespace dart
-
-#endif // DART_PLANNING_TRAJECTORY_HPP_

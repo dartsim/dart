@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -31,8 +32,10 @@
 
 #include <gtest/gtest.h>
 #include "dart/dart.hpp"
-#include "dart/collision/bullet/bullet.hpp"
 #include "dart/collision/fcl/fcl.hpp"
+#if HAVE_BULLET
+  #include "dart/collision/bullet/bullet.hpp"
+#endif
 #include "TestHelpers.hpp"
 
 using namespace dart;
@@ -125,7 +128,7 @@ TEST(Distance, testBasicInterface)
   auto fcl = FCLCollisionDetector::create();
   testBasicInterface(fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testBasicInterface(bullet);
 #endif
@@ -223,7 +226,7 @@ TEST(Distance, Options)
   auto fcl = FCLCollisionDetector::create();
   testOptions(fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testOptions(bullet);
 #endif
@@ -281,7 +284,7 @@ TEST(Distance, SphereSphere)
   auto fcl = FCLCollisionDetector::create();
   testSphereSphere(fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testSphereSphere(bullet);
 #endif

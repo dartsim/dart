@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -72,14 +73,14 @@ public:
   virtual ~SampleObjFunc() {}
 
   /// \copydoc Function::eval
-  double eval(const Eigen::VectorXd& _x) override
+  double eval(const Eigen::VectorXd& _x) const override
   {
     return std::sqrt(_x[1]);
   }
 
   /// \copydoc Function::evalGradient
   void evalGradient(const Eigen::VectorXd& _x,
-                    Eigen::Map<Eigen::VectorXd> _grad) override
+                    Eigen::Map<Eigen::VectorXd> _grad) const override
   {
     _grad[0] = 0.0;
     _grad[1] = 0.5 / std::sqrt(_x[1]);
@@ -97,14 +98,14 @@ public:
   virtual ~SampleConstFunc() {}
 
   /// \copydoc Function::eval
-  double eval(const Eigen::VectorXd& _x) override
+  double eval(const Eigen::VectorXd& _x) const override
   {
     return ((mA*_x[0] + mB) * (mA*_x[0] + mB) * (mA*_x[0] + mB) - _x[1]);
   }
 
   /// \copydoc Function::evalGradient
   void evalGradient(const Eigen::VectorXd& _x,
-                    Eigen::Map<Eigen::VectorXd> _grad) override
+                    Eigen::Map<Eigen::VectorXd> _grad) const override
   {
     _grad[0] = 3 * mA * (mA*_x[0] + mB) * (mA*_x[0] + mB);
     _grad[1] = -1.0;

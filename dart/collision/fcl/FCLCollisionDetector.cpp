@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -636,7 +637,13 @@ dart::fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
 
 } // anonymous namespace
 
-
+//==============================================================================
+FCLCollisionDetector::Registrar<FCLCollisionDetector>
+FCLCollisionDetector::mRegistrar{
+  FCLCollisionDetector::getStaticType(),
+  []() -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
+      return dart::collision::FCLCollisionDetector::create();
+  }};
 
 //==============================================================================
 std::shared_ptr<FCLCollisionDetector> FCLCollisionDetector::create()
@@ -1084,7 +1091,7 @@ bool collisionCallback(
     assert(collisionObject1);
     assert(collisionObject2);
 
-    if (!filter->needCollision(collisionObject2, collisionObject1))
+    if (filter->ignoresCollision(collisionObject2, collisionObject1))
       return collData->done;
   }
 

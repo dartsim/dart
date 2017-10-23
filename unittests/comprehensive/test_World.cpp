@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -39,7 +40,7 @@
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/collision/collision.hpp"
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif
 #include "dart/simulation/World.hpp"
@@ -272,7 +273,7 @@ TEST(World, ValidatingClones)
     worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
 
     // Set non default collision detector
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
     worlds.back()->getConstraintSolver()->setCollisionDetector(
         collision::BulletCollisionDetector::create());
 #else

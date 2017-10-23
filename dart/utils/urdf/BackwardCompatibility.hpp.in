@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -29,35 +30,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_PLANNING_PATHSHORTENER_HPP_
-#define DART_PLANNING_PATHSHORTENER_HPP_
+#ifndef DART_UTILS_URDF_BACKWARDCOMPATIBILITY_HPP_
+#define DART_UTILS_URDF_BACKWARDCOMPATIBILITY_HPP_
 
-#include <list>
-#include <vector>
-#include <Eigen/Core>
+#include "dart/config.hpp"
 
-#include "dart/simulation/World.hpp"
+/* urdfdom_headers Version number */
+// We define the version numbers of urdfdom_headers here since it doesn't expose
+// the version numbers itself in source level.
+#define URDFDOM_HEADERS_MAJOR_VERSION @urdfdom_headers_VERSION_MAJOR@
+#define URDFDOM_HEADERS_MINOR_VERSION @urdfdom_headers_VERSION_MINOR@
+#define URDFDOM_HEADERS_PATCH_VERSION @urdfdom_headers_VERSION_PATCH@
+
+#define URDFDOM_HEADERS_VERSION_AT_LEAST(x,y,z) \
+  (URDFDOM_HEADERS_MAJOR_VERSION > x || (URDFDOM_HEADERS_MAJOR_VERSION >= x && \
+  (URDFDOM_HEADERS_MINOR_VERSION > y || (URDFDOM_HEADERS_MINOR_VERSION >= y && \
+  URDFDOM_HEADERS_PATCH_VERSION >= z))))
+
+#if URDFDOM_HEADERS_VERSION_AT_LEAST(1,0,0)
+#include <memory>
+#else
+#include "boost/shared_ptr.hpp"
+#include "boost/weak_ptr.hpp"
+#endif
 
 namespace dart {
-namespace planning {
+namespace utils {
 
-class PathShortener
-{
-public:
-	PathShortener();
-  PathShortener(simulation::WorldPtr world, dynamics::SkeletonPtr robot, const std::vector<std::size_t>& dofs, double stepSize = 0.1);
-	~PathShortener();
-	virtual void shortenPath(std::list<Eigen::VectorXd> &rawPath);
-	bool segmentCollisionFree(std::list<Eigen::VectorXd> &waypoints, const Eigen::VectorXd &config1, const Eigen::VectorXd &config2);
-protected:
-  simulation::WorldPtr world;
-  dynamics::SkeletonPtr robot;
-    std::vector<std::size_t> dofs;
-	double stepSize;
-	virtual bool localPlanner(std::list<Eigen::VectorXd> &waypoints, std::list<Eigen::VectorXd>::const_iterator it1, std::list<Eigen::VectorXd>::const_iterator it2);
-};
+#if URDFDOM_HEADERS_VERSION_AT_LEAST(1,0,0)
+template <typename T> using urdf_shared_ptr = std::shared_ptr<T>;
+template <typename T> using urdf_weak_ptr = std::weak_ptr<T>;
+#else
+template <typename T> using urdf_shared_ptr = boost::shared_ptr<T>;
+template <typename T> using urdf_weak_ptr = boost::weak_ptr<T>;
+#endif
 
-} // namespace planning
+} // namespace utils
 } // namespace dart
 
-#endif // DART_PLANNING_PATHSHORTENER_HPP_
+#endif // DART_UTILS_URDF_BACKWARDCOMPATIBILITY_HPP_

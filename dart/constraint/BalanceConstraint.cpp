@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -61,7 +62,7 @@ optimizer::FunctionPtr BalanceConstraint::clone(
 }
 
 //==============================================================================
-double BalanceConstraint::eval(const Eigen::VectorXd& _x)
+double BalanceConstraint::eval(const Eigen::VectorXd& _x) const
 {
   const std::shared_ptr<dynamics::HierarchicalIK>& ik = mIK.lock();
 
@@ -177,7 +178,7 @@ static void addDampedPseudoInverseToGradient(
 
 //==============================================================================
 void BalanceConstraint::evalGradient(const Eigen::VectorXd& _x,
-                                     Eigen::Map<Eigen::VectorXd> _grad)
+                                     Eigen::Map<Eigen::VectorXd> _grad) const
 {
   _grad.setZero();
   if(eval(_x) == 0.0)
@@ -399,7 +400,7 @@ void BalanceConstraint::clearCaches()
 
 //==============================================================================
 void BalanceConstraint::convertJacobianMethodOutputToGradient(
-    Eigen::Map<Eigen::VectorXd>& grad)
+    Eigen::Map<Eigen::VectorXd>& grad) const
 {
   const dart::dynamics::SkeletonPtr& skel = mIK.lock()->getSkeleton();
   skel->setVelocities(grad);

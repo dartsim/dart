@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -1631,7 +1632,7 @@ optimizer::FunctionPtr InverseKinematics::Objective::clone(
 }
 
 //==============================================================================
-double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x)
+double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x) const
 {
   if(nullptr == mIK)
   {
@@ -1654,7 +1655,7 @@ double InverseKinematics::Objective::eval(const Eigen::VectorXd& _x)
 
 //==============================================================================
 void InverseKinematics::Objective::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
+    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
 {
   if(nullptr == mIK)
   {
@@ -1699,7 +1700,7 @@ optimizer::FunctionPtr InverseKinematics::Constraint::clone(
 }
 
 //==============================================================================
-double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x)
+double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x) const
 {
   if(nullptr == mIK)
   {
@@ -1714,7 +1715,7 @@ double InverseKinematics::Constraint::eval(const Eigen::VectorXd& _x)
 
 //==============================================================================
 void InverseKinematics::Constraint::evalGradient(
-    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad)
+    const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) const
 {
   if(nullptr == mIK)
   {

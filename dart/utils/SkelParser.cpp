@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -41,9 +42,6 @@
 #include "dart/config.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/collision/CollisionObject.hpp"
-#if HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
-#endif
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
@@ -543,8 +541,23 @@ void readVisualizationShapeNode(
   // color
   if (hasElement(vizShapeNodeEle, "color"))
   {
-    Eigen::Vector3d color = getValueVector3d(vizShapeNodeEle, "color");
-    visualAspect->setColor(color);
+    Eigen::VectorXd color = getValueVectorXd(vizShapeNodeEle, "color");
+
+    if (color.size() == 3)
+    {
+      visualAspect->setColor(static_cast<Eigen::Vector3d>(color));
+    }
+    else if (color.size() == 4)
+    {
+      visualAspect->setColor(static_cast<Eigen::Vector4d>(color));
+    }
+    else
+    {
+      dtwarn << "[readVisualizationShapeNode] Invalid format for <color> "
+             << "element; " << color.size() << "d vector is given. It should "
+             << "be either 3d vector or 4d vector (the 4th element is for "
+             << "alpha). Ignoring the given color value.\n";
+    }
   }
 }
 
@@ -654,6 +667,18 @@ tinyxml2::XMLElement* checkFormatAndGetWorldElement(
 }
 
 //==============================================================================
+static std::shared_ptr<collision::CollisionDetector>
+createFclMeshCollisionDetector()
+{
+  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
+  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
+  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
+
+  return fcl;
+}
+
+//==============================================================================
 simulation::WorldPtr readWorld(
   tinyxml2::XMLElement* _worldElement,
   const common::Uri& _baseUri,
@@ -695,46 +720,37 @@ simulation::WorldPtr readWorld(
 
     if (hasElement(physicsElement, "collision_detector"))
     {
-      std::string strCD = getValueString(physicsElement, "collision_detector");
+      const auto cdType = getValueString(physicsElement, "collision_detector");
 
-      if (strCD == "fcl_mesh")
+      if (cdType == "fcl_mesh")
       {
-        collision_detector = collision::FCLCollisionDetector::create();
-        auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-              collision_detector);
-        cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-        cd->setContactPointComputationMethod(
-              collision::FCLCollisionDetector::DART);
+        collision_detector = createFclMeshCollisionDetector();
       }
-      else if (strCD == "fcl")
+      else if (cdType == "fcl")
       {
-        collision_detector = collision::FCLCollisionDetector::create();
+        collision_detector
+            = collision::CollisionDetector::getFactory()->create("fcl");
         auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
               collision_detector);
         cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
         cd->setContactPointComputationMethod(
               collision::FCLCollisionDetector::DART);
       }
-      else if (strCD == "dart")
-        collision_detector = collision::DARTCollisionDetector::create();
-#if HAVE_BULLET_COLLISION
-      else if (strCD == "bullet")
-        collision_detector = collision::BulletCollisionDetector::create();
-#endif
       else
-        dtwarn << "Unknown collision detector[" << strCD << "]. "
+      {
+        collision_detector
+            = collision::CollisionDetector::getFactory()->create(cdType);
+      }
+
+      if (!collision_detector)
+      {
+        dtwarn << "Unknown collision detector[" << cdType << "]. "
                << "Default collision detector[fcl_mesh] will be loaded.\n";
+      }
     }
 
     if (!collision_detector)
-    {
-      collision_detector = collision::FCLCollisionDetector::create();
-      auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-            collision_detector);
-      cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-      cd->setContactPointComputationMethod(
-            collision::FCLCollisionDetector::DART);
-    }
+      collision_detector = createFclMeshCollisionDetector();
 
     newWorld->getConstraintSolver()->setCollisionDetector(collision_detector);
   }
@@ -1861,7 +1877,7 @@ void readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
           *proxy.restPosition = val;
         }
 
-        // friction
+        // spring_stiffness
         if (hasElement(dynamicsElement, "spring_stiffness"))
         {
           double val = getValueDouble(dynamicsElement, "spring_stiffness");

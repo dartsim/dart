@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Can Erdogan <cerdogan3@gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
+ *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -466,8 +467,10 @@ inline double wrapToPi(double angle)
 template <typename MatrixType, typename ReturnType>
 void extractNullSpace(const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS)
 {
+#if EIGEN_VERSION_AT_LEAST(3,2,2)
+  const int rank = _SVD.rank();
+#else
   int rank = 0;
-  // TODO(MXG): Replace this with _SVD.rank() once the latest Eigen is released
   if(_SVD.nonzeroSingularValues() > 0)
   {
     double thresh = std::max(_SVD.singularValues().coeff(0)*1e-10,
@@ -477,8 +480,10 @@ void extractNullSpace(const Eigen::JacobiSVD<MatrixType>& _SVD, ReturnType& _NS)
       --i;
     rank = i+1;
   }
+#endif
 
-  int cols = _SVD.matrixV().cols(), rows = _SVD.matrixV().rows();
+  const int cols = _SVD.matrixV().cols();
+  const int rows = _SVD.matrixV().rows();
   _NS = _SVD.matrixV().block(0, rank, rows, cols-rank);
 }
 

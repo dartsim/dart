@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -79,6 +80,14 @@ btCollisionShape* createBulletCollisionShapeFromAssimpScene(
 btCollisionShape* createBulletCollisionShapeFromAssimpMesh(const aiMesh* mesh);
 
 } // anonymous namespace
+
+//==============================================================================
+BulletCollisionDetector::Registrar<BulletCollisionDetector>
+BulletCollisionDetector::mRegistrar{
+  BulletCollisionDetector::getStaticType(),
+  []() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
+      return dart::collision::BulletCollisionDetector::create();
+  }};
 
 //==============================================================================
 std::shared_ptr<BulletCollisionDetector> BulletCollisionDetector::create()
@@ -187,7 +196,7 @@ void filterOutCollisions(btCollisionWorld* world)
     const auto collObj0 = static_cast<BulletCollisionObject*>(userPtr0);
     const auto collObj1 = static_cast<BulletCollisionObject*>(userPtr1);
 
-    if (!filter->needCollision(collObj0, collObj1))
+    if (filter->ignoresCollision(collObj0, collObj1))
       manifoldsToRelease.push_back(contactManifold);
   }
 

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -38,11 +39,11 @@
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/collision/collision.hpp"
 #include "dart/collision/fcl/fcl.hpp"
-#if HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/bullet.hpp"
-#endif
-#if HAVE_ODE_COLLISION
+#if HAVE_ODE
   #include "dart/collision/ode/ode.hpp"
+#endif
+#if HAVE_BULLET
+  #include "dart/collision/bullet/bullet.hpp"
 #endif
 #include "dart/simulation/simulation.hpp"
 #include "dart/utils/utils.hpp"
@@ -573,7 +574,7 @@ void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_FALSE(group1->collide(group3.get()));
   EXPECT_TRUE(group2->collide(group3.get()));
   EXPECT_TRUE(group23->collide());
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   if (cd->getType() == BulletCollisionDetector::getStaticType())
   {
     dtwarn << "Skipping group-group test for 'bullet' collision detector. "
@@ -609,7 +610,7 @@ TEST_F(COLLISION, SimpleFrames)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSimpleFrames(fcl_mesh_fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testSimpleFrames(bullet);
 #endif
@@ -716,10 +717,10 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
 //==============================================================================
 TEST_F(COLLISION, SphereSphere)
 {
-//  auto fcl_mesh_dart = FCLCollisionDetector::create();
-//  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
-//  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
-//  testSphereSphere(fcl_mesh_dart);
+  auto fcl_mesh_dart = FCLCollisionDetector::create();
+  fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  testSphereSphere(fcl_mesh_dart);
 
   // auto fcl_prim_fcl = FCLCollisionDetector::create();
   // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
@@ -736,18 +737,18 @@ TEST_F(COLLISION, SphereSphere)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testSphereSphere(fcl_mesh_fcl);
 
-//#if HAVE_ODE_COLLISION
-//  auto ode = OdeCollisionDetector::create();
-//  testSphereSphere(ode);
-//#endif
+#if HAVE_ODE
+  auto ode = OdeCollisionDetector::create();
+  testSphereSphere(ode);
+#endif
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testSphereSphere(bullet);
 #endif
 
-//  auto dart = DARTCollisionDetector::create();
-//  testSphereSphere(dart);
+  auto dart = DARTCollisionDetector::create();
+  testSphereSphere(dart);
 }
 
 //==============================================================================
@@ -844,12 +845,12 @@ TEST_F(COLLISION, BoxBox)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testBoxBox(fcl_mesh_fcl);
 
-#if HAVE_ODE_COLLISION
+#if HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   testBoxBox(ode);
 #endif
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testBoxBox(bullet);
 #endif
@@ -975,12 +976,12 @@ TEST_F(COLLISION, testCylinderCylinder)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testCylinderCylinder(fcl_mesh_fcl);
 
-#if HAVE_ODE_COLLISION
+#if HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   testCylinderCylinder(ode);
 #endif
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testCylinderCylinder(bullet);
 #endif
@@ -1046,18 +1047,65 @@ TEST_F(COLLISION, testCapsuleCapsule)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testCapsuleCapsule(fcl_mesh_fcl);
 
-#if HAVE_ODE_COLLISION
+#if HAVE_ODE
   auto ode = OdeCollisionDetector::create();
   testCapsuleCapsule(ode);
 #endif
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testCapsuleCapsule(bullet);
 #endif
 
   // auto dart = DARTCollisionDetector::create();
   // testCapsuleCapsule(dart);
+}
+
+//==============================================================================
+void testPlane(const std::shared_ptr<CollisionDetector>& cd)
+{
+  auto planeFrame = SimpleFrame::createShared(Frame::World());
+  auto sphereFrame = SimpleFrame::createShared(Frame::World());
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+
+  auto plane = std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  auto sphere = std::make_shared<SphereShape>(0.5);
+  auto box = std::make_shared<BoxShape>(Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  planeFrame->setShape(plane);
+  sphereFrame->setShape(sphere);
+  boxFrame->setShape(box);
+
+  auto group = cd->createCollisionGroup(
+      planeFrame.get(),
+      sphereFrame.get(),
+      boxFrame.get());
+
+  EXPECT_EQ(group->getNumShapeFrames(), 3u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  result.clear();
+  sphereFrame->setTranslation(Eigen::Vector3d(-10.0, 0.0, 1.0));
+  boxFrame->setTranslation(Eigen::Vector3d(-8.0, 0.0, 1.0));
+  EXPECT_FALSE(group->collide(option, &result));
+
+  result.clear();
+  sphereFrame->setTranslation(Eigen::Vector3d(-10.0, 0.0, 0.49));
+  boxFrame->setTranslation(Eigen::Vector3d(-8.0, 0.0, 0.49));
+  EXPECT_TRUE(group->collide(option, &result));
+}
+
+//==============================================================================
+TEST_F(COLLISION, testPlane)
+{
+#if HAVE_ODE
+  auto ode = OdeCollisionDetector::create();
+  testPlane(ode);
+#endif
 }
 
 //==============================================================================
@@ -1083,7 +1131,7 @@ TEST_F(COLLISION, Options)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testOptions(fcl_mesh_fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testOptions(bullet);
 #endif
@@ -1106,13 +1154,20 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
   auto* body1 = pair1.second;
   body1->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
 
-  // Create a collision group from the skeleton
-  auto group = cd->createCollisionGroup(skel.get());
+  // Create a world and add the created skeleton
+  auto world = std::make_shared<simulation::World>();
+  auto constraintSolver = world->getConstraintSolver();
+  constraintSolver->setCollisionDetector(cd);
+  world->addSkeleton(skel);
+
+  // Get the collision group from the constraint solver
+  auto group = constraintSolver->getCollisionGroup();
   EXPECT_EQ(group->getNumShapeFrames(), 2u);
 
   // Default collision filter for Skeleton
-  CollisionOption option;
-  option.collisionFilter = std::make_shared<BodyNodeCollisionFilter>();
+  auto& option = constraintSolver->getCollisionOption();
+  auto bodyNodeFilter = std::make_shared<BodyNodeCollisionFilter>();
+  option.collisionFilter = bodyNodeFilter;
 
   skel->enableSelfCollisionCheck();
   skel->enableAdjacentBodyCheck();
@@ -1141,6 +1196,18 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_FALSE(skel->isEnabledAdjacentBodyCheck());
   EXPECT_TRUE(group->collide());
   EXPECT_FALSE(group->collide(option));
+
+  // Test blacklist
+  skel->enableSelfCollisionCheck();
+  skel->enableAdjacentBodyCheck();
+  bodyNodeFilter->addBodyNodePairToBlackList(body0, body1);
+  EXPECT_FALSE(group->collide(option));
+  bodyNodeFilter->removeBodyNodePairFromBlackList(body0, body1);
+  EXPECT_TRUE(group->collide(option));
+  bodyNodeFilter->addBodyNodePairToBlackList(body0, body1);
+  EXPECT_FALSE(group->collide(option));
+  bodyNodeFilter->removeAllBodyNodePairsFromBlackList();
+  EXPECT_TRUE(group->collide(option));
 }
 
 //==============================================================================
@@ -1166,7 +1233,7 @@ TEST_F(COLLISION, Filter)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testFilter(fcl_mesh_fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testFilter(bullet);
 #endif
@@ -1268,7 +1335,7 @@ TEST_F(COLLISION, CreateCollisionGroupFromVariousObject)
   // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
   // testCreateCollisionGroups(fcl_mesh_fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testCreateCollisionGroups(bullet);
 #endif
@@ -1357,4 +1424,23 @@ TEST_F(COLLISION, CollisionOfPrescribedJoints)
     EXPECT_NEAR(joint6->getVelocity(0), 0.0, tol);
     EXPECT_NEAR(joint6->getAcceleration(0), 0.0, tol);
   }
+}
+
+//==============================================================================
+TEST_F(COLLISION, Factory)
+{
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("fcl"));
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("dart"));
+
+#if HAVE_BULLET
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("bullet"));
+#else
+  EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("bullet"));
+#endif
+
+#if HAVE_ODE
+  EXPECT_TRUE(collision::CollisionDetector::getFactory()->canCreate("ode"));
+#else
+  EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("ode"));
+#endif
 }

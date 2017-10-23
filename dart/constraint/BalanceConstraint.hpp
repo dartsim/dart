@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -96,11 +97,11 @@ public:
       const std::shared_ptr<dynamics::HierarchicalIK>& _newIK) const override;
 
   // Documentation inherited
-  double eval(const Eigen::VectorXd& _x) override;
+  double eval(const Eigen::VectorXd& _x) const override;
 
   // Documentation inherited
   void evalGradient(const Eigen::VectorXd& _x,
-                    Eigen::Map<Eigen::VectorXd> _grad) override;
+                    Eigen::Map<Eigen::VectorXd> _grad) const override;
 
   /// Set the method that this constraint function will use to compute the
   /// error. See the ErrorMethod_t docs for more information.
@@ -143,7 +144,7 @@ protected:
   /// Convert the gradient that gets generated via Jacobian methods into a
   /// gradient that can be used by a GradientDescentSolver.
   void convertJacobianMethodOutputToGradient(
-      Eigen::Map<Eigen::VectorXd>& grad);
+      Eigen::Map<Eigen::VectorXd>& grad) const;
 
   /// Pointer to the hierarchical IK that owns this Function. Note that this
   /// Function does not work correctly without a HierarchicalIK.
@@ -163,11 +164,11 @@ protected:
 
   /// The indices of the supporting end effectors that are closest to the center
   /// of mass. These are used when using FROM_EDGE
-  std::size_t mClosestEndEffector[2];
+  mutable std::size_t mClosestEndEffector[2];
 
   /// The error vector points away from the direction that the center of mass
   /// should move in order to reduce the balance error
-  Eigen::Vector3d mLastError;
+  mutable Eigen::Vector3d mLastError;
 
   /// The last computed location of the center of mass
   Eigen::Vector3d mLastCOM;
@@ -177,24 +178,24 @@ protected:
 
   /// Cache for the center of mass Jacobian so that the memory space does not
   /// need to be reallocated each loop
-  math::LinearJacobian mComJacCache;
+  mutable math::LinearJacobian mComJacCache;
 
   /// Cache for the end effector Jacobians so the space does not need to be
   /// reallocated each loop
-  math::LinearJacobian mEEJacCache;
+  mutable math::LinearJacobian mEEJacCache;
 
   /// Cache for the SVD
-  Eigen::JacobiSVD<math::LinearJacobian> mSVDCache;
+  mutable Eigen::JacobiSVD<math::LinearJacobian> mSVDCache;
 
   /// Cache for the full null space
-  Eigen::MatrixXd mNullSpaceCache;
+  mutable Eigen::MatrixXd mNullSpaceCache;
 
   /// Cache for an individual null space
-  Eigen::MatrixXd mPartialNullSpaceCache;
+  mutable Eigen::MatrixXd mPartialNullSpaceCache;
 
   /// Cache used by convertJacobianMethodOutputToGradient to avoid reallocating
   /// this vector on each iteration.
-  Eigen::VectorXd mInitialPositionsCache;
+  mutable Eigen::VectorXd mInitialPositionsCache;
 };
 
 } // namespace constraint
