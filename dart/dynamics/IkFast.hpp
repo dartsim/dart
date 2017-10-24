@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -41,10 +43,25 @@
 namespace dart {
 namespace dynamics {
 
+/// A base class for IkFast-based analytical inverse kinematics classes.
+///
+/// The detail of IkFast can be found here:
+/// http://openrave.org/docs/0.8.2/openravepy/ikfast/
 class IkFast : public InverseKinematics::Analytical
 {
 public:
   /// Constructor
+  ///
+  /// \param[in] ik The parent InverseKinematics solver that is associated whit
+  /// this gradient method.
+  /// \param[in] dofMap The indices to the degrees-of-freedom that will be
+  /// solved by IkFast. The number of DOFs can be varied depending on the IkFast
+  /// solvers.
+  /// \param[in] freeDofMap The indices to the DOFs that are not solved by the
+  /// IkFast solver. The values of these DOFs should be set properly.
+  /// \param[in] methodName The name of this analytical inverse kinematics
+  /// method.
+  /// \param[in] properties Properties of InverseKinematics::Analytical.
   IkFast(
       InverseKinematics* ik,
       const std::vector<std::size_t>& dofMap,
