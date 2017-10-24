@@ -68,15 +68,14 @@ bool loadFunction(
 } // namespace (anonymous)
 
 //==============================================================================
-SharedLibraryIkFast::SharedLibraryIkFast(
-    InverseKinematics* ik,
-    const std::string& fileName,
+SharedLibraryIkFast::SharedLibraryIkFast(InverseKinematics* ik,
+    const std::string& filePath,
     const std::vector<std::size_t>& dofMap,
     const std::vector<std::size_t>& freeDofMap,
     const std::string& methodName,
     const InverseKinematics::Analytical::Properties& properties)
   : IkFast{ik, dofMap, freeDofMap, methodName, properties},
-    mFileName{fileName},
+    mFilePath{filePath},
     mSharedLibrary{nullptr},
     mGetNumFreeParameters{nullptr},
     mGetFreeParameters{nullptr},
@@ -87,45 +86,45 @@ SharedLibraryIkFast::SharedLibraryIkFast(
     mGetKinematicsHash{nullptr},
     mGetIkFastVersion{nullptr}
 {
-  auto lib = common::SharedLibrary::create(mFileName);
+  auto lib = common::SharedLibrary::create(mFilePath);
 
   if (!lib)
   {
     dterr << "[SharedLibraryIkFast] Could not load dynamic library '"
-          << mFileName << "'. This SharedLibraryIkFast is invalid.\n";
+          << mFilePath << "'. This SharedLibraryIkFast is invalid.\n";
     return;
   }
 
   if (!loadFunction<IkFastFuncGetInt>(
-        lib, "GetNumFreeParameters", mFileName, mGetNumFreeParameters))
+        lib, "GetNumFreeParameters", mFilePath, mGetNumFreeParameters))
       return;
 
   if (!loadFunction<IkFastFuncGetIntPtr>(
-        lib, "GetFreeParameters", mFileName, mGetFreeParameters))
+        lib, "GetFreeParameters", mFilePath, mGetFreeParameters))
     return;
 
   if (!loadFunction<IkFastFuncGetInt>(
-        lib, "GetNumJoints", mFileName, mGetNumJoints))
+        lib, "GetNumJoints", mFilePath, mGetNumJoints))
     return;
 
   if (!loadFunction<IkFastFuncGetInt>(
-        lib, "GetIkRealSize", mFileName, mGetIkRealSize))
+        lib, "GetIkRealSize", mFilePath, mGetIkRealSize))
     return;
 
   if (!loadFunction<IkFastFuncGetInt>(
-        lib, "GetIkType", mFileName, mGetIkType))
+        lib, "GetIkType", mFilePath, mGetIkType))
     return;
 
   if (!loadFunction<IkFastFuncComputeIk>(
-        lib, "ComputeIk", mFileName, mComputeIk))
+        lib, "ComputeIk", mFilePath, mComputeIk))
     return;
 
   if (!loadFunction<IkFastFuncGetConstCharPtr>(
-        lib, "GetKinematicsHash", mFileName, mGetKinematicsHash))
+        lib, "GetKinematicsHash", mFilePath, mGetKinematicsHash))
     return;
 
   if (!loadFunction<IkFastFuncGetConstCharPtr>(
-        lib, "GetIkFastVersion", mFileName, mGetIkFastVersion))
+        lib, "GetIkFastVersion", mFilePath, mGetIkFastVersion))
     return;
 
   mSharedLibrary = lib;
@@ -137,7 +136,7 @@ auto SharedLibraryIkFast::clone(InverseKinematics* newIK) const
 {
   return dart::common::make_unique<SharedLibraryIkFast>(
       newIK,
-      mFileName,
+      mFilePath,
       mDofs,
       mFreeDofs,
       getMethodName(),

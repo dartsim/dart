@@ -37,12 +37,30 @@
 namespace dart {
 namespace dynamics {
 
+/// IkFast-based analytical inverse kinematics class.
+///
+/// The detail of IkFast can be found here:
+/// http://openrave.org/docs/0.8.2/openravepy/ikfast/
 class SharedLibraryIkFast : public IkFast
 {
 public:
+  /// Constructor
+  ///
+  /// \param[in] ik The parent InverseKinematics solver that is associated whit
+  /// this gradient method.
+  /// \param[in] filePath The path to the shared library of the IkFast binary
+  /// file
+  /// \param[in] dofMap The indices to the degrees-of-freedom that will be
+  /// solved by IkFast. The number of DOFs can be varied depending on the IkFast
+  /// solvers.
+  /// \param[in] freeDofMap The indices to the DOFs that are not solved by the
+  /// IkFast solver. The values of these DOFs should be set properly.
+  /// \param[in] methodName The name of this analytical inverse kinematics
+  /// method.
+  /// \param[in] properties Properties of InverseKinematics::Analytical.
   SharedLibraryIkFast(
       InverseKinematics* ik,
-      const std::string& fileName,
+      const std::string& filePath,
       const std::vector<std::size_t>& dofMap,
       const std::vector<std::size_t>& freeDofMap,
       const std::string& methodName = "IKFast",
@@ -94,8 +112,8 @@ protected:
       ikfast::IkSolutionListBase<IkReal>& solutions);
   using IkFastFuncGetConstCharPtr = const char* (*)();
 
-  /// Filename of the ikfast shared library.
-  std::string mFileName;
+  /// File path to the ikfast shared library.
+  std::string mFilePath;
 
   mutable std::shared_ptr<common::SharedLibrary> mSharedLibrary;
 
