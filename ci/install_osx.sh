@@ -7,7 +7,7 @@ PACKAGES='
 git
 cmake
 assimp
-fcl
+dartsim/dart/fcl
 bullet --with-double-precision
 ode --with-libccd --with-double-precision
 flann
