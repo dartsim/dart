@@ -97,37 +97,32 @@ SharedLibraryIkFast::SharedLibraryIkFast(InverseKinematics* ik,
     return;
   }
 
-  if (!loadFunction<IkFastFuncGetInt>(
-        lib, "GetNumFreeParameters", mFilePath, mGetNumFreeParameters))
-      return;
+  // It could fail to load the following symbols from the given shared library.
+  // So we should check if the symbol is actually loaded before using it.
 
-  if (!loadFunction<IkFastFuncGetIntPtr>(
-        lib, "GetFreeParameters", mFilePath, mGetFreeParameters))
-    return;
+  loadFunction<IkFastFuncGetInt>(
+        lib, "GetNumFreeParameters", mFilePath, mGetNumFreeParameters);
 
-  if (!loadFunction<IkFastFuncGetInt>(
-        lib, "GetNumJoints", mFilePath, mGetNumJoints))
-    return;
+  loadFunction<IkFastFuncGetIntPtr>(
+        lib, "GetFreeParameters", mFilePath, mGetFreeParameters);
 
-  if (!loadFunction<IkFastFuncGetInt>(
-        lib, "GetIkRealSize", mFilePath, mGetIkRealSize))
-    return;
+  loadFunction<IkFastFuncGetInt>(
+        lib, "GetNumJoints", mFilePath, mGetNumJoints);
 
-  if (!loadFunction<IkFastFuncGetInt>(
-        lib, "GetIkType", mFilePath, mGetIkType))
-    return;
+  loadFunction<IkFastFuncGetInt>(
+        lib, "GetIkRealSize", mFilePath, mGetIkRealSize);
 
-  if (!loadFunction<IkFastFuncComputeIk>(
-        lib, "ComputeIk", mFilePath, mComputeIk))
-    return;
+  loadFunction<IkFastFuncGetInt>(
+        lib, "GetIkType", mFilePath, mGetIkType);
 
-  if (!loadFunction<IkFastFuncGetConstCharPtr>(
-        lib, "GetKinematicsHash", mFilePath, mGetKinematicsHash))
-    return;
+  loadFunction<IkFastFuncComputeIk>(
+        lib, "ComputeIk", mFilePath, mComputeIk);
 
-  if (!loadFunction<IkFastFuncGetConstCharPtr>(
-        lib, "GetIkFastVersion", mFilePath, mGetIkFastVersion))
-    return;
+  loadFunction<IkFastFuncGetConstCharPtr>(
+        lib, "GetKinematicsHash", mFilePath, mGetKinematicsHash);
+
+  loadFunction<IkFastFuncGetConstCharPtr>(
+        lib, "GetIkFastVersion", mFilePath, mGetIkFastVersion);
 
   mSharedLibrary = lib;
 }
@@ -150,8 +145,8 @@ int SharedLibraryIkFast::getNumFreeParameters() const
 {
   if (!mGetNumFreeParameters)
   {
-    dterr << "[SharedLibraryIkFast::getNumFreeParameters] This SharedLibrary is "
-          << "invalid. Returning 0.\n";
+    dterr << "[SharedLibraryIkFast::getNumFreeParameters] This SharedLibrary "
+          << "is invalid. Returning 0.\n";
     return 0;
   }
 
