@@ -96,6 +96,9 @@ bool InverseKinematics::solve(bool _applySolution)
   for(std::size_t i=0; i < skel->getNumDofs(); ++i)
     skel->getDof(i)->setVelocity(0.0);
 
+  std::stringstream ss;
+  mSolver->setOutStream(&ss);
+
   if(_applySolution)
   {
     bool wasSolved = mSolver->solve();

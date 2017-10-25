@@ -60,7 +60,7 @@ if(TARGET dart-utils-urdf)
   target_compile_options(GeneratedWamIkFast PRIVATE -w)
 
   dart_add_test("unit" test_IkFast)
-  target_link_libraries(test_IkFast dart-utils-urdf)
+  target_link_libraries(test_IkFast dart-utils-urdf dart-optimizer-nlopt)
   add_dependencies(test_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
 endif()
 

@@ -32,6 +32,7 @@
 
 #include <gtest/gtest.h>
 #include <dart/dart.hpp>
+#include <dart/optimizer/nlopt/nlopt.hpp>
 #include <dart/utils/urdf/urdf.hpp>
 #include "TestHelpers.hpp"
 
@@ -141,7 +142,7 @@ void verifySolution(
             << bodyNode.getTransform().matrix() << "\n";
 
   EXPECT_TRUE(equals(ik.getTarget()->getTransform().matrix(),
-                     bodyNode.getTransform().matrix(), 1e-4));
+                     bodyNode.getTransform().matrix(), 1e-3));
 }
 
 //==============================================================================
@@ -153,33 +154,38 @@ TEST(IkFast, SimpleBenchmark)
   auto wamArm1_wam7 = wamArm1->getBodyNode("/wam7");
   auto wamArm2_wam7 = wamArm2->getBodyNode("/wam7");
 
-  const auto numDofs = wamArm2_wam7->getNumDependentGenCoords();
-  std::cout << "numDofs: " << numDofs << "\n";
-
   auto ee1 = wamArm1_wam7->createEndEffector("ee");
   auto ee2 = wamArm2_wam7->createEndEffector("ee");
   auto ik1 = ee1->createIK();
   auto ik2 = ee2->createIK();
-  auto targetFrame1
-      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+
+  ik2->setSolver(std::make_shared<optimizer::NloptSolver>());
+
   ik1->setHierarchyLevel(1);
   ik2->setHierarchyLevel(1);
 
   loadWamArmIkFastSolver(*ik1);
 
-  ik2->getErrorMethod().setBounds(Eigen::VectorXd::Constant(numDofs, -1e-8),
-                                  Eigen::VectorXd::Constant(numDofs,  1e-8));
+  const auto numDofs = wamArm2_wam7->getNumDependentGenCoords();
+  std::cout << "numDofs: " << numDofs << "\n";
+  ik2->getErrorMethod().setBounds(Eigen::Vector6d::Constant(-1e-8),
+                                  Eigen::Vector6d::Constant( 1e-8));
   ik2->getSolver()->setNumMaxIterations(100);
 
-  targetFrame1->setRotation(Eigen::Matrix3d::Identity());
-  targetFrame1->setTranslation(Eigen::Vector3d(0, 0, 0.5));
+  auto targetFrame
+      = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  targetFrame->setRotation(Eigen::Matrix3d::Identity());
+  targetFrame->setTranslation(Eigen::Vector3d(0, 0, 0.5));
 
-//  ik1->setTarget(targetFrame1);
-  ik2->setTarget(targetFrame1);
+  ik1->setTarget(targetFrame);
+  ik2->setTarget(targetFrame);
 
   ik1->solve();
   ik2->solve();
 
   verifySolution(*ik1, *wamArm1_wam7);
   verifySolution(*ik2, *wamArm2_wam7);
+
+  std::cout << "wam1: " << wamArm1->getPositions().transpose() << std::endl;
+  std::cout << "wam2: " << wamArm2->getPositions().transpose() << std::endl;
 }
