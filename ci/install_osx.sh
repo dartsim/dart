@@ -14,7 +14,7 @@ boost
 eigen
 tinyxml
 tinyxml2
-libccd
+homebrew/science/libccd
 nlopt
 ipopt
 ros/deps/urdfdom
