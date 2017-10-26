@@ -30,43 +30,59 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCE_HPP_
-#define DART_COMMON_LOCALRESOURCE_HPP_
+#include "dart/common/detail/SharedLibraryManager.hpp"
 
-#include "dart/common/Resource.hpp"
+#include "dart/common/SharedLibrary.hpp"
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace common {
+namespace detail {
 
-class LocalResource : public virtual Resource
+//==============================================================================
+std::shared_ptr<SharedLibrary> SharedLibraryManager::load(
+    const boost::filesystem::path& path)
 {
-public:
-  explicit LocalResource(const std::string& _path);
-  virtual ~LocalResource();
+  // Check if the given path exits
+  const bool exists = boost::filesystem::exists(path);
+  if (!exists)
+  {
+    dtwarn << "[SharedLibraryManager::load] The given path doesn't exist. "
+           << "Returning nullptr.\n";
+    return nullptr;
+  }
 
-  LocalResource(const LocalResource& _other) = delete;
-  LocalResource& operator=(const LocalResource& _other) = delete;
+  // Convert the given path to the canonical path
+  const auto canonicalPath = boost::filesystem::canonical(path);
 
-  /// Returns true if the resource is open and in a valid state.
-  bool isGood() const;
+  const auto iter = mLibraries.find(canonicalPath);
 
-  // Documentation inherited.
-  std::size_t getSize() override;
+  const auto found = iter != mLibraries.end();
+  if (found)
+  {
+    auto lib = iter->second.lock();
 
-  // Documentation inherited.
-  std::size_t tell() override;
+    // This check could fail if all instances to the library go out of scope,
+    // since iter->second is a std::weak_ptr. In that case, we remove the
+    // destructed library from the list and create new one.
+    if (lib)
+      return lib;
+    else
+      mLibraries.erase(iter);
+  }
 
-  // Documentation inherited.
-  bool seek(ptrdiff_t _origin, SeekType _mode) override;
+  const auto newLib = std::make_shared<SharedLibrary>(
+      SharedLibrary::ProtectedConstruction, canonicalPath);
 
-  // Documentation inherited.
-  std::size_t read(void* _buffer, std::size_t _size, std::size_t _count) override;
+  if (!newLib->isValid())
+    return nullptr;
 
-private:
-  std::FILE* mFile;
-};
+  mLibraries[canonicalPath] = newLib;
+  assert(canonicalPath == newLib->getCanonicalPath());
 
+  return newLib;
+}
+
+} // namespace detail
 } // namespace common
 } // namespace dart
-
-#endif // ifndef DART_COMMON_LOCALRESOURCE_HPP_

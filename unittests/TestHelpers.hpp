@@ -63,7 +63,7 @@ enum TypeOfDOF
   DOF_X, DOF_Y, DOF_Z, DOF_ROLL, DOF_PITCH, DOF_YAW
 };
 
-/******************************************************************************/
+//==============================================================================
 /// Returns true if the two matrices are equal within the given bound
 template <class MATRIX>
 bool equals(const Eigen::DenseBase<MATRIX>& _expected,
@@ -95,6 +95,16 @@ bool equals(const Eigen::DenseBase<MATRIX>& _expected,
 
   // If no problems, the two matrices are equal
   return true;
+}
+
+//==============================================================================
+bool equals(const Eigen::Isometry3d& tf1,
+            const Eigen::Isometry3d& tf2, double tol = 1e-5)
+{
+  auto se3 = dart::math::logMap(tf1.inverse()*tf2);
+  auto norm = se3.norm();
+
+  return (norm < tol);
 }
 
 //==============================================================================
