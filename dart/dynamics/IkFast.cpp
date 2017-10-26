@@ -159,6 +159,43 @@ void convertIkSolutions(
   }
 }
 
+//==============================================================================
+bool checkDofMapValidity(
+    const InverseKinematics* ik,
+    const std::vector<std::size_t>& dofMap,
+    const std::string& dofMapName)
+{
+  // dependentDofs are the dependent DOFs of the BodyNode that is associated
+  // with ik. This function returns true if all the indices in dofMap are found
+  // in dependentDofs. Returns false otherwise.
+  const auto& dependentDofs = ik->getNode()->getDependentDofs();
+
+  for (const auto& dof : dofMap)
+  {
+    bool found = false;
+    for (auto dependentDof : dependentDofs)
+    {
+      const auto dependentDofIndex = dependentDof->getIndexInSkeleton();
+      if (dof == dependentDofIndex)
+      {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found)
+    {
+      dterr << "[IkFast::configure] Failed to configure. An element of the "
+            << "given " << dofMapName << " '" << dof
+            << "' is not a dependent dofs of Node '" << ik->getNode()->getName()
+            << "'.\n";
+      return false;
+    }
+  }
+
+  return true;
+}
+
 } // namespace (anonymous)
 
 //==============================================================================
@@ -202,39 +239,6 @@ bool IkFast::isConfigured() const
 }
 
 //==============================================================================
-bool checkDofMapValidity(
-    const InverseKinematics* ik,
-    const std::vector<std::size_t>& dofMap,
-    const std::vector<DegreeOfFreedom*>& dependentDofs,
-    const std::string& dofMapName)
-{
-  for (const auto& dof : dofMap)
-  {
-    bool found = false;
-    for (auto dependentDof : dependentDofs)
-    {
-      const auto dependentDofIndex = dependentDof->getIndexInSkeleton();
-      if (dof == dependentDofIndex)
-      {
-        found = true;
-        break;
-      }
-    }
-
-    if (!found)
-    {
-      dterr << "[IkFast::configure] Failed to configure. An element of the "
-            << "given " << dofMapName << " '" << dof
-            << "' is not a dependent dofs of Node '" << ik->getNode()->getName()
-            << "'.\n";
-      return false;
-    }
-  }
-
-  return true;
-}
-
-//==============================================================================
 void IkFast::configure() const
 {
   const auto ikFastNumJoints = getNumJoints();
@@ -258,12 +262,10 @@ void IkFast::configure() const
     return;
   }
 
-  const auto dependentDofs = mIK->getNode()->getDependentDofs();
-
-  if (!checkDofMapValidity(mIK.get(), mDofs, dependentDofs, "dof map"))
+  if (!checkDofMapValidity(mIK.get(), mDofs, "dof map"))
     return;
 
-  if (!checkDofMapValidity(mIK.get(), mFreeDofs, dependentDofs, "free dof map"))
+  if (!checkDofMapValidity(mIK.get(), mFreeDofs, "free dof map"))
     return;
 
   mFreeParams.resize(ikFastNumFreeJoints);
