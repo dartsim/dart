@@ -138,8 +138,7 @@ void CollisionGroup::removeAllShapeFrames()
 }
 
 //==============================================================================
-bool CollisionGroup::hasShapeFrame(
-    const dynamics::ShapeFrame* shapeFrame) const
+bool CollisionGroup::hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const
 {
   return std::find_if(mShapeFrameMap.begin(), mShapeFrameMap.end(),
                       [&](const std::pair<const dynamics::ShapeFrame*,
@@ -155,14 +154,16 @@ std::size_t CollisionGroup::getNumShapeFrames() const
 }
 
 //==============================================================================
-bool CollisionGroup::collide(const CollisionOption& option, CollisionResult& result)
+bool CollisionGroup::collide(
+    const CollisionOption& option, CollisionResult& result)
 {
   return mCollisionDetector->collide(this, option, result);
 }
 
 //==============================================================================
 bool CollisionGroup::collide(
-    CollisionGroup* other, const CollisionOption& option, CollisionResult& result)
+    CollisionGroup* other,
+    const CollisionOption& option, CollisionResult& result)
 {
   return mCollisionDetector->collide(this, other, option, result);
 }
