@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,101 +31,48 @@
  */
 
 // Must be included before any Bullet headers.
-#include "dart/config.h"
+#include "dart/config.hpp"
 
-#include "dart/collision/bullet/BulletCollisionDetector.h"
+#include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
 #include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
 
-#include "dart/common/Console.h"
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionFilter.h"
-#include "dart/collision/bullet/BulletTypes.h"
-#include "dart/collision/bullet/BulletCollisionObject.h"
-#include "dart/collision/bullet/BulletCollisionGroup.h"
-#include "dart/dynamics/ShapeFrame.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/PlaneShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SoftMeshShape.h"
+#include "dart/common/Console.hpp"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/bullet/BulletTypes.hpp"
+#include "dart/collision/bullet/BulletCollisionObject.hpp"
+#include "dart/collision/bullet/BulletCollisionGroup.hpp"
+#include "dart/collision/bullet/detail/BulletCollisionDispatcher.hpp"
+#include "dart/collision/bullet/detail/BulletOverlapFilterCallback.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 
 namespace dart {
 namespace collision {
 
 namespace {
 
-struct BulletOverlapFilterCallback : public btOverlapFilterCallback
-{
-  BulletOverlapFilterCallback(const CollisionOption& option, const CollisionResult& result)
-    : mOption(option),
-      mResult(result),
-      mDone(false)
-  {
-    // Do nothing
-  }
-
-  // return true when pairs need collision
-  bool needBroadphaseCollision(btBroadphaseProxy* proxy0,
-                               btBroadphaseProxy* proxy1) const override
-  {
-    if (mDone)
-      return false;
-
-    if ((mOption.binaryCheck && mResult.isCollision())
-        || (mResult.getNumContacts() >= mOption.maxNumContacts))
-    {
-      mDone = true;
-      return false;
-    }
-
-    assert((proxy0 != nullptr && proxy1 != nullptr) &&
-           "Bullet broadphase overlapping pair proxies are nullptr");
-
-    bool collide = (proxy0->m_collisionFilterGroup &
-                    proxy1->m_collisionFilterMask) != 0;
-    collide = collide && (proxy1->m_collisionFilterGroup &
-                          proxy0->m_collisionFilterMask);
-
-    const auto& filter = mOption.collisionFilter;
-
-    if (collide && filter)
-    {
-      auto bulletCollObj0
-          = static_cast<btCollisionObject*>(proxy0->m_clientObject);
-      auto bulletCollObj1
-          = static_cast<btCollisionObject*>(proxy1->m_clientObject);
-
-      auto userData0 = static_cast<BulletCollisionObject::UserData*>(
-            bulletCollObj0->getUserPointer());
-      auto userData1 = static_cast<BulletCollisionObject::UserData*>(
-            bulletCollObj1->getUserPointer());
-
-      collide = filter->needCollision(userData0->collisionObject,
-                                      userData1->collisionObject);
-    }
-
-    return collide;
-  }
-
-  const CollisionOption& mOption;
-  const CollisionResult& mResult;
-
-  /// Whether the collision iteration can stop
-  mutable bool mDone;
-};
-
 Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
-                       const BulletCollisionObject::UserData* userData1,
-                       const BulletCollisionObject::UserData* userData2);
+                       BulletCollisionObject* collObj1,
+                       BulletCollisionObject* collObj2);
 
-void convertContacts(
-    btCollisionWorld* collWorld, const CollisionOption& option, CollisionResult& result);
+void reportContacts(btCollisionWorld* collWorld,
+                     const CollisionOption& option,
+                     CollisionResult& result);
 
-btCollisionShape*
-createBulletEllipsoidMesh(float sizeX, float sizeY, float sizeZ);
+btCollisionShape* createBulletEllipsoidMesh(
+    float sizeX, float sizeY, float sizeZ);
 
 btCollisionShape* createBulletCollisionShapeFromAssimpScene(
     const Eigen::Vector3d& scale, const aiScene* scene);
@@ -138,7 +81,13 @@ btCollisionShape* createBulletCollisionShapeFromAssimpMesh(const aiMesh* mesh);
 
 } // anonymous namespace
 
-
+//==============================================================================
+BulletCollisionDetector::Registrar<BulletCollisionDetector>
+BulletCollisionDetector::mRegistrar{
+  BulletCollisionDetector::getStaticType(),
+  []() -> std::shared_ptr<dart::collision::BulletCollisionDetector> {
+      return dart::collision::BulletCollisionDetector::create();
+  }};
 
 //==============================================================================
 std::shared_ptr<BulletCollisionDetector> BulletCollisionDetector::create()
@@ -181,66 +130,191 @@ BulletCollisionDetector::createCollisionGroup()
 }
 
 //==============================================================================
-bool BulletCollisionDetector::collide(
-    CollisionGroup* group, const CollisionOption& option, CollisionResult& result)
+static bool checkGroupValidity(
+    BulletCollisionDetector* cd, CollisionGroup* group)
 {
-  result.clear();
-
-  if (this != group->getCollisionDetector().get())
+  if (cd != group->getCollisionDetector().get())
   {
-    dterr << "[BulletCollisionDetector::detect] Attempting to check collision "
+    dterr << "[BulletCollisionDetector::collide] Attempting to check collision "
           << "for a collision group that is created from a different collision "
           << "detector instance.\n";
 
     return false;
   }
 
-  auto castedData = static_cast<BulletCollisionGroup*>(group);
-  castedData->updateEngineData();
+  return true;
+}
 
-  auto bulletCollisionWorld = castedData->getBulletCollisionWorld();
-  auto bulletPairCache = bulletCollisionWorld->getPairCache();
-  auto filterCallback = new BulletOverlapFilterCallback(option, result);
+//==============================================================================
+static bool isCollision(btCollisionWorld* world)
+{
+  assert(world);
 
-  bulletPairCache->setOverlapFilterCallback(filterCallback);
-  bulletCollisionWorld->performDiscreteCollisionDetection();
+  auto dispatcher = world->getDispatcher();
+  assert(dispatcher);
 
-  convertContacts(bulletCollisionWorld, option, result);
+  const auto numManifolds = dispatcher->getNumManifolds();
 
-  return result.isCollision();
+  for (auto i = 0; i < numManifolds; ++i)
+  {
+    const auto* contactManifold = dispatcher->getManifoldByIndexInternal(i);
+
+    if (contactManifold->getNumContacts() > 0)
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+void filterOutCollisions(btCollisionWorld* world)
+{
+  assert(world);
+
+  auto dispatcher = static_cast<detail::BulletCollisionDispatcher*>(
+      world->getDispatcher());
+  assert(dispatcher);
+
+  const auto filter = dispatcher->getFilter();
+  if (!filter)
+    return;
+
+  const auto numManifolds = dispatcher->getNumManifolds();
+
+  std::vector<btPersistentManifold*> manifoldsToRelease;
+
+  for (auto i = 0; i < numManifolds; ++i)
+  {
+    const auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
+
+    const auto body0 = contactManifold->getBody0();
+    const auto body1 = contactManifold->getBody1();
+
+    const auto userPtr0 = body0->getUserPointer();
+    const auto userPtr1 = body1->getUserPointer();
+
+    const auto collObj0 = static_cast<BulletCollisionObject*>(userPtr0);
+    const auto collObj1 = static_cast<BulletCollisionObject*>(userPtr1);
+
+    if (filter->ignoresCollision(collObj0, collObj1))
+      manifoldsToRelease.push_back(contactManifold);
+  }
+
+  for (const auto& manifold : manifoldsToRelease)
+    dispatcher->clearManifold(manifold);
+}
+
+//==============================================================================
+bool BulletCollisionDetector::collide(
+    CollisionGroup* group,
+    const CollisionOption& option,
+    CollisionResult* result)
+{
+  if (result)
+    result->clear();
+
+  if (0u == option.maxNumContacts)
+    return false;
+
+  // Check if 'this' is the collision engine of 'group'.
+  if (!checkGroupValidity(this, group))
+    return false;
+
+  auto castedGroup = static_cast<BulletCollisionGroup*>(group);
+  auto collisionWorld = castedGroup->getBulletCollisionWorld();
+
+  auto dispatcher = static_cast<detail::BulletCollisionDispatcher*>(
+      collisionWorld->getDispatcher());
+  dispatcher->setFilter(option.collisionFilter);
+
+  // Filter out persistent contact pairs already existing in the world
+  filterOutCollisions(collisionWorld);
+
+  castedGroup->updateEngineData();
+  collisionWorld->performDiscreteCollisionDetection();
+
+  if (result)
+  {
+    reportContacts(collisionWorld, option, *result);
+
+    return result->isCollision();
+  }
+  else
+  {
+    return isCollision(collisionWorld);
+  }
 }
 
 //==============================================================================
 bool BulletCollisionDetector::collide(
     CollisionGroup* group1, CollisionGroup* group2,
-    const CollisionOption& option, CollisionResult& result)
+    const CollisionOption& option, CollisionResult* result)
 {
-  result.clear();
+  if (result)
+    result->clear();
 
-  if ((this != group1->getCollisionDetector().get())
-      || (this != group2->getCollisionDetector().get()))
-  {
-    dterr << "[BulletCollisionDetector::detect] Attempting to check collision "
-          << "for a collision group that is created from a different collision "
-          << "detector instance.\n";
-
+  if (0u == option.maxNumContacts)
     return false;
-  }
 
-  auto group = common::make_unique<BulletCollisionGroup>(shared_from_this());
-  group->addShapeFramesOf(group1, group2);
-  group->updateEngineData();
+  if (!checkGroupValidity(this, group1))
+    return false;
 
-  auto bulletCollisionWorld = group->getBulletCollisionWorld();
+  if (!checkGroupValidity(this, group2))
+    return false;
+
+  dtwarn << "[BulletCollisionDetector::collide] collide(group1, group2) "
+         << "supposed to check collisions of the objects in group1 against the "
+         << "objects in group2. However, the current implementation of this "
+         << "function checks for all the objects against each other of both "
+         << "group1 and group2, which is an incorrect behavior. This bug will "
+         << "be fixed in the next patch release. (see #717 for the details)\n";
+
+  mGroupForFiltering.reset(new BulletCollisionGroup(shared_from_this()));
+  auto bulletCollisionWorld = mGroupForFiltering->getBulletCollisionWorld();
   auto bulletPairCache = bulletCollisionWorld->getPairCache();
-  auto filterCallback = new BulletOverlapFilterCallback(option, result);
-
+  auto filterCallback = new detail::BulletOverlapFilterCallback(option.collisionFilter);
   bulletPairCache->setOverlapFilterCallback(filterCallback);
+
+  mGroupForFiltering->addShapeFramesOf(group1, group2);
+  mGroupForFiltering->updateEngineData();
+
   bulletCollisionWorld->performDiscreteCollisionDetection();
 
-  convertContacts(bulletCollisionWorld, option, result);
+  if (result)
+  {
+    reportContacts(bulletCollisionWorld, option, *result);
 
-  return result.isCollision();
+    return result->isCollision();
+  }
+  else
+  {
+    return isCollision(bulletCollisionWorld);
+  }
+}
+
+//==============================================================================
+double BulletCollisionDetector::distance(
+    CollisionGroup* /*group*/,
+    const DistanceOption& /*option*/,
+    DistanceResult* /*result*/)
+{
+  dtwarn << "[BulletCollisionDetector::distance] This collision detector does "
+         << "not support (signed) distance queries. Returning 0.0.\n";
+
+  return 0.0;
+}
+
+//==============================================================================
+double BulletCollisionDetector::distance(
+    CollisionGroup* /*group1*/,
+    CollisionGroup* /*group2*/,
+    const DistanceOption& /*option*/,
+    DistanceResult* /*result*/)
+{
+  dtwarn << "[BulletCollisionDetector::distance] This collision detector does "
+         << "not support (signed) distance queries. Returning.\n";
+
+  return 0.0;
 }
 
 //==============================================================================
@@ -324,107 +398,142 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
   using dynamics::Shape;
+  using dynamics::SphereShape;
   using dynamics::BoxShape;
   using dynamics::EllipsoidShape;
   using dynamics::CylinderShape;
+  using dynamics::CapsuleShape;
+  using dynamics::ConeShape;
   using dynamics::PlaneShape;
+  using dynamics::MultiSphereConvexHullShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
 
   btCollisionShape* bulletCollisionShape = nullptr;
 
-  switch (shape->getShapeType())
+  if (shape->is<SphereShape>())
   {
-    case Shape::BOX:
+    assert(dynamic_cast<const SphereShape*>(shape.get()));
+
+    const auto sphere = static_cast<const SphereShape*>(shape.get());
+    const auto radius = sphere->getRadius();
+
+    bulletCollisionShape = new btSphereShape(radius);
+  }
+  else if (shape->is<BoxShape>())
+  {
+    assert(dynamic_cast<const BoxShape*>(shape.get()));
+
+    const auto box = static_cast<const BoxShape*>(shape.get());
+    const Eigen::Vector3d& size = box->getSize();
+
+    bulletCollisionShape = new btBoxShape(convertVector3(size*0.5));
+  }
+  else if (shape->is<EllipsoidShape>())
+  {
+    assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
+
+    const auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
+    const Eigen::Vector3d& radii = ellipsoid->getRadii();
+
+    bulletCollisionShape = createBulletEllipsoidMesh(
+          radii[0]*2.0, radii[1]*2.0, radii[2]*2.0);
+  }
+  else if (shape->is<CylinderShape>())
+  {
+    assert(dynamic_cast<const CylinderShape*>(shape.get()));
+
+    const auto cylinder = static_cast<const CylinderShape*>(shape.get());
+    const auto radius = cylinder->getRadius();
+    const auto height = cylinder->getHeight();
+    const auto size = btVector3(radius, radius, height * 0.5);
+
+    bulletCollisionShape = new btCylinderShapeZ(size);
+  }
+  else if (shape->is<CapsuleShape>())
+  {
+    assert(dynamic_cast<const CapsuleShape*>(shape.get()));
+
+    const auto capsule = static_cast<const CapsuleShape*>(shape.get());
+    const auto radius = capsule->getRadius();
+    const auto height = capsule->getHeight();
+
+    bulletCollisionShape = new btCapsuleShapeZ(radius, height);
+  }
+  else if (shape->is<ConeShape>())
+  {
+    assert(dynamic_cast<const ConeShape*>(shape.get()));
+
+    const auto cone = static_cast<const ConeShape*>(shape.get());
+    const auto radius = cone->getRadius();
+    const auto height = cone->getHeight();
+
+    bulletCollisionShape = new btConeShapeZ(radius, height);
+    bulletCollisionShape->setMargin(0.0);
+    // TODO(JS): Bullet seems to use constant margin 0.4, however this could be
+    // dangerous when the cone is sufficiently small. We use zero margin here
+    // until find better solution even using zero margin is not recommended:
+    // https://www.sjbaker.org/wiki/index.php?title=Physics_-_Bullet_Collected_random_advice#Minimum_object_sizes_-_by_Erwin
+  }
+  else if (shape->is<PlaneShape>())
+  {
+    assert(dynamic_cast<const PlaneShape*>(shape.get()));
+
+    const auto plane = static_cast<const PlaneShape*>(shape.get());
+    const Eigen::Vector3d normal = plane->getNormal();
+    const double offset = plane->getOffset();
+
+    bulletCollisionShape = new btStaticPlaneShape(
+          convertVector3(normal), offset);
+  }
+  else if (shape->is<MultiSphereConvexHullShape>())
+  {
+    assert(dynamic_cast<const MultiSphereConvexHullShape*>(shape.get()));
+
+    const auto multiSphere = static_cast<const MultiSphereConvexHullShape*>(shape.get());
+    const auto numSpheres = multiSphere->getNumSpheres();
+    const auto& spheres = multiSphere->getSpheres();
+
+    std::vector<btVector3> bulletPositions(numSpheres);
+    std::vector<btScalar> bulletRadii(numSpheres);
+
+    for (auto i = 0u; i < numSpheres; ++i)
     {
-      assert(dynamic_cast<const BoxShape*>(shape.get()));
-
-      const auto box = static_cast<const BoxShape*>(shape.get());
-      const Eigen::Vector3d& size = box->getSize();
-
-      bulletCollisionShape = new btBoxShape(convertVector3(size*0.5));
-
-      break;
+      bulletRadii[i] = static_cast<btScalar>(spheres[i].first);
+      bulletPositions[i] = convertVector3(spheres[i].second);
     }
-    case Shape::ELLIPSOID:
-    {
-      assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
 
-      const auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
-      const Eigen::Vector3d& size = ellipsoid->getSize();
+    bulletCollisionShape = new btMultiSphereShape(
+          bulletPositions.data(), bulletRadii.data(), numSpheres);
+  }
+  else if (shape->is<MeshShape>())
+  {
+    assert(dynamic_cast<const MeshShape*>(shape.get()));
 
-      if (ellipsoid->isSphere())
-      {
-        bulletCollisionShape = new btSphereShape(size[0] * 0.5);
-      }
-      else
-      {
-        bulletCollisionShape = createBulletEllipsoidMesh(
-              size[0], size[1], size[2]);
-      }
+    const auto shapeMesh = static_cast<const MeshShape*>(shape.get());
+    const auto scale = shapeMesh->getScale();
+    const auto mesh = shapeMesh->getMesh();
 
-      break;
-    }
-    case Shape::CYLINDER:
-    {
-      assert(dynamic_cast<const CylinderShape*>(shape.get()));
+    bulletCollisionShape = createBulletCollisionShapeFromAssimpScene(
+          scale, mesh);
+  }
+  else if (shape->is<SoftMeshShape>())
+  {
+    assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
 
-      const auto cylinder = static_cast<const CylinderShape*>(shape.get());
-      const auto radius = cylinder->getRadius();
-      const auto height = cylinder->getHeight();
-      const auto size = btVector3(radius, radius, height * 0.5);
+    const auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
+    const auto mesh = softMeshShape->getAssimpMesh();
 
-      bulletCollisionShape = new btCylinderShapeZ(size);
+    bulletCollisionShape = createBulletCollisionShapeFromAssimpMesh(mesh);
+  }
+  else
+  {
+    dterr << "[BulletCollisionDetector::createBulletCollisionShape] "
+          << "Attempting to create an unsupported shape type ["
+          << shape->getType() << "] Creating a sphere with 0.1 radius "
+          << "instead.\n";
 
-      break;
-    }
-    case Shape::PLANE:
-    {
-      assert(dynamic_cast<const PlaneShape*>(shape.get()));
-
-      const auto plane = static_cast<const PlaneShape*>(shape.get());
-      const Eigen::Vector3d normal = plane->getNormal();
-      const double offset = plane->getOffset();
-
-      bulletCollisionShape = new btStaticPlaneShape(
-            convertVector3(normal), offset);
-
-      break;
-    }
-    case Shape::MESH:
-    {
-      assert(dynamic_cast<const MeshShape*>(shape.get()));
-
-      const auto shapeMesh = static_cast<const MeshShape*>(shape.get());
-      const auto scale = shapeMesh->getScale();
-      const auto mesh = shapeMesh->getMesh();
-
-      bulletCollisionShape = createBulletCollisionShapeFromAssimpScene(
-            scale, mesh);
-
-      break;
-    }
-    case Shape::SOFT_MESH:
-    {
-      assert(dynamic_cast<const SoftMeshShape*>(shape.get()));
-
-      const auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
-      const auto mesh = softMeshShape->getAssimpMesh();
-
-      bulletCollisionShape = createBulletCollisionShapeFromAssimpMesh(mesh);
-
-      break;
-    }
-    default:
-    {
-      dterr << "[BulletCollisionObjectData::init] "
-            << "Attempting to create unsupported shape type '"
-            << shape->getShapeType() << "'.\n";
-
-      bulletCollisionShape = new btSphereShape(0.1);
-
-      break;
-    }
+    bulletCollisionShape = new btSphereShape(0.1);
   }
 
   return bulletCollisionShape;
@@ -436,61 +545,63 @@ namespace {
 
 //==============================================================================
 Contact convertContact(const btManifoldPoint& bulletManifoldPoint,
-                       const BulletCollisionObject::UserData* userData1,
-                       const BulletCollisionObject::UserData* userData2)
+                       BulletCollisionObject* collObj1,
+                       BulletCollisionObject* collObj2)
 {
-  assert(userData1);
-  assert(userData2);
+  assert(collObj1);
+  assert(collObj2);
 
   Contact contact;
 
   contact.point = convertVector3(bulletManifoldPoint.getPositionWorldOnA());
-  contact.normal = convertVector3(-bulletManifoldPoint.m_normalWorldOnB);
+  contact.normal = convertVector3(bulletManifoldPoint.m_normalWorldOnB);
   contact.penetrationDepth = -bulletManifoldPoint.m_distance1;
-  contact.collisionObject1 = userData1->collisionObject;
-  contact.collisionObject2 = userData2->collisionObject;
+  contact.collisionObject1 = collObj1;
+  contact.collisionObject2 = collObj2;
 
   return contact;
 }
 
 //==============================================================================
-void convertContacts(
-    btCollisionWorld* collWorld, const CollisionOption& option, CollisionResult& result)
+void reportContacts(
+    btCollisionWorld* world,
+    const CollisionOption& option,
+    CollisionResult& result)
 {
-  assert(collWorld);
+  assert(world);
 
-  auto dispatcher = collWorld->getDispatcher();
+  auto dispatcher = static_cast<detail::BulletCollisionDispatcher*>(
+      world->getDispatcher());
   assert(dispatcher);
 
-  auto numManifolds = dispatcher->getNumManifolds();
+  const auto numManifolds = dispatcher->getNumManifolds();
 
   for (auto i = 0; i < numManifolds; ++i)
   {
-    auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
-    const auto bulletCollObj0 = contactManifold->getBody0();
-    const auto bulletCollObj1 = contactManifold->getBody1();
+    const auto contactManifold = dispatcher->getManifoldByIndexInternal(i);
 
-    auto userPointer0 = bulletCollObj0->getUserPointer();
-    auto userPointer1 = bulletCollObj1->getUserPointer();
+    const auto body0 = contactManifold->getBody0();
+    const auto body1 = contactManifold->getBody1();
 
-    auto userDataA
-        = static_cast<BulletCollisionObject::UserData*>(userPointer1);
-    auto userDataB
-        = static_cast<BulletCollisionObject::UserData*>(userPointer0);
+    const auto userPointer0 = body0->getUserPointer();
+    const auto userPointer1 = body1->getUserPointer();
 
-    auto numContacts = contactManifold->getNumContacts();
+    const auto collObj0 = static_cast<BulletCollisionObject*>(userPointer0);
+    const auto collObj1 = static_cast<BulletCollisionObject*>(userPointer1);
+
+    const auto numContacts = contactManifold->getNumContacts();
 
     for (auto j = 0; j < numContacts; ++j)
     {
-      auto& cp = contactManifold->getContactPoint(j);
+      const auto& cp = contactManifold->getContactPoint(j);
+      result.addContact(convertContact(cp, collObj0, collObj1));
 
-      result.addContact(convertContact(cp, userDataA, userDataB));
-
-      if (option.binaryCheck)
-        return;
-
+      // No need to check further collisions
       if (result.getNumContacts() >= option.maxNumContacts)
-        break;
+      {
+        dispatcher->setDone(true);
+        return;
+      }
     }
   }
 }

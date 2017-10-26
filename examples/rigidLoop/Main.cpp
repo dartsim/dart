@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.h"
+#include <dart/dart.hpp>
+#include <dart/utils/utils.hpp>
 
-#include "examples/rigidLoop/MyWindow.h"
+#include "MyWindow.hpp"
 
 using namespace dart;
 using namespace math;
@@ -49,7 +46,7 @@ int main(int argc, char* argv[])
   // load a skeleton file
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
-    = utils::SkelParser::readWorld(DART_DATA_PATH"/skel/chain.skel");
+    = utils::SkelParser::readWorld("dart://sample/skel/chain.skel");
   assert(myWorld != nullptr);
     
   // create and initialize the world

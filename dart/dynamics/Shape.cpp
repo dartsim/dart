@@ -1,14 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,20 +30,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Shape.h"
+#include "dart/dynamics/Shape.hpp"
+
+#include "dart/common/Console.hpp"
 
 #define PRIMITIVE_MAGIC_NUMBER 1000
 
 namespace dart {
 namespace dynamics {
+
 //==============================================================================
-Shape::Shape(ShapeType _type)
+Shape::Shape(ShapeType type)
   : mBoundingBox(),
     mVolume(0.0),
     mID(mCounter++),
     mVariance(STATIC),
-    mType(_type)
+    mType(type)
 {
+  // Do nothing
+}
+
+//==============================================================================
+Shape::Shape()
+  : mBoundingBox(),
+    mVolume(0.0),
+    mID(mCounter++),
+    mVariance(STATIC),
+    mType(UNSUPPORTED)
+{
+  // Do nothing
 }
 
 //==============================================================================
@@ -61,6 +71,18 @@ Shape::~Shape()
 const math::BoundingBox& Shape::getBoundingBox() const
 {
     return mBoundingBox;
+}
+
+//==============================================================================
+Eigen::Matrix3d Shape::computeInertiaFromDensity(double density) const
+{
+  return computeInertiaFromMass(density * getVolume());
+}
+
+//==============================================================================
+Eigen::Matrix3d Shape::computeInertiaFromMass(double mass) const
+{
+  return computeInertia(mass);
 }
 
 //==============================================================================
@@ -121,13 +143,25 @@ void Shape::refreshData()
 }
 
 //==============================================================================
-void Shape::notifyAlphaUpdate(double /*alpha*/)
+void Shape::notifyAlphaUpdate(double alpha)
+{
+  notifyAlphaUpdated(alpha);
+}
+
+//==============================================================================
+void Shape::notifyAlphaUpdated(double /*alpha*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-void Shape::notifyColorUpdate(const Eigen::Vector4d& /*color*/)
+void Shape::notifyColorUpdate(const Eigen::Vector4d& color)
+{
+  notifyColorUpdated(color);
+}
+
+//==============================================================================
+void Shape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 {
   // Do nothing
 }

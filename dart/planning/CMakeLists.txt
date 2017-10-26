@@ -1,14 +1,33 @@
+# Dependency checks
+find_package(FLANN 1.8.4 QUIET)
+dart_check_optional_package(FLANN "dart-planning" "flann" "1.8.4")
+
 # Search all header and source files
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
 
-include_directories(SYSTEM ${FLANN_INCLUDE_DIRS})
+# Set local target name
+set(target_name ${PROJECT_NAME}-planning)
+set(component_name planning)
 
-# Library
-dart_add_library(dart-planning ${srcs} ${hdrs})
-target_link_libraries(dart-planning dart ${FLANN_LIBRARIES})
+# Add target
+dart_add_library(${target_name} ${hdrs} ${srcs})
+target_include_directories(
+  ${target_name} SYSTEM
+  PUBLIC ${FLANN_INCLUDE_DIRS}
+)
+target_link_libraries(
+  ${target_name}
+  dart
+  ${FLANN_LIBRARIES}
+)
 
-# Generate header for this namespace
+# Component
+add_component(${PROJECT_NAME} ${component_name})
+add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
+
+## Generate header for this namespace
 dart_get_filename_components(header_names "planning headers" ${hdrs})
 dart_generate_include_header_list(
   planning_headers
@@ -17,18 +36,13 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/planning.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/planning.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/planning.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/planning.hpp
 )
 
-# Install
+## Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/planning.hpp
   DESTINATION include/dart/planning
   COMPONENT headers
 )
-install(TARGETS dart-planning EXPORT DARTTargets DESTINATION lib)
-
-# Coverage test files
-set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"
-    CACHE INTERNAL "files for coverage tests")

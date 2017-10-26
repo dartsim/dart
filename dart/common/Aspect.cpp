@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -38,8 +34,8 @@
 #include <string>
 #include <iostream>
 
-#include "dart/common/Aspect.h"
-#include "dart/common/Console.h"
+#include "dart/common/Aspect.hpp"
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace common {
@@ -66,17 +62,6 @@ void Aspect::setAspectProperties(const Properties& /*someProperties*/)
 const Aspect::Properties* Aspect::getAspectProperties() const
 {
   return nullptr;
-}
-
-//==============================================================================
-Aspect::Aspect(Composite* composite)
-{
-  if(nullptr == composite)
-  {
-    dterr << "[Aspect::constructor] You are not allowed to construct an Aspect "
-          << "outside of an Composite!\n";
-    assert(false);
-  }
 }
 
 //==============================================================================

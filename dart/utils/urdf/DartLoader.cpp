@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Ana C. Huamán Quispe <ahuaman3@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "DartLoader.h"
+#include "dart/utils/urdf/DartLoader.hpp"
 
 #include <map>
 #include <iostream>
@@ -43,26 +39,28 @@
 #include <urdf_parser/urdf_parser.h>
 #include <urdf_world/world.h>
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/RevoluteJoint.h"
-#include "dart/dynamics/PrismaticJoint.h"
-#include "dart/dynamics/WeldJoint.h"
-#include "dart/dynamics/FreeJoint.h"
-#include "dart/dynamics/PlanarJoint.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BoxShape.h"
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/CylinderShape.h"
-#include "dart/dynamics/MeshShape.h"
-#include "dart/simulation/World.h"
-#include "dart/utils/urdf/urdf_world_parser.h"
-
-using ModelInterfacePtr = boost::shared_ptr<urdf::ModelInterface>;
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/utils/DartResourceRetriever.hpp"
+#include "dart/utils/urdf/BackwardCompatibility.hpp"
+#include "dart/utils/urdf/urdf_world_parser.hpp"
 
 namespace dart {
 namespace utils {
+
+using ModelInterfacePtr = urdf_shared_ptr<urdf::ModelInterface>;
 
 DartLoader::DartLoader()
   : mLocalRetriever(new common::LocalResourceRetriever),
@@ -71,6 +69,7 @@ DartLoader::DartLoader()
 {
   mRetriever->addSchemaRetriever("file", mLocalRetriever);
   mRetriever->addSchemaRetriever("package", mPackageRetriever);
+  mRetriever->addSchemaRetriever("dart", DartResourceRetriever::create());
 }
 
 void DartLoader::addPackageDirectory(const std::string& _packageName,
@@ -153,7 +152,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
   }
 
   std::shared_ptr<urdf_parsing::World> worldInterface =
-      urdf_parsing::parseWorldURDF(_urdfString, _baseUri);
+      urdf_parsing::parseWorldURDF(_urdfString, _baseUri, resourceRetriever);
 
   if(!worldInterface)
   {
@@ -227,7 +226,8 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
       }
 
       const auto result
-          = createShapeNodes(root, rootNode, _baseUri, _resourceRetriever);
+          = createShapeNodes(_model, root, rootNode,
+                             _baseUri, _resourceRetriever);
       if(!result)
         return nullptr;
     }
@@ -241,13 +241,14 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     std::pair<dynamics::Joint*, dynamics::BodyNode*> pair =
         skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
           nullptr, dynamics::FreeJoint::Properties(
-            dynamics::MultiDofJoint<6>::Properties(
+            dynamics::GenericJoint<math::SE3Space>::Properties(
             dynamics::Joint::Properties("rootJoint"))),
           rootProperties);
     rootNode = pair.second;
 
     const auto result
-        = createShapeNodes(root, rootNode, _baseUri, _resourceRetriever);
+        = createShapeNodes(_model, root, rootNode,
+                           _baseUri, _resourceRetriever);
     if(!result)
       return nullptr;
   }
@@ -255,7 +256,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   for(std::size_t i = 0; i < root->child_links.size(); i++)
   {
     if (!createSkeletonRecursive(
-           skeleton, root->child_links[i].get(), rootNode,
+           _model, skeleton, root->child_links[i].get(), rootNode,
            _baseUri, _resourceRetriever))
       return nullptr;
 
@@ -265,6 +266,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
 }
 
 bool DartLoader::createSkeletonRecursive(
+  const urdf::ModelInterface* model,
   dynamics::SkeletonPtr _skel,
   const urdf::Link* _lk,
   dynamics::BodyNode* _parentNode,
@@ -282,13 +284,15 @@ bool DartLoader::createSkeletonRecursive(
   if(!node)
     return false;
 
-  const auto result = createShapeNodes(_lk, node, _baseUri, _resourceRetriever);
+  const auto result = createShapeNodes(
+        model, _lk, node, _baseUri, _resourceRetriever);
+
   if(!result)
     return false;
   
   for(std::size_t i = 0; i < _lk->child_links.size(); ++i)
   {
-    if (!createSkeletonRecursive(_skel, _lk->child_links[i].get(), node,
+    if (!createSkeletonRecursive(model, _skel, _lk->child_links[i].get(), node,
                                  _baseUri, _resourceRetriever))
       return false;
   }
@@ -308,10 +312,7 @@ bool DartLoader::readFileToString(
   if (!resource)
     return false;
 
-  // Safe because std::string is guaranteed to be contiguous in C++11.
-  const std::size_t size = resource->getSize();
-  _output.resize(size);
-  resource->read(&_output.front(), size, 1);
+  _output = _resourceRetriever->readAll(_uri);
 
   return true;
 }
@@ -333,15 +334,15 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   basicProperties.mT_ParentBodyToJoint =
       toEigen(_jt->parent_to_joint_origin_transform);
 
-  dynamics::SingleDofJoint::UniqueProperties singleDof;
+  dynamics::GenericJoint<math::R1Space>::UniqueProperties singleDof;
   if(_jt->limits)
   {
-    singleDof.mPositionLowerLimit = _jt->limits->lower;
-    singleDof.mPositionUpperLimit = _jt->limits->upper;
-    singleDof.mVelocityLowerLimit = -_jt->limits->velocity;
-    singleDof.mVelocityUpperLimit =  _jt->limits->velocity;
-    singleDof.mForceLowerLimit = -_jt->limits->effort;
-    singleDof.mForceUpperLimit =  _jt->limits->effort;
+    singleDof.mPositionLowerLimits[0] = _jt->limits->lower;
+    singleDof.mPositionUpperLimits[0] = _jt->limits->upper;
+    singleDof.mVelocityLowerLimits[0] = -_jt->limits->velocity;
+    singleDof.mVelocityUpperLimits[0] =  _jt->limits->velocity;
+    singleDof.mForceLowerLimits[0] = -_jt->limits->effort;
+    singleDof.mForceUpperLimits[0] =  _jt->limits->effort;
 
     // If the zero position is out of our limits, we should change the initial
     // position instead of assuming zero.
@@ -349,23 +350,26 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     {
       if(std::isfinite(_jt->limits->lower)
          && std::isfinite(_jt->limits->upper))
-        singleDof.mInitialPosition =
+        singleDof.mInitialPositions[0] =
             (_jt->limits->lower + _jt->limits->upper) / 2.0;
       else if(std::isfinite(_jt->limits->lower))
-        singleDof.mInitialPosition = _jt->limits->lower;
+        singleDof.mInitialPositions[0] = _jt->limits->lower;
       else if(std::isfinite(_jt->limits->upper))
-        singleDof.mInitialPosition = _jt->limits->upper;
+        singleDof.mInitialPositions[0] = _jt->limits->upper;
 
       // Any other case means that the limits are both +inf, both -inf, or
       // either of them is NaN. This should generate warnings elsewhere.
 
       // Apply the same logic to mRestPosition.
-      singleDof.mRestPosition = singleDof.mInitialPosition;
+      singleDof.mRestPositions = singleDof.mInitialPositions;
     }
   }
 
   if(_jt->dynamics)
-    singleDof.mDampingCoefficient = _jt->dynamics->damping;
+  {
+    singleDof.mDampingCoefficients[0] = _jt->dynamics->damping;
+    singleDof.mFrictions[0] = _jt->dynamics->friction;
+  }
 
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
   switch(_jt->type)
@@ -374,7 +378,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::CONTINUOUS:
     {
       dynamics::RevoluteJoint::Properties properties(
-            dynamics::SingleDofJoint::Properties(basicProperties, singleDof),
+            dynamics::GenericJoint<math::R1Space>::Properties(basicProperties, singleDof),
             toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
@@ -385,7 +389,7 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     case urdf::Joint::PRISMATIC:
     {
       dynamics::PrismaticJoint::Properties properties(
-            dynamics::SingleDofJoint::Properties(basicProperties, singleDof),
+            dynamics::GenericJoint<math::R1Space>::Properties(basicProperties, singleDof),
             toEigen(_jt->axis));
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::PrismaticJoint>(
@@ -401,7 +405,8 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
     }
     case urdf::Joint::FLOATING:
     {
-      dynamics::MultiDofJoint<6>::Properties properties(basicProperties);
+      dynamics::GenericJoint<math::SE3Space>::Properties properties(
+            basicProperties);
 
       pair = _skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
             _parent, properties, _body);
@@ -460,24 +465,29 @@ bool DartLoader::createDartNodeProperties(
   return true;
 }
 
-void setMaterial(dynamics::VisualAspect* visualAspect, const urdf::Visual* viz)
+void setMaterial(
+  const urdf::ModelInterface* model,
+  dynamics::VisualAspect* visualAspect,
+  const urdf::Visual* viz)
 {
   if(viz->material)
   {
-    visualAspect->setColor(Eigen::Vector3d(viz->material->color.r,
-                                          viz->material->color.g,
-                                          viz->material->color.b));
-  }
-}
+    urdf::Color urdf_color = viz->material->color;
 
-void setMaterial(dynamics::ShapePtr /*_shape*/,
-                 const urdf::Collision* /*_col*/)
-{
-  // Do nothing
+    const auto& m_it = model->materials_.find(viz->material_name);
+    if(m_it != model->materials_.end())
+      urdf_color = m_it->second->color;
+
+    Eigen::Vector4d color(urdf_color.r, urdf_color.g,
+                          urdf_color.b, urdf_color.a);
+
+    visualAspect->setColor(color);
+  }
 }
 
 //==============================================================================
 bool DartLoader::createShapeNodes(
+  const urdf::ModelInterface* model,
   const urdf::Link* lk,
   dynamics::BodyNode* bodyNode,
   const common::Uri& baseUri,
@@ -493,7 +503,7 @@ bool DartLoader::createShapeNodes(
     {
       auto shapeNode = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(shape);
       shapeNode->setRelativeTransform(toEigen(visual->origin));
-      setMaterial(shapeNode->getVisualAspect(), visual.get());
+      setMaterial(model, shapeNode->getVisualAspect(), visual.get());
     }
     else
     {
@@ -534,8 +544,7 @@ dynamics::ShapePtr DartLoader::createShape(
   // Sphere
   if(urdf::Sphere* sphere = dynamic_cast<urdf::Sphere*>(_vizOrCol->geometry.get()))
   {
-    shape = dynamics::ShapePtr(new dynamics::EllipsoidShape(
-                  2.0 * sphere->radius * Eigen::Vector3d::Ones()));
+    shape = dynamics::ShapePtr(new dynamics::SphereShape(sphere->radius));
   }
   // Box
   else if(urdf::Box* box = dynamic_cast<urdf::Box*>(_vizOrCol->geometry.get()))
@@ -570,7 +579,7 @@ dynamics::ShapePtr DartLoader::createShape(
       return nullptr;
 
     const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
-    shape = Eigen::make_aligned_shared<dynamics::MeshShape>(
+    shape = std::make_shared<dynamics::MeshShape>(
       scale, scene, resolvedUri, _resourceRetriever);
   }
   // Unknown geometry type

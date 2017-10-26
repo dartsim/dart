@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -38,12 +34,12 @@
 
 #include <osg/NodeCallback>
 
-#include "dart/gui/osg/WorldNode.h"
-#include "dart/gui/osg/ShapeFrameNode.h"
+#include "dart/gui/osg/WorldNode.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
 
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/BodyNode.h"
+#include "dart/simulation/World.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
 namespace gui {

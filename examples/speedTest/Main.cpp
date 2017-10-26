@@ -1,14 +1,9 @@
-
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -38,8 +33,8 @@
 #include <chrono>
 #include <numeric>
 
-#include "dart/dart.h"
-#include "dart/utils/utils.h"
+#include <dart/dart.hpp>
+#include "dart/utils/utils.hpp"
 
 double testForwardKinematicSpeed(dart::dynamics::SkeletonPtr skel,
                                  bool position=true,
@@ -170,25 +165,25 @@ void print_results(const std::vector<double>& result)
 std::vector<std::string> getSceneFiles()
 {
   std::vector<std::string> scenes;
-  scenes.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  scenes.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  scenes.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  scenes.push_back("dart://sample/skel/test/chainwhipa.skel");
+  scenes.push_back("dart://sample/skel/test/single_pendulum.skel");
+  scenes.push_back("dart://sample/skel/test/single_pendulum_euler_joint.skel");
+  scenes.push_back("dart://sample/skel/test/single_pendulum_ball_joint.skel");
+  scenes.push_back("dart://sample/skel/test/double_pendulum.skel");
+  scenes.push_back("dart://sample/skel/test/double_pendulum_euler_joint.skel");
+  scenes.push_back("dart://sample/skel/test/double_pendulum_ball_joint.skel");
+  scenes.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  scenes.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  scenes.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
+  scenes.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
+  scenes.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
+  scenes.push_back("dart://sample/skel/test/simple_tree_structure.skel");
+  scenes.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  scenes.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  scenes.push_back("dart://sample/skel/test/tree_structure.skel");
+  scenes.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
+  scenes.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
+  scenes.push_back("dart://sample/skel/fullbody1.skel");
 
   return scenes;
 }

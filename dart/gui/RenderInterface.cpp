@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jie (Jay) Tan <jtan34@cc.gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "RenderInterface.h"
+#include "dart/gui/RenderInterface.hpp"
 
 namespace dart {
 namespace gui {
@@ -106,6 +102,15 @@ void RenderInterface::scale(const Eigen::Vector3d& /*_scale*/)
 {
 }
 
+void RenderInterface::drawSphere(double /*_radius*/, int /*slices*/, int /*stacks*/)
+{
+}
+
+void RenderInterface::drawMultiSphere(const std::vector<std::pair<double, Eigen::Vector3d>>& /*spheres*/, int /*slices*/, int /*stacks*/)
+{
+  // Do nothing
+}
+
 void RenderInterface::drawEllipsoid(const Eigen::Vector3d& /*_size*/)
 {
 }
@@ -137,7 +142,19 @@ void RenderInterface::drawCube(const Eigen::Vector3d& /*_size*/)
 {
 }
 
-void RenderInterface::drawCylinder(double /*_radius*/, double /*_height*/)
+void RenderInterface::drawOpenCylinder(double /*baseRadius*/, double /*topRadius*/, double /*height*/, int /*slices*/, int /*stacks*/)
+{
+}
+
+void RenderInterface::drawCylinder(double /*_radius*/, double /*_height*/, int /*slices*/, int /*stacks*/)
+{
+}
+
+void RenderInterface::drawCapsule(double /*_radius*/, double /*_height*/)
+{
+}
+
+void RenderInterface::drawCone(double /*_radius*/, double /*_height*/)
 {
 }
 

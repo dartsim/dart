@@ -1,14 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Sumit Jain <sumit@cc.gatech.edu>
-              Saul Reynolds-Haertle <saulrh@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/Win3D.h"
+#include "dart/gui/Win3D.hpp"
 
 #include <algorithm>
 
-#include "dart/gui/LoadGlut.h"
+#include "dart/gui/LoadGlut.hpp"
 
 namespace dart {
 namespace gui {
@@ -129,11 +124,11 @@ void Win3D::click(int _button, int _state, int _x, int _y) {
     } else if (_button == 3 && _state == GLUT_DOWN) {  // mouse wheel up
       // each scroll generates a down and an immediate up,
       // so ignore ups
-      mZoom += 0.1;
+      mZoom += mZoom * 0.1;
     } else if (_button == 4 && _state == GLUT_DOWN) {  // mouse wheel down?
       // each scroll generates a down and an immediate up,
       // so ignore ups
-      mZoom -= 0.1;
+      mZoom -= mZoom * 0.1;
     }
     mMouseX = _x;
     mMouseY = _y;
@@ -158,7 +153,7 @@ void Win3D::drag(int _x, int _y) {
   }
   if (mTranslate) {
     Eigen::Matrix3d rot = mTrackBall.getRotationMatrix();
-    mTrans += rot.transpose()*Eigen::Vector3d(deltaX, -deltaY, 0.0);
+    mTrans += (1 / mZoom) * rot.transpose()*Eigen::Vector3d(deltaX, -deltaY, 0.0);
   }
   if (mZooming) {
     mZoom += deltaY*0.01;
@@ -230,7 +225,6 @@ void Win3D::initGL() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-  glEnable(GL_POLYGON_SMOOTH);
   glShadeModel(GL_SMOOTH);
   glPolygonMode(GL_FRONT, GL_FILL);
 }

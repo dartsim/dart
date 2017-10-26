@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,15 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/FileInfoDof.h"
+#include "dart/utils/FileInfoDof.hpp"
 
 #include <fstream>
 #include <string>
 
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/simulation/Recording.h"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/simulation/Recording.hpp"
 
 namespace dart {
 namespace utils {

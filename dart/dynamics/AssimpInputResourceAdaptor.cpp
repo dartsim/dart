@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael Koval <mkoval@cs.cmu.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -37,8 +33,8 @@
 #include <cassert>
 #include <iostream>
 #include <assimp/IOStream.hpp>
-#include "dart/common/Console.h"
-#include "AssimpInputResourceAdaptor.h"
+#include "dart/common/Console.hpp"
+#include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
 
 namespace dart {
 namespace dynamics {

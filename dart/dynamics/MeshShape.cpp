@@ -1,14 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s):
- * Date:
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/MeshShape.h"
+#include "dart/dynamics/MeshShape.hpp"
 
 #include <limits>
 #include <string>
@@ -44,11 +39,12 @@
 #include <assimp/postprocess.h>
 #include <assimp/cimport.h>
 
-#include "dart/config.h"
-#include "dart/common/Console.h"
-#include "dart/common/LocalResourceRetriever.h"
-#include "dart/common/Uri.h"
-#include "dart/dynamics/AssimpInputResourceAdaptor.h"
+#include "dart/config.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/dynamics/AssimpInputResourceAdaptor.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 
 #if !(ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
 // We define our own constructor and destructor for aiScene, because it seems to
@@ -152,6 +148,19 @@ MeshShape::~MeshShape() {
   delete mMesh;
 }
 
+//==============================================================================
+const std::string& MeshShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& MeshShape::getStaticType()
+{
+  static const std::string type("MeshShape");
+  return type;
+}
+
 const aiScene* MeshShape::getMesh() const {
   return mMesh;
 }
@@ -167,7 +176,7 @@ void MeshShape::update()
 }
 
 //==============================================================================
-void MeshShape::notifyAlphaUpdate(double alpha)
+void MeshShape::notifyAlphaUpdated(double alpha)
 {
   for(std::size_t i=0; i<mMesh->mNumMeshes; ++i)
   {
@@ -257,19 +266,11 @@ void MeshShape::setDisplayList(int _index) {
   mDisplayList = _index;
 }
 
-Eigen::Matrix3d MeshShape::computeInertia(double _mass) const {
-  // use bounding box to represent the mesh
-  Eigen::Vector3d bounds = mBoundingBox.computeFullExtents();
-  double l = bounds.x();
-  double h = bounds.y();
-  double w = bounds.z();
-
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
-  inertia(0, 0) = _mass / 12.0 * (h * h + w * w);
-  inertia(1, 1) = _mass / 12.0 * (l * l + w * w);
-  inertia(2, 2) = _mass / 12.0 * (l * l + h * h);
-
-  return inertia;
+//==============================================================================
+Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
+{
+  // Use bounding box to represent the mesh
+  return BoxShape::computeInertia(mBoundingBox.computeFullExtents(), _mass);
 }
 
 void MeshShape::updateVolume() {

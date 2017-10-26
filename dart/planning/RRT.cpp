@@ -1,6 +1,9 @@
 /*
- * Copyright (c) 2010-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,10 +44,12 @@
  * checking, sampling and etc.
  */
 
-#include "RRT.h"
-#include "dart/simulation/World.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/planning/RRT.hpp"
+
 #include <flann/flann.hpp>
+
+#include "dart/simulation/World.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 using namespace std;
 using namespace Eigen;

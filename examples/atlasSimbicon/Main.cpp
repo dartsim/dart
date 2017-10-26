@@ -1,14 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Karen Liu <karenliu@cc.gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -37,10 +32,12 @@
 
 #include <iostream>
 
-#include "dart/dart.h"
+#include <dart/dart.hpp>
+#include <dart/utils/utils.hpp>
+#include <dart/utils/urdf/urdf.hpp>
 
-#include "examples/atlasSimbicon/MyWindow.h"
-#include "examples/atlasSimbicon/Controller.h"
+#include "MyWindow.hpp"
+#include "Controller.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -58,11 +55,9 @@ int main(int argc, char* argv[])
   // Load ground and Atlas robot and add them to the world
   DartLoader urdfLoader;
   SkeletonPtr ground = urdfLoader.parseSkeleton(
-        DART_DATA_PATH"sdf/atlas/ground.urdf");
-//  SkeletonPtr atlas = SoftSdfParser::readSkeleton(
-//        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head.sdf");
+        "dart://sample/sdf/atlas/ground.urdf");
   SkeletonPtr atlas = SdfParser::readSkeleton(
-        DART_DATA_PATH"sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
+        "dart://sample/sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
   myWorld->addSkeleton(atlas);
   myWorld->addSkeleton(ground);
 

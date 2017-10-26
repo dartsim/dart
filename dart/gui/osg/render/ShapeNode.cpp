@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/osg/render/ShapeNode.h"
-#include "dart/gui/osg/ShapeFrameNode.h"
-#include "dart/dynamics/SimpleFrame.h"
+#include "dart/gui/osg/render/ShapeNode.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
 namespace gui {
@@ -52,7 +48,8 @@ ShapeNode::ShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
     mUtilized(true)
 {
   mShapeFrame = mParentShapeFrameNode->getShapeFrame();
-  mVisualAspect = mShapeFrame->getVisualAspect(true);
+  mVisualAspect = mShapeFrame->getVisualAspect();
+  assert(mVisualAspect);
 }
 
 //==============================================================================

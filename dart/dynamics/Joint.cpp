@@ -1,14 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,15 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Joint.h"
+#include "dart/dynamics/Joint.hpp"
 
 #include <string>
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -65,12 +60,12 @@ JointProperties::JointProperties(
     const std::string& _name,
     const Eigen::Isometry3d& _T_ParentBodyToJoint,
     const Eigen::Isometry3d& _T_ChildBodyToJoint,
-    bool _isPositionLimited,
+    bool _isPositionLimitEnforced,
     ActuatorType _actuatorType)
   : mName(_name),
     mT_ParentBodyToJoint(_T_ParentBodyToJoint),
     mT_ChildBodyToJoint(_T_ChildBodyToJoint),
-    mIsPositionLimited(_isPositionLimited),
+    mIsPositionLimitEnforced(_isPositionLimitEnforced),
     mActuatorType(_actuatorType)
 {
   // Do nothing
@@ -116,7 +111,7 @@ void Joint::setAspectProperties(const AspectProperties& properties)
   setName(properties.mName);
   setTransformFromParentBodyNode(properties.mT_ParentBodyToJoint);
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
-  setPositionLimitEnforced(properties.mIsPositionLimited);
+  setPositionLimitEnforced(properties.mIsPositionLimitEnforced);
   setActuatorType(properties.mActuatorType);
 }
 
@@ -268,9 +263,51 @@ std::shared_ptr<const Skeleton> Joint::getSkeleton() const
 //==============================================================================
 const Eigen::Isometry3d& Joint::getLocalTransform() const
 {
+  return getRelativeTransform();
+}
+
+//==============================================================================
+const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
+{
+  return getRelativeSpatialVelocity();
+}
+
+//==============================================================================
+const Eigen::Vector6d& Joint::getLocalSpatialAcceleration() const
+{
+  return getRelativeSpatialAcceleration();
+}
+
+//==============================================================================
+const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
+{
+  return getRelativePrimaryAcceleration();
+}
+
+//==============================================================================
+const math::Jacobian Joint::getLocalJacobian() const
+{
+  return getRelativeJacobian();
+}
+
+//==============================================================================
+math::Jacobian Joint::getLocalJacobian(const Eigen::VectorXd& positions) const
+{
+  return getRelativeJacobian(positions);
+}
+
+//==============================================================================
+const math::Jacobian Joint::getLocalJacobianTimeDeriv() const
+{
+  return getRelativeJacobianTimeDeriv();
+}
+
+//==============================================================================
+const Eigen::Isometry3d& Joint::getRelativeTransform() const
+{
   if(mNeedTransformUpdate)
   {
-    updateLocalTransform();
+    updateRelativeTransform();
     mNeedTransformUpdate = false;
   }
 
@@ -278,11 +315,11 @@ const Eigen::Isometry3d& Joint::getLocalTransform() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
+const Eigen::Vector6d& Joint::getRelativeSpatialVelocity() const
 {
   if(mNeedSpatialVelocityUpdate)
   {
-    updateLocalSpatialVelocity();
+    updateRelativeSpatialVelocity();
     mNeedSpatialVelocityUpdate = false;
   }
 
@@ -290,11 +327,11 @@ const Eigen::Vector6d& Joint::getLocalSpatialVelocity() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& Joint::getLocalSpatialAcceleration() const
+const Eigen::Vector6d& Joint::getRelativeSpatialAcceleration() const
 {
   if(mNeedSpatialAccelerationUpdate)
   {
-    updateLocalSpatialAcceleration();
+    updateRelativeSpatialAcceleration();
     mNeedSpatialAccelerationUpdate = false;
   }
 
@@ -302,11 +339,11 @@ const Eigen::Vector6d& Joint::getLocalSpatialAcceleration() const
 }
 
 //==============================================================================
-const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
+const Eigen::Vector6d& Joint::getRelativePrimaryAcceleration() const
 {
   if(mNeedPrimaryAccelerationUpdate)
   {
-    updateLocalPrimaryAcceleration();
+    updateRelativePrimaryAcceleration();
     mNeedPrimaryAccelerationUpdate = false;
   }
 
@@ -314,15 +351,15 @@ const Eigen::Vector6d& Joint::getLocalPrimaryAcceleration() const
 }
 
 //==============================================================================
-void Joint::setPositionLimitEnforced(bool _isPositionLimited)
+void Joint::setPositionLimitEnforced(bool _isPositionLimitEnforced)
 {
-  mAspectProperties.mIsPositionLimited = _isPositionLimited;
+  mAspectProperties.mIsPositionLimitEnforced = _isPositionLimitEnforced;
 }
 
 //==============================================================================
 bool Joint::isPositionLimitEnforced() const
 {
-  return mAspectProperties.mIsPositionLimited;
+  return mAspectProperties.mIsPositionLimitEnforced;
 }
 
 //==============================================================================
@@ -394,11 +431,17 @@ bool Joint::checkSanity(bool _printWarnings) const
 }
 
 //==============================================================================
+double Joint::getPotentialEnergy() const
+{
+  return computePotentialEnergy();
+}
+
+//==============================================================================
 void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
   mAspectProperties.mT_ParentBodyToJoint = _T;
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -406,8 +449,8 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
   mAspectProperties.mT_ChildBodyToJoint = _T;
-  updateLocalJacobian();
-  notifyPositionUpdate();
+  updateRelativeJacobian();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -433,8 +476,8 @@ Joint::Joint()
     mNeedSpatialVelocityUpdate(true),
     mNeedSpatialAccelerationUpdate(true),
     mNeedPrimaryAccelerationUpdate(true),
-    mIsLocalJacobianDirty(true),
-    mIsLocalJacobianTimeDerivDirty(true)
+    mIsRelativeJacobianDirty(true),
+    mIsRelativeJacobianTimeDerivDirty(true)
 {
   // Do nothing. The Joint::Aspect must be created by a derived class.
 }
@@ -443,6 +486,42 @@ Joint::Joint()
 DegreeOfFreedom* Joint::createDofPointer(std::size_t _indexInJoint)
 {
   return new DegreeOfFreedom(this, _indexInJoint);
+}
+
+//==============================================================================
+void Joint::updateLocalTransform() const
+{
+  updateRelativeTransform();
+}
+
+//==============================================================================
+void Joint::updateLocalSpatialVelocity() const
+{
+  updateRelativeSpatialVelocity();
+}
+
+//==============================================================================
+void Joint::updateLocalSpatialAcceleration() const
+{
+  updateRelativeSpatialAcceleration();
+}
+
+//==============================================================================
+void Joint::updateLocalPrimaryAcceleration() const
+{
+  updateRelativePrimaryAcceleration();
+}
+
+//==============================================================================
+void Joint::updateLocalJacobian(bool mandatory) const
+{
+  updateRelativeJacobian(mandatory);
+}
+
+//==============================================================================
+void Joint::updateLocalJacobianTimeDeriv() const
+{
+  updateRelativeJacobianTimeDeriv();
 }
 
 //==============================================================================
@@ -482,15 +561,21 @@ void Joint::updateArticulatedInertia() const
 //==============================================================================
 void Joint::notifyPositionUpdate()
 {
+  notifyPositionUpdated();
+}
+
+//==============================================================================
+void Joint::notifyPositionUpdated()
+{
   if(mChildBodyNode)
   {
-    mChildBodyNode->notifyTransformUpdate();
-    mChildBodyNode->notifyJacobianUpdate();
-    mChildBodyNode->notifyJacobianDerivUpdate();
+    mChildBodyNode->dirtyTransform();
+    mChildBodyNode->dirtyJacobian();
+    mChildBodyNode->dirtyJacobianDeriv();
   }
 
-  mIsLocalJacobianDirty = true;
-  mIsLocalJacobianTimeDerivDirty = true;
+  mIsRelativeJacobianDirty = true;
+  mIsRelativeJacobianTimeDerivDirty = true;
   mNeedPrimaryAccelerationUpdate = true;
 
   mNeedTransformUpdate = true;
@@ -501,7 +586,7 @@ void Joint::notifyPositionUpdate()
   if(skel)
   {
     std::size_t tree = mChildBodyNode->mTreeIndex;
-    skel->notifyArticulatedInertiaUpdate(tree);
+    skel->dirtyArticulatedInertia(tree);
     skel->mTreeCache[tree].mDirty.mExternalForces = true;
     skel->mSkelCache.mDirty.mExternalForces = true;
   }
@@ -510,13 +595,19 @@ void Joint::notifyPositionUpdate()
 //==============================================================================
 void Joint::notifyVelocityUpdate()
 {
+  notifyVelocityUpdated();
+}
+
+//==============================================================================
+void Joint::notifyVelocityUpdated()
+{
   if(mChildBodyNode)
   {
-    mChildBodyNode->notifyVelocityUpdate();
-    mChildBodyNode->notifyJacobianDerivUpdate();
+    mChildBodyNode->dirtyVelocity();
+    mChildBodyNode->dirtyJacobianDeriv();
   }
 
-  mIsLocalJacobianTimeDerivDirty = true;
+  mIsRelativeJacobianTimeDerivDirty = true;
 
   mNeedSpatialVelocityUpdate = true;
   mNeedSpatialAccelerationUpdate = true;
@@ -525,8 +616,14 @@ void Joint::notifyVelocityUpdate()
 //==============================================================================
 void Joint::notifyAccelerationUpdate()
 {
+  notifyAccelerationUpdated();
+}
+
+//==============================================================================
+void Joint::notifyAccelerationUpdated()
+{
   if(mChildBodyNode)
-    mChildBodyNode->notifyAccelerationUpdate();
+    mChildBodyNode->dirtyAcceleration();
 
   mNeedSpatialAccelerationUpdate = true;
   mNeedPrimaryAccelerationUpdate = true;

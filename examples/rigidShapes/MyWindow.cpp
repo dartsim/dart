@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -40,7 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "MyWindow.h"
+#include "MyWindow.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -97,18 +93,12 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case ' ':  // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating)
-      {
         mPlay = false;
-        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-      }
       break;
     case 'p':  // playBack
       mPlay = !mPlay;
       if (mPlay)
-      {
         mSimulating = false;
-        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-      }
       break;
     case '[':  // step backward
       if (!mSimulating)
@@ -140,7 +130,7 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'w':  // Spawn an ellipsoid
     case 'W':
     {
-      spawnEllipsoid(getRandomTransform(), math::randomVector<3>(0.05, 0.25));
+      spawnEllipsoid(getRandomTransform(), math::randomVector<3>(0.025, 0.125));
       break;
     }
     case 'e':  // Spawn an cylinder
@@ -202,7 +192,7 @@ void MyWindow::spawnEllipsoid(const Eigen::Isometry3d& _T,
 {
   dynamics::SkeletonPtr newSkeleton = dynamics::Skeleton::create();
 
-  dynamics::ShapePtr newShape(new dynamics::EllipsoidShape(_radii));
+  dynamics::ShapePtr newShape(new dynamics::EllipsoidShape(_radii*2.0));
 
   dynamics::BodyNode::Properties bodyProp;
   bodyProp.mName = "ellipsoid_link";

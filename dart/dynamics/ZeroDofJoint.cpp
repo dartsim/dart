@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ZeroDofJoint.h"
+#include "dart/dynamics/ZeroDofJoint.hpp"
 
-#include "dart/common/Console.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -561,7 +557,7 @@ double ZeroDofJoint::getCoulombFriction(std::size_t /*_index*/) const
 }
 
 //==============================================================================
-double ZeroDofJoint::getPotentialEnergy() const
+double ZeroDofJoint::computePotentialEnergy() const
 {
   return 0.0;
 }
@@ -592,20 +588,20 @@ Eigen::Vector6d ZeroDofJoint::getBodyConstraintWrench() const
 }
 
 //==============================================================================
-const math::Jacobian ZeroDofJoint::getLocalJacobian() const
+const math::Jacobian ZeroDofJoint::getRelativeJacobian() const
 {
   return Eigen::Matrix<double, 6, 0>();
 }
 
 //==============================================================================
-math::Jacobian ZeroDofJoint::getLocalJacobian(
+math::Jacobian ZeroDofJoint::getRelativeJacobian(
     const Eigen::VectorXd& /*_positions*/) const
 {
   return Eigen::Matrix<double, 6, 0>();
 }
 
 //==============================================================================
-const math::Jacobian ZeroDofJoint::getLocalJacobianTimeDeriv() const
+const math::Jacobian ZeroDofJoint::getRelativeJacobianTimeDeriv() const
 {
   return Eigen::Matrix<double, 6, 0>();
 }
@@ -643,7 +639,7 @@ void ZeroDofJoint::addChildArtInertiaTo(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(),
+  _parentArtInertia += math::transformInertia(getRelativeTransform().inverse(),
                                               _childArtInertia);
 }
 
@@ -653,7 +649,7 @@ void ZeroDofJoint::addChildArtInertiaImplicitTo(
 {
   // Add child body's articulated inertia to parent body's articulated inertia.
   // Note that mT should be updated.
-  _parentArtInertia += math::transformInertia(getLocalTransform().inverse(),
+  _parentArtInertia += math::transformInertia(getRelativeTransform().inverse(),
                                               _childArtInertia);
 }
 
@@ -681,7 +677,7 @@ void ZeroDofJoint::addChildBiasForceTo(
 {
   // Add child body's bias force to parent body's bias force. Note that mT
   // should be updated.
-  _parentBiasForce += math::dAdInvT(getLocalTransform(), _childBiasForce
+  _parentBiasForce += math::dAdInvT(getRelativeTransform(), _childBiasForce
                                     + _childArtInertia*_childPartialAcc);
 }
 
@@ -693,7 +689,7 @@ void ZeroDofJoint::addChildBiasImpulseTo(
 {
   // Add child body's bias force to parent body's bias impulse. Note that mT
   // should be updated.
-  _parentBiasImpulse += math::dAdInvT(getLocalTransform(), _childBiasImpulse);
+  _parentBiasImpulse += math::dAdInvT(getRelativeTransform(), _childBiasImpulse);
 }
 
 //==============================================================================

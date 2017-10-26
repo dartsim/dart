@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -39,11 +35,11 @@
 #include <osg/Light>
 #include <osg/Material>
 
-#include "dart/gui/osg/render/EllipsoidShapeNode.h"
-#include "dart/gui/osg/Utils.h"
+#include "dart/gui/osg/render/EllipsoidShapeNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
-#include "dart/dynamics/EllipsoidShape.h"
-#include "dart/dynamics/SimpleFrame.h"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
 namespace gui {
@@ -132,7 +128,8 @@ void EllipsoidShapeNode::extractData(bool firstTime)
   {
     Eigen::Matrix4d S(Eigen::Matrix4d::Zero());
     const Eigen::Vector3d& s =
-       mEllipsoidShape->getSize()/smallestComponent(mEllipsoidShape->getSize());
+        mEllipsoidShape->getDiameters()
+        /smallestComponent(mEllipsoidShape->getDiameters());
     S(0,0) = s[0]; S(1,1) = s[1]; S(2,2) = s[2]; S(3,3) = 1.0;
     setMatrix(eigToOsgMatrix(S));
   }
@@ -218,7 +215,7 @@ void EllipsoidShapeDrawable::refresh(bool firstTime)
   {
     ::osg::ref_ptr<::osg::Sphere> osg_shape = nullptr;
     osg_shape = new ::osg::Sphere(::osg::Vec3(0,0,0),
-                          0.5*smallestComponent(mEllipsoidShape->getSize()));
+                          smallestComponent(mEllipsoidShape->getRadii()));
 
     setShape(osg_shape);
     dirtyDisplayList();

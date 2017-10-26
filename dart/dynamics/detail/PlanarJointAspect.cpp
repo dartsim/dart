@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PlanarJoint.h"
+#include "dart/dynamics/PlanarJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -141,10 +137,10 @@ void PlanarJointUniqueProperties::setArbitraryPlane(
 
 //==============================================================================
 PlanarJointProperties::PlanarJointProperties(
-    const MultiDofJoint<3>::Properties& _multiDofProperties,
-    const PlanarJointUniqueProperties& _planarProperties)
-  : MultiDofJoint<3>::Properties(_multiDofProperties),
-    PlanarJointUniqueProperties(_planarProperties)
+    const GenericJoint<math::R3Space>::Properties& genericJointProperties,
+    const PlanarJointUniqueProperties& planarProperties)
+  : GenericJoint<math::R3Space>::Properties(genericJointProperties),
+    PlanarJointUniqueProperties(planarProperties)
 {
   // Do nothing
 }

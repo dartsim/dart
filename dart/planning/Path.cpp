@@ -1,15 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author: Tobias Kunz <tobias@gatech.edu>
- * Date: 10/2011
- *
- * Humanoid Robotics Lab      Georgia Institute of Technology
- * Director: Mike Stilman     http://www.golems.org
- *
- * Algorithm details and publications:
- * http://www.golems.org/node/1570
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -36,7 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Path.h"
+// Algorithm details and publications: http://www.golems.org/node/1570
+
+#include "dart/planning/Path.hpp"
+
 #include <iostream>
 #include <vector>
 #include <algorithm>

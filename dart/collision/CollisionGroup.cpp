@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionGroup.h"
+#include "dart/collision/CollisionGroup.hpp"
 
 #include <cassert>
 
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionDetector.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace collision {
@@ -138,7 +134,8 @@ void CollisionGroup::removeAllShapeFrames()
 }
 
 //==============================================================================
-bool CollisionGroup::hasShapeFrame(const dynamics::ShapeFrame* shapeFrame) const
+bool CollisionGroup::hasShapeFrame(
+    const dynamics::ShapeFrame* shapeFrame) const
 {
   return std::find_if(mShapeFrameMap.begin(), mShapeFrameMap.end(),
                       [&](const std::pair<const dynamics::ShapeFrame*,
@@ -154,18 +151,46 @@ std::size_t CollisionGroup::getNumShapeFrames() const
 }
 
 //==============================================================================
+const dynamics::ShapeFrame* CollisionGroup::getShapeFrame(
+    std::size_t index) const
+{
+  assert(index < mShapeFrameMap.size());
+  if(index < mShapeFrameMap.size())
+    return mShapeFrameMap[index].first;
+
+  return nullptr;
+}
+
+//==============================================================================
 bool CollisionGroup::collide(
-    const CollisionOption& option, CollisionResult& result)
+    const CollisionOption& option, CollisionResult* result)
 {
   return mCollisionDetector->collide(this, option, result);
 }
 
 //==============================================================================
 bool CollisionGroup::collide(
-    CollisionGroup* other,
-    const CollisionOption& option, CollisionResult& result)
+    CollisionGroup* otherGroup,
+    const CollisionOption& option,
+    CollisionResult* result)
 {
-  return mCollisionDetector->collide(this, other, option, result);
+  return mCollisionDetector->collide(this, otherGroup, option, result);
+}
+
+//==============================================================================
+double CollisionGroup::distance(
+    const DistanceOption& option, DistanceResult* result)
+{
+  return mCollisionDetector->distance(this, option, result);
+}
+
+//==============================================================================
+double CollisionGroup::distance(
+    CollisionGroup* otherGroup,
+    const DistanceOption& option,
+    DistanceResult* result)
+{
+  return mCollisionDetector->distance(this, otherGroup, option, result);
 }
 
 //==============================================================================

@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -40,17 +36,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/World.h"
+#include "dart/simulation/World.hpp"
 
 #include <iostream>
 #include <string>
 #include <vector>
 
-#include "dart/common/Console.h"
-#include "dart/integration/SemiImplicitEulerIntegrator.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/constraint/ConstraintSolver.h"
-#include "dart/collision/CollisionGroup.h"
+#include "dart/common/Console.hpp"
+#include "dart/integration/SemiImplicitEulerIntegrator.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/collision/CollisionGroup.hpp"
 
 namespace dart {
 namespace simulation {
@@ -153,6 +149,7 @@ void World::reset()
   mTime = 0.0;
   mFrame = 0;
   mRecording->clear();
+  mConstraintSolver->clearLastCollisionResult();
 }
 
 //==============================================================================
@@ -496,13 +493,19 @@ std::set<dynamics::SimpleFramePtr> World::removeAllSimpleFrames()
 bool World::checkCollision(bool checkAllCollisions)
 {
   collision::CollisionOption option;
+
   if (checkAllCollisions)
-    option.enableContact = true;
+    option.maxNumContacts = 1e+3;
   else
-    option.enableContact = false;
+    option.maxNumContacts = 1u;
 
-  collision::CollisionResult result;
+  return checkCollision(option);
+}
 
+//==============================================================================
+bool World::checkCollision(const collision::CollisionOption& option,
+                           collision::CollisionResult* result)
+{
   return mConstraintSolver->getCollisionGroup()->collide(option, result);
 }
 

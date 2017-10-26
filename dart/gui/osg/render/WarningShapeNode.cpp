@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/osg/render/WarningShapeNode.h"
-#include "dart/gui/osg/ShapeFrameNode.h"
+#include "dart/gui/osg/render/WarningShapeNode.hpp"
+#include "dart/gui/osg/ShapeFrameNode.hpp"
 
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/Entity.h"
-#include "dart/common/Console.h"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/Entity.hpp"
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace gui {
@@ -50,7 +46,7 @@ WarningShapeNode::WarningShapeNode(std::shared_ptr<dart::dynamics::Shape> shape,
                                    ShapeFrameNode* parent)
   : ShapeNode(shape, parent, this)
 {
-  dtwarn << "Shape type (" << shape->getShapeType()
+  dtwarn << "Shape type (" << shape->getType()
          << ") found in Entity '" << parent->getName()
          << "' is not currently supported by dart::gui::osg, "
          << "and will not be rendered\n";

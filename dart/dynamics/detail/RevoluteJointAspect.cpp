@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/RevoluteJoint.h"
+#include "dart/dynamics/RevoluteJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -50,10 +46,10 @@ RevoluteJointUniqueProperties::RevoluteJointUniqueProperties(
 
 //==============================================================================
 RevoluteJointProperties::RevoluteJointProperties(
-    const SingleDofJoint::Properties& _singleDofJointProperties,
-    const RevoluteJointUniqueProperties& _revoluteProperties)
-  : SingleDofJoint::Properties(_singleDofJointProperties),
-    RevoluteJointUniqueProperties(_revoluteProperties)
+    const GenericJoint<math::R1Space>::Properties& genericJointProperties,
+    const RevoluteJointUniqueProperties& revoluteProperties)
+  : GenericJoint<math::R1Space>::Properties(genericJointProperties),
+    RevoluteJointUniqueProperties(revoluteProperties)
 {
   // Do nothing
 }

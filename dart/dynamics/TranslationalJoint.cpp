@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,20 +30,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/TranslationalJoint.h"
+#include "dart/dynamics/TranslationalJoint.hpp"
 
 #include <string>
 
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
 TranslationalJoint::Properties::Properties(
-    const MultiDofJoint<3>::Properties& _properties)
-  : MultiDofJoint<3>::Properties(_properties)
+    const Base::Properties& _properties)
+  : Base::Properties(_properties)
 {
   // Do nothing
 }
@@ -59,26 +55,27 @@ TranslationalJoint::~TranslationalJoint()
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> TranslationalJoint::getLocalJacobianStatic(
+Eigen::Matrix<double, 6, 3> TranslationalJoint::getRelativeJacobianStatic(
     const Eigen::Vector3d& /*_positions*/) const
 {
   // The Jacobian is always constant w.r.t. the generalized coordinates.
-  return getLocalJacobianStatic();
+  return getRelativeJacobianStatic();
 }
 
 //==============================================================================
-TranslationalJoint::Properties TranslationalJoint::getTranslationalJointProperties() const
+TranslationalJoint::Properties
+TranslationalJoint::getTranslationalJointProperties() const
 {
-  return getMultiDofJointProperties();
+  return getGenericJointProperties();
 }
 
 //==============================================================================
 TranslationalJoint::TranslationalJoint(const Properties& properties)
-  : MultiDofJoint<3>(properties)
+  : Base(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
-  createMultiDofJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 
@@ -119,7 +116,7 @@ void TranslationalJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void TranslationalJoint::updateLocalTransform() const
+void TranslationalJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(getPositionsStatic())
@@ -130,7 +127,7 @@ void TranslationalJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void TranslationalJoint::updateLocalJacobian(bool _mandatory) const
+void TranslationalJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if (_mandatory)
   {
@@ -143,7 +140,7 @@ void TranslationalJoint::updateLocalJacobian(bool _mandatory) const
 }
 
 //==============================================================================
-void TranslationalJoint::updateLocalJacobianTimeDeriv() const
+void TranslationalJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of translational joint is always zero
   assert(mJacobianDeriv == (Eigen::Matrix<double, 6, 3>::Zero()));

@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -39,18 +35,18 @@
 #include <osg/OperationThread>
 #include <osgDB/WriteFile>
 
-#include "dart/gui/osg/Viewer.h"
-#include "dart/gui/osg/TrackballManipulator.h"
-#include "dart/gui/osg/DefaultEventHandler.h"
-#include "dart/gui/osg/DragAndDrop.h"
-#include "dart/gui/osg/WorldNode.h"
-#include "dart/gui/osg/Utils.h"
+#include "dart/gui/osg/Viewer.hpp"
+#include "dart/gui/osg/TrackballManipulator.hpp"
+#include "dart/gui/osg/DefaultEventHandler.hpp"
+#include "dart/gui/osg/DragAndDrop.hpp"
+#include "dart/gui/osg/WorldNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
-#include "dart/simulation/World.h"
+#include "dart/simulation/World.hpp"
 
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
 namespace gui {
@@ -706,6 +702,9 @@ bool Viewer::disableDragAndDrop(DragAndDrop* _dnd)
   if(disableDragAndDrop(dynamic_cast<InteractiveFrameDnD*>(_dnd)))
     return true;
 
+  if(disableDragAndDrop(dynamic_cast<BodyNodeDnD*>(_dnd)))
+    return true;
+
   return false;
 }
 
@@ -766,6 +765,9 @@ bool Viewer::disableDragAndDrop(InteractiveFrameDnD* _dnd)
 //==============================================================================
 bool Viewer::disableDragAndDrop(BodyNodeDnD* _dnd)
 {
+  if(nullptr == _dnd)
+    return false;
+
   std::map<dart::dynamics::BodyNode*, BodyNodeDnD*>::iterator it =
       mBodyNodeDnDMap.find(_dnd->getBodyNode());
   if(it == mBodyNodeDnDMap.end())

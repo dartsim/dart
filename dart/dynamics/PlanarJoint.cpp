@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/PlanarJoint.h"
+#include "dart/dynamics/PlanarJoint.hpp"
 
 #include <string>
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -55,8 +51,8 @@ PlanarJoint::~PlanarJoint()
 //==============================================================================
 void PlanarJoint::setProperties(const Properties& _properties)
 {
-  MultiDofJoint<3>::setProperties(
-        static_cast<const MultiDofJoint<3>::Properties&>(_properties));
+  Base::setProperties(
+        static_cast<const Base::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -70,15 +66,15 @@ void PlanarJoint::setProperties(const UniqueProperties& _properties)
 void PlanarJoint::setAspectProperties(const AspectProperties& properties)
 {
   mAspectProperties = properties;
-  Joint::notifyPositionUpdate();
-  updateLocalJacobian(true);
+  Joint::notifyPositionUpdated();
+  updateRelativeJacobian(true);
   Joint::incrementVersion();
 }
 
 //==============================================================================
 PlanarJoint::Properties PlanarJoint::getPlanarJointProperties() const
 {
-  return Properties(getMultiDofJointProperties(), mAspectProperties);
+  return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -132,7 +128,7 @@ void PlanarJoint::setXYPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -142,7 +138,7 @@ void PlanarJoint::setYZPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -152,7 +148,7 @@ void PlanarJoint::setZXPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -164,7 +160,7 @@ void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -192,7 +188,7 @@ const Eigen::Vector3d& PlanarJoint::getTranslationalAxis2() const
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> PlanarJoint::getLocalJacobianStatic(
+Eigen::Matrix<double, 6, 3> PlanarJoint::getRelativeJacobianStatic(
     const Eigen::Vector3d& _positions) const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
@@ -220,7 +216,7 @@ PlanarJoint::PlanarJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createPlanarJointAspect(properties);
-  createMultiDofJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 
@@ -269,7 +265,7 @@ void PlanarJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void PlanarJoint::updateLocalTransform() const
+void PlanarJoint::updateRelativeTransform() const
 {
   const Eigen::Vector3d& positions = getPositionsStatic();
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
@@ -283,20 +279,20 @@ void PlanarJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void PlanarJoint::updateLocalJacobian(bool) const
+void PlanarJoint::updateRelativeJacobian(bool) const
 {
-  mJacobian = getLocalJacobianStatic(getPositionsStatic());
+  mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void PlanarJoint::updateLocalJacobianTimeDeriv() const
+void PlanarJoint::updateRelativeJacobianTimeDeriv() const
 {
   Eigen::Matrix<double, 6, 3> J = Eigen::Matrix<double, 6, 3>::Zero();
   J.block<3, 1>(3, 0) = mAspectProperties.mTransAxis1;
   J.block<3, 1>(3, 1) = mAspectProperties.mTransAxis2;
   J.block<3, 1>(0, 2) = mAspectProperties.mRotAxis;
 
-  const Eigen::Matrix<double, 6, 3>& Jacobian = getLocalJacobianStatic();
+  const Eigen::Matrix<double, 6, 3>& Jacobian = getRelativeJacobianStatic();
   const Eigen::Vector3d& velocities = getVelocitiesStatic();
   mJacobianDeriv.col(0)
       = -math::ad(Jacobian.col(2) * velocities[2],

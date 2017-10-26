@@ -1,9 +1,8 @@
 # Search all header and source files
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
-
-set(dart_lcpsolver_hdrs ${hdrs} PARENT_SCOPE)
-set(dart_lcpsolver_srcs ${srcs} PARENT_SCOPE)
+dart_add_core_headers(${hdrs})
+dart_add_core_sources(${srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "lcpsolver headers" ${hdrs})
@@ -14,13 +13,15 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/lcpsolver.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/lcpsolver.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.hpp
   DESTINATION include/dart/lcpsolver
   COMPONENT headers
 )
+
+dart_format_add(${hdrs} ${srcs})

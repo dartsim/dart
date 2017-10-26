@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/LineSegmentShape.h"
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
+#include "dart/dynamics/LineSegmentShape.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -63,7 +59,7 @@ LineSegmentShape::LineSegmentShape(float _thickness)
 LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& _v1,
                                    const Eigen::Vector3d& _v2,
                                    float _thickness)
-  : Shape(LINE_SEGMENT),
+  : Shape(),
     mThickness(_thickness)
 {
   if (_thickness <= 0.0f)
@@ -78,6 +74,19 @@ LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& _v1,
   addVertex(_v2);
   updateVolume();
   mVariance = DYNAMIC_VERTICES;
+}
+
+//==============================================================================
+const std::string& LineSegmentShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& LineSegmentShape::getStaticType()
+{
+  static const std::string type("LineSegmentShape");
+  return type;
 }
 
 //==============================================================================

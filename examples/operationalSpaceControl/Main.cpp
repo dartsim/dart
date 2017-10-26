@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,9 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.h"
+#include <dart/dart.hpp>
+#include <dart/utils/urdf/urdf.hpp>
 
-#include "examples/operationalSpaceControl/MyWindow.h"
+#include "MyWindow.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -47,9 +44,9 @@ int main(int argc, char* argv[])
   // load skeletons
   dart::utils::DartLoader dl;
   dart::dynamics::SkeletonPtr ground
-      = dl.parseSkeleton(DART_DATA_PATH"urdf/KR5/ground.urdf");
+      = dl.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
   dart::dynamics::SkeletonPtr robot
-      = dl.parseSkeleton(DART_DATA_PATH"urdf/KR5/KR5 sixx R650.urdf");
+      = dl.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(ground);
   world->addSkeleton(robot);
 

@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/SoftMeshShape.h"
+#include "dart/dynamics/SoftMeshShape.hpp"
 
-#include "dart/common/Console.h"
+#include "dart/common/Console.hpp"
 
-#include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/dynamics/PointMass.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -59,6 +55,19 @@ SoftMeshShape::SoftMeshShape(SoftBodyNode* _softBodyNode)
 SoftMeshShape::~SoftMeshShape()
 {
   // Do nothing
+}
+
+//==============================================================================
+const std::string& SoftMeshShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& SoftMeshShape::getStaticType()
+{
+  static const std::string type("SoftMeshShape");
+  return type;
 }
 
 const aiMesh* SoftMeshShape::getAssimpMesh() const

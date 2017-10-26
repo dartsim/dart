@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -36,14 +32,14 @@
 
 #include <memory>
 
-#include "dart/optimizer/nlopt/NloptSolver.h"
+#include "dart/optimizer/nlopt/NloptSolver.hpp"
 
 #include <Eigen/Dense>
 
-#include "dart/common/Console.h"
-#include "dart/common/StlHelpers.h"
-#include "dart/optimizer/Problem.h"
-#include "dart/optimizer/Function.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/StlHelpers.hpp"
+#include "dart/optimizer/Problem.hpp"
+#include "dart/optimizer/Function.hpp"
 
 namespace dart {
 namespace optimizer {
@@ -242,12 +238,10 @@ double NloptSolver::_nlopt_func(unsigned _n,
   if (_gradient)
   {
     Eigen::Map<Eigen::VectorXd> grad(_gradient, _n);
-    fn->evalGradient(static_cast<const Eigen::VectorXd&>(x), grad);
+    fn->evalGradient(x, grad);
   }
 
-  return fn->eval(static_cast<const Eigen::VectorXd&>(x));
-  // TODO(MXG): Remove the static_casts once the old eval() functions are
-  // removed and there is no longer ambiguity.
+  return fn->eval(x);
 }
 
 //==============================================================================

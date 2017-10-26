@@ -1,14 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,51 +30,106 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/EllipsoidShape.h"
+#include "dart/dynamics/EllipsoidShape.hpp"
 
-#include "dart/math/Helpers.h"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
 namespace dynamics {
 
-EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& _size)
-  : Shape(ELLIPSOID) {
-  setSize(_size);
-}
-
-EllipsoidShape::~EllipsoidShape() {
-}
-
-void EllipsoidShape::setSize(const Eigen::Vector3d& _size) {
-  assert(_size[0] > 0.0);
-  assert(_size[1] > 0.0);
-  assert(_size[2] > 0.0);
-  mSize = _size;
-  mBoundingBox.setMin(-_size * 0.5);
-  mBoundingBox.setMax(_size * 0.5);
-  updateVolume();
-}
-
-const Eigen::Vector3d&EllipsoidShape::getSize() const {
-  return mSize;
+//==============================================================================
+EllipsoidShape::EllipsoidShape(const Eigen::Vector3d& diameters)
+  : Shape(ELLIPSOID)
+{
+  setDiameters(diameters);
 }
 
 //==============================================================================
-double EllipsoidShape::computeVolume(const Eigen::Vector3d& size)
+EllipsoidShape::~EllipsoidShape()
+{
+  // Do nothing
+}
+
+//==============================================================================
+const std::string& EllipsoidShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& EllipsoidShape::getStaticType()
+{
+  static const std::string type("EllipsoidShape");
+  return type;
+}
+
+//==============================================================================
+void EllipsoidShape::setSize(const Eigen::Vector3d& diameters)
+{
+  setDiameters(diameters);
+}
+
+//==============================================================================
+const Eigen::Vector3d& EllipsoidShape::getSize() const
+{
+  return getDiameters();
+}
+
+//==============================================================================
+void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters)
+{
+  assert(diameters[0] > 0.0);
+  assert(diameters[1] > 0.0);
+  assert(diameters[2] > 0.0);
+
+  mDiameters = diameters;
+
+  mBoundingBox.setMin(-diameters * 0.5);
+  mBoundingBox.setMax(diameters * 0.5);
+
+  updateVolume();
+}
+
+//==============================================================================
+const Eigen::Vector3d& EllipsoidShape::getDiameters() const
+{
+  return mDiameters;
+}
+
+//==============================================================================
+void EllipsoidShape::setRadii(const Eigen::Vector3d& radii)
+{
+  mDiameters = radii * 2.0;
+}
+
+//==============================================================================
+const Eigen::Vector3d EllipsoidShape::getRadii() const
+{
+  return mDiameters / 2.0;
+}
+
+//==============================================================================
+double EllipsoidShape::computeVolume(const Eigen::Vector3d& diameters)
 {
   // 4/3* Pi* a/2* b/2* c/2
-  return math::constantsd::pi() * size[0] * size[1] * size[2] / 6.0;
+  return math::constantsd::pi()
+      * diameters[0] * diameters[1] * diameters[2] / 6.0;
 }
 
 //==============================================================================
 Eigen::Matrix3d EllipsoidShape::computeInertia(
-    const Eigen::Vector3d& size, double mass)
+    const Eigen::Vector3d& diameters, double mass)
 {
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
 
-  inertia(0, 0) = mass / 20.0 * (std::pow(size[1], 2) + std::pow(size[2], 2));
-  inertia(1, 1) = mass / 20.0 * (std::pow(size[0], 2) + std::pow(size[2], 2));
-  inertia(2, 2) = mass / 20.0 * (std::pow(size[0], 2) + std::pow(size[1], 2));
+  const auto coeff = mass / 20.0;
+  const auto AA = std::pow(diameters[0], 2);
+  const auto BB = std::pow(diameters[1], 2);
+  const auto CC = std::pow(diameters[2], 2);
+
+  inertia(0, 0) = coeff*(BB + CC);
+  inertia(1, 1) = coeff*(AA + CC);
+  inertia(2, 2) = coeff*(AA + BB);
 
   return inertia;
 }
@@ -87,11 +137,13 @@ Eigen::Matrix3d EllipsoidShape::computeInertia(
 //==============================================================================
 Eigen::Matrix3d EllipsoidShape::computeInertia(double mass) const
 {
-  return computeInertia(mSize, mass);
+  return computeInertia(mDiameters, mass);
 }
 
-bool EllipsoidShape::isSphere() const {
-  if (mSize[0] == mSize[1] && mSize[1] == mSize[2])
+//==============================================================================
+bool EllipsoidShape::isSphere() const
+{
+  if (mDiameters[0] == mDiameters[1] && mDiameters[1] == mDiameters[2])
     return true;
   else
     return false;
@@ -100,7 +152,7 @@ bool EllipsoidShape::isSphere() const {
 //==============================================================================
 void EllipsoidShape::updateVolume()
 {
-  mVolume = computeVolume(mSize);
+  mVolume = computeVolume(mDiameters);
 }
 
 }  // namespace dynamics

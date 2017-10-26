@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/ArrowShape.h"
+#include "dart/dynamics/ArrowShape.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -68,7 +64,7 @@ ArrowShape::ArrowShape(const Eigen::Vector3d& _tail,
   instantiate(_resolution);
   configureArrow(mTail, mHead, mProperties);
   setColorMode(MeshShape::COLOR_INDEX);
-  notifyColorUpdate(_color);
+  notifyColorUpdated(_color);
 }
 
 //==============================================================================
@@ -97,7 +93,7 @@ void ArrowShape::setProperties(const Properties& _properties)
 }
 
 //==============================================================================
-void ArrowShape::notifyColorUpdate(const Eigen::Vector4d& _color)
+void ArrowShape::notifyColorUpdated(const Eigen::Vector4d& _color)
 {
   for(std::size_t i=0; i<mMesh->mNumMeshes; ++i)
   {

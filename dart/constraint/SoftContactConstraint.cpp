@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,18 +30,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/SoftContactConstraint.h"
+#include "dart/constraint/SoftContactConstraint.hpp"
 
 #include <iostream>
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SoftBodyNode.h"
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/Shape.h"
-#include "dart/collision/CollisionObject.h"
-#include "dart/lcpsolver/lcp.h"
+#include "dart/external/odelcpsolver/lcp.h"
+
+#include "dart/common/Console.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/PointMass.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/collision/CollisionObject.hpp"
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
@@ -104,8 +102,8 @@ SoftContactConstraint::SoftContactConstraint(
   // Select colling point mass based on trimesh ID
   if (mSoftBodyNode1)
   {
-    if (contact.collisionObject1->getShape()->getShapeType()
-        == dynamics::Shape::SOFT_MESH)
+    if (contact.collisionObject1->getShape()->getType()
+        == dynamics::SoftMeshShape::getStaticType())
     {
       mPointMass1 = selectCollidingPointMass(mSoftBodyNode1, contact.point,
                                              contact.triID1);
@@ -114,8 +112,8 @@ SoftContactConstraint::SoftContactConstraint(
   }
   if (mSoftBodyNode2)
   {
-    if (contact.collisionObject2->getShape()->getShapeType()
-        == dynamics::Shape::SOFT_MESH)
+    if (contact.collisionObject2->getShape()->getType()
+        == dynamics::SoftMeshShape::getStaticType())
     {
       mPointMass2 = selectCollidingPointMass(mSoftBodyNode2, contact.point,
                                              contact.triID2);
@@ -891,24 +889,14 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
     _vel[i] = 0.0;
 
     if (mPointMass1)
-    {
       _vel[i] -= mJacobians1[i].tail<3>().dot(mPointMass1->getBodyVelocity());
-    }
     else
-    {
-      if (mBodyNode1->isReactive())
-        _vel[i] -= mJacobians1[i].dot(mBodyNode1->getSpatialVelocity());
-    }
+      _vel[i] -= mJacobians1[i].dot(mBodyNode1->getSpatialVelocity());
 
     if (mPointMass2)
-    {
       _vel[i] -= mJacobians2[i].tail<3>().dot(mPointMass2->getBodyVelocity());
-    }
     else
-    {
-      if (mBodyNode2->isReactive())
-        _vel[i] -= mJacobians2[i].dot(mBodyNode2->getSpatialVelocity());
-    }
+      _vel[i] -= mJacobians2[i].dot(mBodyNode2->getSpatialVelocity());
 
 //    std::cout << "_relVel[i + _idx]: " << _relVel[i + _idx] << std::endl;
   }

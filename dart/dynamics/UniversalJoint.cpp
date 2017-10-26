@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/UniversalJoint.h"
+#include "dart/dynamics/UniversalJoint.hpp"
 
 #include <string>
 
-#include "dart/math/Helpers.h"
-#include "dart/math/Geometry.h"
+#include "dart/math/Helpers.hpp"
+#include "dart/math/Geometry.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -53,8 +49,9 @@ UniversalJoint::~UniversalJoint()
 //==============================================================================
 void UniversalJoint::setProperties(const Properties& _properties)
 {
-  MultiDofJoint<2>::setProperties(
-        static_cast<const MultiDofJoint<2>::Properties&>(_properties));
+  GenericJoint<math::R2Space>::setProperties(
+        static_cast<const GenericJoint<math::R2Space>::Properties&>(
+          _properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -74,7 +71,7 @@ void UniversalJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 UniversalJoint::Properties UniversalJoint::getUniversalJointProperties() const
 {
-  return Properties(getMultiDofJointProperties(), mAspectProperties);
+  return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -125,7 +122,7 @@ bool UniversalJoint::isCyclic(std::size_t _index) const
 void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 {
   mAspectProperties.mAxis[0] = _axis;
-  Joint::notifyPositionUpdate();
+  Joint::notifyPositionUpdated();
   Joint::incrementVersion();
 }
 
@@ -133,7 +130,7 @@ void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
 {
   mAspectProperties.mAxis[1] = _axis;
-  Joint::notifyPositionUpdate();
+  Joint::notifyPositionUpdated();
   Joint::incrementVersion();
 }
 
@@ -150,7 +147,7 @@ const Eigen::Vector3d& UniversalJoint::getAxis2() const
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 2> UniversalJoint::getLocalJacobianStatic(
+Eigen::Matrix<double, 6, 2> UniversalJoint::getRelativeJacobianStatic(
     const Eigen::Vector2d& _positions) const
 {
   Eigen::Matrix<double, 6, 2> J;
@@ -169,7 +166,7 @@ UniversalJoint::UniversalJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createUniversalJointAspect(properties);
-  createMultiDofJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 
@@ -189,7 +186,7 @@ void UniversalJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void UniversalJoint::updateLocalTransform() const
+void UniversalJoint::updateRelativeTransform() const
 {
   const Eigen::Vector2d& positions = getPositionsStatic();
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
@@ -200,15 +197,15 @@ void UniversalJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void UniversalJoint::updateLocalJacobian(bool) const
+void UniversalJoint::updateRelativeJacobian(bool) const
 {
-  mJacobian = getLocalJacobianStatic(getPositionsStatic());
+  mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void UniversalJoint::updateLocalJacobianTimeDeriv() const
+void UniversalJoint::updateRelativeJacobianTimeDeriv() const
 {
-  Eigen::Vector6d tmpV1 = getLocalJacobianStatic().col(1)
+  Eigen::Vector6d tmpV1 = getRelativeJacobianStatic().col(1)
                         * getVelocitiesStatic()[1];
 
   Eigen::Isometry3d tmpT = math::expAngular(

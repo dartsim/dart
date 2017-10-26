@@ -1,13 +1,15 @@
 # Search all header and source files
-file(GLOB srcs "*.cpp" "detail/*.cpp")
-file(GLOB hdrs "*.h")
-file(GLOB detail "detail/*.h")
-
-set(dart_dynamics_hdrs "${hdrs};${detail}" PARENT_SCOPE)
-set(dart_dynamics_srcs ${srcs} PARENT_SCOPE)
+file(GLOB hdrs "*.hpp")
+file(GLOB srcs "*.cpp")
+file(GLOB detail_hdrs "detail/*.hpp")
+file(GLOB detail_srcs "detail/*.cpp")
+dart_add_core_headers(${hdrs} ${detail_hdrs})
+dart_add_core_sources(${srcs} ${detail_srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "dynamics headers" ${hdrs})
+# TODO: remove below line once the files are completely removed.
+list(REMOVE_ITEM header_names "MultiSphereShape.hpp")
 dart_generate_include_header_list(
   dynamics_headers
   "dart/dynamics/"
@@ -15,19 +17,18 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/dynamics.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/dynamics.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/dynamics.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/dynamics.hpp
   DESTINATION include/dart/dynamics
   COMPONENT headers
 )
-
 install(
-  FILES ${detail}
+  FILES ${detail_hdrs}
   DESTINATION include/dart/dynamics/detail
   COMPONENT headers
 )

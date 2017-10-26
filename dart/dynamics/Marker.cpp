@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,11 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Marker.h"
+#include "dart/dynamics/Marker.hpp"
 
-#include <string>
-
-#include "dart/dynamics/BodyNode.h"
+#include "dart/dynamics/BodyNode.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -46,81 +40,61 @@ namespace dynamics {
 int Marker::msMarkerCount = 0;
 
 //==============================================================================
-Marker::Properties::Properties(const std::string& name,
-                               const Eigen::Vector3d& offset,
-                               const Eigen::Vector4d& color,
-                               ConstraintType type)
-  : mName(name), mOffset(offset), mColor(color), mType(type)
+// These declarations are needed for linking to work
+constexpr Marker::ConstraintType Marker::NO;
+constexpr Marker::ConstraintType Marker::HARD;
+constexpr Marker::ConstraintType Marker::SOFT;
+
+namespace detail {
+
+//==============================================================================
+MarkerProperties::MarkerProperties(const Eigen::Vector4d& color,
+                                   ConstraintType type)
+  : mColor(color),
+    mType(type)
 {
   // Do nothing
 }
 
-//==============================================================================
-Marker::Marker(const std::string& name,
-               const Eigen::Vector3d& offset,
-               const Eigen::Vector4d& color,
-               BodyNode* bodyNode,
-               ConstraintType type)
-  : mProperties(name, offset, color, type),
-    mBodyNode(bodyNode),
-    mSkelIndex(0),
-    mID(Marker::msMarkerCount++)
-{
-  // Do nothing
-}
+} // namespace detail
 
 //==============================================================================
-Marker::~Marker()
+void Marker::setAspectProperties(const AspectProperties& properties)
 {
-  // Do nothing
+  setColor(properties.mColor);
+  setConstraintType(properties.mType);
 }
 
 //==============================================================================
 BodyNode* Marker::getBodyNode()
 {
-  return mBodyNode;
+  return getBodyNodePtr();
 }
 
 //==============================================================================
 const BodyNode* Marker::getBodyNode() const
 {
-  return mBodyNode;
+  return getBodyNodePtr();
 }
 
 //==============================================================================
-const Eigen::Vector3d& Marker::getLocalPosition() const
+Eigen::Vector3d Marker::getLocalPosition() const
 {
-  return mProperties.mOffset;
+  return getRelativeTransform().translation();
 }
 
 //==============================================================================
 void Marker::setLocalPosition(const Eigen::Vector3d& offset)
 {
-    mProperties.mOffset = offset;
+  Eigen::Isometry3d tf = getRelativeTransform();
+  tf.translation() = offset;
+  setRelativeTransform(tf);
 }
 
 //==============================================================================
 Eigen::Vector3d Marker::getWorldPosition() const
 {
-  return mBodyNode->getTransform() * mProperties.mOffset;
-}
-
-//==============================================================================
-void Marker::setSkeletonIndex(int index)
-{
-  setIndexInSkeleton(index);
-}
-
-//==============================================================================
-void Marker::setIndexInSkeleton(int index)
-{
-  mSkelIndex = index;
-}
-
-//==============================================================================
-int Marker::getIndexInSkeleton() const
-{
-  return mSkelIndex;
+  return getWorldTransform().translation();
 }
 
 //==============================================================================
@@ -130,43 +104,61 @@ int Marker::getID() const
 }
 
 //==============================================================================
-void Marker::setName(const std::string& name)
-{
-  mProperties.mName = name;
-}
-
-//==============================================================================
-const std::string& Marker::getName() const
-{
-  return mProperties.mName;
-}
-
-//==============================================================================
 void Marker::setConstraintType(Marker::ConstraintType type)
 {
-  mProperties.mType = type;
+  if(type == mAspectProperties.mType)
+    return;
+
+  mAspectProperties.mType = type;
+  incrementVersion();
 }
 
 //==============================================================================
 Marker::ConstraintType Marker::getConstraintType() const
 {
-  return mProperties.mType;
+  return mAspectProperties.mType;
+}
+
+//==============================================================================
+void Marker::setColor(const Eigen::Vector4d& color)
+{
+  if(color == mAspectProperties.mColor)
+    return;
+
+  mAspectProperties.mColor = color;
+  incrementVersion();
 }
 
 //==============================================================================
 const Eigen::Vector4d& Marker::getColor() const
 {
-  return mProperties.mColor;
+  return mAspectProperties.mColor;
 }
 
 //==============================================================================
-Marker::Marker(const Properties& properties, BodyNode* parent)
-  : mProperties(properties),
-    mBodyNode(parent),
-    mSkelIndex(0),
+Marker::Marker(BodyNode* parent, const BasicProperties& properties)
+  : Entity(ConstructFrame),
+    Frame(parent),
+    FixedFrame(parent, properties.mRelativeTf),
+    common::EmbedPropertiesOnTopOf<
+        Marker, detail::MarkerProperties, FixedJacobianNode>(
+      parent, properties.mRelativeTf),
     mID(Marker::msMarkerCount++)
 {
-  // Do nothing
+  createAspect<Aspect>();
+  setCompositeProperties(properties);
+}
+
+//==============================================================================
+Node* Marker::cloneNode(BodyNode* parent) const
+{
+  Marker* marker = new Marker(parent, BasicProperties());
+  marker->duplicateAspects(this);
+
+  if(mIK)
+    marker->mIK = mIK->clone(marker);
+
+  return marker;
 }
 
 }  // namespace dynamics

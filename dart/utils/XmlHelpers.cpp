@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,16 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/utils/XmlHelpers.h"
+#include "dart/utils/XmlHelpers.hpp"
 
 #include <iostream>
 #include <vector>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/common/LocalResourceRetriever.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/common/LocalResourceRetriever.hpp"
 
 namespace dart {
 namespace utils {
@@ -657,26 +653,8 @@ void openXMLFile(tinyxml2::XMLDocument& doc,
   else
     retriever = std::make_shared<common::LocalResourceRetriever>();
 
-  const common::ResourcePtr resource = retriever->retrieve(uri);
-  if(!resource)
-  {
-    dtwarn << "[openXMLFile] Failed opening URI '"
-           << uri.toString() << "'.\n";
-    throw std::runtime_error("Failed opening URI.");
-  }
-
-  // C++11 guarantees that std::string has contiguous storage.
-  const std::size_t size = resource->getSize();
-  std::string content;
-  content.resize(size);
-  if(resource->read(&content.front(), size, 1) != 1)
-  {
-    dtwarn << "[openXMLFile] Failed reading from URI '"
-           << uri.toString() << "'.\n";
-    throw std::runtime_error("Failed reading from URI.");
-  }
-
-  int const result = doc.Parse(&content.front());
+  const auto content = retriever->readAll(uri);
+  const auto result = doc.Parse(&content.front());
   if(result != tinyxml2::XML_SUCCESS)
   {
     dtwarn << "[openXMLFile] Failed parsing XML: TinyXML2 returned error"
@@ -731,7 +709,7 @@ bool getAttributeBool(const tinyxml2::XMLElement* element,
   const int result = element->QueryBoolAttribute(attributeName.c_str(),
                                                  &val);
 
-  if (result != tinyxml2::XML_NO_ERROR)
+  if (result != tinyxml2::XML_SUCCESS)
   {
     dtwarn << "[getAttribute] Error in parsing bool type attribute ["
            << attributeName << "] of an element [" << element->Name()
@@ -749,7 +727,7 @@ int getAttributeInt(const tinyxml2::XMLElement* element,
   int val = 0;
   const int result = element->QueryIntAttribute(attributeName.c_str(), &val);
 
-  if (result != tinyxml2::XML_NO_ERROR)
+  if (result != tinyxml2::XML_SUCCESS)
   {
     dtwarn << "[getAttribute] Error in parsing int type attribute ["
            << attributeName << "] of an element [" << element->Name()
@@ -768,7 +746,7 @@ unsigned int getAttributeUInt(const tinyxml2::XMLElement* element,
   const int result = element->QueryUnsignedAttribute(attributeName.c_str(),
                                                      &val);
 
-  if (result != tinyxml2::XML_NO_ERROR)
+  if (result != tinyxml2::XML_SUCCESS)
   {
     dtwarn << "[getAttribute] Error in parsing unsiged int type attribute ["
            << attributeName << "] of an element [" << element->Name()
@@ -787,7 +765,7 @@ float getAttributeFloat(const tinyxml2::XMLElement* element,
   const int result = element->QueryFloatAttribute(attributeName.c_str(),
                                                   &val);
 
-  if (result != tinyxml2::XML_NO_ERROR)
+  if (result != tinyxml2::XML_SUCCESS)
   {
     dtwarn << "[getAttribute] Error in parsing float type attribute ["
            << attributeName << "] of an element [" << element->Name()
@@ -806,7 +784,7 @@ double getAttributeDouble(const tinyxml2::XMLElement* element,
   const int result = element->QueryDoubleAttribute(attributeName.c_str(),
                                                    &val);
 
-  if (result != tinyxml2::XML_NO_ERROR)
+  if (result != tinyxml2::XML_SUCCESS)
   {
     dtwarn << "[getAttribute] Error in parsing double type attribute ["
            << attributeName << "] of an element [" << element->Name()

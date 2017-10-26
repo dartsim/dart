@@ -1,46 +1,153 @@
 ###############################################################################
-# Config file for DART
+# CMake config file for DART
 #
 # This sets the following variables:
-# DART_INCLUDE_DIRS - Directories containing the DART include files.
-# DART_LIBRARIES    - Libraries needed to use DART.
-# DART_VERSION      - DART version.
+# @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS - Directories containing the DART include files.
+# @PROJECT_NAME_UPPERCASE@_LIBRARIES    - Libraries needed to use DART.
+# @PROJECT_NAME_UPPERCASE@_VERSION      - DART version.
 
 #===============================================================================
-# DART_INCLUDE_DIRS
+# Helper Function Definitions
 #===============================================================================
-set(DART_INCLUDE_DIRS
-    "@CMAKE_INSTALL_PREFIX@/include"
-    "@EIGEN3_INCLUDE_DIRS@"
-    "@BULLET_INCLUDE_DIRS@")
+
+@PACKAGE_INIT@
 
 #===============================================================================
-# DART_LIBRARIES
-#===============================================================================
-get_filename_component(CURRENT_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-if (NOT TARGET dart)
-  include("${CURRENT_DIR}/DARTTargets.cmake")
-endif()
-set(DART_LIBRARIES dart)
+function(@PROJECT_NAME@_traverse_components output_variable)
+  set(output_components)
 
-# Handle requested components in find_package(DART COMPONENTS [components]).
-# The list of components is passed in DART_FIND_COMPONENTS.
-if(DART_FIND_COMPONENTS)
-  foreach(comp ${DART_FIND_COMPONENTS})
-    if(NOT TARGET "dart-${comp}")
-      set(DART_${comp}_FOUND 0)
-      if(DART_FIND_REQUIRED_${comp})
-        message(FATAL_ERROR "dart-${comp} not available")
+  foreach(component ${ARGN})
+    # We should be able to elminate the <C>_VISITED property by detecting
+    # whether the <C>_FOUND property is DEFINED. Unfortunately, DEFINED checks
+    # whether or not define_property() was called, not whether the variable was
+    # set. The exact behavior seems to vary between CMake versions, so we use
+    # an extra variable instead.
+    get_property(is_visited DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_VISITED")
+    set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_VISITED" TRUE)
+
+    if(NOT is_visited)
+      set(component_include
+        "${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@_${component}Component.cmake")
+      set(target_include
+        "${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@_${component}Targets.cmake")
+
+      if(EXISTS "${component_include}" AND EXISTS "${target_include}")
+        include("${component_include}")
+
+        set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_FOUND" TRUE)
+        set_property(DIRECTORY
+          PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS"
+          ${@PROJECT_NAME@_${component}_INCLUDE_DIRS})
+        set_property(DIRECTORY
+          PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS"
+          ${@PROJECT_NAME@_${component}_DEFINITIONS})
+        set_property(DIRECTORY
+          PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_LIBRARIES"
+          ${@PROJECT_NAME@_${component}_LIBRARIES})
+        set_property(DIRECTORY
+          PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_DEPENDENCIES"
+          ${@PROJECT_NAME@_${component}_DEPENDENCIES})
+
+        @PROJECT_NAME@_traverse_components("${output_variable}"
+          ${@PROJECT_NAME@_${component}_DEPENDENCIES})
+
+        include("${target_include}")
+
+        # This is not necessary in recent versions of cmake, which supports
+        # transitive includes via INTERFACE_INCLUDE_DIRECTORIES.
+        foreach(dependency ${@PROJECT_NAME@_${component}_DEPENDENCIES})
+          set_property(DIRECTORY APPEND
+            PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS"
+            ${@PROJECT_NAME@_${dependency}_INCLUDE_DIRS})
+          set_property(DIRECTORY APPEND
+            PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS"
+            ${@PROJECT_NAME@_${dependency}_DEFINITIONS})
+          # LIBRARIES is automatically inherited via INTERFACE_LINK_LIBRARIES.
+        endforeach()
+
+        list(APPEND output_components "${component}")
+      else()
+        set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_FOUND" FALSE)
       endif()
-    else()
-      set(DART_${comp}_FOUND 1)
-      set(DART_${comp}_LIBRARY "dart-${comp}")
-      list(APPEND DART_LIBRARIES "${DART_${comp}_LIBRARY}")
     endif()
-  endforeach(comp)
-endif(DART_FIND_COMPONENTS)
+  endforeach()
+
+  set("${output_variable}" ${output_components} PARENT_SCOPE)
+endfunction()
 
 #===============================================================================
-# DART_VERSION
+function(@PROJECT_NAME@_export_variable variable)
+  set("${variable}" ${${variable}} CACHE INTERNAL "")
+endfunction()
+
 #===============================================================================
-set(DART_VERSION @DART_VERSION@)
+function(@PROJECT_NAME@_export_property variable)
+  get_property(value DIRECTORY PROPERTY "${variable}")
+  set("${variable}" ${value} CACHE INTERNAL "")
+endfunction()
+
+#===============================================================================
+function(@PROJECT_NAME@_export_notfound variable)
+  set("${variable}" "${variable}-NOTFOUND" CACHE INTERNAL "")
+endfunction()
+
+#===============================================================================
+function(@PROJECT_NAME@_package_init)
+  @PROJECT_NAME@_traverse_components(required_components "${ARGN}")
+
+  set(@PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS)
+  set(@PROJECT_NAME_UPPERCASE@_DEFINITIONS)
+  set(@PROJECT_NAME_UPPERCASE@_LIBRARIES)
+
+  foreach(component ${ARGN})
+    @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_FOUND")
+
+    if(@PROJECT_NAME_UPPERCASE@_${component}_FOUND)
+      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS")
+      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS")
+      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_LIBRARIES")
+      @PROJECT_NAME@_export_property("@PROJECT_NAME_UPPERCASE@_${component}_DEPENDENCIES")
+
+      list(APPEND @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS ${@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS})
+      list(APPEND @PROJECT_NAME_UPPERCASE@_DEFINITIONS ${@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS})
+      list(APPEND @PROJECT_NAME_UPPERCASE@_LIBRARIES ${@PROJECT_NAME_UPPERCASE@_${component}_LIBRARIES})
+    else()
+      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS")
+      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@_${component}_DEFINITIONS")
+      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@_${component}_LIBRARIES")
+      @PROJECT_NAME@_export_notfound("@PROJECT_NAME_UPPERCASE@_${component}_DEPENDENCIES")
+    endif()
+  endforeach()
+
+  @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS)
+  @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_DEFINITIONS)
+  @PROJECT_NAME@_export_variable(@PROJECT_NAME_UPPERCASE@_LIBRARIES)
+endfunction()
+
+#===============================================================================
+# Main
+#===============================================================================
+
+# Default component: dart
+list(APPEND @PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS dart)
+
+# Components
+if(@PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS)
+  set_and_check(@PROJECT_NAME_UPPERCASE@_PACKAGE_INCLUDE_DIRS "@PACKAGE_INCLUDE_INSTALL_DIR@")
+  set(@PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS
+    ${@PROJECT_NAME_UPPERCASE@_PACKAGE_INCLUDE_DIRS}
+    @PACKAGE_INCLUDE_DIRS@
+    CACHE INTERNAL "")
+
+  @PROJECT_NAME@_package_init(${@PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS})
+endif()
+
+# Use find_package_handle_standard_args to generate output. This handles the
+# REQUIRED keyword, sets @PROJECT_NAME_UPPERCASE@_FOUND, and generates the appropriate
+# STATUS and FATAL_ERROR messages.
+include(FindPackageHandleStandardArgs)
+
+find_package_handle_standard_args(@PROJECT_NAME_UPPERCASE@
+  FOUND_VAR @PROJECT_NAME_UPPERCASE@_FOUND
+  REQUIRED_VARS @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS @PROJECT_NAME_UPPERCASE@_LIBRARIES
+  HANDLE_COMPONENTS)

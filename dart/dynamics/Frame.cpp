@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Frame.h"
+#include "dart/dynamics/Frame.hpp"
 
-#include "dart/common/Console.h"
-#include "dart/dynamics/Shape.h"
+#include "dart/common/Console.hpp"
+#include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -452,9 +448,9 @@ bool Frame::isWorld() const
 }
 
 //==============================================================================
-void Frame::notifyTransformUpdate()
+void Frame::dirtyTransform()
 {
-  notifyVelocityUpdate(); // Global Velocity depends on the Global Transform
+  dirtyVelocity(); // Global Velocity depends on the Global Transform
 
   // Always trigger the signal, in case a new subscriber has registered in the
   // time since the last signal
@@ -467,13 +463,13 @@ void Frame::notifyTransformUpdate()
   mNeedTransformUpdate = true;
 
   for(Entity* entity : mChildEntities)
-    entity->notifyTransformUpdate();
+    entity->dirtyTransform();
 }
 
 //==============================================================================
-void Frame::notifyVelocityUpdate()
+void Frame::dirtyVelocity()
 {
-  notifyAccelerationUpdate(); // Global Acceleration depends on Global Velocity
+  dirtyAcceleration(); // Global Acceleration depends on Global Velocity
 
   // Always trigger the signal, in case a new subscriber has registered in the
   // time since the last signal
@@ -486,11 +482,11 @@ void Frame::notifyVelocityUpdate()
   mNeedVelocityUpdate = true;
 
   for(Entity* entity : mChildEntities)
-    entity->notifyVelocityUpdate();
+    entity->dirtyVelocity();
 }
 
 //==============================================================================
-void Frame::notifyAccelerationUpdate()
+void Frame::dirtyAcceleration()
 {
   // Always trigger the signal, in case a new subscriber has registered in the
   // time since the last signal
@@ -503,7 +499,7 @@ void Frame::notifyAccelerationUpdate()
   mNeedAccelerationUpdate = true;
 
   for(Entity* entity : mChildEntities)
-    entity->notifyAccelerationUpdate();
+    entity->dirtyAcceleration();
 }
 
 //==============================================================================

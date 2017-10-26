@@ -1,14 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,27 +30,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Skeleton.h"
+#include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
 #include <queue>
 #include <string>
 #include <vector>
 
-#include "dart/common/Console.h"
-#include "dart/common/Deprecated.h"
-#include "dart/common/StlHelpers.h"
-#include "dart/math/Geometry.h"
-#include "dart/math/Helpers.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
-#include "dart/dynamics/Joint.h"
-#include "dart/dynamics/ShapeNode.h"
-#include "dart/dynamics/EndEffector.h"
-#include "dart/dynamics/InverseKinematics.h"
-#include "dart/dynamics/Marker.h"
-#include "dart/dynamics/PointMass.h"
-#include "dart/dynamics/SoftBodyNode.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/Deprecated.hpp"
+#include "dart/common/StlHelpers.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/Helpers.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/InverseKinematics.hpp"
+#include "dart/dynamics/Marker.hpp"
+#include "dart/dynamics/PointMass.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 
 #define SET_ALL_FLAGS( X ) for(auto& cache : mTreeCache) cache.mDirty. X = true;\
                            mSkelCache.mDirty. X = true;
@@ -453,6 +448,7 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
 
   skelClone->setProperties(getAspectProperties());
   skelClone->setName(cloneName);
+  skelClone->setState(getState());
 
   return skelClone;
 }
@@ -556,11 +552,8 @@ void Skeleton::setAspectProperties(const AspectProperties& properties)
   setMobile(properties.mIsMobile);
   setGravity(properties.mGravity);
   setTimeStep(properties.mTimeStep);
-
-  if(properties.mEnabledSelfCollisionCheck)
-    enableSelfCollision(properties.mEnabledAdjacentBodyCheck);
-  else
-    disableSelfCollision();
+  setSelfCollisionCheck(properties.mEnabledSelfCollisionCheck);
+  setAdjacentBodyCheck(properties.mEnabledAdjacentBodyCheck);
 }
 
 //==============================================================================
@@ -586,8 +579,6 @@ const std::string& Skeleton::setName(const std::string& _name)
         "Skeleton::Joint | "+mAspectProperties.mName);
   mNameMgrForDofs.setManagerName(
         "Skeleton::DegreeOfFreedom | "+mAspectProperties.mName);
-  mNameMgrForMarkers.setManagerName(
-        "Skeleton::Marker | "+mAspectProperties.mName);
 
   for(auto& mgr : mNodeNameMgrMap)
     mgr.second.setManagerName( std::string("Skeleton::") + mgr.first.name()
@@ -637,51 +628,77 @@ void Skeleton::addEntryToSoftBodyNodeNameMgr(SoftBodyNode* _newNode)
 }
 
 //==============================================================================
-void Skeleton::addMarkersOfBodyNode(BodyNode* _node)
+void Skeleton::enableSelfCollision(bool enableAdjacentBodyCheck)
 {
-  for (std::size_t i=0; i<_node->getNumMarkers(); ++i)
-    addEntryToMarkerNameMgr(_node->getMarker(i));
-}
-
-//==============================================================================
-void Skeleton::removeMarkersOfBodyNode(BodyNode* _node)
-{
-  for (std::size_t i=0; i<_node->getNumMarkers(); ++i)
-    mNameMgrForMarkers.removeName(_node->getMarker(i)->getName());
-}
-
-//==============================================================================
-const std::string& Skeleton::addEntryToMarkerNameMgr(Marker* _newMarker)
-{
-  _newMarker->mProperties.mName = mNameMgrForMarkers.issueNewNameAndAdd(
-      _newMarker->getName(), _newMarker);
-  return _newMarker->mProperties.mName;
-}
-
-//==============================================================================
-void Skeleton::enableSelfCollision(bool _enableAdjacentBodyCheck)
-{
-  mAspectProperties.mEnabledSelfCollisionCheck = true;
-  mAspectProperties.mEnabledAdjacentBodyCheck = _enableAdjacentBodyCheck;
+  enableSelfCollisionCheck();
+  setAdjacentBodyCheck(enableAdjacentBodyCheck);
 }
 
 //==============================================================================
 void Skeleton::disableSelfCollision()
 {
-  mAspectProperties.mEnabledSelfCollisionCheck = false;
-  mAspectProperties.mEnabledAdjacentBodyCheck = false;
+  disableSelfCollisionCheck();
+  setAdjacentBodyCheck(false);
 }
 
 //==============================================================================
-bool Skeleton::isEnabledSelfCollisionCheck() const
+void Skeleton::setSelfCollisionCheck(bool enable)
+{
+  mAspectProperties.mEnabledSelfCollisionCheck = enable;
+}
+
+//==============================================================================
+bool Skeleton::getSelfCollisionCheck() const
 {
   return mAspectProperties.mEnabledSelfCollisionCheck;
 }
 
 //==============================================================================
-bool Skeleton::isEnabledAdjacentBodyCheck() const
+void Skeleton::enableSelfCollisionCheck()
+{
+  setSelfCollisionCheck(true);
+}
+
+//==============================================================================
+void Skeleton::disableSelfCollisionCheck()
+{
+  setSelfCollisionCheck(false);
+}
+
+//==============================================================================
+bool Skeleton::isEnabledSelfCollisionCheck() const
+{
+  return getSelfCollisionCheck();
+}
+
+//==============================================================================
+void Skeleton::setAdjacentBodyCheck(bool enable)
+{
+  mAspectProperties.mEnabledAdjacentBodyCheck = enable;
+}
+
+//==============================================================================
+bool Skeleton::getAdjacentBodyCheck() const
 {
   return mAspectProperties.mEnabledAdjacentBodyCheck;
+}
+
+//==============================================================================
+void Skeleton::enableAdjacentBodyCheck()
+{
+  setAdjacentBodyCheck(true);
+}
+
+//==============================================================================
+void Skeleton::disableAdjacentBodyCheck()
+{
+  setAdjacentBodyCheck(false);
+}
+
+//==============================================================================
+bool Skeleton::isEnabledAdjacentBodyCheck() const
+{
+  return getAdjacentBodyCheck();
 }
 
 //==============================================================================
@@ -703,7 +720,7 @@ void Skeleton::setTimeStep(double _timeStep)
   mAspectProperties.mTimeStep = _timeStep;
 
   for(std::size_t i=0; i<mTreeCache.size(); ++i)
-    notifyArticulatedInertiaUpdate(i);
+    dirtyArticulatedInertia(i);
 }
 
 //==============================================================================
@@ -718,7 +735,7 @@ void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
   mAspectProperties.mGravity = _gravity;
   SET_ALL_FLAGS(mGravityForces);
   SET_ALL_FLAGS(mCoriolisAndGravityForces);
-  ON_ALL_TREES(notifySupportUpdate);
+  ON_ALL_TREES(dirtySupportPolygon);
 }
 
 //==============================================================================
@@ -778,6 +795,23 @@ BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx)
 const BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx) const
 {
   return const_cast<Skeleton*>(this)->getRootBodyNode(_treeIdx);
+}
+
+//==============================================================================
+Joint* Skeleton::getRootJoint(std::size_t treeIdx)
+{
+  auto rootBodyNode = getRootBodyNode(treeIdx);
+
+  if (rootBodyNode)
+    return rootBodyNode->getParentJoint();
+
+  return nullptr;
+}
+
+//==============================================================================
+const Joint* Skeleton::getRootJoint(std::size_t treeIdx) const
+{
+  return const_cast<Skeleton*>(this)->getRootJoint(treeIdx);
 }
 
 //==============================================================================
@@ -854,6 +888,29 @@ const std::vector<const BodyNode*>& Skeleton::getBodyNodes() const
 {
   return convertToConstPtrVector<BodyNode>(
         mSkelCache.mBodyNodes, mSkelCache.mConstBodyNodes);
+}
+
+//==============================================================================
+std::vector<BodyNode*> Skeleton::getBodyNodes(const std::string& name)
+{
+  auto bodyNode = getBodyNode(name);
+
+  if (bodyNode)
+    return {bodyNode};
+  else
+    return std::vector<BodyNode*>();
+}
+
+//==============================================================================
+std::vector<const BodyNode*> Skeleton::getBodyNodes(
+    const std::string& name) const
+{
+  const auto bodyNode = getBodyNode(name);
+
+  if (bodyNode)
+    return {bodyNode};
+  else
+    return std::vector<const BodyNode*>();
 }
 
 //==============================================================================
@@ -942,15 +999,63 @@ const Joint* Skeleton::getJoint(std::size_t _idx) const
 }
 
 //==============================================================================
-Joint* Skeleton::getJoint(const std::string& _name)
+Joint* Skeleton::getJoint(const std::string& name)
 {
-  return mNameMgrForJoints.getObject(_name);
+  return mNameMgrForJoints.getObject(name);
 }
 
 //==============================================================================
-const Joint* Skeleton::getJoint(const std::string& _name) const
+const Joint* Skeleton::getJoint(const std::string& name) const
 {
-  return mNameMgrForJoints.getObject(_name);
+  return mNameMgrForJoints.getObject(name);
+}
+
+//==============================================================================
+std::vector<Joint*> Skeleton::getJoints()
+{
+  const auto& bodyNodes = getBodyNodes();
+
+  std::vector<Joint*> joints;
+  joints.reserve(bodyNodes.size());
+  for (const auto& bodyNode : bodyNodes)
+    joints.emplace_back(bodyNode->getParentJoint());
+
+  return joints;
+}
+
+//==============================================================================
+std::vector<const Joint*> Skeleton::getJoints() const
+{
+  const auto& bodyNodes = getBodyNodes();
+
+  std::vector<const Joint*> joints;
+  joints.reserve(bodyNodes.size());
+  for (const auto& bodyNode : bodyNodes)
+    joints.emplace_back(bodyNode->getParentJoint());
+
+  return joints;
+}
+
+//==============================================================================
+std::vector<Joint*> Skeleton::getJoints(const std::string& name)
+{
+  auto joint = getJoint(name);
+
+  if (joint)
+    return {joint};
+  else
+    return std::vector<Joint*>();
+}
+
+//==============================================================================
+std::vector<const Joint*> Skeleton::getJoints(const std::string& name) const
+{
+  const auto joint = getJoint(name);
+
+  if (joint)
+    return {joint};
+  else
+    return std::vector<const Joint*>();
 }
 
 //==============================================================================
@@ -1309,22 +1414,7 @@ void Skeleton::clearIK()
 }
 
 //==============================================================================
-std::size_t Skeleton::getNumMarkers() const
-{
-  return mNameMgrForMarkers.getCount();
-}
-
-//==============================================================================
-Marker* Skeleton::getMarker(const std::string& _name)
-{
-  return mNameMgrForMarkers.getObject(_name);
-}
-
-//==============================================================================
-const Marker* Skeleton::getMarker(const std::string& _name) const
-{
-  return const_cast<Skeleton*>(this)->getMarker(_name);
-}
+DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, Marker )
 
 //==============================================================================
 DART_BAKE_SPECIALIZED_NODE_SKEL_DEFINITIONS( Skeleton, ShapeNode )
@@ -2215,6 +2305,8 @@ void Skeleton::unregisterBodyNode(BodyNode* _oldBodyNode)
                                      mSoftBodyNodes.end(), soft),
                          mSoftBodyNodes.end());
   }
+
+  updateTotalMass();
 }
 
 //==============================================================================
@@ -2554,7 +2646,7 @@ void Skeleton::updateCacheDimensions(std::size_t _treeIdx)
   updateCacheDimensions(mTreeCache[_treeIdx]);
   updateCacheDimensions(mSkelCache);
 
-  notifyArticulatedInertiaUpdate(_treeIdx);
+  dirtyArticulatedInertia(_treeIdx);
 }
 
 //==============================================================================
@@ -3489,6 +3581,12 @@ void Skeleton::clearInternalForces()
 //==============================================================================
 void Skeleton::notifyArticulatedInertiaUpdate(std::size_t _treeIdx)
 {
+  dirtyArticulatedInertia(_treeIdx);
+}
+
+//==============================================================================
+void Skeleton::dirtyArticulatedInertia(std::size_t _treeIdx)
+{
   SET_FLAG(_treeIdx, mArticulatedInertia);
   SET_FLAG(_treeIdx, mMassMatrix);
   SET_FLAG(_treeIdx, mAugMassMatrix);
@@ -3501,6 +3599,12 @@ void Skeleton::notifyArticulatedInertiaUpdate(std::size_t _treeIdx)
 
 //==============================================================================
 void Skeleton::notifySupportUpdate(std::size_t _treeIdx)
+{
+  dirtySupportPolygon(_treeIdx);
+}
+
+//==============================================================================
+void Skeleton::dirtySupportPolygon(std::size_t _treeIdx)
 {
   SET_FLAG(_treeIdx, mSupport);
 }
@@ -3712,30 +3816,26 @@ void Skeleton::computeImpulseForwardDynamics()
 }
 
 //==============================================================================
-double Skeleton::getKineticEnergy() const
+double Skeleton::computeKineticEnergy() const
 {
   double KE = 0.0;
 
-  for (std::vector<BodyNode*>::const_iterator it = mSkelCache.mBodyNodes.begin();
-       it != mSkelCache.mBodyNodes.end(); ++it)
-  {
-    KE += (*it)->getKineticEnergy();
-  }
+  for (auto* bodyNode : mSkelCache.mBodyNodes)
+    KE += bodyNode->computeKineticEnergy();
 
   assert(KE >= 0.0 && "Kinetic energy should be positive value.");
   return KE;
 }
 
 //==============================================================================
-double Skeleton::getPotentialEnergy() const
+double Skeleton::computePotentialEnergy() const
 {
   double PE = 0.0;
 
-  for (std::vector<BodyNode*>::const_iterator it = mSkelCache.mBodyNodes.begin();
-       it != mSkelCache.mBodyNodes.end(); ++it)
+  for (auto* bodyNode : mSkelCache.mBodyNodes)
   {
-    PE += (*it)->getPotentialEnergy(mAspectProperties.mGravity);
-    PE += (*it)->getParentJoint()->getPotentialEnergy();
+    PE += bodyNode->computePotentialEnergy(mAspectProperties.mGravity);
+    PE += bodyNode->getParentJoint()->computePotentialEnergy();
   }
 
   return PE;

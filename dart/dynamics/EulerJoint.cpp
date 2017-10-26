@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/EulerJoint.h"
+#include "dart/dynamics/EulerJoint.hpp"
 
 #include <string>
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/DegreeOfFreedom.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -54,8 +50,8 @@ EulerJoint::~EulerJoint()
 //==============================================================================
 void EulerJoint::setProperties(const Properties& _properties)
 {
-  MultiDofJoint<3>::setProperties(
-        static_cast<const MultiDofJoint<3>::Properties&>(_properties));
+  Base::setProperties(
+        static_cast<const Base::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -74,7 +70,8 @@ void EulerJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 EulerJoint::Properties EulerJoint::getEulerJointProperties() const
 {
-  return EulerJoint::Properties(getMultiDofJointProperties(), getEulerJointAspect()->getProperties());
+  return EulerJoint::Properties(getGenericJointProperties(),
+                                getEulerJointAspect()->getProperties());
 }
 
 //==============================================================================
@@ -128,8 +125,8 @@ void EulerJoint::setAxisOrder(EulerJoint::AxisOrder _order, bool _renameDofs)
   if (_renameDofs)
     updateDegreeOfFreedomNames();
 
-  Joint::notifyPositionUpdate();
-  updateLocalJacobian(true);
+  Joint::notifyPositionUpdated();
+  updateRelativeJacobian(true);
   Joint::incrementVersion();
 }
 
@@ -180,7 +177,7 @@ Eigen::Matrix3d EulerJoint::convertToRotation(const Eigen::Vector3d& _positions)
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 3> EulerJoint::getLocalJacobianStatic(
+Eigen::Matrix<double, 6, 3> EulerJoint::getRelativeJacobianStatic(
     const Eigen::Vector3d& _positions) const
 {
   Eigen::Matrix<double, 6, 3> J;
@@ -294,7 +291,7 @@ EulerJoint::EulerJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createEulerJointAspect(properties);
-  createMultiDofJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 
@@ -336,7 +333,7 @@ void EulerJoint::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void EulerJoint::updateLocalTransform() const
+void EulerJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint * convertToTransform(getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
@@ -345,13 +342,13 @@ void EulerJoint::updateLocalTransform() const
 }
 
 //==============================================================================
-void EulerJoint::updateLocalJacobian(bool) const
+void EulerJoint::updateRelativeJacobian(bool) const
 {
-  mJacobian = getLocalJacobianStatic(getPositionsStatic());
+  mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================
-void EulerJoint::updateLocalJacobianTimeDeriv() const
+void EulerJoint::updateRelativeJacobianTimeDeriv() const
 {
   // double q0 = mPositions[0];
   const Eigen::Vector3d& positions = getPositionsStatic();

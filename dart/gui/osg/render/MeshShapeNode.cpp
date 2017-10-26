@@ -1,14 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *            Pete Vieira <pete.vieira@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -41,12 +36,12 @@
 #include <osg/Geometry>
 #include <osg/CullFace>
 
-#include "dart/gui/osg/render/MeshShapeNode.h"
-#include "dart/gui/osg/Utils.h"
+#include "dart/gui/osg/render/MeshShapeNode.hpp"
+#include "dart/gui/osg/Utils.hpp"
 
-#include "dart/dynamics/MeshShape.h"
-#include "dart/dynamics/SimpleFrame.h"
-#include "dart/common/Console.h"
+#include "dart/dynamics/MeshShape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/common/Console.hpp"
 
 namespace dart {
 namespace gui {
@@ -547,6 +542,8 @@ void MeshShapeGeometry::extractData(bool firstTime)
     if(mNormals->size() != mAiMesh->mNumVertices)
       mNormals->resize(mAiMesh->mNumVertices);
 
+    const Eigen::Vector3d s = mMeshShape->getScale();
+
     for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
     {
       const aiVector3D& v = mAiMesh->mVertices[i];
@@ -555,7 +552,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
       if(mAiMesh->mNormals)
       {
         const aiVector3D& n = mAiMesh->mNormals[i];
-        (*mNormals)[i] = ::osg::Vec3(n.x, n.y, n.z);
+        (*mNormals)[i] = ::osg::Vec3(n.x*s[0], n.y*s[1], n.z*s[2]);
       }
       // TODO(MXG): Consider computing normals for meshes that don't come with
       // normal data per vertex

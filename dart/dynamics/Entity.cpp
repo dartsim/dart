@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Entity.h"
+#include "dart/dynamics/Entity.hpp"
 
-#include "dart/common/Console.h"
-#include "dart/common/StlHelpers.h"
-#include "dart/dynamics/Frame.h"
-#include "dart/dynamics/Shape.h"
+#include "dart/common/Console.hpp"
+#include "dart/common/StlHelpers.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -135,6 +131,12 @@ bool Entity::isFrame() const
 //==============================================================================
 void Entity::notifyTransformUpdate()
 {
+  dirtyTransform();
+}
+
+//==============================================================================
+void Entity::dirtyTransform()
+{
   mNeedTransformUpdate = true;
 
   // The actual transform hasn't updated yet. But when its getter is called,
@@ -151,6 +153,12 @@ bool Entity::needsTransformUpdate() const
 //==============================================================================
 void Entity::notifyVelocityUpdate()
 {
+  dirtyVelocity();
+}
+
+//==============================================================================
+void Entity::dirtyVelocity()
+{
   mNeedVelocityUpdate = true;
 
   // The actual velocity hasn't updated yet. But when its getter is called,
@@ -166,6 +174,12 @@ bool Entity::needsVelocityUpdate() const
 
 //==============================================================================
 void Entity::notifyAccelerationUpdate()
+{
+  dirtyAcceleration();
+}
+
+//==============================================================================
+void Entity::dirtyAcceleration()
 {
   mNeedAccelerationUpdate = true;
 
@@ -247,7 +261,7 @@ void Entity::changeParentFrame(Frame* _newParentFrame)
       mParentFrame->mChildEntities.insert(this);
       mParentFrame->processNewEntity(this);
     }
-    notifyTransformUpdate();
+    dirtyTransform();
   }
 
   if(mParentFrame)

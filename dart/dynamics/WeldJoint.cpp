@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,12 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/WeldJoint.h"
+#include "dart/dynamics/WeldJoint.hpp"
 
 #include <string>
 
-#include "dart/math/Helpers.h"
-#include "dart/math/Geometry.h"
+#include "dart/math/Helpers.hpp"
+#include "dart/math/Geometry.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -113,39 +109,39 @@ Joint* WeldJoint::clone() const
 }
 
 //==============================================================================
-void WeldJoint::updateLocalTransform() const
+void WeldJoint::updateRelativeTransform() const
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalSpatialVelocity() const
+void WeldJoint::updateRelativeSpatialVelocity() const
 {
   // Do nothing
   // Should we have mSpatialVelocity.setZero() here instead?
 }
 
 //==============================================================================
-void WeldJoint::updateLocalSpatialAcceleration() const
+void WeldJoint::updateRelativeSpatialAcceleration() const
 {
   // Do nothing
   // Should we have mSpatialAcceleration.setZero() here instead?
 }
 
 //==============================================================================
-void WeldJoint::updateLocalPrimaryAcceleration() const
+void WeldJoint::updateRelativePrimaryAcceleration() const
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalJacobian(bool) const
+void WeldJoint::updateRelativeJacobian(bool) const
 {
   // Do nothing
 }
 
 //==============================================================================
-void WeldJoint::updateLocalJacobianTimeDeriv() const
+void WeldJoint::updateRelativeJacobianTimeDeriv() const
 {
   // Do nothing
 }

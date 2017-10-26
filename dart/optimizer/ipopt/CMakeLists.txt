@@ -1,12 +1,31 @@
+# Dependency checks
+find_package(IPOPT 3.11.9 QUIET)
+dart_check_optional_package(IPOPT "dart-optimizer-ipopt" "ipopt" "3.11.9")
+
 # Search all header and source files
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
 
-include_directories(SYSTEM ${NLOPT_INCLUDE_DIRS})
+# Set local target name
+set(target_name ${PROJECT_NAME}-optimizer-ipopt)
+set(component_name optimizer-ipopt)
 
-# Library
-dart_add_library(dart-optimizer-ipopt ${srcs} ${hdrs})
-target_link_libraries(dart-optimizer-ipopt dart ${IPOPT_LIBRARIES})
+# Add target
+dart_add_library(${target_name} ${hdrs} ${srcs})
+target_include_directories(
+  ${target_name} SYSTEM
+  PUBLIC ${IPOPT_INCLUDE_DIRS}
+)
+target_link_libraries(
+  ${target_name}
+  dart
+  ${IPOPT_LIBRARIES}
+)
+
+# Component
+add_component(${PROJECT_NAME} ${component_name})
+add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_ipopt headers" ${hdrs})
@@ -17,18 +36,13 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/ipopt.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/ipopt.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/ipopt.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ipopt.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp
   DESTINATION include/dart/optimizer/ipopt
   COMPONENT headers
 )
-install(TARGETS dart-optimizer-ipopt EXPORT DARTTargets DESTINATION lib)
-
-# Coverage test files
-set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"
-    CACHE INTERNAL "files for coverage tests")

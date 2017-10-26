@@ -1,14 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Jeongseok Lee <jslee02@gmail.com>,
- *            Tobias Kunz <tobias@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,18 +30,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/CollisionDetector.h"
+#include "dart/collision/CollisionDetector.hpp"
 
 #include <algorithm>
 
-#include "dart/common/Console.h"
-#include "dart/collision/CollisionObject.h"
-#include "dart/collision/CollisionGroup.h"
-#include "dart/dynamics/BodyNode.h"
-#include "dart/dynamics/Skeleton.h"
+#include "dart/common/Console.hpp"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionGroup.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
 namespace collision {
+
+//==============================================================================
+CollisionDetector::Factory* CollisionDetector::getFactory()
+{
+  return SingletonFactory::getSingletonPtr();
+}
 
 //==============================================================================
 std::shared_ptr<CollisionGroup>
@@ -146,7 +147,8 @@ CollisionDetector::ManagerForSharableCollisionObjects::claimCollisionObject(
 {
   const auto search = mCollisionObjectMap.find(shapeFrame);
 
-  if (mCollisionObjectMap.end() != search)
+  const auto found = mCollisionObjectMap.end() != search;
+  if (found)
   {
     const auto& collObj = search->second;
     assert(collObj.lock());

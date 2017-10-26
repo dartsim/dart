@@ -1,4 +1,3 @@
-brew tap dartsim/dart
 brew tap homebrew/science
 
 brew update > /dev/null
@@ -7,14 +6,15 @@ PACKAGES='
 git
 cmake
 assimp
-fcl
-bullet
+dartsim/dart/fcl
+bullet --with-double-precision
+ode --with-libccd --with-double-precision
 flann
 boost
 eigen
 tinyxml
 tinyxml2
-libccd
+homebrew/science/libccd
 nlopt
 ipopt
 ros/deps/urdfdom

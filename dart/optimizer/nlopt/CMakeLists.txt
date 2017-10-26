@@ -1,12 +1,31 @@
+# Dependency checks
+find_package(NLOPT 2.4.1 QUIET)
+dart_check_optional_package(NLOPT "dart-optimizer-nlopt" "nlopt" "2.4.1")
+
 # Search all header and source files
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
-file(GLOB hdrs "*.h")
 
-include_directories(SYSTEM ${NLOPT_INCLUDE_DIRS})
+# Set local target name
+set(target_name ${PROJECT_NAME}-optimizer-nlopt)
+set(component_name optimizer-nlopt)
 
-# Library
-dart_add_library(dart-optimizer-nlopt ${srcs} ${hdrs})
-target_link_libraries(dart-optimizer-nlopt dart ${NLOPT_LIBRARIES})
+# Add target
+dart_add_library(${target_name} ${hdrs} ${srcs})
+target_include_directories(
+  ${target_name} SYSTEM
+  PUBLIC ${NLOPT_INCLUDE_DIRS}
+)
+target_link_libraries(
+  ${target_name}
+  dart
+  ${NLOPT_LIBRARIES}
+)
+
+# Component
+add_component(${PROJECT_NAME} ${component_name})
+add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_nlopt headers" ${hdrs})
@@ -17,18 +36,13 @@ dart_generate_include_header_list(
   ${header_names}
 )
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/nlopt.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/nlopt.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/nlopt.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/nlopt.hpp
 )
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/nlopt.h
+  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/nlopt.hpp
   DESTINATION include/dart/optimizer/nlopt
   COMPONENT headers
 )
-install(TARGETS dart-optimizer-nlopt EXPORT DARTTargets DESTINATION lib)
-
-# Coverage test files
-set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"
-    CACHE INTERNAL "files for coverage tests")

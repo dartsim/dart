@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
-#include "dart/dynamics/SimpleFrame.h"
+#include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -164,21 +160,21 @@ void SimpleFrame::setRelativeTransform(
     const Eigen::Isometry3d& _newRelTransform)
 {
   mRelativeTf = _newRelTransform;
-  notifyTransformUpdate();
+  dirtyTransform();
 }
 
 //==============================================================================
 void SimpleFrame::setRelativeTranslation(const Eigen::Vector3d& _newTranslation)
 {
   mRelativeTf.translation() = _newTranslation;
-  notifyTransformUpdate();
+  dirtyTransform();
 }
 
 //==============================================================================
 void SimpleFrame::setRelativeRotation(const Eigen::Matrix3d& _newRotation)
 {
   mRelativeTf.linear() = _newRotation;
-  notifyTransformUpdate();
+  dirtyTransform();
 }
 
 //==============================================================================
@@ -217,7 +213,7 @@ void SimpleFrame::setRelativeSpatialVelocity(
     const Eigen::Vector6d& _newSpatialVelocity)
 {
   mRelativeVelocity = _newSpatialVelocity;
-  notifyVelocityUpdate();
+  dirtyVelocity();
 }
 
 //==============================================================================
@@ -242,7 +238,7 @@ void SimpleFrame::setRelativeSpatialAcceleration(
     const Eigen::Vector6d &_newSpatialAcceleration)
 {
   mRelativeAcceleration = _newSpatialAcceleration;
-  notifyAccelerationUpdate();
+  dirtyAcceleration();
 }
 
 //==============================================================================

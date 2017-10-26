@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/BalanceConstraint.h"
+#include "dart/constraint/BalanceConstraint.hpp"
 
-#include "dart/dynamics/Skeleton.h"
-#include "dart/dynamics/EndEffector.h"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/EndEffector.hpp"
 
 namespace dart {
 namespace constraint {
@@ -255,7 +251,7 @@ void BalanceConstraint::evalGradient(const Eigen::VectorXd& _x,
       }
       else
       {
-        mNullSpaceCache.setZero();
+        mNullSpaceCache.setZero(nDofs, nDofs);
       }
 
       std::size_t numEE = skel->getNumEndEffectors();
@@ -292,7 +288,7 @@ void BalanceConstraint::evalGradient(const Eigen::VectorXd& _x,
       }
       else
       {
-        mNullSpaceCache.setZero();
+        mNullSpaceCache.setZero(nDofs, nDofs);
       }
 
       for(std::size_t i=0; i<2; ++i)
@@ -321,6 +317,8 @@ void BalanceConstraint::evalGradient(const Eigen::VectorXd& _x,
       }
     }
   }
+
+  convertJacobianMethodOutputToGradient(_grad);
 }
 
 //==============================================================================
@@ -398,6 +396,26 @@ void BalanceConstraint::clearCaches()
 {
   // This will ensure that the comparison test in eval() fails
   mLastCOM = Eigen::Vector3d::Constant(std::nan(""));
+}
+
+//==============================================================================
+void BalanceConstraint::convertJacobianMethodOutputToGradient(
+    Eigen::Map<Eigen::VectorXd>& grad)
+{
+  const dart::dynamics::SkeletonPtr& skel = mIK.lock()->getSkeleton();
+  skel->setVelocities(grad);
+
+  mInitialPositionsCache = skel->getPositions();
+
+  for(std::size_t i=0; i < skel->getNumJoints(); ++i)
+    skel->getJoint(i)->integratePositions(1.0);
+
+  // Clear out the velocities so we don't interfere with other Jacobian methods
+  for(std::size_t i=0; i < skel->getNumDofs(); ++i)
+    skel->setVelocity(i, 0.0);
+
+  grad = skel->getPositions();
+  grad -= mInitialPositionsCache;
 }
 
 } // namespace constraint

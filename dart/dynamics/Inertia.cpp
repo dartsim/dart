@@ -1,13 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Michael X. Grey <mxgrey@gatech.edu>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/Inertia.h"
-#include "dart/common/Console.h"
-#include "dart/math/Geometry.h"
+#include "dart/dynamics/Inertia.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/math/Geometry.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -211,9 +207,11 @@ bool Inertia::verifyMoment(const Eigen::Matrix3d& _moment, bool _printWarnings,
     {
       valid = false;
       if(_printWarnings)
+      {
         dtwarn << "[Inertia::verifyMoment] Invalid entry for (" << i << "," << i
                << "): " << _moment(i,i) << ". Value should be positive "
                << "and greater than zero.\n";
+      }
     }
   }
 
@@ -225,10 +223,12 @@ bool Inertia::verifyMoment(const Eigen::Matrix3d& _moment, bool _printWarnings,
       {
         valid = false;
         if(_printWarnings)
+        {
           dtwarn << "[Inertia::verifyMoment] Values for entries (" << i
                  << "," << j << ") and (" << j << "," << i << ") differ by "
                  << _moment(i,j) - _moment(j,i) << " which is more than the "
                  << "permitted tolerance (" << _tolerance << ")\n";
+        }
       }
     }
   }

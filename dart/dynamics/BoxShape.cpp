@@ -1,14 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Sehoon Ha <sehoon.ha@gmail.com>,
- *            Jeongseok Lee <jslee02@gmail.com>
- *
- * Georgia Tech Graphics Lab and Humanoid Robotics Lab
- *
- * Directed by Prof. C. Karen Liu and Prof. Mike Stilman
- * <karenliu@cc.gatech.edu> <mstilman@cc.gatech.edu>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -36,7 +31,7 @@
  */
 
 #include <cmath>
-#include "dart/dynamics/BoxShape.h"
+#include "dart/dynamics/BoxShape.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -53,6 +48,19 @@ BoxShape::BoxShape(const Eigen::Vector3d& _size)
 }
 
 BoxShape::~BoxShape() {
+}
+
+//==============================================================================
+const std::string& BoxShape::getType() const
+{
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& BoxShape::getStaticType()
+{
+  static const std::string type("BoxShape");
+  return type;
 }
 
 //==============================================================================
