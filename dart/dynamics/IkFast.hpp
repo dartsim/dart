@@ -52,7 +52,7 @@ class IkFast : public InverseKinematics::Analytical
 public:
   /// Constructor
   ///
-  /// \param[in] ik The parent InverseKinematics solver that is associated whit
+  /// \param[in] ik The parent InverseKinematics solver that is associated with
   /// this gradient method.
   /// \param[in] dofMap The indices to the degrees-of-freedom that will be
   /// solved by IkFast. The number of DOFs can be varied depending on the IkFast

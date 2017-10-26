@@ -48,7 +48,7 @@ class SharedLibraryIkFast : public IkFast
 public:
   /// Constructor
   ///
-  /// \param[in] ik The parent InverseKinematics solver that is associated whit
+  /// \param[in] ik The parent InverseKinematics solver that is associated with
   /// this gradient method.
   /// \param[in] filePath The path to the shared library of the IkFast binary
   /// file
