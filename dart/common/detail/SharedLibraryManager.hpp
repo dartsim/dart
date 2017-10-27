@@ -30,43 +30,59 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCE_HPP_
-#define DART_COMMON_LOCALRESOURCE_HPP_
+#ifndef DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_
+#define DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_
 
-#include "dart/common/Resource.hpp"
+#include <memory>
+#include <unordered_map>
+#include <boost/filesystem.hpp>
+#include "dart/common/Singleton.hpp"
+
+#include <boost/functional/hash.hpp>
+
+namespace std {
+
+template<> struct hash<boost::filesystem::path>
+{
+  size_t operator()(const boost::filesystem::path& p) const
+  {
+    return boost::filesystem::hash_value(p);
+  }
+};
+
+} // namespace std
 
 namespace dart {
 namespace common {
 
-class LocalResource : public virtual Resource
+class SharedLibrary;
+
+namespace detail {
+
+class SharedLibraryManager final : public Singleton<SharedLibraryManager>
 {
 public:
-  explicit LocalResource(const std::string& _path);
-  virtual ~LocalResource();
+  /// Loads the shared library with the specified path.
+  ///
+  /// \param[in] path The path to the shared library. If the path doesn't
+  /// include the extension, this function will use the best guess depending on
+  /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
+  /// Windows).
+  /// \return Pointer to the shared library upon success. Otherwise, returns
+  /// nullptr.
+  std::shared_ptr<SharedLibrary> load(const boost::filesystem::path& path);
 
-  LocalResource(const LocalResource& _other) = delete;
-  LocalResource& operator=(const LocalResource& _other) = delete;
+protected:
+  friend class Singleton<SharedLibraryManager>;
 
-  /// Returns true if the resource is open and in a valid state.
-  bool isGood() const;
-
-  // Documentation inherited.
-  std::size_t getSize() override;
-
-  // Documentation inherited.
-  std::size_t tell() override;
-
-  // Documentation inherited.
-  bool seek(ptrdiff_t _origin, SeekType _mode) override;
-
-  // Documentation inherited.
-  std::size_t read(void* _buffer, std::size_t _size, std::size_t _count) override;
-
-private:
-  std::FILE* mFile;
+protected:
+  /// Map from library path to the library instances.
+  std::unordered_map<
+      boost::filesystem::path, std::weak_ptr<SharedLibrary>> mLibraries;
 };
 
+} // namespace detail
 } // namespace common
 } // namespace dart
 
-#endif // ifndef DART_COMMON_LOCALRESOURCE_HPP_
+#endif // DART_COMMON_DETAIL_SHAREDLIBRARYMANAGER_HPP_

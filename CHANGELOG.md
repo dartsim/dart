@@ -10,6 +10,10 @@
 
 ### DART 6.4.0 (201X-XX-XX)
 
+* Kinematics
+
+  * Added IkFast support as analytic IK solver: [#887](https://github.com/dartsim/dart/pull/887)
+
 * License
 
   * Added Personal Robotics Lab and Open Source Robotics Foundation as contributors: [#929](https://github.com/dartsim/dart/pull/929)

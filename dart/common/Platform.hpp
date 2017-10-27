@@ -30,43 +30,63 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCE_HPP_
-#define DART_COMMON_LOCALRESOURCE_HPP_
+#ifndef DART_COMMON_PLATFORM_HPP_
+#define DART_COMMON_PLATFORM_HPP_
 
-#include "dart/common/Resource.hpp"
+// Operating systems and architectures
+#if defined(__linux__)
 
-namespace dart {
-namespace common {
+#define DART_OS_LINUX      1
+#if __x86_64__ || __ppc64__
+#define DART_ARCH_64BITS   1
+#else
+#define DART_ARCH_32BITS   1
+#endif
 
-class LocalResource : public virtual Resource
-{
-public:
-  explicit LocalResource(const std::string& _path);
-  virtual ~LocalResource();
+#elif defined(__APPLE__)
 
-  LocalResource(const LocalResource& _other) = delete;
-  LocalResource& operator=(const LocalResource& _other) = delete;
+#define DART_OS_MACOS      1
+#if __LP64__
+#define DART_ARCH_64BITS   1
+#else
+#define DART_ARCH_32BITS   1
+#endif
 
-  /// Returns true if the resource is open and in a valid state.
-  bool isGood() const;
+#elif defined(_WIN32)
 
-  // Documentation inherited.
-  std::size_t getSize() override;
+#define DART_OS_WINDOWS    1
+#define DART_ARCH_32BITS   1
 
-  // Documentation inherited.
-  std::size_t tell() override;
+#elif defined(_WIN64)
 
-  // Documentation inherited.
-  bool seek(ptrdiff_t _origin, SeekType _mode) override;
+#define DART_OS_WINDOWS    1
+#define DART_ARCH_64BITS   1
 
-  // Documentation inherited.
-  std::size_t read(void* _buffer, std::size_t _size, std::size_t _count) override;
+#else
 
-private:
-  std::FILE* mFile;
-};
+#error Unsupported platform.
 
-} // namespace common
-} // namespace dart
+#endif // if defined(__linux__)
 
-#endif // ifndef DART_COMMON_LOCALRESOURCE_HPP_
+// Define undefined preprocessors as 0
+#ifndef DART_OS_WINDOWS
+  #define DART_OS_WINDOWS  0
+#endif
+
+#ifndef DART_OS_LINUX
+  #define DART_OS_LINUX    0
+#endif
+
+#ifndef DART_OS_MACOS
+  #define DART_OS_MACOS   0
+#endif
+
+#ifndef DART_ARCH_32BITS
+  #define DART_ARCH_32BITS 0
+#endif
+
+#ifndef DART_ARCH_64BITS
+  #define DART_ARCH_64BITS 0
+#endif
+
+#endif // DART_COMMON_PLATFORM_HPP_

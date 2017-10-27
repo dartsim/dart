@@ -30,43 +30,43 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCE_HPP_
-#define DART_COMMON_LOCALRESOURCE_HPP_
+#include <dart/dart.hpp>
+#include <dart/gui/osg/osg.hpp>
 
-#include "dart/common/Resource.hpp"
+class WamWorld;
 
-namespace dart {
-namespace common {
-
-class LocalResource : public virtual Resource
+class InputHandler : public ::osgGA::GUIEventHandler
 {
 public:
-  explicit LocalResource(const std::string& _path);
-  virtual ~LocalResource();
+  InputHandler(
+      dart::gui::osg::Viewer* viewer,
+      WamWorld* teleop,
+      const dart::dynamics::SkeletonPtr& wam,
+      const dart::simulation::WorldPtr& world);
 
-  LocalResource(const LocalResource& _other) = delete;
-  LocalResource& operator=(const LocalResource& _other) = delete;
+  // Documentation inherited
+  bool handle(
+      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override;
 
-  /// Returns true if the resource is open and in a valid state.
-  bool isGood() const;
+protected:
+  void initialize();
 
-  // Documentation inherited.
-  std::size_t getSize() override;
+protected:
+  dart::gui::osg::Viewer* mViewer;
 
-  // Documentation inherited.
-  std::size_t tell() override;
+  WamWorld* mWamWorld;
 
-  // Documentation inherited.
-  bool seek(ptrdiff_t _origin, SeekType _mode) override;
+  dart::dynamics::SkeletonPtr mWam;
 
-  // Documentation inherited.
-  std::size_t read(void* _buffer, std::size_t _size, std::size_t _count) override;
+  dart::simulation::WorldPtr mWorld;
 
-private:
-  std::FILE* mFile;
+  Eigen::VectorXd mRestConfig;
+
+  std::vector<bool> mConstraintActive;
+
+  std::vector<std::size_t> mEndEffectorIndex;
+
+  std::vector< std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
+
+  Eigen::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
 };
-
-} // namespace common
-} // namespace dart
-
-#endif // ifndef DART_COMMON_LOCALRESOURCE_HPP_
