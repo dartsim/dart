@@ -986,17 +986,13 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const auto radius = cylinder->getRadius();
     const auto height = cylinder->getHeight();
 
+    geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
     if (FCLCollisionDetector::PRIMITIVE == type)
     {
-      geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
       // TODO(JS): We still need to use mesh for cylinder because FCL 0.4.0
       // returns single contact point for cylinder yet. Once FCL support
       // multiple contact points then above code will be replaced by:
       // fclCollGeom.reset(new fcl::Cylinder(radius, height));
-    }
-    else
-    {
-      geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
     }
   }
   else if (PlaneShape::getStaticType() == shapeType)
