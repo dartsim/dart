@@ -58,7 +58,7 @@
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
-#define NORMAL_EPSILON 1e-03
+#define NORMAL_EPSILON_SQUARED 1e-06
 
 namespace dart {
 namespace collision {
@@ -597,7 +597,7 @@ void reportContacts(
     {
       const auto& cp = contactManifold->getContactPoint(j);
 
-      if (cp.m_normalWorldOnB.length() < NORMAL_EPSILON)
+      if (cp.m_normalWorldOnB.length2() < NORMAL_EPSILON_SQUARED)
       {
         // This is an invalid contact, as it contains a zero length normal.
         // Skip this contact.
