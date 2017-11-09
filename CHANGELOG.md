@@ -2,6 +2,10 @@
 
 ### DART 7.0.0 (201X-XX-XX)
 
+* Collision detection
+
+  * Added FCL 0.6 support: [#873](https://github.com/dartsim/dart/pull/873)
+
 * Optimizer
 
   * Changed Function::eval\[Gradient/Hessian\](...) to const function: [#928](https://github.com/dartsim/dart/pull/928)
