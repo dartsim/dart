@@ -47,7 +47,8 @@ double length(const dart::collision::fcl::Vector3& t)
 }
 
 //==============================================================================
-dart::collision::fcl::Vector3 getTranslation(const dart::collision::fcl::Transform3& T)
+dart::collision::fcl::Vector3 getTranslation(
+    const dart::collision::fcl::Transform3& T)
 {
 #if FCL_VERSION_AT_LEAST(0,6,0)
   return T.translation();
@@ -57,7 +58,8 @@ dart::collision::fcl::Vector3 getTranslation(const dart::collision::fcl::Transfo
 }
 
 //==============================================================================
-void setTranslation(dart::collision::fcl::Transform3& T, const dart::collision::fcl::Vector3& t)
+void setTranslation(
+    dart::collision::fcl::Transform3& T, const dart::collision::fcl::Vector3& t)
 {
 #if FCL_VERSION_AT_LEAST(0,6,0)
   T.translation() = t;
@@ -67,7 +69,8 @@ void setTranslation(dart::collision::fcl::Transform3& T, const dart::collision::
 }
 
 //==============================================================================
-dart::collision::fcl::Matrix3 getRotation(const dart::collision::fcl::Transform3& T)
+dart::collision::fcl::Matrix3 getRotation(
+    const dart::collision::fcl::Transform3& T)
 {
 #if FCL_VERSION_AT_LEAST(0,6,0)
   return T.linear();
@@ -77,7 +80,8 @@ dart::collision::fcl::Matrix3 getRotation(const dart::collision::fcl::Transform3
 }
 
 //==============================================================================
-void setRotation(dart::collision::fcl::Transform3& T, const dart::collision::fcl::Matrix3& R)
+void setRotation(
+    dart::collision::fcl::Transform3& T, const dart::collision::fcl::Matrix3& R)
 {
 #if FCL_VERSION_AT_LEAST(0,6,0)
   T.linear() = R;
@@ -88,7 +92,10 @@ void setRotation(dart::collision::fcl::Transform3& T, const dart::collision::fcl
 
 //==============================================================================
 void setEulerZYX(
-    dart::collision::fcl::Matrix3& rot, double eulerX, double eulerY, double eulerZ)
+    dart::collision::fcl::Matrix3& rot,
+    double eulerX,
+    double eulerY,
+    double eulerZ)
 {
 #if FCL_VERSION_AT_LEAST(0,6,0)
   double ci(cos(eulerX));
@@ -112,7 +119,8 @@ void setEulerZYX(
 
 //==============================================================================
 dart::collision::fcl::Vector3 transform(
-      const dart::collision::fcl::Transform3 &t, const dart::collision::fcl::Vector3 &v)
+      const dart::collision::fcl::Transform3 &t,
+    const dart::collision::fcl::Vector3 &v)
 {
 #if FCL_VERSION_AT_LEAST(0,6,0)
   return t * v;

@@ -136,26 +136,34 @@ using Ellipsoid = ::fcl::Ellipsoid;
 double length(const dart::collision::fcl::Vector3& t);
 
 /// Returns translation component of a transform
-dart::collision::fcl::Vector3 getTranslation(const dart::collision::fcl::Transform3& T);
+dart::collision::fcl::Vector3 getTranslation(
+    const dart::collision::fcl::Transform3& T);
 
 /// Sets translation component of a transform
-void setTranslation(dart::collision::fcl::Transform3& T, const dart::collision::fcl::Vector3& t);
+void setTranslation(
+    dart::collision::fcl::Transform3& T,
+    const dart::collision::fcl::Vector3& t);
 
 /// Returns rotation component of a transform
-dart::collision::fcl::Matrix3 getRotation(const dart::collision::fcl::Transform3& T);
+dart::collision::fcl::Matrix3 getRotation(
+    const dart::collision::fcl::Transform3& T);
 
 /// Sets rotation component of a transform
-void setRotation(dart::collision::fcl::Transform3& T, const dart::collision::fcl::Matrix3& R);
+void setRotation(
+    dart::collision::fcl::Transform3& T,
+    const dart::collision::fcl::Matrix3& R);
 
 /// Sets a rotation matrix given Euler-XYZ angles
-void setEulerZYX(dart::collision::fcl::Matrix3& rot,
+void setEulerZYX(
+    dart::collision::fcl::Matrix3& rot,
     double eulerX,
     double eulerY,
     double eulerZ);
 
 /// Transforms a 3-dim vector by a transform and returns the result
 dart::collision::fcl::Vector3 transform(
-    const dart::collision::fcl::Transform3& t, const dart::collision::fcl::Vector3& v);
+    const dart::collision::fcl::Transform3& t,
+    const dart::collision::fcl::Vector3& v);
 
 } // namespace fcl
 } // namespace collision
