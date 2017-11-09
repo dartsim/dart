@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -40,6 +41,7 @@
 #include <typeindex>
 
 #include "dart/common/Aspect.hpp"
+#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace common {
@@ -187,6 +189,7 @@ public:
 
   enum DelegateTag { Delegate };
 
+  using ThisClass = ComposeData<CompositeType, GetData, AspectT, Remainder...>;
   using Base = typename GetData<AspectT>::Type;
   using Data = typename Base::Data;
   using AspectType = typename GetAspect<AspectT>::Type;
@@ -206,6 +209,11 @@ public:
         std::is_base_of<CompositeType, Arg>::value,
         CompositeType, Arg>::type;
   };
+
+  // To get byte-aligned Eigen vectors
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(ThisClass)
 
   ComposeData() = default;
 
@@ -333,10 +341,6 @@ protected:
   {
     _setBaseFrom(composite);
   }
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //==============================================================================

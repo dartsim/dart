@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -65,7 +66,7 @@ void PlanarJoint::setProperties(const UniqueProperties& _properties)
 void PlanarJoint::setAspectProperties(const AspectProperties& properties)
 {
   mAspectProperties = properties;
-  Joint::notifyPositionUpdate();
+  Joint::notifyPositionUpdated();
   updateRelativeJacobian(true);
   Joint::incrementVersion();
 }
@@ -127,7 +128,7 @@ void PlanarJoint::setXYPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -137,7 +138,7 @@ void PlanarJoint::setYZPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -147,7 +148,7 @@ void PlanarJoint::setZXPlane(bool _renameDofs)
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -159,7 +160,7 @@ void PlanarJoint::setArbitraryPlane(const Eigen::Vector3d& _transAxis1,
 
   if (_renameDofs)
     updateDegreeOfFreedomNames();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================

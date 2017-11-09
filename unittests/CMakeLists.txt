@@ -1,8 +1,9 @@
 #
-# Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
-# Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
-# Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+# Copyright (c) 2011-2017, The DART development contributors
 # All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/master/LICENSE
 #
 # This file is provided under the following "BSD-style" License:
 #   Redistribution and use in source and binary forms, with or
@@ -44,9 +45,7 @@ set_target_properties(
 )
 
 #===============================================================================
-# This functiion uses following variables:
-# - DART_TEST_OUT_DIR
-# and uses following global properties:
+# This function uses following global properties:
 # - DART_UNITTESTS
 # - DART_${test_type}_TESTS
 #
@@ -66,9 +65,7 @@ function(dart_add_test test_type target_name) # ARGN for source files
   endif()
 
   add_executable(${target_name} ${sources})
-  add_test(
-    ${target_name}
-    "${DART_TEST_OUT_DIR}/${test_type}/${target_name}")
+  add_test(${target_name} ${target_name})
 
   if(MSVC)
     target_link_libraries(${target_name}
@@ -79,11 +76,6 @@ function(dart_add_test test_type target_name) # ARGN for source files
   else()
     target_link_libraries(${target_name} dart gtest gtest_main)
   endif()
-
-  set_target_properties(
-    ${target_name} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${DART_TEST_OUT_DIR}/${test_type}"
-  )
 
 endfunction()
 
@@ -98,9 +90,6 @@ function(dart_get_tests output_var test_type)
   get_property(var GLOBAL PROPERTY DART_${test_type}_TESTS)
   set(${output_var} ${var} PARENT_SCOPE)
 endfunction()
-
-# Set test binary out directory
-set(DART_TEST_OUT_DIR "${CMAKE_BINARY_DIR}/bin/tests")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -151,5 +140,5 @@ endif()
 # Add custom target to build all the tests as a single target
 add_custom_target(
   tests
-  DEPENDS ${tests} ${comprehensive_tests} ${regression_tests} ${unit_tests}
+  DEPENDS ${comprehensive_tests} ${regression_tests} ${unit_tests}
 )

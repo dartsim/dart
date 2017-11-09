@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -832,23 +833,36 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void notifyTransformUpdate() override;
+  void dirtyTransform() override;
 
   // Documentation inherited
-  void notifyVelocityUpdate() override;
+  void dirtyVelocity() override;
 
   // Documentation inherited
-  void notifyAccelerationUpdate() override;
+  void dirtyAcceleration() override;
 
   /// Notify the Skeleton that the tree of this BodyNode needs an articulated
   /// inertia update
+  DART_DEPRECATED(6.2)
   void notifyArticulatedInertiaUpdate();
 
+  /// Notify the Skeleton that the tree of this BodyNode needs an articulated
+  /// inertia update
+  void dirtyArticulatedInertia();
+
   /// Tell the Skeleton that the external forces need to be updated
+  DART_DEPRECATED(6.2)
   void notifyExternalForcesUpdate();
 
+  /// Tell the Skeleton that the external forces need to be updated
+  void dirtyExternalForces();
+
   /// Tell the Skeleton that the coriolis forces need to be update
+  DART_DEPRECATED(6.2)
   void notifyCoriolisUpdate();
+
+  /// Tell the Skeleton that the coriolis forces need to be update
+  void dirtyCoriolisForces();
 
   //----------------------------------------------------------------------------
   // Friendship

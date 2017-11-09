@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -440,7 +441,7 @@ void Joint::setTransformFromParentBodyNode(const Eigen::Isometry3d& _T)
 {
   assert(math::verifyTransform(_T));
   mAspectProperties.mT_ParentBodyToJoint = _T;
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -449,7 +450,7 @@ void Joint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
   assert(math::verifyTransform(_T));
   mAspectProperties.mT_ChildBodyToJoint = _T;
   updateRelativeJacobian();
-  notifyPositionUpdate();
+  notifyPositionUpdated();
 }
 
 //==============================================================================
@@ -560,11 +561,17 @@ void Joint::updateArticulatedInertia() const
 //==============================================================================
 void Joint::notifyPositionUpdate()
 {
+  notifyPositionUpdated();
+}
+
+//==============================================================================
+void Joint::notifyPositionUpdated()
+{
   if(mChildBodyNode)
   {
-    mChildBodyNode->notifyTransformUpdate();
-    mChildBodyNode->notifyJacobianUpdate();
-    mChildBodyNode->notifyJacobianDerivUpdate();
+    mChildBodyNode->dirtyTransform();
+    mChildBodyNode->dirtyJacobian();
+    mChildBodyNode->dirtyJacobianDeriv();
   }
 
   mIsRelativeJacobianDirty = true;
@@ -579,7 +586,7 @@ void Joint::notifyPositionUpdate()
   if(skel)
   {
     std::size_t tree = mChildBodyNode->mTreeIndex;
-    skel->notifyArticulatedInertiaUpdate(tree);
+    skel->dirtyArticulatedInertia(tree);
     skel->mTreeCache[tree].mDirty.mExternalForces = true;
     skel->mSkelCache.mDirty.mExternalForces = true;
   }
@@ -588,10 +595,16 @@ void Joint::notifyPositionUpdate()
 //==============================================================================
 void Joint::notifyVelocityUpdate()
 {
+  notifyVelocityUpdated();
+}
+
+//==============================================================================
+void Joint::notifyVelocityUpdated()
+{
   if(mChildBodyNode)
   {
-    mChildBodyNode->notifyVelocityUpdate();
-    mChildBodyNode->notifyJacobianDerivUpdate();
+    mChildBodyNode->dirtyVelocity();
+    mChildBodyNode->dirtyJacobianDeriv();
   }
 
   mIsRelativeJacobianTimeDerivDirty = true;
@@ -603,8 +616,14 @@ void Joint::notifyVelocityUpdate()
 //==============================================================================
 void Joint::notifyAccelerationUpdate()
 {
+  notifyAccelerationUpdated();
+}
+
+//==============================================================================
+void Joint::notifyAccelerationUpdated()
+{
   if(mChildBodyNode)
-    mChildBodyNode->notifyAccelerationUpdate();
+    mChildBodyNode->dirtyAcceleration();
 
   mNeedSpatialAccelerationUpdate = true;
   mNeedPrimaryAccelerationUpdate = true;

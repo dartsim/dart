@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -103,6 +104,19 @@ TEST(LocalResourceRetriever, retrieve_Path)
   LocalResourceRetriever retriever;
   auto resource = retriever.retrieve(DART_DATA_PATH "test/hello_world.txt");
   ASSERT_TRUE(resource != nullptr);
+}
+
+TEST(LocalResourceRetriever, readAll)
+{
+  LocalResourceRetriever retriever;
+  auto resource = retriever.retrieve(DART_DATA_PATH "test/hello_world.txt");
+  ASSERT_TRUE(resource != nullptr);
+
+  auto content = resource->readAll();
+  ASSERT_TRUE(content == std::string("Hello World"));
+
+  ASSERT_TRUE(retriever.readAll(DART_DATA_PATH "test/hello_world.txt")
+              == std::string("Hello World"));
 }
 
 TEST(LocalResourceRetriever, retrieve_ResourceOperations)

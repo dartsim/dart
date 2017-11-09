@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -51,6 +52,7 @@
 template <class T> using fcl_shared_ptr = std::shared_ptr<T>;
 template <class T> using fcl_weak_ptr = std::weak_ptr<T>;
 #else
+#include <boost/weak_ptr.hpp>
 template <class T> using fcl_shared_ptr = boost::shared_ptr<T>;
 template <class T> using fcl_weak_ptr = boost::weak_ptr<T>;
 #endif

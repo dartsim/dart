@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -160,7 +161,7 @@ void SoftBodyNode::setAspectState(const AspectState& state)
     return;
 
   mAspectState = state;
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -259,7 +260,7 @@ SoftBodyNode::SoftBodyNode(BodyNode* _parentBodyNode,
   // called on this BodyNode, but that happens after construction is finished.
   mAspectProperties = _properties;
   configurePointMasses(softNode);
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================
@@ -335,7 +336,7 @@ void SoftBodyNode::configurePointMasses(ShapeNode* softNode)
   }
 
   incrementVersion();
-  mNotifier->notifyTransformUpdate();
+  mNotifier->dirtyTransform();
 }
 
 //==============================================================================

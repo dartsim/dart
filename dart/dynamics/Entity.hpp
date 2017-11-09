@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -113,20 +114,38 @@ public:
   /// suitable for temporary objects.
   bool isQuiet() const;
 
-  /// Notify this Entity that its parent Frame's pose has changed
+  /// Notify the transformation update of this Entity that its parent Frame's
+  /// pose is needed
+  DART_DEPRECATED(6.2)
   virtual void notifyTransformUpdate();
+
+  /// Notify the transformation update of this Entity that its parent Frame's
+  /// pose is needed
+  virtual void dirtyTransform();
 
   /// Returns true iff a transform update is needed for this Entity
   bool needsTransformUpdate() const;
 
-  /// Notify this Entity that its parent Frame's velocity has changed
+  /// Notify the velocity update of this Entity that its parent Frame's velocity
+  /// is needed
+  DART_DEPRECATED(6.2)
   virtual void notifyVelocityUpdate();
+
+  /// Notify the velocity update of this Entity that its parent Frame's velocity
+  /// is needed
+  virtual void dirtyVelocity();
 
   /// Returns true iff a velocity update is needed for this Entity
   bool needsVelocityUpdate() const;
 
-  /// Notify this Entity that its parent Frame's acceleration has changed
+  /// Notify the acceleration of this Entity that its parent Frame's
+  /// acceleration is needed
+  DART_DEPRECATED(6.2)
   virtual void notifyAccelerationUpdate();
+
+  /// Notify the acceleration of this Entity that its parent Frame's
+  /// acceleration is needed
+  virtual void dirtyAcceleration();
 
   /// Returns true iff an acceleration update is needed for this Entity
   bool needsAccelerationUpdate() const;
@@ -155,12 +174,15 @@ protected:
 
   /// Does this Entity need a Transform update
   mutable bool mNeedTransformUpdate;
+  // TODO(JS): Rename this to mIsTransformDirty in DART 7
 
   /// Does this Entity need a Velocity update
   mutable bool mNeedVelocityUpdate;
+  // TODO(JS): Rename this to mIsVelocityDirty in DART 7
 
   /// Does this Entity need an Acceleration update
   mutable bool mNeedAccelerationUpdate;
+  // TODO(JS): Rename this to mIsAccelerationDirty in DART 7
 
   /// Frame changed signal
   FrameChangedSignal mFrameChangedSignal;

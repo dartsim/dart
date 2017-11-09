@@ -29,6 +29,10 @@ set(INCLUDE_INSTALL_DIR "include")
 set(LIBRARY_INSTALL_DIR "lib")
 set(CONFIG_INSTALL_DIR "share/${PROJECT_NAME}/cmake")
 
+# Set relative location to install additional documentation (sample data,
+# examples, and tutorials)
+set(DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH "share/doc/${PROJECT_NAME}")
+
 set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -51,8 +55,8 @@ endif()
 
 # If you change the version, please update the <version> tag in package.xml.
 set(DART_MAJOR_VERSION "6")
-set(DART_MINOR_VERSION "1")
-set(DART_PATCH_VERSION "2")
+set(DART_MINOR_VERSION "4")
+set(DART_PATCH_VERSION "0")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "eigen, ccd, fcl, assimp, boost")
@@ -79,8 +83,7 @@ endif()
 option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF)
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
-option(DART_COVERALLS "Turn on coveralls support" OFF)
-option(DART_COVERALLS_UPLOAD "Upload the generated coveralls json" ON)
+option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 
 #===============================================================================
@@ -92,15 +95,14 @@ message(STATUS "                DART ${DART_VERSION}")
 message(STATUS "============================================")
 
 #===============================================================================
-# Coveralls settings
+# CodeCov settings
 #===============================================================================
-function(dart_coveralls_add)
-  dart_property_add(COVERALLS_SOURCES ${ARGN})
-endfunction(dart_coveralls_add)
-
-if(DART_COVERALLS)
-  include(Coveralls)
-  coveralls_turn_on_coverage()
+if(DART_CODECOV)
+  include(CodeCoverage)
+  setup_target_for_coverage(codecov ctest coverage)
+  set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage"
+  )
 endif()
 
 #===============================================================================
@@ -247,33 +249,57 @@ if(DART_VERBOSE)
 endif(DART_VERBOSE)
 
 #===============================================================================
-# Helper Functions
-#===============================================================================
-function(dart_add_example)
-  dart_property_add(DART_EXAMPLES ${ARGN})
-endfunction(dart_add_example)
-
-function(dart_add_tutorial)
-  dart_property_add(DART_TUTORIALS ${ARGN})
-endfunction(dart_add_tutorial)
-
-#===============================================================================
 # Add sub-directories
 #===============================================================================
 
 add_subdirectory(dart)
 
-if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
+if(TARGET dart)
 
   # Add a "tests" target to build unit tests.
   enable_testing()
   add_subdirectory(unittests EXCLUDE_FROM_ALL)
 
-  if (OPENGL_FOUND AND HAVE_GLUT)
+  if (TARGET dart-utils-urdf AND TARGET dart-gui)
+
+    # Add example targets
+    dart_add_example(examples/addDeleteSkels dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/atlasSimbicon dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/bipedStand dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/hardcodedDesign dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/hybridDynamics dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/jointConstraints dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/mixedChain dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/operationalSpaceControl dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/rigidChain dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/rigidCubes dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/rigidLoop dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/rigidShapes dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/simpleFrames dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/softBodies dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/speedTest dart dart-utils-urdf dart-gui)
+    dart_add_example(examples/vehicle dart dart-utils-urdf dart-gui)
+
+    if(TARGET dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgAtlasPuppet dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgAtlasSimbicon dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgDragAndDrop dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgEmpty dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgHuboPuppet dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgImGui dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgOperationalSpaceControl dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgSoftBodies dart dart-utils-urdf dart-gui-osg)
+      dart_add_example(examples/osgExamples/osgTinkertoy dart dart-utils-urdf dart-gui-osg)
+
+      add_library(example_wamIk examples/osgExamples/osgWamIkFast/ikfast/ikfast71.Transform6D.4_6_9_10_11_12_f8.cpp)
+      target_link_libraries(example_wamIk PUBLIC dart)
+      target_compile_definitions(example_wamIk PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
+      target_compile_options(example_wamIk PRIVATE -w)
+
+      dart_add_example(examples/osgExamples/osgWamIkFast dart dart-utils-urdf dart-gui-osg example_wamIk)
+    endif()
 
     # Add an "examples" target to build examples.
-    add_subdirectory(examples EXCLUDE_FROM_ALL)
-
     get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
     add_custom_target(examples DEPENDS ${examples})
 
@@ -288,9 +314,23 @@ if(TINYXML_FOUND AND TINYXML2_FOUND AND BULLET_FOUND)
       message(STATUS "Adding ${examples_length} examples")
     endif(DART_VERBOSE)
 
-    # Add a "tutorials" target to build tutorials.
-    add_subdirectory(tutorials EXCLUDE_FROM_ALL)
+    # Add tutorial targets
+    if(TARGET dart-collision-bullet)
+      dart_add_tutorial(tutorials/tutorialBiped dart-utils-urdf dart-gui dart-collision-bullet)
+      dart_add_tutorial(tutorials/tutorialBiped-Finished dart-utils-urdf dart-gui dart-collision-bullet)
+    else()
+      dart_add_tutorial(tutorials/tutorialBiped dart-utils-urdf dart-gui)
+      dart_add_tutorial(tutorials/tutorialBiped-Finished dart-utils-urdf dart-gui)
+    endif()
 
+    dart_add_tutorial(tutorials/tutorialCollisions dart-utils-urdf dart-gui)
+    dart_add_tutorial(tutorials/tutorialCollisions-Finished dart-utils-urdf dart-gui)
+    dart_add_tutorial(tutorials/tutorialDominoes dart-utils-urdf dart-gui)
+    dart_add_tutorial(tutorials/tutorialDominoes-Finished dart-utils-urdf dart-gui)
+    dart_add_tutorial(tutorials/tutorialMultiPendulum dart-utils-urdf dart-gui)
+    dart_add_tutorial(tutorials/tutorialMultiPendulum-Finished dart-utils-urdf dart-gui)
+
+    # Add a "tutorials" target to build tutorials.
     get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
     add_custom_target(tutorials DEPENDS ${tutorials})
 
@@ -375,6 +415,22 @@ install(FILES ${PC_CONFIG_OUT} DESTINATION lib/pkgconfig)
 install(FILES package.xml DESTINATION share/${PROJECT_NAME})
 
 #===============================================================================
+# Install sample data, examples, and tutorials
+#===============================================================================
+
+# Sample data
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data"
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH})
+
+# Examples source
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/examples"
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH})
+
+# Tutorials source
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tutorials"
+  DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH})
+
+#===============================================================================
 # Uninstall
 #===============================================================================
 
@@ -384,18 +440,54 @@ configure_file("${PROJECT_SOURCE_DIR}/cmake/uninstall_target.cmake.in" "${PROJEC
 add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${PROJECT_BINARY_DIR}/uninstall_target.cmake")
 
 #===============================================================================
-# Coveralls
+# Code Formatting
 #===============================================================================
-# Setup the coveralls target and tell it to gather
-# coverage data for all the lib sources.
-if(DART_COVERALLS)
-  get_property(sources GLOBAL PROPERTY COVERALLS_SOURCES)
+if(DART_VERBOSE)
+  message(STATUS "")
+  message(STATUS "[ Code Formatting ]")
+endif()
 
-  list(LENGTH sources sources_length)
-  message(STATUS "Running Coveralls on ${sources_length} source files.")
+find_program(
+  CLANG_FORMAT_EXECUTABLE
+  NAMES clang-format clang-format-3.8
+)
 
-  coveralls_setup("${sources}" ${DART_COVERALLS_UPLOAD}
-    "${PROJECT_SOURCE_DIR}/cmake")
+get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
+list(LENGTH formatting_files formatting_files_length)
+message(STATUS "Formatting on ${formatting_files_length} source files.")
+
+if(CLANG_FORMAT_EXECUTABLE)
+
+  if(DART_VERBOSE)
+    message(STATUS "Looking for clang-format - found")
+  endif()
+
+  if(formatting_files)
+    add_custom_target(format
+                      COMMAND ${CMAKE_COMMAND} -E echo "Formatting ${formatting_files_length} files... "
+                      COMMAND ${CLANG_FORMAT_EXECUTABLE} -style=file -i ${formatting_files}
+                      COMMAND ${CMAKE_COMMAND} -E echo "Done."
+                      DEPENDS ${CLANG_FORMAT_EXECUTABLE}
+                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart)
+
+    add_custom_target(check-format
+                      COMMAND ${CMAKE_COMMAND} -E echo "Checking ${formatting_files_length} files... "
+                      COMMAND ${CMAKE_SOURCE_DIR}/tools/check_format.sh ${CLANG_FORMAT_EXECUTABLE} ${formatting_files}
+                      COMMAND ${CMAKE_COMMAND} -E echo "Done."
+                      DEPENDS ${CLANG_FORMAT_EXECUTABLE}
+                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/dart)
+  else()
+    add_custom_target(format
+                      COMMAND ${CMAKE_COMMAND} -E echo "Warning: Not found any source files to format.")
+
+    add_custom_target(check-format
+                      COMMAND ${CMAKE_COMMAND} -E echo "Warning: Not found any source files to check.")
+  endif()
+
+else()
+
+  message(STATUS "Looking for clang-format - NOT found, please install clang-format to enable automatic code formatting")
+
 endif()
 
 #===============================================================================
@@ -448,6 +540,17 @@ if(DOXYGEN_FOUND)
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/doxygen
   )
 
+  # Add the "view_docs" target that opens the generated API documentation.
+  if(APPLE)
+    set(OPEN_COMMAND "open")
+  else()
+    set(OPEN_COMMAND "xdg-open")
+  endif()
+
+  add_custom_target(view_docs "${OPEN_COMMAND}" "${DOXYGEN_HTML_INDEX}"
+    DEPENDS "${DOXYGEN_HTML_INDEX}"
+    COMMENT "Opening documentation in a web browser.")
+
 endif()
 
 #===============================================================================
@@ -472,6 +575,7 @@ message(STATUS "Run 'make' to build all the components")
 message(STATUS "Run 'make tests' to build all the unittests")
 message(STATUS "Run 'make examples' to build all the examples")
 message(STATUS "Run 'make tutorials' to build all the tutorials")
+message(STATUS "Run 'make view_docs' to see the API documentation")
 
 #===============================================================================
 # END

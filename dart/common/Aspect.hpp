@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -177,7 +178,7 @@ protected:
 
 //==============================================================================
 #define DART_COMMON_SET_ASPECT_PROPERTY( Type, Name )\
-  DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM( Type, Name, notifyPropertiesUpdate )
+  DART_COMMON_SET_ASPECT_PROPERTY_CUSTOM( Type, Name, notifyPropertiesUpdated )
 
 //==============================================================================
 #define DART_COMMON_GET_ASPECT_PROPERTY( Type, Name )\

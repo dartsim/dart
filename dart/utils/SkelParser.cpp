@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -41,9 +42,6 @@
 #include "dart/config.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/collision/CollisionObject.hpp"
-#if HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
-#endif
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
@@ -57,7 +55,7 @@
 #include "dart/dynamics/ConeShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
-#include "dart/dynamics/MultiSphereShape.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -74,6 +72,8 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/Marker.hpp"
 #include "dart/utils/XmlHelpers.hpp"
+#include "dart/utils/CompositeResourceRetriever.hpp"
+#include "dart/utils/DartResourceRetriever.hpp"
 
 namespace dart {
 namespace utils {
@@ -421,7 +421,7 @@ simulation::WorldPtr SkelParser::readWorld(
     return nullptr;
   }
 
-  return ::dart::utils:: readWorld(worldElement, _uri, retriever);
+  return ::dart::utils::readWorld(worldElement, _uri, retriever);
 }
 
 //==============================================================================
@@ -451,21 +451,21 @@ simulation::WorldPtr SkelParser::readWorldXML(
 
 //==============================================================================
 dynamics::SkeletonPtr SkelParser::readSkeleton(
-  const common::Uri& _fileUri,
-  const common::ResourceRetrieverPtr& _retriever)
+  const common::Uri& uri,
+  const common::ResourceRetrieverPtr& nullOrRetriever)
 {
-  const common::ResourceRetrieverPtr retriever = getRetriever(_retriever);
+  const common::ResourceRetrieverPtr retriever = getRetriever(nullOrRetriever);
 
   //--------------------------------------------------------------------------
   // Load xml and create Document
-  tinyxml2::XMLDocument _dartFile;
+  tinyxml2::XMLDocument dartFile;
   try
   {
-    openXMLFile(_dartFile, _fileUri, retriever);
+    openXMLFile(dartFile, uri, retriever);
   }
   catch(std::exception const& e)
   {
-    std::cout << "LoadFile [" << _fileUri.toString() << "] Fails: "
+    std::cout << "LoadFile [" << uri.toString() << "] Fails: "
               << e.what() << std::endl;
     return nullptr;
   }
@@ -473,10 +473,10 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   //--------------------------------------------------------------------------
   // Load DART
   tinyxml2::XMLElement* skelElement = nullptr;
-  skelElement = _dartFile.FirstChildElement("skel");
+  skelElement = dartFile.FirstChildElement("skel");
   if (skelElement == nullptr)
   {
-    dterr << "Skel file[" << _fileUri.toString()
+    dterr << "Skel file[" << uri.toString()
           << "] does not contain <skel> as the element.\n";
     return nullptr;
   }
@@ -487,14 +487,14 @@ dynamics::SkeletonPtr SkelParser::readSkeleton(
   skeletonElement = skelElement->FirstChildElement("skeleton");
   if (skeletonElement == nullptr)
   {
-    dterr << "Skel file[" << _fileUri.toString()
+    dterr << "Skel file[" << uri.toString()
           << "] does not contain <skeleton> element "
           <<"under <skel> element.\n";
     return nullptr;
   }
 
   dynamics::SkeletonPtr newSkeleton = ::dart::utils:: readSkeleton(
-    skeletonElement, _fileUri, retriever);
+    skeletonElement, uri, retriever);
 
   return newSkeleton;
 }
@@ -541,8 +541,23 @@ void readVisualizationShapeNode(
   // color
   if (hasElement(vizShapeNodeEle, "color"))
   {
-    Eigen::Vector3d color = getValueVector3d(vizShapeNodeEle, "color");
-    visualAspect->setColor(color);
+    Eigen::VectorXd color = getValueVectorXd(vizShapeNodeEle, "color");
+
+    if (color.size() == 3)
+    {
+      visualAspect->setColor(static_cast<Eigen::Vector3d>(color));
+    }
+    else if (color.size() == 4)
+    {
+      visualAspect->setColor(static_cast<Eigen::Vector4d>(color));
+    }
+    else
+    {
+      dtwarn << "[readVisualizationShapeNode] Invalid format for <color> "
+             << "element; " << color.size() << "d vector is given. It should "
+             << "be either 3d vector or 4d vector (the 4th element is for "
+             << "alpha). Ignoring the given color value.\n";
+    }
   }
 }
 
@@ -652,6 +667,18 @@ tinyxml2::XMLElement* checkFormatAndGetWorldElement(
 }
 
 //==============================================================================
+static std::shared_ptr<collision::CollisionDetector>
+createFclMeshCollisionDetector()
+{
+  auto cd = collision::CollisionDetector::getFactory()->create("fcl");
+  auto fcl = std::static_pointer_cast<collision::FCLCollisionDetector>(cd);
+  fcl->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
+  fcl->setContactPointComputationMethod(collision::FCLCollisionDetector::DART);
+
+  return fcl;
+}
+
+//==============================================================================
 simulation::WorldPtr readWorld(
   tinyxml2::XMLElement* _worldElement,
   const common::Uri& _baseUri,
@@ -693,46 +720,37 @@ simulation::WorldPtr readWorld(
 
     if (hasElement(physicsElement, "collision_detector"))
     {
-      std::string strCD = getValueString(physicsElement, "collision_detector");
+      const auto cdType = getValueString(physicsElement, "collision_detector");
 
-      if (strCD == "fcl_mesh")
+      if (cdType == "fcl_mesh")
       {
-        collision_detector = collision::FCLCollisionDetector::create();
-        auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-              collision_detector);
-        cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-        cd->setContactPointComputationMethod(
-              collision::FCLCollisionDetector::DART);
+        collision_detector = createFclMeshCollisionDetector();
       }
-      else if (strCD == "fcl")
+      else if (cdType == "fcl")
       {
-        collision_detector = collision::FCLCollisionDetector::create();
+        collision_detector
+            = collision::CollisionDetector::getFactory()->create("fcl");
         auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
               collision_detector);
         cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
         cd->setContactPointComputationMethod(
               collision::FCLCollisionDetector::DART);
       }
-      else if (strCD == "dart")
-        collision_detector = collision::DARTCollisionDetector::create();
-#if HAVE_BULLET_COLLISION
-      else if (strCD == "bullet")
-        collision_detector = collision::BulletCollisionDetector::create();
-#endif
       else
-        dtwarn << "Unknown collision detector[" << strCD << "]. "
+      {
+        collision_detector
+            = collision::CollisionDetector::getFactory()->create(cdType);
+      }
+
+      if (!collision_detector)
+      {
+        dtwarn << "Unknown collision detector[" << cdType << "]. "
                << "Default collision detector[fcl_mesh] will be loaded.\n";
+      }
     }
 
     if (!collision_detector)
-    {
-      collision_detector = collision::FCLCollisionDetector::create();
-      auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-            collision_detector);
-      cd->setPrimitiveShapeType(collision::FCLCollisionDetector::MESH);
-      cd->setContactPointComputationMethod(
-            collision::FCLCollisionDetector::DART);
-    }
+      collision_detector = createFclMeshCollisionDetector();
 
     newWorld->getConstraintSolver()->setCollisionDetector(collision_detector);
   }
@@ -743,7 +761,7 @@ simulation::WorldPtr readWorld(
   while (SkeletonElements.next())
   {
     dynamics::SkeletonPtr newSkeleton
-        = ::dart::utils:: readSkeleton(SkeletonElements.get(), _baseUri, _retriever);
+        = ::dart::utils::readSkeleton(SkeletonElements.get(), _baseUri, _retriever);
 
     newWorld->addSkeleton(newSkeleton);
   }
@@ -982,7 +1000,7 @@ dynamics::SkeletonPtr readSkeleton(
       BodyMap::const_iterator rootNode = bodyNodes.find(it->second.parentName);
       SkelJoint rootJoint;
       rootJoint.properties =
-          Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
+          dynamics::FreeJoint::Properties::createShared(
             dynamics::Joint::Properties("root", rootNode->second.initTransform));
       rootJoint.type = "free";
 
@@ -1224,7 +1242,7 @@ SkelBodyNode readSoftBodyNode(
 
   SkelBodyNode softBodyNode;
   softBodyNode.properties =
-      Eigen::make_aligned_shared<dynamics::SoftBodyNode::Properties>(
+      dynamics::SoftBodyNode::Properties::createShared(
           *standardBodyNode.properties, newSoftBodyNode);
 
   softBodyNode.initTransform = standardBodyNode.initTransform;
@@ -1309,7 +1327,7 @@ dynamics::ShapePtr readShape(
     tinyxml2::XMLElement* multiSphereEle = getElement(geometryEle, "multi_sphere");
 
     ElementEnumerator xmlSpheres(multiSphereEle, "sphere");
-    dynamics::MultiSphereShape::Spheres spheres;
+    dynamics::MultiSphereConvexHullShape::Spheres spheres;
     while (xmlSpheres.next())
     {
       const double radius = getValueDouble(xmlSpheres.get(), "radius");
@@ -1319,7 +1337,7 @@ dynamics::ShapePtr readShape(
       spheres.emplace_back(radius, position);
     }
 
-    newShape = dynamics::ShapePtr(new dynamics::MultiSphereShape(spheres));
+    newShape = dynamics::ShapePtr(new dynamics::MultiSphereConvexHullShape(spheres));
   }
   else if (hasElement(geometryEle, "mesh"))
   {
@@ -1859,7 +1877,7 @@ void readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
           *proxy.restPosition = val;
         }
 
-        // friction
+        // spring_stiffness
         if (hasElement(dynamicsElement, "spring_stiffness"))
         {
           double val = getValueDouble(dynamicsElement, "spring_stiffness");
@@ -1897,7 +1915,7 @@ JointPropPtr readWeldJoint(
     SkelJoint& /*_joint*/,
     const std::string&)
 {
-  return Eigen::make_aligned_shared<dynamics::WeldJoint::Properties>();
+  return dynamics::WeldJoint::Properties::createShared();
 }
 
 //==============================================================================
@@ -1955,8 +1973,7 @@ JointPropPtr readRevoluteJoint(
   readAllDegreesOfFreedom<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
-  return Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
-      properties);
+  return dynamics::RevoluteJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2014,8 +2031,7 @@ JointPropPtr readPrismaticJoint(
   readAllDegreesOfFreedom<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
-  return Eigen::make_aligned_shared<dynamics::PrismaticJoint::Properties>(
-      properties);
+  return dynamics::PrismaticJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2080,8 +2096,7 @@ JointPropPtr readScrewJoint(
   readAllDegreesOfFreedom<dynamics::GenericJoint<math::R1Space>::Properties>(
         _jointElement, properties, _joint, _name, 1);
 
-  return Eigen::make_aligned_shared<dynamics::ScrewJoint::Properties>(
-        properties);
+  return dynamics::ScrewJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2150,8 +2165,7 @@ JointPropPtr readUniversalJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 2);
 
-  return Eigen::make_aligned_shared<dynamics::UniversalJoint::Properties>(
-      properties);
+  return dynamics::UniversalJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2184,8 +2198,7 @@ JointPropPtr readBallJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
 
-  return Eigen::make_aligned_shared<dynamics::BallJoint::Properties>(
-      properties);
+  return dynamics::BallJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2240,8 +2253,7 @@ JointPropPtr readEulerJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
 
-  return Eigen::make_aligned_shared<dynamics::EulerJoint::Properties>(
-      properties);
+  return dynamics::EulerJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2278,8 +2290,7 @@ JointPropPtr readTranslationalJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
 
-  return Eigen::make_aligned_shared<dynamics::TranslationalJoint::Properties>(
-      properties);
+  return dynamics::TranslationalJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2363,8 +2374,7 @@ JointPropPtr readPlanarJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 3);
 
-  return Eigen::make_aligned_shared<dynamics::PlanarJoint::Properties>(
-      properties);
+  return dynamics::PlanarJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2397,8 +2407,7 @@ JointPropPtr readFreeJoint(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 6);
 
-  return Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
-      properties);
+  return dynamics::FreeJoint::Properties::createShared(properties);
 }
 
 //==============================================================================
@@ -2406,9 +2415,18 @@ common::ResourceRetrieverPtr getRetriever(
   const common::ResourceRetrieverPtr& _retriever)
 {
   if(_retriever)
+  {
     return _retriever;
+  }
   else
-    return std::make_shared<common::LocalResourceRetriever>();
+  {
+    auto newRetriever = std::make_shared<utils::CompositeResourceRetriever>();
+    newRetriever->addSchemaRetriever(
+          "file", std::make_shared<common::LocalResourceRetriever>());
+    newRetriever->addSchemaRetriever(
+          "dart", DartResourceRetriever::create());
+    return newRetriever;
+  }
 }
 
 } // anonymous namespace
