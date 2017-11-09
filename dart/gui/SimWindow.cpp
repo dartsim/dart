@@ -62,7 +62,7 @@
 #include "dart/gui/LoadGlut.hpp"
 #include "dart/gui/GLFuncs.hpp"
 #include "dart/gui/GraphWindow.hpp"
-#include "dart/utils/FileInfoWorld.hpp"
+#include "dart/io/FileInfoWorld.hpp"
 
 namespace dart {
 namespace gui {
@@ -259,7 +259,7 @@ void SimWindow::setWorld(simulation::WorldPtr _world) {
 void SimWindow::saveWorld() {
   if (!mWorld)
     return;
-  dart::utils::FileInfoWorld worldFile;
+  dart::io::FileInfoWorld worldFile;
   worldFile.saveFile("tempWorld.txt", mWorld->getRecording());
 }
 

@@ -35,13 +35,13 @@
 #include "TestHelpers.hpp"
 
 #include "dart/dart.hpp"
-#include "dart/utils/utils.hpp"
+#include "dart/io/io.hpp"
 
 using namespace dart;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
-using namespace utils;
+using namespace io;
 
 //==============================================================================
 TEST(SkelParser, DataStructure)
@@ -164,7 +164,7 @@ TEST(SkelParser, RigidAndSoftBodies)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   WorldPtr world = SkelParser::readWorld(
       "dart://sample/skel/test/test_articulated_bodies.skel");
@@ -189,7 +189,7 @@ TEST(SkelParser, PlanarJoint)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   WorldPtr world = SkelParser::readWorld(
       "dart://sample/skel/test/planar_joint.skel");

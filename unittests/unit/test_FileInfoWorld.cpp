@@ -40,14 +40,14 @@
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/SkelParser.hpp"
-#include "dart/utils/FileInfoWorld.hpp"
+#include "dart/io/SkelParser.hpp"
+#include "dart/io/FileInfoWorld.hpp"
 
 using namespace dart;
 using namespace math;
 using namespace dynamics;
 using namespace simulation;
-using namespace utils;
+using namespace io;
 
 //==============================================================================
 TEST(FileInfoWorld, Basic)

@@ -27,7 +27,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 #   bullet
 # constraint
 # simulation
-# utils
+# io
 #   sdf
 #   urdf
 # gui
@@ -43,8 +43,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 # dart-optimizer-ipopt - {dart}, optimizer/ipopt, [ipopt]
 # dart-optimizer-nlopt - {dart}, optimizer/nlopt, [nlopt]
 # dart-collision-bullet - {dart}, collision/bullet, [bullet]
-# dart-utils - {dart}, utils, utils/sdf, [tinyxml, tinyxml2]
-# dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
+# dart-io - {dart}, io, io/sdf, [tinyxml, tinyxml2]
+# dart-io-urdf - {dart-io}, io/urdf, [urdfdom]
 # dart-gui - {dart}, gui, [opengl, glut]
 # dart-gui-osg - {dart-gui}, gui/osg, gui/osg/render, [openscenegraph]
 
@@ -55,9 +55,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 # optimizer-ipopt - (dart), {dart-optimizer-ipopt}
 # optimizer-nlopt - (dart), {dart-optimizer-nlopt}
 # collision-bullet - (dart), {dart-collision-bullet}
-# utils - (collision-bullet), {dart-utils}
-# utils-urdf - (utils), {dart-utils-urdf}
-# gui - (utils), {dart-gui}
+# io - (collision-bullet), {dart-io}
+# io-urdf - (io), {dart-io-urdf}
+# gui - (io), {dart-gui}
 # gui-osg - (gui), {dart-gui-osg}
 
 # Component. This should be called before adding subdirectories.
@@ -81,7 +81,7 @@ add_subdirectory(dynamics)
 add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(simulation)
-add_subdirectory(utils) # tinyxml, tinyxml2, bullet
+add_subdirectory(io) # tinyxml, tinyxml2, bullet
 add_subdirectory(gui) # opengl, glut, bullet
 
 set(DART_CONFIG_HPP_IN ${CMAKE_SOURCE_DIR}/dart/config.hpp.in)

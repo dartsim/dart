@@ -32,8 +32,8 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
-#include <dart/utils/utils.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/io/io.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -251,7 +251,7 @@ public:
 int main()
 {
   dart::simulation::WorldPtr world(new dart::simulation::World);
-  dart::utils::DartLoader loader;
+  dart::io::DartLoader loader;
 
   // Load the robot
   dart::dynamics::SkeletonPtr robot =

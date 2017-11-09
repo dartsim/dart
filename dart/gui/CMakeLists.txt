@@ -1,5 +1,5 @@
 # Dependency checks
-if (NOT TARGET dart-utils)
+if (NOT TARGET dart-io)
   return()
 endif()
 
@@ -40,7 +40,7 @@ target_include_directories(
 target_link_libraries(
   ${target_name}
   PUBLIC
-    dart-utils
+    dart-io
     ${GLUT_LIBRARY}
     ${OPENGL_LIBRARIES}
     ${PROJECT_NAME}-external-lodepng
@@ -53,7 +53,7 @@ add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(
   ${PROJECT_NAME}
   ${component_name}
-  utils
+  io
   external-lodepng
   external-imgui
 )
