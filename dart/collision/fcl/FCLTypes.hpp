@@ -81,10 +81,8 @@ template <class T> using fcl_shared_ptr = boost::shared_ptr<T>;
 template <class T> using fcl_weak_ptr = boost::weak_ptr<T>;
 #endif
 
-namespace dart
-{
-namespace fcl
-{
+namespace dart {
+namespace fcl {
 #if FCL_VERSION_AT_LEAST(0,6,0)
 // Geometric fundamentals
 typedef ::fcl::Vector3<double> Vector3;
@@ -132,15 +130,12 @@ typedef ::fcl::Contact Contact;
 typedef ::fcl::Ellipsoid Ellipsoid;
 #endif
 
-using ::fcl::GJKSolverType;
-
-template<typename BV>
+template <typename BV>
 using BVHModel = ::fcl::BVHModel<BV>;
 
-} // namespace dart::fcl
+} // namespace fcl
 
-namespace collision
-{
+namespace collision {
 
 class FCLTypes
 {
