@@ -1299,14 +1299,16 @@ void postProcessFCL(
   {
     for (auto i = 0u; i < numContacts; ++i)
     {
-      if (fclResult.getContact(i).normal.squaredNorm() > NORMAL_EPSILON_SQUARED)
+      if (fclResult.getContact(i).normal.squaredNorm() < NORMAL_EPSILON_SQUARED)
       {
-        // This is an valid contact, as it contains a normal which is not
-        // of zero length. We can use this contact.
-        result.addContact(convertContact(fclResult.getContact(i),
-                                         o1, o2, option));
-        break;
+        // Skip this contact. This is because we assume that a contact with
+        // zero-length normal is invalid.
+        continue;
       }
+
+      result.addContact(
+          convertContact(fclResult.getContact(i), o1, o2, option));
+      break;
     }
     return;
   }
@@ -1335,8 +1337,8 @@ void postProcessFCL(
 
     if (fclResult.getContact(i).normal.squaredNorm() < NORMAL_EPSILON_SQUARED)
     {
-      // This is an invalid contact, as it contains a zero length normal.
-      // Skip this contact.
+      // Skip this contact. This is because we assume that a contact with
+      // zero-length normal is invalid.
       continue;
     }
 

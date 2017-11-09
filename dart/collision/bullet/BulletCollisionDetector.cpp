@@ -599,8 +599,8 @@ void reportContacts(
 
       if (cp.m_normalWorldOnB.length2() < NORMAL_EPSILON_SQUARED)
       {
-        // This is an invalid contact, as it contains a zero length normal.
-        // Skip this contact.
+        // Skip this contact. This is because we assume that a contact with
+        // zero-length normal is invalid.
         continue;
       }
 
