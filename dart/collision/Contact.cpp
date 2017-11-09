@@ -51,5 +51,32 @@ Contact::Contact()
   // Do nothing
 }
 
+//==============================================================================
+double Contact::getNormalEpsilon()
+{
+  return 1e-6;
+}
+
+//==============================================================================
+double Contact::getNormalEpsilonSquared()
+{
+  return 1e-12;
+}
+
+//==============================================================================
+bool Contact::isZeroNormal(const Eigen::Vector3d& normal)
+{
+  if (normal.squaredNorm() < getNormalEpsilon())
+    return true;
+  else
+    return false;
+}
+
+//==============================================================================
+bool Contact::isNonZeroNormal(const Eigen::Vector3d& normal)
+{
+  return !isZeroNormal(normal);
+}
+
 }  // namespace collision
 }  // namespace dart

@@ -61,8 +61,6 @@
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
-#define NORMAL_EPSILON_SQUARED 1e-06
-
 namespace dart {
 namespace collision {
 
@@ -1299,7 +1297,8 @@ void postProcessFCL(
   {
     for (auto i = 0u; i < numContacts; ++i)
     {
-      if (fclResult.getContact(i).normal.squaredNorm() < NORMAL_EPSILON_SQUARED)
+      if (fclResult.getContact(i).normal.squaredNorm()
+          < Contact::getNormalEpsilonSquared())
       {
         // Skip this contact. This is because we assume that a contact with
         // zero-length normal is invalid.
@@ -1335,7 +1334,8 @@ void postProcessFCL(
     if (markForDeletion[i])
       continue;
 
-    if (fclResult.getContact(i).normal.squaredNorm() < NORMAL_EPSILON_SQUARED)
+    if (fclResult.getContact(i).normal.squaredNorm()
+        < Contact::getNormalEpsilonSquared())
     {
       // Skip this contact. This is because we assume that a contact with
       // zero-length normal is invalid.
@@ -1381,7 +1381,7 @@ void postProcessDART(
     if (option.enableContact)
     {
       pair1.normal = FCLTypes::convertVector3(-c.normal);
-      if (pair1.normal.squaredNorm() < NORMAL_EPSILON_SQUARED)
+      if (Contact::isZeroNormal(pair1.normal))
       {
         // This is an invalid contact, as it contains a zero length normal.
         // Skip this contact.

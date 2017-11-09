@@ -36,6 +36,7 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/Contact.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -50,8 +51,6 @@
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/DantzigLCPSolver.hpp"
 #include "dart/constraint/PGSLCPSolver.hpp"
-
-#define DART_CONTACT_CONSTRAINT_EPSILON_SQUARED 1e-12
 
 namespace dart {
 namespace constraint {
@@ -413,7 +412,7 @@ void ConstraintSolver::updateConstraints()
   {
     auto& ct = mCollisionResult.getContact(i);
 
-    if (ct.normal.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
+    if (collision::Contact::isZeroNormal(ct.normal))
     {
       // Skip this contact. This is because we assume that a contact with
       // zero-length normal is invalid.

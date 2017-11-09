@@ -597,7 +597,7 @@ void reportContacts(
     {
       const auto& cp = contactManifold->getContactPoint(j);
 
-      if (cp.m_normalWorldOnB.length2() < NORMAL_EPSILON_SQUARED)
+      if (cp.m_normalWorldOnB.length2() < Contact::getNormalEpsilonSquared())
       {
         // Skip this contact. This is because we assume that a contact with
         // zero-length normal is invalid.
