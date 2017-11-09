@@ -2,9 +2,10 @@
 
 ### DART 6.4.0 (201X-XX-XX)
 
-* Kinematics
+* Kinematics/Dynamics
 
   * Added IkFast support as analytic IK solver: [#887](https://github.com/dartsim/dart/pull/887)
+  * Fixed NaN values caused by zero-length normals in ContactConstraint: [#881](https://github.com/dartsim/dart/pull/881)
 
 * License
 
