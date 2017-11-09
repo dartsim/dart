@@ -48,7 +48,7 @@ public:
 
   friend class FCLCollisionDetector;
 
-  using FCLCollisionManager = dart::fcl::DynamicAABBTreeCollisionManager;
+  using FCLCollisionManager = dart::collision::fcl::DynamicAABBTreeCollisionManager;
 
   /// Constructor
   FCLCollisionGroup(const CollisionDetectorPtr& collisionDetector);

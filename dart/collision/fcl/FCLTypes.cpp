@@ -37,137 +37,53 @@ namespace collision {
 
 #if FCL_VERSION_AT_LEAST(0,6,0)
 //==============================================================================
-Eigen::Vector3d FCLTypes::convertVector3(const dart::fcl::Vector3& _vec)
+Eigen::Vector3d FCLTypes::convertVector3(const dart::collision::fcl::Vector3& _vec)
 {
   return _vec;
 }
 
 //==============================================================================
-dart::fcl::Matrix3 FCLTypes::convertMatrix3x3(const Eigen::Matrix3d& _R)
+dart::collision::fcl::Matrix3 FCLTypes::convertMatrix3x3(const Eigen::Matrix3d& _R)
 {
   return _R;
 }
 
 //==============================================================================
-dart::fcl::Transform3 FCLTypes::convertTransform(const Eigen::Isometry3d& _T)
+dart::collision::fcl::Transform3 FCLTypes::convertTransform(const Eigen::Isometry3d& _T)
 {
   return _T;
 }
 
-//==============================================================================
-double length(const dart::fcl::Vector3& t)
-{
-  return t.norm();
-}
-
-//==============================================================================
-dart::fcl::Vector3 getTranslation(const dart::fcl::Transform3& T)
-{
-  return T.translation();
-}
-
-//==============================================================================
-void setTranslation(dart::fcl::Transform3& T, const dart::fcl::Vector3& t)
-{
-  T.translation() = t;
-}
-
-//==============================================================================
-dart::fcl::Matrix3 getRotation(const dart::fcl::Transform3& T)
-{
-  return T.linear();
-}
-
-//==============================================================================
-void setRotation(dart::fcl::Transform3& T, const dart::fcl::Matrix3& R)
-{
-  T.linear() = R;
-}
-
-//==============================================================================
-void setEulerZYX(dart::fcl::Matrix3& rot, const double eulerX, const double eulerY, const double eulerZ)
-{
-  double ci(cos(eulerX));
-  double cj(cos(eulerY));
-  double ch(cos(eulerZ));
-  double si(sin(eulerX));
-  double sj(sin(eulerY));
-  double sh(sin(eulerZ));
-  double cc = ci * ch;
-  double cs = ci * sh;
-  double sc = si * ch;
-  double ss = si * sh;
-
-  rot << cj * ch, sj * sc - cs, sj * cc + ss,
-         cj * sh, sj * ss + cc, sj * cs - sc,
-         -sj,     cj * si,      cj * ci;
-}
 #else
 //==============================================================================
-Eigen::Vector3d FCLTypes::convertVector3(const dart::fcl::Vector3& _vec)
+Eigen::Vector3d FCLTypes::convertVector3(const dart::collision::fcl::Vector3& _vec)
 {
   return Eigen::Vector3d(_vec[0], _vec[1], _vec[2]);
 }
 
 //==============================================================================
-dart::fcl::Vector3 FCLTypes::convertVector3(const Eigen::Vector3d& _vec)
+dart::collision::fcl::Vector3 FCLTypes::convertVector3(const Eigen::Vector3d& _vec)
 {
-  return dart::fcl::Vector3(_vec[0], _vec[1], _vec[2]);
+  return dart::collision::fcl::Vector3(_vec[0], _vec[1], _vec[2]);
 }
 
 //==============================================================================
-dart::fcl::Matrix3 FCLTypes::convertMatrix3x3(const Eigen::Matrix3d& _R)
+dart::collision::fcl::Matrix3 FCLTypes::convertMatrix3x3(const Eigen::Matrix3d& _R)
 {
-  return dart::fcl::Matrix3(_R(0, 0), _R(0, 1), _R(0, 2),
+  return dart::collision::fcl::Matrix3(_R(0, 0), _R(0, 1), _R(0, 2),
                             _R(1, 0), _R(1, 1), _R(1, 2),
                             _R(2, 0), _R(2, 1), _R(2, 2));
 }
 
 //==============================================================================
-dart::fcl::Transform3 FCLTypes::convertTransform(const Eigen::Isometry3d& _T)
+dart::collision::fcl::Transform3 FCLTypes::convertTransform(const Eigen::Isometry3d& _T)
 {
-  dart::fcl::Transform3 trans;
+  dart::collision::fcl::Transform3 trans;
 
   trans.setTranslation(convertVector3(_T.translation()));
   trans.setRotation(convertMatrix3x3(_T.linear()));
 
   return trans;
-}
-
-//==============================================================================
-double length(const dart::fcl::Vector3& t)
-{
-  return t.length();
-}
-
-//==============================================================================
-dart::fcl::Vector3 getTranslation(const dart::fcl::Transform3& T)
-{
-  return T.getTranslation();
-}
-
-//==============================================================================
-void setTranslation(dart::fcl::Transform3& T, const dart::fcl::Vector3& t)
-{
-  T.setTranslation(t);
-}
-
-//==============================================================================
-dart::fcl::Matrix3 getRotation(const dart::fcl::Transform3& T)
-{
-  return T.getRotation();
-}
-
-//==============================================================================
-void setRotation(dart::fcl::Transform3& T, const dart::fcl::Matrix3& R)
-{
-  T.setRotation(R);
-}
-
-//==============================================================================
-void setEulerZYX(dart::fcl::Matrix3& rot, const double eulerX, const double eulerY, const double eulerZ)
-{
-  rot.setEulerZYX(eulerX, eulerY, eulerZ);
 }
 #endif
 }  // namespace collision

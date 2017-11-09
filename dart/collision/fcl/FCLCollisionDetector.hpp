@@ -143,7 +143,7 @@ protected:
 
   /// Return fcl::CollisionGeometry associated with give Shape. New
   /// fcl::CollisionGeome will be created if it hasn't created yet.
-  fcl_shared_ptr<dart::fcl::CollisionGeometry> claimFCLCollisionGeometry(
+  fcl_shared_ptr<dart::collision::fcl::CollisionGeometry> claimFCLCollisionGeometry(
       const dynamics::ConstShapePtr& shape);
 
 protected:
@@ -163,7 +163,7 @@ private:
     FCLCollisionGeometryDeleter(FCLCollisionDetector* cd,
                                 const dynamics::ConstShapePtr& shape);
 
-    void operator()(dart::fcl::CollisionGeometry* geom) const;
+    void operator()(dart::collision::fcl::CollisionGeometry* geom) const;
 
   private:
 
@@ -175,7 +175,7 @@ private:
 
   /// Create fcl::CollisionGeometry with the custom deleter
   /// FCLCollisionGeometryDeleter
-  fcl_shared_ptr<dart::fcl::CollisionGeometry> createFCLCollisionGeometry(
+  fcl_shared_ptr<dart::collision::fcl::CollisionGeometry> createFCLCollisionGeometry(
       const dynamics::ConstShapePtr& shape,
       FCLCollisionDetector::PrimitiveShape type,
       const FCLCollisionGeometryDeleter& deleter);
@@ -183,7 +183,7 @@ private:
 private:
 
   using ShapeMap = std::map<dynamics::ConstShapePtr,
-                            fcl_weak_ptr<dart::fcl::CollisionGeometry>>;
+                            fcl_weak_ptr<dart::collision::fcl::CollisionGeometry>>;
 
   ShapeMap mShapeMap;
 

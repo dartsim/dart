@@ -70,7 +70,6 @@
 #endif
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 
-
 #if FCL_VERSION_AT_LEAST(0,5,0)
 #include <memory>
 template <class T> using fcl_shared_ptr = std::shared_ptr<T>;
@@ -82,7 +81,9 @@ template <class T> using fcl_weak_ptr = boost::weak_ptr<T>;
 #endif
 
 namespace dart {
+namespace collision {
 namespace fcl {
+
 #if FCL_VERSION_AT_LEAST(0,6,0)
 // Geometric fundamentals
 using Vector3 = ::fcl::Vector3<double>;
@@ -128,29 +129,35 @@ using Contact = ::fcl::Contact;
 #endif
 
 #if FCL_VERSION_AT_LEAST(0,4,0) && !FCL_VERSION_AT_LEAST(0,6,0)
-typedef ::fcl::Ellipsoid Ellipsoid;
+using Ellipsoid = ::fcl::Ellipsoid;
 #endif
 
-template <typename BV>
-using BVHModel = ::fcl::BVHModel<BV>;
+/// Returns norm of a 3-dim vector
+double length(const dart::collision::fcl::Vector3& t);
+
+/// Returns translation component of a transform
+dart::collision::fcl::Vector3 getTranslation(const dart::collision::fcl::Transform3& T);
+
+/// Sets translation component of a transform
+void setTranslation(dart::collision::fcl::Transform3& T, const dart::collision::fcl::Vector3& t);
+
+/// Returns rotation component of a transform
+dart::collision::fcl::Matrix3 getRotation(const dart::collision::fcl::Transform3& T);
+
+/// Sets rotation component of a transform
+void setRotation(dart::collision::fcl::Transform3& T, const dart::collision::fcl::Matrix3& R);
+
+/// Sets a rotation matrix given Euler-XYZ angles
+void setEulerZYX(dart::collision::fcl::Matrix3& rot,
+    double eulerX,
+    double eulerY,
+    double eulerZ);
+
+/// Transforms a 3-dim vector by a transform and returns the result
+dart::collision::fcl::Vector3 transform(
+    const dart::collision::fcl::Transform3& t, const dart::collision::fcl::Vector3& v);
 
 } // namespace fcl
-
-namespace collision {
-
-double length(const dart::fcl::Vector3& t);
-dart::fcl::Vector3 getTranslation(const dart::fcl::Transform3& T);
-void setTranslation(dart::fcl::Transform3& T, const dart::fcl::Vector3& t);
-dart::fcl::Matrix3 getRotation(const dart::fcl::Transform3& T);
-void setRotation(dart::fcl::Transform3& T, const dart::fcl::Matrix3& R);
-void setEulerZYX(dart::fcl::Matrix3& rot, const double eulerX, const double eulerY, const double eulerZ);
-
-#if FCL_VERSION_AT_LEAST(0,6,0)
-#define FCL_TRANSFORM(t,v) (t) * (v)
-#else
-#define FCL_TRANSFORM(t,v) (t).transform((v))
-#endif
-
 } // namespace collision
 } // namespace dart
 

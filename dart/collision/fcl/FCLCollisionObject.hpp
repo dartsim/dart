@@ -46,17 +46,17 @@ public:
   friend class FCLCollisionDetector;
 
   /// Return FCL collision object
-  dart::fcl::CollisionObject* getFCLCollisionObject();
+  dart::collision::fcl::CollisionObject* getFCLCollisionObject();
 
   /// Return FCL collision object
-  const dart::fcl::CollisionObject* getFCLCollisionObject() const;
+  const dart::collision::fcl::CollisionObject* getFCLCollisionObject() const;
 
 protected:
 
   /// Constructor
   FCLCollisionObject(CollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame,
-      const fcl_shared_ptr<dart::fcl::CollisionGeometry>& fclCollGeom);
+      const fcl_shared_ptr<dart::collision::fcl::CollisionGeometry>& fclCollGeom);
 
   // Documentation inherited
   void updateEngineData() override;
@@ -64,7 +64,7 @@ protected:
 protected:
 
   /// FCL collision object
-  std::unique_ptr<dart::fcl::CollisionObject> mFCLCollisionObject;
+  std::unique_ptr<dart::collision::fcl::CollisionObject> mFCLCollisionObject;
 
 };
 

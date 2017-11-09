@@ -30,89 +30,97 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/FCLCollisionGroup.hpp"
-
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/fcl/FCLCollisionObject.hpp"
+#include "dart/collision/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
 namespace collision {
+namespace fcl {
 
 //==============================================================================
-FCLCollisionGroup::FCLCollisionGroup(
-    const CollisionDetectorPtr& collisionDetector)
-  : CollisionGroup(collisionDetector),
-    mBroadPhaseAlg(new dart::collision::fcl::DynamicAABBTreeCollisionManager())
+double length(const dart::collision::fcl::Vector3& t)
 {
-  // Do nothing
+#if FCL_VERSION_AT_LEAST(0,6,0)
+  return t.norm();
+#else
+  return t.length();
+#endif
 }
 
 //==============================================================================
-void FCLCollisionGroup::initializeEngineData()
+dart::collision::fcl::Vector3 getTranslation(const dart::collision::fcl::Transform3& T)
 {
-  mBroadPhaseAlg->setup();
+#if FCL_VERSION_AT_LEAST(0,6,0)
+  return T.translation();
+#else
+  return T.getTranslation();
+#endif
 }
 
 //==============================================================================
-void FCLCollisionGroup::addCollisionObjectToEngine(CollisionObject* object)
+void setTranslation(dart::collision::fcl::Transform3& T, const dart::collision::fcl::Vector3& t)
 {
-  auto casted = static_cast<FCLCollisionObject*>(object);
-  mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
-
-  initializeEngineData();
+#if FCL_VERSION_AT_LEAST(0,6,0)
+  T.translation() = t;
+#else
+  T.setTranslation(t);
+#endif
 }
 
 //==============================================================================
-void FCLCollisionGroup::addCollisionObjectsToEngine(
-    const std::vector<CollisionObject*>& collObjects)
+dart::collision::fcl::Matrix3 getRotation(const dart::collision::fcl::Transform3& T)
 {
-  for (auto collObj : collObjects)
-  {
-    auto casted = static_cast<FCLCollisionObject*>(collObj);
-
-    mBroadPhaseAlg->registerObject(casted->getFCLCollisionObject());
-  }
-
-  initializeEngineData();
+#if FCL_VERSION_AT_LEAST(0,6,0)
+  return T.linear();
+#else
+  return T.getRotation();
+#endif
 }
 
 //==============================================================================
-void FCLCollisionGroup::removeCollisionObjectFromEngine(CollisionObject* object)
+void setRotation(dart::collision::fcl::Transform3& T, const dart::collision::fcl::Matrix3& R)
 {
-  auto casted = static_cast<FCLCollisionObject*>(object);
-
-  mBroadPhaseAlg->unregisterObject(casted->getFCLCollisionObject());
-
-  initializeEngineData();
+#if FCL_VERSION_AT_LEAST(0,6,0)
+  T.linear() = R;
+#else
+  T.setRotation(R);
+#endif
 }
 
 //==============================================================================
-void FCLCollisionGroup::removeAllCollisionObjectsFromEngine()
+void setEulerZYX(
+    dart::collision::fcl::Matrix3& rot, double eulerX, double eulerY, double eulerZ)
 {
-  mBroadPhaseAlg->clear();
+#if FCL_VERSION_AT_LEAST(0,6,0)
+  double ci(cos(eulerX));
+  double cj(cos(eulerY));
+  double ch(cos(eulerZ));
+  double si(sin(eulerX));
+  double sj(sin(eulerY));
+  double sh(sin(eulerZ));
+  double cc = ci * ch;
+  double cs = ci * sh;
+  double sc = si * ch;
+  double ss = si * sh;
 
-  initializeEngineData();
+  rot << cj * ch, sj * sc - cs, sj * cc + ss,
+         cj * sh, sj * ss + cc, sj * cs - sc,
+         -sj,     cj * si,      cj * ci;
+#else
+  rot.setEulerZYX(eulerX, eulerY, eulerZ);
+#endif
 }
 
 //==============================================================================
-void FCLCollisionGroup::updateCollisionGroupEngineData()
+dart::collision::fcl::Vector3 transform(
+      const dart::collision::fcl::Transform3 &t, const dart::collision::fcl::Vector3 &v)
 {
-  mBroadPhaseAlg->update();
+#if FCL_VERSION_AT_LEAST(0,6,0)
+  return t * v;
+#else
+  return (t).transform((v));
+#endif
 }
 
-//==============================================================================
-FCLCollisionGroup::FCLCollisionManager*
-FCLCollisionGroup::getFCLCollisionManager()
-{
-  return mBroadPhaseAlg.get();
-}
-
-//==============================================================================
-const FCLCollisionGroup::FCLCollisionManager*
-FCLCollisionGroup::getFCLCollisionManager() const
-{
-  return mBroadPhaseAlg.get();
-}
-
-}  // namespace collision
-}  // namespace dart
+} // namespace fcl
+} // namespace collision
+} // namespace dart
