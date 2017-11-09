@@ -477,7 +477,7 @@ protected:
 
   std::vector< std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
 
-  Eigen::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
+  dart::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
 
   std::shared_ptr<RelaxedPosture> mPosture;
 
