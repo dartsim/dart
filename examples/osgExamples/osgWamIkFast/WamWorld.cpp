@@ -30,43 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCE_HPP_
-#define DART_COMMON_LOCALRESOURCE_HPP_
+#include "WamWorld.hpp"
 
-#include "dart/common/Resource.hpp"
-
-namespace dart {
-namespace common {
-
-class LocalResource : public virtual Resource
+//==============================================================================
+WamWorld::WamWorld(WorldPtr world, SkeletonPtr robot)
+  : dart::gui::osg::WorldNode(world), mWam(robot)
 {
-public:
-  explicit LocalResource(const std::string& _path);
-  virtual ~LocalResource();
+  // Do nothing
+}
 
-  LocalResource(const LocalResource& _other) = delete;
-  LocalResource& operator=(const LocalResource& _other) = delete;
-
-  /// Returns true if the resource is open and in a valid state.
-  bool isGood() const;
-
-  // Documentation inherited.
-  std::size_t getSize() override;
-
-  // Documentation inherited.
-  std::size_t tell() override;
-
-  // Documentation inherited.
-  bool seek(ptrdiff_t _origin, SeekType _mode) override;
-
-  // Documentation inherited.
-  std::size_t read(void* _buffer, std::size_t _size, std::size_t _count) override;
-
-private:
-  std::FILE* mFile;
-};
-
-} // namespace common
-} // namespace dart
-
-#endif // ifndef DART_COMMON_LOCALRESOURCE_HPP_
+//==============================================================================
+void WamWorld::customPreRefresh()
+{
+  mWam->getIK(true)->solve();
+}

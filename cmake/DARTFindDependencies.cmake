@@ -89,9 +89,9 @@ add_definitions(-DBOOST_TEST_DYN_LINK)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 if(DART_VERBOSE)
-  find_package(Boost ${DART_MIN_BOOST_VERSION} REQUIRED COMPONENTS regex system)
+  find_package(Boost ${DART_MIN_BOOST_VERSION} REQUIRED COMPONENTS regex system filesystem)
 else()
-  find_package(Boost ${DART_MIN_BOOST_VERSION} QUIET REQUIRED COMPONENTS regex system)
+  find_package(Boost ${DART_MIN_BOOST_VERSION} QUIET REQUIRED COMPONENTS regex system filesystem)
 endif()
 
 

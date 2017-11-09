@@ -30,43 +30,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCALRESOURCE_HPP_
-#define DART_COMMON_LOCALRESOURCE_HPP_
+#ifndef DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
+#define DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
 
-#include "dart/common/Resource.hpp"
+#include "dart/common/SharedLibrary.hpp"
+#include "dart/dynamics/IkFast.hpp"
 
-namespace dart {
-namespace common {
-
-class LocalResource : public virtual Resource
+class SharedLibraryWamIkFast : public dart::dynamics::IkFast
 {
 public:
-  explicit LocalResource(const std::string& _path);
-  virtual ~LocalResource();
-
-  LocalResource(const LocalResource& _other) = delete;
-  LocalResource& operator=(const LocalResource& _other) = delete;
-
-  /// Returns true if the resource is open and in a valid state.
-  bool isGood() const;
+  SharedLibraryWamIkFast(
+      dart::dynamics::InverseKinematics* ik,
+      const std::vector<std::size_t>& dofMap,
+      const std::vector<std::size_t>& freeDofMap,
+      const std::string& methodName = "IKFast",
+      const Analytical::Properties& properties = Analytical::Properties());
 
   // Documentation inherited.
-  std::size_t getSize() override;
+  auto clone(dart::dynamics::InverseKinematics* newIK) const
+      -> std::unique_ptr<GradientMethod>;
+
+protected:
+  // Documentation inherited.
+  int getNumFreeParameters() const override;
 
   // Documentation inherited.
-  std::size_t tell() override;
+  int* getFreeParameters() const override;
 
   // Documentation inherited.
-  bool seek(ptrdiff_t _origin, SeekType _mode) override;
+  int getNumJoints() const override;
 
   // Documentation inherited.
-  std::size_t read(void* _buffer, std::size_t _size, std::size_t _count) override;
+  int getIkRealSize() const override;
 
-private:
-  std::FILE* mFile;
+  // Documentation inherited.
+  int getIkType() const override;
+
+  // Documentation inherited.
+  bool computeIk(
+      const IkReal* targetTranspose,
+      const IkReal* targetRotation,
+      const IkReal* freeParams,
+      ikfast::IkSolutionListBase<IkReal>& solutions) override;
+
+  // Documentation inherited.
+  const char* getKinematicsHash() override;
+
+  // Documentation inherited.
+  const char* getIkFastVersion() override;
 };
 
-} // namespace common
-} // namespace dart
-
-#endif // ifndef DART_COMMON_LOCALRESOURCE_HPP_
+#endif // DART_TEST_SHAREDLIBRARYWAMIKFAST_HPP_
