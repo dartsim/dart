@@ -51,6 +51,8 @@
 #include "dart/constraint/DantzigLCPSolver.hpp"
 #include "dart/constraint/PGSLCPSolver.hpp"
 
+#define DART_CONTACT_CONSTRAINT_EPSILON_SQUARED 1e-12
+
 namespace dart {
 namespace constraint {
 
@@ -410,6 +412,13 @@ void ConstraintSolver::updateConstraints()
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
   {
     auto& ct = mCollisionResult.getContact(i);
+
+    if (ct.normal.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
+    {
+      // Skip this contact. This is because we assume that a contact with
+      // zero-length normal is invalid.
+      continue;
+    }
 
     // Set colliding bodies
     auto shapeFrame1 = const_cast<dynamics::ShapeFrame*>(
