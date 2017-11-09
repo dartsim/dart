@@ -79,21 +79,23 @@ struct Contact
   /// \brief User data.
   void* userData;
 
-  /// Returns the epsilon to be used for determination of zero-length normal
-  static double getNormalEpsilon();
+  /// Returns the epsilon to be used for determination of zero-length normal.
+  constexpr static double getNormalEpsilon();
 
   /// Returns the squired epsilon to be used for determination of zero-length
-  /// normal
-  static double getNormalEpsilonSquared();
+  /// normal.
+  constexpr static double getNormalEpsilonSquared();
 
-  /// Returns true if the length of a normal is less than the epsilon
+  /// Returns true if the length of a normal is less than the epsilon.
   static bool isZeroNormal(const Eigen::Vector3d& normal);
 
-  /// Returns !isZeroNormal()
+  /// Returns !isZeroNormal().
   static bool isNonZeroNormal(const Eigen::Vector3d& normal);
 };
 
 }  // namespace collision
 }  // namespace dart
+
+#include "dart/collision/detail/Contact-impl.hpp"
 
 #endif  // DART_COLLISION_CONTACT_HPP_
