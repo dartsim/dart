@@ -239,7 +239,7 @@ void LineSegmentShape::addConnection(std::size_t _idx1, std::size_t _idx2)
 void LineSegmentShape::removeConnection(std::size_t _vertexIdx1, std::size_t _vertexIdx2)
 {
   // Search through all connections to remove any that match the request
-  Eigen::aligned_vector<Eigen::Vector2i>::iterator it = mConnections.begin();
+  dart::aligned_vector<Eigen::Vector2i>::iterator it = mConnections.begin();
   while(it != mConnections.end())
   {
     const Eigen::Vector2i c = (*it);
@@ -278,7 +278,7 @@ void LineSegmentShape::removeConnection(std::size_t _connectionIdx)
 }
 
 //==============================================================================
-const Eigen::aligned_vector<Eigen::Vector2i>&
+const dart::aligned_vector<Eigen::Vector2i>&
 LineSegmentShape::getConnections() const
 {
   return mConnections;

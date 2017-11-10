@@ -60,6 +60,10 @@ inline Vector6d compose(const Eigen::Vector3d& _angular,
 typedef std::vector<Eigen::Vector3d> EIGEN_V_VEC3D;
 typedef std::vector<std::vector<Eigen::Vector3d > > EIGEN_VV_VEC3D;
 
+} // namespace Eigen
+
+namespace dart {
+
 #if EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
 
 template <typename _Tp>
@@ -89,9 +93,6 @@ std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args)
         std::forward<_Args>(__args)...);
 }
 
-}  // namespace Eigen
-
-namespace dart {
 namespace math {
 
 typedef Eigen::Matrix6d Inertia;

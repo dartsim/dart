@@ -205,10 +205,10 @@ private:
   double mRestitutionCoeff;
 
   /// Local body jacobians for mBodyNode1
-  Eigen::aligned_vector<Eigen::Vector6d> mJacobians1;
+  dart::aligned_vector<Eigen::Vector6d> mJacobians1;
 
   /// Local body jacobians for mBodyNode2
-  Eigen::aligned_vector<Eigen::Vector6d> mJacobians2;
+  dart::aligned_vector<Eigen::Vector6d> mJacobians2;
 
   /// Contact normal expressed in body frame of the first body node
   Eigen::Vector3d mBodyDirection1;

@@ -103,7 +103,7 @@ public:
     virtual void drawSoftMesh(const aiMesh* mesh);
     virtual void drawList(unsigned int index);
     virtual void drawLineSegments(const std::vector<Eigen::Vector3d>& _vertices,
-                                  const Eigen::aligned_vector<Eigen::Vector2i>& _connections);
+                                  const dart::aligned_vector<Eigen::Vector2i>& _connections);
 
     virtual unsigned int compileDisplayList(const Eigen::Vector3d& _size, const aiScene* _mesh);
 

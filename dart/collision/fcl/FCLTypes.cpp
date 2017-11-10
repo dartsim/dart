@@ -35,36 +35,56 @@
 namespace dart {
 namespace collision {
 
+#if FCL_VERSION_AT_LEAST(0,6,0)
 //==============================================================================
-Eigen::Vector3d FCLTypes::convertVector3(const fcl::Vec3f& _vec)
+Eigen::Vector3d FCLTypes::convertVector3(const dart::collision::fcl::Vector3& _vec)
+{
+  return _vec;
+}
+
+//==============================================================================
+dart::collision::fcl::Matrix3 FCLTypes::convertMatrix3x3(const Eigen::Matrix3d& _R)
+{
+  return _R;
+}
+
+//==============================================================================
+dart::collision::fcl::Transform3 FCLTypes::convertTransform(const Eigen::Isometry3d& _T)
+{
+  return _T;
+}
+
+#else
+//==============================================================================
+Eigen::Vector3d FCLTypes::convertVector3(const dart::collision::fcl::Vector3& _vec)
 {
   return Eigen::Vector3d(_vec[0], _vec[1], _vec[2]);
 }
 
 //==============================================================================
-fcl::Vec3f FCLTypes::convertVector3(const Eigen::Vector3d& _vec)
+dart::collision::fcl::Vector3 FCLTypes::convertVector3(const Eigen::Vector3d& _vec)
 {
-  return fcl::Vec3f(_vec[0], _vec[1], _vec[2]);
+  return dart::collision::fcl::Vector3(_vec[0], _vec[1], _vec[2]);
 }
 
 //==============================================================================
-fcl::Matrix3f FCLTypes::convertMatrix3x3(const Eigen::Matrix3d& _R)
+dart::collision::fcl::Matrix3 FCLTypes::convertMatrix3x3(const Eigen::Matrix3d& _R)
 {
-  return fcl::Matrix3f(_R(0, 0), _R(0, 1), _R(0, 2),
-                       _R(1, 0), _R(1, 1), _R(1, 2),
-                       _R(2, 0), _R(2, 1), _R(2, 2));
+  return dart::collision::fcl::Matrix3(_R(0, 0), _R(0, 1), _R(0, 2),
+                            _R(1, 0), _R(1, 1), _R(1, 2),
+                            _R(2, 0), _R(2, 1), _R(2, 2));
 }
 
 //==============================================================================
-fcl::Transform3f FCLTypes::convertTransform(const Eigen::Isometry3d& _T)
+dart::collision::fcl::Transform3 FCLTypes::convertTransform(const Eigen::Isometry3d& _T)
 {
-  fcl::Transform3f trans;
+  dart::collision::fcl::Transform3 trans;
 
   trans.setTranslation(convertVector3(_T.translation()));
   trans.setRotation(convertMatrix3x3(_T.linear()));
 
   return trans;
 }
-
+#endif
 }  // namespace collision
 }  // namespace dart
