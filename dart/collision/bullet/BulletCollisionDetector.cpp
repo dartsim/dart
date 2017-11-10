@@ -58,8 +58,6 @@
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 
-#define NORMAL_EPSILON_SQUARED 1e-06
-
 namespace dart {
 namespace collision {
 
