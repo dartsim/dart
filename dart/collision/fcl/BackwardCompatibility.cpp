@@ -125,7 +125,7 @@ dart::collision::fcl::Vector3 transform(
 #if FCL_VERSION_AT_LEAST(0,6,0)
   return t * v;
 #else
-  return (t).transform((v));
+  return t.transform(v);
 #endif
 }
 

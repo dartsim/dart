@@ -59,7 +59,7 @@ template<class BV>
         vertices[k] = dart::collision::fcl::Vector3(vertex.x * _scaleX,
                                           vertex.y * _scaleY,
                                           vertex.z * _scaleZ);
-        vertices[k] = _transform * (vertices[k]);
+        vertices[k] = dart::collision::fcl::transform(_transform, vertices[k]);
       }
       model->addTriangle(vertices[0], vertices[1], vertices[2]);
     }
