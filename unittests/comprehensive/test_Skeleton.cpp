@@ -147,27 +147,34 @@ TEST(Skeleton, Restructuring)
         BodyNode* bn = skeleton->getBodyNode(name);
         EXPECT_FALSE(bn == nullptr);
         if(bn)
+        {
           EXPECT_TRUE(bn->getName() == name);
+        }
 
         name = skeleton->getBodyNode(j)->getName();
         bn = original->getBodyNode(name);
         EXPECT_FALSE(bn == nullptr);
         if(bn)
+        {
           EXPECT_TRUE(bn->getName() == name);
-
+        }
 
         // Make sure no Joints have been lost or gained in translation
         name = original->getJoint(j)->getName();
         Joint* joint = skeleton->getJoint(name);
         EXPECT_FALSE(joint == nullptr);
         if(joint)
+        {
           EXPECT_TRUE(joint->getName() == name);
+        }
 
         name = skeleton->getJoint(j)->getName();
         joint = original->getJoint(name);
         EXPECT_FALSE(joint == nullptr);
         if(joint)
+        {
           EXPECT_TRUE(joint->getName() == name);
+        }
       }
     }
 
@@ -178,13 +185,17 @@ TEST(Skeleton, Restructuring)
       DegreeOfFreedom* dof = skeleton->getDof(name);
       EXPECT_FALSE(dof == nullptr);
       if(dof)
+      {
         EXPECT_TRUE(dof->getName() == name);
+      }
 
       name = skeleton->getDof(j)->getName();
       dof = original->getDof(name);
       EXPECT_FALSE(dof == nullptr);
       if(dof)
+      {
         EXPECT_TRUE(dof->getName() == name);
+      }
     }
   }
 
