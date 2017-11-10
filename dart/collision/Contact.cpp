@@ -54,7 +54,7 @@ Contact::Contact()
 //==============================================================================
 bool Contact::isZeroNormal(const Eigen::Vector3d& normal)
 {
-  if (normal.squaredNorm() < getNormalEpsilon())
+  if (normal.squaredNorm() < getNormalEpsilonSquared())
     return true;
   else
     return false;
