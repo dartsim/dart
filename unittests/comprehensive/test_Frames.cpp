@@ -704,7 +704,9 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
       randomize_transform(tf, 1, 2*M_PI);
       T->setTransform(tf, F);
       if(i != j)
+      {
         EXPECT_TRUE( equals(T->getTransform(F).matrix(), tf.matrix(), 1e-10));
+      }
     }
   }
 }

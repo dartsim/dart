@@ -81,6 +81,8 @@ TEST(ContactConstraint, ContactWithKinematicJoint)
 
     // Need few steps to settle down
     if (i > 15)
+    {
       EXPECT_NEAR(bodyNode2->getLinearVelocity()[0], 0.1, 1e-6);
+    }
   }
 }
