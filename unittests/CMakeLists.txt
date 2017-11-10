@@ -50,9 +50,9 @@ set_target_properties(
 # - DART_${test_type}_TESTS
 #
 # Usage:
-#   add_add_test("unit" test_UnitTestA) # assumed source is test_UnitTestA.cpp
-#   add_add_test("unit" test_UnitTestB test_SourceB1.cpp)
-#   add_add_test("unit" test_UnitTestA test_SourceC1.cpp test_SourceC2.cpp)
+#   dart_add_test("unit" test_UnitTestA) # assumed source is test_UnitTestA.cpp
+#   dart_add_test("unit" test_UnitTestB test_SourceB1.cpp)
+#   dart_add_test("unit" test_UnitTestA test_SourceC1.cpp test_SourceC2.cpp)
 #===============================================================================
 function(dart_add_test test_type target_name) # ARGN for source files
 

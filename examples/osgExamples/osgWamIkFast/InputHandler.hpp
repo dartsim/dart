@@ -68,5 +68,5 @@ protected:
 
   std::vector< std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
 
-  Eigen::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
+  common::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
 };

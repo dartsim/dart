@@ -81,9 +81,9 @@ typedef struct c3d_frame_t {
 float convertDecToFloat(char _bytes[4]);
 void convertFloatToDec(float _f, char* _bytes);
 
-bool loadC3DFile( const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData,
+bool loadC3DFile( const char* _fileName, std::vector<std::vector<Eigen::Vector3d>>& _pointData,
                   int* _nFrame, int* _nMarker, double* _freq );
-bool saveC3DFile( const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData,
+bool saveC3DFile( const char* _fileName, std::vector<std::vector<Eigen::Vector3d>>& _pointData,
                   int _nFrame, int _nMarker, double _freq );
 
 } // namespace utils
