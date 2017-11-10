@@ -1297,7 +1297,7 @@ void postProcessFCL(
   {
     for (auto i = 0u; i < numContacts; ++i)
     {
-      if (fclResult.getContact(i).normal.squaredNorm()
+      if (fclResult.getContact(i).normal.sqrLength()
           < Contact::getNormalEpsilonSquared())
       {
         // Skip this contact. This is because we assume that a contact with
@@ -1334,7 +1334,7 @@ void postProcessFCL(
     if (markForDeletion[i])
       continue;
 
-    if (fclResult.getContact(i).normal.squaredNorm()
+    if (fclResult.getContact(i).normal.sqrLength()
         < Contact::getNormalEpsilonSquared())
     {
       // Skip this contact. This is because we assume that a contact with
