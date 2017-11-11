@@ -134,6 +134,8 @@ protected:
   bool isActive() const override;
 
 private:
+  using TangentBasisMatrix = Eigen::Matrix<double, 3, 2>;
+
   /// Get change in relative velocity at contact point due to external impulse
   /// \param[out] _relVel Change in relative velocity at contact point of the
   ///                     two colliding bodies
@@ -143,7 +145,7 @@ private:
   void updateFirstFrictionalDirection();
 
   ///
-  Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
+  TangentBasisMatrix getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
 
 private:
   /// Time step

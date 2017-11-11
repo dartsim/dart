@@ -30,41 +30,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef DART_COLLISION_DETAIL_CONTACT_IMPL_HPP_
+#define DART_COLLISION_DETAIL_CONTACT_IMPL_HPP_
+
 #include "dart/collision/Contact.hpp"
 
 namespace dart {
 namespace collision {
 
 //==============================================================================
-Contact::Contact()
-  : point(Eigen::Vector3d::Zero()),
-    normal(Eigen::Vector3d::Zero()),
-    force(Eigen::Vector3d::Zero()),
-    collisionObject1(nullptr),
-    collisionObject2(nullptr),
-    penetrationDepth(0),
-    triID1(0),
-    triID2(0),
-    userData(nullptr)
+constexpr double Contact::getNormalEpsilon()
 {
-  // TODO(MXG): Consider using NaN instead of zero for uninitialized quantities
-  // Do nothing
+  return 1e-6;
 }
 
 //==============================================================================
-bool Contact::isZeroNormal(const Eigen::Vector3d& normal)
+constexpr double Contact::getNormalEpsilonSquared()
 {
-  if (normal.squaredNorm() < getNormalEpsilonSquared())
-    return true;
-  else
-    return false;
-}
-
-//==============================================================================
-bool Contact::isNonZeroNormal(const Eigen::Vector3d& normal)
-{
-  return !isZeroNormal(normal);
+  return 1e-12;
 }
 
 }  // namespace collision
 }  // namespace dart
+
+#endif // DART_COLLISION_DETAIL_CONTACT_IMPL_HPP_

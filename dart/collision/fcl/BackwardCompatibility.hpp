@@ -135,6 +135,9 @@ using Ellipsoid = ::fcl::Ellipsoid;
 /// Returns norm of a 3-dim vector
 double length(const dart::collision::fcl::Vector3& t);
 
+/// Returns squared norm of a 3-dim vector
+double length2(const dart::collision::fcl::Vector3& t);
+
 /// Returns translation component of a transform
 dart::collision::fcl::Vector3 getTranslation(
     const dart::collision::fcl::Transform3& T);

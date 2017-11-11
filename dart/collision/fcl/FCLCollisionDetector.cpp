@@ -1290,8 +1290,20 @@ void postProcessFCL(
   // without the checkings of repeatidity and co-linearity.
   if (1u == option.maxNumContacts)
   {
-    result.addContact(convertContact(fclResult.getContact(0), o1, o2, option));
+    for (auto i = 0u; i < numContacts; ++i)
+    {
+      if (dart::collision::fcl::length2(fclResult.getContact(i).normal)
+          < Contact::getNormalEpsilonSquared())
+      {
+        // Skip this contact. This is because we assume that a contact with
+        // zero-length normal is invalid.
+        continue;
+      }
 
+      result.addContact(
+          convertContact(fclResult.getContact(i), o1, o2, option));
+      break;
+    }
     return;
   }
 
@@ -1316,6 +1328,14 @@ void postProcessFCL(
   {
     if (markForDeletion[i])
       continue;
+
+    if (dart::collision::fcl::length2(fclResult.getContact(i).normal)
+        < Contact::getNormalEpsilonSquared())
+    {
+      // Skip this contact. This is because we assume that a contact with
+      // zero-length normal is invalid.
+      continue;
+    }
 
     result.addContact(convertContact(fclResult.getContact(i), o1, o2, option));
 
@@ -1356,6 +1376,12 @@ void postProcessDART(
     if (option.enableContact)
     {
       pair1.normal = FCLTypes::convertVector3(-c.normal);
+      if (Contact::isZeroNormal(pair1.normal))
+      {
+        // This is an invalid contact, as it contains a zero length normal.
+        // Skip this contact.
+        continue;
+      }
       pair1.penetrationDepth = c.penetration_depth;
       pair1.triID1 = c.b1;
       pair1.triID2 = c.b2;
