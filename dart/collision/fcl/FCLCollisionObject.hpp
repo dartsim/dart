@@ -33,9 +33,8 @@
 #ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
 #define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
 
-#include <fcl/collision_object.h>
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/fcl/FCLTypes.hpp"
+#include "dart/collision/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
 namespace collision {

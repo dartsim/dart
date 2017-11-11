@@ -35,7 +35,6 @@
 
 #include <cmath>
 #include <assimp/scene.h>
-#include <fcl/BVH/BVH_model.h>
 
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
 

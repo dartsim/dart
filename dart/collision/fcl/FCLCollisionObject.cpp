@@ -32,8 +32,6 @@
 
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 
-#include <fcl/BVH/BVH_model.h>
-
 #include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
