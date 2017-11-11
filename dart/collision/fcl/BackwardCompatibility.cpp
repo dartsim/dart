@@ -52,7 +52,7 @@ double length2(const dart::collision::fcl::Vector3& t)
 #if FCL_VERSION_AT_LEAST(0,6,0)
   return t.squaredNorm();
 #else
-  return t.length2();
+  return t.sqrLength();
 #endif
 }
 
