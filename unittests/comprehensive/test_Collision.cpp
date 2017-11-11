@@ -704,7 +704,9 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
     // TODO(JS): BulletCollsionDetector includes a bug related to this.
     // (see #876)
     if (cd->getType() != BulletCollisionDetector::getStaticType())
+    {
       EXPECT_EQ(result.getNumContacts(), 1u);
+    }
     for (auto i = 0u; i < result.getNumContacts(); ++i)
     {
       std::cout << "point: " << result.getContact(i).point.transpose() << std::endl;
