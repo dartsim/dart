@@ -37,7 +37,7 @@
 #include <assimp/scene.h>
 #include <Eigen/Dense>
 
-#include "dart/math/MathTypes.hpp"
+#include "dart/common/Memory.hpp"
 
 namespace dart {
 namespace gui {
@@ -103,7 +103,7 @@ public:
     virtual void drawSoftMesh(const aiMesh* mesh);
     virtual void drawList(unsigned int index);
     virtual void drawLineSegments(const std::vector<Eigen::Vector3d>& _vertices,
-                                  const dart::aligned_vector<Eigen::Vector2i>& _connections);
+                                  const common::aligned_vector<Eigen::Vector2i>& _connections);
 
     virtual unsigned int compileDisplayList(const Eigen::Vector3d& _size, const aiScene* _mesh);
 

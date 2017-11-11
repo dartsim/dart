@@ -205,18 +205,18 @@ void COLLISION::dropWithRotation(dart::collision::fcl::CollisionGeometry* _objec
 
 void COLLISION::printResult(const dart::collision::fcl::CollisionResult& _result)
 {
-	std::cout << "====== [ RESULT ] ======" << std::endl;
-	std::cout << "The number of contacts: " << _result.numContacts() << std::endl;
+  std::cout << "====== [ RESULT ] ======" << std::endl;
+  std::cout << "The number of contacts: " << _result.numContacts() << std::endl;
 
   for (std::size_t i = 0; i < _result.numContacts(); ++i)
-	{
-		std::cout << "----- CONTACT " << i << " --------" << std::endl;
-		std::cout << "contact_points: " << _result.getContact(i).pos << std::endl;
-		std::cout << "penetration_depth: " << _result.getContact(i).penetration_depth << std::endl;
-		std::cout << "normal: " << _result.getContact(i).normal << std::endl;
-		//std::cout << std::endl;
-	}
-	std::cout << std::endl;
+  {
+    std::cout << "----- CONTACT " << i << " --------" << std::endl;
+    std::cout << "contact_points: " << _result.getContact(i).pos << std::endl;
+    std::cout << "penetration_depth: " << _result.getContact(i).penetration_depth << std::endl;
+    std::cout << "normal: " << _result.getContact(i).normal << std::endl;
+    //std::cout << std::endl;
+  }
+  std::cout << std::endl;
 }
 
 /* ********************************************************************************************* */
@@ -704,7 +704,9 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
     // TODO(JS): BulletCollsionDetector includes a bug related to this.
     // (see #876)
     if (cd->getType() != BulletCollisionDetector::getStaticType())
+    {
       EXPECT_EQ(result.getNumContacts(), 1u);
+    }
     for (auto i = 0u; i < result.getNumContacts(); ++i)
     {
       std::cout << "point: " << result.getContact(i).point.transpose() << std::endl;

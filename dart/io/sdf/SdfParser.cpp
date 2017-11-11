@@ -94,7 +94,7 @@ struct SDFJoint
 };
 
 // Maps the name of a BodyNode to its properties
-using BodyMap = dart::aligned_map<std::string, SDFBodyNode>;
+using BodyMap = common::aligned_map<std::string, SDFBodyNode>;
 
 // Maps a child BodyNode to the properties of its parent Joint
 using JointMap = std::map<std::string, SDFJoint>;

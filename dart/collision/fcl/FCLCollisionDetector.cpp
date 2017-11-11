@@ -483,7 +483,7 @@ template<class BV>
 //==============================================================================
 template<class BV>
 ::fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
-                                        double _height, int _slices, int _stacks)
+                                    double _height, int _slices, int _stacks)
 {
   const int CACHE_SIZE = 240;
 
@@ -552,14 +552,14 @@ template<class BV>
       radiusHigh = _baseRadius
                    - deltaRadius * (static_cast<float>(j + 1) / _stacks);
 
-      p1 = dart::collision::fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i],
-                              zLow);
-      p2 = dart::collision::fcl::Vector3(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1],
-                              zLow);
-      p3 = dart::collision::fcl::Vector3(radiusHigh * sinCache[i], radiusHigh * cosCache[i],
-                              zHigh);
-      p4 = dart::collision::fcl::Vector3(radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1],
-                              zHigh);
+      p1 = dart::collision::fcl::Vector3(
+          radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+      p2 = dart::collision::fcl::Vector3(
+          radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+      p3 = dart::collision::fcl::Vector3(
+          radiusHigh * sinCache[i], radiusHigh * cosCache[i], zHigh);
+      p4 = dart::collision::fcl::Vector3(
+          radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1], zHigh);
 
       model->addTriangle(p1, p2, p3);
       model->addTriangle(p2, p3, p4);
@@ -585,8 +585,8 @@ template<class BV>
 
 //==============================================================================
 template<class BV>
-::fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
-                                    const aiScene* _mesh)
+::fcl::BVHModel<BV>* createMesh(
+    float _scaleX, float _scaleY, float _scaleZ, const aiScene* _mesh)
 {
   // Create FCL mesh from Assimp mesh
 
@@ -604,8 +604,8 @@ template<class BV>
             = _mesh->mMeshes[i]->mVertices[
               _mesh->mMeshes[i]->mFaces[j].mIndices[k]];
         vertices[k] = dart::collision::fcl::Vector3(vertex.x * _scaleX,
-                                         vertex.y * _scaleY,
-                                         vertex.z * _scaleZ);
+                                                    vertex.y * _scaleY,
+                                                    vertex.z * _scaleZ);
       }
       model->addTriangle(vertices[0], vertices[1], vertices[2]);
     }
@@ -1290,8 +1290,20 @@ void postProcessFCL(
   // without the checkings of repeatidity and co-linearity.
   if (1u == option.maxNumContacts)
   {
-    result.addContact(convertContact(fclResult.getContact(0), o1, o2, option));
+    for (auto i = 0u; i < numContacts; ++i)
+    {
+      if (dart::collision::fcl::length2(fclResult.getContact(i).normal)
+          < Contact::getNormalEpsilonSquared())
+      {
+        // Skip this contact. This is because we assume that a contact with
+        // zero-length normal is invalid.
+        continue;
+      }
 
+      result.addContact(
+          convertContact(fclResult.getContact(i), o1, o2, option));
+      break;
+    }
     return;
   }
 
@@ -1316,6 +1328,14 @@ void postProcessFCL(
   {
     if (markForDeletion[i])
       continue;
+
+    if (dart::collision::fcl::length2(fclResult.getContact(i).normal)
+        < Contact::getNormalEpsilonSquared())
+    {
+      // Skip this contact. This is because we assume that a contact with
+      // zero-length normal is invalid.
+      continue;
+    }
 
     result.addContact(convertContact(fclResult.getContact(i), o1, o2, option));
 
@@ -1356,6 +1376,12 @@ void postProcessDART(
     if (option.enableContact)
     {
       pair1.normal = FCLTypes::convertVector3(-c.normal);
+      if (Contact::isZeroNormal(pair1.normal))
+      {
+        // This is an invalid contact, as it contains a zero length normal.
+        // Skip this contact.
+        continue;
+      }
       pair1.penetrationDepth = c.penetration_depth;
       pair1.triID1 = c.b1;
       pair1.triID2 = c.b2;

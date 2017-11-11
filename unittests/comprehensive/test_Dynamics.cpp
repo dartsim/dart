@@ -833,7 +833,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
       skeleton->setVelocities(dq);
       skeleton->setAccelerations(ddq);
 
-      dart::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
+      common::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
       for (auto k = 0u; k < numBodies; ++k)
       {
         auto body  = skeleton->getBodyNode(k);
@@ -1057,9 +1057,9 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
   Eigen::VectorXd dq;
   Eigen::VectorXd ddq;
 
-  dart::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d>  Tmap;
-  dart::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>    Vmap;
-  dart::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>   dVmap;
+  common::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d>  Tmap;
+  common::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>    Vmap;
+  common::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>   dVmap;
 
   for (auto j = 0u; j < numBodies; ++j)
   {
