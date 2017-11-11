@@ -33,10 +33,9 @@
 #ifndef DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 #define DART_COLLISION_FCL_MESH_COLLISIONSHAPES_HPP_
 
-#include "dart/collision/fcl/FCLTypes.hpp"
-
 #include <cmath>
 #include <assimp/scene.h>
+#include "dart/collision/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
 namespace collision {
@@ -57,8 +56,8 @@ template<class BV>
             = _mesh->mMeshes[i]->mVertices[
                   _mesh->mMeshes[i]->mFaces[j].mIndices[k]];
         vertices[k] = dart::collision::fcl::Vector3(vertex.x * _scaleX,
-                                          vertex.y * _scaleY,
-                                          vertex.z * _scaleZ);
+                                                    vertex.y * _scaleY,
+                                                    vertex.z * _scaleZ);
         vertices[k] = dart::collision::fcl::transform(_transform, vertices[k]);
       }
       model->addTriangle(vertices[0], vertices[1], vertices[2]);
@@ -254,14 +253,14 @@ template<class BV>
 
   for (int i = 0; i < 112; i++) {
     p1 = dart::collision::fcl::Vector3(v[f[i][0]][0] * _sizeX,
-                            v[f[i][0]][1] * _sizeY,
-                            v[f[i][0]][2] * _sizeZ);
+                                       v[f[i][0]][1] * _sizeY,
+                                       v[f[i][0]][2] * _sizeZ);
     p2 = dart::collision::fcl::Vector3(v[f[i][1]][0] * _sizeX,
-                            v[f[i][1]][1] * _sizeY,
-                            v[f[i][1]][2] * _sizeZ);
+                                       v[f[i][1]][1] * _sizeY,
+                                       v[f[i][1]][2] * _sizeZ);
     p3 = dart::collision::fcl::Vector3(v[f[i][2]][0] * _sizeX,
-                            v[f[i][2]][1] * _sizeY,
-                            v[f[i][2]][2] * _sizeZ);
+                                       v[f[i][2]][1] * _sizeY,
+                                       v[f[i][2]][2] * _sizeZ);
     p1 = dart::collision::fcl::transform(_transform, p1);
     p2 = dart::collision::fcl::transform(_transform, p2);
     p3 = dart::collision::fcl::transform(_transform, p3);
@@ -395,14 +394,14 @@ template<class BV>
       radiusHigh = _baseRadius
                    - deltaRadius * (static_cast<float>(j + 1) / _stacks);
 
-      p1 = dart::collision::fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i],
-                              zLow);
-      p2 = dart::collision::fcl::Vector3(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1],
-                              zLow);
-      p3 = dart::collision::fcl::Vector3(radiusHigh * sinCache[i], radiusHigh * cosCache[i],
-                              zHigh);
-      p4 = dart::collision::fcl::Vector3(radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1],
-                              zHigh);
+      p1 = dart::collision::fcl::Vector3(
+          radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+      p2 = dart::collision::fcl::Vector3(
+          radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+      p3 = dart::collision::fcl::Vector3(
+          radiusHigh * sinCache[i], radiusHigh * cosCache[i], zHigh);
+      p4 = dart::collision::fcl::Vector3(
+          radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1], zHigh);
       p1 = dart::collision::fcl::transform(_transform, p1);
       p2 = dart::collision::fcl::transform(_transform, p2);
       p3 = dart::collision::fcl::transform(_transform, p3);

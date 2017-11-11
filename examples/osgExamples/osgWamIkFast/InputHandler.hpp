@@ -68,5 +68,5 @@ protected:
 
   std::vector< std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
 
-  dart::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
+  dart::common::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
 };

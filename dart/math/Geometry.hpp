@@ -36,6 +36,7 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Deprecated.hpp"
+#include "dart/common/Memory.hpp"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {
@@ -496,7 +497,7 @@ void computeNullSpace(const MatrixType& _M, ReturnType& _NS)
 
 typedef std::vector<Eigen::Vector3d> SupportGeometry;
 
-typedef dart::aligned_vector<Eigen::Vector2d> SupportPolygon;
+typedef common::aligned_vector<Eigen::Vector2d> SupportPolygon;
 
 /// Project the support geometry points onto a plane with the given axes
 /// and then compute their convex hull, which will take the form of a polgyon.

@@ -483,7 +483,7 @@ template<class BV>
 //==============================================================================
 template<class BV>
 ::fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
-                                        double _height, int _slices, int _stacks)
+                                    double _height, int _slices, int _stacks)
 {
   const int CACHE_SIZE = 240;
 
@@ -552,14 +552,14 @@ template<class BV>
       radiusHigh = _baseRadius
                    - deltaRadius * (static_cast<float>(j + 1) / _stacks);
 
-      p1 = dart::collision::fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i],
-                              zLow);
-      p2 = dart::collision::fcl::Vector3(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1],
-                              zLow);
-      p3 = dart::collision::fcl::Vector3(radiusHigh * sinCache[i], radiusHigh * cosCache[i],
-                              zHigh);
-      p4 = dart::collision::fcl::Vector3(radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1],
-                              zHigh);
+      p1 = dart::collision::fcl::Vector3(
+          radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+      p2 = dart::collision::fcl::Vector3(
+          radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+      p3 = dart::collision::fcl::Vector3(
+          radiusHigh * sinCache[i], radiusHigh * cosCache[i], zHigh);
+      p4 = dart::collision::fcl::Vector3(
+          radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1], zHigh);
 
       model->addTriangle(p1, p2, p3);
       model->addTriangle(p2, p3, p4);
@@ -585,8 +585,8 @@ template<class BV>
 
 //==============================================================================
 template<class BV>
-::fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
-                                    const aiScene* _mesh)
+::fcl::BVHModel<BV>* createMesh(
+    float _scaleX, float _scaleY, float _scaleZ, const aiScene* _mesh)
 {
   // Create FCL mesh from Assimp mesh
 
@@ -604,8 +604,8 @@ template<class BV>
             = _mesh->mMeshes[i]->mVertices[
               _mesh->mMeshes[i]->mFaces[j].mIndices[k]];
         vertices[k] = dart::collision::fcl::Vector3(vertex.x * _scaleX,
-                                         vertex.y * _scaleY,
-                                         vertex.z * _scaleZ);
+                                                    vertex.y * _scaleY,
+                                                    vertex.z * _scaleZ);
       }
       model->addTriangle(vertices[0], vertices[1], vertices[2]);
     }
