@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -42,7 +43,7 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/SkelParser.hpp"
+#include "dart/io/SkelParser.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -238,7 +239,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
@@ -263,7 +264,7 @@ void SoftDynamicsTest::compareEquationsOfMotion(const std::string& _fileName)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(_fileName);
+  myWorld = io::SkelParser::readWorld(_fileName);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)

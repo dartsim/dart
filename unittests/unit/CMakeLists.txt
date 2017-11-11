@@ -20,37 +20,46 @@ if(TARGET dart-optimizer-nlopt)
   target_link_libraries(test_Optimizer dart-optimizer-nlopt)
 endif()
 
-if(TARGET dart-utils)
+if(TARGET dart-io)
 
   dart_add_test("unit" test_CompositeResourceRetriever)
-  target_link_libraries(test_CompositeResourceRetriever dart-utils)
+  target_link_libraries(test_CompositeResourceRetriever dart-io)
 
   dart_add_test("unit" test_DartResourceRetriever)
-  target_link_libraries(test_DartResourceRetriever dart-utils)
+  target_link_libraries(test_DartResourceRetriever dart-io)
 
   dart_add_test("unit" test_FileInfoWorld)
-  target_link_libraries(test_FileInfoWorld dart-utils)
+  target_link_libraries(test_FileInfoWorld dart-io)
 
   dart_add_test("unit" test_PackageResourceRetriever)
-  target_link_libraries(test_PackageResourceRetriever dart-utils)
+  target_link_libraries(test_PackageResourceRetriever dart-io)
 
   dart_add_test("unit" test_SdfParser)
-  target_link_libraries(test_SdfParser dart-utils)
+  target_link_libraries(test_SdfParser dart-io)
 
   dart_add_test("unit" test_SkelParser)
-  target_link_libraries(test_SkelParser dart-utils)
+  target_link_libraries(test_SkelParser dart-io)
 
   dart_add_test("unit" test_VskParser)
-  target_link_libraries(test_VskParser dart-utils)
+  target_link_libraries(test_VskParser dart-io)
 
 endif()
 
-if(TARGET dart-utils-urdf)
+if(TARGET dart-io-urdf)
   dart_add_test("unit" test_DartLoader)
-  target_link_libraries(test_DartLoader dart-utils-urdf)
-endif()
+  target_link_libraries(test_DartLoader dart-io-urdf)
 
-if(TARGET dart-planning)
-  dart_add_test("unit" test_NearestNeighbor)
-  target_link_libraries(test_NearestNeighbor dart-planning)
+  dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
+  target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
+  target_compile_definitions(SharedLibraryWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
+  target_compile_options(SharedLibraryWamIkFast PRIVATE -w)
+
+  dart_add_library(GeneratedWamIkFast GeneratedWamIkFast.cpp)
+  target_link_libraries(GeneratedWamIkFast PUBLIC dart)
+  target_compile_definitions(GeneratedWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
+  target_compile_options(GeneratedWamIkFast PRIVATE -w)
+
+  dart_add_test("unit" test_IkFast)
+  target_link_libraries(test_IkFast dart-io-urdf)
+  add_dependencies(test_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
 endif()

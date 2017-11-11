@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -33,28 +34,7 @@
 #define DART_COLLISION_FCL_FCLTTYPES_HPP_
 
 #include <Eigen/Dense>
-#include <fcl/math/vec_3f.h>
-#include <fcl/math/matrix_3f.h>
-#include <fcl/math/transform.h>
-
-#define FCL_VERSION_AT_LEAST(x,y,z) \
-  (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \
-  (FCL_MINOR_VERSION > y || (FCL_MINOR_VERSION >= y && \
-  FCL_PATCH_VERSION >= z))))
-
-#define FCL_MAJOR_MINOR_VERSION_AT_MOST(x,y) \
-  (FCL_MAJOR_VERSION < x || (FCL_MAJOR_VERSION <= x && \
-  (FCL_MINOR_VERSION < y || (FCL_MINOR_VERSION <= y))))
-
-#if FCL_VERSION_AT_LEAST(0,5,0)
-#include <memory>
-template <class T> using fcl_shared_ptr = std::shared_ptr<T>;
-template <class T> using fcl_weak_ptr = std::weak_ptr<T>;
-#else
-#include <boost/weak_ptr.hpp>
-template <class T> using fcl_shared_ptr = boost::shared_ptr<T>;
-template <class T> using fcl_weak_ptr = boost::weak_ptr<T>;
-#endif
+#include "dart/collision/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
 namespace collision {
@@ -62,20 +42,21 @@ namespace collision {
 class FCLTypes
 {
 public:
-  /// Convert FCL vector3 type to Eigen vector3 type
-  static Eigen::Vector3d convertVector3(const fcl::Vec3f& _vec);
-
+#if !FCL_VERSION_AT_LEAST(0,6,0)
   /// Convert Eigen vector3 type to FCL vector3 type
-  static fcl::Vec3f convertVector3(const Eigen::Vector3d& _vec);
+  static dart::collision::fcl::Vector3 convertVector3(const Eigen::Vector3d& _vec);
+#endif
+  /// Convert FCL vector3 type to Eigen vector3 type
+  static Eigen::Vector3d convertVector3(const dart::collision::fcl::Vector3& _vec);
 
   /// Convert FCL matrix3x3 type to Eigen matrix3x3 type
-  static fcl::Matrix3f convertMatrix3x3(const Eigen::Matrix3d& _R);
+  static dart::collision::fcl::Matrix3 convertMatrix3x3(const Eigen::Matrix3d& _R);
 
   /// Convert FCL transformation type to Eigen transformation type
-  static fcl::Transform3f convertTransform(const Eigen::Isometry3d& _T);
+  static dart::collision::fcl::Transform3 convertTransform(const Eigen::Isometry3d& _T);
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_FCL_FCLTTYPES_HPP_
+#endif // DART_COLLISION_FCL_FCLTTYPES_HPP_

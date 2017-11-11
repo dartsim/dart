@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -43,7 +44,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/SkelParser.hpp"
+#include "dart/io/SkelParser.hpp"
 
 using namespace Eigen;
 using namespace dart;
@@ -568,7 +569,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-6;
@@ -685,7 +686,7 @@ void DynamicsTest::testFiniteDifferenceGeneralizedCoordinates(
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   //----------------------------- Settings -------------------------------------
 #ifndef NDEBUG  // Debug mode
@@ -786,7 +787,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   //----------------------------- Settings -------------------------------------
 #ifndef NDEBUG  // Debug mode
@@ -832,7 +833,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
       skeleton->setVelocities(dq);
       skeleton->setAccelerations(ddq);
 
-      Eigen::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
+      common::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
       for (auto k = 0u; k < numBodies; ++k)
       {
         auto body  = skeleton->getBodyNode(k);
@@ -883,7 +884,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeAcceleration(
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   //----------------------------- Settings -------------------------------------
   const double TOLERANCE = 1.0e-2;
@@ -1056,9 +1057,9 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
   Eigen::VectorXd dq;
   Eigen::VectorXd ddq;
 
-  Eigen::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d>  Tmap;
-  Eigen::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>    Vmap;
-  Eigen::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>   dVmap;
+  common::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d>  Tmap;
+  common::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>    Vmap;
+  common::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>   dVmap;
 
   for (auto j = 0u; j < numBodies; ++j)
   {
@@ -1156,7 +1157,7 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
 //==============================================================================
 void DynamicsTest::testForwardKinematics(const common::Uri& uri)
 {
-  auto world = utils::SkelParser::readWorld(uri);
+  auto world = io::SkelParser::readWorld(uri);
   EXPECT_TRUE(world != nullptr);
 
   auto numSkeletons = world->getNumSkeletons();
@@ -1176,7 +1177,7 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
@@ -1201,7 +1202,7 @@ void DynamicsTest::compareEquationsOfMotion(const common::Uri& uri)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(uri);
+  myWorld = io::SkelParser::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1453,7 +1454,7 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
@@ -1478,7 +1479,7 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(uri);
+  myWorld = io::SkelParser::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1609,7 +1610,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
@@ -1639,7 +1640,7 @@ void DynamicsTest::testCenterOfMassFreeFall(const common::Uri& uri)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(uri);
+  myWorld = io::SkelParser::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1724,7 +1725,7 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
@@ -1743,7 +1744,7 @@ void DynamicsTest::testConstraintImpulse(const common::Uri& uri)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(uri);
+  myWorld = io::SkelParser::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -1818,7 +1819,7 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
   using namespace math;
   using namespace dynamics;
   using namespace simulation;
-  using namespace utils;
+  using namespace io;
 
   //---------------------------- Settings --------------------------------------
   // Number of random state tests for each skeletons
@@ -1839,7 +1840,7 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
   //----------------------------- Tests ----------------------------------------
   // Check whether multiplication of mass matrix and its inverse is identity
   // matrix.
-  myWorld = utils::SkelParser::readWorld(uri);
+  myWorld = io::SkelParser::readWorld(uri);
   EXPECT_TRUE(myWorld != nullptr);
 
   for (std::size_t i = 0; i < myWorld->getNumSkeletons(); ++i)
@@ -2032,7 +2033,7 @@ TEST_F(DynamicsTest, HybridDynamics)
 #endif // ------- Debug mode
 
   // Load world and skeleton
-  WorldPtr world = utils::SkelParser::readWorld(
+  WorldPtr world = io::SkelParser::readWorld(
       "dart://sample/skel/test/hybrid_dynamics_test.skel");
   world->setTimeStep(timeStep);
   EXPECT_TRUE(world != nullptr);

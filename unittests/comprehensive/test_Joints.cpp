@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -49,7 +50,7 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/SkelParser.hpp"
+#include "dart/io/SkelParser.hpp"
 
 using namespace dart;
 using namespace dart::math;
@@ -385,7 +386,7 @@ void testCommandLimits(dynamics::Joint* joint)
 TEST_F(JOINTS, COMMAND_LIMIT)
 {
   simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(
+      = io::SkelParser::readWorld(
         "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
@@ -427,7 +428,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
   double tol = 1e-3;
 
   simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(
+      = io::SkelParser::readWorld(
         "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
@@ -502,7 +503,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   double tol = 1e-9;
 
   simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(
+      = io::SkelParser::readWorld(
         "dart://sample/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
@@ -815,7 +816,7 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
   const double tol = 1e-2;
 
   simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(
+      = io::SkelParser::readWorld(
         "dart://sample/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
@@ -1024,8 +1025,8 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
     // -- collect everything so we can cycle through the tests
     std::vector<Joint*> joints;
     std::vector<BodyNode*> bns;
-    Eigen::aligned_vector<Eigen::Isometry3d> desired_tfs;
-    Eigen::aligned_vector<Eigen::Isometry3d> actual_tfs;
+    common::aligned_vector<Eigen::Isometry3d> desired_tfs;
+    common::aligned_vector<Eigen::Isometry3d> actual_tfs;
 
     joints.push_back(freejoint);
     bns.push_back(freejoint_bn);

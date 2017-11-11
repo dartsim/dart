@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,7 +36,7 @@
 
 #include "dart/common/sub_ptr.hpp"
 #include "dart/math/Geometry.hpp"
-#include "dart/utils/SkelParser.hpp"
+#include "dart/io/SkelParser.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -78,7 +79,7 @@ std::vector<SkeletonPtr> getSkeletons()
 
   std::vector<WorldPtr> worlds;
   for(std::size_t i=0; i<fileList.size(); ++i)
-    worlds.push_back(utils::SkelParser::readWorld(fileList[i]));
+    worlds.push_back(io::SkelParser::readWorld(fileList[i]));
 
   std::vector<SkeletonPtr> skeletons;
   for(std::size_t i=0; i<worlds.size(); ++i)
@@ -146,27 +147,34 @@ TEST(Skeleton, Restructuring)
         BodyNode* bn = skeleton->getBodyNode(name);
         EXPECT_FALSE(bn == nullptr);
         if(bn)
+        {
           EXPECT_TRUE(bn->getName() == name);
+        }
 
         name = skeleton->getBodyNode(j)->getName();
         bn = original->getBodyNode(name);
         EXPECT_FALSE(bn == nullptr);
         if(bn)
+        {
           EXPECT_TRUE(bn->getName() == name);
-
+        }
 
         // Make sure no Joints have been lost or gained in translation
         name = original->getJoint(j)->getName();
         Joint* joint = skeleton->getJoint(name);
         EXPECT_FALSE(joint == nullptr);
         if(joint)
+        {
           EXPECT_TRUE(joint->getName() == name);
+        }
 
         name = skeleton->getJoint(j)->getName();
         joint = original->getJoint(name);
         EXPECT_FALSE(joint == nullptr);
         if(joint)
+        {
           EXPECT_TRUE(joint->getName() == name);
+        }
       }
     }
 
@@ -177,13 +185,17 @@ TEST(Skeleton, Restructuring)
       DegreeOfFreedom* dof = skeleton->getDof(name);
       EXPECT_FALSE(dof == nullptr);
       if(dof)
+      {
         EXPECT_TRUE(dof->getName() == name);
+      }
 
       name = skeleton->getDof(j)->getName();
       dof = original->getDof(name);
       EXPECT_FALSE(dof == nullptr);
       if(dof)
+      {
         EXPECT_TRUE(dof->getName() == name);
+      }
     }
   }
 

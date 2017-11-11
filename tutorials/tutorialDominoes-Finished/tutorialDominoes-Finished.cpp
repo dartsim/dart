@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -31,7 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 const double default_domino_height = 0.3;
 const double default_domino_width = 0.4 * default_domino_height;
@@ -466,7 +467,7 @@ SkeletonPtr createFloor()
 SkeletonPtr createManipulator()
 {
   // Load the Skeleton from a file
-  dart::utils::DartLoader loader;
+  dart::io::DartLoader loader;
   SkeletonPtr manipulator =
       loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   manipulator->setName("manipulator");

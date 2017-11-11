@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -31,8 +32,8 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
-#include <dart/utils/utils.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/io/io.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -250,7 +251,7 @@ public:
 int main()
 {
   dart::simulation::WorldPtr world(new dart::simulation::World);
-  dart::utils::DartLoader loader;
+  dart::io::DartLoader loader;
 
   // Load the robot
   dart::dynamics::SkeletonPtr robot =

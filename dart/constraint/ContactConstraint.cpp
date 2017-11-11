@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -52,7 +53,7 @@
 #define DART_FRICTION_COEFF_THRESHOLD    1e-3
 #define DART_BOUNCING_VELOCITY_THRESHOLD 1e-1
 #define DART_MAX_BOUNCING_VELOCITY       1e+2
-#define DART_CONTACT_CONSTRAINT_EPSILON  1e-6
+#define DART_CONTACT_CONSTRAINT_EPSILON_SQUARED 1e-12
 
 namespace dart {
 namespace constraint {
@@ -75,6 +76,9 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
     mIsBounceOn(false),
     mActive(false)
 {
+  assert(
+      _contact.normal.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED);
+
   // TODO(JS): Assumed single contact
   mContacts.push_back(&_contact);
 
@@ -135,7 +139,7 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
       collision::Contact* ct = mContacts[i];
 
       // TODO(JS): Assumed that the number of tangent basis is 2.
-      Eigen::MatrixXd D = getTangentBasisMatrixODE(ct->normal);
+      TangentBasisMatrix D = getTangentBasisMatrixODE(ct->normal);
 
       assert(std::abs(ct->normal.dot(D.col(0))) < DART_EPSILON);
       assert(std::abs(ct->normal.dot(D.col(1))) < DART_EPSILON);
@@ -203,6 +207,9 @@ ContactConstraint::ContactConstraint(collision::Contact& _contact,
 
       mJacobians1[idx].tail<3>() = bodyDirection1;
       mJacobians2[idx].tail<3>() = bodyDirection2;
+
+      assert(!dart::math::isNan(mJacobians1[idx]));
+      assert(!dart::math::isNan(mJacobians2[idx]));
 
       ++idx;
     }
@@ -776,8 +783,8 @@ void ContactConstraint::updateFirstFrictionalDirection()
 }
 
 //==============================================================================
-Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
-    const Eigen::Vector3d& _n)
+ContactConstraint::TangentBasisMatrix
+ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& _n)
 {
   using namespace math::suffixes;
 
@@ -785,19 +792,43 @@ Eigen::MatrixXd ContactConstraint::getTangentBasisMatrixODE(
   // Check if the number of bases is even number.
 //  bool isEvenNumBases = mNumFrictionConeBases % 2 ? true : false;
 
-  Eigen::MatrixXd T(Eigen::MatrixXd::Zero(3, 2));
-
   // Pick an arbitrary vector to take the cross product of (in this case,
   // Z-axis)
   Eigen::Vector3d tangent = mFirstFrictionalDirection.cross(_n);
 
   // TODO(JS): Modify following lines once _updateFirstFrictionalDirection() is
   //           implemented.
-  // If they're too close, pick another tangent (use X-axis as arbitrary vector)
-  if (tangent.norm() < DART_CONTACT_CONSTRAINT_EPSILON)
+  // If they're too close (or opposing directions, or one of the vectors 0),
+  // pick another tangent (use X-axis as arbitrary vector)
+  if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
+  {
     tangent = Eigen::Vector3d::UnitX().cross(_n);
 
+    // Make sure this is not zero length, otherwise normalization will lead to
+    // NaN values.
+    if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
+    {
+      tangent = Eigen::Vector3d::UnitY().cross(_n);
+      if (tangent.squaredNorm() < DART_CONTACT_CONSTRAINT_EPSILON_SQUARED)
+      {
+        tangent = Eigen::Vector3d::UnitZ().cross(_n);
+
+        // Now tangent shouldn't be zero-length unless the normal is
+        // zero-length, which shouldn't the case because ConstraintSolver
+        // shouldn't create a ContactConstraint for a contact with zero-length
+        // normal.
+        assert(
+            tangent.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED);
+      }
+    }
+  }
+
+  assert(tangent.norm() > 1e-06);
   tangent.normalize();
+
+  assert(!dart::math::isNan(tangent));
+
+  TangentBasisMatrix T;
 
   // Rotate the tangent around the normal to compute bases.
   // Note: a possible speedup is in place for mNumDir % 2 = 0

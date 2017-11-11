@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -201,11 +202,11 @@ protected:
         const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     // Documentation inherited
-    double eval(const Eigen::VectorXd &_x) override;
+    double eval(const Eigen::VectorXd &_x) const override;
 
     // Documentation inherited
     void evalGradient(const Eigen::VectorXd& _x,
-                      Eigen::Map<Eigen::VectorXd> _grad) override;
+                      Eigen::Map<Eigen::VectorXd> _grad) const override;
 
   protected:
 
@@ -213,7 +214,7 @@ protected:
     std::weak_ptr<HierarchicalIK> mIK;
 
     /// Cache for the gradient computation
-    Eigen::VectorXd mGradCache;
+    mutable Eigen::VectorXd mGradCache;
   };
 
   /// The HierarchicalIK::Constraint Function is simply used to merge the
@@ -236,11 +237,11 @@ protected:
         const std::shared_ptr<HierarchicalIK>& _newIK) const override;
 
     // Documentation inherited
-    double eval(const Eigen::VectorXd& _x) override;
+    double eval(const Eigen::VectorXd& _x) const override;
 
     // Documentation inherited
     void evalGradient(const Eigen::VectorXd& _x,
-                      Eigen::Map<Eigen::VectorXd> _grad) override;
+                      Eigen::Map<Eigen::VectorXd> _grad) const override;
 
   protected:
 
@@ -248,10 +249,10 @@ protected:
     std::weak_ptr<HierarchicalIK> mIK;
 
     /// Cache for the gradient of a level
-    Eigen::VectorXd mLevelGradCache;
+    mutable Eigen::VectorXd mLevelGradCache;
 
     /// Cache for temporary gradients
-    Eigen::VectorXd mTempGradCache;
+    mutable Eigen::VectorXd mTempGradCache;
   };
 
   /// Constructor

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -36,7 +37,7 @@
 #include <assimp/scene.h>
 #include <Eigen/Dense>
 
-#include "dart/math/MathTypes.hpp"
+#include "dart/common/Memory.hpp"
 
 namespace dart {
 namespace gui {
@@ -102,7 +103,7 @@ public:
     virtual void drawSoftMesh(const aiMesh* mesh);
     virtual void drawList(unsigned int index);
     virtual void drawLineSegments(const std::vector<Eigen::Vector3d>& _vertices,
-                                  const Eigen::aligned_vector<Eigen::Vector2i>& _connections);
+                                  const common::aligned_vector<Eigen::Vector2i>& _connections);
 
     virtual unsigned int compileDisplayList(const Eigen::Vector3d& _size, const aiScene* _mesh);
 

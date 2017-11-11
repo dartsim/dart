@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -267,7 +269,7 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
   assert(collObj1);
   assert(collObj2);
 
-  if (filter && !filter->needCollision(collObj1, collObj2))
+  if (filter && filter->ignoresCollision(collObj1, collObj2))
       return;
 
   // Perform narrow-phase collision detection

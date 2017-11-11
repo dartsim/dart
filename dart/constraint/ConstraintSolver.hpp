@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -49,9 +50,6 @@ class ShapeNodeCollisionObject;
 }  // namespace dynamics
 
 namespace constraint {
-
-// TODO:
-//   - RootSkeleton concept
 
 /// ConstraintSolver manages constraints and computes constraint impulses
 class ConstraintSolver
@@ -124,6 +122,14 @@ public:
   /// Return (const) collision group of collision objects that are added to this
   /// ConstraintSolver
   collision::ConstCollisionGroupPtr getCollisionGroup() const;
+
+  /// Returns collision option that is used for collision checkings in this
+  /// ConstraintSolver to generate contact constraints.
+  collision::CollisionOption& getCollisionOption();
+
+  /// Returns collision option that is used for collision checkings in this
+  /// ConstraintSolver to generate contact constraints.
+  const collision::CollisionOption& getCollisionOption() const;
 
   /// Return the last collision checking result
   collision::CollisionResult& getLastCollisionResult();

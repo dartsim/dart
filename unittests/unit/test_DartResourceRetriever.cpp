@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,14 +32,14 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
-#include "dart/utils/DartResourceRetriever.hpp"
+#include "dart/io/DartResourceRetriever.hpp"
 
 using namespace dart;
 
 //==============================================================================
 TEST(DartResourceRetriever, ExistsAndRetrieve)
 {
-  auto retriever = utils::DartResourceRetriever::create();
+  auto retriever = io::DartResourceRetriever::create();
 
   EXPECT_FALSE(retriever->exists("unknown://test"));
   EXPECT_FALSE(retriever->exists("unknown://sample/test"));

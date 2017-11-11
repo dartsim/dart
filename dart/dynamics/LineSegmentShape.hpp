@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -99,7 +100,7 @@ public:
   void removeConnection(std::size_t _connectionIdx);
 
   /// Get all the connections
-  const Eigen::aligned_vector<Eigen::Vector2i>& getConnections() const;
+  const common::aligned_vector<Eigen::Vector2i>& getConnections() const;
 
   /// The returned inertia matrix will be like a very thin cylinder. The _mass
   /// will be evenly distributed across all lines.
@@ -119,7 +120,7 @@ protected:
   std::vector<Eigen::Vector3d> mVertices;
 
   /// Vector of connections
-  Eigen::aligned_vector<Eigen::Vector2i> mConnections;
+  common::aligned_vector<Eigen::Vector2i> mConnections;
 
   /// A dummy vertex that can be returned when an out-of-bounds vertex is
   /// requested

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -31,8 +32,8 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
-#include <dart/utils/utils.hpp>
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/io/io.hpp>
+#include <dart/io/urdf/urdf.hpp>
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -62,14 +63,14 @@ public:
     mResultVector.setZero(dofs);
   }
 
-  double eval(const Eigen::VectorXd& _x) override
+  double eval(const Eigen::VectorXd& _x) const override
   {
     computeResultVector(_x);
     return 0.5 * mResultVector.dot(mResultVector);
   }
 
   void evalGradient(const Eigen::VectorXd& _x,
-                    Eigen::Map<Eigen::VectorXd> _grad) override
+                    Eigen::Map<Eigen::VectorXd> _grad) const override
   {
     computeResultVector(_x);
 
@@ -79,7 +80,7 @@ public:
       _grad[i] = mResultVector[i];
   }
 
-  void computeResultVector(const Eigen::VectorXd& _x)
+  void computeResultVector(const Eigen::VectorXd& _x) const
   {
     mResultVector.setZero();
 
@@ -112,7 +113,7 @@ public:
 
 protected:
 
-  Eigen::VectorXd mResultVector;
+  mutable Eigen::VectorXd mResultVector;
 
   Eigen::VectorXd mIdeal;
 
@@ -1048,7 +1049,7 @@ protected:
 
   std::vector< std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
 
-  Eigen::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
+  dart::common::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
 
   std::shared_ptr<RelaxedPosture> mPosture;
 
@@ -1082,7 +1083,7 @@ SkeletonPtr createGround()
 
 SkeletonPtr createHubo()
 {
-  dart::utils::DartLoader loader;
+  dart::io::DartLoader loader;
   loader.addPackageDirectory("drchubo", DART_DATA_PATH"/urdf/drchubo");
   SkeletonPtr hubo =
       loader.parseSkeleton(DART_DATA_PATH"/urdf/drchubo/drchubo.urdf");
