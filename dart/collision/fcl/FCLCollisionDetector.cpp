@@ -1292,7 +1292,7 @@ void postProcessFCL(
   {
     for (auto i = 0u; i < numContacts; ++i)
     {
-      if (fclResult.getContact(i).normal.sqrLength()
+      if (dart::collision::fcl::length2(fclResult.getContact(i).normal)
           < Contact::getNormalEpsilonSquared())
       {
         // Skip this contact. This is because we assume that a contact with
@@ -1329,7 +1329,7 @@ void postProcessFCL(
     if (markForDeletion[i])
       continue;
 
-    if (fclResult.getContact(i).normal.sqrLength()
+    if (dart::collision::fcl::length2(fclResult.getContact(i).normal)
         < Contact::getNormalEpsilonSquared())
     {
       // Skip this contact. This is because we assume that a contact with
