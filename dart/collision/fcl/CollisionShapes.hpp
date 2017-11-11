@@ -56,9 +56,9 @@ template<class BV>
         const aiVector3D& vertex
             = _mesh->mMeshes[i]->mVertices[
                   _mesh->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = dart::collision::fcl::Transform3(vertex.x * _scaleX,
-                                                       vertex.y * _scaleY,
-                                                       vertex.z * _scaleZ);
+        vertices[k] = dart::collision::fcl::Vector3(vertex.x * _scaleX,
+                                                    vertex.y * _scaleY,
+                                                    vertex.z * _scaleZ);
         vertices[k] = dart::collision::fcl::transform(_transform, vertices[k]);
       }
       model->addTriangle(vertices[0], vertices[1], vertices[2]);
