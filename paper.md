@@ -5,8 +5,7 @@ tags:
   - computer animation
   - forward kinematics
   - inverse kinematics
-  - dynamics simulation
-  - motion planning
+  - multibody dynamics
 authors:
  - name: Jeongseok Lee
    orcid: 0000-0002-2146-7502
@@ -16,34 +15,40 @@ authors:
    affiliation: 2
  - name: Tobias Kunz
    orcid: 0000-0000-0000-0000
-   affiliation: 
+   affiliation: 3
  - name: Sehoon Ha
    orcid: 0000-0000-0000-0000
-   affiliation: 3
+   affiliation: 4
  - name: Sumit Jain
    orcid: 0000-0000-0000-0000
-   affiliation: 
+   affiliation: 5
  - name: Yuting Ye
    orcid: 0000-0000-0000-0000
-   affiliation: 
+   affiliation: 6
  - name: Siddhartha S. Srinivasa
    orcid: 0000-0002-5091-106X
    affiliation: 1
  - name: Mike Stilman
    orcid: 0000-0000-0000-0000
-   affiliation: 3
+   affiliation: 7
  - name: C. Karen Liu
    orcid: 0000-0000-0000-0000
-   affiliation: 3
+   affiliation: 7
 affiliations:
  - name: University of Washington
    index: 1
  - name: Open Source Robotics Foundation
    index: 2
- - name: Disney Research
+ - name: Waymo
    index: 3
- - name: Georgia Institute of Technology
+ - name: Disney Research
    index: 4
+ - name: Google
+   index: 5
+ - name: Oculus Research
+   index: 6
+ - name: Georgia Institute of Technology
+   index: 7
 date: 12 September 2017
 bibliography: paper.bib
 ---
