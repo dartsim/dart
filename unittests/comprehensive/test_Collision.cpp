@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -32,15 +33,12 @@
 #include <iostream>
 #include <gtest/gtest.h>
 
-#include <fcl/collision.h>
-#include <fcl/shape/geometric_shapes.h>
-#include <fcl/narrowphase/narrowphase.h>
-
 #include "dart/config.hpp"
 #include "dart/common/common.hpp"
 #include "dart/math/math.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/collision/collision.hpp"
+#include "dart/collision/fcl/fcl.hpp"
 #if HAVE_ODE
   #include "dart/collision/ode/ode.hpp"
 #endif
@@ -62,28 +60,28 @@ using namespace utils;
 class COLLISION : public testing::Test
 {
 public:
-    void unrotatedTest(fcl::CollisionGeometry* _coll1,
-                       fcl::CollisionGeometry* _coll2,
+    void unrotatedTest(dart::collision::fcl::CollisionGeometry* _coll1,
+                       dart::collision::fcl::CollisionGeometry* _coll2,
                        double expectedContactPoint, int _idxAxis);
-    void dropWithRotation(fcl::CollisionGeometry* _object,
+    void dropWithRotation(dart::collision::fcl::CollisionGeometry* _object,
                           double EulerZ, double EulerY, double EulerX);
-	void printResult(const fcl::CollisionResult& _result);
+  void printResult(const dart::collision::fcl::CollisionResult& _result);
 };
 
-void COLLISION::unrotatedTest(fcl::CollisionGeometry* _coll1,
-                              fcl::CollisionGeometry* _coll2,
+void COLLISION::unrotatedTest(dart::collision::fcl::CollisionGeometry* _coll1,
+                              dart::collision::fcl::CollisionGeometry* _coll2,
                               double expectedContactPoint,
                               int _idxAxis)
 {
-    fcl::CollisionResult result;
-    fcl::CollisionRequest request;
+    dart::collision::fcl::CollisionResult result;
+    dart::collision::fcl::CollisionRequest request;
     request.enable_contact = true;
     request.num_max_contacts = 100;
 
-    fcl::Vec3f position(0, 0, 0);
+    dart::collision::fcl::Vector3 position(0, 0, 0);
 
-    fcl::Transform3f coll1_transform;
-    fcl::Transform3f coll2_transform;
+    dart::collision::fcl::Transform3 coll1_transform;
+    dart::collision::fcl::Transform3 coll2_transform;
 
     //==========================================================================
     // Approaching test
@@ -93,17 +91,17 @@ void COLLISION::unrotatedTest(fcl::CollisionGeometry* _coll1,
     double pos = 10.0;
 
     coll1_transform.setIdentity();
-    coll1_transform.setTranslation(fcl::Vec3f(0, 0, 0));
+    dart::collision::fcl::setTranslation(coll1_transform, dart::collision::fcl::Vector3(0, 0, 0));
     coll2_transform.setIdentity();
 
     // Let's drop box2 until it collide with box1
     do {
         position[_idxAxis] = pos;
-        coll2_transform.setTranslation(position);
+        dart::collision::fcl::setTranslation(coll2_transform, position);
 
-        fcl::collide(_coll1, coll1_transform,
-                     _coll2, coll2_transform,
-                     request, result);
+        ::fcl::collide(_coll1, coll1_transform,
+                       _coll2, coll2_transform,
+                       request, result);
 
         pos += dpos;
     }
@@ -123,36 +121,34 @@ void COLLISION::unrotatedTest(fcl::CollisionGeometry* _coll1,
     {
         EXPECT_GE(result.getContact(i).penetration_depth, 0.0);
 //		EXPECT_NEAR(result.getContact(i).normal[_idxAxis], -1.0);
-        EXPECT_EQ(result.getContact(i).normal.length(), 1.0);
+        EXPECT_EQ(dart::collision::fcl::length(result.getContact(i).normal), 1.0);
         EXPECT_NEAR(result.getContact(i).pos[_idxAxis], expectedContactPoint, -dpos*2.0);
     }
 }
 
-void COLLISION::dropWithRotation(fcl::CollisionGeometry* _object,
+void COLLISION::dropWithRotation(dart::collision::fcl::CollisionGeometry* _object,
                                  double EulerZ, double EulerY, double EulerX)
 {
     // Collision test setting
-    fcl::CollisionResult result;
-    fcl::CollisionRequest request;
+    dart::collision::fcl::CollisionResult result;
+    dart::collision::fcl::CollisionRequest request;
     request.enable_contact = true;
     request.num_max_contacts = 100;
 
     // Ground like box setting
-    fcl::Box groundObject(100, 100, 0.1);
-    fcl::Transform3f groundTransf;
+    dart::collision::fcl::Box groundObject(100, 100, 0.1);
+    dart::collision::fcl::Transform3 groundTransf;
     groundTransf.setIdentity();
-    fcl::Vec3f ground_position(0, 0, 0);
-    groundTransf.setTranslation(ground_position);
+    dart::collision::fcl::Vector3 ground_position(0, 0, 0);
+    dart::collision::fcl::setTranslation(groundTransf, ground_position);
 
     // Dropping object setting
-    fcl::Transform3f objectTransf;
-    fcl::Matrix3f rot;
-    rot.setEulerZYX(EulerZ,
-                    EulerY,
-                    EulerX);
-    objectTransf.setRotation(rot);
-    fcl::Vec3f dropping_position(0, 0, 0);
-    objectTransf.setTranslation(dropping_position);
+    dart::collision::fcl::Transform3 objectTransf;
+    dart::collision::fcl::Matrix3 rot;
+    dart::collision::fcl::setEulerZYX(rot, EulerZ, EulerY, EulerX);
+    dart::collision::fcl::setRotation(objectTransf, rot);
+    dart::collision::fcl::Vector3 dropping_position(0, 0, 0);
+    dart::collision::fcl::setTranslation(objectTransf, dropping_position);
 
     //==========================================================================
     // Dropping test in x, y, z aixs each.
@@ -161,44 +157,44 @@ void COLLISION::dropWithRotation(fcl::CollisionGeometry* _object,
     {
         result.clear();
 
-        groundObject.side = fcl::Vec3f(100, 100, 100);
+        groundObject.side = dart::collision::fcl::Vector3(100, 100, 100);
         groundObject.side[_idxAxis] = 0.1;
-        ground_position.setValue(0, 0, 0);
+        ground_position = dart::collision::fcl::Vector3(0, 0, 0);
         ground_position[_idxAxis] = -0.05;
-        groundTransf.setTranslation(ground_position);
+        dart::collision::fcl::setTranslation(groundTransf, ground_position);
 
         // Let's drop the object until it collide with ground
         double posDelta = -0.0001;
         double initPos = 10.0;
-        dropping_position.setValue(0, 0, 0);
+        dropping_position = dart::collision::fcl::Vector3(0, 0, 0);
         do {
             dropping_position[_idxAxis] = initPos;
-            objectTransf.setTranslation(dropping_position);
+            dart::collision::fcl::setTranslation(objectTransf, dropping_position);
 
-            fcl::collide(_object, objectTransf,
-                         &groundObject, groundTransf,
-                         request, result);
+            ::fcl::collide(_object, objectTransf,
+                           &groundObject, groundTransf,
+                           request, result);
 
             initPos += posDelta;
         }
         while (result.numContacts() == 0);
 
         std::cout << "Current position of the object: "
-                  << objectTransf.getTranslation()
+                  << dart::collision::fcl::getTranslation(objectTransf)
                   << std::endl
                   << "Number of contacts: "
                   << result.numContacts()
                   << std::endl;
 
-        fcl::Transform3f objectTransfInv = objectTransf;
+        dart::collision::fcl::Transform3 objectTransfInv = objectTransf;
         objectTransfInv.inverse();
         for (std::size_t i = 0; i < result.numContacts(); ++i)
         {
-            fcl::Vec3f posWorld = objectTransfInv.transform(result.getContact(i).pos);
+            dart::collision::fcl::Vector3 posWorld = dart::collision::fcl::transform(objectTransfInv, result.getContact(i).pos);
             std::cout << "----- CONTACT " << i << " --------" << std::endl;
             std::cout << "contact_points: " << result.getContact(i).pos << std::endl;
             std::cout << "contact_points(w): " << posWorld << std::endl;
-            std::cout << "norm: " << result.getContact(i).pos.length() << std::endl;
+            std::cout << "norm: " << dart::collision::fcl::length(result.getContact(i).pos) << std::endl;
             std::cout << "penetration_depth: " << result.getContact(i).penetration_depth << std::endl;
             std::cout << "normal: " << result.getContact(i).normal << std::endl;
         }
@@ -207,183 +203,183 @@ void COLLISION::dropWithRotation(fcl::CollisionGeometry* _object,
     }
 }
 
-void COLLISION::printResult(const fcl::CollisionResult& _result)
+void COLLISION::printResult(const dart::collision::fcl::CollisionResult& _result)
 {
-	std::cout << "====== [ RESULT ] ======" << std::endl;
-	std::cout << "The number of contacts: " << _result.numContacts() << std::endl;
+  std::cout << "====== [ RESULT ] ======" << std::endl;
+  std::cout << "The number of contacts: " << _result.numContacts() << std::endl;
 
   for (std::size_t i = 0; i < _result.numContacts(); ++i)
-	{
-		std::cout << "----- CONTACT " << i << " --------" << std::endl;
-		std::cout << "contact_points: " << _result.getContact(i).pos << std::endl;
-		std::cout << "penetration_depth: " << _result.getContact(i).penetration_depth << std::endl;
-		std::cout << "normal: " << _result.getContact(i).normal << std::endl;
-		//std::cout << std::endl;
-	}
-	std::cout << std::endl;
+  {
+    std::cout << "----- CONTACT " << i << " --------" << std::endl;
+    std::cout << "contact_points: " << _result.getContact(i).pos << std::endl;
+    std::cout << "penetration_depth: " << _result.getContact(i).penetration_depth << std::endl;
+    std::cout << "normal: " << _result.getContact(i).normal << std::endl;
+    //std::cout << std::endl;
+  }
+  std::cout << std::endl;
 }
 
 /* ********************************************************************************************* */
 
 //TEST_F(COLLISION, BOX_BOX_X) {
-//	fcl::Box box1(2, 2, 2);
-//	fcl::Box box2(1, 1, 1);
+//	dart::collision::fcl::Box box1(2, 2, 2);
+//	dart::collision::fcl::Box box2(1, 1, 1);
 //	unrotatedTest(&box1, &box2, 1.0, 0); // x-axis
 //}
 
 //TEST_F(COLLISION, BOX_BOX_Y) {
-//	fcl::Box box1(2, 2, 2);
-//	fcl::Box box2(1, 1, 1);
+//	dart::collision::fcl::Box box1(2, 2, 2);
+//	dart::collision::fcl::Box box2(1, 1, 1);
 //	unrotatedTest(&box1, &box2, 1.0, 1); // y-axis
 //}
 
 //TEST_F(COLLISION, BOX_BOX_Z) {
-//	fcl::Box box1(2, 2, 2);
-//	fcl::Box box2(1, 1, 1);
+//	dart::collision::fcl::Box box1(2, 2, 2);
+//	dart::collision::fcl::Box box2(1, 1, 1);
 //	unrotatedTest(&box1, &box2, 1.0, 2); // z-axis
 //}
 
 //TEST_F(COLLISION, BOX_SPHERE_X) {
-//	fcl::Box box1(2, 2, 2);
-//	fcl::Sphere sphere(0.5);
+//	dart::collision::fcl::Box box1(2, 2, 2);
+//	dart::collision::fcl::Sphere sphere(0.5);
 //	unrotatedTest(&box1, &sphere, 1.0, 0); // x-axis
 //}
 
 //TEST_F(COLLISION, BOX_SPHERE_Y) {
-//	fcl::Box box1(2, 2, 2);
-//	fcl::Sphere sphere(0.5);
+//	dart::collision::fcl::Box box1(2, 2, 2);
+//	dart::collision::fcl::Sphere sphere(0.5);
 //	unrotatedTest(&box1, &sphere, 1.0, 1); // y-axis
 //}
 
 //TEST_F(COLLISION, BOX_SPHERE_Z) {
-//	fcl::Box box1(2, 2, 2);
-//	fcl::Sphere sphere(0.5);
+//	dart::collision::fcl::Box box1(2, 2, 2);
+//	dart::collision::fcl::Sphere sphere(0.5);
 //	unrotatedTest(&box1, &sphere, 1.0, 2); // z-axis
 //}
 
 //TEST_F(COLLISION, SPHERE_BOX_X) {
-//	fcl::Sphere obj1(0.5);
-//	fcl::Box obj2(2, 2, 2);
+//	dart::collision::fcl::Sphere obj1(0.5);
+//	dart::collision::fcl::Box obj2(2, 2, 2);
 //	unrotatedTest(&obj1, &obj2, 0.5, 0); // x-axis
 //}
 
 //TEST_F(COLLISION, SPHERE_BOX_Y) {
-//	fcl::Sphere obj1(0.5);
-//	fcl::Box obj2(2, 2, 2);
+//	dart::collision::fcl::Sphere obj1(0.5);
+//	dart::collision::fcl::Box obj2(2, 2, 2);
 //	unrotatedTest(&obj1, &obj2, 0.5, 1); // y-axis
 //}
 
 //TEST_F(COLLISION, SPHERE_BOX_Z) {
-//	fcl::Sphere obj1(0.5);
-//	fcl::Box obj2(2, 2, 2);
+//	dart::collision::fcl::Sphere obj1(0.5);
+//	dart::collision::fcl::Box obj2(2, 2, 2);
 //	unrotatedTest(&obj1, &obj2, 0.5, 2); // z-axis
 //}
 
 //TEST_F(COLLISION, SPHERE_SPHERE_X) {
-//	fcl::Sphere sphere1(1);
-//	fcl::Sphere sphere2(0.5);
+//	dart::collision::fcl::Sphere sphere1(1);
+//	dart::collision::fcl::Sphere sphere2(0.5);
 //	unrotatedTest(&sphere1, &sphere2, 1.0, 0); // x-axis
 //}
 
 //TEST_F(COLLISION, SPHERE_SPHERE_Y) {
-//	fcl::Sphere sphere1(1);
-//	fcl::Sphere sphere2(0.5);
+//	dart::collision::fcl::Sphere sphere1(1);
+//	dart::collision::fcl::Sphere sphere2(0.5);
 //	unrotatedTest(&sphere1, &sphere2, 1.0, 1); // y-axis
 //}
 
 //TEST_F(COLLISION, SPHERE_SPHERE_Z) {
-//	fcl::Sphere sphere1(1);
-//	fcl::Sphere sphere2(0.5);
+//	dart::collision::fcl::Sphere sphere1(1);
+//	dart::collision::fcl::Sphere sphere2(0.5);
 //	unrotatedTest(&sphere1, &sphere2, 1.0, 2); // z-axis
 //}
 
 //TEST_F(COLLISION, PLANE_BOX_X) {
-//	fcl::Plane obj1(1, 0, 0, 0);
-//	fcl::Box obj2(1, 1, 1);
+//	dart::collision::fcl::Plane obj1(1, 0, 0, 0);
+//	dart::collision::fcl::Box obj2(1, 1, 1);
 //	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_BOX_Y) {
-//	fcl::Plane obj1(0, 1, 0, 0);
-//	fcl::Box obj2(1, 1, 1);
+//	dart::collision::fcl::Plane obj1(0, 1, 0, 0);
+//	dart::collision::fcl::Box obj2(1, 1, 1);
 //	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_BOX_Z) {
-//	fcl::Plane obj1(0, 0, 1, 0);
-//	fcl::Box obj2(1, 1, 1);
+//	dart::collision::fcl::Plane obj1(0, 0, 1, 0);
+//	dart::collision::fcl::Box obj2(1, 1, 1);
 //	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_SPHERE_X) {
-//	fcl::Plane obj1(1, 0, 0, 0);
-//	fcl::Sphere obj2(0.5);
+//	dart::collision::fcl::Plane obj1(1, 0, 0, 0);
+//	dart::collision::fcl::Sphere obj2(0.5);
 //	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_SPHERE_Y) {
-//	fcl::Plane obj1(0, 1, 0, 0);
-//	fcl::Sphere obj2(0.5);
+//	dart::collision::fcl::Plane obj1(0, 1, 0, 0);
+//	dart::collision::fcl::Sphere obj2(0.5);
 //	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_SPHERE_Z) {
-//	fcl::Plane obj1(0, 0, 1, 0);
-//	fcl::Sphere obj2(0.5);
+//	dart::collision::fcl::Plane obj1(0, 0, 1, 0);
+//	dart::collision::fcl::Sphere obj2(0.5);
 //	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_CYLINDER_X) {
-//	fcl::Plane obj1(1, 0, 0, 0);
-//	fcl::Cylinder obj2(0.5, 1);
+//	dart::collision::fcl::Plane obj1(1, 0, 0, 0);
+//	dart::collision::fcl::Cylinder obj2(0.5, 1);
 //	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_CYLINDER_Y) {
-//	fcl::Plane obj1(0, 1, 0, 0);
-//	fcl::Cylinder obj2(0.5, 1);
+//	dart::collision::fcl::Plane obj1(0, 1, 0, 0);
+//	dart::collision::fcl::Cylinder obj2(0.5, 1);
 //	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_CYLINDER_Z) {
-//	fcl::Plane obj1(0, 0, 1, 0);
-//	fcl::Cylinder obj2(0.5, 1);
+//	dart::collision::fcl::Plane obj1(0, 0, 1, 0);
+//	dart::collision::fcl::Cylinder obj2(0.5, 1);
 //	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_CAPSULE_X) {
-//	fcl::Plane obj1(1, 0, 0, 0);
-//	fcl::Capsule obj2(0.5, 2);
+//	dart::collision::fcl::Plane obj1(1, 0, 0, 0);
+//	dart::collision::fcl::Capsule obj2(0.5, 2);
 //	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_CAPSULE_Y) {
-//	fcl::Plane obj1(0, 1, 0, 0);
-//	fcl::Capsule obj2(0.5, 2);
+//	dart::collision::fcl::Plane obj1(0, 1, 0, 0);
+//	dart::collision::fcl::Capsule obj2(0.5, 2);
 //	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_CAPSULE_Z) {
-//	fcl::Plane obj1(0, 0, 1, 0);
-//	fcl::Capsule obj2(0.5, 2);
+//	dart::collision::fcl::Plane obj1(0, 0, 1, 0);
+//	dart::collision::fcl::Capsule obj2(0.5, 2);
 //	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_CONE_X) {
-//	fcl::Plane obj1(1, 0, 0, 0);
-//	fcl::Cone obj2(0.5, 1);
+//	dart::collision::fcl::Plane obj1(1, 0, 0, 0);
+//	dart::collision::fcl::Cone obj2(0.5, 1);
 //	unrotatedTest(&obj1, &obj2, 0.0, 0); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_CONE_Y) {
-//	fcl::Plane obj1(0, 1, 0, 0);
-//	fcl::Cone obj2(0.5, 1);
+//	dart::collision::fcl::Plane obj1(0, 1, 0, 0);
+//	dart::collision::fcl::Cone obj2(0.5, 1);
 //	unrotatedTest(&obj1, &obj2, 0.0, 1); // x-axis
 //}
 
 //TEST_F(COLLISION, PLANE_CONE_Z) {
-//	fcl::Plane obj1(0, 0, 1, 0);
-//	fcl::Cone obj2(0.5, 1);
+//	dart::collision::fcl::Plane obj1(0, 0, 1, 0);
+//	dart::collision::fcl::Cone obj2(0.5, 1);
 //	unrotatedTest(&obj1, &obj2, 0.0, 2); // x-axis
 //}
 
@@ -391,11 +387,11 @@ void COLLISION::printResult(const fcl::CollisionResult& _result)
 TEST_F(COLLISION, DROP)
 {
     dtdbg << "Unrotated box\n";
-    fcl::Box box1(0.5, 0.5, 0.5);
+    dart::collision::fcl::Box box1(0.5, 0.5, 0.5);
     dropWithRotation(&box1, 0, 0, 0);
 
     dtdbg << "Rotated box\n";
-    fcl::Box box2(0.5, 0.5, 0.5);
+    dart::collision::fcl::Box box2(0.5, 0.5, 0.5);
     dropWithRotation(&box2,
                      dart::math::random(-3.14, 3.14),
                      dart::math::random(-3.14, 3.14),
@@ -414,39 +410,39 @@ TEST_F(COLLISION, FCL_BOX_BOX)
     double EulerX = 3;
 
     // Collision test setting
-    fcl::CollisionResult result;
-    fcl::CollisionRequest request;
+    dart::collision::fcl::CollisionResult result;
+    dart::collision::fcl::CollisionRequest request;
     request.enable_contact = true;
     request.num_max_contacts = 100;
 
     // Ground like box setting
-    fcl::Box groundObject(100, 100, 0.1);
-    fcl::Transform3f groundTransf;
+    dart::collision::fcl::Box groundObject(100, 100, 0.1);
+    dart::collision::fcl::Transform3 groundTransf;
     groundTransf.setIdentity();
-    fcl::Vec3f ground_position(0.0, 0.0, -0.05);
-    groundTransf.setTranslation(ground_position);
+    dart::collision::fcl::Vector3 ground_position(0.0, 0.0, -0.05);
+    dart::collision::fcl::setTranslation(groundTransf, ground_position);
 
     // Dropping box object setting
-    fcl::Box box(0.5, 0.5, 0.5);
-    fcl::Transform3f objectTransf;
-    fcl::Matrix3f rot;
-    rot.setEulerZYX(EulerZ, EulerY, EulerX);
-    objectTransf.setRotation(rot);
-    fcl::Vec3f dropping_position(0.0, 0.0, 5.0);
-    objectTransf.setTranslation(dropping_position);
+    dart::collision::fcl::Box box(0.5, 0.5, 0.5);
+    dart::collision::fcl::Transform3 objectTransf;
+    dart::collision::fcl::Matrix3 rot;
+    dart::collision::fcl::setEulerZYX(rot, EulerZ, EulerY, EulerX);
+    dart::collision::fcl::setRotation(objectTransf, rot);
+    dart::collision::fcl::Vector3 dropping_position(0.0, 0.0, 5.0);
+    dart::collision::fcl::setTranslation(objectTransf, dropping_position);
 
     // Let's drop the object until it collide with ground
     do {
-        objectTransf.setTranslation(dropping_position);
+        dart::collision::fcl::setTranslation(objectTransf, dropping_position);
 
-        fcl::collide(&box, objectTransf, &groundObject, groundTransf, request, result);
+        ::fcl::collide(&box, objectTransf, &groundObject, groundTransf, request, result);
 
         dropping_position[2] -= 0.00001;
     }
     while (result.numContacts() == 0);
 
     std::cout << "Current position of the object: "
-              << objectTransf.getTranslation()
+              << dart::collision::fcl::getTranslation(objectTransf)
               << std::endl
               << "Number of contacts: "
               << result.numContacts()
@@ -490,7 +486,7 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 //    while (result.size() == 0);
 
 //    std::cout //<< "Current position of the object: "
-//              //<< objectTransf.getTranslation()
+//              //<< dart::collision::fcl::getTranslation(objectTransf)
 //              //<< std::endl
 //              << "Number of contacts: "
 //              << result.size()
@@ -708,7 +704,9 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
     // TODO(JS): BulletCollsionDetector includes a bug related to this.
     // (see #876)
     if (cd->getType() != BulletCollisionDetector::getStaticType())
+    {
       EXPECT_EQ(result.getNumContacts(), 1u);
+    }
     for (auto i = 0u; i < result.getNumContacts(); ++i)
     {
       std::cout << "point: " << result.getContact(i).point.transpose() << std::endl;
@@ -1158,13 +1156,20 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
   auto* body1 = pair1.second;
   body1->createShapeNodeWith<VisualAspect, CollisionAspect>(shape);
 
-  // Create a collision group from the skeleton
-  auto group = cd->createCollisionGroup(skel.get());
+  // Create a world and add the created skeleton
+  auto world = std::make_shared<simulation::World>();
+  auto constraintSolver = world->getConstraintSolver();
+  constraintSolver->setCollisionDetector(cd);
+  world->addSkeleton(skel);
+
+  // Get the collision group from the constraint solver
+  auto group = constraintSolver->getCollisionGroup();
   EXPECT_EQ(group->getNumShapeFrames(), 2u);
 
   // Default collision filter for Skeleton
-  CollisionOption option;
-  option.collisionFilter = std::make_shared<BodyNodeCollisionFilter>();
+  auto& option = constraintSolver->getCollisionOption();
+  auto bodyNodeFilter = std::make_shared<BodyNodeCollisionFilter>();
+  option.collisionFilter = bodyNodeFilter;
 
   skel->enableSelfCollisionCheck();
   skel->enableAdjacentBodyCheck();
@@ -1193,6 +1198,18 @@ void testFilter(const std::shared_ptr<CollisionDetector>& cd)
   EXPECT_FALSE(skel->isEnabledAdjacentBodyCheck());
   EXPECT_TRUE(group->collide());
   EXPECT_FALSE(group->collide(option));
+
+  // Test blacklist
+  skel->enableSelfCollisionCheck();
+  skel->enableAdjacentBodyCheck();
+  bodyNodeFilter->addBodyNodePairToBlackList(body0, body1);
+  EXPECT_FALSE(group->collide(option));
+  bodyNodeFilter->removeBodyNodePairFromBlackList(body0, body1);
+  EXPECT_TRUE(group->collide(option));
+  bodyNodeFilter->addBodyNodePairToBlackList(body0, body1);
+  EXPECT_FALSE(group->collide(option));
+  bodyNodeFilter->removeAllBodyNodePairsFromBlackList();
+  EXPECT_TRUE(group->collide(option));
 }
 
 //==============================================================================

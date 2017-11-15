@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -238,7 +239,7 @@ void LineSegmentShape::addConnection(std::size_t _idx1, std::size_t _idx2)
 void LineSegmentShape::removeConnection(std::size_t _vertexIdx1, std::size_t _vertexIdx2)
 {
   // Search through all connections to remove any that match the request
-  Eigen::aligned_vector<Eigen::Vector2i>::iterator it = mConnections.begin();
+  common::aligned_vector<Eigen::Vector2i>::iterator it = mConnections.begin();
   while(it != mConnections.end())
   {
     const Eigen::Vector2i c = (*it);
@@ -277,7 +278,7 @@ void LineSegmentShape::removeConnection(std::size_t _connectionIdx)
 }
 
 //==============================================================================
-const Eigen::aligned_vector<Eigen::Vector2i>&
+const common::aligned_vector<Eigen::Vector2i>&
 LineSegmentShape::getConnections() const
 {
   return mConnections;

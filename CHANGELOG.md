@@ -1,5 +1,42 @@
 ## DART 6
 
+### DART 6.4.0 (201X-XX-XX)
+
+* Kinematics/Dynamics
+
+  * Added IkFast support as analytic IK solver: [#887](https://github.com/dartsim/dart/pull/887)
+  * Fixed NaN values caused by zero-length normals in ContactConstraint: [#881](https://github.com/dartsim/dart/pull/881)
+
+* Collision detection
+
+  * Added FCL 0.6 support (backport of #873): [#936](https://github.com/dartsim/dart/pull/936)
+
+* License
+
+  * Added Personal Robotics Lab and Open Source Robotics Foundation as contributors: [#929](https://github.com/dartsim/dart/pull/929)
+
+* Misc
+
+  * Suppressed warnings: [#937](https://github.com/dartsim/dart/pull/937)
+
+### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)
+
+* Collision detection
+
+  * Added a feature of disabling body node pairs to BodyNodeCollisionFilter: [#911](https://github.com/dartsim/dart/pull/911)
+
+* Kinematics/Dynamics
+
+  * Added setter and getter for WeldJointConstraint::mRelativeTransform: [#910](https://github.com/dartsim/dart/pull/910)
+
+* Parsers
+
+  * Improved SkelParser to read alpha value: [#914](https://github.com/dartsim/dart/pull/914)
+
+* Misc
+
+  * Changed not to use lambda function as an workaround for DART python binding: [#916](https://github.com/dartsim/dart/pull/916)
+
 ### [DART 6.2.1 (2017-08-08)](https://github.com/dartsim/dart/milestone/37?closed=1)
 
 * Collision detection

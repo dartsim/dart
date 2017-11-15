@@ -130,6 +130,7 @@ target_include_directories(
 target_link_libraries(
   dart
   PUBLIC
+    ${CMAKE_DL_LIBS}
     ${CCD_LIBRARIES}
     ${FCL_LIBRARIES}
     ${ASSIMP_LIBRARIES}
