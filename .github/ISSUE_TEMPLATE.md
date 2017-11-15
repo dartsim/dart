@@ -10,9 +10,9 @@ Please answer the following questions for yourself before submitting an issue.
 
 #### Environment
 
-* DART version: 6.3.0 / master
-* OS name and version name(or number): Ubuntu 14.04 / Windows 10 / macOS Sierra
-* Compiler name and version number: GCC 4.8.5 / Clang 3.9.1
+* DART version: Select master / 6.3.0 / other (please specify)
+* OS name and version name(or number): Select Ubuntu 14.04 / Windows 10 / macOS Sierra / other (please specify)
+* Compiler name and version number: Select GCC 4.8.5 / Clang 3.9.1 / other (please specify)
 
 #### Expected Behavior
 > Please describe the behavior you are expecting.
@@ -33,4 +33,4 @@ Please answer the following questions for yourself before submitting an issue.
 
 #### Code to Reproduce
 > Please remember that with a working code it's easier to reproduce the bug and it's much faster to fix it.
-> It would be great to fork this repo and create a test using [this template](https://github.com/dartsim/dart/blob/master/unittests/regression/test_Issue000Template.cpp).
+> It would be great to fork this repo and create a regression test using [this template](https://github.com/dartsim/dart/blob/master/unittests/regression/test_Issue000Template.cpp).
