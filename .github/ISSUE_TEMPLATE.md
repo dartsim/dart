@@ -3,7 +3,7 @@
 ---
 
 ### Bug Report / Assistance Request
-Please answer the following questions for yourself before submitting an issue. **YOU MAY DELETE THE PREREQUISITES SECTION.**
+Please answer the following questions for yourself before submitting an issue.
 
 - [ ] I checked the [documentation](http://dartsim.github.io/) and found no answer.
 - [ ] I checked to make sure that this issue has not already been filed.
