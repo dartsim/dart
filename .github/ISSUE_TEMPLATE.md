@@ -3,6 +3,10 @@
 ---
 
 ### Bug Report / Assistance Request
+Please answer the following questions for yourself before submitting an issue. **YOU MAY DELETE THE PREREQUISITES SECTION.**
+
+- [ ] I checked the [documentation](http://dartsim.github.io/) and found no answer.
+- [ ] I checked to make sure that this issue has not already been filed.
 
 #### Environment
 
@@ -11,15 +15,17 @@
 * Compiler name and version number: GCC 4.8.5 / Clang 3.9.1
 
 #### Expected Behavior
+> Please describe the behavior you are expecting.
 
 #### Current Behavior
+> What is the current behavior?
 > If you have trouble in `cmake` or `make`, it would be very helpful to build DART with verbose option:
 > `$ cmake .. -DDART_VERBOSE=On`
 > `$ make VERBOSE=1`
 > and then dump the results into a [gist](https://gist.github.com/) and share the link to gist here.
 
 #### Steps to Reproduce
-> Tell us how to reproduce this issue.
+> Please provide detailed steps for reproducing the issue.
 1.
 1.
 1.
