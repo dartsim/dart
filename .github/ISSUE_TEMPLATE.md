@@ -3,16 +3,14 @@
 ---
 
 ### Bug Report
-Please answer the following questions for yourself before submitting an issue.
-
+> Please answer the following questions for yourself before submitting an issue.
 - [ ] I checked the [documentation](http://dartsim.github.io/) and found no answer.
 - [ ] I checked to make sure that this issue has not already been filed.
 
 #### Environment
-
-* DART version: Select master / 6.3.0 / other (please specify)
-* OS name and version name(or number): Select Ubuntu 14.04 / Windows 10 / macOS Sierra / other (please specify)
-* Compiler name and version number: Select GCC 4.8.5 / Clang 3.9.1 / other (please specify)
+* Select DART version: master / 6.3.0 / other (please specify)
+* Select OS name and version name(or number): Ubuntu 14.04 / macOS Sierra / Windows 10 / other (please specify)
+* Select compiler name and version number: GCC 4.8.5 / Clang 3.9.1 / other (please specify)
 
 #### Expected Behavior
 > Please describe the behavior you are expecting.
