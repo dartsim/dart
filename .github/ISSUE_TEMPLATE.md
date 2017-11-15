@@ -1,8 +1,8 @@
-> If you want to report a bug or request assistance please use the following template.
+> If you are reporting a bug, please use the following template.
 
 ---
 
-### Bug Report / Assistance Request
+### Bug Report
 Please answer the following questions for yourself before submitting an issue.
 
 - [ ] I checked the [documentation](http://dartsim.github.io/) and found no answer.
@@ -33,4 +33,4 @@ Please answer the following questions for yourself before submitting an issue.
 
 #### Code to Reproduce
 > Please remember that with a working code it's easier to reproduce the bug and it's much faster to fix it.
-> It would be great to fork this repo and create a using [this template](https://github.com/dartsim/dart/blob/master/unittests/regression/test_Issue000Template.cpp).
+> It would be great to fork this repo and create a test using [this template](https://github.com/dartsim/dart/blob/master/unittests/regression/test_Issue000Template.cpp).
