@@ -23,7 +23,7 @@ authors:
    orcid: 0000-0000-0000-0000
    affiliation: 5
  - name: Yuting Ye
-   orcid: 0000-0000-0000-0000
+   orcid: 0000-0003-2643-7457
    affiliation: 6
  - name: Siddhartha S. Srinivasa
    orcid: 0000-0002-5091-106X
