@@ -47,7 +47,7 @@ affiliations:
    index: 5
  - name: Oculus Research
    index: 6
-date: 12 September 2017
+date: 15 November 2017
 bibliography: paper.bib
 ---
 
