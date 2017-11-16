@@ -17,7 +17,7 @@ authors:
    orcid: 0000-0000-0000-0000
    affiliation: 3
  - name: Sehoon Ha
-   orcid: 0000-0000-0000-0000
+   orcid: 0000-0002-1972-328X
    affiliation: 4
  - name: Sumit Jain
    orcid: 0000-0000-0000-0000
