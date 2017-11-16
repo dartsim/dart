@@ -30,16 +30,16 @@ authors:
    affiliation: 1
  - name: Mike Stilman
    orcid: 0000-0000-0000-0000
-   affiliation: 7
+   affiliation: 3
  - name: C. Karen Liu
    orcid: 0000-0000-0000-0000
-   affiliation: 7
+   affiliation: 3
 affiliations:
  - name: University of Washington
    index: 1
  - name: Open Source Robotics Foundation
    index: 2
- - name: Waymo
+ - name: Georgia Institute of Technology
    index: 3
  - name: Disney Research
    index: 4
@@ -47,8 +47,6 @@ affiliations:
    index: 5
  - name: Oculus Research
    index: 6
- - name: Georgia Institute of Technology
-   index: 7
 date: 12 September 2017
 bibliography: paper.bib
 ---
