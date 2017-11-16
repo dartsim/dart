@@ -510,9 +510,13 @@ TEST_F(COLLISION, FCL_BOX_BOX)
 //==============================================================================
 void testSimpleFrames(const std::shared_ptr<CollisionDetector>& cd)
 {
-  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
-  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
-  auto simpleFrame3 = SimpleFrame::createShared(Frame::World());
+//  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+//  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
+//  auto simpleFrame3 = SimpleFrame::createShared(Frame::World());
+
+  auto simpleFrame1 = common::make_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame2 = common::make_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame3 = common::make_shared<SimpleFrame>(Frame::World());
 
   ShapePtr shape1(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new BoxShape(Eigen::Vector3d(1.0, 1.0, 1.0)));

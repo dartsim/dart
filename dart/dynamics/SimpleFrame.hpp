@@ -240,6 +240,24 @@ public:
 };
 
 } // namespace dart
+
+namespace common {
+namespace detail {
+
+template <typename... Args>
+struct MakeSharedImpl<dynamics::SimpleFrame, Args...>
+{
+  static std::shared_ptr<dynamics::SimpleFrame> run(Args&&... args)
+  {
+    std::cout << "yay\n";
+    return dart::common::make_aligned_shared<dynamics::SimpleFrame>(
+          std::forward<Args>(args)...);
+  }
+};
+
+} // namespace detail
+} // namespace common
+
 } // namespace dynamics
 
 #endif // DART_DYNAMICS_SIMPLEFRAME_HPP_

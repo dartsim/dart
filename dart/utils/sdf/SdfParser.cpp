@@ -470,6 +470,11 @@ dynamics::SkeletonPtr readSkeleton(
       rootJoint.properties =
           dynamics::FreeJoint::Properties::createShared(
             dynamics::Joint::Properties("root", body->second.initTransform));
+
+      rootJoint.properties =
+          common::make_shared<dynamics::FreeJoint::Properties>(
+            dynamics::Joint::Properties("root", body->second.initTransform));
+
       rootJoint.type = "free";
 
       if(!createPair(newSkeleton, nullptr, rootJoint, body->second))
