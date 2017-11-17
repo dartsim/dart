@@ -20,7 +20,7 @@ authors:
    orcid: 0000-0002-5614-2265
    affiliation: 4
  - name: Sumit Jain
-   orcid: 0000-0000-0000-0000
+   orcid: 0000-0003-2244-0077
    affiliation: 5
  - name: Yuting Ye
    orcid: 0000-0003-2643-7457
@@ -29,7 +29,6 @@ authors:
    orcid: 0000-0002-5091-106X
    affiliation: 1
  - name: Mike Stilman
-   orcid: 0000-0000-0000-0000
    affiliation: 3
  - name: C. Karen Liu
    orcid: 0000-0001-5926-0905
@@ -43,7 +42,7 @@ affiliations:
    index: 3
  - name: Georgia Institute of Technology
    index: 4
- - name: Google
+ - name: Google Inc.
    index: 5
  - name: Oculus Research
    index: 6
