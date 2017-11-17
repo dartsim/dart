@@ -13,11 +13,11 @@ authors:
  - name: Michael X. Grey
    orcid: 0000-0002-8159-2428
    affiliation: 2
- - name: Tobias Kunz
-   orcid: 0000-0002-5614-2265
-   affiliation: 3
  - name: Sehoon Ha
    orcid: 0000-0002-1972-328X
+   affiliation: 3
+ - name: Tobias Kunz
+   orcid: 0000-0002-5614-2265
    affiliation: 4
  - name: Sumit Jain
    orcid: 0000-0000-0000-0000
@@ -39,9 +39,9 @@ affiliations:
    index: 1
  - name: Open Source Robotics Foundation
    index: 2
- - name: Georgia Institute of Technology
-   index: 3
  - name: Disney Research
+   index: 3
+ - name: Georgia Institute of Technology
    index: 4
  - name: Google
    index: 5
