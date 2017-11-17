@@ -56,24 +56,24 @@ DART (Dynamic Animation and Robotics Toolkit) is a collaborative, cross-platform
 
 # Research Publications Utilized DART
 
-1. Data-Driven Approach to Simulating Realistic Human Joint Constraints, Yifeng Jiang and C. Karen Liu, (Preprint), 2017
-1. Multi-task Learning with Gradient Guided Policy Specialization, Wenhao Yu, Greg Turk, and C. Karen Liu
-1. Learning Human Behaviors for Robot-Assisted Dressing, Alex Clegg, Wenhao Yu, Jie Tan, Charlie Kemp, Greg Turk, and C. Karen Liu
-1. Expanding Motor Skills through Relay Neural Networks, Visak C.V. Kumar, Sehoon Ha, and C. Karen Liu
-1. Stair Negotiation Made Easier Using Novel Interactive Energy-Recycling Assistive Stairs, Yun Seong Song, Sehoon Ha, Hsiang Hsu, Lena H. Ting, and C. Karen Liu, in PLOS ONE, 2017
-1. Learning a Unified Control Policy for Safe Falling, Visak C.V. Kumar, Sehoon Ha, and C. Karen Liu, in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2017
-1. Learning to Navigate Cloth using Haptics, Alex Clegg, Wenhao Yu, Zackory Erickson, C. Karen Liu, and Greg Turk, in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2017
-1. Preparing for the Unknown: Learning a Universal Policy with Online System Identification, Wenhao Yu, Jie Tan, C. Karen Liu, and Greg Turk, Robotics Science and Systems (RSS), 2017
-1. A Linear-Time Variational Integrator for Multibody Systems, Jeongseok Lee, C. Karen Liu, Frank C. Park, and Siddhartha S. Srinivasa, in Workshop on the Algorithmic Foundations of Robotics (WAFR), 2016
-1. Simulation-Based Design of Dynamic Controllers for Humanoid Balancing, Jie Tan, Zhaoming Xie, Byron Boots, and C. Karen Liu, in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2016
-1. Humanoid Manipulation Planning using Backward-Forward Search, Michael X. Grey, Caelan R. Garrett, C. Karen Liu, Aaron D. Ames, and Andrea L. Thomaz, in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2016
-1. Evolutionary Optimization for Parameterized Whole-body Dynamic Motor Skills, Sehoon Ha and C. Karen Liu, in IEEE International Conference on Robotics and Automation (ICRA) 2016
-1. Dexterous Manipulation of Cloth, Yunfei Bai, Wenhao Yu (co-first author), and C. Karen Liu, in Computer Graphics Forum (Eurographics), 2016
-1. Multiple Contact Planning for Minimizing Damage of Humanoid Falls, Sehoon Ha and C. Karen Liu, in IEEE/RSJ International Conference on Intelligent Robots and Systems, 2015
-1. Animating Human Dressing, Alex Clegg, Jia Tan, Greg Turk, and C. Karen Liu, in Transactions on Graphics (SIGGRAPH), 2015
-1. Coupling Cloth and Rigid Bodies for Dexterous Manipulation, Yunfei Bai and C. Karen Liu, in Motion in Games, 2014 (Best Student Paper Award)
-1. Orienting in Mid-air through Configuration Changes to Achieve a Rolling Landing for Reducing Impact after a Fall, Jeffrey T. Bingham, Jeongseok Lee, Ravi N. Haksar, Jun Ueda, and C. Karen Liu, in IEEE/RSJ International Conference on Intelligent Robots and Systems, 2014
-1. Dexterous Manipulation Using Both Palm and Fingers, Yunfei Bai and C. Karen Liu, in IEEE International Conference on Robotics and Automation, 2014
-1. Synthesis of Concurrent Object Manipulation Tasks, Yunfei Bai, Kristin Siu and C. Karen Liu, in ACM Transactions on Graphics (presented at SIGGRAPH Asia), 2012
+1. Data-Driven Approach to Simulating Realistic Human Joint Constraints, Yifeng Jiang, and C. Karen Liu [[arXiv](https://arxiv.org/abs/1709.08685)]
+1. Multi-task Learning with Gradient Guided Policy Specialization, Wenhao Yu, Greg Turk, and C. Karen Liu [[arXiv](https://arxiv.org/abs/1709.07979)]
+1. Learning Human Behaviors for Robot-Assisted Dressing, Alex Clegg, Wenhao Yu, Jie Tan, Charlie Kemp, Greg Turk, and C. Karen Liu [[arXiv](https://arxiv.org/abs/1709.07033)]
+1. Expanding Motor Skills through Relay Neural Networks, Visak C.V. Kumar, Sehoon Ha, and C. Karen Liu [[arXiv](https://arxiv.org/abs/1709.07932)]
+1. Stair Negotiation Made Easier Using Novel Interactive Energy-Recycling Assistive Stairs, Yun Seong Song, Sehoon Ha, Hsiang Hsu, Lena H. Ting, and C. Karen Liu, in PLOS ONE, 2017 [[PDF](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0179637)]
+1. Learning a Unified Control Policy for Safe Falling, Visak C.V. Kumar, Sehoon Ha, and C. Karen Liu, in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2017 [[PDF](https://arxiv.org/abs/1703.02905)]
+1. Learning to Navigate Cloth using Haptics, Alex Clegg, Wenhao Yu, Zackory Erickson, C. Karen Liu, and Greg Turk, in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2017 [[PDF](https://arxiv.org/abs/1703.06905)]
+1. Preparing for the Unknown: Learning a Universal Policy with Online System Identification, Wenhao Yu, Jie Tan, C. Karen Liu, and Greg Turk, Robotics Science and Systems (RSS), 2017 [[PDF](https://arxiv.org/abs/1702.02453)]
+1. A Linear-Time Variational Integrator for Multibody Systems, Jeongseok Lee, C. Karen Liu, Frank C. Park, and Siddhartha S. Srinivasa, in Workshop on the Algorithmic Foundations of Robotics (WAFR), 2016 [[PDF](https://arxiv.org/abs/1609.02898)]
+1. Simulation-Based Design of Dynamic Controllers for Humanoid Balancing, Jie Tan, Zhaoming Xie, Byron Boots, and C. Karen Liu, in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2016 [[PDF](http://www.jie-tan.net/project/simulationBasedDesign.pdf)]
+1. Humanoid Manipulation Planning using Backward-Forward Search, Michael X. Grey, Caelan R. Garrett, C. Karen Liu, Aaron D. Ames, and Andrea L. Thomaz, in IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2016 [[PDF](https://www.cc.gatech.edu/graphics/projects/Grey/humanoid_hbf_iros2016.pdf)]
+1. Evolutionary Optimization for Parameterized Whole-body Dynamic Motor Skills, Sehoon Ha, and C. Karen Liu, in IEEE International Conference on Robotics and Automation (ICRA) 2016 [[PDF](http://sehoonha.com/projects/ha2016eop/2016_optskill.pdf)]
+1. Dexterous Manipulation of Cloth, Yunfei Bai, Wenhao Yu (co-first author), and C. Karen Liu, in Computer Graphics Forum (Eurographics), 2016 [[PDF](https://www.cc.gatech.edu/~ybai30/cloth_manipulation/paper_cloth_manipulation.pdf)]
+1. Multiple Contact Planning for Minimizing Damage of Humanoid Falls, Sehoon Ha, and C. Karen Liu, in IEEE/RSJ International Conference on Intelligent Robots and Systems, 2015 [[PDF](http://sehoonha.com/projects/ha2015mcs/2015_falling.pdf)]
+1. Animating Human Dressing, Alex Clegg, Jia Tan, Greg Turk, and C. Karen Liu, in Transactions on Graphics (SIGGRAPH), 2015 [[PDF](https://www.cc.gatech.edu/~aclegg3/projects/2015_AnimatingHumanDressing.pdf)]
+1. Coupling Cloth and Rigid Bodies for Dexterous Manipulation, Yunfei Bai, and C. Karen Liu, in Motion in Games, 2014 (Best Student Paper Award) [[PDF](https://www.cc.gatech.edu/~ybai30/cloth/paper_cloth.pdf)]
+1. Orienting in Mid-air through Configuration Changes to Achieve a Rolling Landing for Reducing Impact after a Fall, Jeffrey T. Bingham, Jeongseok Lee, Ravi N. Haksar, Jun Ueda, and C. Karen Liu, in IEEE/RSJ International Conference on Intelligent Robots and Systems, 2014 [[PDF](https://www.cc.gatech.edu/~karenliu/bingham_inertiabot_IROS2014.pdf)]
+1. Dexterous Manipulation Using Both Palm and Fingers, Yunfei Bai, and C. Karen Liu, in IEEE International Conference on Robotics and Automation, 2014 [[PDF](https://www.cc.gatech.edu/~ybai30/hand/paper_hand.pdf)]
+1. Synthesis of Concurrent Object Manipulation Tasks, Yunfei Bai, Kristin Siu, and C. Karen Liu, in ACM Transactions on Graphics (presented at SIGGRAPH Asia), 2012 [[PDF](https://www.cc.gatech.edu/~ybai30/multitask/multitask.pdf)]
 
 # References
