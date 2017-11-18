@@ -20,15 +20,16 @@
   * Fixed NaN values caused by zero-length normals in ContactConstraint: [#881](https://github.com/dartsim/dart/pull/881)
 
 * Collision detection
-  
+
   * Added FCL 0.6 support (backport of #873): [#936](https://github.com/dartsim/dart/pull/936)
 
 * License
 
   * Added Personal Robotics Lab and Open Source Robotics Foundation as contributors: [#929](https://github.com/dartsim/dart/pull/929)
-  
+
 * Misc
 
+  * Suppressed warnings: [#937](https://github.com/dartsim/dart/pull/937)
   * Suppressed warnings: [#937](https://github.com/dartsim/dart/pull/937)
 
 ### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)

@@ -40,6 +40,9 @@
 #include "dart/config.hpp"
 #include "dart/common/Deprecated.hpp"
 
+#include "dart/config.hpp"
+#include "dart/common/Deprecated.hpp"
+
 namespace dart {
 namespace common {
 
