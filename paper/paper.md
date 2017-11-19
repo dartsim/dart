@@ -29,10 +29,10 @@ authors:
    orcid: 0000-0002-5091-106X
    affiliation: 1
  - name: Mike Stilman
-   affiliation: 3
+   affiliation: 4
  - name: C. Karen Liu
    orcid: 0000-0001-5926-0905
-   affiliation: 3
+   affiliation: 4
 affiliations:
  - name: University of Washington
    index: 1
