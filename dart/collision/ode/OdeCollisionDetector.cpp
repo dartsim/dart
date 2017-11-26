@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -80,7 +82,10 @@ struct OdeCollisionCallbackData
   /// Whether the collision iteration can stop
   bool done;
 
-  int numContacts;
+  /// The total number of contacts collected by dSpaceCollide() or
+  /// dSpaceCollide2(). This field is used to determine the binary contact
+  /// result.
+  std::size_t numContacts;
 
   OdeCollisionCallbackData(
       const CollisionOption& option,
@@ -88,7 +93,7 @@ struct OdeCollisionCallbackData
     : option(option),
       result(result),
       done(false),
-      numContacts(0)
+      numContacts(0u)
   {
     // Do nothing
   }
@@ -264,14 +269,14 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
   assert(collObj1);
   assert(collObj2);
 
-  if (filter && !filter->needCollision(collObj1, collObj2))
+  if (filter && filter->ignoresCollision(collObj1, collObj2))
       return;
 
   // Perform narrow-phase collision detection
   auto numc = dCollide(
       o1, o2, MAX_COLLIDE_RETURNS, odeResult, sizeof(odeResult[0]));
 
-  cdData->numContacts = numc;
+  cdData->numContacts += numc;
 
   if (result)
     reportContacts(numc, odeResult, collObj1, collObj2, option, *result);

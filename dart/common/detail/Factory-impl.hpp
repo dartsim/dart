@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -113,11 +115,7 @@ void Factory<KeyT, BaseT, HeldT, Args...>::registerCreator(
 {
   return registerCreator(
       key,
-      [](Args&&... args) -> HeldT
-      {
-        return detail::DefaultCreator<Derived, HeldT, Args...>::run(
-            std::forward<Args>(args)...);
-      }
+      &Factory::defaultCreator<Derived>
   );
 }
 
@@ -176,6 +174,18 @@ HeldT Factory<KeyT, BaseT, HeldT, Args...>::create(
   }
 
   return it->second(std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename KeyT,
+          typename BaseT,
+          typename HeldT,
+          typename... Args>
+template <typename Derived>
+HeldT Factory<KeyT, BaseT, HeldT, Args...>::defaultCreator(Args&&... args)
+{
+  return detail::DefaultCreator<Derived, HeldT, Args...>::run(
+        std::forward<Args>(args)...);
 }
 
 //==============================================================================

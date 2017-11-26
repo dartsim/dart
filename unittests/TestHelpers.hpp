@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Can Erdogan <cerdogan3@gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
+ *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
@@ -62,7 +63,7 @@ enum TypeOfDOF
   DOF_X, DOF_Y, DOF_Z, DOF_ROLL, DOF_PITCH, DOF_YAW
 };
 
-/******************************************************************************/
+//==============================================================================
 /// Returns true if the two matrices are equal within the given bound
 template <class MATRIX>
 bool equals(const Eigen::DenseBase<MATRIX>& _expected,
@@ -94,6 +95,16 @@ bool equals(const Eigen::DenseBase<MATRIX>& _expected,
 
   // If no problems, the two matrices are equal
   return true;
+}
+
+//==============================================================================
+bool equals(const Eigen::Isometry3d& tf1,
+            const Eigen::Isometry3d& tf2, double tol = 1e-5)
+{
+  auto se3 = dart::math::logMap(tf1.inverse()*tf2);
+  auto norm = se3.norm();
+
+  return (norm < tol);
 }
 
 //==============================================================================

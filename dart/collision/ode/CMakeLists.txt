@@ -1,6 +1,6 @@
 # Dependency checks
-find_package(ODE 0.11 QUIET)
-dart_check_optional_package(ODE "dart-collision-ode" "ode" "0.11")
+find_package(ODE 0.13 QUIET)
+dart_check_optional_package(ODE "dart-collision-ode" "ode" "0.13")
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")

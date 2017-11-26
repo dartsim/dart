@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -92,7 +93,7 @@ public:
     void drawSoftMesh(const aiMesh* mesh) override;
     void drawList(GLuint index) override;
     void drawLineSegments(const std::vector<Eigen::Vector3d>& _vertices,
-                                  const Eigen::aligned_vector<Eigen::Vector2i>& _connections) override;
+                                  const common::aligned_vector<Eigen::Vector2i>& _connections) override;
 
     void setPenColor(const Eigen::Vector4d& _col) override;
     void setPenColor(const Eigen::Vector3d& _col) override;

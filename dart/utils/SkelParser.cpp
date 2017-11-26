@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -112,7 +113,7 @@ struct SkelJoint
 };
 
 // first: BodyNode name | second: BodyNode information
-using BodyMap = Eigen::aligned_map<std::string, SkelBodyNode>;
+using BodyMap = common::aligned_map<std::string, SkelBodyNode>;
 
 // first: Child BodyNode name | second: Joint information
 using JointMap = std::map<std::string, SkelJoint>;
@@ -540,8 +541,23 @@ void readVisualizationShapeNode(
   // color
   if (hasElement(vizShapeNodeEle, "color"))
   {
-    Eigen::Vector3d color = getValueVector3d(vizShapeNodeEle, "color");
-    visualAspect->setColor(color);
+    Eigen::VectorXd color = getValueVectorXd(vizShapeNodeEle, "color");
+
+    if (color.size() == 3)
+    {
+      visualAspect->setColor(static_cast<Eigen::Vector3d>(color));
+    }
+    else if (color.size() == 4)
+    {
+      visualAspect->setColor(static_cast<Eigen::Vector4d>(color));
+    }
+    else
+    {
+      dtwarn << "[readVisualizationShapeNode] Invalid format for <color> "
+             << "element; " << color.size() << "d vector is given. It should "
+             << "be either 3d vector or 4d vector (the 4th element is for "
+             << "alpha). Ignoring the given color value.\n";
+    }
   }
 }
 
@@ -1861,7 +1877,7 @@ void readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
           *proxy.restPosition = val;
         }
 
-        // friction
+        // spring_stiffness
         if (hasElement(dynamicsElement, "spring_stiffness"))
         {
           double val = getValueDouble(dynamicsElement, "spring_stiffness");

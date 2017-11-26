@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -832,7 +833,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
       skeleton->setVelocities(dq);
       skeleton->setAccelerations(ddq);
 
-      Eigen::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
+      common::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
       for (auto k = 0u; k < numBodies; ++k)
       {
         auto body  = skeleton->getBodyNode(k);
@@ -1056,9 +1057,9 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
   Eigen::VectorXd dq;
   Eigen::VectorXd ddq;
 
-  Eigen::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d>  Tmap;
-  Eigen::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>    Vmap;
-  Eigen::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>   dVmap;
+  common::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d>  Tmap;
+  common::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>    Vmap;
+  common::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>   dVmap;
 
   for (auto j = 0u; j < numBodies; ++j)
   {

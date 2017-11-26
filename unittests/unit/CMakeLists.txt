@@ -48,6 +48,20 @@ endif()
 if(TARGET dart-utils-urdf)
   dart_add_test("unit" test_DartLoader)
   target_link_libraries(test_DartLoader dart-utils-urdf)
+
+  dart_add_library(SharedLibraryWamIkFast SharedLibraryWamIkFast.hpp SharedLibraryWamIkFast.cpp)
+  target_link_libraries(SharedLibraryWamIkFast PUBLIC dart)
+  target_compile_definitions(SharedLibraryWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
+  target_compile_options(SharedLibraryWamIkFast PRIVATE -w)
+
+  dart_add_library(GeneratedWamIkFast GeneratedWamIkFast.cpp)
+  target_link_libraries(GeneratedWamIkFast PUBLIC dart)
+  target_compile_definitions(GeneratedWamIkFast PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
+  target_compile_options(GeneratedWamIkFast PRIVATE -w)
+
+  dart_add_test("unit" test_IkFast)
+  target_link_libraries(test_IkFast dart-utils-urdf)
+  add_dependencies(test_IkFast GeneratedWamIkFast SharedLibraryWamIkFast)
 endif()
 
 if(TARGET dart-planning)

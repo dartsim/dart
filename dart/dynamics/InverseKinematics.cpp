@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -744,6 +745,18 @@ void InverseKinematics::GradientMethod::clearCache()
 }
 
 //==============================================================================
+InverseKinematics* InverseKinematics::GradientMethod::getIK()
+{
+  return mIK;
+}
+
+//==============================================================================
+const InverseKinematics* InverseKinematics::GradientMethod::getIK() const
+{
+  return mIK;
+}
+
+//==============================================================================
 InverseKinematics::JacobianDLS::UniqueProperties::UniqueProperties(
     double damping)
   : mDamping(damping)
@@ -1078,7 +1091,8 @@ void InverseKinematics::Analytical::computeGradient(
       mIK->getErrorMethod().computeDesiredTransform(
         mIK->getNode()->getWorldTransform(), _error);
 
-  if(PRE_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
+  if((PRE_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
+      || PRE_AND_POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization)
      && mExtraDofs.size() > 0)
   {
     const double norm = _error.norm();
@@ -1103,6 +1117,9 @@ void InverseKinematics::Analytical::computeGradient(
   if(mSolutions.empty())
     return;
 
+  if(mSolutions[0].mValidity != VALID)
+    return;
+
   const Eigen::VectorXd& bestSolution = mSolutions[0].mConfig;
   mConfigCache = getPositions();
 
@@ -1121,7 +1138,8 @@ void InverseKinematics::Analytical::computeGradient(
     _grad[index] = mConfigCache[i] - bestSolution[i];
   }
 
-  if(POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
+  if((POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization
+     || PRE_AND_POST_ANALYTICAL == mAnalyticalP.mExtraDofUtilization)
      && mExtraDofs.size() > 0 )
   {
     setPositions(bestSolution);

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -32,7 +33,11 @@
 #ifndef DART_COMMON_MEMORY_HPP_
 #define DART_COMMON_MEMORY_HPP_
 
+#include <map>
 #include <memory>
+
+#include "dart/config.hpp"
+#include "dart/common/Deprecated.hpp"
 
 namespace dart {
 namespace common {
@@ -42,6 +47,27 @@ std::shared_ptr<_Tp> make_aligned_shared(_Args&&... __args);
 
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args);
+
+#if EIGEN_VERSION_AT_LEAST(3,2,1) && EIGEN_VERSION_AT_MOST(3,2,8)
+
+template <typename _Tp>
+using aligned_vector = std::vector<_Tp,
+    dart::common::detail::aligned_allocator_cpp11<_Tp>>;
+
+template <typename _Key, typename _Tp, typename _Compare = std::less<_Key>>
+using aligned_map = std::map<_Key, _Tp, _Compare,
+    dart::common::detail::aligned_allocator_cpp11<std::pair<const _Key, _Tp>>>;
+
+#else
+
+template <typename _Tp>
+using aligned_vector = std::vector<_Tp, Eigen::aligned_allocator<_Tp>>;
+
+template <typename _Key, typename _Tp, typename _Compare = std::less<_Key>>
+using aligned_map = std::map<_Key, _Tp, _Compare,
+    Eigen::aligned_allocator<std::pair<const _Key, _Tp>>>;
+
+#endif
 
 } // namespace common
 } // namespace dart
