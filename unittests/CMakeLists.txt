@@ -77,6 +77,10 @@ function(dart_add_test test_type target_name) # ARGN for source files
     target_link_libraries(${target_name} dart gtest gtest_main)
   endif()
 
+  target_compile_definitions(${target_name}
+      PRIVATE DART_TEST_DATA_PATH="${CMAKE_SOURCE_DIR}/unittests/data"
+  )
+
 endfunction()
 
 #===============================================================================

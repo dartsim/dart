@@ -38,11 +38,6 @@
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
-
-namespace dynamics {
-class Skeleton;
-}  // namespace dynamics
-
 namespace constraint {
 
 /// ConstraintInfo

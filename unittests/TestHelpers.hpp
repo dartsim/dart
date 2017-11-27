@@ -41,6 +41,7 @@
 #define DART_UNITTESTS_TEST_HELPERS_H
 
 #include <vector>
+#include <functional>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Dense>
 #include "dart/common/ResourceRetriever.hpp"
@@ -50,8 +51,10 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/simulation/World.hpp"
+#include "dart/utils/utils.hpp"
 
 using namespace Eigen;
+using namespace dart;
 using namespace dart::math;
 using namespace dart::collision;
 using namespace dart::dynamics;
@@ -532,6 +535,97 @@ struct AbsentResourceRetriever : public dart::common::ResourceRetriever
 
   std::vector<std::string> mExists;
   std::vector<std::string> mRetrieve;
+};
+
+class DartTestResourceRetriever : public utils::DartResourceRetriever
+{
+public:
+  template <typename... Args>
+  static std::shared_ptr<DartResourceRetriever> create(Args&&... args)
+  {
+    return std::make_shared<DartTestResourceRetriever>(
+          std::forward<Args>(args)...);
+  }
+
+  /// Constructor.
+  DartTestResourceRetriever()
+    : dart::utils::DartResourceRetriever()
+  {
+    addTestDirectory(DART_TEST_DATA_PATH);
+  }
+
+  // Documentation inherited.
+  bool exists(const common::Uri& uri) override
+  {
+    if (utils::DartResourceRetriever::exists(uri))
+      return true;
+
+    std::string relativePath;
+    if (!resolveDataUri(uri, relativePath))
+      return false;
+
+    if (uri.mAuthority.get() == "test")
+    {
+      for (const auto& testPath : mTestDirectories)
+      {
+        common::Uri fileUri;
+        fileUri.fromPath(testPath + relativePath);
+
+        if (mLocalRetriever->exists(fileUri))
+          return true;
+      }
+    }
+
+    return false;
+  }
+
+  // Documentation inherited.
+  common::ResourcePtr retrieve(const common::Uri& uri) override
+  {
+    const auto& resource = utils::DartResourceRetriever::retrieve(uri);
+    if (resource)
+      return resource;
+
+    std::string relativePath;
+    if (!resolveDataUri(uri, relativePath))
+      return nullptr;
+
+    if (uri.mAuthority.get() == "test")
+    {
+      for (const auto& testPath : mTestDirectories)
+      {
+        common::Uri fileUri;
+        fileUri.fromPath(testPath + relativePath);
+
+        if (const auto resource = mLocalRetriever->retrieve(fileUri))
+          return resource;
+      }
+    }
+
+    return nullptr;
+  }
+
+protected:
+  void addTestDirectory(const std::string& testDirectory)
+  {
+    // Strip a trailing slash.
+    std::string normalizedDataDirectory;
+    if (!testDirectory.empty() && testDirectory.back() == '/')
+    {
+      normalizedDataDirectory
+        = testDirectory.substr(0, testDirectory.size() - 1);
+    }
+    else
+    {
+      normalizedDataDirectory = testDirectory;
+    }
+
+    mTestDirectories.push_back(normalizedDataDirectory);
+  }
+
+  std::vector<std::string> mTestDirectories;
+
+private:
 };
 
 #endif // #ifndef DART_UNITTESTS_TEST_HELPERS_H

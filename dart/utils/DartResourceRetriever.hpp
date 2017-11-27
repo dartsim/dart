@@ -84,13 +84,11 @@ public:
   // Documentation inherited.
   common::ResourcePtr retrieve(const common::Uri& uri) override;
 
-private:
-
+protected:
   void addDataDirectory(const std::string& packageDirectory);
 
   bool resolveDataUri(const common::Uri& uri, std::string& relativePath) const;
 
-private:
   common::ResourceRetrieverPtr mLocalRetriever;
 
   std::vector<std::string> mDataDirectories;

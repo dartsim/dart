@@ -22,6 +22,9 @@ endif()
 
 if(TARGET dart-utils)
 
+  dart_add_test("unit" test_BallJointConstraint)
+  target_link_libraries(test_BallJointConstraint dart-utils)
+
   dart_add_test("unit" test_CompositeResourceRetriever)
   target_link_libraries(test_CompositeResourceRetriever dart-utils)
 
