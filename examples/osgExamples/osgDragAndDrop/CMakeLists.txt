@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(osgDragAndDrop)
 
-find_package(DART 6.2.0 REQUIRED COMPONENTS utils-urdf gui-osg CONFIG)
+find_package(DART 7 REQUIRED COMPONENTS io-urdf gui-osg CONFIG)
 
 add_compile_options(-std=c++11)
 

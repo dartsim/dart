@@ -10,6 +10,10 @@
 
   * Changed Function::eval\[Gradient/Hessian\](...) to const function: [#928](https://github.com/dartsim/dart/pull/928)
 
+* IO
+
+  * Renamed namespace `utils` to `io`: [#887](https://github.com/dartsim/dart/pull/887), [#953](https://github.com/dartsim/dart/pull/953)
+
 ## DART 6
 
 ### DART 6.4.0 (201X-XX-XX)

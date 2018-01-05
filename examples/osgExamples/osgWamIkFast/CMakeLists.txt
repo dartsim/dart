@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project(osgWamIkfast)
 
-find_package(DART 6.1.1 REQUIRED COMPONENTS utils-urdf gui-osg external-ikfast)
+find_package(DART 6.1.1 REQUIRED COMPONENTS io-urdf gui-osg external-ikfast)
 
 add_compile_options(-std=c++11)
 
