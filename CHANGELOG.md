@@ -12,7 +12,7 @@
 
 * IO
 
-  * Rename namespace `utils` to `io`: [#887](https://github.com/dartsim/dart/pull/887), [#953](https://github.com/dartsim/dart/pull/953)
+  * Renamed namespace `utils` to `io`: [#887](https://github.com/dartsim/dart/pull/887), [#953](https://github.com/dartsim/dart/pull/953)
 
 ## DART 6
 
