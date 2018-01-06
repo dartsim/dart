@@ -10,10 +10,18 @@
 #define DART_VERSION "@DART_VERSION@"
 #define DART_DESCRIPTION "@DART_PKG_DESC@"
 
+/* urdfdom_headers Version number */
+// We define the version numbers of urdfdom_headers here since it doesn't expose
+// the version numbers itself in source level.
+#define URDFDOM_HEADERS_MAJOR_VERSION @urdfdom_headers_VERSION_MAJOR@
+#define URDFDOM_HEADERS_MINOR_VERSION @urdfdom_headers_VERSION_MINOR@
+#define URDFDOM_HEADERS_PATCH_VERSION @urdfdom_headers_VERSION_PATCH@
+
 #cmakedefine HAVE_NLOPT 1
 #cmakedefine HAVE_IPOPT 1
 #cmakedefine HAVE_SNOPT 1
 #cmakedefine HAVE_BULLET_COLLISION 1
+#cmakedefine HAVE_FLANN 1
 
 #define DART_ROOT_PATH "@CMAKE_SOURCE_DIR@/"
 #define DART_DATA_PATH "@CMAKE_SOURCE_DIR@/data/"

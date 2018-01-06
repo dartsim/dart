@@ -569,7 +569,7 @@ void getAttribute(tinyxml2::XMLElement* element,
                          double* d)
 {
     int result = element->QueryDoubleAttribute(name, d);
-    if( result != tinyxml2::XML_NO_ERROR )
+    if( result != tinyxml2::XML_SUCCESS )
     {
         std::ostringstream oss;
         oss << "Error parsing double attribute " << name << " on " << element->Name();

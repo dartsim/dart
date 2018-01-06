@@ -24,7 +24,7 @@ project(dart)
 
 set(DART_MAJOR_VERSION "4")
 set(DART_MINOR_VERSION "3")
-set(DART_PATCH_VERSION "6")
+set(DART_PATCH_VERSION "7")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(DART_PKG_EXTERNAL_DEPS "flann, ccd, fcl")
@@ -136,9 +136,15 @@ if(NOT BUILD_CORE_ONLY)
   # FLANN
   find_package(FLANN QUIET)
   if(FLANN_FOUND)
-    message(STATUS "Looking for FLANN - found")
+    message(STATUS "Looking for FLANN - ${FLANN_VERSION} found")
+    set(HAVE_FLANN TRUE)
   else()
-    message(SEND_ERROR "Looking for FLANN - NOT found, please install libflann-dev")
+    if(FLANN_VERSION)
+      message(SEND_ERROR "Looking for FLANN - ${FLANN_VERSION} found, ${PROJECT_NAME} requires 1.8.4 or greater.")
+    else()
+      message(SEND_ERROR "Looking for FLANN - NOT found, please install libflann-dev")
+    endif()
+    set(HAVE_FLANN FALSE)
   endif()
 
   # TinyXML
@@ -160,7 +166,7 @@ if(NOT BUILD_CORE_ONLY)
   # urdfdom
   find_package(urdfdom QUIET)
   if(urdfdom_FOUND)
-    message(STATUS "Looking for urdfdom - found")
+    message(STATUS "Looking for urdfdom - ${urdfdom_headers_VERSION} found")
   else()
     message(SEND_ERROR "Looking for urdfdom - NOT found, please install liburdfdom-dev")
   endif()
@@ -270,6 +276,7 @@ endif()
 
 if(NOT BUILD_CORE_ONLY)
   set(DART_DEPENDENCIES ${urdfdom_LIBRARIES}
+                        ${FLANN_LIBRARIES}
                         ${TinyXML_LIBRARIES}
                         ${TinyXML2_LIBRARIES}
   )
