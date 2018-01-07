@@ -346,6 +346,11 @@
 1. Added specification of minimum dependency version
     * [Pull request #306](https://github.com/dartsim/dart/pull/306)
 
+### Version 4.3.7 (2018-01-05)
+
+1. Updated DART 4.3 to be compatible with urdf 1.0/tinyxml2 6/flann 1.9.1
+    * [Pull request #955](https://github.com/dartsim/dart/pull/955)
+
 ### Version 4.3.6 (2016-04-16)
 
 1. Fixed duplicate entries in Skeleton::mBodyNodes causing segfault in destructor
