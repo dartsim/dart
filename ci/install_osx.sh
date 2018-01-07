@@ -1,5 +1,3 @@
-brew tap homebrew/science
-
 brew update > /dev/null
 
 PACKAGES='
@@ -14,9 +12,9 @@ boost
 eigen
 tinyxml
 tinyxml2
-homebrew/science/libccd
+dartsim/dart/libccd
 nlopt
-ipopt
+dartsim/dart/ipopt
 ros/deps/urdfdom
 ros/deps/urdfdom_headers
 ros/deps/console_bridge
