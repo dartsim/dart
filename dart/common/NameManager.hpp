@@ -50,7 +50,7 @@ namespace common {
 /// BodyNode* bodyNode = new BodyNode();
 /// std::string name = "Link";
 ///
-/// if (!nameMgr.hasName(name)
+/// if (!nameMgr.hasName(name))
 ///   nameMgr.addName(name, bodyNode);  // "Link"
 /// else
 ///   name = nameMgr.issueNewNameAndAdd(name, bodyNode);  // "Link1"
