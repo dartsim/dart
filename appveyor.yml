@@ -1,0 +1,63 @@
+# Specify version format
+version: "{build}"
+
+# Operating system (build VM template)
+os: Visual Studio 2015
+
+# build platform, i.e. Win32 (instead of x86), x64, Any CPU. This setting is optional.
+platform: 
+  - Win32
+  #- x64  Disable build for x64 machine until x64 version of dart-prerequisites is ready
+
+# specify custom environment variables
+environment:
+  MSVC_DEFAULT_OPTIONS: ON
+  BOOST_ROOT: C:\Libraries\boost_1_59_0
+  BOOST_LIBRARYDIR: C:\Libraries\boost_1_59_0\lib32-msvc-14.0
+
+# build configuration, i.e. Debug, Release, etc.
+configuration:
+  - Debug
+  - Release
+
+# scripts that are called at very beginning, before repo cloning
+init:
+  - cmd: cmake --version
+  - cmd: msbuild /version
+
+# clone directory
+clone_folder: C:\projects\dart
+
+# branches to build
+branches:
+  # whitelist
+  # only: 
+  #   - master
+  # blacklist
+  except:
+    - gh-pages
+
+# scripts that run after cloning repository
+install:
+  - ps: cd C:\projects\dart\ci
+  - ps: .\appveyor_install.ps1
+
+# scripts to run before build
+before_build:
+  - cmd: cd C:\projects\dart
+  - cmd: md build
+  - cmd: cd build
+  # We generate project files for Visual Studio 12 because the boost binaries installed on the test server are for Visual Studio 12.
+  - cmd: if "%platform%"=="Win32" set CMAKE_GENERATOR_NAME=Visual Studio 14 2015
+  - cmd: if "%platform%"=="x64"   set CMAKE_GENERATOR_NAME=Visual Studio 14 2015 Win64
+  - cmd: cmake -G "%CMAKE_GENERATOR_NAME%" -DCMAKE_BUILD_TYPE=%configuration% -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" -DBoost_USE_STATIC_LIBS="ON" -Durdfdom_DIR="%urdfdom_DIR%" -Durdfdom_headers_DIR="%urdfdom_headers_DIR%" -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" ..
+
+build: off
+#build:
+#  project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project
+#  parallel: true                           # enable MSBuild parallel builds
+#  verbosity: quiet                         # MSBuild verbosity level (quiet|minimal|normal|detailed)
+
+test: off
+#test_script:
+#  - cmd: ctest --build-config %configuration% --parallel 4 --output-on-failure

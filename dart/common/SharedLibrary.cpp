@@ -38,6 +38,7 @@
 #if DART_OS_LINUX || DART_OS_MACOS
 
 #include <dlfcn.h>
+#define DYNLIB_HANDLE void*
 #define DYNLIB_LOAD(a) dlopen(a, RTLD_LAZY | RTLD_GLOBAL)
 #define DYNLIB_GETSYM(a, b) dlsym(a, b)
 #define DYNLIB_UNLOAD(a) dlclose(a)
@@ -45,10 +46,17 @@
 #elif DART_OS_WINDOWS
 
 #define WIN32_LEAN_AND_MEAN
+#if !defined(NOMINMAX) && defined(_MSC_VER)
+#define NOMINMAX // required to stop windows.h messing up std::min
+#endif
+#include <windows.h>
+#define DYNLIB_HANDLE hInstance
 // We can not use LOAD_WITH_ALTERED_SEARCH_PATH with relative paths
 #define DYNLIB_LOAD(a) LoadLibraryEx(a, nullptr, 0)
 #define DYNLIB_GETSYM(a, b) GetProcAddress(a, b)
 #define DYNLIB_UNLOAD(a) !FreeLibrary(a)
+struct HINSTANCE__;
+typedef struct HINSTANCE__* hInstance;
 
 #endif
 

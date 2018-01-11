@@ -32,7 +32,6 @@
 
 #include "dart/gui/Trackball.hpp"
 
-#include "dart/math/Constants.hpp"
 #include "dart/gui/LoadOpengl.hpp"
 
 namespace dart {
@@ -69,8 +68,6 @@ void Trackball::applyGLRotation() {
 }
 
 void Trackball::draw(int _winWidth, int _winHeight) {
-  const double pi = math::constantsd::pi();
-
   glDisable(GL_LIGHTING);
   glDisable(GL_TEXTURE_2D);
 
@@ -88,7 +85,7 @@ void Trackball::draw(int _winWidth, int _winHeight) {
   glColor3f(1.0f, 1.0f, 0.0f);
   glBegin(GL_LINE_LOOP);
   for (int i = 0; i < 360; i += 4) {
-    double theta = i / 180.0 * pi;
+    double theta = i / 180.0 * M_PI;
     double x = mRadius * cos(theta);
     double y = mRadius * sin(theta);
     glVertex2d(static_cast<GLdouble>((_winWidth >> 1) + x),
