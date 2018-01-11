@@ -36,6 +36,7 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Deprecated.hpp"
+#include "dart/math/Constants.hpp"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {
@@ -461,7 +462,9 @@ bool verifyTransform(const Eigen::Isometry3d& _T);
 /// rotations
 inline double wrapToPi(double angle)
 {
-  return std::fmod(angle+M_PI, 2*M_PI) - M_PI;
+  constexpr auto pi = constantsd::pi();
+
+  return std::fmod(angle+pi, 2*pi) - pi;
 }
 
 template <typename MatrixType, typename ReturnType>
