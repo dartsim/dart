@@ -82,13 +82,6 @@ CollisionDetector::CollisionObjectManager::CollisionObjectManager(
 }
 
 //==============================================================================
-CollisionDetector*
-CollisionDetector::CollisionObjectManager::getCollisionDetector()
-{
-  return mCollisionDetector;
-}
-
-//==============================================================================
 CollisionDetector::
 ManagerForUnsharableCollisionObjects::ManagerForUnsharableCollisionObjects(
     CollisionDetector* cd)
@@ -124,7 +117,7 @@ void
 CollisionDetector::ManagerForUnsharableCollisionObjects
 ::CollisionObjectDeleter::operator()(CollisionObject* object) const
 {
-  mCollisionObjectManager->getCollisionDetector()->notifyCollisionObjectDestroying(
+  mCollisionObjectManager->mCollisionDetector->notifyCollisionObjectDestroying(
         object);
 
   delete object;
@@ -187,8 +180,8 @@ void
 CollisionDetector::ManagerForSharableCollisionObjects
 ::CollisionObjectDeleter::operator()(CollisionObject* object) const
 {
-  mCollisionObjectManager->getCollisionDetector()
-      ->notifyCollisionObjectDestroying(object);
+  mCollisionObjectManager->mCollisionDetector->notifyCollisionObjectDestroying(
+        object);
   mCollisionObjectManager->mCollisionObjectMap.erase(object->getShapeFrame());
 
   delete object;
