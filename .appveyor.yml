@@ -28,9 +28,6 @@ clone_folder: C:\projects\dart
 
 # branches to build
 branches:
-  # whitelist
-  # only: 
-  #   - master
   # blacklist
   except:
     - gh-pages
