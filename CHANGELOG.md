@@ -35,6 +35,7 @@
 
   * Suppressed warnings: [#937](https://github.com/dartsim/dart/pull/937)
   * Suppressed warnings: [#937](https://github.com/dartsim/dart/pull/937)
+  * Fixed various build issues with Visual Studio: [#956](https://github.com/dartsim/dart/pull/956)
 
 ### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)
 

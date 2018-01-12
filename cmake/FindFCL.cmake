@@ -20,7 +20,7 @@ find_package(PkgConfig QUIET)
 pkg_check_modules(PC_FCL fcl QUIET)
 
 # Include directories
-if (${PC_FCL_VERSION} VERSION_LESS 0.6.0)
+if(PC_FCL_VERSION VERSION_LESS 0.6.0)
   find_path(FCL_INCLUDE_DIRS
       NAMES fcl/collision.h
       HINTS ${PC_FCL_INCLUDEDIR}

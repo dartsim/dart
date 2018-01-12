@@ -32,6 +32,8 @@
 
 #include "dart/dynamics/ArrowShape.hpp"
 
+#include "dart/math/Constants.hpp"
+
 namespace dart {
 namespace dynamics {
 
@@ -119,7 +121,7 @@ static void constructArrowTip(aiMesh* mesh, double base, double tip,
   std::size_t resolution = (mesh->mNumVertices-1)/2;
   for(std::size_t i=0; i<resolution; ++i)
   {
-    double theta = (double)(i)/(double)(resolution)*2*M_PI;
+    double theta = (double)(i)/(double)(resolution)*2*math::constantsd::pi();
 
     double R = properties.mRadius;
     double x = R*cos(theta);
@@ -146,7 +148,7 @@ static void constructArrowBody(aiMesh* mesh, double z1, double z2,
   std::size_t resolution = mesh->mNumVertices/2;
   for(std::size_t i=0; i<resolution; ++i)
   {
-    double theta = (double)(i)/(double)(resolution)*2*M_PI;
+    double theta = (double)(i)/(double)(resolution)*2*math::constantsd::pi();
 
     double R = properties.mRadius;
     double x = R*cos(theta);
@@ -283,7 +285,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   {
     mesh->mNormals[2*i].Set(0.0f, 0.0f, 1.0f);
 
-    double theta = (double)(i)/(double)(resolution)*2*M_PI;
+    double theta = (double)(i)/(double)(resolution)*2*math::constantsd::pi();
     mesh->mNormals[2*i+1].Set(cos(theta), sin(theta), 0.0f);
   }
   mesh->mNormals[mesh->mNumVertices-1].Set(0.0f, 0.0f, -1.0f);
@@ -291,7 +293,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   mesh = scene->mMeshes[1];
   for(std::size_t i=0; i<resolution; ++i)
   {
-    double theta = (double)(i)/(double)(resolution)*2*M_PI;
+    double theta = (double)(i)/(double)(resolution)*2*math::constantsd::pi();
     mesh->mNormals[2*i].Set(cos(theta), sin(theta), 0.0f);
     mesh->mNormals[2*i+1].Set(cos(theta), sin(theta), 0.0f);
   }
@@ -301,7 +303,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   {
     mesh->mNormals[2*i].Set(0.0f, 0.0f, -1.0f);
 
-    double theta = (double)(i)/(double)(resolution)*2*M_PI;
+    double theta = (double)(i)/(double)(resolution)*2* math::constantsd::pi();
     mesh->mNormals[2*i+1].Set(cos(theta), sin(theta), 0.0f);
   }
   mesh->mNormals[mesh->mNumVertices-1].Set(0.0f, 0.0f, 1.0f);
