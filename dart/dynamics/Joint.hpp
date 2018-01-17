@@ -276,11 +276,23 @@ public:
   /// Get lower limit for position
   virtual double getPositionLowerLimit(std::size_t _index) const = 0;
 
+  /// Set the position lower limits of all the generalized coordinates.
+  virtual void setPositionLowerLimits(const Eigen::VectorXd& lowerLimits) = 0;
+
+  /// Get the position lower limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getPositionLowerLimits() const = 0;
+
   /// Set upper limit for position
   virtual void setPositionUpperLimit(std::size_t _index, double _position) = 0;
 
   /// Get upper limit for position
   virtual double getPositionUpperLimit(std::size_t _index) const = 0;
+
+  /// Set the position upper limits of all the generalized coordinates.
+  virtual void setPositionUpperLimits(const Eigen::VectorXd& upperLimits) = 0;
+
+  /// Get the position upper limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getPositionUpperLimits() const = 0;
 
   /// Get whether a generalized coordinate is cyclic. Return true if and only
   /// if this generalized coordinate has an infinite number of positions that

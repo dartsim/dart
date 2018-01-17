@@ -176,10 +176,22 @@ public:
   double getPositionLowerLimit(std::size_t index) const override;
 
   // Documentation inherited
+  void setPositionLowerLimits(const Eigen::VectorXd& lowerLimits) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getPositionLowerLimits() const override;
+
+  // Documentation inherited
   void setPositionUpperLimit(std::size_t index, double position) override;
 
   // Documentation inherited
   double getPositionUpperLimit(std::size_t index) const override;
+
+  // Documentation inherited
+  void setPositionUpperLimits(const Eigen::VectorXd& upperLimits) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getPositionUpperLimits() const override;
 
   // Documentation inherited
   bool hasPositionLimit(std::size_t index) const override;

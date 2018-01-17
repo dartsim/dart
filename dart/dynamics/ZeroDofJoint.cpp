@@ -201,6 +201,19 @@ double ZeroDofJoint::getPositionLowerLimit(std::size_t /*_index*/) const
 }
 
 //==============================================================================
+void ZeroDofJoint::setPositionLowerLimits(
+    const Eigen::VectorXd& /*lowerLimits*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getPositionLowerLimits() const
+{
+  return Eigen::VectorXd::Zero(0);
+}
+
+//==============================================================================
 void ZeroDofJoint::setPositionUpperLimit(std::size_t /*_index*/,
                                          double /*_position*/)
 {
@@ -211,6 +224,19 @@ void ZeroDofJoint::setPositionUpperLimit(std::size_t /*_index*/,
 double ZeroDofJoint::getPositionUpperLimit(std::size_t /*_index*/) const
 {
   return 0.0;
+}
+
+//==============================================================================
+void ZeroDofJoint::setPositionUpperLimits(
+    const Eigen::VectorXd& /*upperLimits*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getPositionUpperLimits() const
+{
+  return Eigen::VectorXd::Zero(0);
 }
 
 //==============================================================================

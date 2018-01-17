@@ -543,6 +543,27 @@ double GenericJoint<ConfigSpaceT>::getPositionLowerLimit(size_t index) const
 }
 
 //==============================================================================
+template<class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setPositionLowerLimits(
+    const Eigen::VectorXd& lowerLimits)
+{
+  if (static_cast<size_t>(lowerLimits.size()) != getNumDofs())
+  {
+    GenericJoint_REPORT_DIM_MISMATCH(setPositionLowerLimits, lowerLimits);
+    return;
+  }
+
+  GenericJoint_SET_IF_DIFFERENT(mPositionLowerLimits, lowerLimits);
+}
+
+//==============================================================================
+template<class ConfigSpaceT>
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getPositionLowerLimits() const
+{
+  return Base::mAspectProperties.mPositionLowerLimits;
+}
+
+//==============================================================================
 template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::setPositionUpperLimit(size_t index,
                                                        double position)
@@ -567,6 +588,27 @@ double GenericJoint<ConfigSpaceT>::getPositionUpperLimit(size_t index) const
   }
 
   return Base::mAspectProperties.mPositionUpperLimits[index];
+}
+
+//==============================================================================
+template<class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setPositionUpperLimits(
+    const Eigen::VectorXd& upperLimits)
+{
+  if (static_cast<size_t>(upperLimits.size()) != getNumDofs())
+  {
+    GenericJoint_REPORT_DIM_MISMATCH(setPositionUpperLimits, upperLimits);
+    return;
+  }
+
+  GenericJoint_SET_IF_DIFFERENT(mPositionUpperLimits, upperLimits);
+}
+
+//==============================================================================
+template<class ConfigSpaceT>
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getPositionUpperLimits() const
+{
+  return Base::mAspectProperties.mPositionUpperLimits;
 }
 
 //==============================================================================
