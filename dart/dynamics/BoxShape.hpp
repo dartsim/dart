@@ -38,7 +38,8 @@
 namespace dart {
 namespace dynamics {
 
-class BoxShape : public Shape {
+class BoxShape : public Shape
+{
 public:
   /// \brief Constructor.
   explicit BoxShape(const Eigen::Vector3d& _size);
@@ -69,6 +70,9 @@ public:
   Eigen::Matrix3d computeInertia(double mass) const override;
 
 protected:
+  // Documentation inherited.
+  void updateBoundingBox() const override;
+
   // Documentation inherited.
   void updateVolume() const override;
 

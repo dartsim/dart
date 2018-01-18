@@ -73,12 +73,12 @@ public:
 
 protected:
   // Documentation inherited.
+  void updateBoundingBox() const override;
+
+  // Documentation inherited.
   void updateVolume() const override;
 
 private:
-  /// \brief
-  void _updateBoundingBoxDim();
-
   /// \brief
   double mRadius;
 

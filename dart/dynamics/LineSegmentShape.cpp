@@ -38,10 +38,12 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+const Eigen::Vector3d LineSegmentShape::mDummyVertex = Eigen::Vector3d::Zero();
+
+//==============================================================================
 LineSegmentShape::LineSegmentShape(float _thickness)
   : Shape(LINE_SEGMENT),
-    mThickness(_thickness),
-    mDummyVertex(Eigen::Vector3d::Zero())
+    mThickness(_thickness)
 {
   if (_thickness <= 0.0f)
   {
@@ -194,13 +196,17 @@ const Eigen::Vector3d& LineSegmentShape::getVertex(std::size_t _idx) const
   if(_idx < mVertices.size())
     return mVertices[_idx];
 
-  if(mVertices.size()==0)
+  if(mVertices.empty())
+  {
     dtwarn << "[LineSegmentShape::getVertex] Requested vertex #" << _idx
            << ", but no vertices currently exist in this LineSegmentShape\n";
+  }
   else
+  {
     dtwarn << "[LineSegmentShape::getVertex] Requested vertex #" << _idx
            << ", but vertex indices currently only go up to "
            << mVertices.size()-1 << "\n";
+  }
 
   return mDummyVertex;
 }
@@ -343,6 +349,33 @@ Eigen::Matrix3d LineSegmentShape::computeInertia(double _mass) const
   }
 
   return inertia;
+}
+
+//==============================================================================
+void LineSegmentShape::updateBoundingBox() const
+{
+  if (mVertices.empty())
+  {
+    mBoundingBox.setMin(Eigen::Vector3d::Zero());
+    mBoundingBox.setMax(Eigen::Vector3d::Zero());
+    return;
+  }
+
+  Eigen::Vector3d min
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d max
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+
+  for (const auto& vertex : mVertices)
+  {
+    min = max.cwiseMin(vertex);
+    max = max.cwiseMax(vertex);
+  }
+
+  mBoundingBox.setMin(min);
+  mBoundingBox.setMax(max);
+
+  mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================

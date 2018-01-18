@@ -44,8 +44,6 @@ BoxShape::BoxShape(const Eigen::Vector3d& _size)
   assert(_size[0] > 0.0);
   assert(_size[1] > 0.0);
   assert(_size[2] > 0.0);
-  mBoundingBox.setMin(-_size * 0.5);
-  mBoundingBox.setMax(_size * 0.5);
 }
 
 //==============================================================================
@@ -93,12 +91,13 @@ void BoxShape::setSize(const Eigen::Vector3d& _size)
   assert(_size[1] > 0.0);
   assert(_size[2] > 0.0);
   mSize = _size;
-  mBoundingBox.setMin(-_size * 0.5);
-  mBoundingBox.setMax(_size * 0.5);
+  mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
 
-const Eigen::Vector3d& BoxShape::getSize() const {
+//==============================================================================
+const Eigen::Vector3d& BoxShape::getSize() const
+{
   return mSize;
 }
 
@@ -106,6 +105,14 @@ const Eigen::Vector3d& BoxShape::getSize() const {
 Eigen::Matrix3d BoxShape::computeInertia(double mass) const
 {
   return computeInertia(mSize, mass);
+}
+
+//==============================================================================
+void BoxShape::updateBoundingBox() const
+{
+  mBoundingBox.setMin(-mSize * 0.5);
+  mBoundingBox.setMax(mSize * 0.5);
+  mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================

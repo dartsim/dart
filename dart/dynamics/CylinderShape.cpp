@@ -46,7 +46,6 @@ CylinderShape::CylinderShape(double _radius, double _height)
 {
   assert(0.0 < _radius);
   assert(0.0 < _height);
-  _updateBoundingBoxDim();
 }
 
 //==============================================================================
@@ -73,7 +72,7 @@ void CylinderShape::setRadius(double _radius)
 {
   assert(0.0 < _radius);
   mRadius = _radius;
-  _updateBoundingBoxDim();
+  mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
 
@@ -88,7 +87,7 @@ void CylinderShape::setHeight(double _height)
 {
   assert(0.0 < _height);
   mHeight = _height;
-  _updateBoundingBoxDim();
+  mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
 
@@ -113,6 +112,13 @@ Eigen::Matrix3d CylinderShape::computeInertia(
 }
 
 //==============================================================================
+void CylinderShape::updateBoundingBox() const
+{
+  mBoundingBox.setMin(Eigen::Vector3d(-mRadius, -mRadius, -mHeight * 0.5));
+  mBoundingBox.setMax(Eigen::Vector3d(mRadius, mRadius, mHeight * 0.5));
+}
+
+//==============================================================================
 void CylinderShape::updateVolume() const
 {
   mVolume = computeVolume(mRadius, mHeight);
@@ -123,11 +129,6 @@ void CylinderShape::updateVolume() const
 Eigen::Matrix3d CylinderShape::computeInertia(double mass) const
 {
   return computeInertia(mRadius, mHeight, mass);
-}
-
-void CylinderShape::_updateBoundingBoxDim() {
-  mBoundingBox.setMin(Eigen::Vector3d(-mRadius, -mRadius, -mHeight * 0.5));
-  mBoundingBox.setMax(Eigen::Vector3d(mRadius, mRadius, mHeight * 0.5));
 }
 
 }  // namespace dynamics

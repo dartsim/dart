@@ -109,6 +109,8 @@ public:
   // TODO(MXG): Consider supporting colors-per-vertex
 
 protected:
+  // Documentation inherited.
+  void updateBoundingBox() const override;
 
   // Documentation inherited
   void updateVolume() const override;
@@ -124,7 +126,7 @@ protected:
 
   /// A dummy vertex that can be returned when an out-of-bounds vertex is
   /// requested
-  const Eigen::Vector3d mDummyVertex;
+  static const Eigen::Vector3d mDummyVertex;
 };
 
 } // namespace dynamics

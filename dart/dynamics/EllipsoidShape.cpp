@@ -84,9 +84,7 @@ void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters)
 
   mDiameters = diameters;
 
-  mBoundingBox.setMin(-diameters * 0.5);
-  mBoundingBox.setMax(diameters * 0.5);
-
+  mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
 
@@ -147,6 +145,14 @@ bool EllipsoidShape::isSphere() const
     return true;
   else
     return false;
+}
+
+//==============================================================================
+void EllipsoidShape::updateBoundingBox() const
+{
+  mBoundingBox.setMin(-mDiameters * 0.5);
+  mBoundingBox.setMax(mDiameters * 0.5);
+  mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================

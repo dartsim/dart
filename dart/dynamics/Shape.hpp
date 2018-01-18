@@ -168,12 +168,17 @@ public:
   virtual void notifyColorUpdated(const Eigen::Vector4d& color);
 
 protected:
-
-  /// \brief Update volume
+  /// Updates volume
   virtual void updateVolume() const = 0;
 
+  /// Updates bounding box
+  virtual void updateBoundingBox() const = 0;
+
   /// \brief The bounding box (in the local coordinate frame) of the shape.
-  math::BoundingBox mBoundingBox;
+  mutable math::BoundingBox mBoundingBox;
+
+  /// Whether bounding box needs update
+  mutable bool mIsBoundingBoxDirty;
 
   /// Volume enclosed by the geometry.
   mutable double mVolume;
@@ -193,7 +198,6 @@ protected:
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
   /// Type of primitive shpae.
   ShapeType mType;
-
 };
 
 }  // namespace dynamics

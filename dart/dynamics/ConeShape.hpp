@@ -85,15 +85,13 @@ public:
   Eigen::Matrix3d computeInertia(double mass) const override;
 
 protected:
+  // Documentation inherited.
+  void updateBoundingBox() const override;
 
   // Documentation inherited.
   void updateVolume() const override;
 
 private:
-
-  /// Update bounding box (in the local coordinate frame) of the shape.
-  void updateBoundingBoxDim();
-
   /// Radius of the circular base.
   double mRadius;
 

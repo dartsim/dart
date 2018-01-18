@@ -233,7 +233,7 @@ void ArrowShape::configureArrow(const Eigen::Vector3d& _tail,
     for(std::size_t j=0; j<4; ++j)
       node->mTransformation[i][j] = tf(i,j);
 
-  _updateBoundingBoxDim();
+  mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
 

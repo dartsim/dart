@@ -48,7 +48,6 @@ ConeShape::ConeShape(double radius, double height)
 {
   assert(0.0 < radius);
   assert(0.0 < height);
-  updateBoundingBoxDim();
 }
 
 //==============================================================================
@@ -75,7 +74,7 @@ void ConeShape::setRadius(double radius)
 {
   assert(0.0 < radius);
   mRadius = radius;
-  updateBoundingBoxDim();
+  mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
 
@@ -90,7 +89,7 @@ void ConeShape::setHeight(double height)
 {
   assert(0.0 < height);
   mHeight = height;
-  updateBoundingBoxDim();
+  mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
 
@@ -116,6 +115,15 @@ Eigen::Matrix3d ConeShape::computeInertia(
 }
 
 //==============================================================================
+void ConeShape::updateBoundingBox() const
+{
+  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5*mHeight);
+
+  mBoundingBox.setMin(-corner);
+  mBoundingBox.setMax(corner);
+}
+
+//==============================================================================
 void ConeShape::updateVolume() const
 {
   mVolume = computeVolume(mRadius, mHeight);
@@ -126,15 +134,6 @@ void ConeShape::updateVolume() const
 Eigen::Matrix3d ConeShape::computeInertia(double mass) const
 {
   return computeInertia(mRadius, mHeight, mass);
-}
-
-//==============================================================================
-void ConeShape::updateBoundingBoxDim()
-{
-  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5*mHeight);
-
-  mBoundingBox.setMin(-corner);
-  mBoundingBox.setMax(corner);
 }
 
 }  // namespace dynamics

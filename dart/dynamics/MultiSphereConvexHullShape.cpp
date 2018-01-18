@@ -70,7 +70,7 @@ void MultiSphereConvexHullShape::addSpheres(const MultiSphereConvexHullShape::Sp
 {
   mSpheres.insert(mSpheres.end(), spheres.begin(), spheres.end());
 
-  updateBoundingBoxDim();
+  mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
 
@@ -79,7 +79,7 @@ void MultiSphereConvexHullShape::addSphere(const MultiSphereConvexHullShape::Sph
 {
   mSpheres.push_back(sphere);
 
-  updateBoundingBoxDim();
+  mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
 
@@ -94,7 +94,7 @@ void MultiSphereConvexHullShape::removeAllSpheres()
 {
   mSpheres.clear();
 
-  updateBoundingBoxDim();
+  mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
 
@@ -118,14 +118,7 @@ Eigen::Matrix3d MultiSphereConvexHullShape::computeInertia(double mass) const
 }
 
 //==============================================================================
-void MultiSphereConvexHullShape::updateVolume() const
-{
-  mVolume = BoxShape::computeVolume(mBoundingBox.computeFullExtents());
-  mIsVolumeDirty = false;
-}
-
-//==============================================================================
-void MultiSphereConvexHullShape::updateBoundingBoxDim()
+void MultiSphereConvexHullShape::updateBoundingBox() const
 {
   Eigen::Vector3d min
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
@@ -143,6 +136,13 @@ void MultiSphereConvexHullShape::updateBoundingBoxDim()
 
   mBoundingBox.setMin(min);
   mBoundingBox.setMax(max);
+}
+
+//==============================================================================
+void MultiSphereConvexHullShape::updateVolume() const
+{
+  mVolume = BoxShape::computeVolume(mBoundingBox.computeFullExtents());
+  mIsVolumeDirty = false;
 }
 
 }  // namespace dynamics

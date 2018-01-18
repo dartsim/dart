@@ -89,6 +89,13 @@ Eigen::Matrix3d SoftMeshShape::computeInertia(double /*mass*/) const
 }
 
 //==============================================================================
+void SoftMeshShape::updateBoundingBox() const
+{
+  // TODO(JS): Not implemented.
+  mIsBoundingBoxDirty = false;
+}
+
+//==============================================================================
 void SoftMeshShape::updateVolume() const
 {
   // TODO(JS): Not implemented.

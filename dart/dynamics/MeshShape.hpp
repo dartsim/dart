@@ -139,10 +139,10 @@ public:
 
 protected:
   // Documentation inherited.
-  void updateVolume() const override;
+  void updateBoundingBox() const override;
 
-  /// \brief
-  void _updateBoundingBoxDim();
+  // Documentation inherited.
+  void updateVolume() const override;
 
   /// \brief
   const aiScene* mMesh;

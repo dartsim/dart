@@ -70,9 +70,7 @@ void SphereShape::setRadius(double radius)
 
   mRadius = radius;
 
-  mBoundingBox.setMin(Eigen::Vector3d::Constant(-radius));
-  mBoundingBox.setMax(Eigen::Vector3d::Constant(radius));
-
+  mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
 
@@ -104,6 +102,14 @@ Eigen::Matrix3d SphereShape::computeInertia(double radius, double mass)
 Eigen::Matrix3d SphereShape::computeInertia(double mass) const
 {
   return computeInertia(mRadius, mass);
+}
+
+//==============================================================================
+void SphereShape::updateBoundingBox() const
+{
+  mBoundingBox.setMin(Eigen::Vector3d::Constant(-mRadius));
+  mBoundingBox.setMax(Eigen::Vector3d::Constant(mRadius));
+  mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================

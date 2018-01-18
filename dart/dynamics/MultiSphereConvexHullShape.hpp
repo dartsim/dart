@@ -85,6 +85,8 @@ public:
   Eigen::Matrix3d computeInertia(double mass) const override;
 
 protected:
+  // Documentation inherited.
+  void updateBoundingBox() const override;
 
   /// Update the volume of this MultiSphereConvexHullShape.
   ///
@@ -93,13 +95,8 @@ protected:
   void updateVolume() const override;
 
 private:
-
-  /// Update bounding box (in the local coordinate frame) of the shape.
-  void updateBoundingBoxDim();
-
   /// Spheres
   Spheres mSpheres;
-
 };
 
 DART_DEPRECATED(6.2)

@@ -84,6 +84,9 @@ public:
 
 private:
   // Documentation inherited.
+  void updateBoundingBox() const override;
+
+  // Documentation inherited.
   void updateVolume() const override;
 
   /// Plane normal
