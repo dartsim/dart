@@ -124,9 +124,10 @@ double PlaneShape::computeSignedDistance(const Eigen::Vector3d& _point) const
 }
 
 //==============================================================================
-void PlaneShape::updateVolume()
+void PlaneShape::updateVolume() const
 {
   mVolume = 0.0;
+  mIsVolumeDirty = false;
 }
 
 }  // namespace dynamics

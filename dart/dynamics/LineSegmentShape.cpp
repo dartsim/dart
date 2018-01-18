@@ -51,7 +51,6 @@ LineSegmentShape::LineSegmentShape(float _thickness)
     mThickness = 1.0f;
   }
 
-  updateVolume();
   mVariance = DYNAMIC_VERTICES;
 }
 
@@ -72,7 +71,6 @@ LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& _v1,
 
   addVertex(_v1);
   addVertex(_v2);
-  updateVolume();
   mVariance = DYNAMIC_VERTICES;
 }
 
@@ -348,9 +346,10 @@ Eigen::Matrix3d LineSegmentShape::computeInertia(double _mass) const
 }
 
 //==============================================================================
-void LineSegmentShape::updateVolume()
+void LineSegmentShape::updateVolume() const
 {
   mVolume = 0.0;
+  mIsVolumeDirty = false;
 }
 
 } // namespace dynamics

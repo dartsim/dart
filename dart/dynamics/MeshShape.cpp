@@ -222,13 +222,15 @@ void MeshShape::setMesh(
   mResourceRetriever = _resourceRetriever;
 }
 
-void MeshShape::setScale(const Eigen::Vector3d& _scale) {
+//==============================================================================
+void MeshShape::setScale(const Eigen::Vector3d& _scale)
+{
   assert(_scale[0] > 0.0);
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
   mScale = _scale;
   _updateBoundingBoxDim();
-  updateVolume();
+  mIsVolumeDirty = true;
 }
 
 const Eigen::Vector3d& MeshShape::getScale() const {
@@ -270,9 +272,12 @@ Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
   return BoxShape::computeInertia(mBoundingBox.computeFullExtents(), _mass);
 }
 
-void MeshShape::updateVolume() {
+//==============================================================================
+void MeshShape::updateVolume() const
+{
   Eigen::Vector3d bounds = mBoundingBox.computeFullExtents();
   mVolume = bounds.x() * bounds.y() * bounds.z();
+  mIsVolumeDirty = false;
 }
 
 void MeshShape::_updateBoundingBoxDim() {

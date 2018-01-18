@@ -118,9 +118,10 @@ public:
 
   Eigen::Matrix3d computeInertiaFromMass(double mass) const;
 
-  /// \brief Get volume of this shape.
-  ///        The volume will be automatically calculated by the sub-classes
-  ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
+  /// Returns volume of this shape.
+  ///
+  /// The volume will be automatically calculated by the sub-classes such as
+  /// BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
   double getVolume() const;
 
   /// \brief
@@ -169,13 +170,16 @@ public:
 protected:
 
   /// \brief Update volume
-  virtual void updateVolume() = 0;
+  virtual void updateVolume() const = 0;
 
   /// \brief The bounding box (in the local coordinate frame) of the shape.
   math::BoundingBox mBoundingBox;
 
-  /// \brief Volume enclosed by the geometry.
-  double mVolume;
+  /// Volume enclosed by the geometry.
+  mutable double mVolume;
+
+  /// Whether volume needs update
+  mutable bool mIsVolumeDirty;
 
   /// \brief Unique id.
   int mID;

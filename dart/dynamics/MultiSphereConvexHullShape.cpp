@@ -71,7 +71,7 @@ void MultiSphereConvexHullShape::addSpheres(const MultiSphereConvexHullShape::Sp
   mSpheres.insert(mSpheres.end(), spheres.begin(), spheres.end());
 
   updateBoundingBoxDim();
-  updateVolume();
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -80,7 +80,7 @@ void MultiSphereConvexHullShape::addSphere(const MultiSphereConvexHullShape::Sph
   mSpheres.push_back(sphere);
 
   updateBoundingBoxDim();
-  updateVolume();
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -95,7 +95,7 @@ void MultiSphereConvexHullShape::removeAllSpheres()
   mSpheres.clear();
 
   updateBoundingBoxDim();
-  updateVolume();
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -118,9 +118,10 @@ Eigen::Matrix3d MultiSphereConvexHullShape::computeInertia(double mass) const
 }
 
 //==============================================================================
-void MultiSphereConvexHullShape::updateVolume()
+void MultiSphereConvexHullShape::updateVolume() const
 {
   mVolume = BoxShape::computeVolume(mBoundingBox.computeFullExtents());
+  mIsVolumeDirty = false;
 }
 
 //==============================================================================

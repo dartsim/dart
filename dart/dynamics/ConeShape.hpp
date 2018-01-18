@@ -87,7 +87,7 @@ public:
 protected:
 
   // Documentation inherited.
-  void updateVolume() override;
+  void updateVolume() const override;
 
 private:
 

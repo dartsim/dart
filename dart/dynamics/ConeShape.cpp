@@ -49,7 +49,6 @@ ConeShape::ConeShape(double radius, double height)
   assert(0.0 < radius);
   assert(0.0 < height);
   updateBoundingBoxDim();
-  updateVolume();
 }
 
 //==============================================================================
@@ -77,7 +76,7 @@ void ConeShape::setRadius(double radius)
   assert(0.0 < radius);
   mRadius = radius;
   updateBoundingBoxDim();
-  updateVolume();
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -92,7 +91,7 @@ void ConeShape::setHeight(double height)
   assert(0.0 < height);
   mHeight = height;
   updateBoundingBoxDim();
-  updateVolume();
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -117,9 +116,10 @@ Eigen::Matrix3d ConeShape::computeInertia(
 }
 
 //==============================================================================
-void ConeShape::updateVolume()
+void ConeShape::updateVolume() const
 {
   mVolume = computeVolume(mRadius, mHeight);
+  mIsVolumeDirty = false;
 }
 
 //==============================================================================

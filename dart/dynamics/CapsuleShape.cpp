@@ -49,7 +49,6 @@ CapsuleShape::CapsuleShape(double radius, double height)
   assert(0.0 < radius);
   assert(0.0 < height);
   updateBoundingBoxDim();
-  updateVolume();
 }
 
 //==============================================================================
@@ -77,7 +76,7 @@ void CapsuleShape::setRadius(double radius)
   assert(0.0 < radius);
   mRadius = radius;
   updateBoundingBoxDim();
-  updateVolume();
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -92,7 +91,7 @@ void CapsuleShape::setHeight(double height)
   assert(0.0 < height);
   mHeight = height;
   updateBoundingBoxDim();
-  updateVolume();
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -129,9 +128,10 @@ Eigen::Matrix3d CapsuleShape::computeInertia(
 }
 
 //==============================================================================
-void CapsuleShape::updateVolume()
+void CapsuleShape::updateVolume() const
 {
   mVolume = computeVolume(mRadius, mHeight);
+  mIsVolumeDirty = false;
 }
 
 //==============================================================================

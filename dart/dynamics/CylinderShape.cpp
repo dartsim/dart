@@ -38,14 +38,15 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 CylinderShape::CylinderShape(double _radius, double _height)
   : Shape(CYLINDER),
     mRadius(_radius),
-    mHeight(_height) {
+    mHeight(_height)
+{
   assert(0.0 < _radius);
   assert(0.0 < _height);
   _updateBoundingBoxDim();
-  updateVolume();
 }
 
 //==============================================================================
@@ -61,26 +62,34 @@ const std::string& CylinderShape::getStaticType()
   return type;
 }
 
-double CylinderShape::getRadius() const {
+//==============================================================================
+double CylinderShape::getRadius() const
+{
   return mRadius;
 }
 
-void CylinderShape::setRadius(double _radius) {
+//==============================================================================
+void CylinderShape::setRadius(double _radius)
+{
   assert(0.0 < _radius);
   mRadius = _radius;
   _updateBoundingBoxDim();
-  updateVolume();
+  mIsVolumeDirty = true;
 }
 
-double CylinderShape::getHeight() const {
+//==============================================================================
+double CylinderShape::getHeight() const
+{
   return mHeight;
 }
 
-void CylinderShape::setHeight(double _height) {
+//==============================================================================
+void CylinderShape::setHeight(double _height)
+{
   assert(0.0 < _height);
   mHeight = _height;
   _updateBoundingBoxDim();
-  updateVolume();
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -104,9 +113,10 @@ Eigen::Matrix3d CylinderShape::computeInertia(
 }
 
 //==============================================================================
-void CylinderShape::updateVolume()
+void CylinderShape::updateVolume() const
 {
   mVolume = computeVolume(mRadius, mHeight);
+  mIsVolumeDirty = false;
 }
 
 //==============================================================================

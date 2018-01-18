@@ -90,7 +90,7 @@ protected:
   ///
   /// \note The result volume is an approximated volumen that is the volume of
   /// the axis-alinged bounding box of this MultiSphereConvexHullShape.
-  void updateVolume() override;
+  void updateVolume() const override;
 
 private:
 

@@ -73,7 +73,7 @@ void SphereShape::setRadius(double radius)
   mBoundingBox.setMin(Eigen::Vector3d::Constant(-radius));
   mBoundingBox.setMax(Eigen::Vector3d::Constant(radius));
 
-  updateVolume();
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -107,9 +107,10 @@ Eigen::Matrix3d SphereShape::computeInertia(double mass) const
 }
 
 //==============================================================================
-void SphereShape::updateVolume()
+void SphereShape::updateVolume() const
 {
   mVolume = computeVolume(mRadius);
+  mIsVolumeDirty = false;
 }
 
 }  // namespace dynamics
