@@ -220,6 +220,9 @@ void MeshShape::setMesh(
   }
 
   mResourceRetriever = _resourceRetriever;
+
+  _updateBoundingBoxDim();
+  updateVolume();
 }
 
 void MeshShape::setScale(const Eigen::Vector3d& _scale) {
