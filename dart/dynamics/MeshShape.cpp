@@ -230,8 +230,8 @@ void MeshShape::setScale(const Eigen::Vector3d& _scale) {
   assert(_scale[1] > 0.0);
   assert(_scale[2] > 0.0);
   mScale = _scale;
-  updateVolume();
   _updateBoundingBoxDim();
+  updateVolume();
 }
 
 const Eigen::Vector3d& MeshShape::getScale() const {
