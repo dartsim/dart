@@ -369,7 +369,7 @@ void LineSegmentShape::updateBoundingBox() const
 
   for (const auto& vertex : mVertices)
   {
-    min = max.cwiseMin(vertex);
+    min = min.cwiseMin(vertex);
     max = max.cwiseMax(vertex);
   }
 
