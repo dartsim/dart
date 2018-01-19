@@ -42,7 +42,9 @@ namespace dynamics {
 //==============================================================================
 Shape::Shape(ShapeType type)
   : mBoundingBox(),
+    mIsBoundingBoxDirty(true),
     mVolume(0.0),
+    mIsVolumeDirty(true),
     mID(mCounter++),
     mVariance(STATIC),
     mType(type)
@@ -70,7 +72,10 @@ Shape::~Shape()
 //==============================================================================
 const math::BoundingBox& Shape::getBoundingBox() const
 {
-    return mBoundingBox;
+  if (mIsBoundingBoxDirty)
+    updateBoundingBox();
+
+  return mBoundingBox;
 }
 
 //==============================================================================
@@ -88,6 +93,9 @@ Eigen::Matrix3d Shape::computeInertiaFromMass(double mass) const
 //==============================================================================
 double Shape::getVolume() const
 {
+  if (mIsVolumeDirty)
+    updateVolume();
+
   return mVolume;
 }
 
