@@ -358,6 +358,7 @@ void LineSegmentShape::updateBoundingBox() const
   {
     mBoundingBox.setMin(Eigen::Vector3d::Zero());
     mBoundingBox.setMax(Eigen::Vector3d::Zero());
+    mIsBoundingBoxDirty = false;
     return;
   }
 

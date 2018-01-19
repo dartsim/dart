@@ -121,6 +121,8 @@ void ConeShape::updateBoundingBox() const
 
   mBoundingBox.setMin(-corner);
   mBoundingBox.setMax(corner);
+
+  mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================

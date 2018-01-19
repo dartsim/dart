@@ -114,7 +114,7 @@ const MultiSphereConvexHullShape::Spheres& MultiSphereConvexHullShape::getSphere
 Eigen::Matrix3d MultiSphereConvexHullShape::computeInertia(double mass) const
 {
   // Use bounding box to represent the mesh
-  return BoxShape::computeInertia(mBoundingBox.computeFullExtents(), mass);
+  return BoxShape::computeInertia(getBoundingBox().computeFullExtents(), mass);
 }
 
 //==============================================================================
@@ -136,6 +136,8 @@ void MultiSphereConvexHullShape::updateBoundingBox() const
 
   mBoundingBox.setMin(min);
   mBoundingBox.setMax(max);
+
+  mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================

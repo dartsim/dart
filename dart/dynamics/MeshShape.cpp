@@ -279,7 +279,7 @@ void MeshShape::setDisplayList(int _index)
 Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
 {
   // Use bounding box to represent the mesh
-  return BoxShape::computeInertia(mBoundingBox.computeFullExtents(), _mass);
+  return BoxShape::computeInertia(getBoundingBox().computeFullExtents(), _mass);
 }
 
 //==============================================================================
@@ -289,6 +289,7 @@ void MeshShape::updateBoundingBox() const
   {
     mBoundingBox.setMin(Eigen::Vector3d::Zero());
     mBoundingBox.setMax(Eigen::Vector3d::Zero());
+    mIsBoundingBoxDirty = false;
     return;
   }
 
@@ -326,7 +327,7 @@ void MeshShape::updateBoundingBox() const
 //==============================================================================
 void MeshShape::updateVolume() const
 {
-  Eigen::Vector3d bounds = mBoundingBox.computeFullExtents();
+  const Eigen::Vector3d bounds = getBoundingBox().computeFullExtents();
   mVolume = bounds.x() * bounds.y() * bounds.z();
   mIsVolumeDirty = false;
 }

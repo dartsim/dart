@@ -116,6 +116,7 @@ void CylinderShape::updateBoundingBox() const
 {
   mBoundingBox.setMin(Eigen::Vector3d(-mRadius, -mRadius, -mHeight * 0.5));
   mBoundingBox.setMax(Eigen::Vector3d(mRadius, mRadius, mHeight * 0.5));
+  mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================
