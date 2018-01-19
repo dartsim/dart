@@ -38,7 +38,8 @@
 namespace dart {
 namespace dynamics {
 
-class BoxShape : public Shape {
+class BoxShape : public Shape
+{
 public:
   /// \brief Constructor.
   explicit BoxShape(const Eigen::Vector3d& _size);
@@ -70,7 +71,10 @@ public:
 
 protected:
   // Documentation inherited.
-  void updateVolume() override;
+  void updateBoundingBox() const override;
+
+  // Documentation inherited.
+  void updateVolume() const override;
 
 private:
   /// \brief Side lengths of the box

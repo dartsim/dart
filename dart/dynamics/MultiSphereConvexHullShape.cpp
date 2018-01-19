@@ -70,8 +70,8 @@ void MultiSphereConvexHullShape::addSpheres(const MultiSphereConvexHullShape::Sp
 {
   mSpheres.insert(mSpheres.end(), spheres.begin(), spheres.end());
 
-  updateBoundingBoxDim();
-  updateVolume();
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -79,8 +79,8 @@ void MultiSphereConvexHullShape::addSphere(const MultiSphereConvexHullShape::Sph
 {
   mSpheres.push_back(sphere);
 
-  updateBoundingBoxDim();
-  updateVolume();
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -94,8 +94,8 @@ void MultiSphereConvexHullShape::removeAllSpheres()
 {
   mSpheres.clear();
 
-  updateBoundingBoxDim();
-  updateVolume();
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -114,17 +114,11 @@ const MultiSphereConvexHullShape::Spheres& MultiSphereConvexHullShape::getSphere
 Eigen::Matrix3d MultiSphereConvexHullShape::computeInertia(double mass) const
 {
   // Use bounding box to represent the mesh
-  return BoxShape::computeInertia(mBoundingBox.computeFullExtents(), mass);
+  return BoxShape::computeInertia(getBoundingBox().computeFullExtents(), mass);
 }
 
 //==============================================================================
-void MultiSphereConvexHullShape::updateVolume()
-{
-  mVolume = BoxShape::computeVolume(mBoundingBox.computeFullExtents());
-}
-
-//==============================================================================
-void MultiSphereConvexHullShape::updateBoundingBoxDim()
+void MultiSphereConvexHullShape::updateBoundingBox() const
 {
   Eigen::Vector3d min
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::max());
@@ -142,6 +136,15 @@ void MultiSphereConvexHullShape::updateBoundingBoxDim()
 
   mBoundingBox.setMin(min);
   mBoundingBox.setMax(max);
+
+  mIsBoundingBoxDirty = false;
+}
+
+//==============================================================================
+void MultiSphereConvexHullShape::updateVolume() const
+{
+  mVolume = BoxShape::computeVolume(mBoundingBox.computeFullExtents());
+  mIsVolumeDirty = false;
 }
 
 }  // namespace dynamics
