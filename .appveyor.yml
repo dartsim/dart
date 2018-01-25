@@ -46,7 +46,7 @@ install:
   - vcpkg install assimp:%VCPKG_ARCH%
   # ---- optional dependencies: nlopt, ipopt, bullet3, ode, flann, tinyxml2, urdfdom_headers, urdfdom, opengl, freeglut, osg
   - vcpkg install nlopt:%VCPKG_ARCH%
-  - vcpkg install ipopt:%VCPKG_ARCH%
+  #- vcpkg install ipopt:%VCPKG_ARCH%
   - vcpkg install bullet3:%VCPKG_ARCH%
   - vcpkg install ode:%VCPKG_ARCH%
   - vcpkg install flann:%VCPKG_ARCH%
