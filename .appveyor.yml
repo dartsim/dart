@@ -53,8 +53,8 @@ install:
   - vcpkg install tinyxml2:%VCPKG_ARCH%
   - vcpkg install urdfdom-headers:%VCPKG_ARCH%
   - vcpkg install urdfdom:%VCPKG_ARCH%
-  - vcpkg install opengl:%VCPKG_ARCH%
-  - vcpkg install freeglut:%VCPKG_ARCH%
+  #- vcpkg install opengl:%VCPKG_ARCH%
+  #- vcpkg install freeglut:%VCPKG_ARCH%
   #- vcpkg install osg:%VCPKG_ARCH%
   
   - vcpkg integrate install
