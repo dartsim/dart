@@ -73,5 +73,5 @@ build:
   parallel: true                           # enable MSBuild parallel builds
   verbosity: quiet                         # MSBuild verbosity level (quiet|minimal|normal|detailed)
 
-#test_script:
+test_script:
   - cmd: ctest --build-config %configuration% --parallel 4 --output-on-failure
