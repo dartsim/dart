@@ -52,6 +52,12 @@ namespace dart {
 namespace simulation {
 
 //==============================================================================
+std::shared_ptr<World> World::create(const std::string& name)
+{
+  return std::make_shared<World>(name);
+}
+
+//==============================================================================
 World::World(const std::string& _name)
   : mName(_name),
     mNameMgrForSkeletons("World::Skeleton | " + _name, "skeleton"),
