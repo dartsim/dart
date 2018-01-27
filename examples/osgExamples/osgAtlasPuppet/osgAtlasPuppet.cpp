@@ -837,7 +837,7 @@ void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& atlas
 
 int main()
 {
-  WorldPtr world(new World);
+  WorldPtr world = World::create();
 
   SkeletonPtr atlas = createAtlas();
   world->addSkeleton(atlas);

@@ -89,7 +89,7 @@ World::~World()
 //==============================================================================
 WorldPtr World::clone() const
 {
-  WorldPtr worldClone(new World(mName));
+  WorldPtr worldClone = World::create(mName);
 
   worldClone->setGravity(mGravity);
   worldClone->setTimeStep(mTimeStep);

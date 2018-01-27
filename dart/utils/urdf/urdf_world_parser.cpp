@@ -89,7 +89,7 @@ std::shared_ptr<World> parseWorldURDF(
     return nullptr;
   }
 
-  std::shared_ptr<World> world(new World);
+  std::shared_ptr<World> world = World::create();
   world->name = std::string(name);
   if(debug) std::cout<< "World name: "<< world->name << std::endl;
 

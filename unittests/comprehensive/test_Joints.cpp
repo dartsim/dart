@@ -667,7 +667,7 @@ void testServoMotor()
   double insufficient_force = 1e-1;
 
   // World
-  simulation::WorldPtr world(new simulation::World);
+  simulation::WorldPtr world = simulation::World::create();
   EXPECT_TRUE(world != nullptr);
 
   world->setGravity(Eigen::Vector3d(0, 0, -9.81));
