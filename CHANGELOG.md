@@ -18,6 +18,7 @@
 
 * Misc
 
+  * Add World::create(): [#962](https://github.com/dartsim/dart/pull/962)
   * Suppressed warnings: [#937](https://github.com/dartsim/dart/pull/937)
   * Fixed various build issues with Visual Studio: [#956](https://github.com/dartsim/dart/pull/956)
 
