@@ -116,7 +116,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   // std::size_t testCount = 1;
 #endif
 
-  WorldPtr world(new World);
+  WorldPtr world = World::create();
   EXPECT_TRUE(world != nullptr);
   world->setGravity(Vector3d(0.0, -10.00, 0.0));
   world->setTimeStep(0.001);
