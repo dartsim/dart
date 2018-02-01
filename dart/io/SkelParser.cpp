@@ -687,7 +687,7 @@ simulation::WorldPtr readWorld(
   assert(_worldElement != nullptr);
 
   // Create a world
-  simulation::WorldPtr newWorld(new simulation::World);
+  simulation::WorldPtr newWorld = simulation::World::create();
 
   //--------------------------------------------------------------------------
   // Load physics

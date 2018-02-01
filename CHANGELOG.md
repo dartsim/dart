@@ -34,8 +34,9 @@
 
 * Misc
 
-  * Suppressed warnings: [#937](https://github.com/dartsim/dart/pull/937)
-  * Suppressed warnings: [#937](https://github.com/dartsim/dart/pull/937)
+  * Added World::create(): [#962](https://github.com/dartsim/dart/pull/962)
+  * Suppressed -Winjected-class-name warnings from Clang 5.0.0: [#964](https://github.com/dartsim/dart/pull/964)
+  * Suppressed -Wdangling-else warnings from GCC 7.2.0: [#937](https://github.com/dartsim/dart/pull/937)
   * Fixed various build issues with Visual Studio: [#956](https://github.com/dartsim/dart/pull/956)
 
 ### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)

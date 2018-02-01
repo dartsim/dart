@@ -369,7 +369,7 @@ simulation::WorldPtr readWorld(
   assert(worldElement != nullptr);
 
   // Create a world
-  simulation::WorldPtr newWorld(new simulation::World);
+  simulation::WorldPtr newWorld = simulation::World::create();
 
   //--------------------------------------------------------------------------
   // Name attribute

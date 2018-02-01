@@ -160,7 +160,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
     return nullptr;
   }
 
-  simulation::WorldPtr world(new simulation::World);
+  simulation::WorldPtr world = simulation::World::create();
 
   for(std::size_t i = 0; i < worldInterface->models.size(); ++i)
   {
