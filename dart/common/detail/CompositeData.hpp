@@ -48,12 +48,37 @@ namespace common {
 namespace detail {
 
 //==============================================================================
+// This default template definition will be called when AspectOrComposite is
+// an Aspect.
+template <class AspectOrComposite, bool isAspect>
+struct GetAspectImpl
+{
+  using Type = AspectOrComposite;
+};
+
+//==============================================================================
+// This template specialization will be called when AspectOrComposite is not
+// an Aspect (and is presumably a composite that defines a nested Aspect type).
+template <class AspectOrComposite>
+struct GetAspectImpl<AspectOrComposite, false>
+{
+  // If you get a compiler error that leads you here, then you are trying to
+  // ask for the Aspect of an object that is not associated with any Aspect.
+  // That means it does not define a nested Aspect type (such as how
+  // RevoluteJoint defines the RevoluteJoint::Aspect).
+  //
+  // Whatever function is leading to the error must be given a template type
+  // that either defines a nested type with the name Aspect, or else inherits
+  // from the type dart::common::Aspect.
+  using Type = typename AspectOrComposite::Aspect;
+};
+
+//==============================================================================
 template <class AspectT>
 struct GetAspect
 {
-  using Type = typename std::conditional<
-      std::is_base_of<Aspect, AspectT>::value,
-      AspectT, typename AspectT::Aspect>::type;
+  using Type = typename GetAspectImpl<
+    AspectT, std::is_base_of<Aspect, AspectT>::value>::Type;
 };
 
 //==============================================================================
