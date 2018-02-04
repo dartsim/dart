@@ -104,6 +104,39 @@ common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri)
 }
 
 //==============================================================================
+std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
+{
+  std::string relativePath;
+  if (!resolveDataUri(uri, relativePath))
+    return "";
+
+  if (uri.mAuthority.get() == "sample")
+  {
+    for (const auto& dataPath : mDataDirectories)
+    {
+      common::Uri fileUri;
+      fileUri.fromPath(dataPath + relativePath);
+
+      const auto path = mLocalRetriever->getFilePath(fileUri);
+
+      // path is empty if the file specified by fileUri doesn't exist.
+      if (!path.empty())
+        return path;
+    }
+  }
+  else
+  {
+    const auto path = mLocalRetriever->getFilePath(uri);
+
+    // path is empty if the file specified by fileUri doesn't exist.
+    if (!path.empty())
+      return path;
+  }
+
+  return "";
+}
+
+//==============================================================================
 void DartResourceRetriever::addDataDirectory(
     const std::string& dataDirectory)
 {
