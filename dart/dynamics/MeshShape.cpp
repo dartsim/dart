@@ -127,24 +127,24 @@ aiMaterial::~aiMaterial()
 namespace dart {
 namespace dynamics {
 
-MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
-                     const std::string& _path,
-                     const common::ResourceRetrieverPtr& _resourceRetriever)
+//==============================================================================
+MeshShape::MeshShape(
+    const Eigen::Vector3d& scale,
+    const aiScene* mesh,
+    const common::Uri& path,
+    common::ResourceRetrieverPtr resourceRetriever)
   : Shape(MESH),
-    mResourceRetriever(_resourceRetriever),
     mDisplayList(0),
     mColorMode(MATERIAL_COLOR),
     mColorIndex(0)
 {
-  assert(_scale[0] > 0.0);
-  assert(_scale[1] > 0.0);
-  assert(_scale[2] > 0.0);
-
-  setMesh(_mesh, _path, _resourceRetriever);
-  setScale(_scale);
+  setMesh(mesh, path, std::move(resourceRetriever));
+  setScale(scale);
 }
 
-MeshShape::~MeshShape() {
+//==============================================================================
+MeshShape::~MeshShape()
+{
   delete mMesh;
 }
 
@@ -161,15 +161,25 @@ const std::string& MeshShape::getStaticType()
   return type;
 }
 
-const aiScene* MeshShape::getMesh() const {
+//==============================================================================
+const aiScene* MeshShape::getMesh() const
+{
   return mMesh;
 }
 
-const std::string& MeshShape::getMeshUri() const
+//==============================================================================
+std::string MeshShape::getMeshUri() const
+{
+  return mMeshUri.toString();
+}
+
+//==============================================================================
+const common::Uri& MeshShape::getMeshUri2() const
 {
   return mMeshUri;
 }
 
+//==============================================================================
 void MeshShape::update()
 {
   // Do nothing
@@ -186,49 +196,58 @@ void MeshShape::notifyAlphaUpdated(double alpha)
   }
 }
 
+//==============================================================================
 const std::string& MeshShape::getMeshPath() const
 {
   return mMeshPath;
 }
 
-void MeshShape::setMesh(
-  const aiScene* _mesh, const std::string& _path,
-  const common::ResourceRetrieverPtr& _resourceRetriever)
+//==============================================================================
+common::ResourceRetrieverPtr MeshShape::getResourceRetriever()
 {
-  mMesh = _mesh;
+  return mResourceRetriever;
+}
 
-  if(nullptr == _mesh) {
-    mMeshPath = "";
-    mMeshUri = "";
+//==============================================================================
+void MeshShape::setMesh(
+  const aiScene* mesh, const std::string& path,
+  common::ResourceRetrieverPtr resourceRetriever)
+{
+  setMesh(mesh, common::Uri(path), std::move(resourceRetriever));
+}
+
+//==============================================================================
+void MeshShape::setMesh(
+  const aiScene* mesh,
+  const common::Uri& uri,
+  common::ResourceRetrieverPtr resourceRetriever)
+{
+  mMesh = mesh;
+
+  if (!mMesh)
+  {
+    mMeshUri.clear();
+    mMeshPath.clear();
     mResourceRetriever = nullptr;
     return;
   }
 
-  common::Uri uri;
-  if(uri.fromString(_path))
-  {
-    mMeshUri = _path;
+  mMeshUri = uri;
 
-    if(uri.mScheme.get_value_or("file") == "file")
-      mMeshPath = uri.mPath.get_value_or("");
-  }
+  if (resourceRetriever)
+    mMeshPath = resourceRetriever->getFilePath(uri);
   else
-  {
-    dtwarn << "[MeshShape::setMesh] Failed parsing URI '" << _path << "'.\n";
-    mMeshUri = "";
-    mMeshPath = "";
-  }
+    mMeshPath.clear();
 
-  mResourceRetriever = _resourceRetriever;
+  mResourceRetriever = std::move(resourceRetriever);
 }
 
 //==============================================================================
-void MeshShape::setScale(const Eigen::Vector3d& _scale)
+void MeshShape::setScale(const Eigen::Vector3d& scale)
 {
-  assert(_scale[0] > 0.0);
-  assert(_scale[1] > 0.0);
-  assert(_scale[2] > 0.0);
-  mScale = _scale;
+  assert((scale.array() > 0.0).all());
+
+  mScale = scale;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
@@ -240,9 +259,9 @@ const Eigen::Vector3d& MeshShape::getScale() const
 }
 
 //==============================================================================
-void MeshShape::setColorMode(ColorMode _mode)
+void MeshShape::setColorMode(ColorMode mode)
 {
-  mColorMode = _mode;
+  mColorMode = mode;
 }
 
 //==============================================================================
@@ -252,9 +271,9 @@ MeshShape::ColorMode MeshShape::getColorMode() const
 }
 
 //==============================================================================
-void MeshShape::setColorIndex(int _index)
+void MeshShape::setColorIndex(int index)
 {
-  mColorIndex = _index;
+  mColorIndex = index;
 }
 
 //==============================================================================
@@ -270,9 +289,9 @@ int MeshShape::getDisplayList() const
 }
 
 //==============================================================================
-void MeshShape::setDisplayList(int _index)
+void MeshShape::setDisplayList(int index)
 {
-  mDisplayList = _index;
+  mDisplayList = index;
 }
 
 //==============================================================================
@@ -333,8 +352,7 @@ void MeshShape::updateVolume() const
 }
 
 //==============================================================================
-const aiScene* MeshShape::loadMesh(
-  const std::string& _uri, const common::ResourceRetrieverPtr& _retriever)
+const aiScene* MeshShape::loadMesh(const std::string& _uri, const common::ResourceRetrieverPtr& retriever)
 {
   // Remove points and lines from the import.
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
@@ -347,7 +365,7 @@ const aiScene* MeshShape::loadMesh(
   // Wrap ResourceRetriever in an IOSystem from Assimp's C++ API.  Then wrap
   // the IOSystem in an aiFileIO from Assimp's C API. Yes, this API is
   // completely ridiculous...
-  AssimpInputResourceRetrieverAdaptor systemIO(_retriever);
+  AssimpInputResourceRetrieverAdaptor systemIO(retriever);
   aiFileIO fileIO = createFileIO(&systemIO);
 
   // Import the file.
@@ -396,10 +414,17 @@ const aiScene* MeshShape::loadMesh(
 }
 
 //==============================================================================
-const aiScene* MeshShape::loadMesh(const std::string& _fileName)
+const aiScene* MeshShape::loadMesh(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
+{
+  return loadMesh(uri.toString(), retriever);
+}
+
+//==============================================================================
+const aiScene* MeshShape::loadMesh(const std::string& filePath)
 {
   const auto retriever = std::make_shared<common::LocalResourceRetriever>();
-  return loadMesh("file://" + _fileName, retriever);
+  return loadMesh("file://" + filePath, retriever);
 }
 
 }  // namespace dynamics
