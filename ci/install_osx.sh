@@ -1,20 +1,2 @@
 brew update > /dev/null
-
-brew install git | grep -v '%$'
-brew install cmake | grep -v '%$'
-brew install assimp | grep -v '%$'
-brew install dartsim/dart/fcl | grep -v '%$'
-brew install bullet --with-double-precision | grep -v '%$'
-brew install ode --with-libccd --with-double-precision | grep -v '%$'
-brew install flann | grep -v '%$'
-brew install boost | grep -v '%$'
-brew install eigen | grep -v '%$'
-brew install tinyxml | grep -v '%$'
-brew install tinyxml2 | grep -v '%$'
-brew install libccd | grep -v '%$'
-brew install nlopt | grep -v '%$'
-brew install dartsim/dart/ipopt | grep -v '%$'
-brew install ros/deps/urdfdom | grep -v '%$'
-brew install ros/deps/urdfdom_headers | grep -v '%$'
-brew install ros/deps/console_bridge | grep -v '%$'
-brew install open-scene-graph | grep -v '%$'
+brew bundle --file="$TRAVIS_BUILD_DIR/ci/Brewfile"

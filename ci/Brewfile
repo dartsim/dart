@@ -1,0 +1,18 @@
+brew 'git'
+brew 'cmake'
+brew 'assimp'
+brew 'dartsim/dart/fcl'
+brew 'bullet', args: ['--with-double-precision']
+brew 'ode', args: ['--with-libccd', '--with-double-precision']
+brew 'flann'
+brew 'boost'
+brew 'eigen'
+brew 'tinyxml'
+brew 'tinyxml2'
+brew 'libccd'
+brew 'nlopt'
+brew 'dartsim/dart/ipopt'
+brew 'ros/deps/urdfdom'
+brew 'ros/deps/urdfdom_headers'
+brew 'ros/deps/console_bridge'
+brew 'open-scene-graph'
