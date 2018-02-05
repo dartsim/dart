@@ -301,7 +301,6 @@ if(TARGET dart)
       dart_add_example(examples/osgExamples/osgOperationalSpaceControl dart dart-utils-urdf dart-gui-osg)
       dart_add_example(examples/osgExamples/osgSoftBodies dart dart-utils-urdf dart-gui-osg)
       dart_add_example(examples/osgExamples/osgTinkertoy dart dart-utils-urdf dart-gui-osg)
-      dart_add_example(examples/osgExamples/osgValkyrie dart dart-utils-urdf dart-gui-osg)
 
       add_library(example_wamIk examples/osgExamples/osgWamIkFast/ikfast/ikfast71.Transform6D.4_6_9_10_11_12_f8.cpp)
       target_link_libraries(example_wamIk PUBLIC dart)
