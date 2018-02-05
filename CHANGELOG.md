@@ -2,6 +2,10 @@
 
 ### DART 6.4.0 (201X-XX-XX)
 
+* Common
+
+  * Added ResourceRetriever::getFilePath(): [#972](https://github.com/dartsim/dart/pull/972)
+
 * Kinematics/Dynamics
 
   * Added lazy evaluation for shape's volume and bounding-box computation: [#959](https://github.com/dartsim/dart/pull/959)
