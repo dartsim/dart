@@ -505,6 +505,12 @@ struct PresentResourceRetriever : public dart::common::ResourceRetriever
     return true;
   }
 
+  std::string getFilePath(const dart::common::Uri& _uri) override
+  {
+    mGetFilePath.push_back(_uri.toString());
+    return _uri.toString();
+  }
+
   dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override
   {
     mRetrieve.push_back(_uri.toString());
@@ -512,6 +518,7 @@ struct PresentResourceRetriever : public dart::common::ResourceRetriever
   }
 
   std::vector<std::string> mExists;
+  std::vector<std::string> mGetFilePath;
   std::vector<std::string> mRetrieve;
 };
 
@@ -524,6 +531,12 @@ struct AbsentResourceRetriever : public dart::common::ResourceRetriever
     return false;
   }
 
+  std::string getFilePath(const dart::common::Uri& _uri) override
+  {
+    mGetFilePath.push_back(_uri.toString());
+    return "";
+  }
+
   dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override
   {
     mRetrieve.push_back(_uri.toString());
@@ -531,6 +544,7 @@ struct AbsentResourceRetriever : public dart::common::ResourceRetriever
   }
 
   std::vector<std::string> mExists;
+  std::vector<std::string> mGetFilePath;
   std::vector<std::string> mRetrieve;
 };
 

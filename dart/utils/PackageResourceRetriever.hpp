@@ -91,6 +91,9 @@ public:
   // Documentation inherited.
   common::ResourcePtr retrieve(const common::Uri& _uri) override;
 
+  // Documentation inherited.
+  std::string getFilePath(const common::Uri& uri) override;
+
 private:
   common::ResourceRetrieverPtr mLocalRetriever;
   std::unordered_map<std::string, std::vector<std::string> > mPackageMap;

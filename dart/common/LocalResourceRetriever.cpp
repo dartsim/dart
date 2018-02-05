@@ -43,14 +43,7 @@ namespace common {
 //==============================================================================
 bool LocalResourceRetriever::exists(const Uri& _uri)
 {
-  // Open and close the file to check if it exists. It would be more efficient
-  // to stat() it, but that is not portable.
-  if(_uri.mScheme.get_value_or("file") != "file")
-    return false;
-  else if (!_uri.mPath)
-    return false;
-
-  return std::ifstream(_uri.getFilesystemPath(), std::ios::binary).good();
+  return !getFilePath(_uri).empty();
 }
 
 //==============================================================================
@@ -68,6 +61,24 @@ common::ResourcePtr LocalResourceRetriever::retrieve(const Uri& _uri)
     return resource;
   else
     return nullptr;
+}
+
+//==============================================================================
+std::string LocalResourceRetriever::getFilePath(const Uri& uri)
+{
+  // Open and close the file to check if it exists. It would be more efficient
+  // to stat() it, but that is not portable.
+  if(uri.mScheme.get_value_or("file") != "file")
+    return "";
+  else if (!uri.mPath)
+    return "";
+
+  const auto path = uri.getFilesystemPath();
+
+  if (std::ifstream(path, std::ios::binary).good())
+    return path;
+  else
+    return "";
 }
 
 } // namespace common
