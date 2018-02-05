@@ -69,7 +69,20 @@ void PackageResourceRetriever::addPackageDirectory(
 //==============================================================================
 bool PackageResourceRetriever::exists(const common::Uri& _uri)
 {
-  return !getFilePath(_uri).empty();
+  std::string packageName, relativePath;
+  if (!resolvePackageUri(_uri, packageName, relativePath))
+    return false;
+
+  for (const std::string& packagePath : getPackagePaths(packageName))
+  {
+    common::Uri fileUri;
+    fileUri.fromPath(packagePath + relativePath);
+
+    if (mLocalRetriever->exists(fileUri))
+      return true;
+  }
+
+  return false;
 }
 
 //==============================================================================
