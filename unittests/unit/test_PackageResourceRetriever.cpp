@@ -54,7 +54,9 @@ TEST(PackageResourceRetriever, exists_UnableToResolve_ReturnsFalse)
 
 TEST(PackageResourceRetriever, exists_DelegateFails_ReturnsFalse)
 {
-  // GTest breaks the string concatenation.
+  // Additional slash is required for Windows because Windows file system
+  // doesn't have a leading slash for an absolute path.
+  // Reference: https://en.wikipedia.org/wiki/File_URI_scheme#Windows
 #ifdef _WIN32
   const char* expected = "file:///" DART_DATA_LOCAL_PATH"test/foo";
 #else
