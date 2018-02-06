@@ -1,5 +1,5 @@
 # DART: Dynamic Animation and Robotics Toolkit
-[![Build Status](https://travis-ci.org/dartsim/dart.png?branch=master)](https://travis-ci.org/dartsim/dart) [![Build status](https://ci.appveyor.com/api/projects/status/6rta8olo95bpu84r/branch/master?svg=true)](https://ci.appveyor.com/project/jslee02/dart/branch/master) [![codecov](https://codecov.io/gh/dartsim/dart/branch/master/graph/badge.svg)](https://codecov.io/gh/dartsim/dart)
+[![Build Status](https://travis-ci.org/dartsim/dart.png?branch=master)](https://travis-ci.org/dartsim/dart) [![Build status](https://ci.appveyor.com/api/projects/status/6rta8olo95bpu84r/branch/master?svg=true)](https://ci.appveyor.com/project/jslee02/dart/branch/master) [![codecov](https://codecov.io/gh/dartsim/dart/branch/master/graph/badge.svg)](https://codecov.io/gh/dartsim/dart) [![DOI](http://joss.theoj.org/papers/10.21105/joss.00500/status.svg)](https://doi.org/10.21105/joss.00500)
 
 Visit the [DART website](http://dartsim.github.io/) for more information
 * [Gallery](http://dartsim.github.io/gallery.html)
