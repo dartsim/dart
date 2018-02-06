@@ -136,7 +136,7 @@ protected:
 
   /// Called when this world gets added to an dart::gui::osg::Viewer. Override
   /// this function to customize the way your WorldNode starts up in an
-  /// dart::gui::osg::Viewer. Default behavior does nothing.
+  /// dart::gui::osg::Viewer. Default behavior enables shadows.
   virtual void setupViewer();
 
   /// Clear the utilization flags of each child node
@@ -172,6 +172,9 @@ protected:
 
   /// Viewer that this WorldNode is inside of
   Viewer* mViewer;
+
+  /// Osg ShadowedScene for handling shadows
+  ::osg::ref_ptr<::osg::Group> mShadowedScene;
 
 };
 

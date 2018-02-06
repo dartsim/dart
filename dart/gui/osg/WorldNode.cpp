@@ -33,6 +33,8 @@
 #include <deque>
 
 #include <osg/NodeCallback>
+#include <osgShadow/ShadowedScene>
+#include <osgShadow/ShadowMap>
 
 #include "dart/gui/osg/WorldNode.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
@@ -164,7 +166,30 @@ WorldNode::~WorldNode()
 //==============================================================================
 void WorldNode::setupViewer()
 {
-  // Do nothing
+  constexpr int ReceivesShadowTraversalMask = 0x2;
+  constexpr int CastsShadowTraversalMask = 0x1;
+
+  // Setup shadows
+  // Create the ShadowedScene
+  ::osg::ref_ptr<osgShadow::ShadowedScene> shadowedScene = new osgShadow::ShadowedScene;
+  shadowedScene->setReceivesShadowTraversalMask(ReceivesShadowTraversalMask);
+  shadowedScene->setCastsShadowTraversalMask(CastsShadowTraversalMask);
+  // Use the ShadowMap technique
+  ::osg::ref_ptr<osgShadow::ShadowMap> sm = new osgShadow::ShadowMap;
+  // increase the resolution of default shadow texture for higher quality
+  int mapres = std::pow(2, 13);
+  sm->setTextureSize(::osg::Vec2s(mapres,mapres));
+
+  // set the technique
+  shadowedScene->setShadowTechnique(sm.get());
+
+  // add the Viewer's root object to the shadowed scene
+  shadowedScene->addChild(mViewer->getRootGroup().get());
+
+  // save the shadowed scene
+  mShadowedScene = shadowedScene;
+  // replace the viewer's scene data with the shadowed scene
+  mViewer->setSceneData(mShadowedScene.get());
 }
 
 //==============================================================================
