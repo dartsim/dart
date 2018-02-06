@@ -173,9 +173,6 @@ protected:
   /// Viewer that this WorldNode is inside of
   Viewer* mViewer;
 
-  /// Osg ShadowedScene for handling shadows
-  ::osg::ref_ptr<::osg::Group> mShadowedScene;
-
 };
 
 } // namespace osg
