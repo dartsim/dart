@@ -1,5 +1,5 @@
-tap dartsim/dart
-tap ros/deps
+tap 'dartsim/dart'
+tap 'ros/deps'
 
 brew 'git'
 brew 'cmake'
