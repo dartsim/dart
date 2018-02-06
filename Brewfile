@@ -1,3 +1,6 @@
+tap dartsim/dart
+tap ros/deps
+
 brew 'git'
 brew 'cmake'
 brew 'assimp'
