@@ -69,7 +69,7 @@ void ShadowedWorldNode::setupViewer()
   // save the shadowed scene
   mShadowedScene = shadowedScene;
   // get camera's home position
-  // it is reseted when chaning the SceneData, which can lead to undesired behavior
+  // it is resetted when changing the SceneData, which can lead to undesired behavior
   ::osg::Vec3d eye, center, up;
   mViewer->getCameraManipulator()->getHomePosition(eye, center, up);
   // replace the viewer's scene data with the shadowed scene
