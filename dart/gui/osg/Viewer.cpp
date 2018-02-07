@@ -316,11 +316,36 @@ void Viewer::switchHeadlights(bool _on)
 
   if(_on)
   {
+    // Turn on lights
     if(getLight())
     {
-      getLight()->setAmbient(::osg::Vec4(0.1,0.1,0.1,1.0));
-      getLight()->setDiffuse(::osg::Vec4(0.8,0.8,0.8,1.0));
+      getLight()->setAmbient(::osg::Vec4(0.1,0.1,0.1,1.0)); // small ambient lighting is always desirable
+      getLight()->setDiffuse(::osg::Vec4(1.0,1.0,1.0,1.0));
       getLight()->setSpecular(::osg::Vec4(1.0,1.0,1.0,1.0));
+    }
+
+    if(mLight1)
+    {
+      mLight1->setAmbient(::osg::Vec4(0.0,0.0,0.0,1.0));
+      mLight1->setDiffuse(::osg::Vec4(1.0,1.0,1.0,1.0));
+      mLight1->setSpecular(::osg::Vec4(1.0,1.0,1.0,1.0));
+    }
+
+    if(mLight2)
+    {
+      mLight2->setAmbient(::osg::Vec4(0.0,0.0,0.0,1.0));
+      mLight1->setDiffuse(::osg::Vec4(1.0,1.0,1.0,1.0));
+      mLight1->setSpecular(::osg::Vec4(1.0,1.0,1.0,1.0));
+    }
+  }
+  else
+  {
+    // Turn off lights
+    if(getLight())
+    {
+      getLight()->setAmbient(::osg::Vec4(0.1,0.1,0.1,1.0)); // small ambient lighting is always desirable
+      getLight()->setDiffuse(::osg::Vec4(0.0,0.0,0.0,1.0));
+      getLight()->setSpecular(::osg::Vec4(0.0,0.0,0.0,1.0));
     }
 
     if(mLight1)
@@ -335,29 +360,6 @@ void Viewer::switchHeadlights(bool _on)
       mLight2->setAmbient(::osg::Vec4(0.0,0.0,0.0,1.0));
       mLight2->setDiffuse(::osg::Vec4(0.0,0.0,0.0,1.0));
       mLight2->setSpecular(::osg::Vec4(0.0,0.0,0.0,1.0));
-    }
-  }
-  else
-  {
-    if(getLight())
-    {
-      getLight()->setAmbient(::osg::Vec4(0.1,0.1,0.1,1.0));
-      getLight()->setDiffuse(::osg::Vec4(0.0,0.0,0.0,1.0));
-      getLight()->setSpecular(::osg::Vec4(0.0,0.0,0.0,1.0));
-    }
-
-    if(mLight1)
-    {
-      mLight1->setAmbient(::osg::Vec4(0.0,0.0,0.0,1.0));
-      mLight1->setDiffuse(::osg::Vec4(0.7,0.7,0.7,1.0));
-      mLight1->setSpecular(::osg::Vec4(0.9,0.9,0.9,1.0));
-    }
-
-    if(mLight2)
-    {
-      mLight2->setAmbient(::osg::Vec4(0.0,0.0,0.0,1.0));
-      mLight2->setDiffuse(::osg::Vec4(0.3,0.3,0.3,1.0));
-      mLight2->setSpecular(::osg::Vec4(0.4,0.4,0.4,1.0));
     }
   }
 }
@@ -508,10 +510,13 @@ void Viewer::setUpwardsDirection(const ::osg::Vec3& _up)
     mOver = ::osg::Vec3(0,0,1)^_up;
   mOver.normalize();
 
-  ::osg::Vec3 p1 = mUpwards+mOver;
-  mLight1->setPosition(::osg::Vec4(p1[0], p1[1], p1[2], 0.0));
-  ::osg::Vec3 p2 = mUpwards-mOver;
-  mLight2->setPosition(::osg::Vec4(p2[0], p2[1], p2[2], 0.0));
+  ::osg::Vec3 p1 = mUpwards*2.+mOver;
+  mLight1->setPosition(::osg::Vec4(p1[0], p1[1], p1[2], 1.0)); // 1.0 at the end means point or spot light
+  // default is point light since the spot cutoff is set at 180 degrees by default
+  mLight1->setQuadraticAttenuation(1.); // enable quadratic attenuation for more realistic lighting
+  ::osg::Vec3 p2 = mUpwards*2.-mOver;
+  mLight2->setPosition(::osg::Vec4(p2[0], p2[1], p2[2], 1.0)); // 1.0 at the end means point or spot light
+  mLight2->setQuadraticAttenuation(1.); // enable quadratic attenuation for more realistic lighting
 }
 
 //==============================================================================
