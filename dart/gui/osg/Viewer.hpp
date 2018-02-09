@@ -117,7 +117,7 @@ public:
 
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the
   /// default event handler.
-  Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9,0.9,0.9,1.0));
+  Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9,0.9,0.9,1.0), bool shadowsOn = false);
 
   /// Destructor
   virtual ~Viewer();
@@ -288,6 +288,12 @@ public:
   /// Get the root ::osg::Group of this Viewer
   const ::osg::ref_ptr<::osg::Group>& getRootGroup() const;
 
+  /// Get the physics root ::osg::Group of this Viewer
+  const ::osg::ref_ptr<::osg::Group>& getPhysicsGroup() const;
+
+  bool isShadowed() const;
+  void enableShadows(bool _enable = true);
+
 protected:
 
   friend class SaveScreen;
@@ -318,6 +324,12 @@ protected:
 
   /// The root node of this Viewer
   ::osg::ref_ptr<::osg::Group> mRootGroup;
+
+  /// The DART physics node of this Viewer
+  ::osg::ref_ptr<::osg::Group> mPhysicsGroup;
+
+  /// Whether the shadows are enabled
+  bool mShadowed;
 
   /// The Group Node containing light sources
   ::osg::ref_ptr<::osg::Group> mLightGroup;
