@@ -301,7 +301,7 @@ public:
   const ::osg::ref_ptr<::osg::Group>& getPhysicsGroup() const;
 
   bool isShadowed() const;
-  void enableShadows(bool _enable = true, ShadowType type = ShadowType::STANDARD_SHADOW_MAP);
+  void enableShadows(bool _enable = true, ShadowType type = ShadowType::SHADOW_MAP);
 
 protected:
 
