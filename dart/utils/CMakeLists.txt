@@ -5,6 +5,9 @@ dart_check_optional_package(TINYXML "dart-utils" "tinyxml" "2.6.2")
 find_package(TINYXML2 QUIET)
 dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
+find_package(YamlCpp QUIET)
+dart_check_optional_package(YAMLCPP "dart-utils" "yaml-cpp" "1.0.0")
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -34,12 +37,15 @@ target_include_directories(
   PUBLIC
     ${TINYXML_INCLUDE_DIRS}
     ${TINYXML2_INCLUDE_DIRS}
+    ${YAMLCPP_INCLUDE_DIRS}
 )
 target_link_libraries(
   ${target_name}
-  dart
-  ${TINYXML_LIBRARIES}
-  ${TINYXML2_LIBRARIES}
+  PUBLIC
+    dart
+    ${TINYXML_LIBRARIES}
+    ${TINYXML2_LIBRARIES}
+    ${YAMLCPP_LIBRARIES}
 )
 
 # Component
@@ -77,3 +83,8 @@ install(
 
 # Add subdirectories (components)
 add_subdirectory(urdf)
+
+dart_format_add(
+  YamlParser.hpp
+  YamlParser.cpp
+)
