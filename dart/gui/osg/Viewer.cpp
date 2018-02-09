@@ -39,6 +39,8 @@
 #include <osgShadow/ShadowVolume>
 #include <osgShadow/ShadowTexture>
 #include <osgShadow/ShadowMap>
+#include <osgShadow/StandardShadowMap>
+#include <osgShadow/SoftShadowMap>
 
 #include "dart/gui/osg/Viewer.hpp"
 #include "dart/gui/osg/TrackballManipulator.hpp"
@@ -195,7 +197,7 @@ void ViewerAttachment::attach(Viewer* newViewer)
 }
 
 //==============================================================================
-Viewer::Viewer(const ::osg::Vec4& clearColor, bool shadowsOn)
+Viewer::Viewer(const ::osg::Vec4& clearColor, bool shadowsOn, ShadowType shadowType)
   : mImageSequenceNum(0),
     mImageDigits(0),
     mRecording(false),
@@ -211,7 +213,7 @@ Viewer::Viewer(const ::osg::Vec4& clearColor, bool shadowsOn)
     mAllowSimulation(true),
     mHeadlights(true)
 {
-  enableShadows(shadowsOn);
+  enableShadows(shadowsOn, shadowType);
 
   // add the physics group to the root group
   mRootGroup->addChild(mPhysicsGroup);
@@ -854,7 +856,7 @@ bool Viewer::isShadowed() const
 }
 
 //==============================================================================
-void Viewer::enableShadows(bool _enable)
+void Viewer::enableShadows(bool _enable, ShadowType type)
 {
   if(!mPhysicsGroup) {
     // Flags for shadowing; maybe this needs to be global?
@@ -875,15 +877,59 @@ void Viewer::enableShadows(bool _enable)
   }
 
   if(_enable) {
-    // Use the ShadowMap technique
-    ::osg::ref_ptr<osgShadow::ShadowMap> sm = new osgShadow::ShadowMap;
-    // increase the resolution of default shadow texture for higher quality
-    int mapres = std::pow(2, 13);
-    sm->setTextureSize(::osg::Vec2s(mapres,mapres));
-    sm->setLight(mLight1);
-
-    // set the technique
-    static_cast<osgShadow::ShadowedScene*>(mPhysicsGroup.get())->setShadowTechnique(sm.get());
+    switch(type) {
+      case ShadowType::STANDARD_SHADOW_MAP:
+        {
+        // Use the StandardShadowMap technique
+        ::osg::ref_ptr<osgShadow::StandardShadowMap> ssm = new osgShadow::StandardShadowMap;
+        // we are using Light1 because this is the highest one (on up direction)
+        ssm->setLight(mLight1);
+        // set the technique
+        static_cast<osgShadow::ShadowedScene*>(mPhysicsGroup.get())->setShadowTechnique(ssm.get());
+        break;
+        }
+      case ShadowType::SOFT_SHADOW_MAP:
+        {
+        // Use the SoftShadowMap technique
+        ::osg::ref_ptr<osgShadow::SoftShadowMap> softsm = new osgShadow::SoftShadowMap;
+        // we are using Light1 because this is the highest one (on up direction)
+        softsm->setLight(mLight1);
+        // set the technique
+        static_cast<osgShadow::ShadowedScene*>(mPhysicsGroup.get())->setShadowTechnique(softsm.get());
+        break;
+        }
+      case ShadowType::SHADOW_TEXTURE:
+        {
+        // Use the ShadowTexture technique
+        ::osg::ref_ptr<osgShadow::ShadowTexture> st = new osgShadow::ShadowTexture;
+        // set the technique
+        static_cast<osgShadow::ShadowedScene*>(mPhysicsGroup.get())->setShadowTechnique(st.get());
+        break;
+        }
+      case ShadowType::SHADOW_VOLUME:
+        {
+        // hint to tell viewer to request stencil buffer when setting up windows
+        ::osg::DisplaySettings::instance()->setMinimumNumStencilBits(8);
+        // Use the ShadowVolume technique
+        ::osg::ref_ptr<osgShadow::ShadowVolume> sv = new osgShadow::ShadowVolume;
+        // set the technique
+        static_cast<osgShadow::ShadowedScene*>(mPhysicsGroup.get())->setShadowTechnique(sv.get());
+        break;
+        }
+      default: // SHADOW_MAP
+        {
+        // Use the ShadowMap technique
+        ::osg::ref_ptr<osgShadow::ShadowMap> sm = new osgShadow::ShadowMap;
+        // increase the resolution of default shadow texture for higher quality
+        int mapres = std::pow(2, 13);
+        sm->setTextureSize(::osg::Vec2s(mapres,mapres));
+        // we are using Light1 because this is the highest one (on up direction)
+        sm->setLight(mLight1);
+        // set the technique
+        static_cast<osgShadow::ShadowedScene*>(mPhysicsGroup.get())->setShadowTechnique(sm.get());
+        break;
+        }
+    }
   }
   else
     static_cast<osgShadow::ShadowedScene*>(mPhysicsGroup.get())->setShadowTechnique(0);

@@ -115,9 +115,18 @@ class Viewer : public osgViewer::Viewer, public dart::common::Subject
 {
 public:
 
+  enum ShadowType {
+    SHADOW_MAP = 0,
+    STANDARD_SHADOW_MAP,
+    SOFT_SHADOW_MAP,
+    SHADOW_TEXTURE,
+    SHADOW_VOLUME
+    // TODO: Add more techniques
+  };
+
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the
   /// default event handler.
-  Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9,0.9,0.9,1.0), bool shadowsOn = false);
+  Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9,0.9,0.9,1.0), bool shadowsOn = false, ShadowType shadowType = ShadowType::SHADOW_MAP);
 
   /// Destructor
   virtual ~Viewer();
@@ -292,7 +301,7 @@ public:
   const ::osg::ref_ptr<::osg::Group>& getPhysicsGroup() const;
 
   bool isShadowed() const;
-  void enableShadows(bool _enable = true);
+  void enableShadows(bool _enable = true, ShadowType type = ShadowType::STANDARD_SHADOW_MAP);
 
 protected:
 
