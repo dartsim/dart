@@ -1,6 +1,3 @@
-tap 'dartsim/dart'
-tap 'ros/deps'
-
 brew 'git'
 brew 'cmake'
 brew 'assimp'
@@ -16,6 +13,4 @@ brew 'libccd'
 brew 'nlopt'
 #brew 'ipopt'
 brew 'urdfdom'
-brew 'urdfdom_headers'
-brew 'console_bridge'
 brew 'open-scene-graph'
