@@ -153,5 +153,20 @@ endfunction(dart_add_tutorial)
 
 #===============================================================================
 function(dart_format_add)
-  dart_property_add(DART_FORMAT_FILES ${ARGN})
+  foreach(source ${ARGN})
+    if(IS_ABSOLUTE "${source}")
+      set(source_abs "${source}")
+    else()
+      get_filename_component(source_abs
+        "${CMAKE_CURRENT_LIST_DIR}/${source}" ABSOLUTE)
+    endif()
+    if(EXISTS "${source_abs}")
+      dart_property_add(DART_FORMAT_FILES "${source_abs}")
+    else()
+      message(FATAL_ERROR
+        "Source file '${source}' does not exist at absolute path"
+        " '${source_abs}'. This should never happen. Did you recently delete"
+        " this file or modify 'CMAKE_CURRENT_LIST_DIR'")
+    endif()
+  endforeach()
 endfunction()
