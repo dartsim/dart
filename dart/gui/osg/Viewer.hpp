@@ -38,6 +38,7 @@
 #include <memory>
 
 #include <osgViewer/Viewer>
+#include <osgShadow/ShadowTechnique>
 
 #include <Eigen/Core>
 
@@ -114,19 +115,9 @@ private:
 class Viewer : public osgViewer::Viewer, public dart::common::Subject
 {
 public:
-
-  enum ShadowType {
-    SHADOW_MAP = 0,
-    STANDARD_SHADOW_MAP,
-    SOFT_SHADOW_MAP,
-    SHADOW_TEXTURE,
-    SHADOW_VOLUME
-    // TODO: Add more techniques
-  };
-
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the
   /// default event handler.
-  Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9,0.9,0.9,1.0), bool shadowsOn = false, ShadowType shadowType = ShadowType::SHADOW_MAP);
+  Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9,0.9,0.9,1.0), bool shadowsOn = false, ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
 
   /// Destructor
   virtual ~Viewer();
@@ -205,6 +196,11 @@ public:
 
   /// Get the Group node that contains the LightSources for this Viewer
   const ::osg::Group* getLightGroup() const;
+
+  /// Get one of the LightSources of this Viewer
+  /// index either 0 or 1
+  /// Useful for shadowing techniques
+  const ::osg::ref_ptr<::osg::LightSource>& getLightSource(unsigned int index = 0) const;
 
   /// Set up the default lighting scheme
   void setupDefaultLights();
@@ -301,7 +297,8 @@ public:
   const ::osg::ref_ptr<::osg::Group>& getPhysicsGroup() const;
 
   bool isShadowed() const;
-  void enableShadows(bool _enable = true, ShadowType type = ShadowType::SHADOW_MAP);
+  void enableShadows(bool _enable = true, ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
+  void setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique);
 
 protected:
 
