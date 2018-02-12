@@ -22,9 +22,11 @@ matrix:
       compiler: clang
       env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
     - os: osx
+      osx_image: xcode9.3beta
       compiler: clang
       env: BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
     - os: osx
+      osx_image: xcode9.3beta
       compiler: clang
       env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
 
