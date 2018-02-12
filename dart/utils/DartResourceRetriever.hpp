@@ -84,6 +84,9 @@ public:
   // Documentation inherited.
   common::ResourcePtr retrieve(const common::Uri& uri) override;
 
+  // Documentation inherited.
+  std::string getFilePath(const common::Uri& uri) override;
+
 private:
 
   void addDataDirectory(const std::string& packageDirectory);
