@@ -16,6 +16,10 @@
 
   * Added FCL 0.6 support (backport of #873): [#936](https://github.com/dartsim/dart/pull/936)
 
+* GUI
+
+  * Added support of rendering texture images: [#973](https://github.com/dartsim/dart/pull/973)
+
 * License
 
   * Added Personal Robotics Lab and Open Source Robotics Foundation as contributors: [#929](https://github.com/dartsim/dart/pull/929)
