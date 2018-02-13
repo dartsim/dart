@@ -43,6 +43,9 @@ if(TARGET dart-utils)
   dart_add_test("unit" test_VskParser)
   target_link_libraries(test_VskParser dart-utils)
 
+  dart_add_test("unit" test_YamlParser)
+  target_link_libraries(test_YamlParser dart-utils)
+
 endif()
 
 if(TARGET dart-utils-urdf)

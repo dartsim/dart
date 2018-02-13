@@ -1,0 +1,34 @@
+version: 0.1.0
+
+worlds:
+  - name: World 1
+    physics:
+      - time_step: 0.001
+        gravity: [0, -9.81, 0]
+        collision_detector: fcl_mesh
+    skeletons:
+      - name: Skeleton 1
+        bodies:
+          - name: Body Node 1
+            gravity: true
+            transform: [0.1, 0, 0, 0, 0, 0]
+            inertia:
+              mass: 5
+              offset: [0, 0, 0]
+              moment: [1, 2, 3, 0, 0, 0]
+            visuals:
+              - transform: [0, 0, 0, 0, 0, 0]
+                geometry:
+                  box:
+                    size: [0.1, 0.2, 0.3]
+            collisions:
+              - transform: [0, 0, 0, 0, 0, 0]
+                geometry:
+                  box:
+                    size: [0.1, 0.2, 0.3]
+        joints:
+          - name: 'Joint 1'
+            type: 'free'
+            parent: world
+            child: Body Node 1
+            transform: [0, 0, 0, 0, 0, 0]

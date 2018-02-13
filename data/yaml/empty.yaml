@@ -1,0 +1,13 @@
+skeletons:
+  - name: Skeleton 1
+  - body_nodes:
+    - name: Body Node 1
+      mass: 100
+    - name: Body Node 2
+      mass: 200
+  - name: Skeleton 2
+  - body_nodes:
+    - name: Body Node 1
+      mass: 300
+    - name: Body Node 2
+      mass: 400
