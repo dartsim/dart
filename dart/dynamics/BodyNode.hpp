@@ -546,12 +546,21 @@ public:
   /// <BodyNodeName>_ShapeNode_<#>.
   ShapeNode* createShapeNode(const ShapePtr& shape);
 
-  /// Create an ShapeNode with the specified name
+  /// Same as createShapeNode(const ShapePtr&), but this accepts pointers to
+  /// arbitrary Shape types.
+  template <class ShapeType>
+  ShapeNode* createShapeNode(const std::shared_ptr<ShapeType>& shape);
+
+  /// Create a ShapeNode with the specified name
   ShapeNode* createShapeNode(
       const ShapePtr& shape, const std::string& name);
 
-  /// Create an ShapeNode with the specified name
-  ShapeNode* createShapeNode(const ShapePtr& shape, const char* name);
+  /// Same as createShapeNode(const ShapePtr&, const std::string&), but this
+  /// accepts pointers to arbitrary Shape types, and can accept string literals.
+  template <class ShapeType, class StringType>
+  ShapeNode* createShapeNode(
+      const std::shared_ptr<ShapeType>& shape,
+      const StringType& name);
 
   /// Return the list of ShapeNodes
   const std::vector<ShapeNode*> getShapeNodes();

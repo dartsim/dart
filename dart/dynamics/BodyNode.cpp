@@ -900,12 +900,6 @@ ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
 }
 
 //==============================================================================
-ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape, const char* name)
-{
-  return createShapeNode(shape, std::string(name));
-}
-
-//==============================================================================
 const std::vector<ShapeNode*> BodyNode::getShapeNodes()
 {
   const auto numShapeNodes = getNumShapeNodes();

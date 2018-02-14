@@ -40,8 +40,19 @@ TEST(IssueXXX, CreateShapeNodeShouldCompile)
 {
   const auto skel = dart::dynamics::Skeleton::create();
   auto* bn = skel->createJointAndBodyNodePair<FreeJoint>().second;
-  auto sphere = std::make_shared<dart::dynamics::SphereShape>(1.0);
+  const auto sphere = std::make_shared<dart::dynamics::SphereShape>(1.0);
+
   bn->createShapeNode(sphere);
+  bn->createShapeNode(sphere, "custom name");
+
+  const dart::dynamics::ShapePtr generic =
+      std::make_shared<dart::dynamics::SphereShape>(1.0);
+
+  bn->createShapeNode(generic);
+  bn->createShapeNode(generic, "another name");
+
+  bn->createShapeNode(sphere, std::string("passing a string"));
+  bn->createShapeNode(generic, std::string("passing another string"));
 
   auto world = dart::simulation::World::create();
   world->addSkeleton(skel);
