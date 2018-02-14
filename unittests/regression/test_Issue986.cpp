@@ -36,7 +36,7 @@
 #include <dart/utils/urdf/DartLoader.hpp>
 
 //==============================================================================
-TEST(IssueXXX, CreateShapeNodeShouldCompile)
+TEST(Issue986, CreateShapeNodeShouldCompile)
 {
   const auto skel = dart::dynamics::Skeleton::create();
   auto* bn = skel->createJointAndBodyNodePair<FreeJoint>().second;
