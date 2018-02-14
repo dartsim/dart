@@ -880,26 +880,6 @@ const Joint* BodyNode::getChildJoint(std::size_t _index) const
 DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( BodyNode, ShapeNode )
 
 //==============================================================================
-ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape)
-{
-  ShapeNode::BasicProperties properties;
-  properties.mShape = shape;
-
-  return createShapeNode(properties, true);
-}
-
-//==============================================================================
-ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
-                                     const std::string& name)
-{
-  ShapeNode::BasicProperties properties;
-  properties.mShape = shape;
-  properties.mName = name;
-
-  return createShapeNode(properties, false);
-}
-
-//==============================================================================
 const std::vector<ShapeNode*> BodyNode::getShapeNodes()
 {
   const auto numShapeNodes = getNumShapeNodes();
