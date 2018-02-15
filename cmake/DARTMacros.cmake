@@ -59,18 +59,48 @@ macro(dart_generate_include_header_list _var _target_dir _cacheDesc)
 endmacro()
 
 #===============================================================================
+# clang-tidy
+#===============================================================================
+if(NOT (${CMAKE_VERSION} VERSION_LESS "3.6.0"))
+  find_program(
+    CLANG_TIDY_EXECUTABLE
+    NAMES clang-tidy clang-tidy-4.0 clang-tidy-3.9 clang-tidy-3.8
+  )
+  if(CLANG_TIDY_EXECUTABLE)
+    set(DO_CLANG_TIDY
+      "${CLANG_TIDY_EXECUTABLE}"
+      "-config="
+    )
+  else()
+    if(DART_VERBOSE)
+      message(
+        STATUS
+        "Looking for clang-tidy - NOT found, please install clang-tidy to enable
+        static code analyzing using clang-tidy."
+      )
+    endif()
+  endif()
+endif()
+
+#===============================================================================
 # Add library and set target properties
 # Usage:
 #   dart_add_library(_libname source1 [source2 ...])
 #===============================================================================
-macro(dart_add_library _name)
+function(dart_add_library _name)
   add_library(${_name} ${ARGN})
   set_target_properties(
     ${_name} PROPERTIES
     SOVERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}"
     VERSION "${DART_VERSION}"
   )
-endmacro()
+  if(DO_CLANG_TIDY)
+    set_target_properties(
+      ${_name} PROPERTIES
+      CXX_CLANG_TIDY "${DO_CLANG_TIDY}"
+    )
+  endif()
+endfunction()
 
 #===============================================================================
 function(dart_property_add property_name)
@@ -169,9 +199,4 @@ function(dart_format_add)
         " this file or modify 'CMAKE_CURRENT_LIST_DIR'")
     endif()
   endforeach()
-endfunction()
-
-#===============================================================================
-function(dart_clang_tidy_add)
-  dart_property_add(DART_CLANG_TIDY_FILES ${ARGN})
 endfunction()
