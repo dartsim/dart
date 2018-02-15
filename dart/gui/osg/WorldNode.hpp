@@ -138,6 +138,10 @@ public:
   /// If you wish to disable shadows, pass a nullptr
   void setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
 
+  /// Get the current ShadowTechnique
+  /// nullptr is there are no shadows
+  ::osg::ref_ptr<osgShadow::ShadowTechnique> getShadowTechnique() const;
+
   /// Helper function to create a default ShadowTechnique given a Viewer
   /// the default ShadowTechnique is ShadowMap
   static ::osg::ref_ptr<osgShadow::ShadowTechnique> createDefaultShadowTechnique(const Viewer* viewer);

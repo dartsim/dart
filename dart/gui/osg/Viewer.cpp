@@ -380,6 +380,9 @@ void Viewer::addWorldNode(WorldNode* _newWorldNode, bool _active)
     _newWorldNode->simulate(mSimulating);
   _newWorldNode->mViewer = this;
   _newWorldNode->setupViewer();
+  // set again the shadow technique to produce warning for ImGuiViewer
+  if(_newWorldNode->isShadowed())
+    _newWorldNode->setShadowTechnique(_newWorldNode->getShadowTechnique());
 }
 
 //==============================================================================

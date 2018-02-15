@@ -39,6 +39,7 @@
 
 #include "dart/gui/osg/WorldNode.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
+#include "dart/gui/osg/ImGuiViewer.hpp"
 
 #include "dart/simulation/World.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -334,9 +335,20 @@ void WorldNode::setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> sh
     static_cast<osgShadow::ShadowedScene*>(mShadowedGroup.get())->setShadowTechnique(nullptr);
   }
   else {
+    ImGuiViewer* viewer = mViewer ? dynamic_cast<ImGuiViewer*>(mViewer) : nullptr;
+    if(viewer)
+      dtwarn << "[WorldNode] You are enabling shadows inside an ImGuiViewer. "
+             << "The ImGui windows may not render properly.\n";
     mShadowed = true;
     static_cast<osgShadow::ShadowedScene*>(mShadowedGroup.get())->setShadowTechnique(shadowTechnique.get());
   }
+}
+
+//==============================================================================
+::osg::ref_ptr<osgShadow::ShadowTechnique> WorldNode::getShadowTechnique() const {
+  if(!mShadowed)
+    return nullptr;
+  return static_cast<osgShadow::ShadowedScene*>(mShadowedGroup.get())->getShadowTechnique();
 }
 
 //==============================================================================
