@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -386,7 +387,7 @@ TEST_F(JOINTS, COMMAND_LIMIT)
 {
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_limit_test.skel");
+        "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
@@ -428,7 +429,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
 
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_limit_test.skel");
+        "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -503,7 +504,7 @@ void testJointCoulombFrictionForce(double _timeStep)
 
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_friction_test.skel");
+        "dart://sample/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -666,7 +667,7 @@ void testServoMotor()
   double insufficient_force = 1e-1;
 
   // World
-  simulation::WorldPtr world(new simulation::World);
+  simulation::WorldPtr world = simulation::World::create();
   EXPECT_TRUE(world != nullptr);
 
   world->setGravity(Eigen::Vector3d(0, 0, -9.81));
@@ -816,7 +817,7 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
 
   simulation::WorldPtr myWorld
       = utils::SkelParser::readWorld(
-        DART_DATA_PATH"/skel/test/joint_friction_test.skel");
+        "dart://sample/skel/test/joint_friction_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 
   myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
@@ -1024,8 +1025,8 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
     // -- collect everything so we can cycle through the tests
     std::vector<Joint*> joints;
     std::vector<BodyNode*> bns;
-    Eigen::aligned_vector<Eigen::Isometry3d> desired_tfs;
-    Eigen::aligned_vector<Eigen::Isometry3d> actual_tfs;
+    common::aligned_vector<Eigen::Isometry3d> desired_tfs;
+    common::aligned_vector<Eigen::Isometry3d> actual_tfs;
 
     joints.push_back(freejoint);
     bns.push_back(freejoint_bn);
@@ -1299,11 +1300,3 @@ TEST_F(JOINTS, FREE_JOINT_RELATIVE_TRANSFORM_VELOCITY_ACCELERATION)
     }
   }
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
-

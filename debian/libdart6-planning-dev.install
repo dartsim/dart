@@ -1,5 +1,0 @@
-usr/include/dart/planning/*
-usr/lib/libdart-planning.so
-usr/share/dart/cmake/dart_planningTargets.cmake
-usr/share/dart/cmake/dart_planningTargets-*.cmake
-usr/share/dart/cmake/dart_planningComponent.cmake

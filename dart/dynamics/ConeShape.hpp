@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -84,15 +85,13 @@ public:
   Eigen::Matrix3d computeInertia(double mass) const override;
 
 protected:
+  // Documentation inherited.
+  void updateBoundingBox() const override;
 
   // Documentation inherited.
-  void updateVolume() override;
+  void updateVolume() const override;
 
 private:
-
-  /// Update bounding box (in the local coordinate frame) of the shape.
-  void updateBoundingBoxDim();
-
   /// Radius of the circular base.
   double mRadius;
 

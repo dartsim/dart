@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -37,6 +38,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Factory.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
@@ -56,6 +58,18 @@ public:
 
   friend class CollisionObject;
   friend class CollisionGroup;
+
+  using Factory = common::Factory<
+      std::string, CollisionDetector, std::shared_ptr<CollisionDetector>>;
+
+  using SingletonFactory = common::Singleton<Factory>;
+
+  template <typename Derived>
+  using Registrar = common::FactoryRegistrar<
+      std::string, CollisionDetector, Derived, std::shared_ptr<CollisionDetector>>;
+
+  /// Returns the singleton factory.
+  static Factory* getFactory();
 
   /// Destructor
   virtual ~CollisionDetector() = default;
@@ -181,6 +195,9 @@ public:
   /// will be created if it hasn't created yet for shapeFrame.
   virtual std::shared_ptr<CollisionObject> claimCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) = 0;
+
+  /// Returns collision detector
+  CollisionDetector* getCollisionDetector();
 
 protected:
 

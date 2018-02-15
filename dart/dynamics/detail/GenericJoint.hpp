@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -477,7 +478,7 @@ void GenericJoint<ConfigSpaceT>::setPosition(size_t index, double position)
 
   // Note: It would not make much sense to use setPositionsStatic() here
   this->mAspectState.mPositions[index] = position;
-  this->notifyPositionUpdate();
+  this->notifyPositionUpdated();
   this->mPositionUpdatedSignal.raise(this);
 }
 
@@ -659,7 +660,7 @@ void GenericJoint<ConfigSpaceT>::setPositionsStatic(const Vector& positions)
     return;
 
   this->mAspectState.mPositions = positions;
-  this->notifyPositionUpdate();
+  this->notifyPositionUpdated();
   this->mPositionUpdatedSignal.raise(this);
 }
 
@@ -680,7 +681,7 @@ void GenericJoint<ConfigSpaceT>::setVelocitiesStatic(
     return;
 
   this->mAspectState.mVelocities = velocities;
-  this->notifyVelocityUpdate();
+  this->notifyVelocityUpdated();
   this->mVelocityUpdatedSignal.raise(this);
 }
 
@@ -700,7 +701,7 @@ void GenericJoint<ConfigSpaceT>::setAccelerationsStatic(const Vector& accels)
     return;
 
   this->mAspectState.mAccelerations = accels;
-  this->notifyAccelerationUpdate();
+  this->notifyAccelerationUpdated();
 }
 
 //==============================================================================
@@ -741,7 +742,7 @@ void GenericJoint<ConfigSpaceT>::setVelocity(size_t index, double velocity)
 
   // Note: It would not make much sense to use setVelocitiesStatic() here
   this->mAspectState.mVelocities[index] = velocity;
-  this->notifyVelocityUpdate();
+  this->notifyVelocityUpdated();
   this->mVelocityUpdatedSignal.raise(this);
 
   if (Joint::mAspectProperties.mActuatorType == Joint::VELOCITY)
@@ -924,7 +925,7 @@ void GenericJoint<ConfigSpaceT>::setAcceleration(
 
   // Note: It would not make much sense to use setAccelerationsStatic() here
   this->mAspectState.mAccelerations[index] = acceleration;
-  this->notifyAccelerationUpdate();
+  this->notifyAccelerationUpdated();
 
   if (Joint::mAspectProperties.mActuatorType == Joint::ACCELERATION)
     this->mAspectState.mCommands[index] = this->getAccelerationsStatic()[index];

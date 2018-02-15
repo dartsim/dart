@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2010-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2010-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -67,7 +68,7 @@ void convertFloatToDec(float _f, char* _bytes) {
 }
 
 
-bool loadC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int* _nFrame, int* _nMarker, double* _freq) {
+bool loadC3DFile(const char* _fileName, std::vector<std::vector<Eigen::Vector3d>>& _pointData, int* _nFrame, int* _nMarker, double* _freq) {
     char buf[C3D_REC_SIZE];
     FILE *file;
     Eigen::Vector3d v;
@@ -174,7 +175,7 @@ bool loadC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int* 
     return true;
 }
 
-bool saveC3DFile(const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData, int _nFrame, int _nMarker, double _freq) {
+bool saveC3DFile(const char* _fileName, std::vector<std::vector<Eigen::Vector3d>>& _pointData, int _nFrame, int _nMarker, double _freq) {
     FILE *file;
     Eigen::Vector3d v;
     c3d_head hdr;

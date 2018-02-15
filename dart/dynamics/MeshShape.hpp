@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -48,10 +49,9 @@ class IOSystem;
 namespace dart {
 namespace dynamics {
 
-/// \brief
-class MeshShape : public Shape {
+class MeshShape : public Shape
+{
 public:
-
   enum ColorMode
   {
     MATERIAL_COLOR = 0, ///< Use the colors specified by the Mesh's material
@@ -59,14 +59,13 @@ public:
     SHAPE_COLOR,        ///< Use the color specified by the Shape base class
   };
 
-  /// \brief Constructor.
-  MeshShape(
-    const Eigen::Vector3d& _scale,
-    const aiScene* _mesh,
-    const std::string& _path = "",
-    const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+  /// Constructor.
+  MeshShape(const Eigen::Vector3d& scale,
+    const aiScene* mesh,
+    const common::Uri& uri = "",
+    common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
-  /// \brief Destructor.
+  /// Destructor.
   virtual ~MeshShape();
 
   // Documentation inherited.
@@ -75,38 +74,46 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  /// \brief
   const aiScene* getMesh() const;
 
-  /// Update positions of the vertices or the elements. By default, this does
+  /// Updates positions of the vertices or the elements. By default, this does
   /// nothing; you must extend the MeshShape class and implement your own
   /// version of this function if you want the mesh data to get updated before
   /// rendering
   virtual void update();
 
   // Documentation inherited
-  void notifyAlphaUpdate(double alpha) override;
+  void notifyAlphaUpdated(double alpha) override;
 
-  /// \brief
   void setMesh(
-    const aiScene* _mesh,
+    const aiScene* mesh,
     const std::string& path = "",
-    const common::ResourceRetrieverPtr& _resourceRetriever = nullptr);
+    common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
-  /// \brief URI to the mesh; an empty string if unavailable.
-  const std::string &getMeshUri() const;
+  void setMesh(
+    const aiScene* mesh,
+    const common::Uri& path,
+    common::ResourceRetrieverPtr resourceRetriever = nullptr);
 
-  /// \brief Path to the mesh on disk; an empty string if unavailable.
+  /// Returns URI to the mesh as std::string; an empty string if unavailable.
+  std::string getMeshUri() const;
+  // TODO(DART 7): Replace with getMeshUri2().
+
+  /// Returns URI to the mesh; an empty string if unavailable.
+  const common::Uri& getMeshUri2() const;
+  // TODO(DART 7): Remove.
+
+  /// Returns path to the mesh on disk; an empty string if unavailable.
   const std::string& getMeshPath() const;
 
-  /// \brief
-  void setScale(const Eigen::Vector3d& _scale);
+  common::ResourceRetrieverPtr getResourceRetriever();
 
-  /// \brief
+  void setScale(const Eigen::Vector3d& scale);
+
   const Eigen::Vector3d& getScale() const;
 
   /// Set how the color of this mesh should be determined
-  void setColorMode(ColorMode _mode);
+  void setColorMode(ColorMode mode);
 
   /// Get the coloring mode that this mesh is using
   ColorMode getColorMode() const;
@@ -115,50 +122,48 @@ public:
   /// COLOR_INDEX. This value must be smaller than AI_MAX_NUMBER_OF_COLOR_SETS.
   /// If the color index is higher than what the mesh has available, then we
   /// will use the highest index possible.
-  void setColorIndex(int _index);
+  void setColorIndex(int index);
 
   /// Get the index that will be used when the ColorMode is set to COLOR_INDEX
   int getColorIndex() const;
 
-  /// \brief
   int getDisplayList() const;
 
-  /// \brief
-  void setDisplayList(int _index);
+  void setDisplayList(int index);
 
-  /// \brief
-  static const aiScene* loadMesh(const std::string& _fileName);
+  static const aiScene* loadMesh(const std::string& filePath);
 
-  /// \brief 
   static const aiScene* loadMesh(
-    const std::string& _uri, const common::ResourceRetrieverPtr& _retriever);
+    const std::string& _uri, const common::ResourceRetrieverPtr& retriever);
+
+  static const aiScene* loadMesh(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever);
 
   // Documentation inherited.
   Eigen::Matrix3d computeInertia(double mass) const override;
 
 protected:
   // Documentation inherited.
-  void updateVolume() override;
+  void updateBoundingBox() const override;
 
-  /// \brief
-  void _updateBoundingBoxDim();
+  // Documentation inherited.
+  void updateVolume() const override;
 
-  /// \brief
   const aiScene* mMesh;
 
-  /// \brief URI the mesh, if available).
-  std::string mMeshUri;
+  /// URI the mesh, if available).
+  common::Uri mMeshUri;
 
-  /// \brief Path the mesh on disk, if available.
+  /// Path the mesh on disk, if available.
   std::string mMeshPath;
 
-  /// \brief Optional method of loading resources by URI.
+  /// Optional method of loading resources by URI.
   common::ResourceRetrieverPtr mResourceRetriever;
 
-  /// \brief OpenGL DisplayList id for rendering
+  /// OpenGL DisplayList id for rendering
   int mDisplayList;
 
-  /// \brief Scale
+  /// Scale
   Eigen::Vector3d mScale;
 
   /// Specifies how the color of this mesh should be determined
@@ -166,10 +171,6 @@ protected:
 
   /// Specifies which color index should be used when mColorMode is COLOR_INDEX
   int mColorIndex;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

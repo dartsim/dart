@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -719,7 +720,7 @@ void Skeleton::setTimeStep(double _timeStep)
   mAspectProperties.mTimeStep = _timeStep;
 
   for(std::size_t i=0; i<mTreeCache.size(); ++i)
-    notifyArticulatedInertiaUpdate(i);
+    dirtyArticulatedInertia(i);
 }
 
 //==============================================================================
@@ -734,7 +735,7 @@ void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
   mAspectProperties.mGravity = _gravity;
   SET_ALL_FLAGS(mGravityForces);
   SET_ALL_FLAGS(mCoriolisAndGravityForces);
-  ON_ALL_TREES(notifySupportUpdate);
+  ON_ALL_TREES(dirtySupportPolygon);
 }
 
 //==============================================================================
@@ -794,6 +795,23 @@ BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx)
 const BodyNode* Skeleton::getRootBodyNode(std::size_t _treeIdx) const
 {
   return const_cast<Skeleton*>(this)->getRootBodyNode(_treeIdx);
+}
+
+//==============================================================================
+Joint* Skeleton::getRootJoint(std::size_t treeIdx)
+{
+  auto rootBodyNode = getRootBodyNode(treeIdx);
+
+  if (rootBodyNode)
+    return rootBodyNode->getParentJoint();
+
+  return nullptr;
+}
+
+//==============================================================================
+const Joint* Skeleton::getRootJoint(std::size_t treeIdx) const
+{
+  return const_cast<Skeleton*>(this)->getRootJoint(treeIdx);
 }
 
 //==============================================================================
@@ -870,6 +888,29 @@ const std::vector<const BodyNode*>& Skeleton::getBodyNodes() const
 {
   return convertToConstPtrVector<BodyNode>(
         mSkelCache.mBodyNodes, mSkelCache.mConstBodyNodes);
+}
+
+//==============================================================================
+std::vector<BodyNode*> Skeleton::getBodyNodes(const std::string& name)
+{
+  auto bodyNode = getBodyNode(name);
+
+  if (bodyNode)
+    return {bodyNode};
+  else
+    return std::vector<BodyNode*>();
+}
+
+//==============================================================================
+std::vector<const BodyNode*> Skeleton::getBodyNodes(
+    const std::string& name) const
+{
+  const auto bodyNode = getBodyNode(name);
+
+  if (bodyNode)
+    return {bodyNode};
+  else
+    return std::vector<const BodyNode*>();
 }
 
 //==============================================================================
@@ -958,15 +999,63 @@ const Joint* Skeleton::getJoint(std::size_t _idx) const
 }
 
 //==============================================================================
-Joint* Skeleton::getJoint(const std::string& _name)
+Joint* Skeleton::getJoint(const std::string& name)
 {
-  return mNameMgrForJoints.getObject(_name);
+  return mNameMgrForJoints.getObject(name);
 }
 
 //==============================================================================
-const Joint* Skeleton::getJoint(const std::string& _name) const
+const Joint* Skeleton::getJoint(const std::string& name) const
 {
-  return mNameMgrForJoints.getObject(_name);
+  return mNameMgrForJoints.getObject(name);
+}
+
+//==============================================================================
+std::vector<Joint*> Skeleton::getJoints()
+{
+  const auto& bodyNodes = getBodyNodes();
+
+  std::vector<Joint*> joints;
+  joints.reserve(bodyNodes.size());
+  for (const auto& bodyNode : bodyNodes)
+    joints.emplace_back(bodyNode->getParentJoint());
+
+  return joints;
+}
+
+//==============================================================================
+std::vector<const Joint*> Skeleton::getJoints() const
+{
+  const auto& bodyNodes = getBodyNodes();
+
+  std::vector<const Joint*> joints;
+  joints.reserve(bodyNodes.size());
+  for (const auto& bodyNode : bodyNodes)
+    joints.emplace_back(bodyNode->getParentJoint());
+
+  return joints;
+}
+
+//==============================================================================
+std::vector<Joint*> Skeleton::getJoints(const std::string& name)
+{
+  auto joint = getJoint(name);
+
+  if (joint)
+    return {joint};
+  else
+    return std::vector<Joint*>();
+}
+
+//==============================================================================
+std::vector<const Joint*> Skeleton::getJoints(const std::string& name) const
+{
+  const auto joint = getJoint(name);
+
+  if (joint)
+    return {joint};
+  else
+    return std::vector<const Joint*>();
 }
 
 //==============================================================================
@@ -2557,7 +2646,7 @@ void Skeleton::updateCacheDimensions(std::size_t _treeIdx)
   updateCacheDimensions(mTreeCache[_treeIdx]);
   updateCacheDimensions(mSkelCache);
 
-  notifyArticulatedInertiaUpdate(_treeIdx);
+  dirtyArticulatedInertia(_treeIdx);
 }
 
 //==============================================================================
@@ -3492,6 +3581,12 @@ void Skeleton::clearInternalForces()
 //==============================================================================
 void Skeleton::notifyArticulatedInertiaUpdate(std::size_t _treeIdx)
 {
+  dirtyArticulatedInertia(_treeIdx);
+}
+
+//==============================================================================
+void Skeleton::dirtyArticulatedInertia(std::size_t _treeIdx)
+{
   SET_FLAG(_treeIdx, mArticulatedInertia);
   SET_FLAG(_treeIdx, mMassMatrix);
   SET_FLAG(_treeIdx, mAugMassMatrix);
@@ -3504,6 +3599,12 @@ void Skeleton::notifyArticulatedInertiaUpdate(std::size_t _treeIdx)
 
 //==============================================================================
 void Skeleton::notifySupportUpdate(std::size_t _treeIdx)
+{
+  dirtySupportPolygon(_treeIdx);
+}
+
+//==============================================================================
+void Skeleton::dirtySupportPolygon(std::size_t _treeIdx)
 {
   SET_FLAG(_treeIdx, mSupport);
 }

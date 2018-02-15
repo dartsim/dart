@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -68,11 +69,3 @@ TEST(Common, Timer)
   EXPECT_GE(timer2.getTotalElapsedTime(), 2.0);
 #endif
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
-

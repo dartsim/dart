@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -32,14 +33,11 @@
 #ifndef DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
 #define DART_COLLISION_FCL_FCLCOLLISIONOBJECT_HPP_
 
-#include <fcl/collision_object.h>
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/fcl/FCLTypes.hpp"
+#include "dart/collision/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
 namespace collision {
-
-class CollisionObject;
 
 class FCLCollisionObject : public CollisionObject
 {
@@ -47,36 +45,26 @@ public:
 
   friend class FCLCollisionDetector;
 
-  struct UserData
-  {
-    CollisionObject* mCollisionObject;
-
-    UserData(CollisionObject* collisionObject);
-  };
+  /// Return FCL collision object
+  dart::collision::fcl::CollisionObject* getFCLCollisionObject();
 
   /// Return FCL collision object
-  fcl::CollisionObject* getFCLCollisionObject();
-
-  /// Return FCL collision object
-  const fcl::CollisionObject* getFCLCollisionObject() const;
+  const dart::collision::fcl::CollisionObject* getFCLCollisionObject() const;
 
 protected:
 
   /// Constructor
   FCLCollisionObject(CollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame,
-      const fcl_shared_ptr<fcl::CollisionGeometry>& fclCollGeom);
+      const fcl_shared_ptr<dart::collision::fcl::CollisionGeometry>& fclCollGeom);
 
   // Documentation inherited
   void updateEngineData() override;
 
 protected:
 
-  /// FCL collision geometry user data
-  std::unique_ptr<UserData> mFCLCollisionObjectUserData;
-
   /// FCL collision object
-  std::unique_ptr<fcl::CollisionObject> mFCLCollisionObject;
+  std::unique_ptr<dart::collision::fcl::CollisionObject> mFCLCollisionObject;
 
 };
 

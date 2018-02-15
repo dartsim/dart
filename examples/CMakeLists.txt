@@ -1,18 +1,22 @@
-# A list of examples
-set_property(DIRECTORY PROPERTY FOLDER Examples)
+cmake_minimum_required(VERSION 2.8.12)
 
-# Automatically identify all directories in the examples folder
-file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*")
-set(directories "")
-foreach(child ${children})
-  if(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")
-    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/${child}/CMakeLists.txt")
-      list(APPEND directories ${child})
-    endif(EXISTS "${CMAKE_CURRENT_LIST_DIR}/${child}/CMakeLists.txt")
-  endif(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")
-endforeach(child)
+project(dart-examples)
 
-# List of all the subdirectories to include
-foreach(EXAMPLE_DIR ${directories})
-  add_subdirectory(${EXAMPLE_DIR})
-endforeach(EXAMPLE_DIR)
+add_subdirectory(addDeleteSkels)
+add_subdirectory(atlasSimbicon)
+add_subdirectory(bipedStand)
+add_subdirectory(hardcodedDesign)
+add_subdirectory(hybridDynamics)
+add_subdirectory(jointConstraints)
+add_subdirectory(mixedChain)
+add_subdirectory(operationalSpaceControl)
+add_subdirectory(rigidChain)
+add_subdirectory(rigidLoop)
+add_subdirectory(rigidShapes)
+add_subdirectory(simpleFrames)
+add_subdirectory(softBodies)
+add_subdirectory(speedTest)
+add_subdirectory(vehicle)
+
+add_subdirectory(osgExamples)
+
