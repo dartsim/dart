@@ -50,6 +50,9 @@ public:
 
   // Documentation inherited.
   ResourcePtr retrieve(const Uri& _uri) override;
+
+  // Documentation inherited.
+  std::string getFilePath(const Uri& uri) override;
 };
 
 using LocalResourceRetrieverPtr = std::shared_ptr<LocalResourceRetriever>;

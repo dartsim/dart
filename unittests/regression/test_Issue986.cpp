@@ -30,35 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
 #include <gtest/gtest.h>
-#include "dart/config.hpp"
-#include "dart/utils/DartResourceRetriever.hpp"
-
-using namespace dart;
+#include <TestHelpers.hpp>
+#include <dart/dart.hpp>
+#include <dart/utils/urdf/DartLoader.hpp>
 
 //==============================================================================
-TEST(DartResourceRetriever, ExistsAndGetFilePathAndRetrieve)
+TEST(Issue986, CreateShapeNodeShouldCompile)
 {
-  auto retriever = utils::DartResourceRetriever::create();
+  const auto skel = dart::dynamics::Skeleton::create();
+  auto* bn = skel->createJointAndBodyNodePair<FreeJoint>().second;
+  const auto sphere = std::make_shared<dart::dynamics::SphereShape>(1.0);
 
-  EXPECT_FALSE(retriever->exists("unknown://test"));
-  EXPECT_FALSE(retriever->exists("unknown://sample/test"));
-  EXPECT_FALSE(retriever->exists("dart://unknown/test"));
-  EXPECT_FALSE(retriever->exists("dart://sample/does/not/exist"));
-  EXPECT_TRUE(retriever->exists("dart://sample/skel/shapes.skel"));
+  bn->createShapeNode(sphere);
+  bn->createShapeNode(sphere, "custom name");
 
-  EXPECT_EQ(retriever->getFilePath("unknown://test"), "");
-  EXPECT_EQ(retriever->getFilePath("unknown://sample/test"), "");
-  EXPECT_EQ(retriever->getFilePath("dart://unknown/test"), "");
-  EXPECT_EQ(retriever->getFilePath("dart://sample/does/not/exist"), "");
-  EXPECT_EQ(retriever->getFilePath(
-      "dart://sample/skel/shapes.skel"),
-      DART_DATA_PATH"skel/shapes.skel");
+  const dart::dynamics::ShapePtr generic =
+      std::make_shared<dart::dynamics::SphereShape>(1.0);
 
-  EXPECT_EQ(nullptr, retriever->retrieve("unknown://test"));
-  EXPECT_EQ(nullptr, retriever->retrieve("unknown://sample/test"));
-  EXPECT_EQ(nullptr, retriever->retrieve("dart://unknown/test"));
-  EXPECT_EQ(nullptr, retriever->retrieve("dart://sample/does/not/exist"));
-  EXPECT_NE(nullptr, retriever->retrieve("dart://sample/skel/shapes.skel"));
+  bn->createShapeNode(generic);
+  bn->createShapeNode(generic, "another name");
+
+  bn->createShapeNode(sphere, std::string("passing a string"));
+  bn->createShapeNode(generic, std::string("passing another string"));
+
+  auto world = dart::simulation::World::create();
+  world->addSkeleton(skel);
 }

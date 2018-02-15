@@ -101,6 +101,19 @@ common::ResourcePtr CompositeResourceRetriever::retrieve(
 }
 
 //==============================================================================
+std::string CompositeResourceRetriever::getFilePath(const common::Uri& uri)
+{
+  for (const auto& resourceRetriever : getRetrievers(uri))
+  {
+    const auto path = resourceRetriever->getFilePath(uri);
+    if (!path.empty())
+      return path;
+  }
+
+  return "";
+}
+
+//==============================================================================
 std::vector<common::ResourceRetrieverPtr>
   CompositeResourceRetriever::getRetrievers(const common::Uri& _uri) const
 {
