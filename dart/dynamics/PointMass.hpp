@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -660,10 +661,6 @@ protected:
   Eigen::Vector3d mImpF;
 
   PointMassNotifier* mNotifier;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //struct PointMassPair
@@ -685,9 +682,9 @@ public:
   void clearPartialAccelerationNotice();
   void clearAccelerationNotice();
 
-  void notifyTransformUpdate() override;
-  void notifyVelocityUpdate() override;
-  void notifyAccelerationUpdate() override;
+  void dirtyTransform() override;
+  void dirtyVelocity() override;
+  void dirtyAcceleration() override;
 
   // Documentation inherited
   const std::string& setName(const std::string& _name) override;
@@ -700,6 +697,7 @@ protected:
   std::string mName;
 
   bool mNeedPartialAccelerationUpdate;
+  // TODO(JS): Rename this to mIsPartialAccelerationDirty in DART 7
 
   SoftBodyNode* mParentSoftBodyNode;
 

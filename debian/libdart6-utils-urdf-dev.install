@@ -1,6 +1,0 @@
-usr/include/dart/utils/urdf/*
-usr/lib/libdart-utils-urdf.so
-usr/share/dart/cmake/dart_utils-urdfTargets.cmake
-usr/share/dart/cmake/dart_utils-urdfTargets-*.cmake
-usr/share/dart/cmake/dart_utils-urdfComponent.cmake
-

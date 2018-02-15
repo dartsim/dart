@@ -1,1 +1,9 @@
-comment: off
+# Reference: https://github.com/codecov/support/wiki/Codecov-Yaml
+
+coverage:
+  ignore:
+    - "unittests"
+    - "dart/external"
+
+comment:
+  layout: "diff, flags, files"

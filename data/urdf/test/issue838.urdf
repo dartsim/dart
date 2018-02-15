@@ -1,0 +1,86 @@
+<?xml version="1.0" ?>
+
+<robot name="issue838">
+
+  <material name="Blue">
+    <color rgba="0 0 0.8 1"/>
+  </material>
+  <material name="Red">
+    <color rgba="1 0 0 1"/>
+  </material>
+  <material name="Yellow">
+    <color rgba="1 1 0 1"/>
+  </material>
+
+  <link name="link_0">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="10.0"/>
+      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 -0.087"/>
+      <geometry>
+        <box size="1 1 1"/>
+      </geometry>
+      <material name="Blue"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="1 1 1"/>
+      </geometry>
+      <material name="Blue"/>
+    </visual>
+  </link>
+  <joint name="0_to_1" type="fixed">
+    <parent link="link_0"/>
+    <child link="link_1"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
+  <link name="link_1">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 -0.087"/>
+      <geometry>
+        <box size="1 1 1"/>
+      </geometry>
+      <material name="Red"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="1 1 1"/>
+      </geometry>
+      <material name="Red"/>
+    </visual>
+  </link>
+  <joint name="1_to_2" type="revolute">
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <limit effort="2.5" lower="-3.14159265359" upper="3.14159265359" velocity="3.00545697193"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+  <link name="link_2">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.855"/>
+      <inertia ixx="0.001449225" ixy="0" ixz="0" iyy="0.00041553" iyz="0" izz="0.001449225"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="1 1 1"/>
+      </geometry>
+      <material name="Yellow"/>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="1 1 1"/>
+      </geometry>
+      <material name="Yellow"/>
+    </visual>
+  </link>
+  
+</robot>

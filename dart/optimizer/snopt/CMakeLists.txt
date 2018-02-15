@@ -1,3 +1,6 @@
+return()
+# TODO(JS): SNOPT optimizer is currently outdated.
+
 # Search all header and source files
 file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")

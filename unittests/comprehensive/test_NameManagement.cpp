@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -416,11 +417,4 @@ TEST(NameManagement, JointDegreeOfFreedom)
   EXPECT_TRUE( joint->getDof(0)->getName() == "j_bicep_left_x" );
   EXPECT_TRUE( joint->getDof(1)->getName() == "j_bicep_left_y" );
   EXPECT_TRUE( joint->getDof(2)->getName() == "j_bicep_left_z" );
-}
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }
