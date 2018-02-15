@@ -72,6 +72,9 @@ public:
   // Documentation inherited.
   common::ResourcePtr retrieve(const common::Uri& _uri) override;
 
+  // Documentation inherited.
+  std::string getFilePath(const common::Uri& uri) override;
+
 private:
   std::vector<common::ResourceRetrieverPtr> getRetrievers(
     const common::Uri& _uri) const;

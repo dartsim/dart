@@ -6,8 +6,6 @@ dist: trusty
 
 cache:
   apt: true
-  directories:
-    - /usr/local/Cellar
 
 matrix:
   include:

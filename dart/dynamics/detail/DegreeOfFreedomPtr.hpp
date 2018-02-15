@@ -142,7 +142,7 @@ public:
   /// Equality
   template <class OtherDofT, class OtherBodyNodeT>
   bool operator == (const TemplateDegreeOfFreedomPtr<OtherDofT,
-                    OtherBodyNodeT>& _rhs)
+                    OtherBodyNodeT>& _rhs) const
   {
     if(nullptr == mBodyNodePtr && nullptr == _rhs.mBodyNodePtr)
       return true;
@@ -156,7 +156,7 @@ public:
   /// Inequality
   template <class OtherDofT, class OtherBodyNodeT>
   bool operator != (const TemplateDegreeOfFreedomPtr<OtherDofT,
-                    OtherBodyNodeT>& _rhs)
+                    OtherBodyNodeT>& _rhs) const
   {
     return !( *this == _rhs );
   }
@@ -164,7 +164,7 @@ public:
   /// Less than
   template <class OtherDofT, class OtherBodyNodeT>
   bool operator < (const TemplateDegreeOfFreedomPtr<OtherDofT,
-                   OtherBodyNodeT>& _rhs)
+                   OtherBodyNodeT>& _rhs) const
   {
     if( mBodyNodePtr == _rhs.mBodyNodePtr )
       return (mIndex < _rhs.mIndex);
@@ -175,7 +175,7 @@ public:
   /// Greater than
   template <class OtherDofT, class OtherBodyNodeT>
   bool operator > (const TemplateDegreeOfFreedomPtr<OtherDofT,
-                   OtherBodyNodeT>& _rhs)
+                   OtherBodyNodeT>& _rhs) const
   {
     if( mBodyNodePtr == _rhs.mBodyNodePtr )
       return (mIndex > _rhs.mIndex);
@@ -186,7 +186,7 @@ public:
   /// Less than or equal to
   template <class OtherDofT, class OtherBodyNodeT>
   bool operator <= (const TemplateDegreeOfFreedomPtr<OtherDofT,
-                    OtherBodyNodeT>& _rhs)
+                    OtherBodyNodeT>& _rhs) const
   {
     return (*this < _rhs) || (*this == _rhs);
   }
@@ -194,7 +194,7 @@ public:
   /// Greater than or equal to
   template <class OtherDofT, class OtherBodyNodeT>
   bool operator >= (const TemplateDegreeOfFreedomPtr<OtherDofT,
-                    OtherBodyNodeT>& _rhs)
+                    OtherBodyNodeT>& _rhs) const
   {
     return (*this > _rhs) || (*this == _rhs);
   }

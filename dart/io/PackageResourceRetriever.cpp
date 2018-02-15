@@ -73,7 +73,7 @@ bool PackageResourceRetriever::exists(const common::Uri& _uri)
   if (!resolvePackageUri(_uri, packageName, relativePath))
     return false;
 
-  for(const std::string& packagePath : getPackagePaths(packageName))
+  for (const std::string& packagePath : getPackagePaths(packageName))
   {
     common::Uri fileUri;
     fileUri.fromPath(packagePath + relativePath);
@@ -81,6 +81,7 @@ bool PackageResourceRetriever::exists(const common::Uri& _uri)
     if (mLocalRetriever->exists(fileUri))
       return true;
   }
+
   return false;
 }
 
@@ -100,6 +101,28 @@ common::ResourcePtr PackageResourceRetriever::retrieve(const common::Uri& _uri)
       return resource;
   }
   return nullptr;
+}
+
+//==============================================================================
+std::string PackageResourceRetriever::getFilePath(const common::Uri& uri)
+{
+  std::string packageName, relativePath;
+  if (!resolvePackageUri(uri, packageName, relativePath))
+    return "";
+
+  for(const std::string& packagePath : getPackagePaths(packageName))
+  {
+    common::Uri fileUri;
+    fileUri.fromPath(packagePath + relativePath);
+
+    const auto path = mLocalRetriever->getFilePath(fileUri);
+
+    // path is empty if the file specified by fileUri doesn't exist.
+    if (!path.empty())
+      return path;
+  }
+
+  return "";
 }
 
 //==============================================================================

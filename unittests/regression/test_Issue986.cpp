@@ -30,34 +30,30 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/ResourceRetriever.hpp"
-
-#include <sstream>
-#include "dart/common/Console.hpp"
-
-namespace dart {
-namespace common {
+#include <gtest/gtest.h>
+#include <TestHelpers.hpp>
+#include <dart/dart.hpp>
+#include <dart/utils/urdf/DartLoader.hpp>
 
 //==============================================================================
-std::string ResourceRetriever::readAll(const Uri& uri)
+TEST(Issue986, CreateShapeNodeShouldCompile)
 {
-  auto resource = retrieve(uri);
+  const auto skel = dart::dynamics::Skeleton::create();
+  auto* bn = skel->createJointAndBodyNodePair<FreeJoint>().second;
+  const auto sphere = std::make_shared<dart::dynamics::SphereShape>(1.0);
 
-  if (!resource)
-  {
-    std::stringstream ss;
-    ss << "Failed retrieving a resource from '" << uri.toString() << "'.";
-    throw std::runtime_error(ss.str());
-  }
+  bn->createShapeNode(sphere);
+  bn->createShapeNode(sphere, "custom name");
 
-  return resource->readAll();
+  const dart::dynamics::ShapePtr generic =
+      std::make_shared<dart::dynamics::SphereShape>(1.0);
+
+  bn->createShapeNode(generic);
+  bn->createShapeNode(generic, "another name");
+
+  bn->createShapeNode(sphere, std::string("passing a string"));
+  bn->createShapeNode(generic, std::string("passing another string"));
+
+  auto world = dart::simulation::World::create();
+  world->addSkeleton(skel);
 }
-
-//==============================================================================
-std::string ResourceRetriever::getFilePath(const Uri& /*uri*/)
-{
-  return "";
-}
-
-} // namespace common
-} // namespace dart

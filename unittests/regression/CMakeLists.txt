@@ -7,4 +7,6 @@ if(TARGET dart-io-urdf)
 
   dart_add_test("regression" test_Issue895)
 
+  dart_add_test("regression" test_Issue986)
+
 endif()
