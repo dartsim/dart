@@ -35,6 +35,7 @@
 #include <osg/NodeCallback>
 
 #include <osgShadow/ShadowedScene>
+#include <osgShadow/ShadowMap>
 
 #include "dart/gui/osg/WorldNode.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
@@ -330,11 +331,24 @@ bool WorldNode::isShadowed() const
 void WorldNode::setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique) {
   if(!shadowTechnique) {
     mShadowed = false;
+    static_cast<osgShadow::ShadowedScene*>(mShadowedGroup.get())->setShadowTechnique(nullptr);
   }
   else {
     mShadowed = true;
     static_cast<osgShadow::ShadowedScene*>(mShadowedGroup.get())->setShadowTechnique(shadowTechnique.get());
   }
+}
+
+//==============================================================================
+::osg::ref_ptr<osgShadow::ShadowTechnique> WorldNode::createDefaultShadowTechnique(const Viewer* viewer) {
+  ::osg::ref_ptr<osgShadow::ShadowMap> sm = new osgShadow::ShadowMap;
+  // increase the resolution of default shadow texture for higher quality
+  int mapres = std::pow(2, 13);
+  sm->setTextureSize(::osg::Vec2s(mapres,mapres));
+  // we are using Light1 because this is the highest one (on up direction)
+  sm->setLight(viewer->getLightSource(0));
+
+  return sm;
 }
 
 } // namespace osg
