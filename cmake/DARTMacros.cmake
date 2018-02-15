@@ -103,6 +103,20 @@ function(dart_add_library _name)
 endfunction()
 
 #===============================================================================
+# Add library and set target properties
+# Usage:
+#   dart_add_external_library(_libname source1 [source2 ...])
+#===============================================================================
+function(dart_add_external_library _name)
+  add_library(${_name} ${ARGN})
+  set_target_properties(
+    ${_name} PROPERTIES
+    SOVERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}"
+    VERSION "${DART_VERSION}"
+  )
+endfunction()
+
+#===============================================================================
 function(dart_property_add property_name)
 
   get_property(is_defined GLOBAL PROPERTY ${property_name} DEFINED)

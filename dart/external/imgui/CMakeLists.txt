@@ -6,7 +6,7 @@ file(GLOB srcs "*.cpp")
 set(target_name ${PROJECT_NAME}-external-imgui)
 set(component_name external-imgui)
 
-dart_add_library(${target_name} ${hdrs} ${srcs})
+dart_add_external_library(${target_name} ${hdrs} ${srcs})
 include_directories(
   ${target_name}
   PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}"
