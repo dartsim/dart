@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -1590,8 +1591,8 @@ Eigen::Vector2d computeCentroidOfHull(const SupportPolygon& _convexHull)
 
     if(BEYOND_ENDPOINTS == result)
     {
-      double a1 = atan2( (p1-p0)[1], (p1-p0)[0] )*180.0/M_PI;
-      double a2 = atan2( (p2-p0)[1], (p2-p0)[0] )*180.0/M_PI;
+      double a1 = atan2( (p1-p0)[1], (p1-p0)[0] )*180.0/constantsd::pi();
+      double a2 = atan2( (p2-p0)[1], (p2-p0)[0] )*180.0/constantsd::pi();
       double diff = a1-a2;
       dtwarn << "[computeCentroidOfHull] You have passed in a set of points "
              << "which is not a proper convex hull! The invalid segment "

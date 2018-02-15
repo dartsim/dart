@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -41,13 +42,9 @@ namespace collision {
 DART_COMMON_MAKE_SHARED_WEAK(CollisionDetector)
 DART_COMMON_MAKE_SHARED_WEAK(FCLCollisionDetector)
 DART_COMMON_MAKE_SHARED_WEAK(DARTCollisionDetector)
-#if HAVE_BULLET_COLLISION
-  DART_COMMON_MAKE_SHARED_WEAK(BulletCollisionDetector)
-#endif
 
 DART_COMMON_MAKE_SHARED_WEAK(CollisionObject)
 DART_COMMON_MAKE_SHARED_WEAK(CollisionGroup)
-
 
 }  // namespace collision
 }  // namespace dart

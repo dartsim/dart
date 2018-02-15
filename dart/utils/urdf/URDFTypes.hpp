@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -32,27 +33,9 @@
 #ifndef DART_UTILS_URDF_URDFTYPES_HPP_
 #define DART_UTILS_URDF_URDFTYPES_HPP_
 
-#include "dart/config.hpp"
+#warning "This header has been deprecated in DART 6.2. "\
+  "Please include dart/utils/urdf/BackwardCompatibility.hpp intead."
 
-#if URDFDOM_HEADERS_VERSION_AT_LEAST(1,0,0)
-#include <memory>
-#else
-#include "boost/shared_ptr.hpp"
-#include "boost/weak_ptr.hpp"
-#endif
-
-namespace dart {
-namespace utils {
-
-#if URDFDOM_HEADERS_VERSION_AT_LEAST(1,0,0)
-template <typename T> using urdf_shared_ptr = std::shared_ptr<T>;
-template <typename T> using urdf_weak_ptr = std::weak_ptr<T>;
-#else
-template <typename T> using urdf_shared_ptr = boost::shared_ptr<T>;
-template <typename T> using urdf_weak_ptr = boost::weak_ptr<T>;
-#endif
-
-} // namespace utils
-} // namespace dart
+#include "dart/utils/urdf/BackwardCompatibility.hpp"
 
 #endif // DART_UTILS_URDF_URDFTYPES_HPP_

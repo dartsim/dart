@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -37,10 +38,13 @@
 namespace dart {
 namespace dynamics {
 
-class EllipsoidShape : public Shape {
+class EllipsoidShape : public Shape
+{
 public:
   /// \brief Constructor.
-  explicit EllipsoidShape(const Eigen::Vector3d& _size);
+  explicit EllipsoidShape(const Eigen::Vector3d& diameters);
+  // TODO(JS): In order to follow the commonly used convention, change the
+  // constructor to take radii instead of diameters in DART 7.
 
   /// \brief Destructor.
   virtual ~EllipsoidShape();
@@ -51,36 +55,55 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  /// \brief Set size of this box.
-  void setSize(const Eigen::Vector3d& _size);
+  /// \brief Set diameters of this ellipsoid.
+  /// \deprecated Deprecated in 6.2. Please use setDiameters() instead.
+  DART_DEPRECATED(6.2)
+  void setSize(const Eigen::Vector3d& diameters);
 
-  /// \brief Get size of this box.
+  /// \brief Get diameters of this ellipsoid.
+  /// \deprecated Deprecated in 6.2. Please use getDiameters() instead.
+  DART_DEPRECATED(6.2)
   const Eigen::Vector3d& getSize() const;
 
+  /// \brief Set diameters of this ellipsoid.
+  void setDiameters(const Eigen::Vector3d& diameters);
+
+  /// \brief Get diameters of this ellipsoid.
+  const Eigen::Vector3d& getDiameters() const;
+
+  /// Set radii of this ellipsoid.
+  void setRadii(const Eigen::Vector3d& radii);
+
+  /// Get radii of this ellipsoid.
+  const Eigen::Vector3d getRadii() const;
+
   /// \brief Compute volume from given properties
-  static double computeVolume(const Eigen::Vector3d& size);
+  static double computeVolume(const Eigen::Vector3d& diameters);
+  // TODO(JS): In order to follow the commonly used convention, change to take
+  // radii instead of diameters in DART 7.
 
   /// \brief Compute moments of inertia of a ellipsoid
   static Eigen::Matrix3d computeInertia(
-      const Eigen::Vector3d& size, double mass);
+      const Eigen::Vector3d& diameters, double mass);
+  // TODO(JS): In order to follow the commonly used convention, change to take
+  // radii instead of diameters in DART 7.
 
   // Documentation inherited.
   Eigen::Matrix3d computeInertia(double mass) const override;
 
-  /// \brief True if (mDim[0] == mDim[1] == mDim[2]).
+  /// \brief True if all the radii are exactly eqaul.
   bool isSphere(void) const;
 
 protected:
   // Documentation inherited.
-  void updateVolume() override;
+  void updateBoundingBox() const override;
+
+  // Documentation inherited.
+  void updateVolume() const override;
 
 private:
-  /// \brief Size of this ellipsoid
-  Eigen::Vector3d mSize;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  /// \brief Diameters of this ellipsoid
+  Eigen::Vector3d mDiameters;
 };
 
 }  // namespace dynamics

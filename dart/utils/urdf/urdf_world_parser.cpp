@@ -69,7 +69,8 @@ Entity::Entity(const urdf::Entity& urdfEntity)
  */
 std::shared_ptr<World> parseWorldURDF(
     const std::string& _xml_string,
-    const dart::common::Uri& _baseUri)
+    const dart::common::Uri& _baseUri,
+    const common::ResourceRetrieverPtr& retriever)
 {
   TiXmlDocument xml_doc;
   xml_doc.Parse( _xml_string.c_str() );
@@ -145,32 +146,16 @@ std::shared_ptr<World> parseWorldURDF(
           return nullptr;
         }
 
-        const std::string fileFullName = absoluteUri.getFilesystemPath();
         entity.uri = absoluteUri;
+
         // Parse model
-        std::string xml_model_string;
-        std::fstream xml_file( fileFullName.c_str(), std::fstream::in );
-
-        if(!xml_file.is_open())
-        {
-          dtwarn << "[parseWorldURDF] Could not open the file [" << fileFullName
-                 << "]. Returning a nullptr.\n";
-          return nullptr;
-        }
-
-        while( xml_file.good() )
-        {
-          std::string line;
-          std::getline( xml_file, line );
-          xml_model_string += (line + "\n");
-        }
-        xml_file.close();
+        const auto xml_model_string = retriever->readAll(absoluteUri);
         entity.model = urdf::parseURDF( xml_model_string );
 
         if( !entity.model )
         {
           dtwarn << "[parseWorldURDF] Could not find a model named ["
-                 << xml_model_string << "] in file [" <<  fileFullName
+                 << xml_model_string << "] from [" <<  absoluteUri.toString()
                  << "]. We will return a nullptr.\n";
           return nullptr;
         }

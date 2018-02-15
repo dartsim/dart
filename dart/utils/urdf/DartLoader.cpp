@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -52,7 +53,8 @@
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/utils/urdf/URDFTypes.hpp"
+#include "dart/utils/DartResourceRetriever.hpp"
+#include "dart/utils/urdf/BackwardCompatibility.hpp"
 #include "dart/utils/urdf/urdf_world_parser.hpp"
 
 namespace dart {
@@ -67,6 +69,7 @@ DartLoader::DartLoader()
 {
   mRetriever->addSchemaRetriever("file", mLocalRetriever);
   mRetriever->addSchemaRetriever("package", mPackageRetriever);
+  mRetriever->addSchemaRetriever("dart", DartResourceRetriever::create());
 }
 
 void DartLoader::addPackageDirectory(const std::string& _packageName,
@@ -149,7 +152,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
   }
 
   std::shared_ptr<urdf_parsing::World> worldInterface =
-      urdf_parsing::parseWorldURDF(_urdfString, _baseUri);
+      urdf_parsing::parseWorldURDF(_urdfString, _baseUri, resourceRetriever);
 
   if(!worldInterface)
   {
@@ -157,7 +160,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
     return nullptr;
   }
 
-  simulation::WorldPtr world(new simulation::World);
+  simulation::WorldPtr world = simulation::World::create();
 
   for(std::size_t i = 0; i < worldInterface->models.size(); ++i)
   {
@@ -223,7 +226,8 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
       }
 
       const auto result
-          = createShapeNodes(root, rootNode, _baseUri, _resourceRetriever);
+          = createShapeNodes(_model, root, rootNode,
+                             _baseUri, _resourceRetriever);
       if(!result)
         return nullptr;
     }
@@ -243,7 +247,8 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
     rootNode = pair.second;
 
     const auto result
-        = createShapeNodes(root, rootNode, _baseUri, _resourceRetriever);
+        = createShapeNodes(_model, root, rootNode,
+                           _baseUri, _resourceRetriever);
     if(!result)
       return nullptr;
   }
@@ -251,7 +256,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
   for(std::size_t i = 0; i < root->child_links.size(); i++)
   {
     if (!createSkeletonRecursive(
-           skeleton, root->child_links[i].get(), rootNode,
+           _model, skeleton, root->child_links[i].get(), rootNode,
            _baseUri, _resourceRetriever))
       return nullptr;
 
@@ -261,6 +266,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
 }
 
 bool DartLoader::createSkeletonRecursive(
+  const urdf::ModelInterface* model,
   dynamics::SkeletonPtr _skel,
   const urdf::Link* _lk,
   dynamics::BodyNode* _parentNode,
@@ -278,13 +284,15 @@ bool DartLoader::createSkeletonRecursive(
   if(!node)
     return false;
 
-  const auto result = createShapeNodes(_lk, node, _baseUri, _resourceRetriever);
+  const auto result = createShapeNodes(
+        model, _lk, node, _baseUri, _resourceRetriever);
+
   if(!result)
     return false;
   
   for(std::size_t i = 0; i < _lk->child_links.size(); ++i)
   {
-    if (!createSkeletonRecursive(_skel, _lk->child_links[i].get(), node,
+    if (!createSkeletonRecursive(model, _skel, _lk->child_links[i].get(), node,
                                  _baseUri, _resourceRetriever))
       return false;
   }
@@ -304,10 +312,7 @@ bool DartLoader::readFileToString(
   if (!resource)
     return false;
 
-  // Safe because std::string is guaranteed to be contiguous in C++11.
-  const std::size_t size = resource->getSize();
-  _output.resize(size);
-  resource->read(&_output.front(), size, 1);
+  _output = _resourceRetriever->readAll(_uri);
 
   return true;
 }
@@ -361,7 +366,10 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   }
 
   if(_jt->dynamics)
+  {
     singleDof.mDampingCoefficients[0] = _jt->dynamics->damping;
+    singleDof.mFrictions[0] = _jt->dynamics->friction;
+  }
 
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
   switch(_jt->type)
@@ -457,24 +465,29 @@ bool DartLoader::createDartNodeProperties(
   return true;
 }
 
-void setMaterial(dynamics::VisualAspect* visualAspect, const urdf::Visual* viz)
+void setMaterial(
+  const urdf::ModelInterface* model,
+  dynamics::VisualAspect* visualAspect,
+  const urdf::Visual* viz)
 {
   if(viz->material)
   {
-    visualAspect->setColor(Eigen::Vector3d(viz->material->color.r,
-                                          viz->material->color.g,
-                                          viz->material->color.b));
-  }
-}
+    urdf::Color urdf_color = viz->material->color;
 
-void setMaterial(dynamics::ShapePtr /*_shape*/,
-                 const urdf::Collision* /*_col*/)
-{
-  // Do nothing
+    const auto& m_it = model->materials_.find(viz->material_name);
+    if(m_it != model->materials_.end())
+      urdf_color = m_it->second->color;
+
+    Eigen::Vector4d color(urdf_color.r, urdf_color.g,
+                          urdf_color.b, urdf_color.a);
+
+    visualAspect->setColor(color);
+  }
 }
 
 //==============================================================================
 bool DartLoader::createShapeNodes(
+  const urdf::ModelInterface* model,
   const urdf::Link* lk,
   dynamics::BodyNode* bodyNode,
   const common::Uri& baseUri,
@@ -490,7 +503,7 @@ bool DartLoader::createShapeNodes(
     {
       auto shapeNode = bodyNode->createShapeNodeWith<dynamics::VisualAspect>(shape);
       shapeNode->setRelativeTransform(toEigen(visual->origin));
-      setMaterial(shapeNode->getVisualAspect(), visual.get());
+      setMaterial(model, shapeNode->getVisualAspect(), visual.get());
     }
     else
     {
@@ -566,7 +579,7 @@ dynamics::ShapePtr DartLoader::createShape(
       return nullptr;
 
     const Eigen::Vector3d scale(mesh->scale.x, mesh->scale.y, mesh->scale.z);
-    shape = Eigen::make_aligned_shared<dynamics::MeshShape>(
+    shape = std::make_shared<dynamics::MeshShape>(
       scale, scene, resolvedUri, _resourceRetriever);
   }
   // Unknown geometry type

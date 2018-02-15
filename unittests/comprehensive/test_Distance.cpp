@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,9 +31,11 @@
  */
 
 #include <gtest/gtest.h>
-#include <fcl/distance.h>
 #include "dart/dart.hpp"
-#include "dart/collision/bullet/bullet.hpp"
+#include "dart/collision/fcl/fcl.hpp"
+#if HAVE_BULLET
+  #include "dart/collision/bullet/bullet.hpp"
+#endif
 #include "TestHelpers.hpp"
 
 using namespace dart;
@@ -48,8 +51,8 @@ void testBasicInterface(const std::shared_ptr<CollisionDetector>& cd,
     return;
   }
 
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new EllipsoidShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new EllipsoidShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -125,7 +128,7 @@ TEST(Distance, testBasicInterface)
   auto fcl = FCLCollisionDetector::create();
   testBasicInterface(fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testBasicInterface(bullet);
 #endif
@@ -145,8 +148,8 @@ void testOptions(const std::shared_ptr<CollisionDetector>& cd,
     return;
   }
 
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new EllipsoidShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new EllipsoidShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -223,7 +226,7 @@ TEST(Distance, Options)
   auto fcl = FCLCollisionDetector::create();
   testOptions(fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testOptions(bullet);
 #endif
@@ -243,8 +246,8 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
     return;
   }
 
-  auto simpleFrame1 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
-  auto simpleFrame2 = Eigen::make_aligned_shared<SimpleFrame>(Frame::World());
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
   ShapePtr shape1(new EllipsoidShape(Eigen::Vector3d(1.0, 1.0, 1.0)));
   ShapePtr shape2(new EllipsoidShape(Eigen::Vector3d(0.5, 0.5, 0.5)));
@@ -281,18 +284,11 @@ TEST(Distance, SphereSphere)
   auto fcl = FCLCollisionDetector::create();
   testSphereSphere(fcl);
 
-#if HAVE_BULLET_COLLISION
+#if HAVE_BULLET
   auto bullet = BulletCollisionDetector::create();
   testSphereSphere(bullet);
 #endif
 
   auto dart = DARTCollisionDetector::create();
   testSphereSphere(dart);
-}
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

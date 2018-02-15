@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -80,7 +81,7 @@ TEST(BUILDING, BASIC)
   joint3->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
 
   // World
-  WorldPtr world(new World);
+  WorldPtr world = World::create();
   world->addSkeleton(skel1);
 
 	//--------------------------------------------------------------------------
@@ -106,11 +107,4 @@ TEST(BUILDING, BASIC)
   int nSteps = 20;
   for (int i = 0; i < nSteps; ++i)
       world->step();
-}
-
-/******************************************************************************/
-int main(int argc, char* argv[])
-{
-	::testing::InitGoogleTest(&argc, argv);
-	return RUN_ALL_TESTS();
 }

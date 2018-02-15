@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -31,6 +32,7 @@
 
 #include "dart/gui/Trackball.hpp"
 
+#include "dart/math/Constants.hpp"
 #include "dart/gui/LoadOpengl.hpp"
 
 namespace dart {
@@ -67,6 +69,8 @@ void Trackball::applyGLRotation() {
 }
 
 void Trackball::draw(int _winWidth, int _winHeight) {
+  const double pi = math::constantsd::pi();
+
   glDisable(GL_LIGHTING);
   glDisable(GL_TEXTURE_2D);
 
@@ -84,7 +88,7 @@ void Trackball::draw(int _winWidth, int _winHeight) {
   glColor3f(1.0f, 1.0f, 0.0f);
   glBegin(GL_LINE_LOOP);
   for (int i = 0; i < 360; i += 4) {
-    double theta = i / 180.0 * M_PI;
+    double theta = i / 180.0 * pi;
     double x = mRadius * cos(theta);
     double y = mRadius * sin(theta);
     glVertex2d(static_cast<GLdouble>((_winWidth >> 1) + x),

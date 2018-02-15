@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -159,21 +160,21 @@ void SimpleFrame::setRelativeTransform(
     const Eigen::Isometry3d& _newRelTransform)
 {
   mRelativeTf = _newRelTransform;
-  notifyTransformUpdate();
+  dirtyTransform();
 }
 
 //==============================================================================
 void SimpleFrame::setRelativeTranslation(const Eigen::Vector3d& _newTranslation)
 {
   mRelativeTf.translation() = _newTranslation;
-  notifyTransformUpdate();
+  dirtyTransform();
 }
 
 //==============================================================================
 void SimpleFrame::setRelativeRotation(const Eigen::Matrix3d& _newRotation)
 {
   mRelativeTf.linear() = _newRotation;
-  notifyTransformUpdate();
+  dirtyTransform();
 }
 
 //==============================================================================
@@ -212,7 +213,7 @@ void SimpleFrame::setRelativeSpatialVelocity(
     const Eigen::Vector6d& _newSpatialVelocity)
 {
   mRelativeVelocity = _newSpatialVelocity;
-  notifyVelocityUpdate();
+  dirtyVelocity();
 }
 
 //==============================================================================
@@ -237,7 +238,7 @@ void SimpleFrame::setRelativeSpatialAcceleration(
     const Eigen::Vector6d &_newSpatialAcceleration)
 {
   mRelativeAcceleration = _newSpatialAcceleration;
-  notifyAccelerationUpdate();
+  dirtyAcceleration();
 }
 
 //==============================================================================
