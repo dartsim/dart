@@ -36,6 +36,7 @@
 #include <Eigen/Dense>
 
 #include "dart/common/Deprecated.hpp"
+#include "dart/math/Constants.hpp"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {
@@ -461,7 +462,9 @@ bool verifyTransform(const Eigen::Isometry3d& _T);
 /// rotations
 inline double wrapToPi(double angle)
 {
-  return std::fmod(angle+M_PI, 2*M_PI) - M_PI;
+  constexpr auto pi = constantsd::pi();
+
+  return std::fmod(angle+pi, 2*pi) - pi;
 }
 
 template <typename MatrixType, typename ReturnType>
@@ -492,7 +495,7 @@ void computeNullSpace(const MatrixType& _M, ReturnType& _NS)
 
 typedef std::vector<Eigen::Vector3d> SupportGeometry;
 
-typedef Eigen::aligned_vector<Eigen::Vector2d> SupportPolygon;
+typedef common::aligned_vector<Eigen::Vector2d> SupportPolygon;
 
 /// Project the support geometry points onto a plane with the given axes
 /// and then compute their convex hull, which will take the form of a polgyon.

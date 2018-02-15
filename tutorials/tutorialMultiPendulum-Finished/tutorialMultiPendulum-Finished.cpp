@@ -438,7 +438,7 @@ int main(int argc, char* argv[])
   pendulum->getDof(1)->setPosition(120 * M_PI / 180.0);
 
   // Create a world and add the pendulum to the world
-  WorldPtr world(new World);
+  WorldPtr world = World::create();
   world->addSkeleton(pendulum);
 
   // Create a window for rendering the world and handling user input

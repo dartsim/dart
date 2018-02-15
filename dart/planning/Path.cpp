@@ -39,6 +39,7 @@
 #include <algorithm>
 #include <cmath>
 #include <Eigen/Geometry>
+#include "dart/math/Constants.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -148,12 +149,13 @@ public:
 	}
 
 	list<double> getSwitchingPoints() const {
+        const double pi = math::constantsd::pi();
 		list<double> switchingPoints;
 		const double dim = x.size();
 		for(unsigned int i = 0; i < dim; i++) {
 			double switchingAngle = atan2(y[i], x[i]);
 			if(switchingAngle < 0.0) {
-				switchingAngle += M_PI;
+				switchingAngle += pi;
 			}
 			const double switchingPoint = switchingAngle * radius;
 			if(switchingPoint < length) {

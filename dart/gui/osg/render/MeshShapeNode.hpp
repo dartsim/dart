@@ -67,6 +67,7 @@ public:
   void extractData(bool firstTime);
 
   ::osg::Material* getMaterial(std::size_t index) const;
+  std::vector<std::string> getTextureImagePaths(std::size_t index) const;
 
 protected:
 
@@ -75,6 +76,7 @@ protected:
   std::shared_ptr<dart::dynamics::MeshShape> mMeshShape;
   osgAiNode* mRootAiNode;
   std::vector< ::osg::ref_ptr<::osg::Material> > mMaterials;
+  std::vector< std::vector<std::string> > mTextureImageArrays;
 
 };
 

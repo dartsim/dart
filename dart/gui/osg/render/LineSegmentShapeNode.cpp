@@ -205,7 +205,7 @@ void LineSegmentShapeDrawable::refresh(bool firstTime)
   const std::vector<Eigen::Vector3d>& vertices =
       mLineSegmentShape->getVertices();
 
-  const Eigen::aligned_vector<Eigen::Vector2i>& connections =
+  const common::aligned_vector<Eigen::Vector2i>& connections =
       mLineSegmentShape->getConnections();
 
   if(   mLineSegmentShape->checkDataVariance(dart::dynamics::Shape::DYNAMIC_ELEMENTS)

@@ -36,6 +36,7 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/Contact.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -410,6 +411,13 @@ void ConstraintSolver::updateConstraints()
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
   {
     auto& ct = mCollisionResult.getContact(i);
+
+    if (collision::Contact::isZeroNormal(ct.normal))
+    {
+      // Skip this contact. This is because we assume that a contact with
+      // zero-length normal is invalid.
+      continue;
+    }
 
     // Set colliding bodies
     auto shapeFrame1 = const_cast<dynamics::ShapeFrame*>(

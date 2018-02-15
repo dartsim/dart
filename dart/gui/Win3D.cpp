@@ -34,6 +34,7 @@
 
 #include <algorithm>
 
+#include "dart/math/Constants.hpp"
 #include "dart/gui/LoadGlut.hpp"
 
 namespace dart {
@@ -295,7 +296,9 @@ void accPerspective(GLdouble fovy, GLdouble aspect,
                     GLdouble nearPlane, GLdouble farPlane,
                     GLdouble pixdx, GLdouble pixdy,
                     GLdouble eyedx, GLdouble eyedy, GLdouble focus) {
-  GLdouble fov2 = ((fovy*M_PI) / 180.0) / 2.0;
+  const double pi = math::constantsd::pi();
+
+  GLdouble fov2 = ((fovy*pi) / 180.0) / 2.0;
   GLdouble top = nearPlane / (cosf(fov2) / sinf(fov2));
   GLdouble bottom = -top;
   GLdouble right = top * aspect;

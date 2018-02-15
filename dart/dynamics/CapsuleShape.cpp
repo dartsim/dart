@@ -48,8 +48,6 @@ CapsuleShape::CapsuleShape(double radius, double height)
 {
   assert(0.0 < radius);
   assert(0.0 < height);
-  updateBoundingBoxDim();
-  updateVolume();
 }
 
 //==============================================================================
@@ -76,8 +74,8 @@ void CapsuleShape::setRadius(double radius)
 {
   assert(0.0 < radius);
   mRadius = radius;
-  updateBoundingBoxDim();
-  updateVolume();
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -91,8 +89,8 @@ void CapsuleShape::setHeight(double height)
 {
   assert(0.0 < height);
   mHeight = height;
-  updateBoundingBoxDim();
-  updateVolume();
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -129,24 +127,27 @@ Eigen::Matrix3d CapsuleShape::computeInertia(
 }
 
 //==============================================================================
-void CapsuleShape::updateVolume()
+void CapsuleShape::updateBoundingBox() const
+{
+  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5*mHeight);
+
+  mBoundingBox.setMin(-corner);
+  mBoundingBox.setMax(corner);
+
+  mIsBoundingBoxDirty = false;
+}
+
+//==============================================================================
+void CapsuleShape::updateVolume() const
 {
   mVolume = computeVolume(mRadius, mHeight);
+  mIsVolumeDirty = false;
 }
 
 //==============================================================================
 Eigen::Matrix3d CapsuleShape::computeInertia(double mass) const
 {
   return computeInertia(mRadius, mHeight, mass);
-}
-
-//==============================================================================
-void CapsuleShape::updateBoundingBoxDim()
-{
-  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5*mHeight);
-
-  mBoundingBox.setMin(-corner);
-  mBoundingBox.setMax(corner);
 }
 
 }  // namespace dynamics

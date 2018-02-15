@@ -20,6 +20,14 @@ find_package(PkgConfig QUIET)
 pkg_check_modules(PC_CCD ccd QUIET)
 
 # Include directories
+# Give explicit precedence to ${PC_CCD_INCLUDEDIR}
+find_path(CCD_INCLUDE_DIRS
+    NAMES ccd/ccd.h
+    HINTS ${PC_CCD_INCLUDEDIR}
+    NO_DEFAULT_PATH
+    NO_CMAKE_PATH
+    NO_CMAKE_ENVIRONMENT_PATH
+    NO_SYSTEM_ENVIRONMENT_PATH)
 find_path(CCD_INCLUDE_DIRS
     NAMES ccd/ccd.h
     HINTS ${PC_CCD_INCLUDEDIR}
@@ -29,6 +37,14 @@ find_path(CCD_INCLUDE_DIRS
 if(MSVC)
   set(CCD_LIBRARIES optimized ccd debug ccdd)
 else()
+  # Give explicit precedence to ${PC_CCD_LIBDIR}
+  find_library(CCD_LIBRARIES
+      NAMES ccd
+      HINTS ${PC_CCD_LIBDIR}
+      NO_DEFAULT_PATH
+      NO_CMAKE_PATH
+      NO_CMAKE_ENVIRONMENT_PATH
+      NO_SYSTEM_ENVIRONMENT_PATH)
   find_library(CCD_LIBRARIES
       NAMES ccd
       HINTS ${PC_CCD_LIBDIR})

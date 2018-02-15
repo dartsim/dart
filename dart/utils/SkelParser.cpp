@@ -113,7 +113,7 @@ struct SkelJoint
 };
 
 // first: BodyNode name | second: BodyNode information
-using BodyMap = Eigen::aligned_map<std::string, SkelBodyNode>;
+using BodyMap = common::aligned_map<std::string, SkelBodyNode>;
 
 // first: Child BodyNode name | second: Joint information
 using JointMap = std::map<std::string, SkelJoint>;
@@ -687,7 +687,7 @@ simulation::WorldPtr readWorld(
   assert(_worldElement != nullptr);
 
   // Create a world
-  simulation::WorldPtr newWorld(new simulation::World);
+  simulation::WorldPtr newWorld = simulation::World::create();
 
   //--------------------------------------------------------------------------
   // Load physics

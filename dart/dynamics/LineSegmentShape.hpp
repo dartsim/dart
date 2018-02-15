@@ -100,7 +100,7 @@ public:
   void removeConnection(std::size_t _connectionIdx);
 
   /// Get all the connections
-  const Eigen::aligned_vector<Eigen::Vector2i>& getConnections() const;
+  const common::aligned_vector<Eigen::Vector2i>& getConnections() const;
 
   /// The returned inertia matrix will be like a very thin cylinder. The _mass
   /// will be evenly distributed across all lines.
@@ -109,9 +109,11 @@ public:
   // TODO(MXG): Consider supporting colors-per-vertex
 
 protected:
+  // Documentation inherited.
+  void updateBoundingBox() const override;
 
   // Documentation inherited
-  void updateVolume() override;
+  void updateVolume() const override;
 
   /// Line thickness for rendering
   float mThickness;
@@ -120,11 +122,11 @@ protected:
   std::vector<Eigen::Vector3d> mVertices;
 
   /// Vector of connections
-  Eigen::aligned_vector<Eigen::Vector2i> mConnections;
+  common::aligned_vector<Eigen::Vector2i> mConnections;
 
   /// A dummy vertex that can be returned when an out-of-bounds vertex is
   /// requested
-  const Eigen::Vector3d mDummyVertex;
+  static const Eigen::Vector3d mDummyVertex;
 };
 
 } // namespace dynamics

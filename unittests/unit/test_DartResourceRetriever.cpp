@@ -32,12 +32,13 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
+#include "dart/config.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 
 using namespace dart;
 
 //==============================================================================
-TEST(DartResourceRetriever, ExistsAndRetrieve)
+TEST(DartResourceRetriever, ExistsAndGetFilePathAndRetrieve)
 {
   auto retriever = utils::DartResourceRetriever::create();
 
@@ -47,16 +48,17 @@ TEST(DartResourceRetriever, ExistsAndRetrieve)
   EXPECT_FALSE(retriever->exists("dart://sample/does/not/exist"));
   EXPECT_TRUE(retriever->exists("dart://sample/skel/shapes.skel"));
 
+  EXPECT_EQ(retriever->getFilePath("unknown://test"), "");
+  EXPECT_EQ(retriever->getFilePath("unknown://sample/test"), "");
+  EXPECT_EQ(retriever->getFilePath("dart://unknown/test"), "");
+  EXPECT_EQ(retriever->getFilePath("dart://sample/does/not/exist"), "");
+  EXPECT_EQ(retriever->getFilePath(
+      "dart://sample/skel/shapes.skel"),
+      DART_DATA_PATH"skel/shapes.skel");
+
   EXPECT_EQ(nullptr, retriever->retrieve("unknown://test"));
   EXPECT_EQ(nullptr, retriever->retrieve("unknown://sample/test"));
   EXPECT_EQ(nullptr, retriever->retrieve("dart://unknown/test"));
   EXPECT_EQ(nullptr, retriever->retrieve("dart://sample/does/not/exist"));
   EXPECT_NE(nullptr, retriever->retrieve("dart://sample/skel/shapes.skel"));
-}
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

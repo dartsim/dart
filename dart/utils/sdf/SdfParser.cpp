@@ -94,7 +94,7 @@ struct SDFJoint
 };
 
 // Maps the name of a BodyNode to its properties
-using BodyMap = Eigen::aligned_map<std::string, SDFBodyNode>;
+using BodyMap = common::aligned_map<std::string, SDFBodyNode>;
 
 // Maps a child BodyNode to the properties of its parent Joint
 using JointMap = std::map<std::string, SDFJoint>;
@@ -369,7 +369,7 @@ simulation::WorldPtr readWorld(
   assert(worldElement != nullptr);
 
   // Create a world
-  simulation::WorldPtr newWorld(new simulation::World);
+  simulation::WorldPtr newWorld = simulation::World::create();
 
   //--------------------------------------------------------------------------
   // Name attribute
