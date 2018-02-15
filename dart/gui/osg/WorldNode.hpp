@@ -34,6 +34,7 @@
 #define DART_GUI_OSG_WORLDNODE_HPP_
 
 #include <osg/Group>
+#include <osgShadow/ShadowTechnique>
 #include <unordered_map>
 #include <memory>
 
@@ -67,6 +68,7 @@ public:
   friend class Viewer;
 
   /// Default constructor
+  /// Shadows are disabled by default
   explicit WorldNode(std::shared_ptr<dart::simulation::World> _world = nullptr, ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
 
   /// Set the World that this WorldNode is associated with
@@ -129,7 +131,11 @@ public:
   /// if the simulation is not paused)
   std::size_t getNumStepsPerCycle() const;
 
+  /// Get whether the WorldNode is casting shadows
   bool isShadowed() const;
+
+  /// Set the ShadowTechnique
+  /// If you wish to disable shadows, pass a nullptr
   void setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
 
 protected:

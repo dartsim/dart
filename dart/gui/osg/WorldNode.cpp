@@ -35,11 +35,6 @@
 #include <osg/NodeCallback>
 
 #include <osgShadow/ShadowedScene>
-#include <osgShadow/ShadowVolume>
-#include <osgShadow/ShadowTexture>
-#include <osgShadow/ShadowMap>
-#include <osgShadow/StandardShadowMap>
-#include <osgShadow/SoftShadowMap>
 
 #include "dart/gui/osg/WorldNode.hpp"
 #include "dart/gui/osg/ShapeFrameNode.hpp"
@@ -221,7 +216,6 @@ void WorldNode::clearUnusedNodes()
   {
     NodeMap::iterator it = mFrameToNode.find(frame);
     ShapeFrameNode* node = it->second;
-    // removeChild(node);
     if(!node->getShapeFrame() || !node->getShapeFrame()->hasVisualAspect() || !node->getShapeFrame()->getVisualAspect(true)->getShadowed()) {
       mNormalGroup->removeChild(node);
     }
@@ -293,6 +287,16 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
     if(!node)
       return;
 
+    // update the group that ShapeFrameNode should be
+    if((!node->getShapeFrame()->hasVisualAspect() || !node->getShapeFrame()->getVisualAspect(true)->getShadowed()) && node->getParent(0) != mNormalGroup) {
+      mShadowedGroup->removeChild(node);
+      mNormalGroup->addChild(node);
+    }
+    else if(node->getShapeFrame()->hasVisualAspect() && node->getShapeFrame()->getVisualAspect(true)->getShadowed() && node->getParent(0) != mShadowedGroup) {
+      mNormalGroup->removeChild(node);
+      mShadowedGroup->addChild(node);
+    }
+
     node->refresh(true);
     return;
   }
@@ -309,8 +313,7 @@ void WorldNode::refreshShapeFrameNode(dart::dynamics::Frame* frame)
   ::osg::ref_ptr<ShapeFrameNode> node = new ShapeFrameNode(frame->asShapeFrame(),
                                                          this);
   it->second = node;
-  // addChild(node);
-  if(!node->getShapeFrame() || !node->getShapeFrame()->hasVisualAspect() || !node->getShapeFrame()->getVisualAspect(true)->getShadowed()) {
+  if(!node->getShapeFrame()->hasVisualAspect() || !node->getShapeFrame()->getVisualAspect(true)->getShadowed()) {
     mNormalGroup->addChild(node);
   }
   else
@@ -323,18 +326,10 @@ bool WorldNode::isShadowed() const
   return mShadowed;
 }
 
+//==============================================================================
 void WorldNode::setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique) {
   if(!shadowTechnique) {
     mShadowed = false;
-    // // default ShadowTechnique is the ShadowMap technique
-    // ::osg::ref_ptr<osgShadow::ShadowMap> sm = new osgShadow::ShadowMap;
-    // // increase the resolution of default shadow texture for higher quality
-    // int mapres = std::pow(2, 13);
-    // sm->setTextureSize(::osg::Vec2s(mapres,mapres));
-    // // we are using Light1 because this is the highest one (on up direction)
-    // sm->setLight(mLight1);
-    // // set the technique
-    // static_cast<osgShadow::ShadowedScene*>(mPhysicsGroup.get())->setShadowTechnique(sm.get());
   }
   else {
     mShadowed = true;
