@@ -67,7 +67,7 @@ public:
   friend class Viewer;
 
   /// Default constructor
-  explicit WorldNode(std::shared_ptr<dart::simulation::World> _world = nullptr);
+  explicit WorldNode(std::shared_ptr<dart::simulation::World> _world = nullptr, ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
 
   /// Set the World that this WorldNode is associated with
   void setWorld(std::shared_ptr<dart::simulation::World> _newWorld);
@@ -129,6 +129,9 @@ public:
   /// if the simulation is not paused)
   std::size_t getNumStepsPerCycle() const;
 
+  bool isShadowed() const;
+  void setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
+
 protected:
 
   /// Destructor
@@ -172,6 +175,15 @@ protected:
 
   /// Viewer that this WorldNode is inside of
   Viewer* mViewer;
+
+  /// OSG group for non-shadowed objects
+  ::osg::ref_ptr<::osg::Group> mNormalGroup;
+
+  /// OSG group for shadowed objects
+  ::osg::ref_ptr<::osg::Group> mShadowedGroup;
+
+  /// Whether the shadows are enabled
+  bool mShadowed;
 
 };
 

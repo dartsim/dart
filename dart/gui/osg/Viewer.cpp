@@ -35,13 +35,6 @@
 #include <osg/OperationThread>
 #include <osgDB/WriteFile>
 
-#include <osgShadow/ShadowedScene>
-#include <osgShadow/ShadowVolume>
-#include <osgShadow/ShadowTexture>
-#include <osgShadow/ShadowMap>
-#include <osgShadow/StandardShadowMap>
-#include <osgShadow/SoftShadowMap>
-
 #include "dart/gui/osg/Viewer.hpp"
 #include "dart/gui/osg/TrackballManipulator.hpp"
 #include "dart/gui/osg/DefaultEventHandler.hpp"
@@ -197,7 +190,7 @@ void ViewerAttachment::attach(Viewer* newViewer)
 }
 
 //==============================================================================
-Viewer::Viewer(const ::osg::Vec4& clearColor, bool shadowsOn, ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique)
+Viewer::Viewer(const ::osg::Vec4& clearColor)
   : mImageSequenceNum(0),
     mImageDigits(0),
     mRecording(false),
@@ -213,11 +206,6 @@ Viewer::Viewer(const ::osg::Vec4& clearColor, bool shadowsOn, ::osg::ref_ptr<osg
     mAllowSimulation(true),
     mHeadlights(true)
 {
-  enableShadows(shadowsOn, shadowTechnique);
-
-  // add the physics group to the root group
-  mRootGroup->addChild(mPhysicsGroup);
-
   setCameraManipulator(new osg::TrackballManipulator);
   addInstructionText("Left-click:   Interaction\n");
   addInstructionText("Right-click:  Rotate view\n");
@@ -227,12 +215,12 @@ Viewer::Viewer(const ::osg::Vec4& clearColor, bool shadowsOn, ::osg::ref_ptr<osg
   mDefaultEventHandler = new DefaultEventHandler(this);
   // ^ Cannot construct this in the initialization list, because its constructor calls member functions of this object
 
+  setSceneData(mRootGroup);
   addEventHandler(mDefaultEventHandler);
+  setupDefaultLights();
   getCamera()->setClearColor(clearColor);
 
   getCamera()->setFinalDrawCallback(new SaveScreen(this));
-
-  setSceneData(mRootGroup.get());
 }
 
 //==============================================================================
@@ -387,7 +375,7 @@ void Viewer::addWorldNode(WorldNode* _newWorldNode, bool _active)
     return;
 
   mWorldNodes[_newWorldNode] = _active;
-  mPhysicsGroup->addChild(_newWorldNode);
+  mRootGroup->addChild(_newWorldNode);
   if(_active)
     _newWorldNode->simulate(mSimulating);
   _newWorldNode->mViewer = this;
@@ -401,7 +389,7 @@ void Viewer::removeWorldNode(WorldNode* _oldWorldNode)
   if(it == mWorldNodes.end())
     return;
 
-  mPhysicsGroup->removeChild(it->first);
+  mRootGroup->removeChild(it->first);
   mWorldNodes.erase(it);
 }
 
@@ -413,7 +401,7 @@ void Viewer::removeWorldNode(std::shared_ptr<dart::simulation::World> _oldWorld)
   if(nullptr == node)
     return;
 
-  mPhysicsGroup->removeChild(node);
+  mRootGroup->removeChild(node);
   mWorldNodes.erase(node);
 }
 
@@ -495,7 +483,7 @@ void Viewer::setupDefaultLights()
   setUpwardsDirection(mUpwards);
   switchHeadlights(true);
 
-  ::osg::ref_ptr<::osg::StateSet> lightSS = mPhysicsGroup->getOrCreateStateSet();
+  ::osg::ref_ptr<::osg::StateSet> lightSS = mRootGroup->getOrCreateStateSet();
 
   mLight1->setLightNum(1);
   mLightSource1->setLight(mLight1);
@@ -511,8 +499,8 @@ void Viewer::setupDefaultLights()
   mLightGroup->removeChild(mLightSource2);
   mLightGroup->addChild(mLightSource2);
 
-  mPhysicsGroup->removeChild(mLightGroup);
-  mPhysicsGroup->addChild(mLightGroup);
+  mRootGroup->removeChild(mLightGroup);
+  mRootGroup->addChild(mLightGroup);
 }
 
 //==============================================================================
@@ -850,64 +838,6 @@ void Viewer::updateDragAndDrops()
 const ::osg::ref_ptr<::osg::Group>& Viewer::getRootGroup() const
 {
   return mRootGroup;
-}
-
-//==============================================================================
-const ::osg::ref_ptr<::osg::Group>& Viewer::getPhysicsGroup() const
-{
-  return mPhysicsGroup;
-}
-
-//==============================================================================
-bool Viewer::isShadowed() const
-{
-  return mShadowed;
-}
-
-//==============================================================================
-void Viewer::enableShadows(bool _enable, ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique)
-{
-  if(!mPhysicsGroup) {
-    // Flags for shadowing; maybe this needs to be global?
-    constexpr int ReceivesShadowTraversalMask = 0x2;
-    constexpr int CastsShadowTraversalMask = 0x1;
-
-    // Setup shadows
-    // Create one ShadowedScene for each light
-    ::osg::ref_ptr<osgShadow::ShadowedScene> shadowedScene = new osgShadow::ShadowedScene;
-    shadowedScene->setReceivesShadowTraversalMask(ReceivesShadowTraversalMask);
-    shadowedScene->setCastsShadowTraversalMask(CastsShadowTraversalMask);
-
-    // set the physics group
-    mPhysicsGroup = shadowedScene.get();
-    mPhysicsGroup->getOrCreateStateSet();
-
-    setupDefaultLights();
-  }
-
-  if(_enable)
-    setShadowTechnique(shadowTechnique);
-  else
-    static_cast<osgShadow::ShadowedScene*>(mPhysicsGroup.get())->setShadowTechnique(0);
-
-  mShadowed = _enable;
-}
-
-void Viewer::setShadowTechnique(::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique) {
-  if(!shadowTechnique) {
-    // default ShadowTechnique is the ShadowMap technique
-    ::osg::ref_ptr<osgShadow::ShadowMap> sm = new osgShadow::ShadowMap;
-    // increase the resolution of default shadow texture for higher quality
-    int mapres = std::pow(2, 13);
-    sm->setTextureSize(::osg::Vec2s(mapres,mapres));
-    // we are using Light1 because this is the highest one (on up direction)
-    sm->setLight(mLight1);
-    // set the technique
-    static_cast<osgShadow::ShadowedScene*>(mPhysicsGroup.get())->setShadowTechnique(sm.get());
-  }
-  else {
-    static_cast<osgShadow::ShadowedScene*>(mPhysicsGroup.get())->setShadowTechnique(shadowTechnique.get());
-  }
 }
 
 } // namespace osg
