@@ -200,7 +200,7 @@ public:
   /// Get one of the LightSources of this Viewer
   /// index either 0 or 1
   /// Useful for shadowing techniques
-  const ::osg::ref_ptr<::osg::LightSource>& getLightSource(unsigned int index = 0) const;
+  const ::osg::ref_ptr<::osg::LightSource>& getLightSource(std::size_t index = 0) const;
 
   /// Set up the default lighting scheme
   void setupDefaultLights();

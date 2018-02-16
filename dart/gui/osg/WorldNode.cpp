@@ -65,8 +65,8 @@ public:
 };
 
 //==============================================================================
-WorldNode::WorldNode(std::shared_ptr<dart::simulation::World> _world, ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique)
-  : mWorld(_world),
+WorldNode::WorldNode(std::shared_ptr<dart::simulation::World> world, ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique)
+  : mWorld(world),
     mSimulating(false),
     mNumStepsPerCycle(1),
     mViewer(nullptr),
@@ -96,9 +96,9 @@ WorldNode::WorldNode(std::shared_ptr<dart::simulation::World> _world, ::osg::ref
 }
 
 //==============================================================================
-void WorldNode::setWorld(std::shared_ptr<dart::simulation::World> _newWorld)
+void WorldNode::setWorld(std::shared_ptr<dart::simulation::World> newWorld)
 {
-  mWorld = _newWorld;
+  mWorld = newWorld;
 }
 
 //==============================================================================
@@ -163,15 +163,15 @@ bool WorldNode::isSimulating() const
 }
 
 //==============================================================================
-void WorldNode::simulate(bool _on)
+void WorldNode::simulate(bool on)
 {
-  mSimulating = _on;
+  mSimulating = on;
 }
 
 //==============================================================================
-void WorldNode::setNumStepsPerCycle(std::size_t _steps)
+void WorldNode::setNumStepsPerCycle(std::size_t steps)
 {
-  mNumStepsPerCycle = _steps;
+  mNumStepsPerCycle = steps;
 }
 
 //==============================================================================

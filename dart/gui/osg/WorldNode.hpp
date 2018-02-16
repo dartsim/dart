@@ -69,10 +69,10 @@ public:
 
   /// Default constructor
   /// Shadows are disabled by default
-  explicit WorldNode(std::shared_ptr<dart::simulation::World> _world = nullptr, ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
+  explicit WorldNode(std::shared_ptr<dart::simulation::World> world = nullptr, ::osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique = nullptr);
 
   /// Set the World that this WorldNode is associated with
-  void setWorld(std::shared_ptr<dart::simulation::World> _newWorld);
+  void setWorld(std::shared_ptr<dart::simulation::World> newWorld);
 
   /// Get the World that this WorldNode is associated with
   std::shared_ptr<dart::simulation::World> getWorld() const;
@@ -121,11 +121,11 @@ public:
 
   /// Pass in true to take steps between render cycles; pass in false to turn
   /// off steps between render cycles.
-  void simulate(bool _on);
+  void simulate(bool on);
 
   /// Set the number of steps to take between each render cycle (only if the
   /// simulation is not paused)
-  void setNumStepsPerCycle(std::size_t _steps);
+  void setNumStepsPerCycle(std::size_t steps);
 
   /// Get the number of steps that will be taken between each render cycle (only
   /// if the simulation is not paused)

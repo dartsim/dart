@@ -472,7 +472,7 @@ const ::osg::Group* Viewer::getLightGroup() const
 }
 
 //==============================================================================
-const ::osg::ref_ptr<::osg::LightSource>& Viewer::getLightSource(unsigned int index) const
+const ::osg::ref_ptr<::osg::LightSource>& Viewer::getLightSource(std::size_t index) const
 {
   assert(index < 2);
   if(index == 0)
