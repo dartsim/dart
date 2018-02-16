@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -33,15 +34,6 @@
 
 #include <assimp/scene.h>
 
-#include <fcl/collision.h>
-#include <fcl/collision_object.h>
-#include <fcl/collision_data.h>
-#include <fcl/distance.h>
-#include <fcl/BVH/BVH_model.h>
-#include <fcl/broadphase/broadphase.h>
-#include <fcl/shape/geometric_shapes.h>
-#include <fcl/shape/geometric_shape_to_BVH_model.h>
-
 #include "dart/common/Console.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionFilter.hpp"
@@ -66,45 +58,49 @@ namespace collision {
 namespace {
 
 bool collisionCallback(
-    fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata);
+    dart::collision::fcl::CollisionObject* o1,
+    dart::collision::fcl::CollisionObject* o2,
+    void* cdata);
 
 bool distanceCallback(
-    fcl::CollisionObject* o1,
-    fcl::CollisionObject* o2,
+    dart::collision::fcl::CollisionObject* o1,
+    dart::collision::fcl::CollisionObject* o2,
     void* cdata,
-    fcl::FCL_REAL& dist);
+    double& dist);
 
 void postProcessFCL(
-    const fcl::CollisionResult& fclResult,
-    fcl::CollisionObject* o1,
-    fcl::CollisionObject* o2,
+    const dart::collision::fcl::CollisionResult& fclResult,
+    dart::collision::fcl::CollisionObject* o1,
+    dart::collision::fcl::CollisionObject* o2,
     const CollisionOption& option,
     CollisionResult& result);
 
 void postProcessDART(
-    const fcl::CollisionResult& fclResult,
-    fcl::CollisionObject* o1,
-    fcl::CollisionObject* o2,
+    const dart::collision::fcl::CollisionResult& fclResult,
+    dart::collision::fcl::CollisionObject* o1,
+    dart::collision::fcl::CollisionObject* o2,
     const CollisionOption& option,
     CollisionResult& result);
 
 void interpreteDistanceResult(
-    const fcl::DistanceResult& fclResult,
-    fcl::CollisionObject* o1,
-    fcl::CollisionObject* o2,
+    const dart::collision::fcl::DistanceResult& fclResult,
+    dart::collision::fcl::CollisionObject* o1,
+    dart::collision::fcl::CollisionObject* o2,
     const DistanceOption& option,
     DistanceResult& result);
 
-int evalContactPosition(const fcl::Contact& fclContact,
-    const fcl::BVHModel<fcl::OBBRSS>* mesh1,
-    const fcl::BVHModel<fcl::OBBRSS>* mesh2,
-    const fcl::Transform3f& transform1,
-    const fcl::Transform3f& transform2,
+int evalContactPosition(const dart::collision::fcl::Contact& fclContact,
+    const ::fcl::BVHModel<dart::collision::fcl::OBBRSS>* mesh1,
+    const ::fcl::BVHModel<dart::collision::fcl::OBBRSS>* mesh2,
+    const dart::collision::fcl::Transform3& transform1,
+    const dart::collision::fcl::Transform3& transform2,
     Eigen::Vector3d& contactPosition1, Eigen::Vector3d& contactPosition2);
 
 Eigen::Vector3d getDiff(const Contact& contact1, const Contact& contact2);
 
-fcl::Vec3f getDiff(const fcl::Contact& contact1, const fcl::Contact& contact2);
+dart::collision::fcl::Vector3 getDiff(
+    const dart::collision::fcl::Contact& contact1,
+    const dart::collision::fcl::Contact& contact2);
 
 bool isColinear(
     const Contact& contact1,
@@ -113,31 +109,31 @@ bool isColinear(
     double tol);
 
 bool isColinear(
-    const fcl::Contact& contact1,
-    const fcl::Contact& contact2,
-    const fcl::Contact& contact3,
+    const dart::collision::fcl::Contact& contact1,
+    const dart::collision::fcl::Contact& contact2,
+    const dart::collision::fcl::Contact& contact3,
     double tol);
 
 template <typename T>
 bool isColinear(const T& pos1, const T& pos2, const T& pos3, double tol);
 
 int FFtest(
-    const fcl::Vec3f& r1, const fcl::Vec3f& r2, const fcl::Vec3f& r3,
-    const fcl::Vec3f& R1, const fcl::Vec3f& R2, const fcl::Vec3f& R3,
-    fcl::Vec3f* res1, fcl::Vec3f* res2);
+    const dart::collision::fcl::Vector3& r1, const dart::collision::fcl::Vector3& r2, const dart::collision::fcl::Vector3& r3,
+    const dart::collision::fcl::Vector3& R1, const dart::collision::fcl::Vector3& R2, const dart::collision::fcl::Vector3& R3,
+    dart::collision::fcl::Vector3* res1, dart::collision::fcl::Vector3* res2);
 
-double triArea(fcl::Vec3f& p1, fcl::Vec3f& p2, fcl::Vec3f& p3);
-
-void convertOption(
-    const CollisionOption& option, fcl::CollisionRequest& request);
+double triArea(dart::collision::fcl::Vector3& p1, dart::collision::fcl::Vector3& p2, dart::collision::fcl::Vector3& p3);
 
 void convertOption(
-    const DistanceOption& option, fcl::DistanceRequest& request);
+    const CollisionOption& option, dart::collision::fcl::CollisionRequest& request);
+
+void convertOption(
+    const DistanceOption& option, dart::collision::fcl::DistanceRequest& request);
 
 Contact convertContact(
-    const fcl::Contact& fclContact,
-    fcl::CollisionObject* o1,
-    fcl::CollisionObject* o2,
+    const dart::collision::fcl::Contact& fclContact,
+    dart::collision::fcl::CollisionObject* o1,
+    dart::collision::fcl::CollisionObject* o2,
     const CollisionOption& option);
 
 /// Collision data stores the collision request and the result given by
@@ -145,10 +141,10 @@ Contact convertContact(
 struct FCLCollisionCallbackData
 {
   /// FCL collision request
-  fcl::CollisionRequest fclRequest;
+  dart::collision::fcl::CollisionRequest fclRequest;
 
   /// FCL collision result
-  fcl::CollisionResult fclResult;
+  dart::collision::fcl::CollisionResult fclResult;
 
   /// Collision option of DART
   const CollisionOption& option;
@@ -203,10 +199,10 @@ struct FCLCollisionCallbackData
 struct FCLDistanceCallbackData
 {
   /// FCL distance request
-  fcl::DistanceRequest fclRequest;
+  dart::collision::fcl::DistanceRequest fclRequest;
 
   /// FCL distance result
-  fcl::DistanceResult fclResult;
+  dart::collision::fcl::DistanceResult fclResult;
 
   /// Distance option of DART
   const DistanceOption& option;
@@ -234,7 +230,7 @@ struct FCLDistanceCallbackData
 //==============================================================================
 // Create a cube mesh for collision detection
 template<class BV>
-fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ)
+::fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ)
 {
   int faces[6][4] =
   {
@@ -254,20 +250,20 @@ fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ)
   v[0][2] = v[3][2] = v[4][2] = v[7][2] = -_sizeZ / 2;
   v[1][2] = v[2][2] = v[5][2] = v[6][2] = _sizeZ / 2;
 
-  fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
-  fcl::Vec3f p1, p2, p3;
+  ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
+  dart::collision::fcl::Vector3 p1, p2, p3;
   model->beginModel();
 
   for (int i = 0; i < 6; i++)
   {
-    p1 = fcl::Vec3f(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
-    p2 = fcl::Vec3f(v[faces[i][1]][0], v[faces[i][1]][1], v[faces[i][1]][2]);
-    p3 = fcl::Vec3f(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
+    p1 = dart::collision::fcl::Vector3(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
+    p2 = dart::collision::fcl::Vector3(v[faces[i][1]][0], v[faces[i][1]][1], v[faces[i][1]][2]);
+    p3 = dart::collision::fcl::Vector3(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
     model->addTriangle(p1, p2, p3);
 
-    p1 = fcl::Vec3f(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
-    p2 = fcl::Vec3f(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
-    p3 = fcl::Vec3f(v[faces[i][3]][0], v[faces[i][3]][1], v[faces[i][3]][2]);
+    p1 = dart::collision::fcl::Vector3(v[faces[i][0]][0], v[faces[i][0]][1], v[faces[i][0]][2]);
+    p2 = dart::collision::fcl::Vector3(v[faces[i][2]][0], v[faces[i][2]][1], v[faces[i][2]][2]);
+    p3 = dart::collision::fcl::Vector3(v[faces[i][3]][0], v[faces[i][3]][1], v[faces[i][3]][2]);
     model->addTriangle(p1, p2, p3);
   }
   model->endModel();
@@ -276,7 +272,7 @@ fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ)
 
 //==============================================================================
 template<class BV>
-fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
+::fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
 {
   float v[59][3] =
   {
@@ -457,19 +453,22 @@ fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
     {56, 49, 58}
   };
 
-  fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
-  fcl::Vec3f p1, p2, p3;
+  ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
+  dart::collision::fcl::Vector3 p1, p2, p3;
   model->beginModel();
 
   for (int i = 0; i < 112; i++)
   {
-    p1 = fcl::Vec3f(v[f[i][0]][0] * _sizeX,
+    p1 = dart::collision::fcl::Vector3(
+        v[f[i][0]][0] * _sizeX,
         v[f[i][0]][1] * _sizeY,
         v[f[i][0]][2] * _sizeZ);
-    p2 = fcl::Vec3f(v[f[i][1]][0] * _sizeX,
+    p2 = dart::collision::fcl::Vector3(
+        v[f[i][1]][0] * _sizeX,
         v[f[i][1]][1] * _sizeY,
         v[f[i][1]][2] * _sizeZ);
-    p3 = fcl::Vec3f(v[f[i][2]][0] * _sizeX,
+    p3 = dart::collision::fcl::Vector3(
+        v[f[i][2]][0] * _sizeX,
         v[f[i][2]][1] * _sizeY,
         v[f[i][2]][2] * _sizeZ);
 
@@ -483,8 +482,8 @@ fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
 
 //==============================================================================
 template<class BV>
-fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
-                                  double _height, int _slices, int _stacks)
+::fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
+                                    double _height, int _slices, int _stacks)
 {
   const int CACHE_SIZE = 240;
 
@@ -515,7 +514,7 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
   /* Cache is the vertex locations cache */
   for (i = 0; i < _slices; i++)
   {
-    angle = 2 * M_PI * i / _slices;
+    angle = 2 * math::constantsd::pi() * i / _slices;
     sinCache[i] = sin(angle);
     cosCache[i] = cos(angle);
   }
@@ -523,8 +522,8 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
   sinCache[_slices] = sinCache[0];
   cosCache[_slices] = cosCache[0];
 
-  fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
-  fcl::Vec3f p1, p2, p3, p4;
+  ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
+  dart::collision::fcl::Vector3 p1, p2, p3, p4;
 
   model->beginModel();
 
@@ -533,11 +532,11 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
   costemp = cosCache[0];
   radiusLow = _baseRadius;
   zLow = zBase;
-  p1 = fcl::Vec3f(radiusLow * sintemp, radiusLow * costemp, zLow);
+  p1 = dart::collision::fcl::Vector3(radiusLow * sintemp, radiusLow * costemp, zLow);
   for (i = 1; i < _slices; i++)
   {
-    p2 = fcl::Vec3f(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
-    p3 = fcl::Vec3f(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+    p2 = dart::collision::fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+    p3 = dart::collision::fcl::Vector3(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
     model->addTriangle(p1, p2, p3);
   }
 
@@ -553,14 +552,14 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
       radiusHigh = _baseRadius
                    - deltaRadius * (static_cast<float>(j + 1) / _stacks);
 
-      p1 = fcl::Vec3f(radiusLow * sinCache[i], radiusLow * cosCache[i],
-                      zLow);
-      p2 = fcl::Vec3f(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1],
-                      zLow);
-      p3 = fcl::Vec3f(radiusHigh * sinCache[i], radiusHigh * cosCache[i],
-                      zHigh);
-      p4 = fcl::Vec3f(radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1],
-                      zHigh);
+      p1 = dart::collision::fcl::Vector3(
+          radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+      p2 = dart::collision::fcl::Vector3(
+          radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+      p3 = dart::collision::fcl::Vector3(
+          radiusHigh * sinCache[i], radiusHigh * cosCache[i], zHigh);
+      p4 = dart::collision::fcl::Vector3(
+          radiusHigh * sinCache[i+1], radiusHigh * cosCache[i+1], zHigh);
 
       model->addTriangle(p1, p2, p3);
       model->addTriangle(p2, p3, p4);
@@ -572,11 +571,11 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
   costemp = cosCache[0];
   radiusLow = _topRadius;
   zLow = zBase + _height;
-  p1 = fcl::Vec3f(radiusLow * sintemp, radiusLow * costemp, zLow);
+  p1 = dart::collision::fcl::Vector3(radiusLow * sintemp, radiusLow * costemp, zLow);
   for (i = 1; i < _slices; i++)
   {
-    p2 = fcl::Vec3f(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
-    p3 = fcl::Vec3f(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
+    p2 = dart::collision::fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
+    p3 = dart::collision::fcl::Vector3(radiusLow * sinCache[i+1], radiusLow * cosCache[i+1], zLow);
     model->addTriangle(p1, p2, p3);
   }
 
@@ -586,27 +585,27 @@ fcl::BVHModel<BV>* createCylinder(double _baseRadius, double _topRadius,
 
 //==============================================================================
 template<class BV>
-fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
-                              const aiScene* _mesh)
+::fcl::BVHModel<BV>* createMesh(
+    float _scaleX, float _scaleY, float _scaleZ, const aiScene* _mesh)
 {
   // Create FCL mesh from Assimp mesh
 
   assert(_mesh);
-  fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
+  ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
   for (std::size_t i = 0; i < _mesh->mNumMeshes; i++)
   {
     for (std::size_t j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++)
     {
-      fcl::Vec3f vertices[3];
+      dart::collision::fcl::Vector3 vertices[3];
       for (std::size_t k = 0; k < 3; k++)
       {
         const aiVector3D& vertex
             = _mesh->mMeshes[i]->mVertices[
               _mesh->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = fcl::Vec3f(vertex.x * _scaleX,
-                                 vertex.y * _scaleY,
-                                 vertex.z * _scaleZ);
+        vertices[k] = dart::collision::fcl::Vector3(vertex.x * _scaleX,
+                                                    vertex.y * _scaleY,
+                                                    vertex.z * _scaleZ);
       }
       model->addTriangle(vertices[0], vertices[1], vertices[2]);
     }
@@ -617,21 +616,21 @@ fcl::BVHModel<BV>* createMesh(float _scaleX, float _scaleY, float _scaleZ,
 
 //==============================================================================
 template<class BV>
-fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
+::fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
 {
   // Create FCL mesh from Assimp mesh
 
   assert(_mesh);
-  fcl::BVHModel<BV>* model = new fcl::BVHModel<BV>;
+  ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
   model->beginModel();
 
   for (std::size_t i = 0; i < _mesh->mNumFaces; i++)
   {
-    fcl::Vec3f vertices[3];
+    dart::collision::fcl::Vector3 vertices[3];
     for (std::size_t j = 0; j < 3; j++)
     {
       const aiVector3D& vertex = _mesh->mVertices[_mesh->mFaces[i].mIndices[j]];
-      vertices[j] = fcl::Vec3f(vertex.x, vertex.y, vertex.z);
+      vertices[j] = dart::collision::fcl::Vector3(vertex.x, vertex.y, vertex.z);
     }
     model->addTriangle(vertices[0], vertices[1], vertices[2]);
   }
@@ -642,7 +641,13 @@ fcl::BVHModel<BV>* createSoftMesh(const aiMesh* _mesh)
 
 } // anonymous namespace
 
-
+//==============================================================================
+FCLCollisionDetector::Registrar<FCLCollisionDetector>
+FCLCollisionDetector::mRegistrar{
+  FCLCollisionDetector::getStaticType(),
+  []() -> std::shared_ptr<dart::collision::FCLCollisionDetector> {
+      return dart::collision::FCLCollisionDetector::create();
+  }};
 
 //==============================================================================
 std::shared_ptr<FCLCollisionDetector> FCLCollisionDetector::create()
@@ -881,7 +886,7 @@ std::unique_ptr<CollisionObject> FCLCollisionDetector::createCollisionObject(
 }
 
 //==============================================================================
-fcl_shared_ptr<fcl::CollisionGeometry>
+fcl_shared_ptr<dart::collision::fcl::CollisionGeometry>
 FCLCollisionDetector::claimFCLCollisionGeometry(
     const dynamics::ConstShapePtr& shape)
 {
@@ -904,7 +909,7 @@ FCLCollisionDetector::claimFCLCollisionGeometry(
 }
 
 //==============================================================================
-fcl_shared_ptr<fcl::CollisionGeometry>
+fcl_shared_ptr<dart::collision::fcl::CollisionGeometry>
 FCLCollisionDetector::createFCLCollisionGeometry(
     const dynamics::ConstShapePtr& shape,
     FCLCollisionDetector::PrimitiveShape type,
@@ -919,7 +924,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
 
-  fcl::CollisionGeometry* geom = nullptr;
+  dart::collision::fcl::CollisionGeometry* geom = nullptr;
   const auto& shapeType = shape->getType();
 
   if (SphereShape::getStaticType() == shapeType)
@@ -930,9 +935,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const auto radius = sphere->getRadius();
 
     if (FCLCollisionDetector::PRIMITIVE == type)
-      geom = new fcl::Sphere(radius);
+      geom = new dart::collision::fcl::Sphere(radius);
     else
-      geom = createEllipsoid<fcl::OBBRSS>(radius*2.0, radius*2.0, radius*2.0);
+      geom = createEllipsoid<dart::collision::fcl::OBBRSS>(radius*2.0, radius*2.0, radius*2.0);
   }
   else if (BoxShape::getStaticType() == shapeType)
   {
@@ -942,28 +947,30 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const Eigen::Vector3d& size = box->getSize();
 
     if (FCLCollisionDetector::PRIMITIVE == type)
-      geom = new fcl::Box(size[0], size[1], size[2]);
+      geom = new dart::collision::fcl::Box(size[0], size[1], size[2]);
     else
-      geom = createCube<fcl::OBBRSS>(size[0], size[1], size[2]);
+      geom = createCube<dart::collision::fcl::OBBRSS>(size[0], size[1], size[2]);
   }
   else if (EllipsoidShape::getStaticType() == shapeType)
   {
     assert(dynamic_cast<const EllipsoidShape*>(shape.get()));
 
     auto ellipsoid = static_cast<const EllipsoidShape*>(shape.get());
-    const Eigen::Vector3d& size = ellipsoid->getSize();
+    const Eigen::Vector3d& radii = ellipsoid->getRadii();
 
     if (FCLCollisionDetector::PRIMITIVE == type)
     {
 #if FCL_VERSION_AT_LEAST(0,4,0)
-      geom = new fcl::Ellipsoid(FCLTypes::convertVector3(size * 0.5));
+      geom = new dart::collision::fcl::Ellipsoid(FCLTypes::convertVector3(radii));
 #else
-      geom = createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]);
+      geom = createEllipsoid<dart::collision::fcl::OBBRSS>(
+          radii[0]*2.0, radii[1]*2.0, radii[2]*2.0);
 #endif
     }
     else
     {
-      geom = createEllipsoid<fcl::OBBRSS>(size[0], size[1], size[2]);
+      geom = createEllipsoid<dart::collision::fcl::OBBRSS>(
+          radii[0]*2.0, radii[1]*2.0, radii[2]*2.0);
     }
   }
   else if (CylinderShape::getStaticType() == shapeType)
@@ -976,15 +983,15 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     if (FCLCollisionDetector::PRIMITIVE == type)
     {
-      geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
+      geom = createCylinder<dart::collision::fcl::OBBRSS>(radius, radius, height, 16, 16);
       // TODO(JS): We still need to use mesh for cylinder because FCL 0.4.0
       // returns single contact point for cylinder yet. Once FCL support
       // multiple contact points then above code will be replaced by:
-      // fclCollGeom.reset(new fcl::Cylinder(radius, height));
+      // fclCollGeom.reset(new dart::collision::fcl::Cylinder(radius, height));
     }
     else
     {
-      geom = createCylinder<fcl::OBBRSS>(radius, radius, height, 16, 16);
+      geom = createCylinder<dart::collision::fcl::OBBRSS>(radius, radius, height, 16, 16);
     }
   }
   else if (PlaneShape::getStaticType() == shapeType)
@@ -996,11 +1003,11 @@ FCLCollisionDetector::createFCLCollisionGeometry(
       const Eigen::Vector3d normal = plane->getNormal();
       const double          offset = plane->getOffset();
 
-      geom = new fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
+      geom = new dart::collision::fcl::Halfspace(FCLTypes::convertVector3(normal), offset);
     }
     else
     {
-      geom = createCube<fcl::OBBRSS>(1000.0, 0.0, 1000.0);
+      geom = createCube<dart::collision::fcl::OBBRSS>(1000.0, 0.0, 1000.0);
       dtwarn << "[FCLCollisionDetector] PlaneShape is not supported by "
              << "FCLCollisionDetector. We create a thin box mesh insted, where "
              << "the size is [1000 0 1000].\n";
@@ -1014,7 +1021,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     const Eigen::Vector3d& scale = shapeMesh->getScale();
     auto aiScene = shapeMesh->getMesh();
 
-    geom = createMesh<fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene);
+    geom = createMesh<dart::collision::fcl::OBBRSS>(scale[0], scale[1], scale[2], aiScene);
   }
   else if (SoftMeshShape::getStaticType() == shapeType)
   {
@@ -1023,7 +1030,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     auto softMeshShape = static_cast<const SoftMeshShape*>(shape.get());
     auto aiMesh = softMeshShape->getAssimpMesh();
 
-    geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
+    geom = createSoftMesh<dart::collision::fcl::OBBRSS>(aiMesh);
   }
   else
   {
@@ -1032,10 +1039,10 @@ FCLCollisionDetector::createFCLCollisionGeometry(
           << shapeType << "]. Creating a sphere with 0.1 radius "
           << "instead.\n";
 
-    geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
+    geom = createEllipsoid<dart::collision::fcl::OBBRSS>(0.1, 0.1, 0.1);
   }
 
-  return fcl_shared_ptr<fcl::CollisionGeometry>(geom, deleter);
+  return fcl_shared_ptr<dart::collision::fcl::CollisionGeometry>(geom, deleter);
 }
 
 //==============================================================================
@@ -1051,7 +1058,7 @@ FCLCollisionDetector::FCLCollisionGeometryDeleter::FCLCollisionGeometryDeleter(
 
 //==============================================================================
 void FCLCollisionDetector::FCLCollisionGeometryDeleter::operator()(
-    fcl::CollisionGeometry* geom) const
+    dart::collision::fcl::CollisionGeometry* geom) const
 {
   mFCLCollisionDetector->mShapeMap.erase(mShape);
 
@@ -1064,7 +1071,7 @@ namespace {
 
 //==============================================================================
 bool collisionCallback(
-    fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata)
+    dart::collision::fcl::CollisionObject* o1, dart::collision::fcl::CollisionObject* o2, void* cdata)
 {
   // Return true if you don't want more narrow phase collision checking after
   // this callback function returns, return false otherwise.
@@ -1083,19 +1090,12 @@ bool collisionCallback(
   // Filtering
   if (filter)
   {
-    auto userData1
-        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-    auto userData2
-        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-    assert(userData1);
-    assert(userData2);
-
-    auto collisionObject1 = userData1->mCollisionObject;
-    auto collisionObject2 = userData2->mCollisionObject;
+    auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+    auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
     assert(collisionObject1);
     assert(collisionObject2);
 
-    if (!filter->needCollision(collisionObject2, collisionObject1))
+    if (filter->ignoresCollision(collisionObject2, collisionObject1))
       return collData->done;
   }
 
@@ -1103,7 +1103,7 @@ bool collisionCallback(
   fclResult.clear();
 
   // Perform narrow-phase detection
-  fcl::collide(o1, o2, fclRequest, fclResult);
+  ::fcl::collide(o1, o2, fclRequest, fclResult);
 
   if (result)
   {
@@ -1137,10 +1137,10 @@ bool collisionCallback(
 
 //==============================================================================
 bool distanceCallback(
-    fcl::CollisionObject* o1,
-    fcl::CollisionObject* o2,
+    dart::collision::fcl::CollisionObject* o1,
+    dart::collision::fcl::CollisionObject* o2,
     void* ddata,
-    fcl::FCL_REAL& dist)
+    double& dist)
 {
   auto* distData = static_cast<FCLDistanceCallbackData*>(ddata);
 
@@ -1159,15 +1159,8 @@ bool distanceCallback(
   // Filtering
   if (filter)
   {
-    auto userData1
-        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-    auto userData2
-        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-    assert(userData1);
-    assert(userData2);
-
-    auto collisionObject1 = userData1->mCollisionObject;
-    auto collisionObject2 = userData2->mCollisionObject;
+    auto collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+    auto collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
     assert(collisionObject1);
     assert(collisionObject2);
 
@@ -1179,7 +1172,7 @@ bool distanceCallback(
   fclResult.clear();
 
   // Perform narrow-phase check
-  fcl::distance(o1, o2, fclRequest, fclResult);
+  ::fcl::distance(o1, o2, fclRequest, fclResult);
 
   // Store the minimum distance just in case result is nullptr.
   distData->unclampedMinDistance = fclResult.min_distance;
@@ -1200,7 +1193,7 @@ Eigen::Vector3d getDiff(const Contact& contact1, const Contact& contact2)
 }
 
 //==============================================================================
-fcl::Vec3f getDiff(const fcl::Contact& contact1, const fcl::Contact& contact2)
+dart::collision::fcl::Vector3 getDiff(const dart::collision::fcl::Contact& contact1, const dart::collision::fcl::Contact& contact2)
 {
   return contact1.pos - contact2.pos;
 }
@@ -1282,9 +1275,9 @@ void markColinearPoints(
 
 //==============================================================================
 void postProcessFCL(
-    const fcl::CollisionResult& fclResult,
-    fcl::CollisionObject* o1,
-    fcl::CollisionObject* o2,
+    const dart::collision::fcl::CollisionResult& fclResult,
+    dart::collision::fcl::CollisionObject* o1,
+    dart::collision::fcl::CollisionObject* o2,
     const CollisionOption& option,
     CollisionResult& result)
 {
@@ -1297,8 +1290,20 @@ void postProcessFCL(
   // without the checkings of repeatidity and co-linearity.
   if (1u == option.maxNumContacts)
   {
-    result.addContact(convertContact(fclResult.getContact(0), o1, o2, option));
+    for (auto i = 0u; i < numContacts; ++i)
+    {
+      if (dart::collision::fcl::length2(fclResult.getContact(i).normal)
+          < Contact::getNormalEpsilonSquared())
+      {
+        // Skip this contact. This is because we assume that a contact with
+        // zero-length normal is invalid.
+        continue;
+      }
 
+      result.addContact(
+          convertContact(fclResult.getContact(i), o1, o2, option));
+      break;
+    }
     return;
   }
 
@@ -1309,20 +1314,28 @@ void postProcessFCL(
 
   // mark all the repeated points
   markRepeatedPoints<
-      fcl::CollisionResult,
-      fcl::Contact,
-      &fcl::CollisionResult::getContact>(markForDeletion, fclResult, tol3);
+      dart::collision::fcl::CollisionResult,
+      dart::collision::fcl::Contact,
+      &dart::collision::fcl::CollisionResult::getContact>(markForDeletion, fclResult, tol3);
 
   // remove all the co-linear contact points
   markColinearPoints<
-      fcl::CollisionResult,
-      fcl::Contact,
-      &fcl::CollisionResult::getContact>(markForDeletion, fclResult, tol);
+      dart::collision::fcl::CollisionResult,
+      dart::collision::fcl::Contact,
+      &dart::collision::fcl::CollisionResult::getContact>(markForDeletion, fclResult, tol);
 
   for (auto i = 0u; i < numContacts; ++i)
   {
     if (markForDeletion[i])
       continue;
+
+    if (dart::collision::fcl::length2(fclResult.getContact(i).normal)
+        < Contact::getNormalEpsilonSquared())
+    {
+      // Skip this contact. This is because we assume that a contact with
+      // zero-length normal is invalid.
+      continue;
+    }
 
     result.addContact(convertContact(fclResult.getContact(i), o1, o2, option));
 
@@ -1333,9 +1346,9 @@ void postProcessFCL(
 
 //==============================================================================
 void postProcessDART(
-    const fcl::CollisionResult& fclResult,
-    fcl::CollisionObject* o1,
-    fcl::CollisionObject* o2,
+    const dart::collision::fcl::CollisionResult& fclResult,
+    dart::collision::fcl::CollisionObject* o1,
+    dart::collision::fcl::CollisionObject* o2,
     const CollisionOption& option,
     CollisionResult& result)
 {
@@ -1353,23 +1366,22 @@ void postProcessDART(
   {
     const auto& c = fclResult.getContact(i);
 
-    auto userData1
-        = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-    auto userData2
-        = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-    assert(userData1);
-    assert(userData2);
-
     // for each pair of intersecting triangles, we create two contact points
     Contact pair1;
     Contact pair2;
 
-    pair1.collisionObject1 = userData1->mCollisionObject;
-    pair1.collisionObject2 = userData2->mCollisionObject;
+    pair1.collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+    pair1.collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
 
     if (option.enableContact)
     {
       pair1.normal = FCLTypes::convertVector3(-c.normal);
+      if (Contact::isZeroNormal(pair1.normal))
+      {
+        // This is an invalid contact, as it contains a zero length normal.
+        // Skip this contact.
+        continue;
+      }
       pair1.penetrationDepth = c.penetration_depth;
       pair1.triID1 = c.b1;
       pair1.triID2 = c.b2;
@@ -1377,8 +1389,8 @@ void postProcessDART(
 
       auto contactResult = evalContactPosition(
             c,
-            static_cast<const fcl::BVHModel<fcl::OBBRSS>*>(c.o1),
-            static_cast<const fcl::BVHModel<fcl::OBBRSS>*>(c.o2),
+            static_cast<const ::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(c.o1),
+            static_cast<const ::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(c.o2),
             FCLTypes::convertTransform(pair1.collisionObject1->getTransform()),
             FCLTypes::convertTransform(pair1.collisionObject2->getTransform()),
             pair1.point,
@@ -1445,9 +1457,9 @@ void postProcessDART(
 
 //==============================================================================
 void interpreteDistanceResult(
-    const fcl::DistanceResult& fclResult,
-    fcl::CollisionObject* o1,
-    fcl::CollisionObject* o2,
+    const dart::collision::fcl::DistanceResult& fclResult,
+    dart::collision::fcl::CollisionObject* o1,
+    dart::collision::fcl::CollisionObject* o2,
     const DistanceOption& option,
     DistanceResult& result)
 {
@@ -1455,17 +1467,10 @@ void interpreteDistanceResult(
   result.minDistance
       = std::max(fclResult.min_distance, option.distanceLowerBound);
 
-  const auto* userData1
-      = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-  const auto* userData2
-      = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-  assert(userData1);
-  assert(userData2);
-  assert(userData1->mCollisionObject);
-  assert(userData2->mCollisionObject);
-
-  result.shapeFrame1 = userData1->mCollisionObject->getShapeFrame();
-  result.shapeFrame2 = userData2->mCollisionObject->getShapeFrame();
+  result.shapeFrame1
+      = static_cast<FCLCollisionObject*>(o1->getUserData())->getShapeFrame();
+  result.shapeFrame2
+      = static_cast<FCLCollisionObject*>(o2->getUserData())->getShapeFrame();
 
   if (option.enableNearestPoints)
   {
@@ -1478,11 +1483,11 @@ void interpreteDistanceResult(
 
 //==============================================================================
 int evalContactPosition(
-    const fcl::Contact& fclContact,
-    const fcl::BVHModel<fcl::OBBRSS>* mesh1,
-    const fcl::BVHModel<fcl::OBBRSS>* mesh2,
-    const fcl::Transform3f& transform1,
-    const fcl::Transform3f& transform2,
+    const dart::collision::fcl::Contact& fclContact,
+    const ::fcl::BVHModel<dart::collision::fcl::OBBRSS>* mesh1,
+    const ::fcl::BVHModel<dart::collision::fcl::OBBRSS>* mesh2,
+    const dart::collision::fcl::Transform3& transform1,
+    const dart::collision::fcl::Transform3& transform2,
     Eigen::Vector3d& contactPosition1,
     Eigen::Vector3d& contactPosition2)
 {
@@ -1491,7 +1496,7 @@ int evalContactPosition(
   auto tri1 = mesh1->tri_indices[id1];
   auto tri2 = mesh2->tri_indices[id2];
 
-  fcl::Vec3f v1, v2, v3, p1, p2, p3;
+  dart::collision::fcl::Vector3 v1, v2, v3, p1, p2, p3;
   v1 = mesh1->vertices[tri1[0]];
   v2 = mesh1->vertices[tri1[1]];
   v3 = mesh1->vertices[tri1[2]];
@@ -1500,13 +1505,13 @@ int evalContactPosition(
   p2 = mesh2->vertices[tri2[1]];
   p3 = mesh2->vertices[tri2[2]];
 
-  fcl::Vec3f contact1, contact2;
-  v1 = transform1.transform(v1);
-  v2 = transform1.transform(v2);
-  v3 = transform1.transform(v3);
-  p1 = transform2.transform(p1);
-  p2 = transform2.transform(p2);
-  p3 = transform2.transform(p3);
+  dart::collision::fcl::Vector3 contact1, contact2;
+  v1 = dart::collision::fcl::transform(transform1, v1);
+  v2 = dart::collision::fcl::transform(transform1, v2);
+  v3 = dart::collision::fcl::transform(transform1, v3);
+  p1 = dart::collision::fcl::transform(transform2, p1);
+  p2 = dart::collision::fcl::transform(transform2, p2);
+  p3 = dart::collision::fcl::transform(transform2, p3);
   auto testRes = FFtest(v1, v2, v3, p1, p2, p3, &contact1, &contact2);
 
   if (testRes == COPLANAR_CONTACT)
@@ -1533,9 +1538,9 @@ int evalContactPosition(
 
 //==============================================================================
 int FFtest(
-    const fcl::Vec3f& r1, const fcl::Vec3f& r2, const fcl::Vec3f& r3,
-    const fcl::Vec3f& R1, const fcl::Vec3f& R2, const fcl::Vec3f& R3,
-    fcl::Vec3f* res1, fcl::Vec3f* res2)
+    const dart::collision::fcl::Vector3& r1, const dart::collision::fcl::Vector3& r2, const dart::collision::fcl::Vector3& r3,
+    const dart::collision::fcl::Vector3& R1, const dart::collision::fcl::Vector3& R2, const dart::collision::fcl::Vector3& R3,
+    dart::collision::fcl::Vector3* res1, dart::collision::fcl::Vector3* res2)
 {
   float U0[3], U1[3], U2[3], V0[3], V1[3], V2[3], RES1[3], RES2[3];
   SET(U0, r1);
@@ -1554,10 +1559,10 @@ int FFtest(
 }
 
 //==============================================================================
-double triArea(fcl::Vec3f& p1, fcl::Vec3f& p2, fcl::Vec3f& p3)
+double triArea(dart::collision::fcl::Vector3& p1, dart::collision::fcl::Vector3& p2, dart::collision::fcl::Vector3& p3)
 {
-  fcl::Vec3f a = p2 - p1;
-  fcl::Vec3f b = p3 - p1;
+  dart::collision::fcl::Vector3 a = p2 - p1;
+  dart::collision::fcl::Vector3 b = p3 - p1;
   double aMag = a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
   double bMag = b[0] * b[0] + b[1] * b[1] + b[2] * b[2];
   double dp = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -1578,9 +1583,9 @@ bool isColinear(
 
 //==============================================================================
 bool isColinear(
-    const fcl::Contact& contact1,
-    const fcl::Contact& contact2,
-    const fcl::Contact& contact3,
+    const dart::collision::fcl::Contact& contact1,
+    const dart::collision::fcl::Contact& contact2,
+    const dart::collision::fcl::Contact& contact3,
     double tol)
 {
   return isColinear(contact1.pos, contact2.pos, contact3.pos, tol);
@@ -1601,37 +1606,31 @@ bool isColinear(const T& pos1, const T& pos2, const T& pos3, double tol)
 }
 
 //==============================================================================
-void convertOption(const CollisionOption& option, fcl::CollisionRequest& request)
+void convertOption(const CollisionOption& option, dart::collision::fcl::CollisionRequest& request)
 {
   request.num_max_contacts = option.maxNumContacts;
   request.enable_contact   = option.enableContact;
 #if FCL_VERSION_AT_LEAST(0,3,0)
-  request.gjk_solver_type  = fcl::GST_LIBCCD;
+  request.gjk_solver_type  = ::fcl::GST_LIBCCD;
 #endif
 }
 
 //==============================================================================
-void convertOption(const DistanceOption& option, fcl::DistanceRequest& request)
+void convertOption(const DistanceOption& option, dart::collision::fcl::DistanceRequest& request)
 {
   request.enable_nearest_points = option.enableNearestPoints;
 }
 
 //==============================================================================
-Contact convertContact(const fcl::Contact& fclContact,
-                       fcl::CollisionObject* o1,
-                       fcl::CollisionObject* o2,
+Contact convertContact(const dart::collision::fcl::Contact& fclContact,
+                       dart::collision::fcl::CollisionObject* o1,
+                       dart::collision::fcl::CollisionObject* o2,
                        const CollisionOption& option)
 {
   Contact contact;
 
-  auto userData1
-      = static_cast<FCLCollisionObject::UserData*>(o1->getUserData());
-  auto userData2
-      = static_cast<FCLCollisionObject::UserData*>(o2->getUserData());
-  assert(userData1);
-  assert(userData2);
-  contact.collisionObject1 = userData1->mCollisionObject;
-  contact.collisionObject2 = userData2->mCollisionObject;
+  contact.collisionObject1 = static_cast<FCLCollisionObject*>(o1->getUserData());
+  contact.collisionObject2 = static_cast<FCLCollisionObject*>(o2->getUserData());
 
   if (option.enableContact)
   {

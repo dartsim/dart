@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -123,9 +124,21 @@ double PlaneShape::computeSignedDistance(const Eigen::Vector3d& _point) const
 }
 
 //==============================================================================
-void PlaneShape::updateVolume()
+void PlaneShape::updateBoundingBox() const
+{
+  mBoundingBox.setMin(
+      Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity()));
+  mBoundingBox.setMax(
+      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()));
+
+  mIsBoundingBoxDirty = false;
+}
+
+//==============================================================================
+void PlaneShape::updateVolume() const
 {
   mVolume = 0.0;
+  mIsVolumeDirty = false;
 }
 
 }  // namespace dynamics

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -117,9 +118,10 @@ public:
 
   Eigen::Matrix3d computeInertiaFromMass(double mass) const;
 
-  /// \brief Get volume of this shape.
-  ///        The volume will be automatically calculated by the sub-classes
-  ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
+  /// Returns volume of this shape.
+  ///
+  /// The volume will be automatically calculated by the sub-classes such as
+  /// BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
   double getVolume() const;
 
   /// \brief
@@ -152,21 +154,37 @@ public:
   virtual void refreshData();
 
   /// Notify that the alpha of this shape has updated
+  DART_DEPRECATED(6.2)
   virtual void notifyAlphaUpdate(double alpha);
 
+  /// Notify that the alpha of this shape has updated
+  virtual void notifyAlphaUpdated(double alpha);
+
   /// Notify that the color (rgba) of this shape has updated
+  DART_DEPRECATED(6.2)
   virtual void notifyColorUpdate(const Eigen::Vector4d& color);
 
-protected:
+  /// Notify that the color (rgba) of this shape has updated
+  virtual void notifyColorUpdated(const Eigen::Vector4d& color);
 
-  /// \brief Update volume
-  virtual void updateVolume() = 0;
+protected:
+  /// Updates volume
+  virtual void updateVolume() const = 0;
+
+  /// Updates bounding box
+  virtual void updateBoundingBox() const = 0;
 
   /// \brief The bounding box (in the local coordinate frame) of the shape.
-  math::BoundingBox mBoundingBox;
+  mutable math::BoundingBox mBoundingBox;
 
-  /// \brief Volume enclosed by the geometry.
-  double mVolume;
+  /// Whether bounding box needs update
+  mutable bool mIsBoundingBoxDirty;
+
+  /// Volume enclosed by the geometry.
+  mutable double mVolume;
+
+  /// Whether volume needs update
+  mutable bool mIsVolumeDirty;
 
   /// \brief Unique id.
   int mID;
@@ -180,7 +198,6 @@ protected:
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
   /// Type of primitive shpae.
   ShapeType mType;
-
 };
 
 }  // namespace dynamics

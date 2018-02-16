@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,18 +36,20 @@
 namespace dart {
 namespace dynamics {
 
+//==============================================================================
 BoxShape::BoxShape(const Eigen::Vector3d& _size)
   : Shape(BOX),
-    mSize(_size) {
+    mSize(_size)
+{
   assert(_size[0] > 0.0);
   assert(_size[1] > 0.0);
   assert(_size[2] > 0.0);
-  mBoundingBox.setMin(-_size * 0.5);
-  mBoundingBox.setMax(_size * 0.5);
-  updateVolume();
 }
 
-BoxShape::~BoxShape() {
+//==============================================================================
+BoxShape::~BoxShape()
+{
+  // Do nothing
 }
 
 //==============================================================================
@@ -81,17 +84,20 @@ Eigen::Matrix3d BoxShape::computeInertia(const Eigen::Vector3d& size,
   return inertia;
 }
 
-void BoxShape::setSize(const Eigen::Vector3d& _size) {
+//==============================================================================
+void BoxShape::setSize(const Eigen::Vector3d& _size)
+{
   assert(_size[0] > 0.0);
   assert(_size[1] > 0.0);
   assert(_size[2] > 0.0);
   mSize = _size;
-  mBoundingBox.setMin(-_size * 0.5);
-  mBoundingBox.setMax(_size * 0.5);
-  updateVolume();
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
-const Eigen::Vector3d& BoxShape::getSize() const {
+//==============================================================================
+const Eigen::Vector3d& BoxShape::getSize() const
+{
   return mSize;
 }
 
@@ -102,9 +108,18 @@ Eigen::Matrix3d BoxShape::computeInertia(double mass) const
 }
 
 //==============================================================================
-void BoxShape::updateVolume()
+void BoxShape::updateBoundingBox() const
+{
+  mBoundingBox.setMin(-mSize * 0.5);
+  mBoundingBox.setMax(mSize * 0.5);
+  mIsBoundingBoxDirty = false;
+}
+
+//==============================================================================
+void BoxShape::updateVolume() const
 {
   mVolume = computeVolume(mSize);
+  mIsVolumeDirty = false;
 }
 
 }  // namespace dynamics

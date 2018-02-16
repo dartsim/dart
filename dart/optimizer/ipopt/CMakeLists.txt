@@ -1,3 +1,7 @@
+# Dependency checks
+find_package(IPOPT 3.11.9 QUIET)
+dart_check_optional_package(IPOPT "dart-optimizer-ipopt" "ipopt" "3.11.9")
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -22,9 +26,6 @@ target_link_libraries(
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
-
-# Coverage test
-dart_coveralls_add(${hdrs} ${srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_ipopt headers" ${hdrs})

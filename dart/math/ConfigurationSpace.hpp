@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -43,8 +44,8 @@ namespace math {
 template <std::size_t Dimension>
 struct RealVectorSpace
 {
-  enum : std::size_t { NumDofs = Dimension };
-  enum : int { NumDofsEigen = Dimension };
+  static constexpr std::size_t NumDofs = Dimension;
+  static constexpr int NumDofsEigen = static_cast<int>(Dimension);
 
   using TangentSpace = RealVectorSpace<NumDofs>;
 
@@ -55,6 +56,18 @@ struct RealVectorSpace
   using JacobianMatrix = Eigen::Matrix<double, 6, NumDofs>;
 };
 
+//==============================================================================
+//
+// These namespace-level definitions are required to enable ODR-use of static
+// constexpr member variables.
+//
+// See this StackOverflow answer: http://stackoverflow.com/a/14396189/111426
+//
+template <std::size_t Dimension>
+constexpr std::size_t RealVectorSpace<Dimension>::NumDofs;
+template <std::size_t Dimension>
+constexpr int RealVectorSpace<Dimension>::NumDofsEigen;
+
 using NullSpace = RealVectorSpace<0u>;
 using R1Space = RealVectorSpace<1u>;
 using R2Space = RealVectorSpace<2u>;
@@ -63,8 +76,8 @@ using R3Space = RealVectorSpace<3u>;
 //==============================================================================
 struct SO3Space
 {
-  enum : std::size_t { NumDofs = 3u };
-  enum : int { NumDofsEigen = 3 };
+  static constexpr std::size_t NumDofs = 3u;
+  static constexpr int NumDofsEigen = 3;
 
   using TangentSpace = RealVectorSpace<NumDofs>;
 
@@ -78,8 +91,8 @@ struct SO3Space
 //==============================================================================
 struct SE3Space
 {
-  enum : std::size_t { NumDofs = 6u };
-  enum : int { NumDofsEigen = 6 };
+  static constexpr std::size_t NumDofs = 6u;
+  static constexpr int NumDofsEigen = 6;
 
   using TangentSpace = RealVectorSpace<NumDofs>;
 
@@ -91,7 +104,6 @@ struct SE3Space
 };
 
 struct MapsToManifoldPoint {};
-
 
 //==============================================================================
 template <typename SpaceT>

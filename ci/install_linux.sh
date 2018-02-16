@@ -21,6 +21,9 @@ libtinyxml2-dev
 liburdfdom-dev
 liburdfdom-headers-dev
 libopenscenegraph-dev
+clang-format-3.8
+lcov
 '
 
 sudo apt-get -qq --yes --force-yes install $APT
+

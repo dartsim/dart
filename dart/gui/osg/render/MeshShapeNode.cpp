@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -31,9 +32,13 @@
 
 #include <map>
 
+#include <boost/filesystem.hpp>
+
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/CullFace>
+#include <osg/Texture2D>
+#include <osgDB/ReadFile>
 
 #include "dart/gui/osg/render/MeshShapeNode.hpp"
 #include "dart/gui/osg/Utils.hpp"
@@ -46,6 +51,41 @@ namespace dart {
 namespace gui {
 namespace osg {
 namespace render {
+
+namespace {
+
+#define GET_TEXTURE_TYPE_AND_COUNT(MATERIAL, TYPE)                             \
+  {                                                                            \
+    const auto count = MATERIAL.GetTextureCount(TYPE);                         \
+    if (count)                                                                 \
+      return std::make_pair(TYPE, count);                                      \
+  }
+
+std::pair<aiTextureType, std::size_t> getTextureTypeAndCount(
+    const aiMaterial& material)
+{
+  // For now, only sinlge texture is supported. So we only checks whether the
+  // texture counter is non-zero.
+
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_NONE)
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_DIFFUSE)
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_SPECULAR)
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_AMBIENT)
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_EMISSIVE)
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_HEIGHT)
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_NORMALS)
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_SHININESS)
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_OPACITY)
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_DISPLACEMENT)
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_LIGHTMAP)
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_REFLECTION)
+  GET_TEXTURE_TYPE_AND_COUNT(material, aiTextureType_UNKNOWN)
+
+  // This shouldn't be reached but put
+  return std::make_pair(aiTextureType_UNKNOWN, 0u);
+}
+
+} // (anonymous) namespace
 
 class osgAiNode : public ShapeNode, public ::osg::MatrixTransform
 {
@@ -174,16 +214,21 @@ bool checkSpecularSanity(const aiColor4D& c)
 //==============================================================================
 void MeshShapeNode::extractData(bool firstTime)
 {
+  namespace bf = boost::filesystem;
+
   const aiScene* scene = mMeshShape->getMesh();
   const aiNode* root = scene->mRootNode;
 
   if(firstTime) // extract material properties
   {
     mMaterials.reserve(scene->mNumMaterials);
+    mTextureImageArrays.reserve(scene->mNumMaterials);
 
     for(std::size_t i=0; i<scene->mNumMaterials; ++i)
     {
       aiMaterial* aiMat = scene->mMaterials[i];
+      assert(aiMat);
+
       ::osg::ref_ptr<::osg::Material> material = new ::osg::Material;
 
       aiColor4D c;
@@ -231,6 +276,47 @@ void MeshShapeNode::extractData(bool firstTime)
       }
 
       mMaterials.push_back(material);
+
+      // Parse texture image paths
+      const auto textureTypeAndCount = getTextureTypeAndCount(*aiMat);
+      const auto& type = textureTypeAndCount.first;
+      const auto& count = textureTypeAndCount.second;
+
+      std::vector<std::string> textureImageArray;
+      textureImageArray.reserve(count);
+
+      aiString imagePath;
+      boost::system::error_code ec;
+      for (auto j = 0u; j < count; ++j)
+      {
+        if ((textureTypeAndCount.first == aiTextureType_NONE)
+            || (textureTypeAndCount.first == aiTextureType_UNKNOWN))
+        {
+          textureImageArray.emplace_back("");
+        }
+        else
+        {
+          aiMat->GetTexture(type, j, &imagePath);
+          const bf::path meshPath = mMeshShape->getMeshPath();
+          const bf::path relativeImagePath = imagePath.C_Str();
+          const bf::path absoluteImagePath
+              = bf::canonical(relativeImagePath, meshPath.parent_path(), ec);
+
+          if (ec)
+          {
+            dtwarn << "[MeshShapeNode] Failed to resolve an file path to a "
+                   << "texture image from (base: `" << meshPath.parent_path()
+                   << "', relative: '" << relativeImagePath << "').\n";
+            textureImageArray.emplace_back("");
+          }
+          else
+          {
+            textureImageArray.emplace_back(absoluteImagePath.string());
+          }
+        }
+      }
+
+      mTextureImageArrays.emplace_back(std::move(textureImageArray));
     }
   }
 
@@ -271,14 +357,41 @@ void MeshShapeNode::extractData(bool firstTime)
   if(index < mMaterials.size())
     return mMaterials[index];
 
-  if(mMaterials.size() > 0)
+  if(!mMaterials.empty())
+  {
     dtwarn << "[MeshShapeNode::getMaterial] Attempting to access material #"
            << index << ", but materials only go up to " << index-1 << "\n";
+  }
   else
+  {
     dtwarn << "[MeshShapeNode::getMaterial] Attempting to access material #"
            << index << ", but there are no materials available\n";
+  }
 
   return nullptr;
+}
+
+//==============================================================================
+std::vector<std::string> MeshShapeNode::getTextureImagePaths(
+    std::size_t index) const
+{
+  if (index < mTextureImageArrays.size())
+    return mTextureImageArrays[index];
+
+  if (!mTextureImageArrays.empty())
+  {
+    dtwarn << "[MeshShapeNode::getTextureImageSet] Attempting to access "
+           << "texture image set #" << index << ", but materials only go up to "
+           << index-1 << "\n";
+  }
+  else
+  {
+    dtwarn << "[MeshShapeNode::getTextureImageSet] Attempting to access "
+           << "texture image set #" << index
+           << ", but there are no materials available\n";
+  }
+
+  return std::vector<std::string>();
 }
 
 //==============================================================================
@@ -541,6 +654,8 @@ void MeshShapeGeometry::extractData(bool firstTime)
     if(mNormals->size() != mAiMesh->mNumVertices)
       mNormals->resize(mAiMesh->mNumVertices);
 
+    const Eigen::Vector3d s = mMeshShape->getScale();
+
     for(std::size_t i=0; i<mAiMesh->mNumVertices; ++i)
     {
       const aiVector3D& v = mAiMesh->mVertices[i];
@@ -549,7 +664,7 @@ void MeshShapeGeometry::extractData(bool firstTime)
       if(mAiMesh->mNormals)
       {
         const aiVector3D& n = mAiMesh->mNormals[i];
-        (*mNormals)[i] = ::osg::Vec3(n.x, n.y, n.z);
+        (*mNormals)[i] = ::osg::Vec3(n.x*s[0], n.y*s[1], n.z*s[2]);
       }
       // TODO(MXG): Consider computing normals for meshes that don't come with
       // normal data per vertex
@@ -678,7 +793,30 @@ void MeshShapeGeometry::extractData(bool firstTime)
       } // switch(mAiMesh->mNumUVComponents[unit])
       aiTexCoords = mAiMesh->mTextureCoords[++unit];
     } // while(nullptr != aiTexCoords)
-  }
+
+    const auto imagePaths
+        = mMainNode->getTextureImagePaths(mAiMesh->mMaterialIndex);
+    for (auto i = 0u; i < imagePaths.size(); ++i)
+    {
+      if (imagePaths[i].empty())
+        continue;
+
+      ::osg::ref_ptr<::osg::Image> image
+          = osgDB::readRefImageFile(imagePaths[i]);
+      if (!image)
+      {
+        dtwarn << "[MeshShapeNode] Failed to load texture image '"
+               << imagePaths[i] << "'\n" ;
+        continue;
+      }
+      ::osg::ref_ptr<::osg::Texture2D> texture
+          = new ::osg::Texture2D(image.get());
+      texture->setResizeNonPowerOfTwoHint(false);
+      texture->setUnRefImageDataAfterApply(true);
+      getOrCreateStateSet()->setTextureAttributeAndModes(
+          i, texture, ::osg::StateAttribute::ON);
+    }
+  } // if(firstTime)
 }
 
 //==============================================================================

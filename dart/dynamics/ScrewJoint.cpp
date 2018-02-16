@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -124,7 +125,7 @@ void ScrewJoint::setAxis(const Eigen::Vector3d& _axis)
     return;
 
   mAspectProperties.mAxis = _axis.normalized();
-  Joint::notifyPositionUpdate();
+  Joint::notifyPositionUpdated();
   updateRelativeJacobian();
   Joint::incrementVersion();
 }
@@ -142,7 +143,7 @@ void ScrewJoint::setPitch(double _pitch)
     return;
 
   mAspectProperties.mPitch = _pitch;
-  Joint::notifyPositionUpdate();
+  Joint::notifyPositionUpdated();
   updateRelativeJacobian();
   Joint::incrementVersion();
 }
@@ -162,7 +163,7 @@ ScrewJoint::getRelativeJacobianStatic(
 
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = getAxis();
-  S.tail<3>() = getAxis() * getPitch() * 0.5_pi;
+  S.tail<3>() = getAxis() * getPitch() / 2.0_pi;
 
   GenericJoint<math::R1Space>::JacobianMatrix jacobian
       = math::AdT(Joint::mAspectProperties.mT_ChildBodyToJoint, S);
@@ -204,7 +205,7 @@ void ScrewJoint::updateRelativeTransform() const
 
   Eigen::Vector6d S = Eigen::Vector6d::Zero();
   S.head<3>() = getAxis();
-  S.tail<3>() = getAxis()*getPitch()*0.5_pi;
+  S.tail<3>() = getAxis() * getPitch() / 2.0_pi;
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * math::expMap(S * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();

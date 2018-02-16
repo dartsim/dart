@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -66,25 +67,25 @@ protected:
 //==============================================================================
 void ConstraintTest::SetUp()
 {
-  list.push_back(DART_DATA_PATH"skel/test/chainwhipa.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/single_pendulum_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/double_pendulum_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_revolute_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_eulerxyz_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_20.skel");
-  list.push_back(DART_DATA_PATH"skel/test/serial_chain_ball_joint_40.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/simple_tree_structure_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure_euler_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/test/tree_structure_ball_joint.skel");
-  list.push_back(DART_DATA_PATH"skel/fullbody1.skel");
+  list.push_back("dart://sample/skel/test/chainwhipa.skel");
+  list.push_back("dart://sample/skel/test/single_pendulum.skel");
+  list.push_back("dart://sample/skel/test/single_pendulum_euler_joint.skel");
+  list.push_back("dart://sample/skel/test/single_pendulum_ball_joint.skel");
+  list.push_back("dart://sample/skel/test/double_pendulum.skel");
+  list.push_back("dart://sample/skel/test/double_pendulum_euler_joint.skel");
+  list.push_back("dart://sample/skel/test/double_pendulum_ball_joint.skel");
+  list.push_back("dart://sample/skel/test/serial_chain_revolute_joint.skel");
+  list.push_back("dart://sample/skel/test/serial_chain_eulerxyz_joint.skel");
+  list.push_back("dart://sample/skel/test/serial_chain_ball_joint.skel");
+  list.push_back("dart://sample/skel/test/serial_chain_ball_joint_20.skel");
+  list.push_back("dart://sample/skel/test/serial_chain_ball_joint_40.skel");
+  list.push_back("dart://sample/skel/test/simple_tree_structure.skel");
+  list.push_back("dart://sample/skel/test/simple_tree_structure_euler_joint.skel");
+  list.push_back("dart://sample/skel/test/simple_tree_structure_ball_joint.skel");
+  list.push_back("dart://sample/skel/test/tree_structure.skel");
+  list.push_back("dart://sample/skel/test/tree_structure_euler_joint.skel");
+  list.push_back("dart://sample/skel/test/tree_structure_ball_joint.skel");
+  list.push_back("dart://sample/skel/fullbody1.skel");
 }
 
 //==============================================================================
@@ -115,7 +116,7 @@ void ConstraintTest::SingleContactTest(const std::string& /*_fileName*/)
   // std::size_t testCount = 1;
 #endif
 
-  WorldPtr world(new World);
+  WorldPtr world = World::create();
   EXPECT_TRUE(world != nullptr);
   world->setGravity(Vector3d(0.0, -10.00, 0.0));
   world->setTimeStep(0.001);
@@ -229,11 +230,3 @@ TEST_F(ConstraintTest, SingleContactTest)
 
   SingleContactTest(getList()[0]);
 }
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
-

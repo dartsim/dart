@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -97,6 +98,19 @@ common::ResourcePtr CompositeResourceRetriever::retrieve(
             << _uri.toString() << "' (tried " << retrievers.size() << ").\n";
 
   return nullptr;
+}
+
+//==============================================================================
+std::string CompositeResourceRetriever::getFilePath(const common::Uri& uri)
+{
+  for (const auto& resourceRetriever : getRetrievers(uri))
+  {
+    const auto path = resourceRetriever->getFilePath(uri);
+    if (!path.empty())
+      return path;
+  }
+
+  return "";
 }
 
 //==============================================================================

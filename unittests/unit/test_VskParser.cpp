@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -50,11 +51,11 @@ using namespace utils;
 //==============================================================================
 TEST(VskParser, EmptySkeleton)
 {
-  WorldPtr world(new World());
+  WorldPtr world = World::create();
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skeleton
-      = VskParser::readSkeleton(DART_DATA_PATH"vsk/test/empty.vsk");
+      = VskParser::readSkeleton("dart://sample/vsk/test/empty.vsk");
   EXPECT_TRUE(skeleton == nullptr);
 
   world->addSkeleton(skeleton);
@@ -66,21 +67,21 @@ TEST(VskParser, EmptySkeleton)
 //==============================================================================
 TEST(VskParser, SingleStepSimulations)
 {
-  WorldPtr world(new World());
+  WorldPtr world = World::create();
   EXPECT_NE(world , nullptr);
 
   SkeletonPtr nick
-      = VskParser::readSkeleton(DART_DATA_PATH"vsk/Nick01.vsk");
+      = VskParser::readSkeleton("dart://sample/vsk/Nick01.vsk");
   EXPECT_NE(nick  , nullptr);
   EXPECT_EQ(nick->getNumMarkers(), 53u);
 
   SkeletonPtr sehoon
-      = VskParser::readSkeleton(DART_DATA_PATH"vsk/SehoonVSK3.vsk");
+      = VskParser::readSkeleton("dart://sample/vsk/SehoonVSK3.vsk");
   EXPECT_NE(sehoon, nullptr);
   EXPECT_EQ(nick->getNumMarkers(), 53u);
 
   SkeletonPtr yuting
-      = VskParser::readSkeleton(DART_DATA_PATH"vsk/Yuting.vsk");
+      = VskParser::readSkeleton("dart://sample/vsk/Yuting.vsk");
   EXPECT_NE(yuting, nullptr);
   EXPECT_EQ(nick->getNumMarkers(), 53u);
 
@@ -98,11 +99,4 @@ TEST(VskParser, SingleStepSimulations)
   world->addSkeleton(yuting);
   EXPECT_EQ(world->getNumSkeletons(), 1u);
   world->step();
-}
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

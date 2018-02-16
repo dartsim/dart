@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -47,8 +48,6 @@ ConeShape::ConeShape(double radius, double height)
 {
   assert(0.0 < radius);
   assert(0.0 < height);
-  updateBoundingBoxDim();
-  updateVolume();
 }
 
 //==============================================================================
@@ -75,8 +74,8 @@ void ConeShape::setRadius(double radius)
 {
   assert(0.0 < radius);
   mRadius = radius;
-  updateBoundingBoxDim();
-  updateVolume();
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -90,8 +89,8 @@ void ConeShape::setHeight(double height)
 {
   assert(0.0 < height);
   mHeight = height;
-  updateBoundingBoxDim();
-  updateVolume();
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -116,24 +115,27 @@ Eigen::Matrix3d ConeShape::computeInertia(
 }
 
 //==============================================================================
-void ConeShape::updateVolume()
+void ConeShape::updateBoundingBox() const
+{
+  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5*mHeight);
+
+  mBoundingBox.setMin(-corner);
+  mBoundingBox.setMax(corner);
+
+  mIsBoundingBoxDirty = false;
+}
+
+//==============================================================================
+void ConeShape::updateVolume() const
 {
   mVolume = computeVolume(mRadius, mHeight);
+  mIsVolumeDirty = false;
 }
 
 //==============================================================================
 Eigen::Matrix3d ConeShape::computeInertia(double mass) const
 {
   return computeInertia(mRadius, mHeight, mass);
-}
-
-//==============================================================================
-void ConeShape::updateBoundingBoxDim()
-{
-  const Eigen::Vector3d corner(mRadius, mRadius, mRadius + 0.5*mHeight);
-
-  mBoundingBox.setMin(-corner);
-  mBoundingBox.setMax(corner);
 }
 
 }  // namespace dynamics

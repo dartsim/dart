@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -32,76 +33,9 @@
 #ifndef DART_DYNAMICS_MULTISPHERESHAPE_HPP_
 #define DART_DYNAMICS_MULTISPHERESHAPE_HPP_
 
-#include <vector>
+#warning "This header has been deprecated in DART 6.2. "\
+  "Please include MultiSphereConvexHullShape.hpp intead."
 
-#include "dart/dynamics/Shape.hpp"
-
-namespace dart {
-namespace dynamics {
-
-/// MultiSphereShape represents the convex hull of a collection of spheres.
-class MultiSphereShape : public Shape
-{
-public:
-
-  using Sphere = std::pair<double, Eigen::Vector3d>;
-  using Spheres = std::vector<Sphere>;
-
-  /// Constructor.
-  explicit MultiSphereShape(const Spheres& spheres);
-
-  /// Destructor.
-  virtual ~MultiSphereShape();
-
-  // Documentation inherited.
-  const std::string& getType() const override;
-
-  /// Returns shape type for this class
-  static const std::string& getStaticType();
-
-  /// Add a list of spheres
-  void addSpheres(const Spheres& spheres);
-
-  /// Add a sphere
-  void addSphere(const Sphere& sphere);
-
-  /// Add a sphere
-  void addSphere(double radius, const Eigen::Vector3d& position);
-
-  /// Remove all spheres
-  void removeAllSpheres();
-
-  /// Get the number of spheres
-  std::size_t getNumSpheres() const;
-
-  /// Get the set of spheres
-  const Spheres& getSpheres() const;
-
-  /// Compute the inertia of this MultiSphereShape.
-  ///
-  /// \note The return value is an approximated inertia that is the inertia of
-  /// the axis-alinged bounding box of this MultiSphereShape.
-  Eigen::Matrix3d computeInertia(double mass) const override;
-
-protected:
-
-  /// Update the volume of this MultiSphereShape.
-  ///
-  /// \note The result volume is an approximated volumen that is the volume of
-  /// the axis-alinged bounding box of this MultiSphereShape.
-  void updateVolume() override;
-
-private:
-
-  /// Update bounding box (in the local coordinate frame) of the shape.
-  void updateBoundingBoxDim();
-
-  /// Spheres
-  Spheres mSpheres;
-
-};
-
-}  // namespace dynamics
-}  // namespace dart
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 
 #endif  // DART_DYNAMICS_MULTISPHERESHAPE_HPP_

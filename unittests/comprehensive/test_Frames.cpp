@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -59,7 +60,7 @@ void randomize_transform(Eigen::Isometry3d& tf,
     tf.rotate(Eigen::AngleAxisd(theta.norm(), theta.normalized()));
 }
 
-void randomize_transforms(Eigen::aligned_vector<Eigen::Isometry3d>& tfs)
+void randomize_transforms(common::aligned_vector<Eigen::Isometry3d>& tfs)
 {
   for(std::size_t i=0; i<tfs.size(); ++i)
   {
@@ -144,7 +145,7 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
                       Eigen::Isometry3d::Identity().matrix(),
                       tolerance));
 
-  Eigen::aligned_vector<Eigen::Isometry3d> tfs;
+  common::aligned_vector<Eigen::Isometry3d> tfs;
   tfs.resize(frames.size(), Eigen::Isometry3d::Identity());
 
   randomize_transforms(tfs);
@@ -188,8 +189,8 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
   // Basic forward spatial velocity propagation
   { // The brackets are to allow reusing variable names
-    Eigen::aligned_vector<Eigen::Vector6d> v_rels(frames.size());
-    Eigen::aligned_vector<Eigen::Vector6d> v_total(frames.size());
+    common::aligned_vector<Eigen::Vector6d> v_rels(frames.size());
+    common::aligned_vector<Eigen::Vector6d> v_total(frames.size());
 
     for(std::size_t i=0; i<frames.size(); ++i)
     {
@@ -261,11 +262,11 @@ TEST(FRAMES, FORWARD_KINEMATICS_CHAIN)
 
   // Basic forward spatial acceleration propagation
   {
-    Eigen::aligned_vector<Eigen::Vector6d> v_rels(frames.size());
-    Eigen::aligned_vector<Eigen::Vector6d> a_rels(frames.size());
+    common::aligned_vector<Eigen::Vector6d> v_rels(frames.size());
+    common::aligned_vector<Eigen::Vector6d> a_rels(frames.size());
 
-    Eigen::aligned_vector<Eigen::Vector6d> v_total(frames.size());
-    Eigen::aligned_vector<Eigen::Vector6d> a_total(frames.size());
+    common::aligned_vector<Eigen::Vector6d> v_total(frames.size());
+    common::aligned_vector<Eigen::Vector6d> a_total(frames.size());
 
 
     for(std::size_t i=0; i<frames.size(); ++i)
@@ -703,7 +704,9 @@ void test_relative_values(bool spatial_targets, bool spatial_followers)
       randomize_transform(tf, 1, 2*M_PI);
       T->setTransform(tf, F);
       if(i != j)
+      {
         EXPECT_TRUE( equals(T->getTransform(F).matrix(), tf.matrix(), 1e-10));
+      }
     }
   }
 }
@@ -736,12 +739,4 @@ TEST(FRAMES, CHILDHOOD)
   SimpleFrame F2(&F1, "F2");
 
   EXPECT_TRUE(F1.getNumChildFrames() == 1);
-}
-
-int main(int argc, char* argv[])
-{
-  srand(271828); // Seed with an arbitrary fixed integer. Don't seed with time,
-                 // because it will produce different numbers between runs.
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

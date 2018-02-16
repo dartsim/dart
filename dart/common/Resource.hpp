@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,6 +35,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <string>
 
 namespace dart {
 namespace common {
@@ -75,6 +77,12 @@ public:
   /// \param[in] _count Number of elements, each of _size bytes.
   /// \note This method has the same API as the standard fread function.
   virtual std::size_t read(void *_buffer, std::size_t _size, std::size_t _count) = 0;
+
+  /// Reads all data from this resource, and returns it as a string.
+  ///
+  /// \return The string retrieved from the resource.
+  /// \throw std::runtime_error when failed to read sucessfully.
+  virtual std::string readAll();
 };
 
 using ResourcePtr = std::shared_ptr<Resource>;

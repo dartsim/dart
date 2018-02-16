@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -85,9 +86,9 @@ void VisualAspect::setRGBA(const Eigen::Vector4d& color)
 {
   mProperties.mRGBA = color;
 
-  notifyPropertiesUpdate();
+  notifyPropertiesUpdated();
 
-  mComposite->getShape()->notifyColorUpdate(color);
+  mComposite->getShape()->notifyColorUpdated(color);
 }
 
 //==============================================================================
@@ -116,9 +117,9 @@ void VisualAspect::setAlpha(const double alpha)
 {
   mProperties.mRGBA[3] = alpha;
 
-  notifyPropertiesUpdate();
+  notifyPropertiesUpdated();
 
-  mComposite->getShape()->notifyAlphaUpdate(alpha);
+  mComposite->getShape()->notifyAlphaUpdated(alpha);
 }
 
 //==============================================================================

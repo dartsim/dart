@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -33,6 +34,7 @@
 
 #include <algorithm>
 
+#include "dart/math/Constants.hpp"
 #include "dart/gui/LoadGlut.hpp"
 
 namespace dart {
@@ -224,7 +226,6 @@ void Win3D::initGL() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-  glEnable(GL_POLYGON_SMOOTH);
   glShadeModel(GL_SMOOTH);
   glPolygonMode(GL_FRONT, GL_FILL);
 }
@@ -295,7 +296,9 @@ void accPerspective(GLdouble fovy, GLdouble aspect,
                     GLdouble nearPlane, GLdouble farPlane,
                     GLdouble pixdx, GLdouble pixdy,
                     GLdouble eyedx, GLdouble eyedy, GLdouble focus) {
-  GLdouble fov2 = ((fovy*M_PI) / 180.0) / 2.0;
+  const double pi = math::constantsd::pi();
+
+  GLdouble fov2 = ((fovy*pi) / 180.0) / 2.0;
   GLdouble top = nearPlane / (cosf(fov2) / sinf(fov2));
   GLdouble bottom = -top;
   GLdouble right = top * aspect;
