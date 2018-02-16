@@ -35,7 +35,7 @@ script:
   - 'ci/script.sh'
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+  - if [ $CODECOV = ON ]; then bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"; fi
 
 after_failure: 
   - cat build/Testing/Temporary/LastTest.log
