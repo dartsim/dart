@@ -465,7 +465,7 @@ find_program(
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
 list(LENGTH formatting_files formatting_files_length)
-message(STATUS "Formatting on ${formatting_files_length} source files.")
+message(STATUS "Formatting ${formatting_files_length} source files using clang-format.")
 
 if(CLANG_FORMAT_EXECUTABLE)
 
