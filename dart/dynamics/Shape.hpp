@@ -118,9 +118,10 @@ public:
 
   Eigen::Matrix3d computeInertiaFromMass(double mass) const;
 
-  /// \brief Get volume of this shape.
-  ///        The volume will be automatically calculated by the sub-classes
-  ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
+  /// Returns volume of this shape.
+  ///
+  /// The volume will be automatically calculated by the sub-classes such as
+  /// BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
   double getVolume() const;
 
   /// \brief
@@ -167,15 +168,23 @@ public:
   virtual void notifyColorUpdated(const Eigen::Vector4d& color);
 
 protected:
+  /// Updates volume
+  virtual void updateVolume() const = 0;
 
-  /// \brief Update volume
-  virtual void updateVolume() = 0;
+  /// Updates bounding box
+  virtual void updateBoundingBox() const = 0;
 
   /// \brief The bounding box (in the local coordinate frame) of the shape.
-  math::BoundingBox mBoundingBox;
+  mutable math::BoundingBox mBoundingBox;
 
-  /// \brief Volume enclosed by the geometry.
-  double mVolume;
+  /// Whether bounding box needs update
+  mutable bool mIsBoundingBoxDirty;
+
+  /// Volume enclosed by the geometry.
+  mutable double mVolume;
+
+  /// Whether volume needs update
+  mutable bool mIsVolumeDirty;
 
   /// \brief Unique id.
   int mID;
@@ -189,7 +198,6 @@ protected:
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
   /// Type of primitive shpae.
   ShapeType mType;
-
 };
 
 }  // namespace dynamics

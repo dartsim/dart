@@ -84,10 +84,8 @@ void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters)
 
   mDiameters = diameters;
 
-  mBoundingBox.setMin(-diameters * 0.5);
-  mBoundingBox.setMax(diameters * 0.5);
-
-  updateVolume();
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -150,9 +148,18 @@ bool EllipsoidShape::isSphere() const
 }
 
 //==============================================================================
-void EllipsoidShape::updateVolume()
+void EllipsoidShape::updateBoundingBox() const
+{
+  mBoundingBox.setMin(-mDiameters * 0.5);
+  mBoundingBox.setMax(mDiameters * 0.5);
+  mIsBoundingBoxDirty = false;
+}
+
+//==============================================================================
+void EllipsoidShape::updateVolume() const
 {
   mVolume = computeVolume(mDiameters);
+  mIsVolumeDirty = false;
 }
 
 }  // namespace dynamics

@@ -1,20 +1,20 @@
+brew tap dartsim/dart # for ipopt
+
 brew update > /dev/null
 
-brew install git | grep -v '%$'
-brew install cmake | grep -v '%$'
-brew install assimp | grep -v '%$'
-brew install dartsim/dart/fcl | grep -v '%$'
-brew install bullet --with-double-precision | grep -v '%$'
-brew install ode --with-libccd --with-double-precision | grep -v '%$'
-brew install flann | grep -v '%$'
-brew install boost | grep -v '%$'
-brew install eigen | grep -v '%$'
-brew install tinyxml | grep -v '%$'
-brew install tinyxml2 | grep -v '%$'
-brew install dartsim/dart/libccd | grep -v '%$'
-brew install nlopt | grep -v '%$'
-brew install dartsim/dart/ipopt | grep -v '%$'
-brew install ros/deps/urdfdom | grep -v '%$'
-brew install ros/deps/urdfdom_headers | grep -v '%$'
-brew install ros/deps/console_bridge | grep -v '%$'
-brew install open-scene-graph | grep -v '%$'
+brew install git
+brew install cmake
+brew install assimp
+brew install fcl
+brew install bullet --with-double-precision
+brew install ode --with-libccd --with-double-precision
+brew install flann
+brew install boost
+brew install eigen
+brew install tinyxml
+brew install tinyxml2
+brew install libccd
+brew install nlopt
+brew install ipopt
+brew install urdfdom
+brew install open-scene-graph

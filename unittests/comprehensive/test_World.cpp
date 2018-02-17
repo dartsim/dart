@@ -54,7 +54,7 @@ using namespace simulation;
 TEST(World, AddingAndRemovingSkeletons)
 {
   // World
-  WorldPtr world(new World);
+  WorldPtr world = World::create();
 
   //-------------------- Test World::removeSkeleton() ------------------------
   SkeletonPtr skeleton1 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),

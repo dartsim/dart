@@ -53,5 +53,11 @@ std::string ResourceRetriever::readAll(const Uri& uri)
   return resource->readAll();
 }
 
+//==============================================================================
+std::string ResourceRetriever::getFilePath(const Uri& /*uri*/)
+{
+  return "";
+}
+
 } // namespace common
 } // namespace dart

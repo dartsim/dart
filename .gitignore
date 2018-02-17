@@ -9,6 +9,7 @@ TAGS
 .DS_Store
 .cproject
 .project
+.vscode
 *.orig
 *.idb
 *.pdb
