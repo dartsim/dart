@@ -349,11 +349,23 @@ public:
   /// Get lower limit for velocity
   virtual double getVelocityLowerLimit(std::size_t _index) const = 0;
 
+  /// Set the velocity lower limits of all the generalized coordinates.
+  virtual void setVelocityLowerLimits(const Eigen::VectorXd& lowerLimits) = 0;
+
+  /// Get the velocity lower limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getVelocityLowerLimits() const = 0;
+
   /// Set upper limit for velocity
   virtual void setVelocityUpperLimit(std::size_t _index, double _velocity) = 0;
 
   /// Get upper limit for velocity
   virtual double getVelocityUpperLimit(std::size_t _index) const = 0;
+
+  /// Set the velocity upper limits of all the generalized coordinates.
+  virtual void setVelocityUpperLimits(const Eigen::VectorXd& upperLimits) = 0;
+
+  /// Get the velocity upper limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getVelocityUpperLimits() const = 0;
 
   /// Set the velocity of a generalized coordinate in this Joint to its initial
   /// velocity
@@ -404,11 +416,23 @@ public:
   /// Get lower limit for acceleration
   virtual double getAccelerationLowerLimit(std::size_t _index) const = 0;
 
+  /// Set the acceleration upper limits of all the generalized coordinates.
+  virtual void setAccelerationLowerLimits(const Eigen::VectorXd& lowerLimits) = 0;
+
+  /// Get the acceleration upper limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getAccelerationLowerLimits() const = 0;
+
   /// Set upper limit for acceleration
   virtual void setAccelerationUpperLimit(std::size_t _index, double _acceleration) = 0;
 
   /// Get upper limit for acceleration
   virtual double getAccelerationUpperLimit(std::size_t _index) const = 0;
+
+  /// Set the acceleration upper limits of all the generalized coordinates.
+  virtual void setAccelerationUpperLimits(const Eigen::VectorXd& upperLimits) = 0;
+
+  /// Get the acceleration upper limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getAccelerationUpperLimits() const = 0;
 
   /// \}
 
@@ -437,11 +461,23 @@ public:
   /// Get lower limit for force
   virtual double getForceLowerLimit(std::size_t _index) const = 0;
 
+  /// Set the force upper limits of all the generalized coordinates.
+  virtual void setForceLowerLimits(const Eigen::VectorXd& lowerLimits) = 0;
+
+  /// Get the force upper limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getForceLowerLimits() const = 0;
+
   /// Set upper limit for force
   virtual void setForceUpperLimit(std::size_t _index, double _force) = 0;
 
   /// Get upper limit for force
   virtual double getForceUpperLimit(std::size_t _index) const = 0;
+
+  /// Set the force upper limits of all the generalized coordinates.
+  virtual void setForceUpperLimits(const Eigen::VectorXd& upperLimits) = 0;
+
+  /// Get the force upper limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getForceUpperLimits() const = 0;
 
   /// \}
 

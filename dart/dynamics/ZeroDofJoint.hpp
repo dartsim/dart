@@ -195,10 +195,22 @@ public:
   double getVelocityLowerLimit(std::size_t _index) const override;
 
   // Documentation inherited
+  void setVelocityLowerLimits(const Eigen::VectorXd& lowerLimits) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getVelocityLowerLimits() const override;
+
+  // Documentation inherited
   void setVelocityUpperLimit(std::size_t _index, double _velocity) override;
 
   // Documentation inherited
   double getVelocityUpperLimit(std::size_t _index) const override;
+
+  // Documentation inherited
+  void setVelocityUpperLimits(const Eigen::VectorXd& upperLimits) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getVelocityUpperLimits() const override;
 
   // Documentation inherited
   void resetVelocity(std::size_t _index) override;
@@ -244,10 +256,22 @@ public:
   double getAccelerationLowerLimit(std::size_t _index) const override;
 
   // Documentation inherited
+  void setAccelerationLowerLimits(const Eigen::VectorXd& lowerLimits) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getAccelerationLowerLimits() const override;
+
+  // Documentation inherited
   void setAccelerationUpperLimit(std::size_t _index, double _acceleration) override;
 
   // Documentation inherited
   double getAccelerationUpperLimit(std::size_t _index) const override;
+
+  // Documentation inherited
+  void setAccelerationUpperLimits(const Eigen::VectorXd& upperLimits) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getAccelerationUpperLimits() const override;
 
   //----------------------------------------------------------------------------
   // Force
@@ -275,10 +299,22 @@ public:
   double getForceLowerLimit(std::size_t _index) const override;
 
   // Documentation inherited
+  void setForceLowerLimits(const Eigen::VectorXd& lowerLimits) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getForceLowerLimits() const override;
+
+  // Documentation inherited
   void setForceUpperLimit(std::size_t _index, double _force) override;
 
   // Documentation inherited
   double getForceUpperLimit(std::size_t _index) const override;
+
+  // Documentation inherited
+  void setForceUpperLimits(const Eigen::VectorXd& upperLimits) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getForceUpperLimits() const override;
 
   //----------------------------------------------------------------------------
   // Velocity change
