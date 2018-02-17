@@ -20,6 +20,7 @@
 * GUI
 
   * Added support of rendering texture images: [#973](https://github.com/dartsim/dart/pull/973)
+  * Added OSG shadows: [#978](https://github.com/dartsim/dart/pull/978)
 
 * License
 
