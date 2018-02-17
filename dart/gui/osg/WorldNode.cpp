@@ -82,7 +82,7 @@ WorldNode::WorldNode(std::shared_ptr<dart::simulation::World> world, ::osg::ref_
   shadowedScene->setReceivesShadowTraversalMask(ReceivesShadowTraversalMask);
   shadowedScene->setCastsShadowTraversalMask(CastsShadowTraversalMask);
 
-  // set the physics group
+  // set the shadowed group
   mShadowedGroup = shadowedScene.get();
   mShadowedGroup->getOrCreateStateSet();
 
