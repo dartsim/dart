@@ -7,7 +7,7 @@ endif()
 if(DART_BUILD_GUI_OSG)
 
   find_package(OpenSceneGraph 3.0 QUIET
-    COMPONENTS osg osgViewer osgManipulator osgGA osgDB)
+    COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow)
 
   # It seems that OPENSCENEGRAPH_FOUND will inadvertently get set to true when
   # OpenThreads is found, even if OpenSceneGraph is not installed. This is quite
