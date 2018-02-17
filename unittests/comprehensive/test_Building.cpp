@@ -81,7 +81,7 @@ TEST(BUILDING, BASIC)
   joint3->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
 
   // World
-  WorldPtr world(new World);
+  WorldPtr world = World::create();
   world->addSkeleton(skel1);
 
 	//--------------------------------------------------------------------------

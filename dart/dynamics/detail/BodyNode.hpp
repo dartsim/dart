@@ -154,6 +154,29 @@ ShapeNode* BodyNode::createShapeNode(ShapeNodeProperties properties,
 }
 
 //==============================================================================
+template <class ShapeType>
+ShapeNode* BodyNode::createShapeNode(const std::shared_ptr<ShapeType>& shape)
+{
+  ShapeNode::BasicProperties properties;
+  properties.mShape = shape;
+
+  return createShapeNode(properties, true);
+}
+
+//==============================================================================
+template <class ShapeType, class StringType>
+ShapeNode* BodyNode::createShapeNode(
+    const std::shared_ptr<ShapeType>& shape,
+    StringType&& name)
+{
+  ShapeNode::BasicProperties properties;
+  properties.mShape = shape;
+  properties.mName = std::forward<StringType>(name);
+
+  return createShapeNode(properties, false);
+}
+
+//==============================================================================
 template <class... Aspects>
 ShapeNode* BodyNode::createShapeNodeWith(const ShapePtr& shape)
 {

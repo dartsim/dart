@@ -544,14 +544,14 @@ public:
 
   /// Create a ShapeNode with an automatically assigned name:
   /// <BodyNodeName>_ShapeNode_<#>.
-  ShapeNode* createShapeNode(const ShapePtr& shape);
+  template <class ShapeType>
+  ShapeNode* createShapeNode(const std::shared_ptr<ShapeType>& shape);
 
-  /// Create an ShapeNode with the specified name
+  /// Create a ShapeNode with the specified name
+  template <class ShapeType, class StringType>
   ShapeNode* createShapeNode(
-      const ShapePtr& shape, const std::string& name);
-
-  /// Create an ShapeNode with the specified name
-  ShapeNode* createShapeNode(const ShapePtr& shape, const char* name);
+      const std::shared_ptr<ShapeType>& shape,
+      StringType&& name);
 
   /// Return the list of ShapeNodes
   const std::vector<ShapeNode*> getShapeNodes();
