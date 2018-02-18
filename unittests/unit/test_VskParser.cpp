@@ -51,7 +51,7 @@ using namespace utils;
 //==============================================================================
 TEST(VskParser, EmptySkeleton)
 {
-  WorldPtr world(new World());
+  WorldPtr world = World::create();
   EXPECT_TRUE(world != nullptr);
 
   SkeletonPtr skeleton
@@ -67,7 +67,7 @@ TEST(VskParser, EmptySkeleton)
 //==============================================================================
 TEST(VskParser, SingleStepSimulations)
 {
-  WorldPtr world(new World());
+  WorldPtr world = World::create();
   EXPECT_NE(world , nullptr);
 
   SkeletonPtr nick

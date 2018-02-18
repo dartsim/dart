@@ -84,7 +84,10 @@ public:
 
 private:
   // Documentation inherited.
-  void updateVolume() override;
+  void updateBoundingBox() const override;
+
+  // Documentation inherited.
+  void updateVolume() const override;
 
   /// Plane normal
   Eigen::Vector3d mNormal;

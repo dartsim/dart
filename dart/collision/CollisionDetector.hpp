@@ -196,6 +196,9 @@ public:
   virtual std::shared_ptr<CollisionObject> claimCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) = 0;
 
+  /// Returns collision detector
+  CollisionDetector* getCollisionDetector();
+
 protected:
 
   CollisionDetector* mCollisionDetector;

@@ -74,6 +74,41 @@ TEST(LocalResourceRetriever, exists_PathDoesExists_ReturnsTrue)
   EXPECT_TRUE(retriever.exists(DART_DATA_PATH "skel/cube.skel"));
 }
 
+TEST(LocalResourceRetriever, getFilePath_UnsupportedUri_ReturnsEmptyString)
+{
+  LocalResourceRetriever retriever;
+  EXPECT_EQ(retriever.getFilePath("unknown://test"), "");
+}
+
+TEST(LocalResourceRetriever, getFilePath_FileUriDoesNotExist_ReturnsEmptyString)
+{
+  LocalResourceRetriever retriever;
+  EXPECT_EQ(
+      retriever.getFilePath(FILE_SCHEME DART_DATA_PATH "does/not/exist"), "");
+}
+
+TEST(LocalResourceRetriever, getFilePath_PathDoesNotExist_ReturnsEmptyString)
+{
+  LocalResourceRetriever retriever;
+  EXPECT_EQ(retriever.getFilePath(DART_DATA_PATH "does/not/exist"), "");
+}
+
+TEST(LocalResourceRetriever, getFilePath_FileUriDoesExists_ReturnsPath)
+{
+  LocalResourceRetriever retriever;
+  EXPECT_EQ(
+      retriever.getFilePath(FILE_SCHEME DART_DATA_PATH "skel/cube.skel"),
+      DART_DATA_PATH"skel/cube.skel");
+}
+
+TEST(LocalResourceRetriever, getFilePath_PathDoesExists_ReturnsPath)
+{
+  LocalResourceRetriever retriever;
+  EXPECT_EQ(
+      retriever.getFilePath(DART_DATA_PATH "skel/cube.skel"),
+      DART_DATA_PATH"skel/cube.skel");
+}
+
 TEST(LocalResourceRetriever, retrieve_UnsupportedUri_ReturnsNull)
 {
   LocalResourceRetriever retriever;

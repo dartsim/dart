@@ -124,9 +124,21 @@ double PlaneShape::computeSignedDistance(const Eigen::Vector3d& _point) const
 }
 
 //==============================================================================
-void PlaneShape::updateVolume()
+void PlaneShape::updateBoundingBox() const
+{
+  mBoundingBox.setMin(
+      Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity()));
+  mBoundingBox.setMax(
+      Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity()));
+
+  mIsBoundingBoxDirty = false;
+}
+
+//==============================================================================
+void PlaneShape::updateVolume() const
 {
   mVolume = 0.0;
+  mIsVolumeDirty = false;
 }
 
 }  // namespace dynamics

@@ -514,7 +514,7 @@ template<class BV>
   /* Cache is the vertex locations cache */
   for (i = 0; i < _slices; i++)
   {
-    angle = 2 * M_PI * i / _slices;
+    angle = 2 * math::constantsd::pi() * i / _slices;
     sinCache[i] = sin(angle);
     cosCache[i] = cos(angle);
   }
