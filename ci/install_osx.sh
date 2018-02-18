@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+
+set -e
+
 brew tap dartsim/dart # for ipopt
 
 brew update > /dev/null
