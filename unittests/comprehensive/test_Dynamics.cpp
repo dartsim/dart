@@ -753,7 +753,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 #ifndef NDEBUG  // Debug mode
   int nTestItr = 2;
 #else
-  int nTestItr = 100;
+  int nTestItr = 20;
 #endif
   double qLB  = -0.5 * constantsd::pi();
   double qUB  =  0.5 * constantsd::pi();
@@ -850,34 +850,34 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 
           compareBodyNodeFkToJacobianRelative(
                 bn, relativeTo, Frame::World(), TOLERANCE);
-//          compareBodyNodeFkToJacobianRelative(
-//                bn, bn->getLocalCOM(), relativeTo, Frame::World(), TOLERANCE);
-//          compareBodyNodeFkToJacobianRelative(
-//                bn, randomVector<3>(10), relativeTo, Frame::World(), TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, bn->getLocalCOM(), relativeTo, Frame::World(), TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, randomVector<3>(10), relativeTo, Frame::World(), TOLERANCE);
 
-//          compareBodyNodeFkToJacobianRelative(
-//                bn, relativeTo, bn, TOLERANCE);
-//          compareBodyNodeFkToJacobianRelative(
-//                bn, bn->getLocalCOM(), relativeTo, bn, TOLERANCE);
-//          compareBodyNodeFkToJacobianRelative(
-//                bn, randomVector<3>(10), relativeTo, bn, TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, relativeTo, bn, TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, bn->getLocalCOM(), relativeTo, bn, TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, randomVector<3>(10), relativeTo, bn, TOLERANCE);
 
-//          compareBodyNodeFkToJacobianRelative(
-//                bn, relativeTo, relativeTo, TOLERANCE);
-//          compareBodyNodeFkToJacobianRelative(
-//                bn, bn->getLocalCOM(), relativeTo, relativeTo, TOLERANCE);
-//          compareBodyNodeFkToJacobianRelative(
-//                bn, randomVector<3>(10), relativeTo, relativeTo, TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, relativeTo, relativeTo, TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, bn->getLocalCOM(), relativeTo, relativeTo, TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, randomVector<3>(10), relativeTo, relativeTo, TOLERANCE);
 
-//          for (size_t r = 0; r < refFrames.size(); ++r)
-//          {
-//            compareBodyNodeFkToJacobianRelative(
-//                  bn, relativeTo, refFrames[r], TOLERANCE);
-//            compareBodyNodeFkToJacobianRelative(
-//                  bn, bn->getLocalCOM(), relativeTo, refFrames[r], TOLERANCE);
-//            compareBodyNodeFkToJacobianRelative(
-//                  bn, randomVector<3>(10), relativeTo, refFrames[r], TOLERANCE);
-//          }
+          for (size_t r = 0; r < refFrames.size(); ++r)
+          {
+            compareBodyNodeFkToJacobianRelative(
+                  bn, relativeTo, refFrames[r], TOLERANCE);
+            compareBodyNodeFkToJacobianRelative(
+                  bn, bn->getLocalCOM(), relativeTo, refFrames[r], TOLERANCE);
+            compareBodyNodeFkToJacobianRelative(
+                  bn, randomVector<3>(10), relativeTo, refFrames[r], TOLERANCE);
+          }
         }
       }
     }
