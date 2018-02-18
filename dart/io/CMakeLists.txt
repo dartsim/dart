@@ -1,7 +1,4 @@
 # Dependency checks
-find_package(TINYXML 2.6.2 QUIET)
-dart_check_optional_package(TINYXML "dart-io" "tinyxml" "2.6.2")
-
 find_package(TINYXML2 QUIET)
 dart_check_optional_package(TINYXML2 "dart-io" "tinyxml2" "1.0.1")
 
@@ -32,13 +29,11 @@ dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_io_headers} ${dart_io_sou
 target_include_directories(
   ${target_name} SYSTEM
   PUBLIC
-    ${TINYXML_INCLUDE_DIRS}
     ${TINYXML2_INCLUDE_DIRS}
 )
 target_link_libraries(
   ${target_name}
   dart
-  ${TINYXML_LIBRARIES}
   ${TINYXML2_LIBRARIES}
 )
 

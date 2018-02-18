@@ -24,6 +24,7 @@
 
 * Kinematics/Dynamics
 
+  * Added vectorized joint limit functions: [#996](https://github.com/dartsim/dart/pull/996)
   * Added lazy evaluation for shape's volume and bounding-box computation: [#959](https://github.com/dartsim/dart/pull/959)
   * Added IkFast support as analytic IK solver: [#887](https://github.com/dartsim/dart/pull/887)
   * Fixed NaN values caused by zero-length normals in ContactConstraint: [#881](https://github.com/dartsim/dart/pull/881)
@@ -36,6 +37,7 @@
 * GUI
 
   * Added support of rendering texture images: [#973](https://github.com/dartsim/dart/pull/973)
+  * Added OSG shadows: [#978](https://github.com/dartsim/dart/pull/978)
 
 * License
 
@@ -47,6 +49,7 @@
   * Suppressed -Winjected-class-name warnings from Clang 5.0.0: [#964](https://github.com/dartsim/dart/pull/964)
   * Suppressed -Wdangling-else warnings from GCC 7.2.0: [#937](https://github.com/dartsim/dart/pull/937)
   * Fixed various build issues with Visual Studio: [#956](https://github.com/dartsim/dart/pull/956)
+  * Removed TinyXML dependency: [#993](https://github.com/dartsim/dart/pull/993)
 
 ### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)
 

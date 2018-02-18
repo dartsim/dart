@@ -31,7 +31,6 @@
   <depend>liburdfdom-dev</depend>
   <depend>libxi-dev</depend>
   <depend>libxmu-dev</depend>
-  <depend>tinyxml</depend>
   <depend>tinyxml2</depend>
   <!-- These are required by REP-136. -->
   <exec_depend>catkin</exec_depend>
