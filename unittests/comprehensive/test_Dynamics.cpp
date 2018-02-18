@@ -753,7 +753,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 #ifndef NDEBUG  // Debug mode
   int nTestItr = 2;
 #else
-  int nTestItr = 20;
+  int nTestItr = 10;
 #endif
   double qLB  = -0.5 * constantsd::pi();
   double qUB  =  0.5 * constantsd::pi();
