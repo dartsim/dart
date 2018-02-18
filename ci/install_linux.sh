@@ -21,7 +21,6 @@ libbullet-dev
 libflann-dev
 libnlopt-dev
 coinor-libipopt-dev
-libtinyxml-dev
 libtinyxml2-dev
 liburdfdom-dev
 liburdfdom-headers-dev
