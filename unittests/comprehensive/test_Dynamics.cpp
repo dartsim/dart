@@ -578,8 +578,8 @@ void printComparisonError(const std::string& _comparison,
 }
 
 //==============================================================================
-void compareBodyNodeFkToJacobianRelative(const BodyNode* bn,
-                                         const BodyNode* relativeTo,
+void compareBodyNodeFkToJacobianRelative(const JacobianNode* bn,
+                                         const JacobianNode* relativeTo,
                                          const Frame* refFrame,
                                          double tolerance)
 {
@@ -629,15 +629,15 @@ void compareBodyNodeFkToJacobianRelative(const BodyNode* bn,
   //-- Linear Jacobian tests --------------------------------------------------
 
   Vector3d LinearVelFk = bn->getLinearVelocity(relativeTo, refFrame);
-//  Vector3d LinearAccFk = bn->getLinearAcceleration(relativeTo, refFrame);
+  Vector3d LinearAccFk = bn->getSpatialAcceleration(relativeTo, refFrame).tail<3>();
 
   LinearJacobian LinearJac
       = skel->getLinearJacobian(bn, relativeTo, refFrame);
-//  LinearJacobian LinearJacDeriv
-//      = skel->getRelativeLinearJacobianDeriv(bn, relativeTo, refFrame);
+  LinearJacobian LinearJacDeriv
+      = skel->getLinearJacobianDeriv(bn, relativeTo, refFrame);
 
   Vector3d LinearVelJac = LinearJac * dq;
-//  Vector3d LinearAccJac = LinearJac * ddq + LinearJacDeriv + dq;
+  Vector3d LinearAccJac = LinearJac * ddq + LinearJacDeriv * dq;
 
   bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
   EXPECT_TRUE(linearVelEqual);
@@ -649,15 +649,15 @@ void compareBodyNodeFkToJacobianRelative(const BodyNode* bn,
                          LinearVelFk,  LinearVelJac);
   }
 
-//  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
-//  EXPECT_TRUE(linearAccEqual);
-//  if (!linearAccEqual)
-//  {
-//    printComparisonError("linear acceleration",
-//                         bn->getName(), relativeTo->getName(),
-//                         refFrame->getName(),
-//                         LinearAccFk,  LinearAccJac);
-//  }
+  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
+  EXPECT_TRUE(linearAccEqual);
+  if (!linearAccEqual)
+  {
+    printComparisonError("linear acceleration",
+                         bn->getName(), relativeTo->getName(),
+                         refFrame->getName(),
+                         LinearAccFk,  LinearAccJac);
+  }
 
   //-- Angular Jacobian tests --------------------------------------------------
 
@@ -670,7 +670,7 @@ void compareBodyNodeFkToJacobianRelative(const BodyNode* bn,
       = skel->getAngularJacobianDeriv(bn, relativeTo, refFrame);
 
   Vector3d AngularVelJac = AngularJac * dq;
-  Vector3d AngularAccJac = AngularJac * ddq + AngularJacDeriv + dq;
+  Vector3d AngularAccJac = AngularJac * ddq + AngularJacDeriv * dq;
 
   bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
   EXPECT_TRUE(angularVelEqual);
@@ -694,9 +694,9 @@ void compareBodyNodeFkToJacobianRelative(const BodyNode* bn,
 }
 
 //==============================================================================
-void compareBodyNodeFkToJacobianRelative(const BodyNode* bn,
+void compareBodyNodeFkToJacobianRelative(const JacobianNode* bn,
                                          const Eigen::Vector3d& _offset,
-                                         const BodyNode* relativeTo,
+                                         const JacobianNode* relativeTo,
                                          const Frame* refFrame,
                                          double tolerance)
 {
@@ -748,15 +748,15 @@ void compareBodyNodeFkToJacobianRelative(const BodyNode* bn,
   //-- Linear Jacobian tests --------------------------------------------------
 
   Vector3d LinearVelFk = bn->getLinearVelocity(_offset, relativeTo, refFrame);
-//  Vector3d LinearAccFk = bn->getLinearAcceleration(relativeTo, refFrame);
+  Vector3d LinearAccFk = bn->getLinearAcceleration(relativeTo, refFrame);
 
   LinearJacobian LinearJac
       = skel->getLinearJacobian(bn, _offset, relativeTo, refFrame);
-//  LinearJacobian LinearJacDeriv
-//      = skel->getRelativeLinearJacobianDeriv(bn, relativeTo, refFrame);
+  LinearJacobian LinearJacDeriv
+      = skel->getLinearJacobianDeriv(bn, relativeTo, refFrame);
 
   Vector3d LinearVelJac = LinearJac * dq;
-//  Vector3d LinearAccJac = LinearJac * ddq + LinearJacDeriv + dq;
+  Vector3d LinearAccJac = LinearJac * ddq + LinearJacDeriv * dq;
 
   bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
   EXPECT_TRUE(linearVelEqual);
@@ -768,15 +768,15 @@ void compareBodyNodeFkToJacobianRelative(const BodyNode* bn,
                          LinearVelFk,  LinearVelJac);
   }
 
-//  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
-//  EXPECT_TRUE(linearAccEqual);
-//  if (!linearAccEqual)
-//  {
-//    printComparisonError("linear acceleration",
-//                         bn->getName(), relativeTo->getName(),
-//                         refFrame->getName(),
-//                         LinearAccFk,  LinearAccJac);
-//  }
+  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
+  EXPECT_TRUE(linearAccEqual);
+  if (!linearAccEqual)
+  {
+    printComparisonError("linear acceleration",
+                         bn->getName(), relativeTo->getName(),
+                         refFrame->getName(),
+                         LinearAccFk,  LinearAccJac);
+  }
 }
 
 //==============================================================================
@@ -884,14 +884,14 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 
         // -- Relative Jacobian tests
 
-//        compareBodyNodeFkToJacobianRelative(bn, bn, Frame::World(), TOLERANCE);
+        compareBodyNodeFkToJacobianRelative(bn, bn, Frame::World(), TOLERANCE);
 
-//        for (size_t l = 0; l < skeleton->getNumBodyNodes(); ++l)
-//        {
-//          const BodyNode* relativeTo = skeleton->getBodyNode(l);
+        for (size_t l = 0; l < skeleton->getNumBodyNodes(); ++l)
+        {
+          const BodyNode* relativeTo = skeleton->getBodyNode(l);
 
-//          compareBodyNodeFkToJacobianRelative(
-//                bn, relativeTo, Frame::World(), TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, relativeTo, Frame::World(), TOLERANCE);
 //          compareBodyNodeFkToJacobianRelative(
 //                bn, bn->getLocalCOM(), relativeTo, Frame::World(), TOLERANCE);
 //          compareBodyNodeFkToJacobianRelative(
@@ -920,7 +920,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 //            compareBodyNodeFkToJacobianRelative(
 //                  bn, randomVector<3>(10), relativeTo, refFrames[r], TOLERANCE);
 //          }
-//        }
+        }
       }
     }
   }

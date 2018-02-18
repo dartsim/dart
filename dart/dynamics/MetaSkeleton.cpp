@@ -1019,7 +1019,7 @@ math::Jacobian MetaSkeleton::getJacobianSpatialDeriv(
     const Frame* _inCoordinatesOf) const
 {
   if (_node == _relativeTo)
-    return math::Jacobian::Zero(3, getNumDofs());
+    return math::Jacobian::Zero(6, getNumDofs());
 
   const math::Jacobian dJ = getJacobianSpatialDeriv(_node);
   const math::Jacobian JRelTo = getJacobian(_relativeTo);
@@ -1028,7 +1028,7 @@ math::Jacobian MetaSkeleton::getJacobianSpatialDeriv(
   const Eigen::Vector6d V = _relativeTo->getSpatialVelocity(_node, _relativeTo);
   const math::Jacobian adJRelTo = math::adJac(V, JRelTo);
 
-  const auto result = (dJ - math::AdTJac(T, dJRelTo + adJRelTo)).eval();
+  const math::Jacobian result = dJ - math::AdTJac(T, dJRelTo + adJRelTo);
 
   if (_node == _inCoordinatesOf)
     return result;
@@ -1044,7 +1044,7 @@ math::Jacobian MetaSkeleton::getJacobianSpatialDeriv(
     const Frame* _inCoordinatesOf) const
 {
   if (_node == _relativeTo)
-    return math::Jacobian::Zero(3, getNumDofs());
+    return math::Jacobian::Zero(6, getNumDofs());
 
   const math::Jacobian dJ = getJacobianSpatialDeriv(_node);
   const math::Jacobian JRelTo = getJacobian(_relativeTo);
@@ -1053,8 +1053,8 @@ math::Jacobian MetaSkeleton::getJacobianSpatialDeriv(
   const Eigen::Vector6d V = _relativeTo->getSpatialVelocity(_node, _relativeTo);
   const math::Jacobian adJRelTo = math::adJac(V, JRelTo);
 
-  auto result = (dJ - math::AdTJac(T, dJRelTo + adJRelTo)).eval();
-  result.bottomRows<3>() += result.topRows<3>().colwise().cross(_localOffset);
+  math::Jacobian result = dJ - math::AdTJac(T, dJRelTo + adJRelTo);
+  result.bottomRows<3>().noalias() += result.topRows<3>().colwise().cross(_localOffset);
 
   if (_node == _inCoordinatesOf)
     return result;
@@ -1069,7 +1069,7 @@ math::Jacobian MetaSkeleton::getJacobianClassicDeriv(
     const Frame* _inCoordinatesOf) const
 {
   if (_node == _relativeTo)
-    return math::Jacobian::Zero(3, getNumDofs());
+    return math::Jacobian::Zero(6, getNumDofs());
 
   const math::Jacobian dJ = getJacobianClassicDeriv(_node);
   const math::Jacobian JRelTo = getJacobian(_relativeTo);
@@ -1094,7 +1094,7 @@ math::Jacobian MetaSkeleton::getJacobianClassicDeriv(
     const Frame* _inCoordinatesOf) const
 {
   if (_node == _relativeTo)
-    return math::Jacobian::Zero(3, getNumDofs());
+    return math::Jacobian::Zero(6, getNumDofs());
 
   const math::Jacobian dJ = getJacobianClassicDeriv(_node);
   const math::Jacobian JRelTo = getJacobian(_relativeTo);
@@ -1118,7 +1118,7 @@ math::LinearJacobian MetaSkeleton::getLinearJacobianDeriv(
     const JacobianNode* _relativeTo,
     const Frame* _inCoordinatesOf) const
 {
-  return getJacobianClassicDeriv(
+  return getJacobianSpatialDeriv(
       _node, _relativeTo, _inCoordinatesOf).bottomRows<3>();
 }
 
@@ -1129,7 +1129,7 @@ math::LinearJacobian MetaSkeleton::getLinearJacobianDeriv(
     const JacobianNode* _relativeTo,
     const Frame* _inCoordinatesOf) const
 {
-  return getJacobianClassicDeriv(
+  return getJacobianSpatialDeriv(
       _node, _localOffset, _relativeTo, _inCoordinatesOf).bottomRows<3>();
 }
 
@@ -1139,7 +1139,7 @@ math::AngularJacobian MetaSkeleton::getAngularJacobianDeriv(
     const JacobianNode* _relativeTo,
     const Frame* _inCoordinatesOf) const
 {
-  return getJacobianClassicDeriv(
+  return getJacobianSpatialDeriv(
       _node, _relativeTo, _inCoordinatesOf).topRows<3>();
 }
 
