@@ -629,15 +629,11 @@ void compareBodyNodeFkToJacobianRelative(const JacobianNode* bn,
   //-- Linear Jacobian tests --------------------------------------------------
 
   Vector3d LinearVelFk = bn->getLinearVelocity(relativeTo, refFrame);
-  Vector3d LinearAccFk = bn->getSpatialAcceleration(relativeTo, refFrame).tail<3>();
 
   LinearJacobian LinearJac
       = skel->getLinearJacobian(bn, relativeTo, refFrame);
-  LinearJacobian LinearJacDeriv
-      = skel->getLinearJacobianDeriv(bn, relativeTo, refFrame);
 
   Vector3d LinearVelJac = LinearJac * dq;
-  Vector3d LinearAccJac = LinearJac * ddq + LinearJacDeriv * dq;
 
   bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
   EXPECT_TRUE(linearVelEqual);
@@ -649,28 +645,14 @@ void compareBodyNodeFkToJacobianRelative(const JacobianNode* bn,
                          LinearVelFk,  LinearVelJac);
   }
 
-  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
-  EXPECT_TRUE(linearAccEqual);
-  if (!linearAccEqual)
-  {
-    printComparisonError("linear acceleration",
-                         bn->getName(), relativeTo->getName(),
-                         refFrame->getName(),
-                         LinearAccFk,  LinearAccJac);
-  }
-
   //-- Angular Jacobian tests --------------------------------------------------
 
   Vector3d AngularVelFk = bn->getAngularVelocity(relativeTo, refFrame);
-  Vector3d AngularAccFk = bn->getAngularAcceleration(relativeTo, refFrame);
 
   AngularJacobian AngularJac
       = skel->getAngularJacobian(bn, relativeTo, refFrame);
-  AngularJacobian AngularJacDeriv
-      = skel->getAngularJacobianDeriv(bn, relativeTo, refFrame);
 
   Vector3d AngularVelJac = AngularJac * dq;
-  Vector3d AngularAccJac = AngularJac * ddq + AngularJacDeriv * dq;
 
   bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
   EXPECT_TRUE(angularVelEqual);
@@ -680,16 +662,6 @@ void compareBodyNodeFkToJacobianRelative(const JacobianNode* bn,
                          bn->getName(), relativeTo->getName(),
                          refFrame->getName(),
                          AngularVelFk,  AngularVelJac);
-  }
-
-  bool angularAccEqual = equals(AngularAccFk, AngularAccJac, tolerance);
-  EXPECT_TRUE(angularAccEqual);
-  if (!angularAccEqual)
-  {
-    printComparisonError("angular acceleration",
-                         bn->getName(), relativeTo->getName(),
-                         refFrame->getName(),
-                         AngularAccFk,  AngularAccJac);
   }
 }
 
@@ -748,15 +720,11 @@ void compareBodyNodeFkToJacobianRelative(const JacobianNode* bn,
   //-- Linear Jacobian tests --------------------------------------------------
 
   Vector3d LinearVelFk = bn->getLinearVelocity(_offset, relativeTo, refFrame);
-  Vector3d LinearAccFk = bn->getLinearAcceleration(relativeTo, refFrame);
 
   LinearJacobian LinearJac
       = skel->getLinearJacobian(bn, _offset, relativeTo, refFrame);
-  LinearJacobian LinearJacDeriv
-      = skel->getLinearJacobianDeriv(bn, relativeTo, refFrame);
 
   Vector3d LinearVelJac = LinearJac * dq;
-  Vector3d LinearAccJac = LinearJac * ddq + LinearJacDeriv * dq;
 
   bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
   EXPECT_TRUE(linearVelEqual);
@@ -766,16 +734,6 @@ void compareBodyNodeFkToJacobianRelative(const JacobianNode* bn,
                          bn->getName(), relativeTo->getName(),
                          refFrame->getName(),
                          LinearVelFk,  LinearVelJac);
-  }
-
-  bool linearAccEqual = equals(LinearAccFk, LinearAccJac, tolerance);
-  EXPECT_TRUE(linearAccEqual);
-  if (!linearAccEqual)
-  {
-    printComparisonError("linear acceleration",
-                         bn->getName(), relativeTo->getName(),
-                         refFrame->getName(),
-                         LinearAccFk,  LinearAccJac);
   }
 }
 
