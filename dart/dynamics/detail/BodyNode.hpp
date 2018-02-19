@@ -35,6 +35,7 @@
 
 #include <utility>
 
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 namespace dart {
@@ -257,6 +258,18 @@ void BodyNode::removeAllShapeNodesWith()
   auto shapeNodes = getShapeNodesWith<AspectT>();
   for (auto shapeNode : shapeNodes)
     shapeNode->remove();
+}
+
+//==============================================================================
+template <typename SensorT>
+SensorT* BodyNode::createSensor()
+{
+  typename SensorT::BasicProperties properties;
+//    properties.mName = name;
+//    properties.mRelativeTf.translation() = position;
+//    properties.mColor = color;
+
+  return createNode<SensorT>(properties);
 }
 
 } // namespace dynamics

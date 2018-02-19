@@ -37,6 +37,11 @@ if(TARGET dart-utils)
   dart_add_test("unit" test_SdfParser)
   target_link_libraries(test_SdfParser dart-utils)
 
+  if(TARGET dart-utils-urdf)
+    dart_add_test("unit" test_Sensor)
+    target_link_libraries(test_Sensor dart-utils-urdf)
+  endif()
+
   dart_add_test("unit" test_SkelParser)
   target_link_libraries(test_SkelParser dart-utils)
 
@@ -68,3 +73,7 @@ if(TARGET dart-planning)
   dart_add_test("unit" test_NearestNeighbor)
   target_link_libraries(test_NearestNeighbor dart-planning)
 endif()
+
+dart_format_add(
+  test_Sensor.cpp
+)

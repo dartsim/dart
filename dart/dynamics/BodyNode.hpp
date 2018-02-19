@@ -62,6 +62,7 @@ class DegreeOfFreedom;
 class Shape;
 class EndEffector;
 class Marker;
+class Sensor;
 
 /// BodyNode class represents a single node of the skeleton.
 ///
@@ -611,6 +612,9 @@ public:
 
   /// Create a Marker given its basic properties
   Marker* createMarker(const Marker::BasicProperties& properties);
+
+  template <typename SensorT>
+  SensorT* createSensor();
 
   // Documentation inherited
   bool dependsOn(std::size_t _genCoordIndex) const override;
