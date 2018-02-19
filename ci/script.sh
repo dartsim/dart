@@ -7,7 +7,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then make check-format; fi
 if [ $CODECOV = ON ]; then make -j4 codecov; else make -j4 test; fi
 
 # Make sure we can install with no issues
-make -j4 install
+sudo make -j4 install
 
 # Build an example using installed DART
 cd $TRAVIS_BUILD_DIR/examples/rigidCubes
