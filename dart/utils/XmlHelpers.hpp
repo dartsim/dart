@@ -35,8 +35,6 @@
 
 #include <string>
 #include <Eigen/Dense>
-// TinyXML-2 Library
-// http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
 #include "dart/common/Deprecated.hpp"
