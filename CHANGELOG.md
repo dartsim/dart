@@ -8,6 +8,7 @@
 
 * Kinematics/Dynamics
 
+  * Added relative Jacobian functions to MetaSkeleton: [#997](https://github.com/dartsim/dart/pull/997)
   * Added vectorized joint limit functions: [#996](https://github.com/dartsim/dart/pull/996)
   * Added lazy evaluation for shape's volume and bounding-box computation: [#959](https://github.com/dartsim/dart/pull/959)
   * Added IkFast support as analytic IK solver: [#887](https://github.com/dartsim/dart/pull/887)

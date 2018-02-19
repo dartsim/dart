@@ -58,6 +58,16 @@ class Skeleton :
     public detail::SkeletonAspectBase
 {
 public:
+  // Some of non-virtual functions of MetaSkeleton are hidden because of the
+  // functions of the same name in this class. We expose those functions as
+  // follows.
+  using MetaSkeleton::getJacobian;
+  using MetaSkeleton::getLinearJacobian;
+  using MetaSkeleton::getAngularJacobian;
+  using MetaSkeleton::getJacobianSpatialDeriv;
+  using MetaSkeleton::getJacobianClassicDeriv;
+  using MetaSkeleton::getLinearJacobianDeriv;
+  using MetaSkeleton::getAngularJacobianDeriv;
 
   using AspectPropertiesData = detail::SkeletonAspectProperties;
   using AspectProperties = common::Aspect::MakeProperties<AspectPropertiesData>;
