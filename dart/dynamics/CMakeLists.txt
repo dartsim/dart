@@ -32,3 +32,18 @@ install(
   DESTINATION include/dart/dynamics/detail
   COMPONENT headers
 )
+
+dart_format_add(
+  ImuSensor.hpp
+  ImuSensor.cpp
+  Sensor.hpp
+  Sensor.cpp
+  TouchSensor.hpp
+  TouchSensor.cpp
+  detail/ImuSensorAspect.hpp
+  detail/ImuSensorAspect.cpp
+  detail/SensorAspect.hpp
+  detail/SensorAspect.cpp
+  detail/TouchSensorAspect.hpp
+  detail/TouchSensorAspect.cpp
+)
