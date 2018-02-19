@@ -778,7 +778,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
     for (int j = 0; j < nTestItr; ++j)
     {
       // For the second half of the tests, scramble up the Skeleton
-      if(j > ceil(nTestItr/2))
+      if(j > std::ceil(nTestItr/2))
       {
         SkeletonPtr copy = skeleton->clone();
         std::size_t maxNode = skeleton->getNumBodyNodes()-1;
@@ -844,7 +844,15 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 
         compareBodyNodeFkToJacobianRelative(bn, bn, Frame::World(), TOLERANCE);
 
-        for (size_t l = 0; l < skeleton->getNumBodyNodes(); ++l)
+#ifndef NDEBUG // Debug mode
+        if (skeleton->getNumBodyNodes() == 0u)
+          continue;
+
+        for (std::size_t l = skeleton->getNumBodyNodes() - 1;
+             l < skeleton->getNumBodyNodes(); ++l)
+#else
+        for (std::size_t l = 0; l < skeleton->getNumBodyNodes(); ++l)
+#endif
         {
           const BodyNode* relativeTo = skeleton->getBodyNode(l);
 
@@ -869,7 +877,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
           compareBodyNodeFkToJacobianRelative(
                 bn, randomVector<3>(10), relativeTo, relativeTo, TOLERANCE);
 
-          for (size_t r = 0; r < refFrames.size(); ++r)
+          for (std::size_t r = 0; r < refFrames.size(); ++r)
           {
             compareBodyNodeFkToJacobianRelative(
                   bn, relativeTo, refFrames[r], TOLERANCE);
