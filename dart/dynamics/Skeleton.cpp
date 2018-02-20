@@ -910,7 +910,7 @@ std::vector<const BodyNode*> Skeleton::getBodyNodes(
   if (bodyNode)
     return {bodyNode};
   else
-      return std::vector<const BodyNode*>();
+    return std::vector<const BodyNode*>();
 }
 
 //==============================================================================

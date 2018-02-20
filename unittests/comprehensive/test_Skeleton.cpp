@@ -829,7 +829,6 @@ TEST(Skeleton, Referential)
         EXPECT_TRUE(skeleton->hasBodyNode(bn));
       }
 
-
       const std::vector<DegreeOfFreedom*>& skelDofs = skeleton->getTreeDofs(j);
       EXPECT_TRUE(tree->getNumDofs() == skelDofs.size());
       for(DegreeOfFreedom* dof : skelDofs)
