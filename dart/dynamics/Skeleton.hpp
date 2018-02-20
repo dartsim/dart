@@ -453,7 +453,7 @@ public:
   std::vector<const Joint*> getJoints(const std::string& name) const override;
 
   // Documentation inherited
-  bool hasJoint(const Joint* joint) const;
+  bool hasJoint(const Joint* joint) const override;
 
   // Documentation inherited
   std::size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;
