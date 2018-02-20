@@ -478,7 +478,7 @@ void ZeroDofJoint::setForce(std::size_t /*_index*/, double /*_force*/)
 }
 
 //==============================================================================
-double ZeroDofJoint::getForce(std::size_t /*_index*/)
+double ZeroDofJoint::getForce(std::size_t /*_index*/) const
 {
   return 0.0;
 }

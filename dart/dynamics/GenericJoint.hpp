@@ -359,7 +359,7 @@ public:
   void setForce(std::size_t index, double force) override;
 
   // Documentation inherited
-  double getForce(std::size_t index) override;
+  double getForce(std::size_t index) const override;
 
   // Documentation inherited
   void setForces(const Eigen::VectorXd& forces) override;

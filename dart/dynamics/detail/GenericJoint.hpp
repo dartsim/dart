@@ -1158,7 +1158,7 @@ void GenericJoint<ConfigSpaceT>::setForce(size_t index, double force)
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GenericJoint<ConfigSpaceT>::getForce(size_t index)
+double GenericJoint<ConfigSpaceT>::getForce(size_t index) const
 {
   if (index >= getNumDofs())
   {
