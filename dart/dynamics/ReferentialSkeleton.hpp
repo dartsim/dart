@@ -115,6 +115,9 @@ public:
       const std::string& name) const override;
 
   // Documentation inherited
+  bool hasBodyNode(const BodyNode* bodyNode) const override;
+
+  // Documentation inherited
   std::size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
 
   // Documentation inherited
@@ -159,6 +162,9 @@ public:
   /// \note ReferentialSkeleton can contain multiple Joints with the same
   /// name when ReferentialSkeleton contains Joints from multiple Skeletons.
   std::vector<const Joint*> getJoints(const std::string& name) const override;
+
+  // Documentation inherited
+  bool hasJoint(const Joint* joint) const override;
 
   // Documentation inherited
   std::size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;

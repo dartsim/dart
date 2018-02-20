@@ -408,6 +408,9 @@ public:
       const std::string& name) const override;
 
   // Documentation inherited
+  bool hasBodyNode(const BodyNode* bodyNode) const override;
+
+  // Documentation inherited
   std::size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
 
   /// Get the BodyNodes belonging to a tree in this Skeleton
@@ -448,6 +451,9 @@ public:
   /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
   /// So this function returns the single Joint of the given name if it exists.
   std::vector<const Joint*> getJoints(const std::string& name) const override;
+
+  // Documentation inherited
+  bool hasJoint(const Joint* joint) const;
 
   // Documentation inherited
   std::size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;
