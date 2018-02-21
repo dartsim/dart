@@ -58,7 +58,7 @@ struct TranslationalJoint2dUniqueProperties
 
   /// Constructor for pre-defined plane types. Defaults to the XY plane if
   /// PlaneType::ARBITRARY is specified.
-  TranslationalJoint2dUniqueProperties(PlaneType planeType = PlaneType::XY);
+  explicit TranslationalJoint2dUniqueProperties(PlaneType planeType = PlaneType::XY);
 
   /// Constructor for arbitrary plane types. mPlaneType will be set to
   /// PlaneType::ARBITRARY

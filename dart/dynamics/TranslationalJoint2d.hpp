@@ -130,7 +130,7 @@ public:
 
 protected:
   /// Constructor called by Skeleton class
-  TranslationalJoint2d(const Properties& properties);
+  explicit TranslationalJoint2d(const Properties& properties);
 
   // Documentation inherited
   Joint* clone() const override;
