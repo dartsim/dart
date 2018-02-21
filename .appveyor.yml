@@ -38,8 +38,7 @@ install:
   - if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
 
   # install pacakges
-  # ---- required dependencies: boost-regex, boost-system, boost-filesystem, eigen3, libccd, fcl, assimp
-  - vcpkg install boost-regex:%VCPKG_ARCH%
+  # ---- required dependencies: boost-system, boost-filesystem, eigen3, libccd, fcl, assimp
   - vcpkg install boost-system:%VCPKG_ARCH%
   - vcpkg install boost-filesystem:%VCPKG_ARCH%
   - vcpkg install eigen3:%VCPKG_ARCH%
