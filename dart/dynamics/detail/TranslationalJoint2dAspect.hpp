@@ -58,15 +58,17 @@ struct TranslationalJoint2dUniqueProperties
 
   /// Constructor for pre-defined plane types. Defaults to the XY plane if
   /// PlaneType::ARBITRARY is specified.
-  explicit TranslationalJoint2dUniqueProperties(PlaneType planeType = PlaneType::XY);
+  explicit TranslationalJoint2dUniqueProperties(
+      PlaneType planeType = PlaneType::XY);
 
   /// Constructor for arbitrary plane types. mPlaneType will be set to
   /// PlaneType::ARBITRARY
-  TranslationalJoint2dUniqueProperties(const Eigen::Vector3d& transAxis1,
-                   const Eigen::Vector3d& transAxis2);
+  TranslationalJoint2dUniqueProperties(
+      const Eigen::Vector3d& transAxis1, const Eigen::Vector3d& transAxis2);
 
   /// Copy-constructor, customized for robustness
-  TranslationalJoint2dUniqueProperties(const TranslationalJoint2dUniqueProperties& other);
+  TranslationalJoint2dUniqueProperties(
+      const TranslationalJoint2dUniqueProperties& other);
 
   virtual ~TranslationalJoint2dUniqueProperties() = default;
 
@@ -80,29 +82,30 @@ struct TranslationalJoint2dUniqueProperties
   void setZXPlane();
 
   /// Set plane type as arbitrary plane with two orthogonal translational axes
-  void setArbitraryPlane(const Eigen::Vector3d& transAxis1,
-                         const Eigen::Vector3d& transAxis2);
+  void setArbitraryPlane(
+      const Eigen::Vector3d& transAxis1, const Eigen::Vector3d& transAxis2);
 };
 
 //==============================================================================
-struct TranslationalJoint2dProperties :
-    GenericJoint<math::R2Space>::Properties,
-    TranslationalJoint2dUniqueProperties
+struct TranslationalJoint2dProperties : GenericJoint<math::R2Space>::Properties,
+                                        TranslationalJoint2dUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(TranslationalJoint2dProperties)
 
   TranslationalJoint2dProperties(
-      const GenericJoint<math::R2Space>::Properties& genericJointProperties =
-          GenericJoint<math::R2Space>::Properties(),
-      const TranslationalJoint2dUniqueProperties& universalProperties =
-          TranslationalJoint2dUniqueProperties());
+      const GenericJoint<math::R2Space>::Properties& genericJointProperties
+      = GenericJoint<math::R2Space>::Properties(),
+      const TranslationalJoint2dUniqueProperties& universalProperties
+      = TranslationalJoint2dUniqueProperties());
 
   virtual ~TranslationalJoint2dProperties() = default;
 };
 
 //==============================================================================
-using TranslationalJoint2dBase = common::EmbedPropertiesOnTopOf<
-    TranslationalJoint2d, TranslationalJoint2dUniqueProperties,  GenericJoint<math::R2Space> >;
+using TranslationalJoint2dBase
+    = common::EmbedPropertiesOnTopOf<TranslationalJoint2d,
+                                     TranslationalJoint2dUniqueProperties,
+                                     GenericJoint<math::R2Space>>;
 
 } // namespace detail
 } // namespace dynamics

@@ -36,6 +36,6 @@ install(
 dart_format_add(
   TranslationalJoint2d.hpp
   TranslationalJoint2d.cpp
-  detail/TranslationalJoint2dAspect.cpp
+  detail/TranslationalJoint2dAspect.hpp
   detail/TranslationalJoint2dAspect.cpp
 )
