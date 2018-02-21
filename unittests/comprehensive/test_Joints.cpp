@@ -42,6 +42,7 @@
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/TranslationalJoint2d.hpp"
 #include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -302,6 +303,12 @@ TEST_F(JOINTS, SCREW_JOINT)
 TEST_F(JOINTS, UNIVERSAL_JOINT)
 {
   kinematicsTest<UniversalJoint>();
+}
+
+// 2-dof joint
+TEST_F(JOINTS, TRANSLATIONAL_JOINT_2D)
+{
+  kinematicsTest<TranslationalJoint2d>();
 }
 
 // 3-dof joint
