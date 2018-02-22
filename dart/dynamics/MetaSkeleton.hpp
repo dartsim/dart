@@ -125,6 +125,9 @@ public:
   virtual std::vector<const BodyNode*> getBodyNodes(
       const std::string& name) const = 0;
 
+  /// Returns whether this Skeleton contains \c bodyNode.
+  virtual bool hasBodyNode(const BodyNode* bodyNode) const = 0;
+
   /// Get the index of a specific BodyNode within this ReferentialSkeleton.
   /// Returns INVALID_INDEX if it is not held in this ReferentialSkeleton.
   /// When _warning is true, a warning message will be printed if the BodyNode
@@ -174,6 +177,9 @@ public:
   /// \return The list of joints of given name.
   virtual std::vector<const Joint*> getJoints(
       const std::string& name) const = 0;
+
+  /// Returns whether this Skeleton contains \c join.
+  virtual bool hasJoint(const Joint* joint) const = 0;
 
   /// Get the index of a specific Joint within this ReferentialSkeleton. Returns
   /// INVALID_INDEX if it is not held in this ReferentialSkeleton.

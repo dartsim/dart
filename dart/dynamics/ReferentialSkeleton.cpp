@@ -168,6 +168,13 @@ std::vector<const BodyNode*> ReferentialSkeleton::getBodyNodes(
 }
 
 //==============================================================================
+bool ReferentialSkeleton::hasBodyNode(const BodyNode* bodyNode) const
+{
+  return std::find(mBodyNodes.begin(), mBodyNodes.end(), bodyNode)
+    != mBodyNodes.end();
+}
+
+//==============================================================================
 std::size_t ReferentialSkeleton::getIndexOf(const BodyNode* _bn, bool _warning) const
 {
   if(nullptr == _bn)
@@ -299,6 +306,12 @@ std::vector<const Joint*> ReferentialSkeleton::getJoints(
   }
 
   return joints;
+}
+
+//==============================================================================
+bool ReferentialSkeleton::hasJoint(const Joint* joint) const
+{
+  return std::find(mJoints.begin(), mJoints.end(), joint) != mJoints.end();
 }
 
 //==============================================================================
