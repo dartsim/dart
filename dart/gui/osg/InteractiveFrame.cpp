@@ -116,6 +116,8 @@ dart::dynamics::SimpleFrame* InteractiveTool::addShapeFrame(
   auto shapeFrame = mSimpleFrames.back().get();
   shapeFrame->setShape(shape);
   shapeFrame->createVisualAspect();
+  // Disable shadowing for InteractiveTool
+  shapeFrame->getVisualAspect(true)->setShadowed(false);
 
   return shapeFrame;
 }
@@ -230,6 +232,8 @@ dart::dynamics::SimpleFrame* InteractiveFrame::addShapeFrame(
   auto shapeFrame = mSimpleFrames.back().get();
   shapeFrame->setShape(shape);
   shapeFrame->createVisualAspect();
+  // Disable shadowing for InteractiveFrame
+  shapeFrame->getVisualAspect(true)->setShadowed(false);
 
   return shapeFrame;
 }

@@ -248,6 +248,41 @@ public:
   dart::sub_ptr<dart::gui::osg::DragAndDrop> mDnD;
 };
 
+class ShadowEventHandler : public osgGA::GUIEventHandler
+{
+public:
+
+  ShadowEventHandler(OperationalSpaceControlWorld* node, dart::gui::osg::Viewer* viewer) : mNode(node), mViewer(viewer) {}
+
+  bool handle(const osgGA::GUIEventAdapter& ea,
+              osgGA::GUIActionAdapter&) override
+  {
+    if(ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN)
+    {
+      if(ea.getKey() == 's' || ea.getKey() == 'S')
+      {
+        if(mNode->isShadowed())
+          mNode->setShadowTechnique(nullptr);
+        else
+          mNode->setShadowTechnique(dart::gui::osg::WorldNode::createDefaultShadowTechnique(mViewer));
+        return true;
+      }
+    }
+
+    // The return value should be 'true' if the input has been fully handled
+    // and should not be visible to any remaining event handlers. It should be
+    // false if the input has not been fully handled and should be viewed by
+    // any remaining event handlers.
+    return false;
+  }
+
+protected:
+
+  OperationalSpaceControlWorld* mNode;
+  dart::gui::osg::Viewer* mViewer;
+
+};
+
 int main()
 {
   dart::simulation::WorldPtr world(new dart::simulation::World);
@@ -299,6 +334,7 @@ int main()
 
   // Add our custom event handler to the Viewer
   viewer.addEventHandler(new ConstraintEventHandler(node->dnd));
+  viewer.addEventHandler(new ShadowEventHandler(node.get(), &viewer));
 
   // Print out instructions
   std::cout << viewer.getInstructions() << std::endl;

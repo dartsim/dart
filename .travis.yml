@@ -22,9 +22,11 @@ matrix:
       compiler: clang
       env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
     - os: osx
+      osx_image: xcode9.3beta
       compiler: clang
       env: BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
     - os: osx
+      osx_image: xcode9.3beta
       compiler: clang
       env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
 
@@ -35,7 +37,7 @@ script:
   - 'ci/script.sh'
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+  - if [ $CODECOV = ON ]; then bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"; fi
 
 after_failure: 
   - cat build/Testing/Temporary/LastTest.log

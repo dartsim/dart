@@ -39,9 +39,11 @@ namespace detail {
 
 //==============================================================================
 VisualAspectProperties::VisualAspectProperties(const Eigen::Vector4d& color,
-                                             const bool hidden)
+                                             const bool hidden,
+                                             const bool shadowed)
   : mRGBA(color),
-    mHidden(hidden)
+    mHidden(hidden),
+    mShadowed(shadowed)
 {
   // Do nothing
 }

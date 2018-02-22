@@ -58,10 +58,14 @@ struct VisualAspectProperties
   /// True if this shape node should be kept from rendering
   bool mHidden;
 
+  /// True if this shape node should be shadowed
+  bool mShadowed;
+
   /// Constructor
   VisualAspectProperties(
       const Eigen::Vector4d& color = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0),
-      const bool hidden = false);
+      const bool hidden = false,
+      const bool shadowed = true);
 
   /// Destructor
   virtual ~VisualAspectProperties() = default;

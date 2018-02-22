@@ -545,7 +545,7 @@ HierarchicalIK::HierarchicalIK(const SkeletonPtr& _skeleton)
 }
 
 //==============================================================================
-void HierarchicalIK::initialize(const std::shared_ptr<HierarchicalIK> my_ptr)
+void HierarchicalIK::initialize(const std::shared_ptr<HierarchicalIK>& my_ptr)
 {
   mPtr = my_ptr;
 
