@@ -181,7 +181,7 @@ Eigen::Vector3d TranslationalJoint2d::getTranslationalAxis1() const
 //==============================================================================
 Eigen::Vector3d TranslationalJoint2d::getTranslationalAxis2() const
 {
-  return mAspectProperties.mTransAxes.col(0);
+  return mAspectProperties.mTransAxes.col(1);
 }
 
 //==============================================================================
