@@ -444,7 +444,7 @@ public:
   virtual void setForce(std::size_t _index, double _force) = 0;
 
   /// Get the force of a single generalized coordinate
-  virtual double getForce(std::size_t _index) = 0;
+  virtual double getForce(std::size_t _index) const = 0;
 
   /// Set the forces of all generalized coordinates in this Joint
   virtual void setForces(const Eigen::VectorXd& _forces) = 0;
