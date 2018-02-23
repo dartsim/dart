@@ -131,6 +131,12 @@ void TranslationalJoint2DUniqueProperties::setArbitraryPlane(
 }
 
 //==============================================================================
+PlaneType TranslationalJoint2DUniqueProperties::getPlaneType() const
+{
+  return mPlaneType;
+}
+
+//==============================================================================
 TranslationalJoint2DProperties::TranslationalJoint2DProperties(
     const GenericJoint<math::R2Space>::Properties& genericJointProperties,
     const TranslationalJoint2DUniqueProperties& universalProperties)

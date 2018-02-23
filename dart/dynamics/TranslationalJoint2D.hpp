@@ -72,13 +72,13 @@ public:
   /// Returns the Properties of this TranslationalJoint2D
   Properties getTranslationalJoint2DProperties() const;
 
-  /// Copy the Properties of another TranslationalJoint2D
+  /// Copies the Properties of another TranslationalJoint2D
   void copy(const TranslationalJoint2D& otherJoint);
 
-  /// Copy the Properties of another TranslationalJoint2D
+  /// Copies the Properties of another TranslationalJoint2D
   void copy(const TranslationalJoint2D* otherJoint);
 
-  /// Copy the Properties of another TranslationalJoint2D
+  /// Copies the Properties of another TranslationalJoint2D
   TranslationalJoint2D& operator=(const TranslationalJoint2D& otherJoint);
 
   // Documentation inherited
@@ -105,9 +105,9 @@ public:
   /// renmaed according to the plane type.
   void setZXPlane(bool renameDofs = true);
 
-  /// \brief Sets plane type as arbitrary plane with two orthogonal
-  /// translational
-  /// axes
+  /// Sets plane type as arbitrary plane with two orthogonal translational axes
+  /// \param[in] transAxis1 First translational axis
+  /// \param[in] transAxis2 Second translational axis
   /// \param[in] renameDofs If true, the names of dofs in this joint will be
   /// renmaed according to the plane type.
   void setArbitraryPlane(

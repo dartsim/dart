@@ -2322,36 +2322,34 @@ JointPropPtr readTranslationalJoint2D(
 
     if (type == "xy")
     {
-      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
+      properties.setXYPlane();
     }
     else if (type == "yz")
     {
-      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::YZ;
+      properties.setYZPlane();
     }
     else if (type == "zx")
     {
-      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::ZX;
+      properties.setZXPlane();
     }
     else if (type == "arbitrary")
     {
-      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::ARBITRARY;
-
-      tinyxml2::XMLElement* transAxis1Element
+      const auto* transAxis1Element
           = getElement(planeElement, "translation_axis1");
 
-      properties.mTransAxes.col(0) = getValueVector3d(transAxis1Element, "xyz");
-
-      tinyxml2::XMLElement* transAxis2Element
+      const auto* transAxis2Element
           = getElement(planeElement, "translation_axis2");
 
-      properties.mTransAxes.col(1) = getValueVector3d(transAxis2Element, "xyz");
+      properties.setArbitraryPlane(
+          getValueVector3d(transAxis1Element, "xyz"),
+          getValueVector3d(transAxis2Element, "xyz"));
     }
     else
     {
       dterr << "[readTranslationalJoint2D] TranslationalJoint2D named ["
             << _name << "] contains unsupported plane type. "
             << "Defaulting to XY-Plane.\n";
-      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
+      properties.setXYPlane();
     }
   }
   else
@@ -2359,7 +2357,7 @@ JointPropPtr readTranslationalJoint2D(
     dtwarn << "[readTranslationalJoint2D] TranslationalJoint2D named ["
            << _name << "] doesn't contain plane element. "
            << "Defaulting to XY-Plane.\n";
-    properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
+    properties.setXYPlane();
   }
 
   //--------------------------------------------------------------------------

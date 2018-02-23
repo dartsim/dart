@@ -169,7 +169,7 @@ void TranslationalJoint2D::setArbitraryPlane(
 //==============================================================================
 TranslationalJoint2D::PlaneType TranslationalJoint2D::getPlaneType() const
 {
-  return mAspectProperties.mPlaneType;
+  return mAspectProperties.getPlaneType();
 }
 
 //==============================================================================

@@ -50,9 +50,6 @@ namespace detail {
 //==============================================================================
 struct TranslationalJoint2DUniqueProperties
 {
-  /// Plane type
-  PlaneType mPlaneType;
-
   /// First and second translational axis
   Eigen::Matrix<double, 3, 2> mTransAxes;
 
@@ -72,18 +69,25 @@ struct TranslationalJoint2DUniqueProperties
 
   virtual ~TranslationalJoint2DUniqueProperties() = default;
 
-  /// Set plane type as XY-plane
+  /// Sets plane type as XY-plane
   void setXYPlane();
 
-  /// Set plane type as YZ-plane
+  /// Sets plane type as YZ-plane
   void setYZPlane();
 
-  /// Set plane type as ZX-plane
+  /// Sets plane type as ZX-plane
   void setZXPlane();
 
-  /// Set plane type as arbitrary plane with two orthogonal translational axes
+  /// Sets plane type as arbitrary plane with two orthogonal translational axes
   void setArbitraryPlane(
       const Eigen::Vector3d& transAxis1, const Eigen::Vector3d& transAxis2);
+
+  /// Returns plane type
+  PlaneType getPlaneType() const;
+
+private:
+  /// Plane type
+  PlaneType mPlaneType;
 };
 
 //==============================================================================
