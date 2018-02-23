@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_TranslationalJoint2DASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_TranslationalJoint2DASPECT_HPP_
+#ifndef DART_DYNAMICS_DETAIL_TRANSLATIONALJOINT2DASPECT_HPP_
+#define DART_DYNAMICS_DETAIL_TRANSLATIONALJOINT2DASPECT_HPP_
 
 #include <string>
 
@@ -115,4 +115,4 @@ using TranslationalJoint2DBase
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_TranslationalJoint2DASPECT_HPP_
+#endif // DART_DYNAMICS_DETAIL_TRANSLATIONALJOINT2DASPECT_HPP_
