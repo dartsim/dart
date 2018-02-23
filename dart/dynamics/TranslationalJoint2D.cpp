@@ -175,13 +175,13 @@ TranslationalJoint2D::PlaneType TranslationalJoint2D::getPlaneType() const
 //==============================================================================
 Eigen::Vector3d TranslationalJoint2D::getTranslationalAxis1() const
 {
-  return mAspectProperties.mTransAxes.col(0);
+  return mAspectProperties.getTranslationalAxis1();
 }
 
 //==============================================================================
 Eigen::Vector3d TranslationalJoint2D::getTranslationalAxis2() const
 {
-  return mAspectProperties.mTransAxes.col(1);
+  return mAspectProperties.getTranslationalAxis2();
 }
 
 //==============================================================================
@@ -224,9 +224,7 @@ void TranslationalJoint2D::updateRelativeTransform() const
   const Eigen::Vector2d& positions = getPositionsStatic();
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
        * Eigen::Translation3d(
-             mAspectProperties.mTransAxes.col(0) * positions[0])
-       * Eigen::Translation3d(
-             mAspectProperties.mTransAxes.col(1) * positions[1])
+             mAspectProperties.getTranslationalAxes() * positions)
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -240,7 +238,7 @@ void TranslationalJoint2D::updateRelativeJacobian(bool mandatory) const
   {
     mJacobian.bottomRows<3>()
         = Joint::mAspectProperties.mT_ChildBodyToJoint.linear()
-          * mAspectProperties.mTransAxes;
+          * mAspectProperties.getTranslationalAxes();
 
     // Verification
     assert(mJacobian.topRows<3>() == (Eigen::Matrix<double, 3, 2>::Zero()));

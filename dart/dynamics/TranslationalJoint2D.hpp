@@ -43,7 +43,7 @@ namespace dynamics {
 /// translational axes.
 ///
 /// First and second coordiantes represent the translations along first and
-/// second translational axese, respectively.
+/// second translational axes, respectively.
 class TranslationalJoint2D : public detail::TranslationalJoint2DBase
 {
 public:

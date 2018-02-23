@@ -48,15 +48,18 @@ class TranslationalJoint2D;
 namespace detail {
 
 //==============================================================================
-struct TranslationalJoint2DUniqueProperties
+class TranslationalJoint2DUniqueProperties
 {
-  /// First and second translational axis
-  Eigen::Matrix<double, 3, 2> mTransAxes;
-
+public:
   /// Constructor for pre-defined plane types. Defaults to the XY plane if
   /// PlaneType::ARBITRARY is specified.
   explicit TranslationalJoint2DUniqueProperties(
       PlaneType planeType = PlaneType::XY);
+
+  /// Constructor for arbitrary plane types. mPlaneType will be set to
+  /// PlaneType::ARBITRARY
+  TranslationalJoint2DUniqueProperties(
+      const Eigen::Matrix<double, 3, 2>& transAxes);
 
   /// Constructor for arbitrary plane types. mPlaneType will be set to
   /// PlaneType::ARBITRARY
@@ -79,8 +82,20 @@ struct TranslationalJoint2DUniqueProperties
   void setZXPlane();
 
   /// Sets plane type as arbitrary plane with two orthogonal translational axes
+  void setArbitraryPlane(const Eigen::Matrix<double, 3, 2>& transAxes);
+
+  /// Sets plane type as arbitrary plane with two orthogonal translational axes
   void setArbitraryPlane(
       const Eigen::Vector3d& transAxis1, const Eigen::Vector3d& transAxis2);
+
+  /// Returns first and second translational axes
+  const Eigen::Matrix<double, 3, 2>& getTranslationalAxes() const;
+
+  /// Returns first translational axis
+  Eigen::Vector3d getTranslationalAxis1() const;
+
+  /// Returns second translational axis
+  Eigen::Vector3d getTranslationalAxis2() const;
 
   /// Returns plane type
   PlaneType getPlaneType() const;
@@ -88,6 +103,9 @@ struct TranslationalJoint2DUniqueProperties
 private:
   /// Plane type
   PlaneType mPlaneType;
+
+  /// First and second translational axes
+  Eigen::Matrix<double, 3, 2> mTransAxes;
 };
 
 //==============================================================================
