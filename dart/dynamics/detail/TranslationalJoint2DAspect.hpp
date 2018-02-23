@@ -58,7 +58,7 @@ public:
 
   /// Constructor for arbitrary plane types. mPlaneType will be set to
   /// PlaneType::ARBITRARY
-  TranslationalJoint2DUniqueProperties(
+  explicit TranslationalJoint2DUniqueProperties(
       const Eigen::Matrix<double, 3, 2>& transAxes);
 
   /// Constructor for arbitrary plane types. mPlaneType will be set to
