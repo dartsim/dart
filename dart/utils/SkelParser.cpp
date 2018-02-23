@@ -64,6 +64,7 @@
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ScrewJoint.hpp"
 #include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -194,6 +195,11 @@ JointPropPtr readEulerJoint(
     const std::string& _name);
 
 JointPropPtr readTranslationalJoint(
+    tinyxml2::XMLElement* _jointElement,
+    SkelJoint& _joint,
+    const std::string& _name);
+
+JointPropPtr readTranslationalJoint2D(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
     const std::string& _name);
@@ -1421,6 +1427,8 @@ void readJoint(tinyxml2::XMLElement* _jointElement,
     joint.properties = readEulerJoint(_jointElement, joint, name);
   else if (joint.type == std::string("translational"))
     joint.properties = readTranslationalJoint(_jointElement, joint, name);
+  else if (joint.type == std::string("translational2d"))
+    joint.properties = readTranslationalJoint2D(_jointElement, joint, name);
   else if (joint.type == std::string("planar"))
     joint.properties = readPlanarJoint(_jointElement, joint, name);
   else if (joint.type == std::string("free"))
@@ -2294,6 +2302,92 @@ JointPropPtr readTranslationalJoint(
 }
 
 //==============================================================================
+JointPropPtr readTranslationalJoint2D(
+    tinyxml2::XMLElement* _jointElement,
+    SkelJoint& _joint,
+    const std::string& _name)
+{
+  assert(_jointElement != nullptr);
+
+  dynamics::TranslationalJoint2D::Properties properties;
+
+  //--------------------------------------------------------------------------
+  // Plane
+  if (hasElement(_jointElement, "plane"))
+  {
+    tinyxml2::XMLElement* planeElement = getElement(_jointElement, "plane");
+
+    // Type attribute
+    std::string type = getAttributeString(planeElement, "type");
+
+    if (type == "xy")
+    {
+      properties.setXYPlane();
+    }
+    else if (type == "yz")
+    {
+      properties.setYZPlane();
+    }
+    else if (type == "zx")
+    {
+      properties.setZXPlane();
+    }
+    else if (type == "arbitrary")
+    {
+      const auto* transAxis1Element
+          = getElement(planeElement, "translation_axis1");
+
+      const auto* transAxis2Element
+          = getElement(planeElement, "translation_axis2");
+
+      properties.setArbitraryPlane(
+          getValueVector3d(transAxis1Element, "xyz"),
+          getValueVector3d(transAxis2Element, "xyz"));
+    }
+    else
+    {
+      dterr << "[readTranslationalJoint2D] TranslationalJoint2D named ["
+            << _name << "] contains unsupported plane type. "
+            << "Defaulting to XY-Plane.\n";
+      properties.setXYPlane();
+    }
+  }
+  else
+  {
+    dtwarn << "[readTranslationalJoint2D] TranslationalJoint2D named ["
+           << _name << "] doesn't contain plane element. "
+           << "Defaulting to XY-Plane.\n";
+    properties.setXYPlane();
+  }
+
+  //--------------------------------------------------------------------------
+  // axis
+  readJointDynamicsAndLimit(_jointElement, properties, _joint, _name, 2);
+
+  //--------------------------------------------------------------------------
+  // init_pos
+  if (hasElement(_jointElement, "init_pos"))
+  {
+    Eigen::Vector2d init_pos = getValueVector2d(_jointElement, "init_pos");
+    _joint.position = init_pos;
+    properties.mInitialPositions = init_pos;
+  }
+
+  //--------------------------------------------------------------------------
+  // init_vel
+  if (hasElement(_jointElement, "init_vel"))
+  {
+    Eigen::Vector2d init_vel = getValueVector2d(_jointElement, "init_vel");
+    _joint.velocity = init_vel;
+    properties.mInitialVelocities = init_vel;
+  }
+
+  readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 2);
+
+  return dynamics::TranslationalJoint2D::Properties::createShared(properties);
+}
+
+//==============================================================================
 JointPropPtr readPlanarJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
@@ -2342,12 +2436,14 @@ JointPropPtr readPlanarJoint(
     {
       dterr << "[readPlanarJoint] Planar Joint named [" << _name
             << "] is missing plane type information. Defaulting to XY-Plane.\n";
+      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
     }
   }
   else
   {
-    dterr << "[readPlanarJoint] Planar Joint named [" << _name
-          << "] is missing plane type information. Defaulting to XY-Plane.\n";
+    dtwarn << "[readPlanarJoint] Planar Joint named [" << _name
+           << "] is missing plane type information. Defaulting to XY-Plane.\n";
+    properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
   }
 
   //--------------------------------------------------------------------------

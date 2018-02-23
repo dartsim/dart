@@ -125,7 +125,7 @@ void PlanarJointUniqueProperties::setArbitraryPlane(
   // Second translational axis
   mTransAxis2 = _transAxis2.normalized();
 
-  // Orthogonalize translational axese
+  // Orthogonalize translational axes
   double dotProduct = mTransAxis1.dot(mTransAxis2);
   assert(std::abs(dotProduct) < 1.0 - 1e-6);
   if (std::abs(dotProduct) > 1e-6)

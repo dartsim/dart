@@ -42,7 +42,7 @@ namespace dynamics {
 /// axes and one rotational axis.
 ///
 /// First and second coordiantes represent translation along first and second
-/// translational axese, respectively. Third coordinate represents rotation
+/// translational axes, respectively. Third coordinate represents rotation
 /// along rotational axis.
 class PlanarJoint : public detail::PlanarJointBase
 {
