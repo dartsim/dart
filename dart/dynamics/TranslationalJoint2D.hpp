@@ -34,52 +34,52 @@
 #define DART_DYNAMICS_TRANSLATIONALJOINT2D_HPP_
 
 #include "dart/dynamics/detail/PlanarJointAspect.hpp"
-#include "dart/dynamics/detail/TranslationalJoint2dAspect.hpp"
+#include "dart/dynamics/detail/TranslationalJoint2DAspect.hpp"
 
 namespace dart {
 namespace dynamics {
 
-/// TranslationalJoint2d represents a 2-dof joint, which has two orthogonal
+/// TranslationalJoint2D represents a 2-dof joint, which has two orthogonal
 /// translational axes.
 ///
 /// First and second coordiantes represent the translations along first and
 /// second translational axese, respectively.
-class TranslationalJoint2d : public detail::TranslationalJoint2dBase
+class TranslationalJoint2D : public detail::TranslationalJoint2DBase
 {
 public:
   friend class Skeleton;
   using PlaneType = detail::PlaneType;
-  using UniqueProperties = detail::TranslationalJoint2dUniqueProperties;
-  using Properties = detail::TranslationalJoint2dProperties;
-  using Base = detail::TranslationalJoint2dBase;
+  using UniqueProperties = detail::TranslationalJoint2DUniqueProperties;
+  using Properties = detail::TranslationalJoint2DProperties;
+  using Base = detail::TranslationalJoint2DBase;
 
-  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, TranslationalJoint2dAspect)
+  DART_BAKE_SPECIALIZED_ASPECT_IRREGULAR(Aspect, TranslationalJoint2DAspect)
 
-  TranslationalJoint2d(const TranslationalJoint2d&) = delete;
+  TranslationalJoint2D(const TranslationalJoint2D&) = delete;
 
   /// Destructor
-  virtual ~TranslationalJoint2d();
+  virtual ~TranslationalJoint2D();
 
-  /// Sets the Properties of this TranslationalJoint2d
+  /// Sets the Properties of this TranslationalJoint2D
   void setProperties(const Properties& properties);
 
-  /// Sets the Properties of this TranslationalJoint2d
+  /// Sets the Properties of this TranslationalJoint2D
   void setProperties(const UniqueProperties& properties);
 
-  /// Sets the AspectProperties of this TranslationalJoint2d
+  /// Sets the AspectProperties of this TranslationalJoint2D
   void setAspectProperties(const AspectProperties& properties);
 
-  /// Returns the Properties of this TranslationalJoint2d
-  Properties getTranslationalJoint2dProperties() const;
+  /// Returns the Properties of this TranslationalJoint2D
+  Properties getTranslationalJoint2DProperties() const;
 
-  /// Copy the Properties of another TranslationalJoint2d
-  void copy(const TranslationalJoint2d& otherJoint);
+  /// Copy the Properties of another TranslationalJoint2D
+  void copy(const TranslationalJoint2D& otherJoint);
 
-  /// Copy the Properties of another TranslationalJoint2d
-  void copy(const TranslationalJoint2d* otherJoint);
+  /// Copy the Properties of another TranslationalJoint2D
+  void copy(const TranslationalJoint2D* otherJoint);
 
-  /// Copy the Properties of another TranslationalJoint2d
-  TranslationalJoint2d& operator=(const TranslationalJoint2d& otherJoint);
+  /// Copy the Properties of another TranslationalJoint2D
+  TranslationalJoint2D& operator=(const TranslationalJoint2D& otherJoint);
 
   // Documentation inherited
   const std::string& getType() const override;
@@ -130,7 +130,7 @@ public:
 
 protected:
   /// Constructor called by Skeleton class
-  explicit TranslationalJoint2d(const Properties& properties);
+  explicit TranslationalJoint2D(const Properties& properties);
 
   // Documentation inherited
   Joint* clone() const override;

@@ -64,7 +64,7 @@
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ScrewJoint.hpp"
 #include "dart/dynamics/TranslationalJoint.hpp"
-#include "dart/dynamics/TranslationalJoint2d.hpp"
+#include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -199,7 +199,7 @@ JointPropPtr readTranslationalJoint(
     SkelJoint& _joint,
     const std::string& _name);
 
-JointPropPtr readTranslationalJoint2d(
+JointPropPtr readTranslationalJoint2D(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
     const std::string& _name);
@@ -1428,7 +1428,7 @@ void readJoint(tinyxml2::XMLElement* _jointElement,
   else if (joint.type == std::string("translational"))
     joint.properties = readTranslationalJoint(_jointElement, joint, name);
   else if (joint.type == std::string("translational2d"))
-    joint.properties = readTranslationalJoint2d(_jointElement, joint, name);
+    joint.properties = readTranslationalJoint2D(_jointElement, joint, name);
   else if (joint.type == std::string("planar"))
     joint.properties = readPlanarJoint(_jointElement, joint, name);
   else if (joint.type == std::string("free"))
@@ -2302,14 +2302,14 @@ JointPropPtr readTranslationalJoint(
 }
 
 //==============================================================================
-JointPropPtr readTranslationalJoint2d(
+JointPropPtr readTranslationalJoint2D(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
     const std::string& _name)
 {
   assert(_jointElement != nullptr);
 
-  dynamics::TranslationalJoint2d::Properties properties;
+  dynamics::TranslationalJoint2D::Properties properties;
 
   //--------------------------------------------------------------------------
   // Plane
@@ -2348,7 +2348,7 @@ JointPropPtr readTranslationalJoint2d(
     }
     else
     {
-      dterr << "[readTranslationalJoint2d] TranslationalJoint2d named ["
+      dterr << "[readTranslationalJoint2D] TranslationalJoint2D named ["
             << _name << "] contains unsupported plane type. "
             << "Defaulting to XY-Plane.\n";
       properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
@@ -2356,7 +2356,7 @@ JointPropPtr readTranslationalJoint2d(
   }
   else
   {
-    dtwarn << "[readTranslationalJoint2d] TranslationalJoint2d named ["
+    dtwarn << "[readTranslationalJoint2D] TranslationalJoint2D named ["
            << _name << "] doesn't contain plane element. "
            << "Defaulting to XY-Plane.\n";
     properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
@@ -2386,7 +2386,7 @@ JointPropPtr readTranslationalJoint2d(
 
   readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 2);
 
-  return dynamics::TranslationalJoint2d::Properties::createShared(properties);
+  return dynamics::TranslationalJoint2D::Properties::createShared(properties);
 }
 
 //==============================================================================

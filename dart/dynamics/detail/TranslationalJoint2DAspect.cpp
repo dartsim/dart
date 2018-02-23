@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/TranslationalJoint2d.hpp"
+#include "dart/dynamics/TranslationalJoint2D.hpp"
 
 namespace dart {
 namespace dynamics {
 namespace detail {
 
 //==============================================================================
-TranslationalJoint2dUniqueProperties::TranslationalJoint2dUniqueProperties(
+TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
     PlaneType planeType)
 {
   switch (planeType)
@@ -58,15 +58,15 @@ TranslationalJoint2dUniqueProperties::TranslationalJoint2dUniqueProperties(
 }
 
 //==============================================================================
-TranslationalJoint2dUniqueProperties::TranslationalJoint2dUniqueProperties(
+TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
     const Eigen::Vector3d& transAxis1, const Eigen::Vector3d& transAxis2)
 {
   setArbitraryPlane(transAxis1, transAxis2);
 }
 
 //==============================================================================
-TranslationalJoint2dUniqueProperties::TranslationalJoint2dUniqueProperties(
-    const TranslationalJoint2dUniqueProperties& other)
+TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
+    const TranslationalJoint2DUniqueProperties& other)
 {
   switch (other.mPlaneType)
   {
@@ -86,7 +86,7 @@ TranslationalJoint2dUniqueProperties::TranslationalJoint2dUniqueProperties(
 }
 
 //==============================================================================
-void TranslationalJoint2dUniqueProperties::setXYPlane()
+void TranslationalJoint2DUniqueProperties::setXYPlane()
 {
   mPlaneType = PlaneType::XY;
   mTransAxes.col(0) = Eigen::Vector3d::UnitX();
@@ -94,7 +94,7 @@ void TranslationalJoint2dUniqueProperties::setXYPlane()
 }
 
 //==============================================================================
-void TranslationalJoint2dUniqueProperties::setYZPlane()
+void TranslationalJoint2DUniqueProperties::setYZPlane()
 {
   mPlaneType = PlaneType::YZ;
   mTransAxes.col(0) = Eigen::Vector3d::UnitY();
@@ -102,7 +102,7 @@ void TranslationalJoint2dUniqueProperties::setYZPlane()
 }
 
 //==============================================================================
-void TranslationalJoint2dUniqueProperties::setZXPlane()
+void TranslationalJoint2DUniqueProperties::setZXPlane()
 {
   mPlaneType = PlaneType::ZX;
   mTransAxes.col(0) = Eigen::Vector3d::UnitZ();
@@ -110,7 +110,7 @@ void TranslationalJoint2dUniqueProperties::setZXPlane()
 }
 
 //==============================================================================
-void TranslationalJoint2dUniqueProperties::setArbitraryPlane(
+void TranslationalJoint2DUniqueProperties::setArbitraryPlane(
     const Eigen::Vector3d& transAxis1, const Eigen::Vector3d& transAxis2)
 {
   // Set plane type as arbitrary plane
@@ -131,11 +131,11 @@ void TranslationalJoint2dUniqueProperties::setArbitraryPlane(
 }
 
 //==============================================================================
-TranslationalJoint2dProperties::TranslationalJoint2dProperties(
+TranslationalJoint2DProperties::TranslationalJoint2DProperties(
     const GenericJoint<math::R2Space>::Properties& genericJointProperties,
-    const TranslationalJoint2dUniqueProperties& universalProperties)
+    const TranslationalJoint2DUniqueProperties& universalProperties)
   : GenericJoint<math::R2Space>::Properties(genericJointProperties),
-    TranslationalJoint2dUniqueProperties(universalProperties)
+    TranslationalJoint2DUniqueProperties(universalProperties)
 {
   // Do nothing
 }

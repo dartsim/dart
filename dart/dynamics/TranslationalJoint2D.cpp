@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/TranslationalJoint2d.hpp"
+#include "dart/dynamics/TranslationalJoint2D.hpp"
 
 #include <string>
 
@@ -43,26 +43,26 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-TranslationalJoint2d::~TranslationalJoint2d()
+TranslationalJoint2D::~TranslationalJoint2D()
 {
   // Do nothing
 }
 
 //==============================================================================
-void TranslationalJoint2d::setProperties(const Properties& properties)
+void TranslationalJoint2D::setProperties(const Properties& properties)
 {
   Base::setProperties(static_cast<const Base::Properties&>(properties));
   setProperties(static_cast<const UniqueProperties&>(properties));
 }
 
 //==============================================================================
-void TranslationalJoint2d::setProperties(const UniqueProperties& properties)
+void TranslationalJoint2D::setProperties(const UniqueProperties& properties)
 {
   setAspectProperties(properties);
 }
 
 //==============================================================================
-void TranslationalJoint2d::setAspectProperties(
+void TranslationalJoint2D::setAspectProperties(
     const AspectProperties& properties)
 {
   mAspectProperties = properties;
@@ -72,23 +72,23 @@ void TranslationalJoint2d::setAspectProperties(
 }
 
 //==============================================================================
-TranslationalJoint2d::Properties
-TranslationalJoint2d::getTranslationalJoint2dProperties() const
+TranslationalJoint2D::Properties
+TranslationalJoint2D::getTranslationalJoint2DProperties() const
 {
   return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
-void TranslationalJoint2d::copy(const TranslationalJoint2d& otherJoint)
+void TranslationalJoint2D::copy(const TranslationalJoint2D& otherJoint)
 {
   if (this == &otherJoint)
     return;
 
-  setProperties(otherJoint.getTranslationalJoint2dProperties());
+  setProperties(otherJoint.getTranslationalJoint2DProperties());
 }
 
 //==============================================================================
-void TranslationalJoint2d::copy(const TranslationalJoint2d* otherJoint)
+void TranslationalJoint2D::copy(const TranslationalJoint2D* otherJoint)
 {
   if (nullptr == otherJoint)
     return;
@@ -97,34 +97,34 @@ void TranslationalJoint2d::copy(const TranslationalJoint2d* otherJoint)
 }
 
 //==============================================================================
-TranslationalJoint2d& TranslationalJoint2d::operator=(
-    const TranslationalJoint2d& otherJoint)
+TranslationalJoint2D& TranslationalJoint2D::operator=(
+    const TranslationalJoint2D& otherJoint)
 {
   copy(otherJoint);
   return *this;
 }
 
 //==============================================================================
-const std::string& TranslationalJoint2d::getType() const
+const std::string& TranslationalJoint2D::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& TranslationalJoint2d::getStaticType()
+const std::string& TranslationalJoint2D::getStaticType()
 {
-  static const std::string name = "TranslationalJoint2d";
+  static const std::string name = "TranslationalJoint2D";
   return name;
 }
 
 //==============================================================================
-bool TranslationalJoint2d::isCyclic(std::size_t /*index*/) const
+bool TranslationalJoint2D::isCyclic(std::size_t /*index*/) const
 {
   return false;
 }
 
 //==============================================================================
-void TranslationalJoint2d::setXYPlane(bool renameDofs)
+void TranslationalJoint2D::setXYPlane(bool renameDofs)
 {
   mAspectProperties.setXYPlane();
 
@@ -134,7 +134,7 @@ void TranslationalJoint2d::setXYPlane(bool renameDofs)
 }
 
 //==============================================================================
-void TranslationalJoint2d::setYZPlane(bool renameDofs)
+void TranslationalJoint2D::setYZPlane(bool renameDofs)
 {
   mAspectProperties.setYZPlane();
 
@@ -144,7 +144,7 @@ void TranslationalJoint2d::setYZPlane(bool renameDofs)
 }
 
 //==============================================================================
-void TranslationalJoint2d::setZXPlane(bool renameDofs)
+void TranslationalJoint2D::setZXPlane(bool renameDofs)
 {
   mAspectProperties.setZXPlane();
 
@@ -154,7 +154,7 @@ void TranslationalJoint2d::setZXPlane(bool renameDofs)
 }
 
 //==============================================================================
-void TranslationalJoint2d::setArbitraryPlane(
+void TranslationalJoint2D::setArbitraryPlane(
     const Eigen::Vector3d& transAxis1,
     const Eigen::Vector3d& transAxis2,
     bool renameDofs)
@@ -167,25 +167,25 @@ void TranslationalJoint2d::setArbitraryPlane(
 }
 
 //==============================================================================
-TranslationalJoint2d::PlaneType TranslationalJoint2d::getPlaneType() const
+TranslationalJoint2D::PlaneType TranslationalJoint2D::getPlaneType() const
 {
   return mAspectProperties.mPlaneType;
 }
 
 //==============================================================================
-Eigen::Vector3d TranslationalJoint2d::getTranslationalAxis1() const
+Eigen::Vector3d TranslationalJoint2D::getTranslationalAxis1() const
 {
   return mAspectProperties.mTransAxes.col(0);
 }
 
 //==============================================================================
-Eigen::Vector3d TranslationalJoint2d::getTranslationalAxis2() const
+Eigen::Vector3d TranslationalJoint2D::getTranslationalAxis2() const
 {
   return mAspectProperties.mTransAxes.col(1);
 }
 
 //==============================================================================
-Eigen::Matrix<double, 6, 2> TranslationalJoint2d::getRelativeJacobianStatic(
+Eigen::Matrix<double, 6, 2> TranslationalJoint2D::getRelativeJacobianStatic(
     const Eigen::Vector2d& /*positions*/) const
 {
   // The Jacobian is always constant w.r.t. the generalized coordinates.
@@ -193,24 +193,24 @@ Eigen::Matrix<double, 6, 2> TranslationalJoint2d::getRelativeJacobianStatic(
 }
 
 //==============================================================================
-TranslationalJoint2d::TranslationalJoint2d(const Properties& properties)
-  : detail::TranslationalJoint2dBase(properties)
+TranslationalJoint2D::TranslationalJoint2D(const Properties& properties)
+  : detail::TranslationalJoint2DBase(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
-  createTranslationalJoint2dAspect(properties);
+  createTranslationalJoint2DAspect(properties);
   createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 
 //==============================================================================
-Joint* TranslationalJoint2d::clone() const
+Joint* TranslationalJoint2D::clone() const
 {
-  return new TranslationalJoint2d(getTranslationalJoint2dProperties());
+  return new TranslationalJoint2D(getTranslationalJoint2DProperties());
 }
 
 //==============================================================================
-void TranslationalJoint2d::updateDegreeOfFreedomNames()
+void TranslationalJoint2D::updateDegreeOfFreedomNames()
 {
   if (!mDofs[0]->isNamePreserved())
     mDofs[0]->setName(Joint::mAspectProperties.mName + "_1", false);
@@ -219,7 +219,7 @@ void TranslationalJoint2d::updateDegreeOfFreedomNames()
 }
 
 //==============================================================================
-void TranslationalJoint2d::updateRelativeTransform() const
+void TranslationalJoint2D::updateRelativeTransform() const
 {
   const Eigen::Vector2d& positions = getPositionsStatic();
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
@@ -234,7 +234,7 @@ void TranslationalJoint2d::updateRelativeTransform() const
 }
 
 //==============================================================================
-void TranslationalJoint2d::updateRelativeJacobian(bool mandatory) const
+void TranslationalJoint2D::updateRelativeJacobian(bool mandatory) const
 {
   if (mandatory)
   {
@@ -249,7 +249,7 @@ void TranslationalJoint2d::updateRelativeJacobian(bool mandatory) const
 }
 
 //==============================================================================
-void TranslationalJoint2d::updateRelativeJacobianTimeDeriv() const
+void TranslationalJoint2D::updateRelativeJacobianTimeDeriv() const
 {
   // Time derivative of translational joint is always zero
   assert(mJacobianDeriv == (Eigen::Matrix<double, 6, 2>::Zero()));

@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_DETAIL_TranslationalJoint2dASPECT_HPP_
-#define DART_DYNAMICS_DETAIL_TranslationalJoint2dASPECT_HPP_
+#ifndef DART_DYNAMICS_DETAIL_TranslationalJoint2DASPECT_HPP_
+#define DART_DYNAMICS_DETAIL_TranslationalJoint2DASPECT_HPP_
 
 #include <string>
 
@@ -43,12 +43,12 @@
 namespace dart {
 namespace dynamics {
 
-class TranslationalJoint2d;
+class TranslationalJoint2D;
 
 namespace detail {
 
 //==============================================================================
-struct TranslationalJoint2dUniqueProperties
+struct TranslationalJoint2DUniqueProperties
 {
   /// Plane type
   PlaneType mPlaneType;
@@ -58,19 +58,19 @@ struct TranslationalJoint2dUniqueProperties
 
   /// Constructor for pre-defined plane types. Defaults to the XY plane if
   /// PlaneType::ARBITRARY is specified.
-  explicit TranslationalJoint2dUniqueProperties(
+  explicit TranslationalJoint2DUniqueProperties(
       PlaneType planeType = PlaneType::XY);
 
   /// Constructor for arbitrary plane types. mPlaneType will be set to
   /// PlaneType::ARBITRARY
-  TranslationalJoint2dUniqueProperties(
+  TranslationalJoint2DUniqueProperties(
       const Eigen::Vector3d& transAxis1, const Eigen::Vector3d& transAxis2);
 
   /// Copy-constructor, customized for robustness
-  TranslationalJoint2dUniqueProperties(
-      const TranslationalJoint2dUniqueProperties& other);
+  TranslationalJoint2DUniqueProperties(
+      const TranslationalJoint2DUniqueProperties& other);
 
-  virtual ~TranslationalJoint2dUniqueProperties() = default;
+  virtual ~TranslationalJoint2DUniqueProperties() = default;
 
   /// Set plane type as XY-plane
   void setXYPlane();
@@ -87,28 +87,28 @@ struct TranslationalJoint2dUniqueProperties
 };
 
 //==============================================================================
-struct TranslationalJoint2dProperties : GenericJoint<math::R2Space>::Properties,
-                                        TranslationalJoint2dUniqueProperties
+struct TranslationalJoint2DProperties : GenericJoint<math::R2Space>::Properties,
+                                        TranslationalJoint2DUniqueProperties
 {
-  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(TranslationalJoint2dProperties)
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(TranslationalJoint2DProperties)
 
-  TranslationalJoint2dProperties(
+  TranslationalJoint2DProperties(
       const GenericJoint<math::R2Space>::Properties& genericJointProperties
       = GenericJoint<math::R2Space>::Properties(),
-      const TranslationalJoint2dUniqueProperties& universalProperties
-      = TranslationalJoint2dUniqueProperties());
+      const TranslationalJoint2DUniqueProperties& universalProperties
+      = TranslationalJoint2DUniqueProperties());
 
-  virtual ~TranslationalJoint2dProperties() = default;
+  virtual ~TranslationalJoint2DProperties() = default;
 };
 
 //==============================================================================
-using TranslationalJoint2dBase
-    = common::EmbedPropertiesOnTopOf<TranslationalJoint2d,
-                                     TranslationalJoint2dUniqueProperties,
+using TranslationalJoint2DBase
+    = common::EmbedPropertiesOnTopOf<TranslationalJoint2D,
+                                     TranslationalJoint2DUniqueProperties,
                                      GenericJoint<math::R2Space>>;
 
 } // namespace detail
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_DETAIL_TranslationalJoint2dASPECT_HPP_
+#endif // DART_DYNAMICS_DETAIL_TranslationalJoint2DASPECT_HPP_
