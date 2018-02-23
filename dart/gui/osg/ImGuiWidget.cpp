@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -92,7 +92,7 @@ void AboutWidget::render()
   ImGui::Begin("About DART", &mIsVisible, ImGuiWindowFlags_AlwaysAutoResize);
   //ImGui::Text("HIT %s", Version::asString().c_str());
   ImGui::Separator();
-  ImGui::Text("Copyright (c) 2011-2017, The DART development team");
+  ImGui::Text("Copyright (c) 2011-2018, The DART development contributors");
   ImGui::Text("DART is licensed under the BSD 2 Clause License.");
   ImGui::Separator();
   ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
