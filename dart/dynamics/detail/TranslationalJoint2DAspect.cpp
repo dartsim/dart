@@ -78,7 +78,7 @@ TranslationalJoint2DUniqueProperties::TranslationalJoint2DUniqueProperties(
   switch (other.mPlaneType)
   {
     case PlaneType::ARBITRARY:
-      setArbitraryPlane(other.mTransAxes.col(0), other.mTransAxes.col(1));
+      setArbitraryPlane(other.mTransAxes);
       break;
     case PlaneType::XY:
       setXYPlane();
