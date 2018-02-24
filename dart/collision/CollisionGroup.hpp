@@ -100,7 +100,7 @@ public:
   void addShapeFramesOf(const dynamics::BodyNode* bodyNode,
                         const Others*... others);
 
-  /// Add ShapeFrames of Skeleton, and also add another ShapeFrames of other
+  /// Add ShapeFrames of MetaSkeleton, and also add another ShapeFrames of other
   /// various objects.
   template <typename... Others>
   void addShapeFramesOf(const dynamics::MetaSkeleton* skeleton,
@@ -147,7 +147,7 @@ public:
   void removeShapeFramesOf(const dynamics::BodyNode* bodyNode,
                            const Others*... others);
 
-  /// Remove ShapeFrames of Skeleton, and also remove another ShapeFrames of
+  /// Remove ShapeFrames of MetaSkeleton, and also remove another ShapeFrames of
   /// other various objects.
   template <typename... Others>
   void removeShapeFramesOf(const dynamics::MetaSkeleton* skeleton,
