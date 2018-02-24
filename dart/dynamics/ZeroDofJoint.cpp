@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -478,7 +478,7 @@ void ZeroDofJoint::setForce(std::size_t /*_index*/, double /*_force*/)
 }
 
 //==============================================================================
-double ZeroDofJoint::getForce(std::size_t /*_index*/)
+double ZeroDofJoint::getForce(std::size_t /*_index*/) const
 {
   return 0.0;
 }

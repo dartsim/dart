@@ -32,3 +32,10 @@ install(
   DESTINATION include/dart/dynamics/detail
   COMPONENT headers
 )
+
+dart_format_add(
+  TranslationalJoint2D.hpp
+  TranslationalJoint2D.cpp
+  detail/TranslationalJoint2DAspect.hpp
+  detail/TranslationalJoint2DAspect.cpp
+)

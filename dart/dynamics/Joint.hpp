@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -444,7 +444,7 @@ public:
   virtual void setForce(std::size_t _index, double _force) = 0;
 
   /// Get the force of a single generalized coordinate
-  virtual double getForce(std::size_t _index) = 0;
+  virtual double getForce(std::size_t _index) const = 0;
 
   /// Set the forces of all generalized coordinates in this Joint
   virtual void setForces(const Eigen::VectorXd& _forces) = 0;
