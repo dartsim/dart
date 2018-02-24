@@ -30,10 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/dynamics/MetaSkeleton.hpp"
+
+#include <algorithm>
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/JacobianNode.hpp"
-#include "dart/dynamics/MetaSkeleton.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -310,6 +312,15 @@ static double getValueFromIndex(const MetaSkeleton* skel, std::size_t _index,
         << "The return value will be zero.\n";
   assert(false);
   return 0.0;
+}
+
+//==============================================================================
+std::vector<std::mutex*> MetaSkeleton::getMutexes() const
+{
+  auto mutexes = getUnorderedMutexes();
+  std::sort(mutexes.begin(), mutexes.begin());
+
+  return mutexes;
 }
 
 //==============================================================================

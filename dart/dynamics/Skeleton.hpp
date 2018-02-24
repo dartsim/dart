@@ -161,6 +161,9 @@ public:
   /// Get the mutex that protects the state of this Skeleton
   std::mutex& getMutex() const;
 
+  // Documentation inherited
+  std::vector<std::mutex*> getUnorderedMutexes() const override;
+
   Skeleton(const Skeleton&) = delete;
 
   /// Destructor

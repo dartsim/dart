@@ -54,6 +54,9 @@ public:
   /// Default destructor
   virtual ~ReferentialSkeleton() = default;
 
+  // Documentation inherited
+  std::vector<std::mutex*> getUnorderedMutexes() const override;
+
   //----------------------------------------------------------------------------
   /// \{ \name Name
   //----------------------------------------------------------------------------
@@ -69,6 +72,15 @@ public:
   //----------------------------------------------------------------------------
   /// \{ \name Structural Properties
   //----------------------------------------------------------------------------
+
+  /// Returns number of skeletons associated with this ReferentialSkeleton.
+  std::size_t getNumSkeletons() const;
+
+  /// Returns skeletons associated with this ReferentialSkeleton.
+  const std::vector<Skeleton*>& getSkeletons();
+
+  /// Returns whether this ReferentialSkeleton contains \c skel.
+  bool hasSkeleton(const Skeleton* skel) const;
 
   // Documentation inherited
   std::size_t getNumBodyNodes() const override;
@@ -460,6 +472,8 @@ protected:
   /// Name of this ReferentialSkeleton
   std::string mName;
 
+  std::vector<Skeleton*> mSkeletons;
+
   /// BodyNodes that this ReferentialSkeleton references. These hold strong
   /// references to ensure that the BodyNodes do not disappear
   std::vector<BodyNodePtr> mBodyNodes;
@@ -515,6 +529,15 @@ protected:
 
   /// Cache for constraint force vector
   mutable Eigen::VectorXd mFc;
+
+private:
+  /// Add a Skeleton to this ReferentialSkeleton, ignoring its Joint and
+  /// DegreesOfFreedom. This can only be used by this class.
+  void registerSkeleton(Skeleton* skel);
+
+  /// Removes a Skeleton from this ReferentialSkeleton. This can only be used by
+  /// this class.
+  void unregisterSkeleton(Skeleton* skel);
 };
 
 } // namespace dynamics

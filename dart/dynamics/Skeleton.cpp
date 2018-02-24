@@ -382,6 +382,12 @@ std::mutex& Skeleton::getMutex() const
 }
 
 //==============================================================================
+std::vector<std::mutex*> Skeleton::getUnorderedMutexes() const
+{
+  return std::vector<std::mutex*>{{&mMutex}};
+}
+
+//==============================================================================
 Skeleton::~Skeleton()
 {
   for (BodyNode* bn : mSkelCache.mBodyNodes)

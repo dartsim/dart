@@ -30,3 +30,8 @@ install(
   DESTINATION include/dart/common/detail
   COMPONENT headers
 )
+
+dart_format_add(
+  Mutex.hpp
+  Mutex.cpp
+)

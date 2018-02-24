@@ -71,6 +71,16 @@ public:
   /// Default destructor
   virtual ~MetaSkeleton() = default;
 
+  /// Returns unordered mutexes of skeletons contained in this MetaSkeleton.
+  ///
+  /// \note Do not lock the returned mutexes in the order as it is. In order to
+  /// avoid deadlock, you should use ordered mutexes, which can be obtained from
+  /// getMutexes(), or lock the mutexes very carefully.
+  virtual std::vector<std::mutex*> getUnorderedMutexes() const = 0;
+
+  /// Returns mutexes that are sorted in order of memory addresses.
+  std::vector<std::mutex*> getMutexes() const;
+
   //----------------------------------------------------------------------------
   /// \{ \name Name
   //----------------------------------------------------------------------------
