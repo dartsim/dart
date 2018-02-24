@@ -39,8 +39,7 @@ install:
 
   # install pacakges
   # ---- required dependencies: boost-system, boost-filesystem, eigen3, libccd, fcl, assimp
-  - vcpkg install boost-system:%VCPKG_ARCH%
-  - vcpkg install boost-filesystem:%VCPKG_ARCH%
+  - vcpkg install boost:%VCPKG_ARCH%
   - vcpkg install eigen3:%VCPKG_ARCH%
   - vcpkg install ccd:%VCPKG_ARCH%
   - vcpkg install fcl:%VCPKG_ARCH%
