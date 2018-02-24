@@ -150,7 +150,7 @@ public:
   /// Remove ShapeFrames of Skeleton, and also remove another ShapeFrames of
   /// other various objects.
   template <typename... Others>
-  void removeShapeFramesOf(const dynamics::Skeleton* skeleton,
+  void removeShapeFramesOf(const dynamics::MetaSkeleton* skeleton,
                            const Others*... others);
 
   /// Do nothing. This function is for terminating the recursive variadic
