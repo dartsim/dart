@@ -66,7 +66,7 @@ private:
 class MultiMutexes final : public Mutex
 {
 public:
-  MultiMutexes(const std::vector<std::mutex*>& mutexes);
+  MultiMutexes(const std::vector<std::mutex*>& mutexes, bool sorted = false);
   void lock() override;
   void unlock() override;
 private:

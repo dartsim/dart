@@ -44,7 +44,7 @@ namespace dynamics {
 //==============================================================================
 std::unique_ptr<common::Mutex> ReferentialSkeleton::getCustomMutex() const
 {
-  return common::make_unique<common::MultiMutexes>(getStdMutexes());
+  return common::make_unique<common::MultiMutexes>(getStdMutexes(), true);
 }
 
 //==============================================================================

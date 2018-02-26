@@ -58,10 +58,11 @@ void SingleMutex::unlock()
 }
 
 //==============================================================================
-MultiMutexes::MultiMutexes(const std::vector<std::mutex*>& mutexes)
+MultiMutexes::MultiMutexes(const std::vector<std::mutex*>& mutexes, bool sorted)
   : mMutexes(mutexes)
 {
-  std::sort(mMutexes.begin(), mMutexes.end());
+  if (!sorted)
+    std::sort(mMutexes.begin(), mMutexes.end());
 }
 
 //==============================================================================
