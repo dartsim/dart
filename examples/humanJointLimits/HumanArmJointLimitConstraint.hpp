@@ -52,9 +52,7 @@ class HumanArmJointLimitConstraint : public ConstraintBase
 public:
   /// Constructor
   explicit HumanArmJointLimitConstraint(
-      dynamics::Joint* _shldjoint,
-      dynamics::Joint* _elbowjoint,
-      bool _isMirror);
+      dynamics::Joint* shldjoint, dynamics::Joint* elbowjoint, bool isMirror);
 
   /// Destructor
   virtual ~HumanArmJointLimitConstraint();
@@ -64,25 +62,25 @@ public:
   //----------------------------------------------------------------------------
 
   /// Set global error reduction parameter
-  static void setErrorAllowance(double _allowance);
+  static void setErrorAllowance(double allowance);
 
   /// Get global error reduction parameter
   static double getErrorAllowance();
 
   /// Set global error reduction parameter
-  static void setErrorReductionParameter(double _erp);
+  static void setErrorReductionParameter(double erp);
 
   /// Get global error reduction parameter
   static double getErrorReductionParameter();
 
   /// Set global error reduction parameter
-  static void setMaxErrorReductionVelocity(double _erv);
+  static void setMaxErrorReductionVelocity(double erv);
 
   /// Get global error reduction parameter
   static double getMaxErrorReductionVelocity();
 
   /// Set global constraint force mixing parameter
-  static void setConstraintForceMixing(double _cfm);
+  static void setConstraintForceMixing(double cfm);
 
   /// Get global constraint force mixing parameter
   static double getConstraintForceMixing();
@@ -103,13 +101,13 @@ protected:
   void update() override;
 
   // Documentation inherited
-  void getInformation(ConstraintInfo* _lcp) override;
+  void getInformation(ConstraintInfo* lcp) override;
 
   // Documentation inherited
-  void applyUnitImpulse(std::size_t _index) override;
+  void applyUnitImpulse(std::size_t index) override;
 
   // Documentation inherited
-  void getVelocityChange(double* _delVel, bool _withCfm) override;
+  void getVelocityChange(double* delVel, bool withCfm) override;
 
   // Documentation inherited
   void excite() override;
@@ -118,7 +116,7 @@ protected:
   void unexcite() override;
 
   // Documentation inherited
-  void applyImpulse(double* _lambda) override;
+  void applyImpulse(double* lambda) override;
 
   // Documentation inherited
   dynamics::SkeletonPtr getRootSkeleton() const override;
@@ -149,25 +147,18 @@ private:
   /// Index of applied impulse
   std::size_t mAppliedImpulseIndex;
 
-  ///
   std::size_t mLifeTime;
 
-  ///
   double mViolation;
 
-  ///
   double mNegativeVel;
 
-  ///
   double mOldX;
 
-  ///
   double mUpperBound;
 
-  ///
   double mLowerBound;
 
-  ///
   bool mActive;
 
   /// Global constraint error allowance

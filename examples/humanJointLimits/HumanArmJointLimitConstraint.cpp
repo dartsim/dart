@@ -59,13 +59,13 @@ double HumanArmJointLimitConstraint::mConstraintForceMixing = DART_CFM;
 
 //==============================================================================
 HumanArmJointLimitConstraint::HumanArmJointLimitConstraint(
-    dynamics::Joint* _shldjoint, dynamics::Joint* _elbowjoint, bool _isMirror)
+    dynamics::Joint* shldjoint, dynamics::Joint* elbowjoint, bool isMirror)
   : ConstraintBase(),
-    mShldJoint(_shldjoint),
-    mElbowJoint(_elbowjoint),
-    mUArmNode(_shldjoint->getChildBodyNode()),
-    mLArmNode(_elbowjoint->getChildBodyNode()),
-    mIsMirror(_isMirror),
+    mShldJoint(shldjoint),
+    mElbowJoint(elbowjoint),
+    mUArmNode(shldjoint->getChildBodyNode()),
+    mLArmNode(elbowjoint->getChildBodyNode()),
+    mIsMirror(isMirror),
     mAppliedImpulseIndex(0)
 {
   assert(mShldJoint);
@@ -91,18 +91,18 @@ HumanArmJointLimitConstraint::~HumanArmJointLimitConstraint()
 }
 
 //==============================================================================
-void HumanArmJointLimitConstraint::setErrorAllowance(double _allowance)
+void HumanArmJointLimitConstraint::setErrorAllowance(double allowance)
 {
   // Clamp error reduction parameter if it is out of the range
-  if (_allowance < 0.0)
+  if (allowance < 0.0)
   {
-    dtwarn << "Error reduction parameter[" << _allowance
+    dtwarn << "Error reduction parameter[" << allowance
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
     mErrorAllowance = 0.0;
   }
 
-  mErrorAllowance = _allowance;
+  mErrorAllowance = allowance;
 }
 
 //==============================================================================
@@ -112,23 +112,23 @@ double HumanArmJointLimitConstraint::getErrorAllowance()
 }
 
 //==============================================================================
-void HumanArmJointLimitConstraint::setErrorReductionParameter(double _erp)
+void HumanArmJointLimitConstraint::setErrorReductionParameter(double erp)
 {
   // Clamp error reduction parameter if it is out of the range [0, 1]
-  if (_erp < 0.0)
+  if (erp < 0.0)
   {
-    dtwarn << "Error reduction parameter[" << _erp << "] is lower than 0.0. "
+    dtwarn << "Error reduction parameter[" << erp << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
     mErrorReductionParameter = 0.0;
   }
-  if (_erp > 1.0)
+  if (erp > 1.0)
   {
-    dtwarn << "Error reduction parameter[" << _erp << "] is greater than 1.0. "
+    dtwarn << "Error reduction parameter[" << erp << "] is greater than 1.0. "
            << "It is set to 1.0." << std::endl;
     mErrorReductionParameter = 1.0;
   }
 
-  mErrorReductionParameter = _erp;
+  mErrorReductionParameter = erp;
 }
 
 //==============================================================================
@@ -138,18 +138,18 @@ double HumanArmJointLimitConstraint::getErrorReductionParameter()
 }
 
 //==============================================================================
-void HumanArmJointLimitConstraint::setMaxErrorReductionVelocity(double _erv)
+void HumanArmJointLimitConstraint::setMaxErrorReductionVelocity(double erv)
 {
   // Clamp maximum error reduction velocity if it is out of the range
-  if (_erv < 0.0)
+  if (erv < 0.0)
   {
-    dtwarn << "Maximum error reduction velocity[" << _erv
+    dtwarn << "Maximum error reduction velocity[" << erv
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
     mMaxErrorReductionVelocity = 0.0;
   }
 
-  mMaxErrorReductionVelocity = _erv;
+  mMaxErrorReductionVelocity = erv;
 }
 
 //==============================================================================
@@ -159,25 +159,25 @@ double HumanArmJointLimitConstraint::getMaxErrorReductionVelocity()
 }
 
 //==============================================================================
-void HumanArmJointLimitConstraint::setConstraintForceMixing(double _cfm)
+void HumanArmJointLimitConstraint::setConstraintForceMixing(double cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
-  if (_cfm < 1e-9)
+  if (cfm < 1e-9)
   {
-    dtwarn << "Constraint force mixing parameter[" << _cfm
+    dtwarn << "Constraint force mixing parameter[" << cfm
            << "] is lower than 1e-9. "
            << "It is set to 1e-9." << std::endl;
     mConstraintForceMixing = 1e-9;
   }
-  if (_cfm > 1.0)
+  if (cfm > 1.0)
   {
-    dtwarn << "Constraint force mixing parameter[" << _cfm
+    dtwarn << "Constraint force mixing parameter[" << cfm
            << "] is greater than 1.0. "
            << "It is set to 1.0." << std::endl;
     mConstraintForceMixing = 1.0;
   }
 
-  mConstraintForceMixing = _cfm;
+  mConstraintForceMixing = cfm;
 }
 
 //==============================================================================
@@ -294,39 +294,39 @@ void HumanArmJointLimitConstraint::update()
 }
 
 //==============================================================================
-void HumanArmJointLimitConstraint::getInformation(ConstraintInfo* _lcp)
+void HumanArmJointLimitConstraint::getInformation(ConstraintInfo* lcp)
 {
   // if non-active, should not call getInfo()
   assert(isActive());
 
   // assume caller will allocate enough space for _lcp variables
-  assert(_lcp->w[0] == 0.0);
-  assert(_lcp->findex[0] == -1);
+  assert(lcp->w[0] == 0.0);
+  assert(lcp->findex[0] == -1);
 
   double bouncingVel = -mViolation - mErrorAllowance;
   if (bouncingVel < 0.0)
   {
     bouncingVel = 0.0;
   }
-  bouncingVel *= _lcp->invTimeStep * mErrorReductionParameter;
+  bouncingVel *= lcp->invTimeStep * mErrorReductionParameter;
   if (bouncingVel > mMaxErrorReductionVelocity)
     bouncingVel = mMaxErrorReductionVelocity;
 
-  _lcp->b[0] = mNegativeVel + bouncingVel;
-  _lcp->lo[0] = mLowerBound;
-  _lcp->hi[0] = mUpperBound;
+  lcp->b[0] = mNegativeVel + bouncingVel;
+  lcp->lo[0] = mLowerBound;
+  lcp->hi[0] = mUpperBound;
 
   if (mLifeTime)
-    _lcp->x[0] = mOldX;
+    lcp->x[0] = mOldX;
   else
-    _lcp->x[0] = 0.0;
+    lcp->x[0] = 0.0;
 }
 
 //==============================================================================
-void HumanArmJointLimitConstraint::applyUnitImpulse(std::size_t _index)
+void HumanArmJointLimitConstraint::applyUnitImpulse(std::size_t index)
 {
   // the dim of constraint = 1, valid _index can only be 0
-  assert(_index < mDim && "Invalid Index.");
+  assert(index < mDim && "Invalid Index.");
   assert(isActive());
 
   const dynamics::SkeletonPtr& skeleton = mShldJoint->getSkeleton();
@@ -349,15 +349,15 @@ void HumanArmJointLimitConstraint::applyUnitImpulse(std::size_t _index)
   }
   mElbowJoint->setConstraintImpulse(0, 0.0);
 
-  mAppliedImpulseIndex = _index; // which is 0
+  mAppliedImpulseIndex = index; // which is 0
 }
 
 //==============================================================================
 void HumanArmJointLimitConstraint::getVelocityChange(
-    double* _delVel, bool _withCfm)
+    double* delVel, bool withCfm)
 {
-  assert(_delVel != nullptr && "Null pointer is not allowed.");
-  _delVel[0] = 0.0;
+  assert(delVel != nullptr && "Null pointer is not allowed.");
+  delVel[0] = 0.0;
 
   if (mShldJoint->getSkeleton()->isImpulseApplied())
   {
@@ -368,13 +368,13 @@ void HumanArmJointLimitConstraint::getVelocityChange(
     }
     delq_d[3] = mElbowJoint->getVelocityChange(0);
 
-    _delVel[0] = mJacobian.dot(delq_d);
+    delVel[0] = mJacobian.dot(delq_d);
   }
 
-  if (_withCfm)
+  if (withCfm)
   {
-    _delVel[mAppliedImpulseIndex]
-        += _delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
+    delVel[mAppliedImpulseIndex]
+        += delVel[mAppliedImpulseIndex] * mConstraintForceMixing;
   }
 }
 
@@ -391,12 +391,12 @@ void HumanArmJointLimitConstraint::unexcite()
 }
 
 //==============================================================================
-void HumanArmJointLimitConstraint::applyImpulse(double* _lambda)
+void HumanArmJointLimitConstraint::applyImpulse(double* lambda)
 {
   assert(isActive());
 
   // the dim of constraint = 1
-  auto con_force = _lambda[0];
+  auto con_force = lambda[0];
   mOldX = con_force;
 
   for (std::size_t i = 0; i < 3; i++)
