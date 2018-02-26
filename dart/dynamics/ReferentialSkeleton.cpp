@@ -42,15 +42,15 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-std::vector<std::mutex*> ReferentialSkeleton::getUnorderedMutexes() const
+std::unique_ptr<common::Mutex> ReferentialSkeleton::getCustomMutex() const
 {
-  std::vector<std::mutex*> mutexes;
-  mutexes.reserve(mSkeletons.size());
+  return common::make_unique<common::MultiMutexes>(getStdMutexes(), true);
+}
 
-  for (const auto* skel : mSkeletons)
-    mutexes.push_back(&skel->getMutex());
-
-  return mutexes;
+//==============================================================================
+const std::vector<std::mutex*>& ReferentialSkeleton::getStdMutexes() const
+{
+  return mSkeletonMutexes;
 }
 
 //==============================================================================
@@ -1478,8 +1478,15 @@ void ReferentialSkeleton::registerSkeleton(Skeleton* skel)
   // to take that into account.
   assert(skel);
 
-  if (!hasSkeleton(skel))
-    mSkeletons.push_back(skel);
+  if (hasSkeleton(skel))
+    return;
+
+  mSkeletons.push_back(skel);
+
+  // Insert the skeleton's mutex in ascending order of its memory addresses
+  auto it = std::upper_bound(
+      mSkeletonMutexes.begin(), mSkeletonMutexes.end(), &skel->getStdMutex());
+  mSkeletonMutexes.insert(it, &skel->getStdMutex());
 }
 
 //==============================================================================
@@ -1497,6 +1504,12 @@ void ReferentialSkeleton::unregisterSkeleton(Skeleton* skel)
   mSkeletons.erase(
       std::remove(mSkeletons.begin(), mSkeletons.end(), skel),
       mSkeletons.end());
+  mSkeletonMutexes.erase(
+      std::remove(
+          mSkeletonMutexes.begin(),
+          mSkeletonMutexes.end(),
+          &skel->getStdMutex()),
+      mSkeletonMutexes.end());
 }
 
 //==============================================================================

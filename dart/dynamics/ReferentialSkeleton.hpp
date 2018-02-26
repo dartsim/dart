@@ -55,7 +55,13 @@ public:
   virtual ~ReferentialSkeleton() = default;
 
   // Documentation inherited
-  std::vector<std::mutex*> getUnorderedMutexes() const override;
+  std::unique_ptr<common::Mutex> getCustomMutex() const override;
+
+  /// Returns sorted mutexes in order of memory addresses.
+  ///
+  /// \note Generally, you don't need to use this function in favor of
+  /// getCustomMutex() that guarantees deadlock-free locking.
+  const std::vector<std::mutex*>& getStdMutexes() const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Name
@@ -472,7 +478,12 @@ protected:
   /// Name of this ReferentialSkeleton
   std::string mName;
 
+  /// Skeletons that this ReferentialSkeleton is referencing to.
   std::vector<Skeleton*> mSkeletons;
+
+  /// Mutexes of the skeletons. The mutexes are sorted in order of memory
+  /// addresses.
+  std::vector<std::mutex*> mSkeletonMutexes;
 
   /// BodyNodes that this ReferentialSkeleton references. These hold strong
   /// references to ensure that the BodyNodes do not disappear

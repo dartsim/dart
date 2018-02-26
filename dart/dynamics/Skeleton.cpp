@@ -378,13 +378,19 @@ ConstSkeletonPtr Skeleton::getSkeleton() const
 //==============================================================================
 std::mutex& Skeleton::getMutex() const
 {
+  return getStdMutex();
+}
+
+//==============================================================================
+std::mutex& Skeleton::getStdMutex() const
+{
   return mMutex;
 }
 
 //==============================================================================
-std::vector<std::mutex*> Skeleton::getUnorderedMutexes() const
+std::unique_ptr<common::Mutex> Skeleton::getCustomMutex() const
 {
-  return std::vector<std::mutex*>{{&mMutex}};
+  return common::make_unique<common::SingleMutex>(mMutex);
 }
 
 //==============================================================================

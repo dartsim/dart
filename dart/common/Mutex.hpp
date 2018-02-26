@@ -39,18 +39,46 @@
 namespace dart {
 namespace common {
 
-/// Locks multiple mutexes.
+/// Mutex is a wrapper class of single or multiple std::mutex to provide unified
+/// interface that guarantees deadlock-free locking and unlocking of the
+/// internal mutex(es).
 ///
-/// If \c sorted is false, mutexes will be sorted in order of memory addresses
-/// then locked.
-void lock(std::vector<std::mutex*> mutexes, bool sorted = false);
+/// This class is compatible to BasicLockable concept so that it can be used
+/// as a template parameter that requires this concept such as std::lock_guard.
+class Mutex
+{
+public:
+  constexpr Mutex() noexcept = default;
+  virtual ~Mutex() = default;
+  virtual void lock() = 0;
+  virtual bool try_lock() noexcept = 0;
+  virtual void unlock() noexcept = 0;
+protected:
+  Mutex(const Mutex&) = delete;
+};
 
-/// Unlocks multiple mutexes in the reverse order of \c mutexes so that this
-/// function can be used in the pair of lock() with the same \c mutexes.
-///
-/// If \c sorted is false, mutexes will be sorted in order of memory addresses
-/// then unlocked.
-void unlock(std::vector<std::mutex*> mutexes, bool sorted = false);
+class SingleMutex final : public Mutex
+{
+public:
+  explicit SingleMutex(std::mutex& mutex) noexcept;
+  void lock() override;
+  bool try_lock() noexcept override;
+  void unlock() noexcept override;
+private:
+  std::mutex& mMutex;
+};
+
+class MultiMutexes final : public Mutex
+{
+public:
+  MultiMutexes(
+      const std::vector<std::mutex*>& mutexes, bool sorted = false) noexcept;
+  void lock() override;
+  bool try_lock() noexcept override;
+  void unlock() noexcept override;
+private:
+  std::vector<std::mutex*> mMutexes;
+};
 
 } // namespace common
 } // namespace dart

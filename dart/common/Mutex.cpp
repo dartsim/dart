@@ -33,47 +33,67 @@
 #include "dart/common/Mutex.hpp"
 
 #include <algorithm>
-#include <cassert>
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-void lock(std::vector<std::mutex*> mutexes, bool sorted)
+SingleMutex::SingleMutex(std::mutex& mutex) noexcept
+  : mMutex(mutex)
 {
-#ifndef NDEBUG
-  if (sorted)
-  {
-    auto mutexesCopy = mutexes;
-    std::sort(mutexesCopy.begin(), mutexesCopy.end());
-    assert(mutexesCopy == mutexes);
-  }
-#endif
+  // Do nothing
+}
 
+//==============================================================================
+void SingleMutex::lock()
+{
+  mMutex.lock();
+}
+
+//==============================================================================
+bool SingleMutex::try_lock() noexcept
+{
+  return mMutex.try_lock();
+}
+
+//==============================================================================
+void SingleMutex::unlock() noexcept
+{
+  mMutex.unlock();
+}
+
+//==============================================================================
+MultiMutexes::MultiMutexes(const std::vector<std::mutex*>& mutexes, bool sorted)
+noexcept
+  : mMutexes(mutexes)
+{
   if (!sorted)
-    std::sort(mutexes.begin(), mutexes.end());
+    std::sort(mMutexes.begin(), mMutexes.end());
+}
 
-  for (auto* mutex : mutexes)
+//==============================================================================
+void MultiMutexes::lock()
+{
+  for (auto& mutex : mMutexes)
     mutex->lock();
 }
 
 //==============================================================================
-void unlock(std::vector<std::mutex*> mutexes, bool sorted)
+bool MultiMutexes::try_lock() noexcept
 {
-#ifndef NDEBUG
-  if (sorted)
+  for (auto& mutex : mMutexes)
   {
-    auto mutexesCopy = mutexes;
-    std::sort(mutexesCopy.begin(), mutexesCopy.end());
-    assert(mutexesCopy == mutexes);
+    if (!mutex->try_lock())
+      return false;
   }
-#endif
 
-  if (!sorted)
-    std::sort(mutexes.begin(), mutexes.end());
+  return true;
+}
 
-  std::sort(mutexes.begin(), mutexes.end());
-  for (auto it = mutexes.rbegin(); it != mutexes.rend(); ++it)
+//==============================================================================
+void MultiMutexes::unlock() noexcept
+{
+  for (auto it = mMutexes.rbegin(); it != mMutexes.rend(); ++it)
     (*it)->unlock();
 }
 
