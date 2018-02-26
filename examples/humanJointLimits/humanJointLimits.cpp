@@ -34,14 +34,14 @@
 #include "dart/gui/gui.hpp"
 #include "dart/collision/bullet/bullet.hpp"
 #include "dart/collision/ode/ode.hpp"
-#include "dart/io/io.hpp"
+#include "dart/utils/utils.hpp"
 #include "HumanArmJointLimitConstraint.hpp"
 #include "HumanLegJointLimitConstraint.hpp"
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart;
-using namespace io;
+using namespace utils;
 
 class MyWindow : public dart::gui::SimWindow
 {
