@@ -46,7 +46,8 @@ using namespace utils;
 class MyWindow : public dart::gui::SimWindow
 {
 public:
-  MyWindow(const WorldPtr& world)
+  explicit MyWindow(const WorldPtr& world)
+    : ts(0)
   {
     setWorld(world);
   }
