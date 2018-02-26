@@ -42,26 +42,15 @@ install:
   - if "%platform%"=="Win32" set VCPKG_ARCH=x86-windows
   - if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
 
-  # install pacakges
-  # ---- required dependencies: assimp, boost-system, boost-filesystem, ccd, eigen3, fcl
-  - vcpkg install assimp:%VCPKG_ARCH%
-  - vcpkg install boost-system:%VCPKG_ARCH%
-  - vcpkg install boost-filesystem:%VCPKG_ARCH%
-  - vcpkg install ccd:%VCPKG_ARCH%
-  - vcpkg install eigen3:%VCPKG_ARCH%
-  - vcpkg install fcl:%VCPKG_ARCH%
-  # ---- optional dependencies: nlopt, ipopt, bullet3, ode, flann, tinyxml2, urdfdom_headers, urdfdom, opengl, freeglut, osg
-  #- vcpkg install nlopt:%VCPKG_ARCH%
+  # remove outdated versions
+  - vcpkg remove --outdated --recurse
+
+  # install required dependencies
+  - vcpkg install --recurse --triplet %VCPKG_ARCH% assimp, boost-system, boost-filesystem, ccd, eigen3, fcl
+  
+  # install optional dependencies
+  #- vcpkg install --recurse --triplet %VCPKG_ARCH% bullet3, flann, freeglut, nlopt, ode, opengl, osg, tinyxml2, urdfdom
   #- vcpkg install ipopt:%VCPKG_ARCH%
-  #- vcpkg install bullet3:%VCPKG_ARCH%
-  #- vcpkg install ode:%VCPKG_ARCH%
-  #- vcpkg install flann:%VCPKG_ARCH%
-  #- vcpkg install tinyxml2:%VCPKG_ARCH%
-  #- vcpkg install urdfdom-headers:%VCPKG_ARCH%
-  #- vcpkg install urdfdom:%VCPKG_ARCH%
-  #- vcpkg install opengl:%VCPKG_ARCH%
-  #- vcpkg install freeglut:%VCPKG_ARCH%
-  #- vcpkg install osg:%VCPKG_ARCH%
   
   - vcpkg integrate install
 
