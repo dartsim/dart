@@ -17,6 +17,7 @@ add_subdirectory(simpleFrames)
 add_subdirectory(softBodies)
 add_subdirectory(speedTest)
 add_subdirectory(vehicle)
+add_subdirectory(humanJointLimits)
 
 add_subdirectory(osgExamples)
 
