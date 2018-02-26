@@ -43,12 +43,13 @@ install:
   - if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
 
   # install pacakges
-  # ---- required dependencies: boost-system, boost-filesystem, eigen3, libccd, fcl, assimp
-  - vcpkg install boost:%VCPKG_ARCH%
-  - vcpkg install eigen3:%VCPKG_ARCH%
-  - vcpkg install ccd:%VCPKG_ARCH%
-  - vcpkg install fcl:%VCPKG_ARCH%
+  # ---- required dependencies: assimp, boost-system, boost-filesystem, ccd, eigen3, fcl
   - vcpkg install assimp:%VCPKG_ARCH%
+  - vcpkg install boost-system:%VCPKG_ARCH%
+  - vcpkg install boost-filesystem:%VCPKG_ARCH%
+  - vcpkg install ccd:%VCPKG_ARCH%
+  - vcpkg install eigen3:%VCPKG_ARCH%
+  - vcpkg install fcl:%VCPKG_ARCH%
   # ---- optional dependencies: nlopt, ipopt, bullet3, ode, flann, tinyxml2, urdfdom_headers, urdfdom, opengl, freeglut, osg
   #- vcpkg install nlopt:%VCPKG_ARCH%
   #- vcpkg install ipopt:%VCPKG_ARCH%
@@ -72,7 +73,6 @@ install:
 # preserve contents of selected directories and files across project builds
 cache:
   - C:\tools\vcpkg\installed -> .appveyor.yml
-  - C:\tools\vcpkg\packages -> .appveyor.yml
 
 build:
   project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project
