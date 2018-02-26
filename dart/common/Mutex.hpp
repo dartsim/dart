@@ -35,12 +35,11 @@
 
 #include <mutex>
 #include <vector>
-#include <memory>
 
 namespace dart {
 namespace common {
 
-/// Mutex is a wrapper of single or multiple std::mutex to provide unified
+/// Mutex is a wrapper class of single or multiple std::mutex to provide unified
 /// interface that guarantees deadlock-free locking and unlocking of the
 /// internal mutex(es).
 ///

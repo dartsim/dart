@@ -33,7 +33,6 @@
 #include "dart/common/Mutex.hpp"
 
 #include <algorithm>
-#include <cassert>
 
 namespace dart {
 namespace common {
