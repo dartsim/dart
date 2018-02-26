@@ -142,13 +142,13 @@ function(dart_add_custom_target rel_dir property_name)
 endfunction()
 
 #===============================================================================
-function(dart_add_example rel_dir)
-  dart_add_custom_target(${rel_dir} DART_EXAMPLES ${ARGN})
-endfunction()
+function(dart_add_example)
+  dart_property_add(DART_EXAMPLES ${ARGN})
+endfunction(dart_add_example)
 
 #===============================================================================
-function(dart_add_tutorial rel_dir)
-  dart_add_custom_target(${rel_dir} DART_TUTORIALS ${ARGN})
+function(dart_add_tutorial)
+  dart_property_add(DART_TUTORIALS ${ARGN})
 endfunction(dart_add_tutorial)
 
 #===============================================================================
