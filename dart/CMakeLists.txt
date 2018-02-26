@@ -138,14 +138,6 @@ target_link_libraries(
     ${PROJECT_NAME}-external-odelcpsolver
 )
 
-# Thread
-if(THREADS_HAVE_PTHREAD_ARG)
-  target_compile_options(dart PUBLIC "-pthread")
-endif()
-if(CMAKE_THREAD_LIBS_INIT)
-  target_link_libraries(dart PUBLIC ${CMAKE_THREAD_LIBS_INIT})
-endif()
-
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
   if(MSVC)

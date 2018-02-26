@@ -12,6 +12,8 @@ find_package(DART 6.4 REQUIRED
     dart-utils-urdf dart-gui dart-collision-ode dart-collision-bullet
   CONFIG
 )
+find_package(TinyDNN REQUIRED)
+find_package(Threads REQUIRED)
 
 target_compile_options(${PROJECT_NAME} PUBLIC -std=c++14)
 
@@ -21,3 +23,11 @@ file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${PROJECT_NAME} ${srcs})
 
 target_link_libraries(${PROJECT_NAME} ${DART_LIBRARIES})
+
+# Thread
+if(THREADS_HAVE_PTHREAD_ARG)
+  target_compile_options(${example_name} PUBLIC "-pthread")
+endif()
+if(CMAKE_THREAD_LIBS_INIT)
+  target_link_libraries(${example_name} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
+endif()
