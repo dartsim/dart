@@ -38,6 +38,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Mutex.hpp"
 #include "dart/common/Signal.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/math/Geometry.hpp"
@@ -60,7 +61,6 @@ class Marker;
 class MetaSkeleton : public common::Subject
 {
 public:
-
   using NameChangedSignal
       = common::Signal<void(std::shared_ptr<const MetaSkeleton> _skeleton,
                             const std::string& _oldName,
@@ -71,15 +71,16 @@ public:
   /// Default destructor
   virtual ~MetaSkeleton() = default;
 
-  /// Returns unordered mutexes of skeletons contained in this MetaSkeleton.
-  ///
-  /// \note Do not lock the returned mutexes in the order as it is. In order to
-  /// avoid deadlock, you should use ordered mutexes, which can be obtained from
-  /// getMutexes(), or lock the mutexes very carefully.
-  virtual std::vector<std::mutex*> getUnorderedMutexes() const = 0;
+  /// Returns mutex.
+  virtual std::unique_ptr<common::Mutex> getCustomMutex() const = 0;
+  // TODO: Rename this to getMutex once the deprecated Skeleton::getMutex() is
+  // removed in DART 7.
 
-  /// Returns mutexes that are sorted in order of memory addresses.
-  std::vector<std::mutex*> getMutexes() const;
+  /// Returns sorted mutexes in order of memory addresses.
+  ///
+  /// \note Generally, you don't need to use this function in favor of
+  /// getCustomMutex() that guarantees deadlock-free locking.
+  virtual std::vector<std::mutex*> getStdMutexes() const = 0;
 
   //----------------------------------------------------------------------------
   /// \{ \name Name

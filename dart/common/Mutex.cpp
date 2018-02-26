@@ -39,41 +39,42 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-void lock(std::vector<std::mutex*> mutexes, bool sorted)
+SingleMutex::SingleMutex(std::mutex& mutex)
+  : mMutex(mutex)
 {
-#ifndef NDEBUG
-  if (sorted)
-  {
-    auto mutexesCopy = mutexes;
-    std::sort(mutexesCopy.begin(), mutexesCopy.end());
-    assert(mutexesCopy == mutexes);
-  }
-#endif
+  // Do nothing
+}
 
-  if (!sorted)
-    std::sort(mutexes.begin(), mutexes.end());
+//==============================================================================
+void SingleMutex::lock()
+{
+  mMutex.lock();
+}
 
-  for (auto* mutex : mutexes)
+//==============================================================================
+void SingleMutex::unlock()
+{
+  mMutex.unlock();
+}
+
+//==============================================================================
+MultiMutexes::MultiMutexes(const std::vector<std::mutex*>& mutexes)
+  : mMutexes(mutexes)
+{
+  std::sort(mMutexes.begin(), mMutexes.end());
+}
+
+//==============================================================================
+void MultiMutexes::lock()
+{
+  for (auto& mutex : mMutexes)
     mutex->lock();
 }
 
 //==============================================================================
-void unlock(std::vector<std::mutex*> mutexes, bool sorted)
+void MultiMutexes::unlock()
 {
-#ifndef NDEBUG
-  if (sorted)
-  {
-    auto mutexesCopy = mutexes;
-    std::sort(mutexesCopy.begin(), mutexesCopy.end());
-    assert(mutexesCopy == mutexes);
-  }
-#endif
-
-  if (!sorted)
-    std::sort(mutexes.begin(), mutexes.end());
-
-  std::sort(mutexes.begin(), mutexes.end());
-  for (auto it = mutexes.rbegin(); it != mutexes.rend(); ++it)
+  for (auto it = mMutexes.rbegin(); it != mMutexes.rend(); ++it)
     (*it)->unlock();
 }
 

@@ -315,15 +315,6 @@ static double getValueFromIndex(const MetaSkeleton* skel, std::size_t _index,
 }
 
 //==============================================================================
-std::vector<std::mutex*> MetaSkeleton::getMutexes() const
-{
-  auto mutexes = getUnorderedMutexes();
-  std::sort(mutexes.begin(), mutexes.begin());
-
-  return mutexes;
-}
-
-//==============================================================================
 void MetaSkeleton::setCommand(std::size_t _index, double _command)
 {
   setValueFromIndex<&DegreeOfFreedom::setCommand>(

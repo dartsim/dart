@@ -55,7 +55,10 @@ public:
   virtual ~ReferentialSkeleton() = default;
 
   // Documentation inherited
-  std::vector<std::mutex*> getUnorderedMutexes() const override;
+  std::unique_ptr<common::Mutex> getCustomMutex() const override;
+
+  // Documentation inherited
+  std::vector<std::mutex*> getStdMutexes() const override;
 
   //----------------------------------------------------------------------------
   /// \{ \name Name

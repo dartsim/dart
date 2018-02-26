@@ -159,10 +159,18 @@ public:
   ConstSkeletonPtr getSkeleton() const;
 
   /// Get the mutex that protects the state of this Skeleton
+  /// \deprecated Use getStdMutex instead.
+  DART_DEPRECATED(6.4)
   std::mutex& getMutex() const;
 
+  /// Get the mutex that protects the state of this Skeleton
+  std::mutex& getStdMutex() const;
+
+  /// Get the mutex that protects the state of this Skeleton
+  std::unique_ptr<common::Mutex> getCustomMutex() const override;
+
   // Documentation inherited
-  std::vector<std::mutex*> getUnorderedMutexes() const override;
+  std::vector<std::mutex*> getStdMutexes() const override;
 
   Skeleton(const Skeleton&) = delete;
 

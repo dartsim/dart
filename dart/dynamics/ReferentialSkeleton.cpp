@@ -42,13 +42,19 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-std::vector<std::mutex*> ReferentialSkeleton::getUnorderedMutexes() const
+std::unique_ptr<common::Mutex> ReferentialSkeleton::getCustomMutex() const
+{
+  return common::make_unique<common::MultiMutexes>(getStdMutexes());
+}
+
+//==============================================================================
+std::vector<std::mutex*> ReferentialSkeleton::getStdMutexes() const
 {
   std::vector<std::mutex*> mutexes;
   mutexes.reserve(mSkeletons.size());
 
   for (const auto* skel : mSkeletons)
-    mutexes.push_back(&skel->getMutex());
+    mutexes.push_back(&skel->getStdMutex());
 
   return mutexes;
 }
