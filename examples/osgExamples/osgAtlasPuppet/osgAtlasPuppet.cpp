@@ -619,7 +619,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   // need to adjust the signs of the relative transform
   tf_hand.translation()[0] = -tf_hand.translation()[0];
   tf_hand.translation()[1] = -tf_hand.translation()[1];
-  tf_hand.linear() = tf_hand.linear().inverse();
+  tf_hand.linear() = tf_hand.linear().inverse().eval();
 
   // Create the right hand's end effector and set its relative transform
   EndEffector* r_hand = atlas->getBodyNode("r_hand")->createEndEffector("r_hand");
