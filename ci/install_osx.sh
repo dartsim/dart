@@ -7,7 +7,7 @@ brew install cmake
 brew install assimp
 brew install fcl
 brew install bullet
-brew install ode --with-libccd --with-double-precision
+brew install ode
 brew install flann
 brew install boost
 brew install eigen
