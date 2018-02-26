@@ -1,10 +1,11 @@
-[Describe this pull request. Link to relevant GitHub issues, if any.]
+[Remove this line and describe this pull request. Link to relevant GitHub issues, if any.]
 
 ***
 
 **Before creating a pull request**
 
 - [ ] Document new methods and classes
+- [ ] Format new code files using `clang-format`
 
 **Before merging a pull request**
 
