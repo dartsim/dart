@@ -394,12 +394,6 @@ std::unique_ptr<common::Mutex> Skeleton::getCustomMutex() const
 }
 
 //==============================================================================
-std::vector<std::mutex*> Skeleton::getStdMutexes() const
-{
-  return std::vector<std::mutex*>{{&mMutex}};
-}
-
-//==============================================================================
 Skeleton::~Skeleton()
 {
   for (BodyNode* bn : mSkelCache.mBodyNodes)

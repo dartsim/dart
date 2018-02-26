@@ -169,9 +169,6 @@ public:
   /// Get the mutex that protects the state of this Skeleton
   std::unique_ptr<common::Mutex> getCustomMutex() const override;
 
-  // Documentation inherited
-  std::vector<std::mutex*> getStdMutexes() const override;
-
   Skeleton(const Skeleton&) = delete;
 
   /// Destructor

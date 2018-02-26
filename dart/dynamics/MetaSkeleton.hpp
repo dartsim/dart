@@ -76,12 +76,6 @@ public:
   // TODO: Rename this to getMutex once the deprecated Skeleton::getMutex() is
   // removed in DART 7.
 
-  /// Returns sorted mutexes in order of memory addresses.
-  ///
-  /// \note Generally, you don't need to use this function in favor of
-  /// getCustomMutex() that guarantees deadlock-free locking.
-  virtual std::vector<std::mutex*> getStdMutexes() const = 0;
-
   //----------------------------------------------------------------------------
   /// \{ \name Name
   //----------------------------------------------------------------------------
