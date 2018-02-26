@@ -34,6 +34,11 @@ branches:
 
 # scripts that run after cloning repository
 install:
+  # update vcpkg
+  - cd C:\tools\vcpkg
+  - git pull
+  - .\bootstrap-vcpkg.bat
+  
   - if "%platform%"=="Win32" set VCPKG_ARCH=x86-windows
   - if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
 
