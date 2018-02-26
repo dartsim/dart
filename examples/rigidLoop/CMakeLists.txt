@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 2.8.12)
 
+if(DART_IN_SOURCE_BUILD)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/InSourceBuild.cmake)
+  return()
+endif()
+
 project(rigidLoop)
 
 find_package(DART 6.2.0 REQUIRED COMPONENTS utils-urdf gui CONFIG)
