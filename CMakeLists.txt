@@ -289,40 +289,21 @@ if(TARGET dart)
     message(STATUS "Adding ${examples_length} examples")
   endif(DART_VERBOSE)
 
-  if (TARGET dart-utils-urdf AND TARGET dart-gui)
+  # Add a "tutorials" target to build tutorials.
+  add_subdirectory(tutorials)
+  get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
+  add_custom_target(tutorials DEPENDS ${tutorials})
 
-    # Add tutorial targets
-    if(TARGET dart-collision-bullet)
-      dart_add_tutorial(tutorials/tutorialBiped dart-utils-urdf dart-gui dart-collision-bullet)
-      dart_add_tutorial(tutorials/tutorialBiped-Finished dart-utils-urdf dart-gui dart-collision-bullet)
-    else()
-      dart_add_tutorial(tutorials/tutorialBiped dart-utils-urdf dart-gui)
-      dart_add_tutorial(tutorials/tutorialBiped-Finished dart-utils-urdf dart-gui)
-    endif()
-
-    dart_add_tutorial(tutorials/tutorialCollisions dart-utils-urdf dart-gui)
-    dart_add_tutorial(tutorials/tutorialCollisions-Finished dart-utils-urdf dart-gui)
-    dart_add_tutorial(tutorials/tutorialDominoes dart-utils-urdf dart-gui)
-    dart_add_tutorial(tutorials/tutorialDominoes-Finished dart-utils-urdf dart-gui)
-    dart_add_tutorial(tutorials/tutorialMultiPendulum dart-utils-urdf dart-gui)
-    dart_add_tutorial(tutorials/tutorialMultiPendulum-Finished dart-utils-urdf dart-gui)
-
-    # Add a "tutorials" target to build tutorials.
-    get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
-    add_custom_target(tutorials DEPENDS ${tutorials})
-
-    if(DART_VERBOSE)
-      message(STATUS "")
-      message(STATUS "[ Tutorials ]")
-      foreach(tutorial ${tutorials})
-        message(STATUS "Adding tutorial: ${tutorial}")
-      endforeach(tutorial ${tutorials})
-    else(DART_VERBOSE)
-      list(LENGTH tutorials tutorials_length)
-      message(STATUS "Adding ${tutorials_length} tutorials")
-    endif(DART_VERBOSE)
-
-  endif()
+  if(DART_VERBOSE)
+    message(STATUS "")
+    message(STATUS "[ Tutorials ]")
+    foreach(tutorial ${tutorials})
+      message(STATUS "Adding tutorial: ${tutorial}")
+    endforeach(tutorial ${tutorials})
+  else(DART_VERBOSE)
+    list(LENGTH tutorials tutorials_length)
+    message(STATUS "Adding ${tutorials_length} tutorials")
+  endif(DART_VERBOSE)
 
 endif()
 
