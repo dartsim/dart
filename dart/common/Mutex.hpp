@@ -48,16 +48,22 @@ namespace common {
 class Mutex
 {
 public:
+  constexpr Mutex() noexcept = default;
+  virtual ~Mutex() = default;
   virtual void lock() = 0;
-  virtual void unlock() = 0;
+  virtual bool try_lock() noexcept = 0;
+  virtual void unlock() noexcept = 0;
+protected:
+  Mutex(const Mutex&) = delete;
 };
 
 class SingleMutex final : public Mutex
 {
 public:
-  SingleMutex(std::mutex& mutex);
+  explicit SingleMutex(std::mutex& mutex) noexcept;
   void lock() override;
-  void unlock() override;
+  bool try_lock() noexcept override;
+  void unlock() noexcept override;
 private:
   std::mutex& mMutex;
 };
@@ -65,9 +71,11 @@ private:
 class MultiMutexes final : public Mutex
 {
 public:
-  MultiMutexes(const std::vector<std::mutex*>& mutexes, bool sorted = false);
+  MultiMutexes(
+      const std::vector<std::mutex*>& mutexes, bool sorted = false) noexcept;
   void lock() override;
-  void unlock() override;
+  bool try_lock() noexcept override;
+  void unlock() noexcept override;
 private:
   std::vector<std::mutex*> mMutexes;
 };

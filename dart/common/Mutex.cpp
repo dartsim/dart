@@ -38,7 +38,7 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-SingleMutex::SingleMutex(std::mutex& mutex)
+SingleMutex::SingleMutex(std::mutex& mutex) noexcept
   : mMutex(mutex)
 {
   // Do nothing
@@ -51,13 +51,20 @@ void SingleMutex::lock()
 }
 
 //==============================================================================
-void SingleMutex::unlock()
+bool SingleMutex::try_lock() noexcept
+{
+  return mMutex.try_lock();
+}
+
+//==============================================================================
+void SingleMutex::unlock() noexcept
 {
   mMutex.unlock();
 }
 
 //==============================================================================
 MultiMutexes::MultiMutexes(const std::vector<std::mutex*>& mutexes, bool sorted)
+noexcept
   : mMutexes(mutexes)
 {
   if (!sorted)
@@ -72,7 +79,19 @@ void MultiMutexes::lock()
 }
 
 //==============================================================================
-void MultiMutexes::unlock()
+bool MultiMutexes::try_lock() noexcept
+{
+  for (auto& mutex : mMutexes)
+  {
+    if (!mutex->try_lock())
+      return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
+void MultiMutexes::unlock() noexcept
 {
   for (auto it = mMutexes.rbegin(); it != mMutexes.rend(); ++it)
     (*it)->unlock();
