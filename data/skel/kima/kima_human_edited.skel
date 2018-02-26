@@ -146,7 +146,7 @@
                     <transformation>-0.0 0.0 -0.0525 0 0 0</transformation>
                     <geometry>
                         <box>
-                            <size>0.09625 0.098 -0.21</size>
+                            <size>0.09625 0.098 0.21</size>
                         </box>
                     </geometry>
                 </visualization_shape>
@@ -154,7 +154,7 @@
                     <transformation>-0.0 0.0 -0.0525 0 0 0</transformation>
                     <geometry>
                         <box>
-                            <size>0.09625 0.098 -0.21</size>
+                            <size>0.09625 0.098 0.21</size>
                         </box>
                     </geometry>
                 </collision_shape>
@@ -267,7 +267,7 @@
                     <transformation>-0.0 0.0 -0.0525 0 0 0</transformation>
                     <geometry>
                         <box>
-                            <size>0.09625 0.098 -0.21</size>
+                            <size>0.09625 0.098 0.21</size>
                         </box>
                     </geometry>
                 </visualization_shape>
@@ -275,7 +275,7 @@
                     <transformation>-0.0 0.0 -0.0525 0 0 0</transformation>
                     <geometry>
                         <box>
-                            <size>0.09625 0.098 -0.21</size>
+                            <size>0.09625 0.098 0.21</size>
                         </box>
                     </geometry>
                 </collision_shape>
