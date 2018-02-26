@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/HumanLegJointLimitConstraint.hpp"
+#include "HumanArmJointLimitConstraint.hpp"
 
 #include <iostream>
 
@@ -52,56 +52,46 @@ using namespace tiny_dnn::layers;
 namespace dart {
 namespace constraint {
 
-double HumanLegJointLimitConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
-double HumanLegJointLimitConstraint::mErrorReductionParameter   = DART_ERP;
-double HumanLegJointLimitConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
-double HumanLegJointLimitConstraint::mConstraintForceMixing     = DART_CFM;
+double HumanArmJointLimitConstraint::mErrorAllowance            = DART_ERROR_ALLOWANCE;
+double HumanArmJointLimitConstraint::mErrorReductionParameter   = DART_ERP;
+double HumanArmJointLimitConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
+double HumanArmJointLimitConstraint::mConstraintForceMixing     = DART_CFM;
 
 //==============================================================================
-HumanLegJointLimitConstraint::HumanLegJointLimitConstraint(
-    dynamics::Joint* _hipjoint, dynamics::Joint* _kneejoint, dynamics::Joint* _anklejoint, bool _isMirror)
+HumanArmJointLimitConstraint::HumanArmJointLimitConstraint(
+    dynamics::Joint* _shldjoint, dynamics::Joint* _elbowjoint, bool _isMirror)
   : ConstraintBase(),
-    mHipJoint(_hipjoint),
-    mKneeJoint(_kneejoint),
-    mAnkleJoint(_anklejoint),
-    mThighNode(_hipjoint->getChildBodyNode()),
-    mLowerLegNode(_kneejoint->getChildBodyNode()),
-    mFootNode(_anklejoint->getChildBodyNode()),
+    mShldJoint(_shldjoint),
+    mElbowJoint(_elbowjoint),
+    mUArmNode(_shldjoint->getChildBodyNode()),
+    mLArmNode(_elbowjoint->getChildBodyNode()),
     mIsMirror(_isMirror),
     mAppliedImpulseIndex(0)
 {
-    assert(mHipJoint);
-    assert(mKneeJoint);
-    assert(mAnkleJoint);
-    assert(mThighNode);
-    assert(mLowerLegNode);
-    assert(mFootNode);
+    assert(mShldJoint);
+    assert(mElbowJoint);
+    assert(mUArmNode);
+    assert(mLArmNode);
     
-    assert(mHipJoint->getNumDofs() == 3);
-    assert(mKneeJoint->getNumDofs() == 1);
-    assert(mAnkleJoint->getNumDofs() == 2);
-    
-    assert(mThighNode->getSkeleton() == mLowerLegNode->getSkeleton());
-    assert(mLowerLegNode->getSkeleton() == mFootNode->getSkeleton());
-    assert(mKneeJoint->getParentBodyNode() == mThighNode);
-    assert(mAnkleJoint->getParentBodyNode() == mLowerLegNode);
+    assert(mShldJoint->getNumDofs() == 3);
+    assert(mElbowJoint->getNumDofs() == 1);
+    assert(mUArmNode->getSkeleton() == mLArmNode->getSkeleton());
+    assert(mElbowJoint->getParentBodyNode() == mUArmNode);
     
     mLifeTime = 0;
     mActive = false;
     
     // load neural net weights from external file
-    mNet.load(DART_DATA_PATH"/neuralnets/net-lleg");
+    mNet.load(DART_DATA_PATH"/neuralnets/net-larm");
 }
-    
-    
 
 //==============================================================================
-HumanLegJointLimitConstraint::~HumanLegJointLimitConstraint()
+HumanArmJointLimitConstraint::~HumanArmJointLimitConstraint()
 {
 }
 
 //==============================================================================
-void HumanLegJointLimitConstraint::setErrorAllowance(double _allowance)
+void HumanArmJointLimitConstraint::setErrorAllowance(double _allowance)
 {
   // Clamp error reduction parameter if it is out of the range
   if (_allowance < 0.0)
@@ -116,13 +106,13 @@ void HumanLegJointLimitConstraint::setErrorAllowance(double _allowance)
 }
 
 //==============================================================================
-double HumanLegJointLimitConstraint::getErrorAllowance()
+double HumanArmJointLimitConstraint::getErrorAllowance()
 {
   return mErrorAllowance;
 }
 
 //==============================================================================
-void HumanLegJointLimitConstraint::setErrorReductionParameter(double _erp)
+void HumanArmJointLimitConstraint::setErrorReductionParameter(double _erp)
 {
   // Clamp error reduction parameter if it is out of the range [0, 1]
   if (_erp < 0.0)
@@ -142,13 +132,13 @@ void HumanLegJointLimitConstraint::setErrorReductionParameter(double _erp)
 }
 
 //==============================================================================
-double HumanLegJointLimitConstraint::getErrorReductionParameter()
+double HumanArmJointLimitConstraint::getErrorReductionParameter()
 {
   return mErrorReductionParameter;
 }
 
 //==============================================================================
-void HumanLegJointLimitConstraint::setMaxErrorReductionVelocity(double _erv)
+void HumanArmJointLimitConstraint::setMaxErrorReductionVelocity(double _erv)
 {
   // Clamp maximum error reduction velocity if it is out of the range
   if (_erv < 0.0)
@@ -163,13 +153,13 @@ void HumanLegJointLimitConstraint::setMaxErrorReductionVelocity(double _erv)
 }
 
 //==============================================================================
-double HumanLegJointLimitConstraint::getMaxErrorReductionVelocity()
+double HumanArmJointLimitConstraint::getMaxErrorReductionVelocity()
 {
   return mMaxErrorReductionVelocity;
 }
 
 //==============================================================================
-void HumanLegJointLimitConstraint::setConstraintForceMixing(double _cfm)
+void HumanArmJointLimitConstraint::setConstraintForceMixing(double _cfm)
 {
   // Clamp constraint force mixing parameter if it is out of the range
   if (_cfm < 1e-9)
@@ -189,39 +179,34 @@ void HumanLegJointLimitConstraint::setConstraintForceMixing(double _cfm)
 }
 
 //==============================================================================
-double HumanLegJointLimitConstraint::getConstraintForceMixing()
+double HumanArmJointLimitConstraint::getConstraintForceMixing()
 {
   return mConstraintForceMixing;
 }
 
 //==============================================================================
-void HumanLegJointLimitConstraint::update()
+void HumanArmJointLimitConstraint::update()
 {
-    double qz = mHipJoint->getPosition(0);
-    double qx = mHipJoint->getPosition(1);
-    double qy = mHipJoint->getPosition(2);
-    double qe = mKneeJoint->getPosition(0);
-    double hx = mAnkleJoint->getPosition(0);
-    double hy = mAnkleJoint->getPosition(1);
+    double qz = mShldJoint->getPosition(0);
+    double qx = mShldJoint->getPosition(1);
+    double qy = mShldJoint->getPosition(2);
+    double qe = mElbowJoint->getPosition(0);
     
-    double qz_d = mHipJoint->getVelocity(0);
-    double qx_d = mHipJoint->getVelocity(1);
-    double qy_d = mHipJoint->getVelocity(2);
-    double qe_d = mKneeJoint->getVelocity(0);
-    double hx_d = mAnkleJoint->getVelocity(0);
-    double hy_d = mAnkleJoint->getVelocity(1);
+    double qz_d = mShldJoint->getVelocity(0);
+    double qx_d = mShldJoint->getVelocity(1);
+    double qy_d = mShldJoint->getVelocity(2);
+    double qe_d = mElbowJoint->getVelocity(0);
     
-    // if isMirror (right-lrg), set up a mirrored euler joint for hip
+    // if isMirror (right-arm), set up a mirrored euler joint for shoulder
     // i.e. pass the mirrored config to NN
     if (mIsMirror)
     {
         qz = -qz; qy = -qy;
     }
     
-    double qsin[8] = {cos(qz), sin(qz), cos(qx), sin(qx),
-        cos(qy + M_PI_2), cos(qe), cos(hx + M_PI_2), cos(hy + M_PI_2)};
+    double qsin[6] = {cos(qz), sin(qz), cos(qx), sin(qx), cos(qy + 2*M_PI/3), cos(qe)};
     vec_t input;
-    input.assign(qsin, qsin+8);
+    input.assign(qsin, qsin+6);
     vec_t pred_vec = mNet.predict(input);
     double C = *(pred_vec.begin());
 
@@ -267,7 +252,6 @@ void HumanLegJointLimitConstraint::update()
                 std::vector<const tensor_t*> out_t;
                 l->output(out_t);
                 vec_t out_v =  (*(out_t[0]))[0];
-                
                 in_grad.assign(out_grad.begin(), out_grad.end());
                 // first arg (x) is used only to infer the size of input, which should be the same as output y
                 (dynamic_cast<activation_layer*>(l))->backward_activation(out_v, out_v, in_grad, out_grad);
@@ -278,12 +262,10 @@ void HumanLegJointLimitConstraint::update()
         
         mJacobian[0] = out_grad[0] * (-sin(qz)) + out_grad[1] * (cos(qz));
         mJacobian[1] = out_grad[2] * (-sin(qx)) + out_grad[3] * (cos(qx));
-        mJacobian[2] = out_grad[4] * (-sin(qy + M_PI_2));
+        mJacobian[2] = out_grad[4] * (-sin(qy + 2*M_PI/3));
         mJacobian[3] = out_grad[5] * (-sin(qe));
-        mJacobian[4] = out_grad[6] * (-sin(hx + M_PI_2));
-        mJacobian[5] = out_grad[7] * (-sin(hy + M_PI_2));
         
-        // note that we also need to take the mirror of the NN gradient for right-leg
+        // note that we also need to take the mirror of the NN gradient for right-arm
         if (mIsMirror)
         {
             mJacobian[0] = -mJacobian[0];
@@ -292,8 +274,8 @@ void HumanLegJointLimitConstraint::update()
         
         // TODO: Normalize grad seems unnecessary?
         
-        Eigen::Vector6d q_d;
-        q_d << qz_d, qx_d, qy_d, qe_d, hx_d, hy_d;
+        Eigen::Vector4d q_d;
+        q_d << qz_d, qx_d, qy_d, qe_d;
         mNegativeVel = -mJacobian.dot(q_d);
         
         mLowerBound = 0.0;
@@ -303,7 +285,7 @@ void HumanLegJointLimitConstraint::update()
 }
 
 //==============================================================================
-void HumanLegJointLimitConstraint::getInformation(ConstraintInfo* _lcp)
+void HumanArmJointLimitConstraint::getInformation(ConstraintInfo* _lcp)
 {
     // if non-active, should not call getInfo()
     assert(isActive());
@@ -332,60 +314,49 @@ void HumanLegJointLimitConstraint::getInformation(ConstraintInfo* _lcp)
 }
 
 //==============================================================================
-void HumanLegJointLimitConstraint::applyUnitImpulse(std::size_t _index)
+void HumanArmJointLimitConstraint::applyUnitImpulse(std::size_t _index)
 {
     // the dim of constraint = 1, valid _index can only be 0
     assert(_index < mDim && "Invalid Index.");
     assert(isActive());
     
-    const dynamics::SkeletonPtr& skeleton = mHipJoint->getSkeleton();
+    const dynamics::SkeletonPtr& skeleton = mShldJoint->getSkeleton();
     skeleton->clearConstraintImpulses();
     
     for (std::size_t i = 0; i < 3; i++)
     {
-        mHipJoint->setConstraintImpulse(i, mJacobian[i]);
+        mShldJoint->setConstraintImpulse(i, mJacobian[i]);
     }
-    mKneeJoint->setConstraintImpulse(0, mJacobian[3]);
-    for (std::size_t i = 0; i < 2; i++)
-    {
-        mAnkleJoint->setConstraintImpulse(i, mJacobian[4+i]);
-    }
+    mElbowJoint->setConstraintImpulse(0, mJacobian[3]);
     
     // Use the body which is placed later in the list of body nodes in this skeleton
-    skeleton->updateBiasImpulse(mFootNode);
+    skeleton->updateBiasImpulse(mLArmNode);
     skeleton->updateVelocityChange();
     
     for (std::size_t i = 0; i < 3; i++)
     {
-        mHipJoint->setConstraintImpulse(i, 0.0);
+        mShldJoint->setConstraintImpulse(i, 0.0);
     }
-    mKneeJoint->setConstraintImpulse(0, 0.0);
-    for (std::size_t i = 0; i < 2; i++)
-    {
-        mAnkleJoint->setConstraintImpulse(i, 0.0);
-    }
+    mElbowJoint->setConstraintImpulse(0, 0.0);
     
     mAppliedImpulseIndex = _index; // which is 0
 }
 
 //==============================================================================
-void HumanLegJointLimitConstraint::getVelocityChange(double* _delVel, bool _withCfm)
+void HumanArmJointLimitConstraint::getVelocityChange(double* _delVel, bool _withCfm)
 {
     assert(_delVel != nullptr && "Null pointer is not allowed.");
     _delVel[0] = 0.0;
     
-    if (mHipJoint->getSkeleton()->isImpulseApplied())
+    if (mShldJoint->getSkeleton()->isImpulseApplied())
     {
-        Eigen::Vector6d delq_d;
+        Eigen::Vector4d delq_d;
         for (std::size_t i = 0; i < 3; i++)
         {
-            delq_d[i] = mHipJoint->getVelocityChange(i);
+            delq_d[i] = mShldJoint->getVelocityChange(i);
         }
-        delq_d[3] = mKneeJoint->getVelocityChange(0);
-        for (std::size_t i = 0; i < 2; i++)
-        {
-            delq_d[4+i] = mAnkleJoint->getVelocityChange(i);
-        }
+        delq_d[3] = mElbowJoint->getVelocityChange(0);
+        
         _delVel[0] = mJacobian.dot(delq_d);
     }
     
@@ -397,19 +368,19 @@ void HumanLegJointLimitConstraint::getVelocityChange(double* _delVel, bool _with
 }
 
 //==============================================================================
-void HumanLegJointLimitConstraint::excite()
+void HumanArmJointLimitConstraint::excite()
 {
-    mHipJoint->getSkeleton()->setImpulseApplied(true);
+    mShldJoint->getSkeleton()->setImpulseApplied(true);
 }
 
 //==============================================================================
-void HumanLegJointLimitConstraint::unexcite()
+void HumanArmJointLimitConstraint::unexcite()
 {
-    mHipJoint->getSkeleton()->setImpulseApplied(false);
+    mShldJoint->getSkeleton()->setImpulseApplied(false);
 }
 
 //==============================================================================
-void HumanLegJointLimitConstraint::applyImpulse(double* _lambda)
+void HumanArmJointLimitConstraint::applyImpulse(double* _lambda)
 {
     assert(isActive());
     
@@ -419,26 +390,21 @@ void HumanLegJointLimitConstraint::applyImpulse(double* _lambda)
     
     for (std::size_t i = 0; i < 3; i++)
     {
-        mHipJoint->setConstraintImpulse(i,
-            mHipJoint->getConstraintImpulse(i) + mJacobian[i] * con_force);
+        mShldJoint->setConstraintImpulse(i,
+            mShldJoint->getConstraintImpulse(i) + mJacobian[i] * con_force);
     }
-    mKneeJoint->setConstraintImpulse(0,
-            mKneeJoint->getConstraintImpulse(0) + mJacobian[3] * con_force);
-    for (std::size_t i = 0; i < 2; i++)
-    {
-        mAnkleJoint->setConstraintImpulse(i,
-            mAnkleJoint->getConstraintImpulse(i) + mJacobian[4+i] * con_force);
-    }
+    mElbowJoint->setConstraintImpulse(0,
+            mElbowJoint->getConstraintImpulse(0) + mJacobian[3] * con_force);
 }
 
 //==============================================================================
-dynamics::SkeletonPtr HumanLegJointLimitConstraint::getRootSkeleton() const
+dynamics::SkeletonPtr HumanArmJointLimitConstraint::getRootSkeleton() const
 {
-    return mHipJoint->getSkeleton()->mUnionRootSkeleton.lock();
+    return mShldJoint->getSkeleton()->mUnionRootSkeleton.lock();
 }
 
 //==============================================================================
-bool HumanLegJointLimitConstraint::isActive() const
+bool HumanArmJointLimitConstraint::isActive() const
 {
     return mActive;
 }

@@ -29,17 +29,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cmath>
 #include "dart/dart.hpp"
 #include "dart/gui/gui.hpp"
 #include "dart/collision/bullet/bullet.hpp"
 #include "dart/collision/ode/ode.hpp"
-#include <dart/utils/utils.hpp>
-#include <math.h>
+#include "dart/io/io.hpp"
+#include "HumanArmJointLimitConstraint.hpp"
+#include "HumanLegJointLimitConstraint.hpp"
 
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace dart;
-using namespace utils;
+using namespace io;
 
 class MyWindow : public dart::gui::SimWindow
 {
