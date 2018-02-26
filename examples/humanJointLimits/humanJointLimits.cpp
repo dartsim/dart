@@ -30,10 +30,10 @@
  */
 
 #include <cmath>
-#include "dart/dart.hpp"
-#include "dart/gui/gui.hpp"
 #include "dart/collision/bullet/bullet.hpp"
 #include "dart/collision/ode/ode.hpp"
+#include "dart/dart.hpp"
+#include "dart/gui/gui.hpp"
 #include "dart/utils/utils.hpp"
 #include "HumanArmJointLimitConstraint.hpp"
 #include "HumanLegJointLimitConstraint.hpp"
@@ -46,93 +46,100 @@ using namespace utils;
 class MyWindow : public dart::gui::SimWindow
 {
 public:
-    
-    MyWindow(const WorldPtr& world)
-    {
-        setWorld(world);
-    }
-    
-    void keyboard(unsigned char key, int x, int y) override
-    {
-        switch(key)
-        {
-            default:
-                SimWindow::keyboard(key, x, y);
-        }
-    }
-    
-    void drawWorld() const override
-    {
-        // Make sure lighting is turned on and that polygons get filled in
-        glEnable(GL_LIGHTING);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        SimWindow::drawWorld();
-    }
-    
-    void timeStepping() override
-    {
-        if (ts == 0)
-        {
-            auto skel = mWorld->getSkeleton("human");
-            
-            auto shldJointl = skel->getJoint("j_bicep_left");
-            auto elbowJointl = skel->getJoint("j_forearm_left");
-            constraint_larm = std::make_shared<dart::constraint::HumanArmJointLimitConstraint>(shldJointl, elbowJointl, false);
-            mWorld->getConstraintSolver()->addConstraint(constraint_larm);
-            
-            auto shldJointr = skel->getJoint("j_bicep_right");
-            auto elbowJointr = skel->getJoint("j_forearm_right");
-            constraint_rarm = std::make_shared<dart::constraint::HumanArmJointLimitConstraint>(shldJointr, elbowJointr, true);
-            mWorld->getConstraintSolver()->addConstraint(constraint_rarm);
-            
-            auto thighJointl = skel->getJoint("j_thigh_left");
-            auto shinJointl = skel->getJoint("j_shin_left");
-            auto ankleJointl = skel->getJoint("j_heel_left");
-            constraint_lleg = std::make_shared<dart::constraint::HumanLegJointLimitConstraint>(thighJointl, shinJointl, ankleJointl, false);
-            mWorld->getConstraintSolver()->addConstraint(constraint_lleg);
-            
-            auto thighJointr = skel->getJoint("j_thigh_right");
-            auto shinJointr = skel->getJoint("j_shin_right");
-            auto ankleJointr = skel->getJoint("j_heel_right");
-            constraint_rleg = std::make_shared<dart::constraint::HumanLegJointLimitConstraint>(thighJointr, shinJointr, ankleJointr, true);
-            mWorld->getConstraintSolver()->addConstraint(constraint_rleg);
-        }
-        
-//            Eigen::Vector3d force = Eigen::Vector3d(0,0,-4);
-//            Eigen::Vector3d location(0.0, -0.2, 0.0);
-//            mWorld->getSkeleton("human")->getBodyNode("l-lowerarm")->addExtForce(force, location, true, true);
-        SimWindow::timeStepping();
-        ts++;
-    }
-    
-    int ts;
-    dart::constraint::HumanArmJointLimitConstraintPtr constraint_larm;
-    dart::constraint::HumanArmJointLimitConstraintPtr constraint_rarm;
-    dart::constraint::HumanLegJointLimitConstraintPtr constraint_lleg;
-    dart::constraint::HumanLegJointLimitConstraintPtr constraint_rleg;
-};
+  MyWindow(const WorldPtr& world)
+  {
+    setWorld(world);
+  }
 
+  void keyboard(unsigned char key, int x, int y) override
+  {
+    switch (key)
+    {
+      default:
+        SimWindow::keyboard(key, x, y);
+    }
+  }
+
+  void drawWorld() const override
+  {
+    // Make sure lighting is turned on and that polygons get filled in
+    glEnable(GL_LIGHTING);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    SimWindow::drawWorld();
+  }
+
+  void timeStepping() override
+  {
+    if (ts == 0)
+    {
+      auto skel = mWorld->getSkeleton("human");
+
+      auto shldJointl = skel->getJoint("j_bicep_left");
+      auto elbowJointl = skel->getJoint("j_forearm_left");
+      constraint_larm
+          = std::make_shared<dart::constraint::HumanArmJointLimitConstraint>(
+              shldJointl, elbowJointl, false);
+      mWorld->getConstraintSolver()->addConstraint(constraint_larm);
+
+      auto shldJointr = skel->getJoint("j_bicep_right");
+      auto elbowJointr = skel->getJoint("j_forearm_right");
+      constraint_rarm
+          = std::make_shared<dart::constraint::HumanArmJointLimitConstraint>(
+              shldJointr, elbowJointr, true);
+      mWorld->getConstraintSolver()->addConstraint(constraint_rarm);
+
+      auto thighJointl = skel->getJoint("j_thigh_left");
+      auto shinJointl = skel->getJoint("j_shin_left");
+      auto ankleJointl = skel->getJoint("j_heel_left");
+      constraint_lleg
+          = std::make_shared<dart::constraint::HumanLegJointLimitConstraint>(
+              thighJointl, shinJointl, ankleJointl, false);
+      mWorld->getConstraintSolver()->addConstraint(constraint_lleg);
+
+      auto thighJointr = skel->getJoint("j_thigh_right");
+      auto shinJointr = skel->getJoint("j_shin_right");
+      auto ankleJointr = skel->getJoint("j_heel_right");
+      constraint_rleg
+          = std::make_shared<dart::constraint::HumanLegJointLimitConstraint>(
+              thighJointr, shinJointr, ankleJointr, true);
+      mWorld->getConstraintSolver()->addConstraint(constraint_rleg);
+    }
+
+    //            Eigen::Vector3d force = Eigen::Vector3d(0,0,-4);
+    //            Eigen::Vector3d location(0.0, -0.2, 0.0);
+    //            mWorld->getSkeleton("human")->getBodyNode("l-lowerarm")->addExtForce(force,
+    //            location, true, true);
+    SimWindow::timeStepping();
+    ts++;
+  }
+
+  int ts;
+  dart::constraint::HumanArmJointLimitConstraintPtr constraint_larm;
+  dart::constraint::HumanArmJointLimitConstraintPtr constraint_rarm;
+  dart::constraint::HumanLegJointLimitConstraintPtr constraint_lleg;
+  dart::constraint::HumanLegJointLimitConstraintPtr constraint_rleg;
+};
 
 int main(int argc, char* argv[])
 {
-    WorldPtr world = SkelParser::readWorld(DART_DATA_PATH"/skel/kima/kima_human_edited.skel");
-    assert(world != nullptr);
-    
-    auto skel = world->getSkeleton("human");
-    for (auto joint : skel->getJoints())
-    {
-        joint->setPositionLimitEnforced(true);
-    }
-    
-//    world->getSkeleton("arm")->enableSelfCollisionCheck();
-//    world->getSkeleton("arm")->disableAdjacentBodyCheck();
-    
-    MyWindow window(world);
-    
-    std::cout << "space bar: simulation on/off" << std::endl;
-    
-    glutInit(&argc, argv);
-    window.initWindow(640, 480, "Simple Test");
-    glutMainLoop();
-}
+  WorldPtr world = SkelParser::readWorld(
+      DART_DATA_PATH "/skel/kima/kima_human_edited.skel");
+  assert(world != nullptr);
 
+  auto skel = world->getSkeleton("human");
+  for (auto joint : skel->getJoints())
+  {
+    joint->setPositionLimitEnforced(true);
+  }
+
+  //    world->getSkeleton("arm")->enableSelfCollisionCheck();
+  //    world->getSkeleton("arm")->disableAdjacentBodyCheck();
+
+  MyWindow window(world);
+
+  std::cout << "space bar: simulation on/off" << std::endl;
+
+  glutInit(&argc, argv);
+  window.initWindow(640, 480, "Simple Test");
+  glutMainLoop();
+}

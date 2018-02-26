@@ -41,7 +41,7 @@ namespace dart {
 namespace dynamics {
 class BodyNode;
 class Joint;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 
@@ -52,7 +52,10 @@ class HumanLegJointLimitConstraint : public ConstraintBase
 public:
   /// Constructor
   explicit HumanLegJointLimitConstraint(
-    dynamics::Joint* _hipjoint, dynamics::Joint* _kneejoint, dynamics::Joint* _anklejoint, bool _isMirror);
+      dynamics::Joint* _hipjoint,
+      dynamics::Joint* _kneejoint,
+      dynamics::Joint* _anklejoint,
+      bool _isMirror);
 
   /// Destructor
   virtual ~HumanLegJointLimitConstraint();
@@ -134,15 +137,15 @@ private:
   dynamics::BodyNode* mThighNode;
   dynamics::BodyNode* mLowerLegNode;
   dynamics::BodyNode* mFootNode;
-    
+
   /// A workaround to have a de facto left-handed euler joint
   /// for right hip, so it could share same limits with left hip.
   /// left-leg set to false, right-leg set to true.
   bool mIsMirror;
-    
+
   /// the neural network for calculating limits
   tiny_dnn::network<tiny_dnn::sequential> mNet;
-    
+
   /// Gradient of the neural net function
   Eigen::Vector6d mJacobian;
 
@@ -166,7 +169,7 @@ private:
 
   ///
   double mLowerBound;
-    
+
   ///
   bool mActive;
 
@@ -186,8 +189,7 @@ private:
   static double mConstraintForceMixing;
 };
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart
 
-#endif  // DART_CONSTRAINT_HUMANLEGJOINTLIMITCONSTRAINT_HPP_
-
+#endif // DART_CONSTRAINT_HUMANLEGJOINTLIMITCONSTRAINT_HPP_

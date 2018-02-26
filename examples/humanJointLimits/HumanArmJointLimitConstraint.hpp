@@ -41,7 +41,7 @@ namespace dart {
 namespace dynamics {
 class BodyNode;
 class Joint;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 
@@ -52,7 +52,9 @@ class HumanArmJointLimitConstraint : public ConstraintBase
 public:
   /// Constructor
   explicit HumanArmJointLimitConstraint(
-    dynamics::Joint* _shldjoint, dynamics::Joint* _elbowjoint, bool _isMirror);
+      dynamics::Joint* _shldjoint,
+      dynamics::Joint* _elbowjoint,
+      bool _isMirror);
 
   /// Destructor
   virtual ~HumanArmJointLimitConstraint();
@@ -132,15 +134,15 @@ private:
   /// arm body nodes involved
   dynamics::BodyNode* mUArmNode;
   dynamics::BodyNode* mLArmNode;
-    
+
   /// A workaround to have a de facto left-handed euler joint
   /// for right shoulder, so it could share same limits with left shoulder.
   /// left-arm set to false, right-arm set to true.
   bool mIsMirror;
-    
+
   /// the neural network for calculating limits
   tiny_dnn::network<tiny_dnn::sequential> mNet;
-    
+
   /// Gradient of the neural net function
   Eigen::Vector4d mJacobian;
 
@@ -164,7 +166,7 @@ private:
 
   ///
   double mLowerBound;
-    
+
   ///
   bool mActive;
 
@@ -184,8 +186,7 @@ private:
   static double mConstraintForceMixing;
 };
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart
 
-#endif  // DART_CONSTRAINT_HUMANARMJOINTLIMITCONSTRAINT_HPP_
-
+#endif // DART_CONSTRAINT_HUMANARMJOINTLIMITCONSTRAINT_HPP_
