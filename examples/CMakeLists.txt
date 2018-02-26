@@ -11,6 +11,7 @@ add_subdirectory(jointConstraints)
 add_subdirectory(mixedChain)
 add_subdirectory(operationalSpaceControl)
 add_subdirectory(rigidChain)
+add_subdirectory(rigidCube)
 add_subdirectory(rigidLoop)
 add_subdirectory(rigidShapes)
 add_subdirectory(simpleFrames)
@@ -19,4 +20,3 @@ add_subdirectory(speedTest)
 add_subdirectory(vehicle)
 
 add_subdirectory(osgExamples)
-
