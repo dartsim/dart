@@ -77,9 +77,9 @@ HumanLegJointLimitConstraint::HumanLegJointLimitConstraint(
     assert(mLowerLegNode);
     assert(mFootNode);
     
-    assert(mHipJoint->getDof() == 3);
-    assert(mKneeJoint->getDof() == 1);
-    assert(mAnkleJoint->getDof() == 2);
+    assert(mHipJoint->getNumDofs() == 3);
+    assert(mKneeJoint->getNumDofs() == 1);
+    assert(mAnkleJoint->getNumDofs() == 2);
     
     assert(mThighNode->getSkeleton() == mLowerLegNode->getSkeleton());
     assert(mLowerLegNode->getSkeleton() == mFootNode->getSkeleton());

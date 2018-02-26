@@ -73,8 +73,8 @@ HumanArmJointLimitConstraint::HumanArmJointLimitConstraint(
     assert(mUArmNode);
     assert(mLArmNode);
     
-    assert(mShldJoint->getDof() == 3);
-    assert(mELbowJoint->getDof() == 1);
+    assert(mShldJoint->getNumDofs() == 3);
+    assert(mElbowJoint->getNumDofs() == 1);
     assert(mUArmNode->getSkeleton() == mLArmNode->getSkeleton());
     assert(mElbowJoint->getParentBodyNode() == mUArmNode);
     
