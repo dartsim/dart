@@ -265,7 +265,7 @@ endif(DART_VERBOSE)
 
 add_subdirectory(dart)
 
-set(DART_IN_SOURCE_BUILD True)
+set(DART_IN_SOURCE_BUILD TRUE)
 
 if(TARGET dart)
 
