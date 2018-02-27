@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -366,7 +366,7 @@ public:
   void setForce(std::size_t index, double force) override;
 
   // Documentation inherited
-  double getForce(std::size_t index) override;
+  double getForce(std::size_t index) const override;
 
   // Documentation inherited
   void setForces(const Eigen::VectorXd& forces) override;

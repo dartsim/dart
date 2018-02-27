@@ -34,28 +34,23 @@ branches:
 
 # scripts that run after cloning repository
 install:
+  # update vcpkg
+  - cd C:\tools\vcpkg
+  - git pull
+  - .\bootstrap-vcpkg.bat
+  
   - if "%platform%"=="Win32" set VCPKG_ARCH=x86-windows
   - if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
 
-  # install pacakges
-  # ---- required dependencies: boost, eigen3, libccd, fcl, assimp
-  - vcpkg install boost:%VCPKG_ARCH%
-  - vcpkg install eigen3:%VCPKG_ARCH%
-  - vcpkg install ccd:%VCPKG_ARCH%
-  - vcpkg install fcl:%VCPKG_ARCH%
-  - vcpkg install assimp:%VCPKG_ARCH%
-  # ---- optional dependencies: nlopt, ipopt, bullet3, ode, flann, tinyxml2, urdfdom_headers, urdfdom, opengl, freeglut, osg
-  #- vcpkg install nlopt:%VCPKG_ARCH%
+  # remove outdated versions
+  - vcpkg remove --outdated --recurse
+
+  # install required dependencies
+  - vcpkg install --recurse --triplet %VCPKG_ARCH% assimp boost-system boost-filesystem ccd eigen3 fcl
+  
+  # install optional dependencies
+  #- vcpkg install --recurse --triplet %VCPKG_ARCH% bullet3 flann freeglut nlopt ode opengl osg tinyxml2 urdfdom
   #- vcpkg install ipopt:%VCPKG_ARCH%
-  #- vcpkg install bullet3:%VCPKG_ARCH%
-  #- vcpkg install ode:%VCPKG_ARCH%
-  #- vcpkg install flann:%VCPKG_ARCH%
-  #- vcpkg install tinyxml2:%VCPKG_ARCH%
-  #- vcpkg install urdfdom-headers:%VCPKG_ARCH%
-  #- vcpkg install urdfdom:%VCPKG_ARCH%
-  #- vcpkg install opengl:%VCPKG_ARCH%
-  #- vcpkg install freeglut:%VCPKG_ARCH%
-  #- vcpkg install osg:%VCPKG_ARCH%
   
   - vcpkg integrate install
 
@@ -67,7 +62,6 @@ install:
 # preserve contents of selected directories and files across project builds
 cache:
   - C:\tools\vcpkg\installed -> .appveyor.yml
-  - C:\tools\vcpkg\packages -> .appveyor.yml
 
 build:
   project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project

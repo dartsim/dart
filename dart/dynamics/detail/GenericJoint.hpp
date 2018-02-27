@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -1177,7 +1177,7 @@ void GenericJoint<ConfigSpaceT>::setForce(size_t index, double force)
 
 //==============================================================================
 template <class ConfigSpaceT>
-double GenericJoint<ConfigSpaceT>::getForce(size_t index)
+double GenericJoint<ConfigSpaceT>::getForce(size_t index) const
 {
   if (index >= getNumDofs())
   {

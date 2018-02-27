@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -810,6 +810,12 @@ TEST(Skeleton, Referential)
   for(std::size_t i=0; i<skeletons.size(); ++i)
   {
     SkeletonPtr skeleton = skeletons[i];
+
+    const auto& skelJoints = skeleton->getJoints();
+    EXPECT_TRUE(skeleton->getNumJoints() == skelJoints.size());
+    for(auto* joint : skelJoints)
+      EXPECT_TRUE(skeleton->hasJoint(joint));
+
     for(std::size_t j=0; j<skeleton->getNumTrees(); ++j)
     {
       BranchPtr tree = Branch::create(skeleton->getRootBodyNode(j));
@@ -820,6 +826,7 @@ TEST(Skeleton, Referential)
       {
         EXPECT_FALSE(tree->getIndexOf(bn) == INVALID_INDEX);
         EXPECT_TRUE(tree->getBodyNode(tree->getIndexOf(bn)) == bn);
+        EXPECT_TRUE(skeleton->hasBodyNode(bn));
       }
 
       const std::vector<DegreeOfFreedom*>& skelDofs = skeleton->getTreeDofs(j);

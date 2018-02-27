@@ -33,6 +33,7 @@ install(
   COMPONENT headers
 )
 
+<<<<<<< HEAD
 get_filename_component(formatting_file "BodyNodeDerivatives.hpp" ABSOLUTE)
 dart_format_add(${formatting_file})
 get_filename_component(formatting_file "BodyNodeDerivatives.cpp" ABSOLUTE)
@@ -49,3 +50,11 @@ get_filename_component(formatting_file "SkeletonSecondDerivatives.hpp" ABSOLUTE)
 dart_format_add(${formatting_file})
 get_filename_component(formatting_file "SkeletonSecondDerivatives.cpp" ABSOLUTE)
 dart_format_add(${formatting_file})
+=======
+dart_format_add(
+  TranslationalJoint2D.hpp
+  TranslationalJoint2D.cpp
+  detail/TranslationalJoint2DAspect.hpp
+  detail/TranslationalJoint2DAspect.cpp
+)
+>>>>>>> origin/release-6.4

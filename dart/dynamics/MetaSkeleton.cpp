@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -31,8 +31,9 @@
  */
 
 #include "dart/common/Console.hpp"
-#include "dart/dynamics/MetaSkeleton.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/JacobianNode.hpp"
+#include "dart/dynamics/MetaSkeleton.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -936,6 +937,129 @@ Eigen::VectorXd MetaSkeleton::getJointConstraintImpulses() const
 {
   return getValuesFromAllDofs<&DegreeOfFreedom::getConstraintImpulse>(
         this, "getJointConstraintImpulses");
+}
+
+//==============================================================================
+math::Jacobian MetaSkeleton::getJacobian(
+    const JacobianNode* _node,
+    const JacobianNode* _relativeTo,
+    const Frame* _inCoordinatesOf) const
+{
+  if (_node == _relativeTo)
+    return math::Jacobian::Zero(6, getNumDofs());
+
+  const math::Jacobian J = getJacobian(_node);
+  const math::Jacobian JRelTo = getJacobian(_relativeTo);
+  const Eigen::Isometry3d T = _relativeTo->getTransform(_node);
+
+  const math::Jacobian result = (J - math::AdTJac(T, JRelTo)).eval();
+
+  if (_node == _inCoordinatesOf)
+    return result;
+
+  return math::AdRJac(_node->getTransform(_inCoordinatesOf), result);
+}
+
+//==============================================================================
+math::Jacobian MetaSkeleton::getJacobian(
+    const JacobianNode* _node,
+    const Eigen::Vector3d& _localOffset,
+    const JacobianNode* _relativeTo,
+    const Frame* _inCoordinatesOf) const
+{
+  if (_node == _relativeTo)
+    return math::Jacobian::Zero(6, getNumDofs());
+
+  const math::Jacobian J = getJacobian(_node);
+  const math::Jacobian JRelTo = getJacobian(_relativeTo);
+  const Eigen::Isometry3d T = _relativeTo->getTransform(_node);
+
+  math::Jacobian result = (J - math::AdTJac(T, JRelTo)).eval();
+  result.bottomRows<3>() += result.topRows<3>().colwise().cross(_localOffset);
+
+  if (_node == _inCoordinatesOf)
+    return result;
+
+  return math::AdRJac(_node->getTransform(_inCoordinatesOf), result);
+}
+
+//==============================================================================
+math::LinearJacobian MetaSkeleton::getLinearJacobian(
+    const JacobianNode* _node,
+    const JacobianNode* _relativeTo,
+    const Frame* _inCoordinatesOf) const
+{
+  return getJacobian(_node, _relativeTo, _inCoordinatesOf).bottomRows<3>();
+}
+
+//==============================================================================
+math::LinearJacobian MetaSkeleton::getLinearJacobian(
+    const JacobianNode* _node,
+    const Eigen::Vector3d& _localOffset,
+    const JacobianNode* _relativeTo,
+    const Frame* _inCoordinatesOf) const
+{
+  return getJacobian(
+        _node, _localOffset, _relativeTo, _inCoordinatesOf).bottomRows<3>();
+}
+
+//==============================================================================
+math::AngularJacobian MetaSkeleton::getAngularJacobian(
+    const JacobianNode* _node,
+    const JacobianNode* _relativeTo,
+    const Frame* _inCoordinatesOf) const
+{
+  return getJacobian(_node, _relativeTo, _inCoordinatesOf).topRows<3>();
+}
+
+//==============================================================================
+math::Jacobian MetaSkeleton::getJacobianSpatialDeriv(
+    const JacobianNode* _node,
+    const JacobianNode* _relativeTo,
+    const Frame* _inCoordinatesOf) const
+{
+  if (_node == _relativeTo)
+    return math::Jacobian::Zero(6, getNumDofs());
+
+  const math::Jacobian dJ = getJacobianSpatialDeriv(_node);
+  const math::Jacobian JRelTo = getJacobian(_relativeTo);
+  const math::Jacobian dJRelTo = getJacobianSpatialDeriv(_relativeTo);
+  const Eigen::Isometry3d T = _relativeTo->getTransform(_node);
+  const Eigen::Vector6d V = _relativeTo->getSpatialVelocity(_node, _relativeTo);
+  const math::Jacobian adJRelTo = math::adJac(V, JRelTo);
+
+  const math::Jacobian result = dJ - math::AdTJac(T, dJRelTo + adJRelTo);
+
+  if (_node == _inCoordinatesOf)
+    return result;
+
+  return math::AdRJac(_node->getTransform(_inCoordinatesOf), result);
+}
+
+//==============================================================================
+math::Jacobian MetaSkeleton::getJacobianSpatialDeriv(
+    const JacobianNode* _node,
+    const Eigen::Vector3d& _localOffset,
+    const JacobianNode* _relativeTo,
+    const Frame* _inCoordinatesOf) const
+{
+  if (_node == _relativeTo)
+    return math::Jacobian::Zero(6, getNumDofs());
+
+  const math::Jacobian dJ = getJacobianSpatialDeriv(_node);
+  const math::Jacobian JRelTo = getJacobian(_relativeTo);
+  const math::Jacobian dJRelTo = getJacobianSpatialDeriv(_relativeTo);
+  const Eigen::Isometry3d T = _relativeTo->getTransform(_node);
+  const Eigen::Vector6d V = _relativeTo->getSpatialVelocity(_node, _relativeTo);
+  const math::Jacobian adJRelTo = math::adJac(V, JRelTo);
+
+  math::Jacobian result = dJ - math::AdTJac(T, dJRelTo + adJRelTo);
+  result.bottomRows<3>().noalias() += result.topRows<3>().colwise().cross(_localOffset);
+
+  if (_node == _inCoordinatesOf)
+    return result;
+
+  return math::AdRJac(_node->getTransform(_inCoordinatesOf), result);
 }
 
 //==============================================================================

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -100,7 +100,7 @@ public:
   void addShapeFramesOf(const dynamics::BodyNode* bodyNode,
                         const Others*... others);
 
-  /// Add ShapeFrames of Skeleton, and also add another ShapeFrames of other
+  /// Add ShapeFrames of MetaSkeleton, and also add another ShapeFrames of other
   /// various objects.
   template <typename... Others>
   void addShapeFramesOf(const dynamics::MetaSkeleton* skeleton,
@@ -147,10 +147,10 @@ public:
   void removeShapeFramesOf(const dynamics::BodyNode* bodyNode,
                            const Others*... others);
 
-  /// Remove ShapeFrames of Skeleton, and also remove another ShapeFrames of
+  /// Remove ShapeFrames of MetaSkeleton, and also remove another ShapeFrames of
   /// other various objects.
   template <typename... Others>
-  void removeShapeFramesOf(const dynamics::Skeleton* skeleton,
+  void removeShapeFramesOf(const dynamics::MetaSkeleton* skeleton,
                            const Others*... others);
 
   /// Do nothing. This function is for terminating the recursive variadic
