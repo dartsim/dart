@@ -265,98 +265,45 @@ endif(DART_VERBOSE)
 
 add_subdirectory(dart)
 
+set(DART_IN_SOURCE_BUILD TRUE)
+
 if(TARGET dart)
 
   # Add a "tests" target to build unit tests.
   enable_testing()
   add_subdirectory(unittests EXCLUDE_FROM_ALL)
 
-  if (TARGET dart-io-urdf AND TARGET dart-gui)
+  # Add example subdirectories and an "examples" target.
+  add_subdirectory(examples)
+  get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
+  add_custom_target(examples DEPENDS ${examples})
 
-    # Add example targets
-    dart_add_example(examples/addDeleteSkels dart dart-io-urdf dart-gui)
-    dart_add_example(examples/atlasSimbicon dart dart-io-urdf dart-gui)
-    dart_add_example(examples/bipedStand dart dart-io-urdf dart-gui)
-    dart_add_example(examples/hardcodedDesign dart dart-io-urdf dart-gui)
-    dart_add_example(examples/hybridDynamics dart dart-io-urdf dart-gui)
-    dart_add_example(examples/jointConstraints dart dart-io-urdf dart-gui)
-    dart_add_example(examples/mixedChain dart dart-io-urdf dart-gui)
-    dart_add_example(examples/operationalSpaceControl dart dart-io-urdf dart-gui)
-    dart_add_example(examples/rigidChain dart dart-io-urdf dart-gui)
-    dart_add_example(examples/rigidCubes dart dart-io-urdf dart-gui)
-    dart_add_example(examples/rigidLoop dart dart-io-urdf dart-gui)
-    dart_add_example(examples/rigidShapes dart dart-io-urdf dart-gui)
-    dart_add_example(examples/simpleFrames dart dart-io-urdf dart-gui)
-    dart_add_example(examples/softBodies dart dart-io-urdf dart-gui)
-    dart_add_example(examples/speedTest dart dart-io-urdf dart-gui)
-    dart_add_example(examples/vehicle dart dart-io-urdf dart-gui)
+  if(DART_VERBOSE)
+    message(STATUS "")
+    message(STATUS "[ Examples ]")
+    foreach(example ${examples})
+      message(STATUS "Adding example: ${example}")
+    endforeach(example ${examples})
+  else(DART_VERBOSE)
+    list(LENGTH examples examples_length)
+    message(STATUS "Adding ${examples_length} examples")
+  endif(DART_VERBOSE)
 
-    if(TARGET dart-gui-osg)
-      dart_add_example(examples/osgExamples/osgAtlasPuppet dart dart-io-urdf dart-gui-osg)
-      dart_add_example(examples/osgExamples/osgAtlasSimbicon dart dart-io-urdf dart-gui-osg)
-      dart_add_example(examples/osgExamples/osgDragAndDrop dart dart-io-urdf dart-gui-osg)
-      dart_add_example(examples/osgExamples/osgEmpty dart dart-io-urdf dart-gui-osg)
-      dart_add_example(examples/osgExamples/osgHuboPuppet dart dart-io-urdf dart-gui-osg)
-      dart_add_example(examples/osgExamples/osgImGui dart dart-io-urdf dart-gui-osg)
-      dart_add_example(examples/osgExamples/osgOperationalSpaceControl dart dart-io-urdf dart-gui-osg)
-      dart_add_example(examples/osgExamples/osgSoftBodies dart dart-io-urdf dart-gui-osg)
-      dart_add_example(examples/osgExamples/osgTinkertoy dart dart-io-urdf dart-gui-osg)
+  # Add a "tutorials" target to build tutorials.
+  add_subdirectory(tutorials)
+  get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
+  add_custom_target(tutorials DEPENDS ${tutorials})
 
-      add_library(example_wamIk examples/osgExamples/osgWamIkFast/ikfast/ikfast71.Transform6D.4_6_9_10_11_12_f8.cpp)
-      target_link_libraries(example_wamIk PUBLIC dart)
-      target_compile_definitions(example_wamIk PUBLIC IKFAST_NO_MAIN IKFAST_CLIBRARY)
-      target_compile_options(example_wamIk PRIVATE -w)
-
-      dart_add_example(examples/osgExamples/osgWamIkFast dart dart-io-urdf dart-gui-osg example_wamIk)
-    endif()
-
-    # Add an "examples" target to build examples.
-    get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
-    add_custom_target(examples DEPENDS ${examples})
-
-    if(DART_VERBOSE)
-      message(STATUS "")
-      message(STATUS "[ Examples ]")
-      foreach(example ${examples})
-        message(STATUS "Adding example: ${example}")
-      endforeach(example ${examples})
-    else(DART_VERBOSE)
-      list(LENGTH examples examples_length)
-      message(STATUS "Adding ${examples_length} examples")
-    endif(DART_VERBOSE)
-
-    # Add tutorial targets
-    if(TARGET dart-collision-bullet)
-      dart_add_tutorial(tutorials/tutorialBiped dart-io-urdf dart-gui dart-collision-bullet)
-      dart_add_tutorial(tutorials/tutorialBiped-Finished dart-io-urdf dart-gui dart-collision-bullet)
-    else()
-      dart_add_tutorial(tutorials/tutorialBiped dart-io-urdf dart-gui)
-      dart_add_tutorial(tutorials/tutorialBiped-Finished dart-io-urdf dart-gui)
-    endif()
-
-    dart_add_tutorial(tutorials/tutorialCollisions dart-io-urdf dart-gui)
-    dart_add_tutorial(tutorials/tutorialCollisions-Finished dart-io-urdf dart-gui)
-    dart_add_tutorial(tutorials/tutorialDominoes dart-io-urdf dart-gui)
-    dart_add_tutorial(tutorials/tutorialDominoes-Finished dart-io-urdf dart-gui)
-    dart_add_tutorial(tutorials/tutorialMultiPendulum dart-io-urdf dart-gui)
-    dart_add_tutorial(tutorials/tutorialMultiPendulum-Finished dart-io-urdf dart-gui)
-
-    # Add a "tutorials" target to build tutorials.
-    get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
-    add_custom_target(tutorials DEPENDS ${tutorials})
-
-    if(DART_VERBOSE)
-      message(STATUS "")
-      message(STATUS "[ Tutorials ]")
-      foreach(tutorial ${tutorials})
-        message(STATUS "Adding tutorial: ${tutorial}")
-      endforeach(tutorial ${tutorials})
-    else(DART_VERBOSE)
-      list(LENGTH tutorials tutorials_length)
-      message(STATUS "Adding ${tutorials_length} tutorials")
-    endif(DART_VERBOSE)
-
-  endif()
+  if(DART_VERBOSE)
+    message(STATUS "")
+    message(STATUS "[ Tutorials ]")
+    foreach(tutorial ${tutorials})
+      message(STATUS "Adding tutorial: ${tutorial}")
+    endforeach(tutorial ${tutorials})
+  else(DART_VERBOSE)
+    list(LENGTH tutorials tutorials_length)
+    message(STATUS "Adding ${tutorials_length} tutorials")
+  endif(DART_VERBOSE)
 
 endif()
 

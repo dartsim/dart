@@ -170,7 +170,7 @@ void CollisionGroup::removeShapeFramesOf(
 //==============================================================================
 template <typename... Others>
 void CollisionGroup::removeShapeFramesOf(
-    const dynamics::Skeleton* skel, const Others*... others)
+    const dynamics::MetaSkeleton* skel, const Others*... others)
 {
   assert(skel);
 
