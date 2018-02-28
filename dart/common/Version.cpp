@@ -99,7 +99,7 @@ void Version::setPatch(unsigned short patch)
 }
 
 //==============================================================================
-void Version::fromString(
+void Version::set(
     unsigned short major, unsigned short minor, unsigned short patch)
 {
   setMajor(major);
@@ -252,7 +252,7 @@ std::istream& operator>>(std::istream& is, Version& version)
   unsigned short major, minor, patch;
 
   is >> major >> separator >> minor >> separator >> patch;
-  version.fromString(major, minor, patch);
+  version.set(major, minor, patch);
 
   return is;
 }

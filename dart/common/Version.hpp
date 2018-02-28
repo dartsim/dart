@@ -60,8 +60,7 @@ public:
   void setPatch(unsigned short patch);
 
   /// Sets the major, minor, and patch version numbers
-  void fromString(
-      unsigned short major, unsigned short minor, unsigned short patch);
+  void set(unsigned short major, unsigned short minor, unsigned short patch);
 
   /// Returns the major version number
   unsigned short getMajor() const;
