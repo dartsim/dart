@@ -12,7 +12,10 @@ find_package(DART 6.4 REQUIRED
     dart-utils-urdf dart-gui dart-collision-ode dart-collision-bullet
   CONFIG
 )
+
+set(TinyDNN_USE_SERIALIZER ON)
 find_package(TinyDNN REQUIRED)
+
 find_package(Threads REQUIRED)
 
 target_compile_options(${PROJECT_NAME} PUBLIC -std=c++14)
@@ -22,7 +25,7 @@ include_directories(${DART_INCLUDE_DIRS})
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${PROJECT_NAME} ${srcs})
 
-target_link_libraries(${PROJECT_NAME} ${DART_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${DART_LIBRARIES} ${TinyDNN_LIBRARIES})
 
 # Thread
 if(THREADS_HAVE_PTHREAD_ARG)

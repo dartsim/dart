@@ -7,6 +7,7 @@ if(NOT TARGET dart-utils-urdf
   return()
 endif()
 
+set(TinyDNN_USE_SERIALIZER ON)
 find_package(TinyDNN)
 if(NOT TinyDNN_FOUND)
   return()
@@ -23,7 +24,11 @@ add_executable(${example_name} ${srcs})
 target_compile_options(${example_name} PUBLIC -std=c++14)
 target_link_libraries(${example_name}
   PUBLIC
-    dart-utils-urdf dart-gui dart-collision-ode dart-collision-bullet
+    dart-utils-urdf
+    dart-gui
+    dart-collision-ode
+    dart-collision-bullet
+    ${TinyDNN_LIBRARIES}
 )
 set_target_properties(${example_name}
   PROPERTIES
