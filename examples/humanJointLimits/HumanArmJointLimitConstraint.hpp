@@ -45,6 +45,8 @@ class Joint;
 
 namespace constraint {
 
+DART_COMMON_MAKE_SHARED_WEAK(HumanArmJointLimitConstraint)
+
 /// HumanArmJointLimitConstraint handles joint position limits on human arm,
 /// representing range of motion of shoulder and elbow joints.
 class HumanArmJointLimitConstraint : public ConstraintBase

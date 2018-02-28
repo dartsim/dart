@@ -45,6 +45,8 @@ class Joint;
 
 namespace constraint {
 
+DART_COMMON_MAKE_SHARED_WEAK(HumanLegJointLimitConstraint)
+
 /// HumanLegJointLimitConstraint handles joint position limits on human leg,
 /// representing range of motion of hip, knee and ankle joints.
 class HumanLegJointLimitConstraint : public ConstraintBase
