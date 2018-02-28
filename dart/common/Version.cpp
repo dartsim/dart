@@ -32,8 +32,8 @@
 
 #include "dart/common/Version.hpp"
 
-#include <vector>
 #include <iostream>
+#include <vector>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include "dart/common/Console.hpp"
@@ -42,12 +42,9 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-Version::Version(unsigned short major,
-    unsigned short minor,
-    unsigned short patch)
-  : mMajor(major),
-    mMinor(minor),
-    mPatch(patch)
+Version::Version(
+    unsigned short major, unsigned short minor, unsigned short patch)
+  : mMajor(major), mMinor(minor), mPatch(patch)
 {
   // Do nothing
 }
@@ -79,9 +76,8 @@ unsigned short Version::getPatch() const
 //==============================================================================
 std::string Version::toString() const
 {
-  return std::to_string(mMajor)
-      + "." + std::to_string(mMinor)
-      + "." + std::to_string(mPatch);
+  return std::to_string(mMajor) + "." + std::to_string(mMinor) + "."
+         + std::to_string(mPatch);
 }
 
 //==============================================================================
@@ -120,13 +116,13 @@ void Version::fromString(const std::string& version)
 
   std::vector<std::string> splitResult;
   boost::algorithm::split(
-        splitResult, version, boost::algorithm::is_any_of(".,"));
+      splitResult, version, boost::algorithm::is_any_of(".,"));
   // TODO(JS): replace with non-boost version
 
   if (splitResult.size() == 0 || splitResult.size() > 3)
   {
-    dterr << "[Version::fromString] Failed to parse a version string '" << version
-          << "'. Ignoring this action.\n";
+    dterr << "[Version::fromString] Failed to parse a version string '"
+          << version << "'. Ignoring this action.\n";
     return;
   }
 
@@ -156,9 +152,8 @@ void Version::fromString(const std::string& version)
 //==============================================================================
 bool Version::operator==(const Version& other)
 {
-  return getMajor() == other.getMajor()
-      && getMinor() == other.getMinor()
-      && getPatch() == other.getPatch();
+  return getMajor() == other.getMajor() && getMinor() == other.getMinor()
+         && getPatch() == other.getPatch();
 }
 
 //==============================================================================
@@ -244,7 +239,8 @@ bool Version::operator>=(const Version& other)
 //==============================================================================
 std::ostream& operator<<(std::ostream& os, const Version& version)
 {
-  os << version.getMajor() << "." << version.getMinor() << "." << version.getPatch();
+  os << version.getMajor() << "." << version.getMinor() << "."
+     << version.getPatch();
 
   return os;
 }
@@ -261,5 +257,5 @@ std::istream& operator>>(std::istream& is, Version& version)
   return is;
 }
 
-}  // namespace common
-}  // namespace dart
+} // namespace common
+} // namespace dart

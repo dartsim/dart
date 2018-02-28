@@ -42,9 +42,10 @@ class Version
 {
 public:
   /// Constructs from version numbers
-  Version(unsigned short major = 0u,
-          unsigned short minor = 0u,
-          unsigned short patch = 0u);
+  Version(
+      unsigned short major = 0u,
+      unsigned short minor = 0u,
+      unsigned short patch = 0u);
 
   /// Constructs from version string (e.g., 5.1.4)
   explicit Version(const std::string& version);
@@ -59,9 +60,8 @@ public:
   void setPatch(unsigned short patch);
 
   /// Sets the major, minor, and patch version numbers
-  void fromString(unsigned short major,
-           unsigned short minor,
-           unsigned short patch);
+  void fromString(
+      unsigned short major, unsigned short minor, unsigned short patch);
 
   /// Returns the major version number
   unsigned short getMajor() const;
