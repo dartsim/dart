@@ -508,7 +508,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
 TEST_F(JOINTS, JOINT_LIMITS)
 {
   simulation::WorldPtr myWorld
-      = utils::SkelParser::readWorld(
+      = io::SkelParser::readWorld(
         "dart://sample/skel/test/joint_limit_test.skel");
   EXPECT_TRUE(myWorld != nullptr);
 

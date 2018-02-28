@@ -33,7 +33,7 @@
 #include <gtest/gtest.h>
 #include <TestHelpers.hpp>
 #include <dart/dart.hpp>
-#include <dart/utils/urdf/DartLoader.hpp>
+#include <dart/io/urdf/DartLoader.hpp>
 
 //==============================================================================
 TEST(Issue986, CreateShapeNodeShouldCompile)
