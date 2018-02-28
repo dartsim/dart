@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -560,6 +561,183 @@ void compareBodyNodeFkToJacobian(const BodyNode* bn,
 }
 
 //==============================================================================
+template <typename T>
+void printComparisonError(const std::string& _comparison,
+                          const std::string& _nameBN,
+                          const std::string& _nameBNRelativeTo,
+                          const std::string& _frame,
+                          const T& fk,
+                          const T& jac)
+{
+  std::cout << "Disagreement between FK and relative Jacobian results for "
+            << _comparison << " of '" << _nameBN << "' relative to '"
+            << _nameBNRelativeTo
+            << "' with a reference Frame of '" << _frame << "'\n"
+            << "FK:  " << fk.transpose() << "\n"
+            << "Jac: " << jac.transpose() << "\n";
+}
+
+//==============================================================================
+void compareBodyNodeFkToJacobianRelative(const JacobianNode* bn,
+                                         const JacobianNode* relativeTo,
+                                         const Frame* refFrame,
+                                         double tolerance)
+{
+  using math::Jacobian;
+  using math::LinearJacobian;
+  using math::AngularJacobian;
+
+  assert(bn->getSkeleton() == relativeTo->getSkeleton());
+  auto skel = bn->getSkeleton();
+
+  VectorXd dq  = skel->getVelocities();
+  VectorXd ddq = skel->getAccelerations();
+
+  //-- Spatial Jacobian tests --------------------------------------------------
+
+  Vector6d SpatialVelFk = bn->getSpatialVelocity(relativeTo, refFrame);
+  Vector6d SpatialAccFk = bn->getSpatialAcceleration(relativeTo, refFrame);
+
+  Jacobian SpatialJac
+      = skel->getJacobian(bn, relativeTo, refFrame);
+  Jacobian SpatialJacDeriv
+      = skel->getJacobianSpatialDeriv(bn, relativeTo, refFrame);
+
+  Vector6d SpatialVelJac = SpatialJac * dq;
+  Vector6d SpatialAccJac = SpatialJac * ddq + SpatialJacDeriv * dq;
+
+  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  EXPECT_TRUE(spatialVelEqual);
+  if (!spatialVelEqual)
+  {
+    printComparisonError("spatial velocity",
+                         bn->getName(), relativeTo->getName(),
+                         refFrame->getName(),
+                         SpatialVelFk,  SpatialVelJac);
+  }
+
+  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
+  EXPECT_TRUE(spatialAccEqual);
+  if (!spatialAccEqual)
+  {
+    printComparisonError("spatial acceleration",
+                         bn->getName(), relativeTo->getName(),
+                         refFrame->getName(),
+                         SpatialAccFk,  SpatialAccJac);
+  }
+
+  //-- Linear Jacobian tests --------------------------------------------------
+
+  Vector3d LinearVelFk = bn->getLinearVelocity(relativeTo, refFrame);
+
+  LinearJacobian LinearJac
+      = skel->getLinearJacobian(bn, relativeTo, refFrame);
+
+  Vector3d LinearVelJac = LinearJac * dq;
+
+  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
+  EXPECT_TRUE(linearVelEqual);
+  if (!linearVelEqual)
+  {
+    printComparisonError("linear velocity",
+                         bn->getName(), relativeTo->getName(),
+                         refFrame->getName(),
+                         LinearVelFk,  LinearVelJac);
+  }
+
+  //-- Angular Jacobian tests --------------------------------------------------
+
+  Vector3d AngularVelFk = bn->getAngularVelocity(relativeTo, refFrame);
+
+  AngularJacobian AngularJac
+      = skel->getAngularJacobian(bn, relativeTo, refFrame);
+
+  Vector3d AngularVelJac = AngularJac * dq;
+
+  bool angularVelEqual = equals(AngularVelFk, AngularVelJac, tolerance);
+  EXPECT_TRUE(angularVelEqual);
+  if (!angularVelEqual)
+  {
+    printComparisonError("angular velocity",
+                         bn->getName(), relativeTo->getName(),
+                         refFrame->getName(),
+                         AngularVelFk,  AngularVelJac);
+  }
+}
+
+//==============================================================================
+void compareBodyNodeFkToJacobianRelative(const JacobianNode* bn,
+                                         const Eigen::Vector3d& _offset,
+                                         const JacobianNode* relativeTo,
+                                         const Frame* refFrame,
+                                         double tolerance)
+{
+  using math::Jacobian;
+  using math::LinearJacobian;
+  using math::AngularJacobian;
+
+  assert(bn->getSkeleton() == relativeTo->getSkeleton());
+  auto skel = bn->getSkeleton();
+
+  VectorXd dq  = skel->getVelocities();
+  VectorXd ddq = skel->getAccelerations();
+
+  //-- Spatial Jacobian tests --------------------------------------------------
+
+  Vector6d SpatialVelFk
+      = bn->getSpatialVelocity(_offset, relativeTo, refFrame);
+  Vector6d SpatialAccFk
+      = bn->getSpatialAcceleration(_offset, relativeTo, refFrame);
+
+  Jacobian SpatialJac
+      = skel->getJacobian(bn, _offset, relativeTo, refFrame);
+  Jacobian SpatialJacDeriv
+      = skel->getJacobianSpatialDeriv(bn, _offset, relativeTo, refFrame);
+
+  Vector6d SpatialVelJac = SpatialJac * dq;
+  Vector6d SpatialAccJac = SpatialJac * ddq + SpatialJacDeriv * dq;
+
+  bool spatialVelEqual = equals(SpatialVelFk, SpatialVelJac, tolerance);
+  EXPECT_TRUE(spatialVelEqual);
+  if (!spatialVelEqual)
+  {
+    printComparisonError("spatial velocity w/ offset",
+                         bn->getName(), relativeTo->getName(),
+                         refFrame->getName(),
+                         SpatialVelFk,  SpatialVelJac);
+  }
+
+  bool spatialAccEqual = equals(SpatialAccFk, SpatialAccJac, tolerance);
+  EXPECT_TRUE(spatialAccEqual);
+  if (!spatialAccEqual)
+  {
+    printComparisonError("spatial acceleration w/ offset",
+                         bn->getName(), relativeTo->getName(),
+                         refFrame->getName(),
+                         SpatialAccFk,  SpatialAccJac);
+  }
+
+  //-- Linear Jacobian tests --------------------------------------------------
+
+  Vector3d LinearVelFk = bn->getLinearVelocity(_offset, relativeTo, refFrame);
+
+  LinearJacobian LinearJac
+      = skel->getLinearJacobian(bn, _offset, relativeTo, refFrame);
+
+  Vector3d LinearVelJac = LinearJac * dq;
+
+  bool linearVelEqual = equals(LinearVelFk, LinearVelJac, tolerance);
+  EXPECT_TRUE(linearVelEqual);
+  if (!linearVelEqual)
+  {
+    printComparisonError("linear velocity w/ offset",
+                         bn->getName(), relativeTo->getName(),
+                         refFrame->getName(),
+                         LinearVelFk,  LinearVelJac);
+  }
+}
+
+//==============================================================================
 void DynamicsTest::testJacobians(const common::Uri& uri)
 {
   using namespace std;
@@ -575,7 +753,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 #ifndef NDEBUG  // Debug mode
   int nTestItr = 2;
 #else
-  int nTestItr = 100;
+  int nTestItr = 5;
 #endif
   double qLB  = -0.5 * constantsd::pi();
   double qUB  =  0.5 * constantsd::pi();
@@ -600,7 +778,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
     for (int j = 0; j < nTestItr; ++j)
     {
       // For the second half of the tests, scramble up the Skeleton
-      if(j > ceil(nTestItr/2))
+      if(j > std::ceil(nTestItr/2))
       {
         SkeletonPtr copy = skeleton->clone();
         std::size_t maxNode = skeleton->getNumBodyNodes()-1;
@@ -642,33 +820,72 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
 
         // Compare results using the World reference Frame
         compareBodyNodeFkToJacobian(bn, Frame::World(), TOLERANCE);
+        compareBodyNodeFkToJacobian(
+              bn, Frame::World(), bn->getLocalCOM(), TOLERANCE);
+        compareBodyNodeFkToJacobian(
+              bn, Frame::World(), randomVector<3>(10), TOLERANCE);
+
         // Compare results using this BodyNode's own reference Frame
         compareBodyNodeFkToJacobian(bn, bn, TOLERANCE);
+        compareBodyNodeFkToJacobian(bn, bn, bn->getLocalCOM(), TOLERANCE);
+        compareBodyNodeFkToJacobian(bn, bn, randomVector<3>(10), TOLERANCE);
 
         // Compare results using the randomized reference Frames
         for(std::size_t r=0; r<refFrames.size(); ++r)
         {
           compareBodyNodeFkToJacobian(bn, refFrames[r], TOLERANCE);
+          compareBodyNodeFkToJacobian(
+              bn, refFrames[r], bn->getLocalCOM(), TOLERANCE);
+          compareBodyNodeFkToJacobian(
+              bn, refFrames[r], randomVector<3>(10), TOLERANCE);
         }
 
-        compareBodyNodeFkToJacobian(
-              bn, Frame::World(), bn->getLocalCOM(), TOLERANCE);
-        compareBodyNodeFkToJacobian(bn, bn, bn->getLocalCOM(), TOLERANCE);
+        // -- Relative Jacobian tests
 
-        for(std::size_t r=0; r<refFrames.size(); ++r)
+        compareBodyNodeFkToJacobianRelative(bn, bn, Frame::World(), TOLERANCE);
+
+#ifndef NDEBUG // Debug mode
+        if (skeleton->getNumBodyNodes() == 0u)
+          continue;
+
+        for (std::size_t l = skeleton->getNumBodyNodes() - 1;
+             l < skeleton->getNumBodyNodes(); ++l)
+#else
+        for (std::size_t l = 0; l < skeleton->getNumBodyNodes(); ++l)
+#endif
         {
-          compareBodyNodeFkToJacobian(
-                bn, refFrames[r], bn->getLocalCOM(), TOLERANCE);
-        }
+          const BodyNode* relativeTo = skeleton->getBodyNode(l);
 
-        compareBodyNodeFkToJacobian(
-              bn, Frame::World(), randomVector<3>(10), TOLERANCE);
-        compareBodyNodeFkToJacobian(bn, bn, randomVector<3>(10), TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, relativeTo, Frame::World(), TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, bn->getLocalCOM(), relativeTo, Frame::World(), TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, randomVector<3>(10), relativeTo, Frame::World(), TOLERANCE);
 
-        for(std::size_t r=0; r<refFrames.size(); ++r)
-        {
-          compareBodyNodeFkToJacobian(
-                bn, refFrames[r], randomVector<3>(10), TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, relativeTo, bn, TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, bn->getLocalCOM(), relativeTo, bn, TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, randomVector<3>(10), relativeTo, bn, TOLERANCE);
+
+          compareBodyNodeFkToJacobianRelative(
+                bn, relativeTo, relativeTo, TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, bn->getLocalCOM(), relativeTo, relativeTo, TOLERANCE);
+          compareBodyNodeFkToJacobianRelative(
+                bn, randomVector<3>(10), relativeTo, relativeTo, TOLERANCE);
+
+          for (std::size_t r = 0; r < refFrames.size(); ++r)
+          {
+            compareBodyNodeFkToJacobianRelative(
+                  bn, relativeTo, refFrames[r], TOLERANCE);
+            compareBodyNodeFkToJacobianRelative(
+                  bn, bn->getLocalCOM(), relativeTo, refFrames[r], TOLERANCE);
+            compareBodyNodeFkToJacobianRelative(
+                  bn, randomVector<3>(10), relativeTo, refFrames[r], TOLERANCE);
+          }
         }
       }
     }
@@ -832,7 +1049,7 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
       skeleton->setVelocities(dq);
       skeleton->setAccelerations(ddq);
 
-      Eigen::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
+      common::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d> Tmap;
       for (auto k = 0u; k < numBodies; ++k)
       {
         auto body  = skeleton->getBodyNode(k);
@@ -1056,9 +1273,9 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
   Eigen::VectorXd dq;
   Eigen::VectorXd ddq;
 
-  Eigen::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d>  Tmap;
-  Eigen::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>    Vmap;
-  Eigen::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>   dVmap;
+  common::aligned_map<dynamics::BodyNodePtr, Eigen::Isometry3d>  Tmap;
+  common::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>    Vmap;
+  common::aligned_map<dynamics::BodyNodePtr, Eigen::Vector6d>   dVmap;
 
   for (auto j = 0u; j < numBodies; ++j)
   {

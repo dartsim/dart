@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -83,4 +84,57 @@ TEST(DartLoader, parseWorld)
   DartLoader loader;
   EXPECT_TRUE(nullptr !=
       loader.parseWorld("dart://sample/urdf/test/testWorld.urdf"));
+}
+
+TEST(DartLoader, parseJointProperties)
+{
+  std::string urdfStr =
+    "<robot name=\"testRobot\">                                       "
+    "  <link name=\"link_0\">                                         "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "  </link>                                                        "
+    "  <joint name=\"0_to_1\" type=\"revolute\">                      "
+    "    <parent link=\"link_0\"/>                                    "
+    "    <child link=\"link_1\"/>                                     "
+    "    <limit effort=\"2.5\" lower=\"-3.14159265359\"               "
+    "           upper=\"3.14159265359\" velocity=\"3.00545697193\"/>  "
+    "    <axis xyz=\"0 0 1\"/>                                        "
+    "    <dynamics damping=\"1.2\" friction=\"2.3\"/>                 "
+    "  </joint>                                                       "
+    "  <link name=\"link_1\">                                         "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "  </link>                                                        "
+    "</robot>                                                         ";
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  EXPECT_TRUE(nullptr != robot);
+
+  auto joint1 = robot->getJoint(1);
+  EXPECT_TRUE(nullptr != joint1);
+
+  EXPECT_NEAR(joint1->getDampingCoefficient(0), 1.2, 1e-12);
+  EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
 }

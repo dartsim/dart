@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -476,7 +477,7 @@ protected:
 
   std::vector< std::pair<Eigen::Vector6d, Eigen::Vector6d> > mDefaultBounds;
 
-  Eigen::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
+  dart::common::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
 
   std::shared_ptr<RelaxedPosture> mPosture;
 
@@ -618,7 +619,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
   // need to adjust the signs of the relative transform
   tf_hand.translation()[0] = -tf_hand.translation()[0];
   tf_hand.translation()[1] = -tf_hand.translation()[1];
-  tf_hand.linear() = tf_hand.linear().inverse();
+  tf_hand.linear() = tf_hand.linear().inverse().eval();
 
   // Create the right hand's end effector and set its relative transform
   EndEffector* r_hand = atlas->getBodyNode("r_hand")->createEndEffector("r_hand");
@@ -836,7 +837,7 @@ void enableDragAndDrops(dart::gui::osg::Viewer& viewer, const SkeletonPtr& atlas
 
 int main()
 {
-  WorldPtr world(new World);
+  WorldPtr world = World::create();
 
   SkeletonPtr atlas = createAtlas();
   world->addSkeleton(atlas);

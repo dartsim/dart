@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -69,10 +70,8 @@ void SphereShape::setRadius(double radius)
 
   mRadius = radius;
 
-  mBoundingBox.setMin(Eigen::Vector3d::Constant(-radius));
-  mBoundingBox.setMax(Eigen::Vector3d::Constant(radius));
-
-  updateVolume();
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -106,9 +105,18 @@ Eigen::Matrix3d SphereShape::computeInertia(double mass) const
 }
 
 //==============================================================================
-void SphereShape::updateVolume()
+void SphereShape::updateBoundingBox() const
+{
+  mBoundingBox.setMin(Eigen::Vector3d::Constant(-mRadius));
+  mBoundingBox.setMax(Eigen::Vector3d::Constant(mRadius));
+  mIsBoundingBoxDirty = false;
+}
+
+//==============================================================================
+void SphereShape::updateVolume() const
 {
   mVolume = computeVolume(mRadius);
+  mIsVolumeDirty = false;
 }
 
 }  // namespace dynamics

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -81,6 +82,13 @@ CollisionDetector::CollisionObjectManager::CollisionObjectManager(
 }
 
 //==============================================================================
+CollisionDetector*
+CollisionDetector::CollisionObjectManager::getCollisionDetector()
+{
+  return mCollisionDetector;
+}
+
+//==============================================================================
 CollisionDetector::
 ManagerForUnsharableCollisionObjects::ManagerForUnsharableCollisionObjects(
     CollisionDetector* cd)
@@ -116,7 +124,7 @@ void
 CollisionDetector::ManagerForUnsharableCollisionObjects
 ::CollisionObjectDeleter::operator()(CollisionObject* object) const
 {
-  mCollisionObjectManager->mCollisionDetector->notifyCollisionObjectDestroying(
+  mCollisionObjectManager->getCollisionDetector()->notifyCollisionObjectDestroying(
         object);
 
   delete object;
@@ -179,8 +187,8 @@ void
 CollisionDetector::ManagerForSharableCollisionObjects
 ::CollisionObjectDeleter::operator()(CollisionObject* object) const
 {
-  mCollisionObjectManager->mCollisionDetector->notifyCollisionObjectDestroying(
-        object);
+  mCollisionObjectManager->getCollisionDetector()
+      ->notifyCollisionObjectDestroying(object);
   mCollisionObjectManager->mCollisionObjectMap.erase(object->getShapeFrame());
 
   delete object;

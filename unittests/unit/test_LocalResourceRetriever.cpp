@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -71,6 +72,41 @@ TEST(LocalResourceRetriever, exists_PathDoesExists_ReturnsTrue)
 {
   LocalResourceRetriever retriever;
   EXPECT_TRUE(retriever.exists(DART_DATA_PATH "skel/cube.skel"));
+}
+
+TEST(LocalResourceRetriever, getFilePath_UnsupportedUri_ReturnsEmptyString)
+{
+  LocalResourceRetriever retriever;
+  EXPECT_EQ(retriever.getFilePath("unknown://test"), "");
+}
+
+TEST(LocalResourceRetriever, getFilePath_FileUriDoesNotExist_ReturnsEmptyString)
+{
+  LocalResourceRetriever retriever;
+  EXPECT_EQ(
+      retriever.getFilePath(FILE_SCHEME DART_DATA_PATH "does/not/exist"), "");
+}
+
+TEST(LocalResourceRetriever, getFilePath_PathDoesNotExist_ReturnsEmptyString)
+{
+  LocalResourceRetriever retriever;
+  EXPECT_EQ(retriever.getFilePath(DART_DATA_PATH "does/not/exist"), "");
+}
+
+TEST(LocalResourceRetriever, getFilePath_FileUriDoesExists_ReturnsPath)
+{
+  LocalResourceRetriever retriever;
+  EXPECT_EQ(
+      retriever.getFilePath(FILE_SCHEME DART_DATA_PATH "skel/cube.skel"),
+      DART_DATA_PATH"skel/cube.skel");
+}
+
+TEST(LocalResourceRetriever, getFilePath_PathDoesExists_ReturnsPath)
+{
+  LocalResourceRetriever retriever;
+  EXPECT_EQ(
+      retriever.getFilePath(DART_DATA_PATH "skel/cube.skel"),
+      DART_DATA_PATH"skel/cube.skel");
 }
 
 TEST(LocalResourceRetriever, retrieve_UnsupportedUri_ReturnsNull)

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -195,7 +196,7 @@ void filterOutCollisions(btCollisionWorld* world)
     const auto collObj0 = static_cast<BulletCollisionObject*>(userPtr0);
     const auto collObj1 = static_cast<BulletCollisionObject*>(userPtr1);
 
-    if (!filter->needCollision(collObj0, collObj1))
+    if (filter->ignoresCollision(collObj0, collObj1))
       manifoldsToRelease.push_back(contactManifold);
   }
 
@@ -593,6 +594,14 @@ void reportContacts(
     for (auto j = 0; j < numContacts; ++j)
     {
       const auto& cp = contactManifold->getContactPoint(j);
+
+      if (cp.m_normalWorldOnB.length2() < Contact::getNormalEpsilonSquared())
+      {
+        // Skip this contact. This is because we assume that a contact with
+        // zero-length normal is invalid.
+        continue;
+      }
+
       result.addContact(convertContact(cp, collObj0, collObj1));
 
       // No need to check further collisions

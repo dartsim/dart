@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,35 +35,49 @@
 namespace dart {
 namespace collision {
 
+#if !FCL_VERSION_AT_LEAST(0,6,0)
 //==============================================================================
-Eigen::Vector3d FCLTypes::convertVector3(const fcl::Vec3f& _vec)
+dart::collision::fcl::Vector3 FCLTypes::convertVector3(const Eigen::Vector3d& _vec)
 {
+  return dart::collision::fcl::Vector3(_vec[0], _vec[1], _vec[2]);
+}
+#endif
+
+//==============================================================================
+Eigen::Vector3d FCLTypes::convertVector3(const dart::collision::fcl::Vector3& _vec)
+{
+#if FCL_VERSION_AT_LEAST(0,6,0)
+  return _vec;
+#else
   return Eigen::Vector3d(_vec[0], _vec[1], _vec[2]);
+#endif
 }
 
 //==============================================================================
-fcl::Vec3f FCLTypes::convertVector3(const Eigen::Vector3d& _vec)
+dart::collision::fcl::Matrix3 FCLTypes::convertMatrix3x3(const Eigen::Matrix3d& _R)
 {
-  return fcl::Vec3f(_vec[0], _vec[1], _vec[2]);
+#if FCL_VERSION_AT_LEAST(0,6,0)
+  return _R;
+#else
+  return dart::collision::fcl::Matrix3(_R(0, 0), _R(0, 1), _R(0, 2),
+                                       _R(1, 0), _R(1, 1), _R(1, 2),
+                                       _R(2, 0), _R(2, 1), _R(2, 2));
+#endif
 }
 
 //==============================================================================
-fcl::Matrix3f FCLTypes::convertMatrix3x3(const Eigen::Matrix3d& _R)
+dart::collision::fcl::Transform3 FCLTypes::convertTransform(const Eigen::Isometry3d& _T)
 {
-  return fcl::Matrix3f(_R(0, 0), _R(0, 1), _R(0, 2),
-                       _R(1, 0), _R(1, 1), _R(1, 2),
-                       _R(2, 0), _R(2, 1), _R(2, 2));
-}
-
-//==============================================================================
-fcl::Transform3f FCLTypes::convertTransform(const Eigen::Isometry3d& _T)
-{
-  fcl::Transform3f trans;
+#if FCL_VERSION_AT_LEAST(0,6,0)
+  return _T;
+#else
+  dart::collision::fcl::Transform3 trans;
 
   trans.setTranslation(convertVector3(_T.translation()));
   trans.setRotation(convertMatrix3x3(_T.linear()));
 
   return trans;
+#endif
 }
 
 }  // namespace collision

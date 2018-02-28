@@ -1,9 +1,10 @@
 /*
- * Copyright (c) 2013-2016, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
- * Author(s): Can Erdogan <cerdogan3@gatech.edu>,
- *            Jeongseok Lee <jslee02@gmail.com>
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
+ *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
  *   without modification, are permitted provided that the following
@@ -62,7 +63,7 @@ enum TypeOfDOF
   DOF_X, DOF_Y, DOF_Z, DOF_ROLL, DOF_PITCH, DOF_YAW
 };
 
-/******************************************************************************/
+//==============================================================================
 /// Returns true if the two matrices are equal within the given bound
 template <class MATRIX>
 bool equals(const Eigen::DenseBase<MATRIX>& _expected,
@@ -94,6 +95,16 @@ bool equals(const Eigen::DenseBase<MATRIX>& _expected,
 
   // If no problems, the two matrices are equal
   return true;
+}
+
+//==============================================================================
+bool equals(const Eigen::Isometry3d& tf1,
+            const Eigen::Isometry3d& tf2, double tol = 1e-5)
+{
+  auto se3 = dart::math::logMap(tf1.inverse()*tf2);
+  auto norm = se3.norm();
+
+  return (norm < tol);
 }
 
 //==============================================================================
@@ -494,6 +505,12 @@ struct PresentResourceRetriever : public dart::common::ResourceRetriever
     return true;
   }
 
+  std::string getFilePath(const dart::common::Uri& _uri) override
+  {
+    mGetFilePath.push_back(_uri.toString());
+    return _uri.toString();
+  }
+
   dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override
   {
     mRetrieve.push_back(_uri.toString());
@@ -501,6 +518,7 @@ struct PresentResourceRetriever : public dart::common::ResourceRetriever
   }
 
   std::vector<std::string> mExists;
+  std::vector<std::string> mGetFilePath;
   std::vector<std::string> mRetrieve;
 };
 
@@ -513,6 +531,12 @@ struct AbsentResourceRetriever : public dart::common::ResourceRetriever
     return false;
   }
 
+  std::string getFilePath(const dart::common::Uri& _uri) override
+  {
+    mGetFilePath.push_back(_uri.toString());
+    return "";
+  }
+
   dart::common::ResourcePtr retrieve(const dart::common::Uri& _uri) override
   {
     mRetrieve.push_back(_uri.toString());
@@ -520,6 +544,7 @@ struct AbsentResourceRetriever : public dart::common::ResourceRetriever
   }
 
   std::vector<std::string> mExists;
+  std::vector<std::string> mGetFilePath;
   std::vector<std::string> mRetrieve;
 };
 

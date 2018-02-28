@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -63,6 +64,7 @@
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ScrewJoint.hpp"
 #include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -112,7 +114,7 @@ struct SkelJoint
 };
 
 // first: BodyNode name | second: BodyNode information
-using BodyMap = Eigen::aligned_map<std::string, SkelBodyNode>;
+using BodyMap = common::aligned_map<std::string, SkelBodyNode>;
 
 // first: Child BodyNode name | second: Joint information
 using JointMap = std::map<std::string, SkelJoint>;
@@ -193,6 +195,11 @@ JointPropPtr readEulerJoint(
     const std::string& _name);
 
 JointPropPtr readTranslationalJoint(
+    tinyxml2::XMLElement* _jointElement,
+    SkelJoint& _joint,
+    const std::string& _name);
+
+JointPropPtr readTranslationalJoint2D(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
     const std::string& _name);
@@ -540,8 +547,23 @@ void readVisualizationShapeNode(
   // color
   if (hasElement(vizShapeNodeEle, "color"))
   {
-    Eigen::Vector3d color = getValueVector3d(vizShapeNodeEle, "color");
-    visualAspect->setColor(color);
+    Eigen::VectorXd color = getValueVectorXd(vizShapeNodeEle, "color");
+
+    if (color.size() == 3)
+    {
+      visualAspect->setColor(static_cast<Eigen::Vector3d>(color));
+    }
+    else if (color.size() == 4)
+    {
+      visualAspect->setColor(static_cast<Eigen::Vector4d>(color));
+    }
+    else
+    {
+      dtwarn << "[readVisualizationShapeNode] Invalid format for <color> "
+             << "element; " << color.size() << "d vector is given. It should "
+             << "be either 3d vector or 4d vector (the 4th element is for "
+             << "alpha). Ignoring the given color value.\n";
+    }
   }
 }
 
@@ -671,7 +693,7 @@ simulation::WorldPtr readWorld(
   assert(_worldElement != nullptr);
 
   // Create a world
-  simulation::WorldPtr newWorld(new simulation::World);
+  simulation::WorldPtr newWorld = simulation::World::create();
 
   //--------------------------------------------------------------------------
   // Load physics
@@ -1405,6 +1427,8 @@ void readJoint(tinyxml2::XMLElement* _jointElement,
     joint.properties = readEulerJoint(_jointElement, joint, name);
   else if (joint.type == std::string("translational"))
     joint.properties = readTranslationalJoint(_jointElement, joint, name);
+  else if (joint.type == std::string("translational2d"))
+    joint.properties = readTranslationalJoint2D(_jointElement, joint, name);
   else if (joint.type == std::string("planar"))
     joint.properties = readPlanarJoint(_jointElement, joint, name);
   else if (joint.type == std::string("free"))
@@ -1861,7 +1885,7 @@ void readJointDynamicsAndLimit(tinyxml2::XMLElement* _jointElement,
           *proxy.restPosition = val;
         }
 
-        // friction
+        // spring_stiffness
         if (hasElement(dynamicsElement, "spring_stiffness"))
         {
           double val = getValueDouble(dynamicsElement, "spring_stiffness");
@@ -2278,6 +2302,92 @@ JointPropPtr readTranslationalJoint(
 }
 
 //==============================================================================
+JointPropPtr readTranslationalJoint2D(
+    tinyxml2::XMLElement* _jointElement,
+    SkelJoint& _joint,
+    const std::string& _name)
+{
+  assert(_jointElement != nullptr);
+
+  dynamics::TranslationalJoint2D::Properties properties;
+
+  //--------------------------------------------------------------------------
+  // Plane
+  if (hasElement(_jointElement, "plane"))
+  {
+    tinyxml2::XMLElement* planeElement = getElement(_jointElement, "plane");
+
+    // Type attribute
+    std::string type = getAttributeString(planeElement, "type");
+
+    if (type == "xy")
+    {
+      properties.setXYPlane();
+    }
+    else if (type == "yz")
+    {
+      properties.setYZPlane();
+    }
+    else if (type == "zx")
+    {
+      properties.setZXPlane();
+    }
+    else if (type == "arbitrary")
+    {
+      const auto* transAxis1Element
+          = getElement(planeElement, "translation_axis1");
+
+      const auto* transAxis2Element
+          = getElement(planeElement, "translation_axis2");
+
+      properties.setArbitraryPlane(
+          getValueVector3d(transAxis1Element, "xyz"),
+          getValueVector3d(transAxis2Element, "xyz"));
+    }
+    else
+    {
+      dterr << "[readTranslationalJoint2D] TranslationalJoint2D named ["
+            << _name << "] contains unsupported plane type. "
+            << "Defaulting to XY-Plane.\n";
+      properties.setXYPlane();
+    }
+  }
+  else
+  {
+    dtwarn << "[readTranslationalJoint2D] TranslationalJoint2D named ["
+           << _name << "] doesn't contain plane element. "
+           << "Defaulting to XY-Plane.\n";
+    properties.setXYPlane();
+  }
+
+  //--------------------------------------------------------------------------
+  // axis
+  readJointDynamicsAndLimit(_jointElement, properties, _joint, _name, 2);
+
+  //--------------------------------------------------------------------------
+  // init_pos
+  if (hasElement(_jointElement, "init_pos"))
+  {
+    Eigen::Vector2d init_pos = getValueVector2d(_jointElement, "init_pos");
+    _joint.position = init_pos;
+    properties.mInitialPositions = init_pos;
+  }
+
+  //--------------------------------------------------------------------------
+  // init_vel
+  if (hasElement(_jointElement, "init_vel"))
+  {
+    Eigen::Vector2d init_vel = getValueVector2d(_jointElement, "init_vel");
+    _joint.velocity = init_vel;
+    properties.mInitialVelocities = init_vel;
+  }
+
+  readAllDegreesOfFreedom(_jointElement, properties, _joint, _name, 2);
+
+  return dynamics::TranslationalJoint2D::Properties::createShared(properties);
+}
+
+//==============================================================================
 JointPropPtr readPlanarJoint(
     tinyxml2::XMLElement* _jointElement,
     SkelJoint& _joint,
@@ -2326,12 +2436,14 @@ JointPropPtr readPlanarJoint(
     {
       dterr << "[readPlanarJoint] Planar Joint named [" << _name
             << "] is missing plane type information. Defaulting to XY-Plane.\n";
+      properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
     }
   }
   else
   {
-    dterr << "[readPlanarJoint] Planar Joint named [" << _name
-          << "] is missing plane type information. Defaulting to XY-Plane.\n";
+    dtwarn << "[readPlanarJoint] Planar Joint named [" << _name
+           << "] is missing plane type information. Defaulting to XY-Plane.\n";
+    properties.mPlaneType = dynamics::PlanarJoint::PlaneType::XY;
   }
 
   //--------------------------------------------------------------------------

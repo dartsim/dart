@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -57,6 +58,16 @@ class Skeleton :
     public detail::SkeletonAspectBase
 {
 public:
+  // Some of non-virtual functions of MetaSkeleton are hidden because of the
+  // functions of the same name in this class. We expose those functions as
+  // follows.
+  using MetaSkeleton::getJacobian;
+  using MetaSkeleton::getLinearJacobian;
+  using MetaSkeleton::getAngularJacobian;
+  using MetaSkeleton::getJacobianSpatialDeriv;
+  using MetaSkeleton::getJacobianClassicDeriv;
+  using MetaSkeleton::getLinearJacobianDeriv;
+  using MetaSkeleton::getAngularJacobianDeriv;
 
   using AspectPropertiesData = detail::SkeletonAspectProperties;
   using AspectProperties = common::Aspect::MakeProperties<AspectPropertiesData>;
@@ -397,6 +408,9 @@ public:
       const std::string& name) const override;
 
   // Documentation inherited
+  bool hasBodyNode(const BodyNode* bodyNode) const override;
+
+  // Documentation inherited
   std::size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
 
   /// Get the BodyNodes belonging to a tree in this Skeleton
@@ -437,6 +451,9 @@ public:
   /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
   /// So this function returns the single Joint of the given name if it exists.
   std::vector<const Joint*> getJoints(const std::string& name) const override;
+
+  // Documentation inherited
+  bool hasJoint(const Joint* joint) const override;
 
   // Documentation inherited
   std::size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;
@@ -1250,7 +1267,7 @@ protected:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-  mutable Eigen::aligned_vector<DataCache> mTreeCache;
+  mutable common::aligned_vector<DataCache> mTreeCache;
 
   mutable DataCache mSkelCache;
 

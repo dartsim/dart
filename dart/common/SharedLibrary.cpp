@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,40 +32,23 @@
 
 #include "dart/common/SharedLibrary.hpp"
 
-#include <stdexcept>
 #include "dart/common/Console.hpp"
+#include "dart/common/detail/SharedLibraryManager.hpp"
 
-#if DART_OS_LINUX
+#if DART_OS_LINUX || DART_OS_MACOS
 
 #include <dlfcn.h>
-#define DYNLIB_HANDLE void*
 #define DYNLIB_LOAD(a) dlopen(a, RTLD_LAZY | RTLD_GLOBAL)
-#define DYNLIB_GETSYM(a, b) dlsym(a, b)
-#define DYNLIB_UNLOAD(a) dlclose(a)
-
-#elif DART_OS_MACOS
-
-#include <macUtils.h>
-#define DYNLIB_HANDLE void*
-#define DYNLIB_LOAD(a) mac_loadDylib(a)
-#define FRAMEWORK_LOAD(a) mac_loadFramework(a)
 #define DYNLIB_GETSYM(a, b) dlsym(a, b)
 #define DYNLIB_UNLOAD(a) dlclose(a)
 
 #elif DART_OS_WINDOWS
 
 #define WIN32_LEAN_AND_MEAN
-#if !defined(NOMINMAX) && defined(_MSC_VER)
-#define NOMINMAX // required to stop windows.h messing up std::min
-#endif
-#include <windows.h>
-#define DYNLIB_HANDLE hInstance
 // We can not use LOAD_WITH_ALTERED_SEARCH_PATH with relative paths
 #define DYNLIB_LOAD(a) LoadLibraryEx(a, nullptr, 0)
 #define DYNLIB_GETSYM(a, b) GetProcAddress(a, b)
 #define DYNLIB_UNLOAD(a) !FreeLibrary(a)
-struct HINSTANCE__;
-typedef struct HINSTANCE__* hInstance;
 
 #endif
 
@@ -71,33 +56,48 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-SharedLibrary::SharedLibrary(const std::string& fileName)
-  : mFileName(fileName), mInstance(nullptr)
+std::shared_ptr<SharedLibrary> SharedLibrary::create(
+    const boost::filesystem::path& path)
 {
-  load();
+  return detail::SharedLibraryManager::getSingleton().load(path);
+}
+
+//==============================================================================
+SharedLibrary::SharedLibrary(
+    ProtectedConstructionTag, const boost::filesystem::path& canonicalPath)
+  : mCanonicalPath(canonicalPath), mInstance(nullptr)
+{
+  mInstance
+      = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(canonicalPath.string().c_str()));
+
+  if (!mInstance)
+  {
+    dterr << "[SharedLibrary::load] Failed to load dynamic library '"
+          << canonicalPath << "': " << getLastError() << "\n";
+  }
 }
 
 //==============================================================================
 SharedLibrary::~SharedLibrary()
 {
-  if (!isGood())
+  if (!isValid())
     return;
 
   if (DYNLIB_UNLOAD(mInstance))
   {
     dterr << "[SharedLibrary::~SharedLibrary] Failed to unload library '"
-          << mFileName << "': " << dynlibError() << "\n";
+          << mCanonicalPath << "': " << getLastError() << "\n";
   }
 }
 
 //==============================================================================
-const std::string& SharedLibrary::getFileName() const
+const boost::filesystem::path& SharedLibrary::getCanonicalPath() const
 {
-  return mFileName;
+  return mCanonicalPath;
 }
 
 //==============================================================================
-bool SharedLibrary::isGood() const
+bool SharedLibrary::isValid() const
 {
   return (mInstance != nullptr);
 }
@@ -105,7 +105,7 @@ bool SharedLibrary::isGood() const
 //==============================================================================
 void* SharedLibrary::getSymbol(const std::string& symbolName) const
 {
-  if (!isGood())
+  if (!isValid())
     return nullptr;
 
   auto symbol = DYNLIB_GETSYM(mInstance, symbolName.c_str());
@@ -121,45 +121,7 @@ void* SharedLibrary::getSymbol(const std::string& symbolName) const
 }
 
 //==============================================================================
-void SharedLibrary::load()
-{
-  auto nameWithExtension = mFileName;
-#if DART_OS_LINUX
-  // dlopen() does not add .so to the filename, like windows does for .dll
-  if (nameWithExtension.find(".so") == std::string::npos)
-    nameWithExtension += ".so";
-#elif DART_OS_MACOS
-  // dlopen() does not add .dylib to the filename, like windows does for .dll
-  if (nameWithExtension.substr(fileName.length() - 6, 6) != ".dylib")
-    nameWithExtension += ".dylib";
-#elif DART_OS_WINDOWS
-  // Although LoadLibraryEx will add .dll itself when you only specify the
-  // library name, if you include a relative path then it does not. So, add it
-  // to be sure.
-  if (nameWithExtension.substr(nameWithExtension.length() - 4, 4) != ".dll")
-    nameWithExtension += ".dll";
-#endif
-
-  mInstance
-      = static_cast<DYNLIB_HANDLE>(DYNLIB_LOAD(nameWithExtension.c_str()));
-
-#if DART_OS_MACOS
-  if (!mInstance)
-  {
-    // Try again as a framework
-    mInstance = (DYNLIB_HANDLE)FRAMEWORK_LOAD(nameWithExtension);
-  }
-#endif
-
-  if (!mInstance)
-  {
-    dterr << "[SharedLibrary::load] Failed to load dynamic library '"
-          << nameWithExtension << "': " << dynlibError() << "\n";
-  }
-}
-
-//==============================================================================
-std::string SharedLibrary::dynlibError() const
+std::string SharedLibrary::getLastError() const
 {
 #if DART_OS_LINUX || DART_OS_MACOS
   return std::string(dlerror());

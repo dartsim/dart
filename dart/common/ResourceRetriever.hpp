@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -47,10 +48,10 @@ class ResourceRetriever
 public:
   virtual ~ResourceRetriever() = default;
 
-  /// \brief Return whether the resource specified by a URI exists.
+  /// Returns whether the resource specified by a URI exists.
   virtual bool exists(const Uri& _uri) = 0;
 
-  /// \brief Return the resource specified by a URI or nullptr on failure.
+  /// Returns the resource specified by a URI or nullptr on failure.
   virtual ResourcePtr retrieve(const Uri& _uri) = 0;
 
   /// Reads all data from the resource of uri, and returns it as a string.
@@ -60,11 +61,16 @@ public:
   /// \throw std::runtime_error when failed to read sucessfully.
   virtual std::string readAll(const Uri& uri);
 
-  // We don't const-qualify for exists, retrieve, and readAll here. Derived
-  // classes of ResourceRetriever will be interacting with external resources
-  // that you don't necessarily have control over so we cannot guarantee that
-  // you get the same result every time with the same input Uri. Indeed,
-  // const-qualification for those functions is pointless.
+  /// Returns absolute file path to \c uri; an empty string if unavailable.
+  ///
+  /// This base class returns an empty string by default.
+  virtual std::string getFilePath(const Uri& uri);
+
+  // We don't const-qualify for exists, retrieve, readAll, and getFilePath here.
+  // Derived classes of ResourceRetriever will be interacting with external
+  // resources that you don't necessarily have control over so we cannot
+  // guarantee that you get the same result every time with the same input Uri.
+  // Indeed, const-qualification for those functions is pointless.
 };
 
 using ResourceRetrieverPtr = std::shared_ptr<ResourceRetriever>;

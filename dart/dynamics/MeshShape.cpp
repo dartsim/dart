@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -126,24 +127,24 @@ aiMaterial::~aiMaterial()
 namespace dart {
 namespace dynamics {
 
-MeshShape::MeshShape(const Eigen::Vector3d& _scale, const aiScene* _mesh,
-                     const std::string& _path,
-                     const common::ResourceRetrieverPtr& _resourceRetriever)
+//==============================================================================
+MeshShape::MeshShape(
+    const Eigen::Vector3d& scale,
+    const aiScene* mesh,
+    const common::Uri& path,
+    common::ResourceRetrieverPtr resourceRetriever)
   : Shape(MESH),
-    mResourceRetriever(_resourceRetriever),
     mDisplayList(0),
     mColorMode(MATERIAL_COLOR),
     mColorIndex(0)
 {
-  assert(_scale[0] > 0.0);
-  assert(_scale[1] > 0.0);
-  assert(_scale[2] > 0.0);
-
-  setMesh(_mesh, _path, _resourceRetriever);
-  setScale(_scale);
+  setMesh(mesh, path, std::move(resourceRetriever));
+  setScale(scale);
 }
 
-MeshShape::~MeshShape() {
+//==============================================================================
+MeshShape::~MeshShape()
+{
   delete mMesh;
 }
 
@@ -160,15 +161,25 @@ const std::string& MeshShape::getStaticType()
   return type;
 }
 
-const aiScene* MeshShape::getMesh() const {
+//==============================================================================
+const aiScene* MeshShape::getMesh() const
+{
   return mMesh;
 }
 
-const std::string& MeshShape::getMeshUri() const
+//==============================================================================
+std::string MeshShape::getMeshUri() const
+{
+  return mMeshUri.toString();
+}
+
+//==============================================================================
+const common::Uri& MeshShape::getMeshUri2() const
 {
   return mMeshUri;
 }
 
+//==============================================================================
 void MeshShape::update()
 {
   // Do nothing
@@ -185,104 +196,119 @@ void MeshShape::notifyAlphaUpdated(double alpha)
   }
 }
 
+//==============================================================================
 const std::string& MeshShape::getMeshPath() const
 {
   return mMeshPath;
 }
 
-void MeshShape::setMesh(
-  const aiScene* _mesh, const std::string& _path,
-  const common::ResourceRetrieverPtr& _resourceRetriever)
+//==============================================================================
+common::ResourceRetrieverPtr MeshShape::getResourceRetriever()
 {
-  mMesh = _mesh;
+  return mResourceRetriever;
+}
 
-  if(nullptr == _mesh) {
-    mMeshPath = "";
-    mMeshUri = "";
+//==============================================================================
+void MeshShape::setMesh(
+  const aiScene* mesh, const std::string& path,
+  common::ResourceRetrieverPtr resourceRetriever)
+{
+  setMesh(mesh, common::Uri(path), std::move(resourceRetriever));
+}
+
+//==============================================================================
+void MeshShape::setMesh(
+  const aiScene* mesh,
+  const common::Uri& uri,
+  common::ResourceRetrieverPtr resourceRetriever)
+{
+  mMesh = mesh;
+
+  if (!mMesh)
+  {
+    mMeshUri.clear();
+    mMeshPath.clear();
     mResourceRetriever = nullptr;
     return;
   }
 
-  common::Uri uri;
-  if(uri.fromString(_path))
-  {
-    mMeshUri = _path;
+  mMeshUri = uri;
 
-    if(uri.mScheme.get_value_or("file") == "file")
-      mMeshPath = uri.mPath.get_value_or("");
-  }
+  if (resourceRetriever)
+    mMeshPath = resourceRetriever->getFilePath(uri);
   else
-  {
-    dtwarn << "[MeshShape::setMesh] Failed parsing URI '" << _path << "'.\n";
-    mMeshUri = "";
-    mMeshPath = "";
-  }
+    mMeshPath.clear();
 
-  mResourceRetriever = _resourceRetriever;
-
-  _updateBoundingBoxDim();
-  updateVolume();
+  mResourceRetriever = std::move(resourceRetriever);
 }
 
-void MeshShape::setScale(const Eigen::Vector3d& _scale) {
-  assert(_scale[0] > 0.0);
-  assert(_scale[1] > 0.0);
-  assert(_scale[2] > 0.0);
-  mScale = _scale;
-  updateVolume();
-  _updateBoundingBoxDim();
+//==============================================================================
+void MeshShape::setScale(const Eigen::Vector3d& scale)
+{
+  assert((scale.array() > 0.0).all());
+
+  mScale = scale;
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
-const Eigen::Vector3d& MeshShape::getScale() const {
+//==============================================================================
+const Eigen::Vector3d& MeshShape::getScale() const
+{
   return mScale;
 }
 
-void MeshShape::setColorMode(ColorMode _mode)
+//==============================================================================
+void MeshShape::setColorMode(ColorMode mode)
 {
-  mColorMode = _mode;
+  mColorMode = mode;
 }
 
+//==============================================================================
 MeshShape::ColorMode MeshShape::getColorMode() const
 {
   return mColorMode;
 }
 
-void MeshShape::setColorIndex(int _index)
+//==============================================================================
+void MeshShape::setColorIndex(int index)
 {
-  mColorIndex = _index;
+  mColorIndex = index;
 }
 
+//==============================================================================
 int MeshShape::getColorIndex() const
 {
   return mColorIndex;
 }
 
-int MeshShape::getDisplayList() const {
+//==============================================================================
+int MeshShape::getDisplayList() const
+{
   return mDisplayList;
 }
 
-void MeshShape::setDisplayList(int _index) {
-  mDisplayList = _index;
+//==============================================================================
+void MeshShape::setDisplayList(int index)
+{
+  mDisplayList = index;
 }
 
 //==============================================================================
 Eigen::Matrix3d MeshShape::computeInertia(double _mass) const
 {
   // Use bounding box to represent the mesh
-  return BoxShape::computeInertia(mBoundingBox.computeFullExtents(), _mass);
+  return BoxShape::computeInertia(getBoundingBox().computeFullExtents(), _mass);
 }
 
-void MeshShape::updateVolume() {
-  Eigen::Vector3d bounds = mBoundingBox.computeFullExtents();
-  mVolume = bounds.x() * bounds.y() * bounds.z();
-}
-
-void MeshShape::_updateBoundingBoxDim() {
-
-  if(!mMesh)
+//==============================================================================
+void MeshShape::updateBoundingBox() const
+{
+  if (!mMesh)
   {
     mBoundingBox.setMin(Eigen::Vector3d::Zero());
     mBoundingBox.setMax(Eigen::Vector3d::Zero());
+    mIsBoundingBoxDirty = false;
     return;
   }
 
@@ -293,8 +319,10 @@ void MeshShape::_updateBoundingBoxDim() {
   double min_Y = std::numeric_limits<double>::infinity();
   double min_Z = std::numeric_limits<double>::infinity();
 
-  for (unsigned int i = 0; i < mMesh->mNumMeshes; i++) {
-    for (unsigned int j = 0; j < mMesh->mMeshes[i]->mNumVertices; j++) {
+  for (unsigned int i = 0; i < mMesh->mNumMeshes; i++)
+  {
+    for (unsigned int j = 0; j < mMesh->mMeshes[i]->mNumVertices; j++)
+    {
       if (mMesh->mMeshes[i]->mVertices[j].x > max_X)
         max_X = mMesh->mMeshes[i]->mVertices[j].x;
       if (mMesh->mMeshes[i]->mVertices[j].x < min_X)
@@ -311,10 +339,20 @@ void MeshShape::_updateBoundingBoxDim() {
   }
   mBoundingBox.setMin(Eigen::Vector3d(min_X * mScale[0], min_Y * mScale[1], min_Z * mScale[2]));
   mBoundingBox.setMax(Eigen::Vector3d(max_X * mScale[0], max_Y * mScale[1], max_Z * mScale[2]));
+
+  mIsBoundingBoxDirty = false;
 }
 
-const aiScene* MeshShape::loadMesh(
-  const std::string& _uri, const common::ResourceRetrieverPtr& _retriever)
+//==============================================================================
+void MeshShape::updateVolume() const
+{
+  const Eigen::Vector3d bounds = getBoundingBox().computeFullExtents();
+  mVolume = bounds.x() * bounds.y() * bounds.z();
+  mIsVolumeDirty = false;
+}
+
+//==============================================================================
+const aiScene* MeshShape::loadMesh(const std::string& _uri, const common::ResourceRetrieverPtr& retriever)
 {
   // Remove points and lines from the import.
   aiPropertyStore* propertyStore = aiCreatePropertyStore();
@@ -327,7 +365,7 @@ const aiScene* MeshShape::loadMesh(
   // Wrap ResourceRetriever in an IOSystem from Assimp's C++ API.  Then wrap
   // the IOSystem in an aiFileIO from Assimp's C API. Yes, this API is
   // completely ridiculous...
-  AssimpInputResourceRetrieverAdaptor systemIO(_retriever);
+  AssimpInputResourceRetrieverAdaptor systemIO(retriever);
   aiFileIO fileIO = createFileIO(&systemIO);
 
   // Import the file.
@@ -375,10 +413,18 @@ const aiScene* MeshShape::loadMesh(
   return scene;
 }
 
-const aiScene* MeshShape::loadMesh(const std::string& _fileName)
+//==============================================================================
+const aiScene* MeshShape::loadMesh(
+    const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
+{
+  return loadMesh(uri.toString(), retriever);
+}
+
+//==============================================================================
+const aiScene* MeshShape::loadMesh(const std::string& filePath)
 {
   const auto retriever = std::make_shared<common::LocalResourceRetriever>();
-  return loadMesh("file://" + _fileName, retriever);
+  return loadMesh("file://" + filePath, retriever);
 }
 
 }  // namespace dynamics

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -159,7 +160,7 @@ simulation::WorldPtr DartLoader::parseWorldString(
     return nullptr;
   }
 
-  simulation::WorldPtr world(new simulation::World);
+  simulation::WorldPtr world = simulation::World::create();
 
   for(std::size_t i = 0; i < worldInterface->models.size(); ++i)
   {
@@ -365,7 +366,10 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   }
 
   if(_jt->dynamics)
+  {
     singleDof.mDampingCoefficients[0] = _jt->dynamics->damping;
+    singleDof.mFrictions[0] = _jt->dynamics->friction;
+  }
 
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
   switch(_jt->type)

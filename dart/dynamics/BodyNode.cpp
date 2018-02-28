@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -877,32 +878,6 @@ const Joint* BodyNode::getChildJoint(std::size_t _index) const
 
 //==============================================================================
 DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( BodyNode, ShapeNode )
-
-//==============================================================================
-ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape)
-{
-  ShapeNode::BasicProperties properties;
-  properties.mShape = shape;
-
-  return createShapeNode(properties, true);
-}
-
-//==============================================================================
-ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
-                                     const std::string& name)
-{
-  ShapeNode::BasicProperties properties;
-  properties.mShape = shape;
-  properties.mName = name;
-
-  return createShapeNode(properties, false);
-}
-
-//==============================================================================
-ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape, const char* name)
-{
-  return createShapeNode(shape, std::string(name));
-}
 
 //==============================================================================
 const std::vector<ShapeNode*> BodyNode::getShapeNodes()

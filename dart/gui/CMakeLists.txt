@@ -7,7 +7,7 @@ find_package(OpenGL QUIET)
 dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
 
 if(WIN32 AND NOT CYGWIN)
-  set(GLUT_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
+  set(GLUT_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
   set(GLUT_LIBRARIES glut32)
   set(HAVE_GLUT TRUE)
 else()
@@ -57,9 +57,6 @@ add_component_dependencies(
   external-lodepng
   external-imgui
 )
-
-# Coverage test
-dart_coveralls_add(${hdrs} ${srcs})
 
 # Add subdirectories
 add_subdirectory(osg)

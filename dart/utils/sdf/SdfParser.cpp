@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -93,7 +94,7 @@ struct SDFJoint
 };
 
 // Maps the name of a BodyNode to its properties
-using BodyMap = Eigen::aligned_map<std::string, SDFBodyNode>;
+using BodyMap = common::aligned_map<std::string, SDFBodyNode>;
 
 // Maps a child BodyNode to the properties of its parent Joint
 using JointMap = std::map<std::string, SDFJoint>;
@@ -368,7 +369,7 @@ simulation::WorldPtr readWorld(
   assert(worldElement != nullptr);
 
   // Create a world
-  simulation::WorldPtr newWorld(new simulation::World);
+  simulation::WorldPtr newWorld = simulation::World::create();
 
   //--------------------------------------------------------------------------
   // Name attribute
@@ -1268,7 +1269,7 @@ static void readAxisElement(
   Eigen::Vector3d xyz = getValueVector3d(axisElement, "xyz");
   if (useParentModelFrame)
   {
-    xyz = _parentModelFrame * xyz;
+    xyz = _parentModelFrame.rotation() * xyz;
   }
   axis = xyz;
 

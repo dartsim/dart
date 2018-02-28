@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -53,7 +54,7 @@ using namespace simulation;
 TEST(World, AddingAndRemovingSkeletons)
 {
   // World
-  WorldPtr world(new World);
+  WorldPtr world = World::create();
 
   //-------------------- Test World::removeSkeleton() ------------------------
   SkeletonPtr skeleton1 = createThreeLinkRobot(Eigen::Vector3d(1.0, 1.0, 1.0),

@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 2.8.12)
 
+if(DART_IN_SOURCE_BUILD)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/InSourceBuild.cmake)
+  return()
+endif()
+
 project(osgAtlasPuppet)
 
-find_package(DART 6.1.1 REQUIRED COMPONENTS utils-urdf gui-osg)
+find_package(DART 6.4.0 REQUIRED COMPONENTS utils-urdf gui-osg CONFIG)
 
 add_compile_options(-std=c++11)
 

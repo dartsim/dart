@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -133,6 +134,8 @@ protected:
   bool isActive() const override;
 
 private:
+  using TangentBasisMatrix = Eigen::Matrix<double, 3, 2>;
+
   /// Get change in relative velocity at contact point due to external impulse
   /// \param[out] _relVel Change in relative velocity at contact point of the
   ///                     two colliding bodies
@@ -142,7 +145,7 @@ private:
   void updateFirstFrictionalDirection();
 
   ///
-  Eigen::MatrixXd getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
+  TangentBasisMatrix getTangentBasisMatrixODE(const Eigen::Vector3d& _n);
 
 private:
   /// Time step
@@ -167,10 +170,10 @@ private:
   double mRestitutionCoeff;
 
   /// Local body jacobians for mBodyNode1
-  Eigen::aligned_vector<Eigen::Vector6d> mJacobians1;
+  common::aligned_vector<Eigen::Vector6d> mJacobians1;
 
   /// Local body jacobians for mBodyNode2
-  Eigen::aligned_vector<Eigen::Vector6d> mJacobians2;
+  common::aligned_vector<Eigen::Vector6d> mJacobians2;
 
   ///
   bool mIsFrictionOn;

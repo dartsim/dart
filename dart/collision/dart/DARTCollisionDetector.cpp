@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -145,7 +146,7 @@ bool DARTCollisionDetector::collide(
     {
       auto* collObj2 = objects[j];
 
-      if (filter && !filter->needCollision(collObj1, collObj2))
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
         continue;
 
       collisionFound = checkPair(collObj1, collObj2, option, result);
@@ -207,7 +208,7 @@ bool DARTCollisionDetector::collide(
     {
       auto* collObj2 = objects2[j];
 
-      if (filter && !filter->needCollision(collObj1, collObj2))
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
         continue;
 
       collisionFound = checkPair(collObj1, collObj2, option, result);

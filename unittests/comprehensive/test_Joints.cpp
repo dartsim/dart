@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -41,6 +42,7 @@
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -303,6 +305,12 @@ TEST_F(JOINTS, UNIVERSAL_JOINT)
   kinematicsTest<UniversalJoint>();
 }
 
+// 2-dof joint
+TEST_F(JOINTS, TRANSLATIONAL_JOINT_2D)
+{
+  kinematicsTest<TranslationalJoint2D>();
+}
+
 // 3-dof joint
 //TEST_F(JOINTS, BALL_JOINT)
 //{
@@ -497,6 +505,75 @@ TEST_F(JOINTS, POSITION_LIMIT)
 }
 
 //==============================================================================
+TEST_F(JOINTS, JOINT_LIMITS)
+{
+  simulation::WorldPtr myWorld
+      = utils::SkelParser::readWorld(
+        "dart://sample/skel/test/joint_limit_test.skel");
+  EXPECT_TRUE(myWorld != nullptr);
+
+  myWorld->setGravity(Eigen::Vector3d(0.0, 0.0, 0.0));
+
+  dynamics::SkeletonPtr pendulum = myWorld->getSkeleton("double_pendulum");
+  EXPECT_TRUE(pendulum != nullptr);
+
+  dynamics::Joint* joint0 = pendulum->getJoint("joint0");
+
+  EXPECT_TRUE(joint0 != nullptr);
+
+  double limit = constantsd::pi() / 6.0;
+  Eigen::VectorXd limits = Eigen::VectorXd::Constant(1, constantsd::pi() / 2.0);
+
+  joint0->setPositionLowerLimit(0, -limit);
+  joint0->setPositionUpperLimit(0, limit);
+  EXPECT_EQ(
+      joint0->getPositionLowerLimits(), Eigen::VectorXd::Constant(1, -limit));
+  EXPECT_EQ(
+      joint0->getPositionUpperLimits(), Eigen::VectorXd::Constant(1, limit));
+
+  joint0->setPositionLowerLimits(-limits);
+  joint0->setPositionUpperLimits(limits);
+  EXPECT_EQ(joint0->getPositionLowerLimits(), -limits);
+  EXPECT_EQ(joint0->getPositionUpperLimits(), limits);
+
+  joint0->setVelocityLowerLimit(0, -limit);
+  joint0->setVelocityUpperLimit(0, limit);
+  EXPECT_EQ(
+      joint0->getVelocityLowerLimits(), Eigen::VectorXd::Constant(1, -limit));
+  EXPECT_EQ(
+      joint0->getVelocityUpperLimits(), Eigen::VectorXd::Constant(1, limit));
+
+  joint0->setVelocityLowerLimits(-limits);
+  joint0->setVelocityUpperLimits(limits);
+  EXPECT_EQ(joint0->getVelocityLowerLimits(), -limits);
+  EXPECT_EQ(joint0->getVelocityUpperLimits(), limits);
+
+  joint0->setAccelerationLowerLimit(0, -limit);
+  joint0->setAccelerationUpperLimit(0, limit);
+  EXPECT_EQ(
+      joint0->getAccelerationLowerLimits(), Eigen::VectorXd::Constant(1, -limit));
+  EXPECT_EQ(
+      joint0->getAccelerationUpperLimits(), Eigen::VectorXd::Constant(1, limit));
+
+  joint0->setAccelerationLowerLimits(-limits);
+  joint0->setAccelerationUpperLimits(limits);
+  EXPECT_EQ(joint0->getAccelerationLowerLimits(), -limits);
+  EXPECT_EQ(joint0->getAccelerationUpperLimits(), limits);
+
+  joint0->setForceLowerLimit(0, -limit);
+  joint0->setForceUpperLimit(0, limit);
+  EXPECT_EQ(
+      joint0->getForceLowerLimits(), Eigen::VectorXd::Constant(1, -limit));
+  EXPECT_EQ(
+      joint0->getForceUpperLimits(), Eigen::VectorXd::Constant(1, limit));
+
+  joint0->setForceLowerLimits(-limits);
+  joint0->setForceUpperLimits(limits);
+  EXPECT_EQ(joint0->getForceLowerLimits(), -limits);
+  EXPECT_EQ(joint0->getForceUpperLimits(), limits);
+}
+
+//==============================================================================
 void testJointCoulombFrictionForce(double _timeStep)
 {
   double tol = 1e-9;
@@ -666,7 +743,7 @@ void testServoMotor()
   double insufficient_force = 1e-1;
 
   // World
-  simulation::WorldPtr world(new simulation::World);
+  simulation::WorldPtr world = simulation::World::create();
   EXPECT_TRUE(world != nullptr);
 
   world->setGravity(Eigen::Vector3d(0, 0, -9.81));
@@ -1024,8 +1101,8 @@ TEST_F(JOINTS, CONVENIENCE_FUNCTIONS)
     // -- collect everything so we can cycle through the tests
     std::vector<Joint*> joints;
     std::vector<BodyNode*> bns;
-    Eigen::aligned_vector<Eigen::Isometry3d> desired_tfs;
-    Eigen::aligned_vector<Eigen::Isometry3d> actual_tfs;
+    common::aligned_vector<Eigen::Isometry3d> desired_tfs;
+    common::aligned_vector<Eigen::Isometry3d> actual_tfs;
 
     joints.push_back(freejoint);
     bns.push_back(freejoint_bn);

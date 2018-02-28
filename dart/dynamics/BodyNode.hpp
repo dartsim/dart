@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -543,14 +544,14 @@ public:
 
   /// Create a ShapeNode with an automatically assigned name:
   /// <BodyNodeName>_ShapeNode_<#>.
-  ShapeNode* createShapeNode(const ShapePtr& shape);
+  template <class ShapeType>
+  ShapeNode* createShapeNode(const std::shared_ptr<ShapeType>& shape);
 
-  /// Create an ShapeNode with the specified name
+  /// Create a ShapeNode with the specified name
+  template <class ShapeType, class StringType>
   ShapeNode* createShapeNode(
-      const ShapePtr& shape, const std::string& name);
-
-  /// Create an ShapeNode with the specified name
-  ShapeNode* createShapeNode(const ShapePtr& shape, const char* name);
+      const std::shared_ptr<ShapeType>& shape,
+      StringType&& name);
 
   /// Return the list of ShapeNodes
   const std::vector<ShapeNode*> getShapeNodes();

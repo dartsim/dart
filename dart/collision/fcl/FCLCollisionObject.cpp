@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -31,8 +32,6 @@
 
 #include "dart/collision/fcl/FCLCollisionObject.hpp"
 
-#include <fcl/BVH/BVH_model.h>
-
 #include "dart/collision/fcl/FCLTypes.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
@@ -41,13 +40,13 @@ namespace dart {
 namespace collision {
 
 //==============================================================================
-fcl::CollisionObject* FCLCollisionObject::getFCLCollisionObject()
+dart::collision::fcl::CollisionObject* FCLCollisionObject::getFCLCollisionObject()
 {
   return mFCLCollisionObject.get();
 }
 
 //==============================================================================
-const fcl::CollisionObject* FCLCollisionObject::getFCLCollisionObject() const
+const dart::collision::fcl::CollisionObject* FCLCollisionObject::getFCLCollisionObject() const
 {
   return mFCLCollisionObject.get();
 }
@@ -56,9 +55,9 @@ const fcl::CollisionObject* FCLCollisionObject::getFCLCollisionObject() const
 FCLCollisionObject::FCLCollisionObject(
     CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame,
-    const fcl_shared_ptr<fcl::CollisionGeometry>& fclCollGeom)
+    const fcl_shared_ptr<dart::collision::fcl::CollisionGeometry>& fclCollGeom)
   : CollisionObject(collisionDetector, shapeFrame),
-    mFCLCollisionObject(new fcl::CollisionObject(fclCollGeom))
+    mFCLCollisionObject(new dart::collision::fcl::CollisionObject(fclCollGeom))
 {
   mFCLCollisionObject->setUserData(this);
 }
@@ -83,24 +82,24 @@ void FCLCollisionObject::updateEngineData()
     // TODO(JS): update function be called by somewhere out of here.
 
 #if FCL_VERSION_AT_LEAST(0,3,0)
-    auto collGeom = const_cast<fcl::CollisionGeometry*>(
+    auto collGeom = const_cast<dart::collision::fcl::CollisionGeometry*>(
           mFCLCollisionObject->collisionGeometry().get());
 #else
-    fcl::CollisionGeometry* collGeom
-        = const_cast<fcl::CollisionGeometry*>(
+    dart::collision::fcl::CollisionGeometry* collGeom
+        = const_cast<dart::collision::fcl::CollisionGeometry*>(
           mFCLCollisionObject->getCollisionGeometry());
 #endif
-    assert(dynamic_cast<fcl::BVHModel<fcl::OBBRSS>*>(collGeom));
-    auto bvhModel = static_cast<fcl::BVHModel<fcl::OBBRSS>*>(collGeom);
+    assert(dynamic_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom));
+    auto bvhModel = static_cast<::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(collGeom);
 
     bvhModel->beginUpdateModel();
     for (auto i = 0u; i < mesh->mNumFaces; ++i)
     {
-      fcl::Vec3f vertices[3];
+      dart::collision::fcl::Vector3 vertices[3];
       for (auto j = 0u; j < 3; ++j)
       {
         const auto& vertex = mesh->mVertices[mesh->mFaces[i].mIndices[j]];
-        vertices[j] = fcl::Vec3f(vertex.x, vertex.y, vertex.z);
+        vertices[j] = dart::collision::fcl::Vector3(vertex.x, vertex.y, vertex.z);
       }
       bvhModel->updateTriangle(vertices[0], vertices[1], vertices[2]);
     }

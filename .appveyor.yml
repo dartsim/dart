@@ -1,0 +1,72 @@
+# Specify version format
+version: "{build}"
+
+image: Visual Studio 2017
+
+platform: x64
+
+# specify custom environment variables
+environment:
+  MSVC_DEFAULT_OPTIONS: ON
+  CMAKE_TOOLCHAIN_FILE: -DCMAKE_TOOLCHAIN_FILE="C:\tools\vcpkg\scripts\buildsystems\vcpkg.cmake"
+  matrix:
+    - CMAKE_GENERATOR: -G"Visual Studio 15 2017 Win64"
+      CMAKE_TOOLCHAIN: -T"v141"
+
+# build configuration, i.e. Debug, Release, etc.
+configuration:
+  - Debug
+  - Release
+
+# scripts that are called at very beginning, before repo cloning
+init:
+  - cmd: cmake --version
+  - cmd: msbuild /version
+
+# clone directory
+clone_folder: C:\projects\dart
+
+# branches to build
+branches:
+  # blacklist
+  except:
+    - gh-pages
+
+# scripts that run after cloning repository
+install:
+  # update vcpkg
+  - cd C:\tools\vcpkg
+  - git pull
+  - .\bootstrap-vcpkg.bat
+  
+  - if "%platform%"=="Win32" set VCPKG_ARCH=x86-windows
+  - if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
+
+  # remove outdated versions
+  - vcpkg remove --outdated --recurse
+
+  # install required dependencies
+  - vcpkg install --recurse --triplet %VCPKG_ARCH% assimp boost-system boost-filesystem ccd eigen3 fcl
+  
+  # install optional dependencies
+  #- vcpkg install --recurse --triplet %VCPKG_ARCH% bullet3 flann freeglut nlopt ode opengl osg tinyxml2 urdfdom
+  #- vcpkg install ipopt:%VCPKG_ARCH%
+  
+  - vcpkg integrate install
+
+  - cmd: cd C:\projects\dart
+  - cmd: md build
+  - cmd: cd build
+  - cmd: cmake %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%configuration% -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
+  
+# preserve contents of selected directories and files across project builds
+cache:
+  - C:\tools\vcpkg\installed -> .appveyor.yml
+
+build:
+  project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project
+  parallel: true                           # enable MSBuild parallel builds
+  verbosity: quiet                         # MSBuild verbosity level (quiet|minimal|normal|detailed)
+
+#test_script:
+  #- cmd: ctest --build-config %configuration% --parallel 4 --output-on-failure

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -37,6 +38,7 @@
 
 #include <Eigen/Eigen>
 
+#include "dart/math/Constants.hpp"
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/LoadGlut.hpp"
 
@@ -76,6 +78,8 @@ namespace gui {
 void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
                  const double _length, const double _thickness,
                  const double _arrowThickness) {
+  const double pi = math::constantsd::pi();
+
   Eigen::Vector3d normDir = _dir;
   normDir.normalize();
 
@@ -93,7 +97,7 @@ void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
 
   glPushMatrix();
   glTranslatef(_pt[0], _pt[1], _pt[2]);
-  glRotated(acos(normDir[2])*180/M_PI, -normDir[1], normDir[0], 0);
+  glRotated(acos(normDir[2])*180/pi, -normDir[1], normDir[0], 0);
   gluCylinder(c, _thickness, _thickness, _length-arrowLength, 16, 16);
 
   // draw the arrowhed as a cone
@@ -111,6 +115,8 @@ void drawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
 // end
 void drawArrow2D(const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec,
                  double _thickness) {
+  const double pi = math::constantsd::pi();
+
   // draw the arrow body as a thick line
   glLineWidth(_thickness);
   glBegin(GL_LINES);
@@ -122,7 +128,7 @@ void drawArrow2D(const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec,
   double theta = atan2(_vec[1], _vec[0]);
   glPushMatrix();
   glTranslatef(_pt[0]+_vec[0], _pt[1]+_vec[1], 0.0);
-  glRotatef(theta*180.0/M_PI, 0.0, 0.0, 1.0);
+  glRotatef(theta*180.0/pi, 0.0, 0.0, 1.0);
   glTranslatef(_thickness, 0.0, 0.0);
   glBegin(GL_TRIANGLES);
   glVertex2f(0.0, _thickness);

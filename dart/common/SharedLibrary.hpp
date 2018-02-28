@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -31,57 +33,108 @@
 #ifndef DART_COMMON_SHAREDLIBRARY_HPP_
 #define DART_COMMON_SHAREDLIBRARY_HPP_
 
+#include <memory>
 #include <string>
+#include <boost/filesystem.hpp>
 #include "dart/common/Platform.hpp"
 
 #if DART_OS_LINUX
+
 #define DYNLIB_HANDLE void*
+
 #elif DART_OS_MACOS
+
 #define DYNLIB_HANDLE void*
+
 #elif DART_OS_WINDOWS
+
+#ifdef NOMINMAX
+#include <windows.h>
+#else
+#define NOMINMAX
+#include <windows.h>
+#undef NOMINMAX
+#endif
+using hInstance = HINSTANCE__*;
 #define DYNLIB_HANDLE hInstance
+
 #endif
 
 namespace dart {
 namespace common {
 
+namespace detail {
+class SharedLibraryManager;
+} // namespace detail
+
 /// SharedLibrary is a RAII object wrapping a shared library.
 class SharedLibrary
 {
-public:
-  /// Constructor
-  ///
-  /// \param[in] The filename of the shared library. If the filename doesn't
-  /// include the extension, this function will use the best guess depending on
-  /// the OS (e.g., '.so' for Linux, '.dylib' for macOS, and '.dll' for
-  /// Windows).
-  /// \throw std::runtime_error upon the file loading failure.
-  explicit SharedLibrary(const std::string& fileName);
+protected:
+  enum ProtectedConstructionTag
+  {
+    ProtectedConstruction
+  };
 
-  /// Destructor
+public:
+  /// Creates a SharedLibrary from a path to the shared library.
+  ///
+  /// \note SharedLibrary should be always created from this create function.
+  /// \param[in] path The path to the shared library. The path can be a relative
+  /// path or an absolute path. If the path doens't exist this function returns
+  /// nullptr. If the path exist, the path will be stored as the canonical path
+  /// where a canonical path is an absolute path that has no elements which are
+  /// symbolic links, and no dot or dot dot elements such as
+  /// "/path/../to/yourfile".
+  /// \return Pointer to the created SharedLibrary upon success in loading.
+  /// Otherwise, returns nullptr.
+  static std::shared_ptr<SharedLibrary> create(
+      const boost::filesystem::path& path);
+
+  /// Constructs from a path to the shared library.
+  ///
+  /// This constructor is only called by detail::SharedLibraryManager.
+  /// ProtectedConstructionTag is necessary to enforce creating SharedLibrary
+  /// using std::make_shared.
+  ///
+  /// \note Please use create() to contruct SharedLibrary instead of this
+  /// constructor.
+  /// \param[in] path The canonical path to the shared library.
+  /// \return Pointer to the created SharedLibrary upon success in loading.
+  /// Otherwise, returns nullptr.
+  explicit SharedLibrary(
+      ProtectedConstructionTag, const boost::filesystem::path& path);
+
+  /// Destructor.
   virtual ~SharedLibrary();
 
-  /// Returns the file name of the shared library
-  const std::string& getFileName() const;
+  /// Returns the path to the shared library file.
+  const boost::filesystem::path& getCanonicalPath() const;
 
   /// Returns true if the shared library loading was successful.
-  bool isGood() const;
+  bool isValid() const;
 
-  /// Returns a symbol from the shared library
+  /// Returns a symbol from the shared library if it exists. Return nullptr
+  /// otherwise.
+  ///
+  /// You have to reinterpret_cast the return value to the appropriate type to
+  /// make use of the void* returned by this function.
   void* getSymbol(const std::string& symbolName) const;
 
 protected:
-  void load();
+  friend class detail::SharedLibraryManager;
 
-  /// Returns the last loading error
-  std::string dynlibError() const;
-
-protected:
-  /// Filename of the shared library.
-  std::string mFileName;
+  /// Canonical path to the shared library where a canonical path is an absolute
+  /// path that has no elements which are symbolic links, and no dot or dot dot
+  /// elements such as "/path/../to/yourfile".
+  boost::filesystem::path mCanonicalPath;
 
   /// Handle to the loaded library.
   DYNLIB_HANDLE mInstance;
+
+private:
+  /// Returns the last loading error.
+  std::string getLastError() const;
 };
 
 } // namespace common

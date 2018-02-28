@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2017, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016-2017, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -83,10 +84,8 @@ void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters)
 
   mDiameters = diameters;
 
-  mBoundingBox.setMin(-diameters * 0.5);
-  mBoundingBox.setMax(diameters * 0.5);
-
-  updateVolume();
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -149,9 +148,18 @@ bool EllipsoidShape::isSphere() const
 }
 
 //==============================================================================
-void EllipsoidShape::updateVolume()
+void EllipsoidShape::updateBoundingBox() const
+{
+  mBoundingBox.setMin(-mDiameters * 0.5);
+  mBoundingBox.setMax(mDiameters * 0.5);
+  mIsBoundingBoxDirty = false;
+}
+
+//==============================================================================
+void EllipsoidShape::updateVolume() const
 {
   mVolume = computeVolume(mDiameters);
+  mIsVolumeDirty = false;
 }
 
 }  // namespace dynamics
