@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -49,8 +50,8 @@ PrismaticJoint::~PrismaticJoint()
 //==============================================================================
 void PrismaticJoint::setProperties(const Properties& _properties)
 {
-  SingleDofJoint::setProperties(
-        static_cast<const SingleDofJoint::Properties&>(_properties));
+  GenericJoint<math::R1Space>::setProperties(
+        static_cast<const GenericJoint<math::R1Space>::Properties&>(_properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -69,7 +70,7 @@ void PrismaticJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 PrismaticJoint::Properties PrismaticJoint::getPrismaticJointProperties() const
 {
-  return Properties(getSingleDofJointProperties(), mAspectProperties);
+  return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -123,7 +124,7 @@ void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
     return;
 
   mAspectProperties.mAxis = _axis.normalized();
-  Joint::notifyPositionUpdate();
+  Joint::notifyPositionUpdated();
   updateRelativeJacobian();
   Joint::incrementVersion();
 }
@@ -135,13 +136,28 @@ const Eigen::Vector3d& PrismaticJoint::getAxis() const
 }
 
 //==============================================================================
+GenericJoint<math::R1Space>::JacobianMatrix
+PrismaticJoint::getRelativeJacobianStatic(
+    const GenericJoint<math::R1Space>::Vector& /*positions*/) const
+{
+  GenericJoint<math::R1Space>::JacobianMatrix jacobian
+      = math::AdTLinear(Joint::mAspectProperties.mT_ChildBodyToJoint,
+                        getAxis());
+
+  // Verification
+  assert(!math::isNan(jacobian));
+
+  return jacobian;
+}
+
+//==============================================================================
 PrismaticJoint::PrismaticJoint(const Properties& properties)
   : detail::PrismaticJointBase(properties)
 {
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createPrismaticJointAspect(properties);
-  createSingleDofJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 
@@ -152,10 +168,18 @@ Joint* PrismaticJoint::clone() const
 }
 
 //==============================================================================
+void PrismaticJoint::updateDegreeOfFreedomNames()
+{
+  // Same name as the joint it belongs to.
+  if (!mDofs[0]->isNamePreserved())
+    mDofs[0]->setName(Joint::mAspectProperties.mName, false);
+}
+
+//==============================================================================
 void PrismaticJoint::updateRelativeTransform() const
 {
   mT = Joint::mAspectProperties.mT_ParentBodyToJoint
-       * Eigen::Translation3d(getAxis() * getPositionStatic())
+       * Eigen::Translation3d(getAxis() * getPositionsStatic())
        * Joint::mAspectProperties.mT_ChildBodyToJoint.inverse();
 
   // Verification
@@ -166,12 +190,7 @@ void PrismaticJoint::updateRelativeTransform() const
 void PrismaticJoint::updateRelativeJacobian(bool _mandatory) const
 {
   if(_mandatory)
-  {
-    mJacobian = math::AdTLinear(Joint::mAspectProperties.mT_ChildBodyToJoint, getAxis());
-
-    // Verification
-    assert(!math::isNan(mJacobian));
-  }
+    mJacobian = getRelativeJacobianStatic(getPositionsStatic());
 }
 
 //==============================================================================

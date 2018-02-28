@@ -1,19 +1,209 @@
 ## DART 6
 
-### DART 6.1.0 (2016-XX-XX)
+### DART 6.4.0 (201X-XX-XX)
 
-* Misc improvements and bug fixes
+* Common
 
-  * Added `virtual Shape::getType()` and deprecated `ShapeType Shpae::getShapeType()`: [#724](https://github.com/dartsim/dart/pull/724)
+  * Added ResourceRetriever::getFilePath(): [#972](https://github.com/dartsim/dart/pull/972)
 
-### DART 6.0.1 (2016-XX-XX)
+* Kinematics/Dynamics
+
+  * Added relative Jacobian functions to MetaSkeleton: [#997](https://github.com/dartsim/dart/pull/997)
+  * Added vectorized joint limit functions: [#996](https://github.com/dartsim/dart/pull/996)
+  * Added lazy evaluation for shape's volume and bounding-box computation: [#959](https://github.com/dartsim/dart/pull/959)
+  * Added IkFast support as analytic IK solver: [#887](https://github.com/dartsim/dart/pull/887)
+  * Added TranslationalJoint2D: [#1003](https://github.com/dartsim/dart/pull/1003)
+  * Fixed NaN values caused by zero-length normals in ContactConstraint: [#881](https://github.com/dartsim/dart/pull/881)
+  * Extended BodyNode::createShapeNode() to accept more types of arguments: [#986](https://github.com/dartsim/dart/pull/986)
 
 * Collision detection
 
-  * Added warnings for unsupported shape pairs of DARTCollisionDetector: [#722](https://github.com/dartsim/dart/pull/722)
+  * Added FCL 0.6 support (backport of #873): [#936](https://github.com/dartsim/dart/pull/936)
+
+* GUI
+
+  * Added support of rendering texture images: [#973](https://github.com/dartsim/dart/pull/973)
+  * Added OSG shadows: [#978](https://github.com/dartsim/dart/pull/978)
+
+* License
+
+  * Added Personal Robotics Lab and Open Source Robotics Foundation as contributors: [#929](https://github.com/dartsim/dart/pull/929)
+
+* Misc
+
+  * Added World::create(): [#962](https://github.com/dartsim/dart/pull/962)
+  * Added MetaSkeleton::hasBodyNode() and MetaSkeleton::hasJoint(): [#1000](https://github.com/dartsim/dart/pull/1000)
+  * Suppressed -Winjected-class-name warnings from Clang 5.0.0: [#964](https://github.com/dartsim/dart/pull/964)
+  * Suppressed -Wdangling-else warnings from GCC 7.2.0: [#937](https://github.com/dartsim/dart/pull/937)
+  * Changed console macros to use global namespace resolutions: [#1010](https://github.com/dartsim/dart/pull/1010)
+  * Fixed various build issues with Visual Studio: [#956](https://github.com/dartsim/dart/pull/956)
+  * Removed TinyXML dependency: [#993](https://github.com/dartsim/dart/pull/993)
+
+### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)
+
+* Collision detection
+
+  * Added a feature of disabling body node pairs to BodyNodeCollisionFilter: [#911](https://github.com/dartsim/dart/pull/911)
+
+* Kinematics/Dynamics
+
+  * Added setter and getter for WeldJointConstraint::mRelativeTransform: [#910](https://github.com/dartsim/dart/pull/910)
+
+* Parsers
+
+  * Improved SkelParser to read alpha value: [#914](https://github.com/dartsim/dart/pull/914)
+
+* Misc
+
+  * Changed not to use lambda function as an workaround for DART python binding: [#916](https://github.com/dartsim/dart/pull/916)
+
+### [DART 6.2.1 (2017-08-08)](https://github.com/dartsim/dart/milestone/37?closed=1)
+
+* Collision detection
+
+  * Fixed collision checking between objects from the same body node: [#894](https://github.com/dartsim/dart/pull/894)
+
+* Kinematics/Dynamics
+
+  * Fixed transform of ScrewJoint with thread pitch: [#855](https://github.com/dartsim/dart/pull/855)
+
+* Parsers
+
+  * Fixed incorrect reading of <use_parent_model_frame> from SDF: [#893](https://github.com/dartsim/dart/pull/893)
+  * Fixed missing reading of joint friction from URDF: [#891](https://github.com/dartsim/dart/pull/891)
+
+* Testing
+
+  * Fixed testing ODE collision detector on macOS: [#884](https://github.com/dartsim/dart/pull/884)
+  * Removed redundant main body for each test source file: [#856](https://github.com/dartsim/dart/pull/856)
+
+* Misc
+
+  * Fixed build of dart-gui-osg that depends on the presence of OSG: [#898](https://github.com/dartsim/dart/pull/898)
+  * Fixed build of examples and tutorials on macOS: [#889](https://github.com/dartsim/dart/pull/889)
+  * Fixed missing overriding method OdePlane::isPlaceable(): [#886](https://github.com/dartsim/dart/pull/886)
+  * Replaced use of enum by static constexpr: [#852](https://github.com/dartsim/dart/pull/852), [#904](https://github.com/dartsim/dart/pull/904)
+
+### [DART 6.2.0 (2017-05-15)](https://github.com/dartsim/dart/milestone/30?closed=1)
+
+* Common
+
+  * Added Factory class and applied it to collision detection creation: [#864](https://github.com/dartsim/dart/pull/864)
+  * Added readAll() to Resource and ResourceRetriever: [#875](https://github.com/dartsim/dart/pull/875)
+
+* Math
+
+  * Added accessors for diameters and radii of EllipsoidShape, and deprecated EllipsoidShape::get/setSize(): [#829](https://github.com/dartsim/dart/pull/829)
+  * Fixed Lemke LCP solver (#808 for DART 6): [#812](https://github.com/dartsim/dart/pull/812)
+
+* Collision Detection
+
+  * Added support of ODE collision detector: [#861](https://github.com/dartsim/dart/pull/861)
+  * Fixed incorrect collision filtering of BulletCollisionDetector: [#859](https://github.com/dartsim/dart/pull/859)
+
+* Simulation
+
+  * Fixed World didn't clear collision results on reset: [#863](https://github.com/dartsim/dart/pull/863)
+
+* Parsers
+
+  * Fixed incorrect creation of resource retriever in SkelParser and SdfParser: [#847](https://github.com/dartsim/dart/pull/847), [#849](https://github.com/dartsim/dart/pull/849)
+
+* GUI
+
+  * Added MotionBlurSimWindow: [#840](https://github.com/dartsim/dart/pull/840)
+  * Improved MultiSphereShape rendering in GLUT renderer: [#862](https://github.com/dartsim/dart/pull/862)
+  * Fixed incorrect parsing of materials and normal scaling from URDF: [#851](https://github.com/dartsim/dart/pull/851)
+  * Fixed the OSG renderer not rendering collision geometries: [#851](https://github.com/dartsim/dart/pull/851)
+  * Fixed that GUI was rendering white lines with nvidia drivers: [#805](https://github.com/dartsim/dart/pull/805)
+
+* Misc
+
+  * Added createShared() and createUnique() pattern: [#844](https://github.com/dartsim/dart/pull/844)
+  * Added Skeleton::getRootJoint(): [#832](https://github.com/dartsim/dart/pull/832)
+  * Added CMake targets for code formatting using clang-format: [#811](https://github.com/dartsim/dart/pull/811), [#817](https://github.com/dartsim/dart/pull/817)
+  * Renamed MultiSphereShape to MultiSphereConvexHullShape: [#865](https://github.com/dartsim/dart/pull/865)
+  * Modified the member function names pertain to lazy evaluation to be more relevant to their functionalities: [#833](https://github.com/dartsim/dart/pull/833)
+
+* Tutorials & Examples
+
+  * Allowed tutorials and examples to be built out of DART source tree: [#842](https://github.com/dartsim/dart/pull/842)
+  * Fixed tutorialDominoes-Finished that didn't work with the latest DART: [#807](https://github.com/dartsim/dart/pull/807)
+
+### DART 6.1.2 (2017-01-13)
+
+* Dynamics
+
+  * Fixed bug of ContactConstraint with kinematic joints: [#809](https://github.com/dartsim/dart/pull/809)
+
+* Misc
+
+  * Fixed that ZeroDofJoint::getIndexInTree was called: [#818](https://github.com/dartsim/dart/pull/818)
+
+### DART 6.1.1 (2016-10-14)
+
+* Build
+
+  * Modified to build DART without SIMD options by default: [#790](https://github.com/dartsim/dart/pull/790)
+  * Modified to build external libraries as separately build targets: [#787](https://github.com/dartsim/dart/pull/787)
+  * Modified to export CMake target files separately per target: [#786](https://github.com/dartsim/dart/pull/786)
+
+* Misc
+
+  * Updated lodepng up to version 20160501 : [#791](https://github.com/dartsim/dart/pull/791)
+
+### DART 6.1.0 (2016-10-07)
+
+* Collision detection
+
+  * Added distance API: [#744](https://github.com/dartsim/dart/pull/744)
+  * Fixed direction of contact normal of BulletCollisionDetector: [#763](https://github.com/dartsim/dart/pull/763)
+
+* Dynamics
+
+  * Added `computeLagrangian()` to `MetaSkeleton` and `BodyNode`: [#746](https://github.com/dartsim/dart/pull/746)
+  * Added new shapes: sphere, capsule, cone, and multi-sphere: [#770](https://github.com/dartsim/dart/pull/770), [#769](https://github.com/dartsim/dart/pull/769), [#745](https://github.com/dartsim/dart/pull/745)
+  * Changed base class of joint from SingleDofJoint/MultiDofJoint to GenericJoint: [#747](https://github.com/dartsim/dart/pull/747)
+
+* Planning
+
+  * Fixed incorrect linking to flann library: [#761](https://github.com/dartsim/dart/pull/761)
+
+* Parsers
+
+  * Added `sdf` parsing for `fixed` joint and `material` tag of visual shape: [#775](https://github.com/dartsim/dart/pull/775)
+  * Added support of urdfdom_headers 1.0: [#766](https://github.com/dartsim/dart/pull/766)
+
+* GUI
+
+  * Added ImGui for 2D graphical interface: [#781](https://github.com/dartsim/dart/pull/781)
+
+* Examples
+
+  * Added osgAtlasSimbicon and osgTinkertoy: [#781](https://github.com/dartsim/dart/pull/781)
 
 * Misc improvements and bug fixes
 
+  * Added `virtual Shape::getType()` and deprecated `ShapeType Shape::getShapeType()`: [#725](https://github.com/dartsim/dart/pull/725)
+  * Changed building with SIMD optional: [#765](https://github.com/dartsim/dart/pull/765), [#760](https://github.com/dartsim/dart/pull/760)
+  * Fixed minor build and install issues: [#773](https://github.com/dartsim/dart/pull/773), [#772](https://github.com/dartsim/dart/pull/772)
+  * Fixed Doxyfile to show missing member functions in API documentation: [#768](https://github.com/dartsim/dart/pull/768)
+  * Fixed typo: [#756](https://github.com/dartsim/dart/pull/756), [#755](https://github.com/dartsim/dart/pull/755)
+
+### DART 6.0.1 (2016-06-29)
+
+* Collision detection
+
+  * Added support of FCL 0.5 and tinyxml2 4.0: [#749](https://github.com/dartsim/dart/pull/749)
+  * Added warnings for unsupported shape pairs of DARTCollisionDetector: [#722](https://github.com/dartsim/dart/pull/722)
+
+* Dynamics
+
+  * Fixed total mass is not being updated when bodies removed from Skeleton: [#731](https://github.com/dartsim/dart/pull/731)
+
+* Misc improvements and bug fixes
+
+  * Renamed `DEPRECATED` and `FORCEINLINE` to `DART_DEPRECATED` and `DART_FORCEINLINE` to avoid name conflicts: [#742](https://github.com/dartsim/dart/pull/742)
   * Updated copyright: added CMU to copyright holder, moved individual contributors to CONTRIBUTING.md: [#723](https://github.com/dartsim/dart/pull/723)
 
 ### DART 6.0.0 (2016-05-10)
@@ -119,8 +309,58 @@
   * Removed OpenGL dependency from `dart` library: [#667](https://github.com/dartsim/dart/pull/667)
   * Removed version check for Bullet: [#636](https://github.com/dartsim/dart/pull/636), [#625](https://github.com/dartsim/dart/issues/625)
 
-
 ## DART 5
+
+### Version 5.1.6 (2017-08-08)
+
+1. Improved camera movement of OpenGL GUI: smooth zooming and translation 
+    * [Pull request #843](https://github.com/dartsim/dart/pull/843)
+
+1. Removed debian meta files from the main DART repository
+    * [Pull request #853](https://github.com/dartsim/dart/pull/853)
+
+### Version 5.1.5 (2017-01-20)
+
+1. Fixed Lemke LCP solver for several failing cases
+    * [Pull request #808](https://github.com/dartsim/dart/pull/808)
+
+1. Increase minimum required Ipopt version to 3.11.9
+    * [Pull request #800](https://github.com/dartsim/dart/pull/800)
+
+1. Added support of urdfdom_headers 1.0 for DART 5.1 (backport of [#766](https://github.com/dartsim/dart/pull/766))
+    * [Pull request #799](https://github.com/dartsim/dart/pull/799)
+
+### Version 5.1.4 (2016-10-14)
+
+1. Fixed inconsistent frame rate of GlutWindow
+    * [Pull request #794](https://github.com/dartsim/dart/pull/794)
+
+### Version 5.1.3 (2016-10-07)
+
+1. Updated to support Bullet built with double precision (backport of [#660](https://github.com/dartsim/dart/pull/660))
+    * [Pull request #777](https://github.com/dartsim/dart/pull/777)
+
+1. Modified to use btGImpactMeshShape instead of btConvexTriangleMeshShape for mesh
+    * [Pull request #764](https://github.com/dartsim/dart/pull/764)
+
+1. Updated to support FCL 0.5 and tinyxml 4.0 (backport of [#749](https://github.com/dartsim/dart/pull/749))
+    * [Pull request #759](https://github.com/dartsim/dart/pull/759)
+
+### Version 5.1.2 (2016-04-25)
+
+1. Fixed inverse kinematics (backporting)
+    * [Pull request #684](https://github.com/dartsim/dart/pull/684)
+
+1. Fixed aligned memory allocation with Eigen objects in loading meshes
+    * [Pull request #606](https://github.com/dartsim/dart/pull/606)
+
+1. Fixed incorrect applying joint constraint impulses (backporting)
+    * [Pull request #579](https://github.com/dartsim/dart/pull/579)
+
+1. Fixed some build and packaging issues
+    * [Pull request #559](https://github.com/dartsim/dart/pull/559)
+    * [Pull request #595](https://github.com/dartsim/dart/pull/595)
+    * [Pull request #696](https://github.com/dartsim/dart/pull/696)
 
 ### Version 5.1.1 (2015-11-06)
 
@@ -420,6 +660,11 @@
     * [Pull request #306](https://github.com/dartsim/dart/pull/306)
 
 ## DART 4
+
+### Version 4.3.7 (2018-01-05)
+
+1. Updated DART 4.3 to be compatible with urdf 1.0/tinyxml2 6/flann 1.9.1
+    * [Pull request #955](https://github.com/dartsim/dart/pull/955)
 
 ### Version 4.3.6 (2016-04-16)
 

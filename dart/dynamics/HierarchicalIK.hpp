@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -258,7 +259,7 @@ protected:
   HierarchicalIK(const SkeletonPtr& _skeleton);
 
   /// Setup the module
-  void initialize(const std::shared_ptr<HierarchicalIK> my_ptr);
+  void initialize(const std::shared_ptr<HierarchicalIK>& my_ptr);
 
   /// Copy the setup of this HierarchicalIK module into another HierarchicalIK
   /// module
@@ -347,10 +348,6 @@ protected:
 
   /// The set of modules being used by this CompositeIK
   std::unordered_set< std::shared_ptr<InverseKinematics> > mModuleSet;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// The WholeBodyIK class provides an interface for simultaneously solving all
@@ -378,10 +375,6 @@ protected:
 
   /// Constructor
   WholeBodyIK(const SkeletonPtr& _skel);
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } // namespace dynamics

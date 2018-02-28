@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,11 +36,9 @@
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/Contact.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
-#if HAVE_BULLET_COLLISION
-  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
-#endif
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -185,6 +184,12 @@ void ConstraintSolver::removeAllConstraints()
 }
 
 //==============================================================================
+void ConstraintSolver::clearLastCollisionResult()
+{
+  mCollisionResult.clear();
+}
+
+//==============================================================================
 void ConstraintSolver::setTimeStep(double _timeStep)
 {
   assert(_timeStep > 0.0 && "Time step should be positive value.");
@@ -254,6 +259,18 @@ collision::CollisionGroupPtr ConstraintSolver::getCollisionGroup()
 collision::ConstCollisionGroupPtr ConstraintSolver::getCollisionGroup() const
 {
   return mCollisionGroup;
+}
+
+//==============================================================================
+collision::CollisionOption& ConstraintSolver::getCollisionOption()
+{
+  return mCollisionOption;
+}
+
+//==============================================================================
+const collision::CollisionOption& ConstraintSolver::getCollisionOption() const
+{
+  return mCollisionOption;
 }
 
 //==============================================================================
@@ -394,6 +411,13 @@ void ConstraintSolver::updateConstraints()
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
   {
     auto& ct = mCollisionResult.getContact(i);
+
+    if (collision::Contact::isZeroNormal(ct.normal))
+    {
+      // Skip this contact. This is because we assume that a contact with
+      // zero-length normal is invalid.
+      continue;
+    }
 
     // Set colliding bodies
     auto shapeFrame1 = const_cast<dynamics::ShapeFrame*>(

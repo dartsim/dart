@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -90,6 +91,10 @@ public:
   ///
   const Eigen::Vector3d& getAxis() const;
 
+  // Documentation inherited
+  GenericJoint<math::R1Space>::JacobianMatrix getRelativeJacobianStatic(
+      const GenericJoint<math::R1Space>::Vector& positions) const override;
+
 protected:
 
   /// Constructor called by Skeleton class
@@ -99,6 +104,9 @@ protected:
   Joint* clone() const override;
 
   // Documentation inherited
+  void updateDegreeOfFreedomNames() override;
+
+  // Documentation inherited
   void updateRelativeTransform() const override;
 
   // Documentation inherited
@@ -106,11 +114,6 @@ protected:
 
   // Documentation inherited
   void updateRelativeJacobianTimeDeriv() const override;
-
-public:
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

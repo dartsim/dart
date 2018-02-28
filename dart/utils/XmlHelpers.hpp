@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -34,8 +35,6 @@
 
 #include <string>
 #include <Eigen/Dense>
-// TinyXML-2 Library
-// http://www.grinninglizard.com/tinyxml2/index.html
 #include <tinyxml2.h>
 
 #include "dart/common/Deprecated.hpp"
@@ -105,11 +104,11 @@ tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* parentElement,
 bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name);
 
 // Please use getAttributeString() instead.
-DEPRECATED(6.0)
+DART_DEPRECATED(6.0)
 std::string getAttribute(tinyxml2::XMLElement* element, const char* const name);
 
 // Please use getAttributeDouble() instead.
-DEPRECATED(6.0)
+DART_DEPRECATED(6.0)
 void getAttribute(tinyxml2::XMLElement* element, const char* const name, double* d);
 
 std::string     getAttributeString  (const tinyxml2::XMLElement* element, const std::string& attributeName);

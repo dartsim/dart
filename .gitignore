@@ -9,6 +9,7 @@ TAGS
 .DS_Store
 .cproject
 .project
+.vscode
 *.orig
 *.idb
 *.pdb
@@ -24,3 +25,4 @@ TAGS
 /nbproject/
 /doxygen/html/
 docs/readthedocs/site
+data/screencap/*

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,6 +31,8 @@
  */
 
 #include "dart/dynamics/ArrowShape.hpp"
+
+#include "dart/math/Constants.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -63,7 +66,7 @@ ArrowShape::ArrowShape(const Eigen::Vector3d& _tail,
   instantiate(_resolution);
   configureArrow(mTail, mHead, mProperties);
   setColorMode(MeshShape::COLOR_INDEX);
-  notifyColorUpdate(_color);
+  notifyColorUpdated(_color);
 }
 
 //==============================================================================
@@ -92,7 +95,7 @@ void ArrowShape::setProperties(const Properties& _properties)
 }
 
 //==============================================================================
-void ArrowShape::notifyColorUpdate(const Eigen::Vector4d& _color)
+void ArrowShape::notifyColorUpdated(const Eigen::Vector4d& _color)
 {
   for(std::size_t i=0; i<mMesh->mNumMeshes; ++i)
   {
@@ -118,7 +121,7 @@ static void constructArrowTip(aiMesh* mesh, double base, double tip,
   std::size_t resolution = (mesh->mNumVertices-1)/2;
   for(std::size_t i=0; i<resolution; ++i)
   {
-    double theta = (double)(i)/(double)(resolution)*2*M_PI;
+    double theta = (double)(i)/(double)(resolution)*2*math::constantsd::pi();
 
     double R = properties.mRadius;
     double x = R*cos(theta);
@@ -145,7 +148,7 @@ static void constructArrowBody(aiMesh* mesh, double z1, double z2,
   std::size_t resolution = mesh->mNumVertices/2;
   for(std::size_t i=0; i<resolution; ++i)
   {
-    double theta = (double)(i)/(double)(resolution)*2*M_PI;
+    double theta = (double)(i)/(double)(resolution)*2*math::constantsd::pi();
 
     double R = properties.mRadius;
     double x = R*cos(theta);
@@ -230,8 +233,8 @@ void ArrowShape::configureArrow(const Eigen::Vector3d& _tail,
     for(std::size_t j=0; j<4; ++j)
       node->mTransformation[i][j] = tf(i,j);
 
-  _updateBoundingBoxDim();
-  updateVolume();
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
@@ -282,7 +285,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   {
     mesh->mNormals[2*i].Set(0.0f, 0.0f, 1.0f);
 
-    double theta = (double)(i)/(double)(resolution)*2*M_PI;
+    double theta = (double)(i)/(double)(resolution)*2*math::constantsd::pi();
     mesh->mNormals[2*i+1].Set(cos(theta), sin(theta), 0.0f);
   }
   mesh->mNormals[mesh->mNumVertices-1].Set(0.0f, 0.0f, -1.0f);
@@ -290,7 +293,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   mesh = scene->mMeshes[1];
   for(std::size_t i=0; i<resolution; ++i)
   {
-    double theta = (double)(i)/(double)(resolution)*2*M_PI;
+    double theta = (double)(i)/(double)(resolution)*2*math::constantsd::pi();
     mesh->mNormals[2*i].Set(cos(theta), sin(theta), 0.0f);
     mesh->mNormals[2*i+1].Set(cos(theta), sin(theta), 0.0f);
   }
@@ -300,7 +303,7 @@ void ArrowShape::instantiate(std::size_t resolution)
   {
     mesh->mNormals[2*i].Set(0.0f, 0.0f, -1.0f);
 
-    double theta = (double)(i)/(double)(resolution)*2*M_PI;
+    double theta = (double)(i)/(double)(resolution)*2* math::constantsd::pi();
     mesh->mNormals[2*i+1].Set(cos(theta), sin(theta), 0.0f);
   }
   mesh->mNormals[mesh->mNumVertices-1].Set(0.0f, 0.0f, 1.0f);

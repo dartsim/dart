@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -70,13 +71,13 @@ public:
   /// Get the BodyNode this Marker belongs to
   ///
   /// Deprecated: Use getBodyNodePtr() instead
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   BodyNode* getBodyNode();
 
   /// Get the (const) BodyNode this Marker belongs to
   ///
   /// Deprecated: Use getBodyNodePtr() instead
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const BodyNode* getBodyNode() const;
 
   /// Get position of this marker in the parent body node coordinates
@@ -119,10 +120,6 @@ private:
 
   /// Counts the number of markers globally.
   static int msMarkerCount;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 };
 

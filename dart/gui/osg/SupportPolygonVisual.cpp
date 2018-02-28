@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -32,7 +33,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
-#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/math/Helpers.hpp"
 
 #include "dart/gui/osg/SupportPolygonVisual.hpp"
@@ -153,8 +154,8 @@ void SupportPolygonVisual::setCentroidRadius(double radius)
 
   mCentroidRadius = radius;
   const dart::dynamics::ShapePtr& shape = mCentroid->getShape();
-  std::static_pointer_cast<dart::dynamics::EllipsoidShape>(shape)->setSize(
-        mCentroidRadius/2.0*Eigen::Vector3d::Ones());
+  std::static_pointer_cast<dart::dynamics::SphereShape>(shape)->setRadius(
+        mCentroidRadius/4.0);
   shape->addDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
 }
 
@@ -192,8 +193,8 @@ void SupportPolygonVisual::setCenterOfMassRadius(double radius)
 
   mComRadius = radius;
   const dart::dynamics::ShapePtr& shape = mCom->getShape();
-  std::static_pointer_cast<dart::dynamics::EllipsoidShape>(shape)->setSize(
-        mComRadius/2.0*Eigen::Vector3d::Ones());
+  std::static_pointer_cast<dart::dynamics::SphereShape>(shape)->setRadius(
+        mComRadius/4.0);
   shape->addDataVariance(dart::dynamics::Shape::DYNAMIC_PRIMITIVE);
 }
 
@@ -370,8 +371,7 @@ void SupportPolygonVisual::initialize()
 
   mCentroidRadius = 0.12;
   mCentroid->setShape(
-        std::make_shared<dart::dynamics::EllipsoidShape>(
-          mCentroidRadius/2.0*Eigen::Vector3d::Ones()));
+        std::make_shared<dart::dynamics::SphereShape>(mCentroidRadius/4.0));
 
   mCentroid->getVisualAspect(true)->setColor(
         Eigen::Vector4d(color[0], color[1], color[2], color[3]));
@@ -387,8 +387,7 @@ void SupportPolygonVisual::initialize()
         dart::dynamics::Frame::World(), "com");
 
   mComRadius = mCentroidRadius;
-  mCom->setShape(std::make_shared<dart::dynamics::EllipsoidShape>(
-                                mComRadius/2.0*Eigen::Vector3d::Ones()));
+  mCom->setShape(std::make_shared<dart::dynamics::SphereShape>(mComRadius/4.0));
   mCom->getShape()->addDataVariance(dart::dynamics::Shape::DYNAMIC_COLOR);
 
   mComNode = new ShapeFrameNode(mCom.get(), nullptr);

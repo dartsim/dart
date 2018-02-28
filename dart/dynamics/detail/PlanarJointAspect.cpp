@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -124,7 +125,7 @@ void PlanarJointUniqueProperties::setArbitraryPlane(
   // Second translational axis
   mTransAxis2 = _transAxis2.normalized();
 
-  // Orthogonalize translational axese
+  // Orthogonalize translational axes
   double dotProduct = mTransAxis1.dot(mTransAxis2);
   assert(std::abs(dotProduct) < 1.0 - 1e-6);
   if (std::abs(dotProduct) > 1e-6)
@@ -136,10 +137,10 @@ void PlanarJointUniqueProperties::setArbitraryPlane(
 
 //==============================================================================
 PlanarJointProperties::PlanarJointProperties(
-    const MultiDofJoint<3>::Properties& _multiDofProperties,
-    const PlanarJointUniqueProperties& _planarProperties)
-  : MultiDofJoint<3>::Properties(_multiDofProperties),
-    PlanarJointUniqueProperties(_planarProperties)
+    const GenericJoint<math::R3Space>::Properties& genericJointProperties,
+    const PlanarJointUniqueProperties& planarProperties)
+  : GenericJoint<math::R3Space>::Properties(genericJointProperties),
+    PlanarJointUniqueProperties(planarProperties)
 {
   // Do nothing
 }

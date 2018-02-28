@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -53,7 +54,7 @@ DefaultEventHandler::DefaultEventHandler(Viewer* _viewer)
     mLastCursorPosition(Eigen::Vector2d::Zero()),
     mLastModKeyMask(0)
 {
-  mViewer->addInstructionText("Spacebar:     Turn simulation on/off for any active worlds\n");
+  mViewer->addInstructionText("Spacebar:     Turn simulation on/off\n");
   mViewer->addInstructionText("Ctrl+H:       Turn headlights on/off\n");
 
   for(std::size_t i=0; i<NUM_MOUSE_BUTTONS; ++i)

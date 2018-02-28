@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -97,6 +98,12 @@ JacobianNode::JacobianNode(BodyNode* bn)
 //==============================================================================
 void JacobianNode::notifyJacobianUpdate()
 {
+  dirtyJacobian();
+}
+
+//==============================================================================
+void JacobianNode::dirtyJacobian()
+{
   // mIsWorldJacobianDirty depends on mIsBodyJacobianDirty, so we only need to
   // check mIsBodyJacobianDirty if we want to terminate.
   if(mIsBodyJacobianDirty)
@@ -106,11 +113,17 @@ void JacobianNode::notifyJacobianUpdate()
   mIsWorldJacobianDirty = true;
 
   for(JacobianNode* child : mChildJacobianNodes)
-    child->notifyJacobianUpdate();
+    child->dirtyJacobian();
 }
 
 //==============================================================================
 void JacobianNode::notifyJacobianDerivUpdate()
+{
+  dirtyJacobianDeriv();
+}
+
+//==============================================================================
+void JacobianNode::dirtyJacobianDeriv()
 {
   // These two flags are independent of each other, so we must check that both
   // are true if we want to terminate early.
@@ -121,7 +134,7 @@ void JacobianNode::notifyJacobianDerivUpdate()
   mIsWorldJacobianClassicDerivDirty = true;
 
   for(JacobianNode* child : mChildJacobianNodes)
-    child->notifyJacobianDerivUpdate();
+    child->dirtyJacobianDeriv();
 }
 
 } // namespace dynamics

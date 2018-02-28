@@ -1,33 +1,72 @@
+# Dependency checks
+if (NOT TARGET dart-utils)
+  return()
+endif()
+
+find_package(OpenGL QUIET)
+dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
+
+if(WIN32 AND NOT CYGWIN)
+  set(GLUT_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
+  set(GLUT_LIBRARIES glut32)
+  set(HAVE_GLUT TRUE)
+else()
+  find_package(GLUT QUIET)
+  dart_check_optional_package(GLUT "dart-gui" "freeglut3")
+  if(GLUT_FOUND)
+    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
+    set(HAVE_GLUT TRUE)
+  else()
+    set(HAVE_GLUT FALSE)
+  endif()
+endif()
+
+find_package(glfw3 QUIET)
+dart_check_optional_package(glfw3 "dart-gui" "glfw3")
+
 # Search all header and source files
-file(GLOB hdrs "*.hpp" "*.h")
-file(GLOB srcs "*.cpp")
+file(GLOB hdrs "*.hpp" "glut/*.hpp")
+file(GLOB srcs "*.cpp" "glut/*.cpp")
 
-include_directories(SYSTEM ${OPENGL_INCLUDE_DIR})
+# Set local target name
+set(target_name ${PROJECT_NAME}-gui)
+set(component_name gui)
 
-if(HAVE_GLUT)
-  add_subdirectory(glut)
-endif(HAVE_GLUT)
+# Add target
+dart_add_library(${target_name} ${hdrs} ${srcs})
+target_include_directories(
+  ${target_name} SYSTEM
+  PUBLIC
+    ${OPENGL_INCLUDE_DIR}
+    ${GLUT_INCLUDE_DIR}
+)
+target_link_libraries(
+  ${target_name}
+  PUBLIC
+    dart-utils
+    ${GLUT_LIBRARY}
+    ${OPENGL_LIBRARIES}
+    ${PROJECT_NAME}-external-lodepng
+    ${PROJECT_NAME}-external-imgui
+)
 
-if(HAVE_GLFW)
-  add_subdirectory(glfw)
-endif(HAVE_GLFW)
+# Component
+add_component(${PROJECT_NAME} ${component_name})
+add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+add_component_dependencies(
+  ${PROJECT_NAME}
+  ${component_name}
+  utils
+  external-lodepng
+  external-imgui
+)
 
-if(HAVE_OPENSCENEGRAPH)
-  add_subdirectory(osg)
-endif(HAVE_OPENSCENEGRAPH)
-
-set(dart_gui_hdrs ${dart_gui_hdrs} ${hdrs})
-set(dart_gui_srcs ${dart_gui_srcs} ${srcs})
-
-# Library
-dart_add_library(dart-gui ${srcs} ${hdrs})
-target_link_libraries(dart-gui dart-utils ${OPENGL_LIBRARIES})
+# Add subdirectories
+#add_subdirectory(glfw)
+add_subdirectory(osg)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})
-if(HAVE_OPENSCENEGRAPH)
-  list(APPEND header_names "osg/osg.hpp")
-endif(HAVE_OPENSCENEGRAPH)
 dart_generate_include_header_list(
   gui_headers
   "dart/gui/"
@@ -45,8 +84,3 @@ install(
   DESTINATION include/dart/gui
   COMPONENT headers
 )
-install(TARGETS dart-gui EXPORT DARTTargets DESTINATION lib)
-
-# Coverage test files
-set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"
-    CACHE INTERNAL "files for coverage tests")

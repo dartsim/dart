@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -35,8 +36,10 @@
 #include <map>
 #include <vector>
 #include "dart/collision/SmartPointer.hpp"
-#include "dart/collision/Option.hpp"
-#include "dart/collision/Result.hpp"
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/DistanceOption.hpp"
+#include "dart/collision/DistanceResult.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
@@ -97,7 +100,7 @@ public:
   void addShapeFramesOf(const dynamics::BodyNode* bodyNode,
                         const Others*... others);
 
-  /// Add ShapeFrames of Skeleton, and also add another ShapeFrames of other
+  /// Add ShapeFrames of MetaSkeleton, and also add another ShapeFrames of other
   /// various objects.
   template <typename... Others>
   void addShapeFramesOf(const dynamics::MetaSkeleton* skeleton,
@@ -144,10 +147,10 @@ public:
   void removeShapeFramesOf(const dynamics::BodyNode* bodyNode,
                            const Others*... others);
 
-  /// Remove ShapeFrames of Skeleton, and also remove another ShapeFrames of
+  /// Remove ShapeFrames of MetaSkeleton, and also remove another ShapeFrames of
   /// other various objects.
   template <typename... Others>
-  void removeShapeFramesOf(const dynamics::Skeleton* skeleton,
+  void removeShapeFramesOf(const dynamics::MetaSkeleton* skeleton,
                            const Others*... others);
 
   /// Do nothing. This function is for terminating the recursive variadic
@@ -176,9 +179,38 @@ public:
   /// Return false if the engine type of the other CollisionGroup is different
   /// from this CollisionObject engine.
   bool collide(
-      CollisionGroup* group,
+      CollisionGroup* otherGroup,
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr);
+
+  /// Get the minimum signed distance between the Shape pairs in this
+  /// CollisionGroup.
+  ///
+  /// The detailed results are stored in the given DistanceResult if provided.
+  ///
+  /// The results can be different by DistanceOption. By default, non-negative
+  /// minimum distance (distance >= 0) is returned for all the shape pairs
+  /// without computing nearest points.
+  double distance(
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr);
+
+  /// Get the minimum signed distance between the Shape pairs where a pair
+  /// consist of two shapes from each groups (one from this CollisionGroup and
+  /// one from otherGroup).
+  ///
+  /// Note that the distance between shapes within the same CollisionGroup
+  /// are not accounted.
+  ///
+  /// The detailed results are stored in the given DistanceResult if provided.
+  ///
+  /// The results can be different by DistanceOption. By default, non-negative
+  /// minimum distance (distance >= 0) is returned for all the shape pairs
+  /// without computing nearest points.
+  double distance(
+      CollisionGroup* otherGroup,
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr);
 
 protected:
 

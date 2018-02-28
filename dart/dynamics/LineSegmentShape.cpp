@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -37,10 +38,12 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+const Eigen::Vector3d LineSegmentShape::mDummyVertex = Eigen::Vector3d::Zero();
+
+//==============================================================================
 LineSegmentShape::LineSegmentShape(float _thickness)
   : Shape(LINE_SEGMENT),
-    mThickness(_thickness),
-    mDummyVertex(Eigen::Vector3d::Zero())
+    mThickness(_thickness)
 {
   if (_thickness <= 0.0f)
   {
@@ -50,7 +53,6 @@ LineSegmentShape::LineSegmentShape(float _thickness)
     mThickness = 1.0f;
   }
 
-  updateVolume();
   mVariance = DYNAMIC_VERTICES;
 }
 
@@ -58,7 +60,7 @@ LineSegmentShape::LineSegmentShape(float _thickness)
 LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& _v1,
                                    const Eigen::Vector3d& _v2,
                                    float _thickness)
-  : Shape(LINE_SEGMENT),
+  : Shape(),
     mThickness(_thickness)
 {
   if (_thickness <= 0.0f)
@@ -71,7 +73,6 @@ LineSegmentShape::LineSegmentShape(const Eigen::Vector3d& _v1,
 
   addVertex(_v1);
   addVertex(_v2);
-  updateVolume();
   mVariance = DYNAMIC_VERTICES;
 }
 
@@ -195,13 +196,17 @@ const Eigen::Vector3d& LineSegmentShape::getVertex(std::size_t _idx) const
   if(_idx < mVertices.size())
     return mVertices[_idx];
 
-  if(mVertices.size()==0)
+  if(mVertices.empty())
+  {
     dtwarn << "[LineSegmentShape::getVertex] Requested vertex #" << _idx
            << ", but no vertices currently exist in this LineSegmentShape\n";
+  }
   else
+  {
     dtwarn << "[LineSegmentShape::getVertex] Requested vertex #" << _idx
            << ", but vertex indices currently only go up to "
            << mVertices.size()-1 << "\n";
+  }
 
   return mDummyVertex;
 }
@@ -238,7 +243,7 @@ void LineSegmentShape::addConnection(std::size_t _idx1, std::size_t _idx2)
 void LineSegmentShape::removeConnection(std::size_t _vertexIdx1, std::size_t _vertexIdx2)
 {
   // Search through all connections to remove any that match the request
-  Eigen::aligned_vector<Eigen::Vector2i>::iterator it = mConnections.begin();
+  common::aligned_vector<Eigen::Vector2i>::iterator it = mConnections.begin();
   while(it != mConnections.end())
   {
     const Eigen::Vector2i c = (*it);
@@ -277,7 +282,7 @@ void LineSegmentShape::removeConnection(std::size_t _connectionIdx)
 }
 
 //==============================================================================
-const Eigen::aligned_vector<Eigen::Vector2i>&
+const common::aligned_vector<Eigen::Vector2i>&
 LineSegmentShape::getConnections() const
 {
   return mConnections;
@@ -347,9 +352,38 @@ Eigen::Matrix3d LineSegmentShape::computeInertia(double _mass) const
 }
 
 //==============================================================================
-void LineSegmentShape::updateVolume()
+void LineSegmentShape::updateBoundingBox() const
+{
+  if (mVertices.empty())
+  {
+    mBoundingBox.setMin(Eigen::Vector3d::Zero());
+    mBoundingBox.setMax(Eigen::Vector3d::Zero());
+    mIsBoundingBoxDirty = false;
+    return;
+  }
+
+  Eigen::Vector3d min
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d max
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+
+  for (const auto& vertex : mVertices)
+  {
+    min = min.cwiseMin(vertex);
+    max = max.cwiseMax(vertex);
+  }
+
+  mBoundingBox.setMin(min);
+  mBoundingBox.setMax(max);
+
+  mIsBoundingBoxDirty = false;
+}
+
+//==============================================================================
+void LineSegmentShape::updateVolume() const
 {
   mVolume = 0.0;
+  mIsVolumeDirty = false;
 }
 
 } // namespace dynamics

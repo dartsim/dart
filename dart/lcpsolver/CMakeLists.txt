@@ -1,9 +1,8 @@
 # Search all header and source files
-file(GLOB hdrs "*.hpp" "*.h")
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
-
-set(dart_lcpsolver_hdrs ${hdrs} PARENT_SCOPE)
-set(dart_lcpsolver_srcs ${srcs} PARENT_SCOPE)
+dart_add_core_headers(${hdrs})
+dart_add_core_sources(${srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "lcpsolver headers" ${hdrs})
@@ -24,3 +23,5 @@ install(
   DESTINATION include/dart/lcpsolver
   COMPONENT headers
 )
+
+dart_format_add(${hdrs} ${srcs})

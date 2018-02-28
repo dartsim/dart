@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -36,7 +37,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/SingleDofJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -58,13 +59,15 @@ struct RevoluteJointUniqueProperties
 
 //==============================================================================
 struct RevoluteJointProperties :
-    SingleDofJoint::Properties,
+    GenericJoint<math::R1Space>::Properties,
     RevoluteJointUniqueProperties
 {
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(RevoluteJointProperties)
+
   RevoluteJointProperties(
-      const SingleDofJoint::Properties& _singleDofJointProperties =
-          SingleDofJoint::Properties(),
-      const RevoluteJointUniqueProperties& _revoluteProperties =
+      const GenericJoint<math::R1Space>::Properties& genericJointProperties =
+          GenericJoint<math::R1Space>::Properties(),
+      const RevoluteJointUniqueProperties& revoluteProperties =
           RevoluteJointUniqueProperties());
 
   virtual ~RevoluteJointProperties() = default;
@@ -72,7 +75,7 @@ struct RevoluteJointProperties :
 
 //==============================================================================
 using RevoluteJointBase = common::EmbedPropertiesOnTopOf<
-    RevoluteJoint, RevoluteJointUniqueProperties, SingleDofJoint>;
+    RevoluteJoint, RevoluteJointUniqueProperties, GenericJoint<math::R1Space> >;
 
 } // namespace detail
 

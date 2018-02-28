@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -200,6 +201,19 @@ double ZeroDofJoint::getPositionLowerLimit(std::size_t /*_index*/) const
 }
 
 //==============================================================================
+void ZeroDofJoint::setPositionLowerLimits(
+    const Eigen::VectorXd& /*lowerLimits*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getPositionLowerLimits() const
+{
+  return Eigen::VectorXd::Zero(0);
+}
+
+//==============================================================================
 void ZeroDofJoint::setPositionUpperLimit(std::size_t /*_index*/,
                                          double /*_position*/)
 {
@@ -210,6 +224,19 @@ void ZeroDofJoint::setPositionUpperLimit(std::size_t /*_index*/,
 double ZeroDofJoint::getPositionUpperLimit(std::size_t /*_index*/) const
 {
   return 0.0;
+}
+
+//==============================================================================
+void ZeroDofJoint::setPositionUpperLimits(
+    const Eigen::VectorXd& /*upperLimits*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getPositionUpperLimits() const
+{
+  return Eigen::VectorXd::Zero(0);
 }
 
 //==============================================================================
@@ -292,6 +319,18 @@ double ZeroDofJoint::getVelocityLowerLimit(std::size_t /*_index*/) const
 }
 
 //==============================================================================
+void ZeroDofJoint::setVelocityLowerLimits(const Eigen::VectorXd& /*lowerLimits*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getVelocityLowerLimits() const
+{
+  return Eigen::VectorXd::Zero(0);
+}
+
+//==============================================================================
 void ZeroDofJoint::setVelocityUpperLimit(std::size_t /*_index*/,
                                          double /*_velocity*/)
 {
@@ -302,6 +341,18 @@ void ZeroDofJoint::setVelocityUpperLimit(std::size_t /*_index*/,
 double ZeroDofJoint::getVelocityUpperLimit(std::size_t /*_index*/) const
 {
   return 0.0;
+}
+
+//==============================================================================
+void ZeroDofJoint::setVelocityUpperLimits(const Eigen::VectorXd& /*upperLimits*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getVelocityUpperLimits() const
+{
+  return Eigen::VectorXd::Zero(0);
 }
 
 //==============================================================================
@@ -384,6 +435,18 @@ double ZeroDofJoint::getAccelerationLowerLimit(std::size_t /*_index*/) const
 }
 
 //==============================================================================
+void ZeroDofJoint::setAccelerationLowerLimits(const Eigen::VectorXd& /*lowerLimits*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getAccelerationLowerLimits() const
+{
+  return Eigen::VectorXd::Zero(0);
+}
+
+//==============================================================================
 void ZeroDofJoint::setAccelerationUpperLimit(std::size_t /*_index*/,
                                              double /*_acceleration*/)
 {
@@ -397,13 +460,25 @@ double ZeroDofJoint::getAccelerationUpperLimit(std::size_t /*_index*/) const
 }
 
 //==============================================================================
+void ZeroDofJoint::setAccelerationUpperLimits(const Eigen::VectorXd& /*upperLimits*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getAccelerationUpperLimits() const
+{
+  return Eigen::VectorXd::Zero(0);
+}
+
+//==============================================================================
 void ZeroDofJoint::setForce(std::size_t /*_index*/, double /*_force*/)
 {
   // Do nothing
 }
 
 //==============================================================================
-double ZeroDofJoint::getForce(std::size_t /*_index*/)
+double ZeroDofJoint::getForce(std::size_t /*_index*/) const
 {
   return 0.0;
 }
@@ -439,6 +514,18 @@ double ZeroDofJoint::getForceLowerLimit(std::size_t /*_index*/) const
 }
 
 //==============================================================================
+void ZeroDofJoint::setForceLowerLimits(const Eigen::VectorXd& /*lowerLimits*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getForceLowerLimits() const
+{
+  return Eigen::VectorXd::Zero(0);
+}
+
+//==============================================================================
 void ZeroDofJoint::setForceUpperLimit(std::size_t /*_index*/, double /*_force*/)
 {
   // Do nothing
@@ -448,6 +535,18 @@ void ZeroDofJoint::setForceUpperLimit(std::size_t /*_index*/, double /*_force*/)
 double ZeroDofJoint::getForceUpperLimit(std::size_t /*_index*/) const
 {
   return 0.0;
+}
+
+//==============================================================================
+void ZeroDofJoint::setForceUpperLimits(const Eigen::VectorXd& /*upperLimits*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getForceUpperLimits() const
+{
+  return Eigen::VectorXd::Zero(0);
 }
 
 //==============================================================================
@@ -556,7 +655,7 @@ double ZeroDofJoint::getCoulombFriction(std::size_t /*_index*/) const
 }
 
 //==============================================================================
-double ZeroDofJoint::getPotentialEnergy() const
+double ZeroDofJoint::computePotentialEnergy() const
 {
   return 0.0;
 }

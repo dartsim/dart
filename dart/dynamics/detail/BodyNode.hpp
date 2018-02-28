@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -150,6 +151,29 @@ ShapeNode* BodyNode::createShapeNode(ShapeNodeProperties properties,
   }
 
   return createNode<ShapeNode>(properties);
+}
+
+//==============================================================================
+template <class ShapeType>
+ShapeNode* BodyNode::createShapeNode(const std::shared_ptr<ShapeType>& shape)
+{
+  ShapeNode::BasicProperties properties;
+  properties.mShape = shape;
+
+  return createShapeNode(properties, true);
+}
+
+//==============================================================================
+template <class ShapeType, class StringType>
+ShapeNode* BodyNode::createShapeNode(
+    const std::shared_ptr<ShapeType>& shape,
+    StringType&& name)
+{
+  ShapeNode::BasicProperties properties;
+  properties.mShape = shape;
+  properties.mName = std::forward<StringType>(name);
+
+  return createShapeNode(properties, false);
 }
 
 //==============================================================================

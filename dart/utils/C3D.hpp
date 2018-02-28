@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -80,9 +81,9 @@ typedef struct c3d_frame_t {
 float convertDecToFloat(char _bytes[4]);
 void convertFloatToDec(float _f, char* _bytes);
 
-bool loadC3DFile( const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData,
+bool loadC3DFile( const char* _fileName, std::vector<std::vector<Eigen::Vector3d>>& _pointData,
                   int* _nFrame, int* _nMarker, double* _freq );
-bool saveC3DFile( const char* _fileName, Eigen::EIGEN_VV_VEC3D& _pointData,
+bool saveC3DFile( const char* _fileName, std::vector<std::vector<Eigen::Vector3d>>& _pointData,
                   int _nFrame, int _nMarker, double _freq );
 
 } // namespace utils

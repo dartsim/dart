@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -50,9 +51,6 @@ class ShapeNodeCollisionObject;
 
 namespace constraint {
 
-// TODO:
-//   - RootSkeleton concept
-
 /// ConstraintSolver manages constraints and computes constraint impulses
 class ConstraintSolver
 {
@@ -92,6 +90,9 @@ public:
   /// Remove all constraints
   void removeAllConstraints();
 
+  /// Clears the last collision result
+  void clearLastCollisionResult();
+
   /// Set time step
   void setTimeStep(double _timeStep);
 
@@ -101,7 +102,7 @@ public:
   /// Set collision detector. This function acquires ownership of the
   /// CollisionDetector passed as an argument. This method is deprecated in
   /// favor of the overload that accepts a std::shared_ptr.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void setCollisionDetector(collision::CollisionDetector* collisionDetector);
 
   /// Set collision detector
@@ -121,6 +122,14 @@ public:
   /// Return (const) collision group of collision objects that are added to this
   /// ConstraintSolver
   collision::ConstCollisionGroupPtr getCollisionGroup() const;
+
+  /// Returns collision option that is used for collision checkings in this
+  /// ConstraintSolver to generate contact constraints.
+  collision::CollisionOption& getCollisionOption();
+
+  /// Returns collision option that is used for collision checkings in this
+  /// ConstraintSolver to generate contact constraints.
+  const collision::CollisionOption& getCollisionOption() const;
 
   /// Return the last collision checking result
   collision::CollisionResult& getLastCollisionResult();

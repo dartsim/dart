@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -33,6 +34,8 @@
 
 #include <iostream>
 
+#include "dart/external/odelcpsolver/lcp.h"
+
 #include "dart/common/Console.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/PointMass.hpp"
@@ -41,7 +44,6 @@
 #include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/collision/CollisionObject.hpp"
-#include "dart/lcpsolver/lcp.h"
 
 #define DART_EPSILON 1e-6
 #define DART_ERROR_ALLOWANCE 0.0
@@ -887,24 +889,14 @@ void SoftContactConstraint::getRelVelocity(double* _vel)
     _vel[i] = 0.0;
 
     if (mPointMass1)
-    {
       _vel[i] -= mJacobians1[i].tail<3>().dot(mPointMass1->getBodyVelocity());
-    }
     else
-    {
-      if (mBodyNode1->isReactive())
-        _vel[i] -= mJacobians1[i].dot(mBodyNode1->getSpatialVelocity());
-    }
+      _vel[i] -= mJacobians1[i].dot(mBodyNode1->getSpatialVelocity());
 
     if (mPointMass2)
-    {
       _vel[i] -= mJacobians2[i].tail<3>().dot(mPointMass2->getBodyVelocity());
-    }
     else
-    {
-      if (mBodyNode2->isReactive())
-        _vel[i] -= mJacobians2[i].dot(mBodyNode2->getSpatialVelocity());
-    }
+      _vel[i] -= mJacobians2[i].dot(mBodyNode2->getSpatialVelocity());
 
 //    std::cout << "_relVel[i + _idx]: " << _relVel[i + _idx] << std::endl;
   }

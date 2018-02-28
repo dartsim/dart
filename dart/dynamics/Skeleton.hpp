@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -57,6 +58,16 @@ class Skeleton :
     public detail::SkeletonAspectBase
 {
 public:
+  // Some of non-virtual functions of MetaSkeleton are hidden because of the
+  // functions of the same name in this class. We expose those functions as
+  // follows.
+  using MetaSkeleton::getJacobian;
+  using MetaSkeleton::getLinearJacobian;
+  using MetaSkeleton::getAngularJacobian;
+  using MetaSkeleton::getJacobianSpatialDeriv;
+  using MetaSkeleton::getJacobianClassicDeriv;
+  using MetaSkeleton::getLinearJacobianDeriv;
+  using MetaSkeleton::getAngularJacobianDeriv;
 
   using AspectPropertiesData = detail::SkeletonAspectProperties;
   using AspectProperties = common::Aspect::MakeProperties<AspectPropertiesData>;
@@ -208,7 +219,7 @@ public:
   void setProperties(const AspectProperties& properties);
 
   /// Get the Properties of this Skeleton
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const AspectProperties& getSkeletonProperties() const;
 
   /// Set the AspectProperties of this Skeleton
@@ -220,13 +231,13 @@ public:
   /// Get name.
   const std::string& getName() const override;
 
-  /// Deprecated. Please use enableSelfCollision() and setAdjacentBodyCheck()
-  /// instead.
-  DEPRECATED(6.0)
+  /// Deprecated. Please use enableSelfCollisionCheck() and
+  /// setAdjacentBodyCheck() instead.
+  DART_DEPRECATED(6.0)
   void enableSelfCollision(bool enableAdjacentBodyCheck = false);
 
   /// Deprecated. Please use disableSelfCollisionCheck() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void disableSelfCollision();
 
   /// Set whether to check self-collision.
@@ -344,6 +355,13 @@ public:
   /// _treeIdx
   const BodyNode* getRootBodyNode(std::size_t _treeIdx = 0) const;
 
+  /// Get the root Joint of the tree whose index in this Skeleton is treeIdx
+  Joint* getRootJoint(std::size_t treeIdx = 0u);
+
+  /// Get the const root Joint of the tree whose index in this Skeleton is
+  /// treeIdx
+  const Joint* getRootJoint(std::size_t treeIdx = 0u) const;
+
   // Documentation inherited
   BodyNode* getBodyNode(std::size_t _idx) override;
 
@@ -356,11 +374,11 @@ public:
   /// Get const SoftBodyNode whose index is _idx
   const SoftBodyNode* getSoftBodyNode(std::size_t _idx) const;
 
-  /// Get body node whose name is _name
-  BodyNode* getBodyNode(const std::string& _name);
+  // Documentation inherited
+  BodyNode* getBodyNode(const std::string& name) override;
 
-  /// Get const body node whose name is _name
-  const BodyNode* getBodyNode(const std::string& _name) const;
+  // Documentation inherited
+  const BodyNode* getBodyNode(const std::string& name) const override;
 
   /// Get soft body node whose name is _name
   SoftBodyNode* getSoftBodyNode(const std::string& _name);
@@ -373,6 +391,24 @@ public:
 
   // Documentation inherited
   const std::vector<const BodyNode*>& getBodyNodes() const override;
+
+  /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  ///
+  /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
+  /// So this function returns the single BodyNode of the given name if it
+  /// exists.
+  std::vector<BodyNode*> getBodyNodes(const std::string& name) override;
+
+  /// \copydoc MetaSkeleton::getBodyNodes(const std::string&).
+  ///
+  /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
+  /// So this function returns the single BodyNode of the given name if it
+  /// exists.
+  std::vector<const BodyNode*> getBodyNodes(
+      const std::string& name) const override;
+
+  // Documentation inherited
+  bool hasBodyNode(const BodyNode* bodyNode) const override;
 
   // Documentation inherited
   std::size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
@@ -392,11 +428,32 @@ public:
   // Documentation inherited
   const Joint* getJoint(std::size_t _idx) const override;
 
-  /// Get Joint whose name is _name
-  Joint* getJoint(const std::string& _name);
+  // Documentation inherited
+  Joint* getJoint(const std::string& name) override;
 
-  /// Get const Joint whose name is _name
-  const Joint* getJoint(const std::string& _name) const;
+  // Documentation inherited
+  const Joint* getJoint(const std::string& name) const override;
+
+  // Documentation inherited
+  std::vector<Joint*> getJoints() override;
+
+  // Documentation inherited
+  std::vector<const Joint*> getJoints() const override;
+
+  /// \copydoc MetaSkeleton::getJoints(const std::string&).
+  ///
+  /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
+  /// So this function returns the single Joint of the given name if it exists.
+  std::vector<Joint*> getJoints(const std::string& name) override;
+
+  /// \copydoc MetaSkeleton::getJoints(const std::string&).
+  ///
+  /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
+  /// So this function returns the single Joint of the given name if it exists.
+  std::vector<const Joint*> getJoints(const std::string& name) const override;
+
+  // Documentation inherited
+  bool hasJoint(const Joint* joint) const override;
 
   // Documentation inherited
   std::size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;
@@ -814,19 +871,28 @@ public:
 
   /// Notify that the articulated inertia and everything that depends on it
   /// needs to be updated
+  DART_DEPRECATED(6.2)
   void notifyArticulatedInertiaUpdate(std::size_t _treeIdx);
 
+  /// Notify that the articulated inertia and everything that depends on it
+  /// needs to be updated
+  void dirtyArticulatedInertia(std::size_t _treeIdx);
+
   /// Notify that the support polygon of a tree needs to be updated
+  DART_DEPRECATED(6.2)
   void notifySupportUpdate(std::size_t _treeIdx);
 
-  // Documentation inherited
-  double getKineticEnergy() const override;
+  /// Notify that the support polygon of a tree needs to be updated
+  void dirtySupportPolygon(std::size_t _treeIdx);
 
   // Documentation inherited
-  double getPotentialEnergy() const override;
+  double computeKineticEnergy() const override;
 
   // Documentation inherited
-  DEPRECATED(6.0)
+  double computePotentialEnergy() const override;
+
+  // Documentation inherited
+  DART_DEPRECATED(6.0)
   void clearCollidingBodies() override;
 
   /// \}
@@ -899,8 +965,7 @@ public:
   friend class BodyNode;
   friend class SoftBodyNode;
   friend class Joint;
-  friend class SingleDofJoint;
-  template<std::size_t> friend class MultiDofJoint;
+  template<class> friend class GenericJoint;
   friend class DegreeOfFreedom;
   friend class Node;
   friend class ShapeNode;
@@ -1202,7 +1267,7 @@ protected:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-  mutable Eigen::aligned_vector<DataCache> mTreeCache;
+  mutable common::aligned_vector<DataCache> mTreeCache;
 
   mutable DataCache mSkelCache;
 
@@ -1238,10 +1303,6 @@ public:
 
   ///
   std::size_t mUnionIndex;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

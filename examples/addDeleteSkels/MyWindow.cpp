@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -50,10 +51,8 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
   switch (_key) {
     case ' ':  // use space key to play or stop the motion
       mSimulating = !mSimulating;
-      if (mSimulating) {
+      if (mSimulating)
         mPlay = false;
-        glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-      }
       break;
     case 'q':  // Spawn a cube
     case 'Q': {  // Spawn a cube
@@ -88,6 +87,8 @@ void MyWindow::spawnCube(const Eigen::Vector3d& _position,
   dart::dynamics::BodyNode::Properties body;
   body.mName = "cube_link";
   body.mInertia.setMass(_mass);
+  body.mInertia.setMoment(
+      dart::dynamics::BoxShape::computeInertia(_size, _mass));
   dart::dynamics::ShapePtr newBoxShape(new dart::dynamics::BoxShape(_size));
 
   dart::dynamics::FreeJoint::Properties joint;

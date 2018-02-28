@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -37,7 +38,8 @@
 namespace dart {
 namespace dynamics {
 
-class BoxShape : public Shape {
+class BoxShape : public Shape
+{
 public:
   /// \brief Constructor.
   explicit BoxShape(const Eigen::Vector3d& _size);
@@ -46,7 +48,7 @@ public:
   virtual ~BoxShape();
 
   // Documentation inherited.
-  const std::string& getType() const;
+  const std::string& getType() const override;
 
   /// Returns shape type for this class
   static const std::string& getStaticType();
@@ -69,15 +71,14 @@ public:
 
 protected:
   // Documentation inherited.
-  void updateVolume() override;
+  void updateBoundingBox() const override;
+
+  // Documentation inherited.
+  void updateVolume() const override;
 
 private:
   /// \brief Side lengths of the box
   Eigen::Vector3d mSize;
-
-public:
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace dynamics

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -37,6 +38,7 @@
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EllipsoidShape.hpp"
 
@@ -56,7 +58,13 @@ void postProcess(CollisionObject* o1, CollisionObject* o2, const CollisionOption
 
 } // anonymous namespace
 
-
+//==============================================================================
+DARTCollisionDetector::Registrar<DARTCollisionDetector>
+DARTCollisionDetector::mRegistrar{
+  DARTCollisionDetector::getStaticType(),
+  []() -> std::shared_ptr<dart::collision::DARTCollisionDetector> {
+      return dart::collision::DARTCollisionDetector::create();
+  }};
 
 //==============================================================================
 std::shared_ptr<DARTCollisionDetector> DARTCollisionDetector::create()
@@ -138,7 +146,7 @@ bool DARTCollisionDetector::collide(
     {
       auto* collObj2 = objects[j];
 
-      if (filter && !filter->needCollision(collObj1, collObj2))
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
         continue;
 
       collisionFound = checkPair(collObj1, collObj2, option, result);
@@ -200,7 +208,7 @@ bool DARTCollisionDetector::collide(
     {
       auto* collObj2 = objects2[j];
 
-      if (filter && !filter->needCollision(collObj1, collObj2))
+      if (filter && filter->ignoresCollision(collObj1, collObj2))
         continue;
 
       collisionFound = checkPair(collObj1, collObj2, option, result);
@@ -224,6 +232,31 @@ bool DARTCollisionDetector::collide(
 }
 
 //==============================================================================
+double DARTCollisionDetector::distance(
+    CollisionGroup* /*group*/,
+    const DistanceOption& /*option*/,
+    DistanceResult* /*result*/)
+{
+  dtwarn << "[DARTCollisionDetector::distance] This collision detector does "
+         << "not support (signed) distance queries. Returning 0.0.\n";
+
+  return 0.0;
+}
+
+//==============================================================================
+double DARTCollisionDetector::distance(
+    CollisionGroup* /*group1*/,
+    CollisionGroup* /*group2*/,
+    const DistanceOption& /*option*/,
+    DistanceResult* /*result*/)
+{
+  dtwarn << "[DARTCollisionDetector::distance] This collision detector does "
+         << "not support (signed) distance queries. Returning 0.0.\n";
+
+  return 0.0;
+}
+
+//==============================================================================
 DARTCollisionDetector::DARTCollisionDetector()
   : CollisionDetector()
 {
@@ -238,6 +271,9 @@ void warnUnsupportedShapeType(const dynamics::ShapeFrame* shapeFrame)
 
   const auto& shape = shapeFrame->getShape();
   const auto& shapeType = shape->getType();
+
+  if (shapeType == dynamics::SphereShape::getStaticType())
+    return;
 
   if (shapeType == dynamics::BoxShape::getStaticType())
     return;

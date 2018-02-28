@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -467,7 +468,7 @@ void BodyNode::setMass(double _mass)
 
   mAspectProperties.mInertia.setMass(_mass);
 
-  notifyArticulatedInertiaUpdate();
+  dirtyArticulatedInertia();
   const SkeletonPtr& skel = getSkeleton();
   if(skel)
     skel->updateTotalMass();
@@ -487,7 +488,7 @@ void BodyNode::setMomentOfInertia(double _Ixx, double _Iyy, double _Izz,
         _Ixx, _Iyy, _Izz,
         _Ixy, _Ixz, _Iyz);
 
-  notifyArticulatedInertiaUpdate();
+  dirtyArticulatedInertia();
 }
 
 //==============================================================================
@@ -518,7 +519,7 @@ void BodyNode::setInertia(const Inertia& _inertia)
 
   mAspectProperties.mInertia = _inertia;
 
-  notifyArticulatedInertiaUpdate();
+  dirtyArticulatedInertia();
   const SkeletonPtr& skel = getSkeleton();
   if(skel)
     skel->updateTotalMass();
@@ -557,7 +558,7 @@ void BodyNode::setLocalCOM(const Eigen::Vector3d& _com)
 {
   mAspectProperties.mInertia.setLocalCOM(_com);
 
-  notifyArticulatedInertiaUpdate();
+  dirtyArticulatedInertia();
 }
 
 //==============================================================================
@@ -877,32 +878,6 @@ const Joint* BodyNode::getChildJoint(std::size_t _index) const
 
 //==============================================================================
 DART_BAKE_SPECIALIZED_NODE_DEFINITIONS( BodyNode, ShapeNode )
-
-//==============================================================================
-ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape)
-{
-  ShapeNode::BasicProperties properties;
-  properties.mShape = shape;
-
-  return createShapeNode(properties, true);
-}
-
-//==============================================================================
-ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape,
-                                     const std::string& name)
-{
-  ShapeNode::BasicProperties properties;
-  properties.mShape = shape;
-  properties.mName = name;
-
-  return createShapeNode(properties, false);
-}
-
-//==============================================================================
-ShapeNode* BodyNode::createShapeNode(const ShapePtr& shape, const char* name)
-{
-  return createShapeNode(shape, std::string(name));
-}
 
 //==============================================================================
 const std::vector<ShapeNode*> BodyNode::getShapeNodes()
@@ -1375,7 +1350,7 @@ void BodyNode::init(const SkeletonPtr& _skeleton)
   mWorldJacobian.setZero(6, numDepGenCoords);
   mBodyJacobianSpatialDeriv.setZero(6, numDepGenCoords);
   mWorldJacobianClassicDeriv.setZero(6, numDepGenCoords);
-  notifyTransformUpdate();
+  dirtyTransform();
 }
 
 //==============================================================================
@@ -1441,9 +1416,9 @@ void BodyNode::processRemovedEntity(Entity* _oldChildEntity)
 }
 
 //==============================================================================
-void BodyNode::notifyTransformUpdate()
+void BodyNode::dirtyTransform()
 {
-  notifyVelocityUpdate(); // Global Velocity depends on the Global Transform
+  dirtyVelocity(); // Global Velocity depends on the Global Transform
 
   if(mNeedTransformUpdate)
     return;
@@ -1466,16 +1441,16 @@ void BodyNode::notifyTransformUpdate()
   // Child BodyNodes and other generic Entities are notified separately to allow
   // some optimizations
   for(std::size_t i=0; i<mChildBodyNodes.size(); ++i)
-    mChildBodyNodes[i]->notifyTransformUpdate();
+    mChildBodyNodes[i]->dirtyTransform();
 
   for(Entity* entity : mNonBodyNodeEntities)
-    entity->notifyTransformUpdate();
+    entity->dirtyTransform();
 }
 
 //==============================================================================
-void BodyNode::notifyVelocityUpdate()
+void BodyNode::dirtyVelocity()
 {
-  notifyAccelerationUpdate(); // Global Acceleration depends on Global Velocity
+  dirtyAcceleration(); // Global Acceleration depends on Global Velocity
 
   if(mNeedVelocityUpdate)
     return;
@@ -1493,14 +1468,14 @@ void BodyNode::notifyVelocityUpdate()
   // Child BodyNodes and other generic Entities are notified separately to allow
   // some optimizations
   for(std::size_t i=0; i<mChildBodyNodes.size(); ++i)
-    mChildBodyNodes[i]->notifyVelocityUpdate();
+    mChildBodyNodes[i]->dirtyVelocity();
 
   for(Entity* entity : mNonBodyNodeEntities)
-    entity->notifyVelocityUpdate();
+    entity->dirtyVelocity();
 }
 
 //==============================================================================
-void BodyNode::notifyAccelerationUpdate()
+void BodyNode::dirtyAcceleration()
 {
   // If we already know we need to update, just quit
   if(mNeedAccelerationUpdate)
@@ -1509,28 +1484,46 @@ void BodyNode::notifyAccelerationUpdate()
   mNeedAccelerationUpdate = true;
 
   for(std::size_t i=0; i<mChildBodyNodes.size(); ++i)
-    mChildBodyNodes[i]->notifyAccelerationUpdate();
+    mChildBodyNodes[i]->dirtyAcceleration();
 
   for(Entity* entity : mNonBodyNodeEntities)
-    entity->notifyAccelerationUpdate();
+    entity->dirtyAcceleration();
 }
 
 //==============================================================================
 void BodyNode::notifyArticulatedInertiaUpdate()
 {
+  dirtyArticulatedInertia();
+}
+
+//==============================================================================
+void BodyNode::dirtyArticulatedInertia()
+{
   const SkeletonPtr& skel = getSkeleton();
   if(skel)
-    skel->notifyArticulatedInertiaUpdate(mTreeIndex);
+    skel->dirtyArticulatedInertia(mTreeIndex);
 }
 
 //==============================================================================
 void BodyNode::notifyExternalForcesUpdate()
+{
+  dirtyExternalForces();
+}
+
+//==============================================================================
+void BodyNode::dirtyExternalForces()
 {
   SKEL_SET_FLAGS(mExternalForces);
 }
 
 //==============================================================================
 void BodyNode::notifyCoriolisUpdate()
+{
+  dirtyCoriolisForces();
+}
+
+//==============================================================================
+void BodyNode::dirtyCoriolisForces()
 {
   SKEL_SET_FLAGS(mCoriolisForces);
   SKEL_SET_FLAGS(mCoriolisAndGravityForces);
@@ -1616,9 +1609,8 @@ void BodyNode::updateTransmittedForceID(const Eigen::Vector3d& _gravity,
 void BodyNode::updateArtInertia(double _timeStep) const
 {
   // Set spatial inertia to the articulated body inertia
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
-  mArtInertia = mI;
-  mArtInertiaImplicit = mI;
+  mArtInertia = mAspectProperties.mInertia.getSpatialTensor();
+  mArtInertiaImplicit = mArtInertia;
 
   // and add child articulated body inertia
   for (const auto& child : mChildBodyNodes)
@@ -1902,17 +1894,36 @@ const Eigen::Vector6d& BodyNode::getConstraintImpulse() const
 }
 
 //==============================================================================
+double BodyNode::computeLagrangian(const Eigen::Vector3d& gravity) const
+{
+  return computeKineticEnergy() - computePotentialEnergy(gravity);
+}
+
+//==============================================================================
 double BodyNode::getKineticEnergy() const
 {
+  return computeKineticEnergy();
+}
+
+//==============================================================================
+double BodyNode::computeKineticEnergy() const
+{
   const Eigen::Vector6d& V = getSpatialVelocity();
-  const Eigen::Matrix6d& mI = mAspectProperties.mInertia.getSpatialTensor();
-  return 0.5 * V.dot(mI * V);
+  const Eigen::Matrix6d& G = mAspectProperties.mInertia.getSpatialTensor();
+
+  return 0.5 * V.dot(G * V);
 }
 
 //==============================================================================
 double BodyNode::getPotentialEnergy(const Eigen::Vector3d& _gravity) const
 {
-  return -getMass() * getWorldTransform().translation().dot(_gravity);
+  return computePotentialEnergy(_gravity);
+}
+
+//==============================================================================
+double BodyNode::computePotentialEnergy(const Eigen::Vector3d& gravity) const
+{
+  return -getMass() * getWorldTransform().translation().dot(gravity);
 }
 
 //==============================================================================
@@ -2074,9 +2085,13 @@ void BodyNode::aggregateSpatialToGeneralized(Eigen::VectorXd& _generalized,
   }
 
   // Project the spatial quantity to generalized coordinates
-  std::size_t iStart = mParentJoint->getIndexInTree(0);
-  _generalized.segment(iStart, mParentJoint->getNumDofs())
-      = mParentJoint->getSpatialToGeneralized(mArbitrarySpatial);
+  const auto numDofs = mParentJoint->getNumDofs();
+  if (numDofs > 0u)
+  {
+    const std::size_t iStart = mParentJoint->getIndexInTree(0);
+    _generalized.segment(iStart, numDofs)
+        = mParentJoint->getSpatialToGeneralized(mArbitrarySpatial);
+  }
 }
 
 //==============================================================================

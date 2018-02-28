@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2012-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2012-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -42,6 +43,8 @@
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/dynamics/dynamics.hpp"
+#include "dart/utils/CompositeResourceRetriever.hpp"
+#include "dart/utils/DartResourceRetriever.hpp"
 #include "dart/utils/XmlHelpers.hpp"
 
 #define SCALE_VSK 1.0e-3
@@ -425,7 +428,7 @@ bool readSegment(const tinyxml2::XMLElement* segment,
 
       if (!res)
       {
-        dtwarn << "[ParserVsk::readSegment] Faild to parse joint type.\n";
+        dtwarn << "[ParserVsk::readSegment] Failed to parse joint type.\n";
         return false;
       }
 
@@ -571,7 +574,7 @@ bool readJoint(const std::string& jointType,
   }
   else
   {
-    dtwarn << "[ParserVsk::readSegment] Faild to parse joint type.\n";
+    dtwarn << "[ParserVsk::readSegment] Failed to parse joint type.\n";
     return false;
   }
 }
@@ -587,9 +590,7 @@ bool readJointFree(const tinyxml2::XMLElement* /*jointEle*/,
   properties.mT_ParentBodyToJoint = tfFromParent;
   properties.mT_ChildBodyToJoint = Eigen::Isometry3d::Identity();
 
-  jointProperties
-      = Eigen::make_aligned_shared<dynamics::FreeJoint::Properties>(
-        properties);
+  jointProperties = dynamics::FreeJoint::Properties::createShared(properties);
 
   return true;
 }
@@ -614,9 +615,7 @@ bool readJointBall(const tinyxml2::XMLElement* /*jointEle*/,
   properties.mFrictions = Eigen::Vector3d::Constant(
         vskData.options.jointFriction);
 
-  jointProperties
-      = Eigen::make_aligned_shared<dynamics::BallJoint::Properties>(
-        properties);
+  jointProperties = dynamics::BallJoint::Properties::createShared(properties);
 
   return true;
 }
@@ -655,8 +654,7 @@ bool readJointHardySpicer(const tinyxml2::XMLElement* jointEle,
         vskData.options.jointFriction);
 
   jointProperties
-      = Eigen::make_aligned_shared<dynamics::UniversalJoint::Properties>(
-        properties);
+      = dynamics::UniversalJoint::Properties::createShared(properties);
 
   return true;
 }
@@ -677,15 +675,14 @@ bool readJointHinge(const tinyxml2::XMLElement* jointEle,
   properties.mT_ParentBodyToJoint = tfFromParent;
   properties.mT_ChildBodyToJoint = Eigen::Isometry3d::Identity();
   properties.mAxis = axis;
-  properties.mDampingCoefficient = vskData.options.jointDampingCoefficient;
-  properties.mPositionLowerLimit = vskData.options.jointPositionLowerLimit;
-  properties.mPositionUpperLimit = vskData.options.jointPositionUpperLimit;
+  properties.mDampingCoefficients[0] = vskData.options.jointDampingCoefficient;
+  properties.mPositionLowerLimits[0] = vskData.options.jointPositionLowerLimit;
+  properties.mPositionUpperLimits[0] = vskData.options.jointPositionUpperLimit;
   properties.mIsPositionLimitEnforced = true;
-  properties.mFriction = vskData.options.jointFriction;
+  properties.mFrictions[0] = vskData.options.jointFriction;
 
   jointProperties
-      = Eigen::make_aligned_shared<dynamics::RevoluteJoint::Properties>(
-        properties);
+      = dynamics::RevoluteJoint::Properties::createShared(properties);
 
   return true;
 }
@@ -701,9 +698,7 @@ bool readJointDummy(const tinyxml2::XMLElement* /*jointEle*/,
   properties.mT_ParentBodyToJoint = tfFromParent;
   properties.mT_ChildBodyToJoint = Eigen::Isometry3d::Identity();
 
-  jointProperties
-      = Eigen::make_aligned_shared<dynamics::WeldJoint::Properties>(
-        properties);
+  jointProperties = dynamics::WeldJoint::Properties::createShared(properties);
 
   return true;
 }
@@ -951,9 +946,9 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
     Eigen::Matrix3d totalMoi = Eigen::Matrix3d::Zero();
     auto numShapeNodes = bodyNode->getNumNodes<dynamics::ShapeNode>();
 
-    for (auto i = 0u; i < numShapeNodes; ++i)
+    for (auto j = 0u; j < numShapeNodes; ++j)
     {
-      auto shapeNode = bodyNode->getNode<dynamics::ShapeNode>(i);
+      auto shapeNode = bodyNode->getNode<dynamics::ShapeNode>(j);
       auto shape     = shapeNode->getShape();
       const double             mass    = density * shape->getVolume();
       const Eigen::Isometry3d& localTf = shapeNode->getRelativeTransform();
@@ -978,8 +973,13 @@ void generateShapes(const dynamics::SkeletonPtr& skel, VskData& vskData)
       dtwarn << "[VskParser::generateShapes] A BodyNode '"
              << bodyNode->getName() << "' of Skelelton '"
              << bodyNode->getSkeleton()->getName()
-             << "' has zero mass or zero inertia. Set sufficient mass and "
-             << "inertia properties for meaningful dynamic simulation.\n";
+             << "' has zero mass or zero inertia. Setting unit mass and unit "
+             << "inertia to prevent segfaults during dynamic simulation. Set "
+             << "proper mass and inertia properties for meaningful dynamic "
+             << "simulation.\n";
+
+      totalMass = 1.0;
+      totalMoi = Eigen::Matrix3d::Identity();
     }
 
     const dynamics::Inertia inertia(totalMass, Eigen::Vector3d::Zero(),
@@ -1016,10 +1016,20 @@ void tokenize(const std::string& str,
 common::ResourceRetrieverPtr getRetriever(
   const common::ResourceRetrieverPtr& retriever)
 {
-  if(retriever)
+  if (retriever)
+  {
     return retriever;
+  }
   else
-    return std::make_shared<common::LocalResourceRetriever>();
+  {
+    auto newRetriever = std::make_shared<utils::CompositeResourceRetriever>();
+    newRetriever->addSchemaRetriever(
+          "file", std::make_shared<common::LocalResourceRetriever>());
+    newRetriever->addSchemaRetriever(
+          "dart", DartResourceRetriever::create());
+
+    return DartResourceRetriever::create();
+  }
 }
 
 } // anonymous namespace

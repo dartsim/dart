@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -36,7 +37,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/dynamics/MultiDofJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 
 namespace dart {
 namespace dynamics {
@@ -59,13 +60,15 @@ struct UniversalJointUniqueProperties
 
 //==============================================================================
 struct UniversalJointProperties :
-    MultiDofJoint<2>::Properties,
+    GenericJoint<math::R2Space>::Properties,
     UniversalJointUniqueProperties
 {
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(UniversalJointProperties)
+
   UniversalJointProperties(
-      const MultiDofJoint<2>::Properties& _multiDofProperties =
-          MultiDofJoint<2>::Properties(),
-      const UniversalJointUniqueProperties& _universalProperties =
+      const GenericJoint<math::R2Space>::Properties& genericJointProperties =
+          GenericJoint<math::R2Space>::Properties(),
+      const UniversalJointUniqueProperties& universalProperties =
           UniversalJointUniqueProperties());
 
   virtual ~UniversalJointProperties() = default;
@@ -73,7 +76,7 @@ struct UniversalJointProperties :
 
 //==============================================================================
 using UniversalJointBase = common::EmbedPropertiesOnTopOf<
-    UniversalJoint, UniversalJointUniqueProperties, MultiDofJoint<2> >;
+    UniversalJoint, UniversalJointUniqueProperties,  GenericJoint<math::R2Space> >;
 
 } // namespace detail
 } // namespace dynamics

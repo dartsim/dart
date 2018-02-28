@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,6 +31,8 @@
  */
 
 #include "dart/gui/glut/GlutWindow.hpp"
+
+#include "dart/external/lodepng/lodepng.h"
 
 #ifdef _WIN32
   #include <sys/types.h>
@@ -82,7 +85,7 @@ void GlutWindow::initWindow(int _w, int _h, const char* _name) {
   mWinWidth = _w;
   mWinHeight = _h;
 
-  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
+  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE | GLUT_ACCUM);
   glutInitWindowPosition(150, 100);
   glutInitWindowSize(_w, _h);
   mWinIDs.push_back(glutCreateWindow(_name));
@@ -106,6 +109,9 @@ void GlutWindow::initWindow(int _w, int _h, const char* _name) {
 #endif
   // TODO: Disabled use of GL_MULTISAMPLE for Windows. Please see #411 for the
   // detail.
+
+  glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+  // Note: We book the timer id 0 for the main rendering purpose.
 }
 
 void GlutWindow::reshape(int _w, int _h) {
@@ -220,7 +226,7 @@ inline GlutWindow* GlutWindow::current() {
       return mWindows.at(i);
     }
   }
-  std::cout << "An unknown error occured!" << std::endl;
+  std::cout << "An unknown error occurred!" << std::endl;
   exit(0);
 }
 

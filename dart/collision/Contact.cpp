@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -48,6 +49,21 @@ Contact::Contact()
 {
   // TODO(MXG): Consider using NaN instead of zero for uninitialized quantities
   // Do nothing
+}
+
+//==============================================================================
+bool Contact::isZeroNormal(const Eigen::Vector3d& normal)
+{
+  if (normal.squaredNorm() < getNormalEpsilonSquared())
+    return true;
+  else
+    return false;
+}
+
+//==============================================================================
+bool Contact::isNonZeroNormal(const Eigen::Vector3d& normal)
+{
+  return !isZeroNormal(normal);
 }
 
 }  // namespace collision

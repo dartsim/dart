@@ -1,26 +1,20 @@
-brew tap dartsim/dart
-brew tap homebrew/science
+brew tap dartsim/dart # for ipopt
 
 brew update > /dev/null
 
-PACKAGES='
-git
-cmake
-assimp
-fcl
-bullet
-flann
-boost
-eigen
-tinyxml
-tinyxml2
-libccd
-nlopt
-ipopt
-ros/deps/urdfdom
-ros/deps/urdfdom_headers
-ros/deps/console_bridge
-open-scene-graph
-'
-
-brew install $PACKAGES | grep -v '%$'
+brew install git
+brew install cmake
+brew install assimp
+brew install fcl
+brew install bullet
+brew install ode
+brew install flann
+brew install boost
+brew install eigen
+brew install tinyxml
+brew install tinyxml2
+brew install libccd
+brew install nlopt
+brew install ipopt
+brew install urdfdom
+brew install open-scene-graph

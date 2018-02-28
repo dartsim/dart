@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -39,6 +40,7 @@
 #include <Eigen/StdVector>
 
 #include "dart/config.hpp"
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/Signal.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
 #include "dart/math/Geometry.hpp"
@@ -542,14 +544,14 @@ public:
 
   /// Create a ShapeNode with an automatically assigned name:
   /// <BodyNodeName>_ShapeNode_<#>.
-  ShapeNode* createShapeNode(const ShapePtr& shape);
+  template <class ShapeType>
+  ShapeNode* createShapeNode(const std::shared_ptr<ShapeType>& shape);
 
-  /// Create an ShapeNode with the specified name
+  /// Create a ShapeNode with the specified name
+  template <class ShapeType, class StringType>
   ShapeNode* createShapeNode(
-      const ShapePtr& shape, const std::string& name);
-
-  /// Create an ShapeNode with the specified name
-  ShapeNode* createShapeNode(const ShapePtr& shape, const char* name);
+      const std::shared_ptr<ShapeType>& shape,
+      StringType&& name);
 
   /// Return the list of ShapeNodes
   const std::vector<ShapeNode*> getShapeNodes();
@@ -706,12 +708,12 @@ public:
   /// this status is set by the constraint solver during dynamics simulation but
   /// not by collision detector.
   /// \param[in] True if this body node is colliding.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void setColliding(bool _isColliding);
 
   /// Return whether this body node is set to be colliding with other objects.
   /// \return True if this body node is colliding.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   bool isColliding();
 
   /// Add applying linear Cartesian forces to this node
@@ -802,11 +804,22 @@ public:
   // Energies
   //----------------------------------------------------------------------------
 
+  /// Return Lagrangian of this body
+  double computeLagrangian(const Eigen::Vector3d& gravity) const;
+
   /// Return kinetic energy.
+  DART_DEPRECATED(6.1)
   virtual double getKineticEnergy() const;
 
+  /// Return kinetic energy
+  double computeKineticEnergy() const;
+
   /// Return potential energy.
+  DART_DEPRECATED(6.1)
   virtual double getPotentialEnergy(const Eigen::Vector3d& _gravity) const;
+
+  /// Return potential energy.
+  double computePotentialEnergy(const Eigen::Vector3d& gravity) const;
 
   /// Return linear momentum.
   Eigen::Vector3d getLinearMomentum() const;
@@ -820,23 +833,36 @@ public:
   //----------------------------------------------------------------------------
 
   // Documentation inherited
-  void notifyTransformUpdate() override;
+  void dirtyTransform() override;
 
   // Documentation inherited
-  void notifyVelocityUpdate() override;
+  void dirtyVelocity() override;
 
   // Documentation inherited
-  void notifyAccelerationUpdate() override;
+  void dirtyAcceleration() override;
 
   /// Notify the Skeleton that the tree of this BodyNode needs an articulated
   /// inertia update
+  DART_DEPRECATED(6.2)
   void notifyArticulatedInertiaUpdate();
 
+  /// Notify the Skeleton that the tree of this BodyNode needs an articulated
+  /// inertia update
+  void dirtyArticulatedInertia();
+
   /// Tell the Skeleton that the external forces need to be updated
+  DART_DEPRECATED(6.2)
   void notifyExternalForcesUpdate();
 
+  /// Tell the Skeleton that the external forces need to be updated
+  void dirtyExternalForces();
+
   /// Tell the Skeleton that the coriolis forces need to be update
+  DART_DEPRECATED(6.2)
   void notifyCoriolisUpdate();
+
+  /// Tell the Skeleton that the coriolis forces need to be update
+  void dirtyCoriolisForces();
 
   //----------------------------------------------------------------------------
   // Friendship
@@ -1030,7 +1056,7 @@ protected:
   static std::size_t msBodyNodeCount;
 
   /// Whether the node is currently in collision with another node.
-  /// \deprecated DEPRECATED(6.0) See #670 for more detail.
+  /// \deprecated DART_DEPRECATED(6.0) See #670 for more detail.
   bool mIsColliding;
 
   //--------------------------------------------------------------------------

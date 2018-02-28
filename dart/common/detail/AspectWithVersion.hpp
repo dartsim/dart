@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -33,6 +34,7 @@
 #define DART_COMMON_DETAIL_ASPECTWITHVERSION_HPP_
 
 #include "dart/common/Aspect.hpp"
+#include "dart/common/Deprecated.hpp"
 #include "dart/common/StlHelpers.hpp"
 
 namespace dart {
@@ -44,7 +46,7 @@ namespace detail {
 /// functions for an Aspect class.
 template <class BaseT, class DerivedT, typename StateDataT,
           class CompositeT = Composite,
-          void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*> >
+          void (*updateState)(DerivedT*) = &NoOp<DerivedT*> >
 class AspectWithState : public BaseT
 {
 public:
@@ -100,7 +102,7 @@ protected:
 /// managing functions for an Aspect class.
 template <class BaseT, class DerivedT, typename PropertiesDataT,
           class CompositeT = Composite,
-          void (*updateProperties)(DerivedT*) = &detail::NoOp<DerivedT*> >
+          void (*updateProperties)(DerivedT*) = &NoOp<DerivedT*> >
 class AspectWithVersionedProperties : public BaseT
 {
 public:
@@ -151,7 +153,11 @@ public:
   std::size_t incrementVersion();
 
   /// Call UpdateProperties(this) and incrementVersion()
+  DART_DEPRECATED(6.2)
   void notifyPropertiesUpdate();
+
+  /// Call UpdateProperties(this) and incrementVersion()
+  void notifyPropertiesUpdated();
 
 protected:
 
@@ -286,7 +292,7 @@ void AspectWithVersionedProperties<BaseT, DerivedT, PropertiesData,
 setProperties(const PropertiesData& properties)
 {
   static_cast<PropertiesData&>(mProperties) = properties;
-  this->notifyPropertiesUpdate();
+  this->notifyPropertiesUpdated();
 }
 
 //==============================================================================
@@ -328,6 +334,16 @@ template <class BaseT, class DerivedT, typename PropertiesData,
 void AspectWithVersionedProperties<
     BaseT, DerivedT, PropertiesData,
     CompositeT, updateProperties>::notifyPropertiesUpdate()
+{
+  notifyPropertiesUpdated();
+}
+
+//==============================================================================
+template <class BaseT, class DerivedT, typename PropertiesData,
+          class CompositeT, void (*updateProperties)(DerivedT*)>
+void AspectWithVersionedProperties<
+    BaseT, DerivedT, PropertiesData,
+    CompositeT, updateProperties>::notifyPropertiesUpdated()
 {
   UpdateProperties(static_cast<Derived*>(this));
   this->incrementVersion();

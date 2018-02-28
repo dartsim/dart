@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -50,13 +51,18 @@ public:
 
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
   enum ShapeType {
+    SPHERE,
     BOX,
     ELLIPSOID,
     CYLINDER,
+    CAPSULE,
+    CONE,
     PLANE,
+    MULTISPHERE,
     MESH,
     SOFT_MESH,
-    LINE_SEGMENT
+    LINE_SEGMENT,
+    UNSUPPORTED
   };
 
   /// DataVariance can be used by renderers to determine whether it should
@@ -72,13 +78,33 @@ public:
   };
 
   /// \brief Constructor
+  /// \deprecated Deprecated in 6.1. Please use getType() instead.
   explicit Shape(ShapeType _type);
+
+  /// \brief Constructor
+  Shape();
 
   /// \brief Destructor
   virtual ~Shape();
 
   /// Returns a string representing the shape type
+  /// \sa is()
   virtual const std::string& getType() const = 0;
+
+  /// Get true if the types of this Shape and the template parameter (a shape
+  /// class) are identical. This function is a syntactic sugar, which is
+  /// identical to: (getType() == ShapeType::getStaticType()).
+  ///
+  /// Example code:
+  /// \code
+  /// auto shape = bodyNode->getShapeNode(0)->getShape();
+  /// if (shape->is<BoxShape>())
+  ///   std::cout << "The shape type is box!\n";
+  /// \endcode
+  ///
+  /// \sa getType()
+  template <typename ShapeT>
+  bool is() const;
 
   /// \brief Get the bounding box of the shape in its local coordinate frame.
   ///        The dimension will be automatically determined by the sub-classes
@@ -92,16 +118,17 @@ public:
 
   Eigen::Matrix3d computeInertiaFromMass(double mass) const;
 
-  /// \brief Get volume of this shape.
-  ///        The volume will be automatically calculated by the sub-classes
-  ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
+  /// Returns volume of this shape.
+  ///
+  /// The volume will be automatically calculated by the sub-classes such as
+  /// BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
   double getVolume() const;
 
   /// \brief
   int getID() const;
 
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
-  DEPRECATED(6.1)
+  DART_DEPRECATED(6.1)
   ShapeType getShapeType() const;
 
   /// Set the data variance of this shape. Use the DataVariance to indicate what
@@ -127,21 +154,37 @@ public:
   virtual void refreshData();
 
   /// Notify that the alpha of this shape has updated
+  DART_DEPRECATED(6.2)
   virtual void notifyAlphaUpdate(double alpha);
 
+  /// Notify that the alpha of this shape has updated
+  virtual void notifyAlphaUpdated(double alpha);
+
   /// Notify that the color (rgba) of this shape has updated
+  DART_DEPRECATED(6.2)
   virtual void notifyColorUpdate(const Eigen::Vector4d& color);
 
-protected:
+  /// Notify that the color (rgba) of this shape has updated
+  virtual void notifyColorUpdated(const Eigen::Vector4d& color);
 
-  /// \brief Update volume
-  virtual void updateVolume() = 0;
+protected:
+  /// Updates volume
+  virtual void updateVolume() const = 0;
+
+  /// Updates bounding box
+  virtual void updateBoundingBox() const = 0;
 
   /// \brief The bounding box (in the local coordinate frame) of the shape.
-  math::BoundingBox mBoundingBox;
+  mutable math::BoundingBox mBoundingBox;
 
-  /// \brief Volume enclosed by the geometry.
-  double mVolume;
+  /// Whether bounding box needs update
+  mutable bool mIsBoundingBoxDirty;
+
+  /// Volume enclosed by the geometry.
+  mutable double mVolume;
+
+  /// Whether volume needs update
+  mutable bool mIsVolumeDirty;
 
   /// \brief Unique id.
   int mID;
@@ -152,15 +195,14 @@ protected:
   /// \brief
   static int mCounter;
 
-private:
-
   /// \deprecated Deprecated in 6.1. Please use getType() instead.
-  /// \brief Type of primitive shpae
+  /// Type of primitive shpae.
   ShapeType mType;
-
 };
 
 }  // namespace dynamics
 }  // namespace dart
+
+#include "dart/dynamics/detail/Shape.hpp"
 
 #endif  // DART_DYNAMICS_SHAPE_HPP_

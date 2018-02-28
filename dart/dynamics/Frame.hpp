@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -238,14 +239,16 @@ public:
   /// Returns true if this Frame is the World Frame
   bool isWorld() const;
 
-  /// Notify this Frame and all its children that its pose has changed
-  virtual void notifyTransformUpdate() override;
+  /// Notify the transformation updates of this Frame and all its children are
+  /// needed
+  virtual void dirtyTransform() override;
 
-  /// Notify this Frame and all its children that its velocity has changed
-  virtual void notifyVelocityUpdate() override;
+  /// Notify the velocity updates of this Frame and all its children are needed
+  virtual void dirtyVelocity() override;
 
-  /// Notify this Frame and all its children that its acceleration has changed
-  virtual void notifyAccelerationUpdate() override;
+  /// Notify the acceleration updates of this Frame and all its children are
+  /// needed
+  virtual void dirtyAcceleration() override;
 
 protected:
 

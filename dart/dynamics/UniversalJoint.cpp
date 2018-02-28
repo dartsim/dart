@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -48,8 +49,9 @@ UniversalJoint::~UniversalJoint()
 //==============================================================================
 void UniversalJoint::setProperties(const Properties& _properties)
 {
-  MultiDofJoint<2>::setProperties(
-        static_cast<const MultiDofJoint<2>::Properties&>(_properties));
+  GenericJoint<math::R2Space>::setProperties(
+        static_cast<const GenericJoint<math::R2Space>::Properties&>(
+          _properties));
   setProperties(static_cast<const UniqueProperties&>(_properties));
 }
 
@@ -69,7 +71,7 @@ void UniversalJoint::setAspectProperties(const AspectProperties& properties)
 //==============================================================================
 UniversalJoint::Properties UniversalJoint::getUniversalJointProperties() const
 {
-  return Properties(getMultiDofJointProperties(), mAspectProperties);
+  return Properties(getGenericJointProperties(), mAspectProperties);
 }
 
 //==============================================================================
@@ -120,7 +122,7 @@ bool UniversalJoint::isCyclic(std::size_t _index) const
 void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 {
   mAspectProperties.mAxis[0] = _axis;
-  Joint::notifyPositionUpdate();
+  Joint::notifyPositionUpdated();
   Joint::incrementVersion();
 }
 
@@ -128,7 +130,7 @@ void UniversalJoint::setAxis1(const Eigen::Vector3d& _axis)
 void UniversalJoint::setAxis2(const Eigen::Vector3d& _axis)
 {
   mAspectProperties.mAxis[1] = _axis;
-  Joint::notifyPositionUpdate();
+  Joint::notifyPositionUpdated();
   Joint::incrementVersion();
 }
 
@@ -164,7 +166,7 @@ UniversalJoint::UniversalJoint(const Properties& properties)
   // Inherited Aspects must be created in the final joint class in reverse order
   // or else we get pure virtual function calls
   createUniversalJointAspect(properties);
-  createMultiDofJointAspect(properties);
+  createGenericJointAspect(properties);
   createJointAspect(properties);
 }
 

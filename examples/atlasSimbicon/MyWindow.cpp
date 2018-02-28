@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2014-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2014-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -29,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "examples/atlasSimbicon/MyWindow.hpp"
+#include "MyWindow.hpp"
 
 //==============================================================================
 MyWindow::MyWindow(Controller* _controller)
@@ -98,18 +99,12 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y)
   case ' ':  // use space key to play or stop the motion
     mSimulating = !mSimulating;
     if (mSimulating)
-    {
       mPlay = false;
-      glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-    }
     break;
   case 'p':  // playBack
     mPlay = !mPlay;
     if (mPlay)
-    {
       mSimulating = false;
-      glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-    }
     break;
   case '[':  // step backward
     if (!mSimulating)

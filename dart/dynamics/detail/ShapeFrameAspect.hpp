@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -57,10 +58,14 @@ struct VisualAspectProperties
   /// True if this shape node should be kept from rendering
   bool mHidden;
 
+  /// True if this shape node should be shadowed
+  bool mShadowed;
+
   /// Constructor
   VisualAspectProperties(
       const Eigen::Vector4d& color = Eigen::Vector4d(0.5, 0.5, 1.0, 1.0),
-      const bool hidden = false);
+      const bool hidden = false,
+      const bool shadowed = true);
 
   /// Destructor
   virtual ~VisualAspectProperties() = default;
@@ -110,7 +115,7 @@ struct ShapeFrameProperties
 };
 
 using ShapeFrameCompositeBase = common::EmbedPropertiesOnTopOf<
-    ShapeFrame, detail::ShapeFrameProperties,
+    ShapeFrame, ShapeFrameProperties,
     common::SpecializedForAspect<
         VisualAspect, CollisionAspect, DynamicsAspect> >;
 

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -275,11 +276,23 @@ public:
   /// Get lower limit for position
   virtual double getPositionLowerLimit(std::size_t _index) const = 0;
 
+  /// Set the position lower limits of all the generalized coordinates.
+  virtual void setPositionLowerLimits(const Eigen::VectorXd& lowerLimits) = 0;
+
+  /// Get the position lower limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getPositionLowerLimits() const = 0;
+
   /// Set upper limit for position
   virtual void setPositionUpperLimit(std::size_t _index, double _position) = 0;
 
   /// Get upper limit for position
   virtual double getPositionUpperLimit(std::size_t _index) const = 0;
+
+  /// Set the position upper limits of all the generalized coordinates.
+  virtual void setPositionUpperLimits(const Eigen::VectorXd& upperLimits) = 0;
+
+  /// Get the position upper limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getPositionUpperLimits() const = 0;
 
   /// Get whether a generalized coordinate is cyclic. Return true if and only
   /// if this generalized coordinate has an infinite number of positions that
@@ -336,11 +349,23 @@ public:
   /// Get lower limit for velocity
   virtual double getVelocityLowerLimit(std::size_t _index) const = 0;
 
+  /// Set the velocity lower limits of all the generalized coordinates.
+  virtual void setVelocityLowerLimits(const Eigen::VectorXd& lowerLimits) = 0;
+
+  /// Get the velocity lower limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getVelocityLowerLimits() const = 0;
+
   /// Set upper limit for velocity
   virtual void setVelocityUpperLimit(std::size_t _index, double _velocity) = 0;
 
   /// Get upper limit for velocity
   virtual double getVelocityUpperLimit(std::size_t _index) const = 0;
+
+  /// Set the velocity upper limits of all the generalized coordinates.
+  virtual void setVelocityUpperLimits(const Eigen::VectorXd& upperLimits) = 0;
+
+  /// Get the velocity upper limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getVelocityUpperLimits() const = 0;
 
   /// Set the velocity of a generalized coordinate in this Joint to its initial
   /// velocity
@@ -391,11 +416,23 @@ public:
   /// Get lower limit for acceleration
   virtual double getAccelerationLowerLimit(std::size_t _index) const = 0;
 
+  /// Set the acceleration upper limits of all the generalized coordinates.
+  virtual void setAccelerationLowerLimits(const Eigen::VectorXd& lowerLimits) = 0;
+
+  /// Get the acceleration upper limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getAccelerationLowerLimits() const = 0;
+
   /// Set upper limit for acceleration
   virtual void setAccelerationUpperLimit(std::size_t _index, double _acceleration) = 0;
 
   /// Get upper limit for acceleration
   virtual double getAccelerationUpperLimit(std::size_t _index) const = 0;
+
+  /// Set the acceleration upper limits of all the generalized coordinates.
+  virtual void setAccelerationUpperLimits(const Eigen::VectorXd& upperLimits) = 0;
+
+  /// Get the acceleration upper limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getAccelerationUpperLimits() const = 0;
 
   /// \}
 
@@ -407,7 +444,7 @@ public:
   virtual void setForce(std::size_t _index, double _force) = 0;
 
   /// Get the force of a single generalized coordinate
-  virtual double getForce(std::size_t _index) = 0;
+  virtual double getForce(std::size_t _index) const = 0;
 
   /// Set the forces of all generalized coordinates in this Joint
   virtual void setForces(const Eigen::VectorXd& _forces) = 0;
@@ -424,11 +461,23 @@ public:
   /// Get lower limit for force
   virtual double getForceLowerLimit(std::size_t _index) const = 0;
 
+  /// Set the force upper limits of all the generalized coordinates.
+  virtual void setForceLowerLimits(const Eigen::VectorXd& lowerLimits) = 0;
+
+  /// Get the force upper limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getForceLowerLimits() const = 0;
+
   /// Set upper limit for force
   virtual void setForceUpperLimit(std::size_t _index, double _force) = 0;
 
   /// Get upper limit for force
   virtual double getForceUpperLimit(std::size_t _index) const = 0;
+
+  /// Set the force upper limits of all the generalized coordinates.
+  virtual void setForceUpperLimits(const Eigen::VectorXd& upperLimits) = 0;
+
+  /// Get the force upper limits of all the generalized coordinates.
+  virtual Eigen::VectorXd getForceUpperLimits() const = 0;
 
   /// \}
 
@@ -534,36 +583,40 @@ public:
   //----------------------------------------------------------------------------
 
   /// Get potential energy
-  virtual double getPotentialEnergy() const = 0;
+  DART_DEPRECATED(6.1)
+  double getPotentialEnergy() const;
+
+  /// Compute and return the potential energy
+  virtual double computePotentialEnergy() const = 0;
 
   //----------------------------------------------------------------------------
 
   /// Deprecated. Use getRelativeTransform() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const Eigen::Isometry3d& getLocalTransform() const;
 
   /// Deprecated. Use getLocalSpatialVelocity() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const Eigen::Vector6d& getLocalSpatialVelocity() const;
 
   /// Deprecated. Use getLocalSpatialAcceleration() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const Eigen::Vector6d& getLocalSpatialAcceleration() const;
 
   /// Deprecated. Use getLocalPrimaryAcceleration() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const Eigen::Vector6d& getLocalPrimaryAcceleration() const;
 
   /// Deprecated. Use getRelativeJacobian() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const math::Jacobian getLocalJacobian() const;
 
   /// Deprecated. Use getRelativeJacobian() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   math::Jacobian getLocalJacobian(const Eigen::VectorXd& positions) const;
 
   /// Deprecated. Use getRelativeJacobianTimeDeriv() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   const math::Jacobian getLocalJacobianTimeDeriv() const;
 
   /// Get transform of the child BodyNode relative to the parent BodyNode
@@ -630,14 +683,26 @@ public:
   /// \{ \name Update Notifiers
   //----------------------------------------------------------------------------
 
-  /// Notify that a position update is needed
+  /// Notify that a position has updated
+  DART_DEPRECATED(6.2)
   void notifyPositionUpdate();
 
-  /// Notify that a velocity update is needed
+  /// Notify that a position has updated
+  void notifyPositionUpdated();
+
+  /// Notify that a velocity has updated
+  DART_DEPRECATED(6.2)
   void notifyVelocityUpdate();
 
-  /// Notify that an acceleration update is needed
+  /// Notify that a velocity has updated
+  void notifyVelocityUpdated();
+
+  /// Notify that an acceleration has updated
+  DART_DEPRECATED(6.2)
   void notifyAccelerationUpdate();
+
+  /// Notify that an acceleration has updated
+  void notifyAccelerationUpdated();
 
   /// \}
 
@@ -680,27 +745,27 @@ protected:
   //----------------------------------------------------------------------------
 
   /// Deprecated. Use updateRelativeTransform() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalTransform() const;
 
   /// Deprecated. Use updateRelativeSpatialVelocity() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalSpatialVelocity() const;
 
   /// Deprecated. Use updateRelativeSpatialAcceleration() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalSpatialAcceleration() const;
 
   /// Deprecated. Use updateRelativePrimaryAcceleration() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalPrimaryAcceleration() const;
 
   /// Deprecated. Use updateRelativeJacobian() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalJacobian(bool mandatory = true) const;
 
   /// Deprecated. Use updateRelativeJacobianTimeDeriv() instead.
-  DEPRECATED(6.0)
+  DART_DEPRECATED(6.0)
   void updateLocalJacobianTimeDeriv() const;
 
   /// Update transform of the child BodyNode relative to the parent BodyNode
@@ -909,18 +974,22 @@ protected:
   /// True iff this joint's position has changed since the last call to
   /// getRelativeTransform()
   mutable bool mNeedTransformUpdate;
+  // TODO(JS): Rename this to mIsTransformDirty in DART 7
 
   /// True iff this joint's position or velocity has changed since the last call
   /// to getRelativeSpatialVelocity()
   mutable bool mNeedSpatialVelocityUpdate;
+  // TODO(JS): Rename this to mIsSpatialVelocityDirty in DART 7
 
   /// True iff this joint's position, velocity, or acceleration has changed
   /// since the last call to getRelativeSpatialAcceleration()
   mutable bool mNeedSpatialAccelerationUpdate;
+  // TODO(JS): Rename this to mIsSpatialAccelerationDirty in DART 7
 
   /// True iff this joint's position, velocity, or acceleration has changed
   /// since the last call to getRelativePrimaryAcceleration()
   mutable bool mNeedPrimaryAccelerationUpdate;
+  // TODO(JS): Rename this to mIsPrimaryAccelerationDirty in DART 7
 
   /// True iff this joint's relative Jacobian has not been updated since the last
   /// position change

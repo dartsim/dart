@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -126,7 +127,7 @@ public:
   /// Equality
   template <class OtherJointT, class OtherBodyNodeT>
   bool operator == (const TemplateJointPtr<OtherJointT,
-                    OtherBodyNodeT>& _rhs)
+                    OtherBodyNodeT>& _rhs) const
   {
     return mBodyNodePtr == _rhs.mBodyNodePtr;
   }
@@ -134,7 +135,7 @@ public:
   /// Inequality
   template <class OtherJointT, class OtherBodyNodeT>
   bool operator != (const TemplateJointPtr<OtherJointT,
-                    OtherBodyNodeT>& _rhs)
+                    OtherBodyNodeT>& _rhs) const
   {
     return !( *this == _rhs );
   }
@@ -142,7 +143,7 @@ public:
   /// Less than
   template <class OtherJointT, class OtherBodyNodeT>
   bool operator < (const TemplateJointPtr<OtherJointT,
-                   OtherBodyNodeT>& _rhs)
+                   OtherBodyNodeT>& _rhs) const
   {
     return (mBodyNodePtr < _rhs.mBodyNodePtr);
   }
@@ -150,7 +151,7 @@ public:
   /// Greater than
   template <class OtherJointT, class OtherBodyNodeT>
   bool operator > (const TemplateJointPtr<OtherJointT,
-                   OtherBodyNodeT>& _rhs)
+                   OtherBodyNodeT>& _rhs) const
   {
     return (mBodyNodePtr > _rhs.mBodyNodePtr);
   }
@@ -158,7 +159,7 @@ public:
   /// Less than or equal to
   template <class OtherJointT, class OtherBodyNodeT>
   bool operator <= (const TemplateJointPtr<OtherJointT,
-                    OtherBodyNodeT>& _rhs)
+                    OtherBodyNodeT>& _rhs) const
   {
     return (*this < _rhs) || (*this == _rhs);
   }
@@ -166,7 +167,7 @@ public:
   /// Greater than or equal to
   template <class OtherJointT, class OtherBodyNodeT>
   bool operator >= (const TemplateJointPtr<OtherJointT,
-                    OtherBodyNodeT>& _rhs)
+                    OtherBodyNodeT>& _rhs) const
   {
     return (*this > _rhs) || (*this == _rhs);
   }

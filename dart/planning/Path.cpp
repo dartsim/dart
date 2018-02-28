@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -38,6 +39,7 @@
 #include <algorithm>
 #include <cmath>
 #include <Eigen/Geometry>
+#include "dart/math/Constants.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -147,12 +149,13 @@ public:
 	}
 
 	list<double> getSwitchingPoints() const {
+        const double pi = math::constantsd::pi();
 		list<double> switchingPoints;
 		const double dim = x.size();
 		for(unsigned int i = 0; i < dim; i++) {
 			double switchingAngle = atan2(y[i], x[i]);
 			if(switchingAngle < 0.0) {
-				switchingAngle += M_PI;
+				switchingAngle += pi;
 			}
 			const double switchingPoint = switchingAngle * radius;
 			if(switchingPoint < length) {

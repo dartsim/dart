@@ -41,8 +41,7 @@
 #include <algorithm>
 #include <iostream>
 
-#include <tinyxml.h>
-
+#include <tinyxml2.h>
 #include <urdf_parser/urdf_parser.h>
 #include <urdf_model/model.h>
 #include <urdf_world/world.h>
@@ -55,6 +54,46 @@ const bool debug = false;
 namespace dart {
 namespace utils {
 namespace urdf_parsing {
+
+namespace {
+
+bool parsePose(urdf::Pose &pose, tinyxml2::XMLElement* xml)
+{
+  pose.clear();
+  if (xml)
+  {
+    const char* xyz_str = xml->Attribute("xyz");
+    if (xyz_str)
+    {
+      try
+      {
+        pose.position.init(xyz_str);
+      }
+      catch (urdf::ParseError& e)
+      {
+        dterr << e.what() << "\n";
+        return false;
+      }
+    }
+
+    const char* rpy_str = xml->Attribute("rpy");
+    if (rpy_str)
+    {
+      try
+      {
+        pose.rotation.init(rpy_str);
+      }
+      catch (urdf::ParseError& e)
+      {
+        dterr << e.what() << "\n";
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+} // (anonymous) namespace
 
 Entity::Entity(const urdf::Entity& urdfEntity)
   : model(urdfEntity.model),
@@ -69,11 +108,19 @@ Entity::Entity(const urdf::Entity& urdfEntity)
  */
 std::shared_ptr<World> parseWorldURDF(
     const std::string& _xml_string,
-    const dart::common::Uri& _baseUri)
+    const dart::common::Uri& _baseUri,
+    const common::ResourceRetrieverPtr& retriever)
 {
-  TiXmlDocument xml_doc;
-  xml_doc.Parse( _xml_string.c_str() );
-  TiXmlElement *world_xml = xml_doc.FirstChildElement("world");
+  tinyxml2::XMLDocument xml_doc;
+  const auto result = xml_doc.Parse(&_xml_string.front());
+  if (result != tinyxml2::XML_SUCCESS)
+  {
+    dtwarn << "[parseWorldURDF] Failed parsing XML: TinyXML2 returned error"
+              " code " << result << ".\n";
+    return nullptr;
+  }
+
+  auto* world_xml = xml_doc.FirstChildElement("world");
   if( !world_xml )
   {
     dtwarn << "[parseWorldURDF] ERROR: Could not find a <world> element in XML, exiting and not loading! \n";
@@ -88,7 +135,7 @@ std::shared_ptr<World> parseWorldURDF(
     return nullptr;
   }
 
-  std::shared_ptr<World> world(new World);
+  std::shared_ptr<World> world = std::make_shared<World>();
   world->name = std::string(name);
   if(debug) std::cout<< "World name: "<< world->name << std::endl;
 
@@ -97,9 +144,9 @@ std::shared_ptr<World> parseWorldURDF(
   int count = 0;
   std::map<std::string, std::string> includedFiles;
 
-  for( TiXmlElement* include_xml = world_xml->FirstChildElement("include");
+  for( auto* include_xml = world_xml->FirstChildElement("include");
        include_xml != nullptr;
-       include_xml = include_xml->NextSiblingElement("include") )
+       include_xml = include_xml->NextSiblingElement("include"))
   {
     ++count;
     const char *filename = include_xml->Attribute("filename");
@@ -113,7 +160,7 @@ std::shared_ptr<World> parseWorldURDF(
 
   // Get all entities
   count = 0;
-  for( TiXmlElement* entity_xml = world_xml->FirstChildElement("entity");
+  for( auto* entity_xml = world_xml->FirstChildElement("entity");
        entity_xml != nullptr;
        entity_xml = entity_xml->NextSiblingElement("entity") )
   {
@@ -145,42 +192,26 @@ std::shared_ptr<World> parseWorldURDF(
           return nullptr;
         }
 
-        const std::string fileFullName = absoluteUri.getFilesystemPath();
         entity.uri = absoluteUri;
+
         // Parse model
-        std::string xml_model_string;
-        std::fstream xml_file( fileFullName.c_str(), std::fstream::in );
-
-        if(!xml_file.is_open())
-        {
-          dtwarn << "[parseWorldURDF] Could not open the file [" << fileFullName
-                 << "]. Returning a nullptr.\n";
-          return nullptr;
-        }
-
-        while( xml_file.good() )
-        {
-          std::string line;
-          std::getline( xml_file, line );
-          xml_model_string += (line + "\n");
-        }
-        xml_file.close();
+        const auto xml_model_string = retriever->readAll(absoluteUri);
         entity.model = urdf::parseURDF( xml_model_string );
 
         if( !entity.model )
         {
           dtwarn << "[parseWorldURDF] Could not find a model named ["
-                 << xml_model_string << "] in file [" <<  fileFullName
+                 << xml_model_string << "] from [" <<  absoluteUri.toString()
                  << "]. We will return a nullptr.\n";
           return nullptr;
         }
         else
         {
           // Parse location
-          TiXmlElement* origin = entity_xml->FirstChildElement("origin");
+          auto* origin = entity_xml->FirstChildElement("origin");
           if( origin )
           {
-            if( !urdf::parsePose( entity.origin, origin ) )
+            if( !parsePose( entity.origin, origin ) )
             {
               dtwarn << "[ERROR] Missing origin tag for '" << entity.model->getName() << "'\n";
               return world;
@@ -202,7 +233,7 @@ std::shared_ptr<World> parseWorldURDF(
 
 
     }
-    catch( urdf::ParseError& e )
+    catch( urdf::ParseError& /*e*/)
     {
       if(debug) std::cout << "Entity xml not initialized correctly \n";
       //entity->reset();

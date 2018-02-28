@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -826,6 +827,12 @@ public:
   /// generally not be necessary to call this function.
   void clearCache();
 
+  /// Returns the IK module that this GradientMethod belongs to.
+  InverseKinematics* getIK();
+
+  /// Returns the IK module that this GradientMethod belongs to.
+  const InverseKinematics* getIK() const;
+
 protected:
 
   /// The IK module that this GradientMethod belongs to.
@@ -966,6 +973,7 @@ public:
     OUT_OF_REACH   = 1 << 0,  ///< The solution does not reach the target
     LIMIT_VIOLATED = 1 << 1   ///< The solution has one or more joint positions that violate the joint limits
   };
+  // TODO(JS): Change to enum class?
 
   /// If there are extra DOFs in the IK module which your Analytical solver
   /// implementation does not make use of, those DOFs can be used to
@@ -992,6 +1000,7 @@ public:
     POST_ANALYTICAL,
     PRE_AND_POST_ANALYTICAL
   };
+  // TODO(JS): Change to enum class?
 
   struct Solution
   {
@@ -1222,6 +1231,8 @@ class InverseKinematics::Objective final :
 {
 public:
 
+  DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(InverseKinematics::Objective)
+
   /// Constructor
   Objective(InverseKinematics* _ik);
 
@@ -1248,6 +1259,7 @@ protected:
 
   /// Cache for the null space SVD
   Eigen::JacobiSVD<math::Jacobian> mSVDCache;
+  // TODO(JS): Need to define aligned operator new for this?
 
   /// Cache for the null space
   Eigen::MatrixXd mNullSpaceCache;

@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -33,6 +34,7 @@
 
 #include <algorithm>
 
+#include "dart/math/Constants.hpp"
 #include "dart/gui/glut/LoadGlut.hpp"
 
 namespace dart {
@@ -135,11 +137,11 @@ void Win3D::click(int _button, int _state, int _x, int _y)
     } else if (_button == 3 && _state == GLUT_DOWN) {  // mouse wheel up
       // each scroll generates a down and an immediate up,
       // so ignore ups
-      mZoom += 0.1;
+      mZoom += mZoom * 0.1;
     } else if (_button == 4 && _state == GLUT_DOWN) {  // mouse wheel down?
       // each scroll generates a down and an immediate up,
       // so ignore ups
-      mZoom -= 0.1;
+      mZoom -= mZoom * 0.1;
     }
     mMouseX = _x;
     mMouseY = _y;
@@ -166,7 +168,7 @@ void Win3D::drag(int _x, int _y)
   }
   if (mTranslate) {
     Eigen::Matrix3d rot = mTrackBall.getRotationMatrix();
-    mTrans += rot.transpose()*Eigen::Vector3d(deltaX, -deltaY, 0.0);
+    mTrans += (1 / mZoom) * rot.transpose()*Eigen::Vector3d(deltaX, -deltaY, 0.0);
   }
   if (mZooming) {
     mZoom += deltaY*0.01;
@@ -242,7 +244,6 @@ void Win3D::initGL()
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-  glEnable(GL_POLYGON_SMOOTH);
   glShadeModel(GL_SMOOTH);
   glPolygonMode(GL_FRONT, GL_FILL);
 }
@@ -285,6 +286,48 @@ void Win3D::initLights()
   glEnable(GL_NORMALIZE);
 }
 
-}  // namespace glfw
+// Remove once deprecated function, capturing(), is removed
+void accFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top,
+                GLdouble nearPlane, GLdouble farPlane,
+                GLdouble pixdx, GLdouble pixdy, GLdouble eyedx, GLdouble eyedy,
+                GLdouble focus) {
+  GLdouble xwsize, ywsize;
+  GLdouble dx, dy;
+  GLint viewport[4];
+
+  glGetIntegerv(GL_VIEWPORT, viewport);
+
+  xwsize = right - left;
+  ywsize = top - bottom;
+  dx = -(pixdx * xwsize / static_cast<GLdouble>(viewport[2])
+       + eyedx * nearPlane / focus);
+  dy = -(pixdy * ywsize / static_cast<GLdouble>(viewport[3])
+       + eyedy * nearPlane / focus);
+
+  glFrustum(left + dx, right + dx, bottom + dy, top + dy, nearPlane, farPlane);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glTranslatef(-eyedx, -eyedy, 0.0);
+}
+
+// Remove once deprecated function, capturing(), is removed
+void accPerspective(GLdouble fovy, GLdouble aspect,
+                    GLdouble nearPlane, GLdouble farPlane,
+                    GLdouble pixdx, GLdouble pixdy,
+                    GLdouble eyedx, GLdouble eyedy, GLdouble focus) {
+  const double pi = math::constantsd::pi();
+
+  GLdouble fov2 = ((fovy*pi) / 180.0) / 2.0;
+  GLdouble top = nearPlane / (cosf(fov2) / sinf(fov2));
+  GLdouble bottom = -top;
+  GLdouble right = top * aspect;
+  GLdouble left = -right;
+
+  accFrustum(left, right, bottom, top, nearPlane, farPlane,
+             pixdx, pixdy, eyedx, eyedy, focus);
+}
+
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart

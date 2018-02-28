@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -37,9 +38,12 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/Factory.hpp"
 #include "dart/collision/Contact.hpp"
-#include "dart/collision/Option.hpp"
-#include "dart/collision/Result.hpp"
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/DistanceOption.hpp"
+#include "dart/collision/DistanceResult.hpp"
 #include "dart/collision/SmartPointer.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
@@ -54,6 +58,18 @@ public:
 
   friend class CollisionObject;
   friend class CollisionGroup;
+
+  using Factory = common::Factory<
+      std::string, CollisionDetector, std::shared_ptr<CollisionDetector>>;
+
+  using SingletonFactory = common::Singleton<Factory>;
+
+  template <typename Derived>
+  using Registrar = common::FactoryRegistrar<
+      std::string, CollisionDetector, Derived, std::shared_ptr<CollisionDetector>>;
+
+  /// Returns the singleton factory.
+  static Factory* getFactory();
 
   /// Destructor
   virtual ~CollisionDetector() = default;
@@ -109,6 +125,37 @@ public:
       const CollisionOption& option = CollisionOption(false, 1u, nullptr),
       CollisionResult* result = nullptr) = 0;
 
+  /// Get the minimum signed distance between the Shape pairs in the given
+  /// CollisionGroup.
+  ///
+  /// The detailed results are stored in the given DistanceResult if provided.
+  ///
+  /// The results can be different by DistanceOption. By default, non-negative
+  /// minimum distance (distance >= 0) is returned for all the shape pairs
+  /// without computing nearest points.
+  virtual double distance(
+      CollisionGroup* group,
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr) = 0;
+
+  /// Get the minimum signed distance between the Shape pairs where a pair
+  /// consist of two shapes from each groups (one from group1 and one from
+  /// group2).
+  ///
+  /// Note that the distance between shapes within the same CollisionGroup
+  /// are not accounted.
+  ///
+  /// The detailed results are stored in the given DistanceResult if provided.
+  ///
+  /// The results can be different by DistanceOption. By default, non-negative
+  /// minimum distance (distance >= 0) is returned for all the shape pairs
+  /// without computing nearest points.
+  virtual double distance(
+      CollisionGroup* group1,
+      CollisionGroup* group2,
+      const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
+      DistanceResult* result = nullptr) = 0;
+
 protected:
 
   class CollisionObjectManager;
@@ -148,6 +195,9 @@ public:
   /// will be created if it hasn't created yet for shapeFrame.
   virtual std::shared_ptr<CollisionObject> claimCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) = 0;
+
+  /// Returns collision detector
+  CollisionDetector* getCollisionDetector();
 
 protected:
 

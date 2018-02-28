@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -54,7 +55,7 @@ class VisualAspect final :
 {
 public:
 
-  using BaseClass = common::AspectWithVersionedProperties<
+  using Base = common::AspectWithVersionedProperties<
       VisualAspect, detail::VisualAspectProperties, ShapeFrame>;
 
   /// Constructor
@@ -66,12 +67,15 @@ public:
   void setRGBA(const Eigen::Vector4d& color);
 
   DART_COMMON_GET_ASPECT_PROPERTY( Eigen::Vector4d, RGBA )
-  // void setRGBA(const Eigen::Vector4d& value);
   // const Eigen::Vector4d& getRGBA() const;
 
   DART_COMMON_SET_GET_ASPECT_PROPERTY( bool, Hidden )
-  // void setHidden(const Eigen::Vector4d& value);
-  // const Eigen::Vector4d& getHidden() const;
+  // void setHidden(const bool& value);
+  // const bool& getHidden() const;
+
+  DART_COMMON_SET_GET_ASPECT_PROPERTY( bool, Shadowed )
+  // void setShadowed(const bool& value);
+  // const bool& getShadowed() const;
 
   /// Identical to setRGB(const Eigen::Vector3d&)
   void setColor(const Eigen::Vector3d& color);
@@ -103,9 +107,6 @@ public:
   /// True iff the ShapeNode is set to be hidden. Use hide(bool) to change this
   /// setting
   bool isHidden() const;
-
-  // To get byte-aligned Eigen vectors
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 };
 
@@ -139,7 +140,7 @@ class DynamicsAspect final :
 {
 public:
 
-  using BaseClass = common::AspectWithVersionedProperties<
+  using Base = common::AspectWithVersionedProperties<
       DynamicsAspect, detail::DynamicsAspectProperties, ShapeFrame>;
 
   DynamicsAspect(const DynamicsAspect&) = delete;

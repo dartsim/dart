@@ -1,8 +1,9 @@
 /*
- * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
- * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
- * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -37,6 +38,7 @@
 #include <memory>
 
 #include <osgViewer/Viewer>
+#include <osgShadow/ShadowTechnique>
 
 #include <Eigen/Core>
 
@@ -113,7 +115,6 @@ private:
 class Viewer : public osgViewer::Viewer, public dart::common::Subject
 {
 public:
-
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the
   /// default event handler.
   Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9,0.9,0.9,1.0));
@@ -195,6 +196,11 @@ public:
 
   /// Get the Group node that contains the LightSources for this Viewer
   const ::osg::Group* getLightGroup() const;
+
+  /// Get one of the LightSources of this Viewer
+  /// index either 0 or 1
+  /// Useful for shadowing techniques
+  const ::osg::ref_ptr<::osg::LightSource>& getLightSource(std::size_t index = 0) const;
 
   /// Set up the default lighting scheme
   void setupDefaultLights();

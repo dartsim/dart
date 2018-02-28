@@ -4,7 +4,7 @@
        a Catkin workspace. Catkin is not required to build DART. For more
        information, see: http://ros.org/reps/rep-0136.html -->
   <name>dart</name>
-  <version>6.1.0</version>
+  <version>6.4.0</version>
   <description>
     DART (Dynamic Animation and Robotics Toolkit) is a collaborative,
     cross-platform, open source library created by the Georgia Tech Graphics
@@ -31,7 +31,6 @@
   <depend>liburdfdom-dev</depend>
   <depend>libxi-dev</depend>
   <depend>libxmu-dev</depend>
-  <depend>tinyxml</depend>
   <depend>tinyxml2</depend>
   <!-- These are required by REP-136. -->
   <exec_depend>catkin</exec_depend>
