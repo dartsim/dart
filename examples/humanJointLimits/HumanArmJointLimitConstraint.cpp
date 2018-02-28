@@ -82,12 +82,7 @@ HumanArmJointLimitConstraint::HumanArmJointLimitConstraint(
   mActive = false;
 
   // load neural net weights from external file
-  mNet.load(DART_DATA_PATH "/neuralnets/net-larm");
-}
-
-//==============================================================================
-HumanArmJointLimitConstraint::~HumanArmJointLimitConstraint()
-{
+  mNet.load(DART_DATA_PATH "/humanJointLimits/neuralnets/net-larm");
 }
 
 //==============================================================================

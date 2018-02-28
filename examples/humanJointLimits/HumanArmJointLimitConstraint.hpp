@@ -57,7 +57,7 @@ public:
       dynamics::Joint* shldjoint, dynamics::Joint* elbowjoint, bool isMirror);
 
   /// Destructor
-  virtual ~HumanArmJointLimitConstraint();
+  virtual ~HumanArmJointLimitConstraint() = default;
 
   //----------------------------------------------------------------------------
   // Property settings

@@ -60,7 +60,7 @@ public:
       bool isMirror);
 
   /// Destructor
-  virtual ~HumanLegJointLimitConstraint();
+  virtual ~HumanLegJointLimitConstraint() = default;
 
   //----------------------------------------------------------------------------
   // Property settings

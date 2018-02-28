@@ -93,12 +93,7 @@ HumanLegJointLimitConstraint::HumanLegJointLimitConstraint(
   mActive = false;
 
   // load neural net weights from external file
-  mNet.load(DART_DATA_PATH "/neuralnets/net-lleg");
-}
-
-//==============================================================================
-HumanLegJointLimitConstraint::~HumanLegJointLimitConstraint()
-{
+  mNet.load(DART_DATA_PATH "/humanJointLimits/neuralnets/net-lleg");
 }
 
 //==============================================================================
