@@ -30,11 +30,11 @@
  */
 
 #include <cmath>
-#include "dart/collision/bullet/bullet.hpp"
-#include "dart/collision/ode/ode.hpp"
-#include "dart/dart.hpp"
-#include "dart/gui/gui.hpp"
-#include "dart/utils/utils.hpp"
+#include <dart/collision/bullet/bullet.hpp>
+#include <dart/collision/ode/ode.hpp>
+#include <dart/dart.hpp>
+#include <dart/gui/gui.hpp>
+#include <dart/utils/utils.hpp>
 #include "HumanArmJointLimitConstraint.hpp"
 #include "HumanLegJointLimitConstraint.hpp"
 
@@ -76,32 +76,28 @@ public:
 
       auto shldJointl = skel->getJoint("j_bicep_left");
       auto elbowJointl = skel->getJoint("j_forearm_left");
-      constraint_larm
-          = std::make_shared<dart::constraint::HumanArmJointLimitConstraint>(
-              shldJointl, elbowJointl, false);
+      constraint_larm = std::make_shared<HumanArmJointLimitConstraint>(
+          shldJointl, elbowJointl, false);
       mWorld->getConstraintSolver()->addConstraint(constraint_larm);
 
       auto shldJointr = skel->getJoint("j_bicep_right");
       auto elbowJointr = skel->getJoint("j_forearm_right");
-      constraint_rarm
-          = std::make_shared<dart::constraint::HumanArmJointLimitConstraint>(
-              shldJointr, elbowJointr, true);
+      constraint_rarm = std::make_shared<HumanArmJointLimitConstraint>(
+          shldJointr, elbowJointr, true);
       mWorld->getConstraintSolver()->addConstraint(constraint_rarm);
 
       auto thighJointl = skel->getJoint("j_thigh_left");
       auto shinJointl = skel->getJoint("j_shin_left");
       auto ankleJointl = skel->getJoint("j_heel_left");
-      constraint_lleg
-          = std::make_shared<dart::constraint::HumanLegJointLimitConstraint>(
-              thighJointl, shinJointl, ankleJointl, false);
+      constraint_lleg = std::make_shared<HumanLegJointLimitConstraint>(
+          thighJointl, shinJointl, ankleJointl, false);
       mWorld->getConstraintSolver()->addConstraint(constraint_lleg);
 
       auto thighJointr = skel->getJoint("j_thigh_right");
       auto shinJointr = skel->getJoint("j_shin_right");
       auto ankleJointr = skel->getJoint("j_heel_right");
-      constraint_rleg
-          = std::make_shared<dart::constraint::HumanLegJointLimitConstraint>(
-              thighJointr, shinJointr, ankleJointr, true);
+      constraint_rleg = std::make_shared<HumanLegJointLimitConstraint>(
+          thighJointr, shinJointr, ankleJointr, true);
       mWorld->getConstraintSolver()->addConstraint(constraint_rleg);
     }
 
@@ -114,10 +110,10 @@ public:
   }
 
   int ts;
-  dart::constraint::HumanArmJointLimitConstraintPtr constraint_larm;
-  dart::constraint::HumanArmJointLimitConstraintPtr constraint_rarm;
-  dart::constraint::HumanLegJointLimitConstraintPtr constraint_lleg;
-  dart::constraint::HumanLegJointLimitConstraintPtr constraint_rleg;
+  HumanArmJointLimitConstraintPtr constraint_larm;
+  HumanArmJointLimitConstraintPtr constraint_rarm;
+  HumanLegJointLimitConstraintPtr constraint_lleg;
+  HumanLegJointLimitConstraintPtr constraint_rleg;
 };
 
 int main(int argc, char* argv[])

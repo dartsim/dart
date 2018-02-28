@@ -33,24 +33,22 @@
 
 #include <iostream>
 
-#include "dart/external/odelcpsolver/lcp.h"
+#include <dart/external/odelcpsolver/lcp.h>
 
-#include "dart/common/Console.hpp"
-#include "dart/dynamics/BodyNode.hpp"
-#include "dart/dynamics/Joint.hpp"
-#include "dart/dynamics/Skeleton.hpp"
+#include <dart/common/Console.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/Joint.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 
 #define DART_ERROR_ALLOWANCE 0.0
 #define DART_ERP 0.01
 #define DART_MAX_ERV 1e+1
 #define DART_CFM 1e-9
 
+using namespace dart;
 using namespace tiny_dnn;
 using namespace tiny_dnn::activation;
 using namespace tiny_dnn::layers;
-
-namespace dart {
-namespace constraint {
 
 double HumanLegJointLimitConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
 double HumanLegJointLimitConstraint::mErrorReductionParameter = DART_ERP;
@@ -313,7 +311,8 @@ void HumanLegJointLimitConstraint::update()
 }
 
 //==============================================================================
-void HumanLegJointLimitConstraint::getInformation(ConstraintInfo* lcp)
+void HumanLegJointLimitConstraint::getInformation(
+    constraint::ConstraintInfo* lcp)
 {
   // if non-active, should not call getInfo()
   assert(isActive());
@@ -454,6 +453,3 @@ bool HumanLegJointLimitConstraint::isActive() const
 {
   return mActive;
 }
-
-} // namespace constraint
-} // namespace dart

@@ -29,32 +29,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_HUMANARMJOINTLIMITCONSTRAINT_HPP_
-#define DART_CONSTRAINT_HUMANARMJOINTLIMITCONSTRAINT_HPP_
+#ifndef EXAMPLES_HUMANJOINTLIMITS_HUMANLEGJOINTLIMITCONSTRAINT_HPP_
+#define EXAMPLES_HUMANJOINTLIMITS_HUMANARMJOINTLIMITCONSTRAINT_HPP_
 
-#include "dart/constraint/ConstraintBase.hpp"
-#include "dart/math/MathTypes.hpp"
-#include "tiny_dnn/tiny_dnn.h"
-
-namespace dart {
-
-namespace dynamics {
-class BodyNode;
-class Joint;
-} // namespace dynamics
-
-namespace constraint {
+#include <dart/dart.hpp>
+#include <tiny_dnn/tiny_dnn.h>
 
 DART_COMMON_MAKE_SHARED_WEAK(HumanArmJointLimitConstraint)
 
 /// HumanArmJointLimitConstraint handles joint position limits on human arm,
 /// representing range of motion of shoulder and elbow joints.
-class HumanArmJointLimitConstraint : public ConstraintBase
+class HumanArmJointLimitConstraint : public dart::constraint::ConstraintBase
 {
 public:
   /// Constructor
   explicit HumanArmJointLimitConstraint(
-      dynamics::Joint* shldjoint, dynamics::Joint* elbowjoint, bool isMirror);
+      dart::dynamics::Joint* shldjoint,
+      dart::dynamics::Joint* elbowjoint,
+      bool isMirror);
 
   /// Destructor
   virtual ~HumanArmJointLimitConstraint() = default;
@@ -91,8 +83,8 @@ public:
   // Friendship
   //----------------------------------------------------------------------------
 
-  friend class ConstraintSolver;
-  friend class ConstrainedGroup;
+  friend class dart::constraint::ConstraintSolver;
+  friend class dart::constraint::ConstrainedGroup;
 
 protected:
   //----------------------------------------------------------------------------
@@ -103,7 +95,7 @@ protected:
   void update() override;
 
   // Documentation inherited
-  void getInformation(ConstraintInfo* lcp) override;
+  void getInformation(dart::constraint::ConstraintInfo* lcp) override;
 
   // Documentation inherited
   void applyUnitImpulse(std::size_t index) override;
@@ -121,19 +113,19 @@ protected:
   void applyImpulse(double* lambda) override;
 
   // Documentation inherited
-  dynamics::SkeletonPtr getRootSkeleton() const override;
+  dart::dynamics::SkeletonPtr getRootSkeleton() const override;
 
   // Documentation inherited
   bool isActive() const override;
 
 private:
   /// arm joints involved
-  dynamics::Joint* mShldJoint;
-  dynamics::Joint* mElbowJoint;
+  dart::dynamics::Joint* mShldJoint;
+  dart::dynamics::Joint* mElbowJoint;
 
   /// arm body nodes involved
-  dynamics::BodyNode* mUArmNode;
-  dynamics::BodyNode* mLArmNode;
+  dart::dynamics::BodyNode* mUArmNode;
+  dart::dynamics::BodyNode* mLArmNode;
 
   /// A workaround to have a de facto left-handed euler joint
   /// for right shoulder, so it could share same limits with left shoulder.
@@ -179,7 +171,4 @@ private:
   static double mConstraintForceMixing;
 };
 
-} // namespace constraint
-} // namespace dart
-
-#endif // DART_CONSTRAINT_HUMANARMJOINTLIMITCONSTRAINT_HPP_
+#endif // EXAMPLES_HUMANJOINTLIMITS_HUMANLEGJOINTLIMITCONSTRAINT_HPP_

@@ -29,34 +29,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_HUMANLEGJOINTLIMITCONSTRAINT_HPP_
-#define DART_CONSTRAINT_HUMANLEGJOINTLIMITCONSTRAINT_HPP_
+#ifndef EXAMPLES_HUMANJOINTLIMITS_HUMANLEGJOINTLIMITCONSTRAINT_HPP_
+#define EXAMPLES_HUMANJOINTLIMITS_HUMANLEGJOINTLIMITCONSTRAINT_HPP_
 
-#include "dart/constraint/ConstraintBase.hpp"
-#include "dart/math/MathTypes.hpp"
-#include "tiny_dnn/tiny_dnn.h"
-
-namespace dart {
-
-namespace dynamics {
-class BodyNode;
-class Joint;
-} // namespace dynamics
-
-namespace constraint {
+#include <dart/dart.hpp>
+#include <tiny_dnn/tiny_dnn.h>
 
 DART_COMMON_MAKE_SHARED_WEAK(HumanLegJointLimitConstraint)
 
 /// HumanLegJointLimitConstraint handles joint position limits on human leg,
 /// representing range of motion of hip, knee and ankle joints.
-class HumanLegJointLimitConstraint : public ConstraintBase
+class HumanLegJointLimitConstraint : public dart::constraint::ConstraintBase
 {
 public:
   /// Constructor
   explicit HumanLegJointLimitConstraint(
-      dynamics::Joint* hipjoint,
-      dynamics::Joint* kneejoint,
-      dynamics::Joint* anklejoint,
+      dart::dynamics::Joint* hipjoint,
+      dart::dynamics::Joint* kneejoint,
+      dart::dynamics::Joint* anklejoint,
       bool isMirror);
 
   /// Destructor
@@ -94,8 +84,8 @@ public:
   // Friendship
   //----------------------------------------------------------------------------
 
-  friend class ConstraintSolver;
-  friend class ConstrainedGroup;
+  friend class dart::constraint::ConstraintSolver;
+  friend class dart::constraint::ConstrainedGroup;
 
 protected:
   //----------------------------------------------------------------------------
@@ -106,7 +96,7 @@ protected:
   void update() override;
 
   // Documentation inherited
-  void getInformation(ConstraintInfo* lcp) override;
+  void getInformation(dart::constraint::ConstraintInfo* lcp) override;
 
   // Documentation inherited
   void applyUnitImpulse(std::size_t index) override;
@@ -124,21 +114,21 @@ protected:
   void applyImpulse(double* lambda) override;
 
   // Documentation inherited
-  dynamics::SkeletonPtr getRootSkeleton() const override;
+  dart::dynamics::SkeletonPtr getRootSkeleton() const override;
 
   // Documentation inherited
   bool isActive() const override;
 
 private:
   /// leg joints involved
-  dynamics::Joint* mHipJoint;
-  dynamics::Joint* mKneeJoint;
-  dynamics::Joint* mAnkleJoint;
+  dart::dynamics::Joint* mHipJoint;
+  dart::dynamics::Joint* mKneeJoint;
+  dart::dynamics::Joint* mAnkleJoint;
 
   /// leg body nodes involved
-  dynamics::BodyNode* mThighNode;
-  dynamics::BodyNode* mLowerLegNode;
-  dynamics::BodyNode* mFootNode;
+  dart::dynamics::BodyNode* mThighNode;
+  dart::dynamics::BodyNode* mLowerLegNode;
+  dart::dynamics::BodyNode* mFootNode;
 
   /// A workaround to have a de facto left-handed euler joint
   /// for right hip, so it could share same limits with left hip.
@@ -184,7 +174,4 @@ private:
   static double mConstraintForceMixing;
 };
 
-} // namespace constraint
-} // namespace dart
-
-#endif // DART_CONSTRAINT_HUMANLEGJOINTLIMITCONSTRAINT_HPP_
+#endif // EXAMPLES_HUMANJOINTLIMITS_HUMANLEGJOINTLIMITCONSTRAINT_HPP_
