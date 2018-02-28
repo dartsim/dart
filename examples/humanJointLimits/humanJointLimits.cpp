@@ -46,8 +46,7 @@ using namespace utils;
 class MyWindow : public dart::gui::SimWindow
 {
 public:
-  explicit MyWindow(const WorldPtr& world)
-    : ts(0)
+  explicit MyWindow(const WorldPtr& world) : ts(0)
   {
     setWorld(world);
   }
@@ -106,10 +105,10 @@ public:
       mWorld->getConstraintSolver()->addConstraint(constraint_rleg);
     }
 
-    //            Eigen::Vector3d force = Eigen::Vector3d(0,0,-4);
-    //            Eigen::Vector3d location(0.0, -0.2, 0.0);
-    //            mWorld->getSkeleton("human")->getBodyNode("l-lowerarm")->addExtForce(force,
-    //            location, true, true);
+    // Eigen::Vector3d force = Eigen::Vector3d(0,0,-4);
+    // Eigen::Vector3d location(0.0, -0.2, 0.0);
+    // mWorld->getSkeleton("human")->getBodyNode("l-lowerarm")->addExtForce(force,
+    // location, true, true);
     SimWindow::timeStepping();
     ts++;
   }
@@ -133,8 +132,8 @@ int main(int argc, char* argv[])
     joint->setPositionLimitEnforced(true);
   }
 
-  //    world->getSkeleton("arm")->enableSelfCollisionCheck();
-  //    world->getSkeleton("arm")->disableAdjacentBodyCheck();
+  // world->getSkeleton("arm")->enableSelfCollisionCheck();
+  // world->getSkeleton("arm")->disableAdjacentBodyCheck();
 
   MyWindow window(world);
 
