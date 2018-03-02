@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCK_HPP_
-#define DART_COMMON_LOCK_HPP_
+#ifndef DART_COMMON_MUTEX_HPP_
+#define DART_COMMON_MUTEX_HPP_
 
 #include <mutex>
 #include <set>
@@ -85,4 +85,4 @@ private:
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_LOCK_HPP_
+#endif // DART_COMMON_MUTEX_HPP_
