@@ -1224,12 +1224,12 @@ TEST(Skeleton, LockSkeletonMutexesWithLockGuard)
 
   {
     auto mutex = subtree->getCustomMutex();
-    std::lock_guard<common::Mutex> lock(*mutex);
+    std::lock_guard<common::MutexReference> lock(*mutex);
   }
 
   {
     auto mutex = midchain->getCustomMutex();
-    std::lock_guard<common::Mutex> lock(*mutex);
+    std::lock_guard<common::MutexReference> lock(*mutex);
   }
 }
 

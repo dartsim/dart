@@ -56,7 +56,7 @@ public:
   virtual ~ReferentialSkeleton() = default;
 
   // Documentation inherited
-  std::unique_ptr<common::Mutex> getCustomMutex() const override;
+  std::unique_ptr<common::MutexReference> getCustomMutex() const override;
 
   /// Returns sorted mutexes in order of memory addresses.
   ///

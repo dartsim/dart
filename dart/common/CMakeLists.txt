@@ -32,6 +32,6 @@ install(
 )
 
 dart_format_add(
-  Mutex.hpp
-  Mutex.cpp
+  MutexReference.hpp
+  MutexReference.cpp
 )

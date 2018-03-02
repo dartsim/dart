@@ -42,9 +42,9 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-std::unique_ptr<common::Mutex> ReferentialSkeleton::getCustomMutex() const
+std::unique_ptr<common::MutexReference> ReferentialSkeleton::getCustomMutex() const
 {
-  return common::make_unique<common::MultiMutexes>(getStdMutexes());
+  return common::make_unique<common::MultiMutexReference>(getStdMutexes());
 }
 
 //==============================================================================

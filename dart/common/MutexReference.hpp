@@ -30,67 +30,59 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/Mutex.hpp"
+#ifndef DART_COMMON_MUTEXREFERENCE_HPP_
+#define DART_COMMON_MUTEXREFERENCE_HPP_
+
+#include <mutex>
+#include <set>
 
 namespace dart {
 namespace common {
 
-//==============================================================================
-SingleMutex::SingleMutex(std::mutex& mutex) noexcept : mMutex(mutex)
+/// Mutex is a wrapper class of single or multiple std::mutex to provide unified
+/// interface that guarantees deadlock-free locking and unlocking of the
+/// internal mutex(es).
+///
+/// This class is compatible to BasicLockable concept so that it can be used
+/// as a template parameter that requires this concept such as std::lock_guard.
+class MutexReference
 {
-  // Do nothing
-}
+public:
+  constexpr MutexReference() noexcept = default;
+  virtual ~MutexReference() = default;
+  virtual void lock() = 0;
+  virtual bool try_lock() noexcept = 0;
+  virtual void unlock() noexcept = 0;
 
-//==============================================================================
-void SingleMutex::lock()
+protected:
+  MutexReference(const MutexReference&) = delete;
+};
+
+class SingleMutexReference final : public MutexReference
 {
-  mMutex.lock();
-}
+public:
+  explicit SingleMutexReference(std::mutex& mutex) noexcept;
+  void lock() override;
+  bool try_lock() noexcept override;
+  void unlock() noexcept override;
 
-//==============================================================================
-bool SingleMutex::try_lock() noexcept
+private:
+  std::mutex& mMutex;
+};
+
+class MultiMutexReference final : public MutexReference
 {
-  return mMutex.try_lock();
-}
+public:
+  MultiMutexReference(const std::set<std::mutex*>& mutexes) noexcept;
+  void lock() override;
+  bool try_lock() noexcept override;
+  void unlock() noexcept override;
 
-//==============================================================================
-void SingleMutex::unlock() noexcept
-{
-  mMutex.unlock();
-}
-
-//==============================================================================
-MultiMutexes::MultiMutexes(const std::set<std::mutex*>& mutexes) noexcept
-    : mMutexes(mutexes)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void MultiMutexes::lock()
-{
-  for (auto& mutex : mMutexes)
-    mutex->lock();
-}
-
-//==============================================================================
-bool MultiMutexes::try_lock() noexcept
-{
-  for (auto& mutex : mMutexes)
-  {
-    if (!mutex->try_lock())
-      return false;
-  }
-
-  return true;
-}
-
-//==============================================================================
-void MultiMutexes::unlock() noexcept
-{
-  for (auto it = mMutexes.rbegin(); it != mMutexes.rend(); ++it)
-    (*it)->unlock();
-}
+private:
+  std::set<std::mutex*> mMutexes;
+};
 
 } // namespace common
 } // namespace dart
+
+#endif // DART_COMMON_MUTEXREFERENCE_HPP_

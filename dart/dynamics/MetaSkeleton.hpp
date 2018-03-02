@@ -38,7 +38,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Mutex.hpp"
+#include "dart/common/MutexReference.hpp"
 #include "dart/common/Signal.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/math/Geometry.hpp"
@@ -72,7 +72,7 @@ public:
   virtual ~MetaSkeleton() = default;
 
   /// Returns mutex.
-  virtual std::unique_ptr<common::Mutex> getCustomMutex() const = 0;
+  virtual std::unique_ptr<common::MutexReference> getCustomMutex() const = 0;
   // TODO: Rename this to getMutex once the deprecated Skeleton::getMutex() is
   // removed in DART 7.
 

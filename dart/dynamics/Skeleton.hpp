@@ -167,7 +167,7 @@ public:
   std::mutex& getStdMutex() const;
 
   /// Get the mutex that protects the state of this Skeleton
-  std::unique_ptr<common::Mutex> getCustomMutex() const override;
+  std::unique_ptr<common::MutexReference> getCustomMutex() const override;
 
   Skeleton(const Skeleton&) = delete;
 
