@@ -73,7 +73,7 @@ private:
 class MultiMutexReference final : public MutexReference
 {
 public:
-  MultiMutexReference(const std::set<std::mutex*>& mutexes) noexcept;
+  explicit MultiMutexReference(const std::set<std::mutex*>& mutexes) noexcept;
   void lock() override;
   bool try_lock() noexcept override;
   void unlock() noexcept override;
