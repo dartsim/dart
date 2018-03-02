@@ -48,37 +48,67 @@ namespace common {
 class MutexReference
 {
 public:
+  /// Default construtor
   constexpr MutexReference() noexcept = default;
+
+  /// Default destructor
   virtual ~MutexReference() = default;
+
+  /// Locks mutex that this class references; blocks if one of the mutexes are
+  /// not avaliable.
   virtual void lock() = 0;
+
+  /// Tries to lock the mutexes that this class references; returns false if
+  /// one of the mutexes is not avaliable.
   virtual bool try_lock() noexcept = 0;
+
+  /// Unlocks the mutexes.
   virtual void unlock() noexcept = 0;
 
 protected:
+  /// Copy construction is not allowed.
   MutexReference(const MutexReference&) = delete;
 };
 
+/// This class references a single mutex.
 class SingleMutexReference final : public MutexReference
 {
 public:
+  /// Constructor from a single mutex.
   explicit SingleMutexReference(std::mutex& mutex) noexcept;
+
+  // Documentation inherited
   void lock() override;
+
+  // Documentation inherited
   bool try_lock() noexcept override;
+
+  // Documentation inherited
   void unlock() noexcept override;
 
 private:
+  /// Mutex this class references.
   std::mutex& mMutex;
 };
 
+/// This class references multiple mutexes.
 class MultiMutexReference final : public MutexReference
 {
 public:
+  /// Constructs from multiple mutexes.
   explicit MultiMutexReference(const std::set<std::mutex*>& mutexes) noexcept;
+
+  // Documentation inherited
   void lock() override;
+
+  // Documentation inherited
   bool try_lock() noexcept override;
+
+  // Documentation inherited
   void unlock() noexcept override;
 
 private:
+  /// Mutexes this class references.
   std::set<std::mutex*> mMutexes;
 };
 
