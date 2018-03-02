@@ -4,6 +4,7 @@
 
 * Common
 
+  * Added MutexReference classes: [#1011](https://github.com/dartsim/dart/pull/1011)
   * Added ResourceRetriever::getFilePath(): [#972](https://github.com/dartsim/dart/pull/972)
 
 * Kinematics/Dynamics
