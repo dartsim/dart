@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_REFERENTIALSKELETON_HPP_
 
 #include <unordered_map>
+#include <unordered_set>
 
 #include "dart/dynamics/MetaSkeleton.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
@@ -61,7 +62,7 @@ public:
   ///
   /// \note Generally, you don't need to use this function in favor of
   /// getCustomMutex() that guarantees deadlock-free locking.
-  const std::vector<std::mutex*>& getStdMutexes() const;
+  const std::set<std::mutex*>& getStdMutexes() const;
 
   //----------------------------------------------------------------------------
   /// \{ \name Name
@@ -83,7 +84,7 @@ public:
   std::size_t getNumSkeletons() const;
 
   /// Returns skeletons associated with this ReferentialSkeleton.
-  const std::vector<Skeleton*>& getSkeletons();
+  const std::unordered_set<const Skeleton*>& getSkeletons() const;
 
   /// Returns whether this ReferentialSkeleton contains \c skel.
   bool hasSkeleton(const Skeleton* skel) const;
@@ -479,11 +480,11 @@ protected:
   std::string mName;
 
   /// Skeletons that this ReferentialSkeleton is referencing to.
-  std::vector<Skeleton*> mSkeletons;
+  std::unordered_set<const Skeleton*> mSkeletons;
 
   /// Mutexes of the skeletons. The mutexes are sorted in order of memory
   /// addresses.
-  std::vector<std::mutex*> mSkeletonMutexes;
+  std::set<std::mutex*> mSkeletonMutexes;
 
   /// BodyNodes that this ReferentialSkeleton references. These hold strong
   /// references to ensure that the BodyNodes do not disappear
@@ -544,11 +545,11 @@ protected:
 private:
   /// Add a Skeleton to this ReferentialSkeleton, ignoring its Joint and
   /// DegreesOfFreedom. This can only be used by this class.
-  void registerSkeleton(Skeleton* skel);
+  void registerSkeleton(const Skeleton* skel);
 
   /// Removes a Skeleton from this ReferentialSkeleton. This can only be used by
   /// this class.
-  void unregisterSkeleton(Skeleton* skel);
+  void unregisterSkeleton(const Skeleton* skel);
 };
 
 } // namespace dynamics

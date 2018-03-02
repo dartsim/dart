@@ -34,7 +34,7 @@
 #define DART_COMMON_LOCK_HPP_
 
 #include <mutex>
-#include <vector>
+#include <set>
 
 namespace dart {
 namespace common {
@@ -53,6 +53,7 @@ public:
   virtual void lock() = 0;
   virtual bool try_lock() noexcept = 0;
   virtual void unlock() noexcept = 0;
+
 protected:
   Mutex(const Mutex&) = delete;
 };
@@ -64,6 +65,7 @@ public:
   void lock() override;
   bool try_lock() noexcept override;
   void unlock() noexcept override;
+
 private:
   std::mutex& mMutex;
 };
@@ -71,13 +73,13 @@ private:
 class MultiMutexes final : public Mutex
 {
 public:
-  MultiMutexes(
-      const std::vector<std::mutex*>& mutexes, bool sorted = false) noexcept;
+  MultiMutexes(const std::set<std::mutex*>& mutexes) noexcept;
   void lock() override;
   bool try_lock() noexcept override;
   void unlock() noexcept override;
+
 private:
-  std::vector<std::mutex*> mMutexes;
+  std::set<std::mutex*> mMutexes;
 };
 
 } // namespace common

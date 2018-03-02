@@ -32,14 +32,11 @@
 
 #include "dart/common/Mutex.hpp"
 
-#include <algorithm>
-
 namespace dart {
 namespace common {
 
 //==============================================================================
-SingleMutex::SingleMutex(std::mutex& mutex) noexcept
-  : mMutex(mutex)
+SingleMutex::SingleMutex(std::mutex& mutex) noexcept : mMutex(mutex)
 {
   // Do nothing
 }
@@ -63,12 +60,10 @@ void SingleMutex::unlock() noexcept
 }
 
 //==============================================================================
-MultiMutexes::MultiMutexes(const std::vector<std::mutex*>& mutexes, bool sorted)
-noexcept
-  : mMutexes(mutexes)
+MultiMutexes::MultiMutexes(const std::set<std::mutex*>& mutexes) noexcept
+    : mMutexes(mutexes)
 {
-  if (!sorted)
-    std::sort(mMutexes.begin(), mMutexes.end());
+  // Do nothing
 }
 
 //==============================================================================

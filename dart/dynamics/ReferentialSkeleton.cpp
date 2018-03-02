@@ -44,11 +44,11 @@ namespace dynamics {
 //==============================================================================
 std::unique_ptr<common::Mutex> ReferentialSkeleton::getCustomMutex() const
 {
-  return common::make_unique<common::MultiMutexes>(getStdMutexes(), true);
+  return common::make_unique<common::MultiMutexes>(getStdMutexes());
 }
 
 //==============================================================================
-const std::vector<std::mutex*>& ReferentialSkeleton::getStdMutexes() const
+const std::set<std::mutex*>& ReferentialSkeleton::getStdMutexes() const
 {
   return mSkeletonMutexes;
 }
@@ -80,12 +80,11 @@ std::size_t ReferentialSkeleton::getNumSkeletons() const
 //==============================================================================
 bool ReferentialSkeleton::hasSkeleton(const Skeleton* skel) const
 {
-  return std::find(mSkeletons.begin(), mSkeletons.end(), skel)
-      != mSkeletons.end();
+  return mSkeletons.find(skel) != mSkeletons.end();
 }
 
 //==============================================================================
-const std::vector<Skeleton*>& ReferentialSkeleton::getSkeletons()
+const std::unordered_set<const Skeleton*>& ReferentialSkeleton::getSkeletons() const
 {
   return mSkeletons;
 }
@@ -1472,7 +1471,7 @@ void ReferentialSkeleton::updateCaches()
 }
 
 //==============================================================================
-void ReferentialSkeleton::registerSkeleton(Skeleton* skel)
+void ReferentialSkeleton::registerSkeleton(const Skeleton* skel)
 {
   // We assume skel is not nullptr. If it's not, this function should be updated
   // to take that into account.
@@ -1481,16 +1480,12 @@ void ReferentialSkeleton::registerSkeleton(Skeleton* skel)
   if (hasSkeleton(skel))
     return;
 
-  mSkeletons.push_back(skel);
-
-  // Insert the skeleton's mutex in ascending order of its memory addresses
-  auto it = std::upper_bound(
-      mSkeletonMutexes.begin(), mSkeletonMutexes.end(), &skel->getStdMutex());
-  mSkeletonMutexes.insert(it, &skel->getStdMutex());
+  mSkeletons.insert(skel);
+  mSkeletonMutexes.insert(&skel->getStdMutex());
 }
 
 //==============================================================================
-void ReferentialSkeleton::unregisterSkeleton(Skeleton* skel)
+void ReferentialSkeleton::unregisterSkeleton(const Skeleton* skel)
 {
   if (!skel)
   {
@@ -1501,15 +1496,8 @@ void ReferentialSkeleton::unregisterSkeleton(Skeleton* skel)
     return;
   }
 
-  mSkeletons.erase(
-      std::remove(mSkeletons.begin(), mSkeletons.end(), skel),
-      mSkeletons.end());
-  mSkeletonMutexes.erase(
-      std::remove(
-          mSkeletonMutexes.begin(),
-          mSkeletonMutexes.end(),
-          &skel->getStdMutex()),
-      mSkeletonMutexes.end());
+  mSkeletonMutexes.erase(&skel->getStdMutex());
+  mSkeletons.erase(skel);
 }
 
 //==============================================================================
