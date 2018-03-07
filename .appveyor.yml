@@ -56,7 +56,7 @@ install:
   
   - cmd: vcpkg integrate install
 
-  - cmd: cd "%clone_folder%"
+  - cmd: cd "%APPVEYOR_BUILD_FOLDER%"
   - cmd: md build
   - cmd: cd build
   - cmd: cmake %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%configuration% -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
