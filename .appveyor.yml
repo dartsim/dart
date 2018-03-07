@@ -80,7 +80,7 @@ build:
 
 build_script:
   - sh: mkdir build && cd build
-  - sh: cmake -DCMAKE_BUILD_TYPE=%configuration% -DTREAT_WARNINGS_AS_ERRORS=ON ..
+  - sh: cmake -DCMAKE_BUILD_TYPE=$configuration -DTREAT_WARNINGS_AS_ERRORS=ON ..
   - sh: make -j4 tests
 
 test_script:
