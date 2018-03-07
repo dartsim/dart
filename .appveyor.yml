@@ -68,6 +68,7 @@ install:
   - sh: sudo apt-get --yes install build-essential cmake pkg-config git
   - sh: sudo apt-get --yes install libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-regex-dev libboost-system-dev
   - sh: sudo apt-get --yes install libnlopt-dev coinor-libipopt-dev libbullet-dev libflann-dev libtinyxml2-dev liburdfdom-dev libxi-dev libxmu-dev freeglut3-dev libopenscenegraph-dev
+  - sh: sudo apt-get --yes install clang-format-3.8
 
 # preserve contents of selected directories and files across project builds
 cache:
@@ -80,8 +81,9 @@ build:
 
 build_script:
   - sh: mkdir build && cd build
-  - sh: cmake -DCMAKE_BUILD_TYPE=$configuration -DTREAT_WARNINGS_AS_ERRORS=ON ..
-  - sh: make -j4 tests
+  - sh: cmake -DCMAKE_BUILD_TYPE=$configuration -DDART_TREAT_WARNINGS_AS_ERRORS=ON ..
+  - sh: make -j4 tests examples tutorials
+  - sh: make check-format
 
 test_script:
   #- cmd: ctest --build-config %configuration% --parallel 4 --output-on-failure
