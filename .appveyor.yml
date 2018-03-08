@@ -76,7 +76,7 @@ build_script:
   #------------------
   - cmd: mkdir build && cd build
   - cmd: cmake %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%configuration% -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
-  - cmd: --build . --target ALL_BUILD --config %configuration% -- /maxcpucount:4 /verbosity:quiet
+  - cmd: cmake --build . --target ALL_BUILD --config %configuration% -- /maxcpucount:4 /verbosity:quiet
   
   #------------------
   # Ubuntu 16.04 LTS
