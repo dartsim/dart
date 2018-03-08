@@ -3,24 +3,25 @@
   <!-- This is a Catkin package.xml file to optionally support building DART in
        a Catkin workspace. Catkin is not required to build DART. For more
        information, see: http://ros.org/reps/rep-0136.html -->
-  <name>dart</name>
+  <name>dartsim</name>
   <version>6.3.0</version>
   <description>
     DART (Dynamic Animation and Robotics Toolkit) is a collaborative,
     cross-platform, open source library created by the Georgia Tech Graphics
-    Lab and Humanoid Robotics Lab. The library provides data structures and
-    algorithms for kinematic and dynamic applications in robotics and computer
-    animation.
+    Lab and Humanoid Robotics Lab, with ongoing support by the University
+    of Washington Personal Robotics Lab and Open Robotics. DART provides data
+    structures and algorithms for kinematic and dynamic applications in robotics
+    and computer animation.
   </description>
   <url type="website">http://dartsim.github.io/</url>
   <url type="repository">https://github.com/dartsim/dart</url>
   <url type="bugtracker">https://github.com/dartsim/dart/issues</url>
-  <maintainer email="jslee02@gmail.com">Jeongseok Lee</maintainer>
+  <maintainer email="grey@openrobotics.org">Michael X. Grey</maintainer>
+  <author email="jslee02@gmail.com">Jeongseok Lee</maintainer>
   <author email="karenliu@cc.gatech.edu">C. Karen Liu</author>
-  <author email="mstilman@cc.gatech.edu">Mike Stilman</author>
+  <author>Mike Stilman</author>
   <license>BSD</license>
-  <buildtool_depend>cmake</buildtool_depend>
-  <buildtool_depend>pkg-config</buildtool_depend>
+  <build_depend>pkg-config</build_depend>
   <depend>assimp</depend>
   <depend>bullet</depend>
   <depend>eigen</depend>
@@ -33,9 +34,7 @@
   <depend>libxmu-dev</depend>
   <depend>tinyxml</depend>
   <depend>tinyxml2</depend>
-  <!-- These are required by REP-136. -->
-  <exec_depend>catkin</exec_depend>
-  <export>
-    <build_type>cmake</build_type>
-  </export>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
 </package>
