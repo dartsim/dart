@@ -34,7 +34,7 @@ branches:
 # scripts that run after cloning repository
 install:
   #------------------
-  # Windows settings
+  # Windows 10
   #------------------
   # update vcpkg
   - cmd: cd C:\tools\vcpkg
@@ -55,15 +55,11 @@ install:
   #- vcpkg install ipopt:%VCPKG_ARCH%
   
   - cmd: vcpkg integrate install
-
   - cmd: cd "%APPVEYOR_BUILD_FOLDER%"
-  - cmd: md build
-  - cmd: cd build
-  - cmd: cmake %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%configuration% -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
 
-  #---------------------------
-  # Ubuntu 16.04 LTS settings
-  #---------------------------
+  #------------------
+  # Ubuntu 16.04 LTS 
+  #------------------
   - sh: sudo apt-get update
   - sh: sudo apt-get --yes install build-essential cmake pkg-config git
   - sh: sudo apt-get --yes install libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-regex-dev libboost-system-dev
@@ -74,12 +70,17 @@ install:
 cache:
   - C:\tools\vcpkg\installed -> .appveyor.yml
 
-build:
-  project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project
-  parallel: true                           # enable MSBuild parallel builds
-  verbosity: quiet                         # MSBuild verbosity level (quiet|minimal|normal|detailed)
-
 build_script:
+  #------------------
+  # Windows 10
+  #------------------
+  - cmd: mkdir build && cd build
+  - cmd: cmake %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%configuration% -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
+  - cmd: --build . --target ALL_BUILD --config %configuration% -- /maxcpucount:4 /verbosity:quiet
+  
+  #------------------
+  # Ubuntu 16.04 LTS
+  #------------------
   - sh: mkdir build && cd build
   - sh: cmake -DCMAKE_BUILD_TYPE=$configuration -DDART_TREAT_WARNINGS_AS_ERRORS=ON ..
   - sh: make -j4 tests examples tutorials
