@@ -17,7 +17,7 @@
   <url type="repository">https://github.com/dartsim/dart</url>
   <url type="bugtracker">https://github.com/dartsim/dart/issues</url>
   <maintainer email="grey@openrobotics.org">Michael X. Grey</maintainer>
-  <author email="jslee02@gmail.com">Jeongseok Lee</maintainer>
+  <author email="jslee02@gmail.com">Jeongseok Lee</author>
   <author email="karenliu@cc.gatech.edu">C. Karen Liu</author>
   <author>Mike Stilman</author>
   <license>BSD</license>
