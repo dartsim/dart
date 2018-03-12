@@ -1,6 +1,6 @@
 ## DART 6
 
-### [DART 6.3.1 XXXXX]
+### DART 6.3.1 (201X-XX-XX)
 
 * Build system
 
