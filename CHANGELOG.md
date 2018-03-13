@@ -4,7 +4,7 @@
 
 * Build system
 
-  * Tweaked package.xml for catkin support: [#1027](https://github.com/dartsim/dart/pull/1027) [#1029](https://github.com/dartsim/dart/pull/1029)
+  * Tweaked package.xml for catkin support: [#1027](https://github.com/dartsim/dart/pull/1027), [#1029](https://github.com/dartsim/dart/pull/1029)
 
 ### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)
 
