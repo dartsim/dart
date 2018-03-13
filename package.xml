@@ -25,9 +25,8 @@
   <depend>assimp</depend>
   <depend>bullet</depend>
   <depend>eigen</depend>
-  <depend>fcl</depend>
+  <depend>fcl_catkin</depend>
   <depend>glut</depend>
-  <depend>libccd</depend>
   <depend>libflann-dev</depend>
   <depend>liburdfdom-dev</depend>
   <depend>libxi-dev</depend>
