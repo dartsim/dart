@@ -1,5 +1,11 @@
 ## DART 6
 
+### DART 6.3.1 (201X-XX-XX)
+
+* Build system
+
+  * Tweaked package.xml for catkin support: [#1027](https://github.com/dartsim/dart/pull/1027)
+
 ### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)
 
 * Collision detection
