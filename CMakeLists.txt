@@ -561,6 +561,40 @@ if("${PERLMODULES_FOUND}" STREQUAL "TRUE")
 endif()
 
 #===============================================================================
+# Catkin Packaging
+#===============================================================================
+# See if the user has catkin available
+find_package(catkin QUIET)
+if(catkin_FOUND)
+
+  message(STATUS "Generating catkin package")
+  # We should only include library components whose dependencies are available
+  # in the target ROS distro.
+  catkin_package(
+    LIBRARIES
+      dart
+      dart-collision-bullet
+      dart-utils
+      dart-utils-urdf
+      dart-gui
+
+    CATKIN_DEPENDS
+      assimp
+      bullet
+      boost
+      eigen
+      libfcl-dev
+      glut
+      libflann-dev
+      liburdfdom-dev
+      libxi-dev
+      libmu-dev
+      tinyxml
+      tinyxml2)
+
+endif()
+
+#===============================================================================
 # Build Instructions
 #===============================================================================
 message(STATUS "")
