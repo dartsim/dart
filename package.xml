@@ -24,6 +24,7 @@
   <build_depend>pkg-config</build_depend>
   <depend>assimp</depend>
   <depend>bullet</depend>
+  <depend>boost</depend>
   <depend>eigen</depend>
   <depend>libfcl-dev</depend>
   <depend>glut</depend>
@@ -34,6 +35,11 @@
   <depend>tinyxml</depend>
   <depend>tinyxml2</depend>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <!-- The following tags are recommended by REP-136 -->
+  <run_depend>catkin</run_depend>
+  <buildtool_depend>cmake</buildtool_depend>
+  <export>
+    <build_type>cmake</build_type>
+  </export>
 
 </package>
