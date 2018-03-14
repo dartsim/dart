@@ -1,7 +1,9 @@
 # Specify version format
 version: "{build}"
 
-image: Visual Studio 2017
+image:
+  - Visual Studio 2017
+  - Ubuntu
 
 platform: x64
 
@@ -23,9 +25,6 @@ init:
   - cmd: cmake --version
   - cmd: msbuild /version
 
-# clone directory
-clone_folder: C:\projects\dart
-
 # branches to build
 branches:
   # blacklist
@@ -34,39 +33,59 @@ branches:
 
 # scripts that run after cloning repository
 install:
+  #------------------
+  # Windows 10
+  #------------------
   # update vcpkg
-  - cd C:\tools\vcpkg
-  - git pull
-  - .\bootstrap-vcpkg.bat
+  - cmd: cd C:\tools\vcpkg
+  - cmd: git pull
+  - cmd: .\bootstrap-vcpkg.bat
   
-  - if "%platform%"=="Win32" set VCPKG_ARCH=x86-windows
-  - if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
+  - cmd: if "%platform%"=="Win32" set VCPKG_ARCH=x86-windows
+  - cmd: if "%platform%"=="x64"   set VCPKG_ARCH=x64-windows
 
   # remove outdated versions
-  - vcpkg remove --outdated --recurse
+  - cmd: vcpkg remove --outdated --recurse
 
   # install required dependencies
-  - vcpkg install --recurse --triplet %VCPKG_ARCH% assimp boost-system boost-filesystem ccd eigen3 fcl
+  - cmd: vcpkg install --recurse --triplet %VCPKG_ARCH% assimp boost-system boost-filesystem ccd eigen3 fcl
   
   # install optional dependencies
   #- vcpkg install --recurse --triplet %VCPKG_ARCH% bullet3 flann freeglut nlopt ode opengl osg tinyxml2 urdfdom
   #- vcpkg install ipopt:%VCPKG_ARCH%
   
-  - vcpkg integrate install
+  - cmd: vcpkg integrate install
+  - cmd: cd "%APPVEYOR_BUILD_FOLDER%"
 
-  - cmd: cd C:\projects\dart
-  - cmd: md build
-  - cmd: cd build
-  - cmd: cmake %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%configuration% -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
-  
+  #------------------
+  # Ubuntu 16.04 LTS 
+  #------------------
+  - sh: sudo apt-get update
+  - sh: sudo apt-get --yes install build-essential cmake pkg-config git
+  - sh: sudo apt-get --yes install libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-regex-dev libboost-system-dev
+  - sh: sudo apt-get --yes install libnlopt-dev coinor-libipopt-dev libbullet-dev libflann-dev libtinyxml2-dev liburdfdom-dev libxi-dev libxmu-dev freeglut3-dev libopenscenegraph-dev
+  - sh: sudo apt-get --yes install clang-format-3.8
+
 # preserve contents of selected directories and files across project builds
 cache:
   - C:\tools\vcpkg\installed -> .appveyor.yml
 
-build:
-  project: C:\projects\dart\build\dart.sln # path to Visual Studio solution or project
-  parallel: true                           # enable MSBuild parallel builds
-  verbosity: quiet                         # MSBuild verbosity level (quiet|minimal|normal|detailed)
+build_script:
+  #------------------
+  # Windows 10
+  #------------------
+  - cmd: mkdir build && cd build
+  - cmd: cmake %CMAKE_GENERATOR% -DCMAKE_BUILD_TYPE=%configuration% -DDART_MSVC_DEFAULT_OPTIONS="%MSVC_DEFAULT_OPTIONS%" %CMAKE_TOOLCHAIN_FILE% %CMAKE_TOOLCHAIN% ..
+  - cmd: cmake --build . --target ALL_BUILD --config %configuration% -- /maxcpucount:4 /verbosity:quiet
+  
+  #------------------
+  # Ubuntu 16.04 LTS
+  #------------------
+  - sh: mkdir build && cd build
+  - sh: cmake -DCMAKE_BUILD_TYPE=$configuration -DDART_TREAT_WARNINGS_AS_ERRORS=ON ..
+  - sh: make -j4 tests examples tutorials
+  - sh: make check-format
 
-#test_script:
+test_script:
   #- cmd: ctest --build-config %configuration% --parallel 4 --output-on-failure
+  - sh: ctest -j4
