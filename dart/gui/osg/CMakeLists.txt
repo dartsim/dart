@@ -31,7 +31,7 @@ if(DART_BUILD_GUI_OSG)
         set(warning_msg "Could NOT find OpenSceneGraph nor OpenThreads")
       endif()
     endif()
-    message(WARNING "${warning_msg} -- we will skip dart-gui-osg\n"
+    message(STATUS "${warning_msg} -- we will skip dart-gui-osg\n"
             "If you believe you do have both OSG and OpenThreads installed, try setting OSG_DIR")
     return()
   endif()
