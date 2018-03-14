@@ -30,55 +30,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef DART_COMMON_MUTEXREFERENCE_IMPL_HPP_
+#define DART_COMMON_MUTEXREFERENCE_IMPL_HPP_
+
 #include "dart/common/MutexReference.hpp"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
-MultiMutexReference::MultiMutexReference(
+template <typename Lockable>
+SingleMutexReference<Lockable>::SingleMutexReference(
     std::weak_ptr<const void> mutexHolder,
-    const std::set<std::mutex*>& mutexes) noexcept
+    Lockable& mutex) noexcept
     : mMutexHolder(std::move(mutexHolder)),
-      mMutexes(mutexes)
+      mMutex(mutex)
 {
   // Do nothing
 }
 
 //==============================================================================
-void MultiMutexReference::lock()
+template <typename Lockable>
+void SingleMutexReference<Lockable>::lock()
 {
   if (mMutexHolder.expired())
     return;
 
-  for (auto& mutex : mMutexes)
-    mutex->lock();
+  mMutex.lock();
 }
 
 //==============================================================================
-bool MultiMutexReference::try_lock() noexcept
+template <typename Lockable>
+bool SingleMutexReference<Lockable>::try_lock() noexcept
 {
   if (mMutexHolder.expired())
     return false;
 
-  for (auto& mutex : mMutexes)
-  {
-    if (!mutex->try_lock())
-      return false;
-  }
-
-  return true;
+  return mMutex.try_lock();
 }
 
 //==============================================================================
-void MultiMutexReference::unlock() noexcept
+template <typename Lockable>
+void SingleMutexReference<Lockable>::unlock() noexcept
 {
   if (mMutexHolder.expired())
     return;
 
-  for (auto it = mMutexes.rbegin(); it != mMutexes.rend(); ++it)
-    (*it)->unlock();
+  mMutex.unlock();
 }
 
 } // namespace common
 } // namespace dart
+
+#endif // DART_COMMON_MUTEXREFERENCE_IMPL_HPP_

@@ -390,7 +390,8 @@ std::mutex& Skeleton::getStdMutex() const
 //==============================================================================
 std::unique_ptr<common::MutexReference> Skeleton::getCustomMutex() const
 {
-  return common::make_unique<common::SingleMutexReference>(mPtr, mMutex);
+  return common::make_unique<common::SingleMutexReference<std::mutex>>(
+      mPtr, mMutex);
 }
 
 //==============================================================================

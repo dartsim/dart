@@ -72,12 +72,15 @@ protected:
 };
 
 /// This class references a single mutex.
+template <typename LockableT = std::mutex>
 class SingleMutexReference final : public MutexReference
 {
 public:
+  using Lockable = LockableT;
+
   /// Constructor from a single mutex.
   SingleMutexReference(
-      std::weak_ptr<const void> mutexHolder, std::mutex& mutex) noexcept;
+      std::weak_ptr<const void> mutexHolder, Lockable& mutex) noexcept;
 
   // Documentation inherited
   void lock() override;
@@ -93,7 +96,7 @@ private:
   std::weak_ptr<const void> mMutexHolder;
 
   /// Mutex this class references.
-  std::mutex& mMutex;
+  LockableT& mMutex;
 };
 
 /// This class references multiple mutexes.
@@ -124,5 +127,7 @@ private:
 
 } // namespace common
 } // namespace dart
+
+#include "dart/common/detail/MutexReference-impl.hpp"
 
 #endif // DART_COMMON_MUTEXREFERENCE_HPP_
