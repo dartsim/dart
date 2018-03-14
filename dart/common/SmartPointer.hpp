@@ -38,22 +38,25 @@
 // -- Standard shared/weak pointers --
 // Define a typedef for const and non-const version of shared_ptr and weak_ptr
 // for the class X
-#define DART_COMMON_MAKE_SHARED_WEAK(X)                                        \
+#define DART_COMMON_DECLARE_SHARED_WEAK(X)                                     \
   class X;                                                                     \
   using X##Ptr = std::shared_ptr<X>;                                           \
   using Const##X##Ptr = std::shared_ptr<const X>;                              \
   using Weak##X##Ptr = std::weak_ptr<X>;                                       \
   using WeakConst##X##Ptr = std::weak_ptr<const X>;
 
+// Deprecated in DART 6.4. Please use DART_COMMON_DECLARE_SHARED_WEAK
+//
+// -- Standard shared/weak pointers --
+// Define a typedef for const and non-const version of shared_ptr and weak_ptr
+// for the class X
+#define DART_COMMON_MAKE_SHARED_WEAK(X) DART_COMMON_DECLARE_SHARED_WEAK(X)
+
 // -- Standard shared/weak/unique pointers --
 // Type aliases for const and non-const version of shared_ptr, weak_ptr, and
 // unique_ptr for the class X
-#define DART_COMMON_MAKE_POINTERS(X)                                           \
-  class X;                                                                     \
-  using X##Ptr = std::shared_ptr<X>;                                           \
-  using Const##X##Ptr = std::shared_ptr<const X>;                              \
-  using Weak##X##Ptr = std::weak_ptr<X>;                                       \
-  using WeakConst##X##Ptr = std::weak_ptr<const X>;                            \
+#define DART_COMMON_DECLARE_SMART_POINTERS(X)                                  \
+  DART_COMMON_DECLARE_SHARED_WEAK(X)                                           \
   using Unique##X##Ptr = std::unique_ptr<X>;                                   \
   using UniqueConst##X##Ptr = std::unique_ptr<const X>;
 
