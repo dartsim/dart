@@ -77,9 +77,6 @@ public:
   /// Returns number of skeletons associated with this ReferentialSkeleton.
   std::size_t getNumSkeletons() const;
 
-  /// Returns skeletons associated with this ReferentialSkeleton.
-  const std::unordered_set<const Skeleton*>& getSkeletons() const;
-
   /// Returns whether this ReferentialSkeleton contains \c skel.
   bool hasSkeleton(const Skeleton* skel) const;
 

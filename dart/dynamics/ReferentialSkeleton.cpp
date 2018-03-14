@@ -80,13 +80,6 @@ bool ReferentialSkeleton::hasSkeleton(const Skeleton* skel) const
 }
 
 //==============================================================================
-const std::unordered_set<const Skeleton*>&
-ReferentialSkeleton::getSkeletons() const
-{
-  return mSkeletons;
-}
-
-//==============================================================================
 std::size_t ReferentialSkeleton::getNumBodyNodes() const
 {
   return mBodyNodes.size();
