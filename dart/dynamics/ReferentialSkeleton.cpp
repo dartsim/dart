@@ -46,7 +46,7 @@ std::unique_ptr<common::LockableReference>
 ReferentialSkeleton::getLockableReference() const
 {
   return common::make_unique<
-      common::MultiLockableReference<std::set<std::mutex*>::iterator>>(
+      common::MultiLockableReference<std::mutex>>(
           mPtr, mSkeletonMutexes.begin(), mSkeletonMutexes.end());
 }
 

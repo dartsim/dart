@@ -111,11 +111,11 @@ private:
 /// MultiLockableReference acquires the locks in the specified order, which
 /// means it is the user's responsibility to sort the collection to avoid
 /// deadlock.
-template <typename InputIteratorT>
+template <typename LockableT>
 class MultiLockableReference final : public LockableReference
 {
 public:
-  using Iterator = InputIteratorT;
+  using Lockable = LockableT;
 
   /// Constructs from multiple lockables.
   ///
@@ -124,8 +124,11 @@ public:
   /// lockable holder is not destructed.
   /// \param[in] first First iterator of lockable to be added to this class.
   /// \param[in] last Last iterator of lockable to be added to this class.
+  template <typename InputIterator>
   MultiLockableReference(
-      std::weak_ptr<const void> lockableHolder, Iterator first, Iterator last);
+      std::weak_ptr<const void> lockableHolder,
+      InputIterator first,
+      InputIterator last);
 
   // Documentation inherited
   void lock() override;
@@ -137,10 +140,6 @@ public:
   void unlock() noexcept override;
 
 private:
-  using IteratorValueType = typename std::iterator_traits<Iterator>::value_type;
-  using Lockable = typename std::remove_pointer<
-      typename std::remove_reference<IteratorValueType>::type>::type;
-
   /// Converts reference to pointer.
   template <typename T>
   T* ptr(T& obj);

@@ -79,19 +79,32 @@ void SingleLockableReference<Lockable>::unlock() noexcept
 }
 
 //==============================================================================
-template <typename Iterator>
-MultiLockableReference<Iterator>::MultiLockableReference(
-    std::weak_ptr<const void> lockableHolder, Iterator first, Iterator last)
+template <typename Lockable>
+template <typename InputIterator>
+MultiLockableReference<Lockable>::MultiLockableReference(
+    std::weak_ptr<const void> lockableHolder,
+    InputIterator first,
+    InputIterator last)
   : mLockableHolder(std::move(lockableHolder)), mLockables(first, last)
 {
+  using IteratorValueType =
+      typename std::iterator_traits<InputIterator>::value_type;
+  using IteratorLockable = typename std::remove_pointer<
+      typename std::remove_reference<IteratorValueType>::type>::type;
+
+  static_assert(
+      std::is_same<Lockable, IteratorLockable>::value,
+      "Lockable of this class and the lockable of InputIterator are not the "
+      "same.");
+
   mLockables.reserve(distance(first, last));
   for (; first != last; ++first)
     mLockables.push_back(ptr(*first));
 }
 
 //==============================================================================
-template <typename Iterator>
-void MultiLockableReference<Iterator>::lock()
+template <typename Lockable>
+void MultiLockableReference<Lockable>::lock()
 {
   if (mLockableHolder.expired())
     return;
@@ -101,8 +114,8 @@ void MultiLockableReference<Iterator>::lock()
 }
 
 //==============================================================================
-template <typename Iterator>
-bool MultiLockableReference<Iterator>::try_lock() noexcept
+template <typename Lockable>
+bool MultiLockableReference<Lockable>::try_lock() noexcept
 {
   if (mLockableHolder.expired())
     return false;
@@ -117,8 +130,8 @@ bool MultiLockableReference<Iterator>::try_lock() noexcept
 }
 
 //==============================================================================
-template <typename Iterator>
-void MultiLockableReference<Iterator>::unlock() noexcept
+template <typename Lockable>
+void MultiLockableReference<Lockable>::unlock() noexcept
 {
   if (mLockableHolder.expired())
     return;
@@ -128,17 +141,17 @@ void MultiLockableReference<Iterator>::unlock() noexcept
 }
 
 //==============================================================================
-template <typename Iterator>
+template <typename Lockable>
 template <typename T>
-T* MultiLockableReference<Iterator>::ptr(T& obj)
+T* MultiLockableReference<Lockable>::ptr(T& obj)
 {
   return &obj;
 }
 
 //==============================================================================
-template <typename Iterator>
+template <typename Lockable>
 template <typename T>
-T* MultiLockableReference<Iterator>::ptr(T* obj)
+T* MultiLockableReference<Lockable>::ptr(T* obj)
 {
   return obj;
 }
