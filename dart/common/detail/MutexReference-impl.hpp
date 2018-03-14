@@ -41,8 +41,7 @@ namespace common {
 //==============================================================================
 template <typename Lockable>
 SingleMutexReference<Lockable>::SingleMutexReference(
-    std::weak_ptr<const void> mutexHolder,
-    Lockable& mutex) noexcept
+    std::weak_ptr<const void> mutexHolder, Lockable& mutex) noexcept
     : mMutexHolder(std::move(mutexHolder)),
       mMutex(mutex)
 {
@@ -77,6 +76,71 @@ void SingleMutexReference<Lockable>::unlock() noexcept
     return;
 
   mMutex.unlock();
+}
+
+//==============================================================================
+template <typename Iterator>
+MultiMutexReference<Iterator>::MultiMutexReference(
+    std::weak_ptr<const void> mutexHolder, Iterator first, Iterator last)
+  : mMutexHolder(std::move(mutexHolder)), mMutexes(first, last)
+{
+  mMutexes.reserve(distance(first, last));
+  for (; first != last; ++first)
+    mMutexes.push_back(ptr(*first));
+}
+
+//==============================================================================
+template <typename Iterator>
+void MultiMutexReference<Iterator>::lock()
+{
+  if (mMutexHolder.expired())
+    return;
+
+  for (auto mutex : mMutexes)
+    mutex->lock();
+}
+
+//==============================================================================
+template <typename Iterator>
+bool MultiMutexReference<Iterator>::try_lock() noexcept
+{
+  if (mMutexHolder.expired())
+    return false;
+
+  for (auto mutex : mMutexes)
+  {
+    if (!mutex->try_lock())
+      return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
+template <typename Iterator>
+void MultiMutexReference<Iterator>::unlock() noexcept
+{
+  if (mMutexHolder.expired())
+    return;
+
+  for (auto it = mMutexes.rbegin(); it != mMutexes.rend(); ++it)
+    (*it)->unlock();
+}
+
+//==============================================================================
+template <typename Iterator>
+template <typename T>
+T* MultiMutexReference<Iterator>::ptr(T& obj)
+{
+  return &obj;
+}
+
+//==============================================================================
+template <typename Iterator>
+template <typename T>
+T* MultiMutexReference<Iterator>::ptr(T* obj)
+{
+  return obj;
 }
 
 } // namespace common
