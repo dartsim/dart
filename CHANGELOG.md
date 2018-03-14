@@ -2,7 +2,7 @@
 
 ### DART 6.3.1 (201X-XX-XX)
 
-* Build system
+* ROS support
 
   * Tweaked package.xml for catkin support: [#1027](https://github.com/dartsim/dart/pull/1027), [#1029](https://github.com/dartsim/dart/pull/1029), [#1031](https://github.com/dartsim/dart/pull/1031)
 
