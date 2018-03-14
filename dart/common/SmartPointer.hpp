@@ -41,10 +41,10 @@
 // for the class X
 #define DART_COMMON_MAKE_SHARED_WEAK(X)                                        \
   class X;                                                                     \
-  typedef std::shared_ptr<X> X##Ptr;                                           \
-  typedef std::shared_ptr<const X> Const##X##Ptr;                              \
-  typedef std::weak_ptr<X> Weak##X##Ptr;                                       \
-  typedef std::weak_ptr<const X> WeakConst##X##Ptr;
+  using X##Ptr = std::shared_ptr<X>;                                           \
+  using Const##X##Ptr = std::shared_ptr<const X>;                              \
+  using Weak##X##Ptr = std::weak_ptr<X>;                                       \
+  using WeakConst##X##Ptr = std::weak_ptr<const X>;
 
 // -- Standard shared/weak/unique pointers --
 // Type aliases for const and non-const version of shared_ptr, weak_ptr, and
