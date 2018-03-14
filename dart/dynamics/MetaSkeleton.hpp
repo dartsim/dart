@@ -72,8 +72,8 @@ public:
   virtual ~MetaSkeleton() = default;
 
   /// Returns mutex.
-  virtual std::unique_ptr<common::LockableReference> getLockableReference() const
-  = 0;
+  virtual std::unique_ptr<common::LockableReference> getLockableReference()
+  const = 0;
   // TODO: Rename this to getMutex once the deprecated Skeleton::getMutex() is
   // removed in DART 7.
 

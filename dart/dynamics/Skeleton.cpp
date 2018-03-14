@@ -378,12 +378,6 @@ ConstSkeletonPtr Skeleton::getSkeleton() const
 //==============================================================================
 std::mutex& Skeleton::getMutex() const
 {
-  return getStdMutex();
-}
-
-//==============================================================================
-std::mutex& Skeleton::getStdMutex() const
-{
   return mMutex;
 }
 

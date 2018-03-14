@@ -1472,7 +1472,7 @@ void ReferentialSkeleton::registerSkeleton(const Skeleton* skel)
     return;
 
   mSkeletons.insert(skel);
-  mSkeletonMutexes.insert(&skel->getStdMutex());
+  mSkeletonMutexes.insert(&skel->getMutex());
 }
 
 //==============================================================================
@@ -1487,7 +1487,7 @@ void ReferentialSkeleton::unregisterSkeleton(const Skeleton* skel)
     return;
   }
 
-  mSkeletonMutexes.erase(&skel->getStdMutex());
+  mSkeletonMutexes.erase(&skel->getMutex());
   mSkeletons.erase(skel);
 }
 
