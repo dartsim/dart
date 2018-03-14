@@ -42,15 +42,11 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-std::unique_ptr<common::MutexReference> ReferentialSkeleton::getCustomMutex() const
+std::unique_ptr<common::MutexReference>
+ReferentialSkeleton::getCustomMutex() const
 {
-  return common::make_unique<common::MultiMutexReference>(getStdMutexes());
-}
-
-//==============================================================================
-const std::set<std::mutex*>& ReferentialSkeleton::getStdMutexes() const
-{
-  return mSkeletonMutexes;
+  return common::make_unique<common::MultiMutexReference>(
+      mPtr, mSkeletonMutexes);
 }
 
 //==============================================================================
@@ -84,7 +80,8 @@ bool ReferentialSkeleton::hasSkeleton(const Skeleton* skel) const
 }
 
 //==============================================================================
-const std::unordered_set<const Skeleton*>& ReferentialSkeleton::getSkeletons() const
+const std::unordered_set<const Skeleton*>&
+ReferentialSkeleton::getSkeletons() const
 {
   return mSkeletons;
 }

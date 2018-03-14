@@ -58,12 +58,6 @@ public:
   // Documentation inherited
   std::unique_ptr<common::MutexReference> getCustomMutex() const override;
 
-  /// Returns sorted mutexes in order of memory addresses.
-  ///
-  /// \note Generally, you don't need to use this function in favor of
-  /// getCustomMutex() that guarantees deadlock-free locking.
-  const std::set<std::mutex*>& getStdMutexes() const;
-
   //----------------------------------------------------------------------------
   /// \{ \name Name
   //----------------------------------------------------------------------------

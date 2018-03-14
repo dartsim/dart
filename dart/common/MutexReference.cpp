@@ -36,8 +36,10 @@ namespace dart {
 namespace common {
 
 //==============================================================================
-SingleMutexReference::SingleMutexReference(std::mutex& mutex) noexcept
-    : mMutex(mutex)
+SingleMutexReference::SingleMutexReference(
+    std::weak_ptr<const void> mutexHolder, std::mutex& mutex) noexcept
+    : mMutexHolder(std::move(mutexHolder)),
+      mMutex(mutex)
 {
   // Do nothing
 }
@@ -45,24 +47,36 @@ SingleMutexReference::SingleMutexReference(std::mutex& mutex) noexcept
 //==============================================================================
 void SingleMutexReference::lock()
 {
+  if (mMutexHolder.expired())
+    return;
+
   mMutex.lock();
 }
 
 //==============================================================================
 bool SingleMutexReference::try_lock() noexcept
 {
+  if (mMutexHolder.expired())
+    return false;
+
   return mMutex.try_lock();
 }
 
 //==============================================================================
 void SingleMutexReference::unlock() noexcept
 {
+  if (mMutexHolder.expired())
+    return;
+
   mMutex.unlock();
 }
 
 //==============================================================================
 MultiMutexReference::MultiMutexReference(
-    const std::set<std::mutex*>& mutexes) noexcept : mMutexes(mutexes)
+    std::weak_ptr<const void> mutexHolder,
+    const std::set<std::mutex*>& mutexes) noexcept
+    : mMutexHolder(std::move(mutexHolder)),
+      mMutexes(mutexes)
 {
   // Do nothing
 }
@@ -70,6 +84,9 @@ MultiMutexReference::MultiMutexReference(
 //==============================================================================
 void MultiMutexReference::lock()
 {
+  if (mMutexHolder.expired())
+    return;
+
   for (auto& mutex : mMutexes)
     mutex->lock();
 }
@@ -77,6 +94,9 @@ void MultiMutexReference::lock()
 //==============================================================================
 bool MultiMutexReference::try_lock() noexcept
 {
+  if (mMutexHolder.expired())
+    return false;
+
   for (auto& mutex : mMutexes)
   {
     if (!mutex->try_lock())
@@ -89,6 +109,9 @@ bool MultiMutexReference::try_lock() noexcept
 //==============================================================================
 void MultiMutexReference::unlock() noexcept
 {
+  if (mMutexHolder.expired())
+    return;
+
   for (auto it = mMutexes.rbegin(); it != mMutexes.rend(); ++it)
     (*it)->unlock();
 }

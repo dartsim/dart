@@ -33,6 +33,7 @@
 #ifndef DART_COMMON_MUTEXREFERENCE_HPP_
 #define DART_COMMON_MUTEXREFERENCE_HPP_
 
+#include <memory>
 #include <mutex>
 #include <set>
 
@@ -75,7 +76,8 @@ class SingleMutexReference final : public MutexReference
 {
 public:
   /// Constructor from a single mutex.
-  explicit SingleMutexReference(std::mutex& mutex) noexcept;
+  SingleMutexReference(
+      std::weak_ptr<const void> mutexHolder, std::mutex& mutex) noexcept;
 
   // Documentation inherited
   void lock() override;
@@ -87,6 +89,9 @@ public:
   void unlock() noexcept override;
 
 private:
+  /// Weak pointer to the mutex holder.
+  std::weak_ptr<const void> mMutexHolder;
+
   /// Mutex this class references.
   std::mutex& mMutex;
 };
@@ -96,7 +101,9 @@ class MultiMutexReference final : public MutexReference
 {
 public:
   /// Constructs from multiple mutexes.
-  explicit MultiMutexReference(const std::set<std::mutex*>& mutexes) noexcept;
+  MultiMutexReference(
+      std::weak_ptr<const void> mutexHolder,
+      const std::set<std::mutex*>& mutexes) noexcept;
 
   // Documentation inherited
   void lock() override;
@@ -108,6 +115,9 @@ public:
   void unlock() noexcept override;
 
 private:
+  /// Weak pointer to the mutex holder.
+  std::weak_ptr<const void> mMutexHolder;
+
   /// Mutexes this class references.
   std::set<std::mutex*> mMutexes;
 };
