@@ -35,7 +35,6 @@
 
 #include <memory>
 
-// Deprecated in DART 6.4
 // -- Standard shared/weak pointers --
 // Define a typedef for const and non-const version of shared_ptr and weak_ptr
 // for the class X
