@@ -77,7 +77,8 @@ public:
   /// Returns number of skeletons associated with this ReferentialSkeleton.
   std::size_t getNumSkeletons() const;
 
-  /// Returns whether this ReferentialSkeleton contains \c skel.
+  /// Returns whether this ReferentialSkeleton contains any BodyNode or Joint
+  /// from \c skel.
   bool hasSkeleton(const Skeleton* skel) const;
 
   // Documentation inherited
@@ -470,7 +471,8 @@ protected:
   /// Name of this ReferentialSkeleton
   std::string mName;
 
-  /// Skeletons that this ReferentialSkeleton is referencing to.
+  /// Skeletons that this ReferentialSkeleton contains any BodyNode or Joint
+  /// from the Skeletons.
   std::unordered_set<const Skeleton*> mSkeletons;
 
   /// Mutexes of the skeletons. The mutexes are sorted in order of memory
