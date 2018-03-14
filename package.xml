@@ -35,6 +35,8 @@
   <depend>tinyxml</depend>
   <depend>tinyxml2</depend>
 
+  <!-- The following tags are recommended by REP-136 -->
+  <run_depend>catkin</run_depend>
   <buildtool_depend>cmake</buildtool_depend>
   <export>
     <build_type>cmake</build_type>
