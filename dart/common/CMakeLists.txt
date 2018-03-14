@@ -32,6 +32,6 @@ install(
 )
 
 dart_format_add(
-  MutexReference.hpp
-  detail/MutexReference-impl.hpp
+  LockableReference.hpp
+  detail/LockableReference-impl.hpp
 )

@@ -42,11 +42,11 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-std::unique_ptr<common::MutexReference>
-ReferentialSkeleton::getCustomMutex() const
+std::unique_ptr<common::LockableReference>
+ReferentialSkeleton::getLockableReference() const
 {
   return common::make_unique<
-      common::MultiMutexReference<std::set<std::mutex*>::iterator>>(
+      common::MultiLockableReference<std::set<std::mutex*>::iterator>>(
           mPtr, mSkeletonMutexes.begin(), mSkeletonMutexes.end());
 }
 

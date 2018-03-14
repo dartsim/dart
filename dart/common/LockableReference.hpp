@@ -30,61 +30,64 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_MUTEXREFERENCE_HPP_
-#define DART_COMMON_MUTEXREFERENCE_HPP_
+#ifndef DART_COMMON_LOCKABLEREFERENCE_HPP_
+#define DART_COMMON_LOCKABLEREFERENCE_HPP_
 
 #include <memory>
-#include <mutex>
 #include <vector>
 
 namespace dart {
 namespace common {
 
-/// Mutex is a wrapper class of single or multiple std::mutex to provide unified
-/// interface that guarantees deadlock-free locking and unlocking of the
-/// internal mutex(es).
+/// LockableReference is a wrapper class of single or multiple Lockable
+/// object(s) to provide unified interface that guarantees deadlock-free locking
+/// and unlocking of the internal lockable(s).
 ///
 /// This class is compatible to BasicLockable concept so that it can be used
-/// as a template parameter that requires this concept such as std::lock_guard.
-class MutexReference
+/// as a template parameter that requires BasicLockable concept such as
+/// std::lock_guard.
+class LockableReference
 {
 public:
   /// Default construtor
-  constexpr MutexReference() noexcept = default;
+  constexpr LockableReference() noexcept = default;
 
   /// Default destructor
-  virtual ~MutexReference() = default;
+  virtual ~LockableReference() = default;
 
-  /// Locks mutex that this class references; blocks if one of the mutexes are
+  /// Locks lockable that this class references; blocks if one of the lockables
+  /// are
   /// not avaliable.
   virtual void lock() = 0;
 
-  /// Tries to lock the mutexes that this class references; returns false if one
-  /// of the mutexes is not avaliable.
+  /// Tries to lock the lockables that this class references; returns false if
+  /// one
+  /// of the lockables is not avaliable.
   virtual bool try_lock() noexcept = 0;
 
-  /// Unlocks the mutexes.
+  /// Unlocks the lockables.
   virtual void unlock() noexcept = 0;
 
 protected:
   /// Copy construction is not allowed.
-  MutexReference(const MutexReference&) = delete;
+  LockableReference(const LockableReference&) = delete;
 };
 
-/// This class references a single mutex.
-template <typename LockableT = std::mutex>
-class SingleMutexReference final : public MutexReference
+/// This class references a single lockable.
+template <typename LockableT>
+class SingleLockableReference final : public LockableReference
 {
 public:
   using Lockable = LockableT;
 
-  /// Constructor from a single mutex.
+  /// Constructor from a single lockable.
   ///
-  /// \param[in] mutexHolder Weak pointer to an object that holds the mutex.
-  /// This is used to lock/unlock this lockable only when the mutex holder is
+  /// \param[in] lockableHolder Weak pointer to an object that holds the
+  /// lockable.
+  /// This is used to lock/unlock this lockable only when the lockable holder is
   /// not destructed.
-  SingleMutexReference(
-      std::weak_ptr<const void> mutexHolder, Lockable& mutex) noexcept;
+  SingleLockableReference(
+      std::weak_ptr<const void> lockableHolder, Lockable& lockable) noexcept;
 
   // Documentation inherited
   void lock() override;
@@ -96,32 +99,33 @@ public:
   void unlock() noexcept override;
 
 private:
-  /// Weak pointer to the mutex holder.
-  std::weak_ptr<const void> mMutexHolder;
+  /// Weak pointer to the lockable holder.
+  std::weak_ptr<const void> mLockableHolder;
 
-  /// Mutex this class references.
-  Lockable& mMutex;
+  /// Lockable this class references.
+  Lockable& mLockable;
 };
 
-/// MultiMutexReference references multiple mutexes.
+/// MultiLockableReference references multiple lockables.
 ///
-/// MultiMutexReference acquires the locks in the specified order, which means
-/// it is the user's responsibility to sort the collection to avoid deadlock.
+/// MultiLockableReference acquires the locks in the specified order, which
+/// means it is the user's responsibility to sort the collection to avoid
+/// deadlock.
 template <typename InputIteratorT>
-class MultiMutexReference final : public MutexReference
+class MultiLockableReference final : public LockableReference
 {
 public:
   using Iterator = InputIteratorT;
 
-  /// Constructs from multiple mutexes.
+  /// Constructs from multiple lockables.
   ///
-  /// \param[in] mutexHolder Weak pointer to an object that holds the mutexes.
-  /// This is used to lock/unlock this lockable only when the mutex holder is
-  /// not destructed.
+  /// \param[in] lockableHolder Weak pointer to an object that holds the
+  /// lockables. This is used to lock/unlock this lockable only when the
+  /// lockable holder is not destructed.
   /// \param[in] first First iterator of lockable to be added to this class.
   /// \param[in] last Last iterator of lockable to be added to this class.
-  MultiMutexReference(
-      std::weak_ptr<const void> mutexHolder, Iterator first, Iterator last);
+  MultiLockableReference(
+      std::weak_ptr<const void> lockableHolder, Iterator first, Iterator last);
 
   // Documentation inherited
   void lock() override;
@@ -145,16 +149,16 @@ private:
   template <typename T>
   T* ptr(T* obj);
 
-  /// Weak pointer to the mutex holder.
-  std::weak_ptr<const void> mMutexHolder;
+  /// Weak pointer to the lockable holder.
+  std::weak_ptr<const void> mLockableHolder;
 
-  /// Mutexes this class references.
-  std::vector<Lockable*> mMutexes;
+  /// lockables this class references.
+  std::vector<Lockable*> mLockables;
 };
 
 } // namespace common
 } // namespace dart
 
-#include "dart/common/detail/MutexReference-impl.hpp"
+#include "dart/common/detail/LockableReference-impl.hpp"
 
-#endif // DART_COMMON_MUTEXREFERENCE_HPP_
+#endif // DART_COMMON_LOCKABLEREFERENCE_HPP_

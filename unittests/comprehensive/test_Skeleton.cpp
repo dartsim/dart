@@ -1223,13 +1223,13 @@ TEST(Skeleton, LockSkeletonMutexesWithLockGuard)
   checkLinkageJointConsistency(midchain);
 
   {
-    auto mutex = subtree->getCustomMutex();
-    std::lock_guard<common::MutexReference> lock(*mutex);
+    auto mutex = subtree->getLockableReference();
+    std::lock_guard<common::LockableReference> lock(*mutex);
   }
 
   {
-    auto mutex = midchain->getCustomMutex();
-    std::lock_guard<common::MutexReference> lock(*mutex);
+    auto mutex = midchain->getLockableReference();
+    std::lock_guard<common::LockableReference> lock(*mutex);
   }
 }
 

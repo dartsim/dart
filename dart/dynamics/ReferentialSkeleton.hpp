@@ -56,7 +56,7 @@ public:
   virtual ~ReferentialSkeleton() = default;
 
   // Documentation inherited
-  std::unique_ptr<common::MutexReference> getCustomMutex() const override;
+  std::unique_ptr<common::LockableReference> getLockableReference() const override;
 
   //----------------------------------------------------------------------------
   /// \{ \name Name

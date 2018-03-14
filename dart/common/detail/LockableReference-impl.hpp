@@ -30,86 +30,86 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_MUTEXREFERENCE_IMPL_HPP_
-#define DART_COMMON_MUTEXREFERENCE_IMPL_HPP_
+#ifndef DART_COMMON_LOCKABLEREFERENCE_IMPL_HPP_
+#define DART_COMMON_LOCKABLEREFERENCE_IMPL_HPP_
 
-#include "dart/common/MutexReference.hpp"
+#include "dart/common/LockableReference.hpp"
 
 namespace dart {
 namespace common {
 
 //==============================================================================
 template <typename Lockable>
-SingleMutexReference<Lockable>::SingleMutexReference(
-    std::weak_ptr<const void> mutexHolder, Lockable& mutex) noexcept
-    : mMutexHolder(std::move(mutexHolder)),
-      mMutex(mutex)
+SingleLockableReference<Lockable>::SingleLockableReference(
+    std::weak_ptr<const void> lockableHolder, Lockable& lockable) noexcept
+    : mLockableHolder(std::move(lockableHolder)),
+      mLockable(lockable)
 {
   // Do nothing
 }
 
 //==============================================================================
 template <typename Lockable>
-void SingleMutexReference<Lockable>::lock()
+void SingleLockableReference<Lockable>::lock()
 {
-  if (mMutexHolder.expired())
+  if (mLockableHolder.expired())
     return;
 
-  mMutex.lock();
+  mLockable.lock();
 }
 
 //==============================================================================
 template <typename Lockable>
-bool SingleMutexReference<Lockable>::try_lock() noexcept
+bool SingleLockableReference<Lockable>::try_lock() noexcept
 {
-  if (mMutexHolder.expired())
+  if (mLockableHolder.expired())
     return false;
 
-  return mMutex.try_lock();
+  return mLockable.try_lock();
 }
 
 //==============================================================================
 template <typename Lockable>
-void SingleMutexReference<Lockable>::unlock() noexcept
+void SingleLockableReference<Lockable>::unlock() noexcept
 {
-  if (mMutexHolder.expired())
+  if (mLockableHolder.expired())
     return;
 
-  mMutex.unlock();
+  mLockable.unlock();
 }
 
 //==============================================================================
 template <typename Iterator>
-MultiMutexReference<Iterator>::MultiMutexReference(
-    std::weak_ptr<const void> mutexHolder, Iterator first, Iterator last)
-  : mMutexHolder(std::move(mutexHolder)), mMutexes(first, last)
+MultiLockableReference<Iterator>::MultiLockableReference(
+    std::weak_ptr<const void> lockableHolder, Iterator first, Iterator last)
+  : mLockableHolder(std::move(lockableHolder)), mLockables(first, last)
 {
-  mMutexes.reserve(distance(first, last));
+  mLockables.reserve(distance(first, last));
   for (; first != last; ++first)
-    mMutexes.push_back(ptr(*first));
+    mLockables.push_back(ptr(*first));
 }
 
 //==============================================================================
 template <typename Iterator>
-void MultiMutexReference<Iterator>::lock()
+void MultiLockableReference<Iterator>::lock()
 {
-  if (mMutexHolder.expired())
+  if (mLockableHolder.expired())
     return;
 
-  for (auto mutex : mMutexes)
-    mutex->lock();
+  for (auto lockable : mLockables)
+    lockable->lock();
 }
 
 //==============================================================================
 template <typename Iterator>
-bool MultiMutexReference<Iterator>::try_lock() noexcept
+bool MultiLockableReference<Iterator>::try_lock() noexcept
 {
-  if (mMutexHolder.expired())
+  if (mLockableHolder.expired())
     return false;
 
-  for (auto mutex : mMutexes)
+  for (auto lockable : mLockables)
   {
-    if (!mutex->try_lock())
+    if (!lockable->try_lock())
       return false;
   }
 
@@ -118,19 +118,19 @@ bool MultiMutexReference<Iterator>::try_lock() noexcept
 
 //==============================================================================
 template <typename Iterator>
-void MultiMutexReference<Iterator>::unlock() noexcept
+void MultiLockableReference<Iterator>::unlock() noexcept
 {
-  if (mMutexHolder.expired())
+  if (mLockableHolder.expired())
     return;
 
-  for (auto it = mMutexes.rbegin(); it != mMutexes.rend(); ++it)
+  for (auto it = mLockables.rbegin(); it != mLockables.rend(); ++it)
     (*it)->unlock();
 }
 
 //==============================================================================
 template <typename Iterator>
 template <typename T>
-T* MultiMutexReference<Iterator>::ptr(T& obj)
+T* MultiLockableReference<Iterator>::ptr(T& obj)
 {
   return &obj;
 }
@@ -138,7 +138,7 @@ T* MultiMutexReference<Iterator>::ptr(T& obj)
 //==============================================================================
 template <typename Iterator>
 template <typename T>
-T* MultiMutexReference<Iterator>::ptr(T* obj)
+T* MultiLockableReference<Iterator>::ptr(T* obj)
 {
   return obj;
 }
@@ -146,4 +146,4 @@ T* MultiMutexReference<Iterator>::ptr(T* obj)
 } // namespace common
 } // namespace dart
 
-#endif // DART_COMMON_MUTEXREFERENCE_IMPL_HPP_
+#endif // DART_COMMON_LOCKABLEREFERENCE_IMPL_HPP_
