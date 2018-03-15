@@ -49,15 +49,15 @@
 namespace dart {
 namespace dynamics {
 
-DART_COMMON_MAKE_SHARED_WEAK(ShapeFrame)
-DART_COMMON_MAKE_SHARED_WEAK(SimpleFrame)
+DART_COMMON_DECLARE_SHARED_WEAK(ShapeFrame)
+DART_COMMON_DECLARE_SHARED_WEAK(SimpleFrame)
 
-DART_COMMON_MAKE_SHARED_WEAK(NodeDestructor)
+DART_COMMON_DECLARE_SHARED_WEAK(NodeDestructor)
 
 //-----------------------------------------------------------------------------
 // Skeleton Smart Pointers
 //-----------------------------------------------------------------------------
-DART_COMMON_MAKE_SHARED_WEAK(Skeleton)
+DART_COMMON_DECLARE_SHARED_WEAK(Skeleton)
 // These pointers will take the form of:
 // std::shared_ptr<Skeleton>        --> SkeletonPtr
 // std::shared_ptr<const Skeleton>  --> ConstSkeletonPtr
@@ -65,28 +65,28 @@ DART_COMMON_MAKE_SHARED_WEAK(Skeleton)
 // std::weak_ptr<const Skeleton>    --> WeakConstSkeletonPtr
 
 // MetaSkeleton smart pointers
-DART_COMMON_MAKE_SHARED_WEAK(MetaSkeleton)
+DART_COMMON_DECLARE_SHARED_WEAK(MetaSkeleton)
 
 // ReferentialSkeleton smart pointers
-DART_COMMON_MAKE_SHARED_WEAK(ReferentialSkeleton)
+DART_COMMON_DECLARE_SHARED_WEAK(ReferentialSkeleton)
 
-DART_COMMON_MAKE_SHARED_WEAK(Group)
-DART_COMMON_MAKE_SHARED_WEAK(Linkage)
-DART_COMMON_MAKE_SHARED_WEAK(Branch)
-DART_COMMON_MAKE_SHARED_WEAK(Chain)
+DART_COMMON_DECLARE_SHARED_WEAK(Group)
+DART_COMMON_DECLARE_SHARED_WEAK(Linkage)
+DART_COMMON_DECLARE_SHARED_WEAK(Branch)
+DART_COMMON_DECLARE_SHARED_WEAK(Chain)
 
 //-----------------------------------------------------------------------------
 // Shape Smart Pointers
 //-----------------------------------------------------------------------------
-DART_COMMON_MAKE_SHARED_WEAK(Shape)
-DART_COMMON_MAKE_SHARED_WEAK(ArrowShape)
-DART_COMMON_MAKE_SHARED_WEAK(BoxShape)
-DART_COMMON_MAKE_SHARED_WEAK(CylinderShape)
-DART_COMMON_MAKE_SHARED_WEAK(EllipsoidShape)
-DART_COMMON_MAKE_SHARED_WEAK(LineSegmentShape)
-DART_COMMON_MAKE_SHARED_WEAK(MeshShape)
-DART_COMMON_MAKE_SHARED_WEAK(PlaneShape)
-DART_COMMON_MAKE_SHARED_WEAK(SoftMeshShape)
+DART_COMMON_DECLARE_SHARED_WEAK(Shape)
+DART_COMMON_DECLARE_SHARED_WEAK(ArrowShape)
+DART_COMMON_DECLARE_SHARED_WEAK(BoxShape)
+DART_COMMON_DECLARE_SHARED_WEAK(CylinderShape)
+DART_COMMON_DECLARE_SHARED_WEAK(EllipsoidShape)
+DART_COMMON_DECLARE_SHARED_WEAK(LineSegmentShape)
+DART_COMMON_DECLARE_SHARED_WEAK(MeshShape)
+DART_COMMON_DECLARE_SHARED_WEAK(PlaneShape)
+DART_COMMON_DECLARE_SHARED_WEAK(SoftMeshShape)
 
 
 //-----------------------------------------------------------------------------
