@@ -2,6 +2,16 @@
 find_package(TINYXML2 QUIET)
 dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
+# Thread
+find_package(Threads QUIET)
+if (NOT CMAKE_THREAD_LIBS_INIT)
+  return()
+endif()
+
+# CURL
+find_package(CURL REQUIRED)
+dart_check_optional_package(CURL "dart-utils" "libcurl")
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -30,11 +40,17 @@ target_include_directories(
   ${target_name} SYSTEM
   PUBLIC
     ${TINYXML2_INCLUDE_DIRS}
+  PRIVATE
+    ${CURL_INCLUDE_DIRS}
 )
 target_link_libraries(
   ${target_name}
-  dart
-  ${TINYXML2_LIBRARIES}
+  PUBLIC
+    dart
+    ${TINYXML2_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+  PRIVATE
+    ${CURL_LIBRARIES}
 )
 
 # Component
@@ -72,3 +88,8 @@ install(
 
 # Add subdirectories (components)
 add_subdirectory(urdf)
+
+dart_format_add(
+  OnlineDatabase.hpp
+  OnlineDatabase.cpp
+)

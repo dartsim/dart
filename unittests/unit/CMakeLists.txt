@@ -28,6 +28,9 @@ if(TARGET dart-utils)
   dart_add_test("unit" test_DartResourceRetriever)
   target_link_libraries(test_DartResourceRetriever dart-utils)
 
+  dart_add_test("unit" test_Database)
+  target_link_libraries(test_Database dart-utils)
+
   dart_add_test("unit" test_FileInfoWorld)
   target_link_libraries(test_FileInfoWorld dart-utils)
 
