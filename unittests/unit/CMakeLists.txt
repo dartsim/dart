@@ -11,6 +11,7 @@ dart_add_test("unit" test_ScrewJoint)
 dart_add_test("unit" test_Signal)
 dart_add_test("unit" test_Subscriptions)
 dart_add_test("unit" test_Uri)
+dart_add_test("unit" test_Version)
 
 if(TARGET dart-optimizer-ipopt)
   target_link_libraries(test_Optimizer dart-optimizer-ipopt)
