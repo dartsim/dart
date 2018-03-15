@@ -26,6 +26,10 @@
   * Added support of rendering texture images: [#973](https://github.com/dartsim/dart/pull/973)
   * Added OSG shadows: [#978](https://github.com/dartsim/dart/pull/978)
 
+* Examples
+
+  * Added humanJointLimits: [#1016](https://github.com/dartsim/dart/pull/1016)
+
 * License
 
   * Added Personal Robotics Lab and Open Source Robotics Foundation as contributors: [#929](https://github.com/dartsim/dart/pull/929)
