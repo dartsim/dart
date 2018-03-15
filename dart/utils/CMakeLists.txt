@@ -2,6 +2,9 @@
 find_package(TINYXML2 QUIET)
 dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
 
+find_package(YamlCpp QUIET)
+dart_check_optional_package(YAMLCPP "dart-utils" "yaml-cpp" "1.0.0")
+
 # Thread
 find_package(Threads QUIET)
 if (NOT CMAKE_THREAD_LIBS_INIT)
@@ -35,12 +38,15 @@ set(target_name ${PROJECT_NAME}-utils)
 set(component_name utils)
 
 # Add target
-dart_add_library(${target_name} ${hdrs} ${srcs} ${dart_utils_headers} ${dart_utils_sources})
+dart_add_library(${target_name}
+  ${hdrs} ${srcs} ${dart_utils_headers} ${dart_utils_sources}
+)
 target_include_directories(
   ${target_name} SYSTEM
   PUBLIC
     ${TINYXML2_INCLUDE_DIRS}
   PRIVATE
+    ${YAMLCPP_INCLUDE_DIRS}
     ${CURL_INCLUDE_DIRS}
 )
 target_link_libraries(
@@ -50,6 +56,7 @@ target_link_libraries(
     ${TINYXML2_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
   PRIVATE
+    ${YAMLCPP_LIBRARIES}
     ${CURL_LIBRARIES}
 )
 
