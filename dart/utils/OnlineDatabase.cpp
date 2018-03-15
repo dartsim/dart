@@ -38,6 +38,9 @@
 #include <curl/curl.h>
 #include <tinyxml2.h>
 
+#include "dart/common/Platform.hpp"
+#include "dart/common/Version.hpp"
+
 namespace dart {
 namespace utils {
 
@@ -45,7 +48,9 @@ namespace utils {
   "https://raw.githubusercontent.com/dartsim/data/master/"
 // TODO(JS): Set correctly
 
-#define GZ_MODEL_MANIFEST_FILENAME "dart_manifest.xml"
+#define GZ_MODEL_MANIFEST_FILENAME "config.xml" // TODO: Change to yaml file
+#define SDF_VERSION "0.0.1"
+#define GZ_MODEL_DB_MANIFEST_FILENAME "" // TODO: Define
 
 namespace {
 
@@ -142,7 +147,7 @@ bool OnlineDatabase::hasData(const common::Uri& dataUri)
 }
 
 //==============================================================================
-std::map<common::Uri, std::string> OnlineDatabase::getModels()
+std::map<std::string, std::string> OnlineDatabase::getModels()
 {
   std::size_t size = 0u;
 
@@ -192,11 +197,49 @@ std::map<common::Uri, std::string> OnlineDatabase::getModels()
 }
 
 //==============================================================================
+std::string OnlineDatabase::GetModelName(const std::string& uri)
+{
+  const std::string xmlStr = GetModelConfig(uri);
+
+  if (xmlStr.empty())
+  {
+    dterr << "Unable to get model name [" << uri << "]\n";
+    return "";
+  }
+
+  tinyxml2::XMLDocument xmlDoc;
+  if (!xmlDoc.Parse(xmlStr.c_str()))
+  {
+    dterr << "Unable to parse " << GZ_MODEL_MANIFEST_FILENAME << " for model ["
+          << uri << "].\n";
+    return "";
+  }
+
+  const auto* modelElem = xmlDoc.FirstChildElement("model");
+  if (!modelElem)
+  {
+    dterr << "No <model> element in " << GZ_MODEL_MANIFEST_FILENAME
+          << " for model [" << uri << "].\n";
+    return "";
+  }
+
+  const auto* nameElem = modelElem->FirstChildElement("name");
+  if (!nameElem)
+  {
+    dterr << "No <name> element in " << GZ_MODEL_MANIFEST_FILENAME
+          << " for model [" << uri << "].\n";
+    return "";
+  }
+
+  return nameElem->GetText();
+}
+
+//==============================================================================
 std::string OnlineDatabase::GetModelConfig(const std::string& modelUri)
 {
   std::string xmlString;
   //  std::string uri = modelUri;
-  //  std::replace_first(uri, "model://", OnlineDatabase::GetURI());
+  //  std::replace_first(uri, "model://", getUri());
 
   //  if (!uri.empty())
   //  {
@@ -224,9 +267,162 @@ std::string OnlineDatabase::GetDBConfig(const std::string& configUri)
 }
 
 //==============================================================================
-std::string OnlineDatabase::GetModelPath(const std::string& uri, bool forceDownload)
+std::string OnlineDatabase::GetModelPath(
+    const std::string& uri, bool forceDownload)
 {
+  //  std::string path, suffix;
 
+  //  if (!forceDownload)
+  //    path = SystemPaths::Instance()->FindFileURI(uri);
+
+  //  struct stat st;
+
+  //  if (path.empty() || stat(path.c_str(), &st) != 0)
+  //  {
+  //    if (!HasModel(uri))
+  //    {
+  //      dterr << "Unable to download model[" << uri << "]\n";
+  //      return std::string();
+  //    }
+
+  //    // DEBUG output
+  //    // std::cout << "Getting uri[" << _uri << "] path[" << path << "]\n";
+
+  //    // Get the model name from the uri
+  //    size_t startIndex = uri.find_first_of("://");
+  //    if (startIndex == std::string::npos)
+  //    {
+  //      dterr << "URI[" << uri << "] is missing ://\n";
+  //      return std::string();
+  //    }
+
+  //    std::string modelName = uri;
+  //    boost::replace_first(modelName, "model://", "");
+  //    boost::replace_first(modelName, getUri(), "");
+
+  //    startIndex = modelName[0] == '/' ? 1 : 0;
+  //    size_t endIndex = modelName.find_first_of("/", startIndex);
+  //    size_t modelNameLen = endIndex == std::string::npos ? std::string::npos
+  //                                                        : endIndex -
+  //                                                        startIndex;
+
+  //    if (endIndex != std::string::npos)
+  //      suffix = modelName.substr(endIndex, std::string::npos);
+
+  //    modelName = modelName.substr(startIndex, modelNameLen);
+
+  //    // Store downloaded .tar.gz and intermediate .tar files in temp location
+  //    boost::filesystem::path tmppath =
+  //    boost::filesystem::temp_directory_path();
+  //    tmppath /=
+  //    boost::filesystem::unique_path("gz_model-%%%%-%%%%-%%%%-%%%%");
+  //    std::string tarfilename = tmppath.string() + ".tar";
+  //    std::string tgzfilename = tarfilename + ".gz";
+
+  //    CURL* curl = curl_easy_init();
+  //    if (!curl)
+  //    {
+  //      dterr << "Unable to initialize libcurl\n";
+  //      return std::string();
+  //    }
+
+  //    curl_easy_setopt(
+  //        curl,
+  //        CURLOPT_URL,
+  //        (getUri() + "/" + modelName + "/model.tar.gz").c_str());
+  //    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeData);
+
+  //    bool retry = true;
+  //    int iterations = 0;
+  //    while (retry && iterations < 4)
+  //    {
+  //      retry = false;
+  //      iterations++;
+
+  //      FILE* fp = fopen(tgzfilename.c_str(), "wb");
+  //      if (!fp)
+  //      {
+  //        dterr << "Could not download model[" << uri << "] because we were"
+  //              << "unable to write to file[" << tgzfilename << "]."
+  //              << "Please fix file permissions.";
+  //        return std::string();
+  //      }
+
+  //      /// Download the model tarball
+  //      curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+  //      CURLcode success = curl_easy_perform(curl);
+
+  //      if (success != CURLE_OK)
+  //      {
+  //        dtwarn << "Unable to connect to model database using [" << uri <<
+  //        "]\n";
+  //        retry = true;
+  //        continue;
+  //      }
+
+  //      std::fclose(fp);
+
+  //      try
+  //      {
+  //        // Unzip model tarball
+  //        std::ifstream file(
+  //            tgzfilename.c_str(), std::ios_base::in | std::ios_base::binary);
+  //        std::ofstream out(
+  //            tarfilename.c_str(), std::ios_base::out |
+  //            std::ios_base::binary);
+  //        boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
+  //        in.push(boost::iostreams::gzip_decompressor());
+  //        in.push(file);
+  //        boost::iostreams::copy(in, out);
+  //      }
+  //      catch (...)
+  //      {
+  //        dterr << "Failed to unzip model tarball. Trying again...\n";
+  //        retry = true;
+  //        continue;
+  //      }
+
+  ////#if !DART_OS_WINDOWS
+  ////      TAR* tar;
+  ////      tar_open(
+  ////          &tar,
+  ////          const_cast<char*>(tarfilename.c_str()),
+  ////          nullptr,
+  ////          O_RDONLY,
+  ////          0644,
+  ////          TAR_GNU);
+
+  ////      std::string outputPath = getenv("HOME");
+  ////      outputPath += "/.gazebo/models";
+
+  ////      tar_extract_all(tar, const_cast<char*>(outputPath.c_str()));
+  ////      path = outputPath + "/" + modelName;
+
+  ////      DownloadDependencies(path);
+  ////#endif
+  //    }
+
+  //    curl_easy_cleanup(curl);
+  //    if (retry)
+  //    {
+  //      dterr << "Could not download model[" << uri << "]."
+  //            << "The model may be corrupt.\n";
+  //      path.clear();
+  //    }
+
+  //    // Clean up
+  //    try
+  //    {
+  //      boost::filesystem::remove(tarfilename);
+  //      boost::filesystem::remove(tgzfilename);
+  //    }
+  //    catch (...)
+  //    {
+  //      dtwarn << "Failed to remove temporary model files after download.";
+  //    }
+  //  }
+
+  //  return path + suffix;
 }
 
 //==============================================================================
@@ -241,23 +437,25 @@ std::string OnlineDatabase::GetModelFile(const std::string& uri)
 
   // Get the GZ_MODEL_MANIFEST_FILENAME.
   if (boost::filesystem::exists(manifestPath / GZ_MODEL_MANIFEST_FILENAME))
+  {
     manifestPath /= GZ_MODEL_MANIFEST_FILENAME;
+  }
   else
   {
-    dterr << "Missing " << GZ_MODEL_MANIFEST_FILENAME
-      << " for model " << manifestPath << "\n";
+    dterr << "Missing " << GZ_MODEL_MANIFEST_FILENAME << " for model "
+          << manifestPath << "\n";
   }
 
   tinyxml2::XMLDocument xmlDoc;
   common::Version sdfParserVersion(SDF_VERSION);
   std::string bestVersionStr = "0.0";
-  if (xmlDoc.LoadFile(manifestPath.string()))
+  if (xmlDoc.LoadFile(manifestPath.string().c_str()))
   {
-    tinyxml2::XMLElement *modelXML = xmlDoc.FirstChildElement("model");
+    tinyxml2::XMLElement* modelXML = xmlDoc.FirstChildElement("model");
     if (modelXML)
     {
-      tinyxml2::XMLElement *sdfXML = modelXML->FirstChildElement("sdf");
-      tinyxml2::XMLElement *sdfSearch = sdfXML;
+      tinyxml2::XMLElement* sdfXML = modelXML->FirstChildElement("sdf");
+      tinyxml2::XMLElement* sdfSearch = sdfXML;
 
       // Find the SDF element that matches our current SDF version.
       // If a match is not found, use the latest version of the element
@@ -280,10 +478,9 @@ std::string OnlineDatabase::GetModelFile(const std::string& uri)
             }
             else
             {
-              dtwarn << "Ignoring version " << version
-                << " for model " << uri
-                << " because Gazebo is using an older sdf parser (version "
-                << SDF_VERSION << ")" << std::endl;
+              dtwarn << "Ignoring version " << version << " for model " << uri
+                     << " because Gazebo is using an older sdf parser (version "
+                     << SDF_VERSION << ")\n";
             }
           }
         }
@@ -312,6 +509,17 @@ std::string OnlineDatabase::GetModelFile(const std::string& uri)
   }
 
   return result;
+}
+
+//==============================================================================
+void OnlineDatabase::DownloadDependencies(const std::string& path)
+{
+}
+
+//==============================================================================
+bool OnlineDatabase::HasModel(const std::string& modelName)
+{
+  return false;
 }
 
 //==============================================================================
@@ -354,6 +562,93 @@ std::string OnlineDatabase::GetManifestImpl(const std::string& uri)
 //==============================================================================
 void OnlineDatabase::UpdateModelCache(bool fetchImmediately)
 {
+  std::unique_lock<std::mutex> lock(updateMutex);
+
+  // Continually update the model cache when requested.
+  while (!stop)
+  {
+    if (fetchImmediately)
+      fetchImmediately = false;
+    else // Wait for an update request.
+      updateCacheCondition.wait(lock);
+
+    // Exit if notified and stopped.
+    if (stop)
+      break;
+
+    // Update the model cache.
+    if (UpdateModelCacheImpl())
+    {
+      std::lock_guard<std::mutex> lock2(callbacksMutex);
+      DART_UNUSED(lock2);
+
+      if (stop)
+        break;
+
+      //      modelDBUpdated(modelCache); // TODO: Change to signal
+    }
+    else
+    {
+      dterr << "Unable to download model manifests\n";
+    }
+
+    updateCacheCompleteCondition.notify_all();
+  }
+
+  // Make sure no one is waiting on us.
+  updateCacheCompleteCondition.notify_all();
+}
+
+//==============================================================================
+bool OnlineDatabase::UpdateModelCacheImpl()
+{
+  std::string xmlString = GetDBConfig(getUri());
+
+  if (!xmlString.empty())
+  {
+    tinyxml2::XMLDocument xmlDoc;
+    xmlDoc.Parse(xmlString.c_str());
+
+    auto* databaseElem = xmlDoc.FirstChildElement("database");
+    if (!databaseElem)
+    {
+      dterr << "No <database> tag in the model database "
+            << GZ_MODEL_DB_MANIFEST_FILENAME << " found"
+            << " here[" << getUri() << "].\n";
+      return false;
+    }
+
+    auto* modelsElem = databaseElem->FirstChildElement("models");
+    if (!modelsElem)
+    {
+      dterr << "No <models> tag in the model database "
+            << GZ_MODEL_DB_MANIFEST_FILENAME << " found"
+            << " here[" << getUri() << "].\n";
+      return false;
+    }
+
+    tinyxml2::XMLElement* uriElem;
+    for (uriElem = modelsElem->FirstChildElement("uri");
+         uriElem != nullptr && !stop;
+         uriElem = uriElem->NextSiblingElement("uri"))
+    {
+      std::string uri = uriElem->GetText();
+
+      size_t index = uri.find("://");
+      std::string suffix = uri;
+      if (index != std::string::npos)
+      {
+        suffix = uri.substr(index + 3, uri.size() - index - 3);
+      }
+
+      std::string fullURI = getUri() + suffix;
+      std::string modelName = GetModelName(fullURI);
+
+      modelCache[fullURI] = modelName;
+    }
+  }
+
+  return true;
 }
 
 } // namespace utils

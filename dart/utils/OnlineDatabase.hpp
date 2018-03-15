@@ -65,7 +65,7 @@ public:
   /// This is a blocking call. Which means it will wait for the
   /// ModelDatabase to download the model list.
   /// \return a map of model names, indexed by their full URI.
-  std::map<common::Uri, std::string> getModels();
+  std::map<std::string, std::string> getModels();
 
   /// Returns the dictionary of all model names via a callback.
   ///
@@ -137,7 +137,9 @@ protected:
   /// \return The contents of the manifest file.
   std::string GetManifestImpl(const std::string& uri);
 
-  /// Used by a thread to update the model cache.
+  /// Updates the model cache.
+  ///
+  /// This function is called by \c updateCacheThread.
   /// \param[in] fetchImmediately True to fetch the models without waiting.
   void UpdateModelCache(bool fetchImmediately);
 
@@ -149,7 +151,7 @@ protected:
   std::thread* updateCacheThread;
 
   /// A dictionary of all model names indexed by their uri.
-  std::map<common::Uri, std::string> modelCache;
+  std::map<std::string, std::string> modelCache;
 
   /// True to stop the background thread
   bool stop;
