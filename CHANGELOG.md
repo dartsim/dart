@@ -4,6 +4,7 @@
 
 * Common
 
+  * Added DART_COMMON_DECLARE_SMART_POINTERS macro: [#1022](https://github.com/dartsim/dart/pull/1022)
   * Added ResourceRetriever::getFilePath(): [#972](https://github.com/dartsim/dart/pull/972)
 
 * Kinematics/Dynamics
