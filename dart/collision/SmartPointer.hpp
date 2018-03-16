@@ -33,20 +33,19 @@
 #ifndef DART_COLLISION_SMARTPOINTER_HPP_
 #define DART_COLLISION_SMARTPOINTER_HPP_
 
-#include "dart/config.hpp"
 #include "dart/common/SmartPointer.hpp"
 
 namespace dart {
 namespace collision {
 
-DART_COMMON_MAKE_SHARED_WEAK(CollisionDetector)
-DART_COMMON_MAKE_SHARED_WEAK(FCLCollisionDetector)
-DART_COMMON_MAKE_SHARED_WEAK(DARTCollisionDetector)
+DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
+DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
+DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
 
-DART_COMMON_MAKE_SHARED_WEAK(CollisionObject)
-DART_COMMON_MAKE_SHARED_WEAK(CollisionGroup)
+DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
+DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_SMARTPOINTER_HPP_
+#endif // DART_COLLISION_SMARTPOINTER_HPP_

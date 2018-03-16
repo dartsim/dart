@@ -4,6 +4,7 @@
 
 * Common
 
+  * Added DART_COMMON_DECLARE_SMART_POINTERS macro: [#1022](https://github.com/dartsim/dart/pull/1022)
   * Added MutexReference classes: [#1011](https://github.com/dartsim/dart/pull/1011)
   * Added ResourceRetriever::getFilePath(): [#972](https://github.com/dartsim/dart/pull/972)
 
@@ -25,6 +26,10 @@
 
   * Added support of rendering texture images: [#973](https://github.com/dartsim/dart/pull/973)
   * Added OSG shadows: [#978](https://github.com/dartsim/dart/pull/978)
+
+* Examples
+
+  * Added humanJointLimits: [#1016](https://github.com/dartsim/dart/pull/1016)
 
 * License
 

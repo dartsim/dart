@@ -33,5 +33,6 @@ install(
 
 dart_format_add(
   LockableReference.hpp
+  SmartPointer.hpp
   detail/LockableReference-impl.hpp
 )
