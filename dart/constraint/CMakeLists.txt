@@ -23,3 +23,7 @@ install(
   DESTINATION include/dart/constraint
   COMPONENT headers
 )
+
+dart_format_add(
+  SmartPointer.hpp
+)

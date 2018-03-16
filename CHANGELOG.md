@@ -20,6 +20,7 @@
 
 * Common
 
+  * Added DART_COMMON_DECLARE_SMART_POINTERS macro: [#1022](https://github.com/dartsim/dart/pull/1022)
   * Added ResourceRetriever::getFilePath(): [#972](https://github.com/dartsim/dart/pull/972)
 
 * Kinematics/Dynamics
@@ -41,6 +42,10 @@
   * Added support of rendering texture images: [#973](https://github.com/dartsim/dart/pull/973)
   * Added OSG shadows: [#978](https://github.com/dartsim/dart/pull/978)
 
+* Examples
+
+  * Added humanJointLimits: [#1016](https://github.com/dartsim/dart/pull/1016)
+
 * License
 
   * Added Personal Robotics Lab and Open Source Robotics Foundation as contributors: [#929](https://github.com/dartsim/dart/pull/929)
@@ -54,6 +59,12 @@
   * Changed console macros to use global namespace resolutions: [#1010](https://github.com/dartsim/dart/pull/1010)
   * Fixed various build issues with Visual Studio: [#956](https://github.com/dartsim/dart/pull/956)
   * Removed TinyXML dependency: [#993](https://github.com/dartsim/dart/pull/993)
+
+### [DART 6.3.1 (2018-03-14)](https://github.com/dartsim/dart/milestone/42?closed=1)
+
+* ROS support
+
+  * Tweaked package.xml for catkin support: [#1027](https://github.com/dartsim/dart/pull/1027), [#1029](https://github.com/dartsim/dart/pull/1029), [#1031](https://github.com/dartsim/dart/pull/1031), [#1032](https://github.com/dartsim/dart/pull/1031), [#1033](https://github.com/dartsim/dart/pull/1033)
 
 ### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)
 
