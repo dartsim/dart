@@ -58,6 +58,7 @@ target_link_libraries(
   PRIVATE
     ${YAMLCPP_LIBRARIES}
     ${CURL_LIBRARIES}
+    tar
 )
 
 # Component

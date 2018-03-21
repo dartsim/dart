@@ -72,3 +72,5 @@ if(TARGET dart-planning)
   dart_add_test("unit" test_NearestNeighbor)
   target_link_libraries(test_NearestNeighbor dart-planning)
 endif()
+
+dart_format_add(test_Database.cpp)

@@ -38,9 +38,39 @@
 
 using namespace dart;
 
+#define DART_DATABASE_SERVER_URI                                               \
+  "https://raw.githubusercontent.com/dartsim/data/test/"
+#define DART_BASE_URI "dart://dartsim/data/"
+
+//==============================================================================
 TEST(Database, Basic)
 {
-  auto database = utils::OnlineDatabase::getSingletonPtr();
+  std::string outputPath = getenv("HOME");
+  outputPath += "/.dart/models";
 
-  std::cout << "Uri: " << database->getUri() << std::endl;
+  auto database = std::make_shared<utils::OnlineDatabase>(
+      DART_DATABASE_SERVER_URI, DART_BASE_URI, outputPath);
+
+  std::cout << "Uri: " << database->getServerUri() << std::endl;
+}
+
+//==============================================================================
+TEST(Database, HasModel)
+{
+  std::string outputPath = getenv("HOME");
+  outputPath += "/.dart/models";
+
+  auto database = std::make_shared<utils::OnlineDatabase>(
+      DART_DATABASE_SERVER_URI, DART_BASE_URI, outputPath);
+
+  EXPECT_FALSE(database->hasDataset("model://authority/path/filename"));
+  EXPECT_TRUE(database->hasDataset("dart://dartsim/data/empty"));
+
+  auto modelFile = database->getDataPath("dart://dartsim/data/empty");
+  std::cout << modelFile << std::endl;
+
+  std::cout << database->getDatasetPath("dart://dartsim/data/empty")
+            << std::endl;
+  std::cout << database->getDataPath("dart://dartsim/data/empty/model.skel")
+            << std::endl;
 }

@@ -45,131 +45,145 @@
 namespace dart {
 namespace utils {
 
-class OnlineDatabase final : public common::Singleton<OnlineDatabase>
+class OnlineDatabase final
 {
 public:
-  /// Starts the model database.
-  /// \param[in] _fetchImmediately True to fetch the models without
-  /// waiting.
+  /// Constructor.
+  OnlineDatabase(
+      const std::string& serverUri,
+      const std::string& baseUri,
+      const std::string& databaseLocalPath,
+      const std::string& databaseConfigFilename = "database.config",
+      const std::string& datasetConfigFilename = "skeleton.config");
+
+  /// Destructor.
+  virtual ~OnlineDatabase();
+
+  /// Starts the online database.
+  ///
+  /// \param[in] fetchImmediately True to fetch the datasets without waiting.
   void startup(bool fetchImmediately = false);
 
-  /// Finalizes the model database.
+  /// Finalizes the online database.
   void shutdown();
 
-  /// Returns the the global model database URI.
-  /// \return the URI.
-  std::string getUri();
-
-  /// Returns the dictionary of all the model names
+  /// Returns the the global online database URI.
   ///
-  /// This is a blocking call. Which means it will wait for the
-  /// ModelDatabase to download the model list.
-  /// \return a map of model names, indexed by their full URI.
-  std::map<std::string, std::string> getModels();
+  /// \return The URI.
+  std::string getServerUri();
 
-  /// Returns the dictionary of all model names via a callback.
+  /// Returns the dictionary of all the dataset names.
   ///
-  /// This is the non-blocking version of ModelDatabase::GetModels
-  /// \param[in] _func Callback function that receives the list of
-  /// models.
-  /// \return A boost shared pointer. This pointer must remain valid in
-  /// order to receive the callback.
+  /// This is a blocking call, which means it will wait for the OnlineDatabase
+  /// to download the dataset list.
+  /// \return A map of dataset names, indexed by their full URI.
+  const std::map<std::string, std::string>& getDatasets();
+
+  /// Returns the dictionary of all dataset names via a callback.
+  ///
+  /// This is the non-blocking version of getDatasets
+  /// \param[in] func Callback function that receives the list of models.
+  /// \return A boost shared pointer. This pointer must remain valid in order to
+  /// receive the callback.
   //  event::ConnectionPtr GetModels(
   //      std::function<void(const std::map<std::string, std::string>&)> func);
 
-  /// Returns the name of a model based on a URI.
+  /// Returns the name of a dataset based on a URI.
   ///
   /// The URI must be fully qualified:
-  /// http://gazebosim.org/gazebo_models/ground_plane or model://gazebo_models
-  /// \param[in] uri The model uri
-  /// \return The model's name.
-  std::string GetModelName(const std::string& uri);
+  /// http://gazebosim.org/gazebo_models/ground_plane or dart://gazebo_models
+  /// \param[in] uri The dataset uri
+  /// \return The dataset's name.
+  std::string getDatasetName(const std::string& uri);
 
-  /// Return the model.config file as a string.
-  /// \return The model config file from the model database.
-  std::string GetModelConfig(const std::string& modelUri);
-
-  /// Return the database.config file as a string.
-  /// \return The database config file from the model database.
-  std::string GetDBConfig(const std::string& configUri);
-
-  /// Returns the local path to a model.
+  /// Return the dataset.config file as a XML string.
   ///
-  /// Get the path to a model based on a URI. If the model is on a remote
+  /// \return The dataset config file from the online database.
+  std::string getDatasetConfig(const std::string& datasetUri);
+
+  /// Return the database.config file as a XML string.
+  ///
+  /// \return The database config file from the online database.
+  std::string getDatabaseConfig(const std::string& configUri);
+
+  /// Returns the local path to a dataset.
+  ///
+  /// Returns the path to a model based on a URI. If the model is on a remote
   /// server, then the model fetched and installed locally.
   /// \param[in] uri The model uri
   /// \param[in] forceDownload True to skip searching local paths.
-  /// \return path to a model directory
-  std::string GetModelPath(const std::string& uri, bool forceDownload = false);
+  /// \return Path to a model directory
+  std::string getDatasetPath(std::string uri, bool forceDownload = false);
 
-  /// Returns a model's SDF file based on a URI.
+  /// Returns a dataset's file based on a URI.
   ///
-  /// Get a model file based on a URI. If the model is on
-  /// a remote server, then the model fetched and installed locally.
+  /// Returns a model file based on a URI. If the model is on a remote server,
+  /// then the model fetched and installed locally.
   /// \param[in] uri The URI of the model
   /// \return The full path and filename to the SDF file
-  std::string GetModelFile(const std::string& uri);
+  std::string getDataPath(const std::string& uri);
 
   /// Downloads all dependencies for a give model path
   ///
-  /// Look's in the model's manifest file (_path/model.config)
-  /// for all models listed in the <depend> block, and downloads the
-  /// models if necessary.
-  /// \param[in] _path Path to a model.
-  void DownloadDependencies(const std::string& path);
+  /// Look's in the model's manifest file (path/model.config) for all models
+  /// listed in the <depend> block, and downloads the models if necessary.
+  /// \param[in] path Path to a model.
+  void downloadDependencies(const std::string& path);
 
-  /// Returns true if the model exists on the database.
+  /// Returns true if the dataset exists on the database.
   ///
-  /// \param[in] modelName URI of the model (eg: model://my_model_name).
+  /// \param[in] modelUri URI of the model (eg: model://my_model_name).
   /// \return True if the model was found.
-  bool HasModel(const std::string& modelName);
-  bool hasData(const common::Uri& dataUri);
+  bool hasDataset(const std::string& datasetUri);
 
-protected:
-  friend class common::Singleton<OnlineDatabase>;
-
-  OnlineDatabase();
-
-  virtual ~OnlineDatabase();
+private:
+  std::pair<std::string, std::string> resolveDatasetAndData(
+      const std::string& uri);
 
   /// A helper function that uses CURL to get a manifest file.
+  ///
   /// \param[in] uri URI of a manifest XML file.
   /// \return The contents of the manifest file.
-  std::string GetManifestImpl(const std::string& uri);
+  std::string getManifestImpl(const std::string& uri);
 
-  /// Updates the model cache.
+  /// Updates the dataset cache.
   ///
   /// This function is called by \c updateCacheThread.
   /// \param[in] fetchImmediately True to fetch the models without waiting.
-  void UpdateModelCache(bool fetchImmediately);
+  void updateDatasetMap(bool fetchImmediately);
 
-  /// Used by ModelDatabase::UpdateModelCache,
-  /// no one else should use this function.
-  bool UpdateModelCacheImpl();
+  /// Used by updateModelCache, no one else should use this function.
+  bool updateDatasetMapImpl();
 
-  /// Thread to update the model cache.
-  std::thread* updateCacheThread;
+  const std::string mServerUri;
+  const std::string mBaseUri;
+  const std::string mDatabaseLocalpath;
+  const std::string mDatabaseConfigFilename;
+  const std::string mDatasetConfigFilename;
+
+  /// Thread to update the dataset cache.
+  std::thread* mUpdateDatasetMapThread;
 
   /// A dictionary of all model names indexed by their uri.
-  std::map<std::string, std::string> modelCache;
+  std::map<std::string, std::string> mDatasetMap;
 
-  /// True to stop the background thread
-  bool stop;
+  /// True to stop the background thread.
+  bool mStop;
 
-  /// Cache update mutex.
-  std::mutex updateMutex;
+  /// Dataset map update mutex.
+  std::mutex mDatasetMapMutex;
 
   /// Protects callback list.
-  std::mutex callbacksMutex;
+  std::mutex mCallbacksMutex;
 
   /// Mutex to protect cache thread status checks.
-  std::recursive_mutex startCacheMutex;
+  std::recursive_mutex mUpdateDatasetThreadMutex;
 
   /// Condition variable for the updateCacheThread.
-  std::condition_variable updateCacheCondition;
+  std::condition_variable mUpdateCacheCondition;
 
   /// Condition variable for completion of one cache update.
-  std::condition_variable updateCacheCompleteCondition;
+  std::condition_variable mUpdateDatasetMapCompleteCondition;
 
   /// \def CallbackFunc
   /// Boost function that is used to passback the model cache.

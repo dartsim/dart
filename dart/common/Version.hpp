@@ -78,22 +78,22 @@ public:
   std::string toString() const;
 
   /// Equality operator
-  bool operator==(const Version& other);
+  bool operator==(const Version& other) const;
 
   /// Inequality operator
-  bool operator!=(const Version& other);
+  bool operator!=(const Version& other) const;
 
   /// Comparison operator
-  bool operator<(const Version& other);
+  bool operator<(const Version& other) const;
 
   /// Comparison operator
-  bool operator>(const Version& other);
+  bool operator>(const Version& other) const;
 
   /// Comparison operator
-  bool operator<=(const Version& other);
+  bool operator<=(const Version& other) const;
 
   /// Comparison operator
-  bool operator>=(const Version& other);
+  bool operator>=(const Version& other) const;
 
 private:
   unsigned short mMajor;

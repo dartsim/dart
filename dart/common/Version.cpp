@@ -150,20 +150,20 @@ void Version::fromString(const std::string& version)
 }
 
 //==============================================================================
-bool Version::operator==(const Version& other)
+bool Version::operator==(const Version& other) const
 {
   return getMajor() == other.getMajor() && getMinor() == other.getMinor()
          && getPatch() == other.getPatch();
 }
 
 //==============================================================================
-bool Version::operator!=(const Version& other)
+bool Version::operator!=(const Version& other) const
 {
   return !(*this == other);
 }
 
 //==============================================================================
-bool Version::operator<(const Version& other)
+bool Version::operator<(const Version& other) const
 {
   if (getMajor() < other.getMajor())
   {
@@ -194,7 +194,7 @@ bool Version::operator<(const Version& other)
 }
 
 //==============================================================================
-bool Version::operator>(const Version& other)
+bool Version::operator>(const Version& other) const
 {
   if (getMajor() > other.getMajor())
   {
@@ -225,13 +225,13 @@ bool Version::operator>(const Version& other)
 }
 
 //==============================================================================
-bool Version::operator<=(const Version& other)
+bool Version::operator<=(const Version& other) const
 {
   return !(*this > other);
 }
 
 //==============================================================================
-bool Version::operator>=(const Version& other)
+bool Version::operator>=(const Version& other) const
 {
   return !(*this < other);
 }
