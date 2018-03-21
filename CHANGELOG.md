@@ -1,6 +1,10 @@
 ## DART 6
 
-### DART 6.3.1 (2018-03-14)
+### DART 6.3.1 (2018-XX-XX)
+
+* Build system
+
+  * Remove an undefined cmake macro/function: [#1036](https://github.com/dartsim/dart/pull/1036)
 
 * ROS support
 
