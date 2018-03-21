@@ -1,6 +1,6 @@
 ## DART 6
 
-### DART 6.3.1 (2018-XX-XX)
+### DART 6.3.1 (2018-03-21)
 
 * Build system
 
