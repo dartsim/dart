@@ -44,7 +44,7 @@ class BodyNode;
 namespace constraint {
 
 /// class JointConstraint
-class JointConstraint : public ConstraintBase
+class DART_EXPORT JointConstraint : public ConstraintBase
 {
 public:
   /// Contructor

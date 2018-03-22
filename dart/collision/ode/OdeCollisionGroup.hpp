@@ -40,7 +40,7 @@
 namespace dart {
 namespace collision {
 
-class OdeCollisionGroup : public CollisionGroup
+class DART_EXPORT OdeCollisionGroup : public CollisionGroup
 {
 public:
   friend class OdeCollisionDetector;

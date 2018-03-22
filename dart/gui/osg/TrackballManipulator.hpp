@@ -34,6 +34,7 @@
 #define DART_GUI_OSG_TRACKBALLMANIPULATOR_HPP_
 
 #include <osgGA/OrbitManipulator>
+#include "dart/export.h"
 
 namespace dart {
 namespace gui {
@@ -49,7 +50,7 @@ namespace osg {
 // and dart::gui::osg, we need to explicitly specify the root namespace osg as
 // ::osg
 
-class OSGGA_EXPORT TrackballManipulator : public ::osgGA::OrbitManipulator
+class DART_EXPORT TrackballManipulator : public ::osgGA::OrbitManipulator
 {
 public:
   /// Constructor

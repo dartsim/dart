@@ -34,12 +34,13 @@
 #define DART_COLLISION_FCL_FCLTTYPES_HPP_
 
 #include <Eigen/Dense>
+#include "dart/export.h"
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
 
 namespace dart {
 namespace collision {
 
-class FCLTypes
+class DART_EXPORT FCLTypes
 {
 public:
 #if !FCL_VERSION_AT_LEAST(0,6,0)

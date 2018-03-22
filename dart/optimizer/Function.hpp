@@ -36,14 +36,14 @@
 #include <vector>
 #include <memory>
 #include <functional>
-
 #include <Eigen/Dense>
+#include "dart/export.h"
 
 namespace dart {
 namespace optimizer {
 
 /// \brief class Function
-class Function
+class DART_EXPORT Function
 {
 public:
   /// \brief Constructor
@@ -97,7 +97,7 @@ typedef std::function<void(
 /// \brief ModularFunction uses C++11 std::function to allow you to easily swap
 /// out the cost function, gradient function, and Hessian function during
 /// runtime for an optimizer::Function instance.
-class ModularFunction : public Function
+class DART_EXPORT ModularFunction : public Function
 {
 public:
   /// \brief Constructor
@@ -156,7 +156,7 @@ protected:
 };
 
 /// \brief NullFunction is a constant-zero Function
-class NullFunction : public Function
+class DART_EXPORT NullFunction : public Function
 {
 public:
   /// \brief Constructor
@@ -181,7 +181,7 @@ public:
 };
 
 /// \brief class MultiFunction
-class MultiFunction
+class DART_EXPORT MultiFunction
 {
 public:
   /// \brief Constructor

@@ -51,7 +51,7 @@ namespace render {
 class SphereShapeGeode;
 class SphereShapeDrawable;
 
-class SphereShapeNode : public ShapeNode, public ::osg::MatrixTransform
+class DART_EXPORT SphereShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 

@@ -35,8 +35,8 @@
 
 #include <iostream>
 #include <memory>
-
 #include <Eigen/Dense>
+#include "dart/export.h"
 
 namespace dart {
 namespace optimizer {
@@ -49,7 +49,7 @@ class Problem;
 /// problem types. This base class allows the different Solver implementations
 /// to be swapped out with each other quickly and easily to help with testing,
 /// benchmarking, and experimentation.
-class Solver
+class DART_EXPORT Solver
 {
 public:
 

@@ -45,7 +45,7 @@ class VisualAspect;
 class CollisionAspect;
 class DynamicsAspect;
 
-class ShapeNode : public detail::ShapeNodeCompositeBase
+class DART_EXPORT ShapeNode : public detail::ShapeNodeCompositeBase
 {
 public:
 

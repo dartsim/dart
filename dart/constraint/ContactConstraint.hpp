@@ -48,7 +48,7 @@ class Skeleton;
 namespace constraint {
 
 /// ContactConstraint represents a contact constraint between two bodies
-class ContactConstraint : public ConstraintBase
+class DART_EXPORT ContactConstraint : public ConstraintBase
 {
 public:
   /// Constructor

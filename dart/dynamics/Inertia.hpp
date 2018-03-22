@@ -35,12 +35,13 @@
 
 #include <array>
 
+#include "dart/export.h"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace dynamics {
 
-class Inertia
+class DART_EXPORT Inertia
 {
 public:
 

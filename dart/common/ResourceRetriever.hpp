@@ -43,7 +43,7 @@ namespace common {
 
 /// ResourceRetriever provides methods for testing for the existance of and
 /// accessing the content of a resource specified by URI.
-class ResourceRetriever
+class DART_EXPORT ResourceRetriever
 {
 public:
   virtual ~ResourceRetriever() = default;

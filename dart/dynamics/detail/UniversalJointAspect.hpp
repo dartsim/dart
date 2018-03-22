@@ -47,7 +47,7 @@ class UniversalJoint;
 namespace detail {
 
 //==============================================================================
-struct UniversalJointUniqueProperties
+struct DART_EXPORT UniversalJointUniqueProperties
 {
   std::array<Eigen::Vector3d,2> mAxis;
 
@@ -59,7 +59,7 @@ struct UniversalJointUniqueProperties
 };
 
 //==============================================================================
-struct UniversalJointProperties :
+struct DART_EXPORT UniversalJointProperties :
     GenericJoint<math::R2Space>::Properties,
     UniversalJointUniqueProperties
 {

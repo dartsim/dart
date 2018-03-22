@@ -43,7 +43,7 @@ namespace constraint {
 
 /// BallJointConstraint represents ball joint constraint between a body and the
 /// world or between two bodies
-class BallJointConstraint : public JointConstraint
+class DART_EXPORT BallJointConstraint : public JointConstraint
 {
 public:
   /// Constructor that takes one body and the joint position in the world frame

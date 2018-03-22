@@ -35,6 +35,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include "dart/export.h"
 
 namespace dart {
 namespace dynamics {
@@ -100,7 +101,7 @@ enum ActuatorType
 
 const ActuatorType DefaultActuatorType = FORCE;
 
-struct JointProperties
+struct DART_EXPORT JointProperties
 {
   /// Joint name
   std::string mName;

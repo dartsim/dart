@@ -34,6 +34,7 @@
 #define DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
 
 #include <memory>
+#include "dart/export.h"
 
 namespace dart {
 namespace common {
@@ -42,7 +43,7 @@ namespace signal {
 namespace detail {
 
 /// class ConnectionBodyBase
-class ConnectionBodyBase
+class DART_EXPORT ConnectionBodyBase
 {
 public:
   /// Constructor

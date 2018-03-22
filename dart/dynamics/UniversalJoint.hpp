@@ -39,7 +39,7 @@ namespace dart {
 namespace dynamics {
 
 /// class UniversalJoint
-class UniversalJoint : public detail::UniversalJointBase
+class DART_EXPORT UniversalJoint : public detail::UniversalJointBase
 {
 public:
 

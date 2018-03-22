@@ -50,7 +50,7 @@ namespace render {
 class SoftMeshShapeGeode;
 class SoftMeshShapeDrawable;
 
-class SoftMeshShapeNode : public ShapeNode, public ::osg::MatrixTransform
+class DART_EXPORT SoftMeshShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 

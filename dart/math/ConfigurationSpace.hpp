@@ -74,7 +74,7 @@ using R2Space = RealVectorSpace<2u>;
 using R3Space = RealVectorSpace<3u>;
 
 //==============================================================================
-struct SO3Space
+struct DART_EXPORT SO3Space
 {
   static constexpr std::size_t NumDofs = 3u;
   static constexpr int NumDofsEigen = 3;
@@ -89,7 +89,7 @@ struct SO3Space
 };
 
 //==============================================================================
-struct SE3Space
+struct DART_EXPORT SE3Space
 {
   static constexpr std::size_t NumDofs = 6u;
   static constexpr int NumDofsEigen = 6;
@@ -103,7 +103,7 @@ struct SE3Space
   using JacobianMatrix = Eigen::Matrix6d;
 };
 
-struct MapsToManifoldPoint {};
+struct DART_EXPORT MapsToManifoldPoint {};
 
 //==============================================================================
 template <typename SpaceT>

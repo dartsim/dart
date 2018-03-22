@@ -35,11 +35,12 @@
 
 #include <Eigen/Eigen>
 #include <ode/ode.h>
+#include "dart/export.h"
 
 namespace dart {
 namespace collision {
 
-class OdeTypes
+class DART_EXPORT OdeTypes
 {
 public:
   static Eigen::Vector3d convertVector3(const dVector3& vec);

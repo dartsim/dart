@@ -39,7 +39,7 @@ namespace dart {
 namespace integration {
 
 /// \brief class RK4Integrator
-class RK4Integrator : public Integrator
+class DART_EXPORT RK4Integrator : public Integrator
 {
 public:
   /// \brief Constructor

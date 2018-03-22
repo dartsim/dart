@@ -35,13 +35,14 @@
 
 #include <cstddef>
 #include <memory>
+#include "dart/export.h"
 
 namespace dart {
 namespace collision {
 
 class CollisionFilter;
 
-struct CollisionOption
+struct DART_EXPORT CollisionOption
 {
 
   /// Flag whether the collision detector computes contact information (contact

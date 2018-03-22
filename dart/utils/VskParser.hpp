@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_VSKPARSER_HPP_
 #define DART_UTILS_VSKPARSER_HPP_
 
+#include "dart/export.h"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/math/Constants.hpp"
@@ -41,62 +42,63 @@
 namespace dart {
 namespace utils {
 
-namespace VskParser
+namespace VskParser {
+
+/// Options struct is additional information that helps building a skeleton
+/// that can be used in kinematics or dynamics simulation. VSK file format
+/// itself doesn't provide essential properties for it such as body's shape,
+/// mass, and inertia.
+struct DART_EXPORT Options
 {
-  /// Options struct is additional information that helps building a skeleton
-  /// that can be used in kinematics or dynamics simulation. VSK file format
-  /// itself doesn't provide essential properties for it such as body's shape,
-  /// mass, and inertia.
-  struct Options
-  {
-    /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
-    common::ResourceRetrieverPtr retrieverOrNullptr;
+  /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
+  common::ResourceRetrieverPtr retrieverOrNullptr;
 
-    /// The default shape for body node is ellipsoid. The size of ellipsoid of
-    /// each body node are determined by the relative transformation from a body
-    /// node and its child body node. defaultEllipsoidSize is used for body
-    /// nodes that don't have child body node.
-    Eigen::Vector3d defaultEllipsoidSize;
+  /// The default shape for body node is ellipsoid. The size of ellipsoid of
+  /// each body node are determined by the relative transformation from a body
+  /// node and its child body node. defaultEllipsoidSize is used for body
+  /// nodes that don't have child body node.
+  Eigen::Vector3d defaultEllipsoidSize;
 
-    /// Ratio of shorter radii of each ellipsoid to the longest radius where
-    /// the longest radius is the distance between a body and its child body
-    /// node.
-    double thicknessRatio;
+  /// Ratio of shorter radii of each ellipsoid to the longest radius where
+  /// the longest radius is the distance between a body and its child body
+  /// node.
+  double thicknessRatio;
 
-    /// Density of each ellipsoid that are used to compute mass.
-    double density;
+  /// Density of each ellipsoid that are used to compute mass.
+  double density;
 
-    /// Lower limit of joint position
-    double jointPositionLowerLimit;
+  /// Lower limit of joint position
+  double jointPositionLowerLimit;
 
-    /// Upper limit of joint position
-    double jointPositionUpperLimit;
+  /// Upper limit of joint position
+  double jointPositionUpperLimit;
 
-    /// Joint damping coefficient
-    double jointDampingCoefficient;
+  /// Joint damping coefficient
+  double jointDampingCoefficient;
 
-    /// Joint Coulomb friction
-    double jointFriction;
+  /// Joint Coulomb friction
+  double jointFriction;
 
-    /// Remove end BodyNodes with no Shape segment
-    bool removeEndBodyNodes;
+  /// Remove end BodyNodes with no Shape segment
+  bool removeEndBodyNodes;
 
-    /// Constructor
-    Options(const common::ResourceRetrieverPtr& retrieverOrNullptr = nullptr,
-            const Eigen::Vector3d& defaultEllipsoidSize
-                = Eigen::Vector3d::Constant(0.05),
-            double thicknessRatio = 0.35,
-            double density = 1e+3,
-            double jointPositionLowerLimit = -math::constantsd::pi(),
-            double jointPositionUpperLimit = +math::constantsd::pi(),
-            double jointDampingCoefficient = 0.1,
-            double jointFriction = 0.0,
-            bool removeEndBodyNodes = false);
-  };
+  /// Constructor
+  Options(const common::ResourceRetrieverPtr& retrieverOrNullptr = nullptr,
+          const Eigen::Vector3d& defaultEllipsoidSize
+              = Eigen::Vector3d::Constant(0.05),
+          double thicknessRatio = 0.35,
+          double density = 1e+3,
+          double jointPositionLowerLimit = -math::constantsd::pi(),
+          double jointPositionUpperLimit = +math::constantsd::pi(),
+          double jointDampingCoefficient = 0.1,
+          double jointFriction = 0.0,
+          bool removeEndBodyNodes = false);
+};
 
-  /// Read Skeleton from VSK file
-  dynamics::SkeletonPtr readSkeleton(const common::Uri& fileUri,
-                                     Options options = Options());
+/// Read Skeleton from VSK file
+DART_EXPORT dynamics::SkeletonPtr readSkeleton(
+    const common::Uri& fileUri,
+    Options options = Options());
 
 } // namespace VskParser
 

@@ -42,7 +42,7 @@ namespace collision {
 
 class FCLCollisionObject;
 
-class FCLCollisionDetector : public CollisionDetector
+class DART_EXPORT FCLCollisionDetector : public CollisionDetector
 {
 public:
 

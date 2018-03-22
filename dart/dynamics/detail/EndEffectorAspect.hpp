@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_DETAIL_ENDEFFECTORASPECT_HPP_
 
 #include <Eigen/Geometry>
+#include "dart/export.h"
 #include "dart/dynamics/CompositeNode.hpp"
 #include "dart/common/SpecializedForAspect.hpp"
 
@@ -46,7 +47,7 @@ class Support;
 namespace detail {
 
 //==============================================================================
-struct EndEffectorProperties
+struct DART_EXPORT EndEffectorProperties
 {
   /// The default relative transform for the EndEffector. If the relative
   /// transform of the EndEffector is ever changed, you can call
@@ -61,7 +62,7 @@ struct EndEffectorProperties
 };
 
 //==============================================================================
-struct SupportStateData
+struct DART_EXPORT SupportStateData
 {
   /// Whether or not this EndEffector is currently being used to support the
   /// weight of the robot.
@@ -74,7 +75,7 @@ struct SupportStateData
 };
 
 //==============================================================================
-struct SupportPropertiesData
+struct DART_EXPORT SupportPropertiesData
 {
   /// A set of points representing the support polygon that can be provided by
   /// the EndEffector. These points must be defined relative to the EndEffector
@@ -89,7 +90,7 @@ struct SupportPropertiesData
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-void SupportUpdate(Support* support);
+DART_EXPORT void SupportUpdate(Support* support);
 
 using EndEffectorCompositeBase = CompositeNode<
     common::CompositeJoiner<

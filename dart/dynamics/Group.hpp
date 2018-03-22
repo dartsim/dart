@@ -38,7 +38,7 @@
 namespace dart {
 namespace dynamics {
 
-class Group : public ReferentialSkeleton
+class DART_EXPORT Group : public ReferentialSkeleton
 {
 public:
 

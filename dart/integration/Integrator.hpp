@@ -34,14 +34,14 @@
 #define DART_INTEGRATION_INTEGRATOR_HPP_
 
 #include <vector>
-
 #include <Eigen/Dense>
+#include "dart/export.h"
 
 namespace dart {
 namespace integration {
 
 /// \brief Any class that uses an integrator should implement this interface
-class IntegrableSystem
+class DART_EXPORT IntegrableSystem
 {
 public:
   /// \brief Constructor
@@ -78,7 +78,7 @@ public:
 // TODO(kasiu): Consider templating the class (which currently only works on
 // arbitrarily-sized vectors of doubles)
 /// \brief class Integrator
-class Integrator
+class DART_EXPORT Integrator
 {
 public:
   /// \brief Constructor

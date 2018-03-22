@@ -45,7 +45,7 @@ namespace dart {
 namespace gui {
 namespace osg {
 
-class ImGuiWidget
+class DART_EXPORT ImGuiWidget
 {
 public:
 
@@ -80,7 +80,7 @@ protected:
 
 };
 
-class AboutWidget : public ImGuiWidget
+class DART_EXPORT AboutWidget : public ImGuiWidget
 {
 public:
   // Documentation inherited

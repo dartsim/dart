@@ -46,7 +46,7 @@ namespace osg {
 
 class InteractiveFrame;
 
-class InteractiveTool : public dart::dynamics::SimpleFrame
+class DART_EXPORT InteractiveTool : public dart::dynamics::SimpleFrame
 {
 public:
 
@@ -108,7 +108,7 @@ protected:
 
 };
 
-class InteractiveFrame : public dart::dynamics::SimpleFrame
+class DART_EXPORT InteractiveFrame : public dart::dynamics::SimpleFrame
 {
 public:
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(InteractiveFrame)

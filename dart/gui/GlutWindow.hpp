@@ -42,7 +42,7 @@ namespace dart {
 namespace gui {
 
 /// \brief
-class GlutWindow {
+class DART_EXPORT GlutWindow {
 public:
   GlutWindow();
   virtual ~GlutWindow();

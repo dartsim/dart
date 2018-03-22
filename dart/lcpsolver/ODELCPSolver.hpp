@@ -34,12 +34,13 @@
 #define DART_LCPSOLVER_ODELCPSOLVER_HPP_
 
 #include <Eigen/Dense>
+#include "dart/export.h"
 
 namespace dart {
 namespace lcpsolver {
 
 /// \brief
-class ODELCPSolver
+class DART_EXPORT ODELCPSolver
 {
 public:
   /// \brief

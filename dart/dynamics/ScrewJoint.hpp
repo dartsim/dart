@@ -39,7 +39,7 @@ namespace dart {
 namespace dynamics {
 
 /// class ScrewJoint
-class ScrewJoint : public detail::ScrewJointBase
+class DART_EXPORT ScrewJoint : public detail::ScrewJointBase
 {
 public:
 

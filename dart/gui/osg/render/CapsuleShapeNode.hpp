@@ -50,7 +50,7 @@ namespace render {
 class CapsuleShapeGeode;
 class CapsuleShapeDrawable;
 
-class CapsuleShapeNode : public ShapeNode, public ::osg::Group
+class DART_EXPORT CapsuleShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
 

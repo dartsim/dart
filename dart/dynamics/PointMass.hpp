@@ -43,11 +43,10 @@ namespace dynamics {
 
 class EllipsoidShape;
 class SoftBodyNode;
-
 class PointMassNotifier;
 
 ///
-class PointMass : public common::Subject
+class DART_EXPORT PointMass : public common::Subject
 {
 public:
   friend class SoftBodyNode;
@@ -669,7 +668,7 @@ protected:
 //  PointMass* pm2;
 //};
 
-class PointMassNotifier : public Entity
+class DART_EXPORT PointMassNotifier : public Entity
 {
 public:
 

@@ -47,7 +47,7 @@ namespace collision {
 
 class BulletCollisionObject;
 
-class BulletCollisionDetector : public CollisionDetector
+class DART_EXPORT BulletCollisionDetector : public CollisionDetector
 {
 public:
 

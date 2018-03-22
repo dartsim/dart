@@ -41,7 +41,7 @@ namespace dart {
 namespace collision {
 
 /// Contact information
-struct Contact
+struct DART_EXPORT Contact
 {
   /// Default constructor
   Contact();

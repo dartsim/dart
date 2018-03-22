@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_COLLISIONFILTER_HPP_
 #define DART_COLLISION_COLLISIONFILTER_HPP_
 
+#include "dart/export.h"
 #include "dart/common/Deprecated.hpp"
 #include "dart/collision/detail/UnorderedPairs.hpp"
 
@@ -46,7 +47,7 @@ namespace collision {
 
 class CollisionObject;
 
-class CollisionFilter
+class DART_EXPORT CollisionFilter
 {
 public:
   /// Returns true if the given two CollisionObjects should be checked by the
@@ -64,7 +65,7 @@ public:
       const CollisionObject* object1, const CollisionObject* object2) const = 0;
 };
 
-class CompositeCollisionFilter : public CollisionFilter
+class DART_EXPORT CompositeCollisionFilter : public CollisionFilter
 {
 public:
   /// Adds a collision filter to this CompositeCollisionFilter.
@@ -86,7 +87,7 @@ protected:
   std::unordered_set<const CollisionFilter*> mFilters;
 };
 
-class BodyNodeCollisionFilter : public CollisionFilter
+class DART_EXPORT BodyNodeCollisionFilter : public CollisionFilter
 {
 public:
   /// Add a BodyNode pair to the blacklist.

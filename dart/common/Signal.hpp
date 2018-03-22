@@ -36,14 +36,14 @@
 #include <functional>
 #include <memory>
 #include <set>
-
+#include "dart/export.h"
 #include "dart/common/detail/ConnectionBody.hpp"
 
 namespace dart {
 namespace common {
 
 /// class Connection
-class Connection
+class DART_EXPORT Connection
 {
 public:
   /// Default constructor
@@ -88,7 +88,7 @@ private:
 };
 
 /// class ScopedConnection
-class ScopedConnection : public Connection
+class DART_EXPORT ScopedConnection : public Connection
 {
 public:
   /// Default constructor

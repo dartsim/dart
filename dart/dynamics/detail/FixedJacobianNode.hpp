@@ -40,7 +40,7 @@
 namespace dart {
 namespace dynamics {
 
-class FixedJacobianNode;
+class DART_EXPORT FixedJacobianNode;
 
 namespace detail {
 

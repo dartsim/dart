@@ -36,6 +36,7 @@
 #include <cstddef>
 #include <memory>
 #include <string>
+#include "dart/export.h"
 
 namespace dart {
 namespace common {
@@ -45,7 +46,7 @@ namespace common {
 /// It is expected that each \a ResourceRetriever will provide a concrete /
 /// instantiation of the Resource class. This interface exposes an similar API
 /// to that of the the standard C file manipulation functions.
-class Resource
+class DART_EXPORT Resource
 {
 public:
   /// \brief Position to seek relative to.

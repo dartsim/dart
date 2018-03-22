@@ -35,13 +35,13 @@
 
 #include <vector>
 #include <Eigen/Dense>
-
+#include "dart/export.h"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace utils {
 
-class FileInfoC3D {
+class DART_EXPORT FileInfoC3D {
     
 public:
     FileInfoC3D();

@@ -45,7 +45,7 @@ namespace detail {
 class OdeGeom;
 } // namespace detail
 
-class OdeCollisionObject : public CollisionObject
+class DART_EXPORT OdeCollisionObject : public CollisionObject
 {
 public:
   friend class OdeCollisionDetector;

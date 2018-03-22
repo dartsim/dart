@@ -34,8 +34,8 @@
 #define DART_UTILS_FILEINFODOF_HPP_
 
 #include <vector>
-
 #include <Eigen/Dense>
+#include "dart/export.h"
 
 namespace dart {
 
@@ -46,7 +46,7 @@ class Skeleton;
 namespace utils {
 
 /// \brief class FileInfoDof
-class FileInfoDof
+class DART_EXPORT FileInfoDof
 {
 public:
   /// \brief Constructor

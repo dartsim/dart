@@ -40,7 +40,7 @@ namespace common {
 
 /// LocalResourceRetriever provides access to local resources specified by
 /// file:// URIs by wrapping the standard C and C++ file manipulation routines.
-class LocalResourceRetriever : public virtual ResourceRetriever
+class DART_EXPORT LocalResourceRetriever : public virtual ResourceRetriever
 {
 public:
   virtual ~LocalResourceRetriever() = default;

@@ -48,7 +48,7 @@ class ShapeFrame;
 }
 
 namespace gui {
-class OpenGLRenderInterface : public RenderInterface {
+class DART_EXPORT OpenGLRenderInterface : public RenderInterface {
 
 public:
     OpenGLRenderInterface() : mViewportX(0.0), mViewportY(0.0), mViewportWidth(0.0), mViewportHeight(0.0) {}

@@ -52,6 +52,8 @@
   #include <sys/time.h>
 #endif
 
+#include "dart/export.h"
+
 namespace dart {
 namespace common {
 
@@ -59,7 +61,7 @@ namespace common {
 ///
 /// This is a definition of mTimer class.
 /// For measure the time, gettimeofday() api is used
-class Timer
+class DART_EXPORT Timer
 {
 public:
   /// \brief Default constructor

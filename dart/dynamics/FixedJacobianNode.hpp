@@ -38,7 +38,7 @@
 namespace dart {
 namespace dynamics {
 
-class FixedJacobianNode :
+class DART_EXPORT FixedJacobianNode :
     public detail::FixedJacobianNodeCompositeBase,
     public AccessoryNode<FixedJacobianNode>
 {

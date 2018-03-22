@@ -35,6 +35,7 @@
 
 #include <memory>
 #include <osg/Node>
+#include "dart/export.h"
 
 namespace dart {
 
@@ -55,7 +56,7 @@ class ShapeFrameNode;
 
 namespace render {
 
-class ShapeNode
+class DART_EXPORT ShapeNode
 {
 public:
 

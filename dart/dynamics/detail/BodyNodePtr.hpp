@@ -36,6 +36,7 @@
 #include <memory>
 #include <mutex>
 #include <atomic>
+#include "dart/export.h"
 
 namespace dart{
 namespace dynamics {
@@ -43,14 +44,14 @@ namespace dynamics {
 class Skeleton;
 
 //==============================================================================
-struct MutexedWeakSkeletonPtr
+struct DART_EXPORT MutexedWeakSkeletonPtr
 {
   std::mutex mMutex;
   std::weak_ptr<const Skeleton> mSkeleton;
 };
 
 //==============================================================================
-class SkeletonRefCountingBase
+class DART_EXPORT SkeletonRefCountingBase
 {
 public:
   template<class> friend class TemplateBodyNodePtr;

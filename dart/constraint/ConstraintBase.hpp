@@ -46,7 +46,7 @@ class Skeleton;
 namespace constraint {
 
 /// ConstraintInfo
-struct ConstraintInfo
+struct DART_EXPORT ConstraintInfo
 {
   /// Impulse
   double* x;
@@ -71,7 +71,7 @@ struct ConstraintInfo
 };
 
 /// Constraint is a base class of concrete constraints classes
-class ConstraintBase
+class DART_EXPORT ConstraintBase
 {
 public:
   /// Return dimesion of this constranit

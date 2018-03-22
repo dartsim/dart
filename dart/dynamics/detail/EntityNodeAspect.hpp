@@ -44,7 +44,7 @@ class EntityNode;
 namespace detail {
 
 //==============================================================================
-struct EntityNodeProperties
+struct DART_EXPORT EntityNodeProperties
 {
   /// Name of the Entity/Node
   std::string mName;

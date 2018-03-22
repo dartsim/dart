@@ -34,7 +34,7 @@
 #define DART_COMMON_ASPECT_HPP_
 
 #include <string>
-
+#include "dart/export.h"
 #include "dart/common/Cloneable.hpp"
 #include "dart/common/detail/NoOp.hpp"
 
@@ -43,7 +43,7 @@ namespace common {
 
 class Composite;
 
-class Aspect
+class DART_EXPORT Aspect
 {
 public:
 

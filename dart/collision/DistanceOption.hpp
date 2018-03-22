@@ -35,13 +35,14 @@
 
 #include <cstddef>
 #include <memory>
+#include "dart/export.h"
 
 namespace dart {
 namespace collision {
 
 class DistanceFilter;
 
-struct DistanceOption
+struct DART_EXPORT DistanceOption
 {
   /// Whether to calculate the nearest points.
   ///

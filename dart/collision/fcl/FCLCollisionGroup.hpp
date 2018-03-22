@@ -42,7 +42,7 @@ namespace collision {
 class CollisionObject;
 class FCLCollisionObjectUserData;
 
-class FCLCollisionGroup : public CollisionGroup
+class DART_EXPORT FCLCollisionGroup : public CollisionGroup
 {
 public:
 

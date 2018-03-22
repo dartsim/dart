@@ -54,7 +54,7 @@ namespace urdf_parsing {
 
 /// We need a customized version of the Entity class, because we need to keep
 /// track of a Skeleton's uri in order to correctly handle relative file paths.
-class Entity
+class DART_EXPORT Entity
 {
 public:
 
@@ -71,7 +71,7 @@ public:
 
 };
 
-class World
+class DART_EXPORT World
 {
 public:
 

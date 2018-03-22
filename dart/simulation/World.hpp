@@ -45,6 +45,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/export.h"
 #include "dart/common/Timer.hpp"
 #include "dart/common/NameManager.hpp"
 #include "dart/common/Subject.hpp"
@@ -74,7 +75,7 @@ class CollisionResult;
 namespace simulation {
 
 /// class World
-class World : public virtual common::Subject
+class DART_EXPORT World : public virtual common::Subject
 {
 public:
 

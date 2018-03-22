@@ -53,7 +53,7 @@ class Skeleton;
 class DegreeOfFreedom;
 
 /// class Joint
-class Joint : public virtual common::Subject,
+class DART_EXPORT Joint : public virtual common::Subject,
               public virtual common::VersionCounter,
               public common::EmbedProperties<Joint, detail::JointProperties>
 {

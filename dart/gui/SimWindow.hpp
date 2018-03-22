@@ -53,7 +53,7 @@ namespace gui {
 class GraphWindow;
 
 /// \brief
-class SimWindow : public Win3D {
+class DART_EXPORT SimWindow : public Win3D {
 public:
   /// \brief
   SimWindow();

@@ -35,6 +35,7 @@
 
 #include <string>
 #include <ostream>
+#include "dart/export.h"
 
 /// \brief Output a message
 #define dtmsg (::dart::common::colorMsg("Msg", 32))
@@ -52,13 +53,14 @@ namespace dart {
 namespace common {
 
 /// \brief
-std::ostream& colorMsg(const std::string& _msg, int _color);
+DART_EXPORT std::ostream& colorMsg(const std::string& _msg, int _color);
 
 /// \brief
-std::ostream& colorErr(const std::string& _msg,
-                       const std::string& _file,
-                       unsigned int _line,
-                       int _color);
+DART_EXPORT std::ostream& colorErr(
+    const std::string& _msg,
+    const std::string& _file,
+    unsigned int _line,
+    int _color);
 
 }  // namespace common
 }  // namespace dart

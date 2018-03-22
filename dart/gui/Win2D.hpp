@@ -39,7 +39,7 @@ namespace dart {
 namespace gui {
 
 /// \brief
-class Win2D : public GlutWindow {
+class DART_EXPORT Win2D : public GlutWindow {
 public:
   /// \brief
   Win2D();

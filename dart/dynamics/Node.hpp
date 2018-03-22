@@ -49,7 +49,7 @@ class BodyNode;
 class Node;
 
 //==============================================================================
-class NodeDestructor final
+class DART_EXPORT NodeDestructor final
 {
 public:
 
@@ -78,7 +78,7 @@ private:
 ///
 /// In most cases, when creating your own custom Node class, you will also want
 /// to inherit from AccessoryNode using CRTP.
-class Node :
+class DART_EXPORT Node :
     public virtual common::Subject,
     public virtual common::VersionCounter
 {

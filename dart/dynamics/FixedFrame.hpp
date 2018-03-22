@@ -45,7 +45,7 @@ namespace dynamics {
 /// zero relative acceleration. It does not move within its parent Frame after
 /// its relative transform is set. However, classes that inherit the FixedFrame
 /// class may alter its relative transform or change what its parent Frame is.
-class FixedFrame :
+class DART_EXPORT FixedFrame :
     public virtual Frame,
     public virtual common::VersionCounter,
     public common::EmbedProperties<FixedFrame, detail::FixedFrameProperties>

@@ -49,7 +49,7 @@ namespace dart {
 namespace gui {
 
 /// \brief
-class GraphWindow : public Win2D {
+class DART_EXPORT GraphWindow : public Win2D {
 public:
   /// \brief
   GraphWindow();

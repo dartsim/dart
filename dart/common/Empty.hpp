@@ -38,7 +38,7 @@ namespace common {
 
 /// This is an empty structure which can be used as a template argument when a
 /// zero-cost placeholder is needed.
-struct Empty { };
+struct DART_EXPORT Empty { };
 
 /// Used to tag arguments as blank for in variadic joiner classes such as
 /// common::CompositeJoiner and dynamics::NodeManagerJoiner

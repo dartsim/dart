@@ -34,6 +34,7 @@
 #define DART_COLLISION_DISTANCE_RESULT_HPP_
 
 #include <Eigen/Dense>
+#include "dart/export.h"
 
 namespace dart {
 
@@ -43,7 +44,7 @@ class ShapeFrame;
 
 namespace collision {
 
-struct DistanceResult
+struct DART_EXPORT DistanceResult
 {
   /// Minimum \b singed distance between the checked Shape pairs.
   ///

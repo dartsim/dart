@@ -76,7 +76,7 @@ namespace utils {
 /**
  * @class DartLoader
  */
-class DartLoader {
+class DART_EXPORT DartLoader {
   public:
     /// Constructor with the default ResourceRetriever.
     DartLoader();

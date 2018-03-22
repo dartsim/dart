@@ -33,6 +33,7 @@
 #ifndef DART_UTILS_SDFPARSER_HPP_
 #define DART_UTILS_SDFPARSER_HPP_
 
+#include "dart/export.h"
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -43,16 +44,17 @@ namespace utils {
 
 namespace SdfParser {
 
-DART_DEPRECATED(6.0)
+/// \deprecated Deprecated in 6.0. Please use readWorld() instead.
+DART_DEPRECATED2_EXPORT
 simulation::WorldPtr readSdfFile(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
-simulation::WorldPtr readWorld(
+DART_EXPORT simulation::WorldPtr readWorld(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
-dynamics::SkeletonPtr readSkeleton(
+DART_EXPORT dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 

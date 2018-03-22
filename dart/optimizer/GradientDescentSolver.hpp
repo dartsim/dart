@@ -46,7 +46,7 @@ namespace optimizer {
 /// objective function and assigned weights) to solve nonlinear problems. Note
 /// that this is not a good option for Problems with difficult constraint
 /// functions that need to be solved exactly.
-class GradientDescentSolver : public Solver
+class DART_EXPORT GradientDescentSolver : public Solver
 {
 public:
 

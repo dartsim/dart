@@ -72,7 +72,7 @@ const double DefaultIKLinearWeight = 1.0;
 /// safely cloned  over to another JacobianNode, as long as every
 /// optimizer::Function that depends on the JacobianNode inherits the
 /// InverseKinematics::Function class and correctly overloads the clone function
-class InverseKinematics : public common::Subject
+class DART_EXPORT InverseKinematics : public common::Subject
 {
 public:
 
@@ -460,7 +460,7 @@ typedef InverseKinematics IK;
 /// InverseKinematics module that it belongs to gets cloned. Any Function
 /// classes in the Problem that do not inherit InverseKinematics::Function
 /// will just be copied over by reference.
-class InverseKinematics::Function
+class DART_EXPORT InverseKinematics::Function
 {
 public:
 
@@ -474,7 +474,7 @@ public:
 //==============================================================================
 /// ErrorMethod is a base class for different ways of computing the error of
 /// an InverseKinematics module.
-class InverseKinematics::ErrorMethod : public common::Subject
+class DART_EXPORT InverseKinematics::ErrorMethod : public common::Subject
 {
 public:
 
@@ -661,7 +661,7 @@ public:
 //==============================================================================
 /// The TaskSpaceRegion is a nicely generalized method for computing the error
 /// of an IK Problem.
-class InverseKinematics::TaskSpaceRegion : public ErrorMethod
+class DART_EXPORT InverseKinematics::TaskSpaceRegion : public ErrorMethod
 {
 public:
 
@@ -728,7 +728,7 @@ protected:
 //==============================================================================
 /// GradientMethod is a base class for different ways of computing the
 /// gradient of an InverseKinematics module.
-class InverseKinematics::GradientMethod : public common::Subject
+class DART_EXPORT InverseKinematics::GradientMethod : public common::Subject
 {
 public:
 
@@ -866,7 +866,7 @@ private:
 /// damping helps with this), and each cycle might take more time to compute
 /// than the JacobianTranspose method (although the JacobianDLS method will
 /// usually converge in fewer cycles than JacobianTranspose).
-class InverseKinematics::JacobianDLS : public GradientMethod
+class DART_EXPORT InverseKinematics::JacobianDLS : public GradientMethod
 {
 public:
 
@@ -927,7 +927,7 @@ protected:
 /// very smooth but imprecise, requiring more iterations before converging
 /// and being less precise in general. This method is suitable for animations
 /// where smoothness is prefered over precision.
-class InverseKinematics::JacobianTranspose : public GradientMethod
+class DART_EXPORT InverseKinematics::JacobianTranspose : public GradientMethod
 {
 public:
 
@@ -961,7 +961,7 @@ public:
 /// counter-productive for analytical methods which do not typically rely on
 /// convergence; analytical methods can usually solve the entire error vector
 /// directly.
-class InverseKinematics::Analytical : public GradientMethod
+class DART_EXPORT InverseKinematics::Analytical : public GradientMethod
 {
 public:
 
@@ -1226,7 +1226,7 @@ private:
 /// InverseKinematics module. This class is not meant to be extended or
 /// instantiated by a user. Call InverseKinematics::resetProblem() to set
 /// the objective of the module's Problem to an InverseKinematics::Objective.
-class InverseKinematics::Objective final :
+class DART_EXPORT InverseKinematics::Objective final :
     public Function, public optimizer::Function
 {
 public:
@@ -1276,7 +1276,7 @@ public:
 /// instantiated by a user. Call InverseKinematics::resetProblem() to set the
 /// first equality constraint of the module's Problem to an
 /// InverseKinematics::Constraint.
-class InverseKinematics::Constraint final :
+class DART_EXPORT InverseKinematics::Constraint final :
     public Function, public optimizer::Function
 {
 public:

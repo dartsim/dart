@@ -36,6 +36,7 @@
 #include <map>
 #include <memory>
 #include <osg/MatrixTransform>
+#include "dart/export.h"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
@@ -54,7 +55,7 @@ class ShapeNode;
 
 class WorldNode;
 
-class ShapeFrameNode : public ::osg::MatrixTransform
+class DART_EXPORT ShapeFrameNode : public ::osg::MatrixTransform
 {
 public:
 

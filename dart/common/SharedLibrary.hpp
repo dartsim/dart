@@ -36,6 +36,7 @@
 #include <memory>
 #include <string>
 #include <boost/filesystem.hpp>
+#include "dart/export.h"
 #include "dart/common/Platform.hpp"
 
 #if DART_OS_LINUX
@@ -68,7 +69,7 @@ class SharedLibraryManager;
 } // namespace detail
 
 /// SharedLibrary is a RAII object wrapping a shared library.
-class SharedLibrary
+class DART_EXPORT SharedLibrary
 {
 protected:
   enum ProtectedConstructionTag

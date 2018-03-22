@@ -48,13 +48,15 @@
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIEventHandler>
 
+#include "dart/export.h"
+
 namespace dart {
 namespace gui {
 namespace osg {
 
 class ImGuiWidget;
 
-class ImGuiHandler : public osgGA::GUIEventHandler
+class DART_EXPORT ImGuiHandler : public osgGA::GUIEventHandler
 {
 public:
   /// Constructor

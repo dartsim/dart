@@ -34,6 +34,7 @@
 #define DART_UTILS_SKELPARSER_HPP_
 
 #include <string>
+#include "dart/export.h"
 #include "dart/common/Uri.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/simulation/World.hpp"
@@ -45,18 +46,18 @@ namespace utils {
 namespace SkelParser {
 
   /// Read World from skel file
-  simulation::WorldPtr readWorld(
+  DART_EXPORT simulation::WorldPtr readWorld(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
   /// Read World from an xml-formatted string
-  simulation::WorldPtr readWorldXML(
+  DART_EXPORT simulation::WorldPtr readWorldXML(
     const std::string& xmlString,
     const common::Uri& baseUri = "",
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
   /// Read Skeleton from skel file
-  dynamics::SkeletonPtr readSkeleton(
+  DART_EXPORT dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 

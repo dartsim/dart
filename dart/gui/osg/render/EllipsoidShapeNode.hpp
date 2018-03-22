@@ -51,7 +51,7 @@ namespace render {
 class EllipsoidShapeGeode;
 class EllipsoidShapeDrawable;
 
-class EllipsoidShapeNode : public ShapeNode, public ::osg::MatrixTransform
+class DART_EXPORT EllipsoidShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 

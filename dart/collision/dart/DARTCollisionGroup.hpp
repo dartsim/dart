@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_DART_DARTCOLLISIONGROUP_HPP_
 #define DART_COLLISION_DART_DARTCOLLISIONGROUP_HPP_
 
+#include "dart/export.h"
 #include "dart/collision/CollisionGroup.hpp"
 
 namespace dart {
@@ -40,7 +41,7 @@ namespace collision {
 
 class DARTCollisionObject;
 
-class DARTCollisionGroup : public CollisionGroup
+class DART_EXPORT DARTCollisionGroup : public CollisionGroup
 {
 public:
 

@@ -33,13 +33,15 @@
 #ifndef DART_CONSTRAINT_LCPSOLVER_HPP_
 #define DART_CONSTRAINT_LCPSOLVER_HPP_
 
+#include "dart/export.h"
+
 namespace dart {
 namespace constraint {
 
 class ConstrainedGroup;
 
 /// LCPSolver
-class LCPSolver
+class DART_EXPORT LCPSolver
 {
 public:
   /// Solve constriant impulses for a constrained group

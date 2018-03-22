@@ -1414,6 +1414,14 @@ bool verifyTransform(const Eigen::Isometry3d& _T) {
       && std::abs(_T.linear().determinant() - 1.0) <= DART_EPSILON;
 }
 
+//==============================================================================
+double wrapToPi(double angle)
+{
+  constexpr auto pi = constantsd::pi();
+
+  return std::fmod(angle+pi, 2*pi) - pi;
+}
+
 Eigen::Vector3d fromSkewSymmetric(const Eigen::Matrix3d& _m) {
 #ifndef NDEBUG
   if (std::abs(_m(0, 0)) > DART_EPSILON

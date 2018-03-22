@@ -47,7 +47,7 @@ namespace dynamics {
 ///
 /// The detail of IkFast can be found here:
 /// http://openrave.org/docs/0.8.2/openravepy/ikfast/
-class IkFast : public InverseKinematics::Analytical
+class DART_EXPORT IkFast : public InverseKinematics::Analytical
 {
 public:
   /// Constructor

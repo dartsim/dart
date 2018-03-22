@@ -41,7 +41,7 @@ namespace dart {
 namespace dynamics {
 
 /// class BallJoint
-class BallJoint : public GenericJoint<math::SO3Space>
+class DART_EXPORT BallJoint : public GenericJoint<math::SO3Space>
 {
 public:
 

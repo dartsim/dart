@@ -54,7 +54,7 @@ class Problem;
 class DartTNLP;
 
 /// \brief class IpoptSolver
-class IpoptSolver : public Solver
+class DART_EXPORT IpoptSolver : public Solver
 {
 public:
 
@@ -96,7 +96,7 @@ private:
 };
 
 /// class DartTNLP
-class DartTNLP : public Ipopt::TNLP
+class DART_EXPORT DartTNLP : public Ipopt::TNLP
 {
 public:
 

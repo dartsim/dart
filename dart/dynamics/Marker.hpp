@@ -43,7 +43,7 @@ namespace dynamics {
 
 class BodyNode;
 
-class Marker final :
+class DART_EXPORT Marker final :
     public common::EmbedPropertiesOnTopOf<
       Marker, detail::MarkerProperties,
       FixedJacobianNode>

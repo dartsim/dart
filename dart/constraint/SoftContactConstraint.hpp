@@ -33,9 +33,9 @@
 #ifndef DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
 
-#include "dart/constraint/ConstraintBase.hpp"
-
+#include "dart/export.h"
 #include "dart/math/MathTypes.hpp"
+#include "dart/constraint/ConstraintBase.hpp"
 #include "dart/collision/CollisionDetector.hpp"
 
 namespace dart {
@@ -54,7 +54,7 @@ class Skeleton;
 namespace constraint {
 
 /// SoftContactConstraint represents a contact constraint between two bodies
-class SoftContactConstraint : public ConstraintBase
+class DART_EXPORT SoftContactConstraint : public ConstraintBase
 {
 public:
   /// Constructor

@@ -36,7 +36,7 @@
 #include <string>
 #include <Eigen/Dense>
 #include <tinyxml2.h>
-
+#include "dart/export.h"
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/math/MathTypes.hpp"
@@ -44,84 +44,87 @@
 namespace dart {
 namespace utils {
 
-std::string toString(bool v);
-std::string toString(int v);
-std::string toString(unsigned int v);
-std::string toString(float v);
-std::string toString(double v);
-std::string toString(char v);
-std::string toString(const Eigen::Vector2d& v);
-std::string toString(const Eigen::Vector3d& v);
-std::string toString(const Eigen::Vector3i& v);
-std::string toString(const Eigen::Vector6d& v);
-std::string toString(const Eigen::VectorXd& v);
-std::string toString(const Eigen::Isometry3d& v);
+DART_EXPORT std::string toString(bool v);
+DART_EXPORT std::string toString(int v);
+DART_EXPORT std::string toString(unsigned int v);
+DART_EXPORT std::string toString(float v);
+DART_EXPORT std::string toString(double v);
+DART_EXPORT std::string toString(char v);
+DART_EXPORT std::string toString(const Eigen::Vector2d& v);
+DART_EXPORT std::string toString(const Eigen::Vector3d& v);
+DART_EXPORT std::string toString(const Eigen::Vector3i& v);
+DART_EXPORT std::string toString(const Eigen::Vector6d& v);
+DART_EXPORT std::string toString(const Eigen::VectorXd& v);
+DART_EXPORT std::string toString(const Eigen::Isometry3d& v);
 
-bool              toBool      (const std::string& str);
-int               toInt       (const std::string& str);
-unsigned int      toUInt      (const std::string& str);
-float             toFloat     (const std::string& str);
-double            toDouble    (const std::string& str);
-char              toChar      (const std::string& str);
-Eigen::Vector2d   toVector2d  (const std::string& str);
-Eigen::Vector3d   toVector3d  (const std::string& str);
-Eigen::Vector3i   toVector3i  (const std::string& str);
-Eigen::Vector6d   toVector6d  (const std::string& str);
-Eigen::VectorXd   toVectorXd  (const std::string& str);
-// TODO: The definition of _str is not clear for transform (see: #250)
-Eigen::Isometry3d toIsometry3d(const std::string& str);
-Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str);
+DART_EXPORT bool              toBool      (const std::string& str);
+DART_EXPORT int               toInt       (const std::string& str);
+DART_EXPORT unsigned int      toUInt      (const std::string& str);
+DART_EXPORT float             toFloat     (const std::string& str);
+DART_EXPORT double            toDouble    (const std::string& str);
+DART_EXPORT char              toChar      (const std::string& str);
+DART_EXPORT Eigen::Vector2d   toVector2d  (const std::string& str);
+DART_EXPORT Eigen::Vector3d   toVector3d  (const std::string& str);
+DART_EXPORT Eigen::Vector3i   toVector3i  (const std::string& str);
+DART_EXPORT Eigen::Vector6d   toVector6d  (const std::string& str);
+DART_EXPORT Eigen::VectorXd   toVectorXd  (const std::string& str);
+// TODO: The definition of str is not clear for transform (see: #250)
+DART_EXPORT Eigen::Isometry3d toIsometry3d(const std::string& str);
+DART_EXPORT Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str);
 
-std::string       getValueString    (const tinyxml2::XMLElement* parentElement, const std::string& name);
-bool              getValueBool      (const tinyxml2::XMLElement* parentElement, const std::string& name);
-int               getValueInt       (const tinyxml2::XMLElement* parentElement, const std::string& name);
-unsigned int      getValueUInt      (const tinyxml2::XMLElement* parentElement, const std::string& name);
-float             getValueFloat     (const tinyxml2::XMLElement* parentElement, const std::string& name);
-double            getValueDouble    (const tinyxml2::XMLElement* parentElement, const std::string& name);
-char              getValueChar      (const tinyxml2::XMLElement* parentElement, const std::string& name);
-Eigen::Vector2d   getValueVector2d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
-Eigen::Vector3d   getValueVector3d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
-Eigen::Vector3i   getValueVector3i  (const tinyxml2::XMLElement* parentElement, const std::string& name);
-Eigen::Vector6d   getValueVector6d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
-Eigen::VectorXd   getValueVectorXd  (const tinyxml2::XMLElement* parentElement, const std::string& name);
-Eigen::Isometry3d getValueIsometry3d(const tinyxml2::XMLElement* parentElement, const std::string& name);
-Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT std::string       getValueString    (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT bool              getValueBool      (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT int               getValueInt       (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT unsigned int      getValueUInt      (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT float             getValueFloat     (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT double            getValueDouble    (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT char              getValueChar      (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT Eigen::Vector2d   getValueVector2d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT Eigen::Vector3d   getValueVector3d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT Eigen::Vector3i   getValueVector3i  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT Eigen::Vector6d   getValueVector6d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT Eigen::VectorXd   getValueVectorXd  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT Eigen::Isometry3d getValueIsometry3d(const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_EXPORT Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(const tinyxml2::XMLElement* parentElement, const std::string& name);
 
-void openXMLFile(tinyxml2::XMLDocument& doc,
-                 const common::Uri& uri,
-                 const common::ResourceRetrieverPtr& retriever = nullptr);
+DART_EXPORT void openXMLFile(
+    tinyxml2::XMLDocument& doc,
+    const common::Uri& uri,
+    const common::ResourceRetrieverPtr& retriever = nullptr);
 
-bool hasElement(const tinyxml2::XMLElement* parentElement,
-                const std::string& name);
-
-const tinyxml2::XMLElement* getElement(
+DART_EXPORT bool hasElement(
     const tinyxml2::XMLElement* parentElement,
     const std::string& name);
 
-tinyxml2::XMLElement* getElement(tinyxml2::XMLElement* parentElement,
-                                 const std::string& name);
+DART_EXPORT const tinyxml2::XMLElement* getElement(
+    const tinyxml2::XMLElement* parentElement,
+    const std::string& name);
 
-bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name);
+DART_EXPORT tinyxml2::XMLElement* getElement(
+    tinyxml2::XMLElement* parentElement,
+    const std::string& name);
 
-// Please use getAttributeString() instead.
-DART_DEPRECATED(6.0)
+DART_EXPORT bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name);
+
+/// \deprecated Deprecated in 6.0. Please use getAttributeString() instead.
+DART_DEPRECATED2_EXPORT
 std::string getAttribute(tinyxml2::XMLElement* element, const char* const name);
 
-// Please use getAttributeDouble() instead.
-DART_DEPRECATED(6.0)
+/// \deprecated Deprecated in 6.0. Please use getAttributeDouble() instead.
+DART_DEPRECATED2_EXPORT
 void getAttribute(tinyxml2::XMLElement* element, const char* const name, double* d);
 
-std::string     getAttributeString  (const tinyxml2::XMLElement* element, const std::string& attributeName);
-bool            getAttributeBool    (const tinyxml2::XMLElement* element, const std::string& attributeName);
-int             getAttributeInt     (const tinyxml2::XMLElement* element, const std::string& attributeName);
-unsigned int    getAttributeUInt    (const tinyxml2::XMLElement* element, const std::string& attributeName);
-float           getAttributeFloat   (const tinyxml2::XMLElement* element, const std::string& attributeName);
-double          getAttributeDouble  (const tinyxml2::XMLElement* element, const std::string& attributeName);
-char            getAttributeChar    (const tinyxml2::XMLElement* element, const std::string& attributeName);
-Eigen::Vector2d getAttributeVector2d(const tinyxml2::XMLElement* element, const std::string& attributeName);
-Eigen::Vector3d getAttributeVector3d(const tinyxml2::XMLElement* element, const std::string& attributeName);
-Eigen::Vector6d getAttributeVector6d(const tinyxml2::XMLElement* element, const std::string& attributeName);
-Eigen::VectorXd getAttributeVectorXd(const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_EXPORT std::string     getAttributeString  (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_EXPORT bool            getAttributeBool    (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_EXPORT int             getAttributeInt     (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_EXPORT unsigned int    getAttributeUInt    (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_EXPORT float           getAttributeFloat   (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_EXPORT double          getAttributeDouble  (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_EXPORT char            getAttributeChar    (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_EXPORT Eigen::Vector2d getAttributeVector2d(const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_EXPORT Eigen::Vector3d getAttributeVector3d(const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_EXPORT Eigen::Vector6d getAttributeVector6d(const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_EXPORT Eigen::VectorXd getAttributeVectorXd(const tinyxml2::XMLElement* element, const std::string& attributeName);
 
 /// TemplatedElementEnumerator is a convenience class to help visiting all the
 /// child elements of given parent element. This class is templated to cover

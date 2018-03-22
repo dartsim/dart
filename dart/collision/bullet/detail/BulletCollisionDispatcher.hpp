@@ -45,7 +45,7 @@ namespace dart {
 namespace collision {
 namespace detail {
 
-class BulletCollisionDispatcher : public btCollisionDispatcher
+class DART_EXPORT BulletCollisionDispatcher : public btCollisionDispatcher
 {
 public:
   explicit BulletCollisionDispatcher(btCollisionConfiguration* config);

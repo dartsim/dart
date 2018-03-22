@@ -48,7 +48,7 @@ class ShapeFrame;
 
 namespace collision {
 
-class CollisionResult
+class DART_EXPORT CollisionResult
 {
 public:
 

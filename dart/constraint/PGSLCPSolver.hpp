@@ -42,7 +42,7 @@ namespace dart {
 namespace constraint {
 
 /// PGSLCPSolver
-class PGSLCPSolver : public LCPSolver
+class DART_EXPORT PGSLCPSolver : public LCPSolver
 {
 public:
   /// Constructor
@@ -68,7 +68,7 @@ private:
 #endif
 };
 
-struct PGSOption
+struct DART_EXPORT PGSOption
 {
   int itermax;
   double sor_w;

@@ -39,7 +39,7 @@ namespace dart {
 namespace dynamics {
 namespace detail {
 
-struct FixedFrameProperties
+struct DART_EXPORT FixedFrameProperties
 {
   /// The relative transform of the FixedFrame
   Eigen::Isometry3d mRelativeTf;

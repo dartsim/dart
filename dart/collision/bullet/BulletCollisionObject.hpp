@@ -45,7 +45,7 @@ namespace collision {
 
 class CollisionObject;
 
-class BulletCollisionObject : public CollisionObject
+class DART_EXPORT BulletCollisionObject : public CollisionObject
 {
 public:
 

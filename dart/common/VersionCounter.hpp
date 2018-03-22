@@ -34,12 +34,13 @@
 #define DART_COMMON_VERSIONCOUNTER_HPP_
 
 #include <cstddef>
+#include "dart/export.h"
 
 namespace dart {
 namespace common {
 
 /// VersionCounter is an interface for objects that count their versions
-class VersionCounter
+class DART_EXPORT VersionCounter
 {
 public:
 

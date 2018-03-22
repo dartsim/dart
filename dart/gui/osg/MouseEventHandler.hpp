@@ -44,14 +44,15 @@ namespace osg {
 
 class DefaultEventHandler;
 
-class MouseEventHandler : public virtual dart::common::Subject,
-                          public virtual dart::common::Observer
+class DART_EXPORT MouseEventHandler :
+    public virtual dart::common::Subject,
+    public virtual dart::common::Observer
 {
 public:
 
   friend class DefaultEventHandler;
 
-  inline MouseEventHandler() : mEventHandler(nullptr) { }
+  MouseEventHandler() : mEventHandler(nullptr) { }
 
   /// Overload this function to set behavior that will get triggered during a
   /// mouse event

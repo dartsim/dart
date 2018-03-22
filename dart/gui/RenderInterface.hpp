@@ -36,7 +36,7 @@
 #include <vector>
 #include <assimp/scene.h>
 #include <Eigen/Dense>
-
+#include "dart/export.h"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {
@@ -64,7 +64,7 @@ enum DecoDrawType {
     DT_Max
 };
 
-class RenderInterface {
+class DART_EXPORT RenderInterface {
 public:
     RenderInterface(){}
     virtual ~RenderInterface(){}

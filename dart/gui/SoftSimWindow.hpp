@@ -45,7 +45,7 @@ namespace dart {
 namespace gui {
 
 /// \brief
-class SoftSimWindow : public SimWindow
+class DART_EXPORT SoftSimWindow : public SimWindow
 {
 public:
   /// \brief

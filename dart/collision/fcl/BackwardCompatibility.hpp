@@ -34,6 +34,7 @@
 #define DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_
 
 #include <Eigen/Dense>
+#include "dart/export.h"
 
 #define FCL_VERSION_AT_LEAST(x,y,z) \
   (FCL_MAJOR_VERSION > x || (FCL_MAJOR_VERSION >= x && \
@@ -133,38 +134,38 @@ using Ellipsoid = ::fcl::Ellipsoid;
 #endif
 
 /// Returns norm of a 3-dim vector
-double length(const dart::collision::fcl::Vector3& t);
+DART_EXPORT double length(const dart::collision::fcl::Vector3& t);
 
 /// Returns squared norm of a 3-dim vector
-double length2(const dart::collision::fcl::Vector3& t);
+DART_EXPORT double length2(const dart::collision::fcl::Vector3& t);
 
 /// Returns translation component of a transform
-dart::collision::fcl::Vector3 getTranslation(
+DART_EXPORT dart::collision::fcl::Vector3 getTranslation(
     const dart::collision::fcl::Transform3& T);
 
 /// Sets translation component of a transform
-void setTranslation(
+DART_EXPORT void setTranslation(
     dart::collision::fcl::Transform3& T,
     const dart::collision::fcl::Vector3& t);
 
 /// Returns rotation component of a transform
-dart::collision::fcl::Matrix3 getRotation(
+DART_EXPORT dart::collision::fcl::Matrix3 getRotation(
     const dart::collision::fcl::Transform3& T);
 
 /// Sets rotation component of a transform
-void setRotation(
+DART_EXPORT void setRotation(
     dart::collision::fcl::Transform3& T,
     const dart::collision::fcl::Matrix3& R);
 
 /// Sets a rotation matrix given Euler-XYZ angles
-void setEulerZYX(
+DART_EXPORT void setEulerZYX(
     dart::collision::fcl::Matrix3& rot,
     double eulerX,
     double eulerY,
     double eulerZ);
 
 /// Transforms a 3-dim vector by a transform and returns the result
-dart::collision::fcl::Vector3 transform(
+DART_EXPORT dart::collision::fcl::Vector3 transform(
     const dart::collision::fcl::Transform3& t,
     const dart::collision::fcl::Vector3& v);
 
