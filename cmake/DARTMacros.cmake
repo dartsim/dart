@@ -177,3 +177,73 @@ macro(check_compiler_visibility variable)
   include(CheckCXXCompilerFlag)
   check_cxx_compiler_flag(-fvisibility=hidden ${variable})
 endmacro()
+
+#===============================================================================
+# Function to create an export header for control of binary symbols visibility.
+#
+# dart_add_export_file(<target_name>
+#     [BASE_NAME <base_name>]
+#     [COMPONENT_PATH <component_path>]
+function(dart_add_export_file target_name)
+  # Parse boolean, unary, and list arguments from input.
+  # Unparsed arguments can be found in variable ARG_UNPARSED_ARGUMENTS.
+  set(prefix _geh)
+  set(options "")
+  set(oneValueArgs BASE_NAME COMPONENT_PATH)
+  set(multiValueArgs "")
+  cmake_parse_arguments(
+    "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
+  )
+
+  # base name
+  set(base_name "${target_name}")
+  string(REPLACE "-" "_" base_name ${base_name})
+  if(_geh_BASE_NAME)
+    set(base_name ${_geh_BASE_NAME})
+  endif()
+  string(TOUPPER ${base_name} base_name_upper)
+  string(TOLOWER ${base_name} base_name_lower)
+
+  # componenet path
+  set(component_path "dart")
+  if(_geh_COMPONENT_PATH)
+    set(component_path "dart/${_geh_COMPONENT_PATH}")
+  endif()
+  set(component_detail_export_path "${component_path}/detail/export.h")
+
+  include(GenerateExportHeader)
+
+  generate_export_header(${target_name}
+    EXPORT_MACRO_NAME ${base_name_upper}_DETAIL_API
+    EXPORT_FILE_NAME detail/export.h
+    DEPRECATED_MACRO_NAME ${base_name_upper}_DETAIL_DEPRECATED
+  )
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/detail/export.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dart/detail
+    COMPONENT headers
+  )
+
+  set(header_guard_name ${base_name_upper}_EXPORT_HPP_)
+
+  set(output_path "${CMAKE_CURRENT_BINARY_DIR}/export.hpp")
+  file(WRITE "${output_path}" "")
+  file(APPEND "${output_path}" "// Automatically generated file by CMake\n")
+  file(APPEND "${output_path}" "\n")
+  file(APPEND "${output_path}" "#ifndef ${header_guard_name}\n")
+  file(APPEND "${output_path}" "#define ${header_guard_name}\n")
+  file(APPEND "${output_path}" "\n")
+  file(APPEND "${output_path}" "#include \"${component_detail_export_path}\"\n")
+  file(APPEND "${output_path}" "\n")
+  file(APPEND "${output_path}" "#define ${base_name_upper}_API\\\n")
+  file(APPEND "${output_path}" "    ${base_name_upper}_DETAIL_API\n")
+  file(APPEND "${output_path}" "\n")
+  file(APPEND "${output_path}" "#define ${base_name_upper}_DEPRECATED_API(version)\\\n")
+  file(APPEND "${output_path}" "    ${base_name_upper}_DETAIL_DEPRECATED_EXPORT\n")
+  file(APPEND "${output_path}" "\n")
+  file(APPEND "${output_path}" "#endif // ${header_guard_name}\n")
+  install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/export.hpp
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/component_path
+    COMPONENT headers
+  )
+endfunction()

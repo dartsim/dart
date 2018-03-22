@@ -65,6 +65,9 @@ add_component_dependencies(
 # Add subdirectories
 add_subdirectory(osg)
 
+# Generate export header
+dart_add_export_file(${target_name} COMPONENT_PATH gui)
+
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})
 dart_generate_include_header_list(

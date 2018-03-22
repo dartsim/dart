@@ -188,11 +188,4 @@ endif()
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 
 # Generate export header
-generate_export_header(${PROJECT_NAME}
-  EXPORT_MACRO_NAME DART_DETAIL_API
-  EXPORT_FILE_NAME detail/export.h
-  DEPRECATED_MACRO_NAME DART_DETAIL_DEPRECATED
-)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/detail/export.h
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dart/detail
-)
+dart_add_export_file(dart)
