@@ -37,6 +37,7 @@ set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 include(DARTMacros)
+include(GenerateExportHeader)
 
 # CMake component helper. It uses the following variables:
 # - LIBRARY_INSTALL_DIR

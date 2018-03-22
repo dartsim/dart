@@ -46,6 +46,10 @@ target_link_libraries(
     ${PROJECT_NAME}-external-lodepng
     ${PROJECT_NAME}-external-imgui
 )
+# Hide symbols by default
+if(COMPILER_SUPPORTS_VISIBILITY)
+  target_compile_options(${target_name} PRIVATE -fvisibility=hidden)
+endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

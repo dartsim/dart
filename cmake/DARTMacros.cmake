@@ -170,3 +170,10 @@ function(dart_format_add)
     endif()
   endforeach()
 endfunction()
+
+#===============================================================================
+# Macro to check for visibility capability in compiler
+macro(check_compiler_visibility variable)
+  include(CheckCXXCompilerFlag)
+  check_cxx_compiler_flag(-fvisibility=hidden ${variable})
+endmacro()

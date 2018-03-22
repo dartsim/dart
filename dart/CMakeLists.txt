@@ -10,6 +10,10 @@ endif()
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
+if(UNIX)
+  check_compiler_visibility(COMPILER_SUPPORTS_VISIBILITY)
+endif()
+
 #===============================================================================
 # Source directories
 #===============================================================================
@@ -137,6 +141,10 @@ target_link_libraries(
     ${Boost_LIBRARIES}
     ${PROJECT_NAME}-external-odelcpsolver
 )
+# Hide symbols by default
+if(COMPILER_SUPPORTS_VISIBILITY)
+  target_compile_options(dart PRIVATE -fvisibility=hidden)
+endif()
 
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
@@ -174,3 +182,12 @@ if(MSVC)
 endif()
 
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
+
+# Generate export header
+generate_export_header(${PROJECT_NAME}
+  DEPRECATED_MACRO_NAME DART_DEPRECATED2
+  EXPORT_FILE_NAME export.h
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/export.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dart
+)
