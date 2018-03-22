@@ -49,7 +49,7 @@
 #if !(ASSIMP_AISCENE_CTOR_DTOR_DEFINED)
 // We define our own constructor and destructor for aiScene, because it seems to
 // be missing from the standard assimp library (see #451)
-aiScene::aiScene()
+DART_EXPORT aiScene::aiScene()
   : mFlags(0),
     mRootNode(nullptr),
     mNumMeshes(0),
@@ -64,10 +64,10 @@ aiScene::aiScene()
     mNumCameras(0),
     mCameras(nullptr)
 {
-
+  // Do nothing
 }
 
-aiScene::~aiScene()
+DART_EXPORT aiScene::~aiScene()
 {
   delete mRootNode;
 
@@ -106,7 +106,7 @@ aiScene::~aiScene()
 // We define our own constructor and destructor for aiMaterial, because it seems
 // to be missing from the standard assimp library (see #451)
 #if !(ASSIMP_AIMATERIAL_CTOR_DTOR_DEFINED)
-aiMaterial::aiMaterial()
+DART_EXPORT aiMaterial::aiMaterial()
 {
   mNumProperties = 0;
   mNumAllocated = 5;
@@ -115,7 +115,7 @@ aiMaterial::aiMaterial()
     mProperties[i] = nullptr;
 }
 
-aiMaterial::~aiMaterial()
+DART_EXPORT aiMaterial::~aiMaterial()
 {
   for(std::size_t i=0; i<mNumProperties; ++i)
     delete mProperties[i];
