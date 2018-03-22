@@ -34,6 +34,10 @@
 
   * Added Personal Robotics Lab and Open Source Robotics Foundation as contributors: [#929](https://github.com/dartsim/dart/pull/929)
 
+* Build system
+
+  * Added preprocessors for controlling symbol visibility: [#1040](https://github.com/dartsim/dart/pull/1040)
+
 * Misc
 
   * Added World::create(): [#962](https://github.com/dartsim/dart/pull/962)
