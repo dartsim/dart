@@ -37,7 +37,7 @@
 #include "dart/config.hpp"
 
 #include <btBulletCollisionCommon.h>
-
+#include "dart/collision/bullet/export.hpp"
 #include "dart/collision/CollisionObject.hpp"
 
 namespace dart {
@@ -45,7 +45,7 @@ namespace collision {
 
 class CollisionObject;
 
-class DART_API BulletCollisionObject : public CollisionObject
+class DART_COLLISION_BULLET_API BulletCollisionObject : public CollisionObject
 {
 public:
 

@@ -39,6 +39,7 @@
 #include <vector>
 #include <assimp/scene.h>
 #include <btBulletCollisionCommon.h>
+#include "dart/collision/bullet/export.hpp"
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
 
@@ -47,7 +48,7 @@ namespace collision {
 
 class BulletCollisionObject;
 
-class DART_API BulletCollisionDetector : public CollisionDetector
+class DART_COLLISION_BULLET_API BulletCollisionDetector : public CollisionDetector
 {
 public:
 

@@ -47,6 +47,7 @@
 #include "dart/common/Uri.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/utils/urdf/BackwardCompatibility.hpp"
+#include "dart/utils/urdf/export.hpp"
 
 namespace dart {
 namespace utils {
@@ -54,7 +55,7 @@ namespace urdf_parsing {
 
 /// We need a customized version of the Entity class, because we need to keep
 /// track of a Skeleton's uri in order to correctly handle relative file paths.
-class DART_API Entity
+class DART_UTILS_URDF_API Entity
 {
 public:
 
@@ -71,7 +72,7 @@ public:
 
 };
 
-class DART_API World
+class DART_UTILS_URDF_API World
 {
 public:
 

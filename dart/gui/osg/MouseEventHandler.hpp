@@ -44,7 +44,7 @@ namespace osg {
 
 class DefaultEventHandler;
 
-class DART_API MouseEventHandler :
+class DART_GUI_OSG_API MouseEventHandler :
     public virtual dart::common::Subject,
     public virtual dart::common::Observer
 {

@@ -37,13 +37,13 @@
 #include "dart/config.hpp"
 
 #include <btBulletCollisionCommon.h>
-
+#include "dart/collision/bullet/export.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 
 namespace dart {
 namespace collision {
 
-class DART_API BulletCollisionGroup : public CollisionGroup
+class DART_COLLISION_BULLET_API BulletCollisionGroup : public CollisionGroup
 {
 public:
 

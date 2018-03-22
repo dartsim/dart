@@ -41,7 +41,7 @@ namespace dart {
 namespace collision {
 namespace detail {
 
-class DART_API OdeCapsule : public OdeGeom
+class DART_COLLISION_ODE_API OdeCapsule : public OdeGeom
 {
 public:
   /// Constructor

@@ -42,7 +42,7 @@ namespace dart {
 namespace collision {
 namespace detail {
 
-class DART_API OdeMesh : public OdeGeom
+class DART_COLLISION_ODE_API OdeMesh : public OdeGeom
 {
 public:
   /// Constructor

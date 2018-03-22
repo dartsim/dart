@@ -37,7 +37,7 @@
 #include "dart/config.hpp"
 
 #include <btBulletCollisionCommon.h>
-
+#include "dart/collision/bullet/export.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/collision/CollisionResult.hpp"
 
@@ -45,7 +45,7 @@ namespace dart {
 namespace collision {
 namespace detail {
 
-struct DART_API BulletOverlapFilterCallback : public btOverlapFilterCallback
+struct DART_COLLISION_BULLET_API BulletOverlapFilterCallback : public btOverlapFilterCallback
 {
   // Constructor
   explicit BulletOverlapFilterCallback(

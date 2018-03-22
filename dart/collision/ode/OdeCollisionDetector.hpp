@@ -34,7 +34,7 @@
 #define DART_COLLISION_ODE_ODECOLLISIONDETECTOR_HPP_
 
 #include <ode/ode.h>
-
+#include "dart/collision/ode/export.hpp"
 #include "dart/collision/CollisionDetector.hpp"
 
 #define MAX_COLLIDE_RETURNS 250
@@ -49,7 +49,7 @@ namespace collision {
 ///
 /// ODE additionally supports ray and heightfiled, but DART doesn't support them
 /// yet.
-class DART_API OdeCollisionDetector : public CollisionDetector
+class DART_COLLISION_ODE_API OdeCollisionDetector : public CollisionDetector
 {
 public:
   friend class OdeCollisionObject;

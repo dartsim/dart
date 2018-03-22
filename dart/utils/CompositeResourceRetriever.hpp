@@ -35,6 +35,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include "dart/utils/export.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 
 namespace dart {
@@ -44,7 +45,7 @@ namespace utils {
 /// used interchangably by: (1) associating each \ref ResourceRetriever with a
 /// particular URI schema and/or (2) providing a precedence order for trying
 /// multiple retrievers.
-class DART_API CompositeResourceRetriever : public virtual common::ResourceRetriever
+class DART_UTILS_API CompositeResourceRetriever : public virtual common::ResourceRetriever
 {
 public:
   virtual ~CompositeResourceRetriever() = default;

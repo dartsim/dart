@@ -35,6 +35,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include "dart/utils/export.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 
 namespace dart {
@@ -62,7 +63,7 @@ namespace utils {
 /// where DART_DATA_LOCAL_PATH and DART_DATA_GLOBAL_PATH are defined in
 /// config.hpp that are determined in CMake time.
 ///
-class DART_API DartResourceRetriever : public common::ResourceRetriever
+class DART_UTILS_API DartResourceRetriever : public common::ResourceRetriever
 {
 public:
   template <typename... Args>

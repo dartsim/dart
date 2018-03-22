@@ -36,6 +36,7 @@
 #include <nlopt.hpp>
 
 #include "dart/optimizer/Solver.hpp"
+#include "dart/optimizer/nlopt/export.hpp"
 
 namespace dart {
 namespace optimizer {
@@ -43,7 +44,7 @@ namespace optimizer {
 class Problem;
 
 /// \brief class NloptSolver
-class DART_API NloptSolver : public Solver
+class DART_OPTIMIZER_NLOPT_API NloptSolver : public Solver
 {
 public:
 

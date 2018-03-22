@@ -46,6 +46,7 @@
 #include <memory>
 
 #include "dart/optimizer/Solver.hpp"
+#include "dart/optimizer/ipopt/export.hpp"
 
 namespace dart {
 namespace optimizer {
@@ -54,7 +55,7 @@ class Problem;
 class DartTNLP;
 
 /// \brief class IpoptSolver
-class DART_API IpoptSolver : public Solver
+class DART_OPTIMIZER_IPOPT_API IpoptSolver : public Solver
 {
 public:
 
@@ -96,7 +97,7 @@ private:
 };
 
 /// class DartTNLP
-class DART_API DartTNLP : public Ipopt::TNLP
+class DART_OPTIMIZER_IPOPT_API DartTNLP : public Ipopt::TNLP
 {
 public:
 

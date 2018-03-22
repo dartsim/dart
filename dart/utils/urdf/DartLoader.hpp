@@ -47,6 +47,7 @@
 #include "dart/simulation/World.hpp"
 #include "dart/utils/CompositeResourceRetriever.hpp"
 #include "dart/utils/PackageResourceRetriever.hpp"
+#include "dart/utils/urdf/export.hpp"
 
 namespace urdf
 {
@@ -76,7 +77,7 @@ namespace utils {
 /**
  * @class DartLoader
  */
-class DART_API DartLoader {
+class DART_UTILS_URDF_API DartLoader {
   public:
     /// Constructor with the default ResourceRetriever.
     DartLoader();

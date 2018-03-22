@@ -37,12 +37,12 @@
 
 #include <list>
 #include <Eigen/Core>
-#include "dart/export.hpp"
+#include "dart/planning/export.hpp"
 
 namespace dart {
 namespace planning {
 
-class DART_API PathSegment
+class DART_PLANNING_API PathSegment
 {
 public:
 	PathSegment(double length = 0.0) :
@@ -68,7 +68,7 @@ protected:
 
 
 
-class DART_API Path
+class DART_PLANNING_API Path
 {
 public:
 	Path(const std::list<Eigen::VectorXd> &path, double maxDeviation = 0.0);

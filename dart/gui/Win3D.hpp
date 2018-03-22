@@ -41,7 +41,7 @@
 namespace dart {
 namespace gui {
 
-class DART_API Win3D : public GlutWindow {
+class DART_GUI_API Win3D : public GlutWindow {
 public:
   Win3D();
 

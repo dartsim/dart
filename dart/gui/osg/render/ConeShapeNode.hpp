@@ -50,7 +50,7 @@ namespace render {
 class ConeShapeGeode;
 class ConeShapeDrawable;
 
-class DART_API ConeShapeNode : public ShapeNode, public ::osg::Group
+class DART_GUI_OSG_API ConeShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
 

@@ -42,7 +42,7 @@
 
 #include <Eigen/Core>
 
-#include "dart/export.hpp"
+#include "dart/gui/osg/export.hpp"
 #include "dart/common/Subject.hpp"
 
 namespace dart {
@@ -72,7 +72,7 @@ class BodyNodeDnD;
 class Viewer;
 class SaveScreen;
 
-class DART_API ViewerAttachment : public virtual ::osg::Group
+class DART_GUI_OSG_API ViewerAttachment : public virtual ::osg::Group
 {
 public:
 
@@ -113,7 +113,7 @@ private:
 
 };
 
-class DART_API Viewer : public osgViewer::Viewer, public dart::common::Subject
+class DART_GUI_OSG_API Viewer : public osgViewer::Viewer, public dart::common::Subject
 {
 public:
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the

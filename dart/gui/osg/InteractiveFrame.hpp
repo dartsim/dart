@@ -34,6 +34,7 @@
 #define DART_GUI_OSG_INTERACTIVEFRAME_HPP_
 
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/gui/osg/export.hpp"
 
 namespace dart {
 
@@ -46,7 +47,7 @@ namespace osg {
 
 class InteractiveFrame;
 
-class DART_API InteractiveTool : public dart::dynamics::SimpleFrame
+class DART_GUI_OSG_API InteractiveTool : public dart::dynamics::SimpleFrame
 {
 public:
 
@@ -108,7 +109,7 @@ protected:
 
 };
 
-class DART_API InteractiveFrame : public dart::dynamics::SimpleFrame
+class DART_GUI_OSG_API InteractiveFrame : public dart::dynamics::SimpleFrame
 {
 public:
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(InteractiveFrame)

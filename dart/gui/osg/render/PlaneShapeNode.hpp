@@ -50,7 +50,7 @@ namespace render {
 class PlaneShapeGeode;
 class PlaneShapeDrawable;
 
-class DART_API PlaneShapeNode : public ShapeNode, public ::osg::Group
+class DART_GUI_OSG_API PlaneShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
 

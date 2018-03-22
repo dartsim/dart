@@ -33,7 +33,7 @@
 #ifndef DART_UTILS_SDFPARSER_HPP_
 #define DART_UTILS_SDFPARSER_HPP_
 
-#include "dart/export.hpp"
+#include "dart/utils/export.hpp"
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -50,11 +50,11 @@ simulation::WorldPtr readSdfFile(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
-DART_API simulation::WorldPtr readWorld(
+DART_UTILS_API simulation::WorldPtr readWorld(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
-DART_API dynamics::SkeletonPtr readSkeleton(
+DART_UTILS_API dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 

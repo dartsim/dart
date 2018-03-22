@@ -50,7 +50,7 @@
 #include <vector>
 #include <list>
 #include <Eigen/Core>
-
+#include "dart/planning/export.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 #include "dart/simulation/World.hpp"
 
@@ -67,7 +67,7 @@ namespace dynamics { class Skeleton; }
 namespace planning {
 
 /// The rapidly-expanding random tree implementation
-class DART_API RRT {
+class DART_PLANNING_API RRT {
 public:
 
 	/// To get byte-aligned Eigen vectors

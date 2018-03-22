@@ -56,7 +56,7 @@ class osgAiNode;
 class MeshShapeGeode;
 class MeshShapeGeometry;
 
-class DART_API MeshShapeNode : public ShapeNode, public ::osg::MatrixTransform
+class DART_GUI_OSG_API MeshShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 

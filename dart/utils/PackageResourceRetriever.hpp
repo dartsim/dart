@@ -36,6 +36,7 @@
 #include <unordered_map>
 #include <vector>
 #include "dart/common/ResourceRetriever.hpp"
+#include "dart/utils/export.hpp"
 
 namespace dart {
 namespace utils {
@@ -45,7 +46,7 @@ namespace utils {
 /// \ref ResourceRetriever. This class uses requires you to manually provide the
 /// base URI of every package that you wish to resolve using the
 /// \ref addPackageDirectory method.
-class DART_API PackageResourceRetriever : public virtual common::ResourceRetriever
+class DART_UTILS_API PackageResourceRetriever : public virtual common::ResourceRetriever
 {
 public:
   /// Construct a PackageResourceRetriever that uses the specified \a

@@ -34,7 +34,7 @@
 #define DART_COLLISION_ODE_ODECOLLISIONOBJECT_HPP_
 
 #include <ode/ode.h>
-
+#include "dart/collision/ode/export.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/ode/OdeCollisionDetector.hpp"
 
@@ -45,7 +45,7 @@ namespace detail {
 class OdeGeom;
 } // namespace detail
 
-class DART_API OdeCollisionObject : public CollisionObject
+class DART_COLLISION_ODE_API OdeCollisionObject : public CollisionObject
 {
 public:
   friend class OdeCollisionDetector;

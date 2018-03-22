@@ -33,7 +33,7 @@
 #ifndef DART_UTILS_VSKPARSER_HPP_
 #define DART_UTILS_VSKPARSER_HPP_
 
-#include "dart/export.hpp"
+#include "dart/utils/export.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/math/Constants.hpp"
@@ -48,7 +48,7 @@ namespace VskParser {
 /// that can be used in kinematics or dynamics simulation. VSK file format
 /// itself doesn't provide essential properties for it such as body's shape,
 /// mass, and inertia.
-struct DART_API Options
+struct DART_UTILS_API Options
 {
   /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
   common::ResourceRetrieverPtr retrieverOrNullptr;
@@ -96,7 +96,7 @@ struct DART_API Options
 };
 
 /// Read Skeleton from VSK file
-DART_API dynamics::SkeletonPtr readSkeleton(
+DART_UTILS_API dynamics::SkeletonPtr readSkeleton(
     const common::Uri& fileUri,
     Options options = Options());
 

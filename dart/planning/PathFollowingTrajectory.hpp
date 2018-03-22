@@ -42,7 +42,7 @@
 namespace dart {
 namespace planning {
 
-class DART_API PathFollowingTrajectory : public Trajectory
+class DART_PLANNING_API PathFollowingTrajectory : public Trajectory
 {
 public:
 	PathFollowingTrajectory(const Path &path, const Eigen::VectorXd &maxVelocity, const Eigen::VectorXd &maxAcceleration);

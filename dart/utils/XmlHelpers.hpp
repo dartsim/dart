@@ -36,7 +36,7 @@
 #include <string>
 #include <Eigen/Dense>
 #include <tinyxml2.h>
-#include "dart/export.hpp"
+#include "dart/utils/export.hpp"
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/math/MathTypes.hpp"
@@ -44,67 +44,67 @@
 namespace dart {
 namespace utils {
 
-DART_API std::string toString(bool v);
-DART_API std::string toString(int v);
-DART_API std::string toString(unsigned int v);
-DART_API std::string toString(float v);
-DART_API std::string toString(double v);
-DART_API std::string toString(char v);
-DART_API std::string toString(const Eigen::Vector2d& v);
-DART_API std::string toString(const Eigen::Vector3d& v);
-DART_API std::string toString(const Eigen::Vector3i& v);
-DART_API std::string toString(const Eigen::Vector6d& v);
-DART_API std::string toString(const Eigen::VectorXd& v);
-DART_API std::string toString(const Eigen::Isometry3d& v);
+DART_UTILS_API std::string toString(bool v);
+DART_UTILS_API std::string toString(int v);
+DART_UTILS_API std::string toString(unsigned int v);
+DART_UTILS_API std::string toString(float v);
+DART_UTILS_API std::string toString(double v);
+DART_UTILS_API std::string toString(char v);
+DART_UTILS_API std::string toString(const Eigen::Vector2d& v);
+DART_UTILS_API std::string toString(const Eigen::Vector3d& v);
+DART_UTILS_API std::string toString(const Eigen::Vector3i& v);
+DART_UTILS_API std::string toString(const Eigen::Vector6d& v);
+DART_UTILS_API std::string toString(const Eigen::VectorXd& v);
+DART_UTILS_API std::string toString(const Eigen::Isometry3d& v);
 
-DART_API bool              toBool      (const std::string& str);
-DART_API int               toInt       (const std::string& str);
-DART_API unsigned int      toUInt      (const std::string& str);
-DART_API float             toFloat     (const std::string& str);
-DART_API double            toDouble    (const std::string& str);
-DART_API char              toChar      (const std::string& str);
-DART_API Eigen::Vector2d   toVector2d  (const std::string& str);
-DART_API Eigen::Vector3d   toVector3d  (const std::string& str);
-DART_API Eigen::Vector3i   toVector3i  (const std::string& str);
-DART_API Eigen::Vector6d   toVector6d  (const std::string& str);
-DART_API Eigen::VectorXd   toVectorXd  (const std::string& str);
+DART_UTILS_API bool              toBool      (const std::string& str);
+DART_UTILS_API int               toInt       (const std::string& str);
+DART_UTILS_API unsigned int      toUInt      (const std::string& str);
+DART_UTILS_API float             toFloat     (const std::string& str);
+DART_UTILS_API double            toDouble    (const std::string& str);
+DART_UTILS_API char              toChar      (const std::string& str);
+DART_UTILS_API Eigen::Vector2d   toVector2d  (const std::string& str);
+DART_UTILS_API Eigen::Vector3d   toVector3d  (const std::string& str);
+DART_UTILS_API Eigen::Vector3i   toVector3i  (const std::string& str);
+DART_UTILS_API Eigen::Vector6d   toVector6d  (const std::string& str);
+DART_UTILS_API Eigen::VectorXd   toVectorXd  (const std::string& str);
 // TODO: The definition of str is not clear for transform (see: #250)
-DART_API Eigen::Isometry3d toIsometry3d(const std::string& str);
-DART_API Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str);
+DART_UTILS_API Eigen::Isometry3d toIsometry3d(const std::string& str);
+DART_UTILS_API Eigen::Isometry3d toIsometry3dWithExtrinsicRotation(const std::string& str);
 
-DART_API std::string       getValueString    (const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API bool              getValueBool      (const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API int               getValueInt       (const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API unsigned int      getValueUInt      (const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API float             getValueFloat     (const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API double            getValueDouble    (const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API char              getValueChar      (const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API Eigen::Vector2d   getValueVector2d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API Eigen::Vector3d   getValueVector3d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API Eigen::Vector3i   getValueVector3i  (const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API Eigen::Vector6d   getValueVector6d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API Eigen::VectorXd   getValueVectorXd  (const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API Eigen::Isometry3d getValueIsometry3d(const tinyxml2::XMLElement* parentElement, const std::string& name);
-DART_API Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API std::string       getValueString    (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API bool              getValueBool      (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API int               getValueInt       (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API unsigned int      getValueUInt      (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API float             getValueFloat     (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API double            getValueDouble    (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API char              getValueChar      (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API Eigen::Vector2d   getValueVector2d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API Eigen::Vector3d   getValueVector3d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API Eigen::Vector3i   getValueVector3i  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API Eigen::Vector6d   getValueVector6d  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API Eigen::VectorXd   getValueVectorXd  (const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API Eigen::Isometry3d getValueIsometry3d(const tinyxml2::XMLElement* parentElement, const std::string& name);
+DART_UTILS_API Eigen::Isometry3d getValueIsometry3dWithExtrinsicRotation(const tinyxml2::XMLElement* parentElement, const std::string& name);
 
-DART_API void openXMLFile(
+DART_UTILS_API void openXMLFile(
     tinyxml2::XMLDocument& doc,
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
-DART_API bool hasElement(
+DART_UTILS_API bool hasElement(
     const tinyxml2::XMLElement* parentElement,
     const std::string& name);
 
-DART_API const tinyxml2::XMLElement* getElement(
+DART_UTILS_API const tinyxml2::XMLElement* getElement(
     const tinyxml2::XMLElement* parentElement,
     const std::string& name);
 
-DART_API tinyxml2::XMLElement* getElement(
+DART_UTILS_API tinyxml2::XMLElement* getElement(
     tinyxml2::XMLElement* parentElement,
     const std::string& name);
 
-DART_API bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name);
+DART_UTILS_API bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name);
 
 /// \deprecated Deprecated in 6.0. Please use getAttributeString() instead.
 DART_DEPRECATED_API(6.0)
@@ -114,17 +114,17 @@ std::string getAttribute(tinyxml2::XMLElement* element, const char* const name);
 DART_DEPRECATED_API(6.0)
 void getAttribute(tinyxml2::XMLElement* element, const char* const name, double* d);
 
-DART_API std::string     getAttributeString  (const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_API bool            getAttributeBool    (const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_API int             getAttributeInt     (const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_API unsigned int    getAttributeUInt    (const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_API float           getAttributeFloat   (const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_API double          getAttributeDouble  (const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_API char            getAttributeChar    (const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_API Eigen::Vector2d getAttributeVector2d(const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_API Eigen::Vector3d getAttributeVector3d(const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_API Eigen::Vector6d getAttributeVector6d(const tinyxml2::XMLElement* element, const std::string& attributeName);
-DART_API Eigen::VectorXd getAttributeVectorXd(const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_UTILS_API std::string     getAttributeString  (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_UTILS_API bool            getAttributeBool    (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_UTILS_API int             getAttributeInt     (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_UTILS_API unsigned int    getAttributeUInt    (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_UTILS_API float           getAttributeFloat   (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_UTILS_API double          getAttributeDouble  (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_UTILS_API char            getAttributeChar    (const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_UTILS_API Eigen::Vector2d getAttributeVector2d(const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_UTILS_API Eigen::Vector3d getAttributeVector3d(const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_UTILS_API Eigen::Vector6d getAttributeVector6d(const tinyxml2::XMLElement* element, const std::string& attributeName);
+DART_UTILS_API Eigen::VectorXd getAttributeVectorXd(const tinyxml2::XMLElement* element, const std::string& attributeName);
 
 /// TemplatedElementEnumerator is a convenience class to help visiting all the
 /// child elements of given parent element. This class is templated to cover

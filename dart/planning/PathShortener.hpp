@@ -36,13 +36,13 @@
 #include <list>
 #include <vector>
 #include <Eigen/Core>
-
+#include "dart/planning/export.hpp"
 #include "dart/simulation/World.hpp"
 
 namespace dart {
 namespace planning {
 
-class DART_API PathShortener
+class DART_PLANNING_API PathShortener
 {
 public:
 	PathShortener();
