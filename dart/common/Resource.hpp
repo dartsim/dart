@@ -36,7 +36,7 @@
 #include <cstddef>
 #include <memory>
 #include <string>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 namespace common {

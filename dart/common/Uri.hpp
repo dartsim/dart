@@ -34,7 +34,7 @@
 #define DART_COMMON_URI_HPP_
 
 #include <string>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 namespace common {

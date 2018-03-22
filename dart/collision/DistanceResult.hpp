@@ -34,7 +34,7 @@
 #define DART_COLLISION_DISTANCE_RESULT_HPP_
 
 #include <Eigen/Dense>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 

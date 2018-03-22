@@ -36,7 +36,7 @@
 #include <memory>
 #include <string>
 #include <boost/filesystem.hpp>
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/common/Platform.hpp"
 
 #if DART_OS_LINUX

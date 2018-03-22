@@ -34,7 +34,7 @@
 #define DART_GUI_OSG_IMGUIVIEWER_HPP_
 
 #include <memory>
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/gui/osg/Viewer.hpp"
 
 namespace dart {

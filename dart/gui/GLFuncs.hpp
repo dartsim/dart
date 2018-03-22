@@ -35,7 +35,7 @@
 
 #include <string>
 #include <Eigen/Eigen>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 namespace gui {

@@ -35,7 +35,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/common/Deprecated.hpp"
 #include "dart/math/Constants.hpp"
 #include "dart/math/MathTypes.hpp"
@@ -448,7 +448,7 @@ DART_API Eigen::Isometry3d computeTransform(const Eigen::Vector3d& axis,
 
 /// Generate frame given origin and z-axis
 /// \deprecated Deprecated in 6.0. Please use computeTransform() instead.
-DART_DEPRECATED2_EXPORT
+DART_DEPRECATED_API(6.0)
 Eigen::Isometry3d getFrameOriginAxisZ(const Eigen::Vector3d& _origin,
                                       const Eigen::Vector3d& _axisZ);
 

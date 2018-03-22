@@ -33,7 +33,7 @@
 #ifndef DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
 #define DART_CONSTRAINT_SOFTCONTACTCONSTRAINT_HPP_
 
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/math/MathTypes.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/collision/CollisionDetector.hpp"

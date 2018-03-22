@@ -33,7 +33,7 @@
 #ifndef DART_UTILS_FILEINFOWORLD_HPP_
 #define DART_UTILS_FILEINFOWORLD_HPP_
 
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 

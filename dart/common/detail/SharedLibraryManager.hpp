@@ -37,7 +37,7 @@
 #include <unordered_map>
 #include <boost/filesystem.hpp>
 #include <boost/functional/hash.hpp>
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/common/Singleton.hpp"
 
 namespace std {

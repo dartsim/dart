@@ -52,7 +52,7 @@
   #include <sys/time.h>
 #endif
 
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 namespace common {

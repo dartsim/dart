@@ -34,7 +34,7 @@
 #define DART_COMMON_SUBJECT_HPP_
 
 #include <set>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 namespace common {

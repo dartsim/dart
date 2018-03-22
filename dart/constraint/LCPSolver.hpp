@@ -33,7 +33,7 @@
 #ifndef DART_CONSTRAINT_LCPSOLVER_HPP_
 #define DART_CONSTRAINT_LCPSOLVER_HPP_
 
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 namespace constraint {

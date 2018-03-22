@@ -35,7 +35,7 @@
 
 #include <string>
 #include <ostream>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 /// \brief Output a message
 #define dtmsg (::dart::common::colorMsg("Msg", 32))

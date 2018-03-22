@@ -37,7 +37,7 @@
 #include <memory>
 #include <functional>
 #include <Eigen/Dense>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 namespace optimizer {

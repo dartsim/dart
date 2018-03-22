@@ -36,7 +36,7 @@
 #include <memory>
 #include <mutex>
 #include <atomic>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart{
 namespace dynamics {

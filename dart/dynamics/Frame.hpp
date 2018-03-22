@@ -37,7 +37,7 @@
 
 #include <Eigen/Geometry>
 
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/dynamics/Entity.hpp"
 #include "dart/math/MathTypes.hpp"
 

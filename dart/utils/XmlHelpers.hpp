@@ -36,7 +36,7 @@
 #include <string>
 #include <Eigen/Dense>
 #include <tinyxml2.h>
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/common/Deprecated.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/math/MathTypes.hpp"
@@ -107,11 +107,11 @@ DART_API tinyxml2::XMLElement* getElement(
 DART_API bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name);
 
 /// \deprecated Deprecated in 6.0. Please use getAttributeString() instead.
-DART_DEPRECATED2_EXPORT
+DART_DEPRECATED_API(6.0)
 std::string getAttribute(tinyxml2::XMLElement* element, const char* const name);
 
 /// \deprecated Deprecated in 6.0. Please use getAttributeDouble() instead.
-DART_DEPRECATED2_EXPORT
+DART_DEPRECATED_API(6.0)
 void getAttribute(tinyxml2::XMLElement* element, const char* const name, double* d);
 
 DART_API std::string     getAttributeString  (const tinyxml2::XMLElement* element, const std::string& attributeName);

@@ -42,7 +42,7 @@
 
 #include <Eigen/Core>
 
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/common/Subject.hpp"
 
 namespace dart {

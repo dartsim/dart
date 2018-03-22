@@ -36,7 +36,7 @@
 #include <vector>
 #include <memory>
 #include <Eigen/Dense>
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/constraint/SmartPointer.hpp"
 
 namespace dart {

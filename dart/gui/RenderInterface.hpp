@@ -36,7 +36,7 @@
 #include <vector>
 #include <assimp/scene.h>
 #include <Eigen/Dense>
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/math/MathTypes.hpp"
 
 namespace dart {

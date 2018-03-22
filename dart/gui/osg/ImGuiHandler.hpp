@@ -48,7 +48,7 @@
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIEventHandler>
 
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 namespace gui {

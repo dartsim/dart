@@ -34,7 +34,7 @@
 #define DART_UTILS_SKELPARSER_HPP_
 
 #include <string>
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/simulation/World.hpp"

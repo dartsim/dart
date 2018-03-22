@@ -35,7 +35,7 @@
 
 #include <memory>
 #include <osg/Node>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 

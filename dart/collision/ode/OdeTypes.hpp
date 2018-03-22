@@ -35,7 +35,7 @@
 
 #include <Eigen/Eigen>
 #include <ode/ode.h>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 namespace collision {

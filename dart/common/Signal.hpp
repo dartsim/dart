@@ -36,7 +36,7 @@
 #include <functional>
 #include <memory>
 #include <set>
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/common/detail/ConnectionBody.hpp"
 
 namespace dart {

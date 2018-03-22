@@ -45,7 +45,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/common/Timer.hpp"
 #include "dart/common/NameManager.hpp"
 #include "dart/common/Subject.hpp"

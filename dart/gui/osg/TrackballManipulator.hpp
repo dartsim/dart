@@ -34,7 +34,7 @@
 #define DART_GUI_OSG_TRACKBALLMANIPULATOR_HPP_
 
 #include <osgGA/OrbitManipulator>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 namespace gui {

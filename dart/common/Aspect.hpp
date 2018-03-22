@@ -34,7 +34,7 @@
 #define DART_COMMON_ASPECT_HPP_
 
 #include <string>
-#include "dart/export.h"
+#include "dart/export.hpp"
 #include "dart/common/Cloneable.hpp"
 #include "dart/common/detail/NoOp.hpp"
 

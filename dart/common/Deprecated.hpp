@@ -34,6 +34,7 @@
 #define DART_COMMON_DEPRECATED_HPP_
 
 #include "dart/config.hpp"
+#include "dart/detail/export.h"
 
 //==============================================================================
 // Deprecated is used for backward compatibility between different minor
@@ -42,7 +43,7 @@
 //==============================================================================
 
 #if defined(__GNUC__) || defined(__clang__)
-  #define DART_DEPRECATED(version) __attribute__ ((deprecated))
+  #define DART_DEPRECATED(version) DART_DETAIL_DEPRECATED
   #define DART_FORCEINLINE __attribute__((always_inline))
 #elif defined(_MSC_VER)
   #define DART_DEPRECATED(version) __declspec(deprecated)

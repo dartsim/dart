@@ -34,7 +34,7 @@
 #define DART_COMMON_DETAIL_CONNECTIONBODY_HPP_
 
 #include <memory>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 namespace common {

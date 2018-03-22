@@ -35,7 +35,7 @@
 
 #include <cstddef>
 #include <memory>
-#include "dart/export.h"
+#include "dart/export.hpp"
 
 namespace dart {
 namespace collision {
