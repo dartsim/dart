@@ -189,6 +189,7 @@ install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 
 # Generate export header
 generate_export_header(${PROJECT_NAME}
+  EXPORT_MACRO_NAME DART_API
   DEPRECATED_MACRO_NAME DART_DEPRECATED2
   EXPORT_FILE_NAME export.h
 )

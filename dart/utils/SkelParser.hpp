@@ -46,18 +46,18 @@ namespace utils {
 namespace SkelParser {
 
   /// Read World from skel file
-  DART_EXPORT simulation::WorldPtr readWorld(
+  DART_API simulation::WorldPtr readWorld(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
   /// Read World from an xml-formatted string
-  DART_EXPORT simulation::WorldPtr readWorldXML(
+  DART_API simulation::WorldPtr readWorldXML(
     const std::string& xmlString,
     const common::Uri& baseUri = "",
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
   /// Read Skeleton from skel file
-  DART_EXPORT dynamics::SkeletonPtr readSkeleton(
+  DART_API dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 

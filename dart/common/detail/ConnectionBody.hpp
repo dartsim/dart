@@ -43,7 +43,7 @@ namespace signal {
 namespace detail {
 
 /// class ConnectionBodyBase
-class DART_EXPORT ConnectionBodyBase
+class DART_API ConnectionBodyBase
 {
 public:
   /// Constructor

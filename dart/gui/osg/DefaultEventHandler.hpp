@@ -55,7 +55,7 @@ class Entity;
 namespace gui {
 namespace osg {
 
-struct DART_EXPORT PickInfo
+struct DART_API PickInfo
 {
   dart::dynamics::ShapeFrame* frame;
   std::shared_ptr<dart::dynamics::Shape> shape;
@@ -95,7 +95,7 @@ enum ConstraintType {
 
 class MouseEventHandler;
 
-class DART_EXPORT DefaultEventHandler : public ::osgGA::GUIEventHandler,
+class DART_API DefaultEventHandler : public ::osgGA::GUIEventHandler,
                             public virtual dart::common::Subject,
                             public virtual dart::common::Observer
 {

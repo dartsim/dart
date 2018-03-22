@@ -43,7 +43,7 @@ namespace optimizer {
 class Problem;
 
 /// \brief class NloptSolver
-class DART_EXPORT NloptSolver : public Solver
+class DART_API NloptSolver : public Solver
 {
 public:
 

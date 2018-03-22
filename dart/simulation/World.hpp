@@ -75,7 +75,7 @@ class CollisionResult;
 namespace simulation {
 
 /// class World
-class DART_EXPORT World : public virtual common::Subject
+class DART_API World : public virtual common::Subject
 {
 public:
 

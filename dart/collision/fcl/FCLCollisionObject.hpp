@@ -39,7 +39,7 @@
 namespace dart {
 namespace collision {
 
-class DART_EXPORT FCLCollisionObject : public CollisionObject
+class DART_API FCLCollisionObject : public CollisionObject
 {
 public:
 

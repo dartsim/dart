@@ -39,7 +39,7 @@ namespace dart {
 namespace dynamics {
 
 /// class RevoluteJoint
-class DART_EXPORT PrismaticJoint : public detail::PrismaticJointBase
+class DART_API PrismaticJoint : public detail::PrismaticJointBase
 {
 public:
 

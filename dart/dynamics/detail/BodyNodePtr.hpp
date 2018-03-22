@@ -44,14 +44,14 @@ namespace dynamics {
 class Skeleton;
 
 //==============================================================================
-struct DART_EXPORT MutexedWeakSkeletonPtr
+struct DART_API MutexedWeakSkeletonPtr
 {
   std::mutex mMutex;
   std::weak_ptr<const Skeleton> mSkeleton;
 };
 
 //==============================================================================
-class DART_EXPORT SkeletonRefCountingBase
+class DART_API SkeletonRefCountingBase
 {
 public:
   template<class> friend class TemplateBodyNodePtr;

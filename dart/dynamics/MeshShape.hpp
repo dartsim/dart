@@ -49,7 +49,7 @@ class IOSystem;
 namespace dart {
 namespace dynamics {
 
-class DART_EXPORT MeshShape : public Shape
+class DART_API MeshShape : public Shape
 {
 public:
   enum ColorMode

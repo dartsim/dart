@@ -45,7 +45,7 @@ namespace utils {
 /// \ref ResourceRetriever. This class uses requires you to manually provide the
 /// base URI of every package that you wish to resolve using the
 /// \ref addPackageDirectory method.
-class DART_EXPORT PackageResourceRetriever : public virtual common::ResourceRetriever
+class DART_API PackageResourceRetriever : public virtual common::ResourceRetriever
 {
 public:
   /// Construct a PackageResourceRetriever that uses the specified \a

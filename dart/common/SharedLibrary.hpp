@@ -69,7 +69,7 @@ class SharedLibraryManager;
 } // namespace detail
 
 /// SharedLibrary is a RAII object wrapping a shared library.
-class DART_EXPORT SharedLibrary
+class DART_API SharedLibrary
 {
 protected:
   enum ProtectedConstructionTag

@@ -41,7 +41,7 @@ namespace dart {
 namespace dynamics {
 
 /// class TranslationalJoint
-class DART_EXPORT TranslationalJoint : public GenericJoint<math::R3Space>
+class DART_API TranslationalJoint : public GenericJoint<math::R3Space>
 {
 public:
 

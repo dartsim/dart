@@ -48,7 +48,7 @@ class TranslationalJoint2D;
 namespace detail {
 
 //==============================================================================
-class DART_EXPORT TranslationalJoint2DUniqueProperties
+class DART_API TranslationalJoint2DUniqueProperties
 {
 public:
   /// Constructor for pre-defined plane types. Defaults to the XY plane if
@@ -109,7 +109,7 @@ private:
 };
 
 //==============================================================================
-struct DART_EXPORT TranslationalJoint2DProperties
+struct DART_API TranslationalJoint2DProperties
     : GenericJoint<math::R2Space>::Properties,
       TranslationalJoint2DUniqueProperties
 {

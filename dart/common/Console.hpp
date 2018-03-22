@@ -53,10 +53,10 @@ namespace dart {
 namespace common {
 
 /// \brief
-DART_EXPORT std::ostream& colorMsg(const std::string& _msg, int _color);
+DART_API std::ostream& colorMsg(const std::string& _msg, int _color);
 
 /// \brief
-DART_EXPORT std::ostream& colorErr(
+DART_API std::ostream& colorErr(
     const std::string& _msg,
     const std::string& _file,
     unsigned int _line,

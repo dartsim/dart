@@ -48,7 +48,7 @@ class Skeleton;
 class EndEffector;
 
 //==============================================================================
-class DART_EXPORT Support final :
+class DART_API Support final :
     public common::AspectWithStateAndVersionedProperties<
         Support,
         detail::SupportStateData,
@@ -77,7 +77,7 @@ public:
 };
 
 //==============================================================================
-class DART_EXPORT EndEffector final :
+class DART_API EndEffector final :
     public common::EmbedPropertiesOnTopOf<
         EndEffector, detail::EndEffectorProperties,
         detail::EndEffectorCompositeBase>

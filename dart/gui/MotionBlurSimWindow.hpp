@@ -17,7 +17,7 @@
 namespace dart {
 namespace gui {
 
-class DART_EXPORT MotionBlurSimWindow : public SimWindow
+class DART_API MotionBlurSimWindow : public SimWindow
 {
 public:
 

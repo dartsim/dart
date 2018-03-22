@@ -47,7 +47,7 @@ namespace collision {
 
 class CollisionObject;
 
-class DART_EXPORT CollisionFilter
+class DART_API CollisionFilter
 {
 public:
   /// Returns true if the given two CollisionObjects should be checked by the
@@ -65,7 +65,7 @@ public:
       const CollisionObject* object1, const CollisionObject* object2) const = 0;
 };
 
-class DART_EXPORT CompositeCollisionFilter : public CollisionFilter
+class DART_API CompositeCollisionFilter : public CollisionFilter
 {
 public:
   /// Adds a collision filter to this CompositeCollisionFilter.
@@ -87,7 +87,7 @@ protected:
   std::unordered_set<const CollisionFilter*> mFilters;
 };
 
-class DART_EXPORT BodyNodeCollisionFilter : public CollisionFilter
+class DART_API BodyNodeCollisionFilter : public CollisionFilter
 {
 public:
   /// Add a BodyNode pair to the blacklist.

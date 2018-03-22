@@ -41,7 +41,7 @@ namespace dart {
 namespace dynamics {
 
 /// MultiSphereConvexHullShape represents the convex hull of a collection of spheres.
-class DART_EXPORT MultiSphereConvexHullShape : public Shape
+class DART_API MultiSphereConvexHullShape : public Shape
 {
 public:
 

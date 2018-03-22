@@ -52,7 +52,7 @@ namespace collision {
 
 class CollisionObject;
 
-class DART_EXPORT CollisionDetector : public std::enable_shared_from_this<CollisionDetector>
+class DART_API CollisionDetector : public std::enable_shared_from_this<CollisionDetector>
 {
 public:
 
@@ -184,7 +184,7 @@ protected:
 };
 
 //==============================================================================
-class DART_EXPORT CollisionDetector::CollisionObjectManager
+class DART_API CollisionDetector::CollisionObjectManager
 {
 public:
 
@@ -206,7 +206,7 @@ protected:
 };
 
 //==============================================================================
-class DART_EXPORT CollisionDetector::ManagerForUnsharableCollisionObjects final :
+class DART_API CollisionDetector::ManagerForUnsharableCollisionObjects final :
     public CollisionDetector::CollisionObjectManager
 {
 public:
@@ -236,7 +236,7 @@ private:
 };
 
 //==============================================================================
-class DART_EXPORT CollisionDetector::ManagerForSharableCollisionObjects final :
+class DART_API CollisionDetector::ManagerForSharableCollisionObjects final :
     public CollisionDetector::CollisionObjectManager
 {
 public:

@@ -54,7 +54,7 @@ class Skeleton;
 namespace simulation {
 
 /// \brief class Recording
-class DART_EXPORT Recording
+class DART_API Recording
 {
 public:
   /// \brief Create Recording with a list of skeletons

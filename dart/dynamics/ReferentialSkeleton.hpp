@@ -43,7 +43,7 @@ namespace dynamics {
 
 /// ReferentialSkeleton is a base class used to implement Linkage, Group, and
 /// other classes that are used to reference subsections of Skeletons.
-class DART_EXPORT ReferentialSkeleton : public MetaSkeleton
+class DART_API ReferentialSkeleton : public MetaSkeleton
 {
 public:
 

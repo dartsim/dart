@@ -39,7 +39,7 @@ namespace dart {
 namespace integration {
 
 /// \brief class SemiImplicitEulerIntegrator
-class DART_EXPORT SemiImplicitEulerIntegrator : public Integrator
+class DART_API SemiImplicitEulerIntegrator : public Integrator
 {
 public:
   /// \brief Constructor

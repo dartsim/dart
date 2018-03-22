@@ -49,7 +49,7 @@ class BodyNode;
 
 /// DegreeOfFreedom class is a proxy class for accessing single degrees of
 /// freedom (aka generalized coordinates) of the Skeleton.
-class DART_EXPORT DegreeOfFreedom : public virtual common::Subject
+class DART_API DegreeOfFreedom : public virtual common::Subject
 {
 public:
 

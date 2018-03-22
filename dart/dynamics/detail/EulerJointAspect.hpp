@@ -53,7 +53,7 @@ enum class AxisOrder : int
 };
 
 //==============================================================================
-struct DART_EXPORT EulerJointUniqueProperties
+struct DART_API EulerJointUniqueProperties
 {
   /// Euler angle order
   AxisOrder mAxisOrder;
@@ -65,7 +65,7 @@ struct DART_EXPORT EulerJointUniqueProperties
 };
 
 //==============================================================================
-struct DART_EXPORT EulerJointProperties :
+struct DART_API EulerJointProperties :
     GenericJoint<math::R3Space>::Properties,
     EulerJointUniqueProperties
 {

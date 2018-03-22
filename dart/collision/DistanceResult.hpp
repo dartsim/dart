@@ -44,7 +44,7 @@ class ShapeFrame;
 
 namespace collision {
 
-struct DART_EXPORT DistanceResult
+struct DART_API DistanceResult
 {
   /// Minimum \b singed distance between the checked Shape pairs.
   ///

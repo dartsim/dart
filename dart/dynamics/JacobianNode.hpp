@@ -50,7 +50,7 @@ class InverseKinematics;
 /// The JacobianNode class serves as a common interface for BodyNodes and
 /// EndEffectors to both be used as references for IK modules. This is a pure
 /// abstract class.
-class DART_EXPORT JacobianNode : public virtual Frame, public Node
+class DART_API JacobianNode : public virtual Frame, public Node
 {
 public:
 

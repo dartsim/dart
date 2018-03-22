@@ -44,7 +44,7 @@ class BodyNode;
 class Skeleton;
 
 /// class ZeroDofJoint
-class DART_EXPORT ZeroDofJoint : public Joint
+class DART_API ZeroDofJoint : public Joint
 {
 public:
 

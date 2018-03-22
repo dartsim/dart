@@ -44,7 +44,7 @@ namespace dart {
 namespace optimizer {
 
 /// \brief class Problem
-class DART_EXPORT Problem
+class DART_API Problem
 {
 public:
 

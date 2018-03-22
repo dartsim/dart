@@ -43,7 +43,7 @@ namespace constraint {
 
 /// DantzigLCPSolver is a LCP solver that uses ODE's implementation of Dantzig
 /// algorithm
-class DART_EXPORT DantzigLCPSolver : public LCPSolver
+class DART_API DantzigLCPSolver : public LCPSolver
 {
 public:
   /// Constructor

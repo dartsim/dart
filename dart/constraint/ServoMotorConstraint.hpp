@@ -45,7 +45,7 @@ class Joint;
 namespace constraint {
 
 /// Servo motor constraint
-class DART_EXPORT ServoMotorConstraint : public ConstraintBase
+class DART_API ServoMotorConstraint : public ConstraintBase
 {
 public:
   /// Constructor

@@ -77,7 +77,7 @@ struct toEuclideanPointImpl
 
 //==============================================================================
 template <>
-struct DART_EXPORT toEuclideanPointImpl<SO3Space>
+struct DART_API toEuclideanPointImpl<SO3Space>
 {
   static typename SO3Space::EuclideanPoint run(
       const typename SO3Space::Point& point)
@@ -88,7 +88,7 @@ struct DART_EXPORT toEuclideanPointImpl<SO3Space>
 
 //==============================================================================
 template <>
-struct DART_EXPORT toEuclideanPointImpl<SE3Space>
+struct DART_API toEuclideanPointImpl<SE3Space>
 {
   static typename SE3Space::EuclideanPoint run(
       const typename SE3Space::Point& point)
@@ -115,7 +115,7 @@ struct toManifoldPointImpl
 
 //==============================================================================
 template <>
-struct DART_EXPORT toManifoldPointImpl<SO3Space>
+struct DART_API toManifoldPointImpl<SO3Space>
 {
   static typename SO3Space::Point run(
       const typename SO3Space::EuclideanPoint& point)
@@ -126,7 +126,7 @@ struct DART_EXPORT toManifoldPointImpl<SO3Space>
 
 //==============================================================================
 template <>
-struct DART_EXPORT toManifoldPointImpl<SE3Space>
+struct DART_API toManifoldPointImpl<SE3Space>
 {
   static typename SE3Space::Point run(
       const typename SE3Space::EuclideanPoint& point)
@@ -155,7 +155,7 @@ struct integratePositionImpl
 
 //==============================================================================
 template <>
-struct DART_EXPORT integratePositionImpl<SO3Space>
+struct DART_API integratePositionImpl<SO3Space>
 {
   static typename SO3Space::Point run(
       const typename SO3Space::Point& pos,
@@ -168,7 +168,7 @@ struct DART_EXPORT integratePositionImpl<SO3Space>
 
 //==============================================================================
 template <>
-struct DART_EXPORT integratePositionImpl<SE3Space>
+struct DART_API integratePositionImpl<SE3Space>
 {
   static typename SE3Space::Point run(
       const typename SE3Space::Point& pos,

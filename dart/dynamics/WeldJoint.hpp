@@ -43,7 +43,7 @@ namespace dart {
 namespace dynamics {
 
 /// class WeldJoint
-class DART_EXPORT WeldJoint : public ZeroDofJoint
+class DART_API WeldJoint : public ZeroDofJoint
 {
 public:
 

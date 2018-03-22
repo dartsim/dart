@@ -48,7 +48,7 @@ class ShapeFrame;
 
 namespace detail {
 
-struct DART_EXPORT VisualAspectProperties
+struct DART_API VisualAspectProperties
 {
   /// Color for the primitive shape
   Eigen::Vector4d mRGBA;
@@ -74,7 +74,7 @@ struct DART_EXPORT VisualAspectProperties
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-struct DART_EXPORT CollisionAspectProperties
+struct DART_API CollisionAspectProperties
 {
   /// This object is collidable if true
   bool mCollidable;
@@ -86,7 +86,7 @@ struct DART_EXPORT CollisionAspectProperties
   virtual ~CollisionAspectProperties() = default;
 };
 
-struct DART_EXPORT DynamicsAspectProperties
+struct DART_API DynamicsAspectProperties
 {
   /// Coefficient of friction
   double mFrictionCoeff;
@@ -102,7 +102,7 @@ struct DART_EXPORT DynamicsAspectProperties
   virtual ~DynamicsAspectProperties() = default;
 };
 
-struct DART_EXPORT ShapeFrameProperties
+struct DART_API ShapeFrameProperties
 {
   /// Pointer to a shape
   ShapePtr mShape;

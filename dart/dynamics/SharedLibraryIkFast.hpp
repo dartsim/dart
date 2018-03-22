@@ -43,7 +43,7 @@ namespace dynamics {
 ///
 /// The detail of IkFast can be found here:
 /// http://openrave.org/docs/0.8.2/openravepy/ikfast/
-class DART_EXPORT SharedLibraryIkFast : public IkFast
+class DART_API SharedLibraryIkFast : public IkFast
 {
 public:
   /// Constructor

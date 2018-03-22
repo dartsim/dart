@@ -134,38 +134,38 @@ using Ellipsoid = ::fcl::Ellipsoid;
 #endif
 
 /// Returns norm of a 3-dim vector
-DART_EXPORT double length(const dart::collision::fcl::Vector3& t);
+DART_API double length(const dart::collision::fcl::Vector3& t);
 
 /// Returns squared norm of a 3-dim vector
-DART_EXPORT double length2(const dart::collision::fcl::Vector3& t);
+DART_API double length2(const dart::collision::fcl::Vector3& t);
 
 /// Returns translation component of a transform
-DART_EXPORT dart::collision::fcl::Vector3 getTranslation(
+DART_API dart::collision::fcl::Vector3 getTranslation(
     const dart::collision::fcl::Transform3& T);
 
 /// Sets translation component of a transform
-DART_EXPORT void setTranslation(
+DART_API void setTranslation(
     dart::collision::fcl::Transform3& T,
     const dart::collision::fcl::Vector3& t);
 
 /// Returns rotation component of a transform
-DART_EXPORT dart::collision::fcl::Matrix3 getRotation(
+DART_API dart::collision::fcl::Matrix3 getRotation(
     const dart::collision::fcl::Transform3& T);
 
 /// Sets rotation component of a transform
-DART_EXPORT void setRotation(
+DART_API void setRotation(
     dart::collision::fcl::Transform3& T,
     const dart::collision::fcl::Matrix3& R);
 
 /// Sets a rotation matrix given Euler-XYZ angles
-DART_EXPORT void setEulerZYX(
+DART_API void setEulerZYX(
     dart::collision::fcl::Matrix3& rot,
     double eulerX,
     double eulerY,
     double eulerZ);
 
 /// Transforms a 3-dim vector by a transform and returns the result
-DART_EXPORT dart::collision::fcl::Vector3 transform(
+DART_API dart::collision::fcl::Vector3 transform(
     const dart::collision::fcl::Transform3& t,
     const dart::collision::fcl::Vector3& v);
 

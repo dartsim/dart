@@ -40,7 +40,7 @@
 namespace dart {
 namespace collision {
 
-class DART_EXPORT OdeTypes
+class DART_API OdeTypes
 {
 public:
   static Eigen::Vector3d convertVector3(const dVector3& vec);

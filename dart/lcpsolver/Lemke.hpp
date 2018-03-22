@@ -40,11 +40,11 @@ namespace dart {
 namespace lcpsolver {
 
 /// \brief
-DART_EXPORT int Lemke(
+DART_API int Lemke(
     const Eigen::MatrixXd& _M, const Eigen::VectorXd& _q, Eigen::VectorXd* _z);
 
 /// \brief
-DART_EXPORT bool validate(
+DART_API bool validate(
     const Eigen::MatrixXd& _M,
     const Eigen::VectorXd& _z,
     const Eigen::VectorXd& _q);

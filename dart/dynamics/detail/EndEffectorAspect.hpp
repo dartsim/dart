@@ -47,7 +47,7 @@ class Support;
 namespace detail {
 
 //==============================================================================
-struct DART_EXPORT EndEffectorProperties
+struct DART_API EndEffectorProperties
 {
   /// The default relative transform for the EndEffector. If the relative
   /// transform of the EndEffector is ever changed, you can call
@@ -62,7 +62,7 @@ struct DART_EXPORT EndEffectorProperties
 };
 
 //==============================================================================
-struct DART_EXPORT SupportStateData
+struct DART_API SupportStateData
 {
   /// Whether or not this EndEffector is currently being used to support the
   /// weight of the robot.
@@ -75,7 +75,7 @@ struct DART_EXPORT SupportStateData
 };
 
 //==============================================================================
-struct DART_EXPORT SupportPropertiesData
+struct DART_API SupportPropertiesData
 {
   /// A set of points representing the support polygon that can be provided by
   /// the EndEffector. These points must be defined relative to the EndEffector
@@ -90,7 +90,7 @@ struct DART_EXPORT SupportPropertiesData
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-DART_EXPORT void SupportUpdate(Support* support);
+DART_API void SupportUpdate(Support* support);
 
 using EndEffectorCompositeBase = CompositeNode<
     common::CompositeJoiner<

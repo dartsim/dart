@@ -47,7 +47,7 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-class DART_EXPORT VisualAspect final :
+class DART_API VisualAspect final :
     public common::AspectWithVersionedProperties<
         VisualAspect,
         detail::VisualAspectProperties,
@@ -111,7 +111,7 @@ public:
 };
 
 //==============================================================================
-class DART_EXPORT CollisionAspect final :
+class DART_API CollisionAspect final :
     public common::AspectWithVersionedProperties<
         CollisionAspect,
         detail::CollisionAspectProperties,
@@ -132,7 +132,7 @@ public:
 };
 
 //==============================================================================
-class DART_EXPORT DynamicsAspect final :
+class DART_API DynamicsAspect final :
     public common::AspectWithVersionedProperties<
         DynamicsAspect,
         detail::DynamicsAspectProperties,
@@ -157,7 +157,7 @@ public:
 };
 
 //==============================================================================
-class DART_EXPORT ShapeFrame :
+class DART_API ShapeFrame :
     public virtual common::VersionCounter,
     public detail::ShapeFrameCompositeBase,
     public virtual Frame

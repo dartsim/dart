@@ -41,7 +41,7 @@ namespace dart {
 namespace integration {
 
 /// \brief Any class that uses an integrator should implement this interface
-class DART_EXPORT IntegrableSystem
+class DART_API IntegrableSystem
 {
 public:
   /// \brief Constructor
@@ -78,7 +78,7 @@ public:
 // TODO(kasiu): Consider templating the class (which currently only works on
 // arbitrarily-sized vectors of doubles)
 /// \brief class Integrator
-class DART_EXPORT Integrator
+class DART_API Integrator
 {
 public:
   /// \brief Constructor

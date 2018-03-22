@@ -50,7 +50,7 @@ namespace dynamics {
 /// so that they match whatever assembly they had the last time
 /// Linkage::reassemble() was called (or the assembly that they had when the
 /// Linkage was constructed, if Linkage::reassemble has never been called).
-class DART_EXPORT Linkage : public ReferentialSkeleton
+class DART_API Linkage : public ReferentialSkeleton
 {
 public:
 

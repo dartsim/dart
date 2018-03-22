@@ -42,7 +42,7 @@ namespace collision {
 
 class CollisionFilter;
 
-struct DART_EXPORT CollisionOption
+struct DART_API CollisionOption
 {
 
   /// Flag whether the collision detector computes contact information (contact

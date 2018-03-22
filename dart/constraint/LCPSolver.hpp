@@ -41,7 +41,7 @@ namespace constraint {
 class ConstrainedGroup;
 
 /// LCPSolver
-class DART_EXPORT LCPSolver
+class DART_API LCPSolver
 {
 public:
   /// Solve constriant impulses for a constrained group

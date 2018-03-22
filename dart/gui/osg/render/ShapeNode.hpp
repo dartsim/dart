@@ -56,7 +56,7 @@ class ShapeFrameNode;
 
 namespace render {
 
-class DART_EXPORT ShapeNode
+class DART_API ShapeNode
 {
 public:
 

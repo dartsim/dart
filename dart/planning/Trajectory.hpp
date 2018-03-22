@@ -40,7 +40,7 @@
 namespace dart {
 namespace planning {
 
-class DART_EXPORT Trajectory
+class DART_API Trajectory
 {
 public:
 	virtual double getDuration() const = 0;

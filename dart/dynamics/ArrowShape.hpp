@@ -38,7 +38,7 @@
 namespace dart {
 namespace dynamics {
 
-class DART_EXPORT ArrowShape : public MeshShape
+class DART_API ArrowShape : public MeshShape
 {
 public:
 

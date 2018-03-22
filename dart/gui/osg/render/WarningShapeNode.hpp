@@ -43,7 +43,7 @@ namespace gui {
 namespace osg {
 namespace render {
 
-class DART_EXPORT WarningShapeNode : public ShapeNode, public ::osg::Node
+class DART_API WarningShapeNode : public ShapeNode, public ::osg::Node
 {
 public:
 

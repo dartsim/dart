@@ -47,7 +47,7 @@ class RevoluteJoint;
 namespace detail {
 
 //==============================================================================
-struct DART_EXPORT RevoluteJointUniqueProperties
+struct DART_API RevoluteJointUniqueProperties
 {
   Eigen::Vector3d mAxis;
 
@@ -58,7 +58,7 @@ struct DART_EXPORT RevoluteJointUniqueProperties
 };
 
 //==============================================================================
-struct DART_EXPORT RevoluteJointProperties :
+struct DART_API RevoluteJointProperties :
     GenericJoint<math::R1Space>::Properties,
     RevoluteJointUniqueProperties
 {

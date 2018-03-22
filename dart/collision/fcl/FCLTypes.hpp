@@ -40,7 +40,7 @@
 namespace dart {
 namespace collision {
 
-class DART_EXPORT FCLTypes
+class DART_API FCLTypes
 {
 public:
 #if !FCL_VERSION_AT_LEAST(0,6,0)

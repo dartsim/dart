@@ -41,7 +41,7 @@
 namespace dart {
 namespace dynamics {
 
-class DART_EXPORT Inertia
+class DART_API Inertia
 {
 public:
 

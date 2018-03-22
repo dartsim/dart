@@ -50,7 +50,7 @@ namespace render {
 class CylinderShapeGeode;
 class CylinderShapeDrawable;
 
-class DART_EXPORT CylinderShapeNode : public ShapeNode, public ::osg::Group
+class DART_API CylinderShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
 

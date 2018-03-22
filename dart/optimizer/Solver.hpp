@@ -49,7 +49,7 @@ class Problem;
 /// problem types. This base class allows the different Solver implementations
 /// to be swapped out with each other quickly and easily to help with testing,
 /// benchmarking, and experimentation.
-class DART_EXPORT Solver
+class DART_API Solver
 {
 public:
 

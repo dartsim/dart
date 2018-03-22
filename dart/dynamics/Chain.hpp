@@ -43,7 +43,7 @@ namespace dynamics {
 /// specified BodyNode and include every BodyNode on the way to a target
 /// BodyNode, except it will stop if it encounters a branching (BodyNode with
 /// multiple child BodyNodes) or a FreeJoint.
-class DART_EXPORT Chain : public Linkage
+class DART_API Chain : public Linkage
 {
 public:
 

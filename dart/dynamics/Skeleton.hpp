@@ -51,7 +51,7 @@ namespace dart {
 namespace dynamics {
 
 /// class Skeleton
-class DART_EXPORT Skeleton :
+class DART_API Skeleton :
     public virtual common::VersionCounter,
     public MetaSkeleton,
     public SkeletonSpecializedFor<ShapeNode, EndEffector, Marker>,

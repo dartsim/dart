@@ -38,7 +38,7 @@
 namespace dart {
 namespace dynamics {
 
-class DART_EXPORT BoxShape : public Shape
+class DART_API BoxShape : public Shape
 {
 public:
   /// \brief Constructor.

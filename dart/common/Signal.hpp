@@ -43,7 +43,7 @@ namespace dart {
 namespace common {
 
 /// class Connection
-class DART_EXPORT Connection
+class DART_API Connection
 {
 public:
   /// Default constructor
@@ -88,7 +88,7 @@ private:
 };
 
 /// class ScopedConnection
-class DART_EXPORT ScopedConnection : public Connection
+class DART_API ScopedConnection : public Connection
 {
 public:
   /// Default constructor

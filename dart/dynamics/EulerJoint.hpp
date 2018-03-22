@@ -39,7 +39,7 @@ namespace dart {
 namespace dynamics {
 
 /// class EulerJoint
-class DART_EXPORT EulerJoint : public detail::EulerJointBase
+class DART_API EulerJoint : public detail::EulerJointBase
 {
 public:
 

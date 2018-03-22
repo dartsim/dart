@@ -46,7 +46,7 @@ class SoftBodyNode;
 class PointMassNotifier;
 
 ///
-class DART_EXPORT PointMass : public common::Subject
+class DART_API PointMass : public common::Subject
 {
 public:
   friend class SoftBodyNode;
@@ -668,7 +668,7 @@ protected:
 //  PointMass* pm2;
 //};
 
-class DART_EXPORT PointMassNotifier : public Entity
+class DART_API PointMassNotifier : public Entity
 {
 public:
 

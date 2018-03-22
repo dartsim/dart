@@ -42,7 +42,7 @@ namespace dart {
 namespace collision {
 namespace detail {
 
-class DART_EXPORT OdeGeom
+class DART_API OdeGeom
 {
 public:
   struct GeomUserData;

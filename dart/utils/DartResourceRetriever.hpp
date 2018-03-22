@@ -62,7 +62,7 @@ namespace utils {
 /// where DART_DATA_LOCAL_PATH and DART_DATA_GLOBAL_PATH are defined in
 /// config.hpp that are determined in CMake time.
 ///
-class DART_EXPORT DartResourceRetriever : public common::ResourceRetriever
+class DART_API DartResourceRetriever : public common::ResourceRetriever
 {
 public:
   template <typename... Args>

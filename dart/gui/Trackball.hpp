@@ -41,7 +41,7 @@ namespace dart {
 namespace gui {
 
 /// \brief
-class DART_EXPORT Trackball {
+class DART_API Trackball {
 public:
   // To get byte-aligned Eigen vectors
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

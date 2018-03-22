@@ -41,23 +41,23 @@ namespace dart {
 namespace gui {
 
 /// \brief
-DART_EXPORT void drawStringOnScreen(
+DART_API void drawStringOnScreen(
     float _x, float _y, const std::string& _s,
     bool _bigFont = true);
 
 /// \brief
-DART_EXPORT void drawArrow3D(
+DART_API void drawArrow3D(
     const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
     const double _length, const double _thickness,
     const double _arrowThickness = -1);
 
 /// \brief
-DART_EXPORT void drawArrow2D(
+DART_API void drawArrow2D(
     const Eigen::Vector2d& _pt, const Eigen::Vector2d& _vec,
     double _thickness);
 
 /// \brief
-DART_EXPORT void drawProgressBar(int _currFrame, int _totalFrame);
+DART_API void drawProgressBar(int _currFrame, int _totalFrame);
 
 // BOOL screenShot(FREE_IMAGE_FORMAT fif, int w, int h, char *fname,
 //                bool _antialias);

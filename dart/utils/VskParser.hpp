@@ -48,7 +48,7 @@ namespace VskParser {
 /// that can be used in kinematics or dynamics simulation. VSK file format
 /// itself doesn't provide essential properties for it such as body's shape,
 /// mass, and inertia.
-struct DART_EXPORT Options
+struct DART_API Options
 {
   /// Resource retriever. LocalResourceRetriever is used if it's nullptr.
   common::ResourceRetrieverPtr retrieverOrNullptr;
@@ -96,7 +96,7 @@ struct DART_EXPORT Options
 };
 
 /// Read Skeleton from VSK file
-DART_EXPORT dynamics::SkeletonPtr readSkeleton(
+DART_API dynamics::SkeletonPtr readSkeleton(
     const common::Uri& fileUri,
     Options options = Options());
 

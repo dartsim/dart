@@ -45,7 +45,7 @@
 namespace dart {
 namespace dynamics {
 
-class DART_EXPORT Shape : public virtual common::Subject
+class DART_API Shape : public virtual common::Subject
 {
 public:
 

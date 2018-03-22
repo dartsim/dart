@@ -46,7 +46,7 @@ class Skeleton;
 namespace utils {
 
 /// \brief class FileInfoDof
-class DART_EXPORT FileInfoDof
+class DART_API FileInfoDof
 {
 public:
   /// \brief Constructor

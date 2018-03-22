@@ -45,13 +45,13 @@ namespace collision {
 
 class CollisionObject;
 
-struct DART_EXPORT DistanceFilter
+struct DART_API DistanceFilter
 {
   virtual bool needDistance(const CollisionObject* object1,
                              const CollisionObject* object2) const = 0;
 };
 
-struct DART_EXPORT BodyNodeDistanceFilter : DistanceFilter
+struct DART_API BodyNodeDistanceFilter : DistanceFilter
 {
   bool needDistance(const CollisionObject* object1,
                     const CollisionObject* object2) const override;

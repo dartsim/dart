@@ -64,7 +64,7 @@ enum DecoDrawType {
     DT_Max
 };
 
-class DART_EXPORT RenderInterface {
+class DART_API RenderInterface {
 public:
     RenderInterface(){}
     virtual ~RenderInterface(){}

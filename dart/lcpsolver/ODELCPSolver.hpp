@@ -40,7 +40,7 @@ namespace dart {
 namespace lcpsolver {
 
 /// \brief
-class DART_EXPORT ODELCPSolver
+class DART_API ODELCPSolver
 {
 public:
   /// \brief

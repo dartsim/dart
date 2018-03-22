@@ -72,7 +72,7 @@ class BodyNodeDnD;
 class Viewer;
 class SaveScreen;
 
-class DART_EXPORT ViewerAttachment : public virtual ::osg::Group
+class DART_API ViewerAttachment : public virtual ::osg::Group
 {
 public:
 
@@ -113,7 +113,7 @@ private:
 
 };
 
-class DART_EXPORT Viewer : public osgViewer::Viewer, public dart::common::Subject
+class DART_API Viewer : public osgViewer::Viewer, public dart::common::Subject
 {
 public:
   /// Constructor for dart::gui::osg::Viewer. This will automatically create the

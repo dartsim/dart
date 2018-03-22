@@ -56,7 +56,7 @@ class Frame;
 /// may have different policies about how/if their reference frame or name
 /// can be changed. Use the Detachable class to create an Entity whose reference
 /// Frame can be changed arbitrarily.
-class DART_EXPORT Entity : public virtual common::Subject
+class DART_API Entity : public virtual common::Subject
 {
 public:
   friend class Frame;
@@ -229,7 +229,7 @@ private:
 
 /// The Detachable class is a special case of the Entity base class. Detachable
 /// allows the Entity's reference Frame to be changed arbitrarily by the user.
-class DART_EXPORT Detachable : public virtual Entity
+class DART_API Detachable : public virtual Entity
 {
 public:
   /// Constructor

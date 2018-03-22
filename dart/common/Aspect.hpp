@@ -43,7 +43,7 @@ namespace common {
 
 class Composite;
 
-class DART_EXPORT Aspect
+class DART_API Aspect
 {
 public:
 

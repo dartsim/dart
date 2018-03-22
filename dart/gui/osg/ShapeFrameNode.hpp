@@ -55,7 +55,7 @@ class ShapeNode;
 
 class WorldNode;
 
-class DART_EXPORT ShapeFrameNode : public ::osg::MatrixTransform
+class DART_API ShapeFrameNode : public ::osg::MatrixTransform
 {
 public:
 

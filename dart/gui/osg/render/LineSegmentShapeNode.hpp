@@ -50,7 +50,7 @@ namespace render {
 class LineSegmentShapeGeode;
 class LineSegmentShapeDrawable;
 
-class DART_EXPORT LineSegmentShapeNode : public ShapeNode, public ::osg::Group
+class DART_API LineSegmentShapeNode : public ShapeNode, public ::osg::Group
 {
 public:
 

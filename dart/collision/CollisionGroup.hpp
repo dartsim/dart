@@ -45,7 +45,7 @@
 namespace dart {
 namespace collision {
 
-class DART_EXPORT CollisionGroup
+class DART_API CollisionGroup
 {
 public:
 

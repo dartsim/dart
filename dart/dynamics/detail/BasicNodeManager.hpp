@@ -45,7 +45,7 @@ namespace dart {
 namespace dynamics {
 namespace detail {
 
-class DART_EXPORT BasicNodeManagerForBodyNode
+class DART_API BasicNodeManagerForBodyNode
 {
 public:
 
@@ -89,7 +89,7 @@ protected:
 
 };
 
-class DART_EXPORT BasicNodeManagerForSkeleton : public virtual BasicNodeManagerForBodyNode
+class DART_API BasicNodeManagerForSkeleton : public virtual BasicNodeManagerForBodyNode
 {
 public:
 

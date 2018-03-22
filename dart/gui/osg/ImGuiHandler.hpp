@@ -56,7 +56,7 @@ namespace osg {
 
 class ImGuiWidget;
 
-class DART_EXPORT ImGuiHandler : public osgGA::GUIEventHandler
+class DART_API ImGuiHandler : public osgGA::GUIEventHandler
 {
 public:
   /// Constructor

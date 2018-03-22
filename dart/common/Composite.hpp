@@ -48,7 +48,7 @@ namespace common {
 /// beneficial to have constant-time access to those Aspect types. To get
 /// constant-time access to specific Aspect types, you can use the templated
 /// class SpecializedForAspect.
-class DART_EXPORT Composite
+class DART_API Composite
 {
 public:
 

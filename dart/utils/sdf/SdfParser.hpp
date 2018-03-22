@@ -50,11 +50,11 @@ simulation::WorldPtr readSdfFile(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
-DART_EXPORT simulation::WorldPtr readWorld(
+DART_API simulation::WorldPtr readWorld(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 
-DART_EXPORT dynamics::SkeletonPtr readSkeleton(
+DART_API dynamics::SkeletonPtr readSkeleton(
     const common::Uri& uri,
     const common::ResourceRetrieverPtr& retriever = nullptr);
 

@@ -40,7 +40,7 @@ namespace dart {
 namespace common {
 
 /// VersionCounter is an interface for objects that count their versions
-class DART_EXPORT VersionCounter
+class DART_API VersionCounter
 {
 public:
 

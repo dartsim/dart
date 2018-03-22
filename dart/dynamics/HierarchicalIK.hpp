@@ -59,7 +59,7 @@ typedef std::vector< std::vector< std::shared_ptr<InverseKinematics> > > IKHiera
 /// put into the IK modules' Problems. Any additional constraints or objectives
 /// that you want the HierarchicalIK to solve should be put directly into the
 /// HierarchicalIK's Problem.
-class DART_EXPORT HierarchicalIK : public common::Subject
+class DART_API HierarchicalIK : public common::Subject
 {
 public:
 
@@ -309,7 +309,7 @@ public:
 /// The CompositeIK class allows you to specify an arbitrary hierarchy of
 /// InverseKinematics modules for a single Skeleton. Simply add in each IK
 /// module that should be used.
-class DART_EXPORT CompositeIK : public HierarchicalIK
+class DART_API CompositeIK : public HierarchicalIK
 {
 public:
 
@@ -353,7 +353,7 @@ protected:
 /// The WholeBodyIK class provides an interface for simultaneously solving all
 /// the IK constraints of all BodyNodes and EndEffectors belonging to a single
 /// Skeleton.
-class DART_EXPORT WholeBodyIK : public HierarchicalIK
+class DART_API WholeBodyIK : public HierarchicalIK
 {
 public:
 

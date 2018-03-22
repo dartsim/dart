@@ -42,7 +42,7 @@ namespace collision {
 
 class DistanceFilter;
 
-struct DART_EXPORT DistanceOption
+struct DART_API DistanceOption
 {
   /// Whether to calculate the nearest points.
   ///

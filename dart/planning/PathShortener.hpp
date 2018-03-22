@@ -42,7 +42,7 @@
 namespace dart {
 namespace planning {
 
-class DART_EXPORT PathShortener
+class DART_API PathShortener
 {
 public:
 	PathShortener();

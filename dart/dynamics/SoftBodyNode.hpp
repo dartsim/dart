@@ -42,7 +42,7 @@ namespace dynamics {
 ///
 /// This class is implementation of Sumit Jain and C. Karen Liu's paper:
 /// http://www.cc.gatech.edu/graphics/projects/Sumit/homepage/projects/softcontacts/index.html
-class DART_EXPORT SoftBodyNode : public detail::SoftBodyNodeBase
+class DART_API SoftBodyNode : public detail::SoftBodyNodeBase
 {
 public:
 
@@ -326,7 +326,7 @@ private:
   void updateInertiaWithPointMass();
 };
 
-class DART_EXPORT SoftBodyNodeHelper
+class DART_API SoftBodyNodeHelper
 {
 public:
 

@@ -101,7 +101,7 @@ enum ActuatorType
 
 const ActuatorType DefaultActuatorType = FORCE;
 
-struct DART_EXPORT JointProperties
+struct DART_API JointProperties
 {
   /// Joint name
   std::string mName;

@@ -45,7 +45,7 @@ namespace dart {
 namespace collision {
 namespace detail {
 
-struct DART_EXPORT BulletOverlapFilterCallback : public btOverlapFilterCallback
+struct DART_API BulletOverlapFilterCallback : public btOverlapFilterCallback
 {
   // Constructor
   explicit BulletOverlapFilterCallback(

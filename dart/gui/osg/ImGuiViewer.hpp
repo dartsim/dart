@@ -45,7 +45,7 @@ class ImGuiHandler;
 class MainMenuWidget;
 class AboutWidget;
 
-class DART_EXPORT ImGuiViewer : public Viewer
+class DART_API ImGuiViewer : public Viewer
 {
 public:
 

@@ -38,7 +38,7 @@
 namespace dart {
 namespace dynamics {
 
-class DART_EXPORT SphereShape : public Shape
+class DART_API SphereShape : public Shape
 {
 public:
   /// Constructor.

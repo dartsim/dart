@@ -41,7 +41,7 @@ namespace dart {
 namespace dynamics {
 namespace detail {
 
-struct DART_EXPORT MarkerProperties
+struct DART_API MarkerProperties
 {
   enum ConstraintType
   {

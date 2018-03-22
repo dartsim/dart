@@ -67,7 +67,7 @@ namespace dynamics { class Skeleton; }
 namespace planning {
 
 /// The rapidly-expanding random tree implementation
-class DART_EXPORT RRT {
+class DART_API RRT {
 public:
 
 	/// To get byte-aligned Eigen vectors

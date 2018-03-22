@@ -43,7 +43,7 @@ namespace dart {
 namespace optimizer {
 
 /// \brief class Function
-class DART_EXPORT Function
+class DART_API Function
 {
 public:
   /// \brief Constructor
@@ -97,7 +97,7 @@ typedef std::function<void(
 /// \brief ModularFunction uses C++11 std::function to allow you to easily swap
 /// out the cost function, gradient function, and Hessian function during
 /// runtime for an optimizer::Function instance.
-class DART_EXPORT ModularFunction : public Function
+class DART_API ModularFunction : public Function
 {
 public:
   /// \brief Constructor
@@ -156,7 +156,7 @@ protected:
 };
 
 /// \brief NullFunction is a constant-zero Function
-class DART_EXPORT NullFunction : public Function
+class DART_API NullFunction : public Function
 {
 public:
   /// \brief Constructor
@@ -181,7 +181,7 @@ public:
 };
 
 /// \brief class MultiFunction
-class DART_EXPORT MultiFunction
+class DART_API MultiFunction
 {
 public:
   /// \brief Constructor

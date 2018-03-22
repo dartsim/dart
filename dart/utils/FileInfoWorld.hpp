@@ -44,7 +44,7 @@ class Recording;
 namespace utils {
 
 /// \brief class FileInfoWorld
-class DART_EXPORT FileInfoWorld
+class DART_API FileInfoWorld
 {
 public:
   /// \brief Constructor

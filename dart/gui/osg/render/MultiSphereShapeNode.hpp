@@ -51,7 +51,7 @@ namespace render {
 class MultiSphereShapeGeode;
 class MultiSphereShapeDrawable;
 
-class DART_EXPORT MultiSphereShapeNode : public ShapeNode, public ::osg::MatrixTransform
+class DART_API MultiSphereShapeNode : public ShapeNode, public ::osg::MatrixTransform
 {
 public:
 

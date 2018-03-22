@@ -46,7 +46,7 @@ namespace constraint {
 
 /// JointLimitConstraint handles joint position or velocity limits
 // TOOD: better naming
-class DART_EXPORT JointLimitConstraint : public ConstraintBase
+class DART_API JointLimitConstraint : public ConstraintBase
 {
 public:
   /// Constructor

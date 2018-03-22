@@ -47,7 +47,7 @@ class PrismaticJoint;
 namespace detail {
 
 //==============================================================================
-struct DART_EXPORT PrismaticJointUniqueProperties
+struct DART_API PrismaticJointUniqueProperties
 {
   Eigen::Vector3d mAxis;
 
@@ -58,7 +58,7 @@ struct DART_EXPORT PrismaticJointUniqueProperties
 };
 
 //==============================================================================
-struct DART_EXPORT PrismaticJointProperties :
+struct DART_API PrismaticJointProperties :
     GenericJoint<math::R1Space>::Properties,
     PrismaticJointUniqueProperties
 {

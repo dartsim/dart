@@ -40,7 +40,7 @@ namespace dynamics {
 
 /// ConeShape represents a three-dimensional geometric shape that tapers
 /// smoothly from a flat circular base to a point called the apex or vertex.
-class DART_EXPORT ConeShape : public Shape
+class DART_API ConeShape : public Shape
 {
 public:
 

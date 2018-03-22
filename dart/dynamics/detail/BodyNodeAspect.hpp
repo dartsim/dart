@@ -50,7 +50,7 @@ const double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
 namespace detail {
 
 //==============================================================================
-struct DART_EXPORT BodyNodeState
+struct DART_API BodyNodeState
 {
   /// External spatial force
   Eigen::Vector6d mFext;
@@ -64,7 +64,7 @@ struct DART_EXPORT BodyNodeState
 };
 
 //==============================================================================
-struct DART_EXPORT BodyNodeAspectProperties
+struct DART_API BodyNodeAspectProperties
 {
   /// Name of the Entity
   std::string mName;

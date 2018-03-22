@@ -41,7 +41,7 @@
 namespace dart {
 namespace utils {
 
-class DART_EXPORT FileInfoC3D {
+class DART_API FileInfoC3D {
     
 public:
     FileInfoC3D();

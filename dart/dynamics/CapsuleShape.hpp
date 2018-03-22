@@ -40,7 +40,7 @@ namespace dynamics {
 
 /// CapsuleShape represents a three-dimensional geometric shape consisting of a
 /// cylinder with hemispherical ends.
-class DART_EXPORT CapsuleShape : public Shape
+class DART_API CapsuleShape : public Shape
 {
 public:
 

@@ -61,7 +61,7 @@ namespace common {
 ///
 /// This is a definition of mTimer class.
 /// For measure the time, gettimeofday() api is used
-class DART_EXPORT Timer
+class DART_API Timer
 {
 public:
   /// \brief Default constructor

@@ -46,7 +46,7 @@ namespace common {
 /// It is expected that each \a ResourceRetriever will provide a concrete /
 /// instantiation of the Resource class. This interface exposes an similar API
 /// to that of the the standard C file manipulation functions.
-class DART_EXPORT Resource
+class DART_API Resource
 {
 public:
   /// \brief Position to seek relative to.

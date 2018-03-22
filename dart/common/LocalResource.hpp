@@ -38,7 +38,7 @@
 namespace dart {
 namespace common {
 
-class DART_EXPORT LocalResource : public virtual Resource
+class DART_API LocalResource : public virtual Resource
 {
 public:
   explicit LocalResource(const std::string& _path);
