@@ -195,7 +195,7 @@ function(dart_add_export_file target_name)
     "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
   )
 
-  # base name
+  # Base name
   set(base_name "${target_name}")
   string(REPLACE "-" "_" base_name ${base_name})
   if(_geh_BASE_NAME)
@@ -204,15 +204,15 @@ function(dart_add_export_file target_name)
   string(TOUPPER ${base_name} base_name_upper)
   string(TOLOWER ${base_name} base_name_lower)
 
-  # componenet path
+  # Componenet path
   set(component_path "dart")
   if(_geh_COMPONENT_PATH)
     set(component_path "dart/${_geh_COMPONENT_PATH}")
   endif()
   set(component_detail_export_path "${component_path}/detail/export.h")
 
+  # Generate CMake's default export header
   include(GenerateExportHeader)
-
   generate_export_header(${target_name}
     EXPORT_MACRO_NAME ${base_name_upper}_DETAIL_API
     EXPORT_FILE_NAME detail/export.h
@@ -223,8 +223,8 @@ function(dart_add_export_file target_name)
     COMPONENT headers
   )
 
+  # Generate final export header
   set(header_guard_name ${base_name_upper}_EXPORT_HPP_)
-
   set(output_path "${CMAKE_CURRENT_BINARY_DIR}/export.hpp")
   file(WRITE "${output_path}" "")
   file(APPEND "${output_path}" "// Automatically generated file by CMake\n")
