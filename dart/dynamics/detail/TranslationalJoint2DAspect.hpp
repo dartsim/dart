@@ -109,8 +109,9 @@ private:
 };
 
 //==============================================================================
-struct DART_EXPORT TranslationalJoint2DProperties : GenericJoint<math::R2Space>::Properties,
-                                        TranslationalJoint2DUniqueProperties
+struct DART_EXPORT TranslationalJoint2DProperties
+    : GenericJoint<math::R2Space>::Properties,
+      TranslationalJoint2DUniqueProperties
 {
   DART_DEFINE_ALIGNED_SHARED_OBJECT_CREATOR(TranslationalJoint2DProperties)
 
