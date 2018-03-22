@@ -60,7 +60,7 @@ set(DART_MINOR_VERSION "4")
 set(DART_PATCH_VERSION "0")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
-set(DART_PKG_EXTERNAL_DEPS "eigen, ccd, fcl, assimp, boost")
+set(DART_PKG_EXTERNAL_DEPS "eigen, ccd, fcl, assimp, boost") # TODO: outdated
 
 #===============================================================================
 # Build options
@@ -86,6 +86,9 @@ option(DART_ENABLE_SIMD
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
+# Option for some bundle-like build system in order not to expose any DART
+# binary symbols in their public ABI
+option(DART_HIDE_ALL_SYMBOLS "Hide all binary symbols" OFF)
 
 #===============================================================================
 # Print intro

@@ -162,6 +162,10 @@ if(DART_ENABLE_SIMD)
   endif()
 endif()
 
+if (DART_HIDE_ALL_SYMBOLS)
+  target_compile_definitions(dart PUBLIC DART_STATIC_DEFINE)
+endif()
+
 # Default component
 add_component_targets(
   ${PROJECT_NAME}
