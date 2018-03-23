@@ -183,6 +183,7 @@ endmacro()
 #
 # dart_add_export_file(
 #   <target_name>
+#   [EXPORT_ALL_SYMBOLS_BY_DEFAULT]
 #   [BASE_NAME <base_name>]
 #   [COMPONENT_PATH <component_path>]
 # )
@@ -190,12 +191,20 @@ function(dart_add_export_file target_name)
   # Parse boolean, unary, and list arguments from input.
   # Unparsed arguments can be found in variable ARG_UNPARSED_ARGUMENTS.
   set(prefix _geh)
-  set(options "")
+  set(options EXPORT_ALL_SYMBOLS_BY_DEFAULT)
   set(oneValueArgs BASE_NAME COMPONENT_PATH)
   set(multiValueArgs "")
   cmake_parse_arguments(
     "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
   )
+
+  # Hide symbols by default
+  if(UNIX AND NOT _geh_EXPORT_ALL_SYMBOLS_BY_DEFAULT)
+    check_compiler_visibility(COMPILER_SUPPORTS_VISIBILITY)
+    if(COMPILER_SUPPORTS_VISIBILITY)
+      target_compile_options(${target_name} PRIVATE -fvisibility=hidden)
+    endif()
+  endif()
 
   include(GNUInstallDirs)
 

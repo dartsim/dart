@@ -10,10 +10,6 @@ endif()
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
-if(UNIX)
-  check_compiler_visibility(COMPILER_SUPPORTS_VISIBILITY)
-endif()
-
 #===============================================================================
 # Source directories
 #===============================================================================
@@ -141,10 +137,6 @@ target_link_libraries(
     ${Boost_LIBRARIES}
     ${PROJECT_NAME}-external-odelcpsolver
 )
-# Hide symbols by default
-if(COMPILER_SUPPORTS_VISIBILITY)
-  target_compile_options(dart PRIVATE -fvisibility=hidden)
-endif()
 
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
