@@ -195,6 +195,8 @@ function(dart_add_export_file target_name)
     "${prefix}" "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN}
   )
 
+  include(GNUInstallDirs)
+
   # Base name
   set(base_name "${target_name}")
   string(REPLACE "-" "_" base_name ${base_name})
@@ -242,7 +244,7 @@ function(dart_add_export_file target_name)
   file(APPEND "${output_path}" "\n")
   file(APPEND "${output_path}" "#endif // ${header_guard_name}\n")
   install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/export.hpp
+    FILES ${output_path}
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/component_path
     COMPONENT headers
   )
