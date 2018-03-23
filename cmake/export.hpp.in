@@ -6,9 +6,9 @@
 #include "@component_detail_export_path@"
 
 #define @base_name_upper@_API\
-    @base_name_upper@_DETAIL_API
+    DETAIL_@base_name_upper@_API
 
 #define @base_name_upper@_DEPRECATED_API(version)\
-    @base_name_upper@_DETAIL_DEPRECATED_EXPORT
+    DETAIL_@base_name_upper@_DEPRECATED_EXPORT
 
 #endif // @header_guard_name@

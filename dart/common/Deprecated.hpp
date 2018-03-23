@@ -43,7 +43,7 @@
 //==============================================================================
 
 #if defined(__GNUC__) || defined(__clang__)
-  #define DART_DEPRECATED(version) DART_DETAIL_DEPRECATED
+  #define DART_DEPRECATED(version) DETAIL_DART_DEPRECATED
   #define DART_FORCEINLINE __attribute__((always_inline))
 #elif defined(_MSC_VER)
   #define DART_DEPRECATED(version) __declspec(deprecated)

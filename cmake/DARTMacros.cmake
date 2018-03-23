@@ -217,9 +217,9 @@ function(dart_add_export_file target_name)
   # Generate CMake's default export header
   include(GenerateExportHeader)
   generate_export_header(${target_name}
-    EXPORT_MACRO_NAME ${base_name_upper}_DETAIL_API
+    EXPORT_MACRO_NAME DETAIL_${base_name_upper}_API
     EXPORT_FILE_NAME detail/export.h
-    DEPRECATED_MACRO_NAME ${base_name_upper}_DETAIL_DEPRECATED
+    DEPRECATED_MACRO_NAME DETAIL_${base_name_upper}_DEPRECATED
   )
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/detail/export.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${component_path}/detail
