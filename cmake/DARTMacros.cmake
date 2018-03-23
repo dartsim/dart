@@ -181,13 +181,13 @@ endmacro()
 #===============================================================================
 # Function to create an export header for control of binary symbols visibility.
 #
-# dart_add_export_file(
+# dart_generate_export_header(
 #   <target_name>
 #   [EXPORT_ALL_SYMBOLS_BY_DEFAULT]
 #   [BASE_NAME <base_name>]
 #   [COMPONENT_PATH <component_path>]
 # )
-function(dart_add_export_file target_name)
+function(dart_generate_export_header target_name)
   # Parse boolean, unary, and list arguments from input.
   # Unparsed arguments can be found in variable ARG_UNPARSED_ARGUMENTS.
   set(prefix _geh)

@@ -180,4 +180,4 @@ endif()
 install(FILES dart.hpp DESTINATION include/dart/ COMPONENT headers)
 
 # Generate export header
-dart_add_export_file(dart)
+dart_generate_export_header(dart)

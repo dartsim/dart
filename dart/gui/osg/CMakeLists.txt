@@ -74,7 +74,7 @@ add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} gui)
 
 # Generate export header
-dart_add_export_file(${target_name} COMPONENT_PATH gui/osg)
+dart_generate_export_header(${target_name} COMPONENT_PATH gui/osg)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui osg headers" ${hdrs})

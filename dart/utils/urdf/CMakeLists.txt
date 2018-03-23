@@ -56,7 +56,7 @@ target_link_libraries(
 )
 
 # Generate export header
-dart_add_export_file(${target_name} COMPONENT_PATH utils/urdf)
+dart_generate_export_header(${target_name} COMPONENT_PATH utils/urdf)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
