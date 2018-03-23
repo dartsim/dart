@@ -245,7 +245,7 @@ function(dart_add_export_file target_name)
   file(APPEND "${output_path}" "#endif // ${header_guard_name}\n")
   install(
     FILES ${output_path}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/component_path
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${component_path}
     COMPONENT headers
   )
 endfunction()
