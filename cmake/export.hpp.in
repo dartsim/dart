@@ -1,0 +1,14 @@
+// Automatically generated file by CMake
+
+#ifndef @header_guard_name@
+#define @header_guard_name@
+
+#include "@component_detail_export_path@"
+
+#define @base_name_upper@_API\
+    @base_name_upper@_DETAIL_API
+
+#define @base_name_upper@_DEPRECATED_API(version)\
+    @base_name_upper@_DETAIL_DEPRECATED_EXPORT
+
+#endif // @header_guard_name@

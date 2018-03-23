@@ -181,9 +181,11 @@ endmacro()
 #===============================================================================
 # Function to create an export header for control of binary symbols visibility.
 #
-# dart_add_export_file(<target_name>
-#     [BASE_NAME <base_name>]
-#     [COMPONENT_PATH <component_path>]
+# dart_add_export_file(
+#   <target_name>
+#   [BASE_NAME <base_name>]
+#   [COMPONENT_PATH <component_path>]
+# )
 function(dart_add_export_file target_name)
   # Parse boolean, unary, and list arguments from input.
   # Unparsed arguments can be found in variable ARG_UNPARSED_ARGUMENTS.
@@ -204,7 +206,6 @@ function(dart_add_export_file target_name)
     set(base_name ${_geh_BASE_NAME})
   endif()
   string(TOUPPER ${base_name} base_name_upper)
-  string(TOLOWER ${base_name} base_name_lower)
 
   # Componenet path
   set(component_path "dart")
@@ -228,21 +229,11 @@ function(dart_add_export_file target_name)
   # Generate final export header
   set(header_guard_name ${base_name_upper}_EXPORT_HPP_)
   set(output_path "${CMAKE_CURRENT_BINARY_DIR}/export.hpp")
-  file(WRITE "${output_path}" "")
-  file(APPEND "${output_path}" "// Automatically generated file by CMake\n")
-  file(APPEND "${output_path}" "\n")
-  file(APPEND "${output_path}" "#ifndef ${header_guard_name}\n")
-  file(APPEND "${output_path}" "#define ${header_guard_name}\n")
-  file(APPEND "${output_path}" "\n")
-  file(APPEND "${output_path}" "#include \"${component_detail_export_path}\"\n")
-  file(APPEND "${output_path}" "\n")
-  file(APPEND "${output_path}" "#define ${base_name_upper}_API\\\n")
-  file(APPEND "${output_path}" "    ${base_name_upper}_DETAIL_API\n")
-  file(APPEND "${output_path}" "\n")
-  file(APPEND "${output_path}" "#define ${base_name_upper}_DEPRECATED_API(version)\\\n")
-  file(APPEND "${output_path}" "    ${base_name_upper}_DETAIL_DEPRECATED_EXPORT\n")
-  file(APPEND "${output_path}" "\n")
-  file(APPEND "${output_path}" "#endif // ${header_guard_name}\n")
+  configure_file(
+    "${CMAKE_SOURCE_DIR}/cmake/export.hpp.in"
+    "${output_path}"
+    @ONLY
+  )
   install(
     FILES ${output_path}
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${component_path}
