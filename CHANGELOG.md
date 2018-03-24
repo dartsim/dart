@@ -45,6 +45,12 @@
   * Fixed various build issues with Visual Studio: [#956](https://github.com/dartsim/dart/pull/956)
   * Removed TinyXML dependency: [#993](https://github.com/dartsim/dart/pull/993)
 
+### [DART 6.3.1 (2018-03-14)](https://github.com/dartsim/dart/milestone/42?closed=1)
+
+* ROS support
+
+  * Tweaked package.xml for catkin support: [#1027](https://github.com/dartsim/dart/pull/1027), [#1029](https://github.com/dartsim/dart/pull/1029), [#1031](https://github.com/dartsim/dart/pull/1031), [#1032](https://github.com/dartsim/dart/pull/1031), [#1033](https://github.com/dartsim/dart/pull/1033)
+
 ### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)
 
 * Collision detection

@@ -1,4 +1,4 @@
-# DART Tutotirals README
+# DART Tutorials README
 
 The purpose of this set of tutorials is to provide a quick introduction to
 using DART. We designed many hands-on exercises to make the learning
