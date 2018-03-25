@@ -35,7 +35,7 @@
 #include <dart/collision/ode/ode.hpp>
 #include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
-#include <dart/io/io>
+#include <dart/io/io.hpp>
 #include "HumanArmJointLimitConstraint.hpp"
 #include "HumanLegJointLimitConstraint.hpp"
 
