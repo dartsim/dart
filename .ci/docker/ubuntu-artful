@@ -1,5 +1,7 @@
 FROM ubuntu:artful
 
+RUN apt-get update -qq
+RUN apt-get install -y software-properties-common
 RUN add-apt-repository ppa:dartsim/ppa -y
 RUN apt-get update -qq
 RUN apt-get install -y \
