@@ -22,7 +22,7 @@ matrix:
       compiler: clang
       env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
     - os: linux
-      env: DOCKER_FILE="ubuntu-bionic"
+      env: DOCKER_FILE="ubuntu-bionic" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
       services: docker
     - os: osx
       osx_image: xcode9.3beta
@@ -38,9 +38,14 @@ install:
       '.ci/install.sh';
     fi
 
+before_script:
+  - if [ -n "$DOCKER_FILE" ]; then
+      docker run -itd -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR --name dart-docker "$DOCKER_FILE";
+    fi
+
 script:
   - if [ -n "$DOCKER_FILE" ]; then
-      docker exec test-docker /bin/sh -c "cd $TRAVIS_BUILD_DIR && ./.ci/script.sh";
+      docker exec dart-docker /bin/sh -c "cd $TRAVIS_BUILD_DIR && ./.ci/script.sh";
     else
       '.ci/script.sh';
     fi
