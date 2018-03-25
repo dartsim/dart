@@ -47,6 +47,10 @@
 
 ### [DART 6.3.1 (2018-03-14)](https://github.com/dartsim/dart/milestone/42?closed=1)
 
+* Build system
+
+  * Remove an undefined cmake macro/function: [#1036](https://github.com/dartsim/dart/pull/1036)
+
 * ROS support
 
   * Tweaked package.xml for catkin support: [#1027](https://github.com/dartsim/dart/pull/1027), [#1029](https://github.com/dartsim/dart/pull/1029), [#1031](https://github.com/dartsim/dart/pull/1031), [#1032](https://github.com/dartsim/dart/pull/1031), [#1033](https://github.com/dartsim/dart/pull/1033)
