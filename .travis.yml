@@ -34,13 +34,11 @@ matrix:
       env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
 
 install:
-  - if [ -z "$DOCKER_FILE" ]; then
-      '.ci/install.sh';
-    fi
-
-before_script:
   - if [ -n "$DOCKER_FILE" ]; then
+      docker build -t "$DOCKER_FILE" -f ".ci/docker/$DOCKER_FILE" .;
       docker run -itd -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR --name dart-docker "$DOCKER_FILE";
+    else
+      '.ci/install.sh';
     fi
 
 script:
