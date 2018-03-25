@@ -39,3 +39,7 @@ dart_format_add(
   detail/TranslationalJoint2DAspect.hpp
   detail/TranslationalJoint2DAspect.cpp
 )
+
+dart_format_add(
+  SmartPointer.hpp
+)

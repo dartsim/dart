@@ -32,6 +32,7 @@ install(
 )
 
 dart_format_add(
+  SmartPointer.hpp
   Version.hpp
   Version.cpp
 )
