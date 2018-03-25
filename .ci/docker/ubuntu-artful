@@ -2,6 +2,7 @@ FROM ubuntu:artful
 
 RUN apt-get update -qq
 RUN apt-get install -y \
+    sudo \
     build-essential  \
     cmake \
     pkg-config \
@@ -24,3 +25,6 @@ RUN apt-get install -y \
     libopenscenegraph-dev \
     clang-format-3.8 \
     lcov
+
+RUN useradd -m docker && echo "docker:docker" | chpasswd && adduser docker sudo
+USER docker
