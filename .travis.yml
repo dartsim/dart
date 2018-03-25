@@ -31,10 +31,10 @@ matrix:
       env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
 
 install:
-  - 'ci/install.sh'
+  - '.ci/install.sh'
 
 script:
-  - 'ci/script.sh'
+  - '.ci/script.sh'
 
 after_success:
   - if [ $CODECOV = ON ]; then bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"; fi
