@@ -22,7 +22,7 @@ matrix:
       compiler: clang
       env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
     - os: linux
-      env: DOCKER_FILE="ubuntu-bionic" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+      env: DOCKER_FILE="ubuntu-artful" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
       services: docker
     - os: osx
       osx_image: xcode9.3beta
