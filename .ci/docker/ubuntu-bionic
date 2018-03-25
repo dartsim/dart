@@ -2,6 +2,7 @@ FROM ubuntu:bionic
 
 RUN apt-get update -qq
 RUN apt-get install -y \
+    sudo \
     build-essential  \
     cmake \
     pkg-config \
