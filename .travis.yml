@@ -11,16 +11,16 @@ matrix:
   include:
     - os: linux
       compiler: gcc
-      env: BUILD_TYPE=Debug CODECOV=ON COMPILER=GCC
+      env: SUDO=sudo BUILD_TYPE=Debug CODECOV=ON COMPILER=GCC
     - os: linux
       compiler: gcc
-      env: BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+      env: SUDO=sudo BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
     - os: linux
       compiler: clang
-      env: BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
+      env: SUDO=sudo BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
     - os: linux
       compiler: clang
-      env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
+      env: SUDO=sudo BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
     - os: linux
       env: DOCKER_FILE="ubuntu-xenial" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
       services: docker
