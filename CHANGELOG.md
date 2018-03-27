@@ -45,7 +45,7 @@
   * Fixed various build issues with Visual Studio: [#956](https://github.com/dartsim/dart/pull/956)
   * Removed TinyXML dependency: [#993](https://github.com/dartsim/dart/pull/993)
 
-### [DART 6.3.1 (2018-03-14)](https://github.com/dartsim/dart/milestone/42?closed=1)
+### [DART 6.3.1 (2018-03-21)](https://github.com/dartsim/dart/milestone/42?closed=1)
 
 * Build system
 
