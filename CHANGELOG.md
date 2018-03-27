@@ -16,7 +16,7 @@
 
 ## DART 6
 
-### DART 6.4.0 (201X-XX-XX)
+### [DART 6.4.0 (2018-03-26)](https://github.com/dartsim/dart/milestone/39?closed=1)
 
 * Common
 
@@ -61,7 +61,11 @@
   * Fixed various build issues with Visual Studio: [#956](https://github.com/dartsim/dart/pull/956)
   * Removed TinyXML dependency: [#993](https://github.com/dartsim/dart/pull/993)
 
-### [DART 6.3.1 (2018-03-14)](https://github.com/dartsim/dart/milestone/42?closed=1)
+### [DART 6.3.1 (2018-03-21)](https://github.com/dartsim/dart/milestone/42?closed=1)
+
+* Build system
+
+  * Removed an undefined cmake macro/function: [#1036](https://github.com/dartsim/dart/pull/1036)
 
 * ROS support
 

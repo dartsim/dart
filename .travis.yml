@@ -11,16 +11,25 @@ matrix:
   include:
     - os: linux
       compiler: gcc
-      env: BUILD_TYPE=Debug CODECOV=ON COMPILER=GCC
+      env: SUDO=sudo BUILD_TYPE=Debug CODECOV=ON COMPILER=GCC
     - os: linux
       compiler: gcc
-      env: BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+      env: SUDO=sudo BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
     - os: linux
       compiler: clang
-      env: BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
+      env: SUDO=sudo BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
     - os: linux
       compiler: clang
-      env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
+      env: SUDO=sudo BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
+    - os: linux
+      env: DOCKER_FILE="ubuntu-xenial" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+      services: docker
+    - os: linux
+      env: DOCKER_FILE="ubuntu-artful" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+      services: docker
+    - os: linux
+      env: DOCKER_FILE="ubuntu-bionic" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+      services: docker
     - os: osx
       osx_image: xcode9.3beta
       compiler: clang
@@ -31,10 +40,19 @@ matrix:
       env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
 
 install:
-  - 'ci/install.sh'
+  - if [ -n "$DOCKER_FILE" ]; then
+      docker build -t "$DOCKER_FILE" -f ".ci/docker/$DOCKER_FILE" .;
+      docker run -itd -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR --env-file .ci/env.list --name dart-docker "$DOCKER_FILE";
+    else
+      '.ci/install.sh';
+    fi
 
 script:
-  - 'ci/script.sh'
+  - if [ -n "$DOCKER_FILE" ]; then
+      docker exec dart-docker /bin/sh -c "cd $TRAVIS_BUILD_DIR && ./.ci/script.sh";
+    else
+      '.ci/script.sh';
+    fi
 
 after_success:
   - if [ $CODECOV = ON ]; then bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"; fi
