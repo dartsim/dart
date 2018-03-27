@@ -1,6 +1,6 @@
 ## DART 6
 
-### DART 6.4.0 (201X-XX-XX)
+### [DART 6.4.0 (2018-03-26)](https://github.com/dartsim/dart/milestone/39?closed=1)
 
 * Common
 
@@ -49,7 +49,7 @@
 
 * Build system
 
-  * Remove an undefined cmake macro/function: [#1036](https://github.com/dartsim/dart/pull/1036)
+  * Removed an undefined cmake macro/function: [#1036](https://github.com/dartsim/dart/pull/1036)
 
 * ROS support
 
