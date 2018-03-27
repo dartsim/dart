@@ -42,7 +42,6 @@ TEST(Version, Create)
   std::string verStr1("0.0.0");
   std::string verStr2("1.0.0");
   std::string verStr3("1.2.0");
-  std::string verStr3("1.2.3");
 
   Version ver1(verStr1);
 
