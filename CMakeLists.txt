@@ -275,7 +275,7 @@ if(TARGET dart)
   add_subdirectory(unittests EXCLUDE_FROM_ALL)
 
   # Add example subdirectories and an "examples" target.
-  add_subdirectory(examples)
+  add_subdirectory(examples EXCLUDE_FROM_ALL)
   get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
   add_custom_target(examples DEPENDS ${examples})
 
@@ -291,7 +291,7 @@ if(TARGET dart)
   endif(DART_VERBOSE)
 
   # Add a "tutorials" target to build tutorials.
-  add_subdirectory(tutorials)
+  add_subdirectory(tutorials EXCLUDE_FROM_ALL)
   get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
   add_custom_target(tutorials DEPENDS ${tutorials})
 
