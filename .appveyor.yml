@@ -3,7 +3,7 @@ version: "{build}"
 
 image:
   - Visual Studio 2017
-  - Ubuntu
+  #- Ubuntu
 
 platform: x64
 

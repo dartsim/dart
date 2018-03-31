@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
- 
-set -e
+set -ex
 
 sudo apt-add-repository --yes ppa:libccd-debs/ppa
 sudo apt-add-repository --yes ppa:fcl-debs/ppa

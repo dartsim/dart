@@ -7,7 +7,7 @@ endif()
 
 project(osgSoftBodies)
 
-find_package(DART 6.4.0 REQUIRED COMPONENTS utils-urdf gui-osg CONFIG)
+find_package(DART 6.5.0 REQUIRED COMPONENTS utils-urdf gui-osg CONFIG)
 
 add_compile_options(-std=c++11)
 
