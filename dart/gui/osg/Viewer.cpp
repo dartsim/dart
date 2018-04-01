@@ -844,7 +844,7 @@ const ::osg::ref_ptr<::osg::Group>& Viewer::getRootGroup() const
 }
 
 //==============================================================================
-bool Viewer::setMasterCameraFieldOfView(double fov)
+void Viewer::setVerticalFieldOfView(double fov)
 {
   double fovy;
   double aspectRatio;
@@ -856,14 +856,18 @@ bool Viewer::setMasterCameraFieldOfView(double fov)
   const bool result = camera->getProjectionMatrixAsPerspective(
       fovy, aspectRatio, zNear, zFar);
 
-  if (result)
-    camera->setProjectionMatrixAsPerspective(fov, aspectRatio, zNear, zFar);
+  if (!result)
+  {
+    dtwarn << "[Viewer::getMasterCameraFieldOfView] Attemping to set vertical "
+           << "field of view while the camera isn't perspective view. "
+           << "Ignoring this request.\n";
+  }
 
-  return result;
+  camera->setProjectionMatrixAsPerspective(fov, aspectRatio, zNear, zFar);
 }
 
 //==============================================================================
-double Viewer::getMasterCameraFieldOfView() const
+double Viewer::getVerticalFieldOfView() const
 {
   double fovy;
   double aspectRatio;
@@ -875,10 +879,15 @@ double Viewer::getMasterCameraFieldOfView() const
   const bool result = camera->getProjectionMatrixAsPerspective(
       fovy, aspectRatio, zNear, zFar);
 
-  if (result)
-    return fovy;
+  if (!result)
+  {
+    dtwarn << "[Viewer::getMasterCameraFieldOfView] Vertical field of view is "
+           << "requested while the camera isn't perspective view. "
+           << "Returning 0.0\n";
+    return 0.0;
+  }
 
-  return 0.0;
+  return fovy;
 }
 
 } // namespace osg
