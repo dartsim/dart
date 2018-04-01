@@ -293,6 +293,16 @@ public:
   /// Get the root ::osg::Group of this Viewer
   const ::osg::ref_ptr<::osg::Group>& getRootGroup() const;
 
+  /// Sets the field of view of the master camera of the view.
+  /// \param[in] fov Field of view in degree.
+  /// \return True if the camera is perspective view, false otherwise.
+  bool setMasterCameraFieldOfView(double fov);
+
+  /// Retruns the field of view of the master camera of the view.
+  /// \return Field of view in degree if the camera is perspective view, 0.0
+  /// otherwise.
+  double getMasterCameraFieldOfView() const;
+
 protected:
 
   friend class SaveScreen;

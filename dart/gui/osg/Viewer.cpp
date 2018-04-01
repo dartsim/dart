@@ -843,6 +843,44 @@ const ::osg::ref_ptr<::osg::Group>& Viewer::getRootGroup() const
   return mRootGroup;
 }
 
+//==============================================================================
+bool Viewer::setMasterCameraFieldOfView(double fov)
+{
+  double fovy;
+  double aspectRatio;
+  double zNear;
+  double zFar;
+
+  auto* camera = getCamera();
+  assert(camera);
+  const bool result = camera->getProjectionMatrixAsPerspective(
+      fovy, aspectRatio, zNear, zFar);
+
+  if (result)
+    camera->setProjectionMatrixAsPerspective(fov, aspectRatio, zNear, zFar);
+
+  return result;
+}
+
+//==============================================================================
+double Viewer::getMasterCameraFieldOfView() const
+{
+  double fovy;
+  double aspectRatio;
+  double zNear;
+  double zFar;
+
+  const auto* camera = getCamera();
+  assert(camera);
+  const bool result = camera->getProjectionMatrixAsPerspective(
+      fovy, aspectRatio, zNear, zFar);
+
+  if (result)
+    return fovy;
+
+  return 0.0;
+}
+
 } // namespace osg
 } // namespace gui
 } // namespace dart
