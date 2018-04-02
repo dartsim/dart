@@ -852,7 +852,14 @@ void Viewer::setVerticalFieldOfView(double fov)
   double zFar;
 
   auto* camera = getCamera();
-  assert(camera);
+
+  if (!camera)
+  {
+    dtwarn << "[Viewer::getMasterCameraFieldOfView] This viewer doesn't have "
+           << "any cameras. Ignoring this request.\n";
+    return;
+  }
+
   const bool result = camera->getProjectionMatrixAsPerspective(
       fovy, aspectRatio, zNear, zFar);
 
@@ -861,6 +868,7 @@ void Viewer::setVerticalFieldOfView(double fov)
     dtwarn << "[Viewer::getMasterCameraFieldOfView] Attemping to set vertical "
            << "field of view while the camera isn't perspective view. "
            << "Ignoring this request.\n";
+    return;
   }
 
   camera->setProjectionMatrixAsPerspective(fov, aspectRatio, zNear, zFar);
@@ -875,7 +883,14 @@ double Viewer::getVerticalFieldOfView() const
   double zFar;
 
   const auto* camera = getCamera();
-  assert(camera);
+
+  if (!camera)
+  {
+    dtwarn << "[Viewer::getMasterCameraFieldOfView] This viewer doesn't have "
+           << "any cameras. Returning 0.0.\n";
+    return 0.0;
+  }
+
   const bool result = camera->getProjectionMatrixAsPerspective(
       fovy, aspectRatio, zNear, zFar);
 
@@ -883,7 +898,7 @@ double Viewer::getVerticalFieldOfView() const
   {
     dtwarn << "[Viewer::getMasterCameraFieldOfView] Vertical field of view is "
            << "requested while the camera isn't perspective view. "
-           << "Returning 0.0\n";
+           << "Returning 0.0.\n";
     return 0.0;
   }
 
