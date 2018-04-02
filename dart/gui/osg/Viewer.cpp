@@ -844,7 +844,7 @@ const ::osg::ref_ptr<::osg::Group>& Viewer::getRootGroup() const
 }
 
 //==============================================================================
-void Viewer::setVerticalFieldOfView(double fov)
+void Viewer::setVerticalFieldOfView(const double fov)
 {
   double fovy;
   double aspectRatio;
