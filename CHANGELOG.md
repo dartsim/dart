@@ -1,6 +1,6 @@
 ## DART 6
 
-### DART 6.4.0 (201X-XX-XX)
+### DART 6.5.0 (201X-XX-XX)
 
 * GUI
 
