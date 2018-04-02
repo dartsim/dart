@@ -855,7 +855,7 @@ void Viewer::setVerticalFieldOfView(double fov)
 
   if (!camera)
   {
-    dtwarn << "[Viewer::getMasterCameraFieldOfView] This viewer doesn't have "
+    dtwarn << "[Viewer::setMasterCameraFieldOfView] This viewer doesn't have "
            << "any cameras. Ignoring this request.\n";
     return;
   }
@@ -865,7 +865,7 @@ void Viewer::setVerticalFieldOfView(double fov)
 
   if (!result)
   {
-    dtwarn << "[Viewer::getMasterCameraFieldOfView] Attemping to set vertical "
+    dtwarn << "[Viewer::setMasterCameraFieldOfView] Attemping to set vertical "
            << "field of view while the camera isn't perspective view. "
            << "Ignoring this request.\n";
     return;
