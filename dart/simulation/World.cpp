@@ -392,6 +392,13 @@ std::set<dynamics::SkeletonPtr> World::removeAllSkeletons()
 }
 
 //==============================================================================
+bool World::hasSkeleton(const dynamics::SkeletonPtr& skeleton)
+{
+  return std::find(mSkeletons.begin(), mSkeletons.end(), skeleton)
+      != mSkeletons.end();
+}
+
+//==============================================================================
 int World::getIndex(int _index) const
 {
   return mIndices[_index];

@@ -149,6 +149,9 @@ public:
   /// pointers to them, in case you want to recycle them
   std::set<dynamics::SkeletonPtr> removeAllSkeletons();
 
+  /// Returns wether this World contains a Skeleton.
+  bool hasSkeleton(const dynamics::SkeletonPtr& skeleton);
+
   /// Get the dof index for the indexed skeleton
   int getIndex(int _index) const;
 
