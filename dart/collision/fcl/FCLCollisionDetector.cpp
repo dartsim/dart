@@ -1398,6 +1398,8 @@ void postProcessDART(
       pair1.triID2 = c.b2;
       pair2 = pair1;
 
+      // TODO(JS): Fix the wrong assumption that the two shapes are always
+      // meshes.
       auto contactResult = evalContactPosition(
             c,
             static_cast<const ::fcl::BVHModel<dart::collision::fcl::OBBRSS>*>(c.o1),
