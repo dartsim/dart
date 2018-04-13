@@ -34,6 +34,7 @@
 #define DART_DYNAMICS_OCTREESHAPE_HPP_
 
 #include <octomap/octomap.h>
+#include "dart/collision/fcl/BackwardCompatibility.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
@@ -48,7 +49,7 @@ public:
 
   /// Constructor.
   /// \param[in] octree Octree.
-  explicit OctreeShape(std::shared_ptr<octomap::OcTree> octree);
+  explicit OctreeShape(fcl_shared_ptr<octomap::OcTree> octree);
 
   /// Destructor.
   virtual ~OctreeShape() = default;
@@ -60,18 +61,18 @@ public:
   static const std::string& getStaticType();
 
   /// Sets octree.
-  void setOctree(std::shared_ptr<octomap::OcTree> octree);
+  void setOctree(fcl_shared_ptr<octomap::OcTree> octree);
 
   /// Returns octree.
-  std::shared_ptr<octomap::OcTree> getOctree();
+  fcl_shared_ptr<octomap::OcTree> getOctree();
 
   /// Returns octree.
-  std::shared_ptr<const octomap::OcTree> getOctree() const;
+  fcl_shared_ptr<const octomap::OcTree> getOctree() const;
 
   /// Sets occupany at a point.
   void setOccupancy(const Eigen::Vector3d& point, bool occupy);
 
-  // TODO(JS): Enable to take point cloud.
+  // TODO(JS): Take point cloud.
 
   /// Occupy a point.
   void occupy(const Eigen::Vector3d& point);
@@ -90,7 +91,8 @@ protected:
   void updateVolume() const override;
 
   /// Octree.
-  std::shared_ptr<octomap::OcTree> mOctree;
+  fcl_shared_ptr<octomap::OcTree> mOctree;
+  // TODO(JS): Change this to std::shared_ptr once we drop FCL (< 0.5) support
 };
 
 } // namespace dynamics

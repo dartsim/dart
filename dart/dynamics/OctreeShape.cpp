@@ -44,7 +44,7 @@ OctreeShape::OctreeShape(double resolution) : Shape()
 }
 
 //==============================================================================
-OctreeShape::OctreeShape(std::shared_ptr<octomap::OcTree> octree) : Shape()
+OctreeShape::OctreeShape(fcl_shared_ptr<octomap::OcTree> octree) : Shape()
 {
   setOctree(std::move(octree));
 }
@@ -63,7 +63,7 @@ const std::string& OctreeShape::getStaticType()
 }
 
 //==============================================================================
-void OctreeShape::setOctree(std::shared_ptr<octomap::OcTree> octree)
+void OctreeShape::setOctree(fcl_shared_ptr<octomap::OcTree> octree)
 {
   if (octree == mOctree)
     return;
@@ -75,13 +75,13 @@ void OctreeShape::setOctree(std::shared_ptr<octomap::OcTree> octree)
 }
 
 //==============================================================================
-std::shared_ptr<octomap::OcTree> OctreeShape::getOctree()
+fcl_shared_ptr<octomap::OcTree> OctreeShape::getOctree()
 {
   return mOctree;
 }
 
 //==============================================================================
-std::shared_ptr<const octomap::OcTree> OctreeShape::getOctree() const
+fcl_shared_ptr<const octomap::OcTree> OctreeShape::getOctree() const
 {
   return mOctree;
 }

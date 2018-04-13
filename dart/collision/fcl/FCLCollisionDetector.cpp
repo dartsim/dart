@@ -1041,8 +1041,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     auto octreeShape = static_cast<const OctreeShape*>(shape.get());
     auto octree = octreeShape->getOctree();
 
-    // TODO(JS): Resolve boost::shared_ptr vs. std::shared_ptr problem
-    // geom = new dart::collision::fcl::OcTree(octree);
+    geom = new dart::collision::fcl::OcTree(octree);
   }
   else
   {
