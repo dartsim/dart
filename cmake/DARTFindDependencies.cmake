@@ -99,6 +99,9 @@ else()
   find_package(Boost ${DART_MIN_BOOST_VERSION} QUIET REQUIRED COMPONENTS ${BOOST_REQUIRED_COMPONENTS})
 endif()
 
+find_package(octomap REQUIRED)
+# TODO(JS): Decide whether to make this required or optional
+
 #--------------------
 # Misc. dependencies
 #--------------------

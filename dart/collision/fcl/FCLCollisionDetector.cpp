@@ -51,6 +51,7 @@
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/OctreeShape.hpp"
 
 namespace dart {
 namespace collision {
@@ -923,6 +924,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::PlaneShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
+  using dynamics::OctreeShape;
 
   dart::collision::fcl::CollisionGeometry* geom = nullptr;
   const auto& shapeType = shape->getType();
@@ -1031,6 +1033,16 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     auto aiMesh = softMeshShape->getAssimpMesh();
 
     geom = createSoftMesh<dart::collision::fcl::OBBRSS>(aiMesh);
+  }
+  else if (OctreeShape::getStaticType() == shapeType)
+  {
+    assert(dynamic_cast<const OctreeShape*>(shape.get()));
+
+    auto octreeShape = static_cast<const OctreeShape*>(shape.get());
+    auto octree = octreeShape->getOctree();
+
+    // TODO(JS): Resolve boost::shared_ptr vs. std::shared_ptr problem
+    // geom = new dart::collision::fcl::OcTree(octree);
   }
   else
   {

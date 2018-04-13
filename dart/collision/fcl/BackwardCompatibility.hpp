@@ -69,6 +69,7 @@
 #include <fcl/distance.h>
 #endif
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
+#include <fcl/octree.h>
 
 #if FCL_VERSION_AT_LEAST(0,5,0)
 #include <memory>
@@ -95,6 +96,7 @@ using Cylinder = ::fcl::Cylinder<double>;
 using Ellipsoid = ::fcl::Ellipsoid<double>;
 using Halfspace = ::fcl::Halfspace<double>;
 using Sphere = ::fcl::Sphere<double>;
+using OcTree = ::fcl::OcTree<double>;
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject<double>;
 using CollisionGeometry = ::fcl::CollisionGeometry<double>;
@@ -116,6 +118,7 @@ using Box = ::fcl::Box;
 using Cylinder = ::fcl::Cylinder;
 using Halfspace = ::fcl::Halfspace;
 using Sphere = ::fcl::Sphere;
+using OcTree = ::fcl::OcTree;
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject;
 using CollisionGeometry = ::fcl::CollisionGeometry;
