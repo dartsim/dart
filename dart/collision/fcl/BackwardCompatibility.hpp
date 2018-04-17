@@ -75,10 +75,21 @@
 #include <memory>
 template <class T> using fcl_shared_ptr = std::shared_ptr<T>;
 template <class T> using fcl_weak_ptr = std::weak_ptr<T>;
+template <class T, class... Args>
+fcl_shared_ptr<T> fcl_make_shared(Args&&... args)
+{
+  return std::make_shared<T>(std::forward<Args>(args)...);
+}
 #else
 #include <boost/weak_ptr.hpp>
+#include <boost/make_shared.hpp>
 template <class T> using fcl_shared_ptr = boost::shared_ptr<T>;
 template <class T> using fcl_weak_ptr = boost::weak_ptr<T>;
+template <class T, class... Args>
+fcl_shared_ptr<T> fcl_make_shared(Args&&... args)
+{
+  return boost::make_shared<T>(std::forward<Args>(args)...);
+}
 #endif
 
 namespace dart {
