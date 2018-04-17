@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_OCTREESHAPE_HPP_
-#define DART_DYNAMICS_OCTREESHAPE_HPP_
+#ifndef DART_DYNAMICS_VOXELSHAPE_HPP_
+#define DART_DYNAMICS_VOXELSHAPE_HPP_
 
 #include <octomap/octomap.h>
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
@@ -40,19 +40,19 @@
 namespace dart {
 namespace dynamics {
 
-class OctreeShape : public Shape
+class VoxelShape : public Shape
 {
 public:
   /// Constructor.
   /// \param[in] resolution Size of voxel. Default is 0.01.
-  explicit OctreeShape(double resolution = 0.01);
+  explicit VoxelShape(double resolution = 0.01);
 
   /// Constructor.
   /// \param[in] octree Octree.
-  explicit OctreeShape(fcl_shared_ptr<octomap::OcTree> octree);
+  explicit VoxelShape(fcl_shared_ptr<octomap::OcTree> octree);
 
   /// Destructor.
-  virtual ~OctreeShape() = default;
+  virtual ~VoxelShape() = default;
 
   // Documentation inherited.
   const std::string& getType() const override;
@@ -98,4 +98,4 @@ protected:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_OCTREESHAPE_HPP_
+#endif // DART_DYNAMICS_VOXELSHAPE_HPP_

@@ -78,12 +78,12 @@ public:
     mWorld->addSimpleFrame(mTarget);
 
     // Create octree
-    mOctreeSimpleFrame
+    mVoxelSimpleFrame
         = std::make_shared<SimpleFrame>(Frame::World(), "Octree Simple Frame");
-    auto octreeShape = std::make_shared<OctreeShape>(0.01);
-    octreeShape->occupy(Eigen::Vector3d(0, 0, 0));
-    mOctreeSimpleFrame->setShape(octreeShape);
-    mWorld->addSimpleFrame(mOctreeSimpleFrame);
+    auto voxelShape = std::make_shared<VoxelShape>(0.01);
+    voxelShape->occupy(Eigen::Vector3d(0, 0, 0));
+    mVoxelSimpleFrame->setShape(voxelShape);
+    mWorld->addSimpleFrame(mVoxelSimpleFrame);
 
     mOffset
         = mEndEffector->getWorldTransform().rotation().transpose() * mOffset;
@@ -139,7 +139,7 @@ protected:
   SkeletonPtr mRobot;
   BodyNode* mEndEffector;
   SimpleFramePtr mTarget;
-  SimpleFramePtr mOctreeSimpleFrame;
+  SimpleFramePtr mVoxelSimpleFrame;
 
   Eigen::Vector3d mOffset;
   Eigen::Matrix3d mKp;

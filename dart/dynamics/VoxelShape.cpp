@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/OctreeShape.hpp"
+#include "dart/dynamics/VoxelShape.hpp"
 
 #include "dart/math/Helpers.hpp"
 
@@ -38,32 +38,32 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-OctreeShape::OctreeShape(double resolution) : Shape()
+VoxelShape::VoxelShape(double resolution) : Shape()
 {
-  setOctree(std::make_shared<octomap::OcTree>(resolution));
+  setOctree(fcl_make_shared<octomap::OcTree>(resolution));
 }
 
 //==============================================================================
-OctreeShape::OctreeShape(fcl_shared_ptr<octomap::OcTree> octree) : Shape()
+VoxelShape::VoxelShape(fcl_shared_ptr<octomap::OcTree> octree) : Shape()
 {
   setOctree(std::move(octree));
 }
 
 //==============================================================================
-const std::string& OctreeShape::getType() const
+const std::string& VoxelShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& OctreeShape::getStaticType()
+const std::string& VoxelShape::getStaticType()
 {
-  static const std::string type("OctreeShape");
+  static const std::string type("VoxelShape");
   return type;
 }
 
 //==============================================================================
-void OctreeShape::setOctree(fcl_shared_ptr<octomap::OcTree> octree)
+void VoxelShape::setOctree(fcl_shared_ptr<octomap::OcTree> octree)
 {
   if (octree == mOctree)
     return;
@@ -75,19 +75,19 @@ void OctreeShape::setOctree(fcl_shared_ptr<octomap::OcTree> octree)
 }
 
 //==============================================================================
-fcl_shared_ptr<octomap::OcTree> OctreeShape::getOctree()
+fcl_shared_ptr<octomap::OcTree> VoxelShape::getOctree()
 {
   return mOctree;
 }
 
 //==============================================================================
-fcl_shared_ptr<const octomap::OcTree> OctreeShape::getOctree() const
+fcl_shared_ptr<const octomap::OcTree> VoxelShape::getOctree() const
 {
   return mOctree;
 }
 
 //==============================================================================
-void OctreeShape::setOccupancy(const Eigen::Vector3d& point, bool occupy)
+void VoxelShape::setOccupancy(const Eigen::Vector3d& point, bool occupy)
 {
   if (!mOctree)
     return;
@@ -96,19 +96,19 @@ void OctreeShape::setOccupancy(const Eigen::Vector3d& point, bool occupy)
 }
 
 //==============================================================================
-void OctreeShape::occupy(const Eigen::Vector3d& point)
+void VoxelShape::occupy(const Eigen::Vector3d& point)
 {
   setOccupancy(point, true);
 }
 
 //==============================================================================
-void OctreeShape::unoccupy(const Eigen::Vector3d& point)
+void VoxelShape::unoccupy(const Eigen::Vector3d& point)
 {
   setOccupancy(point, false);
 }
 
 //==============================================================================
-Eigen::Matrix3d OctreeShape::computeInertia(double /*mass*/) const
+Eigen::Matrix3d VoxelShape::computeInertia(double /*mass*/) const
 {
   // TODO(JS): Not implemented. Do we really want to compute inertia out of
   // voxels?
@@ -116,14 +116,14 @@ Eigen::Matrix3d OctreeShape::computeInertia(double /*mass*/) const
 }
 
 //==============================================================================
-void OctreeShape::updateBoundingBox() const
+void VoxelShape::updateBoundingBox() const
 {
   // TODO(JS): Not implemented.
   mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================
-void OctreeShape::updateVolume() const
+void VoxelShape::updateVolume() const
 {
   // TODO(JS): Not implemented.
   mIsVolumeDirty = false;

@@ -41,7 +41,7 @@ dart_format_add(
 )
 
 dart_format_add(
-  OctreeShape.hpp
-  OctreeShape.cpp
+  VoxelShape.hpp
+  VoxelShape.cpp
   SmartPointer.hpp
 )

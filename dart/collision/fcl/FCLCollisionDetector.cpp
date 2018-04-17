@@ -51,7 +51,7 @@
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/dynamics/OctreeShape.hpp"
+#include "dart/dynamics/VoxelShape.hpp"
 
 namespace dart {
 namespace collision {
@@ -924,7 +924,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::PlaneShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
-  using dynamics::OctreeShape;
+  using dynamics::VoxelShape;
 
   dart::collision::fcl::CollisionGeometry* geom = nullptr;
   const auto& shapeType = shape->getType();
@@ -1034,11 +1034,11 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     geom = createSoftMesh<dart::collision::fcl::OBBRSS>(aiMesh);
   }
-  else if (OctreeShape::getStaticType() == shapeType)
+  else if (VoxelShape::getStaticType() == shapeType)
   {
-    assert(dynamic_cast<const OctreeShape*>(shape.get()));
+    assert(dynamic_cast<const VoxelShape*>(shape.get()));
 
-    auto octreeShape = static_cast<const OctreeShape*>(shape.get());
+    auto octreeShape = static_cast<const VoxelShape*>(shape.get());
     auto octree = octreeShape->getOctree();
 
     geom = new dart::collision::fcl::OcTree(octree);
