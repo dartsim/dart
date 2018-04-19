@@ -1450,7 +1450,8 @@ TEST_F(COLLISION, Factory)
 }
 
 //==============================================================================
-TEST_F(COLLISION, Octree)
+#if FCL_HAVE_OCTOMAP
+TEST_F(COLLISION, Voxel)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
@@ -1482,3 +1483,4 @@ TEST_F(COLLISION, Octree)
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() >= 1u);
 }
+#endif
