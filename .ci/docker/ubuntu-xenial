@@ -23,6 +23,7 @@ RUN apt-get install -y \
     liburdfdom-dev \
     liburdfdom-headers-dev \
     libopenscenegraph-dev \
+    liboctomap-dev \
     clang-format-3.8 \
     lcov \
     curl
