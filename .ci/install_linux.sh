@@ -26,7 +26,6 @@ liburdfdom-headers-dev
 libopenscenegraph-dev
 clang-format-3.8
 lcov
-liboctomap-dev
 '
 
 sudo apt-get -qq --yes --force-yes install $APT
