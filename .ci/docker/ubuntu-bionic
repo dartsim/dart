@@ -24,5 +24,5 @@ RUN apt-get install -y \
     liburdfdom-headers-dev \
     libopenscenegraph-dev \
     liboctomap-dev \
-    clang-format-3.8 \
+    clang-format-6.0 \
     lcov
