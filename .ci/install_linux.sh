@@ -9,7 +9,9 @@ sudo apt-get -qq update
 APT='
 cmake
 libassimp-dev
-libboost-all-dev
+libboost-filesystem-dev
+libboost-regex-dev
+libboost-system-dev
 libccd-dev
 libeigen3-dev
 libfcl-dev
