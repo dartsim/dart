@@ -35,6 +35,7 @@
 
 #include <map>
 #include <memory>
+#include <vector>
 
 #include "dart/config.hpp"
 #include "dart/common/Deprecated.hpp"
