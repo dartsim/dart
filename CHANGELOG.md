@@ -4,7 +4,7 @@
 
 * Common
 
-  * Added missing <vector> to Memory.hpp: [#1057](https://github.com/dartsim/dart/pull/1057)
+  * Added missing \<vector\> to Memory.hpp: [#1057](https://github.com/dartsim/dart/pull/1057)
 
 ### [DART 6.4.0 (2018-03-26)](https://github.com/dartsim/dart/milestone/39?closed=1)
 
