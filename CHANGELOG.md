@@ -1,6 +1,16 @@
 ## DART 6
 
-### DART 6.4.0 (201X-XX-XX)
+### DART 6.5.0 (201X-XX-XX)
+
+* GUI
+
+  * Added FOV API to OSG viewer: [#1048](https://github.com/dartsim/dart/pull/1048)
+
+* Simulation
+
+  * Added World::hasSkeleton(): [#1050](https://github.com/dartsim/dart/pull/1050)
+
+### [DART 6.4.0 (2018-03-26)](https://github.com/dartsim/dart/milestone/39?closed=1)
 
 * Common
 
@@ -45,10 +55,15 @@
   * Suppressed -Winjected-class-name warnings from Clang 5.0.0: [#964](https://github.com/dartsim/dart/pull/964)
   * Suppressed -Wdangling-else warnings from GCC 7.2.0: [#937](https://github.com/dartsim/dart/pull/937)
   * Changed console macros to use global namespace resolutions: [#1010](https://github.com/dartsim/dart/pull/1010)
+  * Fixed build with Eigen 3.2.1-3.2.8: [#1042](https://github.com/dartsim/dart/pull/1042)
   * Fixed various build issues with Visual Studio: [#956](https://github.com/dartsim/dart/pull/956)
   * Removed TinyXML dependency: [#993](https://github.com/dartsim/dart/pull/993)
 
-### [DART 6.3.1 (2018-03-14)](https://github.com/dartsim/dart/milestone/42?closed=1)
+### [DART 6.3.1 (2018-03-21)](https://github.com/dartsim/dart/milestone/42?closed=1)
+
+* Build system
+
+  * Removed an undefined cmake macro/function: [#1036](https://github.com/dartsim/dart/pull/1036)
 
 * ROS support
 

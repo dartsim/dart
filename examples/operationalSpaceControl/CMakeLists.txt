@@ -7,7 +7,7 @@ endif()
 
 project(operationalSpaceControl)
 
-find_package(DART 6.4.0 REQUIRED COMPONENTS utils-urdf gui CONFIG)
+find_package(DART 6.5.0 REQUIRED COMPONENTS utils-urdf gui CONFIG)
 
 add_compile_options(-std=c++11)
 
