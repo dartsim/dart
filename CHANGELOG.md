@@ -10,6 +10,10 @@
 
   * Added World::hasSkeleton(): [#1050](https://github.com/dartsim/dart/pull/1050)
 
+* Build system
+
+  * Added preprocessors for controlling symbol visibility: [#1040](https://github.com/dartsim/dart/pull/1040)
+
 ### [DART 6.4.0 (2018-03-26)](https://github.com/dartsim/dart/milestone/39?closed=1)
 
 * Common
@@ -43,10 +47,6 @@
 * License
 
   * Added Personal Robotics Lab and Open Source Robotics Foundation as contributors: [#929](https://github.com/dartsim/dart/pull/929)
-
-* Build system
-
-  * Added preprocessors for controlling symbol visibility: [#1040](https://github.com/dartsim/dart/pull/1040)
 
 * Misc
 
