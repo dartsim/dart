@@ -52,18 +52,18 @@ class Singleton
 public:
   /// Returns reference of the singleton
   template <typename... Args>
-  static T& getSingleton(Args... _args);
+  DART_API static T& getSingleton(Args... _args);
 
   /// Returns pointer of the singleton
   template <typename ... Args>
-  static T* getSingletonPtr(Args... _args);
+  DART_API static T* getSingletonPtr(Args... _args);
 
 protected:
   /// Constructor
-  Singleton() = default;
+  DART_API Singleton() = default;
 
   /// Destructor
-  virtual ~Singleton() = default;
+  DART_API virtual ~Singleton() = default;
 
 private:
   /// Don't implement copy constructor
@@ -74,7 +74,7 @@ private:
 
 private:
   /// Singleton instance
-  static T* mInstance;
+  DART_API static T* mInstance DART_API;
 };
 
 } // namespace common

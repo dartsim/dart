@@ -104,7 +104,7 @@ private:
   static HeldT defaultCreator(Args&&... args);
 
   /// Object creator function map.
-  CreatorMap mCreatorMap;
+  DART_API CreatorMap mCreatorMap;
 };
 
 /// Helper class to register a object creator function to the Singleton.
