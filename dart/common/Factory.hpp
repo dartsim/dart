@@ -57,7 +57,7 @@ template <typename KeyT,
           typename BaseT,
           typename HeldT = std::shared_ptr<BaseT>,
           typename... Args>
-class Factory
+class DART_API Factory
 {
 public:
   struct EnumClassHash;
@@ -104,7 +104,7 @@ private:
   static HeldT defaultCreator(Args&&... args);
 
   /// Object creator function map.
-  DART_API CreatorMap mCreatorMap;
+  CreatorMap mCreatorMap;
 };
 
 /// Helper class to register a object creator function to the Singleton.
@@ -113,7 +113,7 @@ template <typename KeyT,
           typename DerivedT,
           typename HeldT = std::shared_ptr<BaseT>,
           typename... Args>
-class FactoryRegistrar final
+class DART_API FactoryRegistrar final
 {
 public:
   using This = FactoryRegistrar<KeyT, BaseT, DerivedT, HeldT>;

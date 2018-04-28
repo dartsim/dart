@@ -33,6 +33,8 @@
 #ifndef DART_COMMON_SINGLETON_HPP_
 #define DART_COMMON_SINGLETON_HPP_
 
+#include "dart/export.hpp"
+
 namespace dart {
 namespace common {
 
@@ -47,23 +49,23 @@ namespace common {
 /// // Call before main() and use theT only instead of calling getSingleton()
 /// static T& theT = T::getSingleton();
 template<typename T>
-class Singleton
+class DART_API Singleton
 {
 public:
   /// Returns reference of the singleton
   template <typename... Args>
-  DART_API static T& getSingleton(Args... _args);
+  static T& getSingleton(Args... _args);
 
   /// Returns pointer of the singleton
   template <typename ... Args>
-  DART_API static T* getSingletonPtr(Args... _args);
+  static T* getSingletonPtr(Args... _args);
 
 protected:
   /// Constructor
-  DART_API Singleton() = default;
+  Singleton() = default;
 
   /// Destructor
-  DART_API virtual ~Singleton() = default;
+  virtual ~Singleton() = default;
 
 private:
   /// Don't implement copy constructor
@@ -74,7 +76,7 @@ private:
 
 private:
   /// Singleton instance
-  DART_API static T* mInstance DART_API;
+  DART_API static T* mInstance;
 };
 
 } // namespace common
