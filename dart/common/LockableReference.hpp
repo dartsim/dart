@@ -61,8 +61,7 @@ public:
   virtual void lock() = 0;
 
   /// Tries to lock the lockables that this class references; returns false if
-  /// one
-  /// of the lockables is not avaliable.
+  /// one of the lockables is not avaliable.
   virtual bool try_lock() noexcept = 0;
 
   /// Unlocks the lockables.
@@ -74,6 +73,8 @@ protected:
 };
 
 /// This class references a single lockable.
+///
+/// \tparam LockableT The standard C++ Lockable concept object type.
 template <typename LockableT>
 class SingleLockableReference final : public LockableReference
 {
@@ -83,9 +84,8 @@ public:
   /// Constructor from a single lockable.
   ///
   /// \param[in] lockableHolder Weak pointer to an object that holds the
-  /// lockable.
-  /// This is used to lock/unlock this lockable only when the lockable holder is
-  /// not destructed.
+  /// lockable. This is used to check whether the lockable holder is not
+  /// destructed before lock/unlock.
   SingleLockableReference(
       std::weak_ptr<const void> lockableHolder, Lockable& lockable) noexcept;
 
@@ -111,6 +111,8 @@ private:
 /// MultiLockableReference acquires the locks in the specified order, which
 /// means it is the user's responsibility to sort the collection to avoid
 /// deadlock.
+///
+/// \tparam LockableT The standard C++ Lockable concept object type.
 template <typename LockableT>
 class MultiLockableReference final : public LockableReference
 {

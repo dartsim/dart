@@ -96,10 +96,6 @@ MultiLockableReference<Lockable>::MultiLockableReference(
       std::is_same<Lockable, IteratorLockable>::value,
       "Lockable of this class and the lockable of InputIterator are not the "
       "same.");
-
-  mLockables.reserve(distance(first, last));
-  for (; first != last; ++first)
-    mLockables.push_back(ptr(*first));
 }
 
 //==============================================================================
