@@ -7,7 +7,9 @@ RUN apt-get install -y \
     cmake \
     pkg-config \
     libassimp-dev \
-    libboost-all-dev \
+    libboost-filesystem-dev \
+    libboost-regex-dev \
+    libboost-system-dev \
     libccd-dev \
     libeigen3-dev \
     libfcl-dev \
@@ -23,5 +25,5 @@ RUN apt-get install -y \
     liburdfdom-dev \
     liburdfdom-headers-dev \
     libopenscenegraph-dev \
-    clang-format-3.8 \
+    # clang-format-3.8 \  # Disable until higher version is supported
     lcov

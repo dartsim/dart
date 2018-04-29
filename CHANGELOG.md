@@ -16,6 +16,16 @@
 
 ## DART 6
 
+### DART 6.5.0 (201X-XX-XX)
+
+* GUI
+
+  * Added FOV API to OSG viewer: [#1048](https://github.com/dartsim/dart/pull/1048)
+
+* Simulation
+
+  * Added World::hasSkeleton(): [#1050](https://github.com/dartsim/dart/pull/1050)
+
 ### [DART 6.4.0 (2018-03-26)](https://github.com/dartsim/dart/milestone/39?closed=1)
 
 * Common
