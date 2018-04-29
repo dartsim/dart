@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -ex
 
-sudo apt-add-repository --yes ppa:libccd-debs/ppa
-sudo apt-add-repository --yes ppa:fcl-debs/ppa
+if [ $(lsb_release -sc) = "trusty" ]; then
+  sudo apt-add-repository --yes ppa:libccd-debs/ppa
+  sudo apt-add-repository --yes ppa:fcl-debs/ppa
+fi
 sudo apt-add-repository --yes ppa:dartsim/ppa
 sudo apt-get -qq update
 
