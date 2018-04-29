@@ -2,6 +2,10 @@
 
 ### DART 6.5.0 (201X-XX-XX)
 
+* Common
+
+  * Added MutexReference classes: [#1011](https://github.com/dartsim/dart/pull/1011)
+
 * GUI
 
   * Added FOV API to OSG viewer: [#1048](https://github.com/dartsim/dart/pull/1048)
@@ -15,7 +19,6 @@
 * Common
 
   * Added DART_COMMON_DECLARE_SMART_POINTERS macro: [#1022](https://github.com/dartsim/dart/pull/1022)
-  * Added MutexReference classes: [#1011](https://github.com/dartsim/dart/pull/1011)
   * Added ResourceRetriever::getFilePath(): [#972](https://github.com/dartsim/dart/pull/972)
 
 * Kinematics/Dynamics
