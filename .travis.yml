@@ -2,36 +2,46 @@ language: cpp
 
 sudo: required
 
-dist: trusty
-
 cache:
   apt: true
 
 matrix:
   include:
     - os: linux
+      dist: trusty
       compiler: gcc
       env: SUDO=sudo BUILD_TYPE=Debug CODECOV=ON COMPILER=GCC
     - os: linux
+      dist: trusty
       compiler: gcc
       env: SUDO=sudo BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
     - os: linux
+      dist: trusty
       compiler: clang
       env: SUDO=sudo BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
     - os: linux
+      dist: trusty
       compiler: clang
       env: SUDO=sudo BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
     - os: linux
+      dist: xenial
+      compiler: gcc
+      env: SUDO=sudo BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+    - os: linux
+      dist: trusty
       env: DOCKER_FILE="ubuntu-xenial" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
       services: docker
     - os: linux
+      dist: trusty
       env: DOCKER_FILE="ubuntu-bionic" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
       services: docker
     - os: osx
+      dist: trusty
       osx_image: xcode9.3beta
       compiler: clang
       env: BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
     - os: osx
+      dist: trusty
       osx_image: xcode9.3beta
       compiler: clang
       env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
