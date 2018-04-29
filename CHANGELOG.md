@@ -4,7 +4,7 @@
 
 * Common
 
-  * Added MutexReference classes: [#1011](https://github.com/dartsim/dart/pull/1011)
+  * Added LockableReference classes: [#1011](https://github.com/dartsim/dart/pull/1011)
 
 * GUI
 
