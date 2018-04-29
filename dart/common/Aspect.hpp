@@ -125,7 +125,7 @@ protected:
 
 //==============================================================================
 template <class CompositeType>
-class CompositeTrackingAspect : public Aspect
+class DART_API CompositeTrackingAspect : public Aspect
 {
 public:
 

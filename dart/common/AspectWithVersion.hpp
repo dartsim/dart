@@ -61,7 +61,7 @@ template <class DerivedT,
           class CompositeT = Composite,
           void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*>,
           void (*updateProperties)(DerivedT*) = updateState>
-class AspectWithStateAndVersionedProperties :
+class DART_API AspectWithStateAndVersionedProperties :
     public detail::AspectWithVersionedProperties<
         AspectWithState<DerivedT, StateDataT, CompositeT, updateState>,
         DerivedT, PropertiesDataT, CompositeT, updateProperties>

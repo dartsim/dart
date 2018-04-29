@@ -246,7 +246,7 @@ template <class BaseT, class DerivedT, typename PropertiesDataT,
               &DefaultSetEmbeddedProperties<DerivedT, PropertiesT>,
           const PropertiesT& (*getEmbeddedProperties)(const DerivedT*) =
               &DefaultGetEmbeddedProperties<DerivedT, PropertiesT> >
-class EmbeddedPropertiesAspect : public BaseT
+class DART_API EmbeddedPropertiesAspect : public BaseT
 {
 protected:
 

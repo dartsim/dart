@@ -61,7 +61,7 @@ public:
 
 //==============================================================================
 template <class ReqAspect1, class... OtherReqAspects>
-class RequiresAspect<ReqAspect1, OtherReqAspects...> :
+class DART_API RequiresAspect<ReqAspect1, OtherReqAspects...> :
     public CompositeJoiner< Virtual< RequiresAspect<ReqAspect1> >,
                                Virtual< RequiresAspect<OtherReqAspects...> > > { };
 

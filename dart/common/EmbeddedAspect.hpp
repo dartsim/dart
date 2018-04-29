@@ -48,7 +48,7 @@ namespace common {
 /// For more control over how your embedded-state Aspect is implemented, you can
 /// use the detail::EmbeddedStateAspect class.
 template <class CompositeT, typename StateDataT>
-class EmbeddedStateAspect : public detail::EmbeddedStateAspect<
+class DART_API EmbeddedStateAspect : public detail::EmbeddedStateAspect<
     CompositeTrackingAspect<CompositeT>,
     EmbeddedStateAspect<CompositeT, StateDataT>, StateDataT>
 {
@@ -88,7 +88,7 @@ public:
 /// your Composite by using the dart::common::detail::EmbeddedStateAspect class
 /// directly instead of inheriting this class.
 template <class DerivedT, typename StateDataT>
-class EmbedState : public virtual common::RequiresAspect<
+class DART_API EmbedState : public virtual common::RequiresAspect<
     common::EmbeddedStateAspect<DerivedT, StateDataT> >
 {
 public:
@@ -126,7 +126,7 @@ protected:
 /// other Composite objects by listing them as the third (and later) template
 /// arguments.
 template <class DerivedT, typename StateDataT, typename... BaseComposites>
-class EmbedStateOnTopOf : public CompositeJoiner<
+class DART_API EmbedStateOnTopOf : public CompositeJoiner<
     EmbedState<DerivedT, StateDataT>, BaseComposites...>
 {
 public:
@@ -163,9 +163,11 @@ protected:
 /// For more control over how your embedded-properties Aspect is implemented,
 /// you can use the detail::EmbeddedPropertiesAspect class.
 template <class CompositeT, typename PropertiesDataT>
-class EmbeddedPropertiesAspect : public detail::EmbeddedPropertiesAspect<
-    CompositeTrackingAspect<CompositeT>,
-    EmbeddedPropertiesAspect<CompositeT, PropertiesDataT>, PropertiesDataT>
+class DART_API EmbeddedPropertiesAspect :
+    public detail::EmbeddedPropertiesAspect<
+        CompositeTrackingAspect<CompositeT>,
+        EmbeddedPropertiesAspect<CompositeT, PropertiesDataT>,
+        PropertiesDataT>
 {
 public:
 
@@ -205,7 +207,7 @@ public:
 /// dart::common::detail::EmbeddedPropertiesAspect class directly instead of
 /// inheriting this class.
 template <class DerivedT, typename PropertiesDataT>
-class EmbedProperties : public virtual common::RequiresAspect<
+class DART_API EmbedProperties : public virtual common::RequiresAspect<
     common::EmbeddedPropertiesAspect<DerivedT, PropertiesDataT> >
 {
 public:
@@ -243,7 +245,7 @@ protected:
 /// inherit other Composite objects by listing them as the third (and later)
 /// template arguments.
 template <class DerivedT, typename PropertiesDataT, typename... CompositeBases>
-class EmbedPropertiesOnTopOf : public CompositeJoiner<
+class DART_API EmbedPropertiesOnTopOf : public CompositeJoiner<
     EmbedProperties<DerivedT, PropertiesDataT>, CompositeBases...>
 {
 public:
@@ -283,7 +285,7 @@ protected:
 // on top of each other without the conflict that would arise from both of them
 // inheriting from common::Aspect.
 template <class CompositeT, typename StateDataT, typename PropertiesDataT>
-class EmbeddedStateAndPropertiesAspect :
+class DART_API EmbeddedStateAndPropertiesAspect :
     public detail::EmbeddedPropertiesAspect<
         detail::EmbeddedStateAspect<
             CompositeTrackingAspect<CompositeT>,
@@ -379,7 +381,7 @@ public:
 /// void setAspectProperties(const AspectProperties& state);
 /// \endcode
 template <class DerivedT, typename StateDataT, typename PropertiesDataT>
-class EmbedStateAndProperties : public virtual common::RequiresAspect<
+class DART_API EmbedStateAndProperties : public virtual common::RequiresAspect<
     common::EmbeddedStateAndPropertiesAspect<
         DerivedT, StateDataT, PropertiesDataT> >
 {
@@ -432,7 +434,7 @@ protected:
 /// later) template arguments.
 template <class DerivedT, typename StateDataT, typename PropertiesDataT,
           typename... CompositeBases>
-class EmbedStateAndPropertiesOnTopOf : public CompositeJoiner<
+class DART_API EmbedStateAndPropertiesOnTopOf : public CompositeJoiner<
     EmbedStateAndProperties<DerivedT, StateDataT, PropertiesDataT>,
     CompositeBases...>
 {
