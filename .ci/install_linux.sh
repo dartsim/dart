@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
- 
-set -e
+set -ex
 
 sudo apt-add-repository --yes ppa:libccd-debs/ppa
 sudo apt-add-repository --yes ppa:fcl-debs/ppa
@@ -10,7 +9,9 @@ sudo apt-get -qq update
 APT='
 cmake
 libassimp-dev
-libboost-all-dev
+libboost-filesystem-dev
+libboost-regex-dev
+libboost-system-dev
 libccd-dev
 libeigen3-dev
 libfcl-dev

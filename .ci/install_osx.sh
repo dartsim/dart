@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
- 
-set -e
+set -ex
 
 brew update > /dev/null
 brew bundle
