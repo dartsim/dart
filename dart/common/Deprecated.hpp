@@ -46,7 +46,7 @@
   #define DART_DEPRECATED(version) DETAIL_DART_DEPRECATED
   #define DART_FORCEINLINE __attribute__((always_inline))
 #elif defined(_MSC_VER)
-  #define DART_DEPRECATED(version) __declspec(deprecated)
+  #define DART_DEPRECATED(version) DETAIL_DART_DEPRECATED
   #define DART_FORCEINLINE _forceinline
 #else
   #define DART_DEPRECATED(version) ()
