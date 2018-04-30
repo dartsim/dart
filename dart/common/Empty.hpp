@@ -33,6 +33,8 @@
 #ifndef DART_COMMON_EMPTY_HPP_
 #define DART_COMMON_EMPTY_HPP_
 
+#include "dart/export.hpp"
+
 namespace dart {
 namespace common {
 
