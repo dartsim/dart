@@ -174,7 +174,7 @@ public:
   void setCollidable(bool _isCollidable);
 
   /// Set the mass of the bodynode
-  void setMass(double _mass);
+  void setMass(double mass);
 
   /// Return the mass of the bodynode
   double getMass() const;
