@@ -196,7 +196,7 @@ public:
   const Eigen::Matrix6d& getSpatialInertia() const;
 
   /// Set the inertia data for this BodyNode
-  void setInertia(const Inertia& _inertia);
+  void setInertia(const Inertia& inertia);
 
   /// Get the inertia data for this BodyNode
   const Inertia& getInertia() const;

@@ -476,7 +476,7 @@ void checkMass(const BodyNode& bodyNode, const double mass)
 //==============================================================================
 void BodyNode::setMass(const double mass)
 {
-  checkMass(&this, mass);
+  checkMass(*this, mass);
 
   mAspectProperties.mInertia.setMass(mass);
 
@@ -529,7 +529,7 @@ void BodyNode::setInertia(const Inertia& inertia)
   if(inertia == mAspectProperties.mInertia)
     return;
 
-  checkMass(&this, inertia.getMass());
+  checkMass(*this, inertia.getMass());
 
   mAspectProperties.mInertia = inertia;
 
