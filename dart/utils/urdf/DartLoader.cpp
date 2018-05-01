@@ -374,8 +374,12 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
   switch(_jt->type)
   {
-    case urdf::Joint::REVOLUTE:
     case urdf::Joint::CONTINUOUS:
+    {
+      singleDof.mPositionLowerLimits[0] = -math::constantsd::inf();
+      singleDof.mPositionUpperLimits[0] = math::constantsd::inf();
+    }
+    case urdf::Joint::REVOLUTE:
     {
       dynamics::RevoluteJoint::Properties properties(
             dynamics::GenericJoint<math::R1Space>::Properties(basicProperties, singleDof),
