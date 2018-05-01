@@ -138,3 +138,57 @@ TEST(DartLoader, parseJointProperties)
   EXPECT_NEAR(joint1->getDampingCoefficient(0), 1.2, 1e-12);
   EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
 }
+
+TEST(DartLoader, parseJointPropertiesIncorrectly)
+{
+  std::string urdfStr =
+    "<robot name=\"testRobot\">                                       "
+    "  <link name=\"link_0\">                                         "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "  </link>                                                        "
+    "  <joint name=\"0_to_1\" type=\"continuous\">                    "
+    "    <parent link=\"link_0\"/>                                    "
+    "    <child link=\"link_1\"/>                                     "
+    "    <limit effort=\"2.5\" velocity=\"3.00545697193\"/>           "
+    "    <axis xyz=\"0 0 1\"/>                                        "
+    "    <dynamics damping=\"1.2\" friction=\"2.3\"/>                 "
+    "  </joint>                                                       "
+    "  <link name=\"link_1\">                                         "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "  </link>                                                        "
+    "</robot>                                                         ";
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  EXPECT_TRUE(nullptr != robot);
+
+  auto joint1 = robot->getJoint(1);
+  // Bug: Should be +/-inf.
+  EXPECT_NEAR(joint1->getPositionLowerLimit(0), 0.0, 1e-12);
+  EXPECT_NEAR(joint1->getPositionUpperLimit(0), 0.0, 1e-12);
+  // Bug: Should return true.
+  EXPECT_FALSE(joint1->isCyclic(0));
+}
+
