@@ -2,6 +2,10 @@
 
 ### DART 6.5.0 (201X-XX-XX)
 
+* Common
+
+  * Added LockableReference classes: [#1011](https://github.com/dartsim/dart/pull/1011)
+
 * GUI
 
   * Added FOV API to OSG viewer: [#1048](https://github.com/dartsim/dart/pull/1048)
