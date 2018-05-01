@@ -139,7 +139,7 @@ TEST(DartLoader, parseJointProperties)
   EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
 }
 
-TEST(DartLoader, parseJointPropertiesIncorrectly)
+TEST(DartLoader, parseJointPropertiesCorrectly)
 {
   std::string urdfStr =
     "<robot name=\"testRobot\">                                       "
@@ -185,10 +185,8 @@ TEST(DartLoader, parseJointPropertiesIncorrectly)
   EXPECT_TRUE(nullptr != robot);
 
   auto joint1 = robot->getJoint(1);
-  // Bug: Should be +/-inf.
-  EXPECT_NEAR(joint1->getPositionLowerLimit(0), 0.0, 1e-12);
-  EXPECT_NEAR(joint1->getPositionUpperLimit(0), 0.0, 1e-12);
-  // Bug: Should return true.
-  EXPECT_FALSE(joint1->isCyclic(0));
+  EXPECT_DOUBLE_EQ(joint1->getPositionLowerLimit(0), -dart::math::constantsd::inf());
+  EXPECT_DOUBLE_EQ(joint1->getPositionUpperLimit(0), dart::math::constantsd::inf());
+  EXPECT_TRUE(joint1->isCyclic(0));
 }
 
