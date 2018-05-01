@@ -462,11 +462,23 @@ void BodyNode::setCollidable(bool _isCollidable)
 }
 
 //==============================================================================
-void BodyNode::setMass(double _mass)
+void checkMass(const BodyNode& bodyNode, const double mass)
 {
-  assert(_mass >= 0.0 && "Negative mass is not allowable.");
+  if (mass <= 0.0)
+  {
+    dtwarn << "[BodyNode] A negative or zero mass [" << mass
+           << "] is set to BodyNode [" << bodyNode.getName()
+           << "], which can cause invalid physical behavior or segfault. "
+           << "Consider setting positive value instead.\n";
+  }
+}
 
-  mAspectProperties.mInertia.setMass(_mass);
+//==============================================================================
+void BodyNode::setMass(const double mass)
+{
+  checkMass(*this, mass);
+
+  mAspectProperties.mInertia.setMass(mass);
 
   dirtyArticulatedInertia();
   const SkeletonPtr& skel = getSkeleton();
@@ -512,12 +524,14 @@ const Eigen::Matrix6d& BodyNode::getSpatialInertia() const
 }
 
 //==============================================================================
-void BodyNode::setInertia(const Inertia& _inertia)
+void BodyNode::setInertia(const Inertia& inertia)
 {
-  if(_inertia == mAspectProperties.mInertia)
+  if(inertia == mAspectProperties.mInertia)
     return;
 
-  mAspectProperties.mInertia = _inertia;
+  checkMass(*this, inertia.getMass());
+
+  mAspectProperties.mInertia = inertia;
 
   dirtyArticulatedInertia();
   const SkeletonPtr& skel = getSkeleton();
