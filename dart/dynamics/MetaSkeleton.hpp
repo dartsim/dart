@@ -38,6 +38,7 @@
 
 #include <Eigen/Dense>
 
+#include "dart/common/LockableReference.hpp"
 #include "dart/common/Signal.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/math/Geometry.hpp"
@@ -60,7 +61,6 @@ class Marker;
 class DART_API MetaSkeleton : public common::Subject
 {
 public:
-
   using NameChangedSignal
       = common::Signal<void(std::shared_ptr<const MetaSkeleton> _skeleton,
                             const std::string& _oldName,
@@ -70,6 +70,12 @@ public:
 
   /// Default destructor
   virtual ~MetaSkeleton() = default;
+
+  /// Returns mutex.
+  virtual std::unique_ptr<common::LockableReference> getLockableReference()
+  const = 0;
+  // TODO: Rename this to getMutex once the deprecated Skeleton::getMutex() is
+  // removed in DART 7.
 
   //----------------------------------------------------------------------------
   /// \{ \name Name

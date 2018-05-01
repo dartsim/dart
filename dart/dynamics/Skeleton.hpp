@@ -161,6 +161,10 @@ public:
   /// Get the mutex that protects the state of this Skeleton
   std::mutex& getMutex() const;
 
+  /// Get the mutex that protects the state of this Skeleton
+  std::unique_ptr<common::LockableReference> getLockableReference() const
+  override;
+
   Skeleton(const Skeleton&) = delete;
 
   /// Destructor
