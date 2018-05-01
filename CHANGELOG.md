@@ -10,6 +10,10 @@
 
   * Added FOV API to OSG viewer: [#1048](https://github.com/dartsim/dart/pull/1048)
 
+* Parsers
+
+  * Fixed incorrect parsing of continuous joints specified in URDF [#1064](https://github.com/dartsim/dart/pull/1064)
+
 * Simulation
 
   * Added World::hasSkeleton(): [#1050](https://github.com/dartsim/dart/pull/1050)
