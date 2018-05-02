@@ -381,6 +381,16 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
       // the limits, if specified for this joint, or sets them to 0.
       singleDof.mPositionLowerLimits[0] = -math::constantsd::inf();
       singleDof.mPositionUpperLimits[0] = math::constantsd::inf();
+
+      // This joint is still revolute but with no joint limits
+      dynamics::RevoluteJoint::Properties properties(
+            dynamics::GenericJoint<math::R1Space>::Properties(basicProperties, singleDof),
+            toEigen(_jt->axis));
+
+      pair = _skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+            _parent, properties, _body);
+
+      break;
     }
     case urdf::Joint::REVOLUTE:
     {
