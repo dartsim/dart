@@ -40,6 +40,7 @@
 namespace dart {
 namespace dynamics {
 
+/// VoxelShape represents a probabilistic 3D occupancy grid map.
 class VoxelShape : public Shape
 {
 public:
@@ -69,16 +70,28 @@ public:
   /// Returns octree.
   fcl_shared_ptr<const octomap::OcTree> getOctree() const;
 
-  /// Sets occupany at a point.
-  void setOccupancy(const Eigen::Vector3d& point, bool occupy);
+  void insertPointCloud(
+      const octomap::Pointcloud& pointCloud,
+      const octomap::point3d& sensorOrigin);
+  // TODO(JS): Create DART point cloud type.
 
-  // TODO(JS): Take point cloud.
+  /// Adds a sensor measurement at \c point. The probability of occupancy will
+  /// be updated based on the measurement.
+  ///
+  /// \param[in] point Location of the sensor measurement.
+  /// \param[in] occupied True if the location was measured occupied.
+  void setOccupancy(const Eigen::Vector3d& point, bool occupied);
 
-  /// Occupy a point.
+  /// Adds a sensor measurement of occupancy at \c point. The probability of
+  /// occupancy will be increased.
   void occupy(const Eigen::Vector3d& point);
 
-  /// Unoccupy a point.
+  /// Adds a sensor measurement of unoccupancy at \c point. The probability of
+  /// occupancy will be decreased.
   void unoccupy(const Eigen::Vector3d& point);
+
+  /// Returns probability of the occupancy at \c point.
+  double getOccupancy(const Eigen::Vector3d& point);
 
   // Documentation inherited.
   Eigen::Matrix3d computeInertia(double mass) const override;

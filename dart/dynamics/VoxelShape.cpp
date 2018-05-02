@@ -32,6 +32,7 @@
 
 #include "dart/dynamics/VoxelShape.hpp"
 
+#include "dart/common/Console.hpp"
 #include "dart/math/Helpers.hpp"
 
 namespace dart {
@@ -46,6 +47,14 @@ VoxelShape::VoxelShape(double resolution) : Shape()
 //==============================================================================
 VoxelShape::VoxelShape(fcl_shared_ptr<octomap::OcTree> octree) : Shape()
 {
+  if (!octree)
+  {
+    dtwarn << "[VoxelShape] Attempting to assign null octree. Creating an "
+           << "empty octree with resolution 0.01 instead.\n";
+    setOctree(fcl_make_shared<octomap::OcTree>(0.01));
+    return;
+  }
+
   setOctree(std::move(octree));
 }
 
@@ -65,6 +74,13 @@ const std::string& VoxelShape::getStaticType()
 //==============================================================================
 void VoxelShape::setOctree(fcl_shared_ptr<octomap::OcTree> octree)
 {
+  if (!octree)
+  {
+    dtwarn << "[VoxelShape] Attempting to assign null octree. Ignoring this "
+           << "query.\n";
+    return;
+  }
+
   if (octree == mOctree)
     return;
 
@@ -87,12 +103,16 @@ fcl_shared_ptr<const octomap::OcTree> VoxelShape::getOctree() const
 }
 
 //==============================================================================
-void VoxelShape::setOccupancy(const Eigen::Vector3d& point, bool occupy)
+void VoxelShape::insertPointCloud(
+    const octomap::Pointcloud& pointCloud, const octomap::point3d& sensorOrigin)
 {
-  if (!mOctree)
-    return;
+  mOctree->insertPointCloud(pointCloud, sensorOrigin);
+}
 
-  mOctree->updateNode(point.x(), point.y(), point.z(), occupy);
+//==============================================================================
+void VoxelShape::setOccupancy(const Eigen::Vector3d& point, bool occupied)
+{
+  mOctree->updateNode(point.x(), point.y(), point.z(), occupied);
 }
 
 //==============================================================================
@@ -105,6 +125,16 @@ void VoxelShape::occupy(const Eigen::Vector3d& point)
 void VoxelShape::unoccupy(const Eigen::Vector3d& point)
 {
   setOccupancy(point, false);
+}
+
+//==============================================================================
+double VoxelShape::getOccupancy(const Eigen::Vector3d& point)
+{
+  const auto node = mOctree->search(point.x(), point.y(), point.z());
+  if (node)
+    return node->getOccupancy();
+  else
+    return 0.0;
 }
 
 //==============================================================================

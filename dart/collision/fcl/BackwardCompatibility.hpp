@@ -47,6 +47,7 @@
 #include <fcl/config.h>
 
 #if FCL_VERSION_AT_LEAST(0,6,0)
+
 #include <fcl/math/geometry.h>
 
 #include <fcl/geometry/bvh/BVH_model.h>
@@ -56,7 +57,9 @@
 #include <fcl/narrowphase/collision.h>
 #include <fcl/narrowphase/collision_object.h>
 #include <fcl/narrowphase/distance.h>
+
 #else
+
 #include <fcl/math/vec_3f.h>
 #include <fcl/math/matrix_3f.h>
 #include <fcl/math/transform.h>
@@ -67,9 +70,14 @@
 #include <fcl/collision_data.h>
 #include <fcl/collision_object.h>
 #include <fcl/distance.h>
-#endif
+
+#endif // FCL_VERSION_AT_LEAST(0,6,0)
+
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
+
+#ifdef FCL_HAVE_OCTOMAP
 #include <fcl/octree.h>
+#endif // FCL_HAVE_OCTOMAP
 
 #if FCL_VERSION_AT_LEAST(0,5,0)
 #include <memory>
@@ -90,7 +98,7 @@ fcl_shared_ptr<T> fcl_make_shared(Args&&... args)
 {
   return boost::make_shared<T>(std::forward<Args>(args)...);
 }
-#endif
+#endif // FCL_VERSION_AT_LEAST(0,5,0)
 
 namespace dart {
 namespace collision {
@@ -107,7 +115,9 @@ using Cylinder = ::fcl::Cylinder<double>;
 using Ellipsoid = ::fcl::Ellipsoid<double>;
 using Halfspace = ::fcl::Halfspace<double>;
 using Sphere = ::fcl::Sphere<double>;
+#if FCL_HAVE_OCTOMAP
 using OcTree = ::fcl::OcTree<double>;
+#endif
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject<double>;
 using CollisionGeometry = ::fcl::CollisionGeometry<double>;
@@ -129,7 +139,9 @@ using Box = ::fcl::Box;
 using Cylinder = ::fcl::Cylinder;
 using Halfspace = ::fcl::Halfspace;
 using Sphere = ::fcl::Sphere;
+#if FCL_HAVE_OCTOMAP
 using OcTree = ::fcl::OcTree;
+#endif
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject;
 using CollisionGeometry = ::fcl::CollisionGeometry;

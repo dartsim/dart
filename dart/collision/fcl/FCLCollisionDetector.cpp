@@ -1036,12 +1036,21 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   }
   else if (VoxelShape::getStaticType() == shapeType)
   {
+#if FCL_HAVE_OCTOMAP
     assert(dynamic_cast<const VoxelShape*>(shape.get()));
 
     auto octreeShape = static_cast<const VoxelShape*>(shape.get());
     auto octree = octreeShape->getOctree();
 
     geom = new dart::collision::fcl::OcTree(octree);
+#else
+    dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
+          << "Attempting to create an collision geometry for VoxelShape, but "
+          << "the installed FCL doesn't built with Octomap support. "
+          << "Creating a sphere with 0.1 radius instead.\n";
+
+    geom = createEllipsoid<dart::collision::fcl::OBBRSS>(0.1, 0.1, 0.1);
+#endif
   }
   else
   {
