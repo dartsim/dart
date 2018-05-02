@@ -65,8 +65,6 @@ public:
   /// Set the AspectProperties of this Sensor
   void setAspectProperties(const AspectProperties& properties);
 
-  //  Eigen::Isometry3d getTransform() const;
-
 protected:
   /// Constructor used by BodyNode
   ImuSensor(BodyNode* parent, const BasicProperties& properties);

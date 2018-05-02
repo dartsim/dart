@@ -241,14 +241,14 @@ public:
 
   /// Notify the transformation updates of this Frame and all its children are
   /// needed
-  virtual void dirtyTransform() override;
+  void dirtyTransform() override;
 
   /// Notify the velocity updates of this Frame and all its children are needed
-  virtual void dirtyVelocity() override;
+  void dirtyVelocity() override;
 
   /// Notify the acceleration updates of this Frame and all its children are
   /// needed
-  virtual void dirtyAcceleration() override;
+  void dirtyAcceleration() override;
 
 protected:
 

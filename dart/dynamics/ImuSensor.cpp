@@ -54,7 +54,10 @@ void ImuSensor::setAspectProperties(const AspectProperties& /*properties*/)
 
 //==============================================================================
 ImuSensor::ImuSensor(BodyNode* parent, const BasicProperties& properties)
-  : common::EmbedStateAndPropertiesOnTopOf<ImuSensor,
+  : Entity(ConstructFrame),
+    Frame(parent),
+    FixedFrame(parent),
+    common::EmbedStateAndPropertiesOnTopOf<ImuSensor,
                                            detail::ImuSensorState,
                                            detail::ImuSensorProperties,
                                            Sensor>(parent, properties)
@@ -66,7 +69,7 @@ ImuSensor::ImuSensor(BodyNode* parent, const BasicProperties& properties)
 //==============================================================================
 Node* ImuSensor::cloneNode(BodyNode* parent) const
 {
-  ImuSensor* sensor = new ImuSensor(parent, BasicProperties());
+  auto* sensor = new ImuSensor(parent, BasicProperties());
   sensor->duplicateAspects(this);
 
   if (mIK)

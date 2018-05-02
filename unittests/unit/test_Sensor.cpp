@@ -44,22 +44,20 @@ using namespace dart::simulation;
 //==============================================================================
 TEST(Sensor, ImuSensor)
 {
-  // This is a regression test for pull request #683
-  const double tolerance = 1e-8;
-
   dart::utils::DartLoader loader;
   SkeletonPtr skeleton1
       = loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
-  BodyNode* lastBn1 = skeleton1->getBodyNode(skeleton1->getNumBodyNodes() - 1);
-  Sensor* imuSensor1 = lastBn1->createSensor<Sensor>();
+  auto lastBn1 = skeleton1->getBodyNode(skeleton1->getNumBodyNodes() - 1);
+  auto imuSensor1 = lastBn1->createSensor<ImuSensor>();
   Eigen::Isometry3d tf1 = imuSensor1->getTransform();
 
   EXPECT_TRUE(equals(tf1, lastBn1->getTransform()));
 
   SkeletonPtr skeleton2 = skeleton1->clone();
   BodyNode* lastBn2 = skeleton2->getBodyNode(skeleton2->getNumBodyNodes() - 1);
-  Sensor* imuSensor2 = lastBn2->createSensor<Sensor>();
+  auto imuSensor2 = lastBn2->createSensor<ImuSensor>();
+  imuSensor1->setRelativeTransform(Eigen::Isometry3d::Identity());
 
   Eigen::Isometry3d tf2 = imuSensor2->getTransform();
 
