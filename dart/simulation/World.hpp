@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -148,6 +148,9 @@ public:
   /// Remove all the skeletons in this world, and return a set of shared
   /// pointers to them, in case you want to recycle them
   std::set<dynamics::SkeletonPtr> removeAllSkeletons();
+
+  /// Returns wether this World contains a Skeleton.
+  bool hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const;
 
   /// Get the dof index for the indexed skeleton
   int getIndex(int _index) const;

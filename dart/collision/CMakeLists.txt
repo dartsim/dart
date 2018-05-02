@@ -44,3 +44,7 @@ add_subdirectory(dart)
 add_subdirectory(fcl)
 add_subdirectory(ode)
 add_subdirectory(bullet)
+
+dart_format_add(
+  SmartPointer.hpp
+)

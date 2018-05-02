@@ -38,12 +38,17 @@ dart_format_add(
   ImuSensor.cpp
   Sensor.hpp
   Sensor.cpp
+  SmartPointer.hpp
   TouchSensor.hpp
   TouchSensor.cpp
+  TranslationalJoint2D.hpp
+  TranslationalJoint2D.cpp
   detail/ImuSensorAspect.hpp
   detail/ImuSensorAspect.cpp
   detail/SensorAspect.hpp
   detail/SensorAspect.cpp
   detail/TouchSensorAspect.hpp
   detail/TouchSensorAspect.cpp
+  detail/TranslationalJoint2DAspect.hpp
+  detail/TranslationalJoint2DAspect.cpp
 )

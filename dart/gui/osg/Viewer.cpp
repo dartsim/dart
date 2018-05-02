@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -841,6 +841,68 @@ void Viewer::updateDragAndDrops()
 const ::osg::ref_ptr<::osg::Group>& Viewer::getRootGroup() const
 {
   return mRootGroup;
+}
+
+//==============================================================================
+void Viewer::setVerticalFieldOfView(const double fov)
+{
+  double fovy;
+  double aspectRatio;
+  double zNear;
+  double zFar;
+
+  auto* camera = getCamera();
+
+  if (!camera)
+  {
+    dtwarn << "[Viewer::setMasterCameraFieldOfView] This viewer doesn't have "
+           << "any cameras. Ignoring this request.\n";
+    return;
+  }
+
+  const bool result = camera->getProjectionMatrixAsPerspective(
+      fovy, aspectRatio, zNear, zFar);
+
+  if (!result)
+  {
+    dtwarn << "[Viewer::setMasterCameraFieldOfView] Attemping to set vertical "
+           << "field of view while the camera isn't perspective view. "
+           << "Ignoring this request.\n";
+    return;
+  }
+
+  camera->setProjectionMatrixAsPerspective(fov, aspectRatio, zNear, zFar);
+}
+
+//==============================================================================
+double Viewer::getVerticalFieldOfView() const
+{
+  double fovy;
+  double aspectRatio;
+  double zNear;
+  double zFar;
+
+  const auto* camera = getCamera();
+
+  if (!camera)
+  {
+    dtwarn << "[Viewer::getMasterCameraFieldOfView] This viewer doesn't have "
+           << "any cameras. Returning 0.0.\n";
+    return 0.0;
+  }
+
+  const bool result = camera->getProjectionMatrixAsPerspective(
+      fovy, aspectRatio, zNear, zFar);
+
+  if (!result)
+  {
+    dtwarn << "[Viewer::getMasterCameraFieldOfView] Vertical field of view is "
+           << "requested while the camera isn't perspective view. "
+           << "Returning 0.0.\n";
+    return 0.0;
+  }
+
+  return fovy;
 }
 
 } // namespace osg

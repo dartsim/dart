@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -125,7 +125,7 @@ void PlanarJointUniqueProperties::setArbitraryPlane(
   // Second translational axis
   mTransAxis2 = _transAxis2.normalized();
 
-  // Orthogonalize translational axese
+  // Orthogonalize translational axes
   double dotProduct = mTransAxis1.dot(mTransAxis2);
   assert(std::abs(dotProduct) < 1.0 - 1e-6);
   if (std::abs(dotProduct) > 1e-6)

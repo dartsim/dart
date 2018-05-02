@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -175,7 +175,7 @@ public:
   void setCollidable(bool _isCollidable);
 
   /// Set the mass of the bodynode
-  void setMass(double _mass);
+  void setMass(double mass);
 
   /// Return the mass of the bodynode
   double getMass() const;
@@ -197,7 +197,7 @@ public:
   const Eigen::Matrix6d& getSpatialInertia() const;
 
   /// Set the inertia data for this BodyNode
-  void setInertia(const Inertia& _inertia);
+  void setInertia(const Inertia& inertia);
 
   /// Get the inertia data for this BodyNode
   const Inertia& getInertia() const;

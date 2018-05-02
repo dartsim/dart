@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -389,6 +389,13 @@ std::set<dynamics::SkeletonPtr> World::removeAllSkeletons()
     removeSkeleton(getSkeleton(0));
 
   return ptrs;
+}
+
+//==============================================================================
+bool World::hasSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const
+{
+  return std::find(mSkeletons.begin(), mSkeletons.end(), skeleton)
+      != mSkeletons.end();
 }
 
 //==============================================================================

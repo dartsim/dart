@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -42,6 +42,7 @@
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
@@ -302,6 +303,12 @@ TEST_F(JOINTS, SCREW_JOINT)
 TEST_F(JOINTS, UNIVERSAL_JOINT)
 {
   kinematicsTest<UniversalJoint>();
+}
+
+// 2-dof joint
+TEST_F(JOINTS, TRANSLATIONAL_JOINT_2D)
+{
+  kinematicsTest<TranslationalJoint2D>();
 }
 
 // 3-dof joint

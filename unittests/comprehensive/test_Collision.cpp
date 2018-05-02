@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -703,7 +703,9 @@ void testSphereSphere(const std::shared_ptr<CollisionDetector>& cd,
     EXPECT_TRUE(group->collide(option, &result));
     // TODO(JS): BulletCollsionDetector includes a bug related to this.
     // (see #876)
+#if HAVE_BULLET
     if (cd->getType() != BulletCollisionDetector::getStaticType())
+#endif
     {
       EXPECT_EQ(result.getNumContacts(), 1u);
     }

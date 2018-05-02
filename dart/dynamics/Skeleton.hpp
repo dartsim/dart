@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -58,6 +58,16 @@ class Skeleton :
     public detail::SkeletonAspectBase
 {
 public:
+  // Some of non-virtual functions of MetaSkeleton are hidden because of the
+  // functions of the same name in this class. We expose those functions as
+  // follows.
+  using MetaSkeleton::getJacobian;
+  using MetaSkeleton::getLinearJacobian;
+  using MetaSkeleton::getAngularJacobian;
+  using MetaSkeleton::getJacobianSpatialDeriv;
+  using MetaSkeleton::getJacobianClassicDeriv;
+  using MetaSkeleton::getLinearJacobianDeriv;
+  using MetaSkeleton::getAngularJacobianDeriv;
 
   using AspectPropertiesData = detail::SkeletonAspectProperties;
   using AspectProperties = common::Aspect::MakeProperties<AspectPropertiesData>;
@@ -150,6 +160,10 @@ public:
 
   /// Get the mutex that protects the state of this Skeleton
   std::mutex& getMutex() const;
+
+  /// Get the mutex that protects the state of this Skeleton
+  std::unique_ptr<common::LockableReference> getLockableReference() const
+  override;
 
   Skeleton(const Skeleton&) = delete;
 
@@ -398,6 +412,9 @@ public:
       const std::string& name) const override;
 
   // Documentation inherited
+  bool hasBodyNode(const BodyNode* bodyNode) const override;
+
+  // Documentation inherited
   std::size_t getIndexOf(const BodyNode* _bn, bool _warning=true) const override;
 
   /// Get the BodyNodes belonging to a tree in this Skeleton
@@ -438,6 +455,9 @@ public:
   /// \note Skeleton always guarantees name uniqueness for BodyNodes and Joints.
   /// So this function returns the single Joint of the given name if it exists.
   std::vector<const Joint*> getJoints(const std::string& name) const override;
+
+  // Documentation inherited
+  bool hasJoint(const Joint* joint) const override;
 
   // Documentation inherited
   std::size_t getIndexOf(const Joint* _joint, bool _warning=true) const override;

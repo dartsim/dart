@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -810,6 +810,12 @@ TEST(Skeleton, Referential)
   for(std::size_t i=0; i<skeletons.size(); ++i)
   {
     SkeletonPtr skeleton = skeletons[i];
+
+    const auto& skelJoints = skeleton->getJoints();
+    EXPECT_TRUE(skeleton->getNumJoints() == skelJoints.size());
+    for(auto* joint : skelJoints)
+      EXPECT_TRUE(skeleton->hasJoint(joint));
+
     for(std::size_t j=0; j<skeleton->getNumTrees(); ++j)
     {
       BranchPtr tree = Branch::create(skeleton->getRootBodyNode(j));
@@ -820,6 +826,7 @@ TEST(Skeleton, Referential)
       {
         EXPECT_FALSE(tree->getIndexOf(bn) == INVALID_INDEX);
         EXPECT_TRUE(tree->getBodyNode(tree->getIndexOf(bn)) == bn);
+        EXPECT_TRUE(skeleton->hasBodyNode(bn));
       }
 
       const std::vector<DegreeOfFreedom*>& skelDofs = skeleton->getTreeDofs(j);
@@ -1199,6 +1206,31 @@ TEST(Skeleton, Group)
 
   for(std::size_t i=0; i < group->getNumDofs(); ++i)
     EXPECT_EQ(group->getDof(i), dofs[i]);
+}
+
+TEST(Skeleton, LockSkeletonMutexesWithLockGuard)
+{
+  // Test a variety of uses of Linkage::Criteria
+  SkeletonPtr skel = constructLinkageTestSkeleton();
+
+  BranchPtr subtree = Branch::create(skel->getBodyNode("c3b3"), "subtree");
+  checkForBodyNodes(subtree, skel, true,
+                    "c3b3", "c3b4", "c4b1", "c4b2", "c4b3");
+
+  ChainPtr midchain = Chain::create(skel->getBodyNode("c1b3"),
+                 skel->getBodyNode("c3b4"), "midchain");
+  checkForBodyNodes(midchain, skel, true, "c3b1", "c3b2", "c3b3");
+  checkLinkageJointConsistency(midchain);
+
+  {
+    auto mutex = subtree->getLockableReference();
+    std::lock_guard<common::LockableReference> lock(*mutex);
+  }
+
+  {
+    auto mutex = midchain->getLockableReference();
+    std::lock_guard<common::LockableReference> lock(*mutex);
+  }
 }
 
 TEST(Skeleton, Configurations)

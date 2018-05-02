@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2017, The DART development contributors
+ * Copyright (c) 2011-2018, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -292,6 +292,15 @@ public:
 
   /// Get the root ::osg::Group of this Viewer
   const ::osg::ref_ptr<::osg::Group>& getRootGroup() const;
+
+  /// Sets the vertical field of view of the master camera of the view.
+  /// \param[in] fov Vertical field of view in degrees.
+  void setVerticalFieldOfView(double fov);
+
+  /// Returns the vertical field of view of the master camera of the view.
+  /// \return Vertical field of view in degrees if the camera is perspective
+  /// view, 0.0 otherwise.
+  double getVerticalFieldOfView() const;
 
 protected:
 
