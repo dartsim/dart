@@ -18,6 +18,10 @@
 
   * Added World::hasSkeleton(): [#1050](https://github.com/dartsim/dart/pull/1050)
 
+* Misc
+
+  * Fixed memory leaks in mesh loading: [#1066](https://github.com/dartsim/dart/pull/1066)
+
 ### [DART 6.4.0 (2018-03-26)](https://github.com/dartsim/dart/milestone/39?closed=1)
 
 * Common

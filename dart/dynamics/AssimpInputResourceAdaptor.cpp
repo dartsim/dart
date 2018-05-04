@@ -238,7 +238,7 @@ std::size_t fileWriteProc(
 }
 
 //==============================================================================
-aiFile *fileOpenProc(aiFileIO* _io, const char* _path, const char* _mode)
+aiFile* fileOpenProc(aiFileIO* _io, const char* _path, const char* _mode)
 {
   Assimp::IOStream* stream = getIOSystem(_io)->Open(_path, _mode);
   if(!stream)
@@ -259,9 +259,10 @@ aiFile *fileOpenProc(aiFileIO* _io, const char* _path, const char* _mode)
 void fileCloseProc(aiFileIO *_io, aiFile *_file)
 {
   getIOSystem(_io)->Close(getIOStream(_file));
+  delete _file;
 }
 
-}
+} // (anonymous) namespace
 
 //==============================================================================
 aiFileIO createFileIO(Assimp::IOSystem* _system)
