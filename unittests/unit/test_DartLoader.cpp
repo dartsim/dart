@@ -126,6 +126,27 @@ TEST(DartLoader, parseJointProperties)
     "      </geometry>                                                "
     "    </visual>                                                    "
     "  </link>                                                        "
+    "  <joint name=\"1_to_2\" type=\"continuous\">                    "
+    "    <parent link=\"link_1\"/>                                    "
+    "    <child link=\"link_2\"/>                                     "
+    "    <limit effort=\"2.5\" velocity=\"3.00545697193\"/>           "
+    "    <axis xyz=\"0 0 1\"/>                                        "
+    "    <dynamics damping=\"1.2\" friction=\"2.3\"/>                 "
+    "  </joint>                                                       "
+    "  <link name=\"link_2\">                                         "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "  </link>                                                        "
     "</robot>                                                         ";
 
   DartLoader loader;
@@ -134,7 +155,11 @@ TEST(DartLoader, parseJointProperties)
 
   auto joint1 = robot->getJoint(1);
   EXPECT_TRUE(nullptr != joint1);
-
   EXPECT_NEAR(joint1->getDampingCoefficient(0), 1.2, 1e-12);
   EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
+
+  auto joint2 = robot->getJoint(2);
+  EXPECT_DOUBLE_EQ(joint2->getPositionLowerLimit(0), -dart::math::constantsd::inf());
+  EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::constantsd::inf());
+  EXPECT_TRUE(joint2->isCyclic(0));
 }

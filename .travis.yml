@@ -25,9 +25,6 @@ matrix:
       env: DOCKER_FILE="ubuntu-xenial" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
       services: docker
     - os: linux
-      env: DOCKER_FILE="ubuntu-artful" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
-      services: docker
-    - os: linux
       env: DOCKER_FILE="ubuntu-bionic" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
       services: docker
     - os: osx
