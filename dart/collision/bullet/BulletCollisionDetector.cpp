@@ -81,6 +81,9 @@ btCollisionShape* createBulletCollisionShapeFromAssimpScene(
 
 btCollisionShape* createBulletCollisionShapeFromAssimpMesh(const aiMesh* mesh);
 
+btCollisionShape* createBulletCollisionShapeFromHeightmap(
+    const dart::dynamics::HeightmapShape* heightMap,
+    btTransform& relativeShapeTransform);
 } // anonymous namespace
 
 //==============================================================================
@@ -542,58 +545,8 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
 
     const auto heightMap = static_cast<const HeightmapShape*>(shape.get());
 
-    // get the heightmap parameters
-    const Eigen::Vector3d& scale = heightMap->getScale();
-    const std::vector<HeightmapShape::HeightType>& heights =
-      heightMap->getHeightField();
-    const HeightmapShape::HeightType minHeight = heightMap->getMinHeight();
-    const HeightmapShape::HeightType maxHeight = heightMap->getMaxHeight();
-
-    // determine which data type (float or double) is to be used for the field
-    static_assert(std::is_same<HeightmapShape::HeightType, float>::value ||
-                  std::is_same<HeightmapShape::HeightType, double>::value,
-                  "HeightmapShape must be float or double");
-    PHY_ScalarType scalarType = PHY_FLOAT;
-    if (std::is_same<HeightmapShape::HeightType, double>::value)
-      scalarType = PHY_DOUBLE;
-
-    const btVector3 localScaling(scale.x(), scale.y(), scale.z());
-    const bool flipQuadEdges = false;
-    dtdbg << "Creating height shape, heights size " << heights.size()
-          << " w = " << heightMap->getWidth() << ", h = "
-          << heightMap->getHeight() << " min/max = "
-          << minHeight << "/" << maxHeight << " scale = "
-          << scale.x() <<", " << scale.y() << ", " << scale.z() << std::endl;
-    btHeightfieldTerrainShape* heightFieldShape = new btHeightfieldTerrainShape(
-        heightMap->getWidth(),   // Width of height field
-        heightMap->getHeight(),  // Height of height field
-        &(heights[0]),           // Height values
-        1,                       // Height scaling
-        minHeight,               // Min height
-        maxHeight,               // Max height
-        2,                       // Up axis
-        scalarType,              // Float or double field
-        flipQuadEdges);          // Flip quad edges
-
-    heightFieldShape->setLocalScaling(localScaling);
-
-    // Use zig-zag subdivision or not.
-    heightFieldShape->setUseZigzagSubdivision(true);
-
-    // set the collision shape to the height field
-    bulletCollisionShape = heightFieldShape;
-
-    // bullet places the heightfield such that the origin is in the
-    // middle of the AABB. We want however that the minimum height value
-    // is on x/y plane.
-    btVector3 min, max;
-    heightFieldShape->getAabb(btTransform::getIdentity(), min, max);
-    dtdbg << "Bullet heightfield AABB: min = {"
-          << min.x() << ", " << min.y() << ", " << min.z() << "}, max = {"
-          << max.x() << ", " << max.y() << ", " << max.z() << "}" << std::endl;
-
-    btVector3 trans(0, 0, (maxHeight - minHeight) * 0.5 + minHeight);
-    relativeShapeTransform.setOrigin(trans);
+    bulletCollisionShape =
+     createBulletCollisionShapeFromHeightmap(heightMap, relativeShapeTransform);
   }
   else
   {
@@ -944,6 +897,65 @@ btCollisionShape* createBulletCollisionShapeFromAssimpMesh(const aiMesh* mesh)
   gimpactMeshShape->updateBound();
 
   return gimpactMeshShape;
+}
+
+//==============================================================================
+btCollisionShape* createBulletCollisionShapeFromHeightmap(
+    const dart::dynamics::HeightmapShape* heightMap,
+    btTransform& relativeShapeTransform)
+{
+  using dart::dynamics::HeightmapShape;
+  // get the heightmap parameters
+  const Eigen::Vector3d& scale = heightMap->getScale();
+  const std::vector<HeightmapShape::HeightType>& heights =
+    heightMap->getHeightField();
+  const HeightmapShape::HeightType minHeight = heightMap->getMinHeight();
+  const HeightmapShape::HeightType maxHeight = heightMap->getMaxHeight();
+
+  // determine which data type (float or double) is to be used for the field
+  static_assert(std::is_same<HeightmapShape::HeightType, float>::value ||
+                std::is_same<HeightmapShape::HeightType, double>::value,
+                "HeightmapShape must be float or double");
+  PHY_ScalarType scalarType = PHY_FLOAT;
+  if (std::is_same<HeightmapShape::HeightType, double>::value)
+    scalarType = PHY_DOUBLE;
+
+  const btVector3 localScaling(scale.x(), scale.y(), scale.z());
+  const bool flipQuadEdges = false;
+  dtdbg << "Creating height shape, heights size " << heights.size()
+        << " w = " << heightMap->getWidth() << ", h = "
+        << heightMap->getHeight() << " min/max = "
+        << minHeight << "/" << maxHeight << " scale = "
+        << scale.x() <<", " << scale.y() << ", " << scale.z() << std::endl;
+  btHeightfieldTerrainShape* heightFieldShape = new btHeightfieldTerrainShape(
+      heightMap->getWidth(),   // Width of height field
+      heightMap->getHeight(),  // Height of height field
+      &(heights[0]),           // Height values
+      1,                       // Height scaling
+      minHeight,               // Min height
+      maxHeight,               // Max height
+      2,                       // Up axis
+      scalarType,              // Float or double field
+      flipQuadEdges);          // Flip quad edges
+
+  heightFieldShape->setLocalScaling(localScaling);
+
+  // Use zig-zag subdivision or not.
+  heightFieldShape->setUseZigzagSubdivision(true);
+
+  // bullet places the heightfield such that the origin is in the
+  // middle of the AABB. We want however that the minimum height value
+  // is on x/y plane.
+  btVector3 min, max;
+  heightFieldShape->getAabb(btTransform::getIdentity(), min, max);
+  dtdbg << "Bullet heightfield AABB: min = {"
+        << min.x() << ", " << min.y() << ", " << min.z() << "}, max = {"
+        << max.x() << ", " << max.y() << ", " << max.z() << "}" << std::endl;
+
+  btVector3 trans(0, 0, (maxHeight - minHeight) * 0.5 + minHeight);
+  relativeShapeTransform.setOrigin(trans);
+
+  return heightFieldShape;
 }
 
 } // anonymous namespace
