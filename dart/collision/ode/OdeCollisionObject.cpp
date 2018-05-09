@@ -44,6 +44,7 @@
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/HeightmapShape.hpp"
 #include "dart/collision/ode/OdeTypes.hpp"
 #include "dart/collision/ode/detail/OdeBox.hpp"
 #include "dart/collision/ode/detail/OdeCapsule.hpp"
@@ -51,6 +52,7 @@
 #include "dart/collision/ode/detail/OdeMesh.hpp"
 #include "dart/collision/ode/detail/OdePlane.hpp"
 #include "dart/collision/ode/detail/OdeSphere.hpp"
+#include "dart/collision/ode/detail/OdeHeightmap.hpp"
 
 namespace dart {
 namespace collision {
@@ -82,8 +84,20 @@ OdeCollisionObject::OdeCollisionObject(
 
   if (mOdeGeom->isPlaceable())
   {
+    // if the geometry already has a pose, it is to be considered
+    // a constant relative pose to the body.
+    // Get the geometry pose to ensure this offset is set correctly.
+    dQuaternion geomRelRot; 
+    dGeomGetQuaternion(geomId, geomRelRot);
+    const dReal * geomRelPos = dGeomGetPosition(geomId);
+    assert(geomRelPos);
+    // create the body
     mBodyId = dBodyCreate(collisionDetector->getOdeWorldId());
+    // attach geometry to body. This will set the geometry pose to identity.
     dGeomSetBody(geomId, mBodyId);
+    // set the offset
+    dGeomSetOffsetPosition(geomId, geomRelPos[0], geomRelPos[1], geomRelPos[2]);
+    dGeomSetOffsetQuaternion(geomId, geomRelRot);
   }
 }
 
@@ -138,6 +152,7 @@ detail::OdeGeom* createOdeGeom(
   using dynamics::PlaneShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
+  using dynamics::HeightmapShape;
 
   detail::OdeGeom* geom = nullptr;
   const auto shape = shapeFrame->getShape().get();
@@ -187,6 +202,11 @@ detail::OdeGeom* createOdeGeom(
     auto aiScene = shapeMesh->getMesh();
 
     geom = new detail::OdeMesh(collObj, aiScene, scale);
+  }
+  else if (shape->is<HeightmapShape>())
+  {
+    auto heightMap= static_cast<const HeightmapShape*>(shape);
+    geom = new detail::OdeHeightmap(collObj, heightMap);
   }
   else
   {

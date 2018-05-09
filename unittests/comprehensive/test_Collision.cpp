@@ -1113,6 +1113,152 @@ TEST_F(COLLISION, testPlane)
 }
 
 //==============================================================================
+// \param odeThck: for ODE, use this thickness underneath the heightfield
+//    to adjust collision checks.
+//    See also dGeomHeightfieldDataBuild*().
+void testHeightmapBox(const std::shared_ptr<CollisionDetector>& cd,
+                      const float odeThck = 0)
+{
+  auto terrainFrame = SimpleFrame::createShared(Frame::World());
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+
+  auto terrainShape = std::make_shared<HeightmapShape>();
+  float boxSize = 0.1;
+  auto boxShape =
+    std::make_shared<BoxShape>(Eigen::Vector3d(boxSize, boxSize, boxSize));
+
+  const float minH = -2;
+  const float maxH = 2;
+  // make a terrain with a linearly increasing slope
+  std::vector<HeightmapShape::HeightType> heights =
+    {minH, (maxH-minH)/2, (maxH-minH)/2, maxH};
+  terrainShape->setHeightField(2, 2, heights);
+  // set a scale to test this at the same time
+  const float terrainScale = 1;
+  const float halfTerrSize = 0.5;
+  const float zScale = 1;
+  terrainShape->setScale(Eigen::Vector3d(terrainScale, terrainScale, zScale));
+  EXPECT_EQ(terrainShape->getHeightField().size(), heights.size());
+
+  terrainFrame->setShape(terrainShape);
+  boxFrame->setShape(boxShape);
+
+  auto group = cd->createCollisionGroup(terrainFrame.get(), boxFrame.get());
+
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+  terrainFrame->setTranslation(Eigen::Vector3d::Zero());
+
+  int steps = 50;
+  for (int i = 0; i <= steps; ++i)
+  {
+    float trans = minH - boxSize+ (maxH+boxSize-minH)*zScale*(float)i/steps;
+    float shft = halfTerrSize - boxSize*1.01;
+    boxFrame->setTranslation(Eigen::Vector3d(-shft, +shft, trans));
+    result.clear();
+    if (group->collide(option, &result))
+    {
+      std::cout << "Collide at " << trans << std::endl;
+    }
+    else
+    {
+      std::cout << "No collision at " << trans << std::endl;
+    }
+  }
+  return;
+
+  // no collision underneath height field, which should be on x/y plane.
+  // Some tolerance has to be added becasue ODE adds an extra piece on the
+  // bottom to prevent objects from falling through lowest points.
+  result.clear();
+  float transZ = minH*zScale - boxSize*0.501 - odeThck;
+  boxFrame->setTranslation(Eigen::Vector3d(0, 0, transZ));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+
+  // collide if moved just slightly above
+  result.clear();
+  transZ = minH*zScale - boxSize*0.499 - odeThck;
+  boxFrame->setTranslation(Eigen::Vector3d(0, 0, transZ));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+
+
+  // collision at highest point...
+  result.clear();
+  boxFrame->setTranslation(Eigen::Vector3d(terrainScale, -terrainScale, maxH*zScale));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+
+  // .. but not at opposite corner
+  result.clear();
+  boxFrame->setTranslation(Eigen::Vector3d(-terrainScale, terrainScale, maxH*zScale));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+
+  // should collide in the middle when box intersects slope
+  /*result.clear();
+  boxFrame->setTranslation(Eigen::Vector3d(0, 0, (maxH-minH)*zScale));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+
+  // ... but not if box is translated away from slope
+  result.clear();
+  float xyTrans = boxSize*0.501;
+  boxFrame->setTranslation(Eigen::Vector3d(xyTrans, xyTrans, (maxH-minH)*zScale));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+*/
+}
+
+//==============================================================================
+TEST_F(COLLISION, testHeightmapBox)
+{
+  // auto fcl_mesh_dart = FCLCollisionDetector::create();
+  // fcl_mesh_dart->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_mesh_dart->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testHeightmapBox(fcl_mesh_dart);
+
+  // auto fcl_prim_fcl = FCLCollisionDetector::create();
+  // fcl_prim_fcl->setPrimitiveShapeType(FCLCollisionDetector::MESH);
+  // fcl_prim_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testHeightmapBox(fcl_prim_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::DART);
+  // testHeightmapBox(fcl_mesh_fcl);
+
+  // auto fcl_mesh_fcl = FCLCollisionDetector::create();
+  // fcl_mesh_fcl->setPrimitiveShapeType(FCLCollisionDetector::PRIMITIVE);
+  // fcl_mesh_fcl->setContactPointComputationMethod(FCLCollisionDetector::FCL);
+  // testHeightmapBox(fcl_mesh_fcl);
+
+#if HAVE_ODE
+  auto ode = OdeCollisionDetector::create();
+  dtdbg << "Testing ODE" << std::endl;
+  testHeightmapBox(ode, 0.05);
+#endif
+
+#if HAVE_BULLET
+  dtdbg << "Testing Bullet" << std::endl;
+  auto bullet = BulletCollisionDetector::create();
+  testHeightmapBox(bullet);
+#endif
+
+  // auto dart = DARTCollisionDetector::create();
+  // testHeightmapBox(dart);
+}
+
+
+
+
+
+//==============================================================================
 TEST_F(COLLISION, Options)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();

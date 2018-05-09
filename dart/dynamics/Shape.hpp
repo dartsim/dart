@@ -62,6 +62,7 @@ public:
     MESH,
     SOFT_MESH,
     LINE_SEGMENT,
+    HEIGHTMAP,
     UNSUPPORTED
   };
 

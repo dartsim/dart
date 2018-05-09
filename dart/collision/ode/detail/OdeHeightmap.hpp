@@ -30,48 +30,33 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/bullet/BulletCollisionObject.hpp"
+#ifndef DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
+#define DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
 
-#include "dart/collision/bullet/BulletTypes.hpp"
-#include "dart/dynamics/ShapeFrame.hpp"
+#include <ode/ode.h>
+
+#include "dart/collision/ode/detail/OdeGeom.hpp"
+#include "dart/dynamics/HeightmapShape.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
-//==============================================================================
-btCollisionObject* BulletCollisionObject::getBulletCollisionObject()
+class OdeHeightmap : public OdeGeom
 {
-  return mBulletCollisionObject.get();
-}
+public:
+  /// Constructor
+  OdeHeightmap(const OdeCollisionObject* parent,
+               const dart::dynamics::HeightmapShape* hs);
 
-//==============================================================================
-const btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
-{
-  return mBulletCollisionObject.get();
-}
+  /// Destructor
+  virtual ~OdeHeightmap();
+private:
+  dHeightfieldDataID odeHeightfieldID;
+};
 
-//==============================================================================
-BulletCollisionObject::BulletCollisionObject(
-    CollisionDetector* collisionDetector,
-    const dynamics::ShapeFrame* shapeFrame,
-    btCollisionShape* bulletCollisionShape,
-    const btTransform& relativeShapeTransform)
-  : CollisionObject(collisionDetector, shapeFrame),
-    mBulletCollisionObject(new btCollisionObject()),
-    mRelativeShapeTransform(relativeShapeTransform)
-{
-  mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
-  mBulletCollisionObject->setUserPointer(this);
-}
+} // namespace detail
+} // namespace collision
+} // namespace dart
 
-//==============================================================================
-void BulletCollisionObject::updateEngineData()
-{
-  btTransform worldTransform =
-    convertTransform(mShapeFrame->getWorldTransform());
-  worldTransform *= mRelativeShapeTransform;
-  mBulletCollisionObject->setWorldTransform(worldTransform);
-}
-
-}  // namespace collision
-}  // namespace dart
+#endif  // DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_

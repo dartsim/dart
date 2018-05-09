@@ -36,6 +36,7 @@
 #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
 #include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
+#include <bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 
 #include "dart/common/Console.hpp"
 #include "dart/collision/CollisionObject.hpp"
@@ -57,6 +58,7 @@
 #include "dart/dynamics/MultiSphereConvexHullShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
+#include "dart/dynamics/HeightmapShape.hpp"
 
 namespace dart {
 namespace collision {
@@ -328,10 +330,13 @@ BulletCollisionDetector::BulletCollisionDetector()
 std::unique_ptr<CollisionObject> BulletCollisionDetector::createCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {
-  auto bulletCollShape = claimBulletCollisionShape(shapeFrame->getShape());
+  btTransform relativeShapeTransform;
+  auto bulletCollShape = claimBulletCollisionShape(shapeFrame->getShape(),
+                                                   relativeShapeTransform);
 
   return std::unique_ptr<BulletCollisionObject>(
-        new BulletCollisionObject(this, shapeFrame, bulletCollShape));
+        new BulletCollisionObject(this, shapeFrame, bulletCollShape,
+                                  relativeShapeTransform));
 }
 
 //==============================================================================
@@ -343,7 +348,8 @@ void BulletCollisionDetector::notifyCollisionObjectDestroying(
 
 //==============================================================================
 btCollisionShape* BulletCollisionDetector::claimBulletCollisionShape(
-    const dynamics::ConstShapePtr& shape)
+    const dynamics::ConstShapePtr& shape,
+    btTransform& relativeShapeTransform)
 {
   const auto search = mShapeMap.find(shape);
 
@@ -360,7 +366,8 @@ btCollisionShape* BulletCollisionDetector::claimBulletCollisionShape(
     return bulletCollShape;
   }
 
-  auto newBulletCollisionShape = createBulletCollisionShape(shape);
+  auto newBulletCollisionShape =
+    createBulletCollisionShape(shape, relativeShapeTransform);
   mShapeMap[shape] = std::make_pair(newBulletCollisionShape, 1u);
 
   return newBulletCollisionShape;
@@ -395,7 +402,8 @@ void BulletCollisionDetector::reclaimBulletCollisionShape(
 
 //==============================================================================
 btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
-    const dynamics::ConstShapePtr& shape)
+    const dynamics::ConstShapePtr& shape,
+    btTransform& relativeShapeTransform)
 {
   using dynamics::Shape;
   using dynamics::SphereShape;
@@ -408,8 +416,10 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
   using dynamics::MultiSphereConvexHullShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
+  using dynamics::HeightmapShape;
 
   btCollisionShape* bulletCollisionShape = nullptr;
+  relativeShapeTransform.setIdentity();
 
   if (shape->is<SphereShape>())
   {
@@ -526,6 +536,65 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
 
     bulletCollisionShape = createBulletCollisionShapeFromAssimpMesh(mesh);
   }
+  else if (shape->is<HeightmapShape>())
+  {
+    assert(dynamic_cast<const HeightmapShape*>(shape.get()));
+
+    const auto heightMap = static_cast<const HeightmapShape*>(shape.get());
+
+    // get the heightmap parameters
+    const Eigen::Vector3d& scale = heightMap->getScale();
+    const std::vector<HeightmapShape::HeightType>& heights =
+      heightMap->getHeightField();
+    const HeightmapShape::HeightType minHeight = heightMap->getMinHeight();
+    const HeightmapShape::HeightType maxHeight = heightMap->getMaxHeight();
+
+    // determine which data type (float or double) is to be used for the field
+    static_assert(std::is_same<HeightmapShape::HeightType, float>::value ||
+                  std::is_same<HeightmapShape::HeightType, double>::value,
+                  "HeightmapShape must be float or double");
+    PHY_ScalarType scalarType = PHY_FLOAT;
+    if (std::is_same<HeightmapShape::HeightType, double>::value)
+      scalarType = PHY_DOUBLE;
+
+    const btVector3 localScaling(scale.x(), scale.y(), scale.z());
+    const bool flipQuadEdges = false;
+    dtdbg << "Creating height shape, heights size " << heights.size()
+          << " w = " << heightMap->getWidth() << ", h = "
+          << heightMap->getHeight() << " min/max = "
+          << minHeight << "/" << maxHeight << " scale = "
+          << scale.x() <<", " << scale.y() << ", " << scale.z() << std::endl;
+    btHeightfieldTerrainShape* heightFieldShape = new btHeightfieldTerrainShape(
+        heightMap->getWidth(),   // Width of height field
+        heightMap->getHeight(),  // Height of height field
+        &(heights[0]),           // Height values
+        1,                       // Height scaling
+        minHeight,               // Min height
+        maxHeight,               // Max height
+        2,                       // Up axis
+        scalarType,              // Float or double field
+        flipQuadEdges);          // Flip quad edges
+
+    heightFieldShape->setLocalScaling(localScaling);
+
+    // Use zig-zag subdivision or not.
+    heightFieldShape->setUseZigzagSubdivision(true);
+
+    // set the collision shape to the height field
+    bulletCollisionShape = heightFieldShape;
+
+    // bullet places the heightfield such that the origin is in the
+    // middle of the AABB. We want however that the minimum height value
+    // is on x/y plane.
+    btVector3 min, max;
+    heightFieldShape->getAabb(btTransform::getIdentity(), min, max);
+    dtdbg << "Bullet heightfield AABB: min = {"
+          << min.x() << ", " << min.y() << ", " << min.z() << "}, max = {"
+          << max.x() << ", " << max.y() << ", " << max.z() << "}" << std::endl;
+
+    btVector3 trans(0, 0, (maxHeight - minHeight) * 0.5 + minHeight);
+    relativeShapeTransform.setOrigin(trans);
+  }
   else
   {
     dterr << "[BulletCollisionDetector::createBulletCollisionShape] "
@@ -536,6 +605,7 @@ btCollisionShape* BulletCollisionDetector::createBulletCollisionShape(
     bulletCollisionShape = new btSphereShape(0.1);
   }
 
+  assert(bulletCollisionShape != nullptr);
   return bulletCollisionShape;
 }
 

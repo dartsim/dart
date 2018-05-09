@@ -111,13 +111,15 @@ protected:
 private:
 
   btCollisionShape* claimBulletCollisionShape(
-      const dynamics::ConstShapePtr& shape);
+      const dynamics::ConstShapePtr& shape,
+      btTransform& relativeShapeTransform);
 
   void reclaimBulletCollisionShape(
       const dynamics::ConstShapePtr& shape);
 
   btCollisionShape* createBulletCollisionShape(
-      const dynamics::ConstShapePtr& shape);
+      const dynamics::ConstShapePtr& shape,
+      btTransform& relativeShapeTransform);
 
 private:
 

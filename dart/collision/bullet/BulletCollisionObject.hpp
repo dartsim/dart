@@ -62,7 +62,9 @@ protected:
   /// Constructor
   BulletCollisionObject(CollisionDetector* collisionDetector,
                         const dynamics::ShapeFrame* shapeFrame,
-                        btCollisionShape* bulletCollisionShape);
+                        btCollisionShape* bulletCollisionShape,
+                        const btTransform& relativeShapeTransform
+                          = btTransform::getIdentity());
 
   // Documentation inherited
   void updateEngineData() override;
@@ -71,6 +73,11 @@ protected:
 
   /// Bullet collision object
   std::unique_ptr<btCollisionObject> mBulletCollisionObject;
+  
+  /// Relative transform of the shape to the collision object
+  /// which should be maintained at each pose update of the collision object.
+  /// Defaults to identity.
+  btTransform mRelativeShapeTransform;
 
 };
 
