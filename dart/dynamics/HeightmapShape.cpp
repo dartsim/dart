@@ -35,6 +35,7 @@
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/common/Console.hpp"
 #include <limits>
+#include <algorithm>
 
 namespace dart {
 namespace dynamics {
@@ -86,6 +87,7 @@ const Eigen::Vector3d& HeightmapShape::getScale() const
 void HeightmapShape::setHeightField(const size_t& width, const size_t& height,
                                     const std::vector<HeightType>& heights)
 {
+  // dtdbg << "Setting height field " << width << "*" << height << std::endl;
   assert(heights.size() == width*height);
   if ((width*height) != heights.size())
   {
@@ -115,9 +117,32 @@ void HeightmapShape::setHeightField(const size_t& width, const size_t& height,
 }
 
 //==============================================================================
-const std::vector<HeightmapShape::HeightType>& HeightmapShape::getHeightField() const
+const std::vector<HeightmapShape::HeightType>&
+  HeightmapShape::getHeightField() const
 {
   return mHeights;
+}
+
+//==============================================================================
+std::vector<HeightmapShape::HeightType>&
+  HeightmapShape::getHeightFieldModifiable() const
+{
+  return mHeights;
+}
+
+//==============================================================================
+void HeightmapShape::flipY() const
+{
+  assert(mHeights.size() > mWidth);
+  assert(mHeights.size() == mWidth*mHeight);
+  std::vector<HeightType>::iterator it1 = mHeights.begin();
+  std::vector<HeightType>::iterator it2 = mHeights.end() - mWidth;
+  // int division mHeight/2 ensures odd row counts skip middle row
+  for (size_t r = 0; r < mHeight / 2; ++r) 
+  {
+    it1 = std::swap_ranges(it2, it2+mWidth, it1);
+    it2 -= mWidth;
+  }
 }
 
 //==============================================================================

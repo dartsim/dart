@@ -1123,19 +1123,19 @@ void testHeightmapBox(const std::shared_ptr<CollisionDetector>& cd,
   auto boxFrame = SimpleFrame::createShared(Frame::World());
 
   auto terrainShape = std::make_shared<HeightmapShape>();
-  float boxSize = 0.1;
+  float boxSize = 0.05;
   auto boxShape =
     std::make_shared<BoxShape>(Eigen::Vector3d(boxSize, boxSize, boxSize));
 
-  const float minH = -2;
-  const float maxH = 2;
+  const float minH = 0;  // note: ODE doesn't behave well with negative heights
+  const float maxH = 3;
   // make a terrain with a linearly increasing slope
   std::vector<HeightmapShape::HeightType> heights =
     {minH, (maxH-minH)/2, (maxH-minH)/2, maxH};
   terrainShape->setHeightField(2, 2, heights);
   // set a scale to test this at the same time
   const float terrainScale = 1;
-  const float halfTerrSize = 0.5;
+  const float halfTerrSize = 1 * terrainScale * 0.5;
   const float zScale = 1;
   terrainShape->setScale(Eigen::Vector3d(terrainScale, terrainScale, zScale));
   EXPECT_EQ(terrainShape->getHeightField().size(), heights.size());
@@ -1156,17 +1156,19 @@ void testHeightmapBox(const std::shared_ptr<CollisionDetector>& cd,
   int steps = 50;
   for (int i = 0; i <= steps; ++i)
   {
-    float trans = minH - boxSize+ (maxH+boxSize-minH)*zScale*(float)i/steps;
+    float trans = minH - boxSize + (maxH+boxSize-minH)*zScale*(float)i/steps;
     float shft = halfTerrSize - boxSize*1.01;
-    boxFrame->setTranslation(Eigen::Vector3d(-shft, +shft, trans));
+    float x = shft;
+    float y = shft;
+    boxFrame->setTranslation(Eigen::Vector3d(x, y, trans));
     result.clear();
     if (group->collide(option, &result))
     {
-      std::cout << "Collide at " << trans << std::endl;
+      std::cout << "Collide at " << x << ", " << y << ", " << trans << std::endl;
     }
     else
     {
-      std::cout << "No collision at " << trans << std::endl;
+      std::cout << "No collision at " << x << ", " << y << ", " << trans << std::endl;
     }
   }
   return;
@@ -1254,9 +1256,89 @@ TEST_F(COLLISION, testHeightmapBox)
   // testHeightmapBox(dart);
 }
 
+//==============================================================================
+TEST_F(COLLISION, HeightmapFlipY)
+{
+  // tests HeightmapShape::flipY();
+  std::vector<HeightmapShape::HeightType> heights1 = {-1, -2, 2, 1};
+  auto shape = std::make_shared<HeightmapShape>();
+  shape->setHeightField(2, 2, heights1);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField()[0], heights1[2]);
+  EXPECT_EQ(shape->getHeightField()[1], heights1[3]);
+  EXPECT_EQ(shape->getHeightField()[2], heights1[0]);
+  EXPECT_EQ(shape->getHeightField()[3], heights1[1]);
 
+  // test with odd number of rows
+  std::vector<HeightmapShape::HeightType> heights2 = {-1, -2, 3, 3, 2, 1};
+  shape->setHeightField(2, 3, heights2);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField()[0], heights2[4]);
+  EXPECT_EQ(shape->getHeightField()[1], heights2[5]);
+  EXPECT_EQ(shape->getHeightField()[2], heights2[3]);
+  EXPECT_EQ(shape->getHeightField()[3], heights2[3]);
+  EXPECT_EQ(shape->getHeightField()[4], heights2[0]);
+  EXPECT_EQ(shape->getHeightField()[5], heights2[1]);
 
+  // test higher number of rows
+  std::vector<HeightmapShape::HeightType> heights3 =
+    {1, -1, 2, -2, 3, -3, 4, -4};
+  shape->setHeightField(2, 4, heights3);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField()[0], heights3[6]);
+  EXPECT_EQ(shape->getHeightField()[1], heights3[7]);
+  EXPECT_EQ(shape->getHeightField()[2], heights3[4]);
+  EXPECT_EQ(shape->getHeightField()[3], heights3[5]);
+  EXPECT_EQ(shape->getHeightField()[4], heights3[2]);
+  EXPECT_EQ(shape->getHeightField()[5], heights3[3]);
+  EXPECT_EQ(shape->getHeightField()[6], heights3[0]);
+  EXPECT_EQ(shape->getHeightField()[7], heights3[1]);
 
+  // test wider rows
+  std::vector<HeightmapShape::HeightType> heights4 =
+    {1, -1, 1.5, 2, -2, 2.5,  3, -3, 3.5, 4, -4, 4.5};
+  shape->setHeightField(3, 4, heights4);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField()[0], heights4[9]);
+  EXPECT_EQ(shape->getHeightField()[1], heights4[10]);
+  EXPECT_EQ(shape->getHeightField()[2], heights4[11]);
+  EXPECT_EQ(shape->getHeightField()[3], heights4[6]);
+  EXPECT_EQ(shape->getHeightField()[4], heights4[7]);
+  EXPECT_EQ(shape->getHeightField()[5], heights4[8]);
+  EXPECT_EQ(shape->getHeightField()[6], heights4[3]);
+  EXPECT_EQ(shape->getHeightField()[7], heights4[4]);
+  EXPECT_EQ(shape->getHeightField()[8], heights4[5]);
+  EXPECT_EQ(shape->getHeightField()[9], heights4[0]);
+  EXPECT_EQ(shape->getHeightField()[10], heights4[1]);
+  EXPECT_EQ(shape->getHeightField()[11], heights4[2]);
+
+  // test mini (actually meaningless) height field
+  std::vector<HeightmapShape::HeightType> heights5 = {1, 2};
+  shape->setHeightField(1, 2, heights5);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField()[0], heights5[1]);
+  EXPECT_EQ(shape->getHeightField()[1], heights5[0]);
+
+  // test height field with only one row (which is actually meaningless)
+  std::vector<HeightmapShape::HeightType> heights6 = {1, 2};
+  shape->setHeightField(2, 1, heights6);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField()[0], heights6[0]);
+  EXPECT_EQ(shape->getHeightField()[1], heights6[1]);
+
+  // test height field with only one column (which is actually meaningless)
+  std::vector<HeightmapShape::HeightType> heights7 = {1, 2};
+  shape->setHeightField(1, 2, heights7);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField()[0], heights7[1]);
+  EXPECT_EQ(shape->getHeightField()[1], heights7[0]);
+
+  // test height field with only one col and row (which is actually meaningless)
+  std::vector<HeightmapShape::HeightType> heights8 = {1};
+  shape->setHeightField(1, 1, heights8);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField()[0], heights8[0]);
+}
 
 //==============================================================================
 TEST_F(COLLISION, Options)

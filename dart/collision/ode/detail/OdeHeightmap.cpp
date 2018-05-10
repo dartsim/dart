@@ -64,12 +64,12 @@ void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
       0,
       (width-1) * scale.x(),   // width (in meters)
       (height-1) * scale.y(),  // height (in meters)
-      width,               // width (sampling size)
-      height,              // height (sampling size)
-      scale.z(),           // vertical (z-axis) scaling 
-      0.0,                 // vertical (z-axis) offset
-      HF_THICKNESS,        // vertical thickness for closing the height map mesh
-      0);                  // wrap mode
+      width,                   // width (sampling size)
+      height,                  // height (sampling size)
+      scale.z(),               // vertical scaling 
+      0.0,                     // vertical offset
+      HF_THICKNESS,            // vertical thickness for closing the mesh
+      0);                      // wrap mode
 }
 
 //==============================================================================
@@ -81,18 +81,27 @@ void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
                          const Eigen::Vector3d& scale,
                          typename std::enable_if<std::is_same<double, HeightType>::value>::type* = 0) 
 {
-  dGeomHeightfieldDataBuildDouble(
+  assert(width >= 2);
+  assert(height >= 2);
+  if ((width < 2) || (height < 2))
+  {
+    dtwarn << "Cannot create height field of dimensions " << width
+           << "x" << height << ", needs to be at least 2" << std::endl;
+    return;
+  }
+
+  dGeomHeightfieldDataBuildSingle(
       odeHeightfieldID,
       &(heights[0]),
       0,
-      width * scale.x(),   // width (in meters)
-      height * scale.y(),  // height (in meters)
-      width,               // width (sampling size)
-      height,              // height (sampling size)
-      scale.z(),           // vertical (z-axis) scaling 
-      0.0,                 // vertical (z-axis) offset
-      HF_THICKNESS,        // vertical thickness for closing the height map mesh
-      0);                  // wrap mode
+      (width-1) * scale.x(),   // width (in meters)
+      (height-1) * scale.y(),  // height (in meters)
+      width,                   // width (sampling size)
+      height,                  // height (sampling size)
+      scale.z(),               // vertical scaling 
+      0.0,                     // vertical offset
+      HF_THICKNESS,            // vertical thickness for closing the mesh
+      0);                      // wrap mode
 }
 
 

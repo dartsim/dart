@@ -919,14 +919,22 @@ btCollisionShape* createBulletCollisionShapeFromHeightmap(
   PHY_ScalarType scalarType = PHY_FLOAT;
   if (std::is_same<HeightmapShape::HeightType, double>::value)
     scalarType = PHY_DOUBLE;
-
-  const btVector3 localScaling(scale.x(), scale.y(), scale.z());
-  const bool flipQuadEdges = false;
+  
   dtdbg << "Creating height shape, heights size " << heights.size()
         << " w = " << heightMap->getWidth() << ", h = "
         << heightMap->getHeight() << " min/max = "
         << minHeight << "/" << maxHeight << " scale = "
         << scale.x() <<", " << scale.y() << ", " << scale.z() << std::endl;
+
+  // the y-values in the height field need to be flipped
+  // TODO: This is not a nice solution, especially considering the
+  // const-ness of heightMap, but until a solution has been agreed on,
+  // it will be implemented like this. See also documentation of setHeightField().
+  heightMap->flipY();
+
+  // create the height field
+  const btVector3 localScaling(scale.x(), scale.y(), scale.z());
+  const bool flipQuadEdges = false;
   btHeightfieldTerrainShape* heightFieldShape = new btHeightfieldTerrainShape(
       heightMap->getWidth(),   // Width of height field
       heightMap->getHeight(),  // Height of height field
@@ -937,23 +945,24 @@ btCollisionShape* createBulletCollisionShapeFromHeightmap(
       2,                       // Up axis
       scalarType,              // Float or double field
       flipQuadEdges);          // Flip quad edges
-
   heightFieldShape->setLocalScaling(localScaling);
-
-  // Use zig-zag subdivision or not.
   heightFieldShape->setUseZigzagSubdivision(true);
+
+  // change the relative transform of the height field so that the minimum
+  // height is at the same z coordinate. Bullet shifts the height map such
+  // that its center is the AABB center.
+  btVector3 trans(0, 0, (maxHeight - minHeight)*0.5 + minHeight);
+  relativeShapeTransform.setOrigin(trans);
 
   // bullet places the heightfield such that the origin is in the
   // middle of the AABB. We want however that the minimum height value
   // is on x/y plane.
   btVector3 min, max;
   heightFieldShape->getAabb(btTransform::getIdentity(), min, max);
-  dtdbg << "Bullet heightfield AABB: min = {"
+  dtdbg << "DART Bullet heightfield AABB: min = {"
         << min.x() << ", " << min.y() << ", " << min.z() << "}, max = {"
-        << max.x() << ", " << max.y() << ", " << max.z() << "}" << std::endl;
-
-  btVector3 trans(0, 0, (maxHeight - minHeight) * 0.5 + minHeight);
-  relativeShapeTransform.setOrigin(trans);
+        << max.x() << ", " << max.y() << ", " << max.z() << "}"
+        << " (will be translated by z=" << trans.z() << ")" << std::endl;
 
   return heightFieldShape;
 }
