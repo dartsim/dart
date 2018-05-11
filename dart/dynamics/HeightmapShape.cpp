@@ -84,15 +84,14 @@ const Eigen::Vector3d& HeightmapShape::getScale() const
 }
  
 //==============================================================================
-void HeightmapShape::setHeightField(const size_t& width, const size_t& height,
+void HeightmapShape::setHeightField(const size_t& width, const size_t& depth,
                                     const std::vector<HeightType>& heights)
 {
-  // dtdbg << "Setting height field " << width << "*" << height << std::endl;
-  assert(heights.size() == width*height);
-  if ((width*height) != heights.size())
+  assert(heights.size() == width*depth);
+  if ((width*depth) != heights.size())
   {
-    dterr << "Size of height field needs to be width*height="
-          << width*height << std::endl;
+    dterr << "Size of height field needs to be width*depth="
+          << width*depth << std::endl;
     return;
   }
   if (heights.empty())
@@ -102,7 +101,7 @@ void HeightmapShape::setHeightField(const size_t& width, const size_t& height,
   }
   mHeights = heights;
   mWidth = width;
-  mHeight = height;  
+  mDepth = depth;  
 
   // compute minimum and maximum height
   mMinHeight = std::numeric_limits<HeightType>::max();
@@ -134,11 +133,11 @@ std::vector<HeightmapShape::HeightType>&
 void HeightmapShape::flipY() const
 {
   assert(mHeights.size() > mWidth);
-  assert(mHeights.size() == mWidth*mHeight);
+  assert(mHeights.size() == mWidth*mDepth);
   std::vector<HeightType>::iterator it1 = mHeights.begin();
   std::vector<HeightType>::iterator it2 = mHeights.end() - mWidth;
-  // int division mHeight/2 ensures odd row counts skip middle row
-  for (size_t r = 0; r < mHeight / 2; ++r) 
+  // int division mDepth/2 ensures odd row counts skip middle row
+  for (size_t r = 0; r < mDepth / 2; ++r) 
   {
     it1 = std::swap_ranges(it2, it2+mWidth, it1);
     it2 -= mWidth;
@@ -164,9 +163,9 @@ size_t HeightmapShape::getWidth() const
 }
 
 //==============================================================================
-size_t HeightmapShape::getHeight() const
+size_t HeightmapShape::getDepth() const
 {
-  return mHeight;
+  return mDepth;
 }
 
 //==============================================================================
@@ -184,13 +183,10 @@ void HeightmapShape::computeBoundingBox(Eigen::Vector3d& min,
                                         Eigen::Vector3d& max) const
 {
   const double dimX = mWidth * mScale.x();
-  const double dimY = mHeight * mScale.y();
+  const double dimY = mDepth * mScale.y();
   const double dimZ = (mMaxHeight - mMinHeight) * mScale.z();
   min = Eigen::Vector3d(-dimX*0.5, -dimY*0.5, mMinHeight*mScale.z());
   max = min + Eigen::Vector3d(dimX, dimY, dimZ);
-  dtdbg << "Bounding box of height map: min = {"
-        << min.x() << ", " << min.y() << ", " << min.z() << "}, max = {"
-        << max.x() << ", " << max.y() << ", " << max.z() << "}" << std::endl;
 }
 
 //==============================================================================

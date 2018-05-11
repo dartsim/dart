@@ -919,10 +919,11 @@ btCollisionShape* createBulletCollisionShapeFromHeightmap(
   PHY_ScalarType scalarType = PHY_FLOAT;
   if (std::is_same<HeightmapShape::HeightType, double>::value)
     scalarType = PHY_DOUBLE;
-  
+
+  // TODO take this out when testing is finished  
   /*dtdbg << "Creating height shape, heights size " << heights.size()
         << " w = " << heightMap->getWidth() << ", h = "
-        << heightMap->getHeight() << " min/max = "
+        << heightMap->getDepth() << " min/max = "
         << minHeight << "/" << maxHeight << " scale = "
         << scale.x() <<", " << scale.y() << ", " << scale.z() << std::endl;*/
 
@@ -937,7 +938,7 @@ btCollisionShape* createBulletCollisionShapeFromHeightmap(
   const bool flipQuadEdges = false;
   btHeightfieldTerrainShape* heightFieldShape = new btHeightfieldTerrainShape(
       heightMap->getWidth(),   // Width of height field
-      heightMap->getHeight(),  // Height of height field
+      heightMap->getDepth(),   // Depth of height field
       &(heights[0]),           // Height values
       1,                       // Height scaling
       minHeight,               // Min height

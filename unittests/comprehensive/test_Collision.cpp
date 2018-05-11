@@ -1297,11 +1297,13 @@ TEST_F(COLLISION, testHeightmapBox)
 
 #if HAVE_ODE
   auto ode = OdeCollisionDetector::create();
+  // TODO take this message out as soon as testing is done
   dtdbg << "Testing ODE" << std::endl;
   testHeightmapBox(ode, true, true, 0.05);
 #endif
 
 #if HAVE_BULLET
+  // TODO take this message out as soon as testing is done
   dtdbg << "Testing Bullet" << std::endl;
   auto bullet = BulletCollisionDetector::create();
   testHeightmapBox(bullet, false, false);

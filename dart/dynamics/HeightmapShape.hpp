@@ -78,25 +78,25 @@ public:
   /// \e heights directly instead of copying them locally to a vector in this
   /// class (this would avoid any data being kept twice). However some
   /// collision engine implementations may require to transform the height
-  /// values, e.g. bullet needs the z values inverted. Therefore, until a
-  /// final solution has been agreed on, a (mutable modifiable) copy of
+  /// values, e.g. bullet needs the y values flipped. Therefore, until a
+  /// final solution has been agreed on, a (mutable) copy of
   /// the height values passed in \e heights will be kept in this class.
   /// The copied data can be modified via getHeightFieldModifiable()
   /// and with flipY().
-  /// \param[in] width width of the field
-  /// \param[in] height height of the field
-  /// \param[in] heights the height data of size \e width * \e height.
+  /// \param[in] width width of the field (x axis)
+  /// \param[in] depth depth of the field (-y axis)
+  /// \param[in] heights the height data of size \e width * \e depth.
   //    The heights are interpreted as z values, while \e width goes in x 
-  //    direction and \e height in -y (it goes to -y because traditionally
+  //    direction and \e depth in -y (it goes to -y because traditionally
   //    images are read from top row to bottom row).
   //    In the geometry which is to be generated from this shape, the min/max
   //    height value is also the min/max z value (so if the minimum height 
   //    value is -100, the lowest terrain point will be -100, times the z
   //    scale to be applied).
-  void setHeightField(const size_t& width, const size_t& height,
+  void setHeightField(const size_t& width, const size_t& depth,
                       const std::vector<HeightType>& heights);
 
-  /// \brief Get the height field. Will be of size getWidth() * getHeight().
+  /// \brief Get the height field. Will be of size getWidth() * getDepth().
   const std::vector<HeightType>& getHeightField() const;
   
   /// \brief see also TODO comment in setHeightField().
@@ -110,7 +110,7 @@ public:
   size_t getWidth() const;
   
   /// \brief Get the height dimension of the height field
-  size_t getHeight() const;
+  size_t getDepth() const;
 
   /// \brief Get the minimum height set by setHeightField()
   HeightType getMinHeight() const;
@@ -138,10 +138,10 @@ private:
   /// \brief scale of the heightmap
   Eigen::Vector3d mScale;
 
-  /// \brief width and height of height field
-  size_t mWidth, mHeight;
+  /// \brief width (x) and depth (y) of height field
+  size_t mWidth, mDepth;
 
-  /// \brief height field. Must be of size mWidth*mHeight.
+  /// \brief height field. Must be of size mWidth*mDepth.
   mutable std::vector<HeightType> mHeights;
 
   /// \brief minimum and maximum heights.

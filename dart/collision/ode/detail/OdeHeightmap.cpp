@@ -42,13 +42,15 @@ namespace detail {
 #define HF_THICKNESS 0.05
 
 //==============================================================================
+// creates the ODE height field. Only enabled if the height data type is float.
 template<class HeightType>
 void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
                          const std::vector<HeightType>& heights, 
                          const size_t& width,
                          const size_t& height,
                          const Eigen::Vector3d& scale,
-                         typename std::enable_if<std::is_same<float, HeightType>::value>::type* = 0) 
+                         typename std::enable_if<
+                          std::is_same<float, HeightType>::value>::type* = 0) 
 {
   assert(width >= 2);
   assert(height >= 2);
@@ -73,13 +75,15 @@ void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
 }
 
 //==============================================================================
+// creates the ODE height field. Only enabled if the height data type is double.
 template<class HeightType>
 void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
                          const std::vector<HeightType>& heights, 
                          const size_t& width,
                          const size_t& height,
                          const Eigen::Vector3d& scale,
-                         typename std::enable_if<std::is_same<double, HeightType>::value>::type* = 0) 
+                         typename std::enable_if<
+                          std::is_same<double, HeightType>::value>::type* = 0) 
 {
   assert(width >= 2);
   assert(height >= 2);
@@ -103,8 +107,6 @@ void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
       HF_THICKNESS,            // vertical thickness for closing the mesh
       0);                      // wrap mode
 }
-
-
 
 //==============================================================================
 OdeHeightmap::OdeHeightmap(const OdeCollisionObject* parent,
@@ -128,7 +130,7 @@ OdeHeightmap::OdeHeightmap(const OdeCollisionObject* parent,
 
   // specify height field details
   setOdeHeightfieldDetails(odeHeightfieldID, heights, heightMap->getWidth(),
-                      heightMap->getHeight(), scale);
+                      heightMap->getDepth(), scale);
 
   // Restrict the bounds of the AABB to improve efficiency
   dGeomHeightfieldDataSetBounds(odeHeightfieldID, heightMap->getMinHeight(),
@@ -137,7 +139,9 @@ OdeHeightmap::OdeHeightmap(const OdeCollisionObject* parent,
   // create the height field
   mGeomId = dCreateHeightfield(0, odeHeightfieldID, 1);
 
-  // rotate it so that z axis is up 
+  // rotate it so that z axis is up.
+  // remember the transform as a permanent relative transform by assigning
+  // it to the geometry.
   dQuaternion q;
   q[0] = sqrt(0.5);
   q[1] = sqrt(0.5);
@@ -145,6 +149,8 @@ OdeHeightmap::OdeHeightmap(const OdeCollisionObject* parent,
   q[3] = 0;
   dGeomSetQuaternion(mGeomId, q);
 
+  // TODO Take this out as soon as testing is finished, getting the
+  // AABB is only needed for the debug print.
   dReal aabb[6];
   dGeomGetAABB(mGeomId, aabb);
   dtdbg << "ODE Heightfield AABB: min = {"

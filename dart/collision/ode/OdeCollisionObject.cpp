@@ -76,7 +76,9 @@ OdeCollisionObject::OdeCollisionObject(
     mOdeGeom(nullptr),
     mBodyId(nullptr)
 {
-  // Create detail::OdeGeom according to the shape type
+  // Create detail::OdeGeom according to the shape type.
+  // The geometry may have a transform assigned to it which is to
+  // be treated as relative transform to the main body.
   mOdeGeom.reset(createOdeGeom(this, shapeFrame));
 
   const auto geomId = mOdeGeom->getOdeGeomId();
@@ -87,6 +89,8 @@ OdeCollisionObject::OdeCollisionObject(
     // if the geometry already has a pose, it is to be considered
     // a constant relative pose to the body.
     // Get the geometry pose to ensure this offset is set correctly.
+    // Assigning a body to the geometry will overwrite the geometry
+    // pose, so back it up first.
     dQuaternion geomRelRot; 
     dGeomGetQuaternion(geomId, geomRelRot);
     const dReal * geomRelPos = dGeomGetPosition(geomId);
