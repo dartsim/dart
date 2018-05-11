@@ -91,10 +91,12 @@ OdeCollisionObject::OdeCollisionObject(
     dGeomGetQuaternion(geomId, geomRelRot);
     const dReal * geomRelPos = dGeomGetPosition(geomId);
     assert(geomRelPos);
+
     // create the body
     mBodyId = dBodyCreate(collisionDetector->getOdeWorldId());
     // attach geometry to body. This will set the geometry pose to identity.
     dGeomSetBody(geomId, mBodyId);
+
     // set the offset
     dGeomSetOffsetPosition(geomId, geomRelPos[0], geomRelPos[1], geomRelPos[2]);
     dGeomSetOffsetQuaternion(geomId, geomRelRot);

@@ -920,15 +920,15 @@ btCollisionShape* createBulletCollisionShapeFromHeightmap(
   if (std::is_same<HeightmapShape::HeightType, double>::value)
     scalarType = PHY_DOUBLE;
   
-  dtdbg << "Creating height shape, heights size " << heights.size()
+  /*dtdbg << "Creating height shape, heights size " << heights.size()
         << " w = " << heightMap->getWidth() << ", h = "
         << heightMap->getHeight() << " min/max = "
         << minHeight << "/" << maxHeight << " scale = "
-        << scale.x() <<", " << scale.y() << ", " << scale.z() << std::endl;
+        << scale.x() <<", " << scale.y() << ", " << scale.z() << std::endl;*/
 
   // the y-values in the height field need to be flipped
   // TODO: This is not a nice solution, especially considering the
-  // const-ness of heightMap, but until a solution has been agreed on,
+  // const-ness of heightMap, but until a final solution has been agreed on,
   // it will be implemented like this. See also documentation of setHeightField().
   heightMap->flipY();
 
@@ -951,7 +951,7 @@ btCollisionShape* createBulletCollisionShapeFromHeightmap(
   // change the relative transform of the height field so that the minimum
   // height is at the same z coordinate. Bullet shifts the height map such
   // that its center is the AABB center.
-  btVector3 trans(0, 0, (maxHeight - minHeight)*0.5 + minHeight);
+  btVector3 trans(0, 0, ((maxHeight - minHeight)*0.5 + minHeight)*scale.z());
   relativeShapeTransform.setOrigin(trans);
 
   // bullet places the heightfield such that the origin is in the

@@ -147,7 +147,7 @@ OdeHeightmap::OdeHeightmap(const OdeCollisionObject* parent,
 
   dReal aabb[6];
   dGeomGetAABB(mGeomId, aabb);
-  dtdbg << "Heightfield AABB: min = {"
+  dtdbg << "ODE Heightfield AABB: min = {"
     << aabb[0] << ", " << aabb[2] << ", " << aabb[4]<< "} max = {"
     << aabb[1] << ", " << aabb[3] << ", " << aabb[5] << "}" << std::endl;
 }
