@@ -1208,6 +1208,31 @@ TEST(Skeleton, Group)
     EXPECT_EQ(group->getDof(i), dofs[i]);
 }
 
+TEST(Skeleton, LockSkeletonMutexesWithLockGuard)
+{
+  // Test a variety of uses of Linkage::Criteria
+  SkeletonPtr skel = constructLinkageTestSkeleton();
+
+  BranchPtr subtree = Branch::create(skel->getBodyNode("c3b3"), "subtree");
+  checkForBodyNodes(subtree, skel, true,
+                    "c3b3", "c3b4", "c4b1", "c4b2", "c4b3");
+
+  ChainPtr midchain = Chain::create(skel->getBodyNode("c1b3"),
+                 skel->getBodyNode("c3b4"), "midchain");
+  checkForBodyNodes(midchain, skel, true, "c3b1", "c3b2", "c3b3");
+  checkLinkageJointConsistency(midchain);
+
+  {
+    auto mutex = subtree->getLockableReference();
+    std::lock_guard<common::LockableReference> lock(*mutex);
+  }
+
+  {
+    auto mutex = midchain->getLockableReference();
+    std::lock_guard<common::LockableReference> lock(*mutex);
+  }
+}
+
 TEST(Skeleton, Configurations)
 {
   SkeletonPtr twoLink = createTwoLinkRobot(Vector3d::Ones(), DOF_YAW,
