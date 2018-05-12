@@ -1,10 +1,11 @@
 ## DART 6
 
-### DART 6.5.0 (201X-XX-XX)
+### [DART 6.5.0 (2018-05-12)](https://github.com/dartsim/dart/milestone/41?closed=1)
 
 * Common
 
   * Added LockableReference classes: [#1011](https://github.com/dartsim/dart/pull/1011)
+  * Added missing \<vector\> to Memory.hpp: [#1057](https://github.com/dartsim/dart/pull/1057)
 
 * GUI
 
