@@ -1,0 +1,30 @@
+FROM ubuntu:xenial
+
+RUN apt-get update -qq
+RUN apt-get install -y \
+    sudo \
+    build-essential  \
+    cmake \
+    pkg-config \
+    libassimp-dev \
+    libboost-filesystem-dev \
+    libboost-regex-dev \
+    libboost-system-dev \
+    libccd-dev \
+    libeigen3-dev \
+    libfcl-dev \
+    freeglut3-dev \
+    libxi-dev \
+    libxmu-dev \
+    libbullet-dev \
+    libode-dev \
+    libflann-dev \
+    libnlopt-dev \
+    coinor-libipopt-dev \
+    libtinyxml2-dev \
+    liburdfdom-dev \
+    liburdfdom-headers-dev \
+    libopenscenegraph-dev \
+    clang-format-3.8 \
+    lcov \
+    curl

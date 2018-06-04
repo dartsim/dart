@@ -55,7 +55,7 @@ endif()
 
 # If you change the version, please update the <version> tag in package.xml.
 set(DART_MAJOR_VERSION "6")
-set(DART_MINOR_VERSION "4")
+set(DART_MINOR_VERSION "6")
 set(DART_PATCH_VERSION "0")
 set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSION}")
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
@@ -127,7 +127,7 @@ elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELWITHDEBINFO")
 elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "MINSIZEREL")
   set(BUILD_TYPE_MINSIZEREL TRUE)
 else()
-  build_error("CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel")
+  message(STATUS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel")
 endif()
 
 #===============================================================================
@@ -224,6 +224,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.8")
 
 else()
 
@@ -274,7 +275,7 @@ if(TARGET dart)
   add_subdirectory(unittests EXCLUDE_FROM_ALL)
 
   # Add example subdirectories and an "examples" target.
-  add_subdirectory(examples)
+  add_subdirectory(examples EXCLUDE_FROM_ALL)
   get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
   add_custom_target(examples DEPENDS ${examples})
 
@@ -290,7 +291,7 @@ if(TARGET dart)
   endif(DART_VERBOSE)
 
   # Add a "tutorials" target to build tutorials.
-  add_subdirectory(tutorials)
+  add_subdirectory(tutorials EXCLUDE_FROM_ALL)
   get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
   add_custom_target(tutorials DEPENDS ${tutorials})
 

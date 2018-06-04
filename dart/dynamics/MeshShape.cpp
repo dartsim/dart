@@ -145,7 +145,7 @@ MeshShape::MeshShape(
 //==============================================================================
 MeshShape::~MeshShape()
 {
-  delete mMesh;
+  aiReleaseImport(mMesh);
 }
 
 //==============================================================================
@@ -385,6 +385,7 @@ const aiScene* MeshShape::loadMesh(const std::string& _uri, const common::Resour
   if(!scene)
   {
     dtwarn << "[MeshShape::loadMesh] Failed loading mesh '" << _uri << "'.\n";
+    aiReleasePropertyStore(propertyStore);
     return nullptr;
   }
 
@@ -409,6 +410,8 @@ const aiScene* MeshShape::loadMesh(const std::string& _uri, const common::Resour
   scene = aiApplyPostProcessing(scene, aiProcess_PreTransformVertices);
   if(!scene)
     dtwarn << "[MeshShape::loadMesh] Failed pre-transforming vertices.\n";
+
+  aiReleasePropertyStore(propertyStore);
 
   return scene;
 }

@@ -374,8 +374,25 @@ dynamics::BodyNode* DartLoader::createDartJointAndNode(
   std::pair<dynamics::Joint*, dynamics::BodyNode*> pair;
   switch(_jt->type)
   {
-    case urdf::Joint::REVOLUTE:
     case urdf::Joint::CONTINUOUS:
+    {
+      // We overwrite joint position limits to negative/positive infinities
+      // for "continuous" joint. The URDF parser, by default, either reads
+      // the limits, if specified for this joint, or sets them to 0.
+      singleDof.mPositionLowerLimits[0] = -math::constantsd::inf();
+      singleDof.mPositionUpperLimits[0] = math::constantsd::inf();
+
+      // This joint is still revolute but with no joint limits
+      dynamics::RevoluteJoint::Properties properties(
+            dynamics::GenericJoint<math::R1Space>::Properties(basicProperties, singleDof),
+            toEigen(_jt->axis));
+
+      pair = _skeleton->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+            _parent, properties, _body);
+
+      break;
+    }
+    case urdf::Joint::REVOLUTE:
     {
       dynamics::RevoluteJoint::Properties properties(
             dynamics::GenericJoint<math::R1Space>::Properties(basicProperties, singleDof),

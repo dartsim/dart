@@ -42,6 +42,15 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
+std::unique_ptr<common::LockableReference>
+ReferentialSkeleton::getLockableReference() const
+{
+  return common::make_unique<
+      common::MultiLockableReference<std::mutex>>(
+          mPtr, mSkeletonMutexes.begin(), mSkeletonMutexes.end());
+}
+
+//==============================================================================
 const std::string& ReferentialSkeleton::setName(const std::string& _name)
 {
   const std::string oldName = mName;
@@ -57,6 +66,18 @@ const std::string& ReferentialSkeleton::setName(const std::string& _name)
 const std::string& ReferentialSkeleton::getName() const
 {
   return mName;
+}
+
+//==============================================================================
+std::size_t ReferentialSkeleton::getNumSkeletons() const
+{
+  return mSkeletons.size();
+}
+
+//==============================================================================
+bool ReferentialSkeleton::hasSkeleton(const Skeleton* skel) const
+{
+  return mSkeletons.find(skel) != mSkeletons.end();
 }
 
 //==============================================================================
@@ -1154,6 +1175,7 @@ void ReferentialSkeleton::registerBodyNode(BodyNode* _bn)
     }
   }
 
+  registerSkeleton(_bn->getSkeleton().get());
   updateCaches();
 }
 
@@ -1186,6 +1208,8 @@ void ReferentialSkeleton::registerJoint(Joint* _joint)
       indexing.mJointIndex = mJoints.size()-1;
     }
   }
+
+  registerSkeleton(_joint->getSkeleton().get());
 
   // Updating the caches isn't necessary after registering a joint right now,
   // but it might matter in the future, so it might be better to be safe than
@@ -1234,6 +1258,7 @@ void ReferentialSkeleton::registerDegreeOfFreedom(DegreeOfFreedom* _dof)
 //==============================================================================
 void ReferentialSkeleton::unregisterComponent(BodyNode* _bn)
 {
+  assert(_bn);
   unregisterBodyNode(_bn, true);
   unregisterJoint(_bn);
 }
@@ -1289,6 +1314,7 @@ void ReferentialSkeleton::unregisterBodyNode(
   if(indexing.isExpired())
     mIndexMap.erase(it);
 
+  unregisterSkeleton(_bn->getSkeleton().get());
   updateCaches();
 }
 
@@ -1336,6 +1362,8 @@ void ReferentialSkeleton::unregisterJoint(BodyNode* _child)
 
   if(it->second.isExpired())
     mIndexMap.erase(it);
+
+  unregisterSkeleton(_child->getSkeleton().get());
 
   // Updating the caches isn't necessary after unregistering a joint right now,
   // but it might matter in the future, so it might be better to be safe than
@@ -1431,6 +1459,36 @@ void ReferentialSkeleton::updateCaches()
   mCg       = Eigen::VectorXd::Zero(nDofs);
   mFext     = Eigen::VectorXd::Zero(nDofs);
   mFc       = Eigen::VectorXd::Zero(nDofs);
+}
+
+//==============================================================================
+void ReferentialSkeleton::registerSkeleton(const Skeleton* skel)
+{
+  // We assume skel is not nullptr. If it's not, this function should be updated
+  // to take that into account.
+  assert(skel);
+
+  if (hasSkeleton(skel))
+    return;
+
+  mSkeletons.insert(skel);
+  mSkeletonMutexes.insert(&skel->getMutex());
+}
+
+//==============================================================================
+void ReferentialSkeleton::unregisterSkeleton(const Skeleton* skel)
+{
+  if (!skel)
+  {
+    dterr << "[ReferentialSkeleton::unregisterSkeleton] Attempting to "
+          << "unregister a nullptr Skeleton. This is most likely a bug. Please "
+          << "report this!\n";
+    assert(false);
+    return;
+  }
+
+  mSkeletonMutexes.erase(&skel->getMutex());
+  mSkeletons.erase(skel);
 }
 
 //==============================================================================

@@ -1,9 +1,35 @@
 ## DART 6
 
-### DART 6.4.0 (201X-XX-XX)
+### DART 6.6.0 (201X-XX-XX)
+
+### [DART 6.5.0 (2018-05-12)](https://github.com/dartsim/dart/milestone/41?closed=1)
 
 * Common
 
+  * Added LockableReference classes: [#1011](https://github.com/dartsim/dart/pull/1011)
+  * Added missing \<vector\> to Memory.hpp: [#1057](https://github.com/dartsim/dart/pull/1057)
+
+* GUI
+
+  * Added FOV API to OSG viewer: [#1048](https://github.com/dartsim/dart/pull/1048)
+
+* Parsers
+
+  * Fixed incorrect parsing of continuous joints specified in URDF [#1064](https://github.com/dartsim/dart/pull/1064)
+
+* Simulation
+
+  * Added World::hasSkeleton(): [#1050](https://github.com/dartsim/dart/pull/1050)
+
+* Misc
+
+  * Fixed memory leaks in mesh loading: [#1066](https://github.com/dartsim/dart/pull/1066)
+
+### [DART 6.4.0 (2018-03-26)](https://github.com/dartsim/dart/milestone/39?closed=1)
+
+* Common
+
+  * Added DART_COMMON_DECLARE_SMART_POINTERS macro: [#1022](https://github.com/dartsim/dart/pull/1022)
   * Added ResourceRetriever::getFilePath(): [#972](https://github.com/dartsim/dart/pull/972)
 
 * Kinematics/Dynamics
@@ -25,6 +51,10 @@
   * Added support of rendering texture images: [#973](https://github.com/dartsim/dart/pull/973)
   * Added OSG shadows: [#978](https://github.com/dartsim/dart/pull/978)
 
+* Examples
+
+  * Added humanJointLimits: [#1016](https://github.com/dartsim/dart/pull/1016)
+
 * License
 
   * Added Personal Robotics Lab and Open Source Robotics Foundation as contributors: [#929](https://github.com/dartsim/dart/pull/929)
@@ -36,8 +66,19 @@
   * Suppressed -Winjected-class-name warnings from Clang 5.0.0: [#964](https://github.com/dartsim/dart/pull/964)
   * Suppressed -Wdangling-else warnings from GCC 7.2.0: [#937](https://github.com/dartsim/dart/pull/937)
   * Changed console macros to use global namespace resolutions: [#1010](https://github.com/dartsim/dart/pull/1010)
+  * Fixed build with Eigen 3.2.1-3.2.8: [#1042](https://github.com/dartsim/dart/pull/1042)
   * Fixed various build issues with Visual Studio: [#956](https://github.com/dartsim/dart/pull/956)
   * Removed TinyXML dependency: [#993](https://github.com/dartsim/dart/pull/993)
+
+### [DART 6.3.1 (2018-03-21)](https://github.com/dartsim/dart/milestone/42?closed=1)
+
+* Build system
+
+  * Removed an undefined cmake macro/function: [#1036](https://github.com/dartsim/dart/pull/1036)
+
+* ROS support
+
+  * Tweaked package.xml for catkin support: [#1027](https://github.com/dartsim/dart/pull/1027), [#1029](https://github.com/dartsim/dart/pull/1029), [#1031](https://github.com/dartsim/dart/pull/1031), [#1032](https://github.com/dartsim/dart/pull/1031), [#1033](https://github.com/dartsim/dart/pull/1033)
 
 ### [DART 6.3.0 (2017-10-04)](https://github.com/dartsim/dart/milestone/36?closed=1)
 

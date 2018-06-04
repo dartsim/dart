@@ -35,9 +35,11 @@
 
 #include <map>
 #include <memory>
+#include <vector>
 
 #include "dart/config.hpp"
 #include "dart/common/Deprecated.hpp"
+#include "dart/common/detail/AlignedAllocator.hpp"
 
 namespace dart {
 namespace common {
