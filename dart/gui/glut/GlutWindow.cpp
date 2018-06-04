@@ -48,7 +48,7 @@
 #include <vector>
 
 #include "dart/common/Console.hpp"
-#include "dart/gui/LoadGlut.hpp"
+#include "dart/gui/glut/LoadGlut.hpp"
 #include "dart/gui/GLFuncs.hpp"
 #include "dart/gui/OpenGLRenderInterface.hpp"
 

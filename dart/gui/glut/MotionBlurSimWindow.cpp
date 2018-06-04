@@ -19,7 +19,7 @@
 
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/gui/GLFuncs.hpp"
-#include "dart/gui/LoadGlut.hpp"
+#include "dart/gui/glut/LoadGlut.hpp"
 
 namespace dart {
 namespace gui {
