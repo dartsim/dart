@@ -21,9 +21,6 @@ else()
   endif()
 endif()
 
-find_package(glfw3 QUIET)
-dart_check_optional_package(glfw3 "dart-gui" "glfw3")
-
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -78,7 +75,7 @@ add_component_dependencies(
 )
 
 # Add subdirectories
-#add_subdirectory(glfw)
+add_subdirectory(glfw)
 add_subdirectory(osg)
 
 # Generate header for this namespace

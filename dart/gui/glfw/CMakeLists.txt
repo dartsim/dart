@@ -1,22 +1,40 @@
-include_directories(SYSTEM ${glfw_INCLUDE_DIRS})
+# Dependency checks
+find_package(glfw3 QUIET)
+dart_check_optional_package(glfw3 "dart-gui" "glfw3")
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
+file(GLOB detail_hdrs "detail/*.hpp")
+file(GLOB detail_srcs "detail/*.cpp")
 
-set(dart_gui_glfw_hdrs ${hdrs})
-set(dart_gui_glfw_srcs ${srcs})
+# Set local target name
+set(target_name ${PROJECT_NAME}-gui-glfw)
+set(component_name gui-glfw)
 
-# Library
-dart_add_library(dart-gui-glfw ${dart_gui_glfw_srcs} ${dart_gui_glfw_hdrs})
-target_link_libraries(dart-gui-glfw dart-gui glfw)
+# Add target
+dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})
+target_include_directories(
+  ${target_name} SYSTEM
+  PUBLIC ${ODE_INCLUDE_DIRS}
+)
+target_link_libraries(
+  ${target_name}
+  dart
+  ${ODE_LIBRARIES}
+)
+
+# Component
+add_component(${PROJECT_NAME} ${component_name})
+add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
+add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
 
 # Generate header for this namespace
-dart_get_filename_components(header_names "gui glfw headers" ${hdrs})
+dart_get_filename_components(header_names "gui_glfw headers" ${hdrs})
 dart_generate_include_header_list(
   gui_glfw_headers
   "dart/gui/glfw/"
-  "gui glfw headers"
+  "gui_glfw headers"
   ${header_names}
 )
 configure_file(
@@ -24,13 +42,11 @@ configure_file(
   ${CMAKE_CURRENT_BINARY_DIR}/glfw.hpp
 )
 
+# Install
 install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/glfw.hpp
   DESTINATION include/dart/gui/glfw
   COMPONENT headers
 )
-install(TARGETS dart-gui-glfw EXPORT DARTTargets DESTINATION lib)
 
-# Coverage test files
-set(dart_coveralls_files "${dart_coveralls_files};${hdrs};${srcs}"
-    CACHE INTERNAL "files for coverage tests")
+dart_format_add(${hdrs} ${srcs})
