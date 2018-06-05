@@ -35,12 +35,13 @@
 
 #include "dart/gui/glut/GlutWindow.hpp"
 
-// TODO(JS): add warning
+#warning "This file is deprecated in DART 6.1. "\
+         "Please use dart/gui/glut/GlutWindow.hpp instead."
 
 namespace dart {
 namespace gui {
 
-//using GlutWindow = ::dart::gui::glut::GlutWindow;
+using GlutWindow = ::dart::gui::glut::Window;
 
 } // namespace gui
 } // namespace dart

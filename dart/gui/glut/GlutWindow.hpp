@@ -42,10 +42,10 @@ namespace gui {
 namespace glut {
 
 /// \brief
-class GlutWindow {
+class Window {
 public:
-  GlutWindow();
-  virtual ~GlutWindow();
+  Window();
+  virtual ~Window();
 
   /// \warning This function should be called once.
   virtual void initWindow(int _w, int _h, const char* _name);
@@ -61,8 +61,8 @@ public:
   static void refreshTimer(int _val);
   static void runTimer(int _val);
 
-  static GlutWindow* current();
-  static std::vector<GlutWindow*> mWindows;
+  static Window* current();
+  static std::vector<Window*> mWindows;
   static std::vector<int> mWinIDs;
 
 protected:

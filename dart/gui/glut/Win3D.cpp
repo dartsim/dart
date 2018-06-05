@@ -43,7 +43,7 @@ namespace glut {
 
 //==============================================================================
 Win3D::Win3D()
-  : GlutWindow(),
+  : Window(),
     mTrans(0.0, 0.0, 0.0),
     mEye(0.0, 0.0, 1.0),
     mUp(0.0, 1.0, 0.0),
@@ -59,7 +59,7 @@ Win3D::Win3D()
 //==============================================================================
 void Win3D::initWindow(int _w, int _h, const char* _name)
 {
-  GlutWindow::initWindow(_w, _h, _name);
+  Window::initWindow(_w, _h, _name);
 
   int smaller = _w < _h ? _w : _h;
   mTrackBall.setTrackball(Eigen::Vector2d(_w*0.5, _h*0.5), smaller/2.5);

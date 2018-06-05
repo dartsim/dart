@@ -34,25 +34,20 @@
 #define EXAMPLES_CUBES_MYWINDOW_HPP_
 
 #include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+#include <dart/gui/glfw/glfw.hpp>
 
-/// \brief
-class MyWindow : public dart::gui::glut::SimWindow {
+class MyWindow : public dart::gui::glfw::Viewer
+{
 public:
-  /// \brief
   MyWindow();
 
-  /// \brief
   virtual ~MyWindow();
 
-  /// \brief
-  void timeStepping() override;
+//  void timeStepping() override;
 
-  /// \brief
-  void drawWorld() const override;
+//  void drawWorld() const override;
 
-  /// \brief
-  void keyboard(unsigned char _key, int _x, int _y) override;
+//  void keyboard(unsigned char _key, int _x, int _y) override;
 
 private:
   /// \brief

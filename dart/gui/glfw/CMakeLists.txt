@@ -2,6 +2,9 @@
 find_package(glfw3 QUIET)
 dart_check_optional_package(glfw3 "dart-gui" "glfw3")
 
+find_package(Threads QUIET)
+dart_check_optional_package(Threads "dart-gui" "Threads")
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
@@ -14,14 +17,17 @@ set(component_name gui-glfw)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})
-target_include_directories(
-  ${target_name} SYSTEM
-  PUBLIC ${ODE_INCLUDE_DIRS}
-)
+#target_include_directories(
+#  ${target_name} SYSTEM
+#  PUBLIC
+#    ${GLFW3_INCLUDE_DIRS}
+#)
 target_link_libraries(
   ${target_name}
-  dart
-  ${ODE_LIBRARIES}
+  PUBLIC
+    dart-gui
+    glfw
+    ${CMAKE_THREAD_LIBS_INIT}
 )
 
 # Component

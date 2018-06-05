@@ -33,7 +33,8 @@
 #define DART_GUI_GLFW_WINDOW_HPP_
 
 #include <vector>
-
+#include <unordered_map>
+#include <GLFW/glfw3.h>
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/RenderInterface.hpp"
 
@@ -41,41 +42,55 @@ namespace dart {
 namespace gui {
 namespace glfw {
 
-class Window
+class Viewer
 {
 public:
-  Window();
-  virtual ~Window();
+  Viewer();
+  virtual ~Viewer();
 
   /// \warning This function should be called once.
-  virtual void initWindow(int _w, int _h, const char* _name);
+  virtual void initWindow(int w, int h, const char* name);
 
   // callback functions
-  static void reshape(int _w, int _h);
-  static void keyEvent(unsigned char _key, int _x, int _y);
-  static void specKeyEvent(int _key, int _x, int _y);
-  static void mouseClick(int _button, int _state, int _x, int _y);
-  static void mouseDrag(int _x, int _y);
-  static void mouseMove(int _x, int _y);
-  static void refresh();
-  static void refreshTimer(int _val);
-  static void runTimer(int _val);
+//  static void reshape(int w, int h);
+  static void onKeyEvent(GLFWwindow* window, int key, int scancode, int action, int mods);
+//  static void specKeyEvent(int key, int x, int y);
+//  static void mouseClick(int button, int state, int x, int y);
+//  static void mouseDrag(int x, int y);
+//  static void mouseMove(int x, int y);
+//  static void refresh();
+//  static void refreshTimer(int val);
+//  static void runTimer(int val);
 
-  static Window* current();
-  static std::vector<Window*> mWindows;
-  static std::vector<int> mWinIDs;
+  static Viewer* current(GLFWwindow* window);
+//  static std::vector<Window*> mWindows;
+//  static std::vector<GLFWwindow*> mWinIDs;
+  static bool mMainloopActive;
+  static std::unordered_map<GLFWwindow*, Viewer*> mViewerMap;
+
+  static void runAllViewers(std::size_t refresh = 50u);
+
+  void setVisible(bool visible);
+
+  void show();
+
+  void hide();
+
+  bool isVisible() const;
 
 protected:
+  void startupGlfw();
+  void shutdownGlfw();
   // callback implementation
-  virtual void resize(int _w, int _h) = 0;
-  virtual void render() = 0;
-  virtual void keyboard(unsigned char _key, int _x, int _y);
-  virtual void specKey(int _key, int _x, int _y);
-  virtual void click(int _button, int _state, int _x, int _y);
-  virtual void drag(int _x, int _y);
-  virtual void move(int _x, int _y);
-  virtual void displayTimer(int _val);
-  virtual void simTimer(int _val);
+//  virtual void resize(int w, int h) = 0;
+//  virtual void render() = 0;
+  virtual void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods);
+  virtual void specKey(int key, int x, int y);
+  virtual void click(int button, int state, int x, int y);
+  virtual void drag(int x, int y);
+  virtual void move(int x, int y);
+  virtual void displayTimer(int val);
+  virtual void simTimer(int val);
 
   virtual bool screenshot();
 
@@ -88,9 +103,12 @@ protected:
   bool mMouseDrag;
   bool mCapture;
   double mBackground[4];
-  gui::RenderInterface* mRI;
+  GLFWwindow* mGlfwWindow;
+  std::unique_ptr<gui::RenderInterface> mRI;
   std::vector<unsigned char> mScreenshotTemp;
   std::vector<unsigned char> mScreenshotTemp2;
+
+  bool mIsVisible;
 };
 
 } // namespace glfw

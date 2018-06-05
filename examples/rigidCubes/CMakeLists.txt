@@ -7,7 +7,7 @@ endif()
 
 project(rigidCubes)
 
-find_package(DART 6.2.0 REQUIRED COMPONENTS utils-urdf gui CONFIG)
+find_package(DART 6.2.0 REQUIRED COMPONENTS utils-urdf gui-glfw CONFIG)
 
 add_compile_options(-std=c++11)
 

@@ -40,7 +40,7 @@ namespace dart {
 namespace gui {
 namespace glut {
 
-Win2D::Win2D() : glut::GlutWindow() {
+Win2D::Win2D() : glut::Window() {
   mTransX = 0;
   mTransY = 0;
   mTranslate = false;

@@ -37,7 +37,7 @@
 
 #include "MyWindow.hpp"
 
-int main(int argc, char* argv[])
+int main()
 {
   // create and initialize the world
   dart::simulation::WorldPtr myWorld
@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
 
   // create a window and link it to the world
   MyWindow window;
-  window.setWorld(myWorld);
+//  window.setWorld(myWorld);
 
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'p': playback/stop" << std::endl;
@@ -56,9 +56,10 @@ int main(int argc, char* argv[])
   std::cout << "'v': visualization on/off" << std::endl;
   std::cout << "'1'--'4': programmed interaction" << std::endl;
 
-  glutInit(&argc, argv);
+//  glutInit(&argc, argv);
   window.initWindow(640, 480, "Boxes");
-  glutMainLoop();
+//  glutMainLoop();
+  dart::gui::glfw::Viewer::runAllViewers();
 
   return 0;
 }
