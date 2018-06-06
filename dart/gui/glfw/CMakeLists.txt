@@ -17,11 +17,6 @@ set(component_name gui-glfw)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs})
-#target_include_directories(
-#  ${target_name} SYSTEM
-#  PUBLIC
-#    ${GLFW3_INCLUDE_DIRS}
-#)
 target_link_libraries(
   ${target_name}
   PUBLIC

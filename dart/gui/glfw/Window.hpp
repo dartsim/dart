@@ -32,8 +32,8 @@
 #ifndef DART_GUI_GLFW_WINDOW_HPP_
 #define DART_GUI_GLFW_WINDOW_HPP_
 
-#include <vector>
 #include <unordered_map>
+#include <vector>
 #include <GLFW/glfw3.h>
 #include "dart/gui/LoadOpengl.hpp"
 #include "dart/gui/RenderInterface.hpp"
@@ -52,19 +52,20 @@ public:
   virtual void initWindow(int w, int h, const char* name);
 
   // callback functions
-//  static void reshape(int w, int h);
-  static void onKeyEvent(GLFWwindow* window, int key, int scancode, int action, int mods);
-//  static void specKeyEvent(int key, int x, int y);
-//  static void mouseClick(int button, int state, int x, int y);
-//  static void mouseDrag(int x, int y);
-//  static void mouseMove(int x, int y);
-//  static void refresh();
-//  static void refreshTimer(int val);
-//  static void runTimer(int val);
+  //  static void reshape(int w, int h);
+  static void onKeyEvent(
+      GLFWwindow* window, int key, int scancode, int action, int mods);
+  //  static void specKeyEvent(int key, int x, int y);
+  //  static void mouseClick(int button, int state, int x, int y);
+  //  static void mouseDrag(int x, int y);
+  //  static void mouseMove(int x, int y);
+  //  static void refresh();
+  //  static void refreshTimer(int val);
+  //  static void runTimer(int val);
 
   static Viewer* current(GLFWwindow* window);
-//  static std::vector<Window*> mWindows;
-//  static std::vector<GLFWwindow*> mWinIDs;
+  //  static std::vector<Window*> mWindows;
+  //  static std::vector<GLFWwindow*> mWinIDs;
   static bool mMainloopActive;
   static std::unordered_map<GLFWwindow*, Viewer*> mViewerMap;
 
@@ -82,9 +83,10 @@ protected:
   void startupGlfw();
   void shutdownGlfw();
   // callback implementation
-//  virtual void resize(int w, int h) = 0;
-//  virtual void render() = 0;
-  virtual void keyboard(GLFWwindow* window, int key, int scancode, int action, int mods);
+  //  virtual void resize(int w, int h) = 0;
+  //  virtual void render() = 0;
+  virtual void keyboard(
+      GLFWwindow* window, int key, int scancode, int action, int mods);
   virtual void specKey(int key, int x, int y);
   virtual void click(int button, int state, int x, int y);
   virtual void drag(int x, int y);

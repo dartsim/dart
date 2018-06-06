@@ -45,13 +45,13 @@
 #endif
 #include <cstdio>
 #include <iostream>
-#include <vector>
 #include <thread>
+#include <vector>
 
 #include "dart/common/Console.hpp"
+#include "dart/external/lodepng/lodepng.h"
 #include "dart/gui/GLFuncs.hpp"
 #include "dart/gui/OpenGLRenderInterface.hpp"
-#include "dart/external/lodepng/lodepng.h"
 
 namespace dart {
 namespace gui {
@@ -62,8 +62,7 @@ bool Viewer::mMainloopActive = false;
 std::unordered_map<GLFWwindow*, Viewer*> Viewer::mViewerMap;
 
 //==============================================================================
-Viewer::Viewer()
-  : mIsVisible(true)
+Viewer::Viewer() : mIsVisible(true)
 {
   mWinWidth = 0;
   mWinHeight = 0;
@@ -95,14 +94,16 @@ Viewer::~Viewer()
 void Viewer::initWindow(int w, int h, const char* name)
 {
   // TODO(JS): Improve
-  glfwSetErrorCallback([](int error,const char* description){fprintf(stderr, "Error: %s\n", description);});
+  glfwSetErrorCallback([](int error, const char* description) {
+    fprintf(stderr, "Error: %s\n", description);
+  });
 
   mWinWidth = w;
   mWinHeight = h;
 
-//  glutInitDisplayMode(
-//      GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE | GLUT_ACCUM);
-//  glutInitWindowPosition(150, 100);
+  //  glutInitDisplayMode(
+  //      GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE | GLUT_ACCUM);
+  //  glutInitWindowPosition(150, 100);
 
   mGlfwWindow = glfwCreateWindow(w, h, name, nullptr, nullptr);
   if (!mGlfwWindow)
@@ -118,13 +119,13 @@ void Viewer::initWindow(int w, int h, const char* name)
     exit(EXIT_FAILURE);
   }
 
-//  glfwDisplayFunc(refresh);
-//  glfwReshapeFunc(reshape);
+  //  glfwDisplayFunc(refresh);
+  //  glfwReshapeFunc(reshape);
   glfwSetKeyCallback(mGlfwWindow, onKeyEvent);
-//  glfwSpecialFunc(specKeyEvent);
-//  glfwMouseFunc(mouseClick);
-//  glfwMotionFunc(mouseDrag);
-//  glfwPassiveMotionFunc(mouseMove);
+  //  glfwSpecialFunc(specKeyEvent);
+  //  glfwMouseFunc(mouseClick);
+  //  glfwMotionFunc(mouseDrag);
+  //  glfwPassiveMotionFunc(mouseMove);
 
   mRI.reset(new gui::OpenGLRenderInterface());
   mRI->initialize();
@@ -137,12 +138,12 @@ void Viewer::initWindow(int w, int h, const char* name)
   // TODO: Disabled use of GL_MULTISAMPLE for Windows. Please see #411 for the
   // detail.
 
-//  glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+  //  glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
   // Note: We book the timer id 0 for the main rendering purpose.
 }
 
 ////==============================================================================
-//void Window::reshape(int w, int h)
+// void Window::reshape(int w, int h)
 //{
 ////  current(window)->mScreenshotTemp = std::vector<unsigned char>(w * h * 4);
 ////  current(window)->mScreenshotTemp2 = std::vector<unsigned char>(w * h * 4);
@@ -150,49 +151,50 @@ void Viewer::initWindow(int w, int h, const char* name)
 //}
 
 //==============================================================================
-void Viewer::onKeyEvent(GLFWwindow* window, int key, int scancode, int action, int mods)
+void Viewer::onKeyEvent(
+    GLFWwindow* window, int key, int scancode, int action, int mods)
 {
   current(window)->keyboard(window, key, scancode, action, mods);
 }
 
 ////==============================================================================
-//void Window::specKeyEvent(int key, int x, int y)
+// void Window::specKeyEvent(int key, int x, int y)
 //{
 //  current(window)->specKey(key, x, y);
 //}
 
 ////==============================================================================
-//void Window::mouseClick(int button, int state, int x, int y)
+// void Window::mouseClick(int button, int state, int x, int y)
 //{
 //  current(window)->click(button, state, x, y);
 //}
 
 ////==============================================================================
-//void Window::mouseDrag(int x, int y)
+// void Window::mouseDrag(int x, int y)
 //{
 //  current(window)->drag(x, y);
 //}
 
 ////==============================================================================
-//void Window::mouseMove(int x, int y)
+// void Window::mouseMove(int x, int y)
 //{
 //  current(window)->move(x, y);
 //}
 
 ////==============================================================================
-//void Window::refresh()
+// void Window::refresh()
 //{
 //  current(window)->render();
 //}
 
 ////==============================================================================
-//void Window::refreshTimer(int val)
+// void Window::refreshTimer(int val)
 //{
 //  current(window)->displayTimer(val);
 //}
 
 ////==============================================================================
-//void Window::runTimer(int val)
+// void Window::runTimer(int val)
 //{
 //  current(window)->simTimer(val);
 //}
@@ -200,80 +202,81 @@ void Viewer::onKeyEvent(GLFWwindow* window, int key, int scancode, int action, i
 //==============================================================================
 bool Viewer::screenshot()
 {
-//  static int count = 0;
-//  const char directory[8] = "frames";
-//  const char fileBase[8] = "Capture";
-//  char fileName[32];
+  //  static int count = 0;
+  //  const char directory[8] = "frames";
+  //  const char fileBase[8] = "Capture";
+  //  char fileName[32];
 
-//  // create frames directory if not exists
-//  using Stat = struct stat;
-//  Stat buff;
+  //  // create frames directory if not exists
+  //  using Stat = struct stat;
+  //  Stat buff;
 
-//#ifdef _WIN32
-//#define __S_ISTYPE(mode, mask) (((mode)&_S_IFMT) == (mask))
-//#define S_ISDIR(mode) __S_ISTYPE((mode), _S_IFDIR)
-//  if (stat(directory, &buff) != 0)
-//    _mkdir(directory);
-//#else
-//  if (stat(directory, &buff) != 0)
-//    mkdir(directory, 0777);
-//#endif
+  //#ifdef _WIN32
+  //#define __S_ISTYPE(mode, mask) (((mode)&_S_IFMT) == (mask))
+  //#define S_ISDIR(mode) __S_ISTYPE((mode), _S_IFDIR)
+  //  if (stat(directory, &buff) != 0)
+  //    _mkdir(directory);
+  //#else
+  //  if (stat(directory, &buff) != 0)
+  //    mkdir(directory, 0777);
+  //#endif
 
-//  if (!S_ISDIR(buff.st_mode))
-//  {
-//    dtwarn << "[GlutWindow::screenshot] 'frames' is not a directory, "
-//           << "cannot write a screenshot\n";
-//    return false;
-//  }
+  //  if (!S_ISDIR(buff.st_mode))
+  //  {
+  //    dtwarn << "[GlutWindow::screenshot] 'frames' is not a directory, "
+  //           << "cannot write a screenshot\n";
+  //    return false;
+  //  }
 
-//// png
-//#ifdef _WIN32
-//  _snprintf(
-//      fileName,
-//      sizeof(fileName),
-//      "%s%s%s%.4d.png",
-//      directory,
-//      "\\",
-//      fileBase,
-//      count++);
-//#else
-//  std::snprintf(
-//      fileName,
-//      sizeof(fileName),
-//      "%s%s%s%.4d.png",
-//      directory,
-//      "/",
-//      fileBase,
-//      count++);
-//#endif
-//  int tw = glutGet(GLUT_WINDOW_WIDTH);
-//  int th = glutGet(GLUT_WINDOW_HEIGHT);
+  //// png
+  //#ifdef _WIN32
+  //  _snprintf(
+  //      fileName,
+  //      sizeof(fileName),
+  //      "%s%s%s%.4d.png",
+  //      directory,
+  //      "\\",
+  //      fileBase,
+  //      count++);
+  //#else
+  //  std::snprintf(
+  //      fileName,
+  //      sizeof(fileName),
+  //      "%s%s%s%.4d.png",
+  //      directory,
+  //      "/",
+  //      fileBase,
+  //      count++);
+  //#endif
+  //  int tw = glutGet(GLUT_WINDOW_WIDTH);
+  //  int th = glutGet(GLUT_WINDOW_HEIGHT);
 
-//  glReadPixels(0, 0, tw, th, GL_RGBA, GL_UNSIGNED_BYTE, &mScreenshotTemp[0]);
+  //  glReadPixels(0, 0, tw, th, GL_RGBA, GL_UNSIGNED_BYTE,
+  //  &mScreenshotTemp[0]);
 
-//  // reverse temp2 temp1
-//  for (int row = 0; row < th; row++)
-//  {
-//    memcpy(
-//        &mScreenshotTemp2[row * tw * 4],
-//        &mScreenshotTemp[(th - row - 1) * tw * 4],
-//        tw * 4);
-//  }
+  //  // reverse temp2 temp1
+  //  for (int row = 0; row < th; row++)
+  //  {
+  //    memcpy(
+  //        &mScreenshotTemp2[row * tw * 4],
+  //        &mScreenshotTemp[(th - row - 1) * tw * 4],
+  //        tw * 4);
+  //  }
 
-//  unsigned result = lodepng::encode(fileName, mScreenshotTemp2, tw, th);
+  //  unsigned result = lodepng::encode(fileName, mScreenshotTemp2, tw, th);
 
-//  // if there's an error, display it
-//  if (result)
-//  {
-//    std::cout << "lodepng error " << result << ": "
-//              << lodepng_error_text(result) << std::endl;
-//    return false;
-//  }
-//  else
-//  {
-//    std::cout << "wrote screenshot " << fileName << "\n";
-//    return true;
-//  }
+  //  // if there's an error, display it
+  //  if (result)
+  //  {
+  //    std::cout << "lodepng error " << result << ": "
+  //              << lodepng_error_text(result) << std::endl;
+  //    return false;
+  //  }
+  //  else
+  //  {
+  //    std::cout << "wrote screenshot " << fileName << "\n";
+  //    return true;
+  //  }
 }
 
 //==============================================================================
@@ -295,8 +298,9 @@ Viewer* Viewer::current(GLFWwindow* window)
 void Viewer::runAllViewers(std::size_t refresh)
 {
   if (mMainloopActive)
-    throw std::runtime_error("[Viewer::runMainLoop] Attempting to run the main "
-                             "loop twice. Ignoring this action.\n");
+    throw std::runtime_error(
+        "[Viewer::runMainLoop] Attempting to run the main "
+        "loop twice. Ignoring this action.\n");
 
   mMainloopActive = true;
 
@@ -333,7 +337,7 @@ void Viewer::runAllViewers(std::size_t refresh)
           continue;
         }
 
-//        window->render();
+        //        window->render();
         numScreens++;
       }
 
@@ -428,10 +432,11 @@ void Viewer::shutdownGlfw()
 }
 
 //==============================================================================
-void Viewer::keyboard(GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/)
+void Viewer::keyboard(
+    GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-      glfwSetWindowShouldClose(window, GLFW_TRUE);
+    glfwSetWindowShouldClose(window, true);
 }
 
 //==============================================================================
@@ -461,8 +466,8 @@ void Viewer::move(int /*x*/, int /*y*/)
 //==============================================================================
 void Viewer::displayTimer(int val)
 {
-//  glutPostRedisplay();
-//  glutTimerFunc(mDisplayTimeout, refreshTimer, val);
+  //  glutPostRedisplay();
+  //  glutTimerFunc(mDisplayTimeout, refreshTimer, val);
 }
 
 //==============================================================================
