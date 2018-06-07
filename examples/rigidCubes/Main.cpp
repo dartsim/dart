@@ -47,7 +47,7 @@ int main()
   myWorld->setGravity(gravity);
 
   // create a window and link it to the world
-  MyWindow window;
+  dart::gui::glfw::Viewer viwer("Boxes", 640, 480);
 //  window.setWorld(myWorld);
 
   std::cout << "space bar: simulation on/off" << std::endl;
@@ -57,7 +57,7 @@ int main()
   std::cout << "'1'--'4': programmed interaction" << std::endl;
 
 //  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Boxes");
+//  window.initWindow();
 //  glutMainLoop();
   dart::gui::glfw::Viewer::runAllViewers();
 

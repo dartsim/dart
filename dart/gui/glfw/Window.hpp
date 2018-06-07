@@ -29,14 +29,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_GLFW_WINDOW_HPP_
-#define DART_GUI_GLFW_WINDOW_HPP_
+#ifndef DART_GUI_GLFW_VIEWER_HPP_
+#define DART_GUI_GLFW_VIEWER_HPP_
 
 #include <unordered_map>
-#include <vector>
+#include <Eigen/Dense>
 #include <GLFW/glfw3.h>
-#include "dart/gui/LoadOpengl.hpp"
-#include "dart/gui/RenderInterface.hpp"
+#include "dart/gui/Trackball.hpp"
 
 namespace dart {
 namespace gui {
@@ -45,72 +44,112 @@ namespace glfw {
 class Viewer
 {
 public:
-  Viewer();
+  /// Constructor
+  Viewer(
+      const std::string& title = "Nonamed Window",
+      int width = 640,
+      int height = 360,
+      bool show = true);
+
+  /// Destructor
   virtual ~Viewer();
-
-  /// \warning This function should be called once.
-  virtual void initWindow(int w, int h, const char* name);
-
-  // callback functions
-  //  static void reshape(int w, int h);
-  static void onKeyEvent(
-      GLFWwindow* window, int key, int scancode, int action, int mods);
-  //  static void specKeyEvent(int key, int x, int y);
-  //  static void mouseClick(int button, int state, int x, int y);
-  //  static void mouseDrag(int x, int y);
-  //  static void mouseMove(int x, int y);
-  //  static void refresh();
-  //  static void refreshTimer(int val);
-  //  static void runTimer(int val);
-
-  static Viewer* current(GLFWwindow* window);
-  //  static std::vector<Window*> mWindows;
-  //  static std::vector<GLFWwindow*> mWinIDs;
-  static bool mMainloopActive;
-  static std::unordered_map<GLFWwindow*, Viewer*> mViewerMap;
 
   static void runAllViewers(std::size_t refresh = 50u);
 
+  //----------------------------------------------------------------------------
+  /// \{ \name Properties
+  //----------------------------------------------------------------------------
+
+  /// Sets the title that will be displayed at the window bar.
+  void setTitle(const std::string& title);
+
+  /// Sets the size of this viewer.
+  void setSize(const Eigen::Vector2i& size);
+
+  /// Sets the size of this viewer.
+  void setSize(int width, int height);
+
+  /// Returns the size of this viewer.
+  Eigen::Vector2i getSize() const;
+
+  /// Sets the visibility.
   void setVisible(bool visible);
 
-  void show();
-
-  void hide();
-
+  /// Returns true if this Viewer is shown.
   bool isVisible() const;
 
-protected:
-  void startupGlfw();
-  void shutdownGlfw();
-  // callback implementation
-  //  virtual void resize(int w, int h) = 0;
-  //  virtual void render() = 0;
-  virtual void keyboard(
-      GLFWwindow* window, int key, int scancode, int action, int mods);
-  virtual void specKey(int key, int x, int y);
-  virtual void click(int button, int state, int x, int y);
-  virtual void drag(int x, int y);
-  virtual void move(int x, int y);
-  virtual void displayTimer(int val);
-  virtual void simTimer(int val);
+  /// Shows this Viewer. Equivalent to setVisible(true).
+  void show();
 
-  virtual bool screenshot();
+  /// Hides this Viewer. Equivalent to setVisible(false).
+  void hide();
+
+  /// \}
+
+  //----------------------------------------------------------------------------
+  /// \{ \name GLFW event handlers
+  //----------------------------------------------------------------------------
+
+  /// Windows resize callback function.
+  virtual void windowSizeCallback(int width, int height);
+
+  /// Mouse move callback function.
+  virtual void cursorPosCallback(double xpos, double ypos);
+
+  /// Mouse button callback function.
+  virtual void mouseButtonCallback(int button, int action, int mods);
+
+  /// Keyboard callback function.
+  virtual void keyboardCallback(int key, int scancode, int action, int mods);
+
+  /// Character callback function, which is called when a Unicode character is
+  /// input.
+  virtual void charCallback(unsigned int codepoint);
+
+  /// File drop callback of the specified window, which is called when one or
+  /// more dragged files are dropped on the window.
+  virtual void dropCallback(int count, const char** filenames);
+
+  /// Scroll callback of the specified window, which is called when a scrolling
+  /// device is used, such as a mouse wheel or scrolling area of a touchpad.
+  virtual void scrollCallback(double xoffset, double yoffset);
+
+  /// \}
+
+protected:
+  void render();
+  void renderScene();
+
+  static Viewer* findViewer(GLFWwindow* window);
+
+  GLFWwindow* mGlfwWindow;
+
+  bool mIsVisible;
+
+  Eigen::Vector4f mClearColor;
+
+  Trackball mTrackBall;
+  Eigen::Vector3d mTrans;
+  Eigen::Vector3d mEye;
+  Eigen::Vector3d mUp;
+  float mZoom;
+  float mPersp;
+
+  bool mRotate;
+  bool mTranslate;
+  bool mZooming;
 
   int mWinWidth;
   int mWinHeight;
-  int mMouseX;
-  int mMouseY;
-  double mDisplayTimeout;
-  bool mMouseDown;
-  bool mMouseDrag;
   bool mCapture;
-  double mBackground[4];
-  GLFWwindow* mGlfwWindow;
-  std::unique_ptr<gui::RenderInterface> mRI;
-  std::vector<unsigned char> mScreenshotTemp;
-  std::vector<unsigned char> mScreenshotTemp2;
 
-  bool mIsVisible;
+private:
+  static void startupGlfw();
+  static void shutdownGlfw();
+  void setCallbacks();
+  void initLights();
+  static std::unordered_map<GLFWwindow*, Viewer*> mViewerMap;
+  static bool mMainloopActive;
 };
 
 } // namespace glfw

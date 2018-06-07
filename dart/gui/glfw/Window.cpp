@@ -32,26 +32,13 @@
 
 #include "dart/gui/glfw/Window.hpp"
 
+#include <thread>
+
 #include <GLFW/glfw3.h>
 
-#ifdef _WIN32
-#include <direct.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#else
-#include <dirent.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#endif
-#include <cstdio>
-#include <iostream>
-#include <thread>
-#include <vector>
-
 #include "dart/common/Console.hpp"
-#include "dart/external/lodepng/lodepng.h"
-#include "dart/gui/GLFuncs.hpp"
 #include "dart/gui/OpenGLRenderInterface.hpp"
+#include "dart/gui/glfw/gl3w.h"
 
 namespace dart {
 namespace gui {
@@ -62,50 +49,20 @@ bool Viewer::mMainloopActive = false;
 std::unordered_map<GLFWwindow*, Viewer*> Viewer::mViewerMap;
 
 //==============================================================================
-Viewer::Viewer() : mIsVisible(true)
+Viewer::Viewer(const std::string& title, int width, int height, bool show)
+  : mIsVisible(true), mClearColor(Eigen::Vector4f(1, 1, 1, 1))
 {
-  mWinWidth = 0;
-  mWinHeight = 0;
-  mMouseX = 0;
-  mMouseY = 0;
-  mDisplayTimeout = 1000.0 / 30.0;
-  mMouseDown = false;
-  mMouseDrag = false;
   mCapture = false;
-  mBackground[0] = 0.3;
-  mBackground[1] = 0.3;
-  mBackground[2] = 0.3;
-  mBackground[3] = 1.0;
-  mRI = nullptr;
 
   if (mViewerMap.empty())
     startupGlfw();
-}
 
-//==============================================================================
-Viewer::~Viewer()
-{
-  mViewerMap.erase(mGlfwWindow);
-  if (mViewerMap.empty())
-    shutdownGlfw();
-}
+  glfwWindowHint(GLFW_VISIBLE, show);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-//==============================================================================
-void Viewer::initWindow(int w, int h, const char* name)
-{
-  // TODO(JS): Improve
-  glfwSetErrorCallback([](int error, const char* description) {
-    fprintf(stderr, "Error: %s\n", description);
-  });
-
-  mWinWidth = w;
-  mWinHeight = h;
-
-  //  glutInitDisplayMode(
-  //      GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE | GLUT_ACCUM);
-  //  glutInitWindowPosition(150, 100);
-
-  mGlfwWindow = glfwCreateWindow(w, h, name, nullptr, nullptr);
+  mGlfwWindow
+      = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
   if (!mGlfwWindow)
   {
     dterr << "[Window::initWindow] Failed to create a GLFW window";
@@ -119,168 +76,23 @@ void Viewer::initWindow(int w, int h, const char* name)
     exit(EXIT_FAILURE);
   }
 
-  //  glfwDisplayFunc(refresh);
-  //  glfwReshapeFunc(reshape);
-  glfwSetKeyCallback(mGlfwWindow, onKeyEvent);
-  //  glfwSpecialFunc(specKeyEvent);
-  //  glfwMouseFunc(mouseClick);
-  //  glfwMotionFunc(mouseDrag);
-  //  glfwPassiveMotionFunc(mouseMove);
-
-  mRI.reset(new gui::OpenGLRenderInterface());
-  mRI->initialize();
-// glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-// glutTimerFunc(mDisplayTimeout, runTimer, 0);
-
-#ifndef _WIN32
-  glDisable(GL_MULTISAMPLE);
-#endif
-  // TODO: Disabled use of GL_MULTISAMPLE for Windows. Please see #411 for the
-  // detail.
-
-  //  glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
-  // Note: We book the timer id 0 for the main rendering purpose.
+  setCallbacks();
 }
 
-////==============================================================================
-// void Window::reshape(int w, int h)
-//{
-////  current(window)->mScreenshotTemp = std::vector<unsigned char>(w * h * 4);
-////  current(window)->mScreenshotTemp2 = std::vector<unsigned char>(w * h * 4);
-//  current(window)->resize(w, h);
-//}
-
 //==============================================================================
-void Viewer::onKeyEvent(
-    GLFWwindow* window, int key, int scancode, int action, int mods)
+Viewer::~Viewer()
 {
-  current(window)->keyboard(window, key, scancode, action, mods);
-}
+  assert(mGlfwWindow);
 
-////==============================================================================
-// void Window::specKeyEvent(int key, int x, int y)
-//{
-//  current(window)->specKey(key, x, y);
-//}
+  glfwDestroyWindow(mGlfwWindow);
 
-////==============================================================================
-// void Window::mouseClick(int button, int state, int x, int y)
-//{
-//  current(window)->click(button, state, x, y);
-//}
-
-////==============================================================================
-// void Window::mouseDrag(int x, int y)
-//{
-//  current(window)->drag(x, y);
-//}
-
-////==============================================================================
-// void Window::mouseMove(int x, int y)
-//{
-//  current(window)->move(x, y);
-//}
-
-////==============================================================================
-// void Window::refresh()
-//{
-//  current(window)->render();
-//}
-
-////==============================================================================
-// void Window::refreshTimer(int val)
-//{
-//  current(window)->displayTimer(val);
-//}
-
-////==============================================================================
-// void Window::runTimer(int val)
-//{
-//  current(window)->simTimer(val);
-//}
-
-//==============================================================================
-bool Viewer::screenshot()
-{
-  //  static int count = 0;
-  //  const char directory[8] = "frames";
-  //  const char fileBase[8] = "Capture";
-  //  char fileName[32];
-
-  //  // create frames directory if not exists
-  //  using Stat = struct stat;
-  //  Stat buff;
-
-  //#ifdef _WIN32
-  //#define __S_ISTYPE(mode, mask) (((mode)&_S_IFMT) == (mask))
-  //#define S_ISDIR(mode) __S_ISTYPE((mode), _S_IFDIR)
-  //  if (stat(directory, &buff) != 0)
-  //    _mkdir(directory);
-  //#else
-  //  if (stat(directory, &buff) != 0)
-  //    mkdir(directory, 0777);
-  //#endif
-
-  //  if (!S_ISDIR(buff.st_mode))
-  //  {
-  //    dtwarn << "[GlutWindow::screenshot] 'frames' is not a directory, "
-  //           << "cannot write a screenshot\n";
-  //    return false;
-  //  }
-
-  //// png
-  //#ifdef _WIN32
-  //  _snprintf(
-  //      fileName,
-  //      sizeof(fileName),
-  //      "%s%s%s%.4d.png",
-  //      directory,
-  //      "\\",
-  //      fileBase,
-  //      count++);
-  //#else
-  //  std::snprintf(
-  //      fileName,
-  //      sizeof(fileName),
-  //      "%s%s%s%.4d.png",
-  //      directory,
-  //      "/",
-  //      fileBase,
-  //      count++);
-  //#endif
-  //  int tw = glutGet(GLUT_WINDOW_WIDTH);
-  //  int th = glutGet(GLUT_WINDOW_HEIGHT);
-
-  //  glReadPixels(0, 0, tw, th, GL_RGBA, GL_UNSIGNED_BYTE,
-  //  &mScreenshotTemp[0]);
-
-  //  // reverse temp2 temp1
-  //  for (int row = 0; row < th; row++)
-  //  {
-  //    memcpy(
-  //        &mScreenshotTemp2[row * tw * 4],
-  //        &mScreenshotTemp[(th - row - 1) * tw * 4],
-  //        tw * 4);
-  //  }
-
-  //  unsigned result = lodepng::encode(fileName, mScreenshotTemp2, tw, th);
-
-  //  // if there's an error, display it
-  //  if (result)
-  //  {
-  //    std::cout << "lodepng error " << result << ": "
-  //              << lodepng_error_text(result) << std::endl;
-  //    return false;
-  //  }
-  //  else
-  //  {
-  //    std::cout << "wrote screenshot " << fileName << "\n";
-  //    return true;
-  //  }
+  mViewerMap.erase(mGlfwWindow);
+  if (mViewerMap.empty())
+    shutdownGlfw();
 }
 
 //==============================================================================
-Viewer* Viewer::current(GLFWwindow* window)
+Viewer* Viewer::findViewer(GLFWwindow* window)
 {
   auto result = mViewerMap.find(window);
 
@@ -367,6 +179,34 @@ void Viewer::runAllViewers(std::size_t refresh)
 }
 
 //==============================================================================
+void Viewer::setTitle(const std::string& title)
+{
+  glfwSetWindowTitle(mGlfwWindow, title.c_str());
+}
+
+//==============================================================================
+void Viewer::setSize(const Eigen::Vector2i& size)
+{
+  setSize(size[0], size[1]);
+}
+
+//==============================================================================
+void Viewer::setSize(int width, int height)
+{
+  glfwSetWindowSize(mGlfwWindow, width, height);
+}
+
+//==============================================================================
+Eigen::Vector2i Viewer::getSize() const
+{
+  Eigen::Vector2i size;
+
+  glfwGetWindowSize(mGlfwWindow, &size[0], &size[1]);
+
+  return size;
+}
+
+//==============================================================================
 void Viewer::setVisible(bool visible)
 {
   if (mIsVisible == visible)
@@ -399,6 +239,134 @@ bool Viewer::isVisible() const
 }
 
 //==============================================================================
+void Viewer::windowSizeCallback(int width, int height)
+{
+  mWinWidth = width;
+  mWinHeight = height;
+
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glViewport(0, 0, mWinWidth, mWinHeight);
+  gluPerspective(
+      mPersp,
+      static_cast<double>(mWinWidth) / static_cast<double>(mWinHeight),
+      0.1,
+      10.0);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  mTrackBall.setCenter(Eigen::Vector2d(width * 0.5, height * 0.5));
+  mTrackBall.setRadius(std::min(width, height) / 2.5);
+
+  //  glfwPostRedisplay();
+}
+
+//==============================================================================
+void Viewer::cursorPosCallback(double xpos, double ypos)
+{
+}
+
+//==============================================================================
+void Viewer::mouseButtonCallback(int button, int action, int mods)
+{
+}
+
+//==============================================================================
+void Viewer::keyboardCallback(
+    int key, int /*scancode*/, int action, int /*mods*/)
+{
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    glfwSetWindowShouldClose(mGlfwWindow, true);
+}
+
+//==============================================================================
+void Viewer::charCallback(unsigned int codepoint)
+{
+}
+
+//==============================================================================
+void Viewer::dropCallback(int count, const char** filenames)
+{
+}
+
+//==============================================================================
+void Viewer::scrollCallback(double xoffset, double yoffset)
+{
+}
+
+//==============================================================================
+void Viewer::render()
+{
+  glfwMakeContextCurrent(mGlfwWindow);
+
+  // Rendering
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  gluPerspective(
+      mPersp,
+      static_cast<double>(mWinWidth) / static_cast<double>(mWinHeight),
+      0.1,
+      10.0);
+  gluLookAt(mEye[0], mEye[1], mEye[2], 0.0, 0.0, -1.0, mUp[0], mUp[1], mUp[2]);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  glClearColor(
+      mClearColor.x(), mClearColor.y(), mClearColor.z(), mClearColor.w());
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+  mTrackBall.applyGLRotation();
+
+  // Draw world origin indicator
+  if (!mCapture)
+  {
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_LIGHTING);
+    glLineWidth(2.0);
+    if (mRotate || mTranslate || mZooming)
+    {
+      glColor3f(1.0f, 0.0f, 0.0f);
+      glBegin(GL_LINES);
+      glVertex3f(-0.1f, 0.0f, -0.0f);
+      glVertex3f(0.15f, 0.0f, -0.0f);
+      glEnd();
+
+      glColor3f(0.0f, 1.0f, 0.0f);
+      glBegin(GL_LINES);
+      glVertex3f(0.0f, -0.1f, 0.0f);
+      glVertex3f(0.0f, 0.15f, 0.0f);
+      glEnd();
+
+      glColor3f(0.0f, 0.0f, 1.0f);
+      glBegin(GL_LINES);
+      glVertex3f(0.0f, 0.0f, -0.1f);
+      glVertex3f(0.0f, 0.0f, 0.15f);
+      glEnd();
+    }
+  }
+
+  glScalef(mZoom, mZoom, mZoom);
+  glTranslatef(mTrans[0] * 0.001, mTrans[1] * 0.001, mTrans[2] * 0.001);
+
+  initLights();
+  renderScene();
+
+  // Draw trackball indicator
+  if (mRotate && !mCapture)
+    mTrackBall.draw(mWinWidth, mWinHeight);
+
+  glfwSwapBuffers(mGlfwWindow);
+}
+
+//==============================================================================
+void Viewer::renderScene()
+{
+}
+
+//==============================================================================
 void Viewer::startupGlfw()
 {
   assert(mViewerMap.empty());
@@ -407,8 +375,8 @@ void Viewer::startupGlfw()
 
   // Setup window
   glfwSetErrorCallback([](int error, const char* description) {
-    std::cerr << "GLFW Error occured, Error ID: " << error
-              << ", Description: " << description;
+    dterr << "GLFW Error occured, Error ID: " << error
+          << ", Description: " << description;
   });
 
   if (!glfwInit())
@@ -421,6 +389,8 @@ void Viewer::startupGlfw()
 #if __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
+
+  gl3wInit();
 }
 
 //==============================================================================
@@ -432,48 +402,104 @@ void Viewer::shutdownGlfw()
 }
 
 //==============================================================================
-void Viewer::keyboard(
-    GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/)
+void Viewer::setCallbacks()
 {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, true);
+  assert(mGlfwWindow);
+
+  glfwSetWindowSizeCallback(
+      mGlfwWindow, [](GLFWwindow* window, int width, int height) {
+        auto* viewer = findViewer(window);
+        if (viewer)
+          viewer->windowSizeCallback(width, height);
+      });
+
+  glfwSetCursorPosCallback(
+      mGlfwWindow, [](GLFWwindow* window, double xpos, double ypos) {
+        auto* viewer = findViewer(window);
+        if (viewer)
+          viewer->cursorPosCallback(xpos, ypos);
+      });
+
+  glfwSetMouseButtonCallback(
+      mGlfwWindow, [](GLFWwindow* window, int button, int action, int mods) {
+        auto* viewer = findViewer(window);
+        if (viewer)
+          viewer->mouseButtonCallback(button, action, mods);
+      });
+
+  glfwSetKeyCallback(
+      mGlfwWindow,
+      [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+        auto* viewer = findViewer(window);
+        if (viewer)
+          viewer->keyboardCallback(key, scancode, action, mods);
+      });
+
+  glfwSetCharCallback(
+      mGlfwWindow, [](GLFWwindow* window, unsigned int codepoint) {
+        auto* viewer = findViewer(window);
+        if (viewer)
+          viewer->charCallback(codepoint);
+      });
+
+  glfwSetDropCallback(
+      mGlfwWindow, [](GLFWwindow* window, int count, const char** filenames) {
+        auto* viewer = findViewer(window);
+        if (viewer)
+          viewer->dropCallback(count, filenames);
+      });
+
+  glfwSetScrollCallback(
+      mGlfwWindow, [](GLFWwindow* window, double xoffset, double yoffset) {
+        auto* viewer = findViewer(window);
+        if (viewer)
+          viewer->scrollCallback(xoffset, yoffset);
+      });
+
+  glfwSetFramebufferSizeCallback(
+      mGlfwWindow, [](GLFWwindow* window, int width, int height) {
+        auto* viewer = findViewer(window);
+        if (viewer)
+          viewer->windowSizeCallback(width, height);
+      });
 }
 
 //==============================================================================
-void Viewer::specKey(int /*key*/, int /*x*/, int /*y*/)
+void Viewer::initLights()
 {
-  // Do nothing
-}
+  static float ambient[] = {0.2, 0.2, 0.2, 1.0};
+  static float diffuse[] = {0.6, 0.6, 0.6, 1.0};
+  static float front_mat_shininess[] = {60.0};
+  static float front_mat_specular[] = {0.2, 0.2, 0.2, 1.0};
+  static float front_mat_diffuse[] = {0.5, 0.28, 0.38, 1.0};
+  static float lmodel_ambient[] = {0.2, 0.2, 0.2, 1.0};
+  static float lmodel_twoside[] = {GL_FALSE};
 
-//==============================================================================
-void Viewer::click(int /*button*/, int /*state*/, int /*x*/, int /*y*/)
-{
-  // Do nothing
-}
+  GLfloat position[] = {1.0, 0.0, 0.0, 0.0};
+  GLfloat position1[] = {-1.0, 0.0, 0.0, 0.0};
 
-//==============================================================================
-void Viewer::drag(int /*x*/, int /*y*/)
-{
-  // Do nothing
-}
+  glEnable(GL_LIGHT0);
+  glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+  glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+  glLightfv(GL_LIGHT0, GL_POSITION, position);
 
-//==============================================================================
-void Viewer::move(int /*x*/, int /*y*/)
-{
-  // Do nothing
-}
+  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lmodel_ambient);
+  glLightModelfv(GL_LIGHT_MODEL_TWO_SIDE, lmodel_twoside);
 
-//==============================================================================
-void Viewer::displayTimer(int val)
-{
-  //  glutPostRedisplay();
-  //  glutTimerFunc(mDisplayTimeout, refreshTimer, val);
-}
+  glEnable(GL_LIGHT1);
+  glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
+  glLightfv(GL_LIGHT1, GL_POSITION, position1);
+  glEnable(GL_LIGHTING);
+  glEnable(GL_COLOR_MATERIAL);
 
-//==============================================================================
-void Viewer::simTimer(int /*val*/)
-{
-  // Do nothing
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, front_mat_shininess);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, front_mat_specular);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, front_mat_diffuse);
+
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LEQUAL);
+  glDisable(GL_CULL_FACE);
+  glEnable(GL_NORMALIZE);
 }
 
 } // namespace glfw
