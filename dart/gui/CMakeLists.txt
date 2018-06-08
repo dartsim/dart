@@ -22,8 +22,8 @@ else()
 endif()
 
 # Search all header and source files
-file(GLOB hdrs "*.hpp" "*.h")
-file(GLOB srcs "*.cpp" "*.c")
+file(GLOB hdrs "*.hpp" "*.h" "detail/*.hpp")
+file(GLOB srcs "*.cpp" "*.c" "detail/*.cpp")
 
 function(dart_add_gui_headers)
   dart_property_add(DART_GUI_HEADERS ${ARGN})
@@ -104,12 +104,9 @@ install(
 )
 
 dart_format_add(
-  FragmentShader.hpp
-  FragmentShader.cpp
   Program.hpp
   Program.cpp
   Shader.hpp
   Shader.cpp
-  VertexShader.hpp
-  VertexShader.cpp
+  detail/Shader-impl.hpp
 )

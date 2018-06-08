@@ -242,6 +242,7 @@ private:
   static void startupGlfw();
   static void shutdownGlfw();
   void setCallbacks();
+  void setPrograms();
   void initLights();
   static std::unordered_map<GLFWwindow*, Viewer*> mViewerMap;
   static bool mMainloopActive;

@@ -49,6 +49,29 @@ std::unordered_map<GLFWwindow*, Viewer*> Viewer::mViewerMap;
 const float Viewer::SCROLL_SENSITIVITY = 0.08f;
 
 //==============================================================================
+namespace {
+
+const char* DEFAULT_VERTEX_SHADER_TEXT
+    = "uniform mat4 MVP;\n"
+      "attribute vec3 vCol;\n"
+      "attribute vec2 vPos;\n"
+      "varying vec3 color;\n"
+      "void main()\n"
+      "{\n"
+      "    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
+      "    color = vCol;\n"
+      "}\n";
+
+const char* DEFAULT_FRAGMENT_SHADER_TEXT
+    = "varying vec3 color;\n"
+      "void main()\n"
+      "{\n"
+      "    gl_FragColor = vec4(color, 1.0);\n"
+      "}\n";
+
+} // (anonymous) namespace
+
+//==============================================================================
 Viewer::Viewer(const std::string& title, int width, int height, bool show)
   : mIsVisible(true), mClearColor(Eigen::Vector4f(1.0, 1.0, 1.0, 1.0))
 {
@@ -74,7 +97,13 @@ Viewer::Viewer(const std::string& title, int width, int height, bool show)
     exit(EXIT_FAILURE);
   }
 
+  glfwMakeContextCurrent(mGlfwWindow);
+
   setCallbacks();
+  setPrograms();
+
+  // Create a default scene.
+  createScene<Scene>();
 }
 
 //==============================================================================
@@ -523,17 +552,17 @@ void Viewer::renderScene()
   mPhongProgram->bind();
 
   // Set the variables of the shader
-  mPhongProgram->setMatrix4x4Uniform(
-      std::string("projectionMatrix"), mCamera.getProjectionMatrix());
-  mPhongProgram->setMatrix4x4Uniform(
-      std::string("worldToLight0CameraMatrix"), worldToLightCameraMatrix);
-  mPhongProgram->setVector3Uniform(
-      std::string("light0PosCameraSpace"),
-      worldToCameraMatrix * mLight0.getTranslation());
-  mPhongProgram->setVector3Uniform(
-      std::string("lightAmbientColor"), Eigen::Vector3f(0.4f, 0.4f, 0.4f));
-  mPhongProgram->setVector3Uniform(
-      std::string("light0DiffuseColor"), diffCol.head<3>());
+//  mPhongProgram->setMatrix4x4Uniform(
+//      std::string("projectionMatrix"), mCamera.getProjectionMatrix());
+//  mPhongProgram->setMatrix4x4Uniform(
+//      std::string("worldToLight0CameraMatrix"), worldToLightCameraMatrix);
+//  mPhongProgram->setVector3Uniform(
+//      std::string("light0PosCameraSpace"),
+//      worldToCameraMatrix * mLight0.getTranslation());
+//  mPhongProgram->setVector3Uniform(
+//      std::string("lightAmbientColor"), Eigen::Vector3f(0.4f, 0.4f, 0.4f));
+//  mPhongProgram->setVector3Uniform(
+//      std::string("light0DiffuseColor"), diffCol.head<3>());
 
   int display_w, display_h;
   glfwGetFramebufferSize(mGlfwWindow, &display_w, &display_h);
@@ -667,6 +696,14 @@ void Viewer::setCallbacks()
         if (viewer)
           viewer->windowSizeCallback(width, height);
       });
+}
+
+//==============================================================================
+void Viewer::setPrograms()
+{
+  VertexShader vertexShader(DEFAULT_VERTEX_SHADER_TEXT);
+  FragmentShader fragmentShader(DEFAULT_FRAGMENT_SHADER_TEXT);
+  mPhongProgram.reset(new Program(vertexShader, fragmentShader));
 }
 
 //==============================================================================

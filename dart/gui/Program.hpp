@@ -4,8 +4,7 @@
 #include <string>
 #include <Eigen/Dense>
 
-#include "dart/gui/FragmentShader.hpp"
-#include "dart/gui/VertexShader.hpp"
+#include "dart/gui/Shader.hpp"
 #include "dart/gui/glfw/LoadGlfw.hpp"
 
 namespace dart {
