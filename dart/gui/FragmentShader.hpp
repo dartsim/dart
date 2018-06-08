@@ -2,28 +2,20 @@
 #define DART_GUI_GLFW_FRAGMENTSHADER_HPP_
 
 #include <string>
-#include <Eigen/Dense>
 
-#include "dart/gui/glfw/LoadGlfw.hpp"
+#include "dart/gui/Shader.hpp"
 
 namespace dart {
 namespace gui {
 
-class FragmentShader final
+class FragmentShader : public Shader
 {
 public:
-  FragmentShader(const std::string& vertexVertexShaderFilepath = "");
+  FragmentShader(const common::Uri& shaderUri, common::ResourceRetriever* retriever = nullptr);
   // TODO: remove the default parameters
   // TODO: change to URI
 
-  ~FragmentShader();
-
-  GLuint getId() const;
-
-protected:
-  std::string mFragmentShaderFilepath;
-
-  GLuint mFragmentShaderID;
+  virtual ~FragmentShader() = default;
 };
 
 } // namespace gui

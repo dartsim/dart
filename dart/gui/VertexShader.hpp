@@ -2,28 +2,20 @@
 #define DART_GUI_GLFW_VERTEXSHADER_HPP_
 
 #include <string>
-#include <Eigen/Dense>
 
-#include "dart/gui/glfw/LoadGlfw.hpp"
+#include "dart/gui/Shader.hpp"
 
 namespace dart {
 namespace gui {
 
-class VertexShader final
+class VertexShader : public Shader
 {
 public:
-  VertexShader(const std::string& vertexShaderFilepath = "");
+  VertexShader(const common::Uri& shaderUri = "", common::ResourceRetriever* retriever = nullptr);
   // TODO: remove the default parameters
   // TODO: change to URI
 
-  ~VertexShader();
-
-  GLuint getId() const;
-
-protected:
-  std::string mVertexShaderFilepath;
-
-  GLuint mVertexShaderId;
+  virtual ~VertexShader() = default;
 };
 
 } // namespace gui

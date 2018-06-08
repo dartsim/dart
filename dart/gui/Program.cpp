@@ -1,6 +1,7 @@
 #include "dart/gui/Program.hpp"
 
 #include <fstream>
+#include <vector>
 #include "dart/common/Console.hpp"
 
 namespace dart {
