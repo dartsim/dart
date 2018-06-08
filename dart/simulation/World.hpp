@@ -47,6 +47,7 @@
 
 #include "dart/common/Timer.hpp"
 #include "dart/common/NameManager.hpp"
+#include "dart/common/SmartPointer.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -72,6 +73,8 @@ class CollisionResult;
 } // namespace collision
 
 namespace simulation {
+
+DART_COMMON_DECLARE_SHARED_WEAK(World)
 
 /// class World
 class World : public virtual common::Subject
@@ -309,8 +312,6 @@ public:
   common::SlotRegister<NameChangedSignal> onNameChanged;
 
 };
-
-typedef std::shared_ptr<World> WorldPtr;
 
 }  // namespace simulation
 }  // namespace dart

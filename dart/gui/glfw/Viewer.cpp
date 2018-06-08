@@ -552,17 +552,17 @@ void Viewer::renderScene()
   mPhongProgram->bind();
 
   // Set the variables of the shader
-//  mPhongProgram->setMatrix4x4Uniform(
-//      std::string("projectionMatrix"), mCamera.getProjectionMatrix());
-//  mPhongProgram->setMatrix4x4Uniform(
-//      std::string("worldToLight0CameraMatrix"), worldToLightCameraMatrix);
-//  mPhongProgram->setVector3Uniform(
-//      std::string("light0PosCameraSpace"),
-//      worldToCameraMatrix * mLight0.getTranslation());
-//  mPhongProgram->setVector3Uniform(
-//      std::string("lightAmbientColor"), Eigen::Vector3f(0.4f, 0.4f, 0.4f));
-//  mPhongProgram->setVector3Uniform(
-//      std::string("light0DiffuseColor"), diffCol.head<3>());
+  //  mPhongProgram->setMatrix4x4Uniform(
+  //      std::string("projectionMatrix"), mCamera.getProjectionMatrix());
+  //  mPhongProgram->setMatrix4x4Uniform(
+  //      std::string("worldToLight0CameraMatrix"), worldToLightCameraMatrix);
+  //  mPhongProgram->setVector3Uniform(
+  //      std::string("light0PosCameraSpace"),
+  //      worldToCameraMatrix * mLight0.getTranslation());
+  //  mPhongProgram->setVector3Uniform(
+  //      std::string("lightAmbientColor"), Eigen::Vector3f(0.4f, 0.4f, 0.4f));
+  //  mPhongProgram->setVector3Uniform(
+  //      std::string("light0DiffuseColor"), diffCol.head<3>());
 
   int display_w, display_h;
   glfwGetFramebufferSize(mGlfwWindow, &display_w, &display_h);
