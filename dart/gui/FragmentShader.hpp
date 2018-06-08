@@ -11,7 +11,9 @@ namespace gui {
 class FragmentShader : public Shader
 {
 public:
-  FragmentShader(const common::Uri& shaderUri, common::ResourceRetriever* retriever = nullptr);
+  FragmentShader(
+      const common::Uri& shaderUri,
+      common::ResourceRetriever* retriever = nullptr);
   // TODO: remove the default parameters
   // TODO: change to URI
 

@@ -6,13 +6,11 @@
 #include <unordered_set>
 #include <vector>
 
-#include "dart/gui/glfw/Camera.hpp"
-//#include "dart/gui/glfw/FrameBufferObject.hpp"
 #include "dart/gui/Program.hpp"
-#include "dart/gui/glfw/Light.hpp"
-//#include "dart/gui/glfw/Texture2D.hpp"
 #include "dart/gui/VertexArrayObject.hpp"
 #include "dart/gui/VertexBufferObject.hpp"
+#include "dart/gui/glfw/Camera.hpp"
+#include "dart/gui/glfw/Light.hpp"
 
 namespace dart {
 namespace gui {

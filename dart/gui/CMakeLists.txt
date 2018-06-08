@@ -108,6 +108,8 @@ dart_format_add(
   FragmentShader.cpp
   Program.hpp
   Program.cpp
+  Shader.hpp
+  Shader.cpp
   VertexShader.hpp
   VertexShader.cpp
 )

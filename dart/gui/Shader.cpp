@@ -8,7 +8,10 @@ namespace dart {
 namespace gui {
 
 //==============================================================================
-Shader::Shader(GLuint type, const common::Uri& shaderUri, common::ResourceRetriever* retriever)
+Shader::Shader(
+    GLuint type,
+    const common::Uri& shaderUri,
+    common::ResourceRetriever* retriever)
 {
   std::unique_ptr<common::ResourceRetriever> localRetriever;
   if (!retriever)

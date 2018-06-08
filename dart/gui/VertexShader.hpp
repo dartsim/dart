@@ -11,7 +11,9 @@ namespace gui {
 class VertexShader : public Shader
 {
 public:
-  VertexShader(const common::Uri& shaderUri = "", common::ResourceRetriever* retriever = nullptr);
+  VertexShader(
+      const common::Uri& shaderUri = "",
+      common::ResourceRetriever* retriever = nullptr);
   // TODO: remove the default parameters
   // TODO: change to URI
 
