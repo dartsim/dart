@@ -30,15 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/glfw/Window.hpp"
+#include "dart/gui/glfw/Viewer.hpp"
 
 #include <thread>
 
 #include <GLFW/glfw3.h>
 
 #include "dart/common/Console.hpp"
-#include "dart/gui/OpenGLRenderInterface.hpp"
-#include "dart/gui/glfw/gl3w.h"
+#include "dart/gui/glfw/LoadGlfw.hpp"
 
 namespace dart {
 namespace gui {
@@ -47,13 +46,12 @@ namespace glfw {
 //==============================================================================
 bool Viewer::mMainloopActive = false;
 std::unordered_map<GLFWwindow*, Viewer*> Viewer::mViewerMap;
+const float Viewer::SCROLL_SENSITIVITY = 0.08f;
 
 //==============================================================================
 Viewer::Viewer(const std::string& title, int width, int height, bool show)
-  : mIsVisible(true), mClearColor(Eigen::Vector4f(1, 1, 1, 1))
+  : mIsVisible(true), mClearColor(Eigen::Vector4f(1.0, 1.0, 1.0, 1.0))
 {
-  mCapture = false;
-
   if (mViewerMap.empty())
     startupGlfw();
 
@@ -107,6 +105,102 @@ Viewer* Viewer::findViewer(GLFWwindow* window)
 }
 
 //==============================================================================
+void Viewer::setScenePosition(
+    const Eigen::Vector3f& position, float sceneRadius)
+{
+  // Set the position and radius of the scene
+  mCenterScene = position;
+  mCamera.setSceneRadius(sceneRadius);
+
+  // Reset the camera position and zoom in order to view all the scene
+  resetCameraToViewAll();
+}
+
+//==============================================================================
+void Viewer::resetCameraToViewAll()
+{
+  // Move the camera to the origin of the scene
+  mCamera.translateWorld(-mCamera.getTranslation());
+
+  // Move the camera to the center of the scene
+  mCamera.translateWorld(mCenterScene);
+
+  // Set the zoom of the camera so that the scene center is
+  // in negative view direction of the camera
+  mCamera.setZoom(1.0);
+}
+
+//==============================================================================
+bool Viewer::mapMouseCoordinatesToSphere(
+    double xMouse, double yMouse, Eigen::Vector3f& spherePoint) const
+{
+  if ((xMouse >= 0) && (xMouse <= mWindowWidth) && (yMouse >= 0)
+      && (yMouse <= mWindowHeight))
+  {
+    float x = float(xMouse - 0.5f * mWindowWidth) / float(mWindowWidth);
+    float y = float(0.5f * mWindowHeight - yMouse) / float(mWindowHeight);
+    float sinx = std::sin(math::constantsf::pi() * x * 0.5f);
+    float siny = std::sin(math::constantsf::pi() * y * 0.5f);
+    float sinx2siny2 = sinx * sinx + siny * siny;
+
+    // Compute the point on the sphere
+    spherePoint[0] = sinx;
+    spherePoint[1] = siny;
+    spherePoint[2] = (sinx2siny2 < 1.0) ? std::sqrt(1.0f - sinx2siny2) : 0.0f;
+
+    return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+void Viewer::zoom(float zoomDiff)
+{
+  // Zoom the camera
+  mCamera.setZoom(zoomDiff);
+}
+
+//==============================================================================
+void Viewer::translate(int xMouse, int yMouse)
+{
+  const auto dx = static_cast<float>(xMouse - mLastMouseX);
+  const auto dy = static_cast<float>(yMouse - mLastMouseY);
+
+  // Translate the camera
+  mCamera.translateCamera(
+      -dx / float(mCamera.getWidth()),
+      -dy / float(mCamera.getHeight()),
+      mCenterScene);
+}
+
+//==============================================================================
+void Viewer::rotate(int xMouse, int yMouse)
+{
+  if (mIsLastPointOnSphereValid)
+  {
+    Eigen::Vector3f newPoint3D;
+    bool isNewPointOK = mapMouseCoordinatesToSphere(xMouse, yMouse, newPoint3D);
+
+    if (isNewPointOK)
+    {
+      Eigen::Vector3f axis = mLastPointOnSphere.cross(newPoint3D);
+      float cosAngle = mLastPointOnSphere.dot(newPoint3D);
+
+      float epsilon = std::numeric_limits<float>::epsilon();
+      if (std::fabs(cosAngle) < 1.0f && axis.norm() > epsilon)
+      {
+        axis.normalize();
+        float angle = 2.0f * acos(cosAngle);
+
+        // Rotate the camera around the center of the scene
+        mCamera.rotateAroundLocalPoint(axis, -angle, mCenterScene);
+      }
+    }
+  }
+}
+
+//==============================================================================
 void Viewer::runAllViewers(std::size_t refresh)
 {
   if (mMainloopActive)
@@ -149,7 +243,7 @@ void Viewer::runAllViewers(std::size_t refresh)
           continue;
         }
 
-        //        window->render();
+        window->render();
         numScreens++;
       }
 
@@ -233,6 +327,49 @@ void Viewer::hide()
 }
 
 //==============================================================================
+void Viewer::setScene(std::unique_ptr<Scene>&& scene)
+{
+  if (mScene == scene)
+    return;
+
+  if (nullptr != mScene)
+    mScene->notifyMainWindowChanged(nullptr);
+
+  mScene = std::move(scene);
+  mScene->notifyMainWindowChanged(mGlfwWindow);
+
+  windowSizeCallback(0, 0);
+}
+
+//==============================================================================
+Scene* Viewer::getScene() const
+{
+  return mScene.get();
+}
+
+//==============================================================================
+Scene* Viewer::releaseScene()
+{
+  if (nullptr != mScene)
+    mScene->notifyMainWindowChanged(nullptr);
+
+  return mScene.release();
+}
+
+//==============================================================================
+void Viewer::transferSceneTo(Viewer* other)
+{
+  if (nullptr == other)
+    releaseScene();
+
+  if (this == other)
+    return;
+
+  other->setScene(std::move(mScene));
+  mScene.reset();
+}
+
+//==============================================================================
 bool Viewer::isVisible() const
 {
   return mIsVisible;
@@ -241,35 +378,81 @@ bool Viewer::isVisible() const
 //==============================================================================
 void Viewer::windowSizeCallback(int width, int height)
 {
-  mWinWidth = width;
-  mWinHeight = height;
+  // Get the framebuffer dimension
+  //  int width, height;
+  //  glfwGetFramebufferSize(mGlfwWindow, &width, &height);
 
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glViewport(0, 0, mWinWidth, mWinHeight);
-  gluPerspective(
-      mPersp,
-      static_cast<double>(mWinWidth) / static_cast<double>(mWinHeight),
-      0.1,
-      10.0);
+  // Resize the camera viewport
+  mCamera.setDimensions(width, height);
 
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
+  // Update the window size of the scene
+  int windowWidth, windowHeight;
+  glfwGetWindowSize(mGlfwWindow, &windowWidth, &windowHeight);
 
-  mTrackBall.setCenter(Eigen::Vector2d(width * 0.5, height * 0.5));
-  mTrackBall.setRadius(std::min(width, height) / 2.5);
-
-  //  glfwPostRedisplay();
+  mWindowWidth = width;
+  mWindowHeight = height;
 }
 
 //==============================================================================
-void Viewer::cursorPosCallback(double xpos, double ypos)
+void Viewer::cursorPosCallback(double xMouse, double yMouse)
 {
+  const int leftButtonState
+      = glfwGetMouseButton(mGlfwWindow, GLFW_MOUSE_BUTTON_LEFT);
+  const int rightButtonState
+      = glfwGetMouseButton(mGlfwWindow, GLFW_MOUSE_BUTTON_RIGHT);
+  const int middleButtonState
+      = glfwGetMouseButton(mGlfwWindow, GLFW_MOUSE_BUTTON_MIDDLE);
+  const int altKeyState = glfwGetKey(mGlfwWindow, GLFW_KEY_LEFT_ALT);
+
+  // Zoom
+  if (leftButtonState == GLFW_PRESS && altKeyState == GLFW_PRESS)
+  {
+    const float dy = static_cast<float>(yMouse - mLastMouseY);
+    const float h = static_cast<float>(mWindowHeight);
+
+    // Zoom the camera
+    zoom(-dy / h);
+  }
+  // Translation
+  else if (
+      middleButtonState == GLFW_PRESS || rightButtonState == GLFW_PRESS
+      || (leftButtonState == GLFW_PRESS && altKeyState == GLFW_PRESS))
+  {
+    translate(xMouse, yMouse);
+  }
+  // Rotation
+  else if (leftButtonState == GLFW_PRESS)
+  {
+    rotate(xMouse, yMouse);
+  }
+
+  // Remember the mouse position
+  mLastMouseX = xMouse;
+  mLastMouseY = yMouse;
+  mIsLastPointOnSphereValid
+      = mapMouseCoordinatesToSphere(xMouse, yMouse, mLastPointOnSphere);
 }
 
 //==============================================================================
-void Viewer::mouseButtonCallback(int button, int action, int mods)
+void Viewer::mouseButtonCallback(int /*button*/, int action, int /*mods*/)
 {
+  // Get the mouse cursor position
+  double x, y;
+  glfwGetCursorPos(mGlfwWindow, &x, &y);
+
+  // If the mouse button is pressed
+  if (action == GLFW_PRESS)
+  {
+    mLastMouseX = x;
+    mLastMouseY = y;
+    mIsLastPointOnSphereValid
+        = mapMouseCoordinatesToSphere(x, y, mLastPointOnSphere);
+  }
+  else
+  {
+    // If the mouse button is released
+    mIsLastPointOnSphereValid = false;
+  }
 }
 
 //==============================================================================
@@ -281,18 +464,21 @@ void Viewer::keyboardCallback(
 }
 
 //==============================================================================
-void Viewer::charCallback(unsigned int codepoint)
+void Viewer::charCallback(unsigned int /*codepoint*/)
 {
+  // Do nothing
 }
 
 //==============================================================================
-void Viewer::dropCallback(int count, const char** filenames)
+void Viewer::dropCallback(int /*count*/, const char** /*filenames*/)
 {
+  // Do nothing
 }
 
 //==============================================================================
-void Viewer::scrollCallback(double xoffset, double yoffset)
+void Viewer::scrollCallback(double /*xoffset*/, double yoffset)
 {
+  zoom(yoffset * SCROLL_SENSITIVITY);
 }
 
 //==============================================================================
@@ -301,62 +487,12 @@ void Viewer::render()
   glfwMakeContextCurrent(mGlfwWindow);
 
   // Rendering
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  gluPerspective(
-      mPersp,
-      static_cast<double>(mWinWidth) / static_cast<double>(mWinHeight),
-      0.1,
-      10.0);
-  gluLookAt(mEye[0], mEye[1], mEye[2], 0.0, 0.0, -1.0, mUp[0], mUp[1], mUp[2]);
-
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-
   glClearColor(
       mClearColor.x(), mClearColor.y(), mClearColor.z(), mClearColor.w());
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-  mTrackBall.applyGLRotation();
-
-  // Draw world origin indicator
-  if (!mCapture)
-  {
-    glEnable(GL_DEPTH_TEST);
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_LIGHTING);
-    glLineWidth(2.0);
-    if (mRotate || mTranslate || mZooming)
-    {
-      glColor3f(1.0f, 0.0f, 0.0f);
-      glBegin(GL_LINES);
-      glVertex3f(-0.1f, 0.0f, -0.0f);
-      glVertex3f(0.15f, 0.0f, -0.0f);
-      glEnd();
-
-      glColor3f(0.0f, 1.0f, 0.0f);
-      glBegin(GL_LINES);
-      glVertex3f(0.0f, -0.1f, 0.0f);
-      glVertex3f(0.0f, 0.15f, 0.0f);
-      glEnd();
-
-      glColor3f(0.0f, 0.0f, 1.0f);
-      glBegin(GL_LINES);
-      glVertex3f(0.0f, 0.0f, -0.1f);
-      glVertex3f(0.0f, 0.0f, 0.15f);
-      glEnd();
-    }
-  }
-
-  glScalef(mZoom, mZoom, mZoom);
-  glTranslatef(mTrans[0] * 0.001, mTrans[1] * 0.001, mTrans[2] * 0.001);
-
-  initLights();
   renderScene();
-
-  // Draw trackball indicator
-  if (mRotate && !mCapture)
-    mTrackBall.draw(mWinWidth, mWinHeight);
+  // renderGui();
 
   glfwSwapBuffers(mGlfwWindow);
 }
@@ -364,6 +500,75 @@ void Viewer::render()
 //==============================================================================
 void Viewer::renderScene()
 {
+  if (!mScene)
+  {
+    // TODO: render empty scene
+    return;
+  }
+
+  const Eigen::Vector4f& diffCol = mLight0.getDiffuseColor();
+
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
+
+  const Eigen::Isometry3f worldToLightCameraMatrix
+      = mLight0.getTransform().inverse();
+
+  glCullFace(GL_BACK);
+
+  // Get the world-space to camera-space matrix
+  const Eigen::Isometry3f worldToCameraMatrix
+      = mCamera.getTransform().inverse();
+
+  mPhongProgram->bind();
+
+  // Set the variables of the shader
+  mPhongProgram->setMatrix4x4Uniform(
+      std::string("projectionMatrix"), mCamera.getProjectionMatrix());
+  mPhongProgram->setMatrix4x4Uniform(
+      std::string("worldToLight0CameraMatrix"), worldToLightCameraMatrix);
+  mPhongProgram->setVector3Uniform(
+      std::string("light0PosCameraSpace"),
+      worldToCameraMatrix * mLight0.getTranslation());
+  mPhongProgram->setVector3Uniform(
+      std::string("lightAmbientColor"), Eigen::Vector3f(0.4f, 0.4f, 0.4f));
+  mPhongProgram->setVector3Uniform(
+      std::string("light0DiffuseColor"), diffCol.head<3>());
+
+  int display_w, display_h;
+  glfwGetFramebufferSize(mGlfwWindow, &display_w, &display_h);
+  glViewport(0, 0, display_w, display_h);
+  mViewportX = 0;
+  mViewportY = 0;
+  mViewportWidth = display_w;
+  mViewportHeight = display_h;
+  // TODO: ugly
+
+  // Set the viewport to render the scene
+  glViewport(mViewportX, mViewportY, mViewportWidth, mViewportHeight);
+
+  // Enabling color write (previously disabled for light POV z-buffer rendering)
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+  // Clear previous frame values
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  // Render the objects of the scene
+  renderSinglePass(*mPhongProgram, worldToCameraMatrix);
+
+  mPhongProgram->unbind();
+}
+
+//==============================================================================
+void Viewer::renderSinglePass(
+    Program& program, const Eigen::Isometry3f& worldToCameraMatrix)
+{
+  program.bind();
+
+  if (mScene)
+    mScene->renderSinglePass(program, worldToCameraMatrix);
+
+  program.unbind();
 }
 
 //==============================================================================

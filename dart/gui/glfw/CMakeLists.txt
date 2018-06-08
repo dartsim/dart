@@ -6,8 +6,8 @@ find_package(Threads QUIET)
 dart_check_optional_package(Threads "dart-gui" "Threads")
 
 # Search all header and source files
-file(GLOB hdrs "*.hpp" "*.h")
-file(GLOB srcs "*.cpp" "*.c")
+file(GLOB hdrs "*.hpp")
+file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 

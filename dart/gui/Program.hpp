@@ -1,22 +1,26 @@
-#ifndef DART_GUI_GLFW_SHADER_HPP_
-#define DART_GUI_GLFW_SHADER_HPP_
+#ifndef DART_GUI_GLFW_PROGRAM_HPP_
+#define DART_GUI_GLFW_PROGRAM_HPP_
 
 #include <string>
 #include <Eigen/Dense>
 
+#include "dart/gui/FragmentShader.hpp"
+#include "dart/gui/VertexShader.hpp"
 #include "dart/gui/glfw/LoadGlfw.hpp"
 
 namespace dart {
+namespace gui {
 
-class Shader final
+class Program final
 {
 public:
-  Shader(
-      const std::string& vertexShaderFilename = "",
-      const std::string& fragmentShaderFilename = "");
+  /// Constructor
+  Program(
+      const VertexShader& vertexShader, const FragmentShader& fragmentShader);
   // TODO: remove the default parameters
 
-  ~Shader() = default;
+  /// Destructor
+  ~Program() = default;
 
   void bind();
 
@@ -85,16 +89,11 @@ public:
       const Eigen::Isometry3f& matrix,
       bool errorIfMissing = true) const;
 
-  static bool checkOpenGLExtensions();
-
 protected:
-  GLuint mProgramObjectID;
-
-  std::string mVertexShaderFilename;
-
-  std::string mFragmentShaderFilename;
+  GLuint mProgramObjectId;
 };
 
+} // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_GLFW_SHADER_HPP_
+#endif // DART_GUI_GLFW_PROGRAM_HPP_

@@ -3,6 +3,8 @@
 #include "dart/math/Constants.hpp"
 
 namespace dart {
+namespace gui {
+namespace glfw {
 
 //==============================================================================
 Camera::Camera() : Entity()
@@ -150,4 +152,6 @@ void Camera::updateProjectionMatrix()
   mProjectionMatrix(3, 2) = -1;
 }
 
+} // namespace glfw
+} // namespace gui
 } // namespace dart

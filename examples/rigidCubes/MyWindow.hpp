@@ -36,22 +36,22 @@
 #include <dart/dart.hpp>
 #include <dart/gui/glfw/glfw.hpp>
 
-class MyWindow : public dart::gui::glfw::Viewer
-{
-public:
-  MyWindow();
+//class MyWindow : public dart::gui::glfw::Viewer
+//{
+//public:
+//  MyWindow();
 
-  virtual ~MyWindow();
+//  virtual ~MyWindow();
 
-//  void timeStepping() override;
+////  void timeStepping() override;
 
-//  void drawWorld() const override;
+////  void drawWorld() const override;
 
-//  void keyboard(unsigned char _key, int _x, int _y) override;
+////  void keyboard(unsigned char _key, int _x, int _y) override;
 
-private:
-  /// \brief
-  Eigen::Vector3d mForce;
-};
+//private:
+//  /// \brief
+//  Eigen::Vector3d mForce;
+//};
 
 #endif  // EXAMPLES_CUBES_MYWINDOW_HPP_

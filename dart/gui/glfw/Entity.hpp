@@ -3,10 +3,12 @@
 
 #include <memory>
 #include <Eigen/Dense>
+#include "dart/gui/Program.hpp"
 #include "dart/gui/glfw/LoadGlfw.hpp"
-#include "dart/gui/glfw/Shader.hpp"
 
 namespace dart {
+namespace gui {
+namespace glfw {
 
 class Drawable;
 class Scene;
@@ -75,11 +77,11 @@ protected:
   virtual void render(
       GLFWwindow* window,
       GLFWwindow* sharing,
-      Shader& shader,
+      Program& program,
       const Eigen::Isometry3d& worldToCameraMatrix);
 
   virtual void render(
-      Shader& shader, const Eigen::Isometry3f& worldToCameraMatrix);
+      Program& shader, const Eigen::Isometry3f& worldToCameraMatrix);
 
 protected:
   Scene* mScene;
@@ -89,6 +91,8 @@ protected:
 // TODO: make this class pure virtual class
 // TODO: seperate Entity into Node and Drawable
 
+} // namespace glfw
+} // namespace gui
 } // namespace dart
 
 #endif // DART_GUI_GLFW_ENTITY_HPP_

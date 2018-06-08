@@ -3,6 +3,8 @@
 #include "dart/common/Console.hpp"
 
 namespace dart {
+namespace gui {
+namespace glfw {
 
 //==============================================================================
 Entity::Entity(Scene* scene, const Eigen::Isometry3f& tf)
@@ -102,7 +104,7 @@ void Entity::destroyGlObjectsFor(
 void Entity::render(
     GLFWwindow* /*window*/,
     GLFWwindow* /*sharing*/,
-    Shader& /*shader*/,
+    Program& /*program*/,
     const Eigen::Isometry3d& /*worldToCameraMatrix*/)
 {
   // TODO(JS): Not implemented
@@ -110,9 +112,11 @@ void Entity::render(
 
 //==============================================================================
 void Entity::render(
-    Shader& /*shader*/, const Eigen::Isometry3f& /*worldToCameraMatrix*/)
+    Program& /*program*/, const Eigen::Isometry3f& /*worldToCameraMatrix*/)
 {
   // Do nothing
 }
 
+} // namespace glfw
+} // namespace gui
 } // namespace dart

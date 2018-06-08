@@ -22,10 +22,10 @@
 // SOFTWARE.
 //
 
-#ifndef MR3D_OPENGL_HPP_
-#define MR3D_OPENGL_HPP_
+#ifndef DART_GUI_GLFW_OPENGL_HPP_
+#define DART_GUI_GLFW_OPENGL_HPP_
 
-#include "gl3w.h"
+#include "dart/gui/gl3w.h"
 
 #if defined(__APPLE__)
 #define GLFW_INCLUDE_GLCOREARB
@@ -41,4 +41,4 @@
 
 #include <GLFW/glfw3.h>
 
-#endif // MR3D_OPENGL_HPP_
+#endif // DART_GUI_GLFW_OPENGL_HPP_

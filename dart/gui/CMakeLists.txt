@@ -22,8 +22,8 @@ else()
 endif()
 
 # Search all header and source files
-file(GLOB hdrs "*.hpp")
-file(GLOB srcs "*.cpp")
+file(GLOB hdrs "*.hpp" "*.h")
+file(GLOB srcs "*.cpp" "*.c")
 
 function(dart_add_gui_headers)
   dart_property_add(DART_GUI_HEADERS ${ARGN})
@@ -101,4 +101,13 @@ install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
   DESTINATION include/dart/gui
   COMPONENT headers
+)
+
+dart_format_add(
+  FragmentShader.hpp
+  FragmentShader.cpp
+  Program.hpp
+  Program.cpp
+  VertexShader.hpp
+  VertexShader.cpp
 )

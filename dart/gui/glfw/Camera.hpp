@@ -5,6 +5,8 @@
 #include "dart/gui/glfw/Entity.hpp"
 
 namespace dart {
+namespace gui {
+namespace glfw {
 
 class Camera : public Entity
 {
@@ -79,6 +81,8 @@ protected:
   Eigen::Matrix4f mProjectionMatrix;
 };
 
+} // namespace glfw
+} // namespace gui
 } // namespace dart
 
 #endif // DART_GUI_GLFW_CAMERA_HPP_
