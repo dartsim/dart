@@ -1,5 +1,9 @@
 #tap 'dartsim/dart' # for ipopt
- 
+
+# Build dependencies
+brew 'cmake'
+brew 'pkg-config'
+
 brew 'assimp'
 brew 'boost'
 brew 'bullet'

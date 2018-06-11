@@ -28,11 +28,11 @@ matrix:
       env: DOCKER_FILE="ubuntu-bionic" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
       services: docker
     - os: osx
-      osx_image: xcode9.3beta
+      osx_image: xcode9.3
       compiler: clang
       env: BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
     - os: osx
-      osx_image: xcode9.3beta
+      osx_image: xcode9.3
       compiler: clang
       env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
 
