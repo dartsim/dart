@@ -1,18 +1,29 @@
 ## DART 6
 
-### DART 6.5.0 (201X-XX-XX)
+### DART 6.6.0 (201X-XX-XX)
+
+### [DART 6.5.0 (2018-05-12)](https://github.com/dartsim/dart/milestone/41?closed=1)
 
 * Common
 
   * Added LockableReference classes: [#1011](https://github.com/dartsim/dart/pull/1011)
+  * Added missing \<vector\> to Memory.hpp: [#1057](https://github.com/dartsim/dart/pull/1057)
 
 * GUI
 
   * Added FOV API to OSG viewer: [#1048](https://github.com/dartsim/dart/pull/1048)
 
+* Parsers
+
+  * Fixed incorrect parsing of continuous joints specified in URDF [#1064](https://github.com/dartsim/dart/pull/1064)
+
 * Simulation
 
   * Added World::hasSkeleton(): [#1050](https://github.com/dartsim/dart/pull/1050)
+
+* Misc
+
+  * Fixed memory leaks in mesh loading: [#1066](https://github.com/dartsim/dart/pull/1066)
 
 ### [DART 6.4.0 (2018-03-26)](https://github.com/dartsim/dart/milestone/39?closed=1)
 
