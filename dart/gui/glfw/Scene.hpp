@@ -46,8 +46,7 @@ public:
   virtual void notifySubWindowAdded(GLFWwindow* window);
   virtual void notifySubWindowRemoved(GLFWwindow* window);
 
-  virtual void renderSinglePass(
-      Program& shader, const Eigen::Isometry3f& worldToCameraMatrix);
+  virtual void renderSinglePass(Program& program, const Eigen::Isometry3f& worldToCameraMatrix);
 
 protected:
   std::string mName;

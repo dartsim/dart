@@ -9,8 +9,8 @@ namespace gui {
 namespace glfw {
 
 // Constants
-const int SHADOWMAP_WIDTH = 2048;
-const int SHADOWMAP_HEIGHT = 2048;
+//const int SHADOWMAP_WIDTH = 2048;
+//const int SHADOWMAP_HEIGHT = 2048;
 // TODO(JS): Better name
 
 //==============================================================================
@@ -29,37 +29,49 @@ Scene::~Scene()
 //==============================================================================
 void Scene::addEntity(const std::shared_ptr<Entity>& entity)
 {
-  if (nullptr == entity)
+  if (!entity)
+  {
+    // TODO(JS): Add warning
     return;
+  }
 
   mEntities.insert(entity);
 
-  if (nullptr == mGlfwWindow)
+  if (!mGlfwWindow)
+  {
+    // TODO(JS): Add warning
     return;
+  }
 
   glfwMakeContextCurrent(mGlfwWindow);
 
-  entity->createGlObjectsFor(mGlfwWindow);
+//  entity->createGlObjectsFor(mGlfwWindow);
 
-  for (auto* glfwSubWindow : mGlfwSubWindows)
-    entity->createGlObjectsFor(glfwSubWindow, mGlfwWindow);
+//  for (auto* glfwSubWindow : mGlfwSubWindows)
+//    entity->createGlObjectsFor(glfwSubWindow, mGlfwWindow);
 }
 
 //==============================================================================
 void Scene::removeEntity(const std::shared_ptr<Entity>& entity)
 {
-  if (nullptr == entity)
+  if (!entity)
+  {
+    // TODO(JS): Add warning
     return;
+  }
 
-  if (nullptr == mGlfwWindow)
+  if (!mGlfwWindow)
+  {
+    // TODO(JS): Add warning
     return;
+  }
 
   glfwMakeContextCurrent(mGlfwWindow);
 
-  entity->destroyGlObjectsFor(mGlfwWindow);
+//  entity->destroyGlObjectsFor(mGlfwWindow);
 
-  for (auto* glfwSubWindow : mGlfwSubWindows)
-    entity->destroyGlObjectsFor(glfwSubWindow, mGlfwWindow);
+//  for (auto* glfwSubWindow : mGlfwSubWindows)
+//    entity->destroyGlObjectsFor(glfwSubWindow, mGlfwWindow);
 
   mEntities.erase(entity);
 }
@@ -87,8 +99,8 @@ void Scene::notifyMainWindowChanged(GLFWwindow* window)
   {
     glfwMakeContextCurrent(mGlfwWindow);
 
-    for (const auto& entity : mEntities)
-      entity->destroyGlObjectsFor(mGlfwWindow);
+//    for (const auto& entity : mEntities)
+//      entity->destroyGlObjectsFor(mGlfwWindow);
   }
 
   mGlfwWindow = window;
@@ -98,8 +110,8 @@ void Scene::notifyMainWindowChanged(GLFWwindow* window)
 
   glfwMakeContextCurrent(mGlfwWindow);
 
-  for (const auto& entity : mEntities)
-    entity->createGlObjectsFor(mGlfwWindow);
+//  for (const auto& entity : mEntities)
+//    entity->createGlObjectsFor(mGlfwWindow);
 }
 
 //==============================================================================
@@ -116,14 +128,14 @@ void Scene::notifySubWindowRemoved(GLFWwindow* /*window*/)
 
 //==============================================================================
 void Scene::renderSinglePass(
-    Program& shader, const Eigen::Isometry3f& worldToCameraMatrix)
+    Program& program, const Eigen::Isometry3f& worldToCameraMatrix)
 {
-  shader.bind();
+  program.bind();
 
   for (auto& entity : mEntities)
-    entity->render(shader, worldToCameraMatrix);
+    entity->render(program, worldToCameraMatrix);
 
-  shader.unbind();
+  program.unbind();
 }
 
 } // namespace glfw

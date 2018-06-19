@@ -117,6 +117,12 @@ void Entity::render(
   // Do nothing
 }
 
+//==============================================================================
+void Entity::render(RenderState* /*state*/)
+{
+  // Do nothing
+}
+
 } // namespace glfw
 } // namespace gui
 } // namespace dart

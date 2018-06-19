@@ -51,23 +51,29 @@ const float Viewer::SCROLL_SENSITIVITY = 0.08f;
 //==============================================================================
 namespace {
 
-const char* DEFAULT_VERTEX_SHADER_TEXT
-    = "uniform mat4 MVP;\n"
-      "attribute vec3 vCol;\n"
-      "attribute vec2 vPos;\n"
-      "varying vec3 color;\n"
-      "void main()\n"
-      "{\n"
-      "    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
-      "    color = vCol;\n"
-      "}\n";
+const char* DEFAULT_VERTEX_SHADER_CODE
+    = R"(
+      #version 330
 
-const char* DEFAULT_FRAGMENT_SHADER_TEXT
-    = "varying vec3 color;\n"
-      "void main()\n"
-      "{\n"
-      "    gl_FragColor = vec4(color, 1.0);\n"
-      "}\n";
+      layout(location = 0) in vec3 Position;
+
+      void main()
+      {
+        gl_Position = vec4(Position, 1.0);
+      }
+      )";
+
+const char* DEFAULT_FRAGMENT_SHADER_CODE
+    = R"(
+      #version 330
+
+      layout(location = 0) out vec4 color;
+
+      void main()
+      {
+        color = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+      }
+      )";
 
 } // (anonymous) namespace
 
@@ -104,6 +110,7 @@ Viewer::Viewer(const std::string& title, int width, int height, bool show)
 
   // Create a default scene.
   createScene<Scene>();
+  // TODO(JS): Create empty scene class and use it.
 }
 
 //==============================================================================
@@ -220,7 +227,7 @@ void Viewer::rotate(int xMouse, int yMouse)
       if (std::fabs(cosAngle) < 1.0f && axis.norm() > epsilon)
       {
         axis.normalize();
-        float angle = 2.0f * acos(cosAngle);
+        float angle = 2.0f * std::acos(cosAngle);
 
         // Rotate the camera around the center of the scene
         mCamera.rotateAroundLocalPoint(axis, -angle, mCenterScene);
@@ -605,7 +612,7 @@ void Viewer::startupGlfw()
 {
   assert(mViewerMap.empty());
 
-  dtmsg << "starting GLFW " << glfwGetVersionString();
+  dtmsg << "Starting GLFW " << glfwGetVersionString() << "\n";
 
   // Setup window
   glfwSetErrorCallback([](int error, const char* description) {
@@ -701,8 +708,8 @@ void Viewer::setCallbacks()
 //==============================================================================
 void Viewer::setPrograms()
 {
-  VertexShader vertexShader(DEFAULT_VERTEX_SHADER_TEXT);
-  FragmentShader fragmentShader(DEFAULT_FRAGMENT_SHADER_TEXT);
+  VertexShader vertexShader(DEFAULT_VERTEX_SHADER_CODE);
+  FragmentShader fragmentShader(DEFAULT_FRAGMENT_SHADER_CODE);
   mPhongProgram.reset(new Program(vertexShader, fragmentShader));
 }
 

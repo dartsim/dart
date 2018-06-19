@@ -83,11 +83,11 @@ void Shader<ShaderType>::compile(const char* shaderString)
     // Get the log of the compilation
     int lengthLog;
     glGetShaderiv(mShaderId, GL_INFO_LOG_LENGTH, &lengthLog);
-    std::vector<char> str(lengthLog);
+    std::vector<char> str(static_cast<std::size_t>(lengthLog));
     glGetShaderInfoLog(mShaderId, lengthLog, NULL, str.data());
 
     // Display the log of the compilation
-    dterr << "Vertex Shader Error: " << std::string(str.begin(), str.end());
+    dterr << "Vertex Shader Error: " << std::string(str.begin(), str.end()) << "\n";
     assert(false);
 
     // TODO(JS): Needs better error handling

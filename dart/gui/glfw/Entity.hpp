@@ -12,6 +12,7 @@ namespace glfw {
 
 class Drawable;
 class Scene;
+class RenderState;
 
 class Entity
 {
@@ -82,6 +83,8 @@ protected:
 
   virtual void render(
       Program& shader, const Eigen::Isometry3f& worldToCameraMatrix);
+
+  virtual void render(RenderState* state);
 
 protected:
   Scene* mScene;

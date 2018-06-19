@@ -102,7 +102,7 @@ public:
   /// will be released. You might don't need to this because an empty scene will
   /// be created when Viewer is created.
   template <typename SceneT, typename... Args>
-  Scene* createScene(const Args&... args);
+  Scene* createScene(Args&&... args);
 
   /// Sets a new scene to this Viewer. You might don't need to this because an
   /// empty scene will be created when Viewer is created.

@@ -8,6 +8,7 @@ namespace dart {
 namespace gui {
 namespace glfw {
 
+// TODO(JS): docstring
 class WorldScene : public Scene
 {
 public:
@@ -18,6 +19,9 @@ public:
   simulation::WorldPtr getWorld();
 
   simulation::ConstWorldPtr getWorld() const;
+
+protected:
+  simulation::WorldPtr mWorld;
 };
 
 } // namespace glfw

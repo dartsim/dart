@@ -12,12 +12,12 @@ namespace glfw {
 
 //==============================================================================
 template <typename SceneT, typename... Args>
-Scene* Viewer::createScene(const Args&... args)
+Scene* Viewer::createScene(Args&&... args)
 {
-  if (nullptr != mScene)
+  if (mScene)
     mScene->notifyMainWindowChanged(nullptr);
 
-  mScene = common::make_unique<SceneT>(std::forward(args)...);
+  mScene = common::make_unique<SceneT>(std::forward<Args>(args)...);
 
   return mScene.get();
 }

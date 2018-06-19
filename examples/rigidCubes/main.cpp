@@ -34,21 +34,24 @@
 
 #include <dart/dart.hpp>
 #include <dart/utils/utils.hpp>
+#include <dart/gui/glfw/WorldScene.hpp>
 
 #include "MyWindow.hpp"
 
 int main()
 {
-  // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld("dart://sample/skel/cubes.skel");
-  assert(myWorld != nullptr);
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+  // Create and initialize the world
+  auto world = dart::utils::SkelParser::readWorld("dart://sample/skel/cubes.skel");
+  if (!world)
+  {
+    dterr << "Failed to load world.\n";
+    exit(EXIT_FAILURE);
+  }
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
-  // create a window and link it to the world
-  dart::gui::glfw::Viewer viwer("Boxes", 640, 480);
-//  window.setWorld(myWorld);
+  // Create a window and link it to the world
+  dart::gui::glfw::Viewer viewer("Boxes", 640, 480);
+  viewer.createScene<dart::gui::glfw::WorldScene>(world);
 
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'p': playback/stop" << std::endl;
@@ -56,9 +59,6 @@ int main()
   std::cout << "'v': visualization on/off" << std::endl;
   std::cout << "'1'--'4': programmed interaction" << std::endl;
 
-//  glutInit(&argc, argv);
-//  window.initWindow();
-//  glutMainLoop();
   dart::gui::glfw::Viewer::runAllViewers();
 
   return 0;
