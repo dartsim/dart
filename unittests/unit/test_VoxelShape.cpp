@@ -55,7 +55,7 @@ using namespace octomap;
 //==============================================================================
 void print_query_info(point3d query, OcTreeNode* node)
 {
-  if (node != NULL)
+  if (node)
   {
     cout << "occupancy probability at " << query << ":\t "
          << node->getOccupancy() << endl;
@@ -82,7 +82,10 @@ TEST(VoxelShape, SimpleExample)
     {
       for (int z = -20; z < 20; z++)
       {
-        point3d endpoint((float)x * 0.05f, (float)y * 0.05f, (float)z * 0.05f);
+        point3d endpoint(
+            static_cast<float>(x) * 0.05f,
+            static_cast<float>(y) * 0.05f,
+            static_cast<float>(z) * 0.05f);
         /*auto node = */ tree.updateNode(
             endpoint, true); // integrate 'occupied' measurement
         //        std::cout << "Updated node: (" << endpoint << "), (" <<
@@ -100,9 +103,9 @@ TEST(VoxelShape, SimpleExample)
       for (int z = -30; z < 30; z++)
       {
         point3d endpoint(
-            (float)x * 0.02f - 1.0f,
-            (float)y * 0.02f - 1.0f,
-            (float)z * 0.02f - 1.0f);
+            static_cast<float>(x) * 0.02f - 1.0f,
+            static_cast<float>(y) * 0.02f - 1.0f,
+            static_cast<float>(z) * 0.02f - 1.0f);
         /*auto node = */ tree.updateNode(
             endpoint, false); // integrate 'free' measurement
         //        std::cout << "Updated node: (" << endpoint << "), (" <<
@@ -150,7 +153,10 @@ TEST(VoxelShape, Normals)
     {
       for (int z = -20; z < 20; z++)
       {
-        point3d endpoint((float)x * 0.05f, (float)y * 0.05f, (float)z * 0.05f);
+        point3d endpoint(
+            static_cast<float>(x) * 0.05f,
+            static_cast<float>(y) * 0.05f,
+            static_cast<float>(z) * 0.05f);
         tree.updateNode(endpoint, true); // integrate 'occupied' measurement
       }
     }
@@ -165,9 +171,9 @@ TEST(VoxelShape, Normals)
       for (int z = -30; z < 30; z++)
       {
         point3d endpoint(
-            (float)x * 0.02f - 1.0f,
-            (float)y * 0.02f - 1.0f,
-            (float)z * 0.02f - 1.0f);
+            static_cast<float>(x) * 0.02f - 1.0f,
+            static_cast<float>(y) * 0.02f - 1.0f,
+            static_cast<float>(z) * 0.02f - 1.0f);
         tree.updateNode(endpoint, false); // integrate 'free' measurement
       }
     }

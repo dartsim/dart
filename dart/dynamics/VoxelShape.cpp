@@ -103,32 +103,20 @@ fcl_shared_ptr<const octomap::OcTree> VoxelShape::getOctree() const
 }
 
 //==============================================================================
-void VoxelShape::insertPointCloud(
+void VoxelShape::updateOccupancy(
     const octomap::Pointcloud& pointCloud, const octomap::point3d& sensorOrigin)
 {
   mOctree->insertPointCloud(pointCloud, sensorOrigin);
 }
 
 //==============================================================================
-void VoxelShape::setOccupancy(const Eigen::Vector3d& point, bool occupied)
+void VoxelShape::updateOccupancy(const Eigen::Vector3d& point, bool occupied)
 {
   mOctree->updateNode(point.x(), point.y(), point.z(), occupied);
 }
 
 //==============================================================================
-void VoxelShape::occupy(const Eigen::Vector3d& point)
-{
-  setOccupancy(point, true);
-}
-
-//==============================================================================
-void VoxelShape::unoccupy(const Eigen::Vector3d& point)
-{
-  setOccupancy(point, false);
-}
-
-//==============================================================================
-double VoxelShape::getOccupancy(const Eigen::Vector3d& point)
+double VoxelShape::getOccupancy(const Eigen::Vector3d& point) const
 {
   const auto node = mOctree->search(point.x(), point.y(), point.z());
   if (node)

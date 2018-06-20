@@ -40,7 +40,7 @@
 namespace dart {
 namespace dynamics {
 
-/// VoxelShape represents a probabilistic 3D occupancy grid map.
+/// VoxelShape represents a probabilistic 3D occupancy voxel grid.
 class VoxelShape : public Shape
 {
 public:
@@ -48,12 +48,12 @@ public:
   /// \param[in] resolution Size of voxel. Default is 0.01.
   explicit VoxelShape(double resolution = 0.01);
 
-  /// Constructor.
+  /// Constructs from a octomap::OcTree.
   /// \param[in] octree Octree.
   explicit VoxelShape(fcl_shared_ptr<octomap::OcTree> octree);
 
   /// Destructor.
-  virtual ~VoxelShape() = default;
+  ~VoxelShape() override = default;
 
   // Documentation inherited.
   const std::string& getType() const override;
@@ -70,28 +70,21 @@ public:
   /// Returns octree.
   fcl_shared_ptr<const octomap::OcTree> getOctree() const;
 
-  void insertPointCloud(
-      const octomap::Pointcloud& pointCloud,
-      const octomap::point3d& sensorOrigin);
-  // TODO(JS): Create DART point cloud type.
-
-  /// Adds a sensor measurement at \c point. The probability of occupancy will
-  /// be updated based on the measurement.
+  /// Integrates a sensor measurement at \c point. The occupancy probability of
+  /// a node that contains \c point will be updated based on the value of
+  /// \c occupied; true will increase while false will decrease.
   ///
   /// \param[in] point Location of the sensor measurement.
   /// \param[in] occupied True if the location was measured occupied.
-  void setOccupancy(const Eigen::Vector3d& point, bool occupied);
+  void updateOccupancy(const Eigen::Vector3d& point, bool occupied = true);
 
-  /// Adds a sensor measurement of occupancy at \c point. The probability of
-  /// occupancy will be increased.
-  void occupy(const Eigen::Vector3d& point);
+  /// Integrates a point cloud sensor measurement.
+  void updateOccupancy(
+      const octomap::Pointcloud& pointCloud,
+      const octomap::point3d& sensorOrigin);
 
-  /// Adds a sensor measurement of unoccupancy at \c point. The probability of
-  /// occupancy will be decreased.
-  void unoccupy(const Eigen::Vector3d& point);
-
-  /// Returns probability of the occupancy at \c point.
-  double getOccupancy(const Eigen::Vector3d& point);
+  /// Returns occupancy probability of a node that contains \c point.
+  double getOccupancy(const Eigen::Vector3d& point) const;
 
   // Documentation inherited.
   Eigen::Matrix3d computeInertia(double mass) const override;
@@ -105,7 +98,7 @@ protected:
 
   /// Octree.
   fcl_shared_ptr<octomap::OcTree> mOctree;
-  // TODO(JS): Change this to std::shared_ptr once we drop FCL (< 0.5) support
+  // TODO(JS): Use std::shared_ptr once we drop supporting FCL (< 0.5)
 };
 
 } // namespace dynamics
