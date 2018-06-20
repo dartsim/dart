@@ -48,7 +48,11 @@ public:
 
   virtual void renderSinglePass(Program& program, const Eigen::Isometry3f& worldToCameraMatrix);
 
+  virtual void update();
+
 protected:
+  void setGlfwWindow(GLFWwindow* window);
+
   std::string mName;
 
   GLFWwindow* mGlfwWindow;
@@ -56,6 +60,7 @@ protected:
   std::vector<GLFWwindow*> mGlfwSubWindows;
 
   std::unordered_set<std::shared_ptr<Entity>> mEntities;
+  // TODO(JS): Change this to mRootNode once scene graph is implemented
 };
 
 } // namespace glfw

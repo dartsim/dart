@@ -138,6 +138,20 @@ void Scene::renderSinglePass(
   program.unbind();
 }
 
+//==============================================================================
+void Scene::update()
+{
+  // Do nothing
+
+  // TODO(JS): Handle changes of mGlfwWindow
+}
+
+//==============================================================================
+void Scene::setGlfwWindow(GLFWwindow* window)
+{
+  mGlfwWindow = window;
+}
+
 } // namespace glfw
 } // namespace gui
 } // namespace dart

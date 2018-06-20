@@ -37,6 +37,7 @@
 #include <GLFW/glfw3.h>
 
 #include "dart/common/Console.hpp"
+#include "dart/common/Platform.hpp"
 #include "dart/gui/glfw/LoadGlfw.hpp"
 
 namespace dart {
@@ -109,7 +110,7 @@ Viewer::Viewer(const std::string& title, int width, int height, bool show)
   setPrograms();
 
   // Create a default scene.
-  createScene<Scene>();
+  createScene<Scene>("Default Scene", mGlfwWindow);
   // TODO(JS): Create empty scene class and use it.
 }
 
@@ -300,7 +301,8 @@ void Viewer::runAllViewers(std::size_t refresh)
   catch (const std::exception& e)
   {
     dterr << "[Viewer::runAllViewers] Caught exception in main loop: "
-          << e.what();
+          << e.what()
+          << "\n";
     abort();
   }
 
@@ -419,7 +421,7 @@ void Viewer::windowSizeCallback(int width, int height)
   //  glfwGetFramebufferSize(mGlfwWindow, &width, &height);
 
   // Resize the camera viewport
-  mCamera.setDimensions(width, height);
+  mCamera.setDimensions(static_cast<uint>(width), static_cast<uint>(height));
 
   // Update the window size of the scene
   int windowWidth, windowHeight;
@@ -454,12 +456,12 @@ void Viewer::cursorPosCallback(double xMouse, double yMouse)
       middleButtonState == GLFW_PRESS || rightButtonState == GLFW_PRESS
       || (leftButtonState == GLFW_PRESS && altKeyState == GLFW_PRESS))
   {
-    translate(xMouse, yMouse);
+    translate(static_cast<int>(xMouse), static_cast<int>(yMouse));
   }
   // Rotation
   else if (leftButtonState == GLFW_PRESS)
   {
-    rotate(xMouse, yMouse);
+    rotate(static_cast<int>(xMouse), static_cast<int>(yMouse));
   }
 
   // Remember the mouse position
@@ -514,7 +516,7 @@ void Viewer::dropCallback(int /*count*/, const char** /*filenames*/)
 //==============================================================================
 void Viewer::scrollCallback(double /*xoffset*/, double yoffset)
 {
-  zoom(yoffset * SCROLL_SENSITIVITY);
+  zoom(static_cast<float>(yoffset) * SCROLL_SENSITIVITY);
 }
 
 //==============================================================================
@@ -526,6 +528,9 @@ void Viewer::render()
   glClearColor(
       mClearColor.x(), mClearColor.y(), mClearColor.z(), mClearColor.w());
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+  if (mScene)
+    mScene->update();
 
   renderScene();
   // renderGui();
@@ -542,13 +547,13 @@ void Viewer::renderScene()
     return;
   }
 
-  const Eigen::Vector4f& diffCol = mLight0.getDiffuseColor();
+//  const auto& diffCol = mLight0.getDiffuseColor();
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
 
-  const Eigen::Isometry3f worldToLightCameraMatrix
-      = mLight0.getTransform().inverse();
+//  const Eigen::Isometry3f worldToLightCameraMatrix
+//      = mLight0.getTransform().inverse();
 
   glCullFace(GL_BACK);
 
@@ -559,8 +564,8 @@ void Viewer::renderScene()
   mPhongProgram->bind();
 
   // Set the variables of the shader
-  //  mPhongProgram->setMatrix4x4Uniform(
-  //      std::string("projectionMatrix"), mCamera.getProjectionMatrix());
+//  mPhongProgram->setMatrix4x4Uniform(
+//        std::string("projectionMatrix"), mCamera.getProjectionMatrix());
   //  mPhongProgram->setMatrix4x4Uniform(
   //      std::string("worldToLight0CameraMatrix"), worldToLightCameraMatrix);
   //  mPhongProgram->setVector3Uniform(
@@ -627,7 +632,7 @@ void Viewer::startupGlfw()
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-#if __APPLE__
+#if DART_OS_MACOS
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
@@ -646,6 +651,7 @@ void Viewer::shutdownGlfw()
 void Viewer::setCallbacks()
 {
   assert(mGlfwWindow);
+  assert(glfwGetCurrentContext() == mGlfwWindow);
 
   glfwSetWindowSizeCallback(
       mGlfwWindow, [](GLFWwindow* window, int width, int height) {
@@ -708,6 +714,9 @@ void Viewer::setCallbacks()
 //==============================================================================
 void Viewer::setPrograms()
 {
+  assert(mGlfwWindow);
+  assert(glfwGetCurrentContext() == mGlfwWindow);
+
   VertexShader vertexShader(DEFAULT_VERTEX_SHADER_CODE);
   FragmentShader fragmentShader(DEFAULT_FRAGMENT_SHADER_CODE);
   mPhongProgram.reset(new Program(vertexShader, fragmentShader));
@@ -716,16 +725,16 @@ void Viewer::setPrograms()
 //==============================================================================
 void Viewer::initLights()
 {
-  static float ambient[] = {0.2, 0.2, 0.2, 1.0};
-  static float diffuse[] = {0.6, 0.6, 0.6, 1.0};
-  static float front_mat_shininess[] = {60.0};
-  static float front_mat_specular[] = {0.2, 0.2, 0.2, 1.0};
-  static float front_mat_diffuse[] = {0.5, 0.28, 0.38, 1.0};
-  static float lmodel_ambient[] = {0.2, 0.2, 0.2, 1.0};
+  static float ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};
+  static float diffuse[] = {0.6f, 0.6f, 0.6f, 1.0f};
+  static float front_mat_shininess[] = {60.0f};
+  static float front_mat_specular[] = {0.2f, 0.2f, 0.2f, 1.0f};
+  static float front_mat_diffuse[] = {0.5f, 0.28f, 0.38f, 1.0f};
+  static float lmodel_ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};
   static float lmodel_twoside[] = {GL_FALSE};
 
-  GLfloat position[] = {1.0, 0.0, 0.0, 0.0};
-  GLfloat position1[] = {-1.0, 0.0, 0.0, 0.0};
+  GLfloat position[] = {1.0f, 0.0f, 0.0f, 0.0f};
+  GLfloat position1[] = {-1.0f, 0.0f, 0.0f, 0.0f};
 
   glEnable(GL_LIGHT0);
   glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);

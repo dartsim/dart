@@ -18,6 +18,7 @@ Scene* Viewer::createScene(Args&&... args)
     mScene->notifyMainWindowChanged(nullptr);
 
   mScene = common::make_unique<SceneT>(std::forward<Args>(args)...);
+  mScene->setGlfwWindow(mGlfwWindow);
 
   return mScene.get();
 }

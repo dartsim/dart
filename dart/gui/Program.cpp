@@ -26,7 +26,7 @@ Program::Program(
   {
     GLsizei logLength;
     glGetProgramiv(mProgramObjectId, GL_INFO_LOG_LENGTH, &logLength);
-    std::vector<char> strLog(logLength);
+    std::vector<char> strLog(static_cast<std::size_t>(logLength));
     glGetProgramInfoLog(mProgramObjectId, logLength, nullptr, strLog.data());
     dterr << "Linker Error in vertex shader or in fragment shader: "
           << strLog.data();
@@ -53,12 +53,12 @@ GLint Program::getUniformLocation(
     const std::string& variableName, bool errorIfMissing) const
 {
   assert(mProgramObjectId != 0);
-  const GLint location
+  const auto location
       = glGetUniformLocation(mProgramObjectId, variableName.c_str());
   if (location == -1 && errorIfMissing)
   {
     dterr << "Error in vertex shader or in fragment shader: "
-          << "No Uniform variable : " << variableName;
+          << "No Uniform variable : " << variableName << "\n";
     throw std::logic_error("Error in Shader");
   }
 
@@ -70,7 +70,7 @@ GLint Program::getAttribLocation(
     const std::string& variableName, bool errorIfMissing) const
 {
   assert(mProgramObjectId != 0);
-  const GLint location
+  const auto location
       = glGetAttribLocation(mProgramObjectId, variableName.c_str());
   if (location == -1 && errorIfMissing)
   {

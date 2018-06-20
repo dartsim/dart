@@ -69,6 +69,15 @@ public:
       float angle,
       const Eigen::Vector3f& localPoint);
 
+  void setTransform(const Eigen::Isometry3f& tf);
+
+  /// Updates all rendering data for this ShapeFrame
+  ///
+  /// If shortCircuitIfUtilized is true, this will skip the refresh process if
+  /// mUtilized is set to true. clearUtilization() needs to be called before
+  /// this function if short circuiting is going to be used.
+  virtual void update(bool shortCircuitIfUtilized = false);
+
 protected:
   virtual void createGlObjectsFor(
       GLFWwindow* window, GLFWwindow* sharing = nullptr);

@@ -84,7 +84,17 @@ void Entity::rotateAroundLocalPoint(
 
   mTransform = mTransform * Eigen::Translation3f(localPoint)
                * Eigen::AngleAxisf(angle, axis)
-               * Eigen::Translation3f(-localPoint);
+      * Eigen::Translation3f(-localPoint);
+}
+
+void Entity::setTransform(const Eigen::Isometry3f& tf)
+{
+  mTransform = tf;
+}
+
+void Entity::update(bool shortCircuitIfUtilized)
+{
+  // Do nothing
 }
 
 //==============================================================================
