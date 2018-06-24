@@ -622,7 +622,7 @@ void Viewer::startupGlfw()
   // Setup window
   glfwSetErrorCallback([](int error, const char* description) {
     dterr << "GLFW Error occured, Error ID: " << error
-          << ", Description: " << description;
+          << ", Description: " << description << "\n";
   });
 
   if (!glfwInit())
@@ -643,6 +643,9 @@ void Viewer::startupGlfw()
 void Viewer::shutdownGlfw()
 {
   assert(mViewerMap.empty());
+
+  // TODO(JS): Notify OpenGL context is being shutting down to
+  // - scene
 
   glfwTerminate();
 }

@@ -66,7 +66,7 @@ void Scene::removeEntity(const std::shared_ptr<Entity>& entity)
     return;
   }
 
-  glfwMakeContextCurrent(mGlfwWindow);
+//  glfwMakeContextCurrent(mGlfwWindow);
 
 //  entity->destroyGlObjectsFor(mGlfwWindow);
 
