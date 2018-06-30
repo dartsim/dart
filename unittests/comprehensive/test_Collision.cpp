@@ -1451,7 +1451,7 @@ TEST_F(COLLISION, Factory)
 
 //==============================================================================
 #if FCL_HAVE_OCTOMAP
-TEST_F(COLLISION, Voxel)
+TEST_F(COLLISION, VoxelGrid)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
@@ -1478,7 +1478,7 @@ TEST_F(COLLISION, Voxel)
   EXPECT_TRUE(result.getNumContacts() == 0u);
 
   result.clear();
-  shape1->occupy(Eigen::Vector3d(0.0, 0.0, 0.0));
+  shape1->updateOccupancy(Eigen::Vector3d(0.0, 0.0, 0.0), true);
   simpleFrame2->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() >= 1u);

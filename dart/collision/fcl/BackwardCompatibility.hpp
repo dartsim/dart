@@ -76,7 +76,11 @@
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 
 #ifdef FCL_HAVE_OCTOMAP
+#if FCL_VERSION_AT_LEAST(0,6,0)
+#include <fcl/geometry/octree/octree.h>
+#else
 #include <fcl/octree.h>
+#endif // FCL_VERSION_AT_LEAST(0,6,0)
 #endif // FCL_HAVE_OCTOMAP
 
 #if FCL_VERSION_AT_LEAST(0,5,0)
