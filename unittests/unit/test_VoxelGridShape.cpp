@@ -40,7 +40,6 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/simulation/World.hpp"
 #include "dart/utils/VskParser.hpp"
 
 using namespace dart;
@@ -67,7 +66,7 @@ void print_query_info(point3d query, OcTreeNode* node)
 }
 
 //==============================================================================
-TEST(VoxelShape, SimpleExample)
+TEST(VoxelGridShape, SimpleExample)
 {
   cout << endl;
   cout << "generating example map" << endl;
@@ -138,7 +137,7 @@ TEST(VoxelShape, SimpleExample)
 }
 
 //==============================================================================
-TEST(VoxelShape, Normals)
+TEST(VoxelGridShape, Normals)
 {
   cout << endl;
   cout << "generating example map" << endl;

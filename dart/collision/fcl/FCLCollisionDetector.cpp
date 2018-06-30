@@ -51,7 +51,7 @@
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/SoftMeshShape.hpp"
-#include "dart/dynamics/VoxelShape.hpp"
+#include "dart/dynamics/VoxelGridShape.hpp"
 
 namespace dart {
 namespace collision {
@@ -924,7 +924,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::PlaneShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
-  using dynamics::VoxelShape;
+  using dynamics::VoxelGridShape;
 
   dart::collision::fcl::CollisionGeometry* geom = nullptr;
   const auto& shapeType = shape->getType();
@@ -1034,18 +1034,18 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     geom = createSoftMesh<dart::collision::fcl::OBBRSS>(aiMesh);
   }
-  else if (VoxelShape::getStaticType() == shapeType)
+  else if (VoxelGridShape::getStaticType() == shapeType)
   {
 #if FCL_HAVE_OCTOMAP
-    assert(dynamic_cast<const VoxelShape*>(shape.get()));
+    assert(dynamic_cast<const VoxelGridShape*>(shape.get()));
 
-    auto octreeShape = static_cast<const VoxelShape*>(shape.get());
+    auto octreeShape = static_cast<const VoxelGridShape*>(shape.get());
     auto octree = octreeShape->getOctree();
 
     geom = new dart::collision::fcl::OcTree(octree);
 #else
     dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
-          << "Attempting to create an collision geometry for VoxelShape, but "
+          << "Attempting to create an collision geometry for VoxelGridShape, but "
           << "the installed FCL doesn't built with Octomap support. "
           << "Creating a sphere with 0.1 radius instead.\n";
 

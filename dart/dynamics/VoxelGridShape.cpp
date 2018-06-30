@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dynamics/VoxelShape.hpp"
+#include "dart/dynamics/VoxelGridShape.hpp"
 
 #include "dart/common/Console.hpp"
 #include "dart/math/Helpers.hpp"
@@ -39,17 +39,17 @@ namespace dart {
 namespace dynamics {
 
 //==============================================================================
-VoxelShape::VoxelShape(double resolution) : Shape()
+VoxelGridShape::VoxelGridShape(double resolution) : Shape()
 {
   setOctree(fcl_make_shared<octomap::OcTree>(resolution));
 }
 
 //==============================================================================
-VoxelShape::VoxelShape(fcl_shared_ptr<octomap::OcTree> octree) : Shape()
+VoxelGridShape::VoxelGridShape(fcl_shared_ptr<octomap::OcTree> octree) : Shape()
 {
   if (!octree)
   {
-    dtwarn << "[VoxelShape] Attempting to assign null octree. Creating an "
+    dtwarn << "[VoxelGridShape] Attempting to assign null octree. Creating an "
            << "empty octree with resolution 0.01 instead.\n";
     setOctree(fcl_make_shared<octomap::OcTree>(0.01));
     return;
@@ -59,25 +59,26 @@ VoxelShape::VoxelShape(fcl_shared_ptr<octomap::OcTree> octree) : Shape()
 }
 
 //==============================================================================
-const std::string& VoxelShape::getType() const
+const std::string& VoxelGridShape::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& VoxelShape::getStaticType()
+const std::string& VoxelGridShape::getStaticType()
 {
-  static const std::string type("VoxelShape");
+  static const std::string type("VoxelGridShape");
   return type;
 }
 
 //==============================================================================
-void VoxelShape::setOctree(fcl_shared_ptr<octomap::OcTree> octree)
+void VoxelGridShape::setOctree(fcl_shared_ptr<octomap::OcTree> octree)
 {
   if (!octree)
   {
-    dtwarn << "[VoxelShape] Attempting to assign null octree. Ignoring this "
-           << "query.\n";
+    dtwarn
+        << "[VoxelGridShape] Attempting to assign null octree. Ignoring this "
+        << "query.\n";
     return;
   }
 
@@ -91,32 +92,33 @@ void VoxelShape::setOctree(fcl_shared_ptr<octomap::OcTree> octree)
 }
 
 //==============================================================================
-fcl_shared_ptr<octomap::OcTree> VoxelShape::getOctree()
+fcl_shared_ptr<octomap::OcTree> VoxelGridShape::getOctree()
 {
   return mOctree;
 }
 
 //==============================================================================
-fcl_shared_ptr<const octomap::OcTree> VoxelShape::getOctree() const
+fcl_shared_ptr<const octomap::OcTree> VoxelGridShape::getOctree() const
 {
   return mOctree;
 }
 
 //==============================================================================
-void VoxelShape::updateOccupancy(
+void VoxelGridShape::updateOccupancy(
     const octomap::Pointcloud& pointCloud, const octomap::point3d& sensorOrigin)
 {
   mOctree->insertPointCloud(pointCloud, sensorOrigin);
 }
 
 //==============================================================================
-void VoxelShape::updateOccupancy(const Eigen::Vector3d& point, bool occupied)
+void VoxelGridShape::updateOccupancy(
+    const Eigen::Vector3d& point, bool occupied)
 {
   mOctree->updateNode(point.x(), point.y(), point.z(), occupied);
 }
 
 //==============================================================================
-double VoxelShape::getOccupancy(const Eigen::Vector3d& point) const
+double VoxelGridShape::getOccupancy(const Eigen::Vector3d& point) const
 {
   const auto node = mOctree->search(point.x(), point.y(), point.z());
   if (node)
@@ -126,7 +128,7 @@ double VoxelShape::getOccupancy(const Eigen::Vector3d& point) const
 }
 
 //==============================================================================
-Eigen::Matrix3d VoxelShape::computeInertia(double /*mass*/) const
+Eigen::Matrix3d VoxelGridShape::computeInertia(double /*mass*/) const
 {
   // TODO(JS): Not implemented. Do we really want to compute inertia out of
   // voxels?
@@ -134,14 +136,14 @@ Eigen::Matrix3d VoxelShape::computeInertia(double /*mass*/) const
 }
 
 //==============================================================================
-void VoxelShape::updateBoundingBox() const
+void VoxelGridShape::updateBoundingBox() const
 {
   // TODO(JS): Not implemented.
   mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================
-void VoxelShape::updateVolume() const
+void VoxelGridShape::updateVolume() const
 {
   // TODO(JS): Not implemented.
   mIsVolumeDirty = false;

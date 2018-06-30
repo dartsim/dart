@@ -80,9 +80,9 @@ public:
     // Create octree
     mVoxelSimpleFrame
         = std::make_shared<SimpleFrame>(Frame::World(), "Octree Simple Frame");
-    auto voxelShape = std::make_shared<VoxelShape>(0.01);
-    voxelShape->occupy(Eigen::Vector3d(0, 0, 0));
-    mVoxelSimpleFrame->setShape(voxelShape);
+    auto voxelGridShape = std::make_shared<VoxelGridShape>(0.01);
+    voxelGridShape->occupy(Eigen::Vector3d(0, 0, 0));
+    mVoxelSimpleFrame->setShape(voxelGridShape);
     mWorld->addSimpleFrame(mVoxelSimpleFrame);
 
     mOffset

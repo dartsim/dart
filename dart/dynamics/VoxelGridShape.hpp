@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_DYNAMICS_VOXELSHAPE_HPP_
-#define DART_DYNAMICS_VOXELSHAPE_HPP_
+#ifndef DART_DYNAMICS_VOXELGRIDSHAPE_HPP_
+#define DART_DYNAMICS_VOXELGRIDSHAPE_HPP_
 
 #include <octomap/octomap.h>
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
@@ -40,20 +40,20 @@
 namespace dart {
 namespace dynamics {
 
-/// VoxelShape represents a probabilistic 3D occupancy voxel grid.
-class VoxelShape : public Shape
+/// VoxelGridShape represents a probabilistic 3D occupancy voxel grid.
+class VoxelGridShape : public Shape
 {
 public:
   /// Constructor.
   /// \param[in] resolution Size of voxel. Default is 0.01.
-  explicit VoxelShape(double resolution = 0.01);
+  explicit VoxelGridShape(double resolution = 0.01);
 
   /// Constructs from a octomap::OcTree.
   /// \param[in] octree Octree.
-  explicit VoxelShape(fcl_shared_ptr<octomap::OcTree> octree);
+  explicit VoxelGridShape(fcl_shared_ptr<octomap::OcTree> octree);
 
   /// Destructor.
-  ~VoxelShape() override = default;
+  ~VoxelGridShape() override = default;
 
   // Documentation inherited.
   const std::string& getType() const override;
@@ -104,4 +104,4 @@ protected:
 } // namespace dynamics
 } // namespace dart
 
-#endif // DART_DYNAMICS_VOXELSHAPE_HPP_
+#endif // DART_DYNAMICS_VOXELGRIDSHAPE_HPP_

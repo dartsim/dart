@@ -1456,7 +1456,7 @@ TEST_F(COLLISION, Voxel)
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
   auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
 
-  auto shape1 = std::make_shared<VoxelShape>(0.01);
+  auto shape1 = std::make_shared<VoxelGridShape>(0.01);
   auto shape2 = std::make_shared<SphereShape>(0.001);
 
   simpleFrame1->setShape(shape1);
