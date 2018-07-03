@@ -11,7 +11,6 @@ dart_add_test("unit" test_ScrewJoint)
 dart_add_test("unit" test_Signal)
 dart_add_test("unit" test_Subscriptions)
 dart_add_test("unit" test_Uri)
-dart_add_test("unit" test_VoxelGridShape)
 
 if(TARGET dart-optimizer-ipopt)
   target_link_libraries(test_Optimizer dart-optimizer-ipopt)
@@ -69,5 +68,3 @@ if(TARGET dart-planning)
   dart_add_test("unit" test_NearestNeighbor)
   target_link_libraries(test_NearestNeighbor dart-planning)
 endif()
-
-dart_format_add(test_VoxelGridShape.cpp)
