@@ -1422,7 +1422,7 @@ void postProcessDART(
 
       // If at least one of object is not mesh, then fallback to using contact
       // info computed by fcl.
-      if (fclMeshA || fclMeshB)
+      if (!fclMeshA || !fclMeshB)
       {
         unfiltered.push_back(convertContact(c, o1, o2, option));
         continue;
