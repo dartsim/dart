@@ -1450,7 +1450,7 @@ TEST_F(COLLISION, Factory)
 }
 
 //==============================================================================
-#if FCL_HAVE_OCTOMAP
+#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
 TEST_F(COLLISION, VoxelGrid)
 {
   auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
@@ -1483,4 +1483,4 @@ TEST_F(COLLISION, VoxelGrid)
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_TRUE(result.getNumContacts() >= 1u);
 }
-#endif
+#endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP

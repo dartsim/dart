@@ -33,6 +33,10 @@
 #ifndef DART_DYNAMICS_VOXELGRIDSHAPE_HPP_
 #define DART_DYNAMICS_VOXELGRIDSHAPE_HPP_
 
+#include "dart/config.hpp"
+
+#if HAVE_OCTOMAP
+
 #include <octomap/octomap.h>
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
 #include "dart/dynamics/Shape.hpp"
@@ -103,5 +107,7 @@ protected:
 
 } // namespace dynamics
 } // namespace dart
+
+#endif // HAVE_OCTOMAP
 
 #endif // DART_DYNAMICS_VOXELGRIDSHAPE_HPP_

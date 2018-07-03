@@ -929,7 +929,9 @@ FCLCollisionDetector::createFCLCollisionGeometry(
   using dynamics::PlaneShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
+#if HAVE_OCTOMAP
   using dynamics::VoxelGridShape;
+#endif // HAVE_OCTOMAP
 
   fcl::CollisionGeometry* geom = nullptr;
   const auto& shapeType = shape->getType();
@@ -1039,6 +1041,7 @@ FCLCollisionDetector::createFCLCollisionGeometry(
 
     geom = createSoftMesh<fcl::OBBRSS>(aiMesh);
   }
+#if HAVE_OCTOMAP
   else if (VoxelGridShape::getStaticType() == shapeType)
   {
 #if FCL_HAVE_OCTOMAP
@@ -1050,13 +1053,14 @@ FCLCollisionDetector::createFCLCollisionGeometry(
     geom = new fcl::OcTree(octree);
 #else
     dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "
-          << "Attempting to create an collision geometry for VoxelGridShape, but "
-          << "the installed FCL doesn't built with Octomap support. "
+          << "Attempting to create an collision geometry for VoxelGridShape, "
+          << "but the installed FCL isn't built with Octomap support. "
           << "Creating a sphere with 0.1 radius instead.\n";
 
     geom = createEllipsoid<fcl::OBBRSS>(0.1, 0.1, 0.1);
-#endif
+#endif // FCL_HAVE_OCTOMAP
   }
+#endif // HAVE_OCTOMAP
   else
   {
     dterr << "[FCLCollisionDetector::createFCLCollisionGeometry] "

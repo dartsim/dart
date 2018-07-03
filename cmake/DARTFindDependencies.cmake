@@ -105,7 +105,11 @@ else()
 endif()
 
 find_package(octomap REQUIRED)
-# TODO(JS): Decide whether to make this required or optional
+if (octomap_FOUND)
+  set(HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
+else()
+  set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+endif()
 
 #--------------------
 # Misc. dependencies
