@@ -33,6 +33,8 @@
 #ifndef DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_
 #define DART_COLLISION_FCL_BACKWARDCOMPATIBILITY_HPP_
 
+#include "dart/config.hpp"
+
 #include <Eigen/Dense>
 
 #define FCL_VERSION_AT_LEAST(x,y,z) \
@@ -75,13 +77,13 @@
 
 #include <fcl/broadphase/broadphase_dynamic_AABB_tree.h>
 
-#ifdef FCL_HAVE_OCTOMAP
+#if HAVE_OCTOMAP && defined(FCL_HAVE_OCTOMAP)
 #if FCL_VERSION_AT_LEAST(0,6,0)
 #include <fcl/geometry/octree/octree.h>
 #else
 #include <fcl/octree.h>
 #endif // FCL_VERSION_AT_LEAST(0,6,0)
-#endif // FCL_HAVE_OCTOMAP
+#endif // HAVE_OCTOMAP && defined(FCL_HAVE_OCTOMAP)
 
 #if FCL_VERSION_AT_LEAST(0,5,0)
 #include <memory>
@@ -119,9 +121,9 @@ using Cylinder = ::fcl::Cylinder<double>;
 using Ellipsoid = ::fcl::Ellipsoid<double>;
 using Halfspace = ::fcl::Halfspace<double>;
 using Sphere = ::fcl::Sphere<double>;
-#if FCL_HAVE_OCTOMAP
+#if HAVE_OCTOMAP && defined(FCL_HAVE_OCTOMAP)
 using OcTree = ::fcl::OcTree<double>;
-#endif
+#endif // HAVE_OCTOMAP && defined(FCL_HAVE_OCTOMAP)
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject<double>;
 using CollisionGeometry = ::fcl::CollisionGeometry<double>;
@@ -143,9 +145,9 @@ using Box = ::fcl::Box;
 using Cylinder = ::fcl::Cylinder;
 using Halfspace = ::fcl::Halfspace;
 using Sphere = ::fcl::Sphere;
-#if FCL_HAVE_OCTOMAP
+#if HAVE_OCTOMAP && defined(FCL_HAVE_OCTOMAP)
 using OcTree = ::fcl::OcTree;
-#endif
+#endif // HAVE_OCTOMAP && defined(FCL_HAVE_OCTOMAP)
 // Collision objects
 using CollisionObject = ::fcl::CollisionObject;
 using CollisionGeometry = ::fcl::CollisionGeometry;
