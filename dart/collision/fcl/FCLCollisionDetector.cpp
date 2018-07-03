@@ -91,8 +91,8 @@ void interpreteDistanceResult(
     DistanceResult& result);
 
 int evalContactPosition(const fcl::Contact& fclContact,
-    const ::fcl::BVHModel<fcl::OBBRSS>* mesh1,
-    const ::fcl::BVHModel<fcl::OBBRSS>* mesh2,
+    const::fcl::BVHModel<fcl::OBBRSS>& mesh1,
+    const::fcl::BVHModel<fcl::OBBRSS>& mesh2,
     const fcl::Transform3& transform1,
     const fcl::Transform3& transform2,
     Eigen::Vector3d& contactPosition1, Eigen::Vector3d& contactPosition2);
@@ -1435,8 +1435,8 @@ void postProcessDART(
 
       auto contactResult = evalContactPosition(
             c,
-            fclMeshA,
-            fclMeshB,
+            *fclMeshA,
+            *fclMeshB,
             FCLTypes::convertTransform(pair1.collisionObject1->getTransform()),
             FCLTypes::convertTransform(pair1.collisionObject2->getTransform()),
             pair1.point,
@@ -1530,8 +1530,8 @@ void interpreteDistanceResult(
 //==============================================================================
 int evalContactPosition(
     const fcl::Contact& fclContact,
-    const ::fcl::BVHModel<fcl::OBBRSS>* mesh1,
-    const ::fcl::BVHModel<fcl::OBBRSS>* mesh2,
+    const ::fcl::BVHModel<fcl::OBBRSS>& mesh1,
+    const ::fcl::BVHModel<fcl::OBBRSS>& mesh2,
     const fcl::Transform3& transform1,
     const fcl::Transform3& transform2,
     Eigen::Vector3d& contactPosition1,
@@ -1539,16 +1539,16 @@ int evalContactPosition(
 {
   const auto& id1 = fclContact.b1;
   const auto& id2 = fclContact.b2;
-  const auto& tri1 = mesh1->tri_indices[id1];
-  const auto& tri2 = mesh2->tri_indices[id2];
+  const auto& tri1 = mesh1.tri_indices[id1];
+  const auto& tri2 = mesh2.tri_indices[id2];
 
-  const auto v1 = fcl::transform(transform1, mesh1->vertices[tri1[0]]);
-  const auto v2 = fcl::transform(transform1, mesh1->vertices[tri1[1]]);
-  const auto v3 = fcl::transform(transform1, mesh1->vertices[tri1[2]]);
+  const auto v1 = fcl::transform(transform1, mesh1.vertices[tri1[0]]);
+  const auto v2 = fcl::transform(transform1, mesh1.vertices[tri1[1]]);
+  const auto v3 = fcl::transform(transform1, mesh1.vertices[tri1[2]]);
 
-  const auto p1 = fcl::transform(transform2, mesh2->vertices[tri2[0]]);
-  const auto p2 = fcl::transform(transform2, mesh2->vertices[tri2[1]]);
-  const auto p3 = fcl::transform(transform2, mesh2->vertices[tri2[2]]);
+  const auto p1 = fcl::transform(transform2, mesh2.vertices[tri2[0]]);
+  const auto p2 = fcl::transform(transform2, mesh2.vertices[tri2[1]]);
+  const auto p3 = fcl::transform(transform2, mesh2.vertices[tri2[2]]);
 
   fcl::Vector3 contact1;
   fcl::Vector3 contact2;
