@@ -104,11 +104,16 @@ else()
   find_package(Boost ${DART_MIN_BOOST_VERSION} QUIET REQUIRED COMPONENTS ${BOOST_REQUIRED_COMPONENTS})
 endif()
 
-find_package(octomap REQUIRED)
+find_package(octomap 1.6.8 QUIET)
 if (octomap_FOUND)
   set(HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
+  if(DART_VERBOSE)
+    message(STATUS "Looking for octomap - version ${octomap_VERSION} found")
+  endif()
 else()
   set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+  message(STATUS "Looking for octomap - NOT found, to use VoxelGridShape, "
+      "please install octomap")
 endif()
 
 #--------------------
