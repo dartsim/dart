@@ -72,3 +72,8 @@ install(
 
 # Add subdirectories (components)
 add_subdirectory(urdf)
+
+dart_format_add(
+  MjcfParser.hpp
+  MjcfParser.cpp
+)
