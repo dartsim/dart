@@ -91,8 +91,8 @@ void interpreteDistanceResult(
     DistanceResult& result);
 
 int evalContactPosition(const fcl::Contact& fclContact,
-    const::fcl::BVHModel<fcl::OBBRSS>& mesh1,
-    const::fcl::BVHModel<fcl::OBBRSS>& mesh2,
+    const ::fcl::BVHModel<fcl::OBBRSS>& mesh1,
+    const ::fcl::BVHModel<fcl::OBBRSS>& mesh2,
     const fcl::Transform3& transform1,
     const fcl::Transform3& transform2,
     Eigen::Vector3d& contactPosition1, Eigen::Vector3d& contactPosition2);
