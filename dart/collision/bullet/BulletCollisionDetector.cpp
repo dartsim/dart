@@ -35,8 +35,8 @@
 
 #include "dart/collision/bullet/BulletCollisionDetector.hpp"
 
-#include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
-#include <bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
+#include <BulletCollision/Gimpact/btGImpactShape.h>
+#include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 
 #include "dart/common/Console.hpp"
 #include "dart/collision/CollisionObject.hpp"
