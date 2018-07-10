@@ -55,6 +55,7 @@
 #cmakedefine01 HAVE_BULLET
 #cmakedefine01 HAVE_ODE
 #cmakedefine01 HAVE_FLANN
+#cmakedefine01 HAVE_OCTOMAP
 
 #cmakedefine01 DART_ENABLE_SIMD
 

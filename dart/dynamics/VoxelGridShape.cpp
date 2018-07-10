@@ -30,128 +30,128 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_LOCKABLEREFERENCE_IMPL_HPP_
-#define DART_COMMON_LOCKABLEREFERENCE_IMPL_HPP_
+#include "dart/dynamics/VoxelGridShape.hpp"
 
-#include "dart/common/LockableReference.hpp"
+#if HAVE_OCTOMAP
+
+#include "dart/common/Console.hpp"
+#include "dart/math/Helpers.hpp"
 
 namespace dart {
-namespace common {
+namespace dynamics {
 
 //==============================================================================
-template <typename Lockable>
-SingleLockableReference<Lockable>::SingleLockableReference(
-    std::weak_ptr<const void> lockableHolder, Lockable& lockable) noexcept
-  : mLockableHolder(std::move(lockableHolder)), mLockable(lockable)
+VoxelGridShape::VoxelGridShape(double resolution) : Shape()
 {
-  // Do nothing
+  setOctree(fcl_make_shared<octomap::OcTree>(resolution));
 }
 
 //==============================================================================
-template <typename Lockable>
-void SingleLockableReference<Lockable>::lock()
+VoxelGridShape::VoxelGridShape(fcl_shared_ptr<octomap::OcTree> octree) : Shape()
 {
-  if (mLockableHolder.expired())
-    return;
-
-  mLockable.lock();
-}
-
-//==============================================================================
-template <typename Lockable>
-bool SingleLockableReference<Lockable>::try_lock() noexcept
-{
-  if (mLockableHolder.expired())
-    return false;
-
-  return mLockable.try_lock();
-}
-
-//==============================================================================
-template <typename Lockable>
-void SingleLockableReference<Lockable>::unlock() noexcept
-{
-  if (mLockableHolder.expired())
-    return;
-
-  mLockable.unlock();
-}
-
-//==============================================================================
-template <typename Lockable>
-template <typename InputIterator>
-MultiLockableReference<Lockable>::MultiLockableReference(
-    std::weak_ptr<const void> lockableHolder,
-    InputIterator first,
-    InputIterator last)
-  : mLockableHolder(std::move(lockableHolder)), mLockables(first, last)
-{
-  using IteratorValueType =
-      typename std::iterator_traits<InputIterator>::value_type;
-  using IteratorLockable = typename std::remove_pointer<
-      typename std::remove_reference<IteratorValueType>::type>::type;
-
-  static_assert(
-      std::is_same<Lockable, IteratorLockable>::value,
-      "Lockable of this class and the lockable of InputIterator are not the "
-      "same.");
-}
-
-//==============================================================================
-template <typename Lockable>
-void MultiLockableReference<Lockable>::lock()
-{
-  if (mLockableHolder.expired())
-    return;
-
-  for (auto lockable : mLockables)
-    lockable->lock();
-}
-
-//==============================================================================
-template <typename Lockable>
-bool MultiLockableReference<Lockable>::try_lock() noexcept
-{
-  if (mLockableHolder.expired())
-    return false;
-
-  for (auto lockable : mLockables)
+  if (!octree)
   {
-    if (!lockable->try_lock())
-      return false;
+    dtwarn << "[VoxelGridShape] Attempting to assign null octree. Creating an "
+           << "empty octree with resolution 0.01 instead.\n";
+    setOctree(fcl_make_shared<octomap::OcTree>(0.01));
+    return;
   }
 
-  return true;
+  setOctree(std::move(octree));
 }
 
 //==============================================================================
-template <typename Lockable>
-void MultiLockableReference<Lockable>::unlock() noexcept
+const std::string& VoxelGridShape::getType() const
 {
-  if (mLockableHolder.expired())
+  return getStaticType();
+}
+
+//==============================================================================
+const std::string& VoxelGridShape::getStaticType()
+{
+  static const std::string type("VoxelGridShape");
+  return type;
+}
+
+//==============================================================================
+void VoxelGridShape::setOctree(fcl_shared_ptr<octomap::OcTree> octree)
+{
+  if (!octree)
+  {
+    dtwarn
+        << "[VoxelGridShape] Attempting to assign null octree. Ignoring this "
+        << "query.\n";
+    return;
+  }
+
+  if (octree == mOctree)
     return;
 
-  for (auto it = mLockables.rbegin(); it != mLockables.rend(); ++it)
-    (*it)->unlock();
+  mOctree = std::move(octree);
+
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
 }
 
 //==============================================================================
-template <typename Lockable>
-template <typename T>
-T* MultiLockableReference<Lockable>::ptr(T& obj)
+fcl_shared_ptr<octomap::OcTree> VoxelGridShape::getOctree()
 {
-  return &obj;
+  return mOctree;
 }
 
 //==============================================================================
-template <typename Lockable>
-template <typename T>
-T* MultiLockableReference<Lockable>::ptr(T* obj)
+fcl_shared_ptr<const octomap::OcTree> VoxelGridShape::getOctree() const
 {
-  return obj;
+  return mOctree;
 }
 
-} // namespace common
+//==============================================================================
+void VoxelGridShape::updateOccupancy(
+    const octomap::Pointcloud& pointCloud, const octomap::point3d& sensorOrigin)
+{
+  mOctree->insertPointCloud(pointCloud, sensorOrigin);
+}
+
+//==============================================================================
+void VoxelGridShape::updateOccupancy(
+    const Eigen::Vector3d& point, bool occupied)
+{
+  mOctree->updateNode(point.x(), point.y(), point.z(), occupied);
+}
+
+//==============================================================================
+double VoxelGridShape::getOccupancy(const Eigen::Vector3d& point) const
+{
+  const auto node = mOctree->search(point.x(), point.y(), point.z());
+  if (node)
+    return node->getOccupancy();
+  else
+    return 0.0;
+}
+
+//==============================================================================
+Eigen::Matrix3d VoxelGridShape::computeInertia(double /*mass*/) const
+{
+  // TODO(JS): Not implemented. Do we really want to compute inertia out of
+  // voxels?
+  return Eigen::Matrix3d::Identity();
+}
+
+//==============================================================================
+void VoxelGridShape::updateBoundingBox() const
+{
+  // TODO(JS): Not implemented.
+  mIsBoundingBoxDirty = false;
+}
+
+//==============================================================================
+void VoxelGridShape::updateVolume() const
+{
+  // TODO(JS): Not implemented.
+  mIsVolumeDirty = false;
+}
+
+} // namespace dynamics
 } // namespace dart
 
-#endif // DART_COMMON_LOCKABLEREFERENCE_IMPL_HPP_
+#endif // HAVE_OCTOMAP
