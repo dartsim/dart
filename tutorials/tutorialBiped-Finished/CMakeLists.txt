@@ -5,9 +5,14 @@ if(DART_IN_SOURCE_BUILD)
   return()
 endif()
 
-project(tutorialBiped-Finished)
+get_filename_component(tutorial_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
-find_package(DART 6.5.0 REQUIRED COMPONENTS utils-urdf gui CONFIG)
+project(${tutorial_name})
+
+find_package(DART 6.6.0 REQUIRED
+  COMPONENTS collision-bullet utils-urdf gui
+  CONFIG
+)
 
 add_compile_options(-std=c++11)
 
@@ -17,4 +22,3 @@ file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${PROJECT_NAME} ${srcs})
 
 target_link_libraries(${PROJECT_NAME} ${DART_LIBRARIES})
-
