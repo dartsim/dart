@@ -5,9 +5,7 @@ if(DART_IN_SOURCE_BUILD)
   return()
 endif()
 
-get_filename_component(tutorial_name ${CMAKE_CURRENT_LIST_DIR} NAME)
-
-project(${tutorial_name})
+project(tutorialBiped)
 
 find_package(DART 6.6.0 REQUIRED
   COMPONENTS collision-bullet utils-urdf gui
