@@ -907,7 +907,7 @@ btCollisionShape* createBulletCollisionShapeFromHeightmap(
   using dart::dynamics::HeightmapShape;
   // get the heightmap parameters
   const Eigen::Vector3d& scale = heightMap->getScale();
-  const std::vector<HeightmapShape::HeightType>& heights =
+  const HeightmapShape::HeightField& heights =
     heightMap->getHeightField();
   const HeightmapShape::HeightType minHeight = heightMap->getMinHeight();
   const HeightmapShape::HeightType maxHeight = heightMap->getMaxHeight();
@@ -939,7 +939,7 @@ btCollisionShape* createBulletCollisionShapeFromHeightmap(
   btHeightfieldTerrainShape* heightFieldShape = new btHeightfieldTerrainShape(
       heightMap->getWidth(),   // Width of height field
       heightMap->getDepth(),   // Depth of height field
-      &(heights[0]),           // Height values
+      heights.data(),          // Height values
       1,                       // Height scaling
       minHeight,               // Min height
       maxHeight,               // Max height

@@ -45,7 +45,7 @@ namespace detail {
 // creates the ODE height field. Only enabled if the height data type is float.
 template<class HeightType>
 void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
-                         const std::vector<HeightType>& heights, 
+                         const HeightType* heights, 
                          const size_t& width,
                          const size_t& height,
                          const Eigen::Vector3d& scale,
@@ -62,7 +62,7 @@ void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
   }
   dGeomHeightfieldDataBuildSingle(
       odeHeightfieldID,
-      heights.data(),
+      heights,
       0,
       (width-1) * scale.x(),   // width (in meters)
       (height-1) * scale.y(),  // height (in meters)
@@ -78,7 +78,7 @@ void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
 // creates the ODE height field. Only enabled if the height data type is double.
 template<class HeightType>
 void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
-                         const std::vector<HeightType>& heights, 
+                         const HeightType* heights, 
                          const size_t& width,
                          const size_t& height,
                          const Eigen::Vector3d& scale,
@@ -96,7 +96,7 @@ void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
 
   dGeomHeightfieldDataBuildDouble(
       odeHeightfieldID,
-      heights.data(),
+      heights,
       0,
       (width-1) * scale.x(),   // width (in meters)
       (height-1) * scale.y(),  // height (in meters)
@@ -118,8 +118,7 @@ OdeHeightmap::OdeHeightmap(const OdeCollisionObject* parent,
 
   // get the heightmap parameters
   const Eigen::Vector3d& scale = heightMap->getScale();
-  const std::vector<HeightmapShape::HeightType>& heights =
-    heightMap->getHeightField();
+  const HeightmapShape::HeightField& heights = heightMap->getHeightField();
 
   // Create the ODE heightfield
   odeHeightfieldID = dGeomHeightfieldDataCreate();
@@ -129,8 +128,8 @@ OdeHeightmap::OdeHeightmap(const OdeCollisionObject* parent,
                 "Height field needs to be double or float");
 
   // specify height field details
-  setOdeHeightfieldDetails(odeHeightfieldID, heights, heightMap->getWidth(),
-                      heightMap->getDepth(), scale);
+  setOdeHeightfieldDetails(odeHeightfieldID, heights.data(),
+                           heightMap->getWidth(), heightMap->getDepth(), scale);
 
   // Restrict the bounds of the AABB to improve efficiency
   dGeomHeightfieldDataSetBounds(odeHeightfieldID, heightMap->getMinHeight(),

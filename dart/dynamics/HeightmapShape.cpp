@@ -99,9 +99,10 @@ void HeightmapShape::setHeightField(const size_t& width, const size_t& depth,
     dtwarn << "Empty height field makes no sense." << std::endl;
     return;
   }
-  mHeights = heights;
-  mWidth = width;
-  mDepth = depth;  
+  mHeights = HeightField(depth, width);
+  for (size_t r = 0; r < depth; ++r)
+    for (size_t c = 0; c < width; ++c)
+      mHeights(r, c) = heights[r*width + c];
 
   // compute minimum and maximum height
   mMinHeight = std::numeric_limits<HeightType>::max();
@@ -116,32 +117,37 @@ void HeightmapShape::setHeightField(const size_t& width, const size_t& depth,
 }
 
 //==============================================================================
-const std::vector<HeightmapShape::HeightType>&
+const HeightmapShape::HeightField&
   HeightmapShape::getHeightField() const
 {
   return mHeights;
 }
 
 //==============================================================================
-std::vector<HeightmapShape::HeightType>&
+HeightmapShape::HeightField&
   HeightmapShape::getHeightFieldModifiable() const
 {
   return mHeights;
 }
 
 //==============================================================================
+std::vector<HeightmapShape::HeightType>
+HeightmapShape::getHeightFieldAsVector() const
+{
+// unfortunately cannot use this as internal representation different
+//  return std::vector<HeightType>(mHeights.data(), mHeights.data() +
+//                                 mHeights.rows() * mHeights.cols());
+  std::vector<HeightType> ret;
+  for (size_t r = 0; r < getDepth(); ++r)
+    for (size_t c = 0; c < getWidth(); ++c)
+      ret.push_back(mHeights(r, c));
+  return ret;
+}
+
+//==============================================================================
 void HeightmapShape::flipY() const
 {
-  assert(mHeights.size() > mWidth);
-  assert(mHeights.size() == mWidth*mDepth);
-  std::vector<HeightType>::iterator it1 = mHeights.begin();
-  std::vector<HeightType>::iterator it2 = mHeights.end() - mWidth;
-  // int division mDepth/2 ensures odd row counts skip middle row
-  for (size_t r = 0; r < mDepth / 2; ++r) 
-  {
-    it1 = std::swap_ranges(it2, it2+mWidth, it1);
-    it2 -= mWidth;
-  }
+  mHeights = mHeights.colwise().reverse().eval();
 }
 
 //==============================================================================
@@ -159,13 +165,13 @@ HeightmapShape::HeightType HeightmapShape::getMinHeight() const
 //==============================================================================
 size_t HeightmapShape::getWidth() const
 {
-  return mWidth;
+  return mHeights.cols();
 }
 
 //==============================================================================
 size_t HeightmapShape::getDepth() const
 {
-  return mDepth;
+  return mHeights.rows();
 }
 
 //==============================================================================
@@ -182,8 +188,8 @@ Eigen::Matrix3d HeightmapShape::computeInertia(double mass) const
 void HeightmapShape::computeBoundingBox(Eigen::Vector3d& min,
                                         Eigen::Vector3d& max) const
 {
-  const double dimX = mWidth * mScale.x();
-  const double dimY = mDepth * mScale.y();
+  const double dimX = getWidth() * mScale.x();
+  const double dimY = getDepth() * mScale.y();
   const double dimZ = (mMaxHeight - mMinHeight) * mScale.z();
   min = Eigen::Vector3d(-dimX*0.5, -dimY*0.5, mMinHeight*mScale.z());
   max = min + Eigen::Vector3d(dimX, dimY, dimZ);

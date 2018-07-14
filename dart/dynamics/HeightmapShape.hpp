@@ -49,6 +49,8 @@ public:
   /// short and char can be added at a later point.
   typedef float HeightType;
 
+  typedef Eigen::Matrix<HeightType, Eigen::Dynamic, Eigen::Dynamic> HeightField;
+
   /// \brief Constructor.
   explicit HeightmapShape();
 
@@ -74,15 +76,16 @@ public:
   const Eigen::Vector3d& getScale() const;
 
   /// \brief Set the height field.
-  /// TODO: it would be good to have the option to use the values in
+  /// The data in \e heights will be copied locally.
+  /// It would be nice to have the option to use the values in
   /// \e heights directly instead of copying them locally to a vector in this
   /// class (this would avoid any data being kept twice). However some
   /// collision engine implementations may require to transform the height
-  /// values, e.g. bullet needs the y values flipped. Therefore, until a
-  /// final solution has been agreed on, a (mutable) copy of
-  /// the height values passed in \e heights will be kept in this class.
-  /// The copied data can be modified via getHeightFieldModifiable()
-  /// and with flipY().
+  /// values, e.g. bullet needs the y values flipped. Therefore,
+  /// a (mutable) copy of the height values passed in \e heights will be kept
+  /// in this class. The copied data can be modified via
+  /// getHeightFieldModifiable() and with flipY().
+  /// 
   /// \param[in] width width of the field (x axis)
   /// \param[in] depth depth of the field (-y axis)
   /// \param[in] heights the height data of size \e width * \e depth.
@@ -96,14 +99,17 @@ public:
   void setHeightField(const size_t& width, const size_t& depth,
                       const std::vector<HeightType>& heights);
 
-  /// \brief Get the height field. Will be of size getWidth() * getDepth().
-  const std::vector<HeightType>& getHeightField() const;
+  /// \brief Get the height field.
+  const HeightField& getHeightField() const;
   
-  /// \brief see also TODO comment in setHeightField().
-  std::vector<HeightType>& getHeightFieldModifiable() const;
+  /// \brief Gets the modified height field. See also setHeightField().
+  HeightField& getHeightFieldModifiable() const;
+
+  /// \brief Copies the height field data into a vector, returns row-wise data.
+  /// Will be of size getWidth() * getDepth().
+  std::vector<HeightType> getHeightFieldAsVector() const;
 
   /// \brief Flips the y values in the height field.
-  /// see also TODO comment in setHeightField().
   void flipY() const; 
 
   /// \brief Get the width dimension of the height field
@@ -138,11 +144,8 @@ private:
   /// \brief scale of the heightmap
   Eigen::Vector3d mScale;
 
-  /// \brief width (x) and depth (y) of height field
-  size_t mWidth, mDepth;
-
-  /// \brief height field. Must be of size mWidth*mDepth.
-  mutable std::vector<HeightType> mHeights;
+  /// \brief height field
+  mutable HeightField mHeights;
 
   /// \brief minimum and maximum heights.
   /// Is computed each time the height field is set with setHeightField().
