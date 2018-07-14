@@ -40,7 +40,7 @@ target_link_libraries(
   ${target_name}
   PUBLIC
     dart-utils
-    ${GLUT_LIBRARY}
+    ${GLUT_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${PROJECT_NAME}-external-lodepng
     ${PROJECT_NAME}-external-imgui
