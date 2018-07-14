@@ -1139,8 +1139,8 @@ void testHeightmapBox(const std::shared_ptr<CollisionDetector>& cd,
   const float zScale = 2;
 
   // minimum hand maximum height of terrain to use
-  const float minH = 1;  // note: ODE doesn't behave well with negative heights
-  const float maxH = 3;
+  float minH = 1;  // note: ODE doesn't behave well with negative heights
+  float maxH = 3;
   // adjusted minimum height: If minH > 0, and extendsUntilGroundPlane true,
   // then the minimum height is actually 0.
   const float adjMinH = (extendsUntilGroundPlane && (minH > 0)) ? 0 : minH;
