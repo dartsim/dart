@@ -2,6 +2,10 @@
 
 ### DART 6.6.0 (201X-XX-XX)
 
+* Dynamics
+
+  * Added VoxelGridShape: [#1076](https://github.com/dartsim/dart/pull/1076)
+
 ### [DART 6.5.0 (2018-05-12)](https://github.com/dartsim/dart/milestone/41?closed=1)
 
 * Common

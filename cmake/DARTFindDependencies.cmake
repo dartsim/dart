@@ -104,6 +104,33 @@ else()
   find_package(Boost ${DART_MIN_BOOST_VERSION} QUIET REQUIRED COMPONENTS ${BOOST_REQUIRED_COMPONENTS})
 endif()
 
+find_package(octomap 1.6.8 QUIET)
+if (octomap_FOUND AND NOT MSVC)
+  if (MSVC)
+    # Supporting Octomap on Windows is disabled for the following issue:
+    # https://github.com/OctoMap/octomap/pull/213
+    message(WARNING "Octomap ${octomap_VERSION} is found, but Octomap "
+        "is not supported on Windows until "
+        "'https://github.com/OctoMap/octomap/pull/213' "
+        "is resolved.")
+    set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+  elseif (NOT octomap_VERSION VERSION_LESS 1.9.0)
+    message(WARNING "Octomap ${octomap_VERSION} is found, but Octomap 1.9.0 or "
+        "greater is not supported yet. Please see "
+        "'https://github.com/dartsim/dart/issues/1078' for the details")
+    set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+  else()
+    set(HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
+    if(DART_VERBOSE)
+      message(STATUS "Looking for octomap - version ${octomap_VERSION} found")
+    endif()
+  endif()
+else()
+  set(HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
+  message(STATUS "Looking for octomap - NOT found, to use VoxelGridShape, "
+      "please install octomap")
+endif()
+
 #--------------------
 # Misc. dependencies
 #--------------------
