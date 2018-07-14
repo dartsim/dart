@@ -62,7 +62,7 @@ void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
   }
   dGeomHeightfieldDataBuildSingle(
       odeHeightfieldID,
-      &(heights[0]),
+      heights.data(),
       0,
       (width-1) * scale.x(),   // width (in meters)
       (height-1) * scale.y(),  // height (in meters)
@@ -94,9 +94,9 @@ void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
     return;
   }
 
-  dGeomHeightfieldDataBuildSingle(
+  dGeomHeightfieldDataBuildDouble(
       odeHeightfieldID,
-      &(heights[0]),
+      heights.data(),
       0,
       (width-1) * scale.x(),   // width (in meters)
       (height-1) * scale.y(),  // height (in meters)

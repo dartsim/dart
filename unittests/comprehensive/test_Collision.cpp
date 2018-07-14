@@ -1332,7 +1332,7 @@ TEST_F(COLLISION, HeightmapFlipY)
   shape->flipY();
   EXPECT_EQ(shape->getHeightField()[0], heights2[4]);
   EXPECT_EQ(shape->getHeightField()[1], heights2[5]);
-  EXPECT_EQ(shape->getHeightField()[2], heights2[3]);
+  EXPECT_EQ(shape->getHeightField()[2], heights2[2]);
   EXPECT_EQ(shape->getHeightField()[3], heights2[3]);
   EXPECT_EQ(shape->getHeightField()[4], heights2[0]);
   EXPECT_EQ(shape->getHeightField()[5], heights2[1]);
