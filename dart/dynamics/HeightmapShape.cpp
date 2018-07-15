@@ -101,8 +101,12 @@ void HeightmapShape::setHeightField(const size_t& width, const size_t& depth,
   }
   mHeights = HeightField(depth, width);
   for (size_t r = 0; r < depth; ++r)
+  {
     for (size_t c = 0; c < width; ++c)
+    {
       mHeights(r, c) = heights[r*width + c];
+    }
+  }
 
   // compute minimum and maximum height
   mMinHeight = std::numeric_limits<HeightType>::max();
@@ -128,20 +132,6 @@ HeightmapShape::HeightField&
   HeightmapShape::getHeightFieldModifiable() const
 {
   return mHeights;
-}
-
-//==============================================================================
-std::vector<HeightmapShape::HeightType>
-HeightmapShape::getHeightFieldAsVector() const
-{
-// unfortunately cannot use this as internal representation different
-//  return std::vector<HeightType>(mHeights.data(), mHeights.data() +
-//                                 mHeights.rows() * mHeights.cols());
-  std::vector<HeightType> ret;
-  for (size_t r = 0; r < getDepth(); ++r)
-    for (size_t c = 0; c < getWidth(); ++c)
-      ret.push_back(mHeights(r, c));
-  return ret;
 }
 
 //==============================================================================

@@ -932,8 +932,6 @@ createBulletCollisionShapeFromHeightmap(
   using dart::dynamics::HeightmapShape;
   // get the heightmap parameters
   const Eigen::Vector3d& scale = heightMap->getScale();
-  const HeightmapShape::HeightField& heights =
-    heightMap->getHeightField();
   const HeightmapShape::HeightType minHeight = heightMap->getMinHeight();
   const HeightmapShape::HeightType maxHeight = heightMap->getMaxHeight();
 
@@ -953,10 +951,10 @@ createBulletCollisionShapeFromHeightmap(
         << scale.x() <<", " << scale.y() << ", " << scale.z() << std::endl;*/
 
   // the y-values in the height field need to be flipped
-  // TODO: This is not a nice solution, especially considering the
-  // const-ness of heightMap, but until a final solution has been agreed on,
-  // it will be implemented like this. See also documentation of setHeightField().
   heightMap->flipY();
+
+  const HeightmapShape::HeightField& heights =
+    heightMap->getHeightField();
 
   // create the height field
   const btVector3 localScaling(scale.x(), scale.y(), scale.z());
