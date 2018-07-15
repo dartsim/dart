@@ -862,7 +862,8 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
     triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
   }
 
-  auto gimpactMeshShape = common::make_unique<btGImpactMeshShape>(triMesh);
+  std::unique_ptr<btGImpactMeshShape> gimpactMeshShape
+      = common::make_unique<btGImpactMeshShape>(triMesh);
   gimpactMeshShape->updateBound();
 
   return gimpactMeshShape;
@@ -891,7 +892,8 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
     }
   }
 
-  auto gimpactMeshShape = common::make_unique<btGImpactMeshShape>(triMesh);
+  std::unique_ptr<btGImpactMeshShape> gimpactMeshShape
+      = common::make_unique<btGImpactMeshShape>(triMesh);
   gimpactMeshShape->updateBound();
   gimpactMeshShape->setUserPointer(triMesh);
 
@@ -899,7 +901,8 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
 }
 
 //==============================================================================
-std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(const aiMesh* mesh)
+std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(
+    const aiMesh* mesh)
 {
   auto triMesh = new btTriangleMesh();
 
@@ -914,7 +917,8 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(const
     triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
   }
 
-  auto gimpactMeshShape = common::make_unique<btGImpactMeshShape>(triMesh);
+  std::unique_ptr<btGImpactMeshShape> gimpactMeshShape
+      = common::make_unique<btGImpactMeshShape>(triMesh);
   gimpactMeshShape->updateBound();
 
   return gimpactMeshShape;
