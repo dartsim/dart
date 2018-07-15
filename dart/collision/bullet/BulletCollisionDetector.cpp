@@ -930,8 +930,6 @@ btCollisionShape* createBulletCollisionShapeFromHeightmap(
 
   const HeightmapShape::HeightField& heights =
     heightMap->getHeightField();
-  // const std::vector<HeightmapShape::HeightType> heights =
-  //  heightMap->getHeightFieldAsVector();
 
   // create the height field
   const btVector3 localScaling(scale.x(), scale.y(), scale.z());
