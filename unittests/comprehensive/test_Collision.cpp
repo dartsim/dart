@@ -1148,8 +1148,8 @@ void testHeightmapBox(const std::shared_ptr<CollisionDetector>& cd,
   // ODE thickness is only used if there is not already a layer of this
   // thickness due to a minH > 0 (for ODE, extendsUntilGroundPlane is true)
   const float useOdeThck = (odeThck > 1e-06) ? std::max(odeThck-minH, 0.0f) : 0;
-  
-  // Create frames and shapes 
+
+  // Create frames and shapes
   ///////////////////////////////////////
 
   // frames and shapes
@@ -1170,13 +1170,13 @@ void testHeightmapBox(const std::shared_ptr<CollisionDetector>& cd,
 
   terrainFrame->setShape(terrainShape);
   boxFrame->setShape(boxShape);
-  
+
   // Test collisions
   ///////////////////////////////////////
 
   auto group = cd->createCollisionGroup(terrainFrame.get(), boxFrame.get());
   EXPECT_EQ(group->getNumShapeFrames(), 2u);
-  
+
   collision::CollisionOption option;
   option.enableContact = true;
 
@@ -1224,7 +1224,7 @@ void testHeightmapBox(const std::shared_ptr<CollisionDetector>& cd,
   // ODE doesn't do nicely when boxes are close to the border.
   // Shift the boxes along the slope or normal to slope by this length.
   // Technically we should compute this a bit more accurately than this.
-  // it basically has to ensure the box is inside the terrain bounds, so 
+  // it basically has to ensure the box is inside the terrain bounds, so
   // the slope plays a role for this factor. But since the box is small,
   // an estimate is used for now.
   const float boxShift = boxSize * 2;
@@ -1242,7 +1242,7 @@ void testHeightmapBox(const std::shared_ptr<CollisionDetector>& cd,
   boxFrame->setTranslation(cornerShift);
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 0u);
-  
+
   // test collisions for box on z axis
   // /////////////////////////////////////
 

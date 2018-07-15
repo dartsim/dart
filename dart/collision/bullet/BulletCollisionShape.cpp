@@ -30,50 +30,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
-
-// Must be included before any Bullet headers.
-#include "dart/config.hpp"
-
-#include <btBulletCollisionCommon.h>
-
-#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/bullet/BulletCollisionShape.hpp"
 
 namespace dart {
 namespace collision {
 
-class CollisionObject;
-
-class BulletCollisionObject : public CollisionObject
+//==============================================================================
+BulletCollisionShape::BulletCollisionShape(
+    std::unique_ptr<btCollisionShape> collisionShape,
+    const btTransform& relativeTransform)
+  : mCollisionShape(std::move(collisionShape)),
+    mRelativeTransform(new btTransform(relativeTransform))
 {
-public:
-  friend class BulletCollisionDetector;
+  // Do nothing
+}
 
-  /// Return Bullet collision object
-  btCollisionObject* getBulletCollisionObject();
+//==============================================================================
+BulletCollisionShape::BulletCollisionShape(
+    std::unique_ptr<btCollisionShape> collisionShape)
+  : mCollisionShape(std::move(collisionShape)), mRelativeTransform(nullptr)
+{
+  // Do nothing
+}
 
-  /// Return Bullet collision object
-  const btCollisionObject* getBulletCollisionObject() const;
-
-protected:
-  /// Constructor
-  BulletCollisionObject(CollisionDetector* collisionDetector,
-                        const dynamics::ShapeFrame* shapeFrame,
-                        BulletCollisionShape* bulletCollisionShape);
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-protected:
-  /// Bullet collision object
-  std::unique_ptr<btCollisionObject> mBulletCollisionObject;
-
-  BulletCollisionShape* mBulletCollisionShape;
-};
-
-}  // namespace collision
-}  // namespace dart
-
-#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
+} // namespace collision
+} // namespace dart

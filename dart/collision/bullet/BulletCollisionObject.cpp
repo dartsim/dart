@@ -51,16 +51,16 @@ const btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
 }
 
 //==============================================================================
-BulletCollisionObject::BulletCollisionObject(
-    CollisionDetector* collisionDetector,
+BulletCollisionObject::BulletCollisionObject(CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame,
-    btCollisionShape* bulletCollisionShape,
-    const btTransform& relativeShapeTransform)
+    BulletCollisionShape* bulletCollisionShape)
   : CollisionObject(collisionDetector, shapeFrame),
     mBulletCollisionObject(new btCollisionObject()),
-    mRelativeShapeTransform(relativeShapeTransform)
+    mBulletCollisionShape(bulletCollisionShape)
 {
-  mBulletCollisionObject->setCollisionShape(bulletCollisionShape);
+  assert(bulletCollisionShape);
+
+  mBulletCollisionObject->setCollisionShape(mBulletCollisionShape->mCollisionShape.get());
   mBulletCollisionObject->setUserPointer(this);
 }
 
@@ -69,7 +69,10 @@ void BulletCollisionObject::updateEngineData()
 {
   btTransform worldTransform =
     convertTransform(mShapeFrame->getWorldTransform());
-  worldTransform *= mRelativeShapeTransform;
+
+  if (mBulletCollisionShape->mRelativeTransform)
+    worldTransform *= (*mBulletCollisionShape->mRelativeTransform);
+
   mBulletCollisionObject->setWorldTransform(worldTransform);
 }
 
