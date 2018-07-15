@@ -862,11 +862,10 @@ std::unique_ptr<btCollisionShape> createBulletEllipsoidMesh(
     triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
   }
 
-  std::unique_ptr<btGImpactMeshShape> gimpactMeshShape
-      = common::make_unique<btGImpactMeshShape>(triMesh);
+  auto gimpactMeshShape = common::make_unique<btGImpactMeshShape>(triMesh);
   gimpactMeshShape->updateBound();
 
-  return gimpactMeshShape;
+  return std::move(gimpactMeshShape);
 }
 
 //==============================================================================
@@ -892,12 +891,11 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
     }
   }
 
-  std::unique_ptr<btGImpactMeshShape> gimpactMeshShape
-      = common::make_unique<btGImpactMeshShape>(triMesh);
+  auto gimpactMeshShape = common::make_unique<btGImpactMeshShape>(triMesh);
   gimpactMeshShape->updateBound();
   gimpactMeshShape->setUserPointer(triMesh);
 
-  return gimpactMeshShape;
+  return std::move(gimpactMeshShape);
 }
 
 //==============================================================================
@@ -917,11 +915,10 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(
     triMesh->addTriangle(vertices[0], vertices[1], vertices[2]);
   }
 
-  std::unique_ptr<btGImpactMeshShape> gimpactMeshShape
-      = common::make_unique<btGImpactMeshShape>(triMesh);
+  auto gimpactMeshShape = common::make_unique<btGImpactMeshShape>(triMesh);
   gimpactMeshShape->updateBound();
 
-  return gimpactMeshShape;
+  return std::move(gimpactMeshShape);
 }
 
 //==============================================================================
@@ -943,7 +940,7 @@ createBulletCollisionShapeFromHeightmap(
   if (std::is_same<HeightmapShape::HeightType, double>::value)
     scalarType = PHY_DOUBLE;
 
-  // TODO take this out when testing is finished  
+  // TODO take this out when testing is finished
   /*dtdbg << "Creating height shape, heights size " << heights.size()
         << " w = " << heightMap->getWidth() << ", h = "
         << heightMap->getDepth() << " min/max = "
