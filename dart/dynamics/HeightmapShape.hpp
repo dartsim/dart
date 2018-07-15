@@ -47,9 +47,9 @@ public:
   /// \brief Data type used for height map. Could be made template.
   /// At this point, only double and float are supported.
   /// short and char can be added at a later point.
-  typedef float HeightType;
+  using HeightType = float;
 
-  typedef Eigen::Matrix<HeightType, Eigen::Dynamic, Eigen::Dynamic> HeightField;
+  using HeightField = Eigen::Matrix<HeightType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
   /// \brief Constructor.
   explicit HeightmapShape();
