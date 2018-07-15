@@ -49,7 +49,7 @@ public:
   /// short and char can be added at a later point.
   typedef float HeightType;
 
-  typedef Eigen::Matrix<HeightType, Eigen::Dynamic, Eigen::Dynamic> HeightField;
+  typedef Eigen::Matrix<HeightType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> HeightField;
 
   /// \brief Constructor.
   explicit HeightmapShape();
@@ -104,10 +104,6 @@ public:
   
   /// \brief Gets the modified height field. See also setHeightField().
   HeightField& getHeightFieldModifiable() const;
-
-  /// \brief Copies the height field data into a vector, returns row-wise data.
-  /// Will be of size getWidth() * getDepth().
-  std::vector<HeightType> getHeightFieldAsVector() const;
 
   /// \brief Flips the y values in the height field.
   void flipY() const; 
