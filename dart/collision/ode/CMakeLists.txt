@@ -48,3 +48,8 @@ install(
   DESTINATION include/dart/collision/ode
   COMPONENT headers
 )
+
+dart_format_add(
+  detail/OdeHeightmap.hpp
+  detail/OdeHeightmap.cpp
+)

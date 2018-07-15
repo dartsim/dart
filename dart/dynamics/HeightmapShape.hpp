@@ -49,7 +49,8 @@ public:
   /// short and char can be added at a later point.
   using HeightType = float;
 
-  using HeightField = Eigen::Matrix<HeightType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  using HeightField = Eigen::
+      Matrix<HeightType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
   /// \brief Constructor.
   explicit HeightmapShape();
@@ -85,38 +86,40 @@ public:
   /// a (mutable) copy of the height values passed in \e heights will be kept
   /// in this class. The copied data can be modified via
   /// getHeightFieldModifiable() and with flipY().
-  /// 
+  ///
   /// \param[in] width width of the field (x axis)
   /// \param[in] depth depth of the field (-y axis)
   /// \param[in] heights the height data of size \e width * \e depth.
-  //    The heights are interpreted as z values, while \e width goes in x 
+  //    The heights are interpreted as z values, while \e width goes in x
   //    direction and \e depth in -y (it goes to -y because traditionally
   //    images are read from top row to bottom row).
   //    In the geometry which is to be generated from this shape, the min/max
-  //    height value is also the min/max z value (so if the minimum height 
+  //    height value is also the min/max z value (so if the minimum height
   //    value is -100, the lowest terrain point will be -100, times the z
   //    scale to be applied).
-  void setHeightField(const size_t& width, const size_t& depth,
-                      const std::vector<HeightType>& heights);
+  void setHeightField(
+      const std::size_t& width,
+      const std::size_t& depth,
+      const std::vector<HeightType>& heights);
 
   /// \brief Get the height field.
   const HeightField& getHeightField() const;
-  
+
   /// \brief Gets the modified height field. See also setHeightField().
   HeightField& getHeightFieldModifiable() const;
 
   /// \brief Flips the y values in the height field.
-  void flipY() const; 
+  void flipY() const;
 
   /// \brief Get the width dimension of the height field
-  size_t getWidth() const;
-  
+  std::size_t getWidth() const;
+
   /// \brief Get the height dimension of the height field
-  size_t getDepth() const;
+  std::size_t getDepth() const;
 
   /// \brief Get the minimum height set by setHeightField()
   HeightType getMinHeight() const;
-  
+
   /// \brief Get the maximum height set by setHeightField()
   HeightType getMaxHeight() const;
 
@@ -129,12 +132,11 @@ protected:
   /// the volume of the bounding box. Subclasses may opt to provide a more
   /// accurate computation of the volume.
   virtual void updateVolume() const override;
- 
+
   /// \brief Computes the bounding box of the height field.
-  /// \param[out] min mininum of box
-  /// \param[out] max maxinum of box
-  void computeBoundingBox(Eigen::Vector3d& min,
-                          Eigen::Vector3d& max) const;
+  /// \param[out] min Mininum of box
+  /// \param[out] max Maxinum of box
+  void computeBoundingBox(Eigen::Vector3d& min, Eigen::Vector3d& max) const;
 
 private:
   /// \brief scale of the heightmap
@@ -148,7 +150,7 @@ private:
   HeightType mMinHeight, mMaxHeight;
 };
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart
 
-#endif  // DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_
+#endif // DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_

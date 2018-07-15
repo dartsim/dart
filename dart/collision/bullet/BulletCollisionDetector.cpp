@@ -927,6 +927,7 @@ createBulletCollisionShapeFromHeightmap(
     const dart::dynamics::HeightmapShape* heightMap)
 {
   using dart::dynamics::HeightmapShape;
+
   // get the heightmap parameters
   const Eigen::Vector3d& scale = heightMap->getScale();
   const HeightmapShape::HeightType minHeight = heightMap->getMinHeight();
@@ -978,7 +979,8 @@ createBulletCollisionShapeFromHeightmap(
   // bullet places the heightfield such that the origin is in the
   // middle of the AABB. We want however that the minimum height value
   // is on x/y plane.
-  btVector3 min, max;
+  btVector3 min;
+  btVector3 max;
   heightFieldShape->getAabb(btTransform::getIdentity(), min, max);
   dtdbg << "DART Bullet heightfield AABB: min = {"
         << min.x() << ", " << min.y() << ", " << min.z() << "}, max = {"

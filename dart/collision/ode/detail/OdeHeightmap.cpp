@@ -32,8 +32,8 @@
 
 #include "dart/collision/ode/detail/OdeHeightmap.hpp"
 
-#include "dart/dynamics/HeightmapShape.hpp"
 #include <type_traits>
+#include "dart/dynamics/HeightmapShape.hpp"
 
 namespace dart {
 namespace collision {
@@ -43,77 +43,78 @@ namespace detail {
 
 //==============================================================================
 // creates the ODE height field. Only enabled if the height data type is float.
-template<class HeightType>
-void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
-                         const HeightType* heights, 
-                         const size_t& width,
-                         const size_t& height,
-                         const Eigen::Vector3d& scale,
-                         typename std::enable_if<
-                          std::is_same<float, HeightType>::value>::type* = 0) 
+template <class HeightType>
+void setOdeHeightfieldDetails(
+    const dHeightfieldDataID odeHeightfieldId,
+    const HeightType* heights,
+    const std::size_t& width,
+    const std::size_t& height,
+    const Eigen::Vector3d& scale,
+    typename std::enable_if<std::is_same<float, HeightType>::value>::type* = 0)
 {
   assert(width >= 2);
   assert(height >= 2);
   if ((width < 2) || (height < 2))
   {
-    dtwarn << "Cannot create height field of dimensions " << width
-           << "x" << height << ", needs to be at least 2" << std::endl;
+    dtwarn << "Cannot create height field of dimensions " << width << "x"
+           << height << ", needs to be at least 2" << std::endl;
     return;
   }
   dGeomHeightfieldDataBuildSingle(
-      odeHeightfieldID,
+      odeHeightfieldId,
       heights,
       0,
-      (width-1) * scale.x(),   // width (in meters)
-      (height-1) * scale.y(),  // height (in meters)
-      width,                   // width (sampling size)
-      height,                  // height (sampling size)
-      scale.z(),               // vertical scaling 
-      0.0,                     // vertical offset
-      HF_THICKNESS,            // vertical thickness for closing the mesh
-      0);                      // wrap mode
+      (width - 1) * scale.x(),  // width (in meters)
+      (height - 1) * scale.y(), // height (in meters)
+      width,                    // width (sampling size)
+      height,                   // height (sampling size)
+      scale.z(),                // vertical scaling
+      0.0,                      // vertical offset
+      HF_THICKNESS,             // vertical thickness for closing the mesh
+      0);                       // wrap mode
 }
 
 //==============================================================================
 // creates the ODE height field. Only enabled if the height data type is double.
-template<class HeightType>
-void setOdeHeightfieldDetails(const dHeightfieldDataID odeHeightfieldID,
-                         const HeightType* heights, 
-                         const size_t& width,
-                         const size_t& height,
-                         const Eigen::Vector3d& scale,
-                         typename std::enable_if<
-                          std::is_same<double, HeightType>::value>::type* = 0) 
+template <class HeightType>
+void setOdeHeightfieldDetails(
+    const dHeightfieldDataID odeHeightfieldId,
+    const HeightType* heights,
+    const std::size_t& width,
+    const std::size_t& height,
+    const Eigen::Vector3d& scale,
+    typename std::enable_if<std::is_same<double, HeightType>::value>::type* = 0)
 {
   assert(width >= 2);
   assert(height >= 2);
   if ((width < 2) || (height < 2))
   {
-    dtwarn << "Cannot create height field of dimensions " << width
-           << "x" << height << ", needs to be at least 2" << std::endl;
+    dtwarn << "Cannot create height field of dimensions " << width << "x"
+           << height << ", needs to be at least 2" << std::endl;
     return;
   }
 
   dGeomHeightfieldDataBuildDouble(
-      odeHeightfieldID,
+      odeHeightfieldId,
       heights,
       0,
-      (width-1) * scale.x(),   // width (in meters)
-      (height-1) * scale.y(),  // height (in meters)
-      width,                   // width (sampling size)
-      height,                  // height (sampling size)
-      scale.z(),               // vertical scaling 
-      0.0,                     // vertical offset
-      HF_THICKNESS,            // vertical thickness for closing the mesh
-      0);                      // wrap mode
+      (width - 1) * scale.x(),  // width (in meters)
+      (height - 1) * scale.y(), // height (in meters)
+      width,                    // width (sampling size)
+      height,                   // height (sampling size)
+      scale.z(),                // vertical scaling
+      0.0,                      // vertical offset
+      HF_THICKNESS,             // vertical thickness for closing the mesh
+      0);                       // wrap mode
 }
 
 //==============================================================================
-OdeHeightmap::OdeHeightmap(const OdeCollisionObject* parent,
-                           const dart::dynamics::HeightmapShape* heightMap)
+OdeHeightmap::OdeHeightmap(
+    const OdeCollisionObject* parent,
+    const dynamics::HeightmapShape* heightMap)
   : OdeGeom(parent)
 {
-  using dart::dynamics::HeightmapShape;
+  using dynamics::HeightmapShape;
   assert(heightMap);
 
   // get the heightmap parameters
@@ -121,22 +122,27 @@ OdeHeightmap::OdeHeightmap(const OdeCollisionObject* parent,
   const HeightmapShape::HeightField& heights = heightMap->getHeightField();
 
   // Create the ODE heightfield
-  odeHeightfieldID = dGeomHeightfieldDataCreate();
-  
-  static_assert(std::is_same<HeightmapShape::HeightType, float>::value ||
-                std::is_same<HeightmapShape::HeightType, double>::value,
-                "Height field needs to be double or float");
+  mOdeHeightfieldId = dGeomHeightfieldDataCreate();
+
+  static_assert(
+      std::is_same<HeightmapShape::HeightType, float>::value
+          || std::is_same<HeightmapShape::HeightType, double>::value,
+      "Height field needs to be double or float");
 
   // specify height field details
-  setOdeHeightfieldDetails(odeHeightfieldID, heights.data(),
-                           heightMap->getWidth(), heightMap->getDepth(), scale);
+  setOdeHeightfieldDetails(
+      mOdeHeightfieldId,
+      heights.data(),
+      heightMap->getWidth(),
+      heightMap->getDepth(),
+      scale);
 
   // Restrict the bounds of the AABB to improve efficiency
-  dGeomHeightfieldDataSetBounds(odeHeightfieldID, heightMap->getMinHeight(),
-      heightMap->getMaxHeight());
+  dGeomHeightfieldDataSetBounds(
+      mOdeHeightfieldId, heightMap->getMinHeight(), heightMap->getMaxHeight());
 
   // create the height field
-  mGeomId = dCreateHeightfield(0, odeHeightfieldID, 1);
+  mGeomId = dCreateHeightfield(0, mOdeHeightfieldId, 1);
 
   // rotate it so that z axis is up.
   // remember the transform as a permanent relative transform by assigning
@@ -152,15 +158,15 @@ OdeHeightmap::OdeHeightmap(const OdeCollisionObject* parent,
   // AABB is only needed for the debug print.
   dReal aabb[6];
   dGeomGetAABB(mGeomId, aabb);
-  dtdbg << "ODE Heightfield AABB: min = {"
-    << aabb[0] << ", " << aabb[2] << ", " << aabb[4]<< "} max = {"
-    << aabb[1] << ", " << aabb[3] << ", " << aabb[5] << "}" << std::endl;
+  dtdbg << "ODE Heightfield AABB: min = {" << aabb[0] << ", " << aabb[2] << ", "
+        << aabb[4] << "} max = {" << aabb[1] << ", " << aabb[3] << ", "
+        << aabb[5] << "}" << std::endl;
 }
 
 //==============================================================================
 OdeHeightmap::~OdeHeightmap()
 {
-  dGeomHeightfieldDataDestroy(odeHeightfieldID);
+  dGeomHeightfieldDataDestroy(mOdeHeightfieldId);
   dGeomDestroy(mGeomId);
 }
 

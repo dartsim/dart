@@ -46,17 +46,19 @@ class OdeHeightmap : public OdeGeom
 {
 public:
   /// Constructor
-  OdeHeightmap(const OdeCollisionObject* parent,
-               const dart::dynamics::HeightmapShape* hs);
+  OdeHeightmap(
+      const OdeCollisionObject* parent,
+      const dart::dynamics::HeightmapShape* hs);
 
   /// Destructor
   virtual ~OdeHeightmap();
+
 private:
-  dHeightfieldDataID odeHeightfieldID;
+  dHeightfieldDataID mOdeHeightfieldId;
 };
 
 } // namespace detail
 } // namespace collision
 } // namespace dart
 
-#endif  // DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
+#endif // DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
