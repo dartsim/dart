@@ -1193,18 +1193,10 @@ void testHeightmapBox(CollisionDetector* cd,
   // there should be no collision underneath the height field, which should be
   // on the x/y plane.
   result.clear();
-  S transZ;
-  if (cd->getType() == OdeCollisionDetector::getStaticType())
-  {
-    // Some tolerance has to be added for ODE because it adds an extra piece on
-    // the bottom to prevent objects from falling through lowest points.
-    transZ = adjMinH*zScale - boxSize*0.501 - useOdeThck;
-  }
-  else
-  {
-    transZ = adjMinH*zScale - boxSize*0.5 - useOdeThck;
-  }
-
+  // Some tolerance (useOdeThck) has to be added for ODE because it adds an
+  // extra piece on the bottom to prevent objects from falling through
+  // lowest points.
+  S transZ = adjMinH*zScale - boxSize*0.501 - useOdeThck;
   boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, transZ));
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_EQ(result.getNumContacts(), 0u);
@@ -1213,16 +1205,7 @@ void testHeightmapBox(CollisionDetector* cd,
   if (collidesUnderTerrain)
   {
     result.clear();
-    if (cd->getType() == OdeCollisionDetector::getStaticType())
-    {
-      // Some tolerance has to be added for ODE because it adds an extra piece on
-      // the bottom to prevent objects from falling through lowest points.
-      transZ = adjMinH*zScale - boxSize*0.499 - useOdeThck;
-    }
-    else
-    {
-      transZ = adjMinH*zScale - boxSize*0.5 - useOdeThck;
-    }
+    transZ = adjMinH*zScale - boxSize*0.499 - useOdeThck;
     boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, transZ));
     EXPECT_TRUE(group->collide(option, &result));
     EXPECT_GT(result.getNumContacts(), 0u);
