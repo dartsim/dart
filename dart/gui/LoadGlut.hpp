@@ -39,10 +39,9 @@
 #elif defined(__linux__)
   #include <GL/glut.h>
 #elif defined(__APPLE__)
-  #include <Glut/glut.h>
+  #include <GLUT/glut.h>
 #else
   #error "Load OpenGL Error: What's your operating system?"
 #endif
 
 #endif  // DART_GUI_LOADGLUT_HPP_
-
