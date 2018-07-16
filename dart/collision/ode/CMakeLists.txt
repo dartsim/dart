@@ -51,5 +51,5 @@ install(
 
 dart_format_add(
   detail/OdeHeightmap.hpp
-  detail/OdeHeightmap.cpp
+  detail/OdeHeightmap-impl.hpp
 )

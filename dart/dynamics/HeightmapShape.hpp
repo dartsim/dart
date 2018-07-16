@@ -38,25 +38,24 @@
 namespace dart {
 namespace dynamics {
 
-/**
- * \brief Shape for a height map.
- */
+/// Shape for a height map.
+///
+/// \tparam S_ Data type used for height map. At this point, only double and
+/// float are supported. Short and char can be added at a later point.
+template <typename S_>
 class HeightmapShape : public Shape
 {
 public:
-  /// \brief Data type used for height map. Could be made template.
-  /// At this point, only double and float are supported.
-  /// short and char can be added at a later point.
-  using HeightType = float;
+  using S = S_;
 
-  using HeightField = Eigen::
-      Matrix<HeightType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  using HeightField
+      = Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
-  /// \brief Constructor.
-  explicit HeightmapShape();
+  /// Constructor.
+  HeightmapShape();
 
-  /// \brief Destructor.
-  virtual ~HeightmapShape();
+  /// Destructor.
+  ~HeightmapShape() override = default;
 
   // Documentation inherited.
   const std::string& getType() const override;
@@ -64,19 +63,22 @@ public:
   /// Returns shape type for this class
   static const std::string& getStaticType();
 
-  // Documentation inherited.
-  // This base class computes the intertia based on the bounding box.
-  // Subclasses may choose to provide a more accurate computation of the inertia
-  virtual Eigen::Matrix3d computeInertia(double mass) const override;
+  /// \copydoc Shape::computeInertia()
+  ///
+  /// This base class computes the intertia based on the bounding box.
+  /// Subclasses may choose to provide a more accurate computation of the
+  /// inertia.
+  Eigen::Matrix3d computeInertia(double mass) const override;
 
-  /// \brief Set scale of this heightmap.
-  /// \param[in] scale scale of the height map.
+  /// Sets scale of this heightmap.
+  /// \param[in] scale Scale of the height map.
   void setScale(const Eigen::Vector3d& scale);
 
-  /// \brief Get scale of this heightmap.
+  /// Returns scale of this heightmap.
   const Eigen::Vector3d& getScale() const;
 
-  /// \brief Set the height field.
+  /// Sets the height field.
+  ///
   /// The data in \e heights will be copied locally.
   /// It would be nice to have the option to use the values in
   /// \e heights directly instead of copying them locally to a vector in this
@@ -87,70 +89,80 @@ public:
   /// in this class. The copied data can be modified via
   /// getHeightFieldModifiable() and with flipY().
   ///
-  /// \param[in] width width of the field (x axis)
-  /// \param[in] depth depth of the field (-y axis)
-  /// \param[in] heights the height data of size \e width * \e depth.
-  //    The heights are interpreted as z values, while \e width goes in x
-  //    direction and \e depth in -y (it goes to -y because traditionally
-  //    images are read from top row to bottom row).
-  //    In the geometry which is to be generated from this shape, the min/max
-  //    height value is also the min/max z value (so if the minimum height
-  //    value is -100, the lowest terrain point will be -100, times the z
-  //    scale to be applied).
+  /// \param[in] width Width of the field (x axis)
+  /// \param[in] depth Depth of the field (-y axis)
+  /// \param[in] heights The height data of size \e width * \e depth.
+  /// The heights are interpreted as z values, while \e width goes in x
+  /// direction and \e depth in -y (it goes to -y because traditionally
+  /// images are read from top row to bottom row).
+  /// In the geometry which is to be generated from this shape, the min/max
+  /// height value is also the min/max z value (so if the minimum height
+  /// value is -100, the lowest terrain point will be -100, times the z
+  /// scale to be applied).
   void setHeightField(
       const std::size_t& width,
       const std::size_t& depth,
-      const std::vector<HeightType>& heights);
+      const std::vector<S>& heights);
 
-  /// \brief Get the height field.
+  /// Returns the height field.
   const HeightField& getHeightField() const;
 
-  /// \brief Gets the modified height field. See also setHeightField().
+  /// Returns the modified height field. See also setHeightField().
   HeightField& getHeightFieldModifiable() const;
 
-  /// \brief Flips the y values in the height field.
+  /// Flips the y values in the height field.
   void flipY() const;
 
-  /// \brief Get the width dimension of the height field
+  /// Returns the width dimension of the height field
   std::size_t getWidth() const;
 
-  /// \brief Get the height dimension of the height field
+  /// Returns the height dimension of the height field
   std::size_t getDepth() const;
 
-  /// \brief Get the minimum height set by setHeightField()
-  HeightType getMinHeight() const;
+  /// Returns the minimum height set by setHeightField()
+  S getMinHeight() const;
 
-  /// \brief Get the maximum height set by setHeightField()
-  HeightType getMaxHeight() const;
+  /// Returns the maximum height set by setHeightField()
+  S getMaxHeight() const;
 
 protected:
   // Documentation inherited.
   void updateBoundingBox() const override;
 
-  /// Documentation inherited.
+  /// \copydoc Shape::updateVolume()
+  ///
   /// This base class provides a simple implementation which returns
   /// the volume of the bounding box. Subclasses may opt to provide a more
   /// accurate computation of the volume.
-  virtual void updateVolume() const override;
+  void updateVolume() const override;
 
-  /// \brief Computes the bounding box of the height field.
+  /// Computes the bounding box of the height field.
   /// \param[out] min Mininum of box
   /// \param[out] max Maxinum of box
   void computeBoundingBox(Eigen::Vector3d& min, Eigen::Vector3d& max) const;
 
 private:
-  /// \brief scale of the heightmap
+  /// Scale of the heightmap
   Eigen::Vector3d mScale;
 
-  /// \brief height field
+  /// Height field
   mutable HeightField mHeights;
 
-  /// \brief minimum and maximum heights.
+  /// Minimum heights.
   /// Is computed each time the height field is set with setHeightField().
-  HeightType mMinHeight, mMaxHeight;
+  S mMinHeight;
+
+  /// Maximum heights.
+  /// Is computed each time the height field is set with setHeightField().
+  S mMaxHeight;
 };
+
+using HeightmapShapef = HeightmapShape<float>;
+using HeightmapShaped = HeightmapShape<double>;
 
 } // namespace dynamics
 } // namespace dart
+
+#include "dart/dynamics/detail/HeightmapShape-impl.hpp"
 
 #endif // DART_DYNAMICS_HEIGHTMAPSHAPE_HPP_

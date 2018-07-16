@@ -81,8 +81,9 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpScene(
 
 std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(const aiMesh* mesh);
 
+template <typename HeightmapShapeT>
 std::unique_ptr<BulletCollisionShape> createBulletCollisionShapeFromHeightmap(
-    const dart::dynamics::HeightmapShape* heightMap);
+    const HeightmapShapeT* heightMap);
 } // anonymous namespace
 
 //==============================================================================
@@ -412,7 +413,8 @@ BulletCollisionDetector::createBulletCollisionShape(
   using dynamics::MultiSphereConvexHullShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
-  using dynamics::HeightmapShape;
+  using dynamics::HeightmapShapef;
+  using dynamics::HeightmapShaped;
 
   if (shape->is<SphereShape>())
   {
@@ -563,11 +565,19 @@ BulletCollisionDetector::createBulletCollisionShape(
     return common::make_unique<BulletCollisionShape>(
           std::move(bulletCollisionShape));
   }
-  else if (shape->is<HeightmapShape>())
+  else if (shape->is<HeightmapShapef>())
   {
-    assert(dynamic_cast<const HeightmapShape*>(shape.get()));
+    assert(dynamic_cast<const HeightmapShapef*>(shape.get()));
 
-    const auto heightMap = static_cast<const HeightmapShape*>(shape.get());
+    const auto heightMap = static_cast<const HeightmapShapef*>(shape.get());
+
+    return createBulletCollisionShapeFromHeightmap(heightMap);
+  }
+  else if (shape->is<HeightmapShaped>())
+  {
+    assert(dynamic_cast<const HeightmapShaped*>(shape.get()));
+
+    const auto heightMap = static_cast<const HeightmapShaped*>(shape.get());
 
     return createBulletCollisionShapeFromHeightmap(heightMap);
   }
@@ -922,23 +932,19 @@ std::unique_ptr<btCollisionShape> createBulletCollisionShapeFromAssimpMesh(
 }
 
 //==============================================================================
+template <typename HeightmapShapeT>
 std::unique_ptr<BulletCollisionShape>
 createBulletCollisionShapeFromHeightmap(
-    const dart::dynamics::HeightmapShape* heightMap)
+    const HeightmapShapeT* heightMap)
 {
-  using dart::dynamics::HeightmapShape;
-
   // get the heightmap parameters
   const Eigen::Vector3d& scale = heightMap->getScale();
-  const HeightmapShape::HeightType minHeight = heightMap->getMinHeight();
-  const HeightmapShape::HeightType maxHeight = heightMap->getMaxHeight();
+  const auto minHeight = heightMap->getMinHeight();
+  const auto maxHeight = heightMap->getMaxHeight();
 
   // determine which data type (float or double) is to be used for the field
-  static_assert(std::is_same<HeightmapShape::HeightType, float>::value ||
-                std::is_same<HeightmapShape::HeightType, double>::value,
-                "HeightmapShape must be float or double");
   PHY_ScalarType scalarType = PHY_FLOAT;
-  if (std::is_same<HeightmapShape::HeightType, double>::value)
+  if (std::is_same<typename HeightmapShapeT::S, double>::value)
     scalarType = PHY_DOUBLE;
 
   // TODO take this out when testing is finished
@@ -951,8 +957,7 @@ createBulletCollisionShapeFromHeightmap(
   // the y-values in the height field need to be flipped
   heightMap->flipY();
 
-  const HeightmapShape::HeightField& heights =
-    heightMap->getHeightField();
+  const auto& heights = heightMap->getHeightField();
 
   // create the height field
   const btVector3 localScaling(scale.x(), scale.y(), scale.z());

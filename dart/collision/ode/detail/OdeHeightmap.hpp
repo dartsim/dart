@@ -42,23 +42,28 @@ namespace dart {
 namespace collision {
 namespace detail {
 
+template <typename S>
 class OdeHeightmap : public OdeGeom
 {
 public:
   /// Constructor
   OdeHeightmap(
-      const OdeCollisionObject* parent,
-      const dart::dynamics::HeightmapShape* hs);
+      const OdeCollisionObject* parent, const dynamics::HeightmapShape<S>* hs);
 
   /// Destructor
-  virtual ~OdeHeightmap();
+  ~OdeHeightmap() override;
 
 private:
   dHeightfieldDataID mOdeHeightfieldId;
 };
 
+using OdeHeightmapf = OdeHeightmap<float>;
+using OdeHeightmapd = OdeHeightmap<double>;
+
 } // namespace detail
 } // namespace collision
 } // namespace dart
+
+#include "dart/collision/ode/detail/OdeHeightmap-impl.hpp"
 
 #endif // DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_

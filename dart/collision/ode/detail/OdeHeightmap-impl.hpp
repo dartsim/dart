@@ -43,14 +43,14 @@ namespace detail {
 
 //==============================================================================
 // creates the ODE height field. Only enabled if the height data type is float.
-template <class HeightType>
+template <class S>
 void setOdeHeightfieldDetails(
     const dHeightfieldDataID odeHeightfieldId,
-    const HeightType* heights,
+    const S* heights,
     const std::size_t& width,
     const std::size_t& height,
     const Eigen::Vector3d& scale,
-    typename std::enable_if<std::is_same<float, HeightType>::value>::type* = 0)
+    typename std::enable_if<std::is_same<float, S>::value>::type* = 0)
 {
   assert(width >= 2);
   assert(height >= 2);
@@ -76,14 +76,14 @@ void setOdeHeightfieldDetails(
 
 //==============================================================================
 // creates the ODE height field. Only enabled if the height data type is double.
-template <class HeightType>
+template <class S>
 void setOdeHeightfieldDetails(
     const dHeightfieldDataID odeHeightfieldId,
-    const HeightType* heights,
+    const S* heights,
     const std::size_t& width,
     const std::size_t& height,
     const Eigen::Vector3d& scale,
-    typename std::enable_if<std::is_same<double, HeightType>::value>::type* = 0)
+    typename std::enable_if<std::is_same<double, S>::value>::type* = 0)
 {
   assert(width >= 2);
   assert(height >= 2);
@@ -109,25 +109,20 @@ void setOdeHeightfieldDetails(
 }
 
 //==============================================================================
-OdeHeightmap::OdeHeightmap(
+template <typename S>
+OdeHeightmap<S>::OdeHeightmap(
     const OdeCollisionObject* parent,
-    const dynamics::HeightmapShape* heightMap)
+    const dynamics::HeightmapShape<S>* heightMap)
   : OdeGeom(parent)
 {
-  using dynamics::HeightmapShape;
   assert(heightMap);
 
   // get the heightmap parameters
   const Eigen::Vector3d& scale = heightMap->getScale();
-  const HeightmapShape::HeightField& heights = heightMap->getHeightField();
+  const auto& heights = heightMap->getHeightField();
 
   // Create the ODE heightfield
   mOdeHeightfieldId = dGeomHeightfieldDataCreate();
-
-  static_assert(
-      std::is_same<HeightmapShape::HeightType, float>::value
-          || std::is_same<HeightmapShape::HeightType, double>::value,
-      "Height field needs to be double or float");
 
   // specify height field details
   setOdeHeightfieldDetails(
@@ -164,7 +159,8 @@ OdeHeightmap::OdeHeightmap(
 }
 
 //==============================================================================
-OdeHeightmap::~OdeHeightmap()
+template <typename S>
+OdeHeightmap<S>::~OdeHeightmap()
 {
   dGeomHeightfieldDataDestroy(mOdeHeightfieldId);
   dGeomDestroy(mGeomId);
