@@ -40,6 +40,30 @@
 namespace dart {
 namespace dynamics {
 
+namespace {
+
+//==============================================================================
+octomap::point3d toVector3(const Eigen::Vector3d& point)
+{
+  return octomap::point3d(point.x(), point.y(), point.z());
+}
+
+//==============================================================================
+octomath::Quaternion toQuaternion(const Eigen::Matrix3d& rotation)
+{
+  Eigen::Quaterniond quat(rotation);
+  return octomath::Quaternion(quat.w(), quat.x(), quat.y(), quat.z());
+}
+
+//==============================================================================
+octomap::pose6d toPose(const Eigen::Isometry3d& frame)
+{
+  return octomap::pose6d(
+      toVector3(frame.translation()), toQuaternion(frame.linear()));
+}
+
+} // namespace
+
 //==============================================================================
 VoxelGridShape::VoxelGridShape(double resolution) : Shape()
 {
@@ -107,16 +131,43 @@ fcl_shared_ptr<const octomap::OcTree> VoxelGridShape::getOctree() const
 
 //==============================================================================
 void VoxelGridShape::updateOccupancy(
-    const octomap::Pointcloud& pointCloud, const octomap::point3d& sensorOrigin)
+    const Eigen::Vector3d& point, bool occupied)
 {
-  mOctree->insertPointCloud(pointCloud, sensorOrigin);
+  mOctree->updateNode(toVector3(point), occupied);
 }
 
 //==============================================================================
 void VoxelGridShape::updateOccupancy(
-    const Eigen::Vector3d& point, bool occupied)
+    const Eigen::Vector3d& from, const Eigen::Vector3d& to)
 {
-  mOctree->updateNode(point.x(), point.y(), point.z(), occupied);
+  mOctree->insertRay(toVector3(from), toVector3(to));
+}
+
+//==============================================================================
+void VoxelGridShape::updateOccupancy(
+    const octomap::Pointcloud& pointCloud,
+    const Eigen::Vector3d& sensorOrigin,
+    const Frame* inCoordinatesOf)
+{
+  if (inCoordinatesOf == Frame::World())
+  {
+    mOctree->insertPointCloud(pointCloud, toVector3(sensorOrigin));
+  }
+  else
+  {
+    updateOccupancy(
+        pointCloud, sensorOrigin, inCoordinatesOf->getWorldTransform());
+  }
+}
+
+//==============================================================================
+void VoxelGridShape::updateOccupancy(
+    const octomap::Pointcloud& pointCloud,
+    const Eigen::Vector3d& sensorOrigin,
+    const Eigen::Isometry3d& inCoordinatesOf)
+{
+  mOctree->insertPointCloud(
+      pointCloud, toVector3(sensorOrigin), toPose(inCoordinatesOf));
 }
 
 //==============================================================================

@@ -39,10 +39,13 @@
 
 #include <octomap/octomap.h>
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
+#include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
 namespace dynamics {
+
+class Frame;
 
 /// VoxelGridShape represents a probabilistic 3D occupancy voxel grid.
 class VoxelGridShape : public Shape
@@ -82,10 +85,35 @@ public:
   /// \param[in] occupied True if the location was measured occupied.
   void updateOccupancy(const Eigen::Vector3d& point, bool occupied = true);
 
-  /// Integrates a point cloud sensor measurement.
+  /// Inserts a ray between \c from and \c to into the voxel grid.
+  ///
+  /// \param from Origin of sensor in global coordinates.
+  /// \param to Endpoint of measurement in global coordinates.
+  void updateOccupancy(const Eigen::Vector3d& from, const Eigen::Vector3d& to);
+
+  /// Integrates a 3D ray cloud sensor measurement.
+  ///
+  /// \param[in] pointCloud Point cloud relative to frame. Points represent the
+  /// end points of the rays from the sensor origin.
+  /// \param[in] sensorOrigin Origin of sensor relative to frame.
+  /// \param[in] inCoordinatesOf Reference frame, determines transform to be
+  /// applied to point cloud and sensor origin.
   void updateOccupancy(
       const octomap::Pointcloud& pointCloud,
-      const octomap::point3d& sensorOrigin);
+      const Eigen::Vector3d& sensorOrigin,
+      const Frame* inCoordinatesOf = Frame::World());
+
+  /// Integrates a 3D ray cloud sensor measurement.
+  ///
+  /// \param[in] pointCloud Point cloud relative to frame. Points represent the
+  /// end points of the rays from the sensor origin.
+  /// \param[in] sensorOrigin Origin of sensor relative to frame.
+  /// \param[in] inCoordinatesOf Reference frame, determines transform to be
+  /// applied to point cloud and sensor origin.
+  void updateOccupancy(
+      const octomap::Pointcloud& pointCloud,
+      const Eigen::Vector3d& sensorOrigin,
+      const Eigen::Isometry3d& inCoordinatesOf);
 
   /// Returns occupancy probability of a node that contains \c point.
   double getOccupancy(const Eigen::Vector3d& point) const;
