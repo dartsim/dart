@@ -124,10 +124,10 @@ struct TranslationalJoint2DProperties : GenericJoint<math::R2Space>::Properties,
 };
 
 //==============================================================================
-using TranslationalJoint2DBase = common::EmbedPropertiesOnTopOf<
-    TranslationalJoint2D,
-    TranslationalJoint2DUniqueProperties,
-    GenericJoint<math::R2Space>>;
+using TranslationalJoint2DBase
+    = common::EmbedPropertiesOnTopOf<TranslationalJoint2D,
+                                     TranslationalJoint2DUniqueProperties,
+                                     GenericJoint<math::R2Space>>;
 
 } // namespace detail
 } // namespace dynamics

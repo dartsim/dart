@@ -30,50 +30,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
+#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONSHAPE_HPP_
+#define DART_COLLISION_BULLET_BULLETCOLLISIONSHAPE_HPP_
+
+#include <memory>
 
 // Must be included before any Bullet headers.
 #include "dart/config.hpp"
 
 #include <btBulletCollisionCommon.h>
 
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/bullet/BulletCollisionShape.hpp"
-
 namespace dart {
 namespace collision {
 
-class CollisionObject;
-
-class BulletCollisionObject : public CollisionObject
+struct BulletCollisionShape
 {
-public:
-  friend class BulletCollisionDetector;
+  std::unique_ptr<btCollisionShape> mCollisionShape;
 
-  /// Return Bullet collision object
-  btCollisionObject* getBulletCollisionObject();
+  /// Relative transform of the shape to the collision object
+  /// which should be maintained at each pose update of the collision object.
+  /// Defaults to identity.
+  std::unique_ptr<btTransform> mRelativeTransform;
 
-  /// Return Bullet collision object
-  const btCollisionObject* getBulletCollisionObject() const;
+  BulletCollisionShape(
+      std::unique_ptr<btCollisionShape> collisionShape,
+      const btTransform& relativeTransform);
 
-protected:
-  /// Constructor
-  BulletCollisionObject(CollisionDetector* collisionDetector,
-                        const dynamics::ShapeFrame* shapeFrame,
-                        BulletCollisionShape* bulletCollisionShape);
-
-  // Documentation inherited
-  void updateEngineData() override;
-
-protected:
-  /// Bullet collision object
-  std::unique_ptr<btCollisionObject> mBulletCollisionObject;
-
-  BulletCollisionShape* mBulletCollisionShape;
+  BulletCollisionShape(std::unique_ptr<btCollisionShape> collisionShape);
 };
 
-}  // namespace collision
-}  // namespace dart
+} // namespace collision
+} // namespace dart
 
-#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
+#endif // DART_COLLISION_BULLET_BULLETCOLLISIONSHAPE_HPP_

@@ -30,44 +30,45 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cmath>
 #include "dart/dynamics/HeightmapShape.hpp"
-#include "dart/dynamics/BoxShape.hpp"
-#include "dart/common/Console.hpp"
-#include <limits>
+
 #include <algorithm>
+#include <cmath>
+#include <limits>
+#include "dart/common/Console.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 
 namespace dart {
 namespace dynamics {
 
 //==============================================================================
-HeightmapShape::HeightmapShape()
-  : Shape(HEIGHTMAP),
-    mScale(1, 1, 1)
+template <typename S>
+HeightmapShape<S>::HeightmapShape() : Shape(HEIGHTMAP), mScale(1, 1, 1)
 {
+  static_assert(
+      std::is_same<S, float>::value || std::is_same<S, double>::value,
+      "Height field needs to be double or float");
 }
 
 //==============================================================================
-HeightmapShape::~HeightmapShape()
-{
-  // Do nothing
-}
-
-//==============================================================================
-const std::string& HeightmapShape::getType() const
+template <typename S>
+const std::string& HeightmapShape<S>::getType() const
 {
   return getStaticType();
 }
 
 //==============================================================================
-const std::string& HeightmapShape::getStaticType()
+template <typename S>
+const std::string& HeightmapShape<S>::getStaticType()
 {
-  static const std::string type("HeightmapShape");
+  static const std::string type
+      = "HeightmapShape (" + std::string(typeid(S).name()) + ")";
   return type;
 }
 
 //==============================================================================
-void HeightmapShape::setScale(const Eigen::Vector3d& scale)
+template <typename S>
+void HeightmapShape<S>::setScale(const Eigen::Vector3d& scale)
 {
   assert(scale[0] > 0.0);
   assert(scale[1] > 0.0);
@@ -78,20 +79,24 @@ void HeightmapShape::setScale(const Eigen::Vector3d& scale)
 }
 
 //==============================================================================
-const Eigen::Vector3d& HeightmapShape::getScale() const
+template <typename S>
+const Eigen::Vector3d& HeightmapShape<S>::getScale() const
 {
   return mScale;
 }
- 
+
 //==============================================================================
-void HeightmapShape::setHeightField(const size_t& width, const size_t& depth,
-                                    const std::vector<HeightType>& heights)
+template <typename S>
+void HeightmapShape<S>::setHeightField(
+    const std::size_t& width,
+    const std::size_t& depth,
+    const std::vector<S>& heights)
 {
-  assert(heights.size() == width*depth);
-  if ((width*depth) != heights.size())
+  assert(heights.size() == width * depth);
+  if ((width * depth) != heights.size())
   {
-    dterr << "Size of height field needs to be width*depth="
-          << width*depth << std::endl;
+    dterr << "Size of height field needs to be width*depth=" << width * depth
+          << std::endl;
     return;
   }
   if (heights.empty())
@@ -104,68 +109,76 @@ void HeightmapShape::setHeightField(const size_t& width, const size_t& depth,
   {
     for (size_t c = 0; c < width; ++c)
     {
-      mHeights(r, c) = heights[r*width + c];
+      mHeights(r, c) = heights[r * width + c];
     }
   }
 
   // compute minimum and maximum height
-  mMinHeight = std::numeric_limits<HeightType>::max();
-  mMaxHeight = -std::numeric_limits<HeightType>::max();
+  mMinHeight = std::numeric_limits<S>::max();
+  mMaxHeight = -std::numeric_limits<S>::max();
   for (auto it = heights.begin(); it != heights.end(); ++it)
   {
-    if (*it < mMinHeight) mMinHeight = *it;
-    if (*it > mMaxHeight) mMaxHeight = *it;
+    if (*it < mMinHeight)
+      mMinHeight = *it;
+    if (*it > mMaxHeight)
+      mMaxHeight = *it;
   }
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
 }
 
 //==============================================================================
-const HeightmapShape::HeightField&
-  HeightmapShape::getHeightField() const
+template <typename S>
+auto HeightmapShape<S>::getHeightField() const -> const HeightField&
 {
   return mHeights;
 }
 
 //==============================================================================
-HeightmapShape::HeightField&
-  HeightmapShape::getHeightFieldModifiable() const
+template <typename S>
+auto HeightmapShape<S>::getHeightFieldModifiable() const -> HeightField&
 {
   return mHeights;
 }
 
 //==============================================================================
-void HeightmapShape::flipY() const
+template <typename S>
+void HeightmapShape<S>::flipY() const
 {
   mHeights = mHeights.colwise().reverse().eval();
 }
 
 //==============================================================================
-HeightmapShape::HeightType HeightmapShape::getMaxHeight() const
+template <typename S>
+auto HeightmapShape<S>::getMaxHeight() const -> S
 {
   return mMaxHeight;
 }
 
 //==============================================================================
-HeightmapShape::HeightType HeightmapShape::getMinHeight() const
+template <typename S>
+auto HeightmapShape<S>::getMinHeight() const -> S
 {
   return mMinHeight;
 }
 
 //==============================================================================
-size_t HeightmapShape::getWidth() const
+template <typename S>
+std::size_t HeightmapShape<S>::getWidth() const
 {
   return mHeights.cols();
 }
 
 //==============================================================================
-size_t HeightmapShape::getDepth() const
+template <typename S>
+std::size_t HeightmapShape<S>::getDepth() const
 {
   return mHeights.rows();
 }
 
 //==============================================================================
-Eigen::Matrix3d HeightmapShape::computeInertia(double mass) const
+template <typename S>
+Eigen::Matrix3d HeightmapShape<S>::computeInertia(double mass) const
 {
   if (mIsBoundingBoxDirty)
   {
@@ -173,22 +186,25 @@ Eigen::Matrix3d HeightmapShape::computeInertia(double mass) const
   }
   return BoxShape::computeInertia(getBoundingBox().computeFullExtents(), mass);
 }
-  
+
 //==============================================================================
-void HeightmapShape::computeBoundingBox(Eigen::Vector3d& min,
-                                        Eigen::Vector3d& max) const
+template <typename S>
+void HeightmapShape<S>::computeBoundingBox(
+    Eigen::Vector3d& min, Eigen::Vector3d& max) const
 {
   const double dimX = getWidth() * mScale.x();
   const double dimY = getDepth() * mScale.y();
   const double dimZ = (mMaxHeight - mMinHeight) * mScale.z();
-  min = Eigen::Vector3d(-dimX*0.5, -dimY*0.5, mMinHeight*mScale.z());
+  min = Eigen::Vector3d(-dimX * 0.5, -dimY * 0.5, mMinHeight * mScale.z());
   max = min + Eigen::Vector3d(dimX, dimY, dimZ);
 }
 
 //==============================================================================
-void HeightmapShape::updateBoundingBox() const
+template <typename S>
+void HeightmapShape<S>::updateBoundingBox() const
 {
-  Eigen::Vector3d min, max;
+  Eigen::Vector3d min;
+  Eigen::Vector3d max;
   computeBoundingBox(min, max);
   mBoundingBox.setMin(min);
   mBoundingBox.setMax(max);
@@ -196,7 +212,8 @@ void HeightmapShape::updateBoundingBox() const
 }
 
 //==============================================================================
-void HeightmapShape::updateVolume() const
+template <typename S>
+void HeightmapShape<S>::updateVolume() const
 {
   updateBoundingBox();
   const Eigen::Vector3d size = mBoundingBox.getMax() - mBoundingBox.getMin();
@@ -204,5 +221,5 @@ void HeightmapShape::updateVolume() const
   mIsVolumeDirty = false;
 }
 
-}  // namespace dynamics
-}  // namespace dart
+} // namespace dynamics
+} // namespace dart

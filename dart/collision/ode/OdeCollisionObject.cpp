@@ -158,7 +158,8 @@ detail::OdeGeom* createOdeGeom(
   using dynamics::PlaneShape;
   using dynamics::MeshShape;
   using dynamics::SoftMeshShape;
-  using dynamics::HeightmapShape;
+  using dynamics::HeightmapShapef;
+  using dynamics::HeightmapShaped;
 
   detail::OdeGeom* geom = nullptr;
   const auto shape = shapeFrame->getShape().get();
@@ -209,10 +210,15 @@ detail::OdeGeom* createOdeGeom(
 
     geom = new detail::OdeMesh(collObj, aiScene, scale);
   }
-  else if (shape->is<HeightmapShape>())
+  else if (shape->is<HeightmapShapef>())
   {
-    auto heightMap= static_cast<const HeightmapShape*>(shape);
-    geom = new detail::OdeHeightmap(collObj, heightMap);
+    auto heightMap = static_cast<const HeightmapShapef*>(shape);
+    geom = new detail::OdeHeightmapf(collObj, heightMap);
+  }
+  else if (shape->is<HeightmapShaped>())
+  {
+    auto heightMap = static_cast<const HeightmapShaped*>(shape);
+    geom = new detail::OdeHeightmapd(collObj, heightMap);
   }
   else
   {
