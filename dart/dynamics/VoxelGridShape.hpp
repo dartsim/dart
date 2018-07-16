@@ -100,7 +100,7 @@ public:
   /// applied to point cloud and sensor origin.
   void updateOccupancy(
       const octomap::Pointcloud& pointCloud,
-      const Eigen::Vector3d& sensorOrigin,
+      const Eigen::Vector3d& sensorOrigin = Eigen::Vector3d::Zero(),
       const Frame* inCoordinatesOf = Frame::World());
 
   /// Integrates a 3D ray cloud sensor measurement.
