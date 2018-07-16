@@ -14,7 +14,6 @@ else()
   find_package(GLUT QUIET)
   dart_check_optional_package(GLUT "dart-gui" "freeglut3")
   if(GLUT_FOUND)
-    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
     set(HAVE_GLUT TRUE)
   else()
     set(HAVE_GLUT FALSE)
@@ -41,7 +40,7 @@ target_link_libraries(
   ${target_name}
   PUBLIC
     dart-utils
-    ${GLUT_LIBRARY}
+    ${GLUT_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${PROJECT_NAME}-external-lodepng
     ${PROJECT_NAME}-external-imgui
