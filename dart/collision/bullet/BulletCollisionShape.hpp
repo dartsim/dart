@@ -56,7 +56,7 @@ struct BulletCollisionShape
       std::unique_ptr<btCollisionShape> collisionShape,
       const btTransform& relativeTransform);
 
-  BulletCollisionShape(std::unique_ptr<btCollisionShape> collisionShape);
+  explicit BulletCollisionShape(std::unique_ptr<btCollisionShape> collShape);
 };
 
 } // namespace collision
