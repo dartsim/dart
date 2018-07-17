@@ -577,9 +577,17 @@ BulletCollisionDetector::createBulletCollisionShape(
   {
     assert(dynamic_cast<const HeightmapShaped*>(shape.get()));
 
-    const auto heightMap = static_cast<const HeightmapShaped*>(shape.get());
+    dterr << "[BulletCollisionDetector::createBulletCollisionShape] "
+          << "Bullet does not support double height fields (shape type ["
+          << shape->getType() << "]). Creating a sphere with 0.1 radius "
+          << "instead.\n";
 
-    return createBulletCollisionShapeFromHeightmap(heightMap);
+    return common::make_unique<BulletCollisionShape>(
+          common::make_unique<btSphereShape>(0.1));
+
+    // take this back in as soon as bullet supports double in heightmaps
+    // const auto heightMap = static_cast<const HeightmapShaped*>(shape.get());
+    // return createBulletCollisionShapeFromHeightmap(heightMap);
   }
   else
   {
@@ -945,13 +953,17 @@ createBulletCollisionShapeFromHeightmap(
   // determine which data type (float or double) is to be used for the field
   PHY_ScalarType scalarType = PHY_FLOAT;
   if (std::is_same<typename HeightmapShapeT::S, double>::value)
-    scalarType = PHY_DOUBLE;
+  {
+    dterr << "Bullet does not support DOUBLE as heightmap field yet.\n";
+    return nullptr;
+    // take this back in as soon as it is supported
+    // scalarType = PHY_DOUBLE;
+  }
 
   // TODO take this out when testing is finished
-  /*dtdbg << "Creating height shape, heights size " << heights.size()
-        << " w = " << heightMap->getWidth() << ", h = "
-        << heightMap->getDepth() << " min/max = "
-        << minHeight << "/" << maxHeight << " scale = "
+/*  dtdbg << "Creating height shape, heights w = "
+        << heightMap->getWidth() << ", h = " << heightMap->getDepth()
+        << " min/max = " << minHeight << "/" << maxHeight << " scale = "
         << scale.x() <<", " << scale.y() << ", " << scale.z() << std::endl;*/
 
   // the y-values in the height field need to be flipped

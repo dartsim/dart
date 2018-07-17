@@ -1186,7 +1186,7 @@ void testHeightmapBox(CollisionDetector* cd,
   option.enableContact = true;
 
   collision::CollisionResult result;
-  // the terrain is going to remain in the origin during the tests,
+  // the terrain is going to remain in the origin. During the tests,
   // we are only moving the box.
   terrainFrame->setTranslation(Eigen::Vector3d::Zero());
 
@@ -1228,22 +1228,23 @@ void testHeightmapBox(CollisionDetector* cd,
   const Eigen::Vector3d
     lowCorner(Eigen::Vector3d(-terrSize/2.0, terrSize/2.0, maxH*zScale));
 
-  // ODE doesn't do nicely when boxes are close to the border.
-  // Shift the boxes along the slope or normal to slope by this length.
+  // ODE doesn't do nicely when boxes are close to the border of the terrain.
+  // Shift the boxes along the slope (or normal to slope for some tests)
+  // by this length.
   // Technically we should compute this a bit more accurately than this.
-  // it basically has to ensure the box is inside the terrain bounds, so
-  // the slope plays a role for this factor. But since the box is small,
-  // an estimate is used for now.
-  const S boxShift = boxSize * 2.0;
+  // it basically has to ensure the box is inside or outside the terrain
+  // bounds, so the slope plays a role for this factor.
+  // But since the box is small, an estimate is used for now.
+  const S boxShift = boxSize * 1.5;
 
-  // expect collision at highest point
+  // expect collision at highest point (at max height)
   Eigen::Vector3d cornerShift = highCorner - slope*boxShift;
   result.clear();
   boxFrame->setTranslation(cornerShift);
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_GT(result.getNumContacts(), 0u);
 
-  // .. but not at opposite corner (lowest)
+  // .. but not at opposite corner (lowest corner, at overall max height)
   result.clear();
   cornerShift = Eigen::Vector3d(lowCorner + slope*boxShift);
   boxFrame->setTranslation(cornerShift);
@@ -1299,11 +1300,9 @@ TEST_F(COLLISION, testHeightmapBox)
 
   // TODO take this message out as soon as testing is done
   dtdbg << "Testing Bullet (float)" << std::endl;
+  // bullet so far only supports float height fields, so don't test double here.
   testHeightmapBox<float>(bullet.get(), false, false);
 
-  // TODO take this message out as soon as testing is done
-  dtdbg << "Testing Bullet (double)" << std::endl;
-  testHeightmapBox<double>(bullet.get(), false, false);
 #endif
 }
 
