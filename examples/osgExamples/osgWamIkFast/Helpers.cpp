@@ -103,7 +103,7 @@ void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
 
   ee->getIK(true)->setTarget(wam7_target);
 
-  std::string libName = "libexample_wamIk";
+  std::string libName = "libwamIk";
 #if (DART_OS_LINUX || DART_OS_MACOS) && !NDEBUG
   libName += "d";
 #endif
@@ -112,6 +112,7 @@ void setupEndEffectors(const dart::dynamics::SkeletonPtr& wam)
 #elif DART_OS_MACOS
   libName += ".dylib";
 #elif DART_OS_WINDOWS
+  // TODO(JS): Maybe the prefix 'lib' should be removed.
   libName += ".dll";
 #endif
 
