@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,20 +29,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_WIN2D_HPP_
-#define DART_GUI_WIN2D_HPP_
+#ifndef DART_GUI_GLUT_GLFUNCS_HPP_
+#define DART_GUI_GLUT_GLFUNCS_HPP_
 
-#warning "This file is deprecated in DART 6.1. "\
-         "Please use dart/gui/glut/Win2D.hpp instead."
-
-#include "dart/gui/glut/Win2D.hpp"
+#include <string>
 
 namespace dart {
 namespace gui {
+namespace glut {
 
-using Win2D = ::dart::gui::glut::Win2D;
+void drawStringOnScreen(
+    float x, float y, const std::string& s, bool bigFont = true);
 
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_WIN2D_HPP_
+#endif  // DART_GUI_GLUT_GLFUNCS_HPP_

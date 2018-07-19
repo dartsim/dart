@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,20 +29,51 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_WIN2D_HPP_
-#define DART_GUI_WIN2D_HPP_
+#include "dart/gui/glut/GLUTFuncs.hpp"
 
-#warning "This file is deprecated in DART 6.1. "\
-         "Please use dart/gui/glut/Win2D.hpp instead."
+#include <cstdio>
+#include <iostream>
+#include <string>
 
-#include "dart/gui/glut/Win2D.hpp"
+#include <Eigen/Eigen>
+
+#include "dart/gui/LoadOpengl.hpp"
+#include "dart/gui/glut/LoadGlut.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
-using Win2D = ::dart::gui::glut::Win2D;
+void drawStringOnScreen(float x, float y, const std::string& s, bool bigFont)
+{
+  // draws text on the screen
+  GLint oldMode;
+  glGetIntegerv(GL_MATRIX_MODE, &oldMode);
+  glMatrixMode(GL_PROJECTION);
 
+  glPushMatrix();
+  glLoadIdentity();
+  gluOrtho2D(0.0, 1.0, 0.0, 1.0);
+
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+  glRasterPos2f(x, y);
+  unsigned int length = s.length();
+  for (unsigned int c = 0; c < length; c++)
+  {
+    if (bigFont)
+      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, s.at(c) );
+    else
+      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, s.at(c) );
+  }
+  glPopMatrix();
+
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+  glMatrixMode(oldMode);
+}
+
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart
-
-#endif  // DART_GUI_WIN2D_HPP_

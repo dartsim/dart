@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2015-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2015-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,35 +29,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#ifndef DART_GUI_GLUT_LOADGLUT_HPP_
+#define DART_GUI_GLUT_LOADGLUT_HPP_
 
-#include <dart/dart.hpp>
-#include <dart/utils/utils.hpp>
+#if defined(_WIN32)
+  #include <cstdlib> // To disable glut::exit() function
+  #include <GL/glut.h>
+#elif defined(__linux__)
+  #include <GL/glut.h>
+#elif defined(__APPLE__)
+  #include <GLUT/glut.h>
+#else
+  #error "Load OpenGL Error: What's your operating system?"
+#endif
 
-#include "MyWindow.hpp"
-
-int main(int argc, char* argv[])
-{
-  // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld("dart://sample/skel/cubes.skel");
-  assert(myWorld != nullptr);
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
-
-  // create a window and link it to the world
-  MyWindow window;
-  window.setWorld(myWorld);
-
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'4': programmed interaction" << std::endl;
-
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Boxes");
-  glutMainLoop();
-
-  return 0;
-}
+#endif  // DART_GUI_GLUT_LOADGLUT_HPP_

@@ -30,20 +30,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_WIN2D_HPP_
-#define DART_GUI_WIN2D_HPP_
+#include <iostream>
 
-#warning "This file is deprecated in DART 6.1. "\
-         "Please use dart/gui/glut/Win2D.hpp instead."
+#include <dart/dart.hpp>
+#include <dart/utils/utils.hpp>
 
-#include "dart/gui/glut/Win2D.hpp"
+#include "MyWindow.hpp"
 
-namespace dart {
-namespace gui {
+int main(int argc, char* argv[])
+{
+  // Create and initialize the world
+  auto world = dart::utils::SkelParser::readWorld("dart://sample/skel/cubes.skel");
+  if (!world)
+  {
+    dterr << "Failed to load world.\n";
+    exit(EXIT_FAILURE);
+  }
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
-using Win2D = ::dart::gui::glut::Win2D;
+  // Create a window and link it to the world
+  MyWindow window;
+  window.setWorld(world);
 
-}  // namespace gui
-}  // namespace dart
+  std::cout << "space bar: simulation on/off" << std::endl;
+  std::cout << "'p': playback/stop" << std::endl;
+  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
+  std::cout << "'v': visualization on/off" << std::endl;
+  std::cout << "'1'--'4': programmed interaction" << std::endl;
 
-#endif  // DART_GUI_WIN2D_HPP_
+  glutInit(&argc, argv);
+  window.initWindow(640, 480, "Boxes");
+  glutMainLoop();
+
+  return 0;
+}

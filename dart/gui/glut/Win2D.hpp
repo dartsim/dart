@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,20 +29,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_WIN2D_HPP_
-#define DART_GUI_WIN2D_HPP_
+#ifndef DART_GUI_GLUT_WIN2D_HPP_
+#define DART_GUI_GLUT_WIN2D_HPP_
 
-#warning "This file is deprecated in DART 6.1. "\
-         "Please use dart/gui/glut/Win2D.hpp instead."
-
-#include "dart/gui/glut/Win2D.hpp"
+#include "dart/gui/glut/GlutWindow.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
-using Win2D = ::dart::gui::glut::Win2D;
+/// \brief
+class Win2D : public glut::Window {
+public:
+  /// \brief
+  Win2D();
 
+  /// \brief
+  void resize(int _w, int _h) override;
+
+  /// \brief
+  void render() override;
+
+  /// \brief
+  void keyboard(unsigned char _key, int _x, int _y) override;
+
+  /// \brief
+  void click(int _button, int _state, int _x, int _y) override;
+
+  /// \brief
+  void drag(int _x, int _y) override;
+
+  /// \brief
+  virtual void initGL();
+
+  /// \brief
+  virtual void draw() = 0;
+
+protected:
+  /// \brief
+  bool mTranslate;
+
+  /// \brief
+  double mTransX;
+
+  /// \brief
+  double mTransY;
+};
+
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_WIN2D_HPP_
+#endif  // DART_GUI_GLUT_WIN2D_HPP_

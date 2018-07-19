@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2011-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,20 +29,50 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_WIN2D_HPP_
-#define DART_GUI_WIN2D_HPP_
+#ifndef DART_GUI_GLUT_WIN3D_HPP_
+#define DART_GUI_GLUT_WIN3D_HPP_
 
-#warning "This file is deprecated in DART 6.1. "\
-         "Please use dart/gui/glut/Win2D.hpp instead."
+#include <Eigen/Eigen>
 
-#include "dart/gui/glut/Win2D.hpp"
+#include "dart/gui/Trackball.hpp"
+#include "dart/gui/glut/GlutWindow.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
-using Win2D = ::dart::gui::glut::Win2D;
+class Win3D : public glut::Window {
+public:
+  Win3D();
 
+  void initWindow(int _w, int _h, const char* _name) override;
+  void resize(int _w, int _h) override;
+  void render() override;
+
+  void keyboard(unsigned char _key, int _x, int _y) override;
+  void click(int _button, int _state, int _x, int _y) override;
+  void drag(int _x, int _y) override;
+
+  virtual void initGL();
+  virtual void initLights();
+
+  virtual void draw()=0;
+
+protected:
+  Trackball mTrackBall;
+  Eigen::Vector3d mTrans;
+  Eigen::Vector3d mEye;
+  Eigen::Vector3d mUp;
+  float mZoom;
+  float mPersp;
+
+  bool mRotate;
+  bool mTranslate;
+  bool mZooming;
+};
+
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_WIN2D_HPP_
+#endif  // DART_GUI_GLUT_WIN3D_HPP_

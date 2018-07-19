@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2013-2016, Graphics Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2016, Humanoid Lab, Georgia Tech Research Corporation
+ * Copyright (c) 2016, Personal Robotics Lab, Carnegie Mellon University
  * All rights reserved.
- *
- * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -15,6 +14,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,20 +35,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_WIN2D_HPP_
-#define DART_GUI_WIN2D_HPP_
+#ifndef DART_GUI_GLUT_SOFTSIMWINDOW_HPP_
+#define DART_GUI_GLUT_SOFTSIMWINDOW_HPP_
 
-#warning "This file is deprecated in DART 6.1. "\
-         "Please use dart/gui/glut/Win2D.hpp instead."
-
-#include "dart/gui/glut/Win2D.hpp"
+#include "dart/gui/glut/SimWindow.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
-using Win2D = ::dart::gui::glut::Win2D;
+/// \brief
+class SoftSimWindow : public SimWindow
+{
+public:
+  /// \brief
+  SoftSimWindow();
 
+  /// \brief
+  virtual ~SoftSimWindow();
+
+  /// \brief
+  void keyboard(unsigned char key, int x, int y) override;
+
+protected:
+  /// \brief
+  bool mShowPointMasses;
+
+  /// \brief
+  bool mShowMeshs;
+};
+
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart
 
-#endif  // DART_GUI_WIN2D_HPP_
+#endif  // DART_GUI_SOFTSIMWINDOW_HPP_
