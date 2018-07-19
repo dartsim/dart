@@ -43,7 +43,7 @@ namespace dynamics {
 namespace {
 
 //==============================================================================
-octomap::point3d toVector3(const Eigen::Vector3d& point)
+octomap::point3d toPoint3d(const Eigen::Vector3d& point)
 {
   return octomap::point3d(point.x(), point.y(), point.z());
 }
@@ -56,10 +56,10 @@ octomath::Quaternion toQuaternion(const Eigen::Matrix3d& rotation)
 }
 
 //==============================================================================
-octomap::pose6d toPose(const Eigen::Isometry3d& frame)
+octomap::pose6d toPose6d(const Eigen::Isometry3d& frame)
 {
   return octomap::pose6d(
-      toVector3(frame.translation()), toQuaternion(frame.linear()));
+      toPoint3d(frame.translation()), toQuaternion(frame.linear()));
 }
 
 } // namespace
@@ -133,14 +133,14 @@ fcl_shared_ptr<const octomap::OcTree> VoxelGridShape::getOctree() const
 void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& point, bool occupied)
 {
-  mOctree->updateNode(toVector3(point), occupied);
+  mOctree->updateNode(toPoint3d(point), occupied);
 }
 
 //==============================================================================
 void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& from, const Eigen::Vector3d& to)
 {
-  mOctree->insertRay(toVector3(from), toVector3(to));
+  mOctree->insertRay(toPoint3d(from), toPoint3d(to));
 }
 
 //==============================================================================
@@ -151,12 +151,11 @@ void VoxelGridShape::updateOccupancy(
 {
   if (relativeTo == Frame::World())
   {
-    mOctree->insertPointCloud(pointCloud, toVector3(sensorOrigin));
+    mOctree->insertPointCloud(pointCloud, toPoint3d(sensorOrigin));
   }
   else
   {
-    updateOccupancy(
-        pointCloud, sensorOrigin, relativeTo->getWorldTransform());
+    updateOccupancy(pointCloud, sensorOrigin, relativeTo->getWorldTransform());
   }
 }
 
@@ -167,7 +166,7 @@ void VoxelGridShape::updateOccupancy(
     const Eigen::Isometry3d& relativeTo)
 {
   mOctree->insertPointCloud(
-      pointCloud, toVector3(sensorOrigin), toPose(relativeTo));
+      pointCloud, toPoint3d(sensorOrigin), toPose6d(relativeTo));
 }
 
 //==============================================================================
