@@ -39,4 +39,3 @@
 #include "dart/gui/glut/LoadGlut.hpp"
 
 #endif  // DART_GUI_LOADGLUT_HPP_
-

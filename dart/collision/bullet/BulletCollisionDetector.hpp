@@ -50,6 +50,7 @@ class BulletCollisionObject;
 class BulletCollisionDetector : public CollisionDetector
 {
 public:
+  using CollisionDetector::createCollisionGroup;
 
   friend class CollisionDetector;
 

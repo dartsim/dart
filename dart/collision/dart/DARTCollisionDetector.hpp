@@ -44,6 +44,7 @@ class DARTCollisionObject;
 class DARTCollisionDetector : public CollisionDetector
 {
 public:
+  using CollisionDetector::createCollisionGroup;
 
   static std::shared_ptr<DARTCollisionDetector> create();
 

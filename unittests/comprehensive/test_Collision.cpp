@@ -1448,3 +1448,39 @@ TEST_F(COLLISION, Factory)
   EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("ode"));
 #endif
 }
+
+//==============================================================================
+#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+TEST_F(COLLISION, VoxelGrid)
+{
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
+
+  auto shape1 = std::make_shared<VoxelGridShape>(0.01);
+  auto shape2 = std::make_shared<SphereShape>(0.001);
+
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+
+  auto cd = FCLCollisionDetector::create();
+  auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
+
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  result.clear();
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() == 0u);
+
+  result.clear();
+  shape1->updateOccupancy(Eigen::Vector3d(0.0, 0.0, 0.0), true);
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() >= 1u);
+}
+#endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP

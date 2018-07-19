@@ -7,7 +7,7 @@ endif()
 
 project(osgWamIkfast)
 
-find_package(DART 6.1.1 REQUIRED COMPONENTS utils-urdf gui-osg external-ikfast)
+find_package(DART 6.6.0 REQUIRED COMPONENTS utils-urdf gui-osg)
 
 add_compile_options(-std=c++11)
 
@@ -15,7 +15,11 @@ include_directories(${DART_INCLUDE_DIRS})
 
 add_subdirectory(ikfast)
 
-set(srcs osgWamIkfast.cpp)
+file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${PROJECT_NAME} ${srcs})
+set_target_properties(${PROJECT_NAME}
+  PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
 
-target_link_libraries(${PROJECT_NAME} ${DART_LIBRARIES} wamIkfast)
+target_link_libraries(${PROJECT_NAME} ${DART_LIBRARIES} wamIk)
