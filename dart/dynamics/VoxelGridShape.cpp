@@ -147,16 +147,16 @@ void VoxelGridShape::updateOccupancy(
 void VoxelGridShape::updateOccupancy(
     const octomap::Pointcloud& pointCloud,
     const Eigen::Vector3d& sensorOrigin,
-    const Frame* inCoordinatesOf)
+    const Frame* relativeTo)
 {
-  if (inCoordinatesOf == Frame::World())
+  if (relativeTo == Frame::World())
   {
     mOctree->insertPointCloud(pointCloud, toVector3(sensorOrigin));
   }
   else
   {
     updateOccupancy(
-        pointCloud, sensorOrigin, inCoordinatesOf->getWorldTransform());
+        pointCloud, sensorOrigin, relativeTo->getWorldTransform());
   }
 }
 
@@ -164,10 +164,10 @@ void VoxelGridShape::updateOccupancy(
 void VoxelGridShape::updateOccupancy(
     const octomap::Pointcloud& pointCloud,
     const Eigen::Vector3d& sensorOrigin,
-    const Eigen::Isometry3d& inCoordinatesOf)
+    const Eigen::Isometry3d& relativeTo)
 {
   mOctree->insertPointCloud(
-      pointCloud, toVector3(sensorOrigin), toPose(inCoordinatesOf));
+      pointCloud, toVector3(sensorOrigin), toPose(relativeTo));
 }
 
 //==============================================================================

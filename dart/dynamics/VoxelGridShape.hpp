@@ -45,8 +45,6 @@
 namespace dart {
 namespace dynamics {
 
-class Frame;
-
 /// VoxelGridShape represents a probabilistic 3D occupancy voxel grid.
 class VoxelGridShape : public Shape
 {
@@ -77,43 +75,67 @@ public:
   /// Returns octree.
   fcl_shared_ptr<const octomap::OcTree> getOctree() const;
 
-  /// Integrates a sensor measurement at \c point. The occupancy probability of
-  /// a node that contains \c point will be updated based on the value of
-  /// \c occupied; true will increase while false will decrease.
+  /// Updates the occupancy probability of the voxels where \c point is located.
+  ///
+  /// Note that the probability is computed by both of the current probability
+  /// and the new sensor measurement.
   ///
   /// \param[in] point Location of the sensor measurement.
   /// \param[in] occupied True if the location was measured occupied.
   void updateOccupancy(const Eigen::Vector3d& point, bool occupied = true);
 
-  /// Inserts a ray between \c from and \c to into the voxel grid.
+  /// Updates the occupancy probability of the voxels given sensor measurement,
+  /// which is a single ray.
+  ///
+  /// Note that the probability is computed by both of the current probability
+  /// and the new sensor measurement.
+  ///
+  /// If you have a ray cloud, then using updateOccupancy(PointClout, ...) is
+  /// more efficient.
   ///
   /// \param from Origin of sensor in global coordinates.
   /// \param to Endpoint of measurement in global coordinates.
   void updateOccupancy(const Eigen::Vector3d& from, const Eigen::Vector3d& to);
 
-  /// Integrates a 3D ray cloud sensor measurement.
+  /// Updates the occupancy probability of the voxels given sensor measurement.
+  ///
+  /// Note that the probability is computed by both of the current probability
+  /// and the new sensor measurement.
+  ///
+  /// The voxels of the end points of rays will increase the probability because
+  /// that's where the ray hit an object. On the other hand, the voxles that the
+  /// rays pass through will decreases the probabilities because it mean there
+  /// are no objects where the rays passed.
   ///
   /// \param[in] pointCloud Point cloud relative to frame. Points represent the
   /// end points of the rays from the sensor origin.
   /// \param[in] sensorOrigin Origin of sensor relative to frame.
-  /// \param[in] inCoordinatesOf Reference frame, determines transform to be
+  /// \param[in] relativeTo Reference frame, determines transform to be
   /// applied to point cloud and sensor origin.
   void updateOccupancy(
       const octomap::Pointcloud& pointCloud,
       const Eigen::Vector3d& sensorOrigin = Eigen::Vector3d::Zero(),
-      const Frame* inCoordinatesOf = Frame::World());
+      const Frame* relativeTo = Frame::World());
 
-  /// Integrates a 3D ray cloud sensor measurement.
+  /// Updates the occupancy probability of the voxels given sensor measurement.
+  ///
+  /// Note that the probability is computed by both of the current probability
+  /// and the new sensor measurement.
+  ///
+  /// The voxels of the end points of rays will increase the probability because
+  /// that's where the ray hit an object. On the other hand, the voxles that the
+  /// rays pass through will decreases the probabilities because it mean there
+  /// are no objects where the rays passed.
   ///
   /// \param[in] pointCloud Point cloud relative to frame. Points represent the
   /// end points of the rays from the sensor origin.
   /// \param[in] sensorOrigin Origin of sensor relative to frame.
-  /// \param[in] inCoordinatesOf Reference frame, determines transform to be
+  /// \param[in] relativeTo Reference frame, determines transform to be
   /// applied to point cloud and sensor origin.
   void updateOccupancy(
       const octomap::Pointcloud& pointCloud,
       const Eigen::Vector3d& sensorOrigin,
-      const Eigen::Isometry3d& inCoordinatesOf);
+      const Eigen::Isometry3d& relativeTo);
 
   /// Returns occupancy probability of a node that contains \c point.
   double getOccupancy(const Eigen::Vector3d& point) const;
