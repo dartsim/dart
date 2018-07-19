@@ -35,7 +35,7 @@
 
 #include "dart/gui/glut/GlutWindow.hpp"
 
-#warning "This file is deprecated in DART 6.1. "\
+#warning "This file is deprecated in DART 6.6. "\
          "Please use dart/gui/glut/GlutWindow.hpp instead."
 
 namespace dart {

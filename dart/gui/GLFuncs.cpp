@@ -47,11 +47,9 @@
 namespace dart {
 namespace gui {
 
-void drawStringOnScreen(float, float, const std::string&, bool)
+void drawStringOnScreen(float x, float y, const std::string& s, bool bigFont)
 {
-  dtwarn << "dart::gui::drawStringOnScreen() is deprecated in DART 6.1. "
-         << "Please use dart::gui::glut::drawStringOnScreen() instead. "
-         << "Ignoring this action.\n";
+  glut::drawStringOnScreen(x, y, s, bigFont);
 }
 
 // draw a 3D arrow starting from pt along dir, the arrowhead is on the other end
