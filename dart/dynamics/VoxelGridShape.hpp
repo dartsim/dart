@@ -102,10 +102,10 @@ public:
   /// Note that the probability is computed by both of the current probability
   /// and the new sensor measurement.
   ///
-  /// The voxels of the end points of rays will increase the probability because
-  /// that's where the ray hit an object. On the other hand, the voxels that the
-  /// rays pass through will decreases the probabilities because it mean there
-  /// are no objects where the rays passed.
+  /// The voxels where the ray endpoints are located will increase the
+  /// probabilities because that’s where the rays hit objects. On the other
+  /// hand, the voxels that the rays pass through will decrease the
+  /// probabilities because it means there are no objects.
   ///
   /// \param[in] pointCloud Point cloud relative to frame. Points represent the
   /// end points of the rays from the sensor origin.
@@ -122,10 +122,10 @@ public:
   /// Note that the probability is computed by both of the current probability
   /// and the new sensor measurement.
   ///
-  /// The voxels of the end points of rays will increase the probability because
-  /// that's where the ray hit an object. On the other hand, the voxels that the
-  /// rays pass through will decreases the probabilities because it mean there
-  /// are no objects where the rays passed.
+  /// The voxels where the ray endpoints are located will increase the
+  /// probabilities because that’s where the rays hit objects. On the other
+  /// hand, the voxels that the rays pass through will decrease the
+  /// probabilities because it means there are no objects.
   ///
   /// \param[in] pointCloud Point cloud relative to frame. Points represent the
   /// end points of the rays from the sensor origin.
