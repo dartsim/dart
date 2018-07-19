@@ -103,7 +103,7 @@ public:
   /// and the new sensor measurement.
   ///
   /// The voxels of the end points of rays will increase the probability because
-  /// that's where the ray hit an object. On the other hand, the voxles that the
+  /// that's where the ray hit an object. On the other hand, the voxels that the
   /// rays pass through will decreases the probabilities because it mean there
   /// are no objects where the rays passed.
   ///
@@ -123,7 +123,7 @@ public:
   /// and the new sensor measurement.
   ///
   /// The voxels of the end points of rays will increase the probability because
-  /// that's where the ray hit an object. On the other hand, the voxles that the
+  /// that's where the ray hit an object. On the other hand, the voxels that the
   /// rays pass through will decreases the probabilities because it mean there
   /// are no objects where the rays passed.
   ///
