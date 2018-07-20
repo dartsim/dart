@@ -32,6 +32,8 @@
 
 #include "MyWindow.hpp"
 
+#include <dart/gui/GLFuncs.hpp>
+
 using namespace dart;
 using namespace math;
 using namespace dynamics;

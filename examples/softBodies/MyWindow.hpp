@@ -43,7 +43,7 @@
 #include <dart/gui/gui.hpp>
 
 /// \brief
-class MyWindow : public dart::gui::SoftSimWindow
+class MyWindow : public dart::gui::glut::SoftSimWindow
 {
 public:
   /// \brief

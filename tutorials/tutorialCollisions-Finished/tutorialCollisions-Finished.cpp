@@ -105,7 +105,7 @@ void setupRing(const SkeletonPtr& ring)
   }
 }
 
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public dart::gui::glut::SimWindow
 {
 public:
 

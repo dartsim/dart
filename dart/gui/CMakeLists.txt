@@ -78,6 +78,20 @@ add_subdirectory(osg)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})
+
+# Remove deprecated files from the list
+list(REMOVE_ITEM header_names
+  "GLFuncs.hpp"
+  "GlutWindow.hpp"
+  "GraphWindow.hpp"
+  "LoadGlut.hpp"
+  "MotionBlurSimWindow.hpp"
+  "SimWindow.hpp"
+  "SoftSimWindow.hpp"
+  "Win2D.hpp"
+  "Win3D.hpp"
+)
+
 set(
   header_names
   ${header_names}
