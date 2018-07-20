@@ -39,6 +39,7 @@
 
 #include <octomap/octomap.h>
 #include "dart/collision/fcl/BackwardCompatibility.hpp"
+#include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/Shape.hpp"
 
 namespace dart {
@@ -74,18 +75,67 @@ public:
   /// Returns octree.
   fcl_shared_ptr<const octomap::OcTree> getOctree() const;
 
-  /// Integrates a sensor measurement at \c point. The occupancy probability of
-  /// a node that contains \c point will be updated based on the value of
-  /// \c occupied; true will increase while false will decrease.
+  /// Updates the occupancy probability of the voxels where \c point is located.
+  ///
+  /// Note that the probability is computed by both of the current probability
+  /// and the new sensor measurement.
   ///
   /// \param[in] point Location of the sensor measurement.
   /// \param[in] occupied True if the location was measured occupied.
   void updateOccupancy(const Eigen::Vector3d& point, bool occupied = true);
 
-  /// Integrates a point cloud sensor measurement.
+  /// Updates the occupancy probability of the voxels given sensor measurement,
+  /// which is a single ray.
+  ///
+  /// Note that the probability is computed by both of the current probability
+  /// and the new sensor measurement.
+  ///
+  /// If you have a ray cloud, then using updateOccupancy(PointClout, ...) is
+  /// more efficient.
+  ///
+  /// \param from Origin of sensor in global coordinates.
+  /// \param to Endpoint of measurement in global coordinates.
+  void updateOccupancy(const Eigen::Vector3d& from, const Eigen::Vector3d& to);
+
+  /// Updates the occupancy probability of the voxels given sensor measurement.
+  ///
+  /// Note that the probability is computed by both of the current probability
+  /// and the new sensor measurement.
+  ///
+  /// The voxels where the ray endpoints are located will increase the
+  /// probabilities because that’s where the rays hit objects. On the other
+  /// hand, the voxels that the rays pass through will decrease the
+  /// probabilities because it means there are no objects.
+  ///
+  /// \param[in] pointCloud Point cloud relative to frame. Points represent the
+  /// end points of the rays from the sensor origin.
+  /// \param[in] sensorOrigin Origin of sensor relative to frame.
+  /// \param[in] relativeTo Reference frame, determines transform to be
+  /// applied to point cloud and sensor origin.
   void updateOccupancy(
       const octomap::Pointcloud& pointCloud,
-      const octomap::point3d& sensorOrigin);
+      const Eigen::Vector3d& sensorOrigin = Eigen::Vector3d::Zero(),
+      const Frame* relativeTo = Frame::World());
+
+  /// Updates the occupancy probability of the voxels given sensor measurement.
+  ///
+  /// Note that the probability is computed by both of the current probability
+  /// and the new sensor measurement.
+  ///
+  /// The voxels where the ray endpoints are located will increase the
+  /// probabilities because that’s where the rays hit objects. On the other
+  /// hand, the voxels that the rays pass through will decrease the
+  /// probabilities because it means there are no objects.
+  ///
+  /// \param[in] pointCloud Point cloud relative to frame. Points represent the
+  /// end points of the rays from the sensor origin.
+  /// \param[in] sensorOrigin Origin of sensor relative to frame.
+  /// \param[in] relativeTo Reference frame, determines transform to be
+  /// applied to point cloud and sensor origin.
+  void updateOccupancy(
+      const octomap::Pointcloud& pointCloud,
+      const Eigen::Vector3d& sensorOrigin,
+      const Eigen::Isometry3d& relativeTo);
 
   /// Returns occupancy probability of a node that contains \c point.
   double getOccupancy(const Eigen::Vector3d& point) const;

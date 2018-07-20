@@ -4,7 +4,7 @@
 
 * Dynamics
 
-  * Added VoxelGridShape: [#1076](https://github.com/dartsim/dart/pull/1076)
+  * Added VoxelGridShape: [#1076](https://github.com/dartsim/dart/pull/1076), [#1083](https://github.com/dartsim/dart/pull/1083)
 
 ### [DART 6.5.0 (2018-05-12)](https://github.com/dartsim/dart/milestone/41?closed=1)
 
