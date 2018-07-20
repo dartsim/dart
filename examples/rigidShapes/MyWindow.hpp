@@ -43,7 +43,7 @@
 #include <dart/gui/gui.hpp>
 
 /// MyWindow
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public dart::gui::glut::SimWindow
 {
 public:
   /// Constructor

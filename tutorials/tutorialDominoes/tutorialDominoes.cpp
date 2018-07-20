@@ -132,7 +132,7 @@ protected:
   Eigen::VectorXd mForces;
 };
 
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public dart::gui::glut::SimWindow
 {
 public:
 

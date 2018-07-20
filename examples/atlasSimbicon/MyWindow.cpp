@@ -32,6 +32,8 @@
 
 #include "MyWindow.hpp"
 
+#include <dart/gui/GLFuncs.hpp>
+
 //==============================================================================
 MyWindow::MyWindow(Controller* _controller)
   : SimWindow(),

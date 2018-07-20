@@ -33,7 +33,7 @@
 #ifndef DART_GUI_LOADGLUT_HPP_
 #define DART_GUI_LOADGLUT_HPP_
 
-#warning "This file is deprecated in DART 6.1. "\
+#warning "This file is deprecated in DART 6.6. "\
          "Please use dart/gui/glut/LoadGlut.hpp instead."
 
 #include "dart/gui/glut/LoadGlut.hpp"

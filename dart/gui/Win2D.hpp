@@ -33,7 +33,7 @@
 #ifndef DART_GUI_WIN2D_HPP_
 #define DART_GUI_WIN2D_HPP_
 
-#warning "This file is deprecated in DART 6.1. "\
+#warning "This file is deprecated in DART 6.6. "\
          "Please use dart/gui/glut/Win2D.hpp instead."
 
 #include "dart/gui/glut/Win2D.hpp"

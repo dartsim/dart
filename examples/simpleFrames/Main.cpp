@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
   // rendered correctly, it must be a child of the World Frame
   // TODO(MXG): Fix this issue ^
 
-  dart::gui::SimWindow window;
+  dart::gui::glut::SimWindow window;
   window.setWorld(myWorld);
 
   glutInit(&argc, argv);

@@ -15,7 +15,7 @@
 /////////////////////////////////////////////////////////////////////////
 
 
-#include "dart/gui/MotionBlurSimWindow.hpp"
+#include "dart/gui/glut/MotionBlurSimWindow.hpp"
 
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/gui/GLFuncs.hpp"
@@ -23,15 +23,19 @@
 
 namespace dart {
 namespace gui {
+namespace glut {
 
+//==============================================================================
 MotionBlurSimWindow::MotionBlurSimWindow()
   : SimWindow()
 {
   mMotionBlurFrequency = 1;
 }
 
+//==============================================================================
 MotionBlurSimWindow::~MotionBlurSimWindow()
 {
+  // Do nothing
 }
 
 //==============================================================================
@@ -218,8 +222,7 @@ void MotionBlurSimWindow::displayTimer(int _val)
   glutPostRedisplay();
   glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
-    
 
+} // namespace glut
 } // namespace gui
 } // namespace dart
-

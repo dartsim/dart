@@ -4,7 +4,11 @@
 
 * Dynamics
 
-  * Added VoxelGridShape: [#1076](https://github.com/dartsim/dart/pull/1076)
+  * Added VoxelGridShape: [#1076](https://github.com/dartsim/dart/pull/1076), [#1083](https://github.com/dartsim/dart/pull/1083)
+
+* GUI
+
+  * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)
 
 ### [DART 6.5.0 (2018-05-12)](https://github.com/dartsim/dart/milestone/41?closed=1)
 
@@ -361,7 +365,7 @@
 1. Improved camera movement of OpenGL GUI: smooth zooming and translation 
     * [Pull request #843](https://github.com/dartsim/dart/pull/843)
 
-1. Removed debian meta files from the main DART repository
+2. Removed debian meta files from the main DART repository
     * [Pull request #853](https://github.com/dartsim/dart/pull/853)
 
 ### Version 5.1.5 (2017-01-20)
