@@ -46,12 +46,12 @@ void ShapeFrameEntity::update(bool shortCircuitIfUtilized)
 //  }
 }
 
-void ShapeFrameEntity::refreshShapeNode(const std::shared_ptr<dynamics::Shape>& shape)
+void ShapeFrameEntity::refreshShapeNode(const std::shared_ptr<dynamics::Shape>& /*shape*/)
 {
 
 }
 
-void ShapeFrameEntity::createShapeNode(const std::shared_ptr<dynamics::Shape>& shape)
+void ShapeFrameEntity::createShapeNode(const std::shared_ptr<dynamics::Shape>& /*shape*/)
 {
 
 }

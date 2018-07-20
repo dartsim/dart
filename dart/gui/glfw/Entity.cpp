@@ -92,7 +92,7 @@ void Entity::setTransform(const Eigen::Isometry3f& tf)
   mTransform = tf;
 }
 
-void Entity::update(bool shortCircuitIfUtilized)
+void Entity::update(bool /*shortCircuitIfUtilized*/)
 {
   // Do nothing
 }
