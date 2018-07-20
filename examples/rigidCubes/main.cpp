@@ -33,14 +33,18 @@
 #include <iostream>
 
 #include <dart/dart.hpp>
+#include <dart/gui/glfw/WorldWindow.hpp>
 #include <dart/utils/utils.hpp>
 
 #include "MyWindow.hpp"
 
-int main(int argc, char* argv[])
+using namespace dart::utils;
+using namespace dart::gui;
+
+int main()
 {
   // Create and initialize the world
-  auto world = dart::utils::SkelParser::readWorld("dart://sample/skel/cubes.skel");
+  auto world = SkelParser::readWorld("dart://sample/skel/cubes.skel");
   if (!world)
   {
     dterr << "Failed to load world.\n";
@@ -49,8 +53,7 @@ int main(int argc, char* argv[])
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
   // Create a window and link it to the world
-  MyWindow window;
-  window.setWorld(world);
+  glfw::Window viewer("Boxes", 640, 480);
 
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'p': playback/stop" << std::endl;
@@ -58,9 +61,7 @@ int main(int argc, char* argv[])
   std::cout << "'v': visualization on/off" << std::endl;
   std::cout << "'1'--'4': programmed interaction" << std::endl;
 
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Boxes");
-  glutMainLoop();
+  glfw::Window::runAllViewers();
 
   return 0;
 }

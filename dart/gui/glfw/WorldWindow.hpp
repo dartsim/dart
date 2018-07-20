@@ -30,81 +30,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "MyWindow.hpp"
+#ifndef DART_GUI_GLFW_WORLDWINDOW_HPP_
+#define DART_GUI_GLFW_WORLDWINDOW_HPP_
 
-MyWindow::MyWindow() : SimWindow()
+#include "dart/gui/LoadOpengl.hpp"
+#include "dart/gui/glfw/Window.hpp"
+
+namespace dart {
+namespace gui {
+namespace glfw {
+
+class WorldWindow : public Window
 {
-  mForce = Eigen::Vector3d::Zero();
-}
+public:
+  /// Constructor
+  WorldWindow();
 
-MyWindow::~MyWindow()
-{
-}
+  /// Destructor
+  ~WorldWindow() override;
 
-void MyWindow::timeStepping()
-{
-  mWorld->getSkeleton(1)->getBodyNode(0)->addExtForce(mForce);
-  mWorld->step();
-  mForce /= 2.0;
-}
+protected:
+  void renderScene() override;
 
-void MyWindow::drawWorld() const
-{
-  glEnable(GL_LIGHTING);
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  virtual void renderWorld();
 
-  SimWindow::drawWorld();
-}
+  Trackball mTrackBall;
+  Eigen::Vector3d mTrans;
+  Eigen::Vector3d mEye;
+  Eigen::Vector3d mUp;
+  float mZoom;
+  float mPersp;
 
-void MyWindow::keyboard(unsigned char _key, int _x, int _y)
-{
-  switch (_key)
-  {
-    case ' ': // use space key to play or stop the motion
-      mSimulating = !mSimulating;
-      if (mSimulating)
-        mPlay = false;
-      break;
-    case 'p': // playBack
-      mPlay = !mPlay;
-      if (mPlay)
-        mSimulating = false;
-      break;
-    case '[': // step backward
-      if (!mSimulating)
-      {
-        mPlayFrame--;
-        if (mPlayFrame < 0)
-          mPlayFrame = 0;
-        glutPostRedisplay();
-      }
-      break;
-    case ']': // step forwardward
-      if (!mSimulating)
-      {
-        mPlayFrame++;
-        if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
-          mPlayFrame = 0;
-        glutPostRedisplay();
-      }
-      break;
-    case 'v': // show or hide markers
-      mShowMarkers = !mShowMarkers;
-      break;
-    case '1': // upper right force
-      mForce[0] = -500;
-      break;
-    case '2': // upper right force
-      mForce[0] = 500;
-      break;
-    case '3': // upper right force
-      mForce[2] = -500;
-      break;
-    case '4': // upper right force
-      mForce[2] = 500;
-      break;
-    default:
-      Win3D::keyboard(_key, _x, _y);
-  }
-  glutPostRedisplay();
-}
+  bool mRotate;
+  bool mTranslate;
+  bool mZooming;
+
+  bool mCapture;
+};
+
+} // namespace glfw
+} // namespace gui
+} // namespace dart
+
+#endif // DART_GUI_GLFW_WORLDWINDOW_HPP_

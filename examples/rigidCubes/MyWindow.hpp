@@ -54,4 +54,4 @@ private:
   Eigen::Vector3d mForce;
 };
 
-#endif  // EXAMPLES_CUBES_MYWINDOW_HPP_
+#endif // EXAMPLES_CUBES_MYWINDOW_HPP_
