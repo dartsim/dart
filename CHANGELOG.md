@@ -2,9 +2,10 @@
 
 ### DART 6.6.0 (201X-XX-XX)
 
-* Dynamics
+* Collision detection
 
-  * Added VoxelGridShape: [#1076](https://github.com/dartsim/dart/pull/1076), [#1083](https://github.com/dartsim/dart/pull/1083)
+  * Added voxel grid map: [#1076](https://github.com/dartsim/dart/pull/1076), [#1083](https://github.com/dartsim/dart/pull/1083)
+  * Added heightmap support: [#1069](https://github.com/dartsim/dart/pull/1069)
 
 ### [DART 6.5.0 (2018-05-12)](https://github.com/dartsim/dart/milestone/41?closed=1)
 
