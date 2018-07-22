@@ -29,7 +29,7 @@ The code doesn't need to be perfect right away, feel free to post work-in-progre
  [Can Erdogan](https://github.com/cerdogan)         | planning, examples
  [Jie Tan](https://github.com/jietan)               | lcp solver, renderer
  [Yunfei Bai](https://github.com/YunfeiBai)         | build and bug fixes
- [Konstantinos Chatzilygeroudis](https://github.com/costashatz) | build and bug fixes
+ [Konstantinos Chatzilygeroudis](https://github.com/costashatz) | OSG shadows, build and bug fixes
  [Sehoon Ha](https://github.com/sehoonha)           | early DART data structure design, [pydart](https://github.com/sehoonha/pydart)
  [Donny Ward](https://github.com/donnyward)         | build fix
  [Andrew Price](https://github.com/a-price)         | build fix
@@ -41,8 +41,13 @@ The code doesn't need to be perfect right away, feel free to post work-in-progre
  [José Luis Rivero](https://github.com/j-rivero)    | build, especially for Debian
  [Jonathan Scholz](https://github.com/jscholz)      | build fix
  [John Turgeson](https://github.com/JohnTurgeson)   | mesh model
+ [Jennifer Buehler](https://github.com/JenniferBuehler) | heightmap, bug fix
+ [Dong Xu](https://github.com/hxbloom)              | motion blur renderer
+ [Donghyun Kim](https://github.com/dhkim0821)       | Atlas texture images
+ [Aditya Vamsikrishna](https://github.com/aditya-vk) | bug fix
+ [pchorak](https://github.com/pchorak)              | bug fixes
 
-You can find a detailed contribution history in [here](https://github.com/dartsim/dart/graphs/contributors).
+You can find the complete contribution history in [here](https://github.com/dartsim/dart/graphs/contributors).
 
 ## DART Style Guide
 

@@ -62,6 +62,7 @@ public:
     MESH,
     SOFT_MESH,
     LINE_SEGMENT,
+    HEIGHTMAP,
     UNSUPPORTED
   };
 
@@ -111,7 +112,7 @@ public:
   ///        such as BoxShape, EllipsoidShape, CylinderShape, and MeshShape.
   const math::BoundingBox& getBoundingBox() const;
 
-  /// \brief
+  /// Computes the inertia.
   virtual Eigen::Matrix3d computeInertia(double mass) const = 0;
 
   Eigen::Matrix3d computeInertiaFromDensity(double density) const;

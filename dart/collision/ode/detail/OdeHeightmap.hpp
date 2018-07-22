@@ -30,50 +30,40 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
-#define DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
+#ifndef DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
+#define DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
 
-// Must be included before any Bullet headers.
-#include "dart/config.hpp"
+#include <ode/ode.h>
 
-#include <btBulletCollisionCommon.h>
-
-#include "dart/collision/CollisionObject.hpp"
-#include "dart/collision/bullet/BulletCollisionShape.hpp"
+#include "dart/collision/ode/detail/OdeGeom.hpp"
+#include "dart/dynamics/HeightmapShape.hpp"
 
 namespace dart {
 namespace collision {
+namespace detail {
 
-class CollisionObject;
-
-class BulletCollisionObject : public CollisionObject
+template <typename S>
+class OdeHeightmap : public OdeGeom
 {
 public:
-  friend class BulletCollisionDetector;
-
-  /// Return Bullet collision object
-  btCollisionObject* getBulletCollisionObject();
-
-  /// Return Bullet collision object
-  const btCollisionObject* getBulletCollisionObject() const;
-
-protected:
   /// Constructor
-  BulletCollisionObject(CollisionDetector* collisionDetector,
-                        const dynamics::ShapeFrame* shapeFrame,
-                        BulletCollisionShape* bulletCollisionShape);
+  OdeHeightmap(
+      const OdeCollisionObject* parent, const dynamics::HeightmapShape<S>* hs);
 
-  // Documentation inherited
-  void updateEngineData() override;
+  /// Destructor
+  ~OdeHeightmap() override;
 
-protected:
-  /// Bullet collision object
-  std::unique_ptr<btCollisionObject> mBulletCollisionObject;
-
-  BulletCollisionShape* mBulletCollisionShape;
+private:
+  dHeightfieldDataID mOdeHeightfieldId;
 };
 
-}  // namespace collision
-}  // namespace dart
+using OdeHeightmapf = OdeHeightmap<float>;
+using OdeHeightmapd = OdeHeightmap<double>;
 
-#endif  // DART_COLLISION_BULLET_BULLETCOLLISIONOBJECT_HPP_
+} // namespace detail
+} // namespace collision
+} // namespace dart
+
+#include "dart/collision/ode/detail/OdeHeightmap-impl.hpp"
+
+#endif // DART_COLLISION_ODE_DETAIL_ODEHEIGHTMAP_HPP_
