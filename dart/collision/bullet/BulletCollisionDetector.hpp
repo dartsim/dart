@@ -41,6 +41,7 @@
 #include <btBulletCollisionCommon.h>
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/bullet/BulletCollisionGroup.hpp"
+#include "dart/collision/bullet/BulletCollisionShape.hpp"
 
 namespace dart {
 namespace collision {
@@ -111,19 +112,19 @@ protected:
 
 private:
 
-  btCollisionShape* claimBulletCollisionShape(
+  BulletCollisionShape* claimBulletCollisionShape(
       const dynamics::ConstShapePtr& shape);
 
   void reclaimBulletCollisionShape(
       const dynamics::ConstShapePtr& shape);
 
-  btCollisionShape* createBulletCollisionShape(
+  std::unique_ptr<BulletCollisionShape> createBulletCollisionShape(
       const dynamics::ConstShapePtr& shape);
 
 private:
 
   std::map<dynamics::ConstShapePtr,
-           std::pair<btCollisionShape*, std::size_t>> mShapeMap;
+           std::pair<std::unique_ptr<BulletCollisionShape>, std::size_t>> mShapeMap;
 
   std::unique_ptr<BulletCollisionGroup> mGroupForFiltering;
 
