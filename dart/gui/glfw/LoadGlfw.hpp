@@ -22,23 +22,10 @@
 // SOFTWARE.
 //
 
-#ifndef DART_GUI_GLFW_OPENGL_HPP_
-#define DART_GUI_GLFW_OPENGL_HPP_
+#ifndef DART_GUI_GLFW_LOADGLFW_HPP_
+#define DART_GUI_GLFW_LOADGLFW_HPP_
 
-//#include "dart/gui/gl3w.h"
-
-#if defined(__APPLE__)
-#define GLFW_INCLUDE_GLCOREARB
-#elif defined(_WIN32)
-#ifndef GLEW_STATIC
-#define GLEW_STATIC
-#endif
-#include <GL/glew.h>
-#else
-#define GL_GLEXT_PROTOTYPES
-#endif
-// TODO: Pick one of gl3w and glew
-
-#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3.h>
+#include "dart/gui/LoadOpengl.hpp"
 
 #endif // DART_GUI_GLFW_OPENGL_HPP_

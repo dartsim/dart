@@ -6,6 +6,9 @@ endif()
 find_package(OpenGL QUIET)
 dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
 
+find_package(GLEW QUIET)
+dart_check_optional_package(GLEW "dart-gui" "GLEW")
+
 if(WIN32 AND NOT CYGWIN)
   set(GLUT_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
   set(GLUT_LIBRARIES glut32)
@@ -51,14 +54,16 @@ target_include_directories(
   ${target_name} SYSTEM
   PUBLIC
     ${OPENGL_INCLUDE_DIR}
+    ${GLEW_INCLUDE_DIRS}
     ${GLUT_INCLUDE_DIR}
 )
 target_link_libraries(
   ${target_name}
   PUBLIC
     dart-utils
-    ${GLUT_LIBRARIES}
     ${OPENGL_LIBRARIES}
+    ${GLEW_LIBRARIES}
+    ${GLUT_LIBRARIES}
     ${PROJECT_NAME}-external-lodepng
     ${PROJECT_NAME}-external-imgui
 )
@@ -114,4 +119,18 @@ install(
   FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
   DESTINATION include/dart/gui
   COMPONENT headers
+)
+
+dart_format_add(
+  Program.hpp
+  Program.cpp
+  ShaderCode.hpp
+  Vertex.hpp
+  VertexArrayObject.hpp
+  VertexBufferObject.hpp
+  detail/BufferObject-impl.hpp
+  detail/ShaderCode-impl.hpp
+  detail/Vertex-impl.hpp
+  detail/VertexArrayObject-impl.hpp
+  detail/VertexBufferObject-impl.hpp
 )

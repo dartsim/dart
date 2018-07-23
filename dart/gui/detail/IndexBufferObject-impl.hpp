@@ -30,38 +30,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#include "dart/gui/IndexBufferObject.hpp"
 
-#include <dart/dart.hpp>
-#include <dart/gui/glfw/WorldWindow.hpp>
-#include <dart/utils/utils.hpp>
+#include <cassert>
+#include "dart/gui/glfw/LoadGlfw.hpp"
 
-#include "MyWindow.hpp"
+namespace dart {
+namespace gui {
 
-using namespace dart::utils;
-using namespace dart::gui;
-
-int main()
+//==============================================================================
+template<typename IndexT>
+IndexBufferObject<IndexT>::IndexBufferObject()
 {
-  // Create and initialize the world
-  auto world = SkelParser::readWorld("dart://sample/skel/cubes.skel");
-  if (!world)
-  {
-    dterr << "Failed to load world.\n";
-    exit(EXIT_FAILURE);
-  }
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
-
-  // Create a window and link it to the world
-  glfw::WorldWindow window(world, "Boxes", 640, 480);
-
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'4': programmed interaction" << std::endl;
-
-  glfw::Window::runAllViewers();
-
-  return 0;
+  // Do nothing
 }
+
+} // namespace gui
+} // namespace dart

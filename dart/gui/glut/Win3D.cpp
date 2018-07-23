@@ -251,12 +251,12 @@ void Win3D::initGL()
 //==============================================================================
 void Win3D::initLights()
 {
-  static float ambient[]             = {0.2, 0.2, 0.2, 1.0};
-  static float diffuse[]             = {0.6, 0.6, 0.6, 1.0};
-  static float front_mat_shininess[] = {60.0};
-  static float front_mat_specular[]  = {0.2, 0.2,  0.2,  1.0};
-  static float front_mat_diffuse[]   = {0.5, 0.28, 0.38, 1.0};
-  static float lmodel_ambient[]      = {0.2, 0.2,  0.2,  1.0};
+  static float ambient[]             = {0.2f, 0.2f, 0.2f, 1.0f};
+  static float diffuse[]             = {0.6f, 0.6f, 0.6f, 1.0f};
+  static float front_mat_shininess[] = {60.0f};
+  static float front_mat_specular[]  = {0.2f, 0.2f,  0.2f,  1.0f};
+  static float front_mat_diffuse[]   = {0.5f, 0.28f, 0.38f, 1.0f};
+  static float lmodel_ambient[]      = {0.2f, 0.2f,  0.2f,  1.0f};
   static float lmodel_twoside[]      = {GL_FALSE};
 
   GLfloat position[] = {1.0, 0.0, 0.0, 0.0};

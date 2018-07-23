@@ -34,7 +34,11 @@
 #define DART_GUI_GLFW_WORLDWINDOW_HPP_
 
 #include "dart/gui/LoadOpengl.hpp"
+#include "dart/gui/RenderInterface.hpp"
+#include "dart/gui/glfw/BoxEntity.hpp"
 #include "dart/gui/glfw/Window.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/gui/Program.hpp"
 
 namespace dart {
 namespace gui {
@@ -44,7 +48,12 @@ class WorldWindow : public Window
 {
 public:
   /// Constructor
-  WorldWindow();
+  WorldWindow(
+      simulation::WorldPtr world = nullptr,
+      const std::string& title = "Nonamed Window",
+      int width = 640,
+      int height = 360,
+      bool show = true);
 
   /// Destructor
   ~WorldWindow() override;
@@ -53,6 +62,41 @@ protected:
   void renderScene() override;
 
   virtual void renderWorld();
+
+  virtual void drawSkeleton(
+      const dynamics::Skeleton* skeleton,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      bool useDefaultColor = true) const;
+
+  virtual void drawEntity(
+      const dynamics::Entity* entity,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      bool useDefaultColor = true) const;
+
+  virtual void drawBodyNode(
+      const dynamics::BodyNode* bodyNode,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      bool useDefaultColor = true,
+      bool recursive = false) const;
+
+  virtual void drawShapeFrame(
+      const dynamics::ShapeFrame* shapeFrame,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      bool useDefaultColor = true) const;
+
+  virtual void drawShape(
+      const dynamics::Shape* shape,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5)) const;
+
+  virtual void drawPointMasses(
+      const std::vector<dynamics::PointMass*> pointMasses,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      bool useDefaultColor = true) const;
+
+  virtual void drawMarker(
+      const dynamics::Marker* marker,
+      const Eigen::Vector4d& color = Eigen::Vector4d::Constant(0.5),
+      bool useDefaultColor = true) const;
 
   Trackball mTrackBall;
   Eigen::Vector3d mTrans;
@@ -66,6 +110,26 @@ protected:
   bool mZooming;
 
   bool mCapture;
+
+  std::shared_ptr<RenderInterface> mRI;
+
+  simulation::WorldPtr mWorld;
+
+  int mPlayFrame;
+
+  bool mPlay;
+
+  bool mSimulating;
+
+  /// If true, render point masses of soft bodies
+  bool mShowPointMasses;
+
+  /// If true, render markers
+  bool mShowMarkers;
+
+  std::unique_ptr<Program> mProgram;
+
+  BoxEntity mBox;
 };
 
 } // namespace glfw

@@ -37,7 +37,8 @@
 #include <unordered_map>
 
 #include <Eigen/Dense>
-#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3.h>
+#include "dart/gui/LoadOpengl.hpp"
 
 #include "dart/gui/Trackball.hpp"
 
@@ -133,7 +134,7 @@ protected:
 
   virtual void renderGui();
 
-  static Window* findViewer(GLFWwindow* window);
+  static Window* findWindow(GLFWwindow* window);
 
   //----------------------------------------------------------------------------
   /// \{ \name Camera work

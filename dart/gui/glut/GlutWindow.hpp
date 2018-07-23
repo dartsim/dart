@@ -88,7 +88,7 @@ protected:
   bool mMouseDown;
   bool mMouseDrag;
   bool mCapture;
-  double mBackground[4];
+  float mBackground[4];
   gui::RenderInterface* mRI;
   std::vector<unsigned char> mScreenshotTemp;
   std::vector<unsigned char> mScreenshotTemp2;

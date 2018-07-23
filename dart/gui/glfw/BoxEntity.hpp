@@ -30,38 +30,39 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#ifndef DART_GUI_GLFW_BOXENTITY_HPP_
+#define DART_GUI_GLFW_BOXENTITY_HPP_
 
-#include <dart/dart.hpp>
-#include <dart/gui/glfw/WorldWindow.hpp>
-#include <dart/utils/utils.hpp>
+#include "dart/gui/glfw/Entity.hpp"
 
-#include "MyWindow.hpp"
+#include "dart/gui/Vertex.hpp"
+#include "dart/gui/VertexArrayObject.hpp"
 
-using namespace dart::utils;
-using namespace dart::gui;
+namespace dart {
+namespace gui {
+namespace glfw {
 
-int main()
+// Demo object
+class BoxEntity : public Entityd
 {
-  // Create and initialize the world
-  auto world = SkelParser::readWorld("dart://sample/skel/cubes.skel");
-  if (!world)
-  {
-    dterr << "Failed to load world.\n";
-    exit(EXIT_FAILURE);
-  }
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+public:
+  BoxEntity();
 
-  // Create a window and link it to the world
-  glfw::WorldWindow window(world, "Boxes", 640, 480);
+  ~BoxEntity() override;
 
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'4': programmed interaction" << std::endl;
+  void initialize();
+  // TODO(JS): Let's have this until it's clear when to call this
 
-  glfw::Window::runAllViewers();
+  void release();
 
-  return 0;
-}
+  void render();
+
+protected:
+  VertexArrayObject<PointVertex, GLuint> mVAO;
+};
+
+} // namespace glfw
+} // namespace gui
+} // namespace dart
+
+#endif // DART_GUI_GLFW_BOXENTITY_HPP_

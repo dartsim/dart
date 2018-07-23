@@ -30,38 +30,75 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#ifndef DART_GUI_GLFW_CAMERA_HPP_
+#define DART_GUI_GLFW_CAMERA_HPP_
 
-#include <dart/dart.hpp>
-#include <dart/gui/glfw/WorldWindow.hpp>
-#include <dart/utils/utils.hpp>
+#include <Eigen/Dense>
+#include "dart/gui/glfw/Entity.hpp"
 
-#include "MyWindow.hpp"
+namespace dart {
+namespace gui {
+namespace glfw {
 
-using namespace dart::utils;
-using namespace dart::gui;
-
-int main()
+template <typename S>
+class Camera : public Frame<S>
 {
-  // Create and initialize the world
-  auto world = SkelParser::readWorld("dart://sample/skel/cubes.skel");
-  if (!world)
-  {
-    dterr << "Failed to load world.\n";
-    exit(EXIT_FAILURE);
-  }
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+public:
+  using Matrix4 = Eigen::Matrix<S, 4, 4>;
+  using Vector3 = typename Frame<S>::Vector3;
 
-  // Create a window and link it to the world
-  glfw::WorldWindow window(world, "Boxes", 640, 480);
+  /// Constructor
+  Camera();
 
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'4': programmed interaction" << std::endl;
+  /// Destructor
+  ~Camera() override;
 
-  glfw::Window::runAllViewers();
+  void setDimensions(std::size_t width, std::size_t height);
 
-  return 0;
-}
+  S getSceneRadius() const;
+
+  void setSceneRadius(S radius);
+
+  void setFieldOfView(S fov);
+
+  void setZoom(S fraction);
+
+  void translate(S dx, S dy, const Vector3& worldPoint);
+
+  void setClippingPlanes(S near, S far);
+
+  S getNearClippingPlane() const;
+
+  S getFarClippingPlane() const;
+
+  std::size_t getWidth() const;
+
+  std::size_t getHeight() const;
+
+  const Matrix4& getProjectionMatrix() const;
+
+protected:
+  void updateProjectionMatrix();
+
+  S mFieldOfView;
+
+  S mSceneRadius;
+
+  S mNearPlane;
+
+  S mFarPlane;
+
+  std::size_t mWidth;
+
+  std::size_t mHeight;
+
+  Matrix4 mProjectionMatrix;
+};
+
+} // namespace glfw
+} // namespace gui
+} // namespace dart
+
+#include "dart/gui/glfw/detail/Camera-impl.hpp"
+
+#endif // DART_GUI_GLFW_CAMERA_HPP_

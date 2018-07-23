@@ -33,7 +33,10 @@
 #ifndef DART_GUI_LOADOPENGL_HPP_
 #define DART_GUI_LOADOPENGL_HPP_
 
+// clang-format off
+
 #if defined(_WIN32)
+
   #ifdef NOMINMAX
     #include <windows.h>
   #else
@@ -43,14 +46,25 @@
   #endif
   #include <GL/gl.h>
   #include <GL/glu.h>
+
 #elif defined(__linux__)
-  #include <GL/gl.h>
-  #include <GL/glu.h>
+
+//  #include <GL/glu.h>
+  #define GL_GLEXT_PROTOTYPES
+  #include <GL/glew.h>
+  #include <GLFW/glfw3.h>
+
 #elif defined(__APPLE__)
+
   #include <OpenGL/gl.h>
   #include <OpenGL/glu.h>
+
 #else
+
   #error "Load OpenGL Error: What's your operating system?"
+
 #endif
+
+// clang-format on
 
 #endif  // DART_GUI_LOADOPENGL_HPP_

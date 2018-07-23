@@ -32,13 +32,15 @@
 
 #include "dart/gui/glfw/Window.hpp"
 
+#include <iostream>
 #include <thread>
 
-#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3.h>
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Platform.hpp"
-#include "dart/gui/glfw/LoadGlfw.hpp"
+//#include "dart/gui/glfw/LoadGlfw.hpp"
+#include "dart/gui/LoadOpengl.hpp"
 #include "dart/math/Constants.hpp"
 
 namespace dart {
@@ -78,7 +80,16 @@ Window::Window(const std::string& title, int width, int height, bool show)
 
   glfwMakeContextCurrent(mGlfwWindow);
 
+  glewExperimental = GL_TRUE;
+  const GLenum error = glewInit();
+  if (error != GLEW_OK)
+  {
+    assert(false);
+  }
+
   setCallbacks();
+
+  // TODO(JS): Call initializations
 }
 
 //==============================================================================
@@ -94,7 +105,7 @@ Window::~Window()
 }
 
 //==============================================================================
-Window* Window::findViewer(GLFWwindow* window)
+Window* Window::findWindow(GLFWwindow* window)
 {
   auto result = mViewerMap.find(window);
 
@@ -138,19 +149,21 @@ void Window::resetCameraToViewAll()
 bool Window::mapMouseCoordinatesToSphere(
     double xMouse, double yMouse, Eigen::Vector3f& spherePoint) const
 {
+  const auto pi = math::constantsf::pi();
+
   if ((xMouse >= 0) && (xMouse <= mWindowWidth) && (yMouse >= 0)
       && (yMouse <= mWindowHeight))
   {
-    float x = float(xMouse - 0.5f * mWindowWidth) / float(mWindowWidth);
-    float y = float(0.5f * mWindowHeight - yMouse) / float(mWindowHeight);
-    float sinx = std::sin(math::constantsf::pi() * x * 0.5f);
-    float siny = std::sin(math::constantsf::pi() * y * 0.5f);
-    float sinx2siny2 = sinx * sinx + siny * siny;
+    auto x = float(xMouse - 0.5f * mWindowWidth) / float(mWindowWidth);
+    auto y = float(0.5f * mWindowHeight - yMouse) / float(mWindowHeight);
+    auto sinx = std::sin(pi * x * 0.5f);
+    auto siny = std::sin(pi * y * 0.5f);
+    auto sinx2siny2 = sinx * sinx + siny * siny;
 
     // Compute the point on the sphere
     spherePoint[0] = sinx;
     spherePoint[1] = siny;
-    spherePoint[2] = (sinx2siny2 < 1.0) ? std::sqrt(1.0f - sinx2siny2) : 0.0f;
+    spherePoint[2] = (sinx2siny2 < 1.0f) ? std::sqrt(1.0f - sinx2siny2) : 0.0f;
 
     return true;
   }
@@ -376,17 +389,21 @@ void Window::cursorPosCallback(double xMouse, double yMouse)
 
     // Zoom the camera
     zoom(-dy / h);
+
+    std::cout << "zoom" << std::endl;
   }
   // Translation
   else if (
       middleButtonState == GLFW_PRESS || rightButtonState == GLFW_PRESS
       || (leftButtonState == GLFW_PRESS && altKeyState == GLFW_PRESS))
   {
+    std::cout << "translate" << std::endl;
     translate(static_cast<int>(xMouse), static_cast<int>(yMouse));
   }
   // Rotation
   else if (leftButtonState == GLFW_PRESS)
   {
+    std::cout << "rotate" << std::endl;
     rotate(static_cast<int>(xMouse), static_cast<int>(yMouse));
   }
 
@@ -401,8 +418,12 @@ void Window::cursorPosCallback(double xMouse, double yMouse)
 void Window::mouseButtonCallback(int /*button*/, int action, int /*mods*/)
 {
   // Get the mouse cursor position
-  double x, y;
+  double x;
+  double y;
   glfwGetCursorPos(mGlfwWindow, &x, &y);
+
+  // TODO: For debug
+  std::cout << "Mouse clicked at (" << x << ", " << y << ")" << std::endl;
 
   // If the mouse button is pressed
   if (action == GLFW_PRESS)
@@ -520,21 +541,21 @@ void Window::setCallbacks()
 
   glfwSetWindowSizeCallback(
       mGlfwWindow, [](GLFWwindow* window, int width, int height) {
-        auto* viewer = findViewer(window);
+        auto* viewer = findWindow(window);
         if (viewer)
           viewer->windowSizeCallback(width, height);
       });
 
   glfwSetCursorPosCallback(
       mGlfwWindow, [](GLFWwindow* window, double xpos, double ypos) {
-        auto* viewer = findViewer(window);
+        auto* viewer = findWindow(window);
         if (viewer)
           viewer->cursorPosCallback(xpos, ypos);
       });
 
   glfwSetMouseButtonCallback(
       mGlfwWindow, [](GLFWwindow* window, int button, int action, int mods) {
-        auto* viewer = findViewer(window);
+        auto* viewer = findWindow(window);
         if (viewer)
           viewer->mouseButtonCallback(button, action, mods);
       });
@@ -542,35 +563,35 @@ void Window::setCallbacks()
   glfwSetKeyCallback(
       mGlfwWindow,
       [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-        auto* viewer = findViewer(window);
+        auto* viewer = findWindow(window);
         if (viewer)
           viewer->keyboardCallback(key, scancode, action, mods);
       });
 
   glfwSetCharCallback(
       mGlfwWindow, [](GLFWwindow* window, unsigned int codepoint) {
-        auto* viewer = findViewer(window);
+        auto* viewer = findWindow(window);
         if (viewer)
           viewer->charCallback(codepoint);
       });
 
   glfwSetDropCallback(
       mGlfwWindow, [](GLFWwindow* window, int count, const char** filenames) {
-        auto* viewer = findViewer(window);
+        auto* viewer = findWindow(window);
         if (viewer)
           viewer->dropCallback(count, filenames);
       });
 
   glfwSetScrollCallback(
       mGlfwWindow, [](GLFWwindow* window, double xoffset, double yoffset) {
-        auto* viewer = findViewer(window);
+        auto* viewer = findWindow(window);
         if (viewer)
           viewer->scrollCallback(xoffset, yoffset);
       });
 
   glfwSetFramebufferSizeCallback(
       mGlfwWindow, [](GLFWwindow* window, int width, int height) {
-        auto* viewer = findViewer(window);
+        auto* viewer = findWindow(window);
         if (viewer)
           viewer->framebufferSizeCallback(width, height);
       });
