@@ -47,7 +47,7 @@
 namespace dart {
 namespace gui {
 
-using SoftSimWindow = ::dart::gui::glut::SoftSimWindow;
+using SoftSimWindow DART_DEPRECATED(6.6) = ::dart::gui::glut::SoftSimWindow;
 
 }  // namespace gui
 }  // namespace dart

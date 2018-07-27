@@ -47,7 +47,7 @@
 namespace dart {
 namespace gui {
 
-using SimWindow = ::dart::gui::glut::SimWindow;
+using SimWindow DART_DEPRECATED(6.6) = ::dart::gui::glut::SimWindow;
 
 }  // namespace gui
 }  // namespace dart

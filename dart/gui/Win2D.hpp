@@ -41,7 +41,7 @@
 namespace dart {
 namespace gui {
 
-using Win2D = ::dart::gui::glut::Win2D;
+using Win2D DART_DEPRECATED(6.6) = ::dart::gui::glut::Win2D;
 
 }  // namespace gui
 }  // namespace dart

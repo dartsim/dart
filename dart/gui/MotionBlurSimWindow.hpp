@@ -17,7 +17,8 @@
 namespace dart {
 namespace gui {
 
-using MotionBlurSimWindow = ::dart::gui::glut::MotionBlurSimWindow;
+using MotionBlurSimWindow DART_DEPRECATED(6.6) =
+  ::dart::gui::glut::MotionBlurSimWindow;
 
 }  // namespace gui
 }  // namespace dart
