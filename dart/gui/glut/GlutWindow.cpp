@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/glut/GlutWindow.hpp"
+#include "dart/gui/glut/Window.hpp"
 
 #include "dart/external/lodepng/lodepng.h"
 
@@ -182,7 +182,7 @@ bool Window::screenshot() {
 
   if (!S_ISDIR(buff.st_mode))
   {
-    dtwarn << "[GlutWindow::screenshot] 'frames' is not a directory, "
+    dtwarn << "[Window::screenshot] 'frames' is not a directory, "
            << "cannot write a screenshot\n";
     return false;
   }

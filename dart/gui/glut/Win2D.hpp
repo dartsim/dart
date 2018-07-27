@@ -33,7 +33,7 @@
 #ifndef DART_GUI_GLUT_WIN2D_HPP_
 #define DART_GUI_GLUT_WIN2D_HPP_
 
-#include "dart/gui/glut/GlutWindow.hpp"
+#include "dart/gui/glut/Window.hpp"
 
 namespace dart {
 namespace gui {

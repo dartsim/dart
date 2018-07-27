@@ -34,9 +34,9 @@
 #define DART_GUI_GLUTWINDOW_HPP_
 
 #pragma message("This header is deprecated as of DART 6.6. "\
-    "Please use dart/gui/glut/GlutWindow.hpp instead.")
+    "Please use dart/gui/glut/Window.hpp instead.")
 
-#include "dart/gui/glut/GlutWindow.hpp"
+#include "dart/gui/glut/Window.hpp"
 #include "dart/common/Deprecated.hpp"
 
 namespace dart {

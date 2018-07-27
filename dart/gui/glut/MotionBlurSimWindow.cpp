@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////////////////////////
 // OpenGL Motion blur require the Accumulate function of OpenGL
 // To intergrate this class into the engine
-// Change line 86 of dart/gui/GlutWindows.cpp
+// Change line 86 of dart/gui/glut/Window.cpp
 // From  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
 // to    glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE | GLUT_ACCUM);
 /////////////////////////////////////////////////////////////////////////
