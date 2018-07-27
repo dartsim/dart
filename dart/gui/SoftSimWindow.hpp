@@ -43,6 +43,7 @@
          "Please use dart/gui/glut/SoftSimWindow.hpp instead.")
 
 #include "dart/gui/glut/SoftSimWindow.hpp"
+#include "dart/common/Deprecated.hpp"
 
 namespace dart {
 namespace gui {

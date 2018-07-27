@@ -37,6 +37,7 @@
          "Please use dart/gui/glut/Win3D.hpp instead.")
 
 #include "dart/gui/glut/Win3D.hpp"
+#include "dart/common/Deprecated.hpp"
 
 namespace dart {
 namespace gui {
