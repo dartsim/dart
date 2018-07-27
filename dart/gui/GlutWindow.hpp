@@ -35,13 +35,13 @@
 
 #include "dart/gui/glut/GlutWindow.hpp"
 
-#warning "This file is deprecated in DART 6.6. "\
-         "Please use dart/gui/glut/GlutWindow.hpp instead."
+#pragma message("This header is deprecated as of DART 6.6. "\
+    "Please use dart/gui/glut/GlutWindow.hpp instead.")
 
 namespace dart {
 namespace gui {
 
-using GlutWindow = ::dart::gui::glut::Window;
+using GlutWindow DART_DEPRECATED(6.6) = ::dart::gui::glut::Window;
 
 } // namespace gui
 } // namespace dart

@@ -9,8 +9,8 @@
 #ifndef DART_GUI_MOTIONBLURSIMWINDOW_HPP_
 #define DART_GUI_MOTIONBLURSIMWINDOW_HPP_
 
-#warning "This file is deprecated in DART 6.6. "\
-         "Please use dart/gui/glut/MotionBlurSimWindow.hpp instead."
+#pragma message("This header is deprecated as of DART 6.6. "\
+         "Please use dart/gui/glut/MotionBlurSimWindow.hpp instead.")
 
 #include "dart/gui/glut/MotionBlurSimWindow.hpp"
 
