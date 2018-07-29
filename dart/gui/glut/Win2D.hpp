@@ -30,34 +30,55 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
-#define EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
+#ifndef DART_GUI_GLUT_WIN2D_HPP_
+#define DART_GUI_GLUT_WIN2D_HPP_
 
-#include <cstdarg>
+#include "dart/gui/glut/Window.hpp"
 
-#include <Eigen/Dense>
+namespace dart {
+namespace gui {
+namespace glut {
 
-#include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
-
-#include "Controller.hpp"
-
-class MyWindow : public dart::gui::glut::SimWindow {
+/// \brief
+class Win2D : public glut::Window {
 public:
-  MyWindow();
-  virtual ~MyWindow();
+  /// \brief
+  Win2D();
 
-  void timeStepping() override;
-  void drawWorld() const override;
+  /// \brief
+  void resize(int _w, int _h) override;
+
+  /// \brief
+  void render() override;
+
+  /// \brief
   void keyboard(unsigned char _key, int _x, int _y) override;
 
-  void setController(Controller* _controller);
+  /// \brief
+  void click(int _button, int _state, int _x, int _y) override;
 
-private:
-  void plotCOMX();
-  Eigen::Vector3d mForce;
-  Controller* mController;
-  int mImpulseDuration;
+  /// \brief
+  void drag(int _x, int _y) override;
+
+  /// \brief
+  virtual void initGL();
+
+  /// \brief
+  virtual void draw() = 0;
+
+protected:
+  /// \brief
+  bool mTranslate;
+
+  /// \brief
+  double mTransX;
+
+  /// \brief
+  double mTransY;
 };
 
-#endif  // EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
+}  // namespace glut
+}  // namespace gui
+}  // namespace dart
+
+#endif  // DART_GUI_GLUT_WIN2D_HPP_

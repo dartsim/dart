@@ -39,16 +39,18 @@
 
 int main(int argc, char* argv[])
 {
-  // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld("dart://sample/skel/cubes.skel");
-  assert(myWorld != nullptr);
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+  // Create and initialize the world
+  auto world = dart::utils::SkelParser::readWorld("dart://sample/skel/cubes.skel");
+  if (!world)
+  {
+    dterr << "Failed to load world.\n";
+    exit(EXIT_FAILURE);
+  }
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
-  // create a window and link it to the world
+  // Create a window and link it to the world
   MyWindow window;
-  window.setWorld(myWorld);
+  window.setWorld(world);
 
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'p': playback/stop" << std::endl;

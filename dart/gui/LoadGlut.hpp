@@ -33,15 +33,9 @@
 #ifndef DART_GUI_LOADGLUT_HPP_
 #define DART_GUI_LOADGLUT_HPP_
 
-#if defined(_WIN32)
-  #include <cstdlib> // To disable glut::exit() function
-  #include <GL/glut.h>
-#elif defined(__linux__)
-  #include <GL/glut.h>
-#elif defined(__APPLE__)
-  #include <GLUT/glut.h>
-#else
-  #error "Load OpenGL Error: What's your operating system?"
-#endif
+#pragma message("This file is deprecated as of DART 6.6. "\
+         "Please use dart/gui/glut/LoadGlut.hpp instead.")
+
+#include "dart/gui/glut/LoadGlut.hpp"
 
 #endif  // DART_GUI_LOADGLUT_HPP_

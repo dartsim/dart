@@ -34,24 +34,19 @@
 #define EXAMPLES_CUBES_MYWINDOW_HPP_
 
 #include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+#include <dart/gui/glut/glut.hpp>
 
-/// \brief
-class MyWindow : public dart::gui::SimWindow {
+class MyWindow : public dart::gui::glut::SimWindow
+{
 public:
-  /// \brief
   MyWindow();
 
-  /// \brief
   virtual ~MyWindow();
 
-  /// \brief
   void timeStepping() override;
 
-  /// \brief
   void drawWorld() const override;
 
-  /// \brief
   void keyboard(unsigned char _key, int _x, int _y) override;
 
 private:

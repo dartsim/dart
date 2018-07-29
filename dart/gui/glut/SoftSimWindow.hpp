@@ -30,34 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
-#define EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
+#ifndef DART_GUI_GLUT_SOFTSIMWINDOW_HPP_
+#define DART_GUI_GLUT_SOFTSIMWINDOW_HPP_
 
-#include <cstdarg>
+#include "dart/gui/glut/SimWindow.hpp"
 
-#include <Eigen/Dense>
+namespace dart {
+namespace gui {
+namespace glut {
 
-#include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
-
-#include "Controller.hpp"
-
-class MyWindow : public dart::gui::glut::SimWindow {
+/// \brief
+class SoftSimWindow : public SimWindow
+{
 public:
-  MyWindow();
-  virtual ~MyWindow();
+  /// \brief
+  SoftSimWindow();
 
-  void timeStepping() override;
-  void drawWorld() const override;
-  void keyboard(unsigned char _key, int _x, int _y) override;
+  /// \brief
+  virtual ~SoftSimWindow();
 
-  void setController(Controller* _controller);
+  /// \brief
+  void keyboard(unsigned char key, int x, int y) override;
 
-private:
-  void plotCOMX();
-  Eigen::Vector3d mForce;
-  Controller* mController;
-  int mImpulseDuration;
+protected:
+  /// \brief
+  bool mShowPointMasses;
+
+  /// \brief
+  bool mShowMeshs;
 };
 
-#endif  // EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
+}  // namespace glut
+}  // namespace gui
+}  // namespace dart
+
+#endif  // DART_GUI_SOFTSIMWINDOW_HPP_

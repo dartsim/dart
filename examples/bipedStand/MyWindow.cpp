@@ -32,6 +32,8 @@
 
 #include "MyWindow.hpp"
 
+#include <dart/gui/GLFuncs.hpp>
+
 MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();
   mController = nullptr;

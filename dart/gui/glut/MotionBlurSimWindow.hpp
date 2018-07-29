@@ -30,34 +30,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
-#define EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
+//
+//  MotionBlurSimWindow.hpp
+//  dart
+//
+//  Created by Dong Xu on 1/22/17.
+//
+//
 
-#include <cstdarg>
+#ifndef DART_GUI_GLUT_MOTIONBLURSIMWINDOW_HPP_
+#define DART_GUI_GLUT_MOTIONBLURSIMWINDOW_HPP_
 
+#include <vector>
 #include <Eigen/Dense>
 
-#include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+#include "dart/gui/glut/SimWindow.hpp"
 
-#include "Controller.hpp"
+namespace dart {
+namespace gui {
+namespace glut {
 
-class MyWindow : public dart::gui::glut::SimWindow {
+class MotionBlurSimWindow : public glut::SimWindow
+{
 public:
-  MyWindow();
-  virtual ~MyWindow();
+  /// \brief
+  MotionBlurSimWindow();
 
-  void timeStepping() override;
-  void drawWorld() const override;
-  void keyboard(unsigned char _key, int _x, int _y) override;
+  /// \brief
+  virtual ~MotionBlurSimWindow();
+    
+  // Set the Quality of Motion Blur
+  // Default is 5 (record position of every frame)
+  // int from 0 (No motion blur) - 5 (Highest)
+  // The function takes value smaller than 0 as 0, larger than 5 as 5
+  void setMotionBlurQuality(int _val);
 
-  void setController(Controller* _controller);
+  // Override the render function in dart/gui/Win3D.hpp
+  // To draw the motion image
+  // Render function is called once per GUI display time
+  // but in MotionBlurSimWindow, draw function will run in motion blur frequency
+  void render() override;
 
-private:
-  void plotCOMX();
-  Eigen::Vector3d mForce;
-  Controller* mController;
-  int mImpulseDuration;
-};
+  // Override the display timer,
+  // Move the part of "step" in world function to the render function
+  void displayTimer(int _val) override;
+    
+protected:
+  // Determines the frequency of the motion blur
+  // Default is 1, which means motion blur effect has the highest quality
+  // When set to m, motion blur record data every m frames
+  int mMotionBlurFrequency;
 
-#endif  // EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
+}; // End of Class Definition
+
+} // namespace glut
+} // namespace gui
+} // namespace dart
+
+#endif // DART_GUI_GLUT_MOTIONBLURSIMWINDOW_HPP_

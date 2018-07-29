@@ -46,7 +46,7 @@
 #include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
 
-class MyWindow : public dart::gui::SimWindow {
+class MyWindow : public dart::gui::glut::SimWindow {
 public:
   /// \brief The constructor - set the position of the skeleton
   explicit MyWindow(dart::dynamics::SkeletonPtr _skel): SimWindow(), skel(_skel) {

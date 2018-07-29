@@ -30,34 +30,51 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
-#define EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
+#include "dart/gui/glut/GLUTFuncs.hpp"
 
-#include <cstdarg>
+#include <cstdio>
+#include <iostream>
+#include <string>
 
-#include <Eigen/Dense>
+#include <Eigen/Eigen>
 
-#include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+#include "dart/gui/LoadOpengl.hpp"
+#include "dart/gui/glut/LoadGlut.hpp"
 
-#include "Controller.hpp"
+namespace dart {
+namespace gui {
+namespace glut {
 
-class MyWindow : public dart::gui::glut::SimWindow {
-public:
-  MyWindow();
-  virtual ~MyWindow();
+void drawStringOnScreen(float x, float y, const std::string& s, bool bigFont)
+{
+  // draws text on the screen
+  GLint oldMode;
+  glGetIntegerv(GL_MATRIX_MODE, &oldMode);
+  glMatrixMode(GL_PROJECTION);
 
-  void timeStepping() override;
-  void drawWorld() const override;
-  void keyboard(unsigned char _key, int _x, int _y) override;
+  glPushMatrix();
+  glLoadIdentity();
+  gluOrtho2D(0.0, 1.0, 0.0, 1.0);
 
-  void setController(Controller* _controller);
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+  glRasterPos2f(x, y);
+  unsigned int length = s.length();
+  for (unsigned int c = 0; c < length; c++)
+  {
+    if (bigFont)
+      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, s.at(c) );
+    else
+      glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, s.at(c) );
+  }
+  glPopMatrix();
 
-private:
-  void plotCOMX();
-  Eigen::Vector3d mForce;
-  Controller* mController;
-  int mImpulseDuration;
-};
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();
+  glMatrixMode(oldMode);
+}
 
-#endif  // EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
+}  // namespace glut
+}  // namespace gui
+}  // namespace dart

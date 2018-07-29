@@ -39,31 +39,16 @@
 #ifndef DART_GUI_SOFTSIMWINDOW_HPP_
 #define DART_GUI_SOFTSIMWINDOW_HPP_
 
-#include "dart/gui/SimWindow.hpp"
+#pragma message("This header is deprecated as of DART 6.6. "\
+         "Please use dart/gui/glut/SoftSimWindow.hpp instead.")
+
+#include "dart/gui/glut/SoftSimWindow.hpp"
+#include "dart/common/Deprecated.hpp"
 
 namespace dart {
 namespace gui {
 
-/// \brief
-class SoftSimWindow : public SimWindow
-{
-public:
-  /// \brief
-  SoftSimWindow();
-
-  /// \brief
-  virtual ~SoftSimWindow();
-
-  /// \brief
-  void keyboard(unsigned char key, int x, int y) override;
-
-protected:
-  /// \brief
-  bool mShowPointMasses;
-
-  /// \brief
-  bool mShowMeshs;
-};
+using SoftSimWindow DART_DEPRECATED(6.6) = ::dart::gui::glut::SoftSimWindow;
 
 }  // namespace gui
 }  // namespace dart

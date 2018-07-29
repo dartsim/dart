@@ -30,34 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
-#define EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
+#ifndef DART_GUI_GLUT_LOADGLUT_HPP_
+#define DART_GUI_GLUT_LOADGLUT_HPP_
 
-#include <cstdarg>
+#if defined(_WIN32)
+  #include <cstdlib> // To disable glut::exit() function
+  #include <GL/glut.h>
+#elif defined(__linux__)
+  #include <GL/glut.h>
+#elif defined(__APPLE__)
+  #include <GLUT/glut.h>
+#else
+  #error "Load OpenGL Error: What's your operating system?"
+#endif
 
-#include <Eigen/Dense>
-
-#include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
-
-#include "Controller.hpp"
-
-class MyWindow : public dart::gui::glut::SimWindow {
-public:
-  MyWindow();
-  virtual ~MyWindow();
-
-  void timeStepping() override;
-  void drawWorld() const override;
-  void keyboard(unsigned char _key, int _x, int _y) override;
-
-  void setController(Controller* _controller);
-
-private:
-  void plotCOMX();
-  Eigen::Vector3d mForce;
-  Controller* mController;
-  int mImpulseDuration;
-};
-
-#endif  // EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
+#endif  // DART_GUI_GLUT_LOADGLUT_HPP_

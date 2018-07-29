@@ -30,34 +30,50 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
-#define EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
+#ifndef DART_GUI_GLUT_WIN3D_HPP_
+#define DART_GUI_GLUT_WIN3D_HPP_
 
-#include <cstdarg>
+#include <Eigen/Eigen>
 
-#include <Eigen/Dense>
+#include "dart/gui/Trackball.hpp"
+#include "dart/gui/glut/Window.hpp"
 
-#include <dart/dart.hpp>
-#include <dart/gui/gui.hpp>
+namespace dart {
+namespace gui {
+namespace glut {
 
-#include "Controller.hpp"
-
-class MyWindow : public dart::gui::glut::SimWindow {
+class Win3D : public glut::Window {
 public:
-  MyWindow();
-  virtual ~MyWindow();
+  Win3D();
 
-  void timeStepping() override;
-  void drawWorld() const override;
+  void initWindow(int _w, int _h, const char* _name) override;
+  void resize(int _w, int _h) override;
+  void render() override;
+
   void keyboard(unsigned char _key, int _x, int _y) override;
+  void click(int _button, int _state, int _x, int _y) override;
+  void drag(int _x, int _y) override;
 
-  void setController(Controller* _controller);
+  virtual void initGL();
+  virtual void initLights();
 
-private:
-  void plotCOMX();
-  Eigen::Vector3d mForce;
-  Controller* mController;
-  int mImpulseDuration;
+  virtual void draw()=0;
+
+protected:
+  Trackball mTrackBall;
+  Eigen::Vector3d mTrans;
+  Eigen::Vector3d mEye;
+  Eigen::Vector3d mUp;
+  float mZoom;
+  float mPersp;
+
+  bool mRotate;
+  bool mTranslate;
+  bool mZooming;
 };
 
-#endif  // EXAMPLES_BIPEDSTAND_MYWINDOW_HPP_
+}  // namespace glut
+}  // namespace gui
+}  // namespace dart
+
+#endif  // DART_GUI_GLUT_WIN3D_HPP_
