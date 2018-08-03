@@ -7,7 +7,10 @@ endif()
 
 project(tutorialBiped-Finished)
 
-find_package(DART 7.0.0 REQUIRED COMPONENTS io-urdf gui CONFIG)
+find_package(DART 7.0.0 REQUIRED
+  COMPONENTS collision-bullet io-urdf gui
+  CONFIG
+)
 
 add_compile_options(-std=c++11)
 
@@ -17,4 +20,3 @@ file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${PROJECT_NAME} ${srcs})
 
 target_link_libraries(${PROJECT_NAME} ${DART_LIBRARIES})
-

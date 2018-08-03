@@ -45,6 +45,7 @@ class FCLCollisionObject;
 class FCLCollisionDetector : public CollisionDetector
 {
 public:
+  using CollisionDetector::createCollisionGroup;
 
   static std::shared_ptr<FCLCollisionDetector> create();
 

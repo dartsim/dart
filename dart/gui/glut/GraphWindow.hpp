@@ -15,12 +15,6 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * This code incorporates portions of Open Dynamics Engine
- *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
- *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
- *     Garage, Inc. All rights reserved.), which were released under
- *     the same BSD license as below
- *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -36,70 +30,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/SoftSimWindow.hpp"
+#ifndef DART_GUI_GLUT_GRAPHWINDOW_HPP_
+#define DART_GUI_GLUT_GRAPHWINDOW_HPP_
 
-#include "dart/gui/LoadGlut.hpp"
+#include <vector>
+
+#include <Eigen/Dense>
+
+#include "dart/gui/glut/Win2D.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
-SoftSimWindow::SoftSimWindow()
-  : SimWindow(),
-    mShowPointMasses(false),
-    mShowMeshs(true)
-{
-}
+/// \brief
+class GraphWindow : public Win2D {
+public:
+  /// \brief
+  GraphWindow();
 
-SoftSimWindow::~SoftSimWindow()
-{
-}
+  /// \brief
+  virtual ~GraphWindow();
 
-void SoftSimWindow::keyboard(unsigned char key, int x, int y)
-{
-  switch (key)
-  {
-    case ' ':  // use space key to play or stop the motion
-      mSimulating = !mSimulating;
-      if (mSimulating)
-        mPlay = false;
-      break;
-    case 'p':  // playBack
-      mPlay = !mPlay;
-      if (mPlay)
-        mSimulating = false;
-      break;
-    // case '[':  // step backward
-    //   if (!mSimulating)
-    //   {
-    //     mPlayFrame--;
-    //     if (mPlayFrame < 0)
-    //       mPlayFrame = 0;
-    //     glutPostRedisplay();
-    //   }
-    //   break;
-    // case ']':  // step forwardward
-    //   if (!mSimulating)
-    //   {
-    //     mPlayFrame++;
-    //     if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
-    //       mPlayFrame = 0;
-    //     glutPostRedisplay();
-    //   }
-    //   break;
-    case 'v':  // show or hide markers
-      mShowMarkers = !mShowMarkers;
-      break;
-    case 'n':
-      mShowPointMasses = !mShowPointMasses;
-      break;
-    case 'm':
-      mShowMeshs = !mShowMeshs;
-      break;
-    default:
-      Win3D::keyboard(key, x, y);
-  }
-  glutPostRedisplay();
-}
+  /// \brief
+  void draw() override;
 
+  /// \brief
+  void keyboard(unsigned char _key, int _x, int _y) override;
+
+  void setData(Eigen::VectorXd _data);
+
+protected:
+  Eigen::VectorXd mData;
+};
+
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart
+
+#endif  // DART_GUI_GLUT_GRAPHWINDOW_HPP_

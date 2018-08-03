@@ -41,5 +41,9 @@ dart_format_add(
 )
 
 dart_format_add(
+  HeightmapShape.hpp
+  VoxelGridShape.hpp
+  VoxelGridShape.cpp
   SmartPointer.hpp
+  detail/HeightmapShape-impl.hpp
 )

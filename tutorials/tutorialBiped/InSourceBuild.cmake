@@ -9,7 +9,9 @@ endif()
 file(GLOB srcs "*.cpp" "*.hpp")
 
 add_executable(${tutorial_name} ${srcs})
-target_link_libraries(${tutorial_name} dart dart-io-urdf dart-gui)
+target_link_libraries(${tutorial_name}
+  dart dart-collision-bullet dart-io-urdf dart-gui
+)
 set_target_properties(${tutorial_name}
   PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

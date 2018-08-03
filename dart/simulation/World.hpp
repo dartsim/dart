@@ -47,6 +47,7 @@
 
 #include "dart/common/Timer.hpp"
 #include "dart/common/NameManager.hpp"
+#include "dart/common/SmartPointer.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
@@ -72,6 +73,8 @@ class CollisionResult;
 } // namespace collision
 
 namespace simulation {
+
+DART_COMMON_DECLARE_SHARED_WEAK(World)
 
 /// class World
 class World : public virtual common::Subject
@@ -206,7 +209,7 @@ public:
   void reset();
 
   /// Calculate the dynamics and integrate the world for one step
-  /// \param[in} _resetCommand True if you want to reset to zero the joint
+  /// \param[in] _resetCommand True if you want to reset to zero the joint
   /// command after simulation step.
   void step(bool _resetCommand = true);
 
@@ -309,8 +312,6 @@ public:
   common::SlotRegister<NameChangedSignal> onNameChanged;
 
 };
-
-typedef std::shared_ptr<World> WorldPtr;
 
 }  // namespace simulation
 }  // namespace dart

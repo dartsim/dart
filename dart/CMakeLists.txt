@@ -122,6 +122,7 @@ target_include_directories(
     ${FCL_INCLUDE_DIRS}
     ${ASSIMP_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
+    ${OCTOMAP_INCLUDE_DIRS}
 )
 target_link_libraries(
   dart
@@ -132,6 +133,7 @@ target_link_libraries(
     ${ASSIMP_LIBRARIES}
     ${Boost_LIBRARIES}
     ${PROJECT_NAME}-external-odelcpsolver
+    ${OCTOMAP_LIBRARIES}
 )
 
 # Build DART with all available SIMD instructions

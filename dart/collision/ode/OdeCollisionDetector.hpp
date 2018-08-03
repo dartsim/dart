@@ -52,6 +52,8 @@ namespace collision {
 class OdeCollisionDetector : public CollisionDetector
 {
 public:
+  using CollisionDetector::createCollisionGroup;
+
   friend class OdeCollisionObject;
 
   static std::shared_ptr<OdeCollisionDetector> create();

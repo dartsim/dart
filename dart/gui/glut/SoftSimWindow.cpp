@@ -36,95 +36,72 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/GraphWindow.hpp"
+#include "dart/gui/glut/SoftSimWindow.hpp"
 
-#include <cstdio>
-#include <iostream>
-#include <string>
-
-#include "dart/gui/GLFuncs.hpp"
-#include "dart/gui/LoadGlut.hpp"
+#include "dart/gui/glut/LoadGlut.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
-GraphWindow::GraphWindow()
-  : Win2D() {
-  mBackground[0] = 1.0;
-  mBackground[1] = 1.0;
-  mBackground[2] = 1.0;
-  mBackground[3] = 1.0;
+SoftSimWindow::SoftSimWindow()
+  : SimWindow(),
+    mShowPointMasses(false),
+    mShowMeshs(true)
+{
 }
 
-GraphWindow::~GraphWindow() {
+SoftSimWindow::~SoftSimWindow()
+{
 }
 
-void GraphWindow::draw() {
-  mRI->setPenColor(Eigen::Vector3d(0.2, 0.8, 0.2));
-  glPointSize(2);
-  glMatrixMode(GL_MODELVIEW);
-
-  int nPoints = mData.size();
-
-  double upperBound = +1.0;
-  double lowerBound = -1.0;
-  if (nPoints > 0) {
-    upperBound = mData.maxCoeff();
-    lowerBound = mData.minCoeff();
-  }
-
-  for (int i = 0; i < nPoints; i++) {
-    glPushMatrix();
-    glLoadIdentity();
-    glBegin(GL_POINTS);
-    glVertex2f(i / (double)nPoints * mWinWidth - mWinWidth / 2.0, mWinHeight * (mData[i] - lowerBound) / (upperBound - lowerBound) - mWinHeight / 2.0);
-    glEnd();
-    glPopMatrix();
-  }    
-  glMatrixMode(GL_PROJECTION);
-
-  double xPos = 0.1;
-  while (xPos < 1.0) {
-    char buff[64];
-    int v = xPos * nPoints;
-#ifdef _WIN32
-    _snprintf(buff, sizeof(buff), "%d", v);
-#else
-    std::snprintf(buff, sizeof(buff), "%d", v);
-#endif
-    std::string frame(buff);
-    glColor3f(0.0, 0.0, 0.0);
-    gui::drawStringOnScreen(xPos, 0.01f, frame, false);
-    xPos += 0.2;
-  }
-
-  double yPos = 0.1;
-  while (yPos < 1.0) {
-    char buff[64];
-    double v = yPos * (upperBound - lowerBound) + lowerBound;
-#ifdef _WIN32
-    _snprintf(buff, sizeof(buff), "%.2e", v);
-#else
-    std::snprintf(buff, sizeof(buff), "%.2e", v);
-#endif
-    std::string frame(buff);
-    glColor3f(0.0, 0.0, 0.0);
-    gui::drawStringOnScreen(0.01f, yPos, frame, false);
-    yPos += 0.2;
-  }
-}
-
-void GraphWindow::keyboard(unsigned char _key, int _x, int _y) {
-  switch (_key) {
+void SoftSimWindow::keyboard(unsigned char key, int x, int y)
+{
+  switch (key)
+  {
+    case ' ':  // use space key to play or stop the motion
+      mSimulating = !mSimulating;
+      if (mSimulating)
+        mPlay = false;
+      break;
+    case 'p':  // playBack
+      mPlay = !mPlay;
+      if (mPlay)
+        mSimulating = false;
+      break;
+    // case '[':  // step backward
+    //   if (!mSimulating)
+    //   {
+    //     mPlayFrame--;
+    //     if (mPlayFrame < 0)
+    //       mPlayFrame = 0;
+    //     glutPostRedisplay();
+    //   }
+    //   break;
+    // case ']':  // step forwardward
+    //   if (!mSimulating)
+    //   {
+    //     mPlayFrame++;
+    //     if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
+    //       mPlayFrame = 0;
+    //     glutPostRedisplay();
+    //   }
+    //   break;
+    case 'v':  // show or hide markers
+      mShowMarkers = !mShowMarkers;
+      break;
+    case 'n':
+      mShowPointMasses = !mShowPointMasses;
+      break;
+    case 'm':
+      mShowMeshs = !mShowMeshs;
+      break;
     default:
-      Win2D::keyboard(_key, _x, _y);
+      Win3D::keyboard(key, x, y);
   }
   glutPostRedisplay();
 }
 
-void GraphWindow::setData(Eigen::VectorXd _data) {
-  mData = _data;
-}
-
+}  // namespace glut
 }  // namespace gui
 }  // namespace dart

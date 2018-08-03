@@ -53,7 +53,7 @@ const double delta_damping = 1.0;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public dart::gui::glut::SimWindow
 {
 public:
 

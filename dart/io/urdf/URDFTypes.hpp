@@ -33,8 +33,8 @@
 #ifndef DART_IO_URDF_URDFTYPES_HPP_
 #define DART_IO_URDF_URDFTYPES_HPP_
 
-#warning "This header has been deprecated in DART 6.2. "\
-  "Please include dart/io/urdf/BackwardCompatibility.hpp intead."
+#pragma message("This header has been deprecated in DART 6.2. "\
+  "Please include dart/utils/urdf/BackwardCompatibility.hpp intead.")
 
 #include "dart/io/urdf/BackwardCompatibility.hpp"
 

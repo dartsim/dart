@@ -9,29 +9,33 @@
 /////////////////////////////////////////////////////////////////////////
 // OpenGL Motion blur require the Accumulate function of OpenGL
 // To intergrate this class into the engine
-// Change line 86 of dart/gui/GlutWindows.cpp
+// Change line 86 of dart/gui/glut/Window.cpp
 // From  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
 // to    glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE | GLUT_ACCUM);
 /////////////////////////////////////////////////////////////////////////
 
 
-#include "dart/gui/MotionBlurSimWindow.hpp"
+#include "dart/gui/glut/MotionBlurSimWindow.hpp"
 
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/gui/GLFuncs.hpp"
-#include "dart/gui/LoadGlut.hpp"
+#include "dart/gui/glut/LoadGlut.hpp"
 
 namespace dart {
 namespace gui {
+namespace glut {
 
+//==============================================================================
 MotionBlurSimWindow::MotionBlurSimWindow()
   : SimWindow()
 {
   mMotionBlurFrequency = 1;
 }
 
+//==============================================================================
 MotionBlurSimWindow::~MotionBlurSimWindow()
 {
+  // Do nothing
 }
 
 //==============================================================================
@@ -218,8 +222,7 @@ void MotionBlurSimWindow::displayTimer(int _val)
   glutPostRedisplay();
   glutTimerFunc(mDisplayTimeout, refreshTimer, _val);
 }
-    
 
+} // namespace glut
 } // namespace gui
 } // namespace dart
-

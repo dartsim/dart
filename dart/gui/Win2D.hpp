@@ -33,48 +33,16 @@
 #ifndef DART_GUI_WIN2D_HPP_
 #define DART_GUI_WIN2D_HPP_
 
-#include "dart/gui/GlutWindow.hpp"
+#pragma message("This header is deprecated as of DART 6.6. "\
+         "Please use dart/gui/glut/Win2D.hpp instead.")
+
+#include "dart/gui/glut/Win2D.hpp"
+#include "dart/common/Deprecated.hpp"
 
 namespace dart {
 namespace gui {
 
-/// \brief
-class Win2D : public GlutWindow {
-public:
-  /// \brief
-  Win2D();
-
-  /// \brief
-  void resize(int _w, int _h) override;
-
-  /// \brief
-  void render() override;
-
-  /// \brief
-  void keyboard(unsigned char _key, int _x, int _y) override;
-
-  /// \brief
-  void click(int _button, int _state, int _x, int _y) override;
-
-  /// \brief
-  void drag(int _x, int _y) override;
-
-  /// \brief
-  virtual void initGL();
-
-  /// \brief
-  virtual void draw() = 0;
-
-protected:
-  /// \brief
-  bool mTranslate;
-
-  /// \brief
-  double mTransX;
-
-  /// \brief
-  double mTransY;
-};
+using Win2D DART_DEPRECATED(6.6) = ::dart::gui::glut::Win2D;
 
 }  // namespace gui
 }  // namespace dart

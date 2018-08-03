@@ -16,6 +16,19 @@
 
 ## DART 6
 
+### DART 6.7.0 (201X-XX-XX)
+
+* GUI
+
+  * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)
+
+### [DART 6.6.0 (2018-08-02)](https://github.com/dartsim/dart/milestone/44?closed=1)
+
+* Collision detection
+
+  * Added voxel grid map: [#1076](https://github.com/dartsim/dart/pull/1076), [#1083](https://github.com/dartsim/dart/pull/1083)
+  * Added heightmap support: [#1069](https://github.com/dartsim/dart/pull/1069)
+
 ### [DART 6.5.0 (2018-05-12)](https://github.com/dartsim/dart/milestone/41?closed=1)
 
 * Common

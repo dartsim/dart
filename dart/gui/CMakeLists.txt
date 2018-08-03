@@ -14,7 +14,6 @@ else()
   find_package(GLUT QUIET)
   dart_check_optional_package(GLUT "dart-gui" "freeglut3")
   if(GLUT_FOUND)
-    set(GLUT_LIBRARIES ${GLUT_glut_LIBRARY})
     set(HAVE_GLUT TRUE)
   else()
     set(HAVE_GLUT FALSE)
@@ -22,15 +21,31 @@ else()
 endif()
 
 # Search all header and source files
-file(GLOB hdrs "*.hpp")
-file(GLOB srcs "*.cpp")
+file(GLOB hdrs "*.hpp" "*.h" "detail/*.hpp")
+file(GLOB srcs "*.cpp" "*.c" "detail/*.cpp")
+
+function(dart_add_gui_headers)
+  dart_property_add(DART_GUI_HEADERS ${ARGN})
+endfunction()
+
+function(dart_add_gui_sources)
+  dart_property_add(DART_GUI_SOURCES ${ARGN})
+endfunction()
+
+# Add required subdirectory
+add_subdirectory(glut)
+
+get_property(dart_gui_headers GLOBAL PROPERTY DART_GUI_HEADERS)
+get_property(dart_gui_sources GLOBAL PROPERTY DART_GUI_SOURCES)
 
 # Set local target name
 set(target_name ${PROJECT_NAME}-gui)
 set(component_name gui)
 
 # Add target
-dart_add_library(${target_name} ${hdrs} ${srcs})
+dart_add_library(${target_name}
+  ${hdrs} ${srcs} ${dart_gui_headers} ${dart_gui_sources}
+)
 target_include_directories(
   ${target_name} SYSTEM
   PUBLIC
@@ -41,7 +56,7 @@ target_link_libraries(
   ${target_name}
   PUBLIC
     dart-io
-    ${GLUT_LIBRARY}
+    ${GLUT_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${PROJECT_NAME}-external-lodepng
     ${PROJECT_NAME}-external-imgui
@@ -63,6 +78,25 @@ add_subdirectory(osg)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})
+
+# Remove deprecated files from the list
+list(REMOVE_ITEM header_names
+  "GLFuncs.hpp"
+  "GlutWindow.hpp"
+  "GraphWindow.hpp"
+  "LoadGlut.hpp"
+  "MotionBlurSimWindow.hpp"
+  "SimWindow.hpp"
+  "SoftSimWindow.hpp"
+  "Win2D.hpp"
+  "Win3D.hpp"
+)
+
+set(
+  header_names
+  ${header_names}
+  glut/glut.hpp
+)
 dart_generate_include_header_list(
   gui_headers
   "dart/gui/"

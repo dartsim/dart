@@ -33,67 +33,18 @@
 #ifndef DART_GUI_GLUTWINDOW_HPP_
 #define DART_GUI_GLUTWINDOW_HPP_
 
-#include <vector>
+#pragma message("This header is deprecated as of DART 6.6. "\
+    "Please use dart/gui/glut/Window.hpp instead.")
 
-#include "dart/gui/LoadOpengl.hpp"
-#include "dart/gui/RenderInterface.hpp"
+#include "dart/gui/glut/Window.hpp"
+#include "dart/common/Deprecated.hpp"
 
 namespace dart {
 namespace gui {
 
-/// \brief
-class GlutWindow {
-public:
-  GlutWindow();
-  virtual ~GlutWindow();
+using GlutWindow DART_DEPRECATED(6.6) = ::dart::gui::glut::Window;
 
-  /// \warning This function should be called once.
-  virtual void initWindow(int _w, int _h, const char* _name);
-
-  // callback functions
-  static void reshape(int _w, int _h);
-  static void keyEvent(unsigned char _key, int _x, int _y);
-  static void specKeyEvent(int _key, int _x, int _y);
-  static void mouseClick(int _button, int _state, int _x, int _y);
-  static void mouseDrag(int _x, int _y);
-  static void mouseMove(int _x, int _y);
-  static void refresh();
-  static void refreshTimer(int _val);
-  static void runTimer(int _val);
-
-  static GlutWindow* current();
-  static std::vector<GlutWindow*> mWindows;
-  static std::vector<int> mWinIDs;
-
-protected:
-  // callback implementation
-  virtual void resize(int _w, int _h) = 0;
-  virtual void render() = 0;
-  virtual void keyboard(unsigned char _key, int _x, int _y);
-  virtual void specKey(int _key, int _x, int _y);
-  virtual void click(int _button, int _state, int _x, int _y);
-  virtual void drag(int _x, int _y);
-  virtual void move(int _x, int _y);
-  virtual void displayTimer(int _val);
-  virtual void simTimer(int _val);
-
-  virtual bool screenshot();
-
-  int mWinWidth;
-  int mWinHeight;
-  int mMouseX;
-  int mMouseY;
-  double mDisplayTimeout;
-  bool mMouseDown;
-  bool mMouseDrag;
-  bool mCapture;
-  double mBackground[4];
-  gui::RenderInterface* mRI;
-  std::vector<unsigned char> mScreenshotTemp;
-  std::vector<unsigned char> mScreenshotTemp2;
-};
-
-}  // namespace gui
-}  // namespace dart
+} // namespace gui
+} // namespace dart
 
 #endif  // DART_GUI_GLUTWINDOW_HPP_
