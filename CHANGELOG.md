@@ -6,7 +6,7 @@
 
   * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)
 
-### DART 6.6.0 (201X-XX-XX)
+### [DART 6.6.0 (2018-08-02)](https://github.com/dartsim/dart/milestone/44?closed=1)
 
 * Collision detection
 
