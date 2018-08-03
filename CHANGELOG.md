@@ -1,6 +1,6 @@
 ## DART 6
 
-### DART 6.6.0 (201X-XX-XX)
+### [DART 6.6.0 (2018-08-02)](https://github.com/dartsim/dart/milestone/44?closed=1)
 
 * Collision detection
 
