@@ -1,5 +1,11 @@
 ## DART 6
 
+### [DART 6.6.1 (2018-08-04)](https://github.com/dartsim/dart/milestone/46?closed=1)
+
+* Examples
+
+  * Fix CMakeLists.txt of humanJointLimits: [#1094](https://github.com/dartsim/dart/pull/1094)
+
 ### [DART 6.6.0 (2018-08-02)](https://github.com/dartsim/dart/milestone/44?closed=1)
 
 * Collision detection
