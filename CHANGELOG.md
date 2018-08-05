@@ -2,9 +2,13 @@
 
 ### [DART 6.6.1 (2018-08-04)](https://github.com/dartsim/dart/milestone/46?closed=1)
 
+* Utils
+
+  * Added option to DartResourceRetriever to search from environment variable DART_DATA_PATH: [#1095](https://github.com/dartsim/dart/pull/1095)
+
 * Examples
 
-  * Fix CMakeLists.txt of humanJointLimits: [#1094](https://github.com/dartsim/dart/pull/1094)
+  * Fixed CMakeLists.txt of humanJointLimits: [#1094](https://github.com/dartsim/dart/pull/1094)
 
 ### [DART 6.6.0 (2018-08-02)](https://github.com/dartsim/dart/milestone/44?closed=1)
 
@@ -368,7 +372,7 @@
 1. Improved camera movement of OpenGL GUI: smooth zooming and translation 
     * [Pull request #843](https://github.com/dartsim/dart/pull/843)
 
-1. Removed debian meta files from the main DART repository
+2. Removed debian meta files from the main DART repository
     * [Pull request #853](https://github.com/dartsim/dart/pull/853)
 
 ### Version 5.1.5 (2017-01-20)
