@@ -40,7 +40,6 @@
 namespace dart {
 namespace utils {
 
-///
 /// Retrieve local resources from sample data files given file URI. The scheme
 /// and authority should be "file" and "sample", respectively.
 ///
@@ -54,14 +53,13 @@ namespace utils {
 /// @endcode
 ///
 /// DartResourceRetriever searches files in the following order:
-/// 1) DART_DATA_LOCAL_PATH: path to the data directory in source
-///    (e.g., [DART_SRC_ROOT]/data/).
-/// 2) DART_DATA_GLOBAL_PATH: path to the data directory installed at a system
-///    directory. The location can be varied depending on OS.
-///    (e.g., Linux: /usr/local/share/doc/dart/data/)
-/// where DART_DATA_LOCAL_PATH and DART_DATA_GLOBAL_PATH are defined in
-/// config.hpp that are determined in CMake time.
-///
+/// 1) Preprocessor, DART_DATA_LOCAL_PATH: Path to the data directory in the
+///    source directory (e.g., [DART_SRC_ROOT]/data/).
+/// 2) Preprocessor, DART_DATA_GLOBAL_PATH: Path to the data directory installed
+///    in a system directory. The location can be varied depending on OS
+///    (e.g., Linux: /usr/local/share/doc/dart/data/).
+/// 3) environment variable, DART_DATA_PATH: Path to the data directory
+///    specified by the user.
 class DartResourceRetriever : public common::ResourceRetriever
 {
 public:
@@ -76,7 +74,7 @@ public:
   DartResourceRetriever();
 
   /// Destructor.
-  virtual ~DartResourceRetriever() = default;
+  ~DartResourceRetriever() override = default;
 
   // Documentation inherited.
   bool exists(const common::Uri& uri) override;
