@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -ex
 
-sudo apt-add-repository --yes ppa:libccd-debs/ppa
-sudo apt-add-repository --yes ppa:fcl-debs/ppa
-sudo apt-add-repository --yes ppa:dartsim/ppa
-sudo apt-get -qq update
+$SUDO apt-add-repository --yes ppa:libccd-debs/ppa
+$SUDO apt-add-repository --yes ppa:fcl-debs/ppa
+$SUDO apt-add-repository --yes ppa:dartsim/ppa
+$SUDO apt-get -qq update
 
 APT='
 cmake
@@ -30,5 +30,8 @@ clang-format-3.8
 lcov
 '
 
-sudo apt-get -qq --yes --force-yes install $APT
+$SUDO apt-get -qq --yes --force-yes install $APT
 
+if [ $BUILD_NAME = DOCS ]; then
+  $SUDO apt-get -qq --yes --force-yes install doxygen
+fi

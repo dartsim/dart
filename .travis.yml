@@ -26,13 +26,6 @@ matrix:
         - COMPILER=GCC
     - os: linux
       env:
-        - BUILD_NAME=XENIAL_RELEASE
-        - DOCKER_FILE="ubuntu-xenial"
-        - BUILD_TYPE=Release
-        - COMPILER=GCC
-      services: docker
-    - os: linux
-      env:
         - BUILD_NAME=XENIAL_DEBUG
         - DOCKER_FILE="ubuntu-xenial"
         - BUILD_TYPE=Debug
@@ -40,8 +33,8 @@ matrix:
       services: docker
     - os: linux
       env:
-        - BUILD_NAME=BIONIC_RELEASE
-        - DOCKER_FILE="ubuntu-bionic"
+        - BUILD_NAME=XENIAL_RELEASE
+        - DOCKER_FILE="ubuntu-xenial"
         - BUILD_TYPE=Release
         - COMPILER=GCC
       services: docker
@@ -52,19 +45,26 @@ matrix:
         - BUILD_TYPE=Debug
         - COMPILER=GCC
       services: docker
+    - os: linux
+      env:
+        - BUILD_NAME=BIONIC_RELEASE
+        - DOCKER_FILE="ubuntu-bionic"
+        - BUILD_TYPE=Release
+        - COMPILER=GCC
+      services: docker
     - os: osx
       osx_image: xcode9.4
       compiler: clang
       env:
-        - BUILD_NAME=XCODE93_RELEASE
-        - BUILD_TYPE=Release
+        - BUILD_NAME=XCODE94_DEBUG
+        - BUILD_TYPE=Debug
         - COMPILER=CLANG
     - os: osx
       osx_image: xcode9.4
       compiler: clang
       env:
-        - BUILD_NAME=XCODE93_DEBUG
-        - BUILD_TYPE=Debug
+        - BUILD_NAME=XCODE94_RELEASE
+        - BUILD_TYPE=Release
         - COMPILER=CLANG
     - os: linux
       compiler: gcc
@@ -78,8 +78,9 @@ install:
   - if [ -n "$DOCKER_FILE" ]; then
       docker build -t "$DOCKER_FILE" -f ".ci/docker/$DOCKER_FILE" .;
       docker run -itd -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR --env-file .ci/env.list --name dart-docker "$DOCKER_FILE";
+      docker exec dart-docker /bin/sh -c "cd $TRAVIS_BUILD_DIR && ./.ci/install.sh";
     else
-      '.ci/install.sh';
+      '.ci/install.sh';1
     fi
 
 script:
