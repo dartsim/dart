@@ -4,23 +4,21 @@ set -ex
 
 WORK_DIR="${HOME}/dart_docs"
 mkdir -p ${WORK_DIR}
-cd ${WORK_DIR}
-
-DART_CLONE_DIR="${WORK_DIR}/dart"
 
 # For branch builds, Travis only clones that branch with a fixed depth of 50
 # commits. This means that the clone knows nothing about other Git branches or
 # tags. We fix this by deleting and re-cloning the full repository.
+DART_CLONE_DIR="${WORK_DIR}/dart"
 git clone "https://github.com/${TRAVIS_REPO_SLUG}.git" ${DART_CLONE_DIR}
-
 # TODO: For test. Should be removed before merging
 git -C ${DART_CLONE_DIR} checkout auto_docs
 
+# Build docs of multiple versions in "build" directory
 DART_DOCS_BUILD_DIR="${WORK_DIR}/build/"
 mkdir -p ${DART_DOCS_BUILD_DIR}
 cd ${DART_DOCS_BUILD_DIR}
 
-# Organize into "${WORK_DIR}/docs" directory
+# Organize into "docs" directory
 DART_DOCS_OUTPUT_DIR="${WORK_DIR}/docs/"
 mkdir -p ${DART_DOCS_OUTPUT_DIR}
 
@@ -29,6 +27,7 @@ cat <<EOF > ${DART_DOCS_OUTPUT_DIR}/README.md
 # DART API Documentation
 EOF
 
+# Add entries
 while read version; do
   if [[ ${version} == DART* ]]; then
     echo "### ${version}" >> ${DART_DOCS_OUTPUT_DIR}/README.md
