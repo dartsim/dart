@@ -13,11 +13,6 @@ git clone "https://github.com/${TRAVIS_REPO_SLUG}.git" ${DART_CLONE_DIR}
 # TODO: For test. Should be removed before merging
 git -C ${DART_CLONE_DIR} checkout auto_docs
 
-# Build docs of multiple versions in "build" directory
-DART_DOCS_BUILD_DIR="${WORK_DIR}/build/"
-mkdir -p ${DART_DOCS_BUILD_DIR}
-cd ${DART_DOCS_BUILD_DIR}
-
 # Organize into "docs" directory
 DART_DOCS_OUTPUT_DIR="${WORK_DIR}/docs/"
 mkdir -p ${DART_DOCS_OUTPUT_DIR}
@@ -26,6 +21,11 @@ mkdir -p ${DART_DOCS_OUTPUT_DIR}
 cat <<EOF > ${DART_DOCS_OUTPUT_DIR}/README.md
 # DART API Documentation
 EOF
+
+# Build docs of multiple versions in "build" directory
+DART_DOCS_BUILD_DIR="${WORK_DIR}/build/"
+mkdir -p ${DART_DOCS_BUILD_DIR}
+cd ${DART_DOCS_BUILD_DIR}
 
 # Add entries
 while read version; do
