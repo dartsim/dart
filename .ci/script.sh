@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-set -xe
+set -ex
 
-if [ "$TRAVIS_PULL_REQUEST" = "false" ] && [ "$TRAVIS_OS_NAME" = "linux" ] && [ "$COMPILER" = "CLANG" ]; then
-  exit;
+# Skip Xenial and Bionic in push builds
+if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
+  if [ "$DOCKER_FILE" ]; then
+    exit 0;
+  fi
 fi
 
 if [ $BUILD_NAME = DOCS ]; then
@@ -12,7 +15,11 @@ fi
 
 mkdir build && cd build
 
-cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_VERBOSE=ON -DDART_TREAT_WARNINGS_AS_ERRORS=ON -DDART_CODECOV=$CODECOV ..
+if [ "$BUILD_NAME" = "TRUSTY_DEBUG" ]; then
+  cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_VERBOSE=ON -DDART_TREAT_WARNINGS_AS_ERRORS=ON -DDART_CODECOV=ON ..
+else
+  cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_VERBOSE=ON -DDART_TREAT_WARNINGS_AS_ERRORS=ON -DDART_CODECOV=OFF ..
+fi
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
   make -j4 tutorials examples tests
