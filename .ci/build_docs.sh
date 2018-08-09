@@ -43,5 +43,9 @@ while read version; do
   rm -rf *
   cmake ${DART_DIR}
   make docs
+
+  # For debug; should be removed before merged
+  ls
+
   mv doxygen/html ${DART_DOCS_DIR}/${version}
 done < ${DART_DIR}/.ci/docs_versions.txt
