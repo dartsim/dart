@@ -45,3 +45,8 @@ cd $TRAVIS_BUILD_DIR/examples/rigidCubes
 mkdir build && cd build
 cmake ..
 make -j4
+
+# Uploading report to CodeCov
+if [ "$BUILD_NAME" = "TRUSTY_DEBUG" ]; then
+  bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+fi

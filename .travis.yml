@@ -90,9 +90,6 @@ script:
       '.ci/script.sh';
     fi
 
-after_success:
-  - if [ $CODECOV = ON ]; then bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"; fi
-
 after_failure: 
   - cat build/Testing/Temporary/LastTest.log
   - cat build/Testing/Temporary/LastTestsFailed.log
