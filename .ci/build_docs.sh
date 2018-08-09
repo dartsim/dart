@@ -19,7 +19,7 @@ DART_DOCS_DIR="${HOME}/dart_docs"
 mkdir -p ${DART_DOCS_DIR}
 
 # Initialize list of API versions
-cat <<EOF > ${TRAVIS_BUILD_DIR}/gh-pages/README.md
+cat <<EOF > ${DART_DOCS_DIR}/README.md
 # DART API Documentation
 EOF
 
