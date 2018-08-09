@@ -80,7 +80,7 @@ install:
       docker run -itd -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR --env-file .ci/env.list --name dart-docker "$DOCKER_FILE";
       docker exec dart-docker /bin/sh -c "cd $TRAVIS_BUILD_DIR && ./.ci/install.sh";
     else
-      '.ci/install.sh';1
+      '.ci/install.sh';
     fi
 
 script:
