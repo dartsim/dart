@@ -13,6 +13,7 @@ cd ${WORK_DIR}
 # tags. We fix this by deleting and re-cloning the full repository.
 rm -rf "${DART_DIR}"
 git clone "https://github.com/${TRAVIS_REPO_SLUG}.git" ${DART_DIR}
+git checkout auto_docs # TODO: For test. Should be removed
 
 # Organize into "${HOME}/dart_docs" directory
 DART_DOCS_DIR="${HOME}/dart_docs"
