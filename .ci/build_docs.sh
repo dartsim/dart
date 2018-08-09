@@ -32,6 +32,7 @@ cd build_docs
 while read version; do
   if [[ ${version} == DART* ]]; then
     echo "### ${version}" >> ${DART_DOCS_DIR}/README.md
+    continue
   fi
 
   # Add entry to list of API versions
