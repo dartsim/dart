@@ -2,7 +2,10 @@
 
 set -ex
 
+WORK_DIR="${HOME}/dart_docs"
 DART_DIR="${TRAVIS_BUILD_DIR}"
+
+cd ${WORK_DIR}
 
 # For branch builds, Travis only clones that branch with a fixed depth of 50
 # commits. This means that the clone knows nothing about other Git branches or
