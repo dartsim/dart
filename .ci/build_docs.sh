@@ -27,9 +27,8 @@ mkdir build_docs
 cd build_docs
 
 while read version; do
-  if [ ${version} = DOCS ]; then
-    . "${TRAVIS_BUILD_DIR}/.ci/build_docs.sh"
-    exit 0
+  if [[ ${version} == DART* ]]; then
+    echo "### ${version}" >> ${DART_DOCS_DIR}/README.md
   fi
 
   # Add entry to list of API versions
