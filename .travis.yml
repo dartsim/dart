@@ -102,5 +102,5 @@ deploy:
   keep-history: false
   verbose: true
   on:
-    branch: auto_docs  # this should be changed to master
+    branch: master
     condition: $BUILD_NAME == DOCS && $TRAVIS_EVENT_TYPE != cron

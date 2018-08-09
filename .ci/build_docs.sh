@@ -10,8 +10,6 @@ mkdir -p ${WORK_DIR}
 # tags. We fix this by deleting and re-cloning the full repository.
 DART_CLONE_DIR="${WORK_DIR}/dart"
 git clone "https://github.com/${TRAVIS_REPO_SLUG}.git" ${DART_CLONE_DIR}
-# TODO: For test. Should be removed before merging
-git -C ${DART_CLONE_DIR} checkout auto_docs
 
 # Organize into "docs" directory
 DART_DOCS_OUTPUT_DIR="${TRAVIS_BUILD_DIR}/gh-pages"
