@@ -5,6 +5,7 @@ set -ex
 WORK_DIR="${HOME}/dart_docs"
 DART_DIR="${TRAVIS_BUILD_DIR}"
 
+mkdir -p ${WORK_DIR}
 cd ${WORK_DIR}
 
 # For branch builds, Travis only clones that branch with a fixed depth of 50
@@ -26,6 +27,11 @@ mkdir build_docs
 cd build_docs
 
 while read version; do
+  if [ ${version} = DOCS ]; then
+    . "${TRAVIS_BUILD_DIR}/.ci/build_docs.sh"
+    exit 0
+  fi
+
   # Add entry to list of API versions
   echo "* [${version}](https://dartsim.github.io/dart/${version}/)" >> ${DART_DOCS_DIR}/README.md
 
