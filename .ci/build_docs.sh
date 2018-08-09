@@ -2,22 +2,19 @@
 
 set -ex
 
-DART_CLONE_DIR="${TRAVIS_BUILD_DIR}"
+WORK_DIR="${HOME}/dart_docs"
+mkdir -p ${WORK_DIR}
+cd ${WORK_DIR}
+
+DART_CLONE_DIR="${WORK_DIR}/dart"
 
 # For branch builds, Travis only clones that branch with a fixed depth of 50
 # commits. This means that the clone knows nothing about other Git branches or
 # tags. We fix this by deleting and re-cloning the full repository.
-#rm -rf "${DART_CLONE_DIR}"
-cd "${DART_CLONE_DIR}"
-rm -rf *
 git clone "https://github.com/${TRAVIS_REPO_SLUG}.git" ${DART_CLONE_DIR}
 
 # TODO: For test. Should be removed before merging
 git -C ${DART_CLONE_DIR} checkout auto_docs
-
-WORK_DIR="${HOME}/dart_docs"
-mkdir -p ${WORK_DIR}
-cd ${WORK_DIR}
 
 DART_DOCS_BUILD_DIR="${WORK_DIR}/build/"
 mkdir -p ${DART_DOCS_BUILD_DIR}
