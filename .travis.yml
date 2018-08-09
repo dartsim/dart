@@ -11,30 +11,67 @@ matrix:
   include:
     - os: linux
       compiler: gcc
-      env: SUDO=sudo BUILD_TYPE=Debug CODECOV=ON COMPILER=GCC
+      env:
+        - SUDO=sudo
+        - BUILD_TYPE=Debug
+        - CODECOV=ON
+        - COMPILER=GCC
     - os: linux
       compiler: gcc
-      env: SUDO=sudo BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+      env:
+        - SUDO=sudo
+        - BUILD_TYPE=Release
+        - CODECOV=OFF
+        - COMPILER=GCC
     - os: linux
       compiler: clang
-      env: SUDO=sudo BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
+      env: SUDO=sudo
+        - BUILD_TYPE=Debug
+        - CODECOV=OFF
+        - COMPILER=CLANG
     - os: linux
       compiler: clang
-      env: SUDO=sudo BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
+      env:
+        - SUDO=sudo
+        - BUILD_TYPE=Release
+        - CODECOV=OFF
+        - COMPILER=CLANG
     - os: linux
-      env: DOCKER_FILE="ubuntu-xenial" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+      env:
+        - DOCKER_FILE="ubuntu-xenial"
+        - BUILD_TYPE=Release
+        - CODECOV=OFF
+        - COMPILER=GCC
       services: docker
     - os: linux
-      env: DOCKER_FILE="ubuntu-bionic" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+      env:
+        - DOCKER_FILE="ubuntu-bionic"
+        - BUILD_TYPE=Release
+        - CODECOV=OFF
+        - COMPILER=GCC
       services: docker
     - os: osx
       osx_image: xcode9.3
       compiler: clang
-      env: BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
+      env:
+        - BUILD_TYPE=Debug
+        - CODECOV=OFF
+        - COMPILER=CLANG
     - os: osx
       osx_image: xcode9.3
       compiler: clang
-      env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
+      env:
+        - BUILD_TYPE=Release
+        - CODECOV=OFF
+        - COMPILER=CLANG
+    - os: linux
+      compiler: gcc
+      env: 
+        - BUILD_NAME=DOCS
+        - SUDO=sudo
+        - BUILD_TYPE=Release
+        - CODECOV=OFF
+        - COMPILER=GCC
 
 install:
   - if [ -n "$DOCKER_FILE" ]; then
@@ -57,3 +94,14 @@ after_success:
 after_failure: 
   - cat build/Testing/Temporary/LastTest.log
   - cat build/Testing/Temporary/LastTestsFailed.log
+
+deploy:
+  github-token: $GITHUB_TOKEN
+  provider: pages
+  skip-cleanup: true
+  local-dir: gh-pages
+  keep-history: false
+  verbose: true
+  on:
+    branch: release-6.7  # this should be changed to master
+    condition: $BUILD_NAME == DOCS && $TRAVIS_EVENT_TYPE != cron
