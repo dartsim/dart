@@ -9,7 +9,7 @@ project(humanJointLimits)
 
 find_package(DART 6.4 REQUIRED
   COMPONENTS
-    dart-utils-urdf dart-gui dart-collision-ode dart-collision-bullet
+    utils-urdf gui collision-ode collision-bullet
   CONFIG
 )
 
