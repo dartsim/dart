@@ -11,30 +11,68 @@ matrix:
   include:
     - os: linux
       compiler: gcc
-      env: SUDO=sudo BUILD_TYPE=Debug CODECOV=ON COMPILER=GCC
+      env:
+        - BUILD_NAME=TRUSTY_DEBUG
+        - SUDO=sudo
+        - BUILD_TYPE=Debug
+        - COMPILER=GCC
+        - BUILD_ONLY_ON_PULL_REQUEST=ON
     - os: linux
       compiler: gcc
-      env: SUDO=sudo BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+      env:
+        - BUILD_NAME=TRUSTY_RELEASE
+        - SUDO=sudo
+        - BUILD_TYPE=Release
+        - COMPILER=GCC
     - os: linux
-      compiler: clang
-      env: SUDO=sudo BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
-    - os: linux
-      compiler: clang
-      env: SUDO=sudo BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
-    - os: linux
-      env: DOCKER_FILE="ubuntu-xenial" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+      env:
+        - BUILD_NAME=XENIAL_DEBUG
+        - DOCKER_FILE="ubuntu-xenial"
+        - BUILD_TYPE=Debug
+        - COMPILER=GCC
       services: docker
     - os: linux
-      env: DOCKER_FILE="ubuntu-bionic" BUILD_TYPE=Release CODECOV=OFF COMPILER=GCC
+      env:
+        - BUILD_NAME=XENIAL_RELEASE
+        - DOCKER_FILE="ubuntu-xenial"
+        - BUILD_TYPE=Release
+        - COMPILER=GCC
+      services: docker
+    - os: linux
+      env:
+        - BUILD_NAME=BIONIC_DEBUG
+        - DOCKER_FILE="ubuntu-bionic"
+        - BUILD_TYPE=Debug
+        - COMPILER=GCC
+      services: docker
+    - os: linux
+      env:
+        - BUILD_NAME=BIONIC_RELEASE
+        - DOCKER_FILE="ubuntu-bionic"
+        - BUILD_TYPE=Release
+        - COMPILER=GCC
       services: docker
     - os: osx
-      osx_image: xcode9.3
+      osx_image: xcode9.4
       compiler: clang
-      env: BUILD_TYPE=Debug CODECOV=OFF COMPILER=CLANG
+      env:
+        - BUILD_NAME=XCODE94_DEBUG
+        - BUILD_TYPE=Debug
+        - COMPILER=CLANG
     - os: osx
-      osx_image: xcode9.3
+      osx_image: xcode9.4
       compiler: clang
-      env: BUILD_TYPE=Release CODECOV=OFF COMPILER=CLANG
+      env:
+        - BUILD_NAME=XCODE94_RELEASE
+        - BUILD_TYPE=Release
+        - COMPILER=CLANG
+    - os: linux
+      compiler: gcc
+      env: 
+        - BUILD_NAME=DOCS
+        - SUDO=sudo
+        - BUILD_TYPE=Release
+        - COMPILER=GCC
 
 install:
   - if [ -n "$DOCKER_FILE" ]; then
@@ -51,9 +89,17 @@ script:
       '.ci/script.sh';
     fi
 
-after_success:
-  - if [ $CODECOV = ON ]; then bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"; fi
-
 after_failure: 
   - cat build/Testing/Temporary/LastTest.log
   - cat build/Testing/Temporary/LastTestsFailed.log
+
+deploy:
+  github-token: $GITHUB_TOKEN
+  provider: pages
+  skip-cleanup: true
+  local-dir: gh-pages
+  keep-history: false
+  verbose: true
+  on:
+    branch: master
+    condition: $BUILD_NAME == DOCS && $TRAVIS_EVENT_TYPE != cron
