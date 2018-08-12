@@ -30,43 +30,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_LCPSOLVER_HPP_
-#define DART_CONSTRAINT_LCPSOLVER_HPP_
+#ifndef DART_CONSTRAINT_DETAIL_BOXEDLCPSOLVER_IMPL_HPP_
+#define DART_CONSTRAINT_DETAIL_BOXEDLCPSOLVER_IMPL_HPP_
+
+#include "dart/constraint/BoxedLcpSolver.hpp"
 
 namespace dart {
 namespace constraint {
 
-class ConstrainedGroup;
-
-/// \deprecated This header has been deprecated in DART 6.7.
-///
-/// LCPSolver
-class LCPSolver
+template <typename BoxedLcpSolverT>
+bool BoxedLcpSolver::is() const
 {
-public:
-  /// Solve constriant impulses for a constrained group
-  virtual void solve(ConstrainedGroup* _group) = 0;
-
-  /// Set time step
-  void setTimeStep(double _timeStep);
-
-  /// Return time step
-  double getTimeStep() const;
-
-  /// Destructor
-  virtual ~LCPSolver();
-
-protected:
-  /// Constructor
-  LCPSolver(double _timeStep);
-
-protected:
-  /// Simulation time step
-  double mTimeStep;
-};
+return getType() == BoxedLcpSolverT::getStaticType();
+}
 
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_LCPSOLVER_HPP_
-
+#endif // DART_CONSTRAINT_DETAIL_BOXEDLCPSOLVER_IMPL_HPP_

@@ -61,7 +61,7 @@ public:
   /// Copy constructor
   // TODO: implement copy constructor since this class contains a pointer to
   // allocated memory.
-  ConstraintSolver(const ConstraintSolver& _other) = delete;
+  ConstraintSolver(const ConstraintSolver& other) = delete;
 
   /// Destructor
   virtual ~ConstraintSolver();
@@ -71,6 +71,9 @@ public:
 
   /// Add mutiple skeletons
   void addSkeletons(const std::vector<dynamics::SkeletonPtr>& skeletons);
+
+  /// Returns all the skeletons added to this ConstraintSolver.
+  const std::vector<dynamics::SkeletonPtr>& getSkeletons() const;
 
   /// Remove single skeleton
   void removeSkeleton(const dynamics::SkeletonPtr& skeleton);
@@ -82,10 +85,10 @@ public:
   void removeAllSkeletons();
 
   /// Add a constraint
-  void addConstraint(const ConstraintBasePtr& _constraint);
+  void addConstraint(const ConstraintBasePtr& constraint);
 
   /// Remove a constraint
-  void removeConstraint(const ConstraintBasePtr& _constraint);
+  void removeConstraint(const ConstraintBasePtr& constraint);
 
   /// Remove all constraints
   void removeAllConstraints();
@@ -138,26 +141,31 @@ public:
   const collision::CollisionResult& getLastCollisionResult() const;
 
   /// Set LCP solver
-  void setLCPSolver(std::unique_ptr<LCPSolver> _lcpSolver);
+  DART_DEPRECATED(6.7)
+  void setLCPSolver(std::unique_ptr<LCPSolver> lcpSolver);
 
   /// Get LCP solver
+  DART_DEPRECATED(6.7)
   LCPSolver* getLCPSolver() const;
 
   /// Solve constraint impulses and apply them to the skeletons
   void solve();
 
-private:
+protected:
+  // TODO(JS): Docstring
+  virtual void solveConstrainedGroup(ConstrainedGroup& group) = 0;
+
   /// Check if the skeleton is contained in this solver
-  bool containSkeleton(const dynamics::ConstSkeletonPtr& _skeleton) const;
+  bool containSkeleton(const dynamics::ConstSkeletonPtr& skeleton) const;
 
   /// Add skeleton if the constraint is not contained in this solver
-  bool checkAndAddSkeleton(const dynamics::SkeletonPtr& _skeleton);
+  bool checkAndAddSkeleton(const dynamics::SkeletonPtr& skeleton);
 
   /// Check if the constraint is contained in this solver
-  bool containConstraint(const ConstConstraintBasePtr& _constraint) const;
+  bool containConstraint(const ConstConstraintBasePtr& constraint) const;
 
   /// Add constraint if the constraint is not contained in this solver
-  bool checkAndAddConstraint(const ConstraintBasePtr& _constraint);
+  bool checkAndAddConstraint(const ConstraintBasePtr& constraint);
 
   /// Update constraints
   void updateConstraints();
@@ -169,7 +177,7 @@ private:
   void solveConstrainedGroups();
 
   /// Return true if at least one of colliding body is soft body
-  bool isSoftContact(const collision::Contact& _contact) const;
+  bool isSoftContact(const collision::Contact& contact) const;
 
   using CollisionDetector = collision::CollisionDetector;
 
@@ -187,9 +195,6 @@ private:
 
   /// Time step
   double mTimeStep;
-
-  /// LCP solver
-  std::unique_ptr<LCPSolver> mLCPSolver;
 
   /// Skeleton list
   std::vector<dynamics::SkeletonPtr> mSkeletons;

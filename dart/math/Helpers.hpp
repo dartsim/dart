@@ -401,6 +401,16 @@ inline Eigen::Vector3d Black()
   return Eigen::Vector3d(0.05, 0.05, 0.05);
 }
 
+inline Eigen::Vector4d LightGray(double alpha)
+{
+  return Eigen::Vector4d(0.9, 0.9, 0.9, alpha);
+}
+
+inline Eigen::Vector3d LightGray()
+{
+  return Eigen::Vector3d(0.9, 0.9, 0.9);
+}
+
 inline Eigen::Vector4d Gray(double alpha)
 {
   return Eigen::Vector4d(0.6, 0.6, 0.6, alpha);

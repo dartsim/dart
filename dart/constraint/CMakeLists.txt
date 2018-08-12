@@ -19,11 +19,17 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/constraint.hpp
+  FILES ${hdrs} ${detail_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/constraint.hpp
   DESTINATION include/dart/constraint
   COMPONENT headers
 )
 
 dart_format_add(
+  BoxedLcpSolver.hpp
+  DantzigBoxedLcpSolver.hpp
+  DantzigBoxedLcpSolver.cpp
+  PgsBoxedLcpSolver.hpp
+  PgsBoxedLcpSolver.cpp
   SmartPointer.hpp
+  detail/BoxedLcpSolver-impl.hpp
 )

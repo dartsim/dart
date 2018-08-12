@@ -49,8 +49,6 @@
 #include "dart/constraint/JointLimitConstraint.hpp"
 #include "dart/constraint/ServoMotorConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
-#include "dart/constraint/DantzigLCPSolver.hpp"
-#include "dart/constraint/PGSLCPSolver.hpp"
 
 namespace dart {
 namespace constraint {
@@ -64,8 +62,7 @@ ConstraintSolver::ConstraintSolver(double timeStep)
     mCollisionOption(
       collision::CollisionOption(
         true, 1000u, std::make_shared<collision::BodyNodeCollisionFilter>())),
-    mTimeStep(timeStep),
-    mLCPSolver(new DantzigLCPSolver(mTimeStep))
+    mTimeStep(timeStep)
 {
   assert(timeStep > 0.0);
 
@@ -112,6 +109,12 @@ void ConstraintSolver::addSkeletons(const std::vector<SkeletonPtr>& skeletons)
 }
 
 //==============================================================================
+const std::vector<SkeletonPtr>& ConstraintSolver::getSkeletons() const
+{
+  return mSkeletons;
+}
+
+//==============================================================================
 void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
 {
   assert(skeleton
@@ -134,7 +137,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
 void ConstraintSolver::removeSkeletons(
     const std::vector<SkeletonPtr>& skeletons)
 {
-  for (const auto skeleton : skeletons)
+  for (const auto& skeleton : skeletons)
     removeSkeleton(skeleton);
 }
 
@@ -146,26 +149,26 @@ void ConstraintSolver::removeAllSkeletons()
 }
 
 //==============================================================================
-void ConstraintSolver::addConstraint(const ConstraintBasePtr& _constraint)
+void ConstraintSolver::addConstraint(const ConstraintBasePtr& constraint)
 {
-  assert(_constraint);
+  assert(constraint);
 
-  if (containConstraint(_constraint))
+  if (containConstraint(constraint))
   {
     dtwarn << "Constraint solver already contains constraint that you are "
            << "trying to add." << std::endl;
     return;
   }
 
-  mManualConstraints.push_back(_constraint);
+  mManualConstraints.push_back(constraint);
 }
 
 //==============================================================================
-void ConstraintSolver::removeConstraint(const ConstraintBasePtr& _constraint)
+void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
 {
-  assert(_constraint);
+  assert(constraint);
 
-  if (!containConstraint(_constraint))
+  if (!containConstraint(constraint))
   {
     dtwarn << "Constraint solver deos not contain constraint that you are "
            << "trying to remove." << std::endl;
@@ -173,7 +176,7 @@ void ConstraintSolver::removeConstraint(const ConstraintBasePtr& _constraint)
   }
 
   mManualConstraints.erase(remove(mManualConstraints.begin(),
-                                  mManualConstraints.end(), _constraint),
+                                  mManualConstraints.end(), constraint),
                            mManualConstraints.end());
 }
 
@@ -194,9 +197,6 @@ void ConstraintSolver::setTimeStep(double _timeStep)
 {
   assert(_timeStep > 0.0 && "Time step should be positive value.");
   mTimeStep = _timeStep;
-
-  if (mLCPSolver)
-    mLCPSolver->setTimeStep(mTimeStep);
 }
 
 //==============================================================================
@@ -287,27 +287,33 @@ ConstraintSolver::getLastCollisionResult() const
 }
 
 //==============================================================================
-void ConstraintSolver::setLCPSolver(std::unique_ptr<LCPSolver> _lcpSolver)
+void ConstraintSolver::setLCPSolver(std::unique_ptr<LCPSolver> /*lcpSolver*/)
 {
-  assert(_lcpSolver && "Invalid LCP solver.");
-
-  mLCPSolver = std::move(_lcpSolver);
+  dtwarn << "[ConstraintSolver::setLCPSolver] This function is deprecated in "
+         << "DART 6.7. Please use "
+         << "BoxedLcpConstraintSolver::setBoxedLcpSolver() instead. "
+         << "Doing nothing.";
 }
 
 //==============================================================================
 LCPSolver* ConstraintSolver::getLCPSolver() const
 {
-  return mLCPSolver.get();
+  dtwarn << "[ConstraintSolver::getLCPSolver] This function is deprecated in "
+         << "DART 6.7. Please use "
+         << "BoxedLcpConstraintSolver::getBoxedLcpSolver() instead. "
+         << "Returning nullptr.";
+
+  return nullptr;
 }
 
 //==============================================================================
 void ConstraintSolver::solve()
 {
-  for (std::size_t i = 0; i < mSkeletons.size(); ++i)
+  for (auto& skeleton : mSkeletons)
   {
-    mSkeletons[i]->clearConstraintImpulses();
+    skeleton->clearConstraintImpulses();
 DART_SUPPRESS_DEPRECATED_BEGIN
-    mSkeletons[i]->clearCollidingBodies();
+    skeleton->clearCollidingBodies();
 DART_SUPPRESS_DEPRECATED_END
   }
 
@@ -337,37 +343,35 @@ bool ConstraintSolver::containSkeleton(const ConstSkeletonPtr& _skeleton) const
 }
 
 //==============================================================================
-bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& _skeleton)
+bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& skeleton)
 {
-  if (!containSkeleton(_skeleton))
+  if (!containSkeleton(skeleton))
   {
-    mSkeletons.push_back(_skeleton);
+    mSkeletons.push_back(skeleton);
     return true;
   }
   else
   {
-    dtwarn << "Skeleton [" << _skeleton->getName()
+    dtwarn << "Skeleton [" << skeleton->getName()
            << "] is already in ConstraintSolver." << std::endl;
     return false;
   }
 }
 
 //==============================================================================
-bool ConstraintSolver::containConstraint(
-    const ConstConstraintBasePtr& _constraint) const
+bool ConstraintSolver::containConstraint(const ConstConstraintBasePtr& constraint) const
 {
   return std::find(mManualConstraints.begin(),
                    mManualConstraints.end(),
-                   _constraint) != mManualConstraints.end();
+                   constraint) != mManualConstraints.end();
 }
 
 //==============================================================================
-bool ConstraintSolver::checkAndAddConstraint(
-    const ConstraintBasePtr& _constraint)
+bool ConstraintSolver::checkAndAddConstraint(const ConstraintBasePtr& constraint)
 {
-  if (!containConstraint(_constraint))
+  if (!containConstraint(constraint))
   {
-    mManualConstraints.push_back(_constraint);
+    mManualConstraints.push_back(constraint);
     return true;
   }
   else
@@ -410,9 +414,9 @@ void ConstraintSolver::updateConstraints()
   // Create new contact constraints
   for (auto i = 0u; i < mCollisionResult.getNumContacts(); ++i)
   {
-    auto& ct = mCollisionResult.getContact(i);
+    auto& contact = mCollisionResult.getContact(i);
 
-    if (collision::Contact::isZeroNormal(ct.normal))
+    if (collision::Contact::isZeroNormal(contact.normal))
     {
       // Skip this contact. This is because we assume that a contact with
       // zero-length normal is invalid.
@@ -421,24 +425,24 @@ void ConstraintSolver::updateConstraints()
 
     // Set colliding bodies
     auto shapeFrame1 = const_cast<dynamics::ShapeFrame*>(
-          ct.collisionObject1->getShapeFrame());
+          contact.collisionObject1->getShapeFrame());
     auto shapeFrame2 = const_cast<dynamics::ShapeFrame*>(
-          ct.collisionObject2->getShapeFrame());
+          contact.collisionObject2->getShapeFrame());
 
 DART_SUPPRESS_DEPRECATED_BEGIN
     shapeFrame1->asShapeNode()->getBodyNodePtr()->setColliding(true);
     shapeFrame2->asShapeNode()->getBodyNodePtr()->setColliding(true);
 DART_SUPPRESS_DEPRECATED_END
 
-    if (isSoftContact(ct))
+    if (isSoftContact(contact))
     {
       mSoftContactConstraints.push_back(
-            std::make_shared<SoftContactConstraint>(ct, mTimeStep));
+            std::make_shared<SoftContactConstraint>(contact, mTimeStep));
     }
     else
     {
       mContactConstraints.push_back(
-            std::make_shared<ContactConstraint>(ct, mTimeStep));
+            std::make_shared<ContactConstraint>(contact, mTimeStep));
     }
   }
 
@@ -491,12 +495,16 @@ DART_SUPPRESS_DEPRECATED_END
       }
 
       if (joint->isPositionLimitEnforced())
+      {
         mJointLimitConstraints.push_back(
               std::make_shared<JointLimitConstraint>(joint));
+      }
 
       if (joint->getActuatorType() == dynamics::Joint::SERVO)
+      {
         mServoMotorConstraints.push_back(
               std::make_shared<ServoMotorConstraint>(joint));
+      }
     }
   }
 
@@ -539,26 +547,20 @@ void ConstraintSolver::buildConstrainedGroups()
   //----------------------------------------------------------------------------
   // Unite skeletons according to constraints's relationships
   //----------------------------------------------------------------------------
-  for (std::vector<ConstraintBasePtr>::iterator it = mActiveConstraints.begin();
-       it != mActiveConstraints.end(); ++it)
-  {
-    (*it)->uniteSkeletons();
-  }
+  for (const auto& activeConstraint : mActiveConstraints)
+    activeConstraint->uniteSkeletons();
 
   //----------------------------------------------------------------------------
   // Build constraint groups
   //----------------------------------------------------------------------------
-  for (std::vector<ConstraintBasePtr>::const_iterator it = mActiveConstraints.begin();
-       it != mActiveConstraints.end(); ++it)
+  for (const auto& activeConstraint : mActiveConstraints)
   {
     bool found = false;
-    dynamics::SkeletonPtr skel = (*it)->getRootSkeleton();
+    const auto& skel = activeConstraint->getRootSkeleton();
 
-    for (std::vector<ConstrainedGroup>::const_iterator itConstGroup
-         = mConstrainedGroups.begin();
-         itConstGroup != mConstrainedGroups.end(); ++itConstGroup)
+    for (const auto& constrainedGroup : mConstrainedGroups)
     {
-      if ((*itConstGroup).mRootSkeleton == skel)
+      if (constrainedGroup.mRootSkeleton == skel)
       {
         found = true;
         break;
@@ -575,43 +577,36 @@ void ConstraintSolver::buildConstrainedGroups()
   }
 
   // Add active constraints to constrained groups
-  for (std::vector<ConstraintBasePtr>::const_iterator it = mActiveConstraints.begin();
-       it != mActiveConstraints.end(); ++it)
+  for (const auto& activeConstraint : mActiveConstraints)
   {
-    dynamics::SkeletonPtr skel = (*it)->getRootSkeleton();
-    mConstrainedGroups[skel->mUnionIndex].addConstraint(*it);
+    const auto& skel = activeConstraint->getRootSkeleton();
+    mConstrainedGroups[skel->mUnionIndex].addConstraint(activeConstraint);
   }
 
   //----------------------------------------------------------------------------
   // Reset union since we don't need union information anymore.
   //----------------------------------------------------------------------------
-  for (std::vector<dynamics::SkeletonPtr>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
-  {
-    (*it)->resetUnion();
-  }
+  for (auto& skeleton : mSkeletons)
+    skeleton->resetUnion();
 }
 
 //==============================================================================
 void ConstraintSolver::solveConstrainedGroups()
 {
-  for (std::vector<ConstrainedGroup>::iterator it = mConstrainedGroups.begin();
-       it != mConstrainedGroups.end(); ++it)
-  {
-    mLCPSolver->solve(&(*it));
-  }
+  for (auto& constraintGroup : mConstrainedGroups)
+    solveConstrainedGroup(constraintGroup);
 }
 
 //==============================================================================
 bool ConstraintSolver::isSoftContact(const collision::Contact& contact) const
 {
-  auto shapeNode1 = contact.collisionObject1->getShapeFrame()->asShapeNode();
-  auto shapeNode2 = contact.collisionObject2->getShapeFrame()->asShapeNode();
+  auto* shapeNode1 = contact.collisionObject1->getShapeFrame()->asShapeNode();
+  auto* shapeNode2 = contact.collisionObject2->getShapeFrame()->asShapeNode();
   assert(shapeNode1);
   assert(shapeNode2);
 
-  auto bodyNode1 = shapeNode1->getBodyNodePtr().get();
-  auto bodyNode2 = shapeNode2->getBodyNodePtr().get();
+  auto* bodyNode1 = shapeNode1->getBodyNodePtr().get();
+  auto* bodyNode2 = shapeNode2->getBodyNodePtr().get();
 
   auto bodyNode1IsSoft =
       dynamic_cast<const dynamics::SoftBodyNode*>(bodyNode1) != nullptr;

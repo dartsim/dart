@@ -19,7 +19,11 @@ configure_file(
 
 # Install
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/simulation.hpp
+  FILES ${hdrs} ${detail_hdrs} ${CMAKE_CURRENT_BINARY_DIR}/simulation.hpp
   DESTINATION include/dart/simulation
   COMPONENT headers
+)
+
+dart_format_add(
+  detail/World-impl.hpp
 )

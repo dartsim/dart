@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/constraint/DantzigLCPSolver.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 
+#include <cassert>
 #ifndef NDEBUG
 #include <iomanip>
 #include <iostream>
@@ -42,30 +43,48 @@
 #include "dart/common/Console.hpp"
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
 
 namespace dart {
 namespace constraint {
 
 //==============================================================================
-DantzigLCPSolver::DantzigLCPSolver(double _timestep) : LCPSolver(_timestep)
+BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
+    double timeStep, BoxedLcpSolverPtr boxedLcpSolver)
+  : ConstraintSolver(timeStep), mBoxedLcpSolver(std::move(boxedLcpSolver))
 {
-  // Do nothing
+  if (!mBoxedLcpSolver)
+    mBoxedLcpSolver = std::make_shared<DantzigBoxedLcpSolver>();
 }
 
 //==============================================================================
-DantzigLCPSolver::~DantzigLCPSolver()
+void BoxedLcpConstraintSolver::setBoxedLcpSolver(
+    BoxedLcpSolverPtr lcpSolver)
 {
-  // Do nothing
+  if (!lcpSolver)
+  {
+    dtwarn << "[BoxedLcpConstraintSolver::setBoxedLcpSolver] "
+           << "nullptr for boxed LCP solver is not allowed.";
+    return;
+  }
+
+  mBoxedLcpSolver = std::move(lcpSolver);
 }
 
 //==============================================================================
-void DantzigLCPSolver::solve(ConstrainedGroup* _group)
+ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
 {
+  return mBoxedLcpSolver;
+}
 
+//==============================================================================
+void BoxedLcpConstraintSolver::solveConstrainedGroup(
+    ConstrainedGroup& group)
+{
   // Build LCP terms by aggregating them from constraints
-  std::size_t numConstraints = _group->getNumConstraints();
-  std::size_t n = _group->getTotalDimension();
+  std::size_t numConstraints = group.getNumConstraints();
+  std::size_t n = group.getTotalDimension();
 
   // If there is no constraint, then just return.
   if (0u == n)
@@ -93,7 +112,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 //  std::cout << "offset[" << 0 << "]: " << offset[0] << std::endl;
   for (std::size_t i = 1; i < numConstraints; ++i)
   {
-    const ConstraintBasePtr& constraint = _group->getConstraint(i - 1);
+    const ConstraintBasePtr& constraint = group.getConstraint(i - 1);
     assert(constraint->getDimension() > 0);
     offset[i] = offset[i - 1] + constraint->getDimension();
 //    std::cout << "offset[" << i << "]: " << offset[i] << std::endl;
@@ -104,7 +123,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   constInfo.invTimeStep = 1.0 / mTimeStep;
   for (std::size_t i = 0; i < numConstraints; ++i)
   {
-    const ConstraintBasePtr& constraint = _group->getConstraint(i);
+    const ConstraintBasePtr& constraint = group.getConstraint(i);
 
     constInfo.x      = x      + offset[i];
     constInfo.lo     = lo     + offset[i];
@@ -133,13 +152,13 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
       for (std::size_t k = i + 1; k < numConstraints; ++k)
       {
         index = nSkip * (offset[i] + j) + offset[k];
-        _group->getConstraint(k)->getVelocityChange(A + index, false);
+        group.getConstraint(k)->getVelocityChange(A + index, false);
       }
 
       // Filling symmetric part of A matrix
       for (std::size_t k = 0; k < i; ++k)
       {
-        for (std::size_t l = 0; l < _group->getConstraint(k)->getDimension(); ++l)
+        for (std::size_t l = 0; l < group.getConstraint(k)->getDimension(); ++l)
         {
           int index1 = nSkip * (offset[i] + j) + offset[k] + l;
           int index2 = nSkip * (offset[k] + l) + offset[i] + j;
@@ -163,7 +182,8 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 //  std::cout << std::endl;
 
   // Solve LCP using ODE's Dantzig algorithm
-  dSolveLCP(n, A, x, b, w, 0, lo, hi, findex);
+  assert(mBoxedLcpSolver);
+  mBoxedLcpSolver->solve(n, A, x, b, 0, lo, hi, findex);
 
   // Print LCP formulation
 //  dtdbg << "After solve:" << std::endl;
@@ -173,7 +193,7 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
   // Apply constraint impulses
   for (std::size_t i = 0; i < numConstraints; ++i)
   {
-    const ConstraintBasePtr& constraint = _group->getConstraint(i);
+    const ConstraintBasePtr& constraint = group.getConstraint(i);
     constraint->applyImpulse(x + offset[i]);
     constraint->excite();
   }
@@ -191,27 +211,27 @@ void DantzigLCPSolver::solve(ConstrainedGroup* _group)
 
 //==============================================================================
 #ifndef NDEBUG
-bool DantzigLCPSolver::isSymmetric(std::size_t _n, double* _A)
+bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 {
-  std::size_t nSkip = dPAD(_n);
-  for (std::size_t i = 0; i < _n; ++i)
+  std::size_t nSkip = dPAD(n);
+  for (std::size_t i = 0; i < n; ++i)
   {
-    for (std::size_t j = 0; j < _n; ++j)
+    for (std::size_t j = 0; j < n; ++j)
     {
-      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
+      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6)
       {
         std::cout << "A: " << std::endl;
-        for (std::size_t k = 0; k < _n; ++k)
+        for (std::size_t k = 0; k < n; ++k)
         {
           for (std::size_t l = 0; l < nSkip; ++l)
           {
-            std::cout << std::setprecision(4) << _A[k * nSkip + l] << " ";
+            std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
           }
           std::cout << std::endl;
         }
 
-        std::cout << "A(" << i << ", " << j << "): " << _A[nSkip * i + j] << std::endl;
-        std::cout << "A(" << j << ", " << i << "): " << _A[nSkip * j + i] << std::endl;
+        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j] << std::endl;
+        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i] << std::endl;
         return false;
       }
     }
@@ -221,28 +241,29 @@ bool DantzigLCPSolver::isSymmetric(std::size_t _n, double* _A)
 }
 
 //==============================================================================
-bool DantzigLCPSolver::isSymmetric(std::size_t _n, double* _A,
-                                   std::size_t _begin, std::size_t _end)
+bool BoxedLcpConstraintSolver::isSymmetric(
+    std::size_t n, double* A,
+    std::size_t begin, std::size_t end)
 {
-  std::size_t nSkip = dPAD(_n);
-  for (std::size_t i = _begin; i <= _end; ++i)
+  std::size_t nSkip = dPAD(n);
+  for (std::size_t i = begin; i <= end; ++i)
   {
-    for (std::size_t j = _begin; j <= _end; ++j)
+    for (std::size_t j = begin; j <= end; ++j)
     {
-      if (std::abs(_A[nSkip * i + j] - _A[nSkip * j + i]) > 1e-6)
+      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6)
       {
         std::cout << "A: " << std::endl;
-        for (std::size_t k = 0; k < _n; ++k)
+        for (std::size_t k = 0; k < n; ++k)
         {
           for (std::size_t l = 0; l < nSkip; ++l)
           {
-            std::cout << std::setprecision(4) << _A[k * nSkip + l] << " ";
+            std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
           }
           std::cout << std::endl;
         }
 
-        std::cout << "A(" << i << ", " << j << "): " << _A[nSkip * i + j] << std::endl;
-        std::cout << "A(" << j << ", " << i << "): " << _A[nSkip * j + i] << std::endl;
+        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j] << std::endl;
+        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i] << std::endl;
         return false;
       }
     }
@@ -252,39 +273,40 @@ bool DantzigLCPSolver::isSymmetric(std::size_t _n, double* _A,
 }
 
 //==============================================================================
-void DantzigLCPSolver::print(std::size_t _n, double* _A, double* _x,
-                          double* /*lo*/, double* /*hi*/, double* b,
-                          double* w, int* findex)
+void BoxedLcpConstraintSolver::print(
+    std::size_t n, double* A, double* x,
+    double* /*lo*/, double* /*hi*/, double* b,
+    double* w, int* findex)
 {
-  std::size_t nSkip = dPAD(_n);
+  std::size_t nSkip = dPAD(n);
   std::cout << "A: " << std::endl;
-  for (std::size_t i = 0; i < _n; ++i)
+  for (std::size_t i = 0; i < n; ++i)
   {
     for (std::size_t j = 0; j < nSkip; ++j)
     {
-      std::cout << std::setprecision(4) << _A[i * nSkip + j] << " ";
+      std::cout << std::setprecision(4) << A[i * nSkip + j] << " ";
     }
     std::cout << std::endl;
   }
 
   std::cout << "b: ";
-  for (std::size_t i = 0; i < _n; ++i)
+  for (std::size_t i = 0; i < n; ++i)
   {
     std::cout << std::setprecision(4) << b[i] << " ";
   }
   std::cout << std::endl;
 
   std::cout << "w: ";
-  for (std::size_t i = 0; i < _n; ++i)
+  for (std::size_t i = 0; i < n; ++i)
   {
     std::cout << w[i] << " ";
   }
   std::cout << std::endl;
 
   std::cout << "x: ";
-  for (std::size_t i = 0; i < _n; ++i)
+  for (std::size_t i = 0; i < n; ++i)
   {
-    std::cout << _x[i] << " ";
+    std::cout << x[i] << " ";
   }
   std::cout << std::endl;
 
@@ -303,36 +325,36 @@ void DantzigLCPSolver::print(std::size_t _n, double* _A, double* _x,
   //  std::cout << std::endl;
 
   std::cout << "frictionIndex: ";
-  for (std::size_t i = 0; i < _n; ++i)
+  for (std::size_t i = 0; i < n; ++i)
   {
     std::cout << findex[i] << " ";
   }
   std::cout << std::endl;
 
-  double* Ax  = new double[_n];
+  double* Ax  = new double[n];
 
-  for (std::size_t i = 0; i < _n; ++i)
+  for (std::size_t i = 0; i < n; ++i)
   {
     Ax[i] = 0.0;
   }
 
-  for (std::size_t i = 0; i < _n; ++i)
+  for (std::size_t i = 0; i < n; ++i)
   {
-    for (std::size_t j = 0; j < _n; ++j)
+    for (std::size_t j = 0; j < n; ++j)
     {
-      Ax[i] += _A[i * nSkip + j] * _x[j];
+      Ax[i] += A[i * nSkip + j] * x[j];
     }
   }
 
   std::cout << "Ax   : ";
-  for (std::size_t i = 0; i < _n; ++i)
+  for (std::size_t i = 0; i < n; ++i)
   {
     std::cout << Ax[i] << " ";
   }
   std::cout << std::endl;
 
   std::cout << "b + w: ";
-  for (std::size_t i = 0; i < _n; ++i)
+  for (std::size_t i = 0; i < n; ++i)
   {
     std::cout << b[i] + w[i] << " ";
   }
