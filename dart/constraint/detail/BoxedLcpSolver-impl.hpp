@@ -41,7 +41,7 @@ namespace constraint {
 template <typename BoxedLcpSolverT>
 bool BoxedLcpSolver::is() const
 {
-return getType() == BoxedLcpSolverT::getStaticType();
+  return getType() == BoxedLcpSolverT::getStaticType();
 }
 
 } // namespace constraint

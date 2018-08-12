@@ -114,7 +114,7 @@ dynamics::SkeletonPtr createFloor()
 class CustomWorldNode : public dart::gui::osg::WorldNode
 {
 public:
-  CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
+  explicit CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
     : dart::gui::osg::WorldNode(world)
   {
     // Set up the customized WorldNode
