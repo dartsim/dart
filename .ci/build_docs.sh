@@ -28,12 +28,12 @@ cd ${DART_DOCS_BUILD_DIR}
 # Add entries
 while read version; do
   if [[ ${version} == DART* ]]; then
-    echo "### ${version}" >> ${DART_DOCS_OUTPUT_DIR}/README.md
+    printf "\n### ${version}\n\n" >> ${DART_DOCS_OUTPUT_DIR}/README.md
     continue
   fi
 
   # Add entry to list of API versions
-  echo "* [${version}](https://dartsim.github.io/dart/${version}/)" >> ${DART_DOCS_OUTPUT_DIR}/README.md
+  printf "* [${version}](https://dartsim.github.io/dart/${version}/)\n" >> ${DART_DOCS_OUTPUT_DIR}/README.md
 
   # Build documentation
   git -C ${DART_CLONE_DIR} checkout ${version}
