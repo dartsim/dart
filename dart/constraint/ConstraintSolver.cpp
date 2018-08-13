@@ -49,6 +49,7 @@
 #include "dart/constraint/JointLimitConstraint.hpp"
 #include "dart/constraint/ServoMotorConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
+#include "dart/constraint/LCPSolver.hpp"
 
 namespace dart {
 namespace constraint {
