@@ -57,6 +57,8 @@ class ConstraintSolver
 public:
   /// Constructor
   explicit ConstraintSolver(double timeStep);
+  // TODO(JS): Remove timeStep. The timestep can be set by world when a
+  // constraint solver is assigned to a world.
 
   /// Copy constructor
   // TODO: implement copy constructor since this class contains a pointer to

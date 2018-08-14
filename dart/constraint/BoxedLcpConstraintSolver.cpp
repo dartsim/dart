@@ -41,8 +41,8 @@
 #include "dart/external/odelcpsolver/lcp.h"
 
 #include "dart/common/Console.hpp"
-#include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
 
@@ -59,8 +59,7 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
 }
 
 //==============================================================================
-void BoxedLcpConstraintSolver::setBoxedLcpSolver(
-    BoxedLcpSolverPtr lcpSolver)
+void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
 {
   if (!lcpSolver)
   {
@@ -79,43 +78,37 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
 }
 
 //==============================================================================
-void BoxedLcpConstraintSolver::solveConstrainedGroup(
-    ConstrainedGroup& group)
+void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 {
   // Build LCP terms by aggregating them from constraints
-  std::size_t numConstraints = group.getNumConstraints();
-  std::size_t n = group.getTotalDimension();
+  const std::size_t numConstraints = group.getNumConstraints();
+  const std::size_t n = group.getTotalDimension();
 
   // If there is no constraint, then just return.
   if (0u == n)
     return;
 
-  int nSkip = dPAD(n);
-  double* A = new double[n * nSkip];
-  double* x = new double[n];
-  double* b = new double[n];
-  double* w = new double[n];
-  double* lo = new double[n];
-  double* hi = new double[n];
-  int* findex = new int[n];
-
-  // Set w to 0 and findex to -1
-#ifndef NDEBUG
-  std::memset(A, 0.0, n * nSkip * sizeof(double));
+  const int nSkip = dPAD(n);
+#ifdef NDEBUG // release
+  mA.resize(n, nSkip);
+#else // debug
+  mA.setZero(n, nSkip);
 #endif
-  std::memset(w, 0.0, n * sizeof(double));
-  std::memset(findex, -1, n * sizeof(int));
+  mX.resize(n);
+  mB.resize(n);
+  mW.setZero(n); // set w to 0
+  mLo.resize(n);
+  mHi.resize(n);
+  mFIndex.setConstant(n, -1); // set findex to -1
 
   // Compute offset indices
-  std::size_t* offset = new std::size_t[n];
-  offset[0] = 0;
-//  std::cout << "offset[" << 0 << "]: " << offset[0] << std::endl;
+  mOffset.resize(n);
+  mOffset[0] = 0;
   for (std::size_t i = 1; i < numConstraints; ++i)
   {
     const ConstraintBasePtr& constraint = group.getConstraint(i - 1);
     assert(constraint->getDimension() > 0);
-    offset[i] = offset[i - 1] + constraint->getDimension();
-//    std::cout << "offset[" << i << "]: " << offset[i] << std::endl;
+    mOffset[i] = mOffset[i - 1] + constraint->getDimension();
   }
 
   // For each constraint
@@ -125,12 +118,12 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(
   {
     const ConstraintBasePtr& constraint = group.getConstraint(i);
 
-    constInfo.x      = x      + offset[i];
-    constInfo.lo     = lo     + offset[i];
-    constInfo.hi     = hi     + offset[i];
-    constInfo.b      = b      + offset[i];
-    constInfo.findex = findex + offset[i];
-    constInfo.w      = w      + offset[i];
+    constInfo.x = mX.data() + mOffset[i];
+    constInfo.lo = mLo.data() + mOffset[i];
+    constInfo.hi = mHi.data() + mOffset[i];
+    constInfo.b = mB.data() + mOffset[i];
+    constInfo.findex = mFIndex.data() + mOffset[i];
+    constInfo.w = mW.data() + mOffset[i];
 
     // Fill vectors: lo, hi, b, w
     constraint->getInformation(&constInfo);
@@ -140,73 +133,74 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(
     for (std::size_t j = 0; j < constraint->getDimension(); ++j)
     {
       // Adjust findex for global index
-      if (findex[offset[i] + j] >= 0)
-        findex[offset[i] + j] += offset[i];
+      if (mFIndex[mOffset[i] + j] >= 0)
+        mFIndex[mOffset[i] + j] += mOffset[i];
 
       // Apply impulse for mipulse test
       constraint->applyUnitImpulse(j);
 
       // Fill upper triangle blocks of A matrix
-      int index = nSkip * (offset[i] + j) + offset[i];
-      constraint->getVelocityChange(A + index, true);
+      int index = nSkip * (mOffset[i] + j) + mOffset[i];
+      constraint->getVelocityChange(mA.data() + index, true);
       for (std::size_t k = i + 1; k < numConstraints; ++k)
       {
-        index = nSkip * (offset[i] + j) + offset[k];
-        group.getConstraint(k)->getVelocityChange(A + index, false);
+        index = nSkip * (mOffset[i] + j) + mOffset[k];
+        group.getConstraint(k)->getVelocityChange(mA.data() + index, false);
       }
 
       // Filling symmetric part of A matrix
       for (std::size_t k = 0; k < i; ++k)
       {
+        const int indexI = mOffset[i] + j;
         for (std::size_t l = 0; l < group.getConstraint(k)->getDimension(); ++l)
         {
-          int index1 = nSkip * (offset[i] + j) + offset[k] + l;
-          int index2 = nSkip * (offset[k] + l) + offset[i] + j;
-
-          A[index1] = A[index2];
+          const int indexJ = mOffset[k] + l;
+          mA(indexI, indexJ) = mA(indexJ, indexI);
         }
       }
     }
 
-    assert(isSymmetric(n, A, offset[i],
-                       offset[i] + constraint->getDimension() - 1));
+    assert(
+        isSymmetric(
+            n,
+            mA.data(),
+            mOffset[i],
+            mOffset[i] + constraint->getDimension() - 1));
 
     constraint->unexcite();
   }
 
-  assert(isSymmetric(n, A));
+  assert(isSymmetric(n, mA.data()));
 
   // Print LCP formulation
-//  dtdbg << "Before solve:" << std::endl;
-//  print(n, A, x, lo, hi, b, w, findex);
-//  std::cout << std::endl;
+  //  dtdbg << "Before solve:" << std::endl;
+  //  print(n, A, x, lo, hi, b, w, findex);
+  //  std::cout << std::endl;
 
   // Solve LCP using ODE's Dantzig algorithm
   assert(mBoxedLcpSolver);
-  mBoxedLcpSolver->solve(n, A, x, b, 0, lo, hi, findex);
+  mBoxedLcpSolver->solve(
+      n,
+      mA.data(),
+      mX.data(),
+      mB.data(),
+      0,
+      mLo.data(),
+      mHi.data(),
+      mFIndex.data());
 
   // Print LCP formulation
-//  dtdbg << "After solve:" << std::endl;
-//  print(n, A, x, lo, hi, b, w, findex);
-//  std::cout << std::endl;
+  //  dtdbg << "After solve:" << std::endl;
+  //  print(n, A, x, lo, hi, b, w, findex);
+  //  std::cout << std::endl;
 
   // Apply constraint impulses
   for (std::size_t i = 0; i < numConstraints; ++i)
   {
     const ConstraintBasePtr& constraint = group.getConstraint(i);
-    constraint->applyImpulse(x + offset[i]);
+    constraint->applyImpulse(mX.data() + mOffset[i]);
     constraint->excite();
   }
-
-  delete[] offset;
-
-  delete[] A;
-  delete[] x;
-  delete[] b;
-  delete[] w;
-  delete[] lo;
-  delete[] hi;
-  delete[] findex;
 }
 
 //==============================================================================
@@ -230,8 +224,10 @@ bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
           std::cout << std::endl;
         }
 
-        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j] << std::endl;
-        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i] << std::endl;
+        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j]
+                  << std::endl;
+        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i]
+                  << std::endl;
         return false;
       }
     }
@@ -242,8 +238,7 @@ bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
 
 //==============================================================================
 bool BoxedLcpConstraintSolver::isSymmetric(
-    std::size_t n, double* A,
-    std::size_t begin, std::size_t end)
+    std::size_t n, double* A, std::size_t begin, std::size_t end)
 {
   std::size_t nSkip = dPAD(n);
   for (std::size_t i = begin; i <= end; ++i)
@@ -262,8 +257,10 @@ bool BoxedLcpConstraintSolver::isSymmetric(
           std::cout << std::endl;
         }
 
-        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j] << std::endl;
-        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i] << std::endl;
+        std::cout << "A(" << i << ", " << j << "): " << A[nSkip * i + j]
+                  << std::endl;
+        std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i]
+                  << std::endl;
         return false;
       }
     }
@@ -274,9 +271,14 @@ bool BoxedLcpConstraintSolver::isSymmetric(
 
 //==============================================================================
 void BoxedLcpConstraintSolver::print(
-    std::size_t n, double* A, double* x,
-    double* /*lo*/, double* /*hi*/, double* b,
-    double* w, int* findex)
+    std::size_t n,
+    double* A,
+    double* x,
+    double* /*lo*/,
+    double* /*hi*/,
+    double* b,
+    double* w,
+    int* findex)
 {
   std::size_t nSkip = dPAD(n);
   std::cout << "A: " << std::endl;
@@ -331,7 +333,7 @@ void BoxedLcpConstraintSolver::print(
   }
   std::cout << std::endl;
 
-  double* Ax  = new double[n];
+  double* Ax = new double[n];
 
   for (std::size_t i = 0; i < n; ++i)
   {
@@ -364,5 +366,5 @@ void BoxedLcpConstraintSolver::print(
 }
 #endif
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart
