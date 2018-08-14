@@ -921,6 +921,20 @@ Eigen::VectorXd MetaSkeleton::getForceUpperLimits(
 }
 
 //==============================================================================
+void MetaSkeleton::setVelocityChanges(const Eigen::VectorXd& velocityChanges)
+{
+  setAllValuesFromVector<&DegreeOfFreedom::setVelocityChange>(
+        this, velocityChanges, "setVelocityChanges", "velocityChanges");
+}
+
+//==============================================================================
+void MetaSkeleton::addVelocityChanges(const Eigen::VectorXd& velocityChanges)
+{
+  setAllValuesFromVector<&DegreeOfFreedom::addVelocityChange>(
+        this, velocityChanges, "addVelocityChanges", "velocityChanges");
+}
+
+//==============================================================================
 Eigen::VectorXd MetaSkeleton::getVelocityChanges() const
 {
   return getValuesFromAllDofs<&DegreeOfFreedom::getVelocityChange>(

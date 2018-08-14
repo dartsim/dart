@@ -397,6 +397,12 @@ void DegreeOfFreedom::setVelocityChange(double _velocityChange)
 }
 
 //==============================================================================
+void DegreeOfFreedom::addVelocityChange(double _velocityChange)
+{
+  mJoint->addVelocityChange(mIndexInJoint, _velocityChange);
+}
+
+//==============================================================================
 double DegreeOfFreedom::getVelocityChange() const
 {
   return mJoint->getVelocityChange(mIndexInJoint);

@@ -557,6 +557,13 @@ void ZeroDofJoint::setVelocityChange(std::size_t /*_index*/,
 }
 
 //==============================================================================
+void ZeroDofJoint::addVelocityChange(std::size_t /*_index*/,
+                                     double /*_velocityChange*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
 double ZeroDofJoint::getVelocityChange(std::size_t /*_index*/) const
 {
   return 0.0;

@@ -529,6 +529,12 @@ public:
   /// \{ \name Velocity Change
   //----------------------------------------------------------------------------
 
+  /// Sets velocity changes for all the generalized coordinates
+  void setVelocityChanges(const Eigen::VectorXd& velocityChanges);
+
+  /// Adds velocity changes for all the generalized coordinates
+  void addVelocityChanges(const Eigen::VectorXd& velocityChanges);
+
   /// Get the velocity changes for all the generalized coordinates
   Eigen::VectorXd getVelocityChanges() const;
 

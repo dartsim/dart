@@ -497,6 +497,9 @@ public:
   /// Set a single velocity change
   virtual void setVelocityChange(std::size_t _index, double _velocityChange) = 0;
 
+  /// Add a single velocity change
+  virtual void addVelocityChange(std::size_t _index, double _velocityChange) = 0;
+
   /// Get a single velocity change
   virtual double getVelocityChange(std::size_t _index) const = 0;
 

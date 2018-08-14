@@ -324,6 +324,9 @@ public:
   void setVelocityChange(std::size_t _index, double _velocityChange) override;
 
   // Documentation inherited
+  void addVelocityChange(std::size_t _index, double _velocityChange) override;
+
+  // Documentation inherited
   double getVelocityChange(std::size_t _index) const override;
 
   // Documentation inherited

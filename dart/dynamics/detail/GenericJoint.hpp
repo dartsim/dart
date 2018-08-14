@@ -1314,6 +1314,20 @@ void GenericJoint<ConfigSpaceT>::setVelocityChange(
 
 //==============================================================================
 template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::addVelocityChange(
+    size_t index, double velocityChange)
+{
+  if (index >= getNumDofs())
+  {
+    GenericJoint_REPORT_OUT_OF_RANGE(setVelocityChange, index);
+    return;
+  }
+
+  mVelocityChanges[index] += velocityChange;
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
 double GenericJoint<ConfigSpaceT>::getVelocityChange(size_t index) const
 {
   if (index >= getNumDofs())
