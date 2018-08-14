@@ -357,27 +357,25 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
   //----------------------------------------------------------------------------
   if (mIsFrictionOn)
   {
-    std::size_t index = 0;
-
     // Bias term, w, should be zero
-    assert(info->w[index] == 0.0);
-    assert(info->w[index + 1] == 0.0);
-    assert(info->w[index + 2] == 0.0);
+    assert(info->w[0] == 0.0);
+    assert(info->w[1] == 0.0);
+    assert(info->w[2] == 0.0);
 
     // Upper and lower bounds of normal impulsive force
-    info->lo[index] = 0.0;
-    info->hi[index] = static_cast<double>(dInfinity);
-    assert(info->findex[index] == -1);
+    info->lo[0] = 0.0;
+    info->hi[0] = static_cast<double>(dInfinity);
+    assert(info->findex[0] == -1);
 
     // Upper and lower bounds of tangential direction-1 impulsive force
-    info->lo[index + 1] = -mFrictionCoeff;
-    info->hi[index + 1] = mFrictionCoeff;
-    info->findex[index + 1] = static_cast<int>(index);
+    info->lo[1] = -mFrictionCoeff;
+    info->hi[1] = mFrictionCoeff;
+    info->findex[1] = 0;
 
     // Upper and lower bounds of tangential direction-2 impulsive force
-    info->lo[index + 2] = -mFrictionCoeff;
-    info->hi[index + 2] = mFrictionCoeff;
-    info->findex[index + 2] = static_cast<int>(index);
+    info->lo[2] = -mFrictionCoeff;
+    info->hi[2] = mFrictionCoeff;
+    info->findex[2] = 0;
 
     //------------------------------------------------------------------------
     // Bouncing
@@ -398,7 +396,7 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     // B. Restitution
     if (mIsBounceOn)
     {
-      double& negativeRelativeVel = info->b[index];
+      double& negativeRelativeVel = info->b[0];
       double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
 
       if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD)
@@ -415,16 +413,13 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
       }
     }
 
-    info->b[index] += bouncingVelocity;
+    info->b[0] += bouncingVelocity;
 
     // TODO(JS): Initial guess
     // x
-    info->x[index] = 0.0;
-    info->x[index + 1] = 0.0;
-    info->x[index + 2] = 0.0;
-
-    // Increase index
-    index += 3;
+    info->x[0] = 0.0;
+    info->x[1] = 0.0;
+    info->x[2] = 0.0;
   }
   //----------------------------------------------------------------------------
   // Frictionless case
@@ -604,53 +599,39 @@ void ContactConstraint::applyImpulse(double* lambda)
   //----------------------------------------------------------------------------
   if (mIsFrictionOn)
   {
-    int index = 0;
-
     assert(!math::isNan(lambda[index]));
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
-    mContact.force = mContact.normal * lambda[index] / mTimeStep;
+    mContact.force = mContact.normal * lambda[0] / mTimeStep;
 
     // Normal impulsive force
     if (mBodyNodeA->isReactive())
-      mBodyNodeA->addConstraintImpulse(
-          mSpatialNormalA.col(index) * lambda[index]);
+      mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(0) * lambda[0]);
     if (mBodyNodeB->isReactive())
-      mBodyNodeB->addConstraintImpulse(
-          mSpatialNormalB.col(index) * lambda[index]);
-
-    index++;
+      mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(0) * lambda[0]);
 
     assert(!math::isNan(lambda[index]));
 
     // Add contact impulse (force) toward the tangential w.r.t. world frame
     Eigen::MatrixXd D = getTangentBasisMatrixODE(mContact.normal);
-    mContact.force += D.col(0) * lambda[index] / mTimeStep;
+    mContact.force += D.col(0) * lambda[1] / mTimeStep;
 
     // Tangential direction-1 impulsive force
     if (mBodyNodeA->isReactive())
-      mBodyNodeA->addConstraintImpulse(
-          mSpatialNormalA.col(index) * lambda[index]);
+      mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(1) * lambda[1]);
     if (mBodyNodeB->isReactive())
-      mBodyNodeB->addConstraintImpulse(
-          mSpatialNormalB.col(index) * lambda[index]);
-
-    index++;
+      mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(1) * lambda[1]);
 
     assert(!math::isNan(lambda[index]));
 
     // Add contact impulse (force) toward the tangential w.r.t. world frame
-    mContact.force += D.col(1) * lambda[index] / mTimeStep;
+    mContact.force += D.col(1) * lambda[2] / mTimeStep;
 
     // Tangential direction-2 impulsive force
     if (mBodyNodeA->isReactive())
-      mBodyNodeA->addConstraintImpulse(
-          mSpatialNormalA.col(index) * lambda[index]);
+      mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(2) * lambda[2]);
     if (mBodyNodeB->isReactive())
-      mBodyNodeB->addConstraintImpulse(
-          mSpatialNormalB.col(index) * lambda[index]);
-
-    index++;
+      mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(2) * lambda[2]);
   }
   //----------------------------------------------------------------------------
   // Frictionless case
