@@ -228,7 +228,7 @@ public:
       mGuiGravity(true),
       mGravity(true),
       mGuiHeadlights(true),
-      mLcpSolverType(0)
+      mSolverType(-1)
   {
     // Do nothing
   }
@@ -292,10 +292,14 @@ public:
 
       ImGui::Text("LCP solver:");
 
-      ImGui::RadioButton("Dantzig", &mLcpSolverType, 0);
+      static int solverType = 0;
+      // ImGui::RadioButton("SI", &solverType, 0);
+      ImGui::RadioButton("Dantzig", &solverType, 0);
       ImGui::SameLine();
-      ImGui::RadioButton("PGS", &mLcpSolverType, 1);
-      setLcpSolver(mLcpSolverType);
+      ImGui::RadioButton("Dantzig", &solverType, 1);
+      ImGui::SameLine();
+      ImGui::RadioButton("PGS", &solverType, 2);
+      setLcpSolver(solverType);
 
       ImGui::Text("Time: %.3f", mWorld->getTime());
     }
@@ -340,41 +344,42 @@ public:
   }
 
 protected:
-  void setLcpSolver(int lcpSolverType)
+  void setLcpSolver(int solverType)
   {
-    if (lcpSolverType == mLcpSolverType)
+    if (solverType == mSolverType)
       return;
 
-    auto constraintSolver = mWorld->getConstraintSolver();
-    auto blcpConstraintSolver
-        = dynamic_cast<constraint::BoxedLcpConstraintSolver*>(constraintSolver);
-
-    if (!constraintSolver)
-      return;
-
-    auto boxedLcpSolver = blcpConstraintSolver->getBoxedLcpSolver().get();
-
-    if (lcpSolverType == 0)
+    if (solverType == 0)
     {
-      if (boxedLcpSolver->is<constraint::DantzigBoxedLcpSolver>())
-        return;
-
-      blcpConstraintSolver->setBoxedLcpSolver(
-          std::make_shared<constraint::DantzigBoxedLcpSolver>());
+      // auto solver
+      //     =
+      //     common::make_unique<constraint::SequentialImpulseConstraintSolver>(
+      //         mWorld->getTimeStep());
+      auto lcpSolver = std::make_shared<constraint::DantzigBoxedLcpSolver>();
+      auto solver = common::make_unique<constraint::BoxedLcpConstraintSolver>(
+          mWorld->getTimeStep(), lcpSolver);
+      mWorld->setConstraintSolver(std::move(solver));
     }
-    else if (lcpSolverType == 1)
+    else if (solverType == 1)
     {
-      if (boxedLcpSolver->is<constraint::PgsBoxedLcpSolver>())
-        return;
-
-      blcpConstraintSolver->setBoxedLcpSolver(
-          std::make_shared<constraint::PgsBoxedLcpSolver>());
+      auto lcpSolver = std::make_shared<constraint::DantzigBoxedLcpSolver>();
+      auto solver = common::make_unique<constraint::BoxedLcpConstraintSolver>(
+          mWorld->getTimeStep(), lcpSolver);
+      mWorld->setConstraintSolver(std::move(solver));
+    }
+    else if (solverType == 2)
+    {
+      auto lcpSolver = std::make_shared<constraint::PgsBoxedLcpSolver>();
+      auto solver = common::make_unique<constraint::BoxedLcpConstraintSolver>(
+          mWorld->getTimeStep(), lcpSolver);
+      mWorld->setConstraintSolver(std::move(solver));
     }
     else
     {
-      dtwarn << "Unsupported boxed-LCP solver selected: " << lcpSolverType
-             << "\n";
+      dtwarn << "Unsupported boxed-LCP solver selected: " << solverType << "\n";
     }
+
+    mSolverType = solverType;
   }
 
   void setGravity(bool gravity)
@@ -395,7 +400,7 @@ protected:
   bool mGuiGravity;
   bool mGravity;
   bool mGuiHeadlights;
-  int mLcpSolverType;
+  int mSolverType;
 };
 
 //==============================================================================
@@ -410,6 +415,9 @@ int main()
 
   // Wrap a WorldNode around it
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world);
+
+  // Run 20 simulation steps per one rendering frame
+  node->setNumStepsPerCycle(20);
 
   // Create a Viewer and set it up with the WorldNode
   dart::gui::osg::ImGuiViewer viewer;
