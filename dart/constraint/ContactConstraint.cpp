@@ -473,8 +473,6 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
     // TODO(JS): Initial guess
     // x
     info->x[0] = 0.0;
-
-    // Increase index
   }
 }
 
@@ -599,7 +597,9 @@ void ContactConstraint::applyImpulse(double* lambda)
   //----------------------------------------------------------------------------
   if (mIsFrictionOn)
   {
-    assert(!math::isNan(lambda[index]));
+    assert(!math::isNan(lambda[0]));
+    assert(!math::isNan(lambda[1]));
+    assert(!math::isNan(lambda[2]));
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
     mContact.force = mContact.normal * lambda[0] / mTimeStep;
@@ -610,10 +610,8 @@ void ContactConstraint::applyImpulse(double* lambda)
     if (mBodyNodeB->isReactive())
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(0) * lambda[0]);
 
-    assert(!math::isNan(lambda[index]));
-
     // Add contact impulse (force) toward the tangential w.r.t. world frame
-    Eigen::MatrixXd D = getTangentBasisMatrixODE(mContact.normal);
+    const Eigen::MatrixXd D = getTangentBasisMatrixODE(mContact.normal);
     mContact.force += D.col(0) * lambda[1] / mTimeStep;
 
     // Tangential direction-1 impulsive force
@@ -621,8 +619,6 @@ void ContactConstraint::applyImpulse(double* lambda)
       mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(1) * lambda[1]);
     if (mBodyNodeB->isReactive())
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(1) * lambda[1]);
-
-    assert(!math::isNan(lambda[index]));
 
     // Add contact impulse (force) toward the tangential w.r.t. world frame
     mContact.force += D.col(1) * lambda[2] / mTimeStep;
