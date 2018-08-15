@@ -292,6 +292,9 @@ public:
   /// Set the velocity change of this DegreeOfFreedom
   void setVelocityChange(double _velocityChange);
 
+  /// Add the velocity change of this DegreeOfFreedom
+  void addVelocityChange(double _velocityChange);
+
   /// Get the velocity change of this DegreeOfFreedom
   double getVelocityChange() const;
 
