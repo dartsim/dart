@@ -310,11 +310,22 @@ public:
   /// Set the constraint impulse of this generalized coordinate to zero
   void resetConstraintImpulse();
 
+  /// Sets the output impulse.
+  ///
+  /// This should be only called constraint solvers.
+  void setImpulse(double impulse);
+
+  void addImpulse(double impulse);
+
   /// Returns impulse, the output of kinematic joint.
   ///
   /// The impulse is due to (1) body impulse, (2) body constraint impulse, and
   /// (3) predescribed joint velocity change.
   double getImpulse() const;
+
+  void setHybridOutput(double output);
+
+  void addHybridOutput(double output);
 
   /// Returns velocity change for dynamic joint or velocity change for kinematic
   /// joint.

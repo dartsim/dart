@@ -177,6 +177,12 @@ private:
   /// Local body jacobians for mBodyNode2
   Eigen::Matrix<double, 6, Eigen::Dynamic> mSpatialNormalB;
 
+  Eigen::MatrixXd mUnitHybridOutputsA;
+  Eigen::MatrixXd mUnitHybridOutputsB;
+
+  Eigen::MatrixXd mConstraintJacobianA;
+  Eigen::MatrixXd mConstraintJacobianB;
+
   ///
   bool mIsFrictionOn;
 

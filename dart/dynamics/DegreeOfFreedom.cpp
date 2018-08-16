@@ -433,9 +433,49 @@ void DegreeOfFreedom::resetConstraintImpulse()
 }
 
 //==============================================================================
+void DegreeOfFreedom::setImpulse(double impulse)
+{
+  mJoint->setImpulse(mIndexInJoint, impulse);
+}
+
+//==============================================================================
+void DegreeOfFreedom::addImpulse(double impulse)
+{
+  mJoint->addImpulse(mIndexInJoint, impulse);
+}
+
+//==============================================================================
 double DegreeOfFreedom::getImpulse() const
 {
   return mJoint->getImpulse(mIndexInJoint);
+}
+
+//==============================================================================
+void DegreeOfFreedom::setHybridOutput(double output)
+{
+  if (mJoint->isDynamic())
+  {
+    setVelocityChange(output);
+  }
+  else
+  {
+    assert(mJoint->isKinematic());
+    setImpulse(output);
+  }
+}
+
+//==============================================================================
+void DegreeOfFreedom::addHybridOutput(double output)
+{
+  if (mJoint->isDynamic())
+  {
+    addVelocityChange(output);
+  }
+  else
+  {
+    assert(mJoint->isKinematic());
+    addImpulse(output);
+  }
 }
 
 //==============================================================================

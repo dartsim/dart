@@ -594,6 +594,18 @@ void ZeroDofJoint::resetConstraintImpulses()
 }
 
 //==============================================================================
+void ZeroDofJoint::setImpulse(std::size_t /*index*/, double /*impulse*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void ZeroDofJoint::addImpulse(std::size_t /*index*/, double /*impulse*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
 double ZeroDofJoint::getImpulse(std::size_t /*index*/) const
 {
   return 0.0;

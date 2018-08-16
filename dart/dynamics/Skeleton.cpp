@@ -3828,16 +3828,16 @@ void Skeleton::computeImpulseForwardDynamics()
   // BodyNode::getArticulatedInertia()
 
   // Backward recursion
-  for (auto it = mSkelCache.mBodyNodes.rbegin();
-       it != mSkelCache.mBodyNodes.rend(); ++it)
-    (*it)->updateBiasImpulse();
+//  for (auto it = mSkelCache.mBodyNodes.rbegin();
+//       it != mSkelCache.mBodyNodes.rend(); ++it)
+//    (*it)->updateBiasImpulse();
 
   // Forward recursion
   for (auto& bodyNode : mSkelCache.mBodyNodes)
   {
-    bodyNode->updateVelocityChangeFD();
-    bodyNode->updateTransmittedImpulse();
-    bodyNode->updateJointImpulseFD();
+//    bodyNode->updateVelocityChangeFD();
+//    bodyNode->updateTransmittedImpulse();
+//    bodyNode->updateJointImpulseFD();
     bodyNode->updateConstrainedTerms(mAspectProperties.mTimeStep);
   }
 }

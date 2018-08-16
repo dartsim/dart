@@ -1382,6 +1382,32 @@ void GenericJoint<ConfigSpaceT>::resetConstraintImpulses()
 
 //==============================================================================
 template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setImpulse(size_t index, double impulse)
+{
+  if (index >= getNumDofs())
+  {
+    GenericJoint_REPORT_OUT_OF_RANGE(setImpulse, index);
+    return;
+  }
+
+  mImpulses[index] = impulse;
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::addImpulse(size_t index, double impulse)
+{
+  if (index >= getNumDofs())
+  {
+    GenericJoint_REPORT_OUT_OF_RANGE(addImpulse, index);
+    return;
+  }
+
+  mImpulses[index] += impulse;
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
 double GenericJoint<ConfigSpaceT>::getImpulse(size_t index) const
 {
   if (index >= getNumDofs())

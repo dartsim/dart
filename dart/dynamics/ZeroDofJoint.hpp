@@ -342,6 +342,12 @@ public:
   void resetConstraintImpulses() override;
 
   // Documentation inherited
+  void setImpulse(std::size_t index, double impulse) override;
+
+  // Documentation inherited
+  void addImpulse(std::size_t index, double impulse) override;
+
+  // Documentation inherited
   double getImpulse(std::size_t index) const override;
 
   //----------------------------------------------------------------------------

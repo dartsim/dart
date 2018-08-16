@@ -515,6 +515,10 @@ public:
   /// Set zero all the constraint impulses
   virtual void resetConstraintImpulses() = 0;
 
+  virtual void setImpulse(std::size_t index, double impulse) = 0;
+
+  virtual void addImpulse(std::size_t index, double impulse) = 0;
+
   virtual double getImpulse(std::size_t index) const = 0;
 
   /// \}

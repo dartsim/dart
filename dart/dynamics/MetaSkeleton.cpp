@@ -963,6 +963,20 @@ Eigen::VectorXd MetaSkeleton::getImpulses() const
 }
 
 //==============================================================================
+void MetaSkeleton::setHybridOutputs(const Eigen::VectorXd& outputs)
+{
+  setAllValuesFromVector<&DegreeOfFreedom::setHybridOutput>(
+        this, outputs, "setHybridOutputs", "outputs");
+}
+
+//==============================================================================
+void MetaSkeleton::addHybridOutputs(const Eigen::VectorXd& outputs)
+{
+  setAllValuesFromVector<&DegreeOfFreedom::addHybridOutput>(
+        this, outputs, "addHybridOutputs", "outputs");
+}
+
+//==============================================================================
 Eigen::VectorXd MetaSkeleton::getHybridOutputs() const
 {
   return getValuesFromAllDofs<&DegreeOfFreedom::getHybridOutput>(

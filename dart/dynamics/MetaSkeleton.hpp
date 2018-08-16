@@ -546,6 +546,12 @@ public:
 
   Eigen::VectorXd getImpulses() const;
 
+  /// This should be only called by constraint solvers.
+  void setHybridOutputs(const Eigen::VectorXd& outputs);
+
+  /// This should be only called by constraint solvers.
+  void addHybridOutputs(const Eigen::VectorXd& outputs);
+
   /// Returns a dofs-sized vector where each element corresponds to the DOF.
   /// Each value is either velocity change or impluse for dynamic joint and
   /// kinematic joint
