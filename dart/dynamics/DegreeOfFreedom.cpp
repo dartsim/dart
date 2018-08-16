@@ -433,6 +433,26 @@ void DegreeOfFreedom::resetConstraintImpulse()
 }
 
 //==============================================================================
+double DegreeOfFreedom::getImpulse() const
+{
+  return mJoint->getImpulse(mIndexInJoint);
+}
+
+//==============================================================================
+double DegreeOfFreedom::getHybridOutput() const
+{
+  if (mJoint->isDynamic())
+  {
+    return getVelocityChange();
+  }
+  else
+  {
+    assert(mJoint->isKinematic());
+    return getImpulse();
+  }
+}
+
+//==============================================================================
 void DegreeOfFreedom::setSpringStiffness(double _k)
 {
   mJoint->setSpringStiffness(mIndexInJoint, _k);

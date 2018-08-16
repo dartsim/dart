@@ -397,7 +397,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Velocity change
+  /// \{ \name Impulse-based Dynamics
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -412,12 +412,6 @@ public:
   // Documentation inherited
   void resetVelocityChanges() override;
 
-  /// \}
-
-  //----------------------------------------------------------------------------
-  /// \{ \name Constraint impulse
-  //----------------------------------------------------------------------------
-
   // Documentation inherited
   void setConstraintImpulse(std::size_t index, double impulse) override;
 
@@ -426,6 +420,8 @@ public:
 
   // Documentation inherited
   void resetConstraintImpulses() override;
+
+  double getImpulse(std::size_t index) const;
 
   /// \}
 
@@ -684,10 +680,18 @@ protected:
   /// Change of generalized velocity
   Vector mVelocityChanges;
 
-  /// Generalized impulse
+  /// Generalized impulses, which has different use purposes depending on the
+  /// joint types.
+  ///
+  /// A dynamic joint uses this value as input impulses, while a kinematic joint
+  /// uses this value as output impulses due to joint or body impulse, or
+  /// predescribed velocity change.
   Vector mImpulses;
 
-  /// Generalized constraint impulse
+  /// Generalized constraint impulses, which is only used when the joint type is
+  /// dynamic.
+  ///
+  /// Setting this value is the responsibility of the constraint solver.
   Vector mConstraintImpulses;
 
   //----------------------------------------------------------------------------

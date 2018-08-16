@@ -1382,6 +1382,19 @@ void GenericJoint<ConfigSpaceT>::resetConstraintImpulses()
 
 //==============================================================================
 template <class ConfigSpaceT>
+double GenericJoint<ConfigSpaceT>::getImpulse(size_t index) const
+{
+  if (index >= getNumDofs())
+  {
+    GenericJoint_REPORT_OUT_OF_RANGE(getImpulse, index);
+    return 0.0;
+  }
+
+  return mImpulses[index];
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::integratePositions(double dt)
 {
   const Point& point = math::integratePosition<ConfigSpaceT>(

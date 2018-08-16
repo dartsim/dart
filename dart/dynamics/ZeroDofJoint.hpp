@@ -317,7 +317,7 @@ public:
   Eigen::VectorXd getForceUpperLimits() const override;
 
   //----------------------------------------------------------------------------
-  // Velocity change
+  // Impulse-based Dynamics
   //----------------------------------------------------------------------------
 
   // Documentation inherited
@@ -332,10 +332,6 @@ public:
   // Documentation inherited
   void resetVelocityChanges() override;
 
-  //----------------------------------------------------------------------------
-  // Constraint impulse
-  //----------------------------------------------------------------------------
-
   // Documentation inherited
   void setConstraintImpulse(std::size_t _index, double _impulse) override;
 
@@ -344,6 +340,9 @@ public:
 
   // Documentation inherited
   void resetConstraintImpulses() override;
+
+  // Documentation inherited
+  double getImpulse(std::size_t index) const override;
 
   //----------------------------------------------------------------------------
   // Integration and finite difference

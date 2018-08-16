@@ -286,7 +286,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Velocity change
+  /// \{ \name Impulse-based Dynamics
   //----------------------------------------------------------------------------
 
   /// Set the velocity change of this DegreeOfFreedom
@@ -301,12 +301,6 @@ public:
   /// Set the velocity change of this DegreeOfFreedom to zero
   void resetVelocityChange();
 
-  /// \}
-
-  //----------------------------------------------------------------------------
-  /// \{ \name Constraint impulse
-  //----------------------------------------------------------------------------
-
   /// Set the constraint impulse of this generalized coordinate
   void setConstraintImpulse(double _impulse);
 
@@ -315,6 +309,16 @@ public:
 
   /// Set the constraint impulse of this generalized coordinate to zero
   void resetConstraintImpulse();
+
+  /// Returns impulse, the output of kinematic joint.
+  ///
+  /// The impulse is due to (1) body impulse, (2) body constraint impulse, and
+  /// (3) predescribed joint velocity change.
+  double getImpulse() const;
+
+  /// Returns velocity change for dynamic joint or velocity change for kinematic
+  /// joint.
+  double getHybridOutput() const;
 
   /// \}
 

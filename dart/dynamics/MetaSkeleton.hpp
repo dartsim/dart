@@ -526,7 +526,7 @@ public:
   /// \}
 
   //----------------------------------------------------------------------------
-  /// \{ \name Velocity Change
+  /// \{ \name Impulse-based Dynamics
   //----------------------------------------------------------------------------
 
   /// Sets velocity changes for all the generalized coordinates
@@ -538,16 +538,20 @@ public:
   /// Get the velocity changes for all the generalized coordinates
   Eigen::VectorXd getVelocityChanges() const;
 
-  //----------------------------------------------------------------------------
-  /// \{ \name Constraint Impulse
-  //----------------------------------------------------------------------------
-
   /// Set the constraint impulses for the generalized coordinates
   void setJointConstraintImpulses(const Eigen::VectorXd& _impulses);
 
   /// Get the constraint impulses for the generalized coordinates
   Eigen::VectorXd getJointConstraintImpulses() const;
 
+  Eigen::VectorXd getImpulses() const;
+
+  /// Returns a dofs-sized vector where each element corresponds to the DOF.
+  /// Each value is either velocity change or impluse for dynamic joint and
+  /// kinematic joint
+  Eigen::VectorXd getHybridOutputs() const;
+
+  /// \}
 
   //----------------------------------------------------------------------------
   /// \{ \name Jacobians

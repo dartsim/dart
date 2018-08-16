@@ -491,7 +491,7 @@ public:
   bool checkSanity(bool _printWarnings = true) const;
 
   //----------------------------------------------------------------------------
-  /// \{ \name Velocity change
+  /// \{ \name Impulse-based Dynamics
   //----------------------------------------------------------------------------
 
   /// Set a single velocity change
@@ -506,12 +506,6 @@ public:
   /// Set zero all the velocity change
   virtual void resetVelocityChanges() = 0;
 
-  /// \}
-
-  //----------------------------------------------------------------------------
-  /// \{ \name Constraint impulse
-  //----------------------------------------------------------------------------
-
   /// Set a single constraint impulse
   virtual void setConstraintImpulse(std::size_t _index, double _impulse) = 0;
 
@@ -520,6 +514,8 @@ public:
 
   /// Set zero all the constraint impulses
   virtual void resetConstraintImpulses() = 0;
+
+  virtual double getImpulse(std::size_t index) const = 0;
 
   /// \}
 

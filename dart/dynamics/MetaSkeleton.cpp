@@ -956,6 +956,20 @@ Eigen::VectorXd MetaSkeleton::getJointConstraintImpulses() const
 }
 
 //==============================================================================
+Eigen::VectorXd MetaSkeleton::getImpulses() const
+{
+  return getValuesFromAllDofs<&DegreeOfFreedom::getImpulse>(
+        this, "getImpulses");
+}
+
+//==============================================================================
+Eigen::VectorXd MetaSkeleton::getHybridOutputs() const
+{
+  return getValuesFromAllDofs<&DegreeOfFreedom::getHybridOutput>(
+        this, "getHybridOutputs");
+}
+
+//==============================================================================
 math::Jacobian MetaSkeleton::getJacobian(
     const JacobianNode* _node,
     const JacobianNode* _relativeTo,

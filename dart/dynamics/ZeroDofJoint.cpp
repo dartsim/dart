@@ -594,6 +594,12 @@ void ZeroDofJoint::resetConstraintImpulses()
 }
 
 //==============================================================================
+double ZeroDofJoint::getImpulse(std::size_t /*index*/) const
+{
+  return 0.0;
+}
+
+//==============================================================================
 void ZeroDofJoint::integratePositions(double /*_dt*/)
 {
   // Do nothing
