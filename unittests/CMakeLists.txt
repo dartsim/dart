@@ -31,8 +31,8 @@
 #
 
 # GoogleTest setup
-include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/unittests/gtest/include)
-include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/unittests/gtest)
+include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/unittests/gtest/include)
+include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/unittests/gtest)
 add_library(gtest STATIC gtest/src/gtest-all.cc)
 add_library(gtest_main STATIC gtest/src/gtest_main.cc)
 target_link_libraries(gtest_main gtest)

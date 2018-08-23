@@ -308,6 +308,8 @@ if(TARGET dart)
 
 endif()
 
+add_subdirectory(extras)
+
 #===============================================================================
 # CMake configuration files for components and targets
 #===============================================================================
