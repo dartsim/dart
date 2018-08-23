@@ -83,6 +83,7 @@ endif()
 option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF)
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
+option(DART_BUILD_EXTRAS "Build extra projects" OFF)
 option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 
@@ -308,7 +309,9 @@ if(TARGET dart)
 
 endif()
 
-add_subdirectory(extras)
+if(DART_BUILD_EXTRAS)
+  add_subdirectory(extras)
+endif()
 
 #===============================================================================
 # CMake configuration files for components and targets
