@@ -1,4 +1,4 @@
-file(GLOB hdrs "*.h")
+file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
 add_library(dartc STATIC ${hdrs} ${srcs})

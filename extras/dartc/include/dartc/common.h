@@ -1,7 +1,6 @@
 #pragma once
 
-#define DARTC_DECLARE_HANDLE(name) \
-  typedef struct name *name
+#define DARTC_DECLARE_HANDLE(name) typedef void* name
 
 #ifdef __cplusplus
 extern "C" {

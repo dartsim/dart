@@ -27,3 +27,4 @@ function(dartc_add_test test_type target_name) # ARGN for source files
 endfunction()
 
 dartc_add_test("dartc" test_dartc_skeleton)
+dartc_add_test("dartc" test_dartc_simulation)
