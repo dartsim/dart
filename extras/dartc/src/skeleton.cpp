@@ -71,7 +71,8 @@ double* dart_skeleton_get_velocities(SkeletonId skel)
 void dart_skeleton_set_accelerations(
     SkeletonId skel, double* accelerations, int num_accelerations)
 {
-  const Eigen::Map<Eigen::VectorXd> eigAccelerations(accelerations, num_accelerations);
+  const Eigen::Map<Eigen::VectorXd> eigAccelerations(
+      accelerations, num_accelerations);
   CAST_SKELETON(skel)->setAccelerations(eigAccelerations);
 }
 
