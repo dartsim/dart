@@ -30,43 +30,75 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_LCPSOLVER_HPP_
-#define DART_CONSTRAINT_LCPSOLVER_HPP_
+#ifndef DART_CONSTRAINT_PGSBOXEDLCPSOLVER_HPP_
+#define DART_CONSTRAINT_PGSBOXEDLCPSOLVER_HPP_
+
+#include <vector>
+#include "dart/constraint/BoxedLcpSolver.hpp"
 
 namespace dart {
 namespace constraint {
 
-class ConstrainedGroup;
-
-/// \deprecated This header has been deprecated in DART 6.7.
-///
-/// LCPSolver
-class LCPSolver
+/// Implementation of projected Gauss-Seidel (PGS) LCP solver.
+class PgsBoxedLcpSolver : public BoxedLcpSolver
 {
 public:
-  /// Solve constriant impulses for a constrained group
-  virtual void solve(ConstrainedGroup* _group) = 0;
+  struct Option
+  {
+    int mMaxIteration;
+    double mDeltaXThreshold;
+    double mRelativeDeltaXTolerance;
+    double mEpsilonForDivision;
+    bool mRandomizeConstraintOrder;
 
-  /// Set time step
-  void setTimeStep(double _timeStep);
+    Option(
+        int maxIteration = 30,
+        double deltaXTolerance = 1e-6,
+        double relativeDeltaXTolerance = 1e-3,
+        double epsilonForDivision = 1e-9,
+        bool randomizeConstraintOrder = false);
+  };
 
-  /// Return time step
-  double getTimeStep() const;
+  // Documentation inherited.
+  const std::string& getType() const override;
 
-  /// Destructor
-  virtual ~LCPSolver();
+  /// Returns type for this class
+  static const std::string& getStaticType();
+
+  // Documentation inherited.
+  void solve(
+      int n,
+      double* A,
+      double* x,
+      double* b,
+      int nub,
+      double* lo,
+      double* hi,
+      int* findex) override;
+
+#ifndef NDEBUG
+  // Documentation inherited.
+  bool canSolve(int n, const double* A) override;
+#endif
+
+  /// Sets options
+  void setOption(const Option& option);
+
+  /// Returns options.
+  const Option& getOption() const;
 
 protected:
-  /// Constructor
-  LCPSolver(double _timeStep);
+  Option mOption;
 
-protected:
-  /// Simulation time step
-  double mTimeStep;
+  mutable std::vector<int> mCacheOrder;
+  mutable std::vector<double> mCacheD;
+  mutable Eigen::VectorXd mCachedNormalizedA;
+  mutable Eigen::MatrixXd mCachedNormalizedB;
+  mutable Eigen::VectorXd mCacheZ;
+  mutable Eigen::VectorXd mCacheOldX;
 };
 
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_LCPSOLVER_HPP_
-
+#endif // DART_CONSTRAINT_PGSBOXEDLCPSOLVER_HPP_

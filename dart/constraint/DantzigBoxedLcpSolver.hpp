@@ -30,43 +30,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_LCPSOLVER_HPP_
-#define DART_CONSTRAINT_LCPSOLVER_HPP_
+#ifndef DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
+#define DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_
+
+#include "dart/constraint/BoxedLcpSolver.hpp"
 
 namespace dart {
 namespace constraint {
 
-class ConstrainedGroup;
-
-/// \deprecated This header has been deprecated in DART 6.7.
-///
-/// LCPSolver
-class LCPSolver
+class DantzigBoxedLcpSolver : public BoxedLcpSolver
 {
 public:
-  /// Solve constriant impulses for a constrained group
-  virtual void solve(ConstrainedGroup* _group) = 0;
+  // Documentation inherited.
+  const std::string& getType() const override;
 
-  /// Set time step
-  void setTimeStep(double _timeStep);
+  /// Returns type for this class
+  static const std::string& getStaticType();
 
-  /// Return time step
-  double getTimeStep() const;
+  // Documentation inherited.
+  void solve(
+      int n,
+      double* A,
+      double* x,
+      double* b,
+      int nub,
+      double* lo,
+      double* hi,
+      int* findex) override;
 
-  /// Destructor
-  virtual ~LCPSolver();
-
-protected:
-  /// Constructor
-  LCPSolver(double _timeStep);
-
-protected:
-  /// Simulation time step
-  double mTimeStep;
+#ifndef NDEBUG
+  // Documentation inherited.
+  bool canSolve(int n, const double* A) override;
+#endif
 };
 
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_LCPSOLVER_HPP_
-
+#endif // DART_CONSTRAINT_DANTZIGBOXEDLCPSOLVER_HPP_

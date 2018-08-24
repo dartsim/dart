@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2017, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -15,6 +15,12 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *   * This code incorporates portions of Open Dynamics Engine
+ *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
+ *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
+ *     Garage, Inc. All rights reserved.), which were released under
+ *     the same BSD license as below
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -30,43 +36,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_LCPSOLVER_HPP_
-#define DART_CONSTRAINT_LCPSOLVER_HPP_
+#ifndef DART_SIMULATION_DETAIL_WORLD_IMPL_HPP_
+#define DART_SIMULATION_DETAIL_WORLD_IMPL_HPP_
+
+#include "dart/simulation/World.hpp"
 
 namespace dart {
-namespace constraint {
+namespace simulation {
 
-class ConstrainedGroup;
-
-/// \deprecated This header has been deprecated in DART 6.7.
-///
-/// LCPSolver
-class LCPSolver
+//==============================================================================
+template <typename... Args>
+WorldPtr World::create(Args&&... args)
 {
-public:
-  /// Solve constriant impulses for a constrained group
-  virtual void solve(ConstrainedGroup* _group) = 0;
+  return std::make_shared<World>(std::forward<Args>(args)...);
+}
 
-  /// Set time step
-  void setTimeStep(double _timeStep);
-
-  /// Return time step
-  double getTimeStep() const;
-
-  /// Destructor
-  virtual ~LCPSolver();
-
-protected:
-  /// Constructor
-  LCPSolver(double _timeStep);
-
-protected:
-  /// Simulation time step
-  double mTimeStep;
-};
-
-} // namespace constraint
+} // namespace simulation
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_LCPSOLVER_HPP_
-
+#endif // DART_SIMULATION_DETAIL_WORLD_IMPL_HPP_

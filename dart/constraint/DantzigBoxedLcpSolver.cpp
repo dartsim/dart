@@ -30,43 +30,48 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_LCPSOLVER_HPP_
-#define DART_CONSTRAINT_LCPSOLVER_HPP_
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+
+#include "dart/external/odelcpsolver/lcp.h"
 
 namespace dart {
 namespace constraint {
 
-class ConstrainedGroup;
-
-/// \deprecated This header has been deprecated in DART 6.7.
-///
-/// LCPSolver
-class LCPSolver
+//==============================================================================
+const std::string& DantzigBoxedLcpSolver::getType() const
 {
-public:
-  /// Solve constriant impulses for a constrained group
-  virtual void solve(ConstrainedGroup* _group) = 0;
+  return getStaticType();
+}
 
-  /// Set time step
-  void setTimeStep(double _timeStep);
+//==============================================================================
+const std::string& DantzigBoxedLcpSolver::getStaticType()
+{
+  static const std::string type = "DantzigBoxedLcpSolver";
+  return type;
+}
 
-  /// Return time step
-  double getTimeStep() const;
+//==============================================================================
+void DantzigBoxedLcpSolver::solve(
+    int n,
+    double* A,
+    double* x,
+    double* b,
+    int /*nub*/,
+    double* lo,
+    double* hi,
+    int* findex)
+{
+  dSolveLCP(n, A, x, b, nullptr, 0, lo, hi, findex);
+}
 
-  /// Destructor
-  virtual ~LCPSolver();
-
-protected:
-  /// Constructor
-  LCPSolver(double _timeStep);
-
-protected:
-  /// Simulation time step
-  double mTimeStep;
-};
+#ifndef NDEBUG
+//==============================================================================
+bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
+{
+  // TODO(JS): Not implemented.
+  return true;
+}
+#endif
 
 } // namespace constraint
 } // namespace dart
-
-#endif  // DART_CONSTRAINT_LCPSOLVER_HPP_
-
