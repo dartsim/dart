@@ -22,9 +22,9 @@ else
 fi
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-  make -j4 tutorials examples tests
+  make -j4 all tutorials examples tests
 else
-  make -j4 tests
+  make -j4 all tests
 fi
 
 if [ "$TRAVIS_OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "trusty" ]; then
