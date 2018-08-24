@@ -4,7 +4,7 @@
 
 * Dynamics
 
-  * Refactor constraint solver: [#1099](https://github.com/dartsim/dart/pull/1099)
+  * Refactor constraint solver: [#1099](https://github.com/dartsim/dart/pull/1099), [#1101](https://github.com/dartsim/dart/pull/1101)
 
 * GUI
 

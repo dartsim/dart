@@ -32,7 +32,11 @@ install(
 )
 
 dart_format_add(
+  BoxedLcpConstraintSolver.hpp
+  BoxedLcpConstraintSolver.cpp
   BoxedLcpSolver.hpp
+  ContactConstraint.hpp
+  ContactConstraint.cpp
   DantzigBoxedLcpSolver.hpp
   DantzigBoxedLcpSolver.cpp
   PgsBoxedLcpSolver.hpp

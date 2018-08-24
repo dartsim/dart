@@ -44,8 +44,7 @@ class BoxedLcpConstraintSolver : public ConstraintSolver
 public:
   /// Constructor
   BoxedLcpConstraintSolver(
-      double timeStep,
-      BoxedLcpSolverPtr boxedLcpSolver = nullptr);
+      double timeStep, BoxedLcpSolverPtr boxedLcpSolver = nullptr);
 
   /// Sets boxed LCP (BLCP) solver
   void setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
@@ -57,7 +56,32 @@ protected:
   // Documentation inherited.
   void solveConstrainedGroup(ConstrainedGroup& group) override;
 
+  /// Boxed LCP solver
   BoxedLcpSolverPtr mBoxedLcpSolver;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mA;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mX;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mB;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mW;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mLo;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXd mHi;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXi mFIndex;
+
+  /// Cache data for boxed LCP formulation
+  Eigen::VectorXi mOffset;
 
 #ifndef NDEBUG
 private:
@@ -65,15 +89,23 @@ private:
   bool isSymmetric(std::size_t n, double* A);
 
   /// Return true if the diagonla block of matrix is symmetric
-  bool isSymmetric(std::size_t n, double* A, std::size_t begin, std::size_t end);
+  bool isSymmetric(
+      std::size_t n, double* A, std::size_t begin, std::size_t end);
 
   /// Print debug information
-  void print(std::size_t n, double* A, double* x, double* lo, double* hi,
-             double* b, double* w, int* findex);
+  void print(
+      std::size_t n,
+      double* A,
+      double* x,
+      double* lo,
+      double* hi,
+      double* b,
+      double* w,
+      int* findex);
 #endif
 };
 
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_BOXEDLCPCONSTRAINTSOLVER_HPP_
+#endif // DART_CONSTRAINT_BOXEDLCPCONSTRAINTSOLVER_HPP_
