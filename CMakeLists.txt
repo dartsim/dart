@@ -310,6 +310,7 @@ if(TARGET dart)
 endif()
 
 if(DART_BUILD_EXTRAS)
+  message(STATUS "[DEBUG] Building extras...")
   add_subdirectory(extras)
 endif()
 
