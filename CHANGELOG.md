@@ -2,6 +2,10 @@
 
 ### DART 6.7.0 (201X-XX-XX)
 
+* Dynamics
+
+  * Refactor constraint solver: [#1099](https://github.com/dartsim/dart/pull/1099)
+
 * GUI
 
   * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)
