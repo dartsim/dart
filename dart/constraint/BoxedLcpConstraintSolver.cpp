@@ -160,12 +160,8 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
       }
     }
 
-    assert(
-        isSymmetric(
-            n,
-            mA.data(),
-            mOffset[i],
-            mOffset[i] + constraint->getDimension() - 1));
+    assert(isSymmetric(
+        n, mA.data(), mOffset[i], mOffset[i] + constraint->getDimension() - 1));
 
     constraint->unexcite();
   }

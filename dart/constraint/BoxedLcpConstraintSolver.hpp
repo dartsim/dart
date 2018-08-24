@@ -44,8 +44,7 @@ class BoxedLcpConstraintSolver : public ConstraintSolver
 public:
   /// Constructor
   BoxedLcpConstraintSolver(
-      double timeStep,
-      BoxedLcpSolverPtr boxedLcpSolver = nullptr);
+      double timeStep, BoxedLcpSolverPtr boxedLcpSolver = nullptr);
 
   /// Sets boxed LCP (BLCP) solver
   void setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
