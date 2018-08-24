@@ -1,6 +1,10 @@
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
 
+message(STATUS "[DEBUG] Building dartc...")
+message(STATUS "[DEBUG] hdrs: ${hdrs}")
+message(STATUS "[DEBUG] srcs: ${srcs}")
+
 add_library(dartc STATIC ${hdrs} ${srcs})
 target_link_libraries(dartc PUBLIC dart)
 
