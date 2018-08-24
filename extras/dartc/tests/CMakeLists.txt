@@ -13,6 +13,7 @@ function(dartc_add_test test_type target_name) # ARGN for source files
 
   add_executable(${target_name} ${sources})
   add_test(${target_name} ${target_name})
+  message(STATUS "[DEBUG] [dartc] Adding ${target_name}")
 
   if(MSVC)
     target_link_libraries(${target_name}
