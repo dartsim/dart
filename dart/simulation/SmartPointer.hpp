@@ -22,51 +22,25 @@
  *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
  *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES) LOSS OF
+ *   USE, DATA, OR PROFITS) OR BUSINESS INTERRUPTION) HOWEVER CAUSED
  *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
  *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_LCPSOLVER_HPP_
-#define DART_CONSTRAINT_LCPSOLVER_HPP_
+#ifndef DART_SIMULATION_SMARTPOINTER_HPP_
+#define DART_SIMULATION_SMARTPOINTER_HPP_
+
+#include "dart/common/SmartPointer.hpp"
 
 namespace dart {
-namespace constraint {
+namespace simulation {
 
-class ConstrainedGroup;
+DART_COMMON_DECLARE_SHARED_WEAK(World)
 
-/// \deprecated This header has been deprecated in DART 6.7.
-///
-/// LCPSolver
-class LCPSolver
-{
-public:
-  /// Solve constriant impulses for a constrained group
-  virtual void solve(ConstrainedGroup* _group) = 0;
-
-  /// Set time step
-  void setTimeStep(double _timeStep);
-
-  /// Return time step
-  double getTimeStep() const;
-
-  /// Destructor
-  virtual ~LCPSolver();
-
-protected:
-  /// Constructor
-  LCPSolver(double _timeStep);
-
-protected:
-  /// Simulation time step
-  double mTimeStep;
-};
-
-} // namespace constraint
+} // namespace simulation
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_LCPSOLVER_HPP_
-
+#endif // DART_SIMULATION_SMARTPOINTER_HPP_

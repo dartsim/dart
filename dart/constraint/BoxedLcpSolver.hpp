@@ -30,43 +30,61 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_LCPSOLVER_HPP_
-#define DART_CONSTRAINT_LCPSOLVER_HPP_
+#ifndef DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
+#define DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
+
+#include <string>
+#include <Eigen/Core>
 
 namespace dart {
 namespace constraint {
 
-class ConstrainedGroup;
-
-/// \deprecated This header has been deprecated in DART 6.7.
-///
-/// LCPSolver
-class LCPSolver
+class BoxedLcpSolver
 {
 public:
-  /// Solve constriant impulses for a constrained group
-  virtual void solve(ConstrainedGroup* _group) = 0;
-
-  /// Set time step
-  void setTimeStep(double _timeStep);
-
-  /// Return time step
-  double getTimeStep() const;
-
   /// Destructor
-  virtual ~LCPSolver();
+  virtual ~BoxedLcpSolver() = default;
 
-protected:
-  /// Constructor
-  LCPSolver(double _timeStep);
+  /// Returns the type
+  virtual const std::string& getType() const = 0;
 
-protected:
-  /// Simulation time step
-  double mTimeStep;
+  /// Get true if this solver and the template parameter (a solver class) are
+  /// the same type. This function is a syntactic sugar, which is identical to:
+  /// \code getType() == ShapeType::getStaticType() \endcode.
+  ///
+  /// Example code:
+  /// \code
+  /// auto shape = bodyNode->getShapeNode(0)->getShape();
+  /// if (shape->is<BoxShape>())
+  ///   std::cout << "The shape type is box!\n";
+  /// \endcode
+  ///
+  /// \sa getType()
+  template <typename BoxedLcpSolverT>
+  bool is() const;
+
+  /// Solves constriant impulses for a constrained group
+  // Note: The function signature is ODE specific for now. Consider changing
+  // this to Eigen friendly version once own Dantzig LCP solver is available.
+  virtual void solve(
+      int n,
+      double* A,
+      double* x,
+      double* b,
+      int nub,
+      double* lo,
+      double* hi,
+      int* findex)
+      = 0;
+
+#ifndef NDEBUG
+  virtual bool canSolve(int n, const double* A) = 0;
+#endif
 };
 
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_LCPSOLVER_HPP_
+#include "dart/constraint/detail/BoxedLcpSolver-impl.hpp"
 
+#endif // DART_CONSTRAINT_BOXEDLCPSOLVER_HPP_
