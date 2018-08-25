@@ -83,6 +83,7 @@ endif()
 option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF)
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
+option(DART_BUILD_EXTRAS "Build extra projects" OFF)
 option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
@@ -313,6 +314,10 @@ if(TARGET dart)
     message(STATUS "Adding ${tutorials_length} tutorials")
   endif(DART_VERBOSE)
 
+endif()
+
+if(DART_BUILD_EXTRAS)
+  add_subdirectory(extras)
 endif()
 
 #===============================================================================
