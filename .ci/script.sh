@@ -16,15 +16,15 @@ fi
 mkdir build && cd build
 
 if [ "$BUILD_NAME" = "TRUSTY_DEBUG" ]; then
-  cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_VERBOSE=ON -DDART_TREAT_WARNINGS_AS_ERRORS=ON -DDART_CODECOV=ON ..
+  cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_VERBOSE=ON -DDART_TREAT_WARNINGS_AS_ERRORS=ON -DDART_BUILD_EXTRAS=ON -DDART_CODECOV=ON ..
 else
-  cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_VERBOSE=ON -DDART_TREAT_WARNINGS_AS_ERRORS=ON -DDART_CODECOV=OFF ..
+  cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_VERBOSE=ON -DDART_TREAT_WARNINGS_AS_ERRORS=ON -DDART_BUILD_EXTRAS=ON -DDART_CODECOV=OFF ..
 fi
 
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-  make -j4 tutorials examples tests
+  make -j4 all tutorials examples tests
 else
-  make -j4 tests
+  make -j4 all tests
 fi
 
 if [ "$TRAVIS_OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "trusty" ]; then

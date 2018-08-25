@@ -45,7 +45,7 @@
 #include "dart/common/Console.hpp"
 #include "dart/integration/SemiImplicitEulerIntegrator.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 
 namespace dart {
@@ -66,7 +66,8 @@ World::World(const std::string& _name)
     mTimeStep(0.001),
     mTime(0.0),
     mFrame(0),
-    mConstraintSolver(new constraint::ConstraintSolver(mTimeStep)),
+    mConstraintSolver(
+      new constraint::BoxedLcpConstraintSolver(mTimeStep)),
     mRecording(new Recording(mSkeletons)),
     onNameChanged(mNameChangedSignal)
 {
@@ -76,7 +77,6 @@ World::World(const std::string& _name)
 //==============================================================================
 World::~World()
 {
-  delete mConstraintSolver;
   delete mRecording;
 
   for(common::Connection& connection : mNameConnectionsForSkeletons)
@@ -529,9 +529,25 @@ const collision::CollisionResult& World::getLastCollisionResult() const
 }
 
 //==============================================================================
+void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
+{
+  if (!solver)
+  {
+    dtwarn << "[World::setConstraintSolver] nullptr for constraint solver is "
+           << "not allowed. Doing nothing.";
+    return;
+  }
+
+  solver->removeAllSkeletons();
+  solver->addSkeletons(mConstraintSolver->getSkeletons());
+
+  mConstraintSolver = std::move(solver);
+}
+
+//==============================================================================
 constraint::ConstraintSolver* World::getConstraintSolver() const
 {
-  return mConstraintSolver;
+  return mConstraintSolver.get();
 }
 
 //==============================================================================

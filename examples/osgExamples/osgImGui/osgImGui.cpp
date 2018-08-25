@@ -32,6 +32,7 @@
 
 #include <dart/dart.hpp>
 #include <dart/gui/osg/osg.hpp>
+#include <dart/external/imgui/imgui.h>
 
 //==============================================================================
 class CustomWorldNode : public dart::gui::osg::WorldNode
@@ -140,7 +141,130 @@ public:
     // any remaining event handlers.
     return false;
   }
+};
 
+//==============================================================================
+class TestWidget : public dart::gui::osg::ImGuiWidget
+{
+public:
+  /// Constructor
+  TestWidget(
+      dart::gui::osg::ImGuiViewer* viewer, dart::simulation::WorldPtr world)
+    : mViewer(viewer),
+      mWorld(std::move(world)),
+      mGuiGravity(true),
+      mGravity(true),
+      mGuiHeadlights(true)
+  {
+    // Do nothing
+  }
+
+  // Documentation inherited
+  void render() override
+  {
+    ImGui::SetNextWindowPos(ImVec2(10,20));
+    if (!ImGui::Begin("Tinkertoy Control", nullptr, ImVec2(240, 320), 0.5f,
+                      ImGuiWindowFlags_NoResize |
+                      ImGuiWindowFlags_MenuBar |
+                      ImGuiWindowFlags_HorizontalScrollbar))
+    {
+      // Early out if the window is collapsed, as an optimization.
+      ImGui::End();
+      return;
+    }
+
+    // Menu
+    if (ImGui::BeginMenuBar())
+    {
+      if (ImGui::BeginMenu("Menu"))
+      {
+        if (ImGui::MenuItem("Exit"))
+          mViewer->setDone(true);
+        ImGui::EndMenu();
+      }
+      if (ImGui::BeginMenu("Help"))
+      {
+        if (ImGui::MenuItem("About DART"))
+          mViewer->showAbout();
+        ImGui::EndMenu();
+      }
+      ImGui::EndMenuBar();
+    }
+
+    ImGui::Text("An empty OSG example with ImGui");
+    ImGui::Spacing();
+
+    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+      int e = mViewer->isSimulating() ? 0 : 1;
+      if(mViewer->isAllowingSimulation())
+      {
+        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating())
+          mViewer->simulate(true);
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating())
+          mViewer->simulate(false);
+      }
+
+      ImGui::Text("Time: %.3f", mWorld->getTime());
+    }
+
+    if (ImGui::CollapsingHeader("World Options", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+      // Gravity
+      ImGui::Checkbox("Gravity On/Off", &mGuiGravity);
+      setGravity(mGuiGravity);
+
+      ImGui::Spacing();
+
+      // Headlights
+      mGuiHeadlights = mViewer->checkHeadlights();
+      ImGui::Checkbox("Headlights On/Off", &mGuiHeadlights);
+      mViewer->switchHeadlights(mGuiHeadlights);
+    }
+
+    if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+      osg::Vec3d eye;
+      osg::Vec3d center;
+      osg::Vec3d up;
+      mViewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
+
+      ImGui::Text("Eye   : (%.2f, %.2f, %.2f)", eye.x(), eye.y(), eye.z());
+      ImGui::Text("Center: (%.2f, %.2f, %.2f)", center.x(), center.y(), center.z());
+      ImGui::Text("Up    : (%.2f, %.2f, %.2f)", up.x(), up.y(), up.z());
+    }
+
+    if (ImGui::CollapsingHeader("Help"))
+    {
+      ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
+      ImGui::Text("User Guide:\n");
+      ImGui::Text("%s", mViewer->getInstructions().c_str());
+      ImGui::PopTextWrapPos();
+    }
+
+    ImGui::End();
+  }
+
+protected:
+  void setGravity(bool gravity)
+  {
+    if (mGravity == gravity)
+      return;
+
+    mGravity = gravity;
+
+    if (mGravity)
+      mWorld->setGravity(-9.81*Eigen::Vector3d::UnitZ());
+    else
+      mWorld->setGravity(Eigen::Vector3d::Zero());
+  }
+
+  dart::gui::osg::ImGuiViewer* mViewer;
+  dart::simulation::WorldPtr mWorld;
+  bool mGuiGravity;
+  bool mGravity;
+  bool mGuiHeadlights;
 };
 
 //==============================================================================
@@ -151,7 +275,7 @@ int main()
 
   // Add a target object to the world
   dart::gui::osg::InteractiveFramePtr target(
-        new dart::gui::osg::InteractiveFrame(dart::dynamics::Frame::World()));
+      new dart::gui::osg::InteractiveFrame(dart::dynamics::Frame::World()));
   world->addSimpleFrame(target);
 
   // Wrap a WorldNode around it
@@ -160,6 +284,10 @@ int main()
   // Create a Viewer and set it up with the WorldNode
   dart::gui::osg::ImGuiViewer viewer;
   viewer.addWorldNode(node);
+
+  // Add control widget for atlas
+  viewer.getImGuiHandler()->addWidget(
+      std::make_shared<TestWidget>(&viewer, world));
 
   // Active the drag-and-drop feature for the target
   viewer.enableDragAndDrop(target.get());

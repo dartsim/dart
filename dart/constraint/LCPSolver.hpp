@@ -38,6 +38,8 @@ namespace constraint {
 
 class ConstrainedGroup;
 
+/// \deprecated This header has been deprecated in DART 6.7.
+///
 /// LCPSolver
 class LCPSolver
 {

@@ -41,6 +41,9 @@
 namespace dart {
 namespace constraint {
 
+/// \deprecated This header has been deprecated in DART 6.7. Please include
+/// PgsBoxedLcpSolver.hpp intead.
+///
 /// PGSLCPSolver
 class PGSLCPSolver : public LCPSolver
 {

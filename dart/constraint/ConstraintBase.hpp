@@ -81,13 +81,13 @@ public:
   virtual void update() = 0;
 
   /// Fill LCP variables
-  virtual void getInformation(ConstraintInfo* _info) = 0;
+  virtual void getInformation(ConstraintInfo* info) = 0;
 
   /// Apply unit impulse to constraint space
-  virtual void applyUnitImpulse(std::size_t _index) = 0;
+  virtual void applyUnitImpulse(std::size_t index) = 0;
 
   /// Get velocity change due to the uint impulse
-  virtual void getVelocityChange(double* _vel, bool _withCfm) = 0;
+  virtual void getVelocityChange(double* vel, bool withCfm) = 0;
 
   /// Excite the constraint
   virtual void excite() = 0;
@@ -96,7 +96,7 @@ public:
   virtual void unexcite() = 0;
 
   /// Apply computed constraint impulse to constrained skeletons
-  virtual void applyImpulse(double* _lambda) = 0;
+  virtual void applyImpulse(double* lambda) = 0;
 
   /// Return true if this constraint is active
   virtual bool isActive() const = 0;
@@ -108,10 +108,10 @@ public:
   virtual void uniteSkeletons();
 
   ///
-  static dynamics::SkeletonPtr compressPath(dynamics::SkeletonPtr _skeleton);
+  static dynamics::SkeletonPtr compressPath(dynamics::SkeletonPtr skeleton);
 
   ///
-  static dynamics::SkeletonPtr getRootSkeleton(dynamics::SkeletonPtr _skeleton);
+  static dynamics::SkeletonPtr getRootSkeleton(dynamics::SkeletonPtr skeleton);
 
   //----------------------------------------------------------------------------
   // Friendship

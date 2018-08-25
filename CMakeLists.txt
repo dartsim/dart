@@ -83,8 +83,10 @@ endif()
 option(DART_ENABLE_SIMD
   "Build DART with all SIMD instructions on the current local machine" OFF)
 option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
+option(DART_BUILD_EXTRAS "Build extra projects" OFF)
 option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
+option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
 
 #===============================================================================
 # Print intro
@@ -197,6 +199,9 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
+  if(DART_FAST_DEBUG)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O1")
+  endif()
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
   set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
@@ -222,6 +227,9 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-optimize-sibling-calls")
+  if(DART_FAST_DEBUG)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O1")
+  endif()
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_DEBUG}")
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.8")
@@ -306,6 +314,10 @@ if(TARGET dart)
     message(STATUS "Adding ${tutorials_length} tutorials")
   endif(DART_VERBOSE)
 
+endif()
+
+if(DART_BUILD_EXTRAS)
+  add_subdirectory(extras)
 endif()
 
 #===============================================================================
