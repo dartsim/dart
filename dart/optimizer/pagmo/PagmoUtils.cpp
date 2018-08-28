@@ -58,7 +58,6 @@ Population PagmoTypes::convertPopulation(
 
   const auto& pagmoX = pagmoPop.get_x();
   const auto& pagmoF = pagmoPop.get_f();
-  const auto& pagmoId = pagmoPop.get_ID();
 
   for (std::size_t i = 0u; i < pagmoPop.size(); ++i)
   {

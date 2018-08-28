@@ -61,7 +61,7 @@ public:
     Algorithm mAlgorithm;
 
     /// Constructor
-    UniqueProperties(Algorithm algorithm = Algorithm::Global_NSGA2);
+    explicit UniqueProperties(Algorithm algorithm = Algorithm::Global_NSGA2);
   };
 
   struct Properties : MultiObjectiveSolver::Properties, UniqueProperties
@@ -73,10 +73,10 @@ public:
   };
 
   /// Default Constructor
-  PagmoMultiObjectiveSolver(const Properties& properties = Properties());
+  explicit PagmoMultiObjectiveSolver(const Properties& properties = Properties());
 
   /// Alternative Constructor
-  PagmoMultiObjectiveSolver(std::shared_ptr<MultiObjectiveProblem> problem);
+  explicit PagmoMultiObjectiveSolver(std::shared_ptr<MultiObjectiveProblem> problem);
 
   /// Destructor
   ~PagmoMultiObjectiveSolver() override;
