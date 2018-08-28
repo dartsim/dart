@@ -35,6 +35,8 @@ dart_format_add(
   MultiObjectiveSolver.cpp
   MultiObjectiveProblem.hpp
   MultiObjectiveProblem.cpp
+  McmcMultiObjectiveSolver.hpp
+  McmcMultiObjectiveSolver.cpp
   Population.hpp
   Population.cpp
 )
