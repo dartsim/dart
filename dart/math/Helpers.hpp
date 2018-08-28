@@ -41,6 +41,7 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <random>
 
 // External Libraries
 #include <Eigen/Dense>
@@ -284,6 +285,57 @@ inline Eigen::VectorXd randomVectorXd(std::size_t size, double min, double max)
 inline Eigen::VectorXd randomVectorXd(std::size_t size, double limit)
 {
   return randomVectorXd(size, -std::abs(limit), std::abs(limit));
+}
+
+template <typename T>
+T random(std::mt19937& engine, T lb = 0.0, T ub = 1.0)
+{
+  return std::uniform_real_distribution<T>(lb, ub)(engine);
+}
+
+inline Eigen::VectorXd randomVectorXd(
+    std::mt19937& engine,
+    const Eigen::VectorXd& lb,
+    const Eigen::VectorXd& ub,
+    std::size_t numInteger = 0u)
+{
+  const auto size = lb.size();
+  const auto numReal = size - static_cast<int>(numInteger);
+
+  Eigen::VectorXd vec;
+
+  for (int i = 0; i < static_cast<int>(numReal); ++i)
+    vec[i] = random(engine, lb[i], ub[i]);
+
+  for (int i = static_cast<int>(numReal); i < size; ++i)
+    vec[i] = std::floor(random(engine, lb[i], ub[i] + 1));
+
+  return vec;
+}
+
+//==============================================================================
+template <typename Derived, typename T>
+void push_back(Derived& m, T&& values)
+{
+  static_assert(Derived::ColsAtCompileTime == 1 or Derived::RowsAtCompileTime == 1, "push_back() can be only used with vector");
+  m.conservativeResize(m.size() + 1);
+  m[m.size() - 1] = values;
+}
+
+//==============================================================================
+template <typename Derived>
+void push_right(Derived& m, Eigen::Vector3d&& values)
+{
+  m.conservativeResize(m.cols() + 1, Eigen::NoChange);
+  m.right(1) = values;
+}
+
+//==============================================================================
+template <typename Derived>
+void push_bottom(Derived& m, Eigen::Vector3d&& values)
+{
+  m.conservativeResize(Eigen::NoChange, m.rows() + 1);
+  m.bottom(1) = values;
 }
 
 namespace suffixes {

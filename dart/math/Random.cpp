@@ -30,46 +30,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_CONSOLE_HPP_
-#define DART_COMMON_CONSOLE_HPP_
-
-#include <string>
-#include <ostream>
-
-/// \brief Output a message
-#define dtmsg (::dart::common::colorMsg("Msg", 32))
-
-/// \brief Output a debug message
-#define dtdbg (::dart::common::colorMsg("Dbg", 36))
-
-/// \brief Output a warning message
-#define dtwarn (::dart::common::colorErr("Warning", __FILE__, __LINE__, 33))
-
-/// \brief Output an error message
-#define dterr (::dart::common::colorErr("Error", __FILE__, __LINE__, 31))
+#include "dart/math/Random.hpp"
 
 namespace dart {
-namespace common {
+namespace math {
 
-/// \brief
-std::ostream& colorMsg(const std::string& _msg, int _color);
+//==============================================================================
+std::mt19937 RandomDevice::mMT;
+std::mutex RandomDevice::mMutex;
 
-/// \brief
-std::ostream& colorErr(const std::string& _msg,
-                       const std::string& _file,
-                       unsigned int _line,
-                       int _color);
-
-
-}  // namespace common
-
-template <class T>
-auto operator<<(std::ostream& os, const T& t) -> decltype(t.print(os), os)
+//==============================================================================
+unsigned int RandomDevice::next()
 {
-  t.print(os);
-  return os;
+  std::lock_guard<std::mutex> lock(mMutex);
+  return static_cast<unsigned int>(mMT());
 }
 
-}  // namespace dart
+//==============================================================================
+void RandomDevice::setSeed(unsigned int seed)
+{
+  std::lock_guard<std::mutex> lock(mMutex);
+  mMT.seed(static_cast<std::mt19937::result_type>(seed));
+}
 
-#endif  // DART_COMMON_CONSOLE_HPP_
+} // namespace math
+} // namespace dart

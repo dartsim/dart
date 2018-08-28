@@ -30,46 +30,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_CONSOLE_HPP_
-#define DART_COMMON_CONSOLE_HPP_
+#ifndef DART_MATH_RANDOM_HPP_
+#define DART_MATH_RANDOM_HPP_
 
-#include <string>
-#include <ostream>
-
-/// \brief Output a message
-#define dtmsg (::dart::common::colorMsg("Msg", 32))
-
-/// \brief Output a debug message
-#define dtdbg (::dart::common::colorMsg("Dbg", 36))
-
-/// \brief Output a warning message
-#define dtwarn (::dart::common::colorErr("Warning", __FILE__, __LINE__, 33))
-
-/// \brief Output an error message
-#define dterr (::dart::common::colorErr("Error", __FILE__, __LINE__, 31))
+#include <mutex>
+#include <random>
 
 namespace dart {
-namespace common {
+namespace math {
 
-/// \brief
-std::ostream& colorMsg(const std::string& _msg, int _color);
-
-/// \brief
-std::ostream& colorErr(const std::string& _msg,
-                       const std::string& _file,
-                       unsigned int _line,
-                       int _color);
-
-
-}  // namespace common
-
-template <class T>
-auto operator<<(std::ostream& os, const T& t) -> decltype(t.print(os), os)
+class RandomDevice
 {
-  t.print(os);
-  return os;
-}
+public:
+  static unsigned int next();
 
-}  // namespace dart
+  static void setSeed(unsigned int seed);
 
-#endif  // DART_COMMON_CONSOLE_HPP_
+private:
+  static std::mt19937 mMT;
+  static std::mutex mMutex;
+};
+
+} // namespace math
+} // namespace dart
+
+#endif // DART_MATH_RANDOM_HPP_
