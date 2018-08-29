@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-#include "NativeWindowHelper.h"
+#include "../NativeWindowHelper.h"
 
-#include <utils/Panic.h>
+//#include <utils/Panic.h>
+#include <cassert>
 
 #include <Cocoa/Cocoa.h>
 
@@ -25,7 +26,7 @@
 void* getNativeWindow(SDL_Window* sdlWindow) {
     SDL_SysWMinfo wmi;
     SDL_VERSION(&wmi.version);
-    ASSERT_POSTCONDITION(SDL_GetWindowWMInfo(sdlWindow, &wmi), "SDL version unsupported!");
+    assert(SDL_GetWindowWMInfo(sdlWindow, &wmi) && "SDL version unsupported!");
     NSWindow* win = wmi.info.cocoa.window;
     NSView* view = [win contentView];
     return view;

@@ -96,21 +96,21 @@ int main()
       }
       ImGui::Checkbox("Widgets", &showDemo);
       ImGui::Checkbox("Metrics", &showMetrics);
-      if (showDemo) {
-          ImGui::ShowDemoWindow(&showDemo);
-      }
-      if (showMetrics) {
-          ImGui::ShowMetricsWindow(&showMetrics);
-      }
+//      if (showDemo) {
+//          ImGui::ShowDemoWindow(&showDemo);
+//      }
+//      if (showMetrics) {
+//          ImGui::ShowMetricsWindow(&showMetrics);
+//      }
       ImGui::End();
   };
 
   gui::flmt::Config config;
-  config.backend = filament::Engine::Backend::VULKAN;
+  config.backend = filament::Engine::Backend::OPENGL;
   config.title = "ImGui Demo";
   auto nop = [](filament::Engine*, filament::View*, filament::Scene*) {};
-//  gui::flmt::FilamentApp::get().run(config, nop, nop, imgui);
-  gui::flmt::FilamentApp::get();
+  gui::flmt::FilamentApp::get().run(config, nop, nop, imgui);
+//  gui::flmt::FilamentApp::get();
 
   return 0;
 }

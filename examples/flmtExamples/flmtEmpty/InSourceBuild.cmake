@@ -21,13 +21,12 @@ set_target_properties(${example_name}
   PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
-target_compile_options(${example_name} PUBLIC "-lc++")
+#target_compile_options(${example_name} PUBLIC "-lc++")
 if(THREADS_HAVE_PTHREAD_ARG)
   target_compile_options(${example_name} PUBLIC "-pthread")
 endif()
 if(CMAKE_THREAD_LIBS_INIT)
   target_link_libraries(${example_name} ${CMAKE_THREAD_LIBS_INIT})
 endif()
-target_compile_options(${example_name} PUBLIC "-lc++")
 
 dart_add_example(${example_name})

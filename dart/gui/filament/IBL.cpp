@@ -48,6 +48,7 @@
 
 #include "dart/gui/filament/IBL.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include <fstream>

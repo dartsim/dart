@@ -20,7 +20,9 @@ find_path(filament_INCLUDE_DIRS filament/Scene.h
 )
 
 # Workaround, not sure if this a right way to do
-set(CMAKE_LIBRARY_ARCHITECTURE x86_64)
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+  set(CMAKE_LIBRARY_ARCHITECTURE x86_64)
+endif()
 
 # Libraries
 if(MSVC)

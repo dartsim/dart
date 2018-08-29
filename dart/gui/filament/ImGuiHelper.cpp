@@ -85,7 +85,8 @@ ImGuiHelper::ImGuiHelper(
   // If the given font path is invalid, ImGui will silently fall back to proggy,
   // which is a
   // tiny "pixel art" texture that is compiled into the library.
-  io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 16.0f);
+  // TODO(JS): commented
+  // io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 16.0f);
 
   // Create the grayscale texture that ImGui uses for its glyph atlas.
   static unsigned char* pixels;
@@ -223,21 +224,23 @@ void ImGuiHelper::renderDrawData(ImDrawData* imguiData)
     mMaterialInstances.resize(scissorRects.size());
     for (size_t i = previousSize; i < mMaterialInstances.size(); i++)
     {
-      mMaterialInstances[i] = mMaterial->createInstance();
+      // TODO(JS): commented
+      // mMaterialInstances[i] = mMaterial->createInstance();
     }
   }
 
   // Push each unique scissor rectangle to a MaterialInstance.
   size_t matIndex = 0;
-  for (auto& pair : scissorRects)
-  {
-    pair.second = mMaterialInstances[matIndex++];
-    uint32_t left = (pair.first >> 0ull) & 0xffffull;
-    uint32_t bottom = (pair.first >> 16ull) & 0xffffull;
-    uint32_t width = (pair.first >> 32ull) & 0xffffull;
-    uint32_t height = (pair.first >> 48ull) & 0xffffull;
-    pair.second->setScissor(left, bottom, width, height);
-  }
+  // TODO(JS): commented
+//  for (auto& pair : scissorRects)
+//  {
+//    pair.second = mMaterialInstances[matIndex++];
+//    uint32_t left = (pair.first >> 0ull) & 0xffffull;
+//    uint32_t bottom = (pair.first >> 16ull) & 0xffffull;
+//    uint32_t width = (pair.first >> 32ull) & 0xffffull;
+//    uint32_t height = (pair.first >> 48ull) & 0xffffull;
+//    pair.second->setScissor(left, bottom, width, height);
+//  }
 
   // Recreate the Renderable component and point it to the vertex buffers.
   rcm.destroy(mRenderable);

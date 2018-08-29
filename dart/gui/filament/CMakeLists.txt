@@ -78,7 +78,7 @@ if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT WEBGL)
 endif()
 
 # Search all header and source files
-file(GLOB hdrs "*.hpp")
+file(GLOB hdrs "*.hpp" "*.h")
 file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
@@ -119,7 +119,8 @@ target_link_libraries(
 )
 target_compile_options(${target_name} PUBLIC -std=c++14)
 #add_dependencies(${target_name} sample_materials)
-target_compile_options(${target_name} PUBLIC "-lc++")
+# TODO(JS): Add next line when GCC is used
+#target_compile_options(${target_name} PUBLIC -lc++)
 # Thread
 #if(THREADS_HAVE_PTHREAD_ARG)
 #  target_compile_options(${target_name} PUBLIC "-pthread")

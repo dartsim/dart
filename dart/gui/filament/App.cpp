@@ -132,7 +132,7 @@ void FilamentApp::run(
   //                           sizeof(DEPTH_VISUALIZER_PACKAGE))
   //                       .build(*mEngine);
 
-  mDepthMI = mDepthMaterial->createInstance();
+//  mDepthMI = mDepthMaterial->createInstance();
 
   //  mDefaultMaterial
   //      = filament::Material::Builder()
@@ -469,7 +469,10 @@ void FilamentApp::run(
     {
       for (auto const& view : window->mViews)
       {
-        renderer->render(view->getView());
+        assert(renderer);
+        assert(view->getView());
+        // TODO(JS): commented
+//        renderer->render(view->getView());
       }
       renderer->endFrame();
     }

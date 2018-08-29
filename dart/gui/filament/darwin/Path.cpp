@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <utils/Path.h>
+#include "dart/gui/filament/Path.hpp"
 
 #include <vector>
 
@@ -22,6 +22,10 @@
 #include <sys/stat.h>
 
 #include <mach-o/dyld.h>
+
+namespace dart {
+namespace gui {
+namespace flmt {
 
 namespace utils {
 
@@ -72,3 +76,6 @@ std::vector<Path> Path::listContents() const {
 
 } // namespace utils
 
+} // namespace flmt
+} // namespace gui
+} // namespace dart
