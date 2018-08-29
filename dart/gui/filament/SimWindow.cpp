@@ -40,8 +40,8 @@
 
 namespace dart {
 namespace gui {
-namespace glut {
+namespace flmt {
 
-} // namespace glut
+} // namespace flmt
 } // namespace gui
 } // namespace dart

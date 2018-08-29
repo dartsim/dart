@@ -34,7 +34,7 @@ else()
   find_library(filament_bluegl_LIBRARY NAMES bluegl)
 endif()
 set(filament_LIBRARIES
-  ${filament_filaflat_LIBRARY}
+  ${filament_filabridge_LIBRARY}
   ${filament_filaflat_LIBRARY}
   ${filament_utils_LIBRARY}
   ${filament_filament_LIBRARY}
@@ -48,4 +48,3 @@ find_package_handle_standard_args(filament
   FAIL_MESSAGE  DEFAULT_MSG
   REQUIRED_VARS filament_INCLUDE_DIRS filament_LIBRARIES
 )
-

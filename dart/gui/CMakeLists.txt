@@ -34,7 +34,6 @@ endfunction()
 
 # Add required subdirectory
 add_subdirectory(glut)
-add_subdirectory(filament)
 
 get_property(dart_gui_headers GLOBAL PROPERTY DART_GUI_HEADERS)
 get_property(dart_gui_sources GLOBAL PROPERTY DART_GUI_SOURCES)
@@ -75,6 +74,7 @@ add_component_dependencies(
 )
 
 # Add subdirectories
+add_subdirectory(filament)
 add_subdirectory(osg)
 
 # Generate header for this namespace

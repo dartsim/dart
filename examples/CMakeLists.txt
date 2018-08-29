@@ -20,4 +20,5 @@ add_subdirectory(speedTest)
 add_subdirectory(vehicle)
 add_subdirectory(humanJointLimits)
 
+add_subdirectory(flmtExamples)
 add_subdirectory(osgExamples)
