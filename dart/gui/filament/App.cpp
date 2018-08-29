@@ -85,17 +85,17 @@ namespace dart {
 namespace gui {
 namespace flmt {
 
-// static constexpr uint8_t AI_DEFAULT_MAT_PACKAGE[] = {
-//        #include "generated/material/aiDefaultMat.inc"
-//};
+static constexpr uint8_t AI_DEFAULT_MAT_PACKAGE[] = {
+    #include "generated/material/aiDefaultMat.inc"
+};
 
-// static constexpr uint8_t TRANSPARENT_COLOR_PACKAGE[] = {
-//        #include "generated/material/transparentColor.inc"
-//};
+static constexpr uint8_t TRANSPARENT_COLOR_PACKAGE[] = {
+    #include "generated/material/transparentColor.inc"
+};
 
-// static constexpr uint8_t DEPTH_VISUALIZER_PACKAGE[] = {
-//        #include "generated/material/depthVisualizer.inc"
-//};
+static constexpr uint8_t DEPTH_VISUALIZER_PACKAGE[] = {
+    #include "generated/material/depthVisualizer.inc"
+};
 
 FilamentApp& FilamentApp::get()
 {
@@ -126,26 +126,26 @@ void FilamentApp::run(
   std::unique_ptr<Window> window(
       new Window(this, config, config.title, width, height));
 
-  //  mDepthMaterial = filament::Material::Builder()
-  //                       .package(
-  //                           (void*)DEPTH_VISUALIZER_PACKAGE,
-  //                           sizeof(DEPTH_VISUALIZER_PACKAGE))
-  //                       .build(*mEngine);
+  mDepthMaterial = filament::Material::Builder()
+          .package(
+              (void*)DEPTH_VISUALIZER_PACKAGE,
+              sizeof(DEPTH_VISUALIZER_PACKAGE))
+          .build(*mEngine);
 
-//  mDepthMI = mDepthMaterial->createInstance();
+  mDepthMI = mDepthMaterial->createInstance();
 
-  //  mDefaultMaterial
-  //      = filament::Material::Builder()
-  //            .package(
-  //                (void*)AI_DEFAULT_MAT_PACKAGE,
-  //                sizeof(AI_DEFAULT_MAT_PACKAGE))
-  //            .build(*mEngine);
+  mDefaultMaterial
+          = filament::Material::Builder()
+          .package(
+              (void*)AI_DEFAULT_MAT_PACKAGE,
+              sizeof(AI_DEFAULT_MAT_PACKAGE))
+          .build(*mEngine);
 
-  //  mTransparentMaterial = filament::Material::Builder()
-  //                             .package(
-  //                                 (void*)TRANSPARENT_COLOR_PACKAGE,
-  //                                 sizeof(TRANSPARENT_COLOR_PACKAGE))
-  //                             .build(*mEngine);
+  mTransparentMaterial = filament::Material::Builder()
+          .package(
+              (void*)TRANSPARENT_COLOR_PACKAGE,
+              sizeof(TRANSPARENT_COLOR_PACKAGE))
+          .build(*mEngine);
 
   std::unique_ptr<Cube> cameraCube(
       new Cube(*mEngine, mTransparentMaterial, {1, 0, 0}));
@@ -469,10 +469,7 @@ void FilamentApp::run(
     {
       for (auto const& view : window->mViews)
       {
-        assert(renderer);
-        assert(view->getView());
-        // TODO(JS): commented
-//        renderer->render(view->getView());
+        renderer->render(view->getView());
       }
       renderer->endFrame();
     }

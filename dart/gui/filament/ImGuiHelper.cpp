@@ -71,9 +71,9 @@ namespace flmt {
 
 namespace filagui {
 
-//static const uint8_t UI_BLIT_PACKAGE[] = {
-//#include "generated/material/uiBlit.inc"
-//};
+static const uint8_t UI_BLIT_PACKAGE[] = {
+    #include "generated/material/uiBlit.inc"
+};
 
 ImGuiHelper::ImGuiHelper(
     filament::Engine* engine, filament::View* view, const utils::Path& fontPath)
@@ -105,15 +105,15 @@ ImGuiHelper::ImGuiHelper(
   mTexture->setImage(*engine, 0, std::move(pb));
 
   // Create a simple alpha-blended 2D blitting material.
-//  filament::Material* material
-//      = filament::Material::Builder()
-//            .package((void*)UI_BLIT_PACKAGE, sizeof(UI_BLIT_PACKAGE))
-//            .build(*engine);
+  filament::Material* material
+      = filament::Material::Builder()
+            .package((void*)UI_BLIT_PACKAGE, sizeof(UI_BLIT_PACKAGE))
+            .build(*engine);
 
   filament::TextureSampler sampler(
       filament::TextureSampler::MinFilter::LINEAR, filament::TextureSampler::MagFilter::LINEAR);
-//  material->setDefaultParameter("albedo", mTexture, sampler);
-//  mMaterial = material;
+  material->setDefaultParameter("albedo", mTexture, sampler);
+  mMaterial = material;
 
   // Create a scene solely for our one and only Renderable.
   filament::Scene* scene = engine->createScene();
@@ -225,22 +225,22 @@ void ImGuiHelper::renderDrawData(ImDrawData* imguiData)
     for (size_t i = previousSize; i < mMaterialInstances.size(); i++)
     {
       // TODO(JS): commented
-      // mMaterialInstances[i] = mMaterial->createInstance();
+      assert(mMaterial);
+      mMaterialInstances[i] = mMaterial->createInstance();
     }
   }
 
   // Push each unique scissor rectangle to a MaterialInstance.
   size_t matIndex = 0;
-  // TODO(JS): commented
-//  for (auto& pair : scissorRects)
-//  {
-//    pair.second = mMaterialInstances[matIndex++];
-//    uint32_t left = (pair.first >> 0ull) & 0xffffull;
-//    uint32_t bottom = (pair.first >> 16ull) & 0xffffull;
-//    uint32_t width = (pair.first >> 32ull) & 0xffffull;
-//    uint32_t height = (pair.first >> 48ull) & 0xffffull;
-//    pair.second->setScissor(left, bottom, width, height);
-//  }
+  for (auto& pair : scissorRects)
+  {
+    pair.second = mMaterialInstances[matIndex++];
+    uint32_t left = (pair.first >> 0ull) & 0xffffull;
+    uint32_t bottom = (pair.first >> 16ull) & 0xffffull;
+    uint32_t width = (pair.first >> 32ull) & 0xffffull;
+    uint32_t height = (pair.first >> 48ull) & 0xffffull;
+    pair.second->setScissor(left, bottom, width, height);
+  }
 
   // Recreate the Renderable component and point it to the vertex buffers.
   rcm.destroy(mRenderable);
