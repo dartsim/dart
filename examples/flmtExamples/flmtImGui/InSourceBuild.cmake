@@ -14,4 +14,4 @@ set_target_properties(${example_name}
 )
 
 dart_add_example(${example_name})
-dart_format_add(${example_name})
+dart_format_add(${srcs})
