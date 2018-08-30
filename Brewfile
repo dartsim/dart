@@ -1,4 +1,4 @@
-#tap 'dartsim/dart' # for ipopt
+tap 'dartsim/dart' # for ipopt
 
 # Build dependencies
 brew 'cmake'
@@ -9,6 +9,7 @@ brew 'boost'
 brew 'bullet'
 brew 'eigen'
 brew 'fcl'
+brew 'filament'
 #brew 'flann'
 #brew 'ipopt'
 brew 'libccd'
@@ -16,5 +17,6 @@ brew 'libccd'
 brew 'octomap'
 brew 'ode'
 brew 'open-scene-graph'
+brew 'sdl2'
 brew 'tinyxml2'
 brew 'urdfdom'
