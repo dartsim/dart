@@ -49,8 +49,8 @@
 #include <cmath>
 
 #include <dart/dart.hpp>
-#include <dart/gui/filament/filament.hpp>
 #include <dart/external/imgui/imgui.h>
+#include <dart/gui/filament/filament.hpp>
 #include <filament/Engine.h>
 #include <filament/IndexBuffer.h>
 #include <filament/Material.h>
@@ -68,7 +68,8 @@ using namespace flmt;
 using namespace filament;
 using ::utils::Entity;
 
-struct App {
+struct App
+{
   VertexBuffer* vb;
   IndexBuffer* ib;
   Material* mat;
@@ -76,21 +77,22 @@ struct App {
   Entity renderable;
 };
 
-struct Vertex {
+struct Vertex
+{
   ::math::float2 position;
   uint32_t color;
 };
 
 static const Vertex TRIANGLE_VERTICES[3] = {
-  {{1, 0}, 0xffff0000u},
-  {{cos(M_PI * 2 / 3), sin(M_PI * 2 / 3)}, 0xff00ff00u},
-  {{cos(M_PI * 4 / 3), sin(M_PI * 4 / 3)}, 0xff0000ffu},
+    {{1, 0}, 0xffff0000u},
+    {{cos(M_PI * 2 / 3), sin(M_PI * 2 / 3)}, 0xff00ff00u},
+    {{cos(M_PI * 4 / 3), sin(M_PI * 4 / 3)}, 0xff0000ffu},
 };
 
-static constexpr uint16_t TRIANGLE_INDICES[3] = { 0, 1, 2 };
+static constexpr uint16_t TRIANGLE_INDICES[3] = {0, 1, 2};
 
 static constexpr uint8_t BAKED_COLOR_PACKAGE[] = {
-  #include "generated/material/bakedColor.inc"
+#include "generated/material/bakedColor.inc"
 };
 
 int main()
@@ -106,28 +108,47 @@ int main()
     view->setDepthPrepass(filament::View::DepthPrepass::DISABLED);
     static_assert(sizeof(Vertex) == 12, "Strange vertex size.");
     app.vb = VertexBuffer::Builder()
-        .vertexCount(3)
-        .bufferCount(1)
-        .attribute(VertexAttribute::POSITION, 0, VertexBuffer::AttributeType::FLOAT2, 0, 12)
-        .attribute(VertexAttribute::COLOR, 0, VertexBuffer::AttributeType::UBYTE4, 8, 12)
-        .normalized(VertexAttribute::COLOR)
-        .build(*engine);
-    app.vb->setBufferAt(*engine, 0,
-                        VertexBuffer::BufferDescriptor(TRIANGLE_VERTICES, 36, nullptr));
+                 .vertexCount(3)
+                 .bufferCount(1)
+                 .attribute(
+                     VertexAttribute::POSITION,
+                     0,
+                     VertexBuffer::AttributeType::FLOAT2,
+                     0,
+                     12)
+                 .attribute(
+                     VertexAttribute::COLOR,
+                     0,
+                     VertexBuffer::AttributeType::UBYTE4,
+                     8,
+                     12)
+                 .normalized(VertexAttribute::COLOR)
+                 .build(*engine);
+    app.vb->setBufferAt(
+        *engine,
+        0,
+        VertexBuffer::BufferDescriptor(TRIANGLE_VERTICES, 36, nullptr));
     app.ib = IndexBuffer::Builder()
-        .indexCount(3)
-        .bufferType(IndexBuffer::IndexType::USHORT)
-        .build(*engine);
-    app.ib->setBuffer(*engine,
-                      IndexBuffer::BufferDescriptor(TRIANGLE_INDICES, 6, nullptr));
-    app.mat = Material::Builder()
-        .package((void*) BAKED_COLOR_PACKAGE, sizeof(BAKED_COLOR_PACKAGE))
-        .build(*engine);
+                 .indexCount(3)
+                 .bufferType(IndexBuffer::IndexType::USHORT)
+                 .build(*engine);
+    app.ib->setBuffer(
+        *engine, IndexBuffer::BufferDescriptor(TRIANGLE_INDICES, 6, nullptr));
+    app.mat
+        = Material::Builder()
+              .package((void*)BAKED_COLOR_PACKAGE, sizeof(BAKED_COLOR_PACKAGE))
+              .build(*engine);
     app.renderable = ::utils::EntityManager::get().create();
     RenderableManager::Builder(1)
-        .boundingBox({{ -1, -1, -1 }, { 1, 1, 1 }})
+        .boundingBox({{-1, -1, -1}, {1, 1, 1}})
         .material(0, app.mat->getDefaultInstance())
-        .geometry(0, RenderableManager::PrimitiveType::TRIANGLES, app.vb, app.ib, 0, 3)
+        .geometry(
+            0,
+            RenderableManager::PrimitiveType::TRIANGLES,
+            app.vb,
+            app.ib,
+            0,
+            3)
         .culling(false)
         .receiveShadows(false)
         .castShadows(false)
@@ -150,13 +171,19 @@ int main()
     constexpr float ZOOM = 1.5f;
     const uint32_t w = view->getViewport().width;
     const uint32_t h = view->getViewport().height;
-    const float aspect = (float) w / h;
-    app.cam->setProjection(Camera::Projection::ORTHO,
-                           -aspect * ZOOM, aspect * ZOOM,
-                           -ZOOM, ZOOM, 0, 1);
+    const float aspect = (float)w / h;
+    app.cam->setProjection(
+        Camera::Projection::ORTHO,
+        -aspect * ZOOM,
+        aspect * ZOOM,
+        -ZOOM,
+        ZOOM,
+        0,
+        1);
     auto& tcm = engine->getTransformManager();
-    tcm.setTransform(tcm.getInstance(app.renderable),
-                     ::math::mat4f::rotate(now, ::math::float3{0, 0, 1}));
+    tcm.setTransform(
+        tcm.getInstance(app.renderable),
+        ::math::mat4f::rotate(now, ::math::float3{0, 0, 1}));
   });
 
   FilamentApp::get().run(config, setup, cleanup);

@@ -48,21 +48,21 @@
 
 #include "dart/gui/filament/ImGuiHelper.hpp"
 
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "dart/external/imgui/imgui.h"
 
 //#include <filamat/MaterialBuilder.h>
-#include <filament/VertexBuffer.h>
 #include <filament/IndexBuffer.h>
 #include <filament/Material.h>
 #include <filament/MaterialInstance.h>
 #include <filament/RenderableManager.h>
 #include <filament/Scene.h>
 #include <filament/Texture.h>
-#include <filament/View.h>
 #include <filament/TransformManager.h>
+#include <filament/VertexBuffer.h>
+#include <filament/View.h>
 #include <utils/EntityManager.h>
 
 namespace dart {
@@ -72,7 +72,7 @@ namespace flmt {
 namespace filagui {
 
 static const uint8_t UI_BLIT_PACKAGE[] = {
-    #include "generated/material/uiBlit.inc"
+#include "generated/material/uiBlit.inc"
 };
 
 ImGuiHelper::ImGuiHelper(
@@ -94,7 +94,10 @@ ImGuiHelper::ImGuiHelper(
   io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
   size_t size = (size_t)(width * height);
   filament::Texture::PixelBufferDescriptor pb(
-      pixels, size, filament::Texture::Format::R, filament::Texture::Type::UBYTE);
+      pixels,
+      size,
+      filament::Texture::Format::R,
+      filament::Texture::Type::UBYTE);
   mTexture = filament::Texture::Builder()
                  .width((uint32_t)width)
                  .height((uint32_t)height)
@@ -111,7 +114,8 @@ ImGuiHelper::ImGuiHelper(
             .build(*engine);
 
   filament::TextureSampler sampler(
-      filament::TextureSampler::MinFilter::LINEAR, filament::TextureSampler::MagFilter::LINEAR);
+      filament::TextureSampler::MinFilter::LINEAR,
+      filament::TextureSampler::MagFilter::LINEAR);
   material->setDefaultParameter("albedo", mTexture, sampler);
   mMaterial = material;
 
@@ -297,39 +301,41 @@ void ImGuiHelper::createVertexBuffer(size_t bufferIndex, size_t capacity)
 {
   syncThreads();
   mEngine->destroy(mVertexBuffers[bufferIndex]);
-  mVertexBuffers[bufferIndex] = filament::VertexBuffer::Builder()
-                                    .vertexCount(capacity)
-                                    .bufferCount(1)
-                                    .attribute(
-                                        filament::VertexAttribute::POSITION,
-                                        0,
-                                        filament::VertexBuffer::AttributeType::FLOAT2,
-                                        0,
-                                        sizeof(ImDrawVert))
-                                    .attribute(
-                                        filament::VertexAttribute::UV0,
-                                        0,
-                                        filament::VertexBuffer::AttributeType::FLOAT2,
-                                        sizeof(math::float2),
-                                        sizeof(ImDrawVert))
-                                    .attribute(
-                                        filament::VertexAttribute::COLOR,
-                                        0,
-                                        filament::VertexBuffer::AttributeType::UBYTE4,
-                                        2 * sizeof(math::float2),
-                                        sizeof(ImDrawVert))
-                                    .normalized(filament::VertexAttribute::COLOR)
-                                    .build(*mEngine);
+  mVertexBuffers[bufferIndex]
+      = filament::VertexBuffer::Builder()
+            .vertexCount(capacity)
+            .bufferCount(1)
+            .attribute(
+                filament::VertexAttribute::POSITION,
+                0,
+                filament::VertexBuffer::AttributeType::FLOAT2,
+                0,
+                sizeof(ImDrawVert))
+            .attribute(
+                filament::VertexAttribute::UV0,
+                0,
+                filament::VertexBuffer::AttributeType::FLOAT2,
+                sizeof(math::float2),
+                sizeof(ImDrawVert))
+            .attribute(
+                filament::VertexAttribute::COLOR,
+                0,
+                filament::VertexBuffer::AttributeType::UBYTE4,
+                2 * sizeof(math::float2),
+                sizeof(ImDrawVert))
+            .normalized(filament::VertexAttribute::COLOR)
+            .build(*mEngine);
 }
 
 void ImGuiHelper::createIndexBuffer(size_t bufferIndex, size_t capacity)
 {
   syncThreads();
   mEngine->destroy(mIndexBuffers[bufferIndex]);
-  mIndexBuffers[bufferIndex] = filament::IndexBuffer::Builder()
-                                   .indexCount(capacity)
-                                   .bufferType(filament::IndexBuffer::IndexType::USHORT)
-                                   .build(*mEngine);
+  mIndexBuffers[bufferIndex]
+      = filament::IndexBuffer::Builder()
+            .indexCount(capacity)
+            .bufferType(filament::IndexBuffer::IndexType::USHORT)
+            .build(*mEngine);
 }
 
 void ImGuiHelper::createBuffers(int numRequiredBuffers)

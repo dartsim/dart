@@ -47,8 +47,8 @@
  */
 
 #include <dart/dart.hpp>
-#include <dart/gui/filament/filament.hpp>
 #include <dart/external/imgui/imgui.h>
+#include <dart/gui/filament/filament.hpp>
 
 using namespace dart;
 
@@ -56,28 +56,34 @@ int main()
 {
   bool showDemo = false;
   bool showMetrics = false;
-  auto imgui = [&showDemo, &showMetrics] (filament::Engine*, filament::View*) {
-      // In ImGui, the window title is a unique identifier, so don't call this "ImGui Demo" to
-      // avoid colliding with ImGui::ShowDemoWindow().
-      ImGui::Begin("ImGui", nullptr, ImGuiWindowFlags_MenuBar);
-      if (ImGui::BeginMenuBar()) {
-          if (ImGui::BeginMenu("File")) {
-              if (ImGui::MenuItem("Close"))  {
-                  gui::flmt::FilamentApp::get().close();
-              }
-              ImGui::EndMenu();
-          }
-          ImGui::EndMenuBar();
+  auto imgui = [&showDemo, &showMetrics](filament::Engine*, filament::View*) {
+    // In ImGui, the window title is a unique identifier, so don't call this
+    // "ImGui Demo" to
+    // avoid colliding with ImGui::ShowDemoWindow().
+    ImGui::Begin("ImGui", nullptr, ImGuiWindowFlags_MenuBar);
+    if (ImGui::BeginMenuBar())
+    {
+      if (ImGui::BeginMenu("File"))
+      {
+        if (ImGui::MenuItem("Close"))
+        {
+          gui::flmt::FilamentApp::get().close();
+        }
+        ImGui::EndMenu();
       }
-      ImGui::Checkbox("Widgets", &showDemo);
-      ImGui::Checkbox("Metrics", &showMetrics);
-      if (showDemo) {
-          ImGui::ShowDemoWindow(&showDemo);
-      }
-      if (showMetrics) {
-          ImGui::ShowMetricsWindow(&showMetrics);
-      }
-      ImGui::End();
+      ImGui::EndMenuBar();
+    }
+    ImGui::Checkbox("Widgets", &showDemo);
+    ImGui::Checkbox("Metrics", &showMetrics);
+    if (showDemo)
+    {
+      ImGui::ShowDemoWindow(&showDemo);
+    }
+    if (showMetrics)
+    {
+      ImGui::ShowMetricsWindow(&showMetrics);
+    }
+    ImGui::End();
   };
 
   gui::flmt::Config config;
