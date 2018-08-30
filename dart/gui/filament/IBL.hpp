@@ -68,6 +68,7 @@ namespace dart {
 namespace gui {
 namespace flmt {
 
+/// Implementation of Image Based Lighting (IBL)
 class IBL
 {
 public:
