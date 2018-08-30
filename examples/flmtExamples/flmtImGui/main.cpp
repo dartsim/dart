@@ -30,55 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <thread>
-
 #include <dart/dart.hpp>
 #include <dart/gui/filament/filament.hpp>
 #include <dart/external/imgui/imgui.h>
 
-#include <filament/Engine.h>
-#include <filament/IndexBuffer.h>
-#include <filament/Material.h>
-#include <filament/MaterialInstance.h>
-#include <filament/RenderableManager.h>
-#include <filament/Scene.h>
-#include <filament/TransformManager.h>
-#include <filament/VertexBuffer.h>
-#include <filament/View.h>
-
-//#include "../samples/app/Config.h"
-//#include "../samples/app/FilamentApp.h"
-
-#include <cmath>
-
 using namespace dart;
-using namespace filament;
-using utils::Entity;
-using utils::EntityManager;
-
-struct App {
-    VertexBuffer* vb;
-    IndexBuffer* ib;
-    Material* mat;
-    Camera* cam;
-    Entity renderable;
-};
-
-struct Vertex {
-    ::math::float2 position;
-    uint32_t color;
-};
-
-static const Vertex TRIANGLE_VERTICES[3] = {
-    {{1, 0}, 0xffff0000u},
-    {{cos(M_PI * 2 / 3), sin(M_PI * 2 / 3)}, 0xff00ff00u},
-    {{cos(M_PI * 4 / 3), sin(M_PI * 4 / 3)}, 0xff0000ffu},
-};
 
 int main()
 {
-  std::cout << "Hello World, I'm flmtEmpty.\n";
-
   bool showDemo = false;
   bool showMetrics = false;
   auto imgui = [&showDemo, &showMetrics] (filament::Engine*, filament::View*) {
@@ -96,12 +55,6 @@ int main()
       }
       ImGui::Checkbox("Widgets", &showDemo);
       ImGui::Checkbox("Metrics", &showMetrics);
-//      if (showDemo) {
-//          ImGui::ShowDemoWindow(&showDemo);
-//      }
-//      if (showMetrics) {
-//          ImGui::ShowMetricsWindow(&showMetrics);
-//      }
       ImGui::End();
   };
 
@@ -110,7 +63,6 @@ int main()
   config.title = "ImGui Demo";
   auto nop = [](filament::Engine*, filament::View*, filament::Scene*) {};
   gui::flmt::FilamentApp::get().run(config, nop, nop, imgui);
-//  gui::flmt::FilamentApp::get();
 
   return 0;
 }
