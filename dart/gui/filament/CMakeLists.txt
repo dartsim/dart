@@ -1,11 +1,8 @@
 find_package(filament QUIET)
 dart_check_optional_package(filament "dart-gui-flmt" "filament" "0.0.0")
 
-#find_package(Threads)
-#if(NOT Threads_FOUND)
-#  return()
-#endif()
-find_package(SDL2 REQUIRED)
+find_package(SDL2 QUIET)
+dart_check_optional_package(filament "dart-gui-flmt" "sdl2")
 
 # Compiler check
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU"
@@ -13,66 +10,14 @@ if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU"
   message(WARNING
     "The GCC compiler is not supported for dart-gui-flmt, please use Clang for "
     "both C and C++. Skipping building dart-gui-flmt.")
-#  return()
+  return()
 endif()
-
-#==============================================================================
-# Build materials
-#==============================================================================
-#set(MATERIAL_SRCS
-#  materials/bakedColor.mat
-#  materials/bakedTexture.mat
-#  materials/aiDefaultMat.mat
-#  materials/aiDefaultTrans.mat
-#  materials/depthVisualizer.mat
-#  materials/groundShadow.mat
-#  materials/sandboxCloth.mat
-#  materials/sandboxLit.mat
-#  materials/sandboxLitFade.mat
-#  materials/sandboxLitTransparent.mat
-#  materials/sandboxSubsurface.mat
-#  materials/sandboxUnlit.mat
-#  materials/transparentColor.mat
-#)
-
-#if (CMAKE_CROSSCOMPILING)
-#  set(IMPORT_EXECUTABLES ${FILAMENT}/${IMPORT_EXECUTABLES_DIR}/ImportExecutables-${CMAKE_BUILD_TYPE}.cmake)
-#  include(${IMPORT_EXECUTABLES})
-#endif()
-
-#set(MATERIAL_BINS)
-#set(GENERATION_ROOT ${CMAKE_CURRENT_BINARY_DIR})
-#file(MAKE_DIRECTORY "${GENERATION_ROOT}/generated/material/")
-
-#set(MATC_TARGET desktop)
-
-## Optimize materials for performance in Release mode.
-#set(MATC_FLAGS -a all)
-#if (CMAKE_BUILD_TYPE MATCHES Release)
-#    set(MATC_FLAGS -O ${MATC_FLAGS})
-#endif()
-
-#foreach (mat_src ${MATERIAL_SRCS})
-#    get_filename_component(localname "${mat_src}" NAME_WE)
-#    get_filename_component(fullname "${mat_src}" ABSOLUTE)
-#    set(output_path "${GENERATION_ROOT}/generated/material/${localname}.inc")
-#    add_custom_command(
-#            OUTPUT ${output_path}
-#            COMMAND matc ${MATC_FLAGS} -p ${MATC_TARGET} -m material -f header
-#            -o ${output_path} ${fullname}
-#            MAIN_DEPENDENCY ${mat_src}
-#            DEPENDS matc
-#            COMMENT "Compiling material ${mat_src} to ${output_path}"
-#    )
-#    list(APPEND MATERIAL_BINS ${output_path})
-#endforeach()
-
-#add_custom_target(sample_materials DEPENDS ${MATERIAL_BINS})
-
-#include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-
-
+if(CLANG_VERSION VERSION_LESS 3.4)
+  message(FATAL_ERROR "The installed Clang version is ${CLANG_VERSION}. "
+      "dart-gui-flmt requires clang 3.3 or greater."
+  )
+  return()
+endif()
 if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT WEBGL)
   set(LINUX TRUE)
 endif()
@@ -117,17 +62,8 @@ target_link_libraries(
     ${SDL2_LIBRARIES}
     ${APP_LIBS}
 )
+# TODO(JS): Check if C++14 is supported
 target_compile_options(${target_name} PUBLIC -std=c++14)
-#add_dependencies(${target_name} sample_materials)
-# TODO(JS): Add next line when GCC is used
-#target_compile_options(${target_name} PUBLIC -lc++)
-# Thread
-#if(THREADS_HAVE_PTHREAD_ARG)
-#  target_compile_options(${target_name} PUBLIC "-pthread")
-#endif()
-#if(CMAKE_THREAD_LIBS_INIT)
-#  target_link_libraries(${target_name} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
-#endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
