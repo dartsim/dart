@@ -2,7 +2,10 @@ find_package(filament QUIET)
 dart_check_optional_package(filament "dart-gui-flmt" "filament" "0.0.0")
 
 find_package(SDL2 QUIET)
-dart_check_optional_package(filament "dart-gui-flmt" "sdl2")
+dart_check_optional_package(SDL2 "dart-gui-flmt" "sdl2")
+
+find_package(Threads)
+dart_check_optional_package(Threads "dart-gui-flmt" "threads")
 
 # Compiler check
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU"
@@ -64,6 +67,14 @@ target_link_libraries(
 )
 # TODO(JS): Check if C++14 is supported
 target_compile_options(${target_name} PUBLIC -std=c++14)
+
+# Thread
+if(THREADS_HAVE_PTHREAD_ARG)
+  target_compile_options(${target_name} PUBLIC "-pthread")
+endif()
+if(CMAKE_THREAD_LIBS_INIT)
+  target_link_libraries(${target_name} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
+endif()
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

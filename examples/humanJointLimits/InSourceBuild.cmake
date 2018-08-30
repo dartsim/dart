@@ -8,7 +8,7 @@ if(NOT TARGET dart-utils-urdf
 endif()
 
 set(TinyDNN_USE_SERIALIZER ON)
-find_package(TinyDNN)
+find_package(TinyDNN QUIET)
 if(NOT TinyDNN_FOUND)
   return()
 endif()
