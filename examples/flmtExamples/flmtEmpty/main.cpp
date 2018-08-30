@@ -40,7 +40,7 @@ int main()
   config.backend = filament::Engine::Backend::OPENGL;
   config.title = "ImGui Demo";
   auto nop = [](filament::Engine*, filament::View*, filament::Scene*) {};
-  gui::flmt::FilamentApp::get().run(config, nop, nop, imgui);
+  gui::flmt::FilamentApp::get().run(config, nop, nop);
 
   return 0;
 }
