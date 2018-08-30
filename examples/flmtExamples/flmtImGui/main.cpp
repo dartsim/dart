@@ -71,6 +71,12 @@ int main()
       }
       ImGui::Checkbox("Widgets", &showDemo);
       ImGui::Checkbox("Metrics", &showMetrics);
+      if (showDemo) {
+          ImGui::ShowDemoWindow(&showDemo);
+      }
+      if (showMetrics) {
+          ImGui::ShowMetricsWindow(&showMetrics);
+      }
       ImGui::End();
   };
 
