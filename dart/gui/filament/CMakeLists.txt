@@ -1,7 +1,10 @@
 find_package(filament QUIET)
 dart_check_optional_package(filament "dart-gui-flmt" "filament" "0.0.0")
 
-find_package(SDL2 QUIET)
+find_package(SDL2 CONFIG QUIET)
+if(NOT SDL2_FOUND)
+  find_package(SDL2 MODULE QUIET)
+endif()
 dart_check_optional_package(SDL2 "dart-gui-flmt" "sdl2")
 
 find_package(Threads)

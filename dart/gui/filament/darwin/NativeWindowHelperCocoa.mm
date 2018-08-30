@@ -21,7 +21,7 @@
 
 #include <Cocoa/Cocoa.h>
 
-#include <SDL_syswm.h>
+#include <SDL2/SDL_syswm.h>
 
 void* getNativeWindow(SDL_Window* sdlWindow) {
     SDL_SysWMinfo wmi;
