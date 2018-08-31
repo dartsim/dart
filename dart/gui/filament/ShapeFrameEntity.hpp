@@ -49,18 +49,18 @@
 #ifndef DART_GUI_FILAMENT_SHAPEFRAMEENTITY_HPP_
 #define DART_GUI_FILAMENT_SHAPEFRAMEENTITY_HPP_
 
-#include <filament/Renderer.h>
-#include <filament/View.h>
-#include <filament/Viewport.h>
-#include <filament/VertexBuffer.h>
 #include <filament/IndexBuffer.h>
 #include <filament/Material.h>
+#include <filament/Renderer.h>
+#include <filament/VertexBuffer.h>
+#include <filament/View.h>
+#include <filament/Viewport.h>
 #include <math/vec3.h>
 
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/gui/filament/CameraManipulator.hpp"
-#include "dart/gui/filament/Path.hpp"
 #include "dart/gui/filament/Drawable.hpp"
+#include "dart/gui/filament/Path.hpp"
 
 namespace dart {
 namespace gui {
@@ -71,10 +71,13 @@ class WorldScene;
 class ShapeFrameEntity : public ::utils::Entity
 {
 public:
-  ShapeFrameEntity(WorldScene* worldScene, dynamics::ShapeFrame* shapeFrame, ::utils::Entity entity)
+  ShapeFrameEntity(
+      WorldScene* worldScene,
+      dynamics::ShapeFrame* shapeFrame,
+      ::utils::Entity entity)
     : mWorldScene(worldScene), mShapeFrame(shapeFrame), mEntity(entity)
   {
-        // Do nothing
+    // Do nothing
   }
 
   void refresh(bool flag = true);

@@ -51,19 +51,19 @@
 
 #include <map>
 
-#include <filament/Renderer.h>
-#include <filament/View.h>
-#include <filament/VertexBuffer.h>
 #include <filament/IndexBuffer.h>
 #include <filament/Material.h>
+#include <filament/Renderer.h>
+#include <filament/VertexBuffer.h>
+#include <filament/View.h>
 #include <filament/Viewport.h>
 #include <math/vec3.h>
 
 #include "dart/dynamics/ShapeFrame.hpp"
-#include "dart/gui/filament/CameraManipulator.hpp"
-#include "dart/gui/filament/Path.hpp"
-#include "dart/gui/filament/MeshAssimp.hpp"
 #include "dart/dynamics/dynamics.hpp"
+#include "dart/gui/filament/CameraManipulator.hpp"
+#include "dart/gui/filament/MeshAssimp.hpp"
+#include "dart/gui/filament/Path.hpp"
 
 namespace dart {
 namespace gui {
@@ -75,6 +75,7 @@ class Drawable
 {
 public:
   Drawable(WorldScene* worldScene);
+
 protected:
   filament::VertexBuffer* mVB;
   filament::IndexBuffer* mIB;
@@ -91,7 +92,6 @@ public:
 protected:
   dynamics::BoxShape* mBoxShape;
   filament::Engine* mEngine;
-
 };
 
 class MeshDrawable : public Drawable

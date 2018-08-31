@@ -67,18 +67,18 @@ void ShapeFrameEntity::refresh(bool flag)
   {
     if (mDrawable)
     {
-//      mDrawable->refresh();
+      //      mDrawable->refresh();
     }
     else
     {
       if (shape->is<dynamics::MeshShape>())
       {
         mDrawable = std::make_shared<MeshDrawable>(
-              mWorldScene, static_cast<dynamics::MeshShape*>(shape.get()));
+            mWorldScene, static_cast<dynamics::MeshShape*>(shape.get()));
       }
     }
   }
-//  else if (mRenderShapeEntity)
+  //  else if (mRenderShapeEntity)
   {
     // TODO(JS): remove
   }

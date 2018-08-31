@@ -42,8 +42,7 @@ namespace dart {
 namespace gui {
 namespace flmt {
 
-WorldScene::WorldScene(simulation::WorldPtr world)
-  : mWorld(std::move(world))
+WorldScene::WorldScene(simulation::WorldPtr world) : mWorld(std::move(world))
 {
   // Do nothing
 }
@@ -129,7 +128,8 @@ void WorldScene::refreshShapeFrameNode(dynamics::Frame* frame)
 
   auto entity = ::utils::EntityManager::get().create();
   std::unique_ptr<ShapeFrameEntity> sfEntity
-      = common::make_unique<ShapeFrameEntity>(this, frame->asShapeFrame(), entity);
+      = common::make_unique<ShapeFrameEntity>(
+          this, frame->asShapeFrame(), entity);
 
   itr->second = std::move(sfEntity);
   mScene->addEntity(entity);
@@ -137,7 +137,6 @@ void WorldScene::refreshShapeFrameNode(dynamics::Frame* frame)
 
 void WorldScene::clearUnusedNodes()
 {
-
 }
 
 } // namespace flmt

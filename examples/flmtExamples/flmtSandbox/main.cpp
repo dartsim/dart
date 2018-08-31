@@ -51,9 +51,9 @@
 #include <dart/dart.hpp>
 #include <dart/external/imgui/imgui.h>
 #include <dart/gui/filament/filament.hpp>
-#include <dart/utils/utils.hpp>
-#include <dart/utils/urdf/urdf.hpp>
 #include <dart/simulation/World.hpp>
+#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/utils.hpp>
 #include <filament/Engine.h>
 #include <filament/IndexBuffer.h>
 #include <filament/Material.h>
@@ -106,19 +106,19 @@ SkeletonPtr createAtlas()
 {
   // Parse in the atlas model
   dart::utils::DartLoader urdf;
-  SkeletonPtr atlas =
-      urdf.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+  SkeletonPtr atlas
+      = urdf.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
 
   // Add a box to the root node to make it easier to click and drag
   double scale = 0.25;
-  ShapePtr boxShape =
-      std::make_shared<BoxShape>(scale*Eigen::Vector3d(1.0, 1.0, 0.5));
+  ShapePtr boxShape
+      = std::make_shared<BoxShape>(scale * Eigen::Vector3d(1.0, 1.0, 0.5));
 
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(0.1*Eigen::Vector3d(0.0, 0.0, 1.0));
+  tf.translation() = Eigen::Vector3d(0.1 * Eigen::Vector3d(0.0, 0.0, 1.0));
 
-  auto shapeNode =
-      atlas->getBodyNode(0)->createShapeNodeWith<VisualAspect>(boxShape);
+  auto shapeNode
+      = atlas->getBodyNode(0)->createShapeNodeWith<VisualAspect>(boxShape);
   shapeNode->getVisualAspect()->setColor(dart::Color::Black());
   shapeNode->setRelativeTransform(tf);
 
@@ -135,8 +135,8 @@ int main()
   auto atlas = createAtlas();
   world->addSkeleton(atlas);
   auto worldScene = std::make_shared<WorldScene>(world);
-  auto viewer = std::make_shared<Viewer>(
-      config, "Sandbox", 860, 640, worldScene);
+  auto viewer
+      = std::make_shared<Viewer>(config, "Sandbox", 860, 640, worldScene);
 
   viewer->run();
 

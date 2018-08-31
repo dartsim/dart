@@ -246,17 +246,17 @@ void Window::resize()
   configureCamerasForWindow();
 }
 
-filament::Renderer*Window::getRenderer()
+filament::Renderer* Window::getRenderer()
 {
   return mRenderer;
 }
 
-filament::SwapChain*Window::getSwapChain()
+filament::SwapChain* Window::getSwapChain()
 {
   return mSwapChain;
 }
 
-SDL_Window*Window::getSDLWindow()
+SDL_Window* Window::getSDLWindow()
 {
   return mWindow;
 }

@@ -37,8 +37,8 @@
 
 #include <filament/Scene.h>
 
-#include "dart/simulation/World.hpp"
 #include "dart/gui/filament/ShapeFrameEntity.hpp"
+#include "dart/simulation/World.hpp"
 
 namespace dart {
 namespace gui {
@@ -78,7 +78,8 @@ protected:
   filament::Engine* mEngine;
   filament::Scene* mScene;
 
-  using NodeMap = std::unordered_map<dynamics::Frame*, std::unique_ptr<ShapeFrameEntity>>;
+  using NodeMap
+      = std::unordered_map<dynamics::Frame*, std::unique_ptr<ShapeFrameEntity>>;
 
   NodeMap mFrameToNode;
 };

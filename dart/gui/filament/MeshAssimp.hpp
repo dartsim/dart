@@ -60,75 +60,81 @@
 #include "Path.hpp"
 
 #include <filamat/MaterialBuilder.h>
-#include <filament/Color.h>
 #include <filament/Box.h>
+#include <filament/Color.h>
 
 namespace filament {
-    class Engine;
-    class VertexBuffer;
-    class IndexBuffer;
-    class Material;
-    class MaterialInstance;
-    class Renderable;
+class Engine;
+class VertexBuffer;
+class IndexBuffer;
+class Material;
+class MaterialInstance;
+class Renderable;
 }
 
 namespace dart {
 namespace gui {
 namespace flmt {
 
-class MeshAssimp {
+class MeshAssimp
+{
 public:
-    using mat4f = ::math::mat4f;
-    using half4 = ::math::half4;
-    using short4 = ::math::short4;
-    using half2 = ::math::half2;
-    explicit MeshAssimp(filament::Engine& engine);
-    ~MeshAssimp();
+  using mat4f = ::math::mat4f;
+  using half4 = ::math::half4;
+  using short4 = ::math::short4;
+  using half2 = ::math::half2;
+  explicit MeshAssimp(filament::Engine& engine);
+  ~MeshAssimp();
 
-    void addFromFile(const utils::Path& path,
-            std::map<std::string, filament::MaterialInstance*>& materials,
-            bool overrideMaterial = false);
+  void addFromFile(
+      const utils::Path& path,
+      std::map<std::string, filament::MaterialInstance*>& materials,
+      bool overrideMaterial = false);
 
-    const std::vector<::utils::Entity> getRenderables() const noexcept {
-        return mRenderables;
-    }
+  const std::vector<::utils::Entity> getRenderables() const noexcept
+  {
+    return mRenderables;
+  }
 
 private:
-    struct Part {
-        size_t offset;
-        size_t count;
-        std::string material;
-        filament::sRGBColor baseColor;
-        float opacity;
-        float metallic;
-        float roughness;
-        float reflectance;
-    };
+  struct Part
+  {
+    size_t offset;
+    size_t count;
+    std::string material;
+    filament::sRGBColor baseColor;
+    float opacity;
+    float metallic;
+    float roughness;
+    float reflectance;
+  };
 
-    struct Mesh {
-        size_t offset;
-        size_t count;
-        std::vector<Part> parts;
-        filament::Box aabb;
-        mat4f transform;
-    };
+  struct Mesh
+  {
+    size_t offset;
+    size_t count;
+    std::vector<Part> parts;
+    filament::Box aabb;
+    mat4f transform;
+  };
 
-    bool setFromFile(const utils::Path& file,
-            std::vector<uint32_t>& outIndices,
-            std::vector<half4>&    outPositions,
-            std::vector<short4>&   outTangents,
-            std::vector<half2>&    outTexCoords,
-            std::vector<Mesh>&     outMeshes,
-            std::vector<int>&      outParents);
+  bool setFromFile(
+      const utils::Path& file,
+      std::vector<uint32_t>& outIndices,
+      std::vector<half4>& outPositions,
+      std::vector<short4>& outTangents,
+      std::vector<half2>& outTexCoords,
+      std::vector<Mesh>& outMeshes,
+      std::vector<int>& outParents);
 
-    filament::Engine& mEngine;
-    filament::VertexBuffer* mVertexBuffer = nullptr;
-    filament::IndexBuffer* mIndexBuffer = nullptr;
+  filament::Engine& mEngine;
+  filament::VertexBuffer* mVertexBuffer = nullptr;
+  filament::IndexBuffer* mIndexBuffer = nullptr;
 
-    filament::Material* mDefaultColorMaterial = nullptr;
-    filament::Material* mDefaultTransparentColorMaterial = nullptr;
+  filament::Material* mDefaultColorMaterial = nullptr;
+  filament::Material* mDefaultTransparentColorMaterial = nullptr;
 
-    std::vector<::utils::Entity> mRenderables;
+  std::vector<::utils::Entity> mRenderables;
 };
 
 } // namespace flmt

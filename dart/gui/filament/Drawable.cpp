@@ -42,35 +42,34 @@ namespace dart {
 namespace gui {
 namespace flmt {
 
-Drawable::Drawable(WorldScene* worldScene)
-  : mWorldScene(worldScene)
+Drawable::Drawable(WorldScene* worldScene) : mWorldScene(worldScene)
 {
-
 }
 
 BoxDrawable::BoxDrawable(WorldScene* worldScene, dynamics::BoxShape* boxShape)
   : Drawable(worldScene), mBoxShape(boxShape)
 {
   mVB = filament::VertexBuffer::Builder()
-      .vertexCount(8)
-      .bufferCount(1)
-      .attribute(
-        filament::VertexAttribute::POSITION,
-        0,
-        filament::VertexBuffer::AttributeType::FLOAT3,
-        0,
-        12)
-      .attribute(
-        filament::VertexAttribute::COLOR,
-        0,
-        filament::VertexBuffer::AttributeType::UBYTE4,
-        8,
-        12)
-      .normalized(filament::VertexAttribute::COLOR)
-      .build(*mEngine);
+            .vertexCount(8)
+            .bufferCount(1)
+            .attribute(
+                filament::VertexAttribute::POSITION,
+                0,
+                filament::VertexBuffer::AttributeType::FLOAT3,
+                0,
+                12)
+            .attribute(
+                filament::VertexAttribute::COLOR,
+                0,
+                filament::VertexBuffer::AttributeType::UBYTE4,
+                8,
+                12)
+            .normalized(filament::VertexAttribute::COLOR)
+            .build(*mEngine);
 }
 
-MeshDrawable::MeshDrawable(WorldScene* worldScene, dynamics::MeshShape* meshShape)
+MeshDrawable::MeshDrawable(
+    WorldScene* worldScene, dynamics::MeshShape* meshShape)
   : Drawable(worldScene),
     mMeshShape(meshShape),
     mMeshConvertor(MeshAssimp(*mWorldScene->getEngine()))
@@ -83,7 +82,7 @@ MeshDrawable::MeshDrawable(WorldScene* worldScene, dynamics::MeshShape* meshShap
 
   auto path = retriever->getFilePath(uri);
 
-//  ::utils::Path path2;
+  //  ::utils::Path path2;
 
   mMeshConvertor.addFromFile(path, mMaterials);
 
@@ -104,7 +103,7 @@ MeshDrawable::MeshDrawable(WorldScene* worldScene, dynamics::MeshShape* meshShap
     {
       rcm.setCastShadows(instance, true); // enable shadow
       rcm.setReceiveShadows(instance, false);
-      mWorldScene->getScene()->addEntity(renderable);  // TODO(JS): fix;
+      mWorldScene->getScene()->addEntity(renderable); // TODO(JS): fix;
     }
   }
 

@@ -33,8 +33,8 @@
 #ifndef DART_GUI_FILAMENT_VIEWER_HPP_
 #define DART_GUI_FILAMENT_VIEWER_HPP_
 
-#include <filament/Engine.h>
 #include <SDL2/SDL.h>
+#include <filament/Engine.h>
 #include <filament/Renderer.h>
 #include <filament/View.h>
 #include <filament/Viewport.h>
@@ -42,18 +42,19 @@
 
 #include "dart/gui/filament/CameraManipulator.hpp"
 #include "dart/gui/filament/Config.hpp"
+#include "dart/gui/filament/Cube.hpp"
+#include "dart/gui/filament/IBL.hpp"
+#include "dart/gui/filament/ImGuiHelper.hpp"
 #include "dart/gui/filament/Path.hpp"
 #include "dart/gui/filament/View.hpp"
-#include "dart/gui/filament/ImGuiHelper.hpp"
 #include "dart/gui/filament/WorldScene.hpp"
-#include "dart/gui/filament/IBL.hpp"
-#include "dart/gui/filament/Cube.hpp"
 
 namespace dart {
 namespace gui {
 namespace flmt {
 
-struct GroundPlane {
+struct GroundPlane
+{
   filament::VertexBuffer* vb;
   filament::IndexBuffer* ib;
   filament::Material* mat;
@@ -81,11 +82,12 @@ public:
   using AnimCallback
       = std::function<void(filament::Engine*, filament::View*, double now)>;
 
-  Viewer(const Config& config,
-         std::string title = "notitle",
-         size_t w = 640,
-         size_t h = 860,
-         WorldScenePtr worldScene = nullptr);
+  Viewer(
+      const Config& config,
+      std::string title = "notitle",
+      size_t w = 640,
+      size_t h = 860,
+      WorldScenePtr worldScene = nullptr);
   virtual ~Viewer();
 
   virtual void run();
