@@ -379,7 +379,10 @@ Viewer::Viewer(
   for (auto& view : mViews)
   {
     if (view.get() != mUiView)
+    {
       view->getView()->setScene(mScene);
+      view->getView()->setClearColor({0.5f,0.75f,1.0f,1.0f});
+    }
   }
 
   if (mSetupCallback)
