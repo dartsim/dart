@@ -57,6 +57,11 @@ void WorldScene::setScene(filament::Engine* engine, filament::Scene* scene)
   if (scene == mScene)
     return;
 
+  if (!engine)
+  {
+    mFrameToNode.clear();
+  }
+
   mEngine = engine;
   mScene = scene;
   if (mScene)

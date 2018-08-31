@@ -106,8 +106,12 @@ MeshDrawable::MeshDrawable(
       mWorldScene->getScene()->addEntity(renderable); // TODO(JS): fix;
     }
   }
+}
 
-  int a = 10;
+MeshDrawable::~MeshDrawable()
+{
+//  for (auto& mat : mMaterials)
+//    mEngine->destroy(mat.second);
 }
 
 } // namespace flmt

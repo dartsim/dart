@@ -116,6 +116,7 @@ private:
   GroundPlane mPlane;
 
   void setupWorldScene();
+  void destroyWorldScene();
   void loadIBL(const Config& config);
   void configureCamerasForWindow();
   void fixupMouseCoordinatesForHdpi(ssize_t& x, ssize_t& y) const;

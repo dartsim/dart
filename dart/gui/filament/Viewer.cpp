@@ -432,6 +432,10 @@ Viewer::Viewer(
 
 Viewer::~Viewer()
 {
+  filament::Fence::waitAndDestroy(mEngine->createFence());
+
+  destroyWorldScene();
+
   if (mImGuiHelper)
   {
     mImGuiHelper.reset();
@@ -752,6 +756,12 @@ void Viewer::setupWorldScene()
     return;
 
   mWorldScene->setScene(mEngine, mScene);
+}
+
+void Viewer::destroyWorldScene()
+{
+  // TODO(JS)
+  mWorldScene->setScene(nullptr, nullptr);
 }
 
 void Viewer::loadIBL(const Config& config)

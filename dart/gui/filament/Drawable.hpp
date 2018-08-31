@@ -75,6 +75,7 @@ class Drawable
 {
 public:
   Drawable(WorldScene* worldScene);
+  virtual ~Drawable() = default;
 
 protected:
   filament::VertexBuffer* mVB;
@@ -99,6 +100,7 @@ class MeshDrawable : public Drawable
 public:
   MeshDrawable(WorldScene* worldScene, dynamics::MeshShape* meshShape);
 
+  ~MeshDrawable();
 protected:
   dynamics::MeshShape* mMeshShape;
   filament::Engine* mEngine;
