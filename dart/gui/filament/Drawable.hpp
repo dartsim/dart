@@ -46,96 +46,68 @@
  * limitations under the License.
  */
 
-#ifndef DART_GUI_FILAMENT_WINDOW_HPP_
-#define DART_GUI_FILAMENT_WINDOW_HPP_
+#ifndef DART_GUI_FILAMENT_DRAWABLE_HPP_
+#define DART_GUI_FILAMENT_DRAWABLE_HPP_
 
-#include <SDL2/SDL.h>
+#include <map>
+
 #include <filament/Renderer.h>
 #include <filament/View.h>
+#include <filament/VertexBuffer.h>
+#include <filament/IndexBuffer.h>
+#include <filament/Material.h>
 #include <filament/Viewport.h>
 #include <math/vec3.h>
 
+#include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/gui/filament/CameraManipulator.hpp"
-#include "dart/gui/filament/Config.hpp"
 #include "dart/gui/filament/Path.hpp"
-#include "dart/gui/filament/View.hpp"
-
-namespace filament {
-class Engine;
-class IndexBuffer;
-class IndirectLight;
-class Material;
-class MaterialInstance;
-class Renderable;
-class Texture;
-class Skybox;
-}
+#include "dart/gui/filament/MeshAssimp.hpp"
+#include "dart/dynamics/dynamics.hpp"
 
 namespace dart {
 namespace gui {
 namespace flmt {
 
-class FilamentApp;
+class WorldScene;
 
-class Window
+class Drawable
 {
-  friend class FilamentApp;
-
 public:
-  Window(
-      FilamentApp* filamentApp,
-      const Config& config,
-      std::string title,
-      size_t w,
-      size_t h);
-  virtual ~Window();
+  Drawable(WorldScene* worldScene);
+protected:
+  filament::VertexBuffer* mVB;
+  filament::IndexBuffer* mIB;
+  filament::Material* mMaterial;
 
-  void mouseDown(int button, ssize_t x, ssize_t y);
-  void mouseUp(ssize_t x, ssize_t y);
-  void mouseMoved(ssize_t x, ssize_t y);
-  void mouseWheel(ssize_t x);
-  void resize();
+  WorldScene* mWorldScene;
+};
 
-  filament::Renderer* getRenderer();
-  filament::SwapChain* getSwapChain();
+class BoxDrawable : public Drawable
+{
+public:
+  BoxDrawable(WorldScene* worldScene, dynamics::BoxShape* boxShape);
 
-  SDL_Window* getSDLWindow();
+protected:
+  dynamics::BoxShape* mBoxShape;
+  filament::Engine* mEngine;
 
-private:
-  void configureCamerasForWindow();
-  void fixupMouseCoordinatesForHdpi(ssize_t& x, ssize_t& y) const;
+};
 
-  SDL_Window* mWindow = nullptr;
-  FilamentApp* mFilamentApp = nullptr;
-  filament::Renderer* mRenderer = nullptr;
+class MeshDrawable : public Drawable
+{
+public:
+  MeshDrawable(WorldScene* worldScene, dynamics::MeshShape* meshShape);
 
-  CameraManipulator mMainCameraMan;
-  CameraManipulator mOrthoCameraMan;
-  CameraManipulator mDebugCameraMan;
-  filament::SwapChain* mSwapChain = nullptr;
-
-  filament::Camera* mCameras[4] = {nullptr};
-  filament::Camera* mUiCamera;
-  filament::Camera* mMainCamera;
-  filament::Camera* mDebugCamera;
-  filament::Camera* mOrthoCamera;
-
-  std::vector<std::unique_ptr<CView>> mViews;
-  CView* mMainView;
-  CView* mUiView;
-  CView* mDepthView;
-  GodView* mGodView;
-  CView* mOrthoView;
-
-  size_t mWidth = 0;
-  size_t mHeight = 0;
-  ssize_t mLastX = 0;
-  ssize_t mLastY = 0;
-  CView* mEventTarget = nullptr;
+protected:
+  dynamics::MeshShape* mMeshShape;
+  filament::Engine* mEngine;
+  MeshAssimp mMeshConvertor;
+  std::map<std::string, filament::MaterialInstance*> mMaterials;
 };
 
 } // namespace flmt
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_FILAMENT_WINDOW_HPP_
+#endif // DART_GUI_FILAMENT_DRAWABLE_HPP_

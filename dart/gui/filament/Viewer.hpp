@@ -30,25 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Copyright (C) 2016 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+#ifndef DART_GUI_FILAMENT_VIEWER_HPP_
+#define DART_GUI_FILAMENT_VIEWER_HPP_
 
-#ifndef DART_GUI_FILAMENT_WINDOW_HPP_
-#define DART_GUI_FILAMENT_WINDOW_HPP_
-
+#include <filament/Engine.h>
 #include <SDL2/SDL.h>
 #include <filament/Renderer.h>
 #include <filament/View.h>
@@ -59,36 +44,51 @@
 #include "dart/gui/filament/Config.hpp"
 #include "dart/gui/filament/Path.hpp"
 #include "dart/gui/filament/View.hpp"
-
-namespace filament {
-class Engine;
-class IndexBuffer;
-class IndirectLight;
-class Material;
-class MaterialInstance;
-class Renderable;
-class Texture;
-class Skybox;
-}
+#include "dart/gui/filament/ImGuiHelper.hpp"
+#include "dart/gui/filament/WorldScene.hpp"
+#include "dart/gui/filament/IBL.hpp"
+#include "dart/gui/filament/Cube.hpp"
 
 namespace dart {
 namespace gui {
 namespace flmt {
 
-class FilamentApp;
+struct GroundPlane {
+  filament::VertexBuffer* vb;
+  filament::IndexBuffer* ib;
+  filament::Material* mat;
+  ::utils::Entity renderable;
+};
 
-class Window
+class Viewer
 {
-  friend class FilamentApp;
-
 public:
-  Window(
-      FilamentApp* filamentApp,
-      const Config& config,
-      std::string title,
-      size_t w,
-      size_t h);
-  virtual ~Window();
+  using SetupCallback = std::function<void(
+      filament::Engine*, filament::View*, filament::Scene*)>;
+  using CleanupCallback = std::function<void(
+      filament::Engine*, filament::View*, filament::Scene*)>;
+  using PreRenderCallback = std::function<void(
+      filament::Engine*,
+      filament::View*,
+      filament::Scene*,
+      filament::Renderer*)>;
+  using PostRenderCallback = std::function<void(
+      filament::Engine*,
+      filament::View*,
+      filament::Scene*,
+      filament::Renderer*)>;
+  using ImGuiCallback = std::function<void(filament::Engine*, filament::View*)>;
+  using AnimCallback
+      = std::function<void(filament::Engine*, filament::View*, double now)>;
+
+  Viewer(const Config& config,
+         std::string title = "notitle",
+         size_t w = 640,
+         size_t h = 860,
+         WorldScenePtr worldScene = nullptr);
+  virtual ~Viewer();
+
+  virtual void run();
 
   void mouseDown(int button, ssize_t x, ssize_t y);
   void mouseUp(ssize_t x, ssize_t y);
@@ -96,17 +96,51 @@ public:
   void mouseWheel(ssize_t x);
   void resize();
 
-  filament::Renderer* getRenderer();
-  filament::SwapChain* getSwapChain();
+  // Returns the path to the Filament root for loading assets. This is
+  // determined from the
+  // executable folder, which allows users to launch samples from any folder.
+  static const utils::Path& getRootPath()
+  {
+    static const utils::Path root
+        = utils::Path::getCurrentExecutable().getParent();
+    return root;
+  }
 
-  SDL_Window* getSDLWindow();
+protected:
+  WorldScenePtr mWorldScene;
 
 private:
+  ::utils::Entity mLight;
+  GroundPlane mPlane;
+
+  void setupWorldScene();
+  void loadIBL(const Config& config);
   void configureCamerasForWindow();
   void fixupMouseCoordinatesForHdpi(ssize_t& x, ssize_t& y) const;
 
+  filament::Engine* mEngine = nullptr;
+  filament::Scene* mScene = nullptr;
+  std::unique_ptr<IBL> mIBL;
+  bool mClosed = false;
+  uint64_t mTime = 0;
+
+  filament::Material const* mDefaultMaterial = nullptr;
+  filament::Material const* mTransparentMaterial = nullptr;
+  filament::Material const* mDepthMaterial = nullptr;
+  filament::MaterialInstance* mDepthMI = nullptr;
+  std::unique_ptr<filagui::ImGuiHelper> mImGuiHelper;
+  AnimCallback mAnimation;
+
+  SetupCallback mSetupCallback;
+  CleanupCallback mCleanupCallback;
+  PreRenderCallback mPreRenderCallback;
+  PostRenderCallback mPostRenderCallback;
+  ImGuiCallback mImGuiCallback;
+
+  std::unique_ptr<Cube> mCameraCube;
+  std::unique_ptr<Cube> mLightmapCube;
+
   SDL_Window* mWindow = nullptr;
-  FilamentApp* mFilamentApp = nullptr;
   filament::Renderer* mRenderer = nullptr;
 
   CameraManipulator mMainCameraMan;
@@ -138,4 +172,4 @@ private:
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_FILAMENT_WINDOW_HPP_
+#endif // DART_GUI_FILAMENT_VIEWER_HPP_

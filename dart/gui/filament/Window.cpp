@@ -246,6 +246,21 @@ void Window::resize()
   configureCamerasForWindow();
 }
 
+filament::Renderer*Window::getRenderer()
+{
+  return mRenderer;
+}
+
+filament::SwapChain*Window::getSwapChain()
+{
+  return mSwapChain;
+}
+
+SDL_Window*Window::getSDLWindow()
+{
+  return mWindow;
+}
+
 void Window::configureCamerasForWindow()
 {
 

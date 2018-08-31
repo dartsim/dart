@@ -31,7 +31,7 @@
  */
 
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,96 +46,93 @@
  * limitations under the License.
  */
 
-#ifndef DART_GUI_FILAMENT_WINDOW_HPP_
-#define DART_GUI_FILAMENT_WINDOW_HPP_
+#ifndef DART_GUI_FILAMENT_MESHASSIMP_HPP_
+#define DART_GUI_FILAMENT_MESHASSIMP_HPP_
 
-#include <SDL2/SDL.h>
-#include <filament/Renderer.h>
-#include <filament/View.h>
-#include <filament/Viewport.h>
+#include <map>
+#include <vector>
+
+#include <math/mat4.h>
+#include <math/quat.h>
 #include <math/vec3.h>
 
-#include "dart/gui/filament/CameraManipulator.hpp"
-#include "dart/gui/filament/Config.hpp"
-#include "dart/gui/filament/Path.hpp"
-#include "dart/gui/filament/View.hpp"
+#include <utils/EntityManager.h>
+#include "Path.hpp"
+
+#include <filamat/MaterialBuilder.h>
+#include <filament/Color.h>
+#include <filament/Box.h>
 
 namespace filament {
-class Engine;
-class IndexBuffer;
-class IndirectLight;
-class Material;
-class MaterialInstance;
-class Renderable;
-class Texture;
-class Skybox;
+    class Engine;
+    class VertexBuffer;
+    class IndexBuffer;
+    class Material;
+    class MaterialInstance;
+    class Renderable;
 }
 
 namespace dart {
 namespace gui {
 namespace flmt {
 
-class FilamentApp;
-
-class Window
-{
-  friend class FilamentApp;
-
+class MeshAssimp {
 public:
-  Window(
-      FilamentApp* filamentApp,
-      const Config& config,
-      std::string title,
-      size_t w,
-      size_t h);
-  virtual ~Window();
+    using mat4f = ::math::mat4f;
+    using half4 = ::math::half4;
+    using short4 = ::math::short4;
+    using half2 = ::math::half2;
+    explicit MeshAssimp(filament::Engine& engine);
+    ~MeshAssimp();
 
-  void mouseDown(int button, ssize_t x, ssize_t y);
-  void mouseUp(ssize_t x, ssize_t y);
-  void mouseMoved(ssize_t x, ssize_t y);
-  void mouseWheel(ssize_t x);
-  void resize();
+    void addFromFile(const utils::Path& path,
+            std::map<std::string, filament::MaterialInstance*>& materials,
+            bool overrideMaterial = false);
 
-  filament::Renderer* getRenderer();
-  filament::SwapChain* getSwapChain();
-
-  SDL_Window* getSDLWindow();
+    const std::vector<::utils::Entity> getRenderables() const noexcept {
+        return mRenderables;
+    }
 
 private:
-  void configureCamerasForWindow();
-  void fixupMouseCoordinatesForHdpi(ssize_t& x, ssize_t& y) const;
+    struct Part {
+        size_t offset;
+        size_t count;
+        std::string material;
+        filament::sRGBColor baseColor;
+        float opacity;
+        float metallic;
+        float roughness;
+        float reflectance;
+    };
 
-  SDL_Window* mWindow = nullptr;
-  FilamentApp* mFilamentApp = nullptr;
-  filament::Renderer* mRenderer = nullptr;
+    struct Mesh {
+        size_t offset;
+        size_t count;
+        std::vector<Part> parts;
+        filament::Box aabb;
+        mat4f transform;
+    };
 
-  CameraManipulator mMainCameraMan;
-  CameraManipulator mOrthoCameraMan;
-  CameraManipulator mDebugCameraMan;
-  filament::SwapChain* mSwapChain = nullptr;
+    bool setFromFile(const utils::Path& file,
+            std::vector<uint32_t>& outIndices,
+            std::vector<half4>&    outPositions,
+            std::vector<short4>&   outTangents,
+            std::vector<half2>&    outTexCoords,
+            std::vector<Mesh>&     outMeshes,
+            std::vector<int>&      outParents);
 
-  filament::Camera* mCameras[4] = {nullptr};
-  filament::Camera* mUiCamera;
-  filament::Camera* mMainCamera;
-  filament::Camera* mDebugCamera;
-  filament::Camera* mOrthoCamera;
+    filament::Engine& mEngine;
+    filament::VertexBuffer* mVertexBuffer = nullptr;
+    filament::IndexBuffer* mIndexBuffer = nullptr;
 
-  std::vector<std::unique_ptr<CView>> mViews;
-  CView* mMainView;
-  CView* mUiView;
-  CView* mDepthView;
-  GodView* mGodView;
-  CView* mOrthoView;
+    filament::Material* mDefaultColorMaterial = nullptr;
+    filament::Material* mDefaultTransparentColorMaterial = nullptr;
 
-  size_t mWidth = 0;
-  size_t mHeight = 0;
-  ssize_t mLastX = 0;
-  ssize_t mLastY = 0;
-  CView* mEventTarget = nullptr;
+    std::vector<::utils::Entity> mRenderables;
 };
 
 } // namespace flmt
 } // namespace gui
 } // namespace dart
 
-#endif // DART_GUI_FILAMENT_WINDOW_HPP_
+#endif // DART_GUI_FILAMENT_MESHASSIMP_HPP_

@@ -30,6 +30,7 @@ if(MSVC)
 else()
   find_library(filament_filabridge_LIBRARY NAMES filabridge)
   find_library(filament_filaflat_LIBRARY NAMES filaflat)
+  find_library(filament_filamat_LIBRARY NAMES filamat)
   find_library(filament_utils_LIBRARY NAMES utils)
   find_library(filament_filament_LIBRARY NAMES filament)
   find_library(filament_bluevk_LIBRARY NAMES bluevk)
@@ -38,6 +39,7 @@ endif()
 set(filament_LIBRARIES
   ${filament_filabridge_LIBRARY}
   ${filament_filaflat_LIBRARY}
+  ${filament_filamat_LIBRARY}
   ${filament_utils_LIBRARY}
   ${filament_filament_LIBRARY}
   ${filament_bluevk_LIBRARY}
