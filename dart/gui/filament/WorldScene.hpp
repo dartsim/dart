@@ -33,6 +33,7 @@
 #ifndef DART_GUI_FILAMENT_WORLDSCENE_HPP_
 #define DART_GUI_FILAMENT_WORLDSCENE_HPP_
 
+#include <cstddef>
 #include <unordered_map>
 
 #include <filament/Scene.h>
@@ -45,6 +46,14 @@ namespace gui {
 namespace flmt {
 
 DART_COMMON_DECLARE_SMART_POINTERS(WorldScene)
+
+struct GroundPlane
+{
+  filament::VertexBuffer* vb;
+  filament::IndexBuffer* ib;
+  filament::Material* mat;
+  ::utils::Entity renderable;
+};
 
 class WorldScene
 {
@@ -68,6 +77,9 @@ public:
   }
 
 protected:
+  void setupScene();
+  void destroyScene();
+
   void refreshSkeletons();
   void refreshBaseFrameNode(dynamics::Frame* frame);
   void refreshShapeFrameNode(dynamics::Frame* frame);
@@ -78,10 +90,15 @@ protected:
   filament::Engine* mEngine;
   filament::Scene* mScene;
 
+  ::utils::Entity mLight;
+  GroundPlane mPlane;
+
   using NodeMap
       = std::unordered_map<dynamics::Frame*, std::unique_ptr<ShapeFrameEntity>>;
 
   NodeMap mFrameToNode;
+
+  std::size_t mStepsPerFrame = 5u;
 };
 
 } // namespace flmt

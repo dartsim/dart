@@ -74,36 +74,46 @@ class WorldScene;
 class Drawable
 {
 public:
-  Drawable(WorldScene* worldScene);
+  Drawable(filament::Engine& engine, filament::Scene& scene);
   virtual ~Drawable() = default;
+
+  virtual void refresh();
+
+  virtual ::utils::Entity getEntity() const;
 
 protected:
   filament::VertexBuffer* mVB;
   filament::IndexBuffer* mIB;
   filament::Material* mMaterial;
 
-  WorldScene* mWorldScene;
+  filament::Engine& mEngine;
+  filament::Scene& mScene;
+  ::utils::Entity mEntity;
 };
 
 class BoxDrawable : public Drawable
 {
 public:
-  BoxDrawable(WorldScene* worldScene, dynamics::BoxShape* boxShape);
+  BoxDrawable(filament::Engine& engine, filament::Scene& scene, dynamics::BoxShape* boxShape);
 
 protected:
   dynamics::BoxShape* mBoxShape;
-  filament::Engine* mEngine;
 };
 
 class MeshDrawable : public Drawable
 {
 public:
-  MeshDrawable(WorldScene* worldScene, dynamics::MeshShape* meshShape);
+  MeshDrawable(filament::Engine& engine, filament::Scene& scene, dynamics::MeshShape* meshShape);
 
   ~MeshDrawable();
+
+  ::utils::Entity getEntity() const override
+  {
+    return mMeshConvertor.getRenderables()[0];
+  }
+
 protected:
   dynamics::MeshShape* mMeshShape;
-  filament::Engine* mEngine;
   MeshAssimp mMeshConvertor;
   std::map<std::string, filament::MaterialInstance*> mMaterials;
 };

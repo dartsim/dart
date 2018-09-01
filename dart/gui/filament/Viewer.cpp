@@ -68,95 +68,6 @@ namespace dart {
 namespace gui {
 namespace flmt {
 
-namespace {
-
-static constexpr bool ENABLE_SHADOWS = true;
-static constexpr uint8_t GROUND_SHADOW_PACKAGE[] = {
-#include "generated/material/groundShadow.inc"
-};
-
-static GroundPlane createGroundPlane(filament::Engine* engine)
-{
-  filament::Material* shadowMaterial
-      = filament::Material::Builder()
-            .package(
-                (void*)GROUND_SHADOW_PACKAGE, sizeof(GROUND_SHADOW_PACKAGE))
-            .build(*engine);
-
-  const static uint32_t indices[]{0, 1, 2, 2, 3, 0};
-  const static ::math::float3 vertices[]{
-      {-10, 0, -10}, {-10, 0, 10}, {10, 0, 10}, {10, 0, -10},
-  };
-  ::math::short4 tbn = ::math::packSnorm16(
-      normalize(
-          positive(
-              ::math::mat3f{::math::float3{1.0f, 0.0f, 0.0f},
-                            ::math::float3{0.0f, 0.0f, 1.0f},
-                            ::math::float3{0.0f, 1.0f, 0.0f}}
-                  .toQuaternion()))
-          .xyzw);
-  const static ::math::short4 normals[]{tbn, tbn, tbn, tbn};
-  filament::VertexBuffer* vertexBuffer
-      = filament::VertexBuffer::Builder()
-            .vertexCount(4)
-            .bufferCount(2)
-            .attribute(
-                filament::VertexAttribute::POSITION,
-                0,
-                filament::VertexBuffer::AttributeType::FLOAT3)
-            .attribute(
-                filament::VertexAttribute::TANGENTS,
-                1,
-                filament::VertexBuffer::AttributeType::SHORT4)
-            .normalized(filament::VertexAttribute::TANGENTS)
-            .build(*engine);
-  vertexBuffer->setBufferAt(
-      *engine,
-      0,
-      filament::VertexBuffer::BufferDescriptor(
-          vertices, vertexBuffer->getVertexCount() * sizeof(vertices[0])));
-  vertexBuffer->setBufferAt(
-      *engine,
-      1,
-      filament::VertexBuffer::BufferDescriptor(
-          normals, vertexBuffer->getVertexCount() * sizeof(normals[0])));
-  filament::IndexBuffer* indexBuffer
-      = filament::IndexBuffer::Builder().indexCount(6).build(*engine);
-  indexBuffer->setBuffer(
-      *engine,
-      filament::IndexBuffer::BufferDescriptor(
-          indices, indexBuffer->getIndexCount() * sizeof(uint32_t)));
-
-  auto& em = ::utils::EntityManager::get();
-  ::utils::Entity renderable = em.create();
-  filament::RenderableManager::Builder(1)
-      .boundingBox({{0, 0, 0}, {10, 1e-4f, 10}})
-      .material(0, shadowMaterial->getDefaultInstance())
-      .geometry(
-          0,
-          filament::RenderableManager::PrimitiveType::TRIANGLES,
-          vertexBuffer,
-          indexBuffer,
-          0,
-          6)
-      .culling(false)
-      .receiveShadows(ENABLE_SHADOWS)
-      .castShadows(false)
-      .build(*engine, renderable);
-
-  auto& tcm = engine->getTransformManager();
-  tcm.setTransform(
-      tcm.getInstance(renderable),
-      ::math::mat4f::translate(::math::float3{0, -1, -4}));
-  return {
-      .vb = vertexBuffer,
-      .ib = indexBuffer,
-      .mat = shadowMaterial,
-      .renderable = renderable,
-  };
-}
-}
-
 static constexpr uint8_t AI_DEFAULT_MAT_PACKAGE[] = {
 #include "generated/material/aiDefaultMat.inc"
 };
@@ -288,27 +199,13 @@ Viewer::Viewer(
   // and currently, filament assumes that for culling
   mLightmapCube.reset(
       new Cube(*mEngine, mTransparentMaterial, {0, 1, 0}, false));
+
+  // TODO(JS): The ownership of filament::Scene should be managed by WorldScene
+  // subseqently, all the suppimentarity entities should be in WorldScene, and
+  // the user should be able to configure them throught some simplifed APIs.
   mScene = mEngine->createScene();
 
   setupWorldScene();
-
-  auto& em = ::utils::EntityManager::get();
-
-  // Add light sources into the scene.
-  mLight = em.create();
-  filament::LightManager::Builder(filament::LightManager::Type::SUN)
-      .color(
-          filament::Color::toLinear<filament::ACCURATE>(
-              filament::sRGBColor(0.98f, 0.92f, 0.89f)))
-      .intensity(110000)
-      .direction({0.7, -1, -0.8})
-      .sunAngularRadius(1.9f)
-      .castShadows(true)
-      .build(*mEngine, mLight);
-  mScene->addEntity(mLight);
-
-  mPlane = createGroundPlane(mEngine);
-  mScene->addEntity(mPlane.renderable);
 
   mMainView->getView()->setVisibleLayers(0x4, 0x4);
 

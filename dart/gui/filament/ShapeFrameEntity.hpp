@@ -68,40 +68,38 @@ namespace flmt {
 
 class WorldScene;
 
-class ShapeFrameEntity : public ::utils::Entity
+class ShapeFrameEntity
 {
 public:
   ShapeFrameEntity(
-      WorldScene* worldScene,
-      dynamics::ShapeFrame* shapeFrame,
-      ::utils::Entity entity)
-    : mWorldScene(worldScene), mShapeFrame(shapeFrame), mEntity(entity)
+      filament::Engine& engine,
+      filament::Scene& scene,
+      dynamics::ShapeFrame* shapeFrame)
+    : mEngine(engine), mScene(scene), mShapeFrame(shapeFrame)
   {
     // Do nothing
   }
 
   void refresh(bool flag = true);
 
-  void setEntity(::utils::Entity entity)
-  {
-    mEntity = entity;
-  }
+//  void setEntity(::utils::Entity entity)
+//  {
+//    mEntity = entity;
+//  }
 
-  ::utils::Entity getEntity() const
-  {
-    return mEntity;
-  }
+//  ::utils::Entity getEntity() const
+//  {
+//    assert(mDrawable);
+//    if (mDrawable->hasEntity())
+//      return mDrawable->getEntity();
+//  }
 
 protected:
-  WorldScene* mWorldScene;
+  filament::Engine& mEngine;
+  filament::Scene& mScene;
   dynamics::ShapeFrame* mShapeFrame;
-  ::utils::Entity mEntity;
 
   bool mUtilized = false;
-
-  filament::VertexBuffer* mVB;
-  filament::IndexBuffer* mIB;
-  filament::Material* mMaterial;
 
   std::shared_ptr<Drawable> mDrawable;
 };

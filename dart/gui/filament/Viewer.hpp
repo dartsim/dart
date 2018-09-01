@@ -53,14 +53,6 @@ namespace dart {
 namespace gui {
 namespace flmt {
 
-struct GroundPlane
-{
-  filament::VertexBuffer* vb;
-  filament::IndexBuffer* ib;
-  filament::Material* mat;
-  ::utils::Entity renderable;
-};
-
 class Viewer
 {
 public:
@@ -112,9 +104,6 @@ protected:
   WorldScenePtr mWorldScene;
 
 private:
-  ::utils::Entity mLight;
-  GroundPlane mPlane;
-
   void setupWorldScene();
   void destroyWorldScene();
   void loadIBL(const Config& config);

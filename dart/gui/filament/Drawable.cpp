@@ -37,20 +37,32 @@
 #include <filament/TransformManager.h>
 
 #include "dart/gui/filament/WorldScene.hpp"
+#include "dart/gui/filament/Types.hpp"
 
 namespace dart {
 namespace gui {
 namespace flmt {
 
-Drawable::Drawable(WorldScene* worldScene) : mWorldScene(worldScene)
+Drawable::Drawable(filament::Engine& engine, filament::Scene& scene) : mEngine(engine), mScene(scene)
 {
+  // Do nothing
 }
 
-BoxDrawable::BoxDrawable(WorldScene* worldScene, dynamics::BoxShape* boxShape)
-  : Drawable(worldScene), mBoxShape(boxShape)
+void Drawable::refresh()
+{
+
+}
+
+::utils::Entity Drawable::getEntity() const
+{
+  return mEntity;
+}
+
+BoxDrawable::BoxDrawable(filament::Engine& engine, filament::Scene& scene, dynamics::BoxShape* boxShape)
+  : Drawable(engine, scene), mBoxShape(boxShape)
 {
   mVB = filament::VertexBuffer::Builder()
-            .vertexCount(8)
+      .vertexCount(8)
             .bufferCount(1)
             .attribute(
                 filament::VertexAttribute::POSITION,
@@ -65,14 +77,13 @@ BoxDrawable::BoxDrawable(WorldScene* worldScene, dynamics::BoxShape* boxShape)
                 8,
                 12)
             .normalized(filament::VertexAttribute::COLOR)
-            .build(*mEngine);
+            .build(mEngine);
 }
 
-MeshDrawable::MeshDrawable(
-    WorldScene* worldScene, dynamics::MeshShape* meshShape)
-  : Drawable(worldScene),
+MeshDrawable::MeshDrawable(filament::Engine& engine, filament::Scene& scene, dynamics::MeshShape* meshShape)
+  : Drawable(engine, scene),
     mMeshShape(meshShape),
-    mMeshConvertor(MeshAssimp(*mWorldScene->getEngine()))
+    mMeshConvertor(MeshAssimp(mEngine))
 {
   if (!meshShape)
     return;
@@ -86,10 +97,8 @@ MeshDrawable::MeshDrawable(
 
   mMeshConvertor.addFromFile(path, mMaterials);
 
-  filament::Engine& engine = *mWorldScene->getEngine();
-
-  auto& tcm = engine.getTransformManager();
-  auto& rcm = engine.getRenderableManager();
+  auto& tcm = mEngine.getTransformManager();
+  auto& rcm = mEngine.getRenderableManager();
   auto& em = ::utils::EntityManager::get();
 
   auto ti = tcm.getInstance(mMeshConvertor.getRenderables()[0]);
@@ -103,15 +112,18 @@ MeshDrawable::MeshDrawable(
     {
       rcm.setCastShadows(instance, true); // enable shadow
       rcm.setReceiveShadows(instance, false);
-      mWorldScene->getScene()->addEntity(renderable); // TODO(JS): fix;
+      mScene.addEntity(renderable); // TODO(JS): fix;
     }
   }
 }
 
 MeshDrawable::~MeshDrawable()
 {
-//  for (auto& mat : mMaterials)
-//    mEngine->destroy(mat.second);
+  for (auto renderable : mMeshConvertor.getRenderables())
+    mScene.remove(renderable);
+
+  for (auto& mat : mMaterials)
+    mEngine.destroy(mat.second);
 }
 
 } // namespace flmt

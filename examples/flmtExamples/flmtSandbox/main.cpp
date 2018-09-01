@@ -75,33 +75,6 @@ using namespace dart::gui::flmt;
 using namespace filament;
 using ::utils::Entity;
 
-struct App
-{
-  VertexBuffer* vb;
-  IndexBuffer* ib;
-  Material* mat;
-  Camera* cam;
-  ::utils::Entity renderable;
-};
-
-struct Vertex
-{
-  ::math::float2 position;
-  uint32_t color;
-};
-
-static const Vertex TRIANGLE_VERTICES[3] = {
-    {{1, 0}, 0xffff0000u},
-    {{cos(M_PI * 2 / 3), sin(M_PI * 2 / 3)}, 0xff00ff00u},
-    {{cos(M_PI * 4 / 3), sin(M_PI * 4 / 3)}, 0xff0000ffu},
-};
-
-static constexpr uint16_t TRIANGLE_INDICES[3] = {0, 1, 2};
-
-static constexpr uint8_t BAKED_COLOR_PACKAGE[] = {
-#include "generated/material/bakedColor.inc"
-};
-
 SkeletonPtr createAtlas()
 {
   // Parse in the atlas model
@@ -125,6 +98,27 @@ SkeletonPtr createAtlas()
   return atlas;
 }
 
+SkeletonPtr createGround(const Eigen::Vector3d& position)
+{
+  // Create a Skeleton to represent the ground
+  SkeletonPtr ground = Skeleton::create("ground");
+  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+  double thickness = 0.01;
+  tf.translation() = Eigen::Vector3d(0,0,-thickness/2.0);
+  tf.translate(position);
+  WeldJoint::Properties joint;
+  joint.mT_ParentBodyToJoint = tf;
+  ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
+  ShapePtr groundShape =
+      std::make_shared<BoxShape>(Eigen::Vector3d(10,10,thickness));
+
+  auto shapeNode = ground->getBodyNode(0)->createShapeNodeWith<
+      VisualAspect, CollisionAspect, DynamicsAspect>(groundShape);
+  shapeNode->getVisualAspect()->setColor(dart::Color::Blue(0.2));
+
+  return ground;
+}
+
 int main()
 {
   Config config;
@@ -133,101 +127,14 @@ int main()
 
   auto world = World::create();
   auto atlas = createAtlas();
+  auto ground = createGround(Eigen::Vector3d(0, -2, -2));
   world->addSkeleton(atlas);
+  world->addSkeleton(ground);
   auto worldScene = std::make_shared<WorldScene>(world);
   auto viewer
       = std::make_shared<Viewer>(config, "Sandbox", 860, 640, worldScene);
 
   viewer->run();
-
-  return 0;
-
-  App app;
-  auto setup = [&app](Engine* engine, View* view, Scene* scene) {
-    view->setClearColor({0.1, 0.125, 0.25, 1.0});
-    view->setPostProcessingEnabled(false);
-    view->setDepthPrepass(filament::View::DepthPrepass::DISABLED);
-    static_assert(sizeof(Vertex) == 12, "Strange vertex size.");
-    app.vb = VertexBuffer::Builder()
-                 .vertexCount(3)
-                 .bufferCount(1)
-                 .attribute(
-                     VertexAttribute::POSITION,
-                     0,
-                     VertexBuffer::AttributeType::FLOAT2,
-                     0,
-                     12)
-                 .attribute(
-                     VertexAttribute::COLOR,
-                     0,
-                     VertexBuffer::AttributeType::UBYTE4,
-                     8,
-                     12)
-                 .normalized(VertexAttribute::COLOR)
-                 .build(*engine);
-    app.vb->setBufferAt(
-        *engine,
-        0,
-        VertexBuffer::BufferDescriptor(TRIANGLE_VERTICES, 36, nullptr));
-    app.ib = IndexBuffer::Builder()
-                 .indexCount(3)
-                 .bufferType(IndexBuffer::IndexType::USHORT)
-                 .build(*engine);
-    app.ib->setBuffer(
-        *engine, IndexBuffer::BufferDescriptor(TRIANGLE_INDICES, 6, nullptr));
-    app.mat
-        = Material::Builder()
-              .package((void*)BAKED_COLOR_PACKAGE, sizeof(BAKED_COLOR_PACKAGE))
-              .build(*engine);
-    app.renderable = ::utils::EntityManager::get().create();
-    RenderableManager::Builder(1)
-        .boundingBox({{-1, -1, -1}, {1, 1, 1}})
-        .material(0, app.mat->getDefaultInstance())
-        .geometry(
-            0,
-            RenderableManager::PrimitiveType::TRIANGLES,
-            app.vb,
-            app.ib,
-            0,
-            3)
-        .culling(false)
-        .receiveShadows(false)
-        .castShadows(false)
-        .build(*engine, app.renderable);
-    scene->addEntity(app.renderable);
-    app.cam = engine->createCamera();
-    view->setCamera(app.cam);
-  };
-
-  auto cleanup = [&app](Engine* engine, View*, Scene*) {
-    Fence::waitAndDestroy(engine->createFence());
-    engine->destroy(app.renderable);
-    engine->destroy(app.mat);
-    engine->destroy(app.vb);
-    engine->destroy(app.ib);
-    engine->destroy(app.cam);
-  };
-
-  FilamentApp::get().animate([&app](Engine* engine, View* view, double now) {
-    constexpr float ZOOM = 1.5f;
-    const uint32_t w = view->getViewport().width;
-    const uint32_t h = view->getViewport().height;
-    const float aspect = (float)w / h;
-    app.cam->setProjection(
-        Camera::Projection::ORTHO,
-        -aspect * ZOOM,
-        aspect * ZOOM,
-        -ZOOM,
-        ZOOM,
-        0,
-        1);
-    auto& tcm = engine->getTransformManager();
-    tcm.setTransform(
-        tcm.getInstance(app.renderable),
-        ::math::mat4f::rotate(now, ::math::float3{0, 0, 1}));
-  });
-
-  FilamentApp::get().run(config, setup, cleanup);
 
   return 0;
 }

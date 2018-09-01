@@ -34,6 +34,7 @@
 
 #include "stb_image.h"
 
+#include <memory>
 #include <fstream>
 #include <string>
 
@@ -52,30 +53,57 @@ namespace dart {
 namespace gui {
 namespace flmt {
 
+namespace {
+
+std::shared_ptr<Drawable> createDrawable(
+    filament::Engine& engine, filament::Scene& scene, dynamics::Shape* shape)
+{
+  std::shared_ptr<Drawable> drawable;
+
+  if (shape->is<dynamics::MeshShape>())
+  {
+    drawable = std::make_shared<MeshDrawable>(
+        engine, scene, static_cast<dynamics::MeshShape*>(shape));
+  }
+
+  if (drawable)
+  {
+    scene.addEntity(drawable->getEntity());
+  }
+
+//  assert(drawable); // TODO(JS): allow nullptr for now
+
+  return drawable;
+}
+
+void destroyDrawable()
+{
+
+}
+
+} // namespace
+
 void ShapeFrameEntity::refresh(bool flag)
 {
   mUtilized = true;
 
   auto shape = mShapeFrame->getShape();
 
-  auto& tcm = mWorldScene->getEngine()->getTransformManager();
-  tcm.setTransform(
-      tcm.getInstance(mEntity),
-      FilamentTypes::convertIsometry3d(mShapeFrame->getWorldTransform()));
-
   if (shape && mShapeFrame->hasVisualAspect())
   {
     if (mDrawable)
-    {
-      //      mDrawable->refresh();
-    }
+      mDrawable->refresh();
     else
+      mDrawable = createDrawable(mEngine, mScene, shape.get());
+
+//    assert(mDrawable);
+
+    if (mDrawable)
     {
-      if (shape->is<dynamics::MeshShape>())
-      {
-        mDrawable = std::make_shared<MeshDrawable>(
-            mWorldScene, static_cast<dynamics::MeshShape*>(shape.get()));
-      }
+      auto& tcm = mEngine.getTransformManager();
+      tcm.setTransform(
+            tcm.getInstance(mDrawable->getEntity()),
+            FilamentTypes::convertIsometry3d(mShapeFrame->getWorldTransform()));
     }
   }
   //  else if (mRenderShapeEntity)

@@ -559,7 +559,7 @@ bool MeshAssimp::setFromFile(
 
     processNode(node, -1);
 
-    std::cout << "Hierarchy depth = " << depth << std::endl;
+//    std::cout << "Hierarchy depth = " << depth << std::endl;
 
     // compute the aabb
     for (auto& mesh : outMeshes)
