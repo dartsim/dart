@@ -51,7 +51,7 @@ Population::Population(
   mPopulation.resize(xSize, static_cast<int>(populationSize));
   mFitnesses.resize(fSize, static_cast<int>(populationSize));
 
-  if (mProblem)
+  if (!mProblem)
     return;
 
   const Eigen::VectorXd lb = mProblem->getLowerBounds();

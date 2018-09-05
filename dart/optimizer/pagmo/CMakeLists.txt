@@ -1,6 +1,6 @@
 # Dependency checks
 find_package(PAGMO 2.8 QUIET)
-dart_check_optional_package(PAGMO "dart-optimizer-pagmo" "pagmo2" "2.8")
+dart_check_optional_package(PAGMO "dart-optimizer-pagmo" "pagmo" "2.8")
 
 find_package(Threads REQUIRED)
 dart_check_optional_package(Threads "dart-optimizer-pagmo" "Threads" "")
