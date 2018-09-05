@@ -155,6 +155,7 @@ bool PagmoMultiObjectiveSolver::solve(std::size_t numEvolutions)
   archi.evolve(numEvolutions);
   archi.wait();
 
+  mPopulations.clear();
   mPopulations.reserve(archi.size());
   for (std::size_t i = 0u; i < archi.size(); ++i)
   {
