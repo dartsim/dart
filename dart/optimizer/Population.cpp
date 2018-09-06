@@ -79,7 +79,7 @@ std::shared_ptr<const MultiObjectiveProblem> Population::getProblem() const
 //==============================================================================
 void Population::pushBack(const Eigen::VectorXd& x)
 {
-  // TODO(JS): Validity check
+  // TODO(JS): Input validity check
 
   const Eigen::VectorXd f = mProblem->evaluateFitness(x);
   pushBack(x, f);
@@ -88,7 +88,7 @@ void Population::pushBack(const Eigen::VectorXd& x)
 //==============================================================================
 void Population::pushBack(const Eigen::VectorXd& x, const Eigen::VectorXd& f)
 {
-  // TODO(JS): Validity check
+  // TODO(JS): Input validity check
 
   mPopulation.conservativeResize(Eigen::NoChange, mPopulation.cols() + 1);
   mPopulation.rightCols(1) = x;
@@ -100,6 +100,8 @@ void Population::pushBack(const Eigen::VectorXd& x, const Eigen::VectorXd& f)
 //==============================================================================
 void Population::set(std::size_t index, const Eigen::VectorXd& x)
 {
+  // TODO(JS): Input validity check
+
   set(index, x, mProblem->evaluateFitness(x));
 }
 
@@ -107,8 +109,16 @@ void Population::set(std::size_t index, const Eigen::VectorXd& x)
 void Population::set(
     std::size_t index, const Eigen::VectorXd& x, const Eigen::VectorXd& f)
 {
+  // TODO(JS): Input validity check
+
   mPopulation.col(static_cast<int>(index)) = x;
   mFitnesses.col(static_cast<int>(index)) = f;
+}
+
+//==============================================================================
+void Population::setRandom(std::size_t size)
+{
+
 }
 
 //==============================================================================
@@ -149,7 +159,7 @@ std::ostream& Population::print(std::ostream& os) const
   os << "Population size: " << getSize() << "\n\n";
   os << "List of individuals: \n";
 
-  for (std::size_t i = 0u; i < getSize(); ++i)
+  for (int i = 0u; i < static_cast<int>(getSize()); ++i)
   {
     os << "#" << i << ":\n";
     os << "\tDecision vector:\t" << getDecisionVectors().col(i).transpose()

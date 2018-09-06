@@ -117,7 +117,7 @@ std::size_t MultiObjectiveSolver::getPopulationSize() const
 void MultiObjectiveSolver::setNumPopulations(std::size_t size)
 {
   mProperties.mNumPopulations = size;
-  mPopulations.resize(size);
+  mPopulations.resize(size, {mProperties.mProblem});
 }
 
 //==============================================================================

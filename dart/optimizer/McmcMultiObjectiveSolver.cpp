@@ -92,6 +92,15 @@ bool McmcMultiObjectiveSolver::solve(std::size_t /*numEvolutions*/)
   if (!prob)
     return true;
 
+  const auto numPopulations = getNumPopulations();
+  const auto populationSize = getPopulationSize();
+
+  mPopulations.resize(numPopulations, {nullptr});
+  for (auto& population : mPopulations)
+  {
+    population;
+  }
+
   return true;
 }
 

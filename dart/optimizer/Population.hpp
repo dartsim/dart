@@ -51,7 +51,7 @@ class Population
 public:
   /// Constructor
   Population(
-      std::shared_ptr<MultiObjectiveProblem> problem = nullptr,
+      std::shared_ptr<MultiObjectiveProblem> problem,
       std::size_t populationSize = 0u);
 
   /// Returns problem.
@@ -75,6 +75,8 @@ public:
   /// Sets the decision vector and fitness vector at \c index in the population
   void set(
       std::size_t index, const Eigen::VectorXd& x, const Eigen::VectorXd& f);
+
+  void setRandom(std::size_t size);
 
   /// Returns the size of this population
   std::size_t getSize() const;

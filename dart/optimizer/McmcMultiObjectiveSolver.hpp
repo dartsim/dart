@@ -40,7 +40,7 @@ namespace optimizer {
 
 class MultiObjectiveProblem;
 
-/// Implementation of Markov chain Mote Carlo method for multi-objective
+/// Implementation of Markov chain Monte Carlo method for multi-objective
 /// optimization problems.
 class McmcMultiObjectiveSolver : public MultiObjectiveSolver
 {
