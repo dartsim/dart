@@ -39,26 +39,14 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-inline void Random::setSeed(unsigned int seed)
-{
-  std::seed_seq seq{seed};
-  getSeedMutable() = seed;
-  getRandGenerator().seed(seq);
-}
-
-//==============================================================================
-inline unsigned int Random::getSeed()
-{
-  return getSeedMutable();
-}
-
-//==============================================================================
 template <typename S>
 S Random::uniform(
     S min,
     S max,
     typename std::enable_if<std::is_floating_point<S>::value>::type*)
 {
+  // Distribution objects are lightweight so we simply construct a new
+  // distribution for each random number generation.
   UniformRealDist<S> d(min, max);
   return d(getRandGenerator());
 }
@@ -72,8 +60,17 @@ S Random::uniform(
         enable_if<detail::is_compatible_to_uniform_int_distribution<S>::value>::
             type*)
 {
+  // Distribution objects are lightweight so we simply construct a new
+  // distribution for each random number generation.
   UniformIntDist<S> d(min, max);
   return d(getRandGenerator());
+}
+
+//==============================================================================
+template <typename S>
+S Random::uniform(S limit)
+{
+  return uniform(-std::abs(limit), std::abs(limit));
 }
 
 //==============================================================================
@@ -85,6 +82,111 @@ typename Derived::PlainObject Random::uniform(
   const auto uniformFunc
       = [&](int i, int j) { return uniform(min(i, j), max(i, j)); };
   return Derived::PlainObject::NullaryExpr(min.rows(), min.cols(), uniformFunc);
+}
+
+//==============================================================================
+template <typename Derived>
+typename Derived::PlainObject Random::uniformVector(
+    const Eigen::MatrixBase<Derived>& min,
+    const Eigen::MatrixBase<Derived>& max)
+{
+  return uniform(min, max);
+}
+
+//==============================================================================
+template <int N, typename S>
+Eigen::Matrix<S, N, 1> Random::uniformVector(S min, S max)
+{
+  return uniformVector(
+      Eigen::Matrix<S, N, 1>::Constant(min),
+      Eigen::Matrix<S, N, 1>::Constant(max));
+}
+
+//==============================================================================
+template <int N, typename S>
+Eigen::Matrix<S, N, 1> Random::uniformVector(S limit)
+{
+  return uniformVector<N>(-std::abs(limit), std::abs(limit));
+}
+
+//==============================================================================
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, 1>
+Random::uniformVectorX(
+    const Eigen::MatrixBase<Derived>& min,
+    const Eigen::MatrixBase<Derived>& max)
+{
+  return uniformVector(min, max);
+}
+
+//==============================================================================
+template <typename S>
+Eigen::Matrix<S, Eigen::Dynamic, 1> Random::uniformVectorX(
+    int size, S min, S max)
+{
+  return uniformVector(
+      Eigen::Matrix<S, Eigen::Dynamic, 1>::Constant(size, min),
+      Eigen::Matrix<S, Eigen::Dynamic, 1>::Constant(size, max));
+}
+
+//==============================================================================
+template <typename S>
+Eigen::Matrix<S, Eigen::Dynamic, 1> Random::uniformVectorX(int size, S limit)
+{
+  return uniformVector(size, -std::abs(limit), std::abs(limit));
+}
+
+//==============================================================================
+template <typename Derived>
+typename Derived::PlainObject Random::uniformMatrix(
+    const Eigen::MatrixBase<Derived>& min,
+    const Eigen::MatrixBase<Derived>& max)
+{
+  return uniform(min, max);
+}
+
+//==============================================================================
+template <int Rows, int Cols, typename S>
+Eigen::Matrix<S, Rows, Cols> Random::uniformMatrix(S min, S max)
+{
+  return uniformMatrix(
+      Eigen::Matrix<S, Rows, Cols>::Constant(min),
+      Eigen::Matrix<S, Rows, Cols>::Constant(max));
+}
+
+//==============================================================================
+template <int Rows, int Cols, typename S>
+Eigen::Matrix<S, Rows, Cols> Random::uniformMatrix(S limit)
+{
+  return uniformMatrix(-std::abs(limit), std::abs(limit));
+}
+
+//==============================================================================
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
+Random::uniformMatrixX(
+    const Eigen::MatrixBase<Derived>& min,
+    const Eigen::MatrixBase<Derived>& max)
+{
+  return uniformMatrix(min, max);
+}
+
+//==============================================================================
+template <typename S>
+Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic> Random::uniformMatrixX(
+    int size, S min, S max)
+{
+  return uniformMatrix(
+      Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>::Constant(size, min),
+      Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>::Constant(size, max));
+}
+
+//==============================================================================
+template <typename S>
+Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic> Random::uniformMatrixX(
+    int size, S limit)
+{
+  return uniformMatrix(size, -std::abs(limit), std::abs(limit));
 }
 
 //==============================================================================
@@ -112,20 +214,6 @@ S Random::normal(
       static_cast<DefaultFloatType>(mean),
       static_cast<DefaultFloatType>(sigma));
   return static_cast<S>(std::round(realNormal));
-}
-
-//==============================================================================
-inline uint32_t& Random::getSeedMutable()
-{
-  static uint32_t seed = std::random_device{}();
-  return seed;
-}
-
-//==============================================================================
-inline Random::GeneratorType& Random::getRandGenerator()
-{
-  static GeneratorType randGenerator(getSeed());
-  return randGenerator;
 }
 
 } // namespace math
