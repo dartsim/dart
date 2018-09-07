@@ -36,21 +36,40 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-std::mt19937 RandomDevice::mMT;
-std::mutex RandomDevice::mMutex;
-
-//==============================================================================
-unsigned int RandomDevice::next()
+void Random::setSeed(unsigned int seed)
 {
-  std::lock_guard<std::mutex> lock(mMutex);
-  return static_cast<unsigned int>(mMT());
+  std::seed_seq seq{seed};
+  getSeedMutable() = seed;
+  getRandGenerator().seed(seq);
 }
 
 //==============================================================================
-void RandomDevice::setSeed(unsigned int seed)
+unsigned int Random::generateSeed(bool applyGeneratedSeed)
 {
-  std::lock_guard<std::mutex> lock(mMutex);
-  mMT.seed(static_cast<std::mt19937::result_type>(seed));
+  const unsigned int seed = std::random_device{}();
+  if (applyGeneratedSeed)
+    setSeed(seed);
+  return seed;
+}
+
+//==============================================================================
+unsigned int Random::getSeed()
+{
+  return getSeedMutable();
+}
+
+//==============================================================================
+unsigned int& Random::getSeedMutable()
+{
+  static uint32_t seed = generateSeed(false);
+  return seed;
+}
+
+//==============================================================================
+Random::GeneratorType& Random::getRandGenerator()
+{
+  static GeneratorType randGenerator(getSeed());
+  return randGenerator;
 }
 
 } // namespace math

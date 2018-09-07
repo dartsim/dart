@@ -32,7 +32,6 @@
 
 #include "dart/optimizer/Population.hpp"
 
-#include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
 #include "dart/optimizer/MultiObjectiveProblem.hpp"
 
@@ -42,7 +41,7 @@ namespace optimizer {
 //==============================================================================
 Population::Population(
     std::shared_ptr<MultiObjectiveProblem> problem, std::size_t populationSize)
-  : mProblem(std::move(problem)), mMT(math::RandomDevice::next())
+  : mProblem(std::move(problem))
 {
   const int xSize = mProblem ? static_cast<int>(mProblem->getDimension()) : 0;
   const int fSize
@@ -54,14 +53,11 @@ Population::Population(
   if (!mProblem)
     return;
 
-  const Eigen::VectorXd lb = mProblem->getLowerBounds();
-  const Eigen::VectorXd ub = mProblem->getUpperBounds();
+  const Eigen::VectorXd& lb = mProblem->getLowerBounds();
+  const Eigen::VectorXd& ub = mProblem->getUpperBounds();
 
   for (std::size_t i = 0u; i < populationSize; ++i)
-  {
-    const Eigen::VectorXd randVec = math::randomVectorXd(mMT, lb, ub);
-    set(i, randVec);
-  }
+    set(i, math::Random::uniform(lb, ub));
 }
 
 //==============================================================================

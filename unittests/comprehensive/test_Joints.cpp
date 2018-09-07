@@ -120,16 +120,16 @@ void JOINTS::randomizeRefFrames()
   {
     SimpleFrame* F = frames[i];
 
-    Eigen::Vector3d p = randomVector<3>(100);
-    Eigen::Vector3d theta = randomVector<3>(2*M_PI);
+    Eigen::Vector3d p = Random::uniformVector<3>(100.0);
+    Eigen::Vector3d theta = Random::uniformVector<3>(2*M_PI);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     tf.translate(p);
     tf.linear() = math::eulerXYZToMatrix(theta);
 
     F->setRelativeTransform(tf);
-    F->setRelativeSpatialVelocity(randomVector<6>(100));
-    F->setRelativeSpatialAcceleration(randomVector<6>(100));
+    F->setRelativeSpatialVelocity(Random::uniformVector<6>(100.0));
+    F->setRelativeSpatialAcceleration(Random::uniformVector<6>(100.0));
   }
 }
 
@@ -159,8 +159,8 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
 
     for (int i = 0; i < dof; ++i)
     {
-      q(i) = random(-constantsd::pi()*1.0, constantsd::pi()*1.0);
-      dq(i) = random(-constantsd::pi()*1.0, constantsd::pi()*1.0);
+      q(i) = Random::uniform(-constantsd::pi()*1.0, constantsd::pi()*1.0);
+      dq(i) = Random::uniform(-constantsd::pi()*1.0, constantsd::pi()*1.0);
     }
 
     skeleton->setPositions(q);
@@ -263,7 +263,7 @@ void JOINTS::kinematicsTest(const typename JointType::Properties& _properties)
   for (int idxTest = 0; idxTest < numTests; ++idxTest)
   {
     for (int i = 0; i < dof; ++i)
-      q(i) = random(posMin, posMax);
+      q(i) = Random::uniform(posMin, posMax);
 
     skeleton->setPositions(q);
 
@@ -1003,7 +1003,7 @@ Eigen::Matrix<double,N,1> random_vec(double limit=100)
 {
   Eigen::Matrix<double,N,1> v;
   for(std::size_t i=0; i<N; ++i)
-    v[i] = math::random(-std::abs(limit), std::abs(limit));
+    v[i] = math::Random::uniform(-std::abs(limit), std::abs(limit));
   return v;
 }
 

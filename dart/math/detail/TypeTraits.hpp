@@ -15,12 +15,6 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * This code incorporates portions of Open Dynamics Engine
- *     (Copyright (c) 2001-2004, Russell L. Smith. All rights
- *     reserved.) and portions of FCL (Copyright (c) 2011, Willow
- *     Garage, Inc. All rights reserved.), which were released under
- *     the same BSD license as below
- *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -36,42 +30,47 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <iostream>
+#ifndef DART_MATH_DETAIL_TYPETRAITS_HPP_
+#define DART_MATH_DETAIL_TYPETRAITS_HPP_
 
-#include <dart/dart.hpp>
-#include <dart/utils/utils.hpp>
+#include <type_traits>
 
-#include "MyWindow.hpp"
+namespace dart {
+namespace math {
+namespace detail {
 
-int main(int argc, char* argv[])
+// clang-format off
+
+/// Check whether \c T can be used for std::uniform_int_distribution<T>
+/// Reference:
+/// https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
+template <typename T, typename Enable = void>
+struct is_compatible_to_uniform_int_distribution : std::false_type
 {
-  // load a skeleton file
-  // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::utils::SkelParser::readWorld(
-          "dart://sample/skel/test/test_articulated_bodies_10bodies.skel");
-  assert(myWorld != nullptr);
+  // Define nothing
+};
 
-  int dof = myWorld->getSkeleton(1)->getNumDofs();
-  Eigen::VectorXd initPose = Eigen::VectorXd::Zero(dof);
-  for (int i = 0; i < 3; i++)
-    initPose[i] = dart::math::Random::uniform(-0.5, 0.5);
-  myWorld->getSkeleton(1)->setPositions(initPose);
+template <typename T>
+struct is_compatible_to_uniform_int_distribution<
+    T, typename std::enable_if<
+        std::is_same<typename std::remove_cv<T>::type, short>::value
+        || std::is_same<typename std::remove_cv<T>::type, int>::value
+        || std::is_same<typename std::remove_cv<T>::type, long>::value
+        || std::is_same<typename std::remove_cv<T>::type, long long>::value
+        || std::is_same<typename std::remove_cv<T>::type, unsigned short>::value
+        || std::is_same<typename std::remove_cv<T>::type, unsigned int>::value
+        || std::is_same<typename std::remove_cv<T>::type, unsigned long>::value
+        || std::is_same<typename std::remove_cv<T>::type, unsigned long long>::value
+        >::type
+    > : std::true_type
+{
+  // Define nothing
+};
 
-  // create a window and link it to the world
-  MyWindow window;
-  window.setWorld(myWorld);
+// clang-format on
 
-  std::cout << "space bar: simulation on/off" << std::endl;
-  std::cout << "'p': playback/stop" << std::endl;
-  std::cout << "'[' and ']': play one frame backward and forward" << std::endl;
-  std::cout << "'v': visualization on/off" << std::endl;
-  std::cout << "'1'--'4': programmed interaction" << std::endl;
+} // namespace detail
+} // namespace math
+} // namespace dart
 
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Articulated Rigid and Soft Bodies");
-  glutMainLoop();
-
-  return 0;
-}
-
+#endif // DART_MATH_DETAIL_TYPETRAITS_HPP_

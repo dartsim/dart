@@ -103,9 +103,6 @@ protected:
 
   /// Fitness vectors. A column represents a fitness vector.
   Eigen::MatrixXd mFitnesses;
-
-  /// Mersenne twister method
-  std::mt19937 mMT;
 };
 
 } // namespace optimizer

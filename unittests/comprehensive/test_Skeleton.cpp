@@ -115,7 +115,7 @@ TEST(Skeleton, Restructuring)
   // Test moves within the current Skeleton
   for(std::size_t i=0; i<numIterations; ++i)
   {
-    std::size_t index = floor(math::random(0, skeletons.size()));
+    std::size_t index = floor(math::Random::uniform<float>(0, skeletons.size()));
     index = std::min(index, skeletons.size()-1);
     SkeletonPtr skeleton = skeletons[index];
     EXPECT_TRUE(skeleton->checkIndexingConsistency());
@@ -123,8 +123,8 @@ TEST(Skeleton, Restructuring)
     EXPECT_TRUE(original->checkIndexingConsistency());
 
     std::size_t maxNode = skeleton->getNumBodyNodes()-1;
-    BodyNode* bn1 = skeleton->getBodyNode(floor(math::random(0, maxNode)));
-    BodyNode* bn2 = skeleton->getBodyNode(ceil(math::random(0, maxNode)));
+    BodyNode* bn1 = skeleton->getBodyNode(floor(math::Random::uniform<float>(0, maxNode)));
+    BodyNode* bn2 = skeleton->getBodyNode(ceil(math::Random::uniform<float>(0, maxNode)));
 
     if(bn1 == bn2)
     {
@@ -202,7 +202,7 @@ TEST(Skeleton, Restructuring)
   // Test moves between Skeletons
   for(std::size_t i=0; i<numIterations; ++i)
   {
-    std::size_t fromIndex = floor(math::random(0, skeletons.size()));
+    std::size_t fromIndex = floor(math::Random::uniform<float>(0, skeletons.size()));
     fromIndex = std::min(fromIndex, skeletons.size()-1);
     SkeletonPtr fromSkel = skeletons[fromIndex];
 
@@ -212,7 +212,7 @@ TEST(Skeleton, Restructuring)
       continue;
     }
 
-    std::size_t toIndex = floor(math::random(0, skeletons.size()));
+    std::size_t toIndex = floor(math::Random::uniform<float>(0, skeletons.size()));
     toIndex = std::min(toIndex, skeletons.size()-1);
     SkeletonPtr toSkel = skeletons[toIndex];
 
@@ -223,9 +223,9 @@ TEST(Skeleton, Restructuring)
     }
 
     BodyNode* childBn = fromSkel->getBodyNode(
-          floor(math::random(0, fromSkel->getNumBodyNodes()-1)));
+          floor(math::Random::uniform<float>(0, fromSkel->getNumBodyNodes()-1)));
     BodyNode* parentBn = toSkel->getBodyNode(
-          floor(math::random(0, toSkel->getNumBodyNodes()-1)));
+          floor(math::Random::uniform<float>(0, toSkel->getNumBodyNodes()-1)));
 
     if(fromSkel == toSkel)
     {
@@ -845,9 +845,9 @@ TEST(Skeleton, Referential)
       {
         for(int r=0; r<q.size(); ++r)
         {
-          q[r] = math::random(-10, 10);
-          dq[r] = math::random(-10, 10);
-          ddq[r] = math::random(-10, 10);
+          q[r] = math::Random::uniform(-10, 10);
+          dq[r] = math::Random::uniform(-10, 10);
+          ddq[r] = math::Random::uniform(-10, 10);
         }
 
         tree->setPositions(q);
@@ -1178,17 +1178,17 @@ TEST(Skeleton, Group)
   std::vector<DegreeOfFreedom*> dofs;
   for(std::size_t i=0; i < 2*skel->getNumBodyNodes(); ++i)
   {
-    std::size_t randomIndex = floor(random(0, skel->getNumBodyNodes()));
+    std::size_t randomIndex = floor(Random::uniform<float>(0, skel->getNumBodyNodes()));
     BodyNode* bn = skel->getBodyNode(randomIndex);
     if(group->addBodyNode(bn, false))
       bodyNodes.push_back(bn);
 
-    randomIndex = floor(random(0, skel->getNumJoints()));
+    randomIndex = floor(Random::uniform<float>(0, skel->getNumJoints()));
     Joint* joint = skel->getJoint(randomIndex);
     if(group->addJoint(joint, false, false))
       joints.push_back(joint);
 
-    randomIndex = floor(random(0, skel->getNumDofs()));
+    randomIndex = floor(Random::uniform<float>(0, skel->getNumDofs()));
     DegreeOfFreedom* dof = skel->getDof(randomIndex);
     if(group->addDof(dof, false, false))
       dofs.push_back(dof);
