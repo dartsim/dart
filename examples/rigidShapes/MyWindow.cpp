@@ -136,8 +136,8 @@ void MyWindow::keyboard(unsigned char key, int x, int y)
     case 'e':  // Spawn an cylinder
     case 'E':
     {
-      const double radius = math::random(0.05, 0.25);
-      const double height = math::random(0.1, 0.5);
+      const double radius = math::Random::uniform(0.05, 0.25);
+      const double height = math::Random::uniform(0.1, 0.5);
       spawnCylinder(getRandomTransform(), radius, height);
       break;
     }

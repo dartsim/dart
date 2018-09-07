@@ -39,7 +39,7 @@ namespace dart {
 namespace math {
 namespace detail {
 
-// clang-off
+// clang-format off
 
 /// Check whether \c T can be used for std::uniform_int_distribution<T>
 /// Reference:
@@ -67,7 +67,7 @@ struct is_compatible_to_uniform_int_distribution<
   // Define nothing
 };
 
-// clang-on
+// clang-format on
 
 } // namespace detail
 } // namespace math

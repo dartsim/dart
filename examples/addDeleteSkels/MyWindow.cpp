@@ -102,7 +102,8 @@ void MyWindow::spawnCube(const Eigen::Vector3d& _position,
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(newBoxShape);
-  shapeNode->getVisualAspect()->setColor(dart::math::Random::uniform::uniformVector<3>(0.0, 1.0));
+  shapeNode->getVisualAspect()->setColor(
+      dart::math::Random::uniformVector<3>(0.0, 1.0));
 
   mWorld->addSkeleton(newCubeSkeleton);
 }
