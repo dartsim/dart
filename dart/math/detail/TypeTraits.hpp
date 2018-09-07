@@ -39,66 +39,35 @@ namespace dart {
 namespace math {
 namespace detail {
 
+// clang-off
+
 /// Check whether \c T can be used for std::uniform_int_distribution<T>
 /// Reference:
 /// https://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
 template <typename T, typename Enable = void>
 struct is_compatible_to_uniform_int_distribution : std::false_type
 {
+  // Define nothing
 };
 
 template <typename T>
-struct
-    is_compatible_to_uniform_int_distribution<T,
-                                              typename std::
-                                                  enable_if<std::is_same<
-                                                                typename std::
-                                                                    remove_cv<T>::
-                                                                        type,
-                                                                short>::value
-                                                            || std::is_same<
-                                                                   typename std::
-                                                                       remove_cv<T>::
-                                                                           type,
-                                                                   int>::value
-                                                            || std::is_same<
-                                                                   typename std::
-                                                                       remove_cv<T>::
-                                                                           type,
-                                                                   long>::value
-                                                            || std::is_same<
-                                                                   typename std::
-                                                                       remove_cv<T>::
-                                                                           type,
-                                                                   long long>::
-                                                                   value
-                                                            || std::is_same<
-                                                                   typename std::
-                                                                       remove_cv<T>::
-                                                                           type,
-                                                                   unsigned short>::
-                                                                   value
-                                                            || std::is_same<
-                                                                   typename std::
-                                                                       remove_cv<T>::
-                                                                           type,
-                                                                   unsigned int>::
-                                                                   value
-                                                            || std::is_same<
-                                                                   typename std::
-                                                                       remove_cv<T>::
-                                                                           type,
-                                                                   unsigned long>::
-                                                                   value
-                                                            || std::is_same<
-                                                                   typename std::
-                                                                       remove_cv<T>::
-                                                                           type,
-                                                                   unsigned long long>::
-                                                                   value>::type>
-    : std::true_type
+struct is_compatible_to_uniform_int_distribution<
+    T, typename std::enable_if<
+        std::is_same<typename std::remove_cv<T>::type, short>::value
+        || std::is_same<typename std::remove_cv<T>::type, int>::value
+        || std::is_same<typename std::remove_cv<T>::type, long>::value
+        || std::is_same<typename std::remove_cv<T>::type, long long>::value
+        || std::is_same<typename std::remove_cv<T>::type, unsigned short>::value
+        || std::is_same<typename std::remove_cv<T>::type, unsigned int>::value
+        || std::is_same<typename std::remove_cv<T>::type, unsigned long>::value
+        || std::is_same<typename std::remove_cv<T>::type, unsigned long long>::value
+        >::type
+    > : std::true_type
 {
+  // Define nothing
 };
+
+// clang-on
 
 } // namespace detail
 } // namespace math
