@@ -106,3 +106,33 @@ TEST(Random, UniformVector)
   EXPECT_TRUE((uniformi.array() >= mini.array()).all());
   EXPECT_TRUE((uniformi.array() <= maxi.array()).all());
 }
+
+//==============================================================================
+TEST(Random, SetSeed)
+{
+  unsigned int N = 10;
+
+  int min = -10;
+  int max = 10;
+
+  std::vector<int> first;
+  std::vector<int> second;
+  std::vector<int> third;
+
+  for (unsigned int i = 0; i < N; ++i)
+  {
+    math::Random::setSeed(i);
+    first.push_back(math::Random::uniform(min, max));
+    second.push_back(math::Random::uniform(min, max));
+    third.push_back(math::Random::uniform(min, max));
+  }
+
+  for (unsigned int i = 0; i < N; ++i)
+  {
+    math::Random::setSeed(i);
+    EXPECT_EQ(math::Random::getSeed(), static_cast<unsigned int>(i));
+    EXPECT_EQ(first[i], math::Random::uniform(min, max));
+    EXPECT_EQ(second[i], math::Random::uniform(min, max));
+    EXPECT_EQ(third[i], math::Random::uniform(min, max));
+  }
+}

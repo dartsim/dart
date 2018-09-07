@@ -56,12 +56,12 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       break;
     case 'q':  // Spawn a cube
     case 'Q': {  // Spawn a cube
-      Eigen::Vector3d position = Eigen::Vector3d(dart::math::random(-1.0, 1.0),
-                                                 dart::math::random( 0.5, 1.0),
-                                                 dart::math::random(-1.0, 1.0));
-      Eigen::Vector3d size = Eigen::Vector3d(dart::math::random(0.1, 0.5),
-                                             dart::math::random(0.1, 0.5),
-                                             dart::math::random(0.1, 0.5));
+      Eigen::Vector3d position = Eigen::Vector3d(dart::math::Random::uniform(-1.0, 1.0),
+                                                 dart::math::Random::uniform( 0.5, 1.0),
+                                                 dart::math::Random::uniform(-1.0, 1.0));
+      Eigen::Vector3d size = Eigen::Vector3d(dart::math::Random::uniform(0.1, 0.5),
+                                             dart::math::Random::uniform(0.1, 0.5),
+                                             dart::math::Random::uniform(0.1, 0.5));
       spawnCube(position, size);
       break;
     }
@@ -102,7 +102,7 @@ void MyWindow::spawnCube(const Eigen::Vector3d& _position,
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(newBoxShape);
-  shapeNode->getVisualAspect()->setColor(dart::math::randomVector<3>(0.0, 1.0));
+  shapeNode->getVisualAspect()->setColor(dart::math::Random::uniform::uniformVector<3>(0.0, 1.0));
 
   mWorld->addSkeleton(newCubeSkeleton);
 }
