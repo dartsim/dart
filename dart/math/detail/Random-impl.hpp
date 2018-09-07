@@ -42,46 +42,80 @@ namespace {
 
 //==============================================================================
 template <typename Derived, typename Enable = void>
-struct UniformImpl
+struct UniformEigenImpl
+{
+  // Define nothing
+};
+
+//==============================================================================
+// Dynamic matrix case
+template <typename Derived>
+struct UniformEigenImpl<Derived,
+                        typename std::enable_if<!Derived::IsVectorAtCompileTime
+                                                && Derived::SizeAtCompileTime
+                                                       == Eigen::Dynamic>::type>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
       const Eigen::MatrixBase<Derived>& max)
   {
     const auto uniformFunc
-        = [&](int i, int j) { return uniform(min(i, j), max(i, j)); };
+        = [&](int i, int j) { return Random::uniform(min(i, j), max(i, j)); };
     return Derived::PlainObject::NullaryExpr(
         min.rows(), min.cols(), uniformFunc);
   }
 };
 
 //==============================================================================
+// Dynamic vector case
 template <typename Derived>
-struct UniformImpl<Derived,
-                   typename std::enable_if<Derived::IsVectorAtCompileTime>::
-                       type>
-{
-  static typename Derived::PlainObject run(
-      const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max)
-  {
-    const auto uniformFunc = [&](int i) { return uniform(min[i], max[i]); };
-    return Derived::PlainObject::NullaryExpr(min.size(), uniformFunc);
-  }
-};
-
-//==============================================================================
-template <typename Derived>
-struct UniformImpl<Derived,
-                   typename std::enable_if<Derived::SizeAtCompileTime
-                                           != Eigen::Dynamic>::type>
+struct UniformEigenImpl<Derived,
+                        typename std::enable_if<Derived::IsVectorAtCompileTime
+                                                && Derived::SizeAtCompileTime
+                                                       == Eigen::Dynamic>::type>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
       const Eigen::MatrixBase<Derived>& max)
   {
     const auto uniformFunc
-        = [&](int i, int j) { return uniform(min(i, j), max(i, j)); };
+        = [&](int i) { return Random::uniform(min[i], max[i]); };
+    return Derived::PlainObject::NullaryExpr(min.size(), uniformFunc);
+  }
+};
+
+//==============================================================================
+// Fixed matrix case
+template <typename Derived>
+struct UniformEigenImpl<Derived,
+                        typename std::enable_if<!Derived::IsVectorAtCompileTime
+                                                && Derived::SizeAtCompileTime
+                                                       != Eigen::Dynamic>::type>
+{
+  static typename Derived::PlainObject run(
+      const Eigen::MatrixBase<Derived>& min,
+      const Eigen::MatrixBase<Derived>& max)
+  {
+    const auto uniformFunc
+        = [&](int i, int j) { return Random::uniform(min(i, j), max(i, j)); };
+    return Derived::PlainObject::NullaryExpr(uniformFunc);
+  }
+};
+
+//==============================================================================
+// Fixed vector case
+template <typename Derived>
+struct UniformEigenImpl<Derived,
+                        typename std::enable_if<Derived::IsVectorAtCompileTime
+                                                && Derived::SizeAtCompileTime
+                                                       != Eigen::Dynamic>::type>
+{
+  static typename Derived::PlainObject run(
+      const Eigen::MatrixBase<Derived>& min,
+      const Eigen::MatrixBase<Derived>& max)
+  {
+    const auto uniformFunc
+        = [&](int i) { return Random::uniform(min[i], max[i]); };
     return Derived::PlainObject::NullaryExpr(uniformFunc);
   }
 };
@@ -129,7 +163,7 @@ typename Derived::PlainObject Random::uniform(
     const Eigen::MatrixBase<Derived>& min,
     const Eigen::MatrixBase<Derived>& max)
 {
-  return UniformImpl<Derived>::run(min, max);
+  return UniformEigenImpl<Derived>::run(min, max);
 }
 
 //==============================================================================
