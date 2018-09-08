@@ -38,23 +38,34 @@ using namespace dart;
 using namespace dart::math;
 
 //==============================================================================
-TEST(Random, SyntaxValidityCheck)
+TEST(Random, CheckSyntaxValidity)
 {
-//  bool result;
-
   const int rows = 5;
   const int cols = 5;
-
   const int size = 5;
 
-  int mini = -5.0;
-  int maxi = 10.0;
-
+  short mins = -2;
+  short maxs = 3;
+  int mini = -1;
+  int maxi = 10;
+  long minl = -1l;
+  long maxl = 10l;
+  long long minll = -1ll;
+  long long maxll = 10ll;
+  unsigned short minus = 2;
+  unsigned short maxus = 3;
+  unsigned int minui = 1u;
+  unsigned int maxui = 10u;
+  unsigned long minul = 1ul;
+  unsigned long maxul = 10ul;
+  unsigned long long minull = 1ull;
+  unsigned long long maxull = 10ull;
   float minf = -3.0f;
   float maxf = 4.0f;
-
   double mind = -5.0;
   double maxd = 10.0;
+  long double minld = -5.0l;
+  long double maxld = 10.0l;
 
   Eigen::VectorXi minVecXi = Eigen::VectorXi::Constant(size, mini);
   Eigen::VectorXi maxVecXi = Eigen::VectorXi::Constant(size, maxi);
@@ -89,9 +100,17 @@ TEST(Random, SyntaxValidityCheck)
   // The output type will be inferred from the arguments.
 
   // Create random scalars given scalar bounds
+  Random::uniform(mins, maxs);
   Random::uniform(mini, maxi);
+  Random::uniform(minl, maxl);
+  Random::uniform(minll, maxll);
+  Random::uniform(minus, maxus);
+  Random::uniform(minui, maxui);
+  Random::uniform(minul, maxul);
+  Random::uniform(minull, maxull);
   Random::uniform(minf, maxf);
   Random::uniform(mind, maxd);
+  Random::uniform(minld, maxld);
 
   // Create random vectors given dynamic size vector bounds
   Random::uniform(minVecXi, maxVecXi);
@@ -116,9 +135,17 @@ TEST(Random, SyntaxValidityCheck)
   // -- Create random vectors explicitly given template parameters
 
   // Create random scalars given scalar bounds
+  Random::uniform<short>(mins, maxs);
   Random::uniform<int>(mini, maxi);
+  Random::uniform<long>(minl, maxl);
+  Random::uniform<long long>(minll, maxll);
+  Random::uniform<unsigned short>(minus, maxus);
+  Random::uniform<unsigned int>(minui, maxui);
+  Random::uniform<unsigned long>(minul, maxul);
+  Random::uniform<unsigned long long>(minull, maxull);
   Random::uniform<float>(minf, maxf);
   Random::uniform<double>(mind, maxd);
+  Random::uniform<long double>(minld, maxld);
 
   // Create random vectors given scalar bounds
   Random::uniform<Eigen::VectorXi>(size, mini, maxi);
@@ -174,6 +201,48 @@ TEST(Random, UniformScalar)
   int uniformi = math::Random::uniform(mini, maxi);
   EXPECT_GE(uniformi, mini);
   EXPECT_LE(uniformi, maxi);
+}
+
+//==============================================================================
+template <typename I>
+bool testClosedEnds(int maxTry, I min = 0, I max = 2)
+{
+  bool foundMin = false;
+  bool foundMax = false;
+
+  for (int i = 0; i < maxTry; ++i)
+  {
+    const I val = math::Random::uniform<I>(min, max);
+
+    if (val == min)
+      foundMin = true;
+
+    if (val == max)
+      foundMax = true;
+
+    if (foundMin && foundMax)
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+TEST(Random, UniformClosedEnd)
+{
+  const int maxTry = 100000;
+
+  EXPECT_TRUE(testClosedEnds<short>(maxTry));
+  EXPECT_TRUE(testClosedEnds<int>(maxTry));
+  EXPECT_TRUE(testClosedEnds<long>(maxTry));
+  EXPECT_TRUE(testClosedEnds<long long>(maxTry));
+
+  EXPECT_TRUE(testClosedEnds<unsigned short>(maxTry));
+  EXPECT_TRUE(testClosedEnds<unsigned int>(maxTry));
+  EXPECT_TRUE(testClosedEnds<unsigned long>(maxTry));
+  EXPECT_TRUE(testClosedEnds<unsigned long long>(maxTry));
+
+  EXPECT_TRUE(testClosedEnds<std::size_t>(maxTry));
 }
 
 //==============================================================================
