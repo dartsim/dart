@@ -36,6 +36,13 @@ namespace dart {
 namespace math {
 
 //==============================================================================
+Random::GeneratorType& Random::getRandGenerator()
+{
+  static GeneratorType randGenerator(getSeed());
+  return randGenerator;
+}
+
+//==============================================================================
 void Random::setSeed(unsigned int seed)
 {
   std::seed_seq seq{seed};
@@ -63,13 +70,6 @@ unsigned int& Random::getSeedMutable()
 {
   static uint32_t seed = generateSeed(false);
   return seed;
-}
-
-//==============================================================================
-Random::GeneratorType& Random::getRandGenerator()
-{
-  static GeneratorType randGenerator(getSeed());
-  return randGenerator;
 }
 
 } // namespace math

@@ -60,7 +60,7 @@ dynamics::SkeletonPtr createBox(const Eigen::Vector3d& position)
       dynamics::CollisionAspect,
       dynamics::DynamicsAspect>(boxShape);
   shapeNode->getVisualAspect()->setColor(
-      dart::math::Random::uniformVector<3>(0.0, 1.0));
+      dart::math::Random::uniform<Eigen::Vector3d>(0.0, 1.0));
 
   // Put the body into position
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();

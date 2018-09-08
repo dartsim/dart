@@ -170,16 +170,16 @@ void DynamicsTest::randomizeRefFrames()
   {
     SimpleFrame* F = refFrames[i];
 
-    Eigen::Vector3d p = Random::uniformVector<3>(100.0);
-    Eigen::Vector3d theta = Random::uniformVector<3>(2*M_PI);
+    Eigen::Vector3d p = Random::uniform<Eigen::Vector3d>(-100, 100);
+    Eigen::Vector3d theta = Random::uniform<Eigen::Vector3d>(-2*M_PI, 2*M_PI);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     tf.translate(p);
     tf.linear() = math::eulerXYZToMatrix(theta);
 
     F->setRelativeTransform(tf);
-    F->setRelativeSpatialVelocity(Random::uniformVector<6>(100.0));
-    F->setRelativeSpatialAcceleration(Random::uniformVector<6>(100.0));
+    F->setRelativeSpatialVelocity(Random::uniform<Eigen::Vector6d>(-100, 100));
+    F->setRelativeSpatialAcceleration(Random::uniform<Eigen::Vector6d>(-100, 100));
   }
 }
 
@@ -824,12 +824,12 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
         compareBodyNodeFkToJacobian(
               bn, Frame::World(), bn->getLocalCOM(), TOLERANCE);
         compareBodyNodeFkToJacobian(
-              bn, Frame::World(), Random::uniformVector<3>(10.0), TOLERANCE);
+              bn, Frame::World(), Random::uniform<Eigen::Vector3d>(-10, 10), TOLERANCE);
 
         // Compare results using this BodyNode's own reference Frame
         compareBodyNodeFkToJacobian(bn, bn, TOLERANCE);
         compareBodyNodeFkToJacobian(bn, bn, bn->getLocalCOM(), TOLERANCE);
-        compareBodyNodeFkToJacobian(bn, bn, Random::uniformVector<3>(10.0), TOLERANCE);
+        compareBodyNodeFkToJacobian(bn, bn, Random::uniform<Eigen::Vector3d>(-10, 10), TOLERANCE);
 
         // Compare results using the randomized reference Frames
         for(std::size_t r=0; r<refFrames.size(); ++r)
@@ -838,7 +838,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
           compareBodyNodeFkToJacobian(
               bn, refFrames[r], bn->getLocalCOM(), TOLERANCE);
           compareBodyNodeFkToJacobian(
-              bn, refFrames[r], Random::uniformVector<3>(10.0), TOLERANCE);
+              bn, refFrames[r], Random::uniform<Eigen::Vector3d>(-10, 10), TOLERANCE);
         }
 
         // -- Relative Jacobian tests
@@ -862,21 +862,21 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
           compareBodyNodeFkToJacobianRelative(
                 bn, bn->getLocalCOM(), relativeTo, Frame::World(), TOLERANCE);
           compareBodyNodeFkToJacobianRelative(
-                bn, Random::uniformVector<3>(10.0), relativeTo, Frame::World(), TOLERANCE);
+                bn, Random::uniform<Eigen::Vector3d>(-10, 10), relativeTo, Frame::World(), TOLERANCE);
 
           compareBodyNodeFkToJacobianRelative(
                 bn, relativeTo, bn, TOLERANCE);
           compareBodyNodeFkToJacobianRelative(
                 bn, bn->getLocalCOM(), relativeTo, bn, TOLERANCE);
           compareBodyNodeFkToJacobianRelative(
-                bn, Random::uniformVector<3>(10.0), relativeTo, bn, TOLERANCE);
+                bn, Random::uniform<Eigen::Vector3d>(-10, 10), relativeTo, bn, TOLERANCE);
 
           compareBodyNodeFkToJacobianRelative(
                 bn, relativeTo, relativeTo, TOLERANCE);
           compareBodyNodeFkToJacobianRelative(
                 bn, bn->getLocalCOM(), relativeTo, relativeTo, TOLERANCE);
           compareBodyNodeFkToJacobianRelative(
-                bn, Random::uniformVector<3>(10.0), relativeTo, relativeTo, TOLERANCE);
+                bn, Random::uniform<Eigen::Vector3d>(-10, 10), relativeTo, relativeTo, TOLERANCE);
 
           for (std::size_t r = 0; r < refFrames.size(); ++r)
           {
@@ -885,7 +885,7 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
             compareBodyNodeFkToJacobianRelative(
                   bn, bn->getLocalCOM(), relativeTo, refFrames[r], TOLERANCE);
             compareBodyNodeFkToJacobianRelative(
-                  bn, Random::uniformVector<3>(10.0), relativeTo, refFrames[r], TOLERANCE);
+                  bn, Random::uniform<Eigen::Vector3d>(-10, 10), relativeTo, refFrames[r], TOLERANCE);
           }
         }
       }
@@ -1042,9 +1042,9 @@ void DynamicsTest::testFiniteDifferenceBodyNodeVelocity(const common::Uri& uri)
       std::size_t numBodies = skeleton->getNumBodyNodes();
 
       // Generate random states
-      VectorXd   q = Random::uniformVectorX(dof,   qLB,   qUB);
-      VectorXd  dq = Random::uniformVectorX(dof,  dqLB,  dqUB);
-      VectorXd ddq = Random::uniformVectorX(dof, ddqLB, ddqUB);
+      VectorXd   q = Random::uniform<Eigen::VectorXd>(dof,   qLB,   qUB);
+      VectorXd  dq = Random::uniform<Eigen::VectorXd>(dof,  dqLB,  dqUB);
+      VectorXd ddq = Random::uniform<Eigen::VectorXd>(dof, ddqLB, ddqUB);
 
       skeleton->setPositions(q);
       skeleton->setVelocities(dq);
@@ -1289,9 +1289,9 @@ void testForwardKinematicsSkeleton(const dynamics::SkeletonPtr& skel)
 
   for (auto i = 0u; i < nRandomItr; ++i)
   {
-    q   = Random::uniformVectorX(dof,   qLB,   qUB);
-    dq  = Random::uniformVectorX(dof,  dqLB,  dqUB);
-    ddq = Random::uniformVectorX(dof, ddqLB, ddqUB);
+    q   = Random::uniform<Eigen::VectorXd>(dof,   qLB,   qUB);
+    dq  = Random::uniform<Eigen::VectorXd>(dof,  dqLB,  dqUB);
+    ddq = Random::uniform<Eigen::VectorXd>(dof, ddqLB, ddqUB);
 
     skel->setPositions(q);
     skel->setVelocities(dq);

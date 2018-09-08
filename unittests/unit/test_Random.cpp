@@ -35,6 +35,121 @@
 #include "TestHelpers.hpp"
 
 using namespace dart;
+using namespace dart::math;
+
+//==============================================================================
+TEST(Random, SyntaxValidityCheck)
+{
+//  bool result;
+
+  const int rows = 5;
+  const int cols = 5;
+
+  const int size = 5;
+
+  int mini = -5.0;
+  int maxi = 10.0;
+
+  float minf = -3.0f;
+  float maxf = 4.0f;
+
+  double mind = -5.0;
+  double maxd = 10.0;
+
+  Eigen::VectorXi minVecXi = Eigen::VectorXi::Constant(size, mini);
+  Eigen::VectorXi maxVecXi = Eigen::VectorXi::Constant(size, maxi);
+  Eigen::VectorXf minVecXf = Eigen::VectorXf::Constant(size, minf);
+  Eigen::VectorXf maxVecXf = Eigen::VectorXf::Constant(size, maxf);
+  Eigen::VectorXd minVecXd = Eigen::VectorXd::Constant(size, mind);
+  Eigen::VectorXd maxVecXd = Eigen::VectorXd::Constant(size, maxd);
+
+  Eigen::Vector3i minVec3i = Eigen::Vector3i::Constant(mini);
+  Eigen::Vector3i maxVec3i = Eigen::Vector3i::Constant(maxi);
+  Eigen::Vector3f minVec3f = Eigen::Vector3f::Constant(minf);
+  Eigen::Vector3f maxVec3f = Eigen::Vector3f::Constant(maxf);
+  Eigen::Vector3d minVec3d = Eigen::Vector3d::Constant(mind);
+  Eigen::Vector3d maxVec3d = Eigen::Vector3d::Constant(maxd);
+
+  Eigen::MatrixXi minMatXi = Eigen::MatrixXi::Constant(rows, cols, mini);
+  Eigen::MatrixXi maxMatXi = Eigen::MatrixXi::Constant(rows, cols, maxi);
+  Eigen::MatrixXf minMatXf = Eigen::MatrixXf::Constant(rows, cols, minf);
+  Eigen::MatrixXf maxMatXf = Eigen::MatrixXf::Constant(rows, cols, maxf);
+  Eigen::MatrixXd minMatXd = Eigen::MatrixXd::Constant(rows, cols, mind);
+  Eigen::MatrixXd maxMatXd = Eigen::MatrixXd::Constant(rows, cols, maxd);
+
+  Eigen::Matrix3i minMat3i = Eigen::Matrix3i::Constant(mini);
+  Eigen::Matrix3i maxMat3i = Eigen::Matrix3i::Constant(maxi);
+  Eigen::Matrix3f minMat3f = Eigen::Matrix3f::Constant(minf);
+  Eigen::Matrix3f maxMat3f = Eigen::Matrix3f::Constant(maxf);
+  Eigen::Matrix3d minMat3d = Eigen::Matrix3d::Constant(mind);
+  Eigen::Matrix3d maxMat3d = Eigen::Matrix3d::Constant(maxd);
+
+  // -- Create random vectors without template parameters.
+  //
+  // The output type will be inferred from the arguments.
+
+  // Create random scalars given scalar bounds
+  Random::uniform(mini, maxi);
+  Random::uniform(minf, maxf);
+  Random::uniform(mind, maxd);
+
+  // Create random vectors given dynamic size vector bounds
+  Random::uniform(minVecXi, maxVecXi);
+  Random::uniform(minVecXf, maxVecXf);
+  Random::uniform(minVecXd, maxVecXd);
+
+  // Create random vectors given fixed-size vector bounds
+  Random::uniform(minVec3i, maxVec3i);
+  Random::uniform(minVec3f, maxVec3f);
+  Random::uniform(minVec3d, maxVec3d);
+
+  // Create random matrices given dynamic size matrix bounds
+  Random::uniform(minMatXi, maxMatXi);
+  Random::uniform(minMatXf, maxMatXf);
+  Random::uniform(minMatXd, maxMatXd);
+
+  // Create random matrices given fixed-size matrix bounds
+  Random::uniform(minMat3i, maxMat3i);
+  Random::uniform(minMat3f, maxMat3f);
+  Random::uniform(minMat3d, maxMat3d);
+
+  // -- Create random vectors explicitly given template parameters
+
+  // Create random scalars given scalar bounds
+  Random::uniform<int>(mini, maxi);
+  Random::uniform<float>(minf, maxf);
+  Random::uniform<double>(mind, maxd);
+
+  // Create random vectors given scalar bounds
+  Random::uniform<Eigen::VectorXi>(size, mini, maxi);
+  Random::uniform<Eigen::VectorXf>(size, minf, maxf);
+  Random::uniform<Eigen::VectorXd>(size, mind, maxd);
+
+  // Create random vectors given dynamic size vector bounds
+  Random::uniform<Eigen::VectorXi>(minVecXi, maxVecXi);
+  Random::uniform<Eigen::VectorXf>(minVecXf, maxVecXf);
+  Random::uniform<Eigen::VectorXd>(minVecXd, maxVecXd);
+
+  // Create random vectors given fixed-size vector bounds
+  Random::uniform<Eigen::Vector3i>(minVec3i, maxVec3i);
+  Random::uniform<Eigen::Vector3f>(minVec3f, maxVec3f);
+  Random::uniform<Eigen::Vector3d>(minVec3d, maxVec3d);
+
+  // Create random vectors given scalar bounds
+  Random::uniform<Eigen::MatrixXi>(rows, cols, mini, maxi);
+  Random::uniform<Eigen::MatrixXf>(rows, cols, minf, maxf);
+  Random::uniform<Eigen::MatrixXd>(rows, cols, mind, maxd);
+
+  // Create random matrices given dynamic size matrix bounds
+  Random::uniform<Eigen::MatrixXi>(minMatXi, maxMatXi);
+  Random::uniform<Eigen::MatrixXf>(minMatXf, maxMatXf);
+  Random::uniform<Eigen::MatrixXd>(minMatXd, maxMatXd);
+
+  // Create random matrices given fixed-size matrix bounds
+  Random::uniform<Eigen::Matrix3i>(minMat3i, maxMat3i);
+  Random::uniform<Eigen::Matrix3f>(minMat3f, maxMat3f);
+  Random::uniform<Eigen::Matrix3d>(minMat3d, maxMat3d);
+}
 
 //==============================================================================
 TEST(Random, UniformScalar)

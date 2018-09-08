@@ -44,7 +44,7 @@ using namespace dynamics;
 template<int N>
 Eigen::Matrix<double,N,1> random_vec(double limit=100)
 {
-  return Random::uniformVector<N>(limit);
+  return Random::uniform<Eigen::Matrix<double,N,1>>(-limit, limit);
 }
 
 void randomize_transform(Eigen::Isometry3d& tf,
