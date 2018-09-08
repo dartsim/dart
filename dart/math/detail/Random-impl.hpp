@@ -30,10 +30,92 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_MATH_DETAIL_RANDOM_HPP_
-#define DART_MATH_DETAIL_RANDOM_HPP_
-
 #include "dart/math/Random.hpp"
+
+//==============================================================================
+// This workaround is necessary for old Eigen (< 3.3). See the details here:
+// http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1286
+#if !EIGEN_VERSION_AT_LEAST(3, 3, 0)
+
+namespace dart {
+namespace math {
+namespace detail {
+
+template <typename Derived>
+struct UniformScalarFromMatrixFunctor
+{
+  using S = typename Derived::Scalar;
+
+  UniformScalarFromMatrixFunctor(
+      const Eigen::MatrixBase<Derived>& min,
+      const Eigen::MatrixBase<Derived>& max)
+    : mMin(min), mMax(max)
+  {
+    // Do nothing
+  }
+
+  S operator()(int i, int j) const
+  {
+    return Random::uniform<S>(mMin(i, j), mMax(i, j));
+  }
+
+  const Eigen::MatrixBase<Derived>& mMin;
+  const Eigen::MatrixBase<Derived>& mMax;
+};
+
+template <typename Derived>
+struct UniformScalarFromVectorFunctor
+{
+  using S = typename Derived::Scalar;
+
+  UniformScalarFromVectorFunctor(
+      const Eigen::MatrixBase<Derived>& min,
+      const Eigen::MatrixBase<Derived>& max)
+    : mMin(min), mMax(max)
+  {
+    // Do nothing
+  }
+
+  S operator()(int i) const
+  {
+    return Random::uniform<S>(mMin[i], mMax[i]);
+  }
+
+  const Eigen::MatrixBase<Derived>& mMin;
+  const Eigen::MatrixBase<Derived>& mMax;
+};
+
+} // namespace detail
+} // namespace math
+} // namespace dart
+
+namespace Eigen {
+namespace internal {
+
+template <typename T>
+struct functor_has_linear_access<dart::math::detail::
+                                     UniformScalarFromMatrixFunctor<T>>
+{
+  enum
+  {
+    ret = false
+  };
+};
+
+template <typename T>
+struct functor_has_linear_access<dart::math::detail::
+                                     UniformScalarFromVectorFunctor<T>>
+{
+  enum
+  {
+    ret = true
+  };
+};
+
+} // namespace internal
+} // namespace Eigen
+
+#endif // !EIGEN_VERSION_AT_LEAST(3,3,0)
 
 namespace dart {
 namespace math {
@@ -146,10 +228,18 @@ struct UniformMatrixImpl<Derived,
       const Eigen::MatrixBase<Derived>& min,
       const Eigen::MatrixBase<Derived>& max)
   {
-    const auto uniformFunc
-        = [&](int i, int j) { return Random::uniform(min(i, j), max(i, j)); };
+#if EIGEN_VERSION_AT_LEAST(3, 3, 0)
+    const auto uniformFunc = [&](int i, int j) {
+      return Random::uniform<typename Derived::Scalar>(min(i, j), max(i, j));
+    };
     return Derived::PlainObject::NullaryExpr(
         min.rows(), min.cols(), uniformFunc);
+#else
+    return Derived::PlainObject::NullaryExpr(
+        min.rows(),
+        min.cols(),
+        detail::UniformScalarFromMatrixFunctor<Derived>(min, max));
+#endif
   }
 };
 
@@ -166,9 +256,15 @@ struct UniformMatrixImpl<Derived,
       const Eigen::MatrixBase<Derived>& min,
       const Eigen::MatrixBase<Derived>& max)
   {
-    const auto uniformFunc
-        = [&](int i) { return Random::uniform(min[i], max[i]); };
+#if EIGEN_VERSION_AT_LEAST(3, 3, 0)
+    const auto uniformFunc = [&](int i) {
+      return Random::uniform<typename Derived::Scalar>(min[i], max[i]);
+    };
     return Derived::PlainObject::NullaryExpr(min.size(), uniformFunc);
+#else
+    return Derived::PlainObject::NullaryExpr(
+        min.size(), detail::UniformScalarFromVectorFunctor<Derived>(min, max));
+#endif
   }
 };
 
@@ -185,9 +281,15 @@ struct UniformMatrixImpl<Derived,
       const Eigen::MatrixBase<Derived>& min,
       const Eigen::MatrixBase<Derived>& max)
   {
-    const auto uniformFunc
-        = [&](int i, int j) { return Random::uniform(min(i, j), max(i, j)); };
+#if EIGEN_VERSION_AT_LEAST(3, 3, 0)
+    const auto uniformFunc = [&](int i, int j) {
+      return Random::uniform<typename Derived::Scalar>(min(i, j), max(i, j));
+    };
     return Derived::PlainObject::NullaryExpr(uniformFunc);
+#else
+    return Derived::PlainObject::NullaryExpr(
+        detail::UniformScalarFromMatrixFunctor<Derived>(min, max));
+#endif
   }
 };
 
@@ -204,9 +306,15 @@ struct UniformMatrixImpl<Derived,
       const Eigen::MatrixBase<Derived>& min,
       const Eigen::MatrixBase<Derived>& max)
   {
-    const auto uniformFunc
-        = [&](int i) { return Random::uniform(min[i], max[i]); };
+#if EIGEN_VERSION_AT_LEAST(3, 3, 0)
+    const auto uniformFunc = [&](int i) {
+      return Random::uniform<typename Derived::Scalar>(min[i], max[i]);
+    };
     return Derived::PlainObject::NullaryExpr(uniformFunc);
+#else
+    return Derived::PlainObject::NullaryExpr(
+        detail::UniformScalarFromVectorFunctor<Derived>(min, max));
+#endif
   }
 };
 
@@ -349,5 +457,3 @@ S Random::normal(S min, S max)
 
 } // namespace math
 } // namespace dart
-
-#endif // DART_MATH_DETAIL_RANDOM_HPP_

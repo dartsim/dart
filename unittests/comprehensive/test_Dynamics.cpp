@@ -783,8 +783,8 @@ void DynamicsTest::testJacobians(const common::Uri& uri)
       {
         SkeletonPtr copy = skeleton->clone();
         std::size_t maxNode = skeleton->getNumBodyNodes()-1;
-        BodyNode* bn1 = skeleton->getBodyNode(ceil(math::Random::uniform<float>(0, maxNode)));
-        BodyNode* bn2 = skeleton->getBodyNode(ceil(math::Random::uniform<float>(0, maxNode)));
+        BodyNode* bn1 = skeleton->getBodyNode(math::Random::uniform<std::size_t>(0, maxNode));
+        BodyNode* bn2 = skeleton->getBodyNode(math::Random::uniform<std::size_t>(0, maxNode));
 
         if(bn1 != bn2)
         {
@@ -1718,8 +1718,8 @@ void DynamicsTest::testCenterOfMass(const common::Uri& uri)
       {
         SkeletonPtr copy = skeleton->clone();
         std::size_t maxNode = skeleton->getNumBodyNodes()-1;
-        BodyNode* bn1 = skeleton->getBodyNode(ceil(math::Random::uniform<float>(0, maxNode)));
-        BodyNode* bn2 = skeleton->getBodyNode(ceil(math::Random::uniform<float>(0, maxNode)));
+        BodyNode* bn1 = skeleton->getBodyNode(math::Random::uniform<std::size_t>(0, maxNode));
+        BodyNode* bn2 = skeleton->getBodyNode(math::Random::uniform<std::size_t>(0, maxNode));
 
         if(bn1 != bn2)
         {
@@ -2241,7 +2241,7 @@ TEST_F(DynamicsTest, testImpulseBasedDynamics)
 //==============================================================================
 TEST_F(DynamicsTest, HybridDynamics)
 {
-  const double tol       = 1e-9;
+  const double tol       = 1e-8;
   const double timeStep  = 1e-3;
 #ifndef NDEBUG // Debug mode
   const std::size_t numFrames = 50;  // 0.05 secs

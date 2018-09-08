@@ -76,35 +76,46 @@ public:
   /// Returns a random number from an uniform distribution.
   ///
   ///
-  /// This template function can generate different types of random numbers as:
-  /// - floating-point number: float, double, long double
-  /// - integer number: [unsigned] short, [unsigned] int, [unsigned] long,
-  ///   [unsigned] long long
+  /// This template function can generate different scalar types of random
+  /// numbers as:
+  /// - Floating-point number: \c float, \c double, \c long double
+  /// - Integer number: [\c unsigned] \c short, [\c unsigned] \c int,
+  ///   [\c unsigned] \c long, [\c unsigned] \c long \c long
   ///
-  /// Besides the scalar types, it can also generate vectors and matrices as:
+  /// and vectors and matrices as:
   /// - Fixed-size: Eigen::Vector3i, Eigen::Vector3d, Eigen::Matrix4d, and so
   ///   on.
   /// - Dynamic-size: Eigen::VectorXi, Eigen::VectorXd, Eigen::MatrixXd, and so
   ///   on.
   ///
-  /// Note that the end of the range is closed for integer types (i.e.,
-  /// [int_min, int_max]), but open for floating-point types (i.e., [float_min,
-  /// float_max)).
-  ///
   /// Example:
   /// \code
   /// // Generate a random int in [0, 10]
-  /// int intVal = Random::uniform(0, 10);
+  /// int intVal1 = Random::uniform(0, 10);
+  /// int intVal2 = Random::uniform<int>(0, 10);
   ///
   /// // Generate a random double in [0.0, 10.0)
-  /// double dblVal = Random::uniform(0.0, 10.0);
+  /// double dblVal1 = Random::uniform(0.0, 10.0);
+  /// double dblVal2 = Random::uniform<double>(0, 10);
   ///
   /// // Generate a random vector in [lb, ub)
   /// Eigen::Vector3d lb = Eigen::Vector3d::Constant(1);
   /// Eigen::Vector3d ub = Eigen::Vector3d::Constant(4);
-  /// Eigen::Vector3d vecVal = Random::uniform(lb, ub);
+  /// Eigen::Vector3d vecVal1 = Random::uniform(lb, ub);
+  /// Eigen::Vector3d vecVal2 = Random::uniform<Eigen::Vector3d>(lb, ub);
+  ///
+  /// // Generate a random matrix in [lb, ub)
+  /// Eigen::Matrix4f lb = Eigen::Matrix4f::Constant(1);
+  /// Eigen::Matrix4f ub = Eigen::Matrix4f::Constant(4);
+  /// Eigen::Matrix4f vecVal1 = Random::uniform(lb, ub);
+  /// Eigen::Matrix4f vecVal2 = Random::uniform<Eigen::Matrix4f>(lb, ub);
   /// \endcode
   ///
+  /// Note that the end of the range is closed for integer types (i.e.,
+  /// [int_min, int_max]), but open for floating-point types (i.e., [float_min,
+  /// float_max)).
+  ///
+  /// \tparam S The type of random value.
   /// \param[in] min Lower bound of the distribution.
   /// \param[in] max Upper bound of the distribution.
   ///
@@ -122,6 +133,13 @@ public:
   /// For dynamic-size types, please use other variants that takes the size of
   /// vector or matrix.
   ///
+  /// Example:
+  /// \code
+  /// // Generate random vectors
+  /// Eigen::VectorXi vecXi = Random::uniform<Eigen::VectorXi>(0, 10);
+  /// Eigen::VectorXd vecXd = Random::uniform<Eigen::VectorXd>(0.0, 10.0);
+  /// \endcode
+  ///
   /// \tparam FixedSizeT The type of fixed-size vector or fixed-size matrix.
   /// \param[in] min The constant value of the lower bound.
   /// \param[in] max The constant value of the upper bound.
@@ -134,6 +152,13 @@ public:
   /// Returns a random vector from an uniform distribution.
   ///
   /// This variant is meant to be used for dynamic-size vector.
+  ///
+  /// Example:
+  /// \code
+  /// // Generate random matrices
+  /// Eigen::MatrixXi matXi = Random::uniform<Eigen::MatrixXi>(0, 10);
+  /// Eigen::MatrixXd matXd = Random::uniform<Eigen::MatrixXd>(0.0, 10.0);
+  /// \endcode
   ///
   /// \tparam DynamicSizeVectorT The type of dynamic-size vector.
   /// \param[in] size The size of the vectors.
@@ -150,7 +175,6 @@ public:
   /// This variant is meant to be used for dynamic-size matrix.
   ///
   /// \tparam DynamicSizeMatrixT The type of dynamic-size matrix.
-  ///
   /// \param[in] rows The row size of the matrices.
   /// \param[in] cols The col size of the matrices.
   /// \param[in] min The constant value of the lower bound matrix.
@@ -166,17 +190,18 @@ public:
 
   /// Returns a random number from a normal distribution.
   ///
-  /// This template function can generate different types of random numbers as:
-  /// - floating-point number: float, double, long double
-  /// - integer number: [unsigned] short, [unsigned] int, [unsigned] long,
-  ///   [unsigned] long long
+  /// This template function can generate different scalar types of random
+  /// numbers as:
+  /// - Floating-point number: \c float, \c double, \c long double
+  /// - Integer number: [\c unsigned] \c short, [\c unsigned] \c int,
+  ///   [\c unsigned] \c long, [\c unsigned] \c long \c long
   ///
   /// Example:
   /// \code
-  /// // Generate a random int in [0, 10]
+  /// // Generate a random int
   /// int intVal = Random::normal(0, 10);
   ///
-  /// // Generate a random double in [0.0, 10.0]
+  /// // Generate a random double
   /// double dblVal = Random::normal(0.0, 10.0);
   /// \endcode
   ///
