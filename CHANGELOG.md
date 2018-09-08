@@ -4,7 +4,7 @@
 
 * Math
 
-  * Consolidated random functions into Random class : [#1099](https://github.com/dartsim/dart/pull/1099), [#1101](https://github.com/dartsim/dart/pull/1101)
+  * Consolidated random functions into Random class : [#1109](https://github.com/dartsim/dart/pull/1109)
 
 * Dynamics
 
