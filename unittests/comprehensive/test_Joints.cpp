@@ -120,16 +120,16 @@ void JOINTS::randomizeRefFrames()
   {
     SimpleFrame* F = frames[i];
 
-    Eigen::Vector3d p = Random::uniformVector<3>(100.0);
-    Eigen::Vector3d theta = Random::uniformVector<3>(2*M_PI);
+    Eigen::Vector3d p = Random::uniform<Eigen::Vector3d>(-100, 100);
+    Eigen::Vector3d theta = Random::uniform<Eigen::Vector3d>(-2*M_PI, 2*M_PI);
 
     Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
     tf.translate(p);
     tf.linear() = math::eulerXYZToMatrix(theta);
 
     F->setRelativeTransform(tf);
-    F->setRelativeSpatialVelocity(Random::uniformVector<6>(100.0));
-    F->setRelativeSpatialAcceleration(Random::uniformVector<6>(100.0));
+    F->setRelativeSpatialVelocity(Random::uniform<Eigen::Vector6d>(-100, 100));
+    F->setRelativeSpatialAcceleration(Random::uniform<Eigen::Vector6d>(-100, 100));
   }
 }
 

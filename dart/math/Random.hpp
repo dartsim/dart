@@ -37,14 +37,26 @@
 
 #include <Eigen/Core>
 
-#include "dart/math/detail/TypeTraits.hpp"
-
 namespace dart {
 namespace math {
 
-class Random
+class Random final
 {
 public:
+  using GeneratorType = std::mt19937;
+
+  template <typename FloatType>
+  using UniformRealDist = std::uniform_real_distribution<FloatType>;
+
+  template <typename IntType>
+  using UniformIntDist = std::uniform_int_distribution<IntType>;
+
+  template <typename FloatType>
+  using NormalRealDist = std::normal_distribution<FloatType>;
+
+  /// Returns a mutable reference to the random generator
+  static GeneratorType& getRandGenerator();
+
   /// Sets the seed value.
   ///
   /// The same seed gives the same sequence of random values so that you can
@@ -52,176 +64,132 @@ public:
   /// value.
   static void setSeed(unsigned int seed);
 
-  /// Changes the seed value using the default random device and returns the new
-  /// seed value.
+  /// Generates a seed value using the default random device.
+  ///
+  /// \param[in] applyGeneratedSeed Whether to apply the generated seed.
+  /// \return The new seed value.
   static unsigned int generateSeed(bool applyGeneratedSeed = false);
 
-  /// Returns the current seed value.
+  /// \return The current seed value.
   static unsigned int getSeed();
 
-  /// Returns a random number from a uniform distribution where the type of
-  /// number is floating-point.
-  template <typename S>
-  static S uniform(
-      S min,
-      S max,
-      typename std::enable_if<std::is_floating_point<S>::value>::
-          type* = nullptr);
-
-  /// Returns a random number from a uniform distribution where the type of
-  /// number is integer.
-  template <typename S>
-  static S uniform(
-      S min,
-      S max,
-      typename std::
-          enable_if<detail::is_compatible_to_uniform_int_distribution<S>::
-                        value>::type* = nullptr);
-
-  /// Returns a random number from a uniform distribution where the range is
-  /// [-|limit|, |limit|]. The type of number can be either of floating-point
-  /// type or integer depending on the type of \c limit, which is \c S.
-  template <typename S>
-  static S uniform(S limit);
-
-  /// Returns a random vector/matrix from a uniform distribution where the type
-  /// of elements can be either floating-point or integer.
-  template <typename Derived>
-  static typename Derived::PlainObject uniform(
-      const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max);
-
-  /// Returns a random vector from a uniform distribution where the type of
-  /// elements can be either floating-point or integer.
+  /// Returns a random number from an uniform distribution.
   ///
-  /// This function is rather redundant, which is identical to calling uniform()
-  /// with the same arguments, but we have this to provide analogous fashion of
-  /// generating random vectors as other series of uniformVector() functions.
-  template <typename Derived>
-  static typename Derived::PlainObject uniformVector(
-      const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max);
-
-  /// Returns a random vector from a uniform distribution where the type of
-  /// elements can be either floating-point or integer.
-  template <int N, typename S>
-  static Eigen::Matrix<S, N, 1> uniformVector(S min, S max);
-
-  /// Returns a random fixed-size vector from a uniform distribution where the
-  /// range is [-|limit|, |limit|]. The type of elements can be either
-  /// floating-point or integer.
-  template <int N, typename S>
-  static Eigen::Matrix<S, N, 1> uniformVector(S limit);
-
-  /// Returns a random dynamic size vector from a uniform distribution where the
-  /// type of elements can be either floating-point or integer.
   ///
-  /// This function is rather redundant, which is identical to calling
-  /// uniformVector() with the same arguments, but we have this to provide
-  /// analogous fashion of generating random vectors as other series of
-  /// uniformVectorX() functions.
-  template <typename Derived>
-  static Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, 1>
-  uniformVectorX(
-      const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max);
-
-  /// Returns a random dynamic size vector from a uniform distribution where
-  /// type of elements can be either floating-point or integer.
-  template <typename S>
-  static Eigen::Matrix<S, Eigen::Dynamic, 1> uniformVectorX(
-      int size, S min, S max);
-
-  /// Returns a random dynamic size vector from a uniform distribution where the
-  /// range is [-|limit|, |limit|]. The type of elements can be either
-  /// floating-point or integer.
-  template <typename S>
-  static Eigen::Matrix<S, Eigen::Dynamic, 1> uniformVectorX(int size, S limit);
-
-  /// Returns a random vector from a uniform distribution where the type of
-  /// elements can be either floating-point or integer.
+  /// This template function can generate different types of random numbers as:
+  /// - floating-point number: float, double, long double
+  /// - integer number: [unsigned] short, [unsigned] int, [unsigned] long,
+  ///   [unsigned] long long
   ///
-  /// This function is rather redundant, which is identical to calling uniform()
-  /// with the same arguments, but we have this to provide analogous fashion of
-  /// generating random vectors as other series of uniformMatrix() functions.
-  template <typename Derived>
-  static typename Derived::PlainObject uniformMatrix(
-      const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max);
-
-  /// Returns a random matrix from a uniform distribution where the type of
-  /// elements can be either floating-point or integer.
-  template <int Rows, int Cols, typename S>
-  static Eigen::Matrix<S, Rows, Cols> uniformMatrix(S min, S max);
-
-  /// Returns a random fixed-size matrix from a uniform distribution where the
-  /// range is [-|limit|, |limit|]. The type of elements can be either
-  /// floating-point or integer.
-  template <int Rows, int Cols, typename S>
-  static Eigen::Matrix<S, Rows, Cols> uniformMatrix(S limit);
-
-  /// Returns a random dynamic size matrix from a uniform distribution where the
-  /// type of elements can be either floating-point or integer.
+  /// Besides the scalar types, it can also generate vectors and matrices as:
+  /// - Fixed-size: Eigen::Vector3i, Eigen::Vector3d, Eigen::Matrix4d, and so
+  ///   on.
+  /// - Dynamic-size: Eigen::VectorXi, Eigen::VectorXd, Eigen::MatrixXd, and so
+  ///   on.
   ///
-  /// This function is rather redundant, which is identical to calling
-  /// uniformVector() with the same arguments, but we have this to provide
-  /// analogous fashion of generating random vectors as other series of
-  /// uniformVectorX() functions.
-  template <typename Derived>
-  static Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-  uniformMatrixX(
-      const Eigen::MatrixBase<Derived>& min,
-      const Eigen::MatrixBase<Derived>& max);
-
-  /// Returns a random dynamic size matrix from a uniform distribution where
-  /// type of elements can be either floating-point or integer.
+  /// Note that the end of the range is closed for integer types (i.e.,
+  /// [int_min, int_max]), but open for floating-point types (i.e., [float_min,
+  /// float_max)).
+  ///
+  /// Example:
+  /// \code
+  /// // Generate a random int in [0, 10]
+  /// int intVal = Random::uniform(0, 10);
+  ///
+  /// // Generate a random double in [0.0, 10.0)
+  /// double dblVal = Random::uniform(0.0, 10.0);
+  ///
+  /// // Generate a random vector in [lb, ub)
+  /// Eigen::Vector3d lb = Eigen::Vector3d::Constant(1);
+  /// Eigen::Vector3d ub = Eigen::Vector3d::Constant(4);
+  /// Eigen::Vector3d vecVal = Random::uniform(lb, ub);
+  /// \endcode
+  ///
+  /// \param[in] min Lower bound of the distribution.
+  /// \param[in] max Upper bound of the distribution.
+  ///
+  /// \sa normal()
   template <typename S>
-  static Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic> uniformMatrixX(
-      int size, S min, S max);
+  static S uniform(S min, S max);
 
-  /// Returns a random dynamic size matrix from a uniform distribution where the
-  /// range is [-|limit|, |limit|]. The type of elements can be either
-  /// floating-point or integer.
-  template <typename S>
-  static Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic> uniformMatrixX(
-      int size, S limit);
+  /// Returns a random vector or matrix from an uniform distribution.
+  ///
+  /// This is a helper function for the case that the each of lower and upper
+  /// bound has an uniform element value in it. For example, the lower bound is
+  /// [1, 1, 1] or [-2, -2].
+  ///
+  /// This variant is meant to be used for fixed-size vector or matrix types.
+  /// For dynamic-size types, please use other variants that takes the size of
+  /// vector or matrix.
+  ///
+  /// \tparam FixedSizeT The type of fixed-size vector or fixed-size matrix.
+  /// \param[in] min The constant value of the lower bound.
+  /// \param[in] max The constant value of the upper bound.
+  ///
+  /// \sa uniform()
+  template <typename FixedSizeT>
+  static FixedSizeT uniform(
+      typename FixedSizeT::Scalar min, typename FixedSizeT::Scalar max);
 
-  /// Returns a random number from a normal distribution where the type of
-  /// number is floating-point.
-  template <typename S>
-  static S normal(
-      S mean,
-      S sigma,
-      typename std::enable_if<std::is_floating_point<S>::value>::
-          type* = nullptr);
+  /// Returns a random vector from an uniform distribution.
+  ///
+  /// This variant is meant to be used for dynamic-size vector.
+  ///
+  /// \tparam DynamicSizeVectorT The type of dynamic-size vector.
+  /// \param[in] size The size of the vectors.
+  /// \param[in] min The constant value of the lower bound vector.
+  /// \param[in] max The constant value of the upper bound vector.
+  template <typename DynamicSizeVectorT>
+  static DynamicSizeVectorT uniform(
+      int size,
+      typename DynamicSizeVectorT::Scalar min,
+      typename DynamicSizeVectorT::Scalar max);
 
-  /// Returns a random number from a normal distribution where the type of
-  /// number is integer.
+  /// Returns a random matrix from an uniform distribution.
+  ///
+  /// This variant is meant to be used for dynamic-size matrix.
+  ///
+  /// \tparam DynamicSizeMatrixT The type of dynamic-size matrix.
+  ///
+  /// \param[in] rows The row size of the matrices.
+  /// \param[in] cols The col size of the matrices.
+  /// \param[in] min The constant value of the lower bound matrix.
+  /// \param[in] max The constant value of the upper bound matrix.
+  ///
+  /// \sa uniform()
+  template <typename DynamicSizeMatrixT>
+  static DynamicSizeMatrixT uniform(
+      int rows,
+      int cols,
+      typename DynamicSizeMatrixT::Scalar min,
+      typename DynamicSizeMatrixT::Scalar max);
+
+  /// Returns a random number from a normal distribution.
+  ///
+  /// This template function can generate different types of random numbers as:
+  /// - floating-point number: float, double, long double
+  /// - integer number: [unsigned] short, [unsigned] int, [unsigned] long,
+  ///   [unsigned] long long
+  ///
+  /// Example:
+  /// \code
+  /// // Generate a random int in [0, 10]
+  /// int intVal = Random::normal(0, 10);
+  ///
+  /// // Generate a random double in [0.0, 10.0]
+  /// double dblVal = Random::normal(0.0, 10.0);
+  /// \endcode
+  ///
+  /// \param[in] mean Mean of the normal distribution.
+  /// \param[in] sigma Standard deviation of the distribution.
+  ///
+  /// \sa uniform()
   template <typename S>
-  static S normal(
-      S mean,
-      S sigma,
-      typename std::
-          enable_if<detail::is_compatible_to_uniform_int_distribution<S>::
-                        value>::type* = nullptr);
+  static S normal(S mean, S sigma);
 
 private:
-  using GeneratorType = std::mt19937;
-
-  template <typename FloatType>
-  using UniformRealDist = std::uniform_real_distribution<FloatType>;
-
-  template <typename FloatType>
-  using NormalRealDist = std::normal_distribution<FloatType>;
-
-  template <typename IntType>
-  using UniformIntDist = std::uniform_int_distribution<IntType>;
-
-  /// Returns a mutable reference to the seed.
+  /// \return A mutable reference to the seed.
   static unsigned int& getSeedMutable();
-
-  /// Returns a mutable reference to the random generator
-  static GeneratorType& getRandGenerator();
 };
 
 } // namespace math

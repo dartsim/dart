@@ -35,5 +35,4 @@ dart_format_add(
   Random.hpp
   Random.cpp
   detail/Random-impl.hpp
-  detail/TypeTraits.hpp
 )
