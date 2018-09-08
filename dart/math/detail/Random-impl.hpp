@@ -146,8 +146,9 @@ struct UniformMatrixImpl<Derived,
       const Eigen::MatrixBase<Derived>& min,
       const Eigen::MatrixBase<Derived>& max)
   {
-    const auto uniformFunc
-        = [&](int i, int j) { return Random::uniform(min(i, j), max(i, j)); };
+    const auto uniformFunc = [&](int i, int j) {
+      return Random::uniform<typename Derived::Scalar>(min(i, j), max(i, j));
+    };
     return Derived::PlainObject::NullaryExpr(
         min.rows(), min.cols(), uniformFunc);
   }
@@ -166,8 +167,9 @@ struct UniformMatrixImpl<Derived,
       const Eigen::MatrixBase<Derived>& min,
       const Eigen::MatrixBase<Derived>& max)
   {
-    const auto uniformFunc
-        = [&](int i) { return Random::uniform(min[i], max[i]); };
+    const auto uniformFunc = [&](int i) {
+      return Random::uniform<typename Derived::Scalar>(min[i], max[i]);
+    };
     return Derived::PlainObject::NullaryExpr(min.size(), uniformFunc);
   }
 };
@@ -185,8 +187,9 @@ struct UniformMatrixImpl<Derived,
       const Eigen::MatrixBase<Derived>& min,
       const Eigen::MatrixBase<Derived>& max)
   {
-    const auto uniformFunc
-        = [&](int i, int j) { return Random::uniform(min(i, j), max(i, j)); };
+    const auto uniformFunc = [&](int i, int j) {
+      return Random::uniform<typename Derived::Scalar>(min(i, j), max(i, j));
+    };
     return Derived::PlainObject::NullaryExpr(uniformFunc);
   }
 };
@@ -204,8 +207,9 @@ struct UniformMatrixImpl<Derived,
       const Eigen::MatrixBase<Derived>& min,
       const Eigen::MatrixBase<Derived>& max)
   {
-    const auto uniformFunc
-        = [&](int i) { return Random::uniform(min[i], max[i]); };
+    const auto uniformFunc = [&](int i) {
+      return Random::uniform<typename Derived::Scalar>(min[i], max[i]);
+    };
     return Derived::PlainObject::NullaryExpr(uniformFunc);
   }
 };
