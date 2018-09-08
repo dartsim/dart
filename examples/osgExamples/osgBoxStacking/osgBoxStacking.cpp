@@ -55,10 +55,10 @@ dynamics::SkeletonPtr createBox(const Eigen::Vector3d& position)
   double boxHeight = 0.5;
   auto boxShape = std::make_shared<dynamics::BoxShape>(
       Eigen::Vector3d(boxWidth, boxDepth, boxHeight));
-  dynamics::ShapeNode* shapeNode = boxBody->createShapeNodeWith<
-      dynamics::VisualAspect,
-      dynamics::CollisionAspect,
-      dynamics::DynamicsAspect>(boxShape);
+  dynamics::ShapeNode* shapeNode
+      = boxBody->createShapeNodeWith<dynamics::VisualAspect,
+                                     dynamics::CollisionAspect,
+                                     dynamics::DynamicsAspect>(boxShape);
   shapeNode->getVisualAspect()->setColor(
       dart::math::Random::uniform<Eigen::Vector3d>(0.0, 1.0));
 
@@ -97,10 +97,10 @@ dynamics::SkeletonPtr createFloor()
   double floorHeight = 0.01;
   auto box = std::make_shared<dynamics::BoxShape>(
       Eigen::Vector3d(floorWidth, floorWidth, floorHeight));
-  dynamics::ShapeNode* shapeNode = body->createShapeNodeWith<
-      dynamics::VisualAspect,
-      dynamics::CollisionAspect,
-      dynamics::DynamicsAspect>(box);
+  dynamics::ShapeNode* shapeNode
+      = body->createShapeNodeWith<dynamics::VisualAspect,
+                                  dynamics::CollisionAspect,
+                                  dynamics::DynamicsAspect>(box);
   shapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
 
   // Put the body into position
