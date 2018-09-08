@@ -343,8 +343,8 @@ public:
 
   void randomize()
   {
-    mState.val = static_cast<T>(dart::math::Random::uniform(0, 100));
-    mProperties.val = static_cast<T>(dart::math::Random::uniform(0, 100));
+    mState.val = dart::math::Random::uniform<T>(0, 100);
+    mProperties.val = dart::math::Random::uniform<T>(0, 100);
   }
 
   State mState;
@@ -720,12 +720,12 @@ TEST(Aspect, Construction)
 
   comp.createAspect<DoubleAspect>();
 
-  double s1 = dart::math::Random::uniform(0, 100);
+  double s1 = dart::math::Random::uniform<double>(0, 100);
   comp.createAspect<DoubleAspect>(s1);
   EXPECT_EQ(comp.get<DoubleAspect>()->mState.val, s1);
 
-  double s2 = dart::math::Random::uniform(0, 100);
-  double p = dart::math::Random::uniform(0, 100);
+  double s2 = dart::math::Random::uniform<double>(0, 100);
+  double p = dart::math::Random::uniform<double>(0, 100);
   comp.createAspect<DoubleAspect>(s2, p);
   EXPECT_NE(comp.get<DoubleAspect>()->mState.val, s1);
   EXPECT_EQ(comp.get<DoubleAspect>()->mState.val, s2);
