@@ -47,20 +47,38 @@ class MultiObjectiveProblem
 {
 public:
   /// Constructor
-  explicit MultiObjectiveProblem(std::size_t dim);
+  explicit MultiObjectiveProblem(std::size_t dim, std::size_t integerDim = 0u);
 
   /// Destructor
   virtual ~MultiObjectiveProblem() = default;
 
-  /// \{ \name Decision Vector
+  /// \{ \name Solution
 
-  /// Sets the total dimension of the decision vector (or optimization
-  /// parameters), and the dimension of the integers in the decision vector,
-  /// which should be equal or less than the total dimension.
-  virtual void setDimension(std::size_t dim, std::size_t integerDim = 0u);
+  /// Sets the dimension of the solution.
+  ///
+  /// The element type of the solution can be either \c double or \c int. In the
+  /// case that the solution partially contains integers, we assume the integer
+  /// part takes place the tail of the solution, and the size of the integer
+  /// part is \p integerDim. For example, a solution vector can be
+  /// <tt>[floating1, floating2, ..., int1, int2]</tt>.
+  ///
+  /// Note that the \p dim represents the whole dimension of the solution so
+  /// that the dimension of floating-point part is to be (\p dim -
+  /// \p integerDim).
+  ///
+  /// By default, we assume the solution is homogeneously floating-point type (
+  /// i.e., \p integerDim is zero).
+  ///
+  /// \param[in] dim Total dimension of the solution.
+  /// \param[in] integerDim The dimension of integer part in the solution.
+  virtual void setSolutionDimension(
+      std::size_t dim, std::size_t integerDim = 0u);
 
-  /// Returns dimension of the decision vector (or optimization parameters)
-  virtual std::size_t getDimension() const;
+  /// Returns dimension of the solution
+  virtual std::size_t getSolutionDimension() const;
+
+  /// Returns dimension of the floating-point part of the solution
+  std::size_t getDoubleDimension() const;
 
   /// Sets dimension of the integers in the decision vector
   virtual void setIntegerDimension(std::size_t dim);
@@ -84,91 +102,44 @@ public:
 
   /// \{ \name Objectives
 
-  /// Sets objective functions to be minimized.
-  void setObjectiveFunctions(const std::vector<FunctionPtr>& objectives);
-
-  /// Adds a minimum objective function
-  void addObjectiveFunction(FunctionPtr objective);
-
-  /// Returns the number objective functions.
-  std::size_t getNumObjectiveFunctions() const;
-
   /// Returns the total dimension of objective functions.
-  std::size_t getObjectiveDimension() const;
-
-  /// Returns objective functions
-  const std::vector<FunctionPtr>& getObjectiveFunctions() const;
-
-  /// Removes an objective function
-  void removeObjectiveFunction(FunctionPtr function);
-
-  /// Removes all objective functions
-  void removeAllObjectiveFunctions();
+  virtual std::size_t getObjectiveDimension() const = 0;
 
   /// \}
 
   /// \{ \name Equality Constraints
 
-  /// Adds equality constraint
-  void addEqConstraintFunction(FunctionPtr eqConst);
-
-  /// Returns number of equality constraints
-  std::size_t getNumEqualityConstraintFunctions() const;
-
   /// Returns the total dimension of equality constraints.
-  std::size_t getEqConstraintDimension() const;
-
-  /// Returns equality constraint
-  FunctionPtr getEqConstraintFunction(std::size_t index) const;
-
-  /// Removes equality constraint
-  void removeEqConstraintFunction(FunctionPtr eqConst);
-
-  /// Removes all equality constraints
-  void removeAllEqConstraintFunctions();
+  virtual std::size_t getEqConstraintDimension() const;
 
   /// \}
 
   /// \{ \name Inequality Constraints
 
-  /// Adds inequality constraint. Inequality constraints must evaluate
-  /// to LESS THAN or equal to zero (within some tolerance) to be satisfied.
-  void addIneqConstraintFunction(FunctionPtr ineqConst);
-
-  /// Returns number of inequality constraints
-  std::size_t getNumIneqConstraintFunctions() const;
-
   /// Returns the total dimension of inequality constraints.
-  std::size_t getIneqConstraintDimension() const;
-
-  /// Returns inequality constraint
-  FunctionPtr getIneqConstraintFunction(std::size_t index) const;
-
-  /// Removes inequality constraint
-  void removeIneqConstraintFunction(FunctionPtr ineqConst);
-
-  /// Removes all inequality constraints
-  void removeAllIneqConstraintFunctions();
+  virtual std::size_t getIneqConstraintDimension() const;
 
   /// \}
 
   /// \{ \name Evaluations
 
   /// Evaluates objectives
-  Eigen::VectorXd evaluateObjectives(const Eigen::VectorXd& x);
+  virtual Eigen::VectorXd evaluateObjectives(
+      const Eigen::VectorXd& x) const = 0;
 
   /// Evaluates equality constraints
-  Eigen::VectorXd evaluateEqConstraints(const Eigen::VectorXd& x);
+  virtual Eigen::VectorXd evaluateEqConstraints(const Eigen::VectorXd& x) const;
 
   /// Evaluates inequality constraints
-  Eigen::VectorXd evaluateIneqConstraints(const Eigen::VectorXd& x);
+  virtual Eigen::VectorXd evaluateIneqConstraints(
+      const Eigen::VectorXd& x) const;
 
   /// Return dimension of fitness
   std::size_t getFitnessDimension() const;
 
   /// Evaluates fitness, which is [objectives, equality constraints, inequality
   /// constraints].
-  Eigen::VectorXd evaluateFitness(const Eigen::VectorXd& x);
+  Eigen::VectorXd evaluateFitness(const Eigen::VectorXd& x) const;
 
   /// \}
 
@@ -188,25 +159,6 @@ protected:
 
   /// Upper bounds for optimization parameters
   Eigen::VectorXd mUpperBounds;
-
-  /// Objective functions
-  std::vector<FunctionPtr> mObjectiveFunctions;
-
-  /// Equality constraint functions
-  std::vector<FunctionPtr> mEqConstraintFunctions;
-
-  /// Inequality constraint functions
-  std::vector<FunctionPtr> mIneqConstraintFunctions;
-
-private:
-  /// Cache for objective dimension
-  std::size_t mObjectiveDimension;
-
-  /// Cache for equality constraint dimension
-  std::size_t mEqConstraintDimension;
-
-  /// Cache for inequality constraint dimension
-  std::size_t mIneqConstraintDimension;
 };
 
 } // namespace optimizer

@@ -54,7 +54,7 @@ Population PagmoTypes::convertPopulation(
     const ::pagmo::population& pagmoPop,
     std::shared_ptr<MultiObjectiveProblem> problem)
 {
-  Population pop(std::move(problem), pagmoPop.size());
+  Population pop(problem, pagmoPop.size());
 
   const auto& pagmoX = pagmoPop.get_x();
   const auto& pagmoF = pagmoPop.get_f();

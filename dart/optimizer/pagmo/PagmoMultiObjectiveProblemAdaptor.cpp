@@ -32,48 +32,27 @@
 
 #include "dart/optimizer/pagmo/PagmoMultiObjectiveProblemAdaptor.hpp"
 
+#include "dart/optimizer/pagmo/PagmoUtils.hpp"
+
 namespace dart {
 namespace optimizer {
 
 //==============================================================================
 PagmoMultiObjectiveProblemAdaptor::PagmoMultiObjectiveProblemAdaptor(
     std::shared_ptr<MultiObjectiveProblem> problem)
-  : mDimension(problem->getDimension()), mObjNum(1), mProb(std::move(problem))
+  : mProb(std::move(problem))
 {
-  // Do Nothing
+  assert(mProb);
 }
 
 //==============================================================================
 pagmo::vector_double PagmoMultiObjectiveProblemAdaptor::fitness(
     const pagmo::vector_double& x) const
 {
+  const Eigen::VectorXd val = PagmoTypes::convertVector(x);
+
   assert(mProb.get());
-  MultiObjectiveProblem& prob = *mProb;
-
-  const std::size_t numObjs = prob.getObjectiveDimension();
-  const std::size_t numEqConsts = prob.getEqConstraintDimension();
-  const std::size_t numIneqConsts = prob.getIneqConstraintDimension();
-
-  pagmo::vector_double ret(numObjs + numEqConsts + numIneqConsts);
-
-  std::size_t index = 0u;
-  const Eigen::VectorXd val = Eigen::VectorXd::Map(x.data(), x.size());
-
-  // Evaluate objectives
-  for (const auto& objective : prob.getObjectiveFunctions())
-    ret[index++] = objective->eval(val);
-
-  // Evaluate equality constraints
-  for (std::size_t i = 0u; i < numEqConsts; ++i)
-    ret[index++] = prob.getEqConstraintFunction(i)->eval(val);
-
-  // Evaluate inequality constraints
-  for (std::size_t i = 0u; i < numIneqConsts; ++i)
-    ret[index++] = prob.getIneqConstraintFunction(i)->eval(val);
-
-  assert(index == ret.size());
-
-  return ret;
+  return PagmoTypes::convertVector(mProb->evaluateFitness(val));
 }
 
 //==============================================================================
@@ -101,13 +80,12 @@ pagmo::vector_double::size_type PagmoMultiObjectiveProblemAdaptor::get_nic()
 std::pair<pagmo::vector_double, pagmo::vector_double>
 PagmoMultiObjectiveProblemAdaptor::get_bounds() const
 {
-  const Eigen::VectorXd& lb1 = mProb->getLowerBounds();
-  const Eigen::VectorXd& ub1 = mProb->getUpperBounds();
+  const pagmo::vector_double lb
+      = PagmoTypes::convertVector(mProb->getLowerBounds());
+  const pagmo::vector_double ub
+      = PagmoTypes::convertVector(mProb->getUpperBounds());
 
-  pagmo::vector_double lb2(lb1.data(), lb1.data() + lb1.size());
-  pagmo::vector_double ub2(ub1.data(), ub1.data() + ub1.size());
-
-  return std::make_pair(lb2, ub2);
+  return std::make_pair(lb, ub);
 }
 
 //==============================================================================

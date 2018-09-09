@@ -73,10 +73,12 @@ public:
   };
 
   /// Default Constructor
-  explicit PagmoMultiObjectiveSolver(const Properties& properties = Properties());
+  explicit PagmoMultiObjectiveSolver(
+      const Properties& properties = Properties());
 
   /// Alternative Constructor
-  explicit PagmoMultiObjectiveSolver(std::shared_ptr<MultiObjectiveProblem> problem);
+  explicit PagmoMultiObjectiveSolver(
+      std::shared_ptr<MultiObjectiveProblem> problem);
 
   /// Destructor
   ~PagmoMultiObjectiveSolver() override;
