@@ -42,7 +42,8 @@ namespace common {
 template <typename Lockable>
 SingleLockableReference<Lockable>::SingleLockableReference(
     std::weak_ptr<const void> lockableHolder, Lockable& lockable) noexcept
-  : mLockableHolder(std::move(lockableHolder)), mLockable(lockable)
+    : mLockableHolder(std::move(lockableHolder)),
+      mLockable(lockable)
 {
   // Do nothing
 }

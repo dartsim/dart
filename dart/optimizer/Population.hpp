@@ -39,7 +39,7 @@
 
 #include <Eigen/Dense>
 
-#include "dart/common/Console.hpp"
+#include "dart/optimizer/MultiObjectiveProblem.hpp"
 
 namespace dart {
 namespace optimizer {
@@ -50,15 +50,17 @@ class Population
 {
 public:
   /// Constructor
+  ///
+  /// Population stores a clone of a \p problem.
   Population(
       std::shared_ptr<MultiObjectiveProblem> problem,
       std::size_t populationSize = 0u);
 
-  /// Returns problem.
-  std::shared_ptr<MultiObjectiveProblem> getProblem();
+  /// Returns the associated problem, which is always not null.
+  MultiObjectiveProblem* getProblem();
 
-  /// Returns problem.
-  std::shared_ptr<const MultiObjectiveProblem> getProblem() const;
+  /// Returns the associated problem, which is always not null.
+  const MultiObjectiveProblem* getProblem() const;
 
   /// Adds the decision vector at the back of the population. The corresponding
   /// fitness vector will be evaulated and set.
@@ -81,14 +83,8 @@ public:
   /// Returns the size of this population
   std::size_t getSize() const;
 
-  /// Returns the decision vectors. A column represents a decision vector.
-  const Eigen::MatrixXd& getDecisionVectors() const;
-
   /// Returns a decision vectors at \c index.
   Eigen::VectorXd getDecisionVector(std::size_t index) const;
-
-  /// Returns the fitness vectors. A column represents a fitness vector.
-  const Eigen::MatrixXd& getFitnessVectors() const;
 
   /// Returns a fitness vectors at \c index.
   Eigen::VectorXd getFitnessVector(std::size_t index) const;
@@ -97,17 +93,15 @@ public:
   std::ostream& print(std::ostream& os) const;
 
 protected:
-  /// Multi-objective problem that this population is accosiated with.
+  /// Multi-objective problem that this population is accosiated with. This is
+  /// always not null.
   std::shared_ptr<MultiObjectiveProblem> mProblem;
 
   /// Decision vectors. A column represents a decision vector.
   Eigen::MatrixXd mPopulation;
 
   /// Fitness vectors. A column represents a fitness vector.
-  Eigen::MatrixXd mFitnesses;
-
-  /// Mersenne twister method
-  std::mt19937 mMT;
+  Eigen::MatrixXd mFitness;
 };
 
 } // namespace optimizer

@@ -51,3 +51,7 @@ if(TARGET dart-utils)
   endif()
 
 endif()
+
+dart_format_add(
+  test_MultiObjectiveOptimization.cpp
+)

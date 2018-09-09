@@ -31,6 +31,8 @@ add_subdirectory(pagmo)
 add_subdirectory(snopt)
 
 dart_format_add(
+  GenericMultiObjectiveProblem.hpp
+  GenericMultiObjectiveProblem.cpp
   MultiObjectiveSolver.hpp
   MultiObjectiveSolver.cpp
   MultiObjectiveProblem.hpp

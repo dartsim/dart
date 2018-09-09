@@ -32,54 +32,85 @@
 
 #include "dart/optimizer/Population.hpp"
 
-#include "dart/math/Helpers.hpp"
+#include "dart/common/Console.hpp"
 #include "dart/math/Random.hpp"
-#include "dart/optimizer/MultiObjectiveProblem.hpp"
 
 namespace dart {
 namespace optimizer {
 
+namespace {
+
+//==============================================================================
+bool isValidX(const MultiObjectiveProblem& problem, const Eigen::VectorXd& x)
+{
+  if (problem.getSolutionDimension() != static_cast<std::size_t>(x.size()))
+  {
+    dtwarn << "[Population] Attempting to add an incompatible decision vector. "
+           << "The dimension of the decision vector '" << x.size()
+           << "' should be '" << problem.getSolutionDimension() << "'.\n";
+    return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool isValidF(const MultiObjectiveProblem& problem, const Eigen::VectorXd& f)
+{
+  if (problem.getFitnessDimension() != static_cast<std::size_t>(f.size()))
+  {
+    dtwarn << "[Population] Attempting to add an incompatible decision vector. "
+           << "The dimension of the decision vector '" << f.size()
+           << "' should be '" << problem.getFitnessDimension() << "'.\n";
+    return false;
+  }
+
+  return true;
+}
+
+} // (anonymous) namespace
+
 //==============================================================================
 Population::Population(
     std::shared_ptr<MultiObjectiveProblem> problem, std::size_t populationSize)
-  : mProblem(std::move(problem)), mMT(math::RandomDevice::next())
+  : mProblem(std::move(problem))
 {
-  const int xSize = mProblem ? static_cast<int>(mProblem->getDimension()) : 0;
-  const int fSize
-      = mProblem ? static_cast<int>(mProblem->getFitnessDimension()) : 0;
+  // TODO(JS): Take the argument type of problem by const reference of
+  // MultiObjectiveProblem and clone it once MultiObjectiveProblem::clone()
+  // is added.
+
+  assert(mProblem);
+
+  const int xSize = static_cast<int>(mProblem->getSolutionDimension());
+  const int fSize = static_cast<int>(mProblem->getFitnessDimension());
 
   mPopulation.resize(xSize, static_cast<int>(populationSize));
-  mFitnesses.resize(fSize, static_cast<int>(populationSize));
+  mFitness.resize(fSize, static_cast<int>(populationSize));
 
-  if (!mProblem)
-    return;
-
-  const Eigen::VectorXd lb = mProblem->getLowerBounds();
-  const Eigen::VectorXd ub = mProblem->getUpperBounds();
+  const Eigen::VectorXd& lb = mProblem->getLowerBounds();
+  const Eigen::VectorXd& ub = mProblem->getUpperBounds();
 
   for (std::size_t i = 0u; i < populationSize; ++i)
-  {
-    const Eigen::VectorXd randVec = math::randomVectorXd(mMT, lb, ub);
-    set(i, randVec);
-  }
+    set(i, math::Random::uniform(lb, ub));
 }
 
 //==============================================================================
-std::shared_ptr<MultiObjectiveProblem> Population::getProblem()
+MultiObjectiveProblem* Population::getProblem()
 {
-  return mProblem;
+  return mProblem.get();
 }
 
 //==============================================================================
-std::shared_ptr<const MultiObjectiveProblem> Population::getProblem() const
+const MultiObjectiveProblem* Population::getProblem() const
 {
-  return mProblem;
+  return mProblem.get();
 }
 
 //==============================================================================
 void Population::pushBack(const Eigen::VectorXd& x)
 {
-  // TODO(JS): Input validity check
+  if (!isValidX(*mProblem, x))
+    return;
 
   const Eigen::VectorXd f = mProblem->evaluateFitness(x);
   pushBack(x, f);
@@ -88,19 +119,23 @@ void Population::pushBack(const Eigen::VectorXd& x)
 //==============================================================================
 void Population::pushBack(const Eigen::VectorXd& x, const Eigen::VectorXd& f)
 {
-  // TODO(JS): Input validity check
+  if (!isValidX(*mProblem, x))
+    return;
+
+  if (!isValidF(*mProblem, f))
+    return;
 
   mPopulation.conservativeResize(Eigen::NoChange, mPopulation.cols() + 1);
   mPopulation.rightCols(1) = x;
 
-  mFitnesses.conservativeResize(Eigen::NoChange, mFitnesses.cols() + 1);
-  mFitnesses.rightCols(1) = f;
+  mFitness.conservativeResize(Eigen::NoChange, mFitness.cols() + 1);
+  mFitness.rightCols(1) = f;
 }
 
 //==============================================================================
 void Population::set(std::size_t index, const Eigen::VectorXd& x)
 {
-  // TODO(JS): Input validity check
+  isValidX(*mProblem, x);
 
   set(index, x, mProblem->evaluateFitness(x));
 }
@@ -109,10 +144,14 @@ void Population::set(std::size_t index, const Eigen::VectorXd& x)
 void Population::set(
     std::size_t index, const Eigen::VectorXd& x, const Eigen::VectorXd& f)
 {
-  // TODO(JS): Input validity check
+  if (!isValidX(*mProblem, x))
+    return;
+
+  if (!isValidF(*mProblem, f))
+    return;
 
   mPopulation.col(static_cast<int>(index)) = x;
-  mFitnesses.col(static_cast<int>(index)) = f;
+  mFitness.col(static_cast<int>(index)) = f;
 }
 
 //==============================================================================
@@ -124,14 +163,8 @@ void Population::setRandom(std::size_t size)
 //==============================================================================
 std::size_t Population::getSize() const
 {
-  assert(mPopulation.cols() == mFitnesses.cols());
+  assert(mPopulation.cols() == mFitness.cols());
   return static_cast<std::size_t>(mPopulation.cols());
-}
-
-//==============================================================================
-const Eigen::MatrixXd& Population::getDecisionVectors() const
-{
-  return mPopulation;
 }
 
 //==============================================================================
@@ -141,15 +174,9 @@ Eigen::VectorXd Population::getDecisionVector(std::size_t index) const
 }
 
 //==============================================================================
-const Eigen::MatrixXd& Population::getFitnessVectors() const
-{
-  return mFitnesses;
-}
-
-//==============================================================================
 Eigen::VectorXd Population::getFitnessVector(std::size_t index) const
 {
-  return mFitnesses.col(static_cast<int>(index));
+  return mFitness.col(static_cast<int>(index));
 }
 
 //==============================================================================
@@ -162,10 +189,10 @@ std::ostream& Population::print(std::ostream& os) const
   for (int i = 0u; i < static_cast<int>(getSize()); ++i)
   {
     os << "#" << i << ":\n";
-    os << "\tDecision vector:\t" << getDecisionVectors().col(i).transpose()
-       << "\n";
-    os << "\tDecision vector:\t" << getFitnessVectors().col(i).transpose()
-       << "\n";
+    os << "\tDecision vector:\t"
+       << mPopulation.col(static_cast<int>(i)).transpose() << "\n";
+    os << "\tDecision vector:\t"
+       << mFitness.col(static_cast<int>(i)).transpose() << "\n";
   }
 
   // TODO(JS): Print champions if the dimension is one.

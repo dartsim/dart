@@ -48,6 +48,7 @@
 // Local Headers
 #include "dart/math/Constants.hpp"
 #include "dart/math/MathTypes.hpp"
+#include "dart/math/Random.hpp"
 
 namespace dart {
 namespace math {
@@ -249,70 +250,60 @@ inline unsigned seedRand() {
   return seed;
 }
 
+/// \deprecated Please use Random::uniform() instead.
+DART_DEPRECATED(6.7)
 inline double random(double _min, double _max) {
   return _min + ((static_cast<double>(rand()) / (RAND_MAX + 1.0))
                 * (_max - _min));
 }
 
+/// \deprecated Please use Random::uniform() instead.
 template<int N>
+DART_DEPRECATED(6.7)
 Eigen::Matrix<double, N, 1> randomVector(double _min, double _max)
 {
   Eigen::Matrix<double, N, 1> v;
+DART_SUPPRESS_DEPRECATED_BEGIN
   for(std::size_t i=0; i<N; ++i)
     v[i] = random(_min, _max);
+DART_SUPPRESS_DEPRECATED_END
 
   return v;
 }
 
+/// \deprecated Please use Random::uniform() instead.
 template<int N>
+DART_DEPRECATED(6.7)
 Eigen::Matrix<double, N, 1> randomVector(double _limit)
 {
+DART_SUPPRESS_DEPRECATED_BEGIN
   return randomVector<N>(-std::abs(_limit), std::abs(_limit));
+DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
+/// \deprecated Please use Random::uniform() instead.
+DART_DEPRECATED(6.7)
 inline Eigen::VectorXd randomVectorXd(std::size_t size, double min, double max)
 {
   Eigen::VectorXd v = Eigen::VectorXd::Zero(size);
 
+DART_SUPPRESS_DEPRECATED_BEGIN
   for (std::size_t i = 0; i < size; ++i)
     v[i] = random(min, max);
+DART_SUPPRESS_DEPRECATED_END
 
   return v;
 }
 
 //==============================================================================
+/// \deprecated Please use Random::uniform() instead.
+DART_DEPRECATED(6.7)
 inline Eigen::VectorXd randomVectorXd(std::size_t size, double limit)
 {
+DART_SUPPRESS_DEPRECATED_BEGIN
   return randomVectorXd(size, -std::abs(limit), std::abs(limit));
-}
-
-//==============================================================================
-template <typename T>
-T random(std::mt19937& engine, T lb = 0.0, T ub = 1.0)
-{
-  return std::uniform_real_distribution<T>(lb, ub)(engine);
-}
-
-//==============================================================================
-inline Eigen::VectorXd randomVectorXd(
-    std::mt19937& engine,
-    const Eigen::VectorXd& lb,
-    const Eigen::VectorXd& ub,
-    std::size_t numInteger = 0u)
-{
-  const auto size = lb.size();
-  const auto numReal = size - static_cast<int>(numInteger);
-
-  Eigen::VectorXd vec(size);
-
-  for (int i = 0; i < static_cast<int>(numReal); ++i)
-    vec[i] = random(engine, lb[i], ub[i]);
-
-  for (int i = static_cast<int>(numReal); i < size; ++i)
-    vec[i] = std::floor(random(engine, lb[i], ub[i] + 1));
-
-  return vec;
+DART_SUPPRESS_DEPRECATED_END
 }
 
 namespace suffixes {
@@ -452,17 +443,17 @@ inline Eigen::Vector3d Gray()
 
 inline Eigen::Vector4d Random(double alpha)
 {
-  return Eigen::Vector4d(math::random(0.0, 1.0),
-                         math::random(0.0, 1.0),
-                         math::random(0.0, 1.0),
+  return Eigen::Vector4d(math::Random::uniform(0.0, 1.0),
+                         math::Random::uniform(0.0, 1.0),
+                         math::Random::uniform(0.0, 1.0),
                          alpha);
 }
 
 inline Eigen::Vector3d Random()
 {
-  return Eigen::Vector3d(math::random(0.0, 1.0),
-                         math::random(0.0, 1.0),
-                         math::random(0.0, 1.0));
+  return Eigen::Vector3d(math::Random::uniform(0.0, 1.0),
+                         math::Random::uniform(0.0, 1.0),
+                         math::Random::uniform(0.0, 1.0));
 }
 
 } // namespace Color

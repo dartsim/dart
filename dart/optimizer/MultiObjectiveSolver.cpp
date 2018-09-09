@@ -117,13 +117,13 @@ std::size_t MultiObjectiveSolver::getPopulationSize() const
 void MultiObjectiveSolver::setNumPopulations(std::size_t size)
 {
   mProperties.mNumPopulations = size;
-  mPopulations.resize(size, {mProperties.mProblem});
+  //  mPopulations.resize(size);
 }
 
 //==============================================================================
 std::size_t MultiObjectiveSolver::getNumPopulations() const
 {
-  assert(mPopulations.size() == mProperties.mNumPopulations);
+  //  assert(mPopulations.size() == mProperties.mNumPopulations);
   return mProperties.mNumPopulations;
 }
 

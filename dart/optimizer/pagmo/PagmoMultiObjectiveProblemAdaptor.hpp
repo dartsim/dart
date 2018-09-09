@@ -85,8 +85,6 @@ public:
   void serialize(Archive& ar);
 
 protected:
-  std::size_t mDimension;
-  std::size_t mObjNum;
   std::shared_ptr<MultiObjectiveProblem> mProb;
 };
 
@@ -94,7 +92,7 @@ protected:
 template <typename Archive>
 void PagmoMultiObjectiveProblemAdaptor::serialize(Archive& ar)
 {
-  ar(mDimension, mObjNum);
+  ar(mProb->getSolutionDimension(), mProb->getFitnessDimension());
 }
 
 } // namespace optimizer
