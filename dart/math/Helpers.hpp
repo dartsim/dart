@@ -306,34 +306,6 @@ DART_SUPPRESS_DEPRECATED_BEGIN
 DART_SUPPRESS_DEPRECATED_END
 }
 
-//==============================================================================
-template <typename T>
-T random(std::mt19937& engine, T lb = 0.0, T ub = 1.0)
-{
-  return std::uniform_real_distribution<T>(lb, ub)(engine);
-}
-
-//==============================================================================
-inline Eigen::VectorXd randomVectorXd(
-    std::mt19937& engine,
-    const Eigen::VectorXd& lb,
-    const Eigen::VectorXd& ub,
-    std::size_t numInteger = 0u)
-{
-  const auto size = lb.size();
-  const auto numReal = size - static_cast<int>(numInteger);
-
-  Eigen::VectorXd vec(size);
-
-  for (int i = 0; i < static_cast<int>(numReal); ++i)
-    vec[i] = random(engine, lb[i], ub[i]);
-
-  for (int i = static_cast<int>(numReal); i < size; ++i)
-    vec[i] = std::floor(random(engine, lb[i], ub[i] + 1));
-
-  return vec;
-}
-
 namespace suffixes {
 
 //==============================================================================
