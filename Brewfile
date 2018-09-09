@@ -1,5 +1,4 @@
-# should be commented out once https://github.com/Homebrew/homebrew-core/pull/31752 is merged
-tap 'dartsim/dart' # for ipopt
+# tap 'dartsim/dart' # for ipopt
 
 # Build dependencies
 brew 'cmake'
