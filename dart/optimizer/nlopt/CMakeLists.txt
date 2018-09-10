@@ -12,15 +12,8 @@ set(component_name optimizer-nlopt)
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})
-target_include_directories(
-  ${target_name} SYSTEM
-  PUBLIC ${NLOPT_INCLUDE_DIRS}
-)
-target_link_libraries(
-  ${target_name}
-  dart
-  ${NLOPT_LIBRARIES}
-)
+target_include_directories(${target_name} SYSTEM PUBLIC ${NLOPT_INCLUDE_DIRS})
+target_link_libraries(${target_name} PUBLIC dart ${NLOPT_LIBRARIES})
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

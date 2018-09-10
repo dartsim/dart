@@ -10,6 +10,10 @@
 
   * Refactor constraint solver: [#1099](https://github.com/dartsim/dart/pull/1099), [#1101](https://github.com/dartsim/dart/pull/1101)
 
+* Optimization
+
+  * Added multi-objective optimization with pagmo2 support: [#1106](https://github.com/dartsim/dart/pull/1106)
+
 * GUI
 
   * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)

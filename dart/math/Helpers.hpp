@@ -41,6 +41,7 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <random>
 
 // External Libraries
 #include <Eigen/Dense>

@@ -30,46 +30,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COMMON_CONSOLE_HPP_
-#define DART_COMMON_CONSOLE_HPP_
+#ifndef DART_OPTIMIZER_PAGMO_PAGMOUTILS_HPP_
+#define DART_OPTIMIZER_PAGMO_PAGMOUTILS_HPP_
 
-#include <string>
-#include <ostream>
-
-/// \brief Output a message
-#define dtmsg (::dart::common::colorMsg("Msg", 32))
-
-/// \brief Output a debug message
-#define dtdbg (::dart::common::colorMsg("Dbg", 36))
-
-/// \brief Output a warning message
-#define dtwarn (::dart::common::colorErr("Warning", __FILE__, __LINE__, 33))
-
-/// \brief Output an error message
-#define dterr (::dart::common::colorErr("Error", __FILE__, __LINE__, 31))
+#include <pagmo/pagmo.hpp>
+#include "dart/optimizer/MultiObjectiveSolver.hpp"
 
 namespace dart {
-namespace common {
+namespace optimizer {
 
-/// \brief
-std::ostream& colorMsg(const std::string& _msg, int _color);
-
-/// \brief
-std::ostream& colorErr(const std::string& _msg,
-                       const std::string& _file,
-                       unsigned int _line,
-                       int _color);
-
-
-}  // namespace common
-
-template <class T>
-auto operator<<(std::ostream& os, const T& t) -> decltype(t.print(os), os)
+class PagmoTypes
 {
-  t.print(os);
-  return os;
-}
+public:
+  static std::vector<double> convertVector(const Eigen::VectorXd& v);
 
-}  // namespace dart
+  static Eigen::Map<const Eigen::VectorXd> convertVector(
+      const std::vector<double>& v);
 
-#endif  // DART_COMMON_CONSOLE_HPP_
+  static Population convertPopulation(
+      const ::pagmo::population& pagmoPop,
+      std::shared_ptr<MultiObjectiveProblem> problem);
+
+  static ::pagmo::population convertPopulation(
+      const Population& pop, const ::pagmo::problem& pagmoProb);
+};
+
+} // namespace optimizer
+} // namespace dart
+
+#endif // DART_OPTIMIZER_PAGMO_PAGMOUTILS_HPP_
