@@ -54,7 +54,7 @@ Population PagmoTypes::convertPopulation(
     const ::pagmo::population& pagmoPop,
     std::shared_ptr<MultiObjectiveProblem> problem)
 {
-  Population pop(problem, pagmoPop.size());
+  Population pop(*problem, pagmoPop.size());
 
   const auto& pagmoX = pagmoPop.get_x();
   const auto& pagmoF = pagmoPop.get_f();
@@ -73,12 +73,12 @@ Population PagmoTypes::convertPopulation(
 pagmo::population PagmoTypes::convertPopulation(
     const Population& pop, const ::pagmo::problem& pagmoProb)
 {
-  pagmo::population pagmoPop(pagmoProb, pop.getSize());
+  pagmo::population pagmoPop(pagmoProb, pop.getNumSolutions());
 
   for (std::size_t i = 0u; i < pagmoPop.size(); ++i)
   {
-    const std::vector<double> pagmoX = convertVector(pop.getDecisionVector(i));
-    const std::vector<double> pagmoF = convertVector(pop.getFitnessVector(i));
+    const std::vector<double> pagmoX = convertVector(pop.getSolution(i));
+    const std::vector<double> pagmoF = convertVector(pop.getFitness(i));
     pagmoPop.set_xf(i, pagmoX, pagmoF);
   }
 

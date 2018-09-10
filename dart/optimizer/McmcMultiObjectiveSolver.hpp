@@ -40,33 +40,67 @@ namespace optimizer {
 
 class MultiObjectiveProblem;
 
+struct FitnessEvaluator
+{
+  virtual void evaluate(const Population& pop, Eigen::VectorXd& fitness) const = 0;
+};
+
+struct HyperVolumeFitnessEvaluator : FitnessEvaluator
+{
+  using BoolArray = Eigen::Matrix<bool, Eigen::Dynamic, 1>;
+  mutable BoolArray isSolutionInParetoFront;
+  mutable Eigen::MatrixXd dominanceMatrix;
+
+  void evaluate(const Population& pop, Eigen::VectorXd& dominanceFitness) const override;
+};
+
 /// Implementation of Markov chain Monte Carlo method for multi-objective
 /// optimization problems.
-class McmcMultiObjectiveSolver : public MultiObjectiveSolver
+class MomcmcSolver : public MultiObjectiveSolver
 {
 public:
   struct UniqueProperties
   {
+    /// Simulated temparature
+    double mTemp;
+
+    /// Lower bound for the simulated temparature.
+    double mMinTemp;
+
+    /// Upper bound for the simulated temparature.
+    double mMaxTemp;
+
+    /// Desired acceptance rate, which is used for controlling the simulated
+    /// temperature. The temperature will be increased by 10% if the acceptance
+    /// rate (AR) of the samples in a new population is lower than the desired
+    /// AR, and it will be decreased by 10% if the AR is greater than the
+    /// desired AR. Otherwise, the simulated temperature will be unchanged.
+    double mDesiredAR;
+
     /// Constructor
-    UniqueProperties();
+    UniqueProperties(
+        double temperature = 1.0,
+        double minTemperature = 0.0,
+        double maxTemperature = 1000.0,
+        double desiredAcceptanceRate = 0.01);
   };
 
   struct Properties : MultiObjectiveSolver::Properties, UniqueProperties
   {
     Properties(
-        const MultiObjectiveSolver::Properties& solverProperties
+        const MultiObjectiveSolver::Properties& parentProperties
         = MultiObjectiveSolver::Properties(),
-        const UniqueProperties& descentProperties = UniqueProperties());
+        const UniqueProperties& uniqueProperties = UniqueProperties());
   };
 
   /// Default Constructor
-  McmcMultiObjectiveSolver(const Properties& properties = Properties());
+  MomcmcSolver(const Properties& properties = Properties());
 
   /// Alternative Constructor
-  McmcMultiObjectiveSolver(std::shared_ptr<MultiObjectiveProblem> problem);
+  MomcmcSolver(std::shared_ptr<MultiObjectiveProblem> problem);
 
   /// Destructor
-  ~McmcMultiObjectiveSolver() override;
+  ~MomcmcSolver() override;
 
   // Documentation inherited
   bool solve(std::size_t numEvolutions = 1u) override;
@@ -87,17 +121,56 @@ public:
   Properties getGradientDescentProperties() const;
 
   /// Copies the Properties of another McmcMultiObjectiveSolver
-  void copy(const McmcMultiObjectiveSolver& other);
+  void copy(const MomcmcSolver& other);
 
   /// Copies the Properties of another McmcMultiObjectiveSolver
-  McmcMultiObjectiveSolver& operator=(const McmcMultiObjectiveSolver& other);
+  MomcmcSolver& operator=(const MomcmcSolver& other);
 
 protected:
   /// McmcMultiObjectiveSolver properties
-  UniqueProperties mMcmcMultiObjectiveSolverP;
+  UniqueProperties mUniqueP;
 
   /// Distribution
   std::uniform_real_distribution<double> mDistribution;
+
+private:
+  // using BoolArray = Eigen::Array<bool, Eigen::Dynamic, 1>;
+  using BoolArray = Eigen::Matrix<bool, Eigen::Dynamic, 1>;
+
+  void computeDominance(
+      const Population& pop,
+      BoolArray& isSolutionInParetoFront,
+      Eigen::MatrixXd& popDominanceMatrix);
+
+  void computeDominanceFitness(
+      const BoolArray& isSolutionInParetoFront,
+      const Eigen::MatrixXd& dominanceMatrix,
+      Eigen::VectorXd& dominanceFitness);
+
+  bool goodToAcceptNewSample(
+      double oldDominanceFitness,
+      double newDominanceFitness,
+      double temperature,
+      double randomVar);
+
+  void increaseTemperature();
+  void decreaseTemperature();
+
+  void evolution(Population& pop, Population& newPop);
+
+  void randomEvolution(const Population& pop, Population& newPop);
+  // void differentialEvolution(Population& pop, Population& newPop);
+
+  BoolArray mPopNotDominated;
+  Eigen::MatrixXd mDominanceMatrix;
+  Eigen::VectorXd mDominanceFitnesses;
+
+  std::vector<Population> mNewPopulations;
+  BoolArray mNewPopNotDominated;
+  Eigen::MatrixXd mNewDominanceMatrix;
+  Eigen::VectorXd mNewDominanceFitnesses;
+
+  HyperVolumeFitnessEvaluator mFitnessEvaluator;
 };
 
 } // namespace optimizer

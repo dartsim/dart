@@ -43,7 +43,7 @@ namespace optimizer {
 MultiObjectiveSolver::Properties::Properties(
     std::shared_ptr<MultiObjectiveProblem> problem,
     std::size_t numPopulations,
-    std::size_t populationSize,
+    std::size_t numSolutions,
     double tolerance,
     std::size_t numMaxIterations,
     std::size_t iterationsPerPrint,
@@ -51,7 +51,7 @@ MultiObjectiveSolver::Properties::Properties(
     bool printFinalResult)
   : mProblem(std::move(problem)),
     mNumPopulations(numPopulations),
-    mPopulationSize(populationSize),
+    mNumSolutions(numSolutions),
     mTolerance(tolerance),
     mIterationsPerEvolution(numMaxIterations),
     mIterationsPerPrint(iterationsPerPrint),
@@ -72,7 +72,7 @@ void MultiObjectiveSolver::setProperties(
     const MultiObjectiveSolver::Properties& properties)
 {
   mProperties.mProblem = properties.mProblem;
-  setPopulationSize(properties.mPopulationSize);
+  setNumSolutions(properties.mNumSolutions);
   setNumPopulations(properties.mNumPopulations);
   mProperties.mTolerance = properties.mTolerance;
   mProperties.mIterationsPerEvolution = properties.mIterationsPerEvolution;
@@ -102,15 +102,15 @@ std::shared_ptr<MultiObjectiveProblem> MultiObjectiveSolver::getProblem() const
 }
 
 //==============================================================================
-void MultiObjectiveSolver::setPopulationSize(std::size_t size)
+void MultiObjectiveSolver::setNumSolutions(std::size_t size)
 {
-  mProperties.mPopulationSize = size;
+  mProperties.mNumSolutions = size;
 }
 
 //==============================================================================
-std::size_t MultiObjectiveSolver::getPopulationSize() const
+std::size_t MultiObjectiveSolver::getNumSolutions() const
 {
-  return mProperties.mPopulationSize;
+  return mProperties.mNumSolutions;
 }
 
 //==============================================================================

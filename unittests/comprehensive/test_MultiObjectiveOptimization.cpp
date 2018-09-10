@@ -4,6 +4,7 @@
 #include <dart/config.hpp>
 #include <dart/optimizer/Function.hpp>
 #include <dart/optimizer/GenericMultiObjectiveProblem.hpp>
+#include <dart/optimizer/McmcMultiObjectiveSolver.hpp>
 #include <gtest/gtest.h>
 #if HAVE_PAGMO
 #include <dart/optimizer/pagmo/pagmo.hpp>
@@ -39,7 +40,7 @@ public:
 
     ret[0] = x[0];
 
-    const double g = 1.0 + 9 * (x.sum() - x[0]) / double(dimension - 1);
+    const double g = 1.0 + 9.0 * (x.sum() - x[0]) / double(dimension - 1);
     ret[1] = g * (1.0 - std::sqrt(x[0] / g));
 
     return ret;
@@ -78,7 +79,7 @@ public:
 
   double eval(const Eigen::VectorXd& x) override
   {
-    double g = 1.0 + 9 * (x.sum() - x[0]) / double(dimension - 1);
+    double g = 1.0 + 9.0 * (x.sum() - x[0]) / double(dimension - 1);
     return g * (1.0 - std::sqrt(x[0] / g));
   }
 
@@ -94,36 +95,17 @@ public:
 };
 
 //==============================================================================
-void testZDT1(MultiObjectiveSolver& solver)
+std::shared_ptr<MultiObjectiveProblem> createZDT1()
 {
-#ifdef NDEBUG // release mode
-  std::size_t numSolutions = 200;
-#else
-  std::size_t numSolutions = 10;
-#endif
-#ifdef NDEBUG // release mode
-  std::size_t iterationNum = 1000;
-#else
-  std::size_t iterationNum = 200;
-#endif
-
   auto problem = std::make_shared<ZDT1>();
   problem->setLowerBounds(lowerLimits);
   problem->setUpperBounds(upperLimits);
 
-  solver.setProblem(problem);
-  solver.setPopulationSize(numSolutions);
-  solver.setNumPopulations(100);
-  solver.setNumIterationsPerEvolution(iterationNum);
-  solver.solve(100);
-
-  EXPECT_TRUE(solver.getPopulation(0).getSize() == numSolutions);
-  EXPECT_TRUE(solver.getPopulation(1).getSize() == numSolutions);
-  EXPECT_TRUE(solver.getNumPopulations() == 100);
+  return problem;
 }
 
 //==============================================================================
-void testZDT1Generic(MultiObjectiveSolver& solver)
+std::shared_ptr<MultiObjectiveProblem> createZDT1Generic()
 {
   auto pFunc1 = std::make_shared<Func1>();
   auto pFunc2 = std::make_shared<Func2>();
@@ -132,40 +114,59 @@ void testZDT1Generic(MultiObjectiveSolver& solver)
   pFuncs.push_back(pFunc1);
   pFuncs.push_back(pFunc2);
 
-#ifdef NDEBUG // release mode
-  std::size_t numSolutions = 200;
-#else
-  std::size_t numSolutions = 10;
-#endif
-#ifdef NDEBUG // release mode
-  std::size_t iterationNum = 1000;
-#else
-  std::size_t iterationNum = 200;
-#endif
-
   auto problem
       = std::make_shared<optimizer::GenericMultiObjectiveProblem>(dimension);
   problem->setObjectiveFunctions(pFuncs);
   problem->setLowerBounds(lowerLimits);
   problem->setUpperBounds(upperLimits);
 
-  solver.setProblem(problem);
-  solver.setPopulationSize(numSolutions);
-  solver.setNumPopulations(100);
-  solver.setNumIterationsPerEvolution(iterationNum);
-  solver.solve(100);
-
-  EXPECT_TRUE(solver.getPopulation(0).getSize() == numSolutions);
-  EXPECT_TRUE(solver.getPopulation(1).getSize() == numSolutions);
-  EXPECT_TRUE(solver.getNumPopulations() == 100);
+  return problem;
 }
 
 //==============================================================================
-TEST(ZDT1, Basic)
+void testBasics(
+    std::shared_ptr<MultiObjectiveProblem> prob, MultiObjectiveSolver& solver)
 {
-#if HAVE_PAGMO
-  optimizer::PagmoMultiObjectiveSolver pagmoSolver;
-  testZDT1(pagmoSolver);
-  testZDT1Generic(pagmoSolver);
+  std::size_t numPopulations = 1;
+
+#ifdef NDEBUG // release mode
+  std::size_t numSolutions = 100;
+#else
+  std::size_t numSolutions = 10;
 #endif
+
+#ifdef NDEBUG // release mode
+  std::size_t numIterationPerEvolution = 200;
+#else
+  std::size_t numIterationPerEvolution = 20;
+#endif
+
+  solver.setProblem(prob);
+  solver.setNumSolutions(numSolutions);
+  solver.setNumPopulations(numPopulations);
+  solver.setNumIterationsPerEvolution(numIterationPerEvolution);
+  solver.solve(1);
+
+  for (std::size_t i = 0u; i < numPopulations; ++i)
+    EXPECT_TRUE(solver.getPopulation(i).getNumSolutions() == numSolutions);
+  EXPECT_TRUE(solver.getNumPopulations() == numPopulations);
+
+  std::cout << solver.getPopulation(0) << std::endl;
+}
+
+//==============================================================================
+TEST(ZDT1, Basics)
+{
+  auto zdt1 = createZDT1();
+  auto zdt1Generic = createZDT1Generic();
+
+#if HAVE_PAGMO
+  PagmoMultiObjectiveSolver pagmoSolver;
+  testBasics(zdt1, pagmoSolver);
+//  testBasics(zdt1Generic, pagmoSolver);
+#endif
+
+  MomcmcSolver momcmcSolver;
+  testBasics(zdt1, momcmcSolver);
+  //  testBasics(zdt1Generic, momcmcSolver);
 }

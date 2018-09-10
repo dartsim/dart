@@ -67,9 +67,9 @@ public:
   struct Properties : MultiObjectiveSolver::Properties, UniqueProperties
   {
     Properties(
-        const MultiObjectiveSolver::Properties& solverProperties
+        const MultiObjectiveSolver::Properties& parentProperties
         = MultiObjectiveSolver::Properties(),
-        const UniqueProperties& descentProperties = UniqueProperties());
+        const UniqueProperties& uniqueProperties = UniqueProperties());
   };
 
   /// Default Constructor

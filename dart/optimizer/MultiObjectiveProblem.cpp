@@ -65,10 +65,10 @@ MultiObjectiveProblem::MultiObjectiveProblem(
 void MultiObjectiveProblem::setSolutionDimension(
     std::size_t dim, std::size_t integerDim)
 {
-  if (dim == mDimension && integerDim == mIntegerDimension)
+  if (dim == mSolutionDimension && integerDim == mIntegerDimension)
     return;
 
-  mDimension = dim;
+  mSolutionDimension = dim;
   mIntegerDimension = integerDim;
 
   const double inf = std::numeric_limits<double>::infinity();
@@ -81,7 +81,7 @@ void MultiObjectiveProblem::setSolutionDimension(
 //==============================================================================
 std::size_t MultiObjectiveProblem::getSolutionDimension() const
 {
-  return mDimension;
+  return mSolutionDimension;
 }
 
 //==============================================================================
@@ -105,7 +105,9 @@ std::size_t MultiObjectiveProblem::getIntegerDimension() const
 //==============================================================================
 void MultiObjectiveProblem::setLowerBounds(const Eigen::VectorXd& lb)
 {
-  assert(static_cast<std::size_t>(lb.size()) == mDimension && "Invalid size.");
+  assert(
+      static_cast<std::size_t>(lb.size()) == mSolutionDimension
+      && "Invalid size.");
   mLowerBounds = lb;
 }
 
@@ -118,7 +120,9 @@ const Eigen::VectorXd& MultiObjectiveProblem::getLowerBounds() const
 //==============================================================================
 void MultiObjectiveProblem::setUpperBounds(const Eigen::VectorXd& ub)
 {
-  assert(static_cast<std::size_t>(ub.size()) == mDimension && "Invalid size.");
+  assert(
+      static_cast<std::size_t>(ub.size()) == mSolutionDimension
+      && "Invalid size.");
   mUpperBounds = ub;
 }
 

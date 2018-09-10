@@ -50,58 +50,55 @@ class Population
 {
 public:
   /// Constructor
-  ///
-  /// Population stores a clone of a \p problem.
   Population(
-      std::shared_ptr<MultiObjectiveProblem> problem,
-      std::size_t populationSize = 0u);
+      std::size_t solutionDimension = 0u,
+      std::size_t fitnessDimension = 0u,
+      std::size_t numSolutions = 0u);
 
-  /// Returns the associated problem, which is always not null.
-  MultiObjectiveProblem* getProblem();
+  /// Constructor
+  Population(
+      const MultiObjectiveProblem& problem, std::size_t numSolutions = 0u);
 
-  /// Returns the associated problem, which is always not null.
-  const MultiObjectiveProblem* getProblem() const;
-
-  /// Adds the decision vector at the back of the population. The corresponding
-  /// fitness vector will be evaulated and set.
-  void pushBack(const Eigen::VectorXd& x);
-
-  /// Adds the decision vector and the fitness vector at the back of the
-  /// population.
+  /// Adds the solution and its fitness at the back of the population.
   void pushBack(const Eigen::VectorXd& x, const Eigen::VectorXd& f);
 
-  /// Sets the decision vector. The corresponding fitness vector will be
-  /// evaulated and set.
-  void set(std::size_t index, const Eigen::VectorXd& x);
-
-  /// Sets the decision vector and fitness vector at \c index in the population
+  /// Sets the solution and its fitness at \c index in the population.
   void set(
       std::size_t index, const Eigen::VectorXd& x, const Eigen::VectorXd& f);
 
-  void setRandom(std::size_t size);
+  void setRandom(const MultiObjectiveProblem& prob, std::size_t numSolutions);
+
+  void setRandom(const MultiObjectiveProblem& prob);
 
   /// Returns the size of this population
-  std::size_t getSize() const;
+  std::size_t getNumSolutions() const;
 
-  /// Returns a decision vectors at \c index.
-  Eigen::VectorXd getDecisionVector(std::size_t index) const;
+  /// Returns a solution at \c index.
+  Eigen::VectorXd getSolution(std::size_t index) const;
 
-  /// Returns a fitness vectors at \c index.
-  Eigen::VectorXd getFitnessVector(std::size_t index) const;
+  /// Returns a fitness vector at \c index.
+  Eigen::VectorXd getFitness(std::size_t index) const;
 
   /// Prints information of this class to a stream.
   std::ostream& print(std::ostream& os) const;
 
 protected:
-  /// Multi-objective problem that this population is accosiated with. This is
-  /// always not null.
-  std::shared_ptr<MultiObjectiveProblem> mProblem;
+  void resize(
+      std::size_t fitnessDimension,
+      std::size_t numSolutions,
+      std::size_t solutionDimension);
 
-  /// Decision vectors. A column represents a decision vector.
-  Eigen::MatrixXd mPopulation;
+  std::size_t mNumSolutions;
 
-  /// Fitness vectors. A column represents a fitness vector.
-  Eigen::MatrixXd mFitness;
+  std::size_t mSolutionDimension;
+
+  std::size_t mFitnessDimension;
+
+  /// Solution vectors. A column represents a solution.
+  Eigen::MatrixXd mSolutions;
+
+  /// Fitness vectors. A column represents a fitness.
+  Eigen::MatrixXd mFitnesses;
 };
 
 } // namespace optimizer

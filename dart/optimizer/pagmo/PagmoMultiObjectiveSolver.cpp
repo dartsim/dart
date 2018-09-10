@@ -55,9 +55,9 @@ PagmoMultiObjectiveSolver::UniqueProperties::UniqueProperties(
 
 //==============================================================================
 PagmoMultiObjectiveSolver::Properties::Properties(
-    const MultiObjectiveSolver::Properties& solverProperties,
+    const MultiObjectiveSolver::Properties& parentProperties,
     const PagmoMultiObjectiveSolver::UniqueProperties& uniqueProperties)
-  : MultiObjectiveSolver::Properties(solverProperties),
+  : MultiObjectiveSolver::Properties(parentProperties),
     UniqueProperties(uniqueProperties)
 {
   // Do nothing
@@ -151,7 +151,7 @@ bool PagmoMultiObjectiveSolver::solve(std::size_t numEvolutions)
   const pagmo::algorithm algo = createPagmoAlgorithm(mProperties);
 
   pagmo::archipelago archi = pagmo::archipelago(
-      getNumPopulations(), algo, pagmoProb, getPopulationSize());
+      getNumPopulations(), algo, pagmoProb, getNumSolutions());
   archi.evolve(numEvolutions);
   archi.wait();
 

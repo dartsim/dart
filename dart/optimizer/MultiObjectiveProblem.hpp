@@ -80,10 +80,10 @@ public:
   /// Returns dimension of the floating-point part of the solution
   std::size_t getDoubleDimension() const;
 
-  /// Sets dimension of the integers in the decision vector
+  /// Sets dimension of the integers in the solution
   virtual void setIntegerDimension(std::size_t dim);
 
-  /// Returns dimension of the integers in the decision vector
+  /// Returns dimension of the integers in the solution
   virtual std::size_t getIntegerDimension() const;
 
   /// Sets lower bounds for optimization parameters
@@ -147,11 +147,11 @@ public:
   virtual std::ostream& print(std::ostream& os) const;
 
 protected:
-  /// Dimension of the decision vector (or optimization parameters)
-  std::size_t mDimension;
+  /// Dimension of the solution
+  std::size_t mSolutionDimension;
 
-  /// Dimension of integer in the decision vector. The integers are placed in
-  /// the tail of the decision vector.
+  /// Dimension of integer in the solution. The integers are placed in the tail
+  /// of the solution.
   std::size_t mIntegerDimension;
 
   /// Lower bounds for optimization parameters

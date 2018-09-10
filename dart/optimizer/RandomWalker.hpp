@@ -41,7 +41,19 @@ namespace optimizer {
 class RandomWalker
 {
 public:
+  virtual ~RandomWalker() = default;
+  virtual void generate() = 0;
 
+protected:
+};
+
+class SimpleRandomWalker : public RandomWalker
+{
+public:
+  virtual void generate() override
+  {
+
+  }
 
 protected:
 };

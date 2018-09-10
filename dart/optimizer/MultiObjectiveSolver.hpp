@@ -69,8 +69,8 @@ public:
     /// Number of populations
     std::size_t mNumPopulations;
 
-    /// Number of decision vectors in one population
-    std::size_t mPopulationSize;
+    /// Number of solutions in a population
+    std::size_t mNumSolutions;
 
     /// The maximum step size allowed for the Problem to be considered converged
     double mTolerance;
@@ -92,7 +92,7 @@ public:
     Properties(
         std::shared_ptr<MultiObjectiveProblem> problem = nullptr,
         std::size_t numPopulations = 1u,
-        std::size_t populationSize = 100u,
+        std::size_t numSolutions = 100u,
         double tolerance = 1e-9,
         std::size_t numMaxIterations = 500u,
         std::size_t iterationsPerPrint = 0u,
@@ -128,17 +128,17 @@ public:
 
   /// \{ \name Population
 
-  /// Sets the number of decision vectors in one population
-  void setPopulationSize(std::size_t size);
-
-  /// Return sthe number of decision vectors in one population
-  std::size_t getPopulationSize() const;
-
   /// Sets the number of populations.
   void setNumPopulations(std::size_t size);
 
   /// Returns the number of populations.
   std::size_t getNumPopulations() const;
+
+  /// Sets the number of solutions in a population
+  void setNumSolutions(std::size_t size);
+
+  /// Returns the number of solutions in a population
+  std::size_t getNumSolutions() const;
 
   /// Returns a population at \c index.
   const Population& getPopulation(std::size_t index) const;
