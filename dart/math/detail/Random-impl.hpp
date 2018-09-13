@@ -186,7 +186,7 @@ struct UniformScalarImpl<S,
     // Distribution objects are lightweight so we simply construct a new
     // distribution for each random number generation.
     Random::UniformRealDist<S> d(min, max);
-    return d(Random::getRandGenerator());
+    return d(Random::getGenerator());
   }
 };
 
@@ -204,7 +204,7 @@ struct
     // Distribution objects are lightweight so we simply construct a new
     // distribution for each random number generation.
     Random::UniformIntDist<S> d(min, max);
-    return d(Random::getRandGenerator());
+    return d(Random::getGenerator());
   }
 };
 
@@ -364,7 +364,7 @@ struct NormalScalarImpl<S,
   static S run(S mean, S sigma)
   {
     Random::NormalRealDist<S> d(mean, sigma);
-    return d(Random::getRandGenerator());
+    return d(Random::getGenerator());
   }
 };
 

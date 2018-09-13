@@ -36,7 +36,7 @@ namespace dart {
 namespace math {
 
 //==============================================================================
-Random::GeneratorType& Random::getRandGenerator()
+Random::GeneratorType& Random::getGenerator()
 {
   static GeneratorType randGenerator(getSeed());
   return randGenerator;
@@ -47,7 +47,7 @@ void Random::setSeed(unsigned int seed)
 {
   std::seed_seq seq{seed};
   getSeedMutable() = seed;
-  getRandGenerator().seed(seq);
+  getGenerator().seed(seq);
 }
 
 //==============================================================================

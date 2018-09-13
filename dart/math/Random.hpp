@@ -55,7 +55,7 @@ public:
   using NormalRealDist = std::normal_distribution<FloatType>;
 
   /// Returns a mutable reference to the random generator
-  static GeneratorType& getRandGenerator();
+  static GeneratorType& getGenerator();
 
   /// Sets the seed value.
   ///
