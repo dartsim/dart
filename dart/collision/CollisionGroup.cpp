@@ -44,7 +44,8 @@ namespace collision {
 
 //==============================================================================
 CollisionGroup::CollisionGroup(const CollisionDetectorPtr& collisionDetector)
-  : mCollisionDetector(collisionDetector)
+  : mCollisionDetector(collisionDetector),
+    mVersion(0)
 {
   assert(mCollisionDetector);
 }
@@ -62,7 +63,9 @@ ConstCollisionDetectorPtr CollisionGroup::getCollisionDetector() const
 }
 
 //==============================================================================
-void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
+void CollisionGroup::addShapeFrame(
+    const dynamics::ShapeFrame* shapeFrame,
+    const void* source)
 {
   if (!shapeFrame)
     return;
@@ -75,6 +78,9 @@ void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
   addCollisionObjectToEngine(collObj.get());
 
   mShapeFrameMap.push_back(std::make_pair(shapeFrame, collObj));
+
+  // TODO(MXG): Keep track of source so we know when/if we should automatically
+  // delete this CollisionObject.
 }
 
 //==============================================================================
@@ -87,6 +93,12 @@ void CollisionGroup::addShapeFrames(
 
 //==============================================================================
 void CollisionGroup::addShapeFramesOf()
+{
+  // Do nothing
+}
+
+//==============================================================================
+void CollisionGroup::subscribeTo()
 {
   // Do nothing
 }
@@ -165,6 +177,9 @@ const dynamics::ShapeFrame* CollisionGroup::getShapeFrame(
 bool CollisionGroup::collide(
     const CollisionOption& option, CollisionResult* result)
 {
+  if(mUpdateAutomatically)
+    update();
+
   return mCollisionDetector->collide(this, option, result);
 }
 
@@ -174,6 +189,9 @@ bool CollisionGroup::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  if(mUpdateAutomatically)
+    update();
+
   return mCollisionDetector->collide(this, otherGroup, option, result);
 }
 
@@ -181,6 +199,9 @@ bool CollisionGroup::collide(
 double CollisionGroup::distance(
     const DistanceOption& option, DistanceResult* result)
 {
+  if(mUpdateAutomatically)
+    update();
+
   return mCollisionDetector->distance(this, option, result);
 }
 
@@ -190,7 +211,34 @@ double CollisionGroup::distance(
     const DistanceOption& option,
     DistanceResult* result)
 {
+  if(mUpdateAutomatically)
+    update();
+
   return mCollisionDetector->distance(this, otherGroup, option, result);
+}
+
+//==============================================================================
+std::size_t CollisionGroup::getVersion() const
+{
+  return mVersion;
+}
+
+//==============================================================================
+void CollisionGroup::setAutomaticUpdate(const bool automatic)
+{
+  mUpdateAutomatically = automatic;
+}
+
+//==============================================================================
+bool CollisionGroup::getAutomaticUpdate() const
+{
+  return mUpdateAutomatically;
+}
+
+//==============================================================================
+void CollisionGroup::update()
+{
+  // TODO(MXG): Figure this out
 }
 
 //==============================================================================

@@ -110,6 +110,69 @@ void CollisionGroup::addShapeFramesOf(
 
 //==============================================================================
 template <typename... Others>
+void CollisionGroup::subscribeTo(
+    const ConstCollisionGroupPtr& otherGroup,
+    const Others&... others)
+{
+  if(this != otherGroup.get())
+  {
+    addShapeFramesOf(otherGroup.get());
+
+    const bool inserted = mCollisionGroupSources.insert(
+          CollisionGroupSources::value_type(
+            otherGroup.get(),
+            {WeakConstCollisionGroupPtr(otherGroup), otherGroup->getVersion()})
+          ).second;
+
+    if(inserted)
+      ++mVersion;
+  }
+
+  subscribeTo(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::subscribeTo(
+    const dynamics::ConstBodyNodePtr& bodyNode,
+    const Others&... others)
+{
+  addShapeFramesOf(bodyNode.get());
+
+  const bool inserted = mBodyNodeSources.insert(
+        BodyNodeSources::value_type(
+          bodyNode.get(),
+          {dynamics::WeakConstBodyNodePtr(bodyNode), bodyNode->getVersion()})
+        ).second;
+
+  if(inserted)
+    ++mVersion;
+
+  subscribeTo(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::subscribeTo(
+    const dynamics::ConstSkeletonPtr& skeleton,
+    const Others&... others)
+{
+  addShapeFramesOf(skeleton.get());
+
+  const bool inserted = mSkeletonSources.insert(
+      SkeletonSources::value_type(
+        skeleton.get(),
+        {dynamics::WeakConstMetaSkeletonPtr(skeleton), skeleton->getVersion()})
+      ).second;
+
+  if(inserted)
+    ++mVersion;
+
+  subscribeTo(others...);
+}
+
+//==============================================================================
+template <typename... Others>
 void CollisionGroup::removeShapeFramesOf(
     const dynamics::ShapeFrame* shapeFrame, const Others*... others)
 {
@@ -179,6 +242,45 @@ void CollisionGroup::removeShapeFramesOf(
     removeShapeFramesOf(skel->getBodyNode(i));
 
   removeShapeFramesOf(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::unsubscribeFrom(
+    const CollisionGroup* otherGroup,
+    const Others*... others)
+{
+  const bool erased = mCollisionGroupSources.erase(otherGroup);
+  if(erased)
+    ++mVersion;
+
+  unsubscribeFrom(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::unsubscribeFrom(
+    const dynamics::BodyNode* bodyNode,
+    const Others*... others)
+{
+  const bool erased = mBodyNodeSources.erase(bodyNode);
+  if(erased)
+    ++mVersion;
+
+  unsubscribeFrom(others...);
+}
+
+//==============================================================================
+template <typename... Others>
+void CollisionGroup::unsubscribeFrom(
+    const dynamics::Skeleton* skeleton,
+    const Others*... others)
+{
+  const bool erased = mSkeletonSources.erase(skeleton);
+  if(erased)
+    ++mVersion;
+
+  unsubscribeFrom(others...);
 }
 
 }  // namespace collision
