@@ -1,4 +1,5 @@
 dart_add_test("unit" test_Aspect)
+dart_add_test("unit" test_Collisions)
 dart_add_test("unit" test_ContactConstraint)
 dart_add_test("unit" test_Factory)
 dart_add_test("unit" test_GenericJoints)

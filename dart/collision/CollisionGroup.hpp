@@ -34,6 +34,7 @@
 #define DART_COLLISION_COLLISIONGROUP_HPP_
 
 #include <map>
+#include <unordered_set>
 #include <unordered_map>
 #include <vector>
 #include "dart/collision/SmartPointer.hpp"
@@ -65,8 +66,7 @@ public:
   ConstCollisionDetectorPtr getCollisionDetector() const;
 
   /// Add a ShapeFrame to this CollisionGroup
-  void addShapeFrame(const dynamics::ShapeFrame* shapeFrame,
-                     const void* source = nullptr);
+  void addShapeFrame(const dynamics::ShapeFrame* shapeFrame);
 
   /// Add ShapeFrames to this CollisionGroup
   void addShapeFrames(
@@ -112,16 +112,6 @@ public:
   /// template function template<typename...> addShapeFramesOf().
   void addShapeFramesOf();
 
-  /// Add ShapeFrames of the other CollisionGroup, and also subscribe to the
-  /// other CollisionGroup so that the results from this CollisionGroup
-  /// automatically reflect any changes that are made to it.
-  ///
-  /// This does likewise for the objects in ...others.
-  template <typename... Others>
-  void subscribeTo(
-      const ConstCollisionGroupPtr& otherGroup,
-      const Others&... others);
-
   /// Add ShapeFrames of bodyNode, and also subscribe to the BodyNode so that
   /// the results from this CollisionGroup automatically reflect any changes
   /// that are made to it.
@@ -150,7 +140,10 @@ public:
   /// template.
   void subscribeTo();
 
-  /// Remove a ShapeFrame from this CollisionGroup
+  /// Remove a ShapeFrame from this CollisionGroup. If this ShapeFrame was being
+  /// provided by any subscriptions, then calling this function will unsubscribe
+  /// from them, because otherwise this ShapeFrame would simply be put back into
+  /// the CollisionGroup the next time the group gets updated.
   void removeShapeFrame(const dynamics::ShapeFrame* shapeFrame);
 
   /// Remove ShapeFrames from this CollisionGroup
@@ -209,25 +202,15 @@ public:
   /// Remove all the ShapeFrames in this CollisionGroup
   void removeAllShapeFrames();
 
-  /// Unsubscribe from the otherGroup, but do not remove its ShapeFrames. To
-  /// both unsubscribe and remove its ShapeFrames, call removeShapeFramesOf(~)
-  /// instead.
-  template <typename... Others>
-  void unsubscribeFrom(
-      const CollisionGroup* otherGroup,
-      const Others*... others);
-
-  /// Unsubscribe from bodyNode, but do not remove its ShapeFrames. To both
-  /// unsubscribe and remove its ShapeFrames, call removeShapeFramesOf(~)
-  /// instead.
+  /// Unsubscribe from bodyNode. The ShapeFrames of the BodyNode will also be
+  /// removed if no other source is requesting them for this group.
   template <typename... Others>
   void unsubscribeFrom(
       const dynamics::BodyNode* bodyNode,
       const Others*... others);
 
-  /// Unsubscribe from skeleton, but do not remove its ShapeFrames. To both
-  /// unsubscribe and remove its ShapeFrames, call removeShapeFramesOf(~)
-  /// instead.
+  /// Unsubscribe from skeleton. The ShapeFrames of the skeleton will also be
+  /// removed if no other source is requesting them for this group.
   template <typename... Others>
   void unsubscribeFrom(
       const dynamics::Skeleton* skeleton,
@@ -285,11 +268,6 @@ public:
       const DistanceOption& option = DistanceOption(false, 0.0, nullptr),
       DistanceResult* result = nullptr);
 
-  /// Get the version of this CollisionGroup. As ShapeFrames are added or
-  /// removed from this CollisionGroup (or its subscriptions are changed), its
-  /// version number will change.
-  std::size_t getVersion() const;
-
   /// Set whether this CollisionGroup will automatically check for updates.
   void setAutomaticUpdate(bool automatic = true);
 
@@ -344,9 +322,21 @@ protected:
   // CollisionDetector doesn't get destroyed as long as at least one
   // CollisionGroup is alive.
 
-  /// ShapeFrames and CollisionOjbects added to this CollisionGroup
-  std::vector<std::pair<const dynamics::ShapeFrame*,
-                        CollisionObjectPtr>> mShapeFrameMap;
+  struct ObjectInfo
+  {
+    const dynamics::ShapeFrame* mFrame;
+    CollisionObjectPtr mObject;
+    std::unordered_set<const void*> mSources;
+    std::size_t mLastKnownVersion;
+
+    ~ObjectInfo();
+  };
+
+  using ObjectInfoList = std::vector<std::unique_ptr<ObjectInfo>>;
+
+  /// Information about ShapeFrames and CollisionObjects that have been added to
+  /// this CollisionGroup.
+  ObjectInfoList mObjectInfoList;
   // CollisionGroup also shares the ownership of CollisionObjects across other
   // CollisionGroups for the same reason with above.
   //
@@ -363,9 +353,18 @@ protected:
 
 private:
 
-  /// The version number of this CollisionGroup. This increments every time a
-  /// ShapeFrame or subscription is added/removed.
-  std::size_t mVersion;
+  /// Implementation of addShapeFrame. The source argument tells us whether this
+  /// ShapeFrame is being requested explicitly by the user or implicitly through
+  /// a BodyNode, Skeleton, or other CollisionGroup.
+  ObjectInfo* _addShapeFrameImpl(
+      const dynamics::ShapeFrame* shapeFrame,
+      const void* source);
+
+  /// Internal version of removeShapeFrame. This will only remove the ShapeFrame
+  /// if it is unsubscribed from all sources.
+  void _removeShapeFrameInternal(
+      const dynamics::ShapeFrame* shapeFrame,
+      const void* source);
 
   /// Set this to true to have this CollisionGroup check for updates
   /// automatically. Default is true.
@@ -374,7 +373,7 @@ private:
   /// This struct is used to store sources of ShapeFrames that the
   /// CollisionGroup is subscribed to, alongside the last version number of that
   /// source, as known by this CollisionGroup.
-  template <typename Source>
+  template <typename Source, typename Child = void>
   struct CollisionSource
   {
     /// The source of ShapeFrames
@@ -382,25 +381,53 @@ private:
 
     /// The last known version of that source
     std::size_t mLastKnownVersion;
+
+    struct ChildInfo
+    {
+      std::size_t mLastKnownVersion;
+      std::unordered_set<const dynamics::ShapeFrame*> mFrames;
+
+      explicit ChildInfo(const std::size_t version)
+        : mLastKnownVersion(version)
+      {
+        // Do nothing
+      }
+    };
+
+    /// The last known versions of the children related to this source. This is
+    /// used by SkeletonSources to keep track of their child BodyNode versions.
+    std::unordered_map<const Child*, ChildInfo> mChildren;
+
+    /// The set of objects that pertain to this source
+    std::unordered_map<const dynamics::ShapeFrame*, ObjectInfo*> mObjects;
+
+    CollisionSource(const Source& source, std::size_t lastKnownVersion)
+      : mSource(source),
+        mLastKnownVersion(lastKnownVersion)
+    {
+      // Do nothing
+    }
   };
 
   // Convenient typedefs
+  using SkeletonSource =
+      CollisionSource<dynamics::WeakConstMetaSkeletonPtr, dynamics::BodyNode>;
   using SkeletonSources = std::unordered_map<
-      const dynamics::MetaSkeleton*,
-      CollisionSource<dynamics::WeakConstMetaSkeletonPtr>>;
+      const dynamics::MetaSkeleton*, SkeletonSource>;
 
+  using BodyNodeSource = CollisionSource<dynamics::WeakConstBodyNodePtr>;
   using BodyNodeSources = std::unordered_map<
-      const dynamics::BodyNode*,
-      CollisionSource<dynamics::WeakConstBodyNodePtr>>;
+      const dynamics::BodyNode*, BodyNodeSource>;
 
-  using CollisionGroupSources = std::unordered_map<
-      const CollisionGroup*,
-      CollisionSource<WeakConstCollisionGroupPtr>>;
+  void _updateSkeletonSource(SkeletonSources::value_type& entry);
+
+  void _updateBodyNodeSource(BodyNodeSources::value_type& entry);
+
+  void _updateShapeFrame(ObjectInfo* object);
 
   // The various sources that this CollisionGroup is subscribed to
   SkeletonSources mSkeletonSources;
   BodyNodeSources mBodyNodeSources;
-  CollisionGroupSources mCollisionGroupSources;
 
 };
 

@@ -71,8 +71,8 @@ void CollisionGroup::addShapeFramesOf(
 
   if (otherGroup && this != otherGroup)
   {
-    for (const auto& pair : otherGroup->mShapeFrameMap)
-      addShapeFrame(pair.first);
+    for (const auto& info : otherGroup->mObjectInfoList)
+      addShapeFrame(info->mFrame);
   }
 
   addShapeFramesOf(others...);
@@ -111,42 +111,28 @@ void CollisionGroup::addShapeFramesOf(
 //==============================================================================
 template <typename... Others>
 void CollisionGroup::subscribeTo(
-    const ConstCollisionGroupPtr& otherGroup,
-    const Others&... others)
-{
-  if(this != otherGroup.get())
-  {
-    addShapeFramesOf(otherGroup.get());
-
-    const bool inserted = mCollisionGroupSources.insert(
-          CollisionGroupSources::value_type(
-            otherGroup.get(),
-            {WeakConstCollisionGroupPtr(otherGroup), otherGroup->getVersion()})
-          ).second;
-
-    if(inserted)
-      ++mVersion;
-  }
-
-  subscribeTo(others...);
-}
-
-//==============================================================================
-template <typename... Others>
-void CollisionGroup::subscribeTo(
     const dynamics::ConstBodyNodePtr& bodyNode,
     const Others&... others)
 {
-  addShapeFramesOf(bodyNode.get());
+  const auto collisionShapeNodes =
+      bodyNode->getShapeNodesWith<dynamics::CollisionAspect>();
 
-  const bool inserted = mBodyNodeSources.insert(
+  const auto inserted = mBodyNodeSources.insert(
         BodyNodeSources::value_type(
           bodyNode.get(),
-          {dynamics::WeakConstBodyNodePtr(bodyNode), bodyNode->getVersion()})
-        ).second;
+          BodyNodeSource(bodyNode.get(), bodyNode->getVersion()))
+        );
 
-  if(inserted)
-    ++mVersion;
+  if(inserted.second)
+  {
+    const BodyNodeSources::iterator& entry = inserted.first;
+
+    for (const auto& shapeNode : collisionShapeNodes)
+    {
+      entry->second.mObjects.insert(
+        {shapeNode, _addShapeFrameImpl(shapeNode, bodyNode.get())});
+    }
+  }
 
   subscribeTo(others...);
 }
@@ -157,16 +143,36 @@ void CollisionGroup::subscribeTo(
     const dynamics::ConstSkeletonPtr& skeleton,
     const Others&... others)
 {
-  addShapeFramesOf(skeleton.get());
-
-  const bool inserted = mSkeletonSources.insert(
+  const auto inserted = mSkeletonSources.insert(
       SkeletonSources::value_type(
         skeleton.get(),
-        {dynamics::WeakConstMetaSkeletonPtr(skeleton), skeleton->getVersion()})
-      ).second;
+        SkeletonSource(skeleton, skeleton->getVersion()))
+      );
 
-  if(inserted)
-    ++mVersion;
+  if(inserted.second)
+  {
+    SkeletonSource& entry = inserted.first->second;
+
+    const std::size_t numBodies = skeleton->getNumBodyNodes();
+    for (std::size_t i = 0u ; i < numBodies; ++i)
+    {
+      const dynamics::BodyNode* bn = skeleton->getBodyNode(i);
+
+      const auto& collisionShapeNodes =
+          bn->getShapeNodesWith<dynamics::CollisionAspect>();
+
+      auto& childInfo = entry.mChildren.insert(
+            std::make_pair(bn, SkeletonSource::ChildInfo(bn->getVersion())))
+          .first->second;
+
+      for (const auto& shapeNode : collisionShapeNodes)
+      {
+        entry.mObjects.insert(
+            {shapeNode, _addShapeFrameImpl(shapeNode, skeleton.get())});
+        childInfo.mFrames.insert(shapeNode);
+      }
+    }
+  }
 
   subscribeTo(others...);
 }
@@ -207,8 +213,8 @@ void CollisionGroup::removeShapeFramesOf(
       return;
     }
 
-    for (const auto& pair : otherGroup->mShapeFrameMap)
-      removeShapeFrame(pair.first);
+    for (const auto& info : otherGroup->mObjectInfoList)
+      removeShapeFrame(info->mFrame);
   }
 
   removeShapeFramesOf(others...);
@@ -247,25 +253,17 @@ void CollisionGroup::removeShapeFramesOf(
 //==============================================================================
 template <typename... Others>
 void CollisionGroup::unsubscribeFrom(
-    const CollisionGroup* otherGroup,
-    const Others*... others)
-{
-  const bool erased = mCollisionGroupSources.erase(otherGroup);
-  if(erased)
-    ++mVersion;
-
-  unsubscribeFrom(others...);
-}
-
-//==============================================================================
-template <typename... Others>
-void CollisionGroup::unsubscribeFrom(
     const dynamics::BodyNode* bodyNode,
     const Others*... others)
 {
-  const bool erased = mBodyNodeSources.erase(bodyNode);
-  if(erased)
-    ++mVersion;
+  auto it = mBodyNodeSources.find(bodyNode);
+  if(it != mBodyNodeSources.end())
+  {
+    for(const auto& entry : it->second.mObjects)
+      _removeShapeFrameInternal(entry.first, bodyNode);
+
+    mBodyNodeSources.erase(it);
+  }
 
   unsubscribeFrom(others...);
 }
@@ -276,9 +274,17 @@ void CollisionGroup::unsubscribeFrom(
     const dynamics::Skeleton* skeleton,
     const Others*... others)
 {
-  const bool erased = mSkeletonSources.erase(skeleton);
-  if(erased)
-    ++mVersion;
+  auto it = mSkeletonSources.find(skeleton);
+  if(it != mSkeletonSources.end())
+  {
+    for(const auto& entry : it->second.mObjects)
+    {
+      _removeShapeFrameInternal(
+            entry.first, static_cast<const dynamics::MetaSkeleton*>(skeleton));
+    }
+
+    mSkeletonSources.erase(it);
+  }
 
   unsubscribeFrom(others...);
 }
