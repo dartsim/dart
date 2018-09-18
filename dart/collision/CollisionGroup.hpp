@@ -326,8 +326,9 @@ protected:
   {
     const dynamics::ShapeFrame* mFrame;
     CollisionObjectPtr mObject;
-    std::unordered_set<const void*> mSources;
+    std::size_t mLastKnownShapeID;
     std::size_t mLastKnownVersion;
+    std::unordered_set<const void*> mSources;
 
     ~ObjectInfo();
   };
@@ -419,11 +420,11 @@ private:
   using BodyNodeSources = std::unordered_map<
       const dynamics::BodyNode*, BodyNodeSource>;
 
-  void _updateSkeletonSource(SkeletonSources::value_type& entry);
+  bool _updateSkeletonSource(SkeletonSources::value_type& entry);
 
-  void _updateBodyNodeSource(BodyNodeSources::value_type& entry);
+  bool _updateBodyNodeSource(BodyNodeSources::value_type& entry);
 
-  void _updateShapeFrame(ObjectInfo* object);
+  bool _updateShapeFrame(ObjectInfo* object);
 
   // The various sources that this CollisionGroup is subscribed to
   SkeletonSources mSkeletonSources;

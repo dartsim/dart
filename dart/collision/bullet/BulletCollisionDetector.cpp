@@ -340,6 +340,12 @@ std::unique_ptr<CollisionObject> BulletCollisionDetector::createCollisionObject(
 }
 
 //==============================================================================
+void BulletCollisionDetector::refreshCollisionObject(CollisionObject* object)
+{
+  // TODO
+}
+
+//==============================================================================
 void BulletCollisionDetector::notifyCollisionObjectDestroying(
     CollisionObject* object)
 {

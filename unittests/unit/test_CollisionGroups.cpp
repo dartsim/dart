@@ -41,9 +41,26 @@
 #include "dart/simulation/World.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 
-TEST(Collisions, WorldSubscription)
+
+class CollisionGroupsTest
+    : public testing::Test,
+      public testing::WithParamInterface<const char*>
 {
+
+};
+
+TEST_P(CollisionGroupsTest, WorldSubscription)
+{
+  if(!dart::collision::CollisionDetector::getFactory()->canCreate(GetParam()))
+  {
+    std::cout << "Skipping test for [" << GetParam() << "], because it is not "
+              << "available" << std::endl;
+    return;
+  }
+
   dart::simulation::WorldPtr world = dart::simulation::World::create();
+  world->getConstraintSolver()->setCollisionDetector(
+        dart::collision::CollisionDetector::getFactory()->create(GetParam()));
 
   dart::dynamics::SkeletonPtr skel_A = dart::dynamics::Skeleton::create("A");
   dart::dynamics::SkeletonPtr skel_B = dart::dynamics::Skeleton::create("B");
@@ -51,25 +68,44 @@ TEST(Collisions, WorldSubscription)
   world->addSkeleton(skel_A);
   world->addSkeleton(skel_B);
 
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = 0.25*Eigen::Vector3d::UnitX();
-
-  auto boxShape = std::make_shared<dart::dynamics::BoxShape>(
-        Eigen::Vector3d::Constant(1.0));
+  // There should be no collisions because there are no shapes in the world.
+  EXPECT_FALSE(world->checkCollision());
 
   // We will now add some BodyNodes and collision shapes *after* the Skeletons
   // have been added to the world, to see that the collision geometries get
   // updated automatically.
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = (1.0 + 0.25)*Eigen::Vector3d::UnitX();
+
+  auto boxShape = std::make_shared<dart::dynamics::BoxShape>(
+        Eigen::Vector3d::Constant(1.0));
   auto pair = skel_A->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
   pair.first->setTransform(tf);
-  pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(boxShape);
+  auto sn1 = pair.second->createShapeNodeWith<
+      dart::dynamics::CollisionAspect>(boxShape);
 
-  tf.translation() = -0.25*Eigen::Vector3d::UnitX();
+  tf.translation() = (1.0 -0.25)*Eigen::Vector3d::UnitX();
 
   pair = skel_B->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
   pair.first->setTransform(tf);
-  pair.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(boxShape);
+  auto sn2 = pair.second->createShapeNodeWith<
+      dart::dynamics::CollisionAspect>(boxShape);
 
+  EXPECT_TRUE(world->checkCollision());
+
+  // Now we'll change the properties of one the box shape so that there should
+  // no longer be any collisions.
+  boxShape->setSize(Eigen::Vector3d::Constant(0.1));
+  dart::collision::CollisionResult result2;
+  EXPECT_FALSE(world->checkCollision());
+
+  // Now we'll replace one of the boxes with a large one, so that a collision
+  // will occur again.
+  auto largeBox = std::make_shared<dart::dynamics::BoxShape>(
+        Eigen::Vector3d::Constant(1.0));
+  sn1->setShape(largeBox);
   EXPECT_TRUE(world->checkCollision());
 }
 
+INSTANTIATE_TEST_CASE_P(CollisionEngine, CollisionGroupsTest,
+                        testing::Values("dart", "fcl", "bullet", "ode"));

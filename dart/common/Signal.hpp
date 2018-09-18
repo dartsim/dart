@@ -92,7 +92,7 @@ class ScopedConnection : public Connection
 {
 public:
   /// Default constructor
-  ScopedConnection(const Connection& _other);
+  ScopedConnection(const Connection& _other = Connection());
 
   /// Move constructor
   ScopedConnection(Connection&& _other);

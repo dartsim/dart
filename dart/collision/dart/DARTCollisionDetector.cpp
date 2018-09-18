@@ -305,6 +305,11 @@ std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
         new DARTCollisionObject(this, shapeFrame));
 }
 
+//==============================================================================
+void DARTCollisionDetector::refreshCollisionObject(CollisionObject* object)
+{
+  // TODO
+}
 
 
 

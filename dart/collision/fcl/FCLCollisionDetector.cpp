@@ -892,15 +892,27 @@ std::unique_ptr<CollisionObject> FCLCollisionDetector::createCollisionObject(
 }
 
 //==============================================================================
+void FCLCollisionDetector::refreshCollisionObject(CollisionObject* const object)
+{
+  FCLCollisionObject* fcl = static_cast<FCLCollisionObject*>(object);
+
+  fcl->mFCLCollisionObject = std::unique_ptr<fcl::CollisionObject>(
+        new fcl::CollisionObject(
+          claimFCLCollisionGeometry(
+            object->getShapeFrame()->getShape(), true)));
+}
+
+//==============================================================================
 fcl_shared_ptr<fcl::CollisionGeometry>
 FCLCollisionDetector::claimFCLCollisionGeometry(
-    const dynamics::ConstShapePtr& shape)
+    const dynamics::ConstShapePtr& shape, bool refresh)
 {
-  const auto search = mShapeMap.find(shape);
+  const auto search = mShapeMap.insert(
+        std::make_pair(shape, fcl_weak_ptr<fcl::CollisionGeometry>()));
 
-  if (mShapeMap.end() != search)
+  if (!search.second && !refresh)
   {
-    const auto& fclCollGeom = search->second;
+    const auto& fclCollGeom = search.first->second;
     assert(fclCollGeom.lock());
     // Ensure all the collision geometry in the map should be alive pointers.
 
@@ -909,7 +921,7 @@ FCLCollisionDetector::claimFCLCollisionGeometry(
 
   auto newfclCollGeom = createFCLCollisionGeometry(
         shape, mPrimitiveShapeType, FCLCollisionGeometryDeleter(this, shape));
-  mShapeMap[shape] = newfclCollGeom;
+  search.first->second = newfclCollGeom;
 
   return newfclCollGeom;
 }

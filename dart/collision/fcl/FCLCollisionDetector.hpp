@@ -142,10 +142,12 @@ protected:
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
 
+  void refreshCollisionObject(CollisionObject* object) override;
+
   /// Return fcl::CollisionGeometry associated with give Shape. New
   /// fcl::CollisionGeome will be created if it hasn't created yet.
   fcl_shared_ptr<dart::collision::fcl::CollisionGeometry> claimFCLCollisionGeometry(
-      const dynamics::ConstShapePtr& shape);
+      const dynamics::ConstShapePtr& shape, bool refresh = false);
 
 protected:
 

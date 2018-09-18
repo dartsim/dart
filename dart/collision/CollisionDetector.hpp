@@ -174,6 +174,9 @@ protected:
   virtual std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) = 0;
 
+  /// Update the collision geometry of a ShapeFrame
+  virtual void refreshCollisionObject(CollisionObject* object) = 0;
+
   /// Notify that a CollisionObject is destroying. Do nothing by default.
   virtual void notifyCollisionObjectDestroying(CollisionObject* object);
 
@@ -198,6 +201,8 @@ public:
 
   /// Returns collision detector
   CollisionDetector* getCollisionDetector();
+
+  virtual ~CollisionObjectManager() = default;
 
 protected:
 

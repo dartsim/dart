@@ -238,6 +238,12 @@ std::unique_ptr<CollisionObject> OdeCollisionDetector::createCollisionObject(
 }
 
 //==============================================================================
+void OdeCollisionDetector::refreshCollisionObject(CollisionObject* object)
+{
+  // TODO
+}
+
+//==============================================================================
 dWorldID OdeCollisionDetector::getOdeWorldId() const
 {
   return mWorldId;

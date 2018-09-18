@@ -245,6 +245,9 @@ protected:
   /// Relative transformation updated signal
   RelativeTransformUpdatedSignal mRelativeTransformUpdatedSignal;
 
+  /// Connect to changes in the Shape version
+  common::Connection mConnectionForShapeVersionChange;
+
 public:
 
   /// Slot register for shape updated signal

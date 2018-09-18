@@ -108,6 +108,9 @@ protected:
       const dynamics::ShapeFrame* shapeFrame) override;
 
   // Documentation inherited
+  void refreshCollisionObject(CollisionObject* object) override;
+
+  // Documentation inherited
   void notifyCollisionObjectDestroying(CollisionObject* object) override;
 
 private:

@@ -159,7 +159,6 @@ CollisionDetector::ManagerForSharableCollisionObjects::claimCollisionObject(
   {
     const auto& collObj = search->second;
     assert(collObj.lock());
-    // Ensure all the collision object in the map should be alive pointers.
 
     return collObj.lock();
   }

@@ -209,6 +209,19 @@ void ShapeFrame::setShape(const ShapePtr& shape)
   ShapePtr oldShape = ShapeFrame::mAspectProperties.mShape;
 
   ShapeFrame::mAspectProperties.mShape = shape;
+  incrementVersion();
+
+  mConnectionForShapeVersionChange.disconnect();
+
+  if(shape)
+  {
+    mConnectionForShapeVersionChange = shape->onVersionChanged.connect(
+          [this](Shape* shape, std::size_t)
+          {
+            assert(shape == this->ShapeFrame::mAspectProperties.mShape.get());
+            this->incrementVersion();
+          });
+  }
 
   mShapeUpdatedSignal.raise(this, oldShape, ShapeFrame::mAspectProperties.mShape);
 }
@@ -272,8 +285,7 @@ ShapeFrame::ShapeFrame(Frame* parent, const Properties& properties)
 }
 
 //==============================================================================
-ShapeFrame::ShapeFrame(Frame* parent,
-                       const ShapePtr& shape)
+ShapeFrame::ShapeFrame(Frame* parent, const ShapePtr& shape)
   : common::Composite(),
     Entity(ConstructFrame),
     Frame(parent),
