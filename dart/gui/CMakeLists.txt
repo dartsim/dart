@@ -75,6 +75,7 @@ add_component_dependencies(
 
 # Add subdirectories
 add_subdirectory(osg)
+add_subdirectory(ogre)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "gui headers" ${hdrs})

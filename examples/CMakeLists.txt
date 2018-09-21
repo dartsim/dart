@@ -21,3 +21,4 @@ add_subdirectory(vehicle)
 add_subdirectory(humanJointLimits)
 
 add_subdirectory(osgExamples)
+add_subdirectory(ogreExamples)
