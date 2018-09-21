@@ -115,7 +115,7 @@ protected:
 
 private:
 
-  BulletCollisionShape* claimBulletCollisionShape(
+  std::shared_ptr<BulletCollisionShape> claimBulletCollisionShape(
       const dynamics::ConstShapePtr& shape);
 
   void reclaimBulletCollisionShape(
@@ -126,8 +126,13 @@ private:
 
 private:
 
-  std::map<dynamics::ConstShapePtr,
-           std::pair<std::unique_ptr<BulletCollisionShape>, std::size_t>> mShapeMap;
+  struct ShapeInfo
+  {
+    std::weak_ptr<BulletCollisionShape> mShape;
+    std::size_t mLastKnownVersion;
+  };
+
+  std::map<dynamics::ConstShapePtr, ShapeInfo> mShapeMap;
 
   std::unique_ptr<BulletCollisionGroup> mGroupForFiltering;
 

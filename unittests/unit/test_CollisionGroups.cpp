@@ -57,6 +57,11 @@ TEST_P(CollisionGroupsTest, WorldSubscription)
               << "available" << std::endl;
     return;
   }
+  else
+  {
+    std::cout << "Running CollisionGroups test for [" << GetParam() << "]"
+              << std::endl;
+  }
 
   dart::simulation::WorldPtr world = dart::simulation::World::create();
   world->getConstraintSolver()->setCollisionDetector(
@@ -105,6 +110,10 @@ TEST_P(CollisionGroupsTest, WorldSubscription)
         Eigen::Vector3d::Constant(1.0));
   sn1->setShape(largeBox);
   EXPECT_TRUE(world->checkCollision());
+
+  // TODO(MXG): Make it so that this test does not crash bullet
+//  sn2->setShape(largeBox);
+//  EXPECT_TRUE(world->checkCollision());
 }
 
 INSTANTIATE_TEST_CASE_P(CollisionEngine, CollisionGroupsTest,

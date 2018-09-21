@@ -342,7 +342,11 @@ std::unique_ptr<CollisionObject> BulletCollisionDetector::createCollisionObject(
 //==============================================================================
 void BulletCollisionDetector::refreshCollisionObject(CollisionObject* object)
 {
-  // TODO
+  BulletCollisionObject* bullet = static_cast<BulletCollisionObject*>(object);
+
+  bullet->mBulletCollisionShape = claimBulletCollisionShape(bullet->getShape());
+  bullet->mBulletCollisionObject->setCollisionShape(
+        bullet->mBulletCollisionShape->mCollisionShape.get());
 }
 
 //==============================================================================
@@ -353,54 +357,40 @@ void BulletCollisionDetector::notifyCollisionObjectDestroying(
 }
 
 //==============================================================================
-BulletCollisionShape* BulletCollisionDetector::claimBulletCollisionShape(
+std::shared_ptr<BulletCollisionShape>
+BulletCollisionDetector::claimBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
-  const auto search = mShapeMap.find(shape);
+  const std::size_t currentVersion = shape->getVersion();
 
-  if (mShapeMap.end() != search)
+  const auto search = mShapeMap.insert(std::make_pair(shape, ShapeInfo()));
+  const bool inserted = search.second;
+  auto& info = search.first->second;
+
+  if (!inserted && currentVersion == info.mLastKnownVersion)
   {
-    auto& bulletCollShapeAndCount = search->second;
+    const auto& bulletCollShape = info.mShape.lock();
+    assert(bulletCollShape);
 
-    auto& bulletCollShape = bulletCollShapeAndCount.first;
-    auto& count = bulletCollShapeAndCount.second;
-    assert(0u != count);
-
-    count++;
-
-    return bulletCollShape.get();
+    return bulletCollShape;
   }
 
-  auto newBulletCollisionShape = createBulletCollisionShape(shape);
-  auto rawCollisionShape = newBulletCollisionShape.get();
-  mShapeMap[shape] = std::make_pair(std::move(newBulletCollisionShape), 1u);
+  auto newBulletCollisionShape = std::shared_ptr<BulletCollisionShape>(
+        createBulletCollisionShape(shape).release());
+  info.mShape = newBulletCollisionShape;
+  info.mLastKnownVersion = currentVersion;
 
-  return rawCollisionShape;
+  return newBulletCollisionShape;
 }
 
 //==============================================================================
 void BulletCollisionDetector::reclaimBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
-  auto search = mShapeMap.find(shape);
-
-  assert(mShapeMap.end() != search);
-
-  auto& bulletCollShapeAndCount = search->second;
-
-  auto& bulletCollShape = bulletCollShapeAndCount.first;
-  auto& count = bulletCollShapeAndCount.second;
-
-  count--;
-
-  if (0u == count)
-  {
-    auto userPointer = bulletCollShape->mCollisionShape->getUserPointer();
-    if (userPointer)
-      delete static_cast<btTriangleMesh*>(userPointer);
-
+  const auto& search = mShapeMap.find(shape);
+  const auto& bulletShape = search->second.mShape.lock();
+  if(!bulletShape || bulletShape.use_count() <= 2)
     mShapeMap.erase(search);
-  }
 }
 
 //==============================================================================

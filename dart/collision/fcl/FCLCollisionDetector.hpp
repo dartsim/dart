@@ -147,7 +147,7 @@ protected:
   /// Return fcl::CollisionGeometry associated with give Shape. New
   /// fcl::CollisionGeome will be created if it hasn't created yet.
   fcl_shared_ptr<dart::collision::fcl::CollisionGeometry> claimFCLCollisionGeometry(
-      const dynamics::ConstShapePtr& shape, bool refresh = false);
+      const dynamics::ConstShapePtr& shape);
 
 protected:
 
@@ -185,8 +185,13 @@ private:
 
 private:
 
-  using ShapeMap = std::map<dynamics::ConstShapePtr,
-                            fcl_weak_ptr<dart::collision::fcl::CollisionGeometry>>;
+  struct ShapeInfo
+  {
+    fcl_weak_ptr<dart::collision::fcl::CollisionGeometry> mShape;
+    std::size_t mLastKnownVersion;
+  };
+
+  using ShapeMap = std::map<dynamics::ConstShapePtr, ShapeInfo>;
 
   ShapeMap mShapeMap;
 
