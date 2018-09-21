@@ -242,10 +242,7 @@ void CollisionGroup::update()
     updateNeeded |= _updateBodyNodeSource(entry);
 
   if(updateNeeded)
-  {
-    std::cout << "Updating engine" << std::endl;
     updateEngineData();
-  }
 }
 
 //==============================================================================
