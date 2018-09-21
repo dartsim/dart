@@ -202,24 +202,63 @@ ContactConstraint::ContactConstraint(
     assert(!dart::math::isNan(mSpatialNormalA));
     assert(!dart::math::isNan(mSpatialNormalB));
 
-    mUnitHybridOutputsA.resize(numDofsA, 3);
-    mUnitHybridOutputsB.resize(numDofsB, 3);
+    mUnitImpulseResponsesA.resize(numDofsA, 3);
+    mUnitImpulseResponsesB.resize(numDofsB, 3);
 
-    excite();
+    computeJointImpulseResponses(
+        mUnitImpulseResponsesA.col(0),
+        *mBodyNodeA,
+        mSpatialNormalA.col(0));
+    computeJointImpulseResponses(
+        mUnitImpulseResponsesA.col(1),
+        *mBodyNodeA,
+        mSpatialNormalA.col(1));
+    computeJointImpulseResponses(
+        mUnitImpulseResponsesA.col(2),
+        *mBodyNodeA,
+        mSpatialNormalA.col(2));
 
-    applyUnitImpulse(0);
-    mUnitHybridOutputsA.col(0) = mBodyNodeA->getSkeleton()->getHybridOutputs();
-    mUnitHybridOutputsB.col(0) = mBodyNodeB->getSkeleton()->getHybridOutputs();
+    computeJointImpulseResponses(
+        mUnitImpulseResponsesB.col(0),
+        *mBodyNodeB,
+        mSpatialNormalB.col(0));
+    computeJointImpulseResponses(
+        mUnitImpulseResponsesB.col(1),
+        *mBodyNodeB,
+        mSpatialNormalB.col(1));
+    computeJointImpulseResponses(
+        mUnitImpulseResponsesB.col(2),
+        *mBodyNodeB,
+        mSpatialNormalB.col(2));
 
-    applyUnitImpulse(1);
-    mUnitHybridOutputsA.col(1) = mBodyNodeA->getSkeleton()->getHybridOutputs();
-    mUnitHybridOutputsB.col(1) = mBodyNodeB->getSkeleton()->getHybridOutputs();
+//    excite();
 
-    applyUnitImpulse(2);
-    mUnitHybridOutputsA.col(2) = mBodyNodeA->getSkeleton()->getHybridOutputs();
-    mUnitHybridOutputsB.col(2) = mBodyNodeB->getSkeleton()->getHybridOutputs();
+//    applyUnitImpulse(0);
+//    mUnitImpulseResponsesA.col(0)
+//        = mBodyNodeA->getSkeleton()->getImpulseResponses();
+//    mUnitImpulseResponsesB.col(0)
+//        = mBodyNodeB->getSkeleton()->getImpulseResponses();
 
-    unexcite();
+//    applyUnitImpulse(1);
+//    mUnitImpulseResponsesA.col(1)
+//        = mBodyNodeA->getSkeleton()->getImpulseResponses();
+//    mUnitImpulseResponsesB.col(1)
+//        = mBodyNodeB->getSkeleton()->getImpulseResponses();
+
+//    applyUnitImpulse(2);
+//    mUnitImpulseResponsesA.col(2)
+//        = mBodyNodeA->getSkeleton()->getImpulseResponses();
+//    mUnitImpulseResponsesB.col(2)
+//        = mBodyNodeB->getSkeleton()->getImpulseResponses();
+
+//    unexcite();
+
+    //    Eigen::Map<Eigen::VectorXd>
+    //    map(mResponsesToUnitImpulsesA.col(0).data(),
+    //    mResponsesToUnitImpulsesA.rows());
+//    Eigen::VectorXd map;
+
+//    computeJointImpulseResponses(map, *mBodyNodeA, mSpatialNormalA.col(0));
   }
   else
   {
@@ -249,26 +288,29 @@ ContactConstraint::ContactConstraint(
     mSpatialNormalA.col(0).tail<3>().noalias() = bodyDirectionA;
     mSpatialNormalB.col(0).tail<3>().noalias() = bodyDirectionB;
 
-    mUnitHybridOutputsA.resize(numDofsA, 1);
-    mUnitHybridOutputsB.resize(numDofsB, 1);
+    mUnitImpulseResponsesA.resize(numDofsA, 1);
+    mUnitImpulseResponsesB.resize(numDofsB, 1);
 
     excite();
     applyUnitImpulse(0);
-    mUnitHybridOutputsA = mBodyNodeA->getSkeleton()->getHybridOutputs();
-    mUnitHybridOutputsB = mBodyNodeB->getSkeleton()->getHybridOutputs();
+    mUnitImpulseResponsesA = mBodyNodeA->getSkeleton()->getImpulseResponses();
+    mUnitImpulseResponsesB = mBodyNodeB->getSkeleton()->getImpulseResponses();
     unexcite();
   }
 
-  mConstraintJacobianA.noalias()
+  mJacobianA.noalias()
       = mSpatialNormalA.transpose()
-        * mBodyNodeA->getSkeleton()->getWorldJacobian(mBodyNodeA);
-  mConstraintJacobianB.noalias()
+        * mBodyNodeA->getSkeleton()->getJacobian(mBodyNodeA);
+  mJacobianB.noalias()
       = mSpatialNormalB.transpose()
-        * mBodyNodeB->getSkeleton()->getWorldJacobian(mBodyNodeB);
-  assert(static_cast<std::size_t>(mConstraintJacobianA.rows()) == mDim);
-  assert(static_cast<std::size_t>(mConstraintJacobianA.cols()) == numDofsA);
-  assert(static_cast<std::size_t>(mConstraintJacobianB.rows()) == mDim);
-  assert(static_cast<std::size_t>(mConstraintJacobianB.cols()) == numDofsB);
+        * mBodyNodeB->getSkeleton()->getJacobian(mBodyNodeB);
+  assert(static_cast<std::size_t>(mJacobianA.rows()) == mDim);
+  assert(static_cast<std::size_t>(mJacobianA.cols()) == numDofsA);
+  assert(static_cast<std::size_t>(mJacobianB.rows()) == mDim);
+  assert(static_cast<std::size_t>(mJacobianB.cols()) == numDofsB);
+
+  mMassMatrix.noalias() = mJacobianA * mUnitImpulseResponsesA;
+  mMassMatrix.noalias() += mJacobianB * mUnitImpulseResponsesB;
 }
 
 //==============================================================================
@@ -612,6 +654,12 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
 }
 
 //==============================================================================
+const Eigen::MatrixXd& ContactConstraint::getConstraintMassMatrix() const
+{
+  return mMassMatrix;
+}
+
+//==============================================================================
 void ContactConstraint::excite()
 {
   if (mBodyNodeA->isReactive())
@@ -638,9 +686,11 @@ void ContactConstraint::unexcite()
 }
 
 //==============================================================================
-void ContactConstraint::applyImpulse(double* lambda) // TODO(JS): make this const
+void ContactConstraint::applyImpulse(
+    double* lambda) // TODO(JS): make this const
 {
-  const Eigen::Map<const Eigen::VectorXd> lambdaMap(lambda, static_cast<int>(mDim));
+  const Eigen::Map<const Eigen::VectorXd> lambdaMap(
+      lambda, static_cast<int>(mDim));
 
   assert(!math::isNan(lambdaMap));
 
@@ -652,42 +702,42 @@ void ContactConstraint::applyImpulse(double* lambda) // TODO(JS): make this cons
     // Store contact impulse (force) toward the normal w.r.t. world frame
     mContact.force = mContact.normal * lambda[0] / mTimeStep;
 
-//    // Normal impulsive force
-//    if (mBodyNodeA->isReactive())
-//      mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(0) * lambda[0]);
-//    if (mBodyNodeB->isReactive())
-//      mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(0) * lambda[0]);
+    // Normal impulsive force
+    if (mBodyNodeA->isReactive())
+      mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(0) * lambda[0]);
+    if (mBodyNodeB->isReactive())
+      mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(0) * lambda[0]);
 
-//    // Add contact impulse (force) toward the tangential w.r.t. world frame
-//    const Eigen::MatrixXd D = getTangentBasisMatrixODE(mContact.normal);
-//    mContact.force += D.col(0) * lambda[1] / mTimeStep;
+    // Add contact impulse (force) toward the tangential w.r.t. world frame
+    const Eigen::MatrixXd D = getTangentBasisMatrixODE(mContact.normal);
+    mContact.force += D.col(0) * lambda[1] / mTimeStep;
 
-//    // Tangential direction-1 impulsive force
-//    if (mBodyNodeA->isReactive())
-//      mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(1) * lambda[1]);
-//    if (mBodyNodeB->isReactive())
-//      mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(1) * lambda[1]);
+    // Tangential direction-1 impulsive force
+    if (mBodyNodeA->isReactive())
+      mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(1) * lambda[1]);
+    if (mBodyNodeB->isReactive())
+      mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(1) * lambda[1]);
 
-//    // Add contact impulse (force) toward the tangential w.r.t. world frame
-//    mContact.force += D.col(1) * lambda[2] / mTimeStep;
+    // Add contact impulse (force) toward the tangential w.r.t. world frame
+    mContact.force += D.col(1) * lambda[2] / mTimeStep;
 
-//    // Tangential direction-2 impulsive force
-//    if (mBodyNodeA->isReactive())
-//      mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(2) * lambda[2]);
-//    if (mBodyNodeB->isReactive())
-//      mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(2) * lambda[2]);
+    // Tangential direction-2 impulsive force
+    if (mBodyNodeA->isReactive())
+      mBodyNodeA->addConstraintImpulse(mSpatialNormalA.col(2) * lambda[2]);
+    if (mBodyNodeB->isReactive())
+      mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(2) * lambda[2]);
   }
   //----------------------------------------------------------------------------
   // Frictionless case
   //----------------------------------------------------------------------------
   else
   {
-//    // Normal impulsive force
-//    if (mBodyNodeA->isReactive())
-//      mBodyNodeA->addConstraintImpulse(mSpatialNormalA * lambda[0]);
+    //    // Normal impulsive force
+    //    if (mBodyNodeA->isReactive())
+    //      mBodyNodeA->addConstraintImpulse(mSpatialNormalA * lambda[0]);
 
-//    if (mBodyNodeB->isReactive())
-//      mBodyNodeB->addConstraintImpulse(mSpatialNormalB * lambda[0]);
+    //    if (mBodyNodeB->isReactive())
+    //      mBodyNodeB->addConstraintImpulse(mSpatialNormalB * lambda[0]);
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
     mContact.force = mContact.normal * lambda[0] / mTimeStep;
@@ -695,14 +745,14 @@ void ContactConstraint::applyImpulse(double* lambda) // TODO(JS): make this cons
 
   if (mBodyNodeA->isReactive())
   {
-    const Eigen::VectorXd hybridOutputsA = mUnitHybridOutputsA * lambdaMap;
-    mBodyNodeA->getSkeleton()->addHybridOutputs(hybridOutputsA);
+    const Eigen::VectorXd hybridOutputsA = mUnitImpulseResponsesA * lambdaMap;
+    mBodyNodeA->getSkeleton()->addImpulseResponses(hybridOutputsA);
   }
 
   if (mBodyNodeB->isReactive())
   {
-    const Eigen::VectorXd hybridOutputsB = mUnitHybridOutputsB * lambdaMap;
-    mBodyNodeB->getSkeleton()->addHybridOutputs(hybridOutputsB);
+    const Eigen::VectorXd hybridOutputsB = mUnitImpulseResponsesB * lambdaMap;
+    mBodyNodeB->getSkeleton()->addImpulseResponses(hybridOutputsB);
   }
 }
 

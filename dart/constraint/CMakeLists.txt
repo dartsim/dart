@@ -35,6 +35,8 @@ dart_format_add(
   BoxedLcpConstraintSolver.hpp
   BoxedLcpConstraintSolver.cpp
   BoxedLcpSolver.hpp
+  ConstraintBase.hpp
+  ConstraintBase.cpp
   ContactConstraint.hpp
   ContactConstraint.cpp
   DantzigBoxedLcpSolver.hpp

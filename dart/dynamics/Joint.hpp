@@ -509,8 +509,22 @@ public:
   /// Set a single constraint impulse
   virtual void setConstraintImpulse(std::size_t _index, double _impulse) = 0;
 
+  // TODO(JS): document
+  virtual void setConstraintImpulse(
+      const Eigen::Vector6d& bodyConstraintImpulse) = 0;
+
+  // TODO(JS): document
+  virtual void addConstraintImpulse(
+      const Eigen::Vector6d& bodyConstraintImpulse) = 0;
+
   /// Get a single constraint impulse
   virtual double getConstraintImpulse(std::size_t _index) const = 0;
+
+    // TODO(JS): document
+  virtual void setConstraintImpulses(const Eigen::VectorXd& impulses) = 0;
+
+  // TODO(JS): document
+  virtual Eigen::VectorXd getConstraintImpulses() const = 0;
 
   /// Set zero all the constraint impulses
   virtual void resetConstraintImpulses() = 0;

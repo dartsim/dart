@@ -942,17 +942,29 @@ Eigen::VectorXd MetaSkeleton::getVelocityChanges() const
 }
 
 //==============================================================================
-void MetaSkeleton::setJointConstraintImpulses(const Eigen::VectorXd& _impulses)
+void MetaSkeleton::setJointConstraintImpulses(const Eigen::VectorXd& impulses)
+{
+  setConstraintImpulses(impulses);
+}
+
+//==============================================================================
+void MetaSkeleton::setConstraintImpulses(const Eigen::VectorXd& impulses)
 {
   setAllValuesFromVector<&DegreeOfFreedom::setConstraintImpulse>(
-        this, _impulses, "setJointConstraintImpulses", "_impulses");
+        this, impulses, "setConstraintImpulses", "impulses");
 }
 
 //==============================================================================
 Eigen::VectorXd MetaSkeleton::getJointConstraintImpulses() const
 {
+  return getConstraintImpulses();
+}
+
+//==============================================================================
+Eigen::VectorXd MetaSkeleton::getConstraintImpulses() const
+{
   return getValuesFromAllDofs<&DegreeOfFreedom::getConstraintImpulse>(
-        this, "getJointConstraintImpulses");
+        this, "getConstraintImpulses");
 }
 
 //==============================================================================
@@ -963,24 +975,24 @@ Eigen::VectorXd MetaSkeleton::getImpulses() const
 }
 
 //==============================================================================
-void MetaSkeleton::setHybridOutputs(const Eigen::VectorXd& outputs)
+void MetaSkeleton::setImpulseResponses(const Eigen::VectorXd& outputs)
 {
-  setAllValuesFromVector<&DegreeOfFreedom::setHybridOutput>(
+  setAllValuesFromVector<&DegreeOfFreedom::setImpulseResponse>(
         this, outputs, "setHybridOutputs", "outputs");
 }
 
 //==============================================================================
-void MetaSkeleton::addHybridOutputs(const Eigen::VectorXd& outputs)
+void MetaSkeleton::addImpulseResponses(const Eigen::VectorXd& outputs)
 {
-  setAllValuesFromVector<&DegreeOfFreedom::addHybridOutput>(
+  setAllValuesFromVector<&DegreeOfFreedom::addImpulseResponse>(
         this, outputs, "addHybridOutputs", "outputs");
 }
 
 //==============================================================================
-Eigen::VectorXd MetaSkeleton::getHybridOutputs() const
+Eigen::VectorXd MetaSkeleton::getImpulseResponses() const
 {
-  return getValuesFromAllDofs<&DegreeOfFreedom::getHybridOutput>(
-        this, "getHybridOutputs");
+  return getValuesFromAllDofs<&DegreeOfFreedom::getImpulseResponse>(
+        this, "getImpulseResponses");
 }
 
 //==============================================================================

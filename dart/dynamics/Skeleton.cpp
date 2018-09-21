@@ -3338,15 +3338,6 @@ const Eigen::VectorXd& Skeleton::computeConstraintForces(DataCache& cache) const
   const std::size_t dof = cache.mDofs.size();
   assert(static_cast<std::size_t>(cache.mFc.size()) == dof);
 
-  // Body constraint impulses
-  for (std::vector<BodyNode*>::reverse_iterator it =
-       cache.mBodyNodes.rbegin();
-       it != cache.mBodyNodes.rend(); ++it)
-  {
-    (*it)->aggregateSpatialToGeneralized(
-          cache.mFc, (*it)->getConstraintImpulse());
-  }
-
   // Joint constraint impulses
   for (std::size_t i = 0; i < dof; ++i)
     cache.mFc[i] += cache.mDofs[i]->getConstraintImpulse();
@@ -3644,9 +3635,60 @@ void Skeleton::clearConstraintImpulses()
 }
 
 //==============================================================================
-void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
+void Skeleton::updateBiasImpulse(BodyNode* bodyNode)
 {
-  if(nullptr == _bodyNode)
+  if(nullptr == bodyNode)
+  {
+    dterr << "[Skeleton::updateBiasImpulse] Passed in a nullptr!\n";
+    assert(false);
+    return;
+  }
+
+  updateBiasImpulse(*bodyNode);
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulse(BodyNode& bodyNode)
+{
+  if (getNumDofs() == 0u)
+    return;
+//  assert(getNumDofs() > 0);
+
+  // This skeleton should contain _bodyNode
+  assert(bodyNode.getSkeleton().get() == this);
+
+#ifndef NDEBUG  // debug mode
+  // All the constraint impulse should be zero
+  for (const BodyNode* itrBodyNode : mSkelCache.mBodyNodes)
+  {
+    if (itrBodyNode == &bodyNode)
+      continue;
+
+    const Eigen::VectorXd constImpulses = itrBodyNode->getParentJoint()->getConstraintImpulses();
+    const bool isConstImpZero = constImpulses.isZero();
+    if (isConstImpZero)
+      continue;
+
+    dterr << "Constraint impulse '" << constImpulses.transpose() << "' should "
+          << "be zero.\n";
+
+    assert(isConstImpZero);
+  }
+#endif
+
+  // Prepare cache data
+  BodyNode* it = &bodyNode;
+  while (it != nullptr)
+  {
+    it->updateBiasImpulse();
+    it = it->getParentBodyNode();
+  }
+}
+
+//==============================================================================
+void Skeleton::updateBiasImpulse(BodyNode* bodyNode, const Eigen::Vector6d& imp)
+{
+  if(nullptr == bodyNode)
   {
     dterr << "[Skeleton::updateBiasImpulse] Passed in a nullptr!\n";
     assert(false);
@@ -3656,74 +3698,43 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
-  assert(_bodyNode->getSkeleton().get() == this);
+  assert(bodyNode->getSkeleton().get() == this);
 
-#ifndef NDEBUG
+#ifndef NDEBUG  // debug mode
   // All the constraint impulse should be zero
-  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-    assert(mSkelCache.mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
+  for (const BodyNode* bodyNode : mSkelCache.mBodyNodes)
+    assert(bodyNode->getParentJoint()->getConstraintImpulses().isZero());
 #endif
 
-  // Prepare cache data
-  BodyNode* it = _bodyNode;
-  while (it != nullptr)
-  {
-    it->updateBiasImpulse();
-    it = it->getParentBodyNode();
-  }
-}
-
-//==============================================================================
-void Skeleton::updateBiasImpulse(BodyNode* _bodyNode,
-                                 const Eigen::Vector6d& _imp)
-{
-  if(nullptr == _bodyNode)
-  {
-    dterr << "[Skeleton::updateBiasImpulse] Passed in a nullptr!\n";
-    assert(false);
-    return;
-  }
-
-  assert(getNumDofs() > 0);
-
-  // This skeleton should contain _bodyNode
-  assert(_bodyNode->getSkeleton().get() == this);
-
-#ifndef NDEBUG
-  // All the constraint impulse should be zero
-  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-    assert(mSkelCache.mBodyNodes[i]->mConstraintImpulse == Eigen::Vector6d::Zero());
-#endif
-
-  // Set impulse of _bodyNode
-  _bodyNode->mConstraintImpulse = _imp;
+  // Set impulse of bodyNode
+  bodyNode->setConstraintImpulse(imp);
 
   // Prepare cache data
-  BodyNode* it = _bodyNode;
+  BodyNode* it = bodyNode;
   while (it != nullptr)
   {
     it->updateBiasImpulse();
     it = it->getParentBodyNode();
   }
 
-  _bodyNode->mConstraintImpulse.setZero();
+  bodyNode->clearConstraintImpulse();
 }
 
 //==============================================================================
-void Skeleton::updateBiasImpulse(BodyNode* _bodyNode1,
-                                 const Eigen::Vector6d& _imp1,
-                                 BodyNode* _bodyNode2,
-                                 const Eigen::Vector6d& _imp2)
+void Skeleton::updateBiasImpulse(BodyNode* bodyNodeA,
+                                 const Eigen::Vector6d& impA,
+                                 BodyNode* bodyNodeB,
+                                 const Eigen::Vector6d& impB)
 {
   // Assertions
-  if(nullptr == _bodyNode1)
+  if(nullptr == bodyNodeA)
   {
     dterr << "[Skeleton::updateBiasImpulse] Passed in nullptr for BodyNode1!\n";
     assert(false);
     return;
   }
 
-  if(nullptr == _bodyNode2)
+  if(nullptr == bodyNodeB)
   {
     dterr << "[Skeleton::updateBiasImpulse] Passed in nullptr for BodyNode2!\n";
     assert(false);
@@ -3733,60 +3744,61 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode1,
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
-  assert(_bodyNode1->getSkeleton().get() == this);
-  assert(_bodyNode2->getSkeleton().get() == this);
+  assert(bodyNodeA->getSkeleton().get() == this);
+  assert(bodyNodeB->getSkeleton().get() == this);
 
-#ifndef NDEBUG
+#ifndef NDEBUG  // debug mode
   // All the constraint impulse should be zero
-  for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-    assert(mSkelCache.mBodyNodes[i]->mConstraintImpulse ==
-           Eigen::Vector6d::Zero());
+  for (const BodyNode* bodyNode : mSkelCache.mBodyNodes)
+    assert(bodyNode->getParentJoint()->getConstraintImpulses().isZero());
 #endif
 
   // Set impulse to _bodyNode
-  _bodyNode1->mConstraintImpulse = _imp1;
-  _bodyNode2->mConstraintImpulse = _imp2;
+  bodyNodeA->mParentJoint->setConstraintImpulse(impA);
+  bodyNodeB->mParentJoint->setConstraintImpulse(impB);
 
   // Find which body is placed later in the list of body nodes in this skeleton
-  std::size_t index1 = _bodyNode1->getIndexInSkeleton();
-  std::size_t index2 = _bodyNode2->getIndexInSkeleton();
+  const std::size_t indexA = bodyNodeA->getIndexInSkeleton();
+  const std::size_t indexB = bodyNodeB->getIndexInSkeleton();
 
-  std::size_t index = std::max(index1, index2);
+  const std::size_t index = std::max(indexA, indexB);
 
   // Prepare cache data
-  for (int i = index; 0 <= i; --i)
+  for (std::size_t i = index; i == 0u; --i)
     mSkelCache.mBodyNodes[i]->updateBiasImpulse();
 
-  _bodyNode1->mConstraintImpulse.setZero();
-  _bodyNode2->mConstraintImpulse.setZero();
+  bodyNodeA->mParentJoint->resetConstraintImpulses();
+  bodyNodeB->mParentJoint->resetConstraintImpulses();
 }
 
 //==============================================================================
-void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
-                                 PointMass* _pointMass,
-                                 const Eigen::Vector3d& _imp)
+void Skeleton::updateBiasImpulse(SoftBodyNode* softBodyNode,
+                                 PointMass* pointMass,
+                                 const Eigen::Vector3d& imp)
 {
   // Assertions
-  assert(_softBodyNode != nullptr);
+  assert(softBodyNode != nullptr);
   assert(getNumDofs() > 0);
 
   // This skeleton should contain _bodyNode
-  assert(std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), _softBodyNode)
+  assert(std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), softBodyNode)
          != mSoftBodyNodes.end());
 
-#ifndef NDEBUG
+#ifndef NDEBUG  // debug mode
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
-    assert(mSkelCache.mBodyNodes[i]->mConstraintImpulse ==
-           Eigen::Vector6d::Zero());
+  {
+    assert(mSkelCache.mBodyNodes[i]->getParentJoint()->getConstraintImpulses().
+         isZero());
+  }
 #endif
 
   // Set impulse to _bodyNode
-  Eigen::Vector3d oldConstraintImpulse =_pointMass->getConstraintImpulses();
-  _pointMass->setConstraintImpulse(_imp, true);
+  Eigen::Vector3d oldConstraintImpulse =pointMass->getConstraintImpulses();
+  pointMass->setConstraintImpulse(imp, true);
 
   // Prepare cache data
-  BodyNode* it = _softBodyNode;
+  BodyNode* it = softBodyNode;
   while (it != nullptr)
   {
     it->updateBiasImpulse();
@@ -3794,7 +3806,7 @@ void Skeleton::updateBiasImpulse(SoftBodyNode* _softBodyNode,
   }
 
   // TODO(JS): Do we need to backup and restore the original value?
-  _pointMass->setConstraintImpulse(oldConstraintImpulse);
+  pointMass->setConstraintImpulse(oldConstraintImpulse);
 }
 
 //==============================================================================
@@ -3803,6 +3815,34 @@ void Skeleton::updateVelocityChange()
   for (auto& bodyNode : mSkelCache.mBodyNodes)
     bodyNode->updateVelocityChangeFD();
 }
+
+////==============================================================================
+//Eigen::VectorXd Skeleton::computeJointImpulseResponses(
+//    SoftBodyNode& softBodyNode,
+//    PointMass& pointMass,
+//    const Eigen::Vector3d& imp)
+//{
+//  // This skeleton should contain _bodyNode
+//  assert(std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), softBodyNode)
+//         != mSoftBodyNodes.end());
+
+//  // Set impulse to _bodyNode
+//  Eigen::Vector3d oldConstraintImpulse = pointMass.getConstraintImpulses();
+//  pointMass.setConstraintImpulse(imp, true);
+
+//  // Prepare cache data
+//  BodyNode* it = &softBodyNode;
+//  while (it != nullptr)
+//  {
+//    it->updateBiasImpulse();
+//    it = it->getParentBodyNode();
+//  }
+
+//  // TODO(JS): Do we need to backup and restore the original value?
+//  pointMass.setConstraintImpulse(oldConstraintImpulse);
+
+//  return getImpulseResponses();
+//}
 
 //==============================================================================
 void Skeleton::setImpulseApplied(bool _val)
@@ -3839,6 +3879,29 @@ void Skeleton::computeImpulseForwardDynamics()
 //    bodyNode->updateTransmittedImpulse();
 //    bodyNode->updateJointImpulseFD();
     bodyNode->updateConstrainedTerms(mAspectProperties.mTimeStep);
+  }
+}
+
+//==============================================================================
+void Skeleton::computeImpulseForwardDynamics(BodyNode& bodyNode)
+{
+  // Skip immobile or 0-dof skeleton
+  if (!isMobile() || getNumDofs() == 0)
+    return;
+
+  // Note: we do not need to update articulated inertias here, because they will
+  // be updated when BodyNode::updateBiasImpulse() calls
+  // BodyNode::getArticulatedInertia()
+
+  bodyNode.getSkeleton()->updateBiasImpulse(bodyNode);
+
+  // Forward recursion
+  for (auto& bodyNode : mSkelCache.mBodyNodes)
+  {
+    bodyNode->updateVelocityChangeFD();
+    bodyNode->updateTransmittedImpulse();
+    bodyNode->updateJointImpulseFD();
+//    bodyNode->updateConstrainedTerms(mAspectProperties.mTimeStep);
   }
 }
 

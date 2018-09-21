@@ -538,24 +538,42 @@ public:
   /// Get the velocity changes for all the generalized coordinates
   Eigen::VectorXd getVelocityChanges() const;
 
-  /// Set the constraint impulses for the generalized coordinates
-  void setJointConstraintImpulses(const Eigen::VectorXd& _impulses);
+  /// \deprecated Deprecated in DART 6.7. Please use setConstraintImpulses()
+  /// instead. We store projected body impulse in the joint impulse so don't
+  /// need to encode "Joint" in this function.
+  ///
+  /// Returns the constraint impulses for the generalized coordinates
+  void setJointConstraintImpulses(const Eigen::VectorXd& impulses);
 
-  /// Get the constraint impulses for the generalized coordinates
+  /// Returns the constraint impulses for the generalized coordinates
+  void setConstraintImpulses(const Eigen::VectorXd& impulses);
+
+  /// \deprecated Deprecated in DART 6.7. Please use getConstraintImpulses()
+  /// instead. We store projected body impulse in the joint impulse so don't
+  /// need to encode "Joint" in this function.
+  ///
+  /// Returns the constraint impulses for the generalized coordinates
   Eigen::VectorXd getJointConstraintImpulses() const;
 
+  /// Returns the constraint impulses for the generalized coordinates
+  Eigen::VectorXd getConstraintImpulses() const;
+
+  // TODO(JS): document
+  /// Returns the joint impulses.
+  ///
+  /// This is only meaningful for kinematic joints.
   Eigen::VectorXd getImpulses() const;
 
   /// This should be only called by constraint solvers.
-  void setHybridOutputs(const Eigen::VectorXd& outputs);
+  void setImpulseResponses(const Eigen::VectorXd& outputs);
 
   /// This should be only called by constraint solvers.
-  void addHybridOutputs(const Eigen::VectorXd& outputs);
+  void addImpulseResponses(const Eigen::VectorXd& outputs);
 
   /// Returns a dofs-sized vector where each element corresponds to the DOF.
   /// Each value is either velocity change or impluse for dynamic joint and
   /// kinematic joint
-  Eigen::VectorXd getHybridOutputs() const;
+  Eigen::VectorXd getImpulseResponses() const;
 
   /// \}
 

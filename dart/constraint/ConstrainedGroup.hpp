@@ -37,6 +37,7 @@
 #include <memory>
 #include <Eigen/Dense>
 
+#include "dart/common/Deprecated.hpp"
 #include "dart/constraint/SmartPointer.hpp"
 
 namespace dart {
@@ -89,8 +90,15 @@ public:
   /// Remove all constraints
   void removeAllConstraints();
 
-  /// Get total dimension of contraints in this group
+  /// \deprecated Deprecated in DART 6.7. Please use computeTotalDimension(). We
+  /// use "get" only the method complexity is O(1).
+  ///
+  /// Returns total dimension of contraints in this group
+  DART_DEPRECATED(6.7)
   std::size_t getTotalDimension() const;
+
+  /// Returns total dimension of contraints in this group
+  std::size_t computeTotalDimension() const;
 
   //----------------------------------------------------------------------------
   // Friendship

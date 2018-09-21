@@ -80,6 +80,9 @@ ConstBoxedLcpSolverPtr BoxedLcpConstraintSolver::getBoxedLcpSolver() const
 //==============================================================================
 void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 {
+  solveConstrainedGroup2(group);
+  return;
+
   // Build LCP terms by aggregating them from constraints
   const std::size_t numConstraints = group.getNumConstraints();
   const std::size_t n = group.getTotalDimension();
@@ -102,13 +105,14 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   mFIndex.setConstant(n, -1); // set findex to -1
 
   // Compute offset indices
-  mOffset.resize(n);
-  mOffset[0] = 0;
+  mConstraintOffset.resize(numConstraints);
+  mConstraintOffset[0] = 0;
   for (std::size_t i = 1; i < numConstraints; ++i)
   {
     const ConstraintBasePtr& constraint = group.getConstraint(i - 1);
     assert(constraint->getDimension() > 0);
-    mOffset[i] = mOffset[i - 1] + constraint->getDimension();
+    mConstraintOffset[i]
+        = mConstraintOffset[i - 1] + constraint->getDimension();
   }
 
   // For each constraint
@@ -118,12 +122,12 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   {
     const ConstraintBasePtr& constraint = group.getConstraint(i);
 
-    constInfo.x = mX.data() + mOffset[i];
-    constInfo.lo = mLo.data() + mOffset[i];
-    constInfo.hi = mHi.data() + mOffset[i];
-    constInfo.b = mB.data() + mOffset[i];
-    constInfo.findex = mFIndex.data() + mOffset[i];
-    constInfo.w = mW.data() + mOffset[i];
+    constInfo.x = mX.data() + mConstraintOffset[i];
+    constInfo.lo = mLo.data() + mConstraintOffset[i];
+    constInfo.hi = mHi.data() + mConstraintOffset[i];
+    constInfo.b = mB.data() + mConstraintOffset[i];
+    constInfo.findex = mFIndex.data() + mConstraintOffset[i];
+    constInfo.w = mW.data() + mConstraintOffset[i];
 
     // Fill vectors: lo, hi, b, w
     constraint->getInformation(&constInfo);
@@ -133,28 +137,28 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     for (std::size_t j = 0; j < constraint->getDimension(); ++j)
     {
       // Adjust findex for global index
-      if (mFIndex[mOffset[i] + j] >= 0)
-        mFIndex[mOffset[i] + j] += mOffset[i];
+      if (mFIndex[mConstraintOffset[i] + j] >= 0)
+        mFIndex[mConstraintOffset[i] + j] += mConstraintOffset[i];
 
       // Apply impulse for mipulse test
       constraint->applyUnitImpulse(j);
 
       // Fill upper triangle blocks of A matrix
-      int index = nSkip * (mOffset[i] + j) + mOffset[i];
+      int index = nSkip * (mConstraintOffset[i] + j) + mConstraintOffset[i];
       constraint->getVelocityChange(mA.data() + index, true);
       for (std::size_t k = i + 1; k < numConstraints; ++k)
       {
-        index = nSkip * (mOffset[i] + j) + mOffset[k];
+        index = nSkip * (mConstraintOffset[i] + j) + mConstraintOffset[k];
         group.getConstraint(k)->getVelocityChange(mA.data() + index, false);
       }
 
       // Filling symmetric part of A matrix
       for (std::size_t k = 0; k < i; ++k)
       {
-        const int indexI = mOffset[i] + j;
+        const int indexI = mConstraintOffset[i] + j;
         for (std::size_t l = 0; l < group.getConstraint(k)->getDimension(); ++l)
         {
-          const int indexJ = mOffset[k] + l;
+          const int indexJ = mConstraintOffset[k] + l;
           mA(indexI, indexJ) = mA(indexJ, indexI);
         }
       }
@@ -164,8 +168,8 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
         isSymmetric(
             n,
             mA.data(),
-            mOffset[i],
-            mOffset[i] + constraint->getDimension() - 1));
+            mConstraintOffset[i],
+            mConstraintOffset[i] + constraint->getDimension() - 1));
 
     constraint->unexcite();
   }
@@ -198,28 +202,175 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   for (std::size_t i = 0; i < numConstraints; ++i)
   {
     const ConstraintBasePtr& constraint = group.getConstraint(i);
-    constraint->applyImpulse(mX.data() + mOffset[i]);
+    constraint->applyImpulse(mX.data() + mConstraintOffset[i]);
+    constraint->excite();
+  }
+}
+
+//==============================================================================
+void BoxedLcpConstraintSolver::solveConstrainedGroup2(ConstrainedGroup& group)
+{
+  // Sum of all the constraint dimensions
+  const std::size_t n = group.computeTotalDimension();
+
+  // If there is no constraint, then just return.
+  if (0u == n)
+    return;
+
+  // Build LCP terms by aggregating them from constraints
+  const std::size_t numConstraints = group.getNumConstraints();
+
+  int totalConstraintDim = 0;
+  for (std::size_t i = 0; i < numConstraints; ++i)
+    totalConstraintDim += group.getConstraint(i)->getDimension();
+  // TODO(JS): Consider having these values as precomputed in ConstrainedGroup
+
+  const int nSkip = dPAD(n);
+#ifdef NDEBUG // release
+  mA.resize(n, nSkip);
+#else // debug
+  mA.setZero(n, nSkip);
+#endif
+  mX.resize(n);
+  mB.resize(n);
+  mW.setZero(n); // set w to 0
+  mLo.resize(n);
+  mHi.resize(n);
+  mFIndex.setConstant(n, -1); // set findex to -1
+
+  mSkeletonNumDofsOffsetMap.clear();
+  mSkeletonNumDofsOffsetMap.reserve(mSkeletons.size());
+  std::size_t skeletonNumDofsOffset = 0;
+  for (const dynamics::SkeletonPtr& skel : mSkeletons)
+  {
+    mSkeletonNumDofsOffsetMap[skel.get()] = skeletonNumDofsOffset;
+    skeletonNumDofsOffset += skel->getNumDofs();
+  }
+
+  // Compute offset indices
+  mConstraintOffset.resize(numConstraints);
+  mConstraintOffset[0] = 0;
+  for (std::size_t i = 1; i < numConstraints; ++i)
+  {
+    const ConstraintBasePtr& constraint = group.getConstraint(i - 1);
+    assert(constraint->getDimension() > 0);
+    mConstraintOffset[i]
+        = mConstraintOffset[i - 1] + constraint->getDimension();
+  }
+
+  mJ.setZero(totalConstraintDim, n);
+  mInvMJtran.setZero(n, totalConstraintDim);
+
+  // For each constraint
+  ConstraintInfo constInfo;
+  constInfo.invTimeStep = 1.0 / mTimeStep;
+  for (std::size_t i = 0; i < numConstraints; ++i)
+  {
+    const ConstraintBasePtr& constraint = group.getConstraint(i);
+
+    constInfo.x = mX.data() + mConstraintOffset[i];
+    constInfo.lo = mLo.data() + mConstraintOffset[i];
+    constInfo.hi = mHi.data() + mConstraintOffset[i];
+    constInfo.b = mB.data() + mConstraintOffset[i];
+    constInfo.findex = mFIndex.data() + mConstraintOffset[i];
+    constInfo.w = mW.data() + mConstraintOffset[i];
+
+    // Fill vectors: lo, hi, b, w
+    constraint->getInformation(&constInfo);
+
+    // Fill a matrix by impulse tests: A
+    constraint->excite();
+    for (std::size_t j = 0; j < constraint->getDimension(); ++j)
+    {
+      // Adjust findex for global index
+      if (mFIndex[mConstraintOffset[i] + j] >= 0)
+        mFIndex[mConstraintOffset[i] + j] += mConstraintOffset[i];
+    }
+
+    for (std::size_t j = 0u; j < constraint->getNumSkeletons(); ++j)
+    {
+      dynamics::Skeleton* skel = constraint->getSkeleton(j);
+      const std::size_t skelNumDofsIndex = mSkeletonNumDofsOffsetMap[skel];
+      const std::size_t size = skel->getNumDofs();
+
+      mJ.block(
+          mConstraintOffset[i],
+          skelNumDofsIndex,
+          constraint->getDimension(),
+          size)
+          = constraint->getJacobian(j);
+
+      mInvMJtran.block(
+          skelNumDofsIndex,
+          mConstraintOffset[i],
+          size,
+          constraint->getDimension())
+          = constraint->getUnitResponses(j);
+    }
+
+//    assert(
+//        isSymmetric(
+//            numTotalConstDim,
+//            mA.data(),
+//            mConstraintOffset[i],
+//            mConstraintOffset[i] + constraint->getDimension() - 1));
+
+    constraint->unexcite();
+  }
+
+  mA.noalias() = mJ * mInvMJtran;
+
+  assert(isSymmetric(n, mA.data(), 1e-2));
+
+  // Print LCP formulation
+  //  dtdbg << "Before solve:" << std::endl;
+  //  print(n, A, x, lo, hi, b, w, findex);
+  //  std::cout << std::endl;
+
+  // Solve LCP using ODE's Dantzig algorithm
+  assert(mBoxedLcpSolver);
+  mBoxedLcpSolver->solve(
+      n,
+      mA.data(),
+      mX.data(),
+      mB.data(),
+      0,
+      mLo.data(),
+      mHi.data(),
+      mFIndex.data());
+
+  // Print LCP formulation
+  //  dtdbg << "After solve:" << std::endl;
+  //  print(n, A, x, lo, hi, b, w, findex);
+  //  std::cout << std::endl;
+
+  // Apply constraint impulses
+  for (std::size_t i = 0; i < numConstraints; ++i)
+  {
+    const ConstraintBasePtr& constraint = group.getConstraint(i);
+    constraint->applyImpulse(mX.data() + mConstraintOffset[i]);
     constraint->excite();
   }
 }
 
 //==============================================================================
 #ifndef NDEBUG
-bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
+bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A, double tol)
 {
   std::size_t nSkip = dPAD(n);
   for (std::size_t i = 0; i < n; ++i)
   {
     for (std::size_t j = 0; j < n; ++j)
     {
-      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > 1e-6)
+      if (std::abs(A[nSkip * i + j] - A[nSkip * j + i]) > tol)
       {
         std::cout << "A: " << std::endl;
         for (std::size_t k = 0; k < n; ++k)
         {
           for (std::size_t l = 0; l < nSkip; ++l)
           {
-            std::cout << std::setprecision(4) << A[k * nSkip + l] << " ";
+            std::cout << std::setw(8) << std::setprecision(4)
+                      << A[k * nSkip + l] << " ";
           }
           std::cout << std::endl;
         }
@@ -228,6 +379,8 @@ bool BoxedLcpConstraintSolver::isSymmetric(std::size_t n, double* A)
                   << std::endl;
         std::cout << "A(" << j << ", " << i << "): " << A[nSkip * j + i]
                   << std::endl;
+        std::cout << "The difference: "
+                  << std::abs(A[nSkip * i + j] - A[nSkip * j + i]) << "\n";
         return false;
       }
     }

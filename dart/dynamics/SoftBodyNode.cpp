@@ -777,10 +777,7 @@ void SoftBodyNode::updateBiasImpulse()
   for (auto& pointMass : mPointMasses)
     pointMass->updateBiasImpulseFD();
 
-  // Update impulsive bias force
-  mBiasImpulse = -mConstraintImpulse;
-
-  // And add child bias impulse
+  // Add child bias impulse
   for (auto& childBodyNode : mChildBodyNodes)
   {
     Joint* childJoint = childBodyNode->getParentJoint();

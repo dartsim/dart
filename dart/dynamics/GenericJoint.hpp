@@ -416,7 +416,21 @@ public:
   void setConstraintImpulse(std::size_t index, double impulse) override;
 
   // Documentation inherited
+  void setConstraintImpulse(
+      const Eigen::Vector6d& bodyConstraintImpulse) override;
+
+  // Documentation inherited
+  void addConstraintImpulse(
+      const Eigen::Vector6d& bodyConstraintImpulse) override;
+
+  // Documentation inherited
   double getConstraintImpulse(std::size_t index) const override;
+
+  // Documentation inherited
+  void setConstraintImpulses(const Eigen::VectorXd& impulses) override;
+
+  // Documentation inherited
+  Eigen::VectorXd getConstraintImpulses() const override;
 
   // Documentation inherited
   void resetConstraintImpulses() override;

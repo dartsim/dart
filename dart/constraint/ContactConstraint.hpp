@@ -90,6 +90,27 @@ public:
   /// Get first frictional direction
   const Eigen::Vector3d& getFrictionDirection1() const;
 
+  std::size_t getNumSkeletons() const override
+  {
+    return 2u;
+  }
+
+  dynamics::Skeleton* getSkeleton(std::size_t index) override
+  {
+    if (index == 0u)
+      return mBodyNodeA->getSkeleton().get();
+    else
+      return mBodyNodeB->getSkeleton().get();
+  }
+
+  const dynamics::Skeleton* getSkeleton(std::size_t index) const override
+  {
+    if (index == 0u)
+      return mBodyNodeA->getSkeleton().get();
+    else
+      return mBodyNodeB->getSkeleton().get();
+  }
+
   //----------------------------------------------------------------------------
   // Friendship
   //----------------------------------------------------------------------------
@@ -102,6 +123,23 @@ protected:
   // Constraint virtual functions
   //----------------------------------------------------------------------------
 
+  const Eigen::MatrixXd& getJacobian(std::size_t skeletonIndex) const override
+  {
+    if (skeletonIndex == 0u)
+      return mJacobianA;
+    else
+      return mJacobianB;
+  }
+
+  const Eigen::MatrixXd& getUnitResponses(
+      std::size_t skeletonIndex) const override
+  {
+    if (skeletonIndex == 0u)
+      return mUnitImpulseResponsesA;
+    else
+      return mUnitImpulseResponsesB;
+  }
+
   // Documentation inherited
   void update() override;
 
@@ -113,6 +151,8 @@ protected:
 
   // Documentation inherited
   void getVelocityChange(double* vel, bool withCfm) override;
+
+  const Eigen::MatrixXd& getConstraintMassMatrix() const override;
 
   // Documentation inherited
   void excite() override;
@@ -177,11 +217,22 @@ private:
   /// Local body jacobians for mBodyNode2
   Eigen::Matrix<double, 6, Eigen::Dynamic> mSpatialNormalB;
 
-  Eigen::MatrixXd mUnitHybridOutputsA;
-  Eigen::MatrixXd mUnitHybridOutputsB;
+  /// Constraint Jacobian for contact A. This is identical to
+  /// spatial_normal_a * body_jacobian_a_in_world_coordinates.
+  Eigen::MatrixXd mJacobianA;
 
-  Eigen::MatrixXd mConstraintJacobianA;
-  Eigen::MatrixXd mConstraintJacobianB;
+  /// Constraint Jacobian for contact B. This is identical to
+  /// spatial_normal_b * body_jacobian_b_in_world_coordinates.
+  Eigen::MatrixXd mJacobianB;
+
+  /// Responses to the unit impulse to contact A
+  Eigen::MatrixXd mUnitImpulseResponsesA;
+
+  /// Responses to the unit impulse to contact B
+  Eigen::MatrixXd mUnitImpulseResponsesB;
+
+  /// Constraint space mass matrix.
+  Eigen::MatrixXd mMassMatrix;
 
   ///
   bool mIsFrictionOn;

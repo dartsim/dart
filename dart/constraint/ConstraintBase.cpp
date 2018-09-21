@@ -37,14 +37,15 @@
 #include <iomanip>
 #include <iostream>
 
+#include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 
 namespace dart {
 namespace constraint {
 
 //==============================================================================
-ConstraintBase::ConstraintBase()
-  : mDim(0)
+ConstraintBase::ConstraintBase() : mDim(0)
 {
 }
 
@@ -63,6 +64,69 @@ std::size_t ConstraintBase::getDimension() const
 void ConstraintBase::uniteSkeletons()
 {
   // Do nothing
+}
+
+//==============================================================================
+void ConstraintBase::computeJointImpulseResponses(
+    Eigen::Ref<Eigen::VectorXd> responses,
+    dynamics::BodyNode& bodyNode,
+    const Eigen::Vector6d& bodyImpulse)
+{
+  bodyNode.applyConstraintImpulse(bodyImpulse);
+  bodyNode.getSkeleton()->computeImpulseForwardDynamics(bodyNode);
+
+  Eigen::VectorXd tmp1 = bodyNode.getSkeleton()->getImpulseResponses();
+  responses = bodyNode.getSkeleton()->getImpulseResponses();
+  bodyNode.clearConstraintImpulse();
+
+  Eigen::VectorXd tmp2 = bodyNode.getSkeleton()->getImpulseResponses();
+}
+
+//==============================================================================
+void ConstraintBase::computeJointImpulseResponses(
+    Eigen::VectorXd& responses,
+    dynamics::BodyNode& bodyNodeA,
+    const Eigen::Vector6d& impA,
+    dynamics::BodyNode& bodyNodeB,
+    const Eigen::Vector6d& impB)
+{
+  bodyNodeA.applyConstraintImpulse(impA);
+  bodyNodeB.applyConstraintImpulse(impB);
+
+  assert(bodyNodeA.getSkeleton());
+  assert(bodyNodeB.getSkeleton());
+  assert(bodyNodeA.getSkeleton() == bodyNodeB.getSkeleton());
+  dynamics::Skeleton& skeleton = *bodyNodeA.getSkeleton();
+
+  // Find which body is placed later in the list of body nodes in this skeleton
+  const std::size_t indexA = bodyNodeA.getIndexInSkeleton();
+  const std::size_t indexB = bodyNodeB.getIndexInSkeleton();
+  if (indexA > indexB)
+    skeleton.updateBiasImpulse(bodyNodeA);
+  else
+    skeleton.updateBiasImpulse(bodyNodeB);
+
+  bodyNodeA.clearConstraintImpulse();
+  bodyNodeB.clearConstraintImpulse();
+
+  responses = skeleton.getImpulseResponses();
+}
+
+//==============================================================================
+void ConstraintBase::computeJointImpulseResponses(
+    Eigen::VectorXd& responses,
+    dynamics::SoftBodyNode& softBodyNode,
+    dynamics::PointMass& pointMass,
+    const Eigen::Vector3d& imp)
+{
+  pointMass.setConstraintImpulse(imp, true);
+
+  // Prepare cache data
+  assert(softBodyNode.getSkeleton());
+  softBodyNode.getSkeleton()->updateBiasImpulse(softBodyNode);
+  softBodyNode.clearConstraintImpulse();
+
+  responses = softBodyNode.getSkeleton()->getImpulseResponses();
 }
 
 //==============================================================================
@@ -89,5 +153,5 @@ dynamics::SkeletonPtr ConstraintBase::getRootSkeleton(
   return _skeleton;
 }
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart

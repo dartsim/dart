@@ -323,13 +323,13 @@ public:
   /// (3) predescribed joint velocity change.
   double getImpulse() const;
 
-  void setHybridOutput(double output);
+  void setImpulseResponse(double output);
 
-  void addHybridOutput(double output);
+  void addImpulseResponse(double output);
 
   /// Returns velocity change for dynamic joint or velocity change for kinematic
   /// joint.
-  double getHybridOutput() const;
+  double getImpulseResponse() const;
 
   /// \}
 

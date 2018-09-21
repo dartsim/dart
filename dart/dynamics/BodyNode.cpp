@@ -1242,7 +1242,6 @@ BodyNode::BodyNode(BodyNode* _parentBodyNode, Joint* _parentJoint,
     mArbitrarySpatial(Eigen::Vector6d::Zero()),
     mDelV(Eigen::Vector6d::Zero()),
     mBiasImpulse(Eigen::Vector6d::Zero()),
-    mConstraintImpulse(Eigen::Vector6d::Zero()),
     mImpF(Eigen::Vector6d::Zero()),
     onColShapeAdded(mColShapeAddedSignal),
     onColShapeRemoved(mColShapeRemovedSignal),
@@ -1691,10 +1690,7 @@ void BodyNode::updateBiasForce(const Eigen::Vector3d& _gravity,
 //==============================================================================
 void BodyNode::updateBiasImpulse()
 {
-  // Update impulsive bias force
-  mBiasImpulse = -mConstraintImpulse;
-
-  // And add child bias impulse
+  // Add child bias impulse
   for (auto& childBodyNode : mChildBodyNodes)
   {
     Joint* childJoint = childBodyNode->getParentJoint();
@@ -1865,7 +1861,7 @@ void BodyNode::addConstraintImpulse(const Eigen::Vector3d& _constImp,
   else
     F.tail<3>() = W.linear().transpose() * _constImp;
 
-  mConstraintImpulse += math::dAdInvT(T, F);
+  mParentJoint->addConstraintImpulse(math::dAdInvT(T, F));
 }
 
 //==============================================================================
@@ -1873,7 +1869,6 @@ void BodyNode::clearConstraintImpulse()
 {
   mDelV.setZero();
   mBiasImpulse.setZero();
-  mConstraintImpulse.setZero();
   mImpF.setZero();
 
   mParentJoint->resetConstraintImpulses();
@@ -1888,23 +1883,30 @@ const Eigen::Vector6d& BodyNode::getBodyForce() const
 }
 
 //==============================================================================
-void BodyNode::setConstraintImpulse(const Eigen::Vector6d& _constImp)
+void BodyNode::setConstraintImpulse(const Eigen::Vector6d& constImp)
 {
-  assert(!math::isNan(_constImp));
-  mConstraintImpulse = _constImp;
+  applyConstraintImpulse(constImp);
 }
 
 //==============================================================================
-void BodyNode::addConstraintImpulse(const Eigen::Vector6d& _constImp)
+void BodyNode::applyConstraintImpulse(const Eigen::Vector6d& bodyImpulse)
 {
-  assert(!math::isNan(_constImp));
-  mConstraintImpulse += _constImp;
+  assert(!math::isNan(bodyImpulse));
+  mParentJoint->setConstraintImpulse(bodyImpulse);
+}
+
+//==============================================================================
+void BodyNode::addConstraintImpulse(const Eigen::Vector6d& constImp)
+{
+  assert(!math::isNan(constImp));
+  mParentJoint->addConstraintImpulse(constImp);
 }
 
 //==============================================================================
 const Eigen::Vector6d& BodyNode::getConstraintImpulse() const
 {
-  return mConstraintImpulse;
+  static Eigen::Vector6d zeroImpulse = Eigen::Vector6d::Zero();
+  return zeroImpulse;
 }
 
 //==============================================================================

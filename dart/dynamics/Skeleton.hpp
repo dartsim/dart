@@ -656,7 +656,7 @@ public:
                               bool _withSpringForces = false);
 
   //----------------------------------------------------------------------------
-  // Impulse-based dynamics algorithms
+  /// \{ \name Impulse-based Dynamics
   //----------------------------------------------------------------------------
 
   /// Clear constraint impulses and cache data used for impulse-based forward
@@ -664,32 +664,71 @@ public:
   /// on the BodyNodes and generalized constraints on the Joints.
   void clearConstraintImpulses();
 
-  /// Update bias impulses
-  void updateBiasImpulse(BodyNode* _bodyNode);
+  /// \deprecated Deprecated in DART 6.7. Use updateBiasImpulse(BodyNode&)
+  /// instead.
+  ///
+  /// Updates bias impulses.
+  ///
+  /// We assume that all the (non-zero) impulses are only applied to \c bodyNode
+  /// (and its parent joint) or its ancestors (and their parent joints).
+  /// Impulses applied to other bodies or joints will be ignored.
+  ///
+  /// \param[in/out] bodyNode The body that the backward iterative impulse-based
+  /// hybrid dynamics will start.
+  DART_DEPRECATED(6.7)
+  void updateBiasImpulse(BodyNode* bodyNode);
 
-  /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
-  /// \param _bodyNode Body node contraint impulse, _imp, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode
-  void updateBiasImpulse(BodyNode* _bodyNode, const Eigen::Vector6d& _imp);
+  /// Updates bias impulses.
+  ///
+  /// We assume that all the (non-zero) impulses are only applied to \c bodyNode
+  /// (and its parent joint) or its ancestors (and their parent joints).
+  /// Impulses applied to other bodies or joints will be ignored.
+  ///
+  /// \param[in/out] bodyNode The body that the backward iterative impulse-based
+  /// hybrid dynamics will start.
+  void updateBiasImpulse(BodyNode& bodyNode);
 
-  /// \brief Update bias impulses due to impulse [_imp] on body node [_bodyNode]
-  /// \param _bodyNode Body node contraint impulse, _imp1, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode1
-  /// \param _bodyNode Body node contraint impulse, _imp2, is applied
-  /// \param _imp Constraint impulse expressed in body frame of _bodyNode2
-  void updateBiasImpulse(BodyNode* _bodyNode1, const Eigen::Vector6d& _imp1,
-                         BodyNode* _bodyNode2, const Eigen::Vector6d& _imp2);
+  /// \deprecated Deprecated in DART 6.7. Please use
+  /// constraint::ConstraintBase::computeImpuseResponses() instead.
+  ///
+  /// Updates bias impulses due to impulse \c imp on body node \c bodyNode.
+  ///
+  /// \param bodyNode Body node contraint impulse, imp, is applied
+  /// \param imp Constraint impulse expressed in body frame of \c bodyNode
+  DART_DEPRECATED(6.7)
+  void updateBiasImpulse(BodyNode* bodyNode, const Eigen::Vector6d& imp);
 
-  /// \brief Update bias impulses due to impulse[_imp] on body node [_bodyNode]
-  void updateBiasImpulse(SoftBodyNode* _softBodyNode,
-                         PointMass* _pointMass,
-                         const Eigen::Vector3d& _imp);
+  /// \deprecated Deprecated in DART 6.7. Please use
+  /// constraint::ConstraintBase::computeImpuseResponses() instead.
+  ///
+  /// Updates bias impulses due to impulse \c impA  and \c impB on \c bodyNodeA
+  /// and \c bodyNodeB, respectively.
+  ///
+  /// \param bodyNodeA Body node contraint impulse, \c impA, is applied
+  /// \param impA Constraint impulse expressed in body frame of \c bodyNodeA
+  /// \param bodyNodeB Body node contraint impulse, \c impB, is applied
+  /// \param impB Constraint impulse expressed in body frame of \c bodyNodeB
+  DART_DEPRECATED(6.7)
+  void updateBiasImpulse(
+      BodyNode* bodyNodeA,
+      const Eigen::Vector6d& impA,
+      BodyNode* bodyNodeB,
+      const Eigen::Vector6d& impB);
 
-  /// \brief Update velocity changes in body nodes and joints due to applied
-  /// impulse
+  /// \deprecated Deprecated in DART 6.7. Please use
+  /// constraint::ConstraintBase::computeImpuseResponses() instead.
+  ///
+  /// Updates bias impulses due to impulse \c imp on \c pointMass of
+  /// \c softBodyNode.
+  DART_DEPRECATED(6.7)
+  void updateBiasImpulse(
+      SoftBodyNode* softBodyNode,
+      PointMass* pointMass,
+      const Eigen::Vector3d& imp);
+
+  /// Updates velocity changes in body nodes and joints due to applied impulse.
   void updateVelocityChange();
 
-  // TODO(JS): Better naming
   /// Set whether this skeleton is constrained. ConstraintSolver will
   ///  mark this.
   void setImpulseApplied(bool _val);
@@ -699,6 +738,11 @@ public:
 
   /// Compute impulse-based forward dynamics
   void computeImpulseForwardDynamics();
+
+  /// Compute impulse-based forward dynamics
+  void computeImpulseForwardDynamics(dynamics::BodyNode& bodyNode);
+
+  /// \}
 
   //----------------------------------------------------------------------------
   /// \{ \name Jacobians

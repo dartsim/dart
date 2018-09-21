@@ -451,7 +451,7 @@ double DegreeOfFreedom::getImpulse() const
 }
 
 //==============================================================================
-void DegreeOfFreedom::setHybridOutput(double output)
+void DegreeOfFreedom::setImpulseResponse(double output)
 {
   if (mJoint->isDynamic())
   {
@@ -465,7 +465,7 @@ void DegreeOfFreedom::setHybridOutput(double output)
 }
 
 //==============================================================================
-void DegreeOfFreedom::addHybridOutput(double output)
+void DegreeOfFreedom::addImpulseResponse(double output)
 {
   if (mJoint->isDynamic())
   {
@@ -479,7 +479,7 @@ void DegreeOfFreedom::addHybridOutput(double output)
 }
 
 //==============================================================================
-double DegreeOfFreedom::getHybridOutput() const
+double DegreeOfFreedom::getImpulseResponse() const
 {
   if (mJoint->isDynamic())
   {

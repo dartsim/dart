@@ -35,14 +35,13 @@
 
 #include <cstddef>
 
+#include <Eigen/Dense>
+
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
-
-namespace dynamics {
-class Skeleton;
-}  // namespace dynamics
-
 namespace constraint {
 
 /// ConstraintInfo
@@ -74,8 +73,26 @@ struct ConstraintInfo
 class ConstraintBase
 {
 public:
+  Eigen::MatrixXd mUnitResponses;
+
   /// Return dimesion of this constranit
   std::size_t getDimension() const;
+
+  virtual std::size_t getNumSkeletons() const
+  {
+    return 0;
+  }
+  // TODO(JS): Make this a pure virtual functions.
+
+  virtual dynamics::Skeleton* getSkeleton(std::size_t index)
+  {
+    return nullptr;
+  }
+
+  virtual const dynamics::Skeleton* getSkeleton(std::size_t index) const
+  {
+    return nullptr;
+  }
 
   /// Update constraint using updated Skeleton's states
   virtual void update() = 0;
@@ -89,6 +106,54 @@ public:
   /// Get velocity change due to the uint impulse
   virtual void getVelocityChange(double* vel, bool withCfm) = 0;
 
+  virtual const Eigen::MatrixXd& getJacobian(std::size_t skeletonIndex) const
+  {
+    static Eigen::MatrixXd zeroMat = Eigen::MatrixXd::Zero(0, 0);
+    return zeroMat;
+  }
+
+  virtual const Eigen::MatrixXd& getUnitResponses(
+      std::size_t skeletonIndex) const
+  {
+    static Eigen::MatrixXd zeroMat = Eigen::MatrixXd::Zero(0, 0);
+    return zeroMat;
+  }
+
+  virtual const Eigen::MatrixXd& getConstraintMassMatrix() const
+  {
+    static Eigen::MatrixXd zeroMat = Eigen::MatrixXd::Zero(0, 0);
+    return zeroMat;
+  }
+
+  virtual const Eigen::MatrixXd& computeConstraintMassMatrix(
+      const ConstraintBase& other) const
+  {
+    // Unit responses of this constraint against the Jacobians of other
+    // constraints
+
+    const std::size_t numSkeletonsA = getNumSkeletons();
+    const std::size_t numSkeletonsB = other.getNumSkeletons();
+
+    Eigen::MatrixXd result = Eigen::MatrixXd::Zero(mDim, other.mDim);
+
+    for (std::size_t i = 0; i < numSkeletonsA; ++i)
+    {
+      const dynamics::Skeleton* skeletonA = getSkeleton(i);
+      for (std::size_t j = 0; j < numSkeletonsB; ++j)
+      {
+        const dynamics::Skeleton* skeletonB = getSkeleton(j);
+
+        if (skeletonA != skeletonB)
+          continue;
+
+        //        result.noalias() += m
+      }
+    }
+
+    static Eigen::MatrixXd zeroMat = Eigen::MatrixXd::Zero(0, 0);
+    return zeroMat;
+  }
+
   /// Excite the constraint
   virtual void excite() = 0;
 
@@ -101,16 +166,74 @@ public:
   /// Return true if this constraint is active
   virtual bool isActive() const = 0;
 
-  ///
   virtual dynamics::SkeletonPtr getRootSkeleton() const = 0;
 
-  ///
   virtual void uniteSkeletons();
 
+  /// Performs impulse test and returns the responses.
   ///
+  /// The responses is basically a vector where the size is the DOFs of the
+  /// skeleton of \c bodyNode. Each element would be either velocity change or
+  /// impulse for dynamic joint and kinematic joint, respectively.
+  ///
+  /// We assume that all the constraint impulses are already cleared out. If not
+  /// the output \c responses won't be as expected. This function clears out the
+  /// constraint impulses applied to the body before returns.
+  ///
+  /// \param[out] responses The output vector.
+  /// \param[in/out] bodyNode The body we apply impulse.
+  /// \param[in] bodyImpulse The body impulse applied to \c bodyNode.
+  static void computeJointImpulseResponses(
+      Eigen::Ref<Eigen::VectorXd> responses,
+      dynamics::BodyNode& bodyNode,
+      const Eigen::Vector6d& bodyImpulse);
+
+  /// Performs impulse test and returns the responses, which is used for
+  /// self-collision cases.
+  ///
+  /// The responses is basically a vector where the size is the DOFs of the
+  /// skeleton of \c bodyNode. Each element would be either velocity change or
+  /// impulse for dynamic joint and kinematic joint, respectively.
+  ///
+  /// We assume that all the constraint impulses are already cleared out. If not
+  /// the output \c responses won't be as expected. This function clears out the
+  /// constraint impulses applied to the bodies before returns.
+  ///
+  /// The skeletons of the two bodies should be the same. Otherwise, it's
+  /// undefined behavior.
+  ///
+  /// \param[in] bodyNodeA The first body we apply \c impA.
+  /// \param[in] bodyImpulse The body impulse applied to \c bodyNodeA.
+  /// \param[in] bodyNode The second body we apply \c impB.
+  /// \param[in] bodyImpulse The body impulse applied to \c bodyNodeB.
+  static void computeJointImpulseResponses(
+      Eigen::VectorXd& responses,
+      dynamics::BodyNode& bodyNodeA,
+      const Eigen::Vector6d& impA,
+      dynamics::BodyNode& bodyNodeB,
+      const Eigen::Vector6d& impB);
+
+  /// Performs impulse test and returns the responses.
+  ///
+  /// The responses is basically a vector where the size is the DOFs of the
+  /// skeleton of \c bodyNode. Each element would be either velocity change or
+  /// impulse for dynamic joint and kinematic joint, respectively.
+  ///
+  /// We assume that all the constraint impulses are already cleared out. If not
+  /// the output \c responses won't be as expected. This function clears out the
+  /// constraint impulses applied to the bodies before returns.
+  ///
+  /// \param[in] softBodyNode The SoftBodyNode contains \c pointMass.
+  /// \param[in] pointMass The point mass we apply \c imp.
+  /// \param[in] imp The linear impulse will be applied to \c pointMass.
+  static void computeJointImpulseResponses(
+      Eigen::VectorXd& responses,
+      dynamics::SoftBodyNode& softBodyNode,
+      dynamics::PointMass& pointMass,
+      const Eigen::Vector3d& imp);
+
   static dynamics::SkeletonPtr compressPath(dynamics::SkeletonPtr skeleton);
 
-  ///
   static dynamics::SkeletonPtr getRootSkeleton(dynamics::SkeletonPtr skeleton);
 
   //----------------------------------------------------------------------------
@@ -135,5 +258,4 @@ protected:
 } // namespace constraint
 } // namespace dart
 
-#endif  // DART_CONSTRAINT_CONSTRAINTBASE_HPP_
-
+#endif // DART_CONSTRAINT_CONSTRAINTBASE_HPP_

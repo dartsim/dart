@@ -779,13 +779,30 @@ public:
   /// dependent generalized coordinates is non zero.
   bool isReactive() const;
 
-  /// Set constraint impulse
-  /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame
-  void setConstraintImpulse(const Eigen::Vector6d& _constImp);
+  /// \deprecated Deprecated in DART 6.7. Please use applyConstraintImpulse()
+  /// instead.
+  ///
+  /// Sets constraint impulse
+  ///
+  /// \param[in] constImp Spatial constraint impulse w.r.t. body frame
+  DART_DEPRECATED(6.7)
+  void setConstraintImpulse(const Eigen::Vector6d& constImp);
+
+  /// Applies constraint impulse.
+  ///
+  /// \param[in] bodyImpulse The body impulse that will be applied to this body.
+  /// The reference coordinate is the body coordinate.
+  ///
+  /// \note \c bodyImpulse will be projected onto the joint space and stored
+  /// in the parent joint. We intentionally use the verb "apply" instead of
+  /// "set" to indicate this behavior because we might expect "set" will store
+  /// the value as it is and then we can "get" the value, which isn't the case
+  /// here.
+  void applyConstraintImpulse(const Eigen::Vector6d& bodyImpulse);
 
   /// Add constraint impulse
-  /// \param[in] _constImp Spatial constraint impulse w.r.t. body frame
-  void addConstraintImpulse(const Eigen::Vector6d& _constImp);
+  /// \param[in] constImp Spatial constraint impulse w.r.t. body frame
+  void addConstraintImpulse(const Eigen::Vector6d& constImp);
 
   /// Add constraint impulse
   void addConstraintImpulse(const Eigen::Vector3d& _constImp,
@@ -797,7 +814,13 @@ public:
   /// dynamics algorithm
   virtual void clearConstraintImpulse();
 
+  /// \deprecated Deprecated in DART 6.7. The body constraint impulse is now
+  /// encoded in the joint constraint impulse. This is because we don't have use
+  /// cases to distinct body constraint impulse, which is a wrench, and joint
+  /// constraint impulse.
+  ///
   /// Return constraint impulse
+  DART_DEPRECATED(6.7)
   const Eigen::Vector6d& getConstraintImpulse() const;
 
   //----------------------------------------------------------------------------
@@ -1177,9 +1200,6 @@ protected:
   /// Impulsive bias force due to external impulsive force exerted on
   ///        bodies of the parent skeleton.
   Eigen::Vector6d mBiasImpulse;
-
-  /// Constraint impulse: contact impulse, dynamic joint impulse
-  Eigen::Vector6d mConstraintImpulse;
 
   // TODO(JS): rename with more informative one
   /// Generalized impulsive body force w.r.t. body frame.

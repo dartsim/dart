@@ -1362,6 +1362,24 @@ void GenericJoint<ConfigSpaceT>::setConstraintImpulse(size_t index,
 
 //==============================================================================
 template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setConstraintImpulse(
+    const Eigen::Vector6d& bodyConstraintImpulse)
+{
+  mConstraintImpulses.noalias()
+      = getRelativeJacobianStatic().transpose() * bodyConstraintImpulse;
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::addConstraintImpulse(
+    const Eigen::Vector6d& bodyConstraintImpulse)
+{
+  mConstraintImpulses.noalias()
+      += getRelativeJacobianStatic().transpose() * bodyConstraintImpulse;
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
 double GenericJoint<ConfigSpaceT>::getConstraintImpulse(size_t index) const
 {
   if (index >= getNumDofs())
@@ -1371,6 +1389,21 @@ double GenericJoint<ConfigSpaceT>::getConstraintImpulse(size_t index) const
   }
 
   return mConstraintImpulses[index];
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+void GenericJoint<ConfigSpaceT>::setConstraintImpulses(
+    const Eigen::VectorXd& impulses)
+{
+  mConstraintImpulses = impulses;
+}
+
+//==============================================================================
+template <class ConfigSpaceT>
+Eigen::VectorXd GenericJoint<ConfigSpaceT>::getConstraintImpulses() const
+{
+  return mConstraintImpulses;
 }
 
 //==============================================================================

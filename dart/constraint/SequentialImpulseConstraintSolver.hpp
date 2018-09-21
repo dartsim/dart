@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_CONSTRAINT_BOXEDLCPCONSTRAINTSOLVER_HPP_
-#define DART_CONSTRAINT_BOXEDLCPCONSTRAINTSOLVER_HPP_
+#ifndef DART_CONSTRAINT_SEQUENTIALIMPULSECONSTRAINTSOLVER_HPP_
+#define DART_CONSTRAINT_SEQUENTIALIMPULSECONSTRAINTSOLVER_HPP_
 
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/SmartPointer.hpp"
@@ -39,87 +39,34 @@
 namespace dart {
 namespace constraint {
 
-class BoxedLcpConstraintSolver : public ConstraintSolver
+class SequentialImpulseConstraintSolver : public ConstraintSolver
 {
 public:
   /// Constructor
-  BoxedLcpConstraintSolver(
-      double timeStep, BoxedLcpSolverPtr boxedLcpSolver = nullptr);
+  SequentialImpulseConstraintSolver(
+      double timeStep,
+      std::size_t maxIteration = 30,
+      double squaredResidual = 1e-3);
 
-  /// Sets boxed LCP (BLCP) solver
-  void setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver);
+  std::size_t getMaxIteration() const;
 
-  /// Returns boxed LCP (BLCP) solver
-  ConstBoxedLcpSolverPtr getBoxedLcpSolver() const;
+  void setMaxIteration(std::size_t maxIteration);
 
 protected:
   // Documentation inherited.
   void solveConstrainedGroup(ConstrainedGroup& group) override;
 
-  void solveConstrainedGroup2(ConstrainedGroup& group);
+  void prestep();
 
-  /// Boxed LCP solver
-  BoxedLcpSolverPtr mBoxedLcpSolver;
+  double solveSingleIteration(
+      std::size_t iterationNumber, ConstrainedGroup& group);
 
-  /// Cache data for boxed LCP formulation
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> mA;
+  std::size_t mMaxIteration;
 
-  /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mX;
-
-  /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mB;
-
-  /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mW;
-
-  /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mLo;
-
-  /// Cache data for boxed LCP formulation
-  Eigen::VectorXd mHi;
-
-  /// Cache data for boxed LCP formulation
-  Eigen::VectorXi mFIndex;
-
-  /// Cache data for boxed LCP formulation
-  Eigen::VectorXi mConstraintOffset;
-
-private:
-  std::unordered_map<dynamics::Skeleton*, std::size_t>
-      mSkeletonNumDofsOffsetMap;
-
-  int mTotalSkeletonDofs;
-
-  int mTotalConstraintDimension;
-
-  Eigen::MatrixXd mJ;
-
-  Eigen::MatrixXd mInvMJtran;
-
-#ifndef NDEBUG
-private:
-  /// Return true if the matrix is symmetric
-  bool isSymmetric(std::size_t n, double* A, double tol = 1e-6);
-
-  /// Return true if the diagonla block of matrix is symmetric
-  bool isSymmetric(
-      std::size_t n, double* A, std::size_t begin, std::size_t end);
-
-  /// Print debug information
-  void print(
-      std::size_t n,
-      double* A,
-      double* x,
-      double* lo,
-      double* hi,
-      double* b,
-      double* w,
-      int* findex);
-#endif
+  double mSquaredResidual;
 };
 
 } // namespace constraint
 } // namespace dart
 
-#endif // DART_CONSTRAINT_BOXEDLCPCONSTRAINTSOLVER_HPP_
+#endif // DART_CONSTRAINT_SEQUENTIALIMPULSECONSTRAINTSOLVER_HPP_

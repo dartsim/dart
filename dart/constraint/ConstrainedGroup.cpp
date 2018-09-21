@@ -115,6 +115,12 @@ bool ConstrainedGroup::containConstraint(
 //==============================================================================
 std::size_t ConstrainedGroup::getTotalDimension() const
 {
+  return computeTotalDimension();
+}
+
+//==============================================================================
+std::size_t ConstrainedGroup::computeTotalDimension() const
+{
   std::size_t totalDim = 0;
 
   for (std::size_t i = 0; i < mConstraints.size(); ++i)

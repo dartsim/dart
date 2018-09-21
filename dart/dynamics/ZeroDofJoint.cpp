@@ -582,9 +582,36 @@ void ZeroDofJoint::setConstraintImpulse(std::size_t /*_index*/, double /*_impuls
 }
 
 //==============================================================================
+void ZeroDofJoint::setConstraintImpulse(
+    const Eigen::Vector6d& /*bodyConstraintImpulse*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+void ZeroDofJoint::addConstraintImpulse(
+    const Eigen::Vector6d& /*bodyConstraintImpulse*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
 double ZeroDofJoint::getConstraintImpulse(std::size_t /*_index*/) const
 {
   return 0.0;
+}
+
+//==============================================================================
+void ZeroDofJoint::setConstraintImpulses(const Eigen::VectorXd& /*impulses*/)
+{
+  // Do nothing
+}
+
+//==============================================================================
+Eigen::VectorXd ZeroDofJoint::getConstraintImpulses() const
+{
+  static Eigen::VectorXd zeroVector = Eigen::VectorXd::Zero(0);
+  return zeroVector;
 }
 
 //==============================================================================
