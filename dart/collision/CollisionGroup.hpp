@@ -42,6 +42,7 @@
 #include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/DistanceOption.hpp"
 #include "dart/collision/DistanceResult.hpp"
+#include "dart/common/Observer.hpp"
 #include "dart/dynamics/SmartPointer.hpp"
 
 namespace dart {
@@ -285,6 +286,13 @@ public:
   /// useful to control when it occurs.
   void update();
 
+  /// Remove any ShapeFrames that have been deleted. This will be done
+  /// automatically for ShapeFrames that belong to subscriptions.
+  ///
+  /// Returns true if one or more ShapeFrames were removed; otherwise returns
+  /// false.
+  void removeDeletedShapeFrames();
+
 protected:
 
   /// Update engine data. This function should be called before the collision
@@ -354,6 +362,42 @@ protected:
 
 private:
 
+  /// This class watches when ShapeFrames get deleted so that they can be safely
+  /// removes from the CollisionGroup. We cannot have a weak_ptr to a ShapeFrame
+  /// because some are managed by std::shared_ptr while others are managed by
+  /// NodePtr.
+  ///
+  /// If we don't carefully track when each ShapeFrame gets destructed, then we
+  /// can land in a situation where a ShapeFrame gets removed from a BodyNode,
+  /// deallocated, and then a new ShapeFrame is allocated in the memory address
+  /// of the old one. This can lead to invalid memory accesses if we neglect to
+  /// correctly clean up our references to deleted ShapeFrames.
+  class ShapeFrameObserver final : public common::Observer
+  {
+  public:
+
+    void addShapeFrame(const dynamics::ShapeFrame* shapeFrame);
+
+    void removeShapeFrame(const dynamics::ShapeFrame* shapeFrame);
+
+    void removeAllShapeFrames();
+
+    std::unordered_set<const dynamics::ShapeFrame*> mDeletedFrames;
+
+  protected:
+
+    void handleDestructionNotification(const common::Subject* subject) override;
+
+  private:
+
+    /// A map from a subject pointer to its corresponding ShapeFrame pointer.
+    /// This needs to be stored because by the time a Subject is being
+    /// destructed, it can no longer be cast back to its ShapeFrame.
+    std::unordered_map<const common::Subject*,
+                       const dynamics::ShapeFrame*> mMap;
+
+  };
+
   /// Implementation of addShapeFrame. The source argument tells us whether this
   /// ShapeFrame is being requested explicitly by the user or implicitly through
   /// a BodyNode, Skeleton, or other CollisionGroup.
@@ -366,6 +410,10 @@ private:
   void _removeShapeFrameInternal(
       const dynamics::ShapeFrame* shapeFrame,
       const void* source);
+
+  /// Implementation of removeDeletedShapeFrames(). This will not tell the
+  /// engine to update.
+  bool _removeDeletedShapeFramesImpl();
 
   /// Set this to true to have this CollisionGroup check for updates
   /// automatically. Default is true.
@@ -429,6 +477,7 @@ private:
   // The various sources that this CollisionGroup is subscribed to
   SkeletonSources mSkeletonSources;
   BodyNodeSources mBodyNodeSources;
+  ShapeFrameObserver mObserver;
 
 };
 
