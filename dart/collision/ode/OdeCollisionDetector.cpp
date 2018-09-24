@@ -240,7 +240,11 @@ std::unique_ptr<CollisionObject> OdeCollisionDetector::createCollisionObject(
 //==============================================================================
 void OdeCollisionDetector::refreshCollisionObject(CollisionObject* object)
 {
-  // TODO
+  OdeCollisionObject temp(this, object->getShapeFrame());
+
+  static_cast<OdeCollisionObject&>(*object) =
+//      OdeCollisionObject(this, object->getShapeFrame());
+      std::move(temp);
 }
 
 //==============================================================================

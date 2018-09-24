@@ -60,6 +60,8 @@ protected:
       OdeCollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame);
 
+  OdeCollisionObject& operator=(OdeCollisionObject&& other);
+
   // Documentation inherited
   void updateEngineData() override;
 
