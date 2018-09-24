@@ -306,9 +306,9 @@ std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
 }
 
 //==============================================================================
-void DARTCollisionDetector::refreshCollisionObject(CollisionObject* object)
+void DARTCollisionDetector::refreshCollisionObject(CollisionObject* /*object*/)
 {
-  // TODO
+  // Do nothing
 }
 
 
