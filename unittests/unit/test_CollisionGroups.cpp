@@ -37,6 +37,7 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include <dart/dynamics/SphereShape.hpp>
 
 #include "dart/simulation/World.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
@@ -100,20 +101,24 @@ TEST_P(CollisionGroupsTest, WorldSubscription)
 
   // Now we'll change the properties of one the box shape so that there should
   // no longer be any collisions.
-  boxShape->setSize(Eigen::Vector3d::Constant(0.1));
+  boxShape->setSize(Eigen::Vector3d::Constant(0.2));
   dart::collision::CollisionResult result2;
   EXPECT_FALSE(world->checkCollision());
 
   // Now we'll replace one of the boxes with a large one, so that a collision
   // will occur again.
   auto largeBox = std::make_shared<dart::dynamics::BoxShape>(
-        Eigen::Vector3d::Constant(1.0));
+        Eigen::Vector3d::Constant(0.95));
   sn1->setShape(largeBox);
   EXPECT_TRUE(world->checkCollision());
 
-  // TODO(MXG): Make it so that this test does not crash bullet
-//  sn2->setShape(largeBox);
-//  EXPECT_TRUE(world->checkCollision());
+  // After this, both shapes will have been replaced with new shape instances.
+  // If the shape map of the collision detector is empty upon destruction, then
+  // the internal collision shapes are being managed correctly. Otherwise, if
+  // they are not being managed correctly, then an assertion will fail when
+  // testing in debug mode.
+  sn2->setShape(std::make_shared<dart::dynamics::SphereShape>(0.01));
+  EXPECT_FALSE(world->checkCollision());
 }
 
 INSTANTIATE_TEST_CASE_P(CollisionEngine, CollisionGroupsTest,

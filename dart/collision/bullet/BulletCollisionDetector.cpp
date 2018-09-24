@@ -376,7 +376,8 @@ BulletCollisionDetector::claimBulletCollisionShape(
   }
 
   auto newBulletCollisionShape = std::shared_ptr<BulletCollisionShape>(
-        createBulletCollisionShape(shape).release());
+        createBulletCollisionShape(shape).release(),
+        BulletCollisionGeometryDeleter(this, shape));
   info.mShape = newBulletCollisionShape;
   info.mLastKnownVersion = currentVersion;
 
@@ -388,6 +389,9 @@ void BulletCollisionDetector::reclaimBulletCollisionShape(
     const dynamics::ConstShapePtr& shape)
 {
   const auto& search = mShapeMap.find(shape);
+  if(search == mShapeMap.end())
+    return;
+
   const auto& bulletShape = search->second.mShape.lock();
   if(!bulletShape || bulletShape.use_count() <= 2)
     mShapeMap.erase(search);
@@ -597,7 +601,25 @@ BulletCollisionDetector::createBulletCollisionShape(
   }
 }
 
+//==============================================================================
+BulletCollisionDetector::BulletCollisionGeometryDeleter
+::BulletCollisionGeometryDeleter(
+    BulletCollisionDetector* cd,
+    const dynamics::ConstShapePtr& shape)
+  : mBulletCollisionDetector(cd),
+    mShape(shape)
+{
+  // Do nothing
+}
 
+//==============================================================================
+void BulletCollisionDetector::BulletCollisionGeometryDeleter
+::operator()(BulletCollisionShape* shape) const
+{
+  mBulletCollisionDetector->reclaimBulletCollisionShape(mShape);
+
+  delete shape;
+}
 
 namespace {
 

@@ -124,13 +124,31 @@ private:
   std::unique_ptr<BulletCollisionShape> createBulletCollisionShape(
       const dynamics::ConstShapePtr& shape);
 
-private:
+  class BulletCollisionGeometryDeleter final
+  {
+  public:
 
-  struct ShapeInfo
+    BulletCollisionGeometryDeleter(
+        BulletCollisionDetector* cd,
+        const dynamics::ConstShapePtr& shape);
+
+    void operator()(BulletCollisionShape* shape) const;
+
+  private:
+
+    BulletCollisionDetector* mBulletCollisionDetector;
+
+    dynamics::ConstShapePtr mShape;
+
+  };
+
+  struct ShapeInfo final
   {
     std::weak_ptr<BulletCollisionShape> mShape;
     std::size_t mLastKnownVersion;
   };
+
+private:
 
   std::map<dynamics::ConstShapePtr, ShapeInfo> mShapeMap;
 

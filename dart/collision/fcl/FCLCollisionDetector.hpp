@@ -176,6 +176,12 @@ private:
 
   };
 
+  struct ShapeInfo final
+  {
+    fcl_weak_ptr<dart::collision::fcl::CollisionGeometry> mShape;
+    std::size_t mLastKnownVersion;
+  };
+
   /// Create fcl::CollisionGeometry with the custom deleter
   /// FCLCollisionGeometryDeleter
   fcl_shared_ptr<dart::collision::fcl::CollisionGeometry> createFCLCollisionGeometry(
@@ -184,12 +190,6 @@ private:
       const FCLCollisionGeometryDeleter& deleter);
 
 private:
-
-  struct ShapeInfo
-  {
-    fcl_weak_ptr<dart::collision::fcl::CollisionGeometry> mShape;
-    std::size_t mLastKnownVersion;
-  };
 
   using ShapeMap = std::map<dynamics::ConstShapePtr, ShapeInfo>;
 
