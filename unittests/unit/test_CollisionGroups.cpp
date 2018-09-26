@@ -132,7 +132,7 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
   EXPECT_FALSE(world->checkCollision());
 
   // Create a new shape node so that there should be a collision again
-  auto sn_new = pair.second->createShapeNodeWith<
+  pair.second->createShapeNodeWith<
       dart::dynamics::CollisionAspect>(sphereShape);
   EXPECT_TRUE(world->checkCollision());
 
