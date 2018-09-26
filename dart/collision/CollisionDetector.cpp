@@ -159,6 +159,7 @@ CollisionDetector::ManagerForSharableCollisionObjects::claimCollisionObject(
   {
     const auto& collObj = search->second;
     assert(collObj.lock());
+    // Ensure all the collision objects in the map are valid pointers
 
     return collObj.lock();
   }

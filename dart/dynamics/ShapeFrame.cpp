@@ -183,6 +183,15 @@ DynamicsAspect::DynamicsAspect(
 }
 
 //==============================================================================
+ShapeFrame::~ShapeFrame()
+{
+  // TODO(MXG): Why doesn't ScopedConnection seem to work as a member variable?
+  // If we could use a ScopedConnection for mConnectionForShapeVersionChange
+  // instead, then we wouldn't need to explicitly disconnect in this destructor.
+  mConnectionForShapeVersionChange.disconnect();
+}
+
+//==============================================================================
 void ShapeFrame::setProperties(const ShapeFrame::UniqueProperties& properties)
 {
   setAspectProperties(properties);

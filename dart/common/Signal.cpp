@@ -52,7 +52,7 @@ Connection::Connection(const Connection& _other)
 Connection::Connection(Connection&& _other)
   : mWeakConnectionBody(std::move(_other.mWeakConnectionBody))
 {
-  _other.mWeakConnectionBody.reset();
+  // Do nothing
 }
 
 //==============================================================================

@@ -365,7 +365,7 @@ BulletCollisionDetector::claimBulletCollisionShape(
 
   const auto search = mShapeMap.insert(std::make_pair(shape, ShapeInfo()));
   const bool inserted = search.second;
-  auto& info = search.first->second;
+  ShapeInfo& info = search.first->second;
 
   if (!inserted && currentVersion == info.mLastKnownVersion)
   {
@@ -377,7 +377,7 @@ BulletCollisionDetector::claimBulletCollisionShape(
 
   auto newBulletCollisionShape = std::shared_ptr<BulletCollisionShape>(
         createBulletCollisionShape(shape).release(),
-        BulletCollisionGeometryDeleter(this, shape));
+        BulletCollisionShapeDeleter(this, shape));
   info.mShape = newBulletCollisionShape;
   info.mLastKnownVersion = currentVersion;
 
@@ -602,8 +602,8 @@ BulletCollisionDetector::createBulletCollisionShape(
 }
 
 //==============================================================================
-BulletCollisionDetector::BulletCollisionGeometryDeleter
-::BulletCollisionGeometryDeleter(
+BulletCollisionDetector::BulletCollisionShapeDeleter
+::BulletCollisionShapeDeleter(
     BulletCollisionDetector* cd,
     const dynamics::ConstShapePtr& shape)
   : mBulletCollisionDetector(cd),
@@ -613,7 +613,7 @@ BulletCollisionDetector::BulletCollisionGeometryDeleter
 }
 
 //==============================================================================
-void BulletCollisionDetector::BulletCollisionGeometryDeleter
+void BulletCollisionDetector::BulletCollisionShapeDeleter
 ::operator()(BulletCollisionShape* shape) const
 {
   mBulletCollisionDetector->reclaimBulletCollisionShape(mShape);

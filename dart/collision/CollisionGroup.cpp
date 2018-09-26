@@ -295,13 +295,6 @@ void CollisionGroup::updateEngineData()
 }
 
 //==============================================================================
-CollisionGroup::ObjectInfo::~ObjectInfo()
-{
-  // Do nothing. For some reason, a compilation error occurs if this is not
-  // defined in a translation unit?
-}
-
-//==============================================================================
 void CollisionGroup::ShapeFrameObserver::addShapeFrame(
     const dynamics::ShapeFrame* shapeFrame)
 {

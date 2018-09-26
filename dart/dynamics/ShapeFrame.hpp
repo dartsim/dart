@@ -180,7 +180,7 @@ public:
   using Properties = UniqueProperties;
 
   /// Destructor
-  virtual ~ShapeFrame() = default;
+  virtual ~ShapeFrame() override;
 
   /// Set the UniqueProperties of this ShapeFrame
   void setProperties(const UniqueProperties& properties);

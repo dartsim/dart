@@ -910,7 +910,7 @@ FCLCollisionDetector::claimFCLCollisionGeometry(
 
   const auto search = mShapeMap.insert(std::make_pair(shape, ShapeInfo()));
   const bool inserted = search.second;
-  auto& info = search.first->second;
+  ShapeInfo& info = search.first->second;
 
   if (!inserted && currentVersion == info.mLastKnownVersion)
   {

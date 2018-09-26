@@ -202,6 +202,7 @@ public:
   /// Returns collision detector
   CollisionDetector* getCollisionDetector();
 
+  /// Virtual destructor
   virtual ~CollisionObjectManager() = default;
 
 protected:
