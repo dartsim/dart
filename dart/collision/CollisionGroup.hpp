@@ -33,7 +33,6 @@
 #ifndef DART_COLLISION_COLLISIONGROUP_HPP_
 #define DART_COLLISION_COLLISIONGROUP_HPP_
 
-#include <map>
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
