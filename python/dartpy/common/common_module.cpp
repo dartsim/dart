@@ -7,8 +7,8 @@ void dart_common(pybind11::module& m)
 {
   auto sm = m.def_submodule("common");
 
-  void dart_common_Uri(pybind11::module& sm);
-  dart_common_Uri(sm);
+  void Uri(pybind11::module& sm);
+  Uri(sm);
 }
 
 } // namespace python

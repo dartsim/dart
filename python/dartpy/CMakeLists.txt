@@ -26,8 +26,12 @@ set(dartpy_sources
   dartpy.cpp
   common/common_module.cpp
   common/Uri.cpp
+  dynamics/dynamics_module.cpp
+  dynamics/Skeleton.cpp
   simulation/simulation_module.cpp
   simulation/World.cpp
+  utils/utils_module.cpp
+  utils/DartLoader.cpp
 )
 
 # Build a Python extension module:
@@ -52,6 +56,7 @@ target_link_libraries(dartpy
     dart
     dart-collision-bullet
     dart-utils
+    dart-utils-urdf
     ${PYTHON_LIBRARIES}
 )
 

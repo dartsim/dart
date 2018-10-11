@@ -7,7 +7,7 @@
 namespace dart {
 namespace python {
 
-void dart_simulation_World(pybind11::module& m)
+void World(pybind11::module& m)
 {
   ::pybind11::class_<dart::simulation::World, std::shared_ptr<dart::simulation::World>>(m, "World")
       .def(::pybind11::init<>())

@@ -4,7 +4,7 @@
 namespace dart {
 namespace python {
 
-void dart_common_Uri(pybind11::module& m)
+void Uri(pybind11::module& m)
 {
   ::pybind11::class_<dart::common::Uri >(m, "Uri")
       .def(::pybind11::init<>())
@@ -49,6 +49,8 @@ void dart_common_Uri(pybind11::module& m)
       .def_readwrite("mQuery", &dart::common::Uri::mQuery)
       .def_readwrite("mFragment", &dart::common::Uri::mFragment)
       ;
+
+  ::pybind11::implicitly_convertible<std::string, dart::common::Uri>();
 }
 
 } // namespace python
