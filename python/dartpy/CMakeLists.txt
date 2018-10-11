@@ -22,9 +22,12 @@ set(dartpy_headers
   eigen_pybind.h
 )
 set(dartpy_sources
+  eigen_geometry_pybind.cpp
   dartpy.cpp
   common/common_module.cpp
   common/Uri.cpp
+  simulation/simulation_module.cpp
+  simulation/World.cpp
 )
 
 # Build a Python extension module:
@@ -34,6 +37,7 @@ set(dartpy_sources
 pybind11_add_module(dartpy
   MODULE
   EXCLUDE_FROM_ALL
+  ${dartpy_headers}
   ${dartpy_sources}
 )
 

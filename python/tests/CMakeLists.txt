@@ -20,16 +20,14 @@ else()
 endif()
 
 set(dartpy_test_files
-  # comprehensive/test_collision_detector.py
-  # regression/test_get_shape.py
-  # unit/utils/test_dart_loader.py
   unit/common/test_uri.py
+  unit/simulation/test_world.py
 )
 
 # Add custom target to run the tests
 add_custom_target(pytest
-  COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: ${PYTHON_EXECUTABLE} -m pytest [sources]"
-  COMMAND PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}/../dartpy ${PYTHON_EXECUTABLE} -m pytest ${dartpy_test_files}
+  COMMAND ${CMAKE_COMMAND} -E echo "Running pytest by: PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} -m pytest [sources]"
+  COMMAND PYTHONPATH=${DART_DARTPY_BUILD_DIR} ${PYTHON_EXECUTABLE} -m pytest ${dartpy_test_files} -v
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   SOURCES ${dartpy_test_files}
 )

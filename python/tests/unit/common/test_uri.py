@@ -12,7 +12,7 @@ def test_from_string_valid_uri_returns_true():
     assert uri.fromString("news:comp.infosystems.www.servers.unix") is True
     assert uri.fromString("tel:+1-816-555-1212") is True
     assert uri.fromString("telnet://192.0.2.16:80/") is True
-    assert uri.fromString("urn:oasis:names:specification:docbook:dtd:xml:4.1.2");
+    assert uri.fromString("urn:oasis:names:specification:docbook:dtd:xml:4.1.2") is True
 
 
 if __name__ == "__main__":
