@@ -87,6 +87,7 @@ option(DART_BUILD_EXTRAS "Build extra projects" OFF)
 option(DART_CODECOV "Turn on codecov support" OFF)
 option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 option(DART_FAST_DEBUG "Add -O1 option for DEBUG mode build" OFF)
+option(DART_BUILD_DARTPY "Build dartpy (the python binding)" OFF)
 
 #===============================================================================
 # Print intro
@@ -314,6 +315,10 @@ if(TARGET dart)
     message(STATUS "Adding ${tutorials_length} tutorials")
   endif(DART_VERBOSE)
 
+endif()
+
+if (DART_BUILD_DARTPY)
+  add_subdirectory(python)
 endif()
 
 if(DART_BUILD_EXTRAS)
