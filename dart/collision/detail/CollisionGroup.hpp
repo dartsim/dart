@@ -114,9 +114,6 @@ void CollisionGroup::subscribeTo(
     const dynamics::ConstBodyNodePtr& bodyNode,
     const Others&... others)
 {
-  const auto collisionShapeNodes =
-      bodyNode->getShapeNodesWith<dynamics::CollisionAspect>();
-
   const auto inserted = mBodyNodeSources.insert(
         BodyNodeSources::value_type(
           bodyNode.get(),
@@ -127,10 +124,13 @@ void CollisionGroup::subscribeTo(
   {
     const BodyNodeSources::iterator& entry = inserted.first;
 
+    const auto collisionShapeNodes =
+        bodyNode->getShapeNodesWith<dynamics::CollisionAspect>();
+
     for (const auto& shapeNode : collisionShapeNodes)
     {
       entry->second.mObjects.insert(
-        {shapeNode, _addShapeFrameImpl(shapeNode, bodyNode.get())});
+        {shapeNode, addShapeFrameImpl(shapeNode, bodyNode.get())});
     }
   }
 
@@ -168,7 +168,7 @@ void CollisionGroup::subscribeTo(
       for (const auto& shapeNode : collisionShapeNodes)
       {
         entry.mObjects.insert(
-            {shapeNode, _addShapeFrameImpl(shapeNode, skeleton.get())});
+            {shapeNode, addShapeFrameImpl(shapeNode, skeleton.get())});
         childInfo.mFrames.insert(shapeNode);
       }
     }
@@ -260,7 +260,7 @@ void CollisionGroup::unsubscribeFrom(
   if(it != mBodyNodeSources.end())
   {
     for(const auto& entry : it->second.mObjects)
-      _removeShapeFrameInternal(entry.first, bodyNode);
+      removeShapeFrameInternal(entry.first, bodyNode);
 
     mBodyNodeSources.erase(it);
   }
@@ -279,7 +279,7 @@ void CollisionGroup::unsubscribeFrom(
   {
     for(const auto& entry : it->second.mObjects)
     {
-      _removeShapeFrameInternal(
+      removeShapeFrameInternal(
             entry.first, static_cast<const dynamics::MetaSkeleton*>(skeleton));
     }
 

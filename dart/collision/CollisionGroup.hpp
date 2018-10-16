@@ -421,17 +421,16 @@ private:
 
   };
 
-  /// \private Implementation of addShapeFrame. The source argument tells us
-  /// whether this ShapeFrame is being requested explicitly by the user or
-  /// implicitly through a BodyNode, Skeleton, or other CollisionGroup.
-  ObjectInfo* _addShapeFrameImpl(
+  /// Implementation of addShapeFrame. The source argument tells us whether this
+  /// ShapeFrame is being requested explicitly by the user or implicitly through
+  /// a BodyNode, Skeleton, or other CollisionGroup.
+  ObjectInfo* addShapeFrameImpl(
       const dynamics::ShapeFrame* shapeFrame,
       const void* source);
 
-  /// \private Internal version of removeShapeFrame. This will only remove the
-  /// ShapeFrame
+  /// Internal version of removeShapeFrame. This will only remove the ShapeFrame
   /// if it is unsubscribed from all sources.
-  void _removeShapeFrameInternal(
+  void removeShapeFrameInternal(
       const dynamics::ShapeFrame* shapeFrame,
       const void* source);
 
@@ -497,14 +496,17 @@ private:
   using BodyNodeSources = std::unordered_map<
       const dynamics::BodyNode*, BodyNodeSource>;
 
-  /// \private Internal function called to update a Skeleton source
-  bool _updateSkeletonSource(SkeletonSources::value_type& entry);
+  /// Internal function called to update a Skeleton source
+  /// \returns true if an update was performed
+  bool updateSkeletonSource(SkeletonSources::value_type& entry);
 
-  /// \private Internal function called to update a BodyNode source
-  bool _updateBodyNodeSource(BodyNodeSources::value_type& entry);
+  /// Internal function called to update a BodyNode source
+  /// \returns true if an update was performed
+  bool updateBodyNodeSource(BodyNodeSources::value_type& entry);
 
-  /// \private Internal function called to update a ShapeFrame
-  bool _updateShapeFrame(ObjectInfo* object);
+  /// Internal function called to update a ShapeFrame
+  /// \returns true if an update was performed
+  bool updateShapeFrame(ObjectInfo* object);
 
   /// Skeleton sources that this group is subscribed to
   SkeletonSources mSkeletonSources;

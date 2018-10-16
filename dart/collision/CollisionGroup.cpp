@@ -65,7 +65,7 @@ ConstCollisionDetectorPtr CollisionGroup::getCollisionDetector() const
 //==============================================================================
 void CollisionGroup::addShapeFrame(const dynamics::ShapeFrame* shapeFrame)
 {
-  _addShapeFrameImpl(shapeFrame, nullptr);
+  addShapeFrameImpl(shapeFrame, nullptr);
 }
 
 //==============================================================================
@@ -238,10 +238,10 @@ void CollisionGroup::update()
   removeDeletedShapeFrames();
 
   for(auto& entry : mSkeletonSources)
-    _updateSkeletonSource(entry);
+    updateSkeletonSource(entry);
 
   for(auto& entry : mBodyNodeSources)
-    _updateBodyNodeSource(entry);
+    updateBodyNodeSource(entry);
 }
 
 //==============================================================================
@@ -326,7 +326,7 @@ void CollisionGroup::ShapeFrameObserver::handleDestructionNotification(
 }
 
 //==============================================================================
-auto CollisionGroup::_addShapeFrameImpl(
+auto CollisionGroup::addShapeFrameImpl(
     const dynamics::ShapeFrame* shapeFrame,
     const void* source) -> ObjectInfo*
 {
@@ -365,7 +365,7 @@ auto CollisionGroup::_addShapeFrameImpl(
 }
 
 //==============================================================================
-void CollisionGroup::_removeShapeFrameInternal(
+void CollisionGroup::removeShapeFrameInternal(
     const dynamics::ShapeFrame* shapeFrame,
     const void* source)
 {
@@ -392,7 +392,7 @@ void CollisionGroup::_removeShapeFrameInternal(
 }
 
 //==============================================================================
-bool CollisionGroup::_updateSkeletonSource(SkeletonSources::value_type& entry)
+bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
 {
   SkeletonSource& source = entry.second;
 
@@ -402,7 +402,7 @@ bool CollisionGroup::_updateSkeletonSource(SkeletonSources::value_type& entry)
     // This skeleton no longer exists, so we should remove all its contents from
     // the CollisionGroup.
     for(const auto& object : source.mObjects)
-      _removeShapeFrameInternal(object.second->mFrame, object.first);
+      removeShapeFrameInternal(object.second->mFrame, object.first);
 
     return true;
   }
@@ -451,7 +451,7 @@ bool CollisionGroup::_updateSkeletonSource(SkeletonSources::value_type& entry)
       for(const auto& shapeNode : collisionShapeNodes)
       {
         source.mObjects.insert(
-            {shapeNode, _addShapeFrameImpl(shapeNode, meta.get())});
+            {shapeNode, addShapeFrameImpl(shapeNode, meta.get())});
         child->second.mFrames.insert(shapeNode);
       }
 
@@ -487,21 +487,21 @@ bool CollisionGroup::_updateSkeletonSource(SkeletonSources::value_type& entry)
         // need to create a collision object for it.
         updateNeeded = true;
 
-        it->second = _addShapeFrameImpl(node, meta.get());
+        it->second = addShapeFrameImpl(node, meta.get());
         child->second.mFrames.insert(node);
       }
       else
       {
         // If the insertion did not occur, then this is an old ShapeFrame, and
         // we should check if it needs an update.
-        updateNeeded |= _updateShapeFrame(it->second);
+        updateNeeded |= updateShapeFrame(it->second);
       }
     }
 
     for(const dynamics::ShapeFrame* unused : unusedFrames)
     {
       updateNeeded = true;
-      _removeShapeFrameInternal(unused, meta.get());
+      removeShapeFrameInternal(unused, meta.get());
       child->second.mFrames.erase(unused);
     }
   }
@@ -512,7 +512,7 @@ bool CollisionGroup::_updateSkeletonSource(SkeletonSources::value_type& entry)
     for(const dynamics::ShapeFrame* unusedFrame : unusedChild.second.mFrames)
     {
       updateNeeded = true;
-      _removeShapeFrameInternal(unusedFrame, meta.get());
+      removeShapeFrameInternal(unusedFrame, meta.get());
       source.mObjects.erase(unusedFrame);
     }
 
@@ -523,7 +523,7 @@ bool CollisionGroup::_updateSkeletonSource(SkeletonSources::value_type& entry)
 }
 
 //==============================================================================
-bool CollisionGroup::_updateBodyNodeSource(BodyNodeSources::value_type& entry)
+bool CollisionGroup::updateBodyNodeSource(BodyNodeSources::value_type& entry)
 {
   BodyNodeSource& source = entry.second;
 
@@ -533,7 +533,7 @@ bool CollisionGroup::_updateBodyNodeSource(BodyNodeSources::value_type& entry)
     // This BodyNode no longer exists, so we should remove all i ts contents
     // from the CollisionGroup.
     for(const auto& object : source.mObjects)
-      _removeShapeFrameInternal(object.second->mFrame, object.first);
+      removeShapeFrameInternal(object.second->mFrame, object.first);
 
     return true;
   }
@@ -565,13 +565,13 @@ bool CollisionGroup::_updateBodyNodeSource(BodyNodeSources::value_type& entry)
       updateNeeded = true;
       // If the insertion occurred, then this is a new ShapeFrame, and we need
       // to create a collision object for it.
-      it->second = _addShapeFrameImpl(node, bn.get());
+      it->second = addShapeFrameImpl(node, bn.get());
     }
     else
     {
       // If the insertion did not occur, then this is an old ShapeFrame, and
       // we should check if it needs an update.
-      updateNeeded |= _updateShapeFrame(it->second);
+      updateNeeded |= updateShapeFrame(it->second);
     }
   }
 
@@ -580,7 +580,7 @@ bool CollisionGroup::_updateBodyNodeSource(BodyNodeSources::value_type& entry)
   for(const auto& unusedFrame : unusedFrames)
   {
     updateNeeded = true;
-    _removeShapeFrameInternal(unusedFrame.first, bn.get());
+    removeShapeFrameInternal(unusedFrame.first, bn.get());
     source.mObjects.erase(unusedFrame.first);
   }
 
@@ -588,7 +588,7 @@ bool CollisionGroup::_updateBodyNodeSource(BodyNodeSources::value_type& entry)
 }
 
 //==============================================================================
-bool CollisionGroup::_updateShapeFrame(ObjectInfo* object)
+bool CollisionGroup::updateShapeFrame(ObjectInfo* object)
 {
   const dynamics::ConstShapePtr& shape = object->mFrame->getShape();
   const std::size_t currentID = shape? shape->getID() : 0;
