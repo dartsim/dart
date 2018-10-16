@@ -18,6 +18,10 @@
 
 ### DART 6.7.0 (201X-XX-XX)
 
+* Build system
+
+  * Fix compilation warnings for newer versions of compilers: [#1174](https://github.com/dartsim/dart/pull/1174)
+
 * Dynamics
 
   * Refactor constraint solver: [#1099](https://github.com/dartsim/dart/pull/1099), [#1101](https://github.com/dartsim/dart/pull/1101)
