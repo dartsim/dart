@@ -610,6 +610,5 @@ bool CollisionGroup::updateShapeFrame(ObjectInfo* object)
   return false;
 }
 
-
 }  // namespace collision
 }  // namespace dart
