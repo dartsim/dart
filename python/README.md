@@ -1,7 +1,7 @@
 # dartpy
 
 > :warning: **Warning:** `dartpy` is under heavy development. See the open
-> issues on [`dartpy`](https://github.com/personalrobotics/dartpy/issues) and
+> issues on [`dartpy`](https://github.com/dartsim/dart/issues) and
 > [Chimera](https://github.com/personalrobotics/chimera/issues) for insight
 > into the current state of the project. Please report any issues you
 > encounter on the appropriate repository. This repo will be mreged into the
