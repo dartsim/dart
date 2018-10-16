@@ -331,7 +331,6 @@ bool DefaultEventHandler::handle(const ::osgGA::GUIEventAdapter& ea,
         {
           mViewer->switchHeadlights(!mViewer->checkHeadlights());
           return true;
-          break;
         }
 
         case ' ':
@@ -344,6 +343,7 @@ bool DefaultEventHandler::handle(const ::osgGA::GUIEventAdapter& ea,
           break;
         }
       }
+      break;
     }
 
     case ::osgGA::GUIEventAdapter::MOVE:
