@@ -2,6 +2,10 @@
 
 ### DART 7.0.0 (201X-XX-XX)
 
+* Build system
+
+  * Fix compilation warnings for newer versions of compilers: [#1174](https://github.com/dartsim/dart/pull/1174)
+
 * Collision detection
 
   * Added FCL 0.6 support: [#873](https://github.com/dartsim/dart/pull/873)
@@ -17,10 +21,6 @@
 ## DART 6
 
 ### DART 6.7.0 (201X-XX-XX)
-
-* Build system
-
-  * Fix compilation warnings for newer versions of compilers: [#1174](https://github.com/dartsim/dart/pull/1174)
 
 * Dynamics
 
