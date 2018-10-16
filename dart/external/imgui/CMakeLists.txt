@@ -12,6 +12,10 @@ include_directories(
   PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+if(CMAKE_COMPILER_IS_GNUCXX)
+  target_compile_options(dart-external-imgui PRIVATE -w)
+endif()
+
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
