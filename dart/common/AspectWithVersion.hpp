@@ -88,7 +88,6 @@ public:
       DerivedT, StateDataT, PropertiesDataT, CompositeT,
       updateState, updateProperties>;
 
-  AspectWithStateAndVersionedProperties() = delete;
   AspectWithStateAndVersionedProperties(
       const AspectWithStateAndVersionedProperties&) = delete;
 
