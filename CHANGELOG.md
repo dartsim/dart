@@ -2,6 +2,10 @@
 
 ### DART 6.7.0 (201X-XX-XX)
 
+* Build system
+
+  * Fix compilation warnings for newer versions of compilers: [#1177](https://github.com/dartsim/dart/pull/1177)
+
 * Math
 
   * Consolidated random functions into Random class : [#1109](https://github.com/dartsim/dart/pull/1109)
