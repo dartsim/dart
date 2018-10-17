@@ -54,7 +54,7 @@ class Func1 : public Function
 public:
   Func1() = default;
 
-  double eval(const Eigen::VectorXd& x) override
+  double eval(const Eigen::VectorXd& x) const override
   {
     return x[0];
   }
@@ -76,7 +76,7 @@ class Func2 : public Function
 public:
   Func2() = default;
 
-  double eval(const Eigen::VectorXd& x) override
+  double eval(const Eigen::VectorXd& x) const override
   {
     double g = 1.0 + 9 * (x.sum() - x[0]) / double(dimension - 1);
     return g * (1.0 - std::sqrt(x[0] / g));
