@@ -346,7 +346,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
         Eigen::Vector3d randomS = Eigen::Vector3d::Zero();
 
         for (int i = 0; i < 3; ++i)
-          randomS[i] = random(min, max);
+          randomS[i] = Random::uniform(min, max);
 
         Eigen::Isometry3d T = math::expAngular(randomS);
         EXPECT_TRUE(math::verifyTransform(T));
@@ -357,7 +357,7 @@ TEST(LIE_GROUP_OPERATORS, EXPONENTIAL_MAPPINGS)
         Eigen::Vector6d randomS = Eigen::Vector6d::Zero();
 
         for (int i = 0; i < 6; ++i)
-          randomS[i] = random(min, max);
+          randomS[i] = Random::uniform(min, max);
 
         Eigen::Isometry3d T = math::expMap(randomS);
         EXPECT_TRUE(math::verifyTransform(T));

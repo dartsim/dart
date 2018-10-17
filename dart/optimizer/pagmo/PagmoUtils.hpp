@@ -30,35 +30,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
-#include <dart/io/io.hpp>
+#ifndef DART_OPTIMIZER_PAGMO_PAGMOUTILS_HPP_
+#define DART_OPTIMIZER_PAGMO_PAGMOUTILS_HPP_
 
-#include "MyWindow.hpp"
+#include <pagmo/pagmo.hpp>
+#include "dart/optimizer/MultiObjectiveSolver.hpp"
 
-int main(int argc, char* argv[]) {
-  // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::io::SkelParser::readWorld("dart://sample/skel/chain.skel");
-  assert(myWorld != nullptr);
+namespace dart {
+namespace optimizer {
 
-  // create and initialize the world
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
-  myWorld->setTimeStep(1.0/2000);
+class PagmoTypes
+{
+public:
+  static std::vector<double> convertVector(const Eigen::VectorXd& v);
 
-  int dof =  myWorld->getSkeleton(0)->getNumDofs();
-  Eigen::VectorXd initPose(dof);
-  for (int i = 0; i < dof; i++)
-    initPose[i] = dart::math::Random::uniform(-0.5, 0.5);
-  myWorld->getSkeleton(0)->setPositions(initPose);
+  static Eigen::Map<const Eigen::VectorXd> convertVector(
+      const std::vector<double>& v);
 
-  // create a window and link it to the world
-  MyWindow window;
-  window.setWorld(myWorld);
+  static Population convertPopulation(
+      const ::pagmo::population& pagmoPop,
+      std::shared_ptr<MultiObjectiveProblem> problem);
 
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Forward Simulation");
-  glutMainLoop();
+  static ::pagmo::population convertPopulation(
+      const Population& pop, const ::pagmo::problem& pagmoProb);
+};
 
-  return 0;
-}
+} // namespace optimizer
+} // namespace dart
+
+#endif // DART_OPTIMIZER_PAGMO_PAGMOUTILS_HPP_

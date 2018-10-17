@@ -30,56 +30,60 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/osg/TrackballManipulator.hpp"
-
-#include <osg/Version>
+#include "dart/optimizer/pagmo/PagmoUtils.hpp"
 
 namespace dart {
-namespace gui {
-namespace osg {
+namespace optimizer {
 
 //==============================================================================
-TrackballManipulator::TrackballManipulator(int flags)
-  : ::osgGA::OrbitManipulator(flags)
+std::vector<double> PagmoTypes::convertVector(const Eigen::VectorXd& v)
 {
-  setVerticalAxisFixed(false);
-  setAllowThrow(false);
+  return std::vector<double>(v.data(), v.data() + v.size());
 }
 
 //==============================================================================
-TrackballManipulator::TrackballManipulator(const TrackballManipulator& tm,
-                                           const ::osg::CopyOp& copyOp)
-  : ::osg::Object(tm, copyOp),
-#if OSG_VERSION_GREATER_OR_EQUAL(3,3,2)
-    ::osg::Callback(),
-#endif
-    ::osgGA::OrbitManipulator(tm, copyOp)
+Eigen::Map<const Eigen::VectorXd> PagmoTypes::convertVector(
+    const std::vector<double>& v)
 {
-  // Do nothing
+  return Eigen::Map<const Eigen::VectorXd>(
+      v.data(), static_cast<int>(v.size()));
 }
 
 //==============================================================================
-TrackballManipulator::~TrackballManipulator()
+Population PagmoTypes::convertPopulation(
+    const ::pagmo::population& pagmoPop,
+    std::shared_ptr<MultiObjectiveProblem> problem)
 {
-  // Do nothing
+  Population pop(problem, pagmoPop.size());
+
+  const auto& pagmoX = pagmoPop.get_x();
+  const auto& pagmoF = pagmoPop.get_f();
+
+  for (std::size_t i = 0u; i < pagmoPop.size(); ++i)
+  {
+    const Eigen::VectorXd x = convertVector(pagmoX[i]);
+    const Eigen::VectorXd f = convertVector(pagmoF[i]);
+    pop.set(i, x, f);
+  }
+
+  return pop;
 }
 
 //==============================================================================
-bool TrackballManipulator::performMovementLeftMouseButton(
-    const double, const double, const double)
+pagmo::population PagmoTypes::convertPopulation(
+    const Population& pop, const ::pagmo::problem& pagmoProb)
 {
-  // Do nothing
-  return false;
+  pagmo::population pagmoPop(pagmoProb, pop.getSize());
+
+  for (std::size_t i = 0u; i < pagmoPop.size(); ++i)
+  {
+    const std::vector<double> pagmoX = convertVector(pop.getDecisionVector(i));
+    const std::vector<double> pagmoF = convertVector(pop.getFitnessVector(i));
+    pagmoPop.set_xf(i, pagmoX, pagmoF);
+  }
+
+  return pagmoPop;
 }
 
-//==============================================================================
-bool TrackballManipulator::performMovementRightMouseButton(
-    const double eventTimeDelta, const double dx, const double dy)
-{
-  return OrbitManipulator::performMovementLeftMouseButton(
-        eventTimeDelta, dx, dy);
-}
-
-} // namespace osg
-} // namespace gui
+} // namespace optimizer
 } // namespace dart

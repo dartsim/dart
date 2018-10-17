@@ -33,9 +33,9 @@
 #ifndef DART_OPTIMIZER_FUNCTION_HPP_
 #define DART_OPTIMIZER_FUNCTION_HPP_
 
+#include <functional>
 #include <memory>
 #include <string>
-#include <functional>
 
 #include <Eigen/Dense>
 
@@ -51,27 +51,27 @@ public:
   /// Destructor
   virtual ~Function();
 
-  /// Set the name of this Function
+  /// Sets the name of this Function
   virtual void setName(const std::string& newName);
 
-  /// Get the name of this Function
+  /// Returns the name of this Function
   const std::string& getName() const;
 
-  /// Evaluate and return the objective function at the point x
+  /// Evaluates and returns the objective function at the point x
   virtual double eval(const Eigen::VectorXd& x) const = 0;
 
-  /// Evaluate and return the objective function at the point x
+  /// Evaluates and returns the objective function at the point x
   virtual void evalGradient(const Eigen::VectorXd& x,
                             Eigen::Map<Eigen::VectorXd> grad) const;
 
-  /// Evaluate and return the objective function at the point x.
+  /// Evaluates and return the objective function at the point x.
   ///
   /// If you have a raw array that the gradient will be passed in, then use
   /// evalGradient(const Eigen::VectorXd&, Eigen::Map<Eigen::VectorXd>)
   /// for better performance.
   void evalGradient(const Eigen::VectorXd& x, Eigen::VectorXd& grad) const;
 
-  /// Evaluate and return the objective function at the point x
+  /// Evaluates and return the objective function at the point x
   virtual void evalHessian(
       const Eigen::VectorXd& x,
       Eigen::Map<Eigen::VectorXd, Eigen::RowMajor> Hess) const;
@@ -79,10 +79,10 @@ public:
 protected:
   /// Name of this function
   std::string mName;
-
 };
 
 using FunctionPtr = std::shared_ptr<Function>;
+using UniqueFunctionPtr = std::unique_ptr<Function>;
 
 using CostFunction = std::function<double(const Eigen::VectorXd&)>;
 
@@ -103,7 +103,7 @@ public:
   explicit ModularFunction(const std::string& name = "modular_function");
 
   /// Destructor
-  virtual ~ModularFunction();
+  ~ModularFunction() override;
 
   /// eval() will now call whatever CostFunction you set using
   /// setCostFunction()
@@ -162,7 +162,7 @@ public:
   explicit NullFunction(const std::string& name = "null_function");
 
   /// Destructor
-  virtual ~NullFunction();
+  ~NullFunction() override;
 
   /// eval() will always return exactly zero
   double eval(const Eigen::VectorXd&) const override;

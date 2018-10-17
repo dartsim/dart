@@ -30,56 +30,78 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/osg/TrackballManipulator.hpp"
+#include "dart/optimizer/pagmo/PagmoMultiObjectiveProblemAdaptor.hpp"
 
-#include <osg/Version>
+#include "dart/optimizer/pagmo/PagmoUtils.hpp"
 
 namespace dart {
-namespace gui {
-namespace osg {
+namespace optimizer {
 
 //==============================================================================
-TrackballManipulator::TrackballManipulator(int flags)
-  : ::osgGA::OrbitManipulator(flags)
+PagmoMultiObjectiveProblemAdaptor::PagmoMultiObjectiveProblemAdaptor(
+    std::shared_ptr<MultiObjectiveProblem> problem)
+  : mProb(std::move(problem))
 {
-  setVerticalAxisFixed(false);
-  setAllowThrow(false);
+  assert(mProb);
 }
 
 //==============================================================================
-TrackballManipulator::TrackballManipulator(const TrackballManipulator& tm,
-                                           const ::osg::CopyOp& copyOp)
-  : ::osg::Object(tm, copyOp),
-#if OSG_VERSION_GREATER_OR_EQUAL(3,3,2)
-    ::osg::Callback(),
-#endif
-    ::osgGA::OrbitManipulator(tm, copyOp)
+pagmo::vector_double PagmoMultiObjectiveProblemAdaptor::fitness(
+    const pagmo::vector_double& x) const
 {
-  // Do nothing
+  const Eigen::VectorXd val = PagmoTypes::convertVector(x);
+
+  assert(mProb.get());
+  return PagmoTypes::convertVector(mProb->evaluateFitness(val));
 }
 
 //==============================================================================
-TrackballManipulator::~TrackballManipulator()
+pagmo::vector_double::size_type PagmoMultiObjectiveProblemAdaptor::get_nobj()
+    const
 {
-  // Do nothing
+  return mProb->getObjectiveDimension();
 }
 
 //==============================================================================
-bool TrackballManipulator::performMovementLeftMouseButton(
-    const double, const double, const double)
+pagmo::vector_double::size_type PagmoMultiObjectiveProblemAdaptor::get_nec()
+    const
 {
-  // Do nothing
-  return false;
+  return mProb->getEqConstraintDimension();
 }
 
 //==============================================================================
-bool TrackballManipulator::performMovementRightMouseButton(
-    const double eventTimeDelta, const double dx, const double dy)
+pagmo::vector_double::size_type PagmoMultiObjectiveProblemAdaptor::get_nic()
+    const
 {
-  return OrbitManipulator::performMovementLeftMouseButton(
-        eventTimeDelta, dx, dy);
+  return mProb->getIneqConstraintDimension();
 }
 
-} // namespace osg
-} // namespace gui
+//==============================================================================
+std::pair<pagmo::vector_double, pagmo::vector_double>
+PagmoMultiObjectiveProblemAdaptor::get_bounds() const
+{
+  const pagmo::vector_double lb
+      = PagmoTypes::convertVector(mProb->getLowerBounds());
+  const pagmo::vector_double ub
+      = PagmoTypes::convertVector(mProb->getUpperBounds());
+
+  return std::make_pair(lb, ub);
+}
+
+//==============================================================================
+pagmo::vector_double::size_type PagmoMultiObjectiveProblemAdaptor::get_nix()
+    const
+{
+  pagmo::vector_double::size_type retval = 0u;
+  return retval;
+}
+
+//==============================================================================
+std::string PagmoMultiObjectiveProblemAdaptor::get_name() const
+{
+  // TODO(JS): Add name field to problem
+  return "PagmoMultiObjectiveProblem";
+}
+
+} // namespace optimizer
 } // namespace dart

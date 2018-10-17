@@ -18,13 +18,31 @@
 
 ### DART 6.7.0 (201X-XX-XX)
 
+* Build system
+
+  * Fix compilation warnings for newer versions of compilers: [#1177](https://github.com/dartsim/dart/pull/1177)
+
+* Math
+
+  * Consolidated random functions into Random class : [#1109](https://github.com/dartsim/dart/pull/1109)
+
 * Dynamics
 
   * Refactor constraint solver: [#1099](https://github.com/dartsim/dart/pull/1099), [#1101](https://github.com/dartsim/dart/pull/1101)
 
+* Optimization
+
+  * Added multi-objective optimization with pagmo2 support: [#1106](https://github.com/dartsim/dart/pull/1106)
+
 * GUI
 
   * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)
+
+### [DART 6.6.2 (2018-09-03)](https://github.com/dartsim/dart/milestone/47?closed=1)
+
+* Utils
+
+  * Fixed checking file existence in DartResourceRetriever: [#1107](https://github.com/dartsim/dart/pull/1107)
 
 ### [DART 6.6.1 (2018-08-04)](https://github.com/dartsim/dart/milestone/46?closed=1)
 

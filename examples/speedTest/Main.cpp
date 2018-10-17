@@ -57,7 +57,7 @@ double testForwardKinematicSpeed(dart::dynamics::SkeletonPtr skel,
     for(std::size_t i=0; i<skel->getNumDofs(); ++i)
     {
       dart::dynamics::DegreeOfFreedom* dof = skel->getDof(i);
-      dof->setPosition( dart::math::random(
+      dof->setPosition( dart::math::Random::uniform(
                           std::max(dof->getPositionLowerLimit(),-1.0),
                           std::min(dof->getPositionUpperLimit(), 1.0)) );
     }

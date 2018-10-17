@@ -393,9 +393,9 @@ TEST_F(COLLISION, DROP)
     dtdbg << "Rotated box\n";
     dart::collision::fcl::Box box2(0.5, 0.5, 0.5);
     dropWithRotation(&box2,
-                     dart::math::random(-3.14, 3.14),
-                     dart::math::random(-3.14, 3.14),
-                     dart::math::random(-3.14, 3.14));
+                     dart::math::Random::uniform(-3.14, 3.14),
+                     dart::math::Random::uniform(-3.14, 3.14),
+                     dart::math::Random::uniform(-3.14, 3.14));
 
     dropWithRotation(&box2,
                      0.0,

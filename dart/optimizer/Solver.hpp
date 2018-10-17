@@ -62,7 +62,9 @@ public:
     /// Nonlinear optimization Problem to be solved
     std::shared_ptr<Problem> mProblem;
 
-    /// The maximum step size allowed for the Problem to be considered converged
+    /// The relative tolerance on the optimization parameters. For example, the
+    /// distance between the last parameters and the current parameters to be
+    /// considered converged.
     double mTolerance;
 
     /// The maximum number of iterations that the solver should use. Use 0 for

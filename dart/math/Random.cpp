@@ -30,35 +30,47 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
-#include <dart/io/io.hpp>
+#include "dart/math/Random.hpp"
 
-#include "MyWindow.hpp"
+namespace dart {
+namespace math {
 
-int main(int argc, char* argv[]) {
-  // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::io::SkelParser::readWorld("dart://sample/skel/chain.skel");
-  assert(myWorld != nullptr);
-
-  // create and initialize the world
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
-  myWorld->setTimeStep(1.0/2000);
-
-  int dof =  myWorld->getSkeleton(0)->getNumDofs();
-  Eigen::VectorXd initPose(dof);
-  for (int i = 0; i < dof; i++)
-    initPose[i] = dart::math::Random::uniform(-0.5, 0.5);
-  myWorld->getSkeleton(0)->setPositions(initPose);
-
-  // create a window and link it to the world
-  MyWindow window;
-  window.setWorld(myWorld);
-
-  glutInit(&argc, argv);
-  window.initWindow(640, 480, "Forward Simulation");
-  glutMainLoop();
-
-  return 0;
+//==============================================================================
+Random::GeneratorType& Random::getGenerator()
+{
+  static GeneratorType randGenerator(getSeed());
+  return randGenerator;
 }
+
+//==============================================================================
+void Random::setSeed(unsigned int seed)
+{
+  std::seed_seq seq{seed};
+  getSeedMutable() = seed;
+  getGenerator().seed(seq);
+}
+
+//==============================================================================
+unsigned int Random::generateSeed(bool applyGeneratedSeed)
+{
+  const unsigned int seed = std::random_device{}();
+  if (applyGeneratedSeed)
+    setSeed(seed);
+  return seed;
+}
+
+//==============================================================================
+unsigned int Random::getSeed()
+{
+  return getSeedMutable();
+}
+
+//==============================================================================
+unsigned int& Random::getSeedMutable()
+{
+  static uint32_t seed = generateSeed(false);
+  return seed;
+}
+
+} // namespace math
+} // namespace dart
