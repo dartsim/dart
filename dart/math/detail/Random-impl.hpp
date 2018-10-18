@@ -120,7 +120,7 @@ struct functor_has_linear_access<dart::math::detail::
 namespace dart {
 namespace math {
 
-namespace {
+namespace detail {
 
 //==============================================================================
 template <template <typename...> class C, typename... Ts>
@@ -405,13 +405,13 @@ struct NormalImpl<T,
   }
 };
 
-} // (anonymous) namespace
+} // detail namespace
 
 //==============================================================================
 template <typename S>
 S Random::uniform(S min, S max)
 {
-  return UniformImpl<S>::run(min, max);
+  return detail::UniformImpl<S>::run(min, max);
 }
 
 //==============================================================================
@@ -452,7 +452,7 @@ DynamicSizeMatrixT Random::uniform(
 template <typename S>
 S Random::normal(S min, S max)
 {
-  return NormalImpl<S>::run(min, max);
+  return detail::NormalImpl<S>::run(min, max);
 }
 
 } // namespace math
