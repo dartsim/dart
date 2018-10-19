@@ -49,6 +49,7 @@ const Joint::ActuatorType Joint::DefaultActuatorType = detail::DefaultActuatorTy
 constexpr Joint::ActuatorType Joint::FORCE;
 constexpr Joint::ActuatorType Joint::PASSIVE;
 constexpr Joint::ActuatorType Joint::SERVO;
+constexpr Joint::ActuatorType Joint::MIMIC;
 constexpr Joint::ActuatorType Joint::ACCELERATION;
 constexpr Joint::ActuatorType Joint::VELOCITY;
 constexpr Joint::ActuatorType Joint::LOCKED;
@@ -61,12 +62,14 @@ JointProperties::JointProperties(
     const Eigen::Isometry3d& _T_ParentBodyToJoint,
     const Eigen::Isometry3d& _T_ChildBodyToJoint,
     bool _isPositionLimitEnforced,
-    ActuatorType _actuatorType)
+    ActuatorType _actuatorType,
+    Joint* _mimicJoint)
   : mName(_name),
     mT_ParentBodyToJoint(_T_ParentBodyToJoint),
     mT_ChildBodyToJoint(_T_ChildBodyToJoint),
     mIsPositionLimitEnforced(_isPositionLimitEnforced),
-    mActuatorType(_actuatorType)
+    mActuatorType(_actuatorType),
+    mMimicJoint(_mimicJoint)
 {
   // Do nothing
 }

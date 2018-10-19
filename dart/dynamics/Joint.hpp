@@ -66,6 +66,7 @@ public:
   static constexpr ActuatorType FORCE        = detail::FORCE;
   static constexpr ActuatorType PASSIVE      = detail::PASSIVE;
   static constexpr ActuatorType SERVO        = detail::SERVO;
+  static constexpr ActuatorType MIMIC        = detail::MIMIC;
   static constexpr ActuatorType ACCELERATION = detail::ACCELERATION;
   static constexpr ActuatorType VELOCITY     = detail::VELOCITY;
   static constexpr ActuatorType LOCKED       = detail::LOCKED;

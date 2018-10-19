@@ -46,7 +46,7 @@ namespace detail {
 /// command is different depending on the actuator type. The default actuator
 /// type is FORCE. (TODO: FreeJoint should be PASSIVE?)
 ///
-/// FORCE/PASSIVE/SERVO joints are dynamic joints while
+/// FORCE/PASSIVE/SERVO/MIMIC joints are dynamic joints while
 /// ACCELERATION/VELOCITY/LOCKED joints are kinematic joints.
 ///
 /// Note the presence of joint damping force and joint spring force for all
@@ -74,8 +74,16 @@ enum ActuatorType
   /// Command input is desired velocity, and the output is joint acceleration.
   ///
   /// The constraint solver will try to track the desired velocity within the
-  /// joint force limit. All the joint constarints are valid.
+  /// joint force limit. All the joint constraints are valid.
   SERVO,
+
+  /// There is no command input. The joint tries to follow the position of
+  /// another joint (the mimic joint) by computing desired velocities.
+  /// The output is joint acceleration.
+  ///
+  /// The constraint solver will try to track the desired velocity within the
+  /// joint force limit. All the joint constraints are valid.
+  MIMIC,
 
   /// Command input is joint acceleration, and the output is joint force.
   ///
@@ -117,6 +125,9 @@ struct JointProperties
   /// Actuator type
   ActuatorType mActuatorType;
 
+  /// Mimic joint
+  Joint* mMimicJoint;
+
   /// Constructor
   JointProperties(const std::string& _name = "Joint",
              const Eigen::Isometry3d& _T_ParentBodyToJoint =
@@ -124,7 +135,8 @@ struct JointProperties
              const Eigen::Isometry3d& _T_ChildBodyToJoint =
                                  Eigen::Isometry3d::Identity(),
              bool _isPositionLimitEnforced = false,
-             ActuatorType _actuatorType = DefaultActuatorType);
+             ActuatorType _actuatorType = DefaultActuatorType,
+             Joint* _mimicJoint = nullptr);
 
   virtual ~JointProperties() = default;
 

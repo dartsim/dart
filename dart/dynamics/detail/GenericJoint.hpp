@@ -349,6 +349,15 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
           Base::mAspectProperties.mVelocityLowerLimits[index],
           Base::mAspectProperties.mVelocityUpperLimits[index]);
       break;
+    case Joint::MIMIC:
+      if (0.0 != command)
+      {
+        dtwarn << "[GenericJoint::setCommand] Attempting to set a non-zero ("
+               << command << ") command for a MIMIC joint ["
+               << this->getName() << "].\n";
+      }
+      this->mAspectState.mCommands[index] = command;
+      break;
     case Joint::ACCELERATION:
       this->mAspectState.mCommands[index] = math::clip(command,
           Base::mAspectProperties.mAccelerationLowerLimits[index],
