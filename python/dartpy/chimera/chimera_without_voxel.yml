@@ -140,6 +140,9 @@ template:
 namespaces:
   'dart':
     name: null  # Collapse the 'dart' namespace into its parent.
+  'dart::common::detail': null
+  'dart::math::detail': null
+  'dart::dynamics::detail': null
 
 # Selected types that need special handling.
 types:
