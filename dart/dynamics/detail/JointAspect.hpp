@@ -128,6 +128,9 @@ struct JointProperties
   /// Mimic joint
   Joint* mMimicJoint;
 
+  /// Mimic joint properties
+  double mMultiplier, mOffset;
+
   /// Constructor
   JointProperties(const std::string& _name = "Joint",
              const Eigen::Isometry3d& _T_ParentBodyToJoint =
@@ -136,7 +139,9 @@ struct JointProperties
                                  Eigen::Isometry3d::Identity(),
              bool _isPositionLimitEnforced = false,
              ActuatorType _actuatorType = DefaultActuatorType,
-             Joint* _mimicJoint = nullptr);
+             Joint* _mimicJoint = nullptr,
+             double _multiplier = 1.0,
+             double _offset = 0.0);
 
   virtual ~JointProperties() = default;
 

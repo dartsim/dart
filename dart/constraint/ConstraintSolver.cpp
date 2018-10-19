@@ -472,6 +472,7 @@ DART_SUPPRESS_DEPRECATED_END
   // Destroy previous joint constraints
   mJointLimitConstraints.clear();
   mServoMotorConstraints.clear();
+  mMimicMotorConstraints.clear();
   mJointCoulombFrictionConstraints.clear();
 
   // Create new joint constraints
@@ -511,7 +512,7 @@ DART_SUPPRESS_DEPRECATED_END
       if (joint->getActuatorType() == dynamics::Joint::MIMIC && joint->getJointProperties().mMimicJoint)
       {
         mMimicMotorConstraints.push_back(
-              std::make_shared<MimicMotorConstraint>(joint, joint->getJointProperties().mMimicJoint));
+              std::make_shared<MimicMotorConstraint>(joint, joint->getJointProperties().mMimicJoint, joint->getJointProperties().mMultiplier, joint->getJointProperties().mOffset));
       }
     }
   }
@@ -531,6 +532,14 @@ DART_SUPPRESS_DEPRECATED_END
 
     if (servoMotorConstraint->isActive())
       mActiveConstraints.push_back(servoMotorConstraint);
+  }
+
+  for (auto& mimicMotorConstraint : mMimicMotorConstraints)
+  {
+    mimicMotorConstraint->update();
+
+    if (mimicMotorConstraint->isActive())
+      mActiveConstraints.push_back(mimicMotorConstraint);
   }
 
   for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)

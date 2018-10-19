@@ -49,10 +49,12 @@ namespace constraint {
 double MimicMotorConstraint::mConstraintForceMixing = DART_CFM;
 
 //==============================================================================
-MimicMotorConstraint::MimicMotorConstraint(dynamics::Joint* joint, dynamics::Joint* mimicJoint)
+MimicMotorConstraint::MimicMotorConstraint(dynamics::Joint* joint, dynamics::Joint* mimicJoint, double multiplier, double offset)
   : ConstraintBase(),
     mJoint(joint),
     mMimicJoint(mimicJoint),
+    mMultiplier(multiplier),
+    mOffset(offset),
     mBodyNode(joint->getChildBodyNode()),
     mAppliedImpulseIndex(0)
 {
@@ -118,19 +120,14 @@ void MimicMotorConstraint::update()
   std::size_t dof = mJoint->getNumDofs();
   for (std::size_t i = 0; i < dof; ++i)
   {
-    mNegativeVelocityError[i] = mJoint->getCommand(i) - mJoint->getVelocity(i);
+    double timeStep = mJoint->getSkeleton()->getTimeStep();
+    double qError = mMimicJoint->getPosition(i) * mMultiplier + mOffset - mJoint->getPosition(i);
+    double desiredVelocity = math::clip(qError / timeStep, mJoint->getVelocityLowerLimit(i), mJoint->getVelocityUpperLimit(i));
+
+    mNegativeVelocityError[i] = desiredVelocity - mJoint->getVelocity(i);
 
     if (mNegativeVelocityError[i] != 0.0)
     {
-      double timeStep = mJoint->getSkeleton()->getTimeStep();
-      // TODO: There are multiple ways to get time step (or its inverse).
-      //   - ContactConstraint get it from the constructor parameter
-      //   - Skeleton has it itself.
-      //   - ConstraintBase::getInformation() passes ConstraintInfo structure
-      //     that contains reciprocal time step.
-      // We might need to pick one way and remove the others to get rid of
-      // redundancy.
-
       // Note that we are computing impulse not force
       mUpperBound[i] = mJoint->getForceUpperLimit(i) * timeStep;
       mLowerBound[i] = mJoint->getForceLowerLimit(i) * timeStep;
@@ -284,7 +281,7 @@ bool MimicMotorConstraint::isActive() const
 {
   // Since we are not allowed to set the joint actuator type per each
   // DegreeOfFreedom, we just check if the whole joint is SERVO actuator.
-  if (mJoint->getActuatorType() == dynamics::Joint::SERVO)
+  if (mJoint->getActuatorType() == dynamics::Joint::MIMIC)
     return true;
 
   return false;

@@ -49,7 +49,7 @@ class MimicMotorConstraint : public ConstraintBase
 {
 public:
   /// Constructor
-  explicit MimicMotorConstraint(dynamics::Joint* joint, dynamics::Joint* mimicJoint);
+  explicit MimicMotorConstraint(dynamics::Joint* joint, dynamics::Joint* mimicJoint, double multiplier = 1.0, double offset = 0.0);
 
   /// Destructor
   virtual ~MimicMotorConstraint();
@@ -109,6 +109,9 @@ private:
 
   ///
   dynamics::Joint* mMimicJoint;
+
+  ///
+  double mMultiplier, mOffset;
 
   ///
   dynamics::BodyNode* mBodyNode;
