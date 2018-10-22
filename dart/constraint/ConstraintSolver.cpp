@@ -509,10 +509,10 @@ DART_SUPPRESS_DEPRECATED_END
               std::make_shared<ServoMotorConstraint>(joint));
       }
 
-      if (joint->getActuatorType() == dynamics::Joint::MIMIC && joint->getJointProperties().mMimicJoint)
+      if (joint->getActuatorType() == dynamics::Joint::MIMIC && joint->getMimicJoint())
       {
         mMimicMotorConstraints.push_back(
-              std::make_shared<MimicMotorConstraint>(joint, joint->getJointProperties().mMimicJoint, joint->getJointProperties().mMultiplier, joint->getJointProperties().mOffset));
+              std::make_shared<MimicMotorConstraint>(joint, joint->getMimicJoint(), joint->getMimicMultiplier(), joint->getMimicOffset()));
       }
     }
   }

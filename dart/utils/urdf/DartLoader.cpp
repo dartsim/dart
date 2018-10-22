@@ -262,6 +262,13 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
 
   }
 
+  // Find mimic joints
+  for(std::size_t i = 0; i < root->child_links.size(); i++)
+  {
+    addMimicJointsRecursive(_model, skeleton, root->child_links[i].get(),
+      _baseUri, _resourceRetriever);
+  }
+
   return skeleton;
 }
 
@@ -289,10 +296,48 @@ bool DartLoader::createSkeletonRecursive(
 
   if(!result)
     return false;
-  
+
   for(std::size_t i = 0; i < _lk->child_links.size(); ++i)
   {
     if (!createSkeletonRecursive(model, _skel, _lk->child_links[i].get(), node,
+                                 _baseUri, _resourceRetriever))
+      return false;
+  }
+  return true;
+}
+
+bool DartLoader::addMimicJointsRecursive(
+  const urdf::ModelInterface* model,
+  dynamics::SkeletonPtr _skel,
+  const urdf::Link* _lk,
+  const common::Uri& _baseUri,
+  const common::ResourceRetrieverPtr& _resourceRetriever)
+{
+  const urdf::Joint* jt = _lk->parent_joint.get();
+  if (jt->mimic)
+  {
+    std::string joint_name = jt->name;
+    double multiplier = jt->mimic->multiplier;
+    double offset = jt->mimic->offset;
+    std::string mimic_joint_name = jt->mimic->joint_name;
+
+    dynamics::Joint* joint = _skel->getJoint(joint_name);
+    dynamics::Joint* mimic_joint = _skel->getJoint(mimic_joint_name);
+
+    if (!joint || !mimic_joint) // TODO: Add warning message
+      return false;
+
+    dynamics::Joint::Properties properties = joint->getJointProperties();
+    properties.mActuatorType = dynamics::Joint::MIMIC;
+    properties.mMimicJoint = mimic_joint;
+    properties.mMultiplier = multiplier;
+    properties.mOffset = offset;
+    joint->setProperties(properties);
+  }
+
+  for(std::size_t i = 0; i < _lk->child_links.size(); ++i)
+  {
+    if (!addMimicJointsRecursive(model, _skel, _lk->child_links[i].get(),
                                  _baseUri, _resourceRetriever))
       return false;
   }
@@ -460,7 +505,7 @@ bool DartLoader::createDartNodeProperties(
   const common::ResourceRetrieverPtr& /*_resourceRetriever*/)
 {
   node.mName = _lk->name;
-  
+
   // Load Inertial information
   if(_lk->inertial) {
     urdf::Pose origin = _lk->inertial->origin;

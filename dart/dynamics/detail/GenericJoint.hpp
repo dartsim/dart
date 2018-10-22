@@ -356,7 +356,9 @@ void GenericJoint<ConfigSpaceT>::setCommand(size_t index, double command)
                << command << ") command for a MIMIC joint ["
                << this->getName() << "].\n";
       }
-      this->mAspectState.mCommands[index] = command;
+      this->mAspectState.mCommands[index] = math::clip(command,
+          Base::mAspectProperties.mVelocityLowerLimits[index],
+          Base::mAspectProperties.mVelocityUpperLimits[index]);
       break;
     case Joint::ACCELERATION:
       this->mAspectState.mCommands[index] = math::clip(command,
@@ -425,6 +427,17 @@ void GenericJoint<ConfigSpaceT>::setCommands(
       this->mAspectState.mCommands = commands;
       break;
     case Joint::SERVO:
+      this->mAspectState.mCommands = math::clip(commands,
+          Base::mAspectProperties.mVelocityLowerLimits,
+          Base::mAspectProperties.mVelocityUpperLimits);
+      break;
+    case Joint::MIMIC:
+      if(Vector::Zero() != commands)
+      {
+        dtwarn << "[GenericJoint::setCommands] Attempting to set a non-zero ("
+               << commands.transpose() << ") command for a MIMIC joint ["
+               << this->getName() << "].\n";
+      }
       this->mAspectState.mCommands = math::clip(commands,
           Base::mAspectProperties.mVelocityLowerLimits,
           Base::mAspectProperties.mVelocityUpperLimits);
@@ -1763,6 +1776,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaTo(
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       addChildArtInertiaToDynamic(parentArtInertia,
                                        childArtInertia);
       break;
@@ -1819,6 +1833,7 @@ void GenericJoint<ConfigSpaceT>::addChildArtInertiaImplicitTo(
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       addChildArtInertiaImplicitToDynamic(parentArtInertia,
                                                 childArtInertia);
       break;
@@ -1874,6 +1889,7 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertia(
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       updateInvProjArtInertiaDynamic(artInertia);
       break;
     case Joint::ACCELERATION:
@@ -1922,6 +1938,7 @@ void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicit(
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       updateInvProjArtInertiaImplicitDynamic(artInertia, timeStep);
       break;
     case Joint::ACCELERATION:
@@ -1979,6 +1996,7 @@ void GenericJoint<ConfigSpaceT>::addChildBiasForceTo(
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       addChildBiasForceToDynamic(parentBiasForce,
                                  childArtInertia,
                                  childBiasForce,
@@ -2066,6 +2084,7 @@ void GenericJoint<ConfigSpaceT>::addChildBiasImpulseTo(
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       addChildBiasImpulseToDynamic(parentBiasImpulse,
                                    childArtInertia,
                                    childBiasImpulse);
@@ -2132,6 +2151,7 @@ void GenericJoint<ConfigSpaceT>::updateTotalForce(
       break;
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       this->mAspectState.mForces.setZero();
       updateTotalForceDynamic(bodyForce, timeStep);
       break;
@@ -2199,6 +2219,7 @@ void GenericJoint<ConfigSpaceT>::updateTotalImpulse(
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       updateTotalImpulseDynamic(bodyImpulse);
       break;
     case Joint::ACCELERATION:
@@ -2248,6 +2269,7 @@ void GenericJoint<ConfigSpaceT>::updateAcceleration(
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       updateAccelerationDynamic(artInertia, spatialAcc);
       break;
     case Joint::ACCELERATION:
@@ -2296,6 +2318,7 @@ void GenericJoint<ConfigSpaceT>::updateVelocityChange(
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       updateVelocityChangeDynamic(artInertia, velocityChange);
       break;
     case Joint::ACCELERATION:
@@ -2378,6 +2401,7 @@ void GenericJoint<ConfigSpaceT>::updateForceFD(
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       break;
     case Joint::ACCELERATION:
     case Joint::VELOCITY:
@@ -2408,6 +2432,7 @@ void GenericJoint<ConfigSpaceT>::updateImpulseFD(
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       break;
     case Joint::ACCELERATION:
     case Joint::VELOCITY:
@@ -2429,6 +2454,7 @@ void GenericJoint<ConfigSpaceT>::updateConstrainedTerms(double timeStep)
     case Joint::FORCE:
     case Joint::PASSIVE:
     case Joint::SERVO:
+    case Joint::MIMIC:
       updateConstrainedTermsDynamic(timeStep);
       break;
     case Joint::ACCELERATION:

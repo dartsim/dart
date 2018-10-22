@@ -136,6 +136,18 @@ public:
   /// Get actuator type
   ActuatorType getActuatorType() const;
 
+  /// Set mimic joint
+  void setMimicJoint(Joint* _mimicJoint, double _multiplier = 1.0, double _offset = 0.0);
+
+  /// Get mimic joint
+  Joint* getMimicJoint() const;
+
+  /// Get mimic joint multiplier
+  double getMimicMultiplier() const;
+
+  /// Get mimic joint offset
+  double getMimicOffset() const;
+
   /// Return true if this joint is kinematic joint.
   ///
   /// Kinematic joint means the motion is prescribed by position or velocity or

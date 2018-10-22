@@ -120,6 +120,7 @@ void Joint::setAspectProperties(const AspectProperties& properties)
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
   setPositionLimitEnforced(properties.mIsPositionLimitEnforced);
   setActuatorType(properties.mActuatorType);
+  setMimicJoint(properties.mMimicJoint, properties.mMultiplier, properties.mOffset);
 }
 
 //==============================================================================
@@ -202,6 +203,32 @@ Joint::ActuatorType Joint::getActuatorType() const
 }
 
 //==============================================================================
+void Joint::setMimicJoint(Joint* _mimicJoint, double _multiplier, double _offset)
+{
+  mAspectProperties.mMimicJoint = _mimicJoint;
+  mAspectProperties.mMultiplier = _multiplier;
+  mAspectProperties.mOffset = _offset;
+}
+
+//==============================================================================
+Joint* Joint::getMimicJoint() const
+{
+  return mAspectProperties.mMimicJoint;
+}
+
+//==============================================================================
+double Joint::getMimicMultiplier() const
+{
+  return mAspectProperties.mMultiplier;
+}
+
+//==============================================================================
+double Joint::getMimicOffset() const
+{
+  return mAspectProperties.mOffset;
+}
+
+//==============================================================================
 bool Joint::isKinematic() const
 {
   switch (mAspectProperties.mActuatorType)
@@ -209,6 +236,7 @@ bool Joint::isKinematic() const
     case FORCE:
     case PASSIVE:
     case SERVO:
+    case MIMIC:
       return false;
     case ACCELERATION:
     case VELOCITY:
