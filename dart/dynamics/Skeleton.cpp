@@ -470,7 +470,10 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
       }
       else
       {
-        // TODO(JS): Warning
+        dterr << "[Skeleton::clone] Failed to clone mimic joint successfully: "
+              << "Unable to find the mimic joint ["
+              << joint->getMimicJoint()->getName()
+              << "] in the clone Skeleton. Please report this as a bug!\n";
       }
     }
   }
