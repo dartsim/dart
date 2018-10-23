@@ -29,7 +29,7 @@ The code doesn't need to be perfect right away, feel free to post work-in-progre
  [Can Erdogan](https://github.com/cerdogan)         | planning, examples
  [Jie Tan](https://github.com/jietan)               | lcp solver, renderer
  [Yunfei Bai](https://github.com/YunfeiBai)         | build and bug fixes
- [Konstantinos Chatzilygeroudis](https://github.com/costashatz) | OSG shadows, build and bug fixes
+ [Konstantinos Chatzilygeroudis](https://github.com/costashatz) | mimic joint, OSG shadows, build and bug fixes
  [Sehoon Ha](https://github.com/sehoonha)           | early DART data structure design, [pydart](https://github.com/sehoonha/pydart)
  [Donny Ward](https://github.com/donnyward)         | build fix
  [Andrew Price](https://github.com/a-price)         | build fix
