@@ -463,9 +463,15 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
     Joint* joint = skelClone->getJoint(i);
     if(joint->getActuatorType() == Joint::MIMIC)
     {
-      const Joint* mimic_joint = skelClone->getJoint(joint->getMimicJoint()->getName());
-      if(mimic_joint)
-        joint->setMimicJoint(mimic_joint, joint->getMimicMultiplier(), joint->getMimicOffset());
+      const Joint* mimicJoint = skelClone->getJoint(joint->getMimicJoint()->getName());
+      if(mimicJoint)
+      {
+        joint->setMimicJoint(mimicJoint, joint->getMimicMultiplier(), joint->getMimicOffset());
+      }
+      else
+      {
+        // TODO(JS): Warning
+      }
     }
   }
 

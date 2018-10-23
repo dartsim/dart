@@ -139,7 +139,7 @@ struct JointProperties
                                  Eigen::Isometry3d::Identity(),
              bool _isPositionLimitEnforced = false,
              ActuatorType _actuatorType = DefaultActuatorType,
-             Joint* _mimicJoint = nullptr,
+             const Joint* _mimicJoint = nullptr,
              double _mimicMultiplier = 1.0,
              double _mimicOffset = 0.0);
 

@@ -97,7 +97,7 @@ void MimicMotorConstraint::setConstraintForceMixing(double cfm)
     dtwarn << "[MimicMotorConstraint::setConstraintForceMixing] "
            << "Constraint force mixing parameter[" << cfm
            << "] is lower than 1e-9. "
-           << "It is set to 1e-9." << std::endl;
+           << "It is set to 1e-9.\n";
     mConstraintForceMixing = 1e-9;
   }
   if (cfm > 1.0)
@@ -105,7 +105,7 @@ void MimicMotorConstraint::setConstraintForceMixing(double cfm)
     dtwarn << "[MimicMotorConstraint::setConstraintForceMixing] "
            << "Constraint force mixing parameter[" << cfm
            << "] is greater than 1.0. "
-           << "It is set to 1.0." << std::endl;
+           << "It is set to 1.0.\n";
     mConstraintForceMixing = 1.0;
   }
 

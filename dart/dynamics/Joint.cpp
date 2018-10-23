@@ -63,7 +63,7 @@ JointProperties::JointProperties(
     const Eigen::Isometry3d& _T_ChildBodyToJoint,
     bool _isPositionLimitEnforced,
     ActuatorType _actuatorType,
-    Joint* _mimicJoint,
+    const Joint* _mimicJoint,
     double _mimicMultiplier,
     double _mimicOffset)
   : mName(_name),
