@@ -129,7 +129,7 @@ struct JointProperties
   Joint* mMimicJoint;
 
   /// Mimic joint properties
-  double mMultiplier, mOffset;
+  double mMimicMultiplier, mMimicOffset;
 
   /// Constructor
   JointProperties(const std::string& _name = "Joint",
@@ -140,8 +140,8 @@ struct JointProperties
              bool _isPositionLimitEnforced = false,
              ActuatorType _actuatorType = DefaultActuatorType,
              Joint* _mimicJoint = nullptr,
-             double _multiplier = 1.0,
-             double _offset = 0.0);
+             double _mimicMultiplier = 1.0,
+             double _mimicOffset = 0.0);
 
   virtual ~JointProperties() = default;
 

@@ -64,16 +64,16 @@ JointProperties::JointProperties(
     bool _isPositionLimitEnforced,
     ActuatorType _actuatorType,
     Joint* _mimicJoint,
-    double _multiplier,
-    double _offset)
+    double _mimicMultiplier,
+    double _mimicOffset)
   : mName(_name),
     mT_ParentBodyToJoint(_T_ParentBodyToJoint),
     mT_ChildBodyToJoint(_T_ChildBodyToJoint),
     mIsPositionLimitEnforced(_isPositionLimitEnforced),
     mActuatorType(_actuatorType),
     mMimicJoint(_mimicJoint),
-    mMultiplier(_multiplier),
-    mOffset(_offset)
+    mMimicMultiplier(_mimicMultiplier),
+    mMimicOffset(_mimicOffset)
 {
   // Do nothing
 }
@@ -120,7 +120,7 @@ void Joint::setAspectProperties(const AspectProperties& properties)
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
   setPositionLimitEnforced(properties.mIsPositionLimitEnforced);
   setActuatorType(properties.mActuatorType);
-  setMimicJoint(properties.mMimicJoint, properties.mMultiplier, properties.mOffset);
+  setMimicJoint(properties.mMimicJoint, properties.mMimicMultiplier, properties.mMimicOffset);
 }
 
 //==============================================================================
@@ -203,11 +203,11 @@ Joint::ActuatorType Joint::getActuatorType() const
 }
 
 //==============================================================================
-void Joint::setMimicJoint(Joint* _mimicJoint, double _multiplier, double _offset)
+void Joint::setMimicJoint(Joint* _mimicJoint, double _mimicMultiplier, double _mimicOffset)
 {
   mAspectProperties.mMimicJoint = _mimicJoint;
-  mAspectProperties.mMultiplier = _multiplier;
-  mAspectProperties.mOffset = _offset;
+  mAspectProperties.mMimicMultiplier = _mimicMultiplier;
+  mAspectProperties.mMimicOffset = _mimicOffset;
 }
 
 //==============================================================================
@@ -219,13 +219,13 @@ Joint* Joint::getMimicJoint() const
 //==============================================================================
 double Joint::getMimicMultiplier() const
 {
-  return mAspectProperties.mMultiplier;
+  return mAspectProperties.mMimicMultiplier;
 }
 
 //==============================================================================
 double Joint::getMimicOffset() const
 {
-  return mAspectProperties.mOffset;
+  return mAspectProperties.mMimicOffset;
 }
 
 //==============================================================================

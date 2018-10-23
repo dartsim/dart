@@ -330,8 +330,8 @@ bool DartLoader::addMimicJointsRecursive(
     dynamics::Joint::Properties properties = joint->getJointProperties();
     properties.mActuatorType = dynamics::Joint::MIMIC;
     properties.mMimicJoint = mimic_joint;
-    properties.mMultiplier = multiplier;
-    properties.mOffset = offset;
+    properties.mMimicMultiplier = multiplier;
+    properties.mMimicOffset = offset;
     joint->setProperties(properties);
   }
 
