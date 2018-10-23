@@ -117,7 +117,6 @@ public:
   using AspectImplementation = AspectWithVersionedProperties<
       Base, Derived, PropertiesData, CompositeT, updateProperties>;
 
-  AspectWithVersionedProperties() = delete;
   AspectWithVersionedProperties(const AspectWithVersionedProperties&) = delete;
 
   /// Construct using a PropertiesData instance
