@@ -51,7 +51,7 @@ double MimicMotorConstraint::mConstraintForceMixing = DART_CFM;
 //==============================================================================
 MimicMotorConstraint::MimicMotorConstraint(
     dynamics::Joint* joint,
-    dynamics::Joint* mimicJoint,
+    const dynamics::Joint* mimicJoint,
     double multiplier,
     double offset)
   : ConstraintBase(),

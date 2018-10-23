@@ -126,7 +126,7 @@ struct JointProperties
   ActuatorType mActuatorType;
 
   /// Mimic joint
-  Joint* mMimicJoint;
+  const Joint* mMimicJoint;
 
   /// Mimic joint properties
   double mMimicMultiplier, mMimicOffset;

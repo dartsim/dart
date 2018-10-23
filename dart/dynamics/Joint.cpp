@@ -203,7 +203,7 @@ Joint::ActuatorType Joint::getActuatorType() const
 }
 
 //==============================================================================
-void Joint::setMimicJoint(Joint* _mimicJoint, double _mimicMultiplier, double _mimicOffset)
+void Joint::setMimicJoint(const Joint* _mimicJoint, double _mimicMultiplier, double _mimicOffset)
 {
   mAspectProperties.mMimicJoint = _mimicJoint;
   mAspectProperties.mMimicMultiplier = _mimicMultiplier;
@@ -211,7 +211,7 @@ void Joint::setMimicJoint(Joint* _mimicJoint, double _mimicMultiplier, double _m
 }
 
 //==============================================================================
-Joint* Joint::getMimicJoint() const
+const Joint* Joint::getMimicJoint() const
 {
   return mAspectProperties.mMimicJoint;
 }

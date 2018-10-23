@@ -137,10 +137,10 @@ public:
   ActuatorType getActuatorType() const;
 
   /// Set mimic joint
-  void setMimicJoint(Joint* _mimicJoint, double _mimicMultiplier = 1.0, double _mimicOffset = 0.0);
+  void setMimicJoint(const Joint* _mimicJoint, double _mimicMultiplier = 1.0, double _mimicOffset = 0.0);
 
   /// Get mimic joint
-  Joint* getMimicJoint() const;
+  const Joint* getMimicJoint() const;
 
   /// Get mimic joint multiplier
   double getMimicMultiplier() const;
