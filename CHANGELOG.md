@@ -13,6 +13,7 @@
 * Dynamics
 
   * Refactor constraint solver: [#1099](https://github.com/dartsim/dart/pull/1099), [#1101](https://github.com/dartsim/dart/pull/1101)
+  * Added mimic joint functionality as a new actuator type: [#1178](https://github.com/dartsim/dart/pull/1178)
 
 * Optimization
 
