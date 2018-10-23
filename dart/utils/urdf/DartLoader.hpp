@@ -142,9 +142,7 @@ private:
     static bool addMimicJointsRecursive(
       const urdf::ModelInterface* model,
       dynamics::SkeletonPtr _skel,
-      const urdf::Link* _lk,
-      const common::Uri& _baseUri,
-      const common::ResourceRetrieverPtr& _resourceRetriever);
+      const urdf::Link* _lk);
 
     template <class VisualOrCollision>
     static dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol,

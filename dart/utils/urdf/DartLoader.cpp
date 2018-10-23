@@ -264,10 +264,7 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
 
   // Find mimic joints
   for(std::size_t i = 0; i < root->child_links.size(); i++)
-  {
-    addMimicJointsRecursive(_model, skeleton, root->child_links[i].get(),
-      _baseUri, _resourceRetriever);
-  }
+    addMimicJointsRecursive(_model, skeleton, root->child_links[i].get());
 
   return skeleton;
 }
@@ -309,27 +306,38 @@ bool DartLoader::createSkeletonRecursive(
 bool DartLoader::addMimicJointsRecursive(
   const urdf::ModelInterface* model,
   dynamics::SkeletonPtr _skel,
-  const urdf::Link* _lk,
-  const common::Uri& _baseUri,
-  const common::ResourceRetrieverPtr& _resourceRetriever)
+  const urdf::Link* _lk)
 {
   const urdf::Joint* jt = _lk->parent_joint.get();
   if (jt->mimic)
   {
-    std::string joint_name = jt->name;
-    double multiplier = jt->mimic->multiplier;
-    double offset = jt->mimic->offset;
-    std::string mimic_joint_name = jt->mimic->joint_name;
+    const std::string& jointName = jt->name;
+    const double multiplier = jt->mimic->multiplier;
+    const double offset = jt->mimic->offset;
+    const std::string& mimicJointName = jt->mimic->joint_name;
 
-    dynamics::Joint* joint = _skel->getJoint(joint_name);
-    dynamics::Joint* mimic_joint = _skel->getJoint(mimic_joint_name);
+    dynamics::Joint* joint = _skel->getJoint(jointName);
+    const dynamics::Joint* mimicJoint = _skel->getJoint(mimicJointName);
 
-    if (!joint || !mimic_joint) // TODO: Add warning message
+    if (!joint)
+    {
+      dterr << "Failed to configure a mimic joint [" << jointName
+            << "] because the joint isn't found in Skeleton ["
+            << _skel->getName() << "]\n.";
       return false;
+    }
+
+    if (!mimicJoint)
+    {
+      dterr << "Failed to configure a mimic joint [" << jointName
+            << "] because the joint to mimic [" << mimicJoint
+            << "] isn't found in Skeleton [" << _skel->getName() << "]\n.";
+      return false;
+    }
 
     dynamics::Joint::Properties properties = joint->getJointProperties();
     properties.mActuatorType = dynamics::Joint::MIMIC;
-    properties.mMimicJoint = mimic_joint;
+    properties.mMimicJoint = mimicJoint;
     properties.mMimicMultiplier = multiplier;
     properties.mMimicOffset = offset;
     joint->setProperties(properties);
@@ -337,13 +345,12 @@ bool DartLoader::addMimicJointsRecursive(
 
   for(std::size_t i = 0; i < _lk->child_links.size(); ++i)
   {
-    if (!addMimicJointsRecursive(model, _skel, _lk->child_links[i].get(),
-                                 _baseUri, _resourceRetriever))
+    if (!addMimicJointsRecursive(model, _skel, _lk->child_links[i].get()))
       return false;
   }
+
   return true;
 }
-
 
 /**
  * @function readXml
