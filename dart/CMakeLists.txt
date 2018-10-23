@@ -150,11 +150,10 @@ if(DART_ENABLE_SIMD)
     # in CMake time, then I would gratefully apply these options differently
     # depending on the architectures.
   elseif(CMAKE_COMPILER_IS_GNUCXX)
-    set(native_flags "-march=native")
+    target_compile_options(dart PUBLIC -march=native)
     if(GCC_VERSION VERSION_GREATER 7.0)
-      set(native_flags "-march=native;-faligned-new")
+      target_compile_options(dart PUBLIC -faligned-new)
     endif()
-    target_compile_options(dart PUBLIC ${native_flags})
   elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     target_compile_options(dart PUBLIC -march=native -faligned-new)
   endif()
