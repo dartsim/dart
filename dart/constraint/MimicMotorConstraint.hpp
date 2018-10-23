@@ -40,7 +40,7 @@ namespace dart {
 namespace dynamics {
 class BodyNode;
 class Joint;
-}  // namespace dynamics
+} // namespace dynamics
 
 namespace constraint {
 
@@ -49,10 +49,14 @@ class MimicMotorConstraint : public ConstraintBase
 {
 public:
   /// Constructor
-  explicit MimicMotorConstraint(dynamics::Joint* joint, dynamics::Joint* mimicJoint, double multiplier = 1.0, double offset = 0.0);
+  explicit MimicMotorConstraint(
+      dynamics::Joint* joint,
+      dynamics::Joint* mimicJoint,
+      double multiplier = 1.0,
+      double offset = 0.0);
 
   /// Destructor
-  virtual ~MimicMotorConstraint();
+  ~MimicMotorConstraint() override;
 
   //----------------------------------------------------------------------------
   // Property settings
@@ -145,8 +149,7 @@ private:
   static double mConstraintForceMixing;
 };
 
-}  // namespace constraint
-}  // namespace dart
+} // namespace constraint
+} // namespace dart
 
-#endif  // DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_
-
+#endif // DART_CONSTRAINT_MIMICMOTORCONSTRAINT_HPP_
