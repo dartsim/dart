@@ -76,6 +76,8 @@ void CapsuleShape::setRadius(double radius)
   mRadius = radius;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -91,6 +93,8 @@ void CapsuleShape::setHeight(double height)
   mHeight = height;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================

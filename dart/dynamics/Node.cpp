@@ -249,6 +249,7 @@ void Node::stageForRemoval()
     return;
 #endif
 
+  mBodyNode->incrementVersion();
   BodyNode::NodeMap::iterator it = mBodyNode->mNodeMap.find(typeid(*this));
   NodeDestructorPtr destructor = getOrCreateDestructor();
 

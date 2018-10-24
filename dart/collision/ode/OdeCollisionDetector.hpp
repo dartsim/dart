@@ -107,6 +107,9 @@ protected:
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
 
+  // Documentation inherited
+  void refreshCollisionObject(CollisionObject* object) override;
+
   dWorldID getOdeWorldId() const;
 
 protected:

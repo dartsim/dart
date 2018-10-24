@@ -6,9 +6,13 @@
 
   * Fix compilation warnings for newer versions of compilers: [#1177](https://github.com/dartsim/dart/pull/1177)
 
+* Collision Detection
+
+  * CollisionGroups will automatically update their objects when any changes occur to Skeletons or BodyNodes that they are subscribed to: [#1112](https://github.com/dartsim/dart/pull/1112)
+
 * Math
 
-  * Consolidated random functions into Random class : [#1109](https://github.com/dartsim/dart/pull/1109)
+  * Consolidated random functions into Random class: [#1109](https://github.com/dartsim/dart/pull/1109)
 
 * Dynamics
 
@@ -234,7 +238,7 @@
 
 * Misc
 
-  * Updated lodepng up to version 20160501 : [#791](https://github.com/dartsim/dart/pull/791)
+  * Updated lodepng up to version 20160501: [#791](https://github.com/dartsim/dart/pull/791)
 
 ### DART 6.1.0 (2016-10-07)
 

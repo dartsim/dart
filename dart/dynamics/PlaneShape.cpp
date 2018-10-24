@@ -75,6 +75,8 @@ Eigen::Matrix3d PlaneShape::computeInertia(double /*mass*/) const
 void PlaneShape::setNormal(const Eigen::Vector3d& _normal)
 {
   mNormal = _normal.normalized();
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -87,6 +89,8 @@ const Eigen::Vector3d& PlaneShape::getNormal() const
 void PlaneShape::setOffset(double _offset)
 {
   mOffset = _offset;
+
+  incrementVersion();
 }
 
 //==============================================================================
