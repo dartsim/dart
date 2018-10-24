@@ -36,6 +36,7 @@
 #include <functional>
 #include <unordered_map>
 #include <memory>
+#include <unordered_set>
 
 #include "dart/common/StlHelpers.hpp"
 #include "dart/common/Singleton.hpp"
@@ -98,6 +99,9 @@ public:
   HeldT create(const KeyT& key, Args&&... args);
   // TODO(JS): Add create() for creating smart_pointers
   // (see: https://github.com/dartsim/dart/pull/845)
+
+  /// Get a set of the keys that are available for this Creator
+  std::unordered_set<KeyT> getKeys() const;
 
 private:
   template <typename Derived>

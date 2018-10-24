@@ -98,7 +98,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
     return;
   }
 
-  mCollisionGroup->addShapeFramesOf(skeleton.get());
+  mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
 }
@@ -106,7 +106,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
 //==============================================================================
 void ConstraintSolver::addSkeletons(const std::vector<SkeletonPtr>& skeletons)
 {
-  for (const auto skeleton : skeletons)
+  for (const auto& skeleton : skeletons)
     addSkeleton(skeleton);
 }
 

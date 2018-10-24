@@ -76,6 +76,8 @@ void HeightmapShape<S>::setScale(const Eigen::Vector3d& scale)
   mScale = scale;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -125,6 +127,8 @@ void HeightmapShape<S>::setHeightField(
   }
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================
