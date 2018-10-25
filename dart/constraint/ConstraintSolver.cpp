@@ -48,6 +48,7 @@
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/constraint/JointLimitConstraint.hpp"
 #include "dart/constraint/ServoMotorConstraint.hpp"
+#include "dart/constraint/MimicMotorConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
 
@@ -471,6 +472,7 @@ DART_SUPPRESS_DEPRECATED_END
   // Destroy previous joint constraints
   mJointLimitConstraints.clear();
   mServoMotorConstraints.clear();
+  mMimicMotorConstraints.clear();
   mJointCoulombFrictionConstraints.clear();
 
   // Create new joint constraints
@@ -506,6 +508,12 @@ DART_SUPPRESS_DEPRECATED_END
         mServoMotorConstraints.push_back(
               std::make_shared<ServoMotorConstraint>(joint));
       }
+
+      if (joint->getActuatorType() == dynamics::Joint::MIMIC && joint->getMimicJoint())
+      {
+        mMimicMotorConstraints.push_back(
+              std::make_shared<MimicMotorConstraint>(joint, joint->getMimicJoint(), joint->getMimicMultiplier(), joint->getMimicOffset()));
+      }
     }
   }
 
@@ -524,6 +532,14 @@ DART_SUPPRESS_DEPRECATED_END
 
     if (servoMotorConstraint->isActive())
       mActiveConstraints.push_back(servoMotorConstraint);
+  }
+
+  for (auto& mimicMotorConstraint : mMimicMotorConstraints)
+  {
+    mimicMotorConstraint->update();
+
+    if (mimicMotorConstraint->isActive())
+      mActiveConstraints.push_back(mimicMotorConstraint);
   }
 
   for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)
