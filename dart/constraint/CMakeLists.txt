@@ -39,6 +39,8 @@ dart_format_add(
   ContactConstraint.cpp
   DantzigBoxedLcpSolver.hpp
   DantzigBoxedLcpSolver.cpp
+  MimicMotorConstraint.hpp
+  MimicMotorConstraint.cpp
   PgsBoxedLcpSolver.hpp
   PgsBoxedLcpSolver.cpp
   SmartPointer.hpp

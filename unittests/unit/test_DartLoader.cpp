@@ -163,3 +163,170 @@ TEST(DartLoader, parseJointProperties)
   EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::constantsd::inf());
   EXPECT_TRUE(joint2->isCyclic(0));
 }
+
+TEST(DartLoader, mimicJoint)
+{
+  std::string urdfStr =
+    "<robot name=\"testRobot\">                                       "
+    "  <link name=\"link_0\">                                         "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "  </link>                                                        "
+    "  <joint name=\"0_to_1\" type=\"revolute\">                      "
+    "    <parent link=\"link_0\"/>                                    "
+    "    <child link=\"link_1\"/>                                     "
+    "    <limit effort=\"2.5\" lower=\"-3.14159265359\"               "
+    "           upper=\"3.14159265359\" velocity=\"3.00545697193\"/>  "
+    "    <axis xyz=\"0 0 1\"/>                                        "
+    "    <dynamics damping=\"1.2\" friction=\"2.3\"/>                 "
+    "  </joint>                                                       "
+    "  <link name=\"link_1\">                                         "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "  </link>                                                        "
+    "  <joint name=\"1_to_2\" type=\"continuous\">                    "
+    "    <parent link=\"link_1\"/>                                    "
+    "    <child link=\"link_2\"/>                                     "
+    "    <limit effort=\"2.5\" velocity=\"3.00545697193\"/>           "
+    "    <axis xyz=\"0 0 1\"/>                                        "
+    "    <dynamics damping=\"1.2\" friction=\"2.3\"/>                 "
+    "    <mimic joint=\"0_to_1\" multiplier=\"2.\" offset=\"0.1\"/>   "
+    "  </joint>                                                       "
+    "  <link name=\"link_2\">                                         "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "  </link>                                                        "
+    "</robot>                                                         ";
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  EXPECT_TRUE(nullptr != robot);
+
+  auto joint1 = robot->getJoint(1);
+  EXPECT_TRUE(nullptr != joint1);
+  EXPECT_NEAR(joint1->getDampingCoefficient(0), 1.2, 1e-12);
+  EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
+
+  auto joint2 = robot->getJoint(2);
+  EXPECT_DOUBLE_EQ(joint2->getPositionLowerLimit(0), -dart::math::constantsd::inf());
+  EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::constantsd::inf());
+  EXPECT_TRUE(joint2->isCyclic(0));
+
+  EXPECT_TRUE(joint2->getActuatorType() == dart::dynamics::Joint::MIMIC);
+  EXPECT_TRUE(nullptr != joint2->getMimicJoint());
+  EXPECT_DOUBLE_EQ(joint2->getMimicMultiplier(), 2.);
+  EXPECT_DOUBLE_EQ(joint2->getMimicOffset(), 0.1);
+}
+
+
+TEST(DartLoader, badMimicJoint)
+{
+  std::string urdfStr =
+    "<robot name=\"testRobot\">                                       "
+    "  <link name=\"link_0\">                                         "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "  </link>                                                        "
+    "  <joint name=\"0_to_1\" type=\"revolute\">                      "
+    "    <parent link=\"link_0\"/>                                    "
+    "    <child link=\"link_1\"/>                                     "
+    "    <limit effort=\"2.5\" lower=\"-3.14159265359\"               "
+    "           upper=\"3.14159265359\" velocity=\"3.00545697193\"/>  "
+    "    <axis xyz=\"0 0 1\"/>                                        "
+    "    <dynamics damping=\"1.2\" friction=\"2.3\"/>                 "
+    "  </joint>                                                       "
+    "  <link name=\"link_1\">                                         "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "  </link>                                                        "
+    "  <joint name=\"1_to_2\" type=\"continuous\">                    "
+    "    <parent link=\"link_1\"/>                                    "
+    "    <child link=\"link_2\"/>                                     "
+    "    <limit effort=\"2.5\" velocity=\"3.00545697193\"/>           "
+    "    <axis xyz=\"0 0 1\"/>                                        "
+    "    <dynamics damping=\"1.2\" friction=\"2.3\"/>                 "
+    "    <mimic joint=\"mjoint\" multiplier=\"2.\" offset=\"0.1\"/>   "
+    "  </joint>                                                       "
+    "  <link name=\"link_2\">                                         "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 -0.087\"/>                 "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "    <visual>                                                     "
+    "      <origin rpy=\"0 0 0\" xyz=\"0 0 0\"/>                      "
+    "      <geometry>                                                 "
+    "        <box size=\"1 1 1\"/>                                    "
+    "      </geometry>                                                "
+    "    </visual>                                                    "
+    "  </link>                                                        "
+    "</robot>                                                         ";
+
+  DartLoader loader;
+  auto robot = loader.parseSkeletonString(urdfStr, "");
+  EXPECT_TRUE(nullptr != robot);
+
+  auto joint1 = robot->getJoint(1);
+  EXPECT_TRUE(nullptr != joint1);
+  EXPECT_NEAR(joint1->getDampingCoefficient(0), 1.2, 1e-12);
+  EXPECT_NEAR(joint1->getCoulombFriction(0), 2.3, 1e-12);
+
+  auto joint2 = robot->getJoint(2);
+  EXPECT_DOUBLE_EQ(joint2->getPositionLowerLimit(0), -dart::math::constantsd::inf());
+  EXPECT_DOUBLE_EQ(joint2->getPositionUpperLimit(0), dart::math::constantsd::inf());
+  EXPECT_TRUE(joint2->isCyclic(0));
+
+  EXPECT_TRUE(joint2->getActuatorType() != dart::dynamics::Joint::MIMIC);
+  EXPECT_TRUE(nullptr == joint2->getMimicJoint());
+}

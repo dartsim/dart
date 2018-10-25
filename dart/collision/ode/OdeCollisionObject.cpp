@@ -108,6 +108,28 @@ OdeCollisionObject::OdeCollisionObject(
 }
 
 //==============================================================================
+OdeCollisionObject& OdeCollisionObject::operator=(
+    OdeCollisionObject&& other)
+{
+  // This should only be used for refreshing the collision objects, so the
+  // detector and the shape frame should never need to change
+  assert(mCollisionDetector == other.mCollisionDetector);
+  assert(mShapeFrame == other.mShapeFrame);
+
+  // We should never be assigning a collision object to itself
+  assert(this != &other);
+
+  // There should never be duplicate body IDs or geometries
+  assert(!mBodyId || mBodyId != other.mBodyId);
+  assert(mOdeGeom.get() != other.mOdeGeom.get());
+
+  mOdeGeom = std::move(other.mOdeGeom);
+  std::swap(mBodyId, other.mBodyId);
+
+  return *this;
+}
+
+//==============================================================================
 void OdeCollisionObject::updateEngineData()
 {
   mOdeGeom->updateEngineData();

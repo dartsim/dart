@@ -72,6 +72,8 @@ void SphereShape::setRadius(double radius)
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================

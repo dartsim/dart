@@ -213,6 +213,9 @@ protected:
   /// Servo motor constraints those are automatically created
   std::vector<ServoMotorConstraintPtr> mServoMotorConstraints;
 
+  /// Mimic motor constraints those are automatically created
+  std::vector<MimicMotorConstraintPtr> mMimicMotorConstraints;
+
   /// Joint Coulomb friction constraints those are automatically created
   std::vector<JointCoulombFrictionConstraintPtr> mJointCoulombFrictionConstraints;
 

@@ -66,6 +66,7 @@ public:
   static constexpr ActuatorType FORCE        = detail::FORCE;
   static constexpr ActuatorType PASSIVE      = detail::PASSIVE;
   static constexpr ActuatorType SERVO        = detail::SERVO;
+  static constexpr ActuatorType MIMIC        = detail::MIMIC;
   static constexpr ActuatorType ACCELERATION = detail::ACCELERATION;
   static constexpr ActuatorType VELOCITY     = detail::VELOCITY;
   static constexpr ActuatorType LOCKED       = detail::LOCKED;
@@ -134,6 +135,18 @@ public:
 
   /// Get actuator type
   ActuatorType getActuatorType() const;
+
+  /// Set mimic joint
+  void setMimicJoint(const Joint* _mimicJoint, double _mimicMultiplier = 1.0, double _mimicOffset = 0.0);
+
+  /// Get mimic joint
+  const Joint* getMimicJoint() const;
+
+  /// Get mimic joint multiplier
+  double getMimicMultiplier() const;
+
+  /// Get mimic joint offset
+  double getMimicOffset() const;
 
   /// Return true if this joint is kinematic joint.
   ///

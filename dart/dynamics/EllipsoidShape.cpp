@@ -86,6 +86,8 @@ void EllipsoidShape::setDiameters(const Eigen::Vector3d& diameters)
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -98,6 +100,11 @@ const Eigen::Vector3d& EllipsoidShape::getDiameters() const
 void EllipsoidShape::setRadii(const Eigen::Vector3d& radii)
 {
   mDiameters = radii * 2.0;
+
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================
