@@ -19,7 +19,7 @@ RUN apt-get install -y \
     libbullet-dev \
     libode-dev \
     libflann-dev \
-    libnlopt-dev \
+    libnlopt-cxx-dev \
     coinor-libipopt-dev \
     libtinyxml2-dev \
     liburdfdom-dev \
