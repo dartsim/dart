@@ -441,7 +441,11 @@ DART_SUPPRESS_DEPRECATED_END
       mSoftContactConstraints.push_back(
             std::make_shared<SoftContactConstraint>(contact, mTimeStep));
     }
-    else
+    // If penetration depth is negative, then the collision isn't really
+    // happening and the contact point should be ignored.
+    // TODO(MXG): Investigate ways to leverage the proximity information of a
+    //            negative penetration to improve collision handling.
+    else if(contact.penetrationDepth >= 0.0)
     {
       mContactConstraints.push_back(
             std::make_shared<ContactConstraint>(contact, mTimeStep));
