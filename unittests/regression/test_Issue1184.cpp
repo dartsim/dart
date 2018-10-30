@@ -90,7 +90,7 @@ TEST(Issue1184, Accuracy)
   {
     for(const auto& objectShapeFunction : {makeBoxObject, makeSphereObject})
     {
-      for(const double halfsize : {0.1, 1.0, 5.0, 10.0, 20.0})
+      for(const double halfsize : {0.25, 1.0, 5.0, 10.0, 20.0})
       {
         for(const bool falling : {true, false})
         {
@@ -128,16 +128,15 @@ TEST(Issue1184, Accuracy)
           world->addSkeleton(ground);
 
           // time until the object will strike
-          const double t_strike =
-              sqrt(-2.0*dropHeight/world->getGravity()[2]);
+          const double t_strike = falling?
+              sqrt(-2.0*dropHeight/world->getGravity()[2]) : 0.0;
 
           // give the object some time to settle
-          const double min_time = 2.0;
-          const double t_limit = 3*t_strike + min_time;
+          const double min_time = 0.5;
+          const double t_limit = 30.0*t_strike + min_time;
 
           double lowestHeight = std::numeric_limits<double>::infinity();
           double time = 0.0;
-          std::size_t contactPointsAboveSurface = 0;
           while(time < t_limit)
           {
             world->step();
@@ -147,22 +146,13 @@ TEST(Issue1184, Accuracy)
             if(currentHeight < lowestHeight)
               lowestHeight = currentHeight;
 
-            const auto& result =
-                world->getConstraintSolver()->getLastCollisionResult();
-
-            for(const auto& contact : result.getContacts())
-            {
-              if(contact.point[2] > tolerance)
-                ++contactPointsAboveSurface;
-            }
-
             time = world->getTime();
           }
 
           // The simulation should have run for at least two seconds
           ASSERT_LE(min_time, time);
 
-          EXPECT_NEAR(halfsize, lowestHeight, tolerance)
+          EXPECT_GE(halfsize+tolerance, lowestHeight)
               << "object type: " << objectShape->getType()
               << "\nground type: " << groundInfo.shape->getType()
               << "\nfalling: " << falling << "\n";
@@ -172,12 +162,7 @@ TEST(Issue1184, Accuracy)
 
           EXPECT_NEAR(halfsize, finalHeight, tolerance)
               << "object type: " << objectShape->getType()
-              << "\nshape type: " << groundInfo.shape->getType()
-              << "\nfalling: " << falling << "\n";
-
-          EXPECT_EQ(0u, contactPointsAboveSurface)
-              << "object type: " << objectShape->getType()
-              << "\nshape type: " << groundInfo.shape->getType()
+              << "\nground type: " << groundInfo.shape->getType()
               << "\nfalling: " << falling << "\n";
         }
       }
