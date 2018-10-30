@@ -240,6 +240,8 @@ void MeshShape::setMesh(
     mMeshPath.clear();
 
   mResourceRetriever = std::move(resourceRetriever);
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -250,6 +252,8 @@ void MeshShape::setScale(const Eigen::Vector3d& scale)
   mScale = scale;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================

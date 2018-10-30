@@ -95,6 +95,9 @@ protected:
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
 
+  // Documentation inherited
+  void refreshCollisionObject(CollisionObject* object) override;
+
 private:
   static Registrar<DARTCollisionDetector> mRegistrar;
 };

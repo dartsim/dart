@@ -101,8 +101,8 @@ void BulletCollisionGroup::removeCollisionObjectFromEngine(
 //==============================================================================
 void BulletCollisionGroup::removeAllCollisionObjectsFromEngine()
 {
-  for (const auto& pair : mShapeFrameMap)
-    removeCollisionObjectFromEngine(pair.second.get());
+  for (const auto& info : mObjectInfoList)
+    removeCollisionObjectFromEngine(info->mObject.get());
 
   initializeEngineData();
 }

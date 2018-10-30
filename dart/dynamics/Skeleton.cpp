@@ -457,6 +457,27 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
   skelClone->setName(cloneName);
   skelClone->setState(getState());
 
+  // Fix mimic joint references
+  for(std::size_t i=0; i<getNumJoints(); ++i)
+  {
+    Joint* joint = skelClone->getJoint(i);
+    if(joint->getActuatorType() == Joint::MIMIC)
+    {
+      const Joint* mimicJoint = skelClone->getJoint(joint->getMimicJoint()->getName());
+      if(mimicJoint)
+      {
+        joint->setMimicJoint(mimicJoint, joint->getMimicMultiplier(), joint->getMimicOffset());
+      }
+      else
+      {
+        dterr << "[Skeleton::clone] Failed to clone mimic joint successfully: "
+              << "Unable to find the mimic joint ["
+              << joint->getMimicJoint()->getName()
+              << "] in the cloned Skeleton. Please report this as a bug!\n";
+      }
+    }
+  }
+
   return skelClone;
 }
 

@@ -74,6 +74,8 @@ void CylinderShape::setRadius(double _radius)
   mRadius = _radius;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -89,6 +91,8 @@ void CylinderShape::setHeight(double _height)
   mHeight = _height;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================
