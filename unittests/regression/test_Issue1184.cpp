@@ -45,6 +45,7 @@
 //==============================================================================
 TEST(Issue1184, Accuracy)
 {
+
   struct ShapeInfo
   {
     dart::dynamics::ShapePtr shape;
@@ -83,16 +84,30 @@ TEST(Issue1184, Accuracy)
     return std::make_shared<dart::dynamics::SphereShape>(s);
   };
 
+
+#ifndef NDEBUG
+  const auto groundInfoFunctions = {makePlaneGround};
+  const auto objectShapeFunctions = {makeSphereObject};
+  const auto halfsizes = {10.0};
+  const auto fallingModes = {true};
+  const double dropHeight = 0.1;
+  const double tolerance = 1e-3;
+#else
+  const auto groundInfoFunctions = {makePlaneGround, makeBoxGround};
+  const auto objectShapeFunctions = {makeBoxObject, makeSphereObject};
+  const auto halfsizes = {0.25, 1.0, 5.0, 10.0, 20.0};
+  const auto fallingModes = {true, false};
   const double dropHeight = 1.0;
   const double tolerance = 1e-3;
+#endif
 
-  for(const auto& groundInfoFunction : {makePlaneGround, makeBoxGround})
+  for(const auto& groundInfoFunction : groundInfoFunctions)
   {
-    for(const auto& objectShapeFunction : {makeBoxObject, makeSphereObject})
+    for(const auto& objectShapeFunction : objectShapeFunctions)
     {
-      for(const double halfsize : {0.25, 1.0, 5.0, 10.0, 20.0})
+      for(const double halfsize : halfsizes)
       {
-        for(const bool falling : {true, false})
+        for(const bool falling : fallingModes)
         {
           auto world = dart::simulation::World::create("test");
           world->getConstraintSolver()->setCollisionDetector(
