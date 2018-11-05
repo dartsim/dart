@@ -52,6 +52,20 @@ matrix:
         - BUILD_TYPE=Release
         - COMPILER=GCC
       services: docker
+    - os: linux
+      env:
+        - BUILD_NAME=COSMIC_DEBUG
+        - DOCKER_FILE="ubuntu-cosmic"
+        - BUILD_TYPE=Debug
+        - COMPILER=GCC
+      services: docker
+    - os: linux
+      env:
+        - BUILD_NAME=COSMIC_RELEASE
+        - DOCKER_FILE="ubuntu-cosmic"
+        - BUILD_TYPE=Release
+        - COMPILER=GCC
+      services: docker
     - os: osx
       osx_image: xcode9.4
       compiler: clang
@@ -68,7 +82,7 @@ matrix:
         - COMPILER=CLANG
     - os: linux
       compiler: gcc
-      env: 
+      env:
         - BUILD_NAME=DOCS
         - SUDO=sudo
         - BUILD_TYPE=Release
@@ -89,7 +103,7 @@ script:
       '.ci/script.sh';
     fi
 
-after_failure: 
+after_failure:
   - cat build/Testing/Temporary/LastTest.log
   - cat build/Testing/Temporary/LastTestsFailed.log
 
