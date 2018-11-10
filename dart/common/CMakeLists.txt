@@ -8,15 +8,10 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "common headers" ${hdrs})
-dart_generate_include_header_list(
-  common_headers
+dart_generate_include_header_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/common.hpp"
   "dart/common/"
-  "common headers"
   ${header_names}
-)
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/common.hpp.in
-  ${CMAKE_CURRENT_BINARY_DIR}/common.hpp
 )
 
 # Install

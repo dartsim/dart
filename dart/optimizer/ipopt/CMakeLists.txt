@@ -22,15 +22,10 @@ add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_ipopt headers" ${hdrs})
-dart_generate_include_header_list(
-  optimizer_ipopt_headers
+dart_generate_include_header_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp"
   "dart/optimizer/ipopt/"
-  "optimizer_ipopt headers"
   ${header_names}
-)
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/ipopt.hpp.in
-  ${CMAKE_CURRENT_BINARY_DIR}/ipopt.hpp
 )
 
 # Install

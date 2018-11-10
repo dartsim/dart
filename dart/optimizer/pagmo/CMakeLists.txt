@@ -35,15 +35,10 @@ add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_pagmo headers" ${hdrs})
-dart_generate_include_header_list(
-  optimizer_pagmo_headers
+dart_generate_include_header_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/pagmo.hpp"
   "dart/optimizer/pagmo/"
-  "optimizer_pagmo headers"
   ${header_names}
-)
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/pagmo.hpp.in
-  ${CMAKE_CURRENT_BINARY_DIR}/pagmo.hpp
 )
 
 # Install
