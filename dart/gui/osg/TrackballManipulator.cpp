@@ -32,6 +32,8 @@
 
 #include "dart/gui/osg/TrackballManipulator.hpp"
 
+#include <osg/Version>
+
 namespace dart {
 namespace gui {
 namespace osg {
@@ -48,6 +50,9 @@ TrackballManipulator::TrackballManipulator(int flags)
 TrackballManipulator::TrackballManipulator(const TrackballManipulator& tm,
                                            const ::osg::CopyOp& copyOp)
   : ::osg::Object(tm, copyOp),
+#if OSG_VERSION_GREATER_OR_EQUAL(3,3,2)
+    ::osg::Callback(),
+#endif
     ::osgGA::OrbitManipulator(tm, copyOp)
 {
   // Do nothing

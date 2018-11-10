@@ -235,6 +235,8 @@ void ArrowShape::configureArrow(const Eigen::Vector3d& _tail,
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================

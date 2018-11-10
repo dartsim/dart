@@ -39,35 +39,16 @@
 #ifndef DART_GUI_GRAPHWINDOW_HPP_
 #define DART_GUI_GRAPHWINDOW_HPP_
 
-#include <vector>
+#pragma message("This header is deprecated as of DART 6.6. "\
+    "Please use dart/gui/glut/GraphWindow.hpp instead.")
 
-#include <Eigen/Dense>
-
-#include "dart/gui/Win2D.hpp"
+#include "dart/gui/glut/GraphWindow.hpp"
+#include "dart/common/Deprecated.hpp"
 
 namespace dart {
 namespace gui {
 
-/// \brief
-class GraphWindow : public Win2D {
-public:
-  /// \brief
-  GraphWindow();
-
-  /// \brief
-  virtual ~GraphWindow();
-
-  /// \brief
-  void draw() override;
-
-  /// \brief
-  void keyboard(unsigned char _key, int _x, int _y) override;
-
-  void setData(Eigen::VectorXd _data);
-
-protected:
-  Eigen::VectorXd mData;
-};
+using GraphWindow DART_DEPRECATED(6.6) = ::dart::gui::glut::GraphWindow;
  
 }  // namespace gui
 }  // namespace dart

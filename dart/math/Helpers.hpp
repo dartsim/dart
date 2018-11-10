@@ -41,12 +41,14 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <random>
 
 // External Libraries
 #include <Eigen/Dense>
 // Local Headers
 #include "dart/math/Constants.hpp"
 #include "dart/math/MathTypes.hpp"
+#include "dart/math/Random.hpp"
 
 namespace dart {
 namespace math {
@@ -248,42 +250,60 @@ inline unsigned seedRand() {
   return seed;
 }
 
+/// \deprecated Please use Random::uniform() instead.
+DART_DEPRECATED(6.7)
 inline double random(double _min, double _max) {
   return _min + ((static_cast<double>(rand()) / (RAND_MAX + 1.0))
                 * (_max - _min));
 }
 
+/// \deprecated Please use Random::uniform() instead.
 template<int N>
+DART_DEPRECATED(6.7)
 Eigen::Matrix<double, N, 1> randomVector(double _min, double _max)
 {
   Eigen::Matrix<double, N, 1> v;
+DART_SUPPRESS_DEPRECATED_BEGIN
   for(std::size_t i=0; i<N; ++i)
     v[i] = random(_min, _max);
+DART_SUPPRESS_DEPRECATED_END
 
   return v;
 }
 
+/// \deprecated Please use Random::uniform() instead.
 template<int N>
+DART_DEPRECATED(6.7)
 Eigen::Matrix<double, N, 1> randomVector(double _limit)
 {
+DART_SUPPRESS_DEPRECATED_BEGIN
   return randomVector<N>(-std::abs(_limit), std::abs(_limit));
+DART_SUPPRESS_DEPRECATED_END
 }
 
 //==============================================================================
+/// \deprecated Please use Random::uniform() instead.
+DART_DEPRECATED(6.7)
 inline Eigen::VectorXd randomVectorXd(std::size_t size, double min, double max)
 {
   Eigen::VectorXd v = Eigen::VectorXd::Zero(size);
 
+DART_SUPPRESS_DEPRECATED_BEGIN
   for (std::size_t i = 0; i < size; ++i)
     v[i] = random(min, max);
+DART_SUPPRESS_DEPRECATED_END
 
   return v;
 }
 
 //==============================================================================
+/// \deprecated Please use Random::uniform() instead.
+DART_DEPRECATED(6.7)
 inline Eigen::VectorXd randomVectorXd(std::size_t size, double limit)
 {
+DART_SUPPRESS_DEPRECATED_BEGIN
   return randomVectorXd(size, -std::abs(limit), std::abs(limit));
+DART_SUPPRESS_DEPRECATED_END
 }
 
 namespace suffixes {
@@ -401,6 +421,16 @@ inline Eigen::Vector3d Black()
   return Eigen::Vector3d(0.05, 0.05, 0.05);
 }
 
+inline Eigen::Vector4d LightGray(double alpha)
+{
+  return Eigen::Vector4d(0.9, 0.9, 0.9, alpha);
+}
+
+inline Eigen::Vector3d LightGray()
+{
+  return Eigen::Vector3d(0.9, 0.9, 0.9);
+}
+
 inline Eigen::Vector4d Gray(double alpha)
 {
   return Eigen::Vector4d(0.6, 0.6, 0.6, alpha);
@@ -413,17 +443,17 @@ inline Eigen::Vector3d Gray()
 
 inline Eigen::Vector4d Random(double alpha)
 {
-  return Eigen::Vector4d(math::random(0.0, 1.0),
-                         math::random(0.0, 1.0),
-                         math::random(0.0, 1.0),
+  return Eigen::Vector4d(math::Random::uniform(0.0, 1.0),
+                         math::Random::uniform(0.0, 1.0),
+                         math::Random::uniform(0.0, 1.0),
                          alpha);
 }
 
 inline Eigen::Vector3d Random()
 {
-  return Eigen::Vector3d(math::random(0.0, 1.0),
-                         math::random(0.0, 1.0),
-                         math::random(0.0, 1.0));
+  return Eigen::Vector3d(math::Random::uniform(0.0, 1.0),
+                         math::Random::uniform(0.0, 1.0),
+                         math::Random::uniform(0.0, 1.0));
 }
 
 } // namespace Color

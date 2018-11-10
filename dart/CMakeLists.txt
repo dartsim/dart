@@ -126,6 +126,7 @@ target_include_directories(
     ${FCL_INCLUDE_DIRS}
     ${ASSIMP_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
+    ${OCTOMAP_INCLUDE_DIRS}
 )
 target_link_libraries(
   dart
@@ -136,6 +137,7 @@ target_link_libraries(
     ${ASSIMP_LIBRARIES}
     ${Boost_LIBRARIES}
     ${PROJECT_NAME}-external-odelcpsolver
+    ${OCTOMAP_LIBRARIES}
 )
 
 # Build DART with all available SIMD instructions
@@ -149,8 +151,11 @@ if(DART_ENABLE_SIMD)
     # depending on the architectures.
   elseif(CMAKE_COMPILER_IS_GNUCXX)
     target_compile_options(dart PUBLIC -march=native)
+    if(GCC_VERSION VERSION_GREATER 7.0)
+      target_compile_options(dart PUBLIC -faligned-new)
+    endif()
   elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    target_compile_options(dart PUBLIC -march=native)
+    target_compile_options(dart PUBLIC -march=native -faligned-new)
   endif()
 endif()
 

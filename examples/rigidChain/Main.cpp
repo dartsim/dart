@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
   int dof =  myWorld->getSkeleton(0)->getNumDofs();
   Eigen::VectorXd initPose(dof);
   for (int i = 0; i < dof; i++)
-    initPose[i] = dart::math::random(-0.5, 0.5);
+    initPose[i] = dart::math::Random::uniform(-0.5, 0.5);
   myWorld->getSkeleton(0)->setPositions(initPose);
 
   // create a window and link it to the world

@@ -50,11 +50,13 @@ namespace constraint {
 //==============================================================================
 DantzigLCPSolver::DantzigLCPSolver(double _timestep) : LCPSolver(_timestep)
 {
+  // Do nothing
 }
 
 //==============================================================================
 DantzigLCPSolver::~DantzigLCPSolver()
 {
+  // Do nothing
 }
 
 //==============================================================================

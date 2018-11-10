@@ -47,11 +47,14 @@
 
 #include "dart/common/Timer.hpp"
 #include "dart/common/NameManager.hpp"
+#include "dart/common/SmartPointer.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/collision/CollisionOption.hpp"
 #include "dart/simulation/Recording.hpp"
+#include "dart/simulation/SmartPointer.hpp"
+#include "dart/constraint/SmartPointer.hpp"
 
 namespace dart {
 
@@ -73,6 +76,8 @@ class CollisionResult;
 
 namespace simulation {
 
+DART_COMMON_DECLARE_SHARED_WEAK(World)
+
 /// class World
 class World : public virtual common::Subject
 {
@@ -81,6 +86,10 @@ public:
   using NameChangedSignal
       = common::Signal<void(const std::string& _oldName,
                             const std::string& _newName)>;
+
+  /// Creates World as shared_ptr
+  template <typename... Args>
+  static WorldPtr create(Args&&... args);
 
   //--------------------------------------------------------------------------
   // Constructor and Destructor
@@ -206,7 +215,7 @@ public:
   void reset();
 
   /// Calculate the dynamics and integrate the world for one step
-  /// \param[in} _resetCommand True if you want to reset to zero the joint
+  /// \param[in] _resetCommand True if you want to reset to zero the joint
   /// command after simulation step.
   void step(bool _resetCommand = true);
 
@@ -225,6 +234,9 @@ public:
   //--------------------------------------------------------------------------
   // Constraint
   //--------------------------------------------------------------------------
+
+  /// Sets the constraint solver
+  void setConstraintSolver(constraint::UniqueConstraintSolverPtr solver);
 
   /// Get the constraint solver
   constraint::ConstraintSolver* getConstraintSolver() const;
@@ -292,7 +304,7 @@ protected:
   int mFrame;
 
   /// Constraint solver
-  constraint::ConstraintSolver* mConstraintSolver;
+  std::unique_ptr<constraint::ConstraintSolver> mConstraintSolver;
 
   ///
   Recording* mRecording;
@@ -310,9 +322,9 @@ public:
 
 };
 
-typedef std::shared_ptr<World> WorldPtr;
-
 }  // namespace simulation
 }  // namespace dart
+
+#include "dart/simulation/detail/World-impl.hpp"
 
 #endif  // DART_SIMULATION_WORLD_HPP_

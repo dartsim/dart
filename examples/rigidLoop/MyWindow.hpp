@@ -36,7 +36,7 @@
 #include <dart/dart.hpp>
 #include <dart/gui/gui.hpp>
 
-class MyWindow : public dart::gui::SimWindow
+class MyWindow : public dart::gui::glut::SimWindow
 {
 public:
     MyWindow() : SimWindow() {}

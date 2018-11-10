@@ -47,9 +47,10 @@ Shape::Shape(ShapeType type)
     mIsVolumeDirty(true),
     mID(mCounter++),
     mVariance(STATIC),
-    mType(type)
+    mType(type),
+    onVersionChanged(mVersionChangedSignal)
 {
-  // Do nothing
+  mVersion = 1;
 }
 
 //==============================================================================
@@ -58,9 +59,10 @@ Shape::Shape()
     mVolume(0.0),
     mID(mCounter++),
     mVariance(STATIC),
-    mType(UNSUPPORTED)
+    mType(UNSUPPORTED),
+    onVersionChanged(mVersionChangedSignal)
 {
-  // Do nothing
+  mVersion = 1;
 }
 
 //==============================================================================
@@ -100,7 +102,7 @@ double Shape::getVolume() const
 }
 
 //==============================================================================
-int Shape::getID() const
+std::size_t Shape::getID() const
 {
   return mID;
 }
@@ -175,7 +177,16 @@ void Shape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 }
 
 //==============================================================================
-int Shape::mCounter = PRIMITIVE_MAGIC_NUMBER;
+std::size_t Shape::incrementVersion()
+{
+  ++mVersion;
+  mVersionChangedSignal.raise(this, mVersion);
+
+  return mVersion;
+}
+
+//==============================================================================
+std::atomic_int Shape::mCounter{PRIMITIVE_MAGIC_NUMBER};
 
 }  // namespace dynamics
 }  // namespace dart

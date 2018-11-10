@@ -78,7 +78,10 @@ public:
   std::size_t getNumConstraints() const;
 
   /// Return a constraint
-  ConstraintBasePtr getConstraint(std::size_t _index) const;
+  ConstraintBasePtr getConstraint(std::size_t _index);
+
+  /// Return a constraint
+  ConstConstraintBasePtr getConstraint(std::size_t _index) const;
 
   /// Remove constraint
   void removeConstraint(const ConstraintBasePtr& _constraint);

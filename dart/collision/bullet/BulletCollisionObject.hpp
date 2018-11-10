@@ -39,6 +39,7 @@
 #include <btBulletCollisionCommon.h>
 
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/bullet/BulletCollisionShape.hpp"
 
 namespace dart {
 namespace collision {
@@ -48,7 +49,6 @@ class CollisionObject;
 class BulletCollisionObject : public CollisionObject
 {
 public:
-
   friend class BulletCollisionDetector;
 
   /// Return Bullet collision object
@@ -58,20 +58,19 @@ public:
   const btCollisionObject* getBulletCollisionObject() const;
 
 protected:
-
   /// Constructor
-  BulletCollisionObject(CollisionDetector* collisionDetector,
-                        const dynamics::ShapeFrame* shapeFrame,
-                        btCollisionShape* bulletCollisionShape);
+  BulletCollisionObject(
+      CollisionDetector* collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame,
+      const std::shared_ptr<BulletCollisionShape>& bulletCollisionShape);
 
   // Documentation inherited
   void updateEngineData() override;
 
 protected:
-
   /// Bullet collision object
+  std::shared_ptr<BulletCollisionShape> mBulletCollisionShape;
   std::unique_ptr<btCollisionObject> mBulletCollisionObject;
-
 };
 
 }  // namespace collision

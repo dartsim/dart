@@ -393,9 +393,9 @@ TEST_F(COLLISION, DROP)
     dtdbg << "Rotated box\n";
     dart::collision::fcl::Box box2(0.5, 0.5, 0.5);
     dropWithRotation(&box2,
-                     dart::math::random(-3.14, 3.14),
-                     dart::math::random(-3.14, 3.14),
-                     dart::math::random(-3.14, 3.14));
+                     dart::math::Random::uniform(-3.14, 3.14),
+                     dart::math::Random::uniform(-3.14, 3.14),
+                     dart::math::Random::uniform(-3.14, 3.14));
 
     dropWithRotation(&box2,
                      0.0,
@@ -1113,6 +1113,285 @@ TEST_F(COLLISION, testPlane)
 }
 
 //==============================================================================
+/// \param[in] collidesUnderTerrain Set to true if the collision engine returns
+/// collisions when a shape is underneath the terrain, but still above the
+/// minimum height. If false, only intersections with the surface mesh will be
+/// detected.
+/// \param[in] extendsUntilGroundPlane Set to true if the collision engine
+/// extends the terrain until the plane z=0
+/// \param[in] odeThck: for ODE, use this thickness underneath the heightfield
+/// to adjust collision checks.
+///
+/// \sa dGeomHeightfieldDataBuild*().
+template <typename S>
+void testHeightmapBox(CollisionDetector* cd,
+                      const bool collidesUnderTerrain = true,
+                      const bool extendsUntilGroundPlane = false,
+                      const S odeThck = 0)
+{
+  ///////////////////////////////////////
+  // Set test parameters.
+  // The height field will have a flat, even
+  // slope spanned by four corner vertices
+  ///////////////////////////////////////
+
+  // size of box
+  const S boxSize = 0.1;
+  // terrain scale in x and y direction
+  const S terrainScale = 2.0;
+  // z values scale
+  const S zScale = 2.0;
+
+  // minimum hand maximum height of terrain to use
+  const S minH = 1.0;  // note: ODE doesn't behave well with negative heights
+  const S maxH = 3.0;
+  // adjusted minimum height: If minH > 0, and extendsUntilGroundPlane true,
+  // then the minimum height is actually 0.
+  const S adjMinH = (extendsUntilGroundPlane && (minH > 0.0)) ? 0.0 : minH;
+  const S halfHeight = minH+(maxH-minH)/2.0;
+  // ODE thickness is only used if there is not already a layer of this
+  // thickness due to a minH > 0 (for ODE, extendsUntilGroundPlane is true)
+  const S useOdeThck = (odeThck > 1.0e-06) ? std::max(odeThck-minH, S(0)) : 0.0;
+
+  ///////////////////////////////////////
+  // Create frames and shapes
+  ///////////////////////////////////////
+
+  // frames and shapes
+  auto terrainFrame = SimpleFrame::createShared(Frame::World());
+  auto boxFrame = SimpleFrame::createShared(Frame::World());
+  auto terrainShape = std::make_shared<HeightmapShape<S>>();
+  auto boxShape = std::make_shared<BoxShape>(Eigen::Vector3d(boxSize,
+                                                             boxSize, boxSize));
+
+  // make a terrain with a linearly increasing slope
+  std::vector<S> heights = {minH, halfHeight, halfHeight, maxH};
+  terrainShape->setHeightField(2u, 2u, heights);
+  // set a scale to test this at the same time
+  const S terrSize = terrainScale;
+  terrainShape->setScale(Eigen::Vector3d(terrainScale, terrainScale, zScale));
+  EXPECT_EQ(terrainShape->getHeightField().size(), heights.size());
+
+  terrainFrame->setShape(terrainShape);
+  boxFrame->setShape(boxShape);
+
+  ///////////////////////////////////////
+  // Test collisions
+  ///////////////////////////////////////
+
+  auto group = cd->createCollisionGroup(terrainFrame.get(), boxFrame.get());
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+  // the terrain is going to remain in the origin. During the tests,
+  // we are only moving the box.
+  terrainFrame->setTranslation(Eigen::Vector3d::Zero());
+
+  // there should be no collision underneath the height field, which should be
+  // on the x/y plane.
+  result.clear();
+  // Some tolerance (useOdeThck) has to be added for ODE because it adds an
+  // extra piece on the bottom to prevent objects from falling through
+  // lowest points.
+  S transZ = adjMinH*zScale - boxSize*0.501 - useOdeThck;
+  boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, transZ));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+
+  // expect collision if moved just slightly above the lower terrain bound
+  if (collidesUnderTerrain)
+  {
+    result.clear();
+    transZ = adjMinH*zScale - boxSize*0.499 - useOdeThck;
+    boxFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, transZ));
+    EXPECT_TRUE(group->collide(option, &result));
+    EXPECT_GT(result.getNumContacts(), 0u);
+  }
+
+  ///////////////////////////////////////
+  // test collisions when box is at extreme corner
+  // points (lowest and highest)
+  ///////////////////////////////////////
+
+  // some helper vectors
+  Eigen::Vector3d slope(1.0, -1.0, maxH-minH);
+  slope.normalize();
+  Eigen::Vector3d crossSection(1.0, 1.0, heights[1]-heights[2]);
+  crossSection.normalize();
+  const Eigen::Vector3d normal = slope.cross(crossSection);
+  // the two extreme corners:
+  const Eigen::Vector3d
+    highCorner(Eigen::Vector3d(terrSize/2.0, -terrSize/2.0, maxH*zScale));
+  const Eigen::Vector3d
+    lowCorner(Eigen::Vector3d(-terrSize/2.0, terrSize/2.0, maxH*zScale));
+
+  // ODE doesn't do nicely when boxes are close to the border of the terrain.
+  // Shift the boxes along the slope (or normal to slope for some tests)
+  // by this length.
+  // Technically we should compute this a bit more accurately than this.
+  // it basically has to ensure the box is inside or outside the terrain
+  // bounds, so the slope plays a role for this factor.
+  // But since the box is small, an estimate is used for now.
+  const S boxShift = boxSize * 1.5;
+
+  // expect collision at highest point (at max height)
+  Eigen::Vector3d cornerShift = highCorner - slope*boxShift;
+  result.clear();
+  boxFrame->setTranslation(cornerShift);
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+
+  // .. but not at opposite corner (lowest corner, at overall max height)
+  result.clear();
+  cornerShift = Eigen::Vector3d(lowCorner + slope*boxShift);
+  boxFrame->setTranslation(cornerShift);
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+
+  ///////////////////////////////////////
+  // test collisions for box on z axis
+  ///////////////////////////////////////
+
+  // box should collide where it intersects the slope
+  result.clear();
+  Eigen::Vector3d inMiddle(0.0, 0.0, halfHeight*zScale);
+  boxFrame->setTranslation(inMiddle);
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+
+  // ... but not if the box is translated away from the slope
+  result.clear();
+  Eigen::Vector3d onTopOfSlope = inMiddle + normal*boxShift;
+  boxFrame->setTranslation(onTopOfSlope);
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(result.getNumContacts(), 0u);
+
+  // ... however it still should collide if translated the
+  // other way inside the slope
+  if (collidesUnderTerrain)
+  {
+    result.clear();
+    Eigen::Vector3d underSlope = inMiddle - normal*boxShift;
+    boxFrame->setTranslation(underSlope);
+    EXPECT_TRUE(group->collide(option, &result));
+    EXPECT_GT(result.getNumContacts(), 0u);
+  }
+}
+
+//==============================================================================
+TEST_F(COLLISION, testHeightmapBox)
+{
+#if HAVE_ODE
+  auto ode = OdeCollisionDetector::create();
+  // TODO take this message out as soon as testing is done
+  dtdbg << "Testing ODE (float)" << std::endl;
+  testHeightmapBox<float>(ode.get(), true, true, 0.05);
+
+  // TODO take this message out as soon as testing is done
+  dtdbg << "Testing ODE (double)" << std::endl;
+  testHeightmapBox<double>(ode.get(), true, true, 0.05);
+#endif
+
+#if HAVE_BULLET
+  auto bullet = BulletCollisionDetector::create();
+
+  // TODO take this message out as soon as testing is done
+  dtdbg << "Testing Bullet (float)" << std::endl;
+  // bullet so far only supports float height fields, so don't test double here.
+  testHeightmapBox<float>(bullet.get(), false, false);
+
+#endif
+}
+
+//==============================================================================
+// Tests HeightmapShape::flipY();
+TEST_F(COLLISION, HeightmapFlipY)
+{
+  using S = double;
+
+  std::vector<S> heights1 = {-1, -2, 2, 1};
+  auto shape = std::make_shared<HeightmapShape<S>>();
+  shape->setHeightField(2, 2, heights1);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField().data()[0], heights1[2]);
+  EXPECT_EQ(shape->getHeightField().data()[1], heights1[3]);
+  EXPECT_EQ(shape->getHeightField().data()[2], heights1[0]);
+  EXPECT_EQ(shape->getHeightField().data()[3], heights1[1]);
+
+  // test with odd number of rows
+  std::vector<S> heights2 = {-1, -2, 3, 3, 2, 1};
+  shape->setHeightField(2, 3, heights2);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField().data()[0], heights2[4]);
+  EXPECT_EQ(shape->getHeightField().data()[1], heights2[5]);
+  EXPECT_EQ(shape->getHeightField().data()[2], heights2[2]);
+  EXPECT_EQ(shape->getHeightField().data()[3], heights2[3]);
+  EXPECT_EQ(shape->getHeightField().data()[4], heights2[0]);
+  EXPECT_EQ(shape->getHeightField().data()[5], heights2[1]);
+
+  // test higher number of rows
+  std::vector<S> heights3 = {1, -1, 2, -2, 3, -3, 4, -4};
+  shape->setHeightField(2, 4, heights3);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField().data()[0], heights3[6]);
+  EXPECT_EQ(shape->getHeightField().data()[1], heights3[7]);
+  EXPECT_EQ(shape->getHeightField().data()[2], heights3[4]);
+  EXPECT_EQ(shape->getHeightField().data()[3], heights3[5]);
+  EXPECT_EQ(shape->getHeightField().data()[4], heights3[2]);
+  EXPECT_EQ(shape->getHeightField().data()[5], heights3[3]);
+  EXPECT_EQ(shape->getHeightField().data()[6], heights3[0]);
+  EXPECT_EQ(shape->getHeightField().data()[7], heights3[1]);
+
+  // test wider rows
+  std::vector<S> heights4 =
+    {1, -1, 1.5, 2, -2, 2.5,  3, -3, 3.5, 4, -4, 4.5};
+  shape->setHeightField(3, 4, heights4);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField().data()[0], heights4[9]);
+  EXPECT_EQ(shape->getHeightField().data()[1], heights4[10]);
+  EXPECT_EQ(shape->getHeightField().data()[2], heights4[11]);
+  EXPECT_EQ(shape->getHeightField().data()[3], heights4[6]);
+  EXPECT_EQ(shape->getHeightField().data()[4], heights4[7]);
+  EXPECT_EQ(shape->getHeightField().data()[5], heights4[8]);
+  EXPECT_EQ(shape->getHeightField().data()[6], heights4[3]);
+  EXPECT_EQ(shape->getHeightField().data()[7], heights4[4]);
+  EXPECT_EQ(shape->getHeightField().data()[8], heights4[5]);
+  EXPECT_EQ(shape->getHeightField().data()[9], heights4[0]);
+  EXPECT_EQ(shape->getHeightField().data()[10], heights4[1]);
+  EXPECT_EQ(shape->getHeightField().data()[11], heights4[2]);
+
+  // test mini (actually meaningless) height field
+  std::vector<S> heights5 = {1, 2};
+  shape->setHeightField(1, 2, heights5);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField().data()[0], heights5[1]);
+  EXPECT_EQ(shape->getHeightField().data()[1], heights5[0]);
+
+  // test height field with only one row (which is actually meaningless)
+  std::vector<S> heights6 = {1, 2};
+  shape->setHeightField(2, 1, heights6);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField().data()[0], heights6[0]);
+  EXPECT_EQ(shape->getHeightField().data()[1], heights6[1]);
+
+  // test height field with only one column (which is actually meaningless)
+  std::vector<S> heights7 = {1, 2};
+  shape->setHeightField(1, 2, heights7);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField().data()[0], heights7[1]);
+  EXPECT_EQ(shape->getHeightField().data()[1], heights7[0]);
+
+  // test height field with only one col and row (which is actually meaningless)
+  std::vector<S> heights8 = {1};
+  shape->setHeightField(1, 1, heights8);
+  shape->flipY();
+  EXPECT_EQ(shape->getHeightField().data()[0], heights8[0]);
+}
+
+//==============================================================================
 TEST_F(COLLISION, Options)
 {
   auto fcl_mesh_dart = FCLCollisionDetector::create();
@@ -1448,3 +1727,39 @@ TEST_F(COLLISION, Factory)
   EXPECT_TRUE(!collision::CollisionDetector::getFactory()->canCreate("ode"));
 #endif
 }
+
+//==============================================================================
+#if HAVE_OCTOMAP && FCL_HAVE_OCTOMAP
+TEST_F(COLLISION, VoxelGrid)
+{
+  auto simpleFrame1 = SimpleFrame::createShared(Frame::World());
+  auto simpleFrame2 = SimpleFrame::createShared(Frame::World());
+
+  auto shape1 = std::make_shared<VoxelGridShape>(0.01);
+  auto shape2 = std::make_shared<SphereShape>(0.001);
+
+  simpleFrame1->setShape(shape1);
+  simpleFrame2->setShape(shape2);
+
+  auto cd = FCLCollisionDetector::create();
+  auto group = cd->createCollisionGroup(simpleFrame1.get(), simpleFrame2.get());
+
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+
+  collision::CollisionOption option;
+  option.enableContact = true;
+
+  collision::CollisionResult result;
+
+  result.clear();
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() == 0u);
+
+  result.clear();
+  shape1->updateOccupancy(Eigen::Vector3d(0.0, 0.0, 0.0), true);
+  simpleFrame2->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.0));
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_TRUE(result.getNumContacts() >= 1u);
+}
+#endif // HAVE_OCTOMAP && FCL_HAVE_OCTOMAP

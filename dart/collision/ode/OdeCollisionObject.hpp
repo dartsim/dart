@@ -60,6 +60,10 @@ protected:
       OdeCollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame);
 
+  /// Move assignment operator. This is used to refresh OdeCollisionObjects when
+  /// their underlying shape information needs to be updated.
+  OdeCollisionObject& operator=(OdeCollisionObject&& other);
+
   // Documentation inherited
   void updateEngineData() override;
 

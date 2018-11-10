@@ -93,6 +93,8 @@ void BoxShape::setSize(const Eigen::Vector3d& _size)
   mSize = _size;
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================

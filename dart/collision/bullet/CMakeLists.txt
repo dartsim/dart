@@ -88,3 +88,8 @@ install(
   DESTINATION include/dart/collision/bullet
   COMPONENT headers
 )
+
+dart_format_add(
+  BulletCollisionShape.hpp
+  BulletCollisionShape.cpp
+)

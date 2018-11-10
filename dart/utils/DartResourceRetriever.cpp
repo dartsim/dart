@@ -32,6 +32,7 @@
 
 #include "dart/utils/DartResourceRetriever.hpp"
 
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include "dart/config.hpp"
@@ -45,8 +46,19 @@ namespace utils {
 DartResourceRetriever::DartResourceRetriever()
   : mLocalRetriever(std::make_shared<common::LocalResourceRetriever>())
 {
+  // 1. Search the local build directory
   addDataDirectory(DART_DATA_LOCAL_PATH);
+
+  // 2. Search the designated install directory. This should work if you build
+  // and install DART from source.
   addDataDirectory(DART_DATA_GLOBAL_PATH);
+
+  // 3. Search the directoy set by the environment variable, DART_DATA_PATH.
+  // Method 2 can fail because some package manager use temporary install
+  // directory (e.g., Launchpad PPA).
+  const char* dartDataPathEnv = std::getenv("DART_DATA_PATH");
+  if (dartDataPathEnv)
+    addDataDirectory(dartDataPathEnv);
 }
 
 //==============================================================================
@@ -65,6 +77,11 @@ bool DartResourceRetriever::exists(const common::Uri& uri)
 
       if (mLocalRetriever->exists(fileUri))
         return true;
+
+      dtwarn << "Failed to retrieve a resource from '" << uri.toString()
+             << "'. Please make sure you set the environment variable for DART "
+             << "data path. For example:\n"
+             << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
     }
   }
   else
@@ -93,6 +110,11 @@ common::ResourcePtr DartResourceRetriever::retrieve(const common::Uri& uri)
       if (const auto resource = mLocalRetriever->retrieve(fileUri))
         return resource;
     }
+
+    dtwarn << "Failed to retrieve a resource from '" << uri.toString()
+           << "'. Please make sure you set the environment variable for DART "
+           << "data path. For example:\n"
+           << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
   }
   else
   {
@@ -123,6 +145,11 @@ std::string DartResourceRetriever::getFilePath(const common::Uri& uri)
       if (!path.empty())
         return path;
     }
+    
+    dtwarn << "Failed to retrieve a resource from '" << uri.toString()
+             << "'. Please make sure you set the environment variable for "
+             << "DART data path. For example:\n"
+             << "  $ export DART_DATA_PATH=/usr/local/share/doc/dart/data/\n";
   }
   else
   {

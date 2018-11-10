@@ -44,6 +44,7 @@ class DARTCollisionObject;
 class DARTCollisionDetector : public CollisionDetector
 {
 public:
+  using CollisionDetector::createCollisionGroup;
 
   static std::shared_ptr<DARTCollisionDetector> create();
 
@@ -93,6 +94,9 @@ protected:
   // Documentation inherited
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
+
+  // Documentation inherited
+  void refreshCollisionObject(CollisionObject* object) override;
 
 private:
   static Registrar<DARTCollisionDetector> mRegistrar;

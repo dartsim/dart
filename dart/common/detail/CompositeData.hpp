@@ -41,7 +41,6 @@
 #include <typeindex>
 
 #include "dart/common/Aspect.hpp"
-#include "dart/math/MathTypes.hpp"
 
 namespace dart {
 namespace common {

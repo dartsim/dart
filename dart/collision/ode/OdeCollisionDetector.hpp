@@ -52,6 +52,8 @@ namespace collision {
 class OdeCollisionDetector : public CollisionDetector
 {
 public:
+  using CollisionDetector::createCollisionGroup;
+
   friend class OdeCollisionObject;
 
   static std::shared_ptr<OdeCollisionDetector> create();
@@ -104,6 +106,9 @@ protected:
   // Documentation inherited
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
+
+  // Documentation inherited
+  void refreshCollisionObject(CollisionObject* object) override;
 
   dWorldID getOdeWorldId() const;
 
