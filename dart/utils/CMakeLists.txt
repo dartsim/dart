@@ -52,15 +52,10 @@ set(
   ${header_names}
   sdf/sdf.hpp
 )
-dart_generate_include_header_list(
-  utils_headers
+dart_generate_include_header_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/utils.hpp"
   "dart/utils/"
-  "utils headers"
   ${header_names}
-)
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/utils.hpp.in
-  ${CMAKE_CURRENT_BINARY_DIR}/utils.hpp
 )
 
 # Install
