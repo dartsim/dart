@@ -8,6 +8,11 @@ pool:
 
 steps:
 - script: |
+    sudo apt-add-repository --yes ppa:dartsim/ppa
+    sudo apt-get -qq update
+    sudo apt-get -qq --yes install build-essential cmake pkg-config git
+    sudo apt-get -qq --yes install libeigen3-dev libassimp-dev libccd-dev libfcl-dev libboost-filesystem-dev libboost-regex-dev libboost-system-dev
+    sudo apt-get -qq --yes install libopenscenegraph-dev
     mkdir build
     cd build
     cmake ..
