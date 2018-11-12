@@ -440,7 +440,7 @@ DART_SUPPRESS_DEPRECATED_END
     // happening and the contact point should be ignored.
     // TODO(MXG): Investigate ways to leverage the proximity information of a
     //            negative penetration to improve collision handling.
-    if (contact.penetrationDepth >= 0.0)
+    if (contact.penetrationDepth < 0.0)
       continue;
 
     if (isSoftContact(contact))
