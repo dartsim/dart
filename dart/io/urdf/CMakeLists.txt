@@ -64,15 +64,10 @@ add_component_dependencies(${PROJECT_NAME} ${component_name} io)
 dart_get_filename_components(header_names "io_urdf headers" ${hdrs})
 # TODO: remove below line once the files are completely removed.
 list(REMOVE_ITEM header_names "URDFTypes.hpp")
-dart_generate_include_header_list(
-  io_urdf_headers
+dart_generate_include_header_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/urdf.hpp"
   "dart/io/urdf/"
-  "io_urdf headers"
   ${header_names}
-)
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/urdf.hpp.in
-  ${CMAKE_CURRENT_BINARY_DIR}/urdf.hpp
 )
 
 # Install

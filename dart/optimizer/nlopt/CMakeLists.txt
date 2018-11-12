@@ -22,15 +22,10 @@ add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "optimizer_nlopt headers" ${hdrs})
-dart_generate_include_header_list(
-  optimizer_nlopt_headers
+dart_generate_include_header_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/nlopt.hpp"
   "dart/optimizer/nlopt/"
-  "optimizer_nlopt headers"
   ${header_names}
-)
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/nlopt.hpp.in
-  ${CMAKE_CURRENT_BINARY_DIR}/nlopt.hpp
 )
 
 # Install

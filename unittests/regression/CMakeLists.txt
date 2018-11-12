@@ -10,3 +10,10 @@ if(TARGET dart-io-urdf)
   dart_add_test("regression" test_Issue986)
 
 endif()
+
+if(TARGET dart-collision-bullet)
+
+  dart_add_test("regression" test_Issue1184)
+  target_link_libraries(test_Issue1184 dart-collision-bullet)
+
+endif()

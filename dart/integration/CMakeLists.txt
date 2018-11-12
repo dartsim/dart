@@ -6,15 +6,10 @@ dart_add_core_sources(${srcs} ${detail_srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "integration headers" ${hdrs})
-dart_generate_include_header_list(
-  integration_headers
+dart_generate_include_header_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/integration.hpp"
   "dart/integration/"
-  "integration headers"
   ${header_names}
-)
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/integration.hpp.in
-  ${CMAKE_CURRENT_BINARY_DIR}/integration.hpp
 )
 
 # Install
