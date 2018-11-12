@@ -1,0 +1,10 @@
+parameters:
+  numThreads: 4
+
+steps:
+- script: |
+    ./.ci/install.sh
+  displayName: 'Install'
+- script: |
+    ./.ci/script.sh -j${{ parameters.numThreads }}
+  displayName: 'Script'

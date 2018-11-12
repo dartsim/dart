@@ -42,4 +42,4 @@ while read version; do
   make docs
 
   mv doxygen/html ${DART_DOCS_OUTPUT_DIR}/${version}
-done < ${DART_CLONE_DIR}/.ci/docs_versions.txt
+done < ${DART_CLONE_DIR}/.ci/travis/docs_versions.txt

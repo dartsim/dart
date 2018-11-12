@@ -1,0 +1,12 @@
+parameters:
+  numThreads: 4
+
+steps:
+- script: |
+    docker build -t ${DOCKERFILE,,} -f ".ci/docker/$DOCKERFILE" .;
+    docker run -itd -v $(Build.SourcesDirectory):$(Build.SourcesDirectory) --env-file .ci/docker/env.list --name dart-docker ${DOCKERFILE,,};
+    docker exec dart-docker /bin/sh -c "cd $(Build.SourcesDirectory) && ./.ci/install.sh";
+  displayName: 'Install'
+- script: |
+    docker exec dart-docker /bin/sh -c "cd $(Build.SourcesDirectory) && ./.ci/script.sh -j${{ parameters.numThreads }}";
+  displayName: 'Script'
