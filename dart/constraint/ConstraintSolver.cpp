@@ -436,16 +436,19 @@ DART_SUPPRESS_DEPRECATED_BEGIN
     shapeFrame2->asShapeNode()->getBodyNodePtr()->setColliding(true);
 DART_SUPPRESS_DEPRECATED_END
 
+    // If penetration depth is negative, then the collision isn't really
+    // happening and the contact point should be ignored.
+    // TODO(MXG): Investigate ways to leverage the proximity information of a
+    //            negative penetration to improve collision handling.
+    if (contact.penetrationDepth >= 0.0)
+      continue;
+
     if (isSoftContact(contact))
     {
       mSoftContactConstraints.push_back(
             std::make_shared<SoftContactConstraint>(contact, mTimeStep));
     }
-    // If penetration depth is negative, then the collision isn't really
-    // happening and the contact point should be ignored.
-    // TODO(MXG): Investigate ways to leverage the proximity information of a
-    //            negative penetration to improve collision handling.
-    else if(contact.penetrationDepth >= 0.0)
+    else
     {
       mContactConstraints.push_back(
             std::make_shared<ContactConstraint>(contact, mTimeStep));
