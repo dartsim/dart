@@ -486,6 +486,61 @@ LinkagePtr Linkage::create(const Criteria &_criteria, const std::string& _name)
 }
 
 //==============================================================================
+Linkage::Criteria::Target getTarget(
+    const std::unordered_map<const Skeleton*, SkeletonPtr>& map,
+    const Linkage::Criteria::Target& target)
+{
+  Linkage::Criteria::Target newTarget;
+  BodyNodePtr bodyNodePtr = target.mNode.lock();
+  if (!bodyNodePtr)
+  {
+    newTarget.mNode = WeakBodyNodePtr();
+    // NOTE:
+  }
+  else
+  {
+    const Skeleton* skel = bodyNodePtr->getSkeleton().get();
+    SkeletonPtr skelClone = map[skel];
+  }
+  newTarget.mPolicy = target.mPolicy;
+  newTarget.mChain = target.mChain;
+
+  return newTarget;
+}
+
+//==============================================================================
+MetaSkeletonPtr Linkage::cloneMetaSkeleton() const
+{
+  // Create an empty Linkage
+  //LinkagePtr newGroup = create(getName(), nullptr);
+
+  if (getNumBodyNodes() == 0u && (getNumJoints() != 0u || getNumDofs() != 0u))
+  {
+    dtwarn << "[Linkage::cloneMetaSkeletonHelper] Attempting to "
+           << "clone a ReferentialSkeleton that doesn't include any BodyNodes "
+           << "but including some Joints or DegreeOfFreedoms. This will lead "
+           << "to dangling Joints or DegreeOfFreedoms in the cloned "
+           << "ReferentialSkeleton because it only holds the stong reference "
+           << "to the BodyNodes but not others.\n";
+  }
+
+  // Clone skeletons
+  std::unordered_map<const Skeleton*, SkeletonPtr> map;
+  for (const Skeleton* skel : mSkeletons)
+  {
+    SkeletonPtr skelClone = skel->clone();
+    map.insert(std::make_pair(skel, skelClone));
+  }
+
+  // Create Criteria for creating a new Linkage
+  mCriteria;
+
+  Criteria newCriteria;
+  newCriteria.mStart = getTarget(map, mCriteria.mStart);
+  newCriteria.mTargets;
+}
+
+//==============================================================================
 bool Linkage::isAssembled() const
 {
   for(std::size_t i=0; i<mParentBodyNodes.size(); ++i)

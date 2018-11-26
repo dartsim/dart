@@ -70,6 +70,9 @@ public:
   /// Destructor
   virtual ~Group() = default;
 
+  // Documentation inherited
+  MetaSkeletonPtr cloneMetaSkeleton() const override;
+
   /// Swap the index of BodyNode _index1 with _index2
   void swapBodyNodeIndices(std::size_t _index1, std::size_t _index2);
 

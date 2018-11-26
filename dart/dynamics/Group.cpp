@@ -69,6 +69,60 @@ GroupPtr Group::create(const std::string& _name,
 }
 
 //==============================================================================
+MetaSkeletonPtr Group::cloneMetaSkeleton() const
+{
+  // Create an empty Group
+  GroupPtr newGroup = create(getName(), nullptr);
+
+  if (getNumBodyNodes() == 0u && (getNumJoints() != 0u || getNumDofs() != 0u))
+  {
+    dtwarn << "[Group::cloneMetaSkeletonHelper] Attempting to "
+           << "clone a ReferentialSkeleton that doesn't include any BodyNodes "
+           << "but including some Joints or DegreeOfFreedoms. This will lead "
+           << "to dangling Joints or DegreeOfFreedoms in the cloned "
+           << "ReferentialSkeleton because it only holds the stong reference "
+           << "to the BodyNodes but not others.\n";
+  }
+
+  // Clone skeletons
+  std::unordered_map<const Skeleton*, SkeletonPtr> map;
+  for (const Skeleton* skel : mSkeletons)
+  {
+    SkeletonPtr skelClone = skel->clone();
+    map.insert(std::make_pair(skel, skelClone));
+  }
+
+  // Register BodyNode
+  for (const BodyNodePtr& bodyNode : mBodyNodes)
+  {
+    const Skeleton* skel = bodyNode->getSkeleton().get();
+    SkeletonPtr& skelClone = map[skel];
+    BodyNode* bodyNodeClone = skelClone->getBodyNode(bodyNode->getName());
+    newGroup->registerBodyNode(bodyNodeClone);
+  }
+
+  // Register Joint
+  for (const JointPtr& joint : mJoints)
+  {
+    const Skeleton* skel = joint->getSkeleton().get();
+    SkeletonPtr& skelClone = map[skel];
+    Joint* jointClone = skelClone->getJoint(joint->getName());
+    newGroup->registerJoint(jointClone);
+  }
+
+  // Register DegreeOfFreedom
+  for (const DegreeOfFreedomPtr& dof : mDofs)
+  {
+    const Skeleton* skel = dof->getSkeleton().get();
+    SkeletonPtr& skelClone = map[skel];
+    DegreeOfFreedom* dofClone = skelClone->getDof(dof->getName());
+    newGroup->registerDegreeOfFreedom(dofClone);
+  }
+
+  return newGroup;
+}
+
+//==============================================================================
 void Group::swapBodyNodeIndices(std::size_t _index1, std::size_t _index2)
 {
   if(_index1 >= mBodyNodes.size() || _index2 >= mBodyNodes.size())

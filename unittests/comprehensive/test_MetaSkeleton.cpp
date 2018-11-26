@@ -47,6 +47,7 @@ using namespace math;
 using namespace dynamics;
 using namespace simulation;
 
+//==============================================================================
 std::vector<common::Uri> getFileList()
 {
   std::vector<common::Uri> fileList;
@@ -73,6 +74,7 @@ std::vector<common::Uri> getFileList()
   return fileList;
 }
 
+//==============================================================================
 std::vector<SkeletonPtr> getSkeletons()
 {
   const auto fileList = getFileList();
@@ -92,7 +94,8 @@ std::vector<SkeletonPtr> getSkeletons()
   return skeletons;
 }
 
-TEST(Skeleton, Referential)
+//==============================================================================
+TEST(MetaSkeleton, Referential)
 {
   std::vector<SkeletonPtr> skeletons = getSkeletons();
 
@@ -223,6 +226,7 @@ TEST(Skeleton, Referential)
   }
 }
 
+//==============================================================================
 template <class JointType = RevoluteJoint>
 BodyNode* addBodyNode(BodyNode* bn, const std::string& name)
 {
@@ -231,6 +235,7 @@ BodyNode* addBodyNode(BodyNode* bn, const std::string& name)
   return result;
 }
 
+//==============================================================================
 SkeletonPtr constructLinkageTestSkeleton()
 {
   SkeletonPtr skel = Skeleton::create();
@@ -257,6 +262,7 @@ SkeletonPtr constructLinkageTestSkeleton()
   return skel;
 }
 
+//==============================================================================
 void checkForBodyNodes(
     std::size_t& /*count*/,
     const ReferentialSkeletonPtr& /*refSkel*/,
@@ -265,6 +271,7 @@ void checkForBodyNodes(
   // Do nothing
 }
 
+//==============================================================================
 // Variadic function for testing a ReferentialSkeleton for a series of BodyNode
 // names
 template <typename ... Args>
@@ -288,6 +295,7 @@ void checkForBodyNodes(
   checkForBodyNodes(count, refSkel, skel, args...);
 }
 
+//==============================================================================
 template <typename ... Args>
 std::size_t checkForBodyNodes(
     const ReferentialSkeletonPtr& refSkel,
@@ -313,6 +321,7 @@ std::size_t checkForBodyNodes(
   return count;
 }
 
+//==============================================================================
 void checkLinkageJointConsistency(const ReferentialSkeletonPtr& refSkel)
 {
   EXPECT_TRUE(refSkel->getNumBodyNodes() == refSkel->getNumJoints());
@@ -326,7 +335,8 @@ void checkLinkageJointConsistency(const ReferentialSkeletonPtr& refSkel)
   }
 }
 
-TEST(Skeleton, Linkage)
+//==============================================================================
+TEST(MetaSkeleton, Linkage)
 {
   // Test a variety of uses of Linkage::Criteria
   SkeletonPtr skel = constructLinkageTestSkeleton();
@@ -436,7 +446,8 @@ TEST(Skeleton, Linkage)
   checkLinkageJointConsistency(terminatedUpstream);
 }
 
-TEST(Skeleton, Group)
+//==============================================================================
+TEST(MetaSkeleton, Group)
 {
   SkeletonPtr skel = constructLinkageTestSkeleton();
 
@@ -503,7 +514,8 @@ TEST(Skeleton, Group)
     EXPECT_EQ(group->getDof(i), dofs[i]);
 }
 
-TEST(Skeleton, LockSkeletonMutexesWithLockGuard)
+//==============================================================================
+TEST(MetaSkeleton, LockSkeletonMutexesWithLockGuard)
 {
   // Test a variety of uses of Linkage::Criteria
   SkeletonPtr skel = constructLinkageTestSkeleton();
@@ -529,7 +541,7 @@ TEST(Skeleton, LockSkeletonMutexesWithLockGuard)
 }
 
 //==============================================================================
-TEST(Skeleton, GetJointsAndBodyNodes)
+TEST(MetaSkeleton, GetJointsAndBodyNodes)
 {
   auto skelA = Skeleton::create();
   auto skelB = Skeleton::create();
@@ -641,4 +653,33 @@ TEST(Skeleton, GetJointsAndBodyNodes)
   EXPECT_EQ(group->getJoints("joint0").size(), 2u);
   EXPECT_EQ(group->getJoints("joint1").size(), 0u);
   EXPECT_EQ(group->getJoints("joint2").size(), 0u);
+}
+
+TEST(MetaSkeleton, ReferentialSkeletonHoldsStrongReferencesOfBodyNodes)
+{
+  // Create skeletons
+  SkeletonPtr skel1 = constructLinkageTestSkeleton();
+  SkeletonPtr skel2 = constructLinkageTestSkeleton();
+  EXPECT_TRUE(skel1->getNumBodyNodes() > 1);
+  EXPECT_TRUE(skel2->getNumBodyNodes() > 2);
+
+  // Create group from the skeletons
+  GroupPtr group = Group::create();
+  group->addBodyNode(skel1->getBodyNode(0));
+  group->addBodyNode(skel2->getBodyNode(1));
+  EXPECT_EQ(group->getNumBodyNodes(), 2);
+
+  const std::string name1 = group->getBodyNode(0)->getName();
+  const std::string name2 = group->getBodyNode(1)->getName();
+  EXPECT_EQ(group->getBodyNode(0)->getName(), name1);
+  EXPECT_EQ(group->getBodyNode(1)->getName(), name2);
+
+  // Release the ownership of skel1 and skel2
+  skel1.reset();
+  skel2.reset();
+
+  // However, bodyNodes (and the Skeletons) are still alive because the group is
+  // alive
+  EXPECT_EQ(group->getBodyNode(0)->getName(), name1);
+  EXPECT_EQ(group->getBodyNode(1)->getName(), name2);
 }
