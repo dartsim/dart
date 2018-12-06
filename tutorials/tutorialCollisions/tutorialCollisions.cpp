@@ -114,23 +114,23 @@ public:
     switch(key)
     {
       case '1':
-        addObject(mOriginalBall->clone());
+        addObject(mOriginalBall->cloneSkeleton());
         break;
 
       case '2':
-        addObject(mOriginalSoftBody->clone());
+        addObject(mOriginalSoftBody->cloneSkeleton());
         break;
 
       case '3':
-        addObject(mOriginalHybridBody->clone());
+        addObject(mOriginalHybridBody->cloneSkeleton());
         break;
 
       case '4':
-        addObject(mOriginalRigidChain->clone());
+        addObject(mOriginalRigidChain->cloneSkeleton());
         break;
 
       case '5':
-        addRing(mOriginalRigidRing->clone());
+        addRing(mOriginalRigidRing->cloneSkeleton());
         break;
 
       case 'd':
