@@ -84,40 +84,26 @@ MetaSkeletonPtr Group::cloneMetaSkeleton() const
            << "to the BodyNodes but not others.\n";
   }
 
-  // Clone skeletons
-  std::unordered_map<const Skeleton*, SkeletonPtr> map;
-  for (const Skeleton* skel : mSkeletons)
-  {
-    SkeletonPtr skelClone = skel->clone();
-    map.insert(std::make_pair(skel, skelClone));
-  }
+  // Array for Skeleton clones that will be collected durig cloning BodyNodes,
+  // Joints, DegreeOfFreedoms.
+  //
+  // The clones will not be destroyed even after the map is destroyed because
+  // the new Linkage will hold the skeleton by holding the strong referecnes of
+  // the body nodes.
+  std::unordered_map<const Skeleton*, SkeletonPtr> mapToSkeletonClones;
+  mapToSkeletonClones.reserve(mSkeletons.size());
 
   // Register BodyNode
   for (const BodyNodePtr& bodyNode : mBodyNodes)
-  {
-    const Skeleton* skel = bodyNode->getSkeleton().get();
-    SkeletonPtr& skelClone = map[skel];
-    BodyNode* bodyNodeClone = skelClone->getBodyNode(bodyNode->getName());
-    newGroup->registerBodyNode(bodyNodeClone);
-  }
+    newGroup->cloneBodyNode(bodyNode.get(), mapToSkeletonClones);
 
   // Register Joint
   for (const JointPtr& joint : mJoints)
-  {
-    const Skeleton* skel = joint->getSkeleton().get();
-    SkeletonPtr& skelClone = map[skel];
-    Joint* jointClone = skelClone->getJoint(joint->getName());
-    newGroup->registerJoint(jointClone);
-  }
+    newGroup->cloneJoint(joint.get(), mapToSkeletonClones);
 
   // Register DegreeOfFreedom
   for (const DegreeOfFreedomPtr& dof : mDofs)
-  {
-    const Skeleton* skel = dof->getSkeleton().get();
-    SkeletonPtr& skelClone = map[skel];
-    DegreeOfFreedom* dofClone = skelClone->getDof(dof->getName());
-    newGroup->registerDegreeOfFreedom(dofClone);
-  }
+    newGroup->cloneDegreeOfFreedom(dof.get(), mapToSkeletonClones);
 
   return newGroup;
 }

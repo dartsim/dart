@@ -486,8 +486,8 @@ LinkagePtr Linkage::create(const Criteria &_criteria, const std::string& _name)
 }
 
 //==============================================================================
-Linkage::Criteria::Target getTarget(
-    const std::unordered_map<const Skeleton*, SkeletonPtr>& map,
+Linkage::Criteria::Target Linkage::cloneTarget(
+    std::unordered_map<const Skeleton*, SkeletonPtr>& mapToSkeletonClones,
     const Linkage::Criteria::Target& target)
 {
   Linkage::Criteria::Target newTarget;
@@ -500,7 +500,12 @@ Linkage::Criteria::Target getTarget(
   else
   {
     const Skeleton* skel = bodyNodePtr->getSkeleton().get();
-    SkeletonPtr skelClone = map[skel];
+    auto search = mapToSkeletonClones.find(skel);
+    assert(search != mapToSkeletonClones.end());
+    const SkeletonPtr& skelClone = getOrCloneSkeleton(skel, mapToSkeletonClones);
+    BodyNode* bodyNodeInClone = skelClone->getBodyNode(bodyNodePtr->getName());
+    assert(bodyNodeInClone);
+    newTarget.mNode = WeakBodyNodePtr(bodyNodeInClone);
   }
   newTarget.mPolicy = target.mPolicy;
   newTarget.mChain = target.mChain;
@@ -509,35 +514,16 @@ Linkage::Criteria::Target getTarget(
 }
 
 //==============================================================================
-MetaSkeletonPtr Linkage::cloneMetaSkeleton() const
+void Linkage::cloneCriteria(
+    const Criteria& criteria,
+    std::unordered_map<const Skeleton*, SkeletonPtr>& mapToSkeletonClones)
 {
-  // Create an empty Linkage
-  //LinkagePtr newGroup = create(getName(), nullptr);
-
-  if (getNumBodyNodes() == 0u && (getNumJoints() != 0u || getNumDofs() != 0u))
-  {
-    dtwarn << "[Linkage::cloneMetaSkeletonHelper] Attempting to "
-           << "clone a ReferentialSkeleton that doesn't include any BodyNodes "
-           << "but including some Joints or DegreeOfFreedoms. This will lead "
-           << "to dangling Joints or DegreeOfFreedoms in the cloned "
-           << "ReferentialSkeleton because it only holds the stong reference "
-           << "to the BodyNodes but not others.\n";
-  }
-
-  // Clone skeletons
-  std::unordered_map<const Skeleton*, SkeletonPtr> map;
-  for (const Skeleton* skel : mSkeletons)
-  {
-    SkeletonPtr skelClone = skel->clone();
-    map.insert(std::make_pair(skel, skelClone));
-  }
-
-  // Create Criteria for creating a new Linkage
-  mCriteria;
-
+  // Create Criteria for a Linkage clone
   Criteria newCriteria;
-  newCriteria.mStart = getTarget(map, mCriteria.mStart);
-  newCriteria.mTargets;
+  newCriteria.mStart = cloneTarget(mapToSkeletonClones, criteria.mStart);
+  for (const Linkage::Criteria::Target& target : criteria.mTargets)
+    newCriteria.mTargets.emplace_back(cloneTarget(mapToSkeletonClones, target));
+  mCriteria = newCriteria;
 }
 
 //==============================================================================

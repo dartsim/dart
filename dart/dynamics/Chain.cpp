@@ -118,6 +118,48 @@ ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
 }
 
 //==============================================================================
+MetaSkeletonPtr Chain::cloneMetaSkeleton() const
+{
+  // Create an empty Group
+  ChainPtr newGroup = create(nullptr, nullptr, getName());
+
+  if (getNumBodyNodes() == 0u && (getNumJoints() != 0u || getNumDofs() != 0u))
+  {
+    dtwarn << "[Chain::cloneMetaSkeletonHelper] Attempting to "
+           << "clone a ReferentialSkeleton that doesn't include any BodyNodes "
+           << "but including some Joints or DegreeOfFreedoms. This will lead "
+           << "to dangling Joints or DegreeOfFreedoms in the cloned "
+           << "ReferentialSkeleton because it only holds the stong reference "
+           << "to the BodyNodes but not others.\n";
+  }
+
+  // Array for Skeleton clones that will be collected durig cloning BodyNodes,
+  // Joints, DegreeOfFreedoms.
+  //
+  // The clones will not be destroyed even after the map is destroyed because
+  // the new Linkage will hold the skeleton by holding the strong referecnes of
+  // the body nodes.
+  std::unordered_map<const Skeleton*, SkeletonPtr> mapToSkeletonClones;
+  mapToSkeletonClones.reserve(mSkeletons.size());
+
+  newGroup->cloneCriteria(mCriteria, mapToSkeletonClones);
+
+  // Register BodyNode
+  for (const BodyNodePtr& bodyNode : mBodyNodes)
+    newGroup->cloneBodyNode(bodyNode.get(), mapToSkeletonClones);
+
+  // Register Joint
+  for (const JointPtr& joint : mJoints)
+    newGroup->cloneJoint(joint.get(), mapToSkeletonClones);
+
+  // Register DegreeOfFreedom
+  for (const DegreeOfFreedomPtr& dof : mDofs)
+    newGroup->cloneDegreeOfFreedom(dof.get(), mapToSkeletonClones);
+
+  return newGroup;
+}
+
+//==============================================================================
 bool Chain::isStillChain() const
 {
   if(!isAssembled())

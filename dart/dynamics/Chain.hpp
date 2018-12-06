@@ -93,6 +93,9 @@ public:
   static ChainPtr create(BodyNode* _start, BodyNode* _target,
                          IncludeBothTag, const std::string& _name = "Chain");
 
+  // Documentation inherited
+  MetaSkeletonPtr cloneMetaSkeleton() const override;
+
   /// Returns false if this Chain has been broken, or some new Branching has
   /// been added.
   bool isStillChain() const;
