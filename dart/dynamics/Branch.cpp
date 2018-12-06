@@ -71,7 +71,9 @@ Branch::Criteria Branch::Criteria::convert(const Linkage::Criteria& criteria)
   BodyNodePtr startBodyNode = criteria.mStart.mNode.lock();
   if (!startBodyNode)
   {
-    // TODO: Warning for invalid criteria
+    dtwarn << "[Chain::Criteria::convert] Failed in conversion because the "
+           << "start node of the input criteria is not valid anymore. Using "
+           << "the returning Criteria will lead to creating an empty Branch.\n";
     return Branch::Criteria(nullptr);
   }
 
