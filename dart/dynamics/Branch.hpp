@@ -71,6 +71,9 @@ public:
   static BranchPtr create(const Branch::Criteria& _criteria,
                           const std::string& _name = "Branch");
 
+  /// Creates and returns a clone of this Branch.
+  BranchPtr cloneBranch() const;
+
   // Documentation inherited
   MetaSkeletonPtr cloneMetaSkeleton() const override;
 

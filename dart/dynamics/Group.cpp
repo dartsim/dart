@@ -69,7 +69,7 @@ GroupPtr Group::create(const std::string& _name,
 }
 
 //==============================================================================
-MetaSkeletonPtr Group::cloneMetaSkeleton() const
+GroupPtr Group::cloneGroup() const
 {
   // Create an empty Group
   GroupPtr newGroup = create(getName(), nullptr);
@@ -129,6 +129,12 @@ MetaSkeletonPtr Group::cloneMetaSkeleton() const
   }
 
   return newGroup;
+}
+
+//==============================================================================
+MetaSkeletonPtr Group::cloneMetaSkeleton() const
+{
+  return cloneGroup();
 }
 
 //==============================================================================

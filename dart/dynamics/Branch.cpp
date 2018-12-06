@@ -88,7 +88,7 @@ BranchPtr Branch::create(const Branch::Criteria& _criteria,
 }
 
 //==============================================================================
-MetaSkeletonPtr Branch::cloneMetaSkeleton() const
+BranchPtr Branch::cloneBranch() const
 {
   // Clone the skeleton (assuming one skeleton is involved)
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
@@ -111,6 +111,12 @@ MetaSkeletonPtr Branch::cloneMetaSkeleton() const
   BranchPtr newBranch = create(newCriteria, getName());
 
   return newBranch;
+}
+
+//==============================================================================
+MetaSkeletonPtr Branch::cloneMetaSkeleton() const
+{
+  return cloneBranch();
 }
 
 //==============================================================================

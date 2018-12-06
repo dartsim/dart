@@ -73,12 +73,15 @@ public:
 
   /// Creates an identical clone of this MetaSkeleton
   virtual MetaSkeletonPtr cloneMetaSkeleton() const = 0;
+  // TODO: In DART7, rename this to clone() and change the current
+  // Skeleton::clone() to override it. Then consider adding
+  // Skeleton::cloneSkeleton().
 
   /// Returns mutex.
   virtual std::unique_ptr<common::LockableReference> getLockableReference()
   const = 0;
-  // TODO: Rename this to getMutex once the deprecated Skeleton::getMutex() is
-  // removed in DART 7.
+  // TODO: In DART7, rename this to getMutex() and change the current
+  // Skeleton::getMutex() to override it.
 
   //----------------------------------------------------------------------------
   /// \{ \name Name

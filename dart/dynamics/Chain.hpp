@@ -96,6 +96,9 @@ public:
   static ChainPtr create(BodyNode* _start, BodyNode* _target,
                          IncludeBothTag, const std::string& _name = "Chain");
 
+  /// Creates and returns a clone of this Chain.
+  ChainPtr cloneChain() const;
+
   // Documentation inherited
   MetaSkeletonPtr cloneMetaSkeleton() const override;
 

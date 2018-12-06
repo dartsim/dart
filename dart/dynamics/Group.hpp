@@ -70,6 +70,9 @@ public:
   /// Destructor
   virtual ~Group() = default;
 
+  /// Creates and returns a clone of this Group.
+  GroupPtr cloneGroup() const;
+
   // Documentation inherited
   MetaSkeletonPtr cloneMetaSkeleton() const override;
 

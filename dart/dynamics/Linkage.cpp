@@ -515,7 +515,7 @@ Linkage::Criteria::Terminal createTerminalFromClone(
 }
 
 //==============================================================================
-MetaSkeletonPtr Linkage::cloneMetaSkeleton() const
+LinkagePtr Linkage::cloneLinkage() const
 {
   // Clone the skeleton (assuming one skeleton is involved)
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
@@ -549,6 +549,12 @@ MetaSkeletonPtr Linkage::cloneMetaSkeleton() const
   LinkagePtr newLinkage = create(newCriteria, getName());
 
   return newLinkage;
+}
+
+//==============================================================================
+MetaSkeletonPtr Linkage::cloneMetaSkeleton() const
+{
+  return cloneLinkage();
 }
 
 //==============================================================================

@@ -168,6 +168,9 @@ public:
   static LinkagePtr create(const Criteria& _criteria,
                            const std::string& _name = "Linkage");
 
+  /// Creates and returns a clone of this Linkage.
+  LinkagePtr cloneLinkage() const;
+
   // Documentation inherited
   MetaSkeletonPtr cloneMetaSkeleton() const override;
 
