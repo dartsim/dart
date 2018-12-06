@@ -71,8 +71,14 @@ GroupPtr Group::create(const std::string& _name,
 //==============================================================================
 GroupPtr Group::cloneGroup() const
 {
+  return cloneGroup(getName());
+}
+
+//==============================================================================
+GroupPtr Group::cloneGroup(const std::string& cloneName) const
+{
   // Create an empty Group
-  GroupPtr newGroup = create(getName(), nullptr);
+  GroupPtr newGroup = create(cloneName, nullptr);
 
   if (getNumBodyNodes() == 0u && (getNumJoints() != 0u || getNumDofs() != 0u))
   {
@@ -94,7 +100,7 @@ GroupPtr Group::cloneGroup() const
   mapToSkeletonClones.reserve(mSkeletons.size());
   for (const Skeleton* skel : mSkeletons)
   {
-    SkeletonPtr skelClone = skel->clone();
+    SkeletonPtr skelClone = skel->cloneSkeleton();
     mapToSkeletonClones.insert(std::make_pair(skel, skelClone));
   }
 
@@ -132,9 +138,9 @@ GroupPtr Group::cloneGroup() const
 }
 
 //==============================================================================
-MetaSkeletonPtr Group::cloneMetaSkeleton() const
+MetaSkeletonPtr Group::cloneMetaSkeleton(const std::string& cloneName) const
 {
-  return cloneGroup();
+  return cloneGroup(cloneName);
 }
 
 //==============================================================================

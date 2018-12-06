@@ -161,6 +161,12 @@ ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
 //==============================================================================
 ChainPtr Chain::cloneChain() const
 {
+  return cloneChain(getName());
+}
+
+//==============================================================================
+ChainPtr Chain::cloneChain(const std::string& cloneName) const
+{
   // Clone the skeleton (assuming one skeleton is involved)
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
   if (!bodyNode)
@@ -170,7 +176,7 @@ ChainPtr Chain::cloneChain() const
            << "Returning nullptr.\n";
     return nullptr;
   }
-  SkeletonPtr skelClone = bodyNode->getSkeleton()->clone();
+  SkeletonPtr skelClone = bodyNode->getSkeleton()->cloneSkeleton();
 
   // Create a Criteria
   Criteria newCriteria = Criteria::convert(mCriteria);
@@ -182,15 +188,15 @@ ChainPtr Chain::cloneChain() const
       = skelClone->getBodyNode(newCriteria.mTarget.lock()->getName());
 
   // Create a Chain clone with the Criteria
-  ChainPtr newChain = create(newCriteria, getName());
+  ChainPtr newChain = create(newCriteria, cloneName);
 
   return newChain;
 }
 
 //==============================================================================
-MetaSkeletonPtr Chain::cloneMetaSkeleton() const
+MetaSkeletonPtr Chain::cloneMetaSkeleton(const std::string& cloneName) const
 {
-  return cloneChain();
+  return cloneChain(cloneName);
 }
 
 //==============================================================================

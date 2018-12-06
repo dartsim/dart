@@ -72,10 +72,14 @@ public:
   virtual ~MetaSkeleton() = default;
 
   /// Creates an identical clone of this MetaSkeleton
-  virtual MetaSkeletonPtr cloneMetaSkeleton() const = 0;
+  virtual MetaSkeletonPtr cloneMetaSkeleton(
+      const std::string& cloneName) const = 0;
   // TODO: In DART7, rename this to clone() and change the current
   // Skeleton::clone() to override it. Then consider adding
   // Skeleton::cloneSkeleton().
+
+  /// Creates an identical clone of this MetaSkeleton
+  MetaSkeletonPtr cloneMetaSkeleton() const;
 
   /// Returns mutex.
   virtual std::unique_ptr<common::LockableReference> getLockableReference()

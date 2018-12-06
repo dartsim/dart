@@ -99,8 +99,14 @@ public:
   /// Creates and returns a clone of this Chain.
   ChainPtr cloneChain() const;
 
+  /// Creates and returns a clone of this Chain.
+  ChainPtr cloneChain(const std::string& cloneName) const;
+
+  // To expose MetaSkeleton::cloneMetaSkeleton(), which takes no cloneName.
+  using MetaSkeleton::cloneMetaSkeleton;
+
   // Documentation inherited
-  MetaSkeletonPtr cloneMetaSkeleton() const override;
+  MetaSkeletonPtr cloneMetaSkeleton(const std::string& cloneName) const override;
 
   /// Returns false if this Chain has been broken, or some new Branching has
   /// been added.

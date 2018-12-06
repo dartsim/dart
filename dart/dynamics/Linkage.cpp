@@ -517,6 +517,12 @@ Linkage::Criteria::Terminal createTerminalFromClone(
 //==============================================================================
 LinkagePtr Linkage::cloneLinkage() const
 {
+  return cloneLinkage(getName());
+}
+
+//==============================================================================
+LinkagePtr Linkage::cloneLinkage(const std::string& cloneName) const
+{
   // Clone the skeleton (assuming one skeleton is involved)
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
   if (!bodyNode)
@@ -526,7 +532,7 @@ LinkagePtr Linkage::cloneLinkage() const
            << "anymore. Returning nullptr.\n";
     return nullptr;
   }
-  SkeletonPtr skelClone = bodyNode->getSkeleton()->clone();
+  SkeletonPtr skelClone = bodyNode->getSkeleton()->cloneSkeleton();
   assert(skelClone != bodyNode->getSkeleton());
 
   // Create a Criteria
@@ -546,15 +552,15 @@ LinkagePtr Linkage::cloneLinkage() const
   }
 
   // Create a Chain clone with the Criteria
-  LinkagePtr newLinkage = create(newCriteria, getName());
+  LinkagePtr newLinkage = create(newCriteria, cloneName);
 
   return newLinkage;
 }
 
 //==============================================================================
-MetaSkeletonPtr Linkage::cloneMetaSkeleton() const
+MetaSkeletonPtr Linkage::cloneMetaSkeleton(const std::string& cloneName) const
 {
-  return cloneLinkage();
+  return cloneLinkage(cloneName);
 }
 
 //==============================================================================

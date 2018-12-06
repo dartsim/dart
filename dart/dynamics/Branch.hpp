@@ -74,8 +74,14 @@ public:
   /// Creates and returns a clone of this Branch.
   BranchPtr cloneBranch() const;
 
+  /// Creates and returns a clone of this Branch.
+  BranchPtr cloneBranch(const std::string& cloneName) const;
+
+  // To expose MetaSkeleton::cloneMetaSkeleton(), which takes no cloneName.
+  using MetaSkeleton::cloneMetaSkeleton;
+
   // Documentation inherited
-  MetaSkeletonPtr cloneMetaSkeleton() const override;
+  MetaSkeletonPtr cloneMetaSkeleton(const std::string& cloneName) const override;
 
   /// Returns false if a new BodyNode has been attached to any BodyNode of this
   /// Branch, or if a BodyNode of this Branch has been detached.

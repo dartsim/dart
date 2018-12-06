@@ -171,8 +171,14 @@ public:
   /// Creates and returns a clone of this Linkage.
   LinkagePtr cloneLinkage() const;
 
+  /// Creates and returns a clone of this Linkage.
+  LinkagePtr cloneLinkage(const std::string& cloneName) const;
+
+  // To expose MetaSkeleton::cloneMetaSkeleton(), which takes no cloneName.
+  using MetaSkeleton::cloneMetaSkeleton;
+
   // Documentation inherited
-  MetaSkeletonPtr cloneMetaSkeleton() const override;
+  MetaSkeletonPtr cloneMetaSkeleton(const std::string& cloneName) const override;
 
   /// Returns false if the original assembly of this Linkage has been broken in
   /// some way
