@@ -486,21 +486,32 @@ LinkagePtr Linkage::create(const Criteria &_criteria, const std::string& _name)
 }
 
 //==============================================================================
-Linkage::Criteria::Target cloneTarget(
+Linkage::Criteria::Target createTargetFromClone(
     Skeleton& skelClone,
     const Linkage::Criteria::Target& target)
 {
-  Linkage::Criteria::Target newTarget;
-
   BodyNodePtr bodyNodePtr = target.mNode.lock();
   assert(bodyNodePtr);
-  BodyNode* bodyNodeInClone = skelClone.getBodyNode(bodyNodePtr->getName());
-  assert(bodyNodeInClone);
-  newTarget.mNode = WeakBodyNodePtr(bodyNodeInClone);
-  newTarget.mPolicy = target.mPolicy;
-  newTarget.mChain = target.mChain;
+  BodyNode* bodyNodeClone = skelClone.getBodyNode(bodyNodePtr->getName());
+  assert(bodyNodeClone);
+  assert(bodyNodeClone != bodyNodePtr.get());
 
-   return newTarget;
+  return Linkage::Criteria::Target(
+      bodyNodeClone, target.mPolicy, target.mPolicy);
+}
+
+//==============================================================================
+Linkage::Criteria::Terminal createTerminalFromClone(
+    Skeleton& skelClone,
+    const Linkage::Criteria::Terminal& terminal)
+{
+  BodyNodePtr bodyNodePtr = terminal.mTerminal.lock();
+  assert(bodyNodePtr);
+  BodyNode* bodyNodeClone = skelClone.getBodyNode(bodyNodePtr->getName());
+  assert(bodyNodeClone);
+  assert(bodyNodeClone != bodyNodePtr.get());
+
+  return Linkage::Criteria::Terminal(bodyNodeClone, terminal.mInclusive);
 }
 
 //==============================================================================
@@ -515,15 +526,24 @@ MetaSkeletonPtr Linkage::cloneMetaSkeleton() const
            << "anymore. Returning nullptr.\n";
     return nullptr;
   }
-  SkeletonPtr skelClone = bodyNode->getSkeleton();
+  SkeletonPtr skelClone = bodyNode->getSkeleton()->clone();
+  assert(skelClone != bodyNode->getSkeleton());
 
   // Create a Criteria
-  Criteria newCriteria = mCriteria;
-  assert(newCriteria.mStart.lock());
-  newCriteria.mStart = cloneTarget(*skelClone, mCriteria.mStart);
+  Criteria newCriteria;
+  newCriteria.mStart = createTargetFromClone(*skelClone, mCriteria.mStart);
   newCriteria.mTargets.reserve(mCriteria.mTargets.size());
   for (const Criteria::Target& target : mCriteria.mTargets)
-    newCriteria.mTargets.emplace_back(cloneTarget(*skelClone, target));
+  {
+    newCriteria.mTargets.emplace_back(
+        createTargetFromClone(*skelClone, target));
+  }
+  newCriteria.mTerminals.reserve(mCriteria.mTerminals.size());
+  for (const Criteria::Terminal& terminal : newCriteria.mTerminals)
+  {
+    newCriteria.mTerminals.emplace_back(
+        createTerminalFromClone(*skelClone, terminal));
+  }
 
   // Create a Chain clone with the Criteria
   LinkagePtr newLinkage = create(newCriteria, getName());

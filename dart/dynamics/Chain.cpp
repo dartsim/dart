@@ -170,7 +170,7 @@ MetaSkeletonPtr Chain::cloneMetaSkeleton() const
            << "Returning nullptr.\n";
     return nullptr;
   }
-  SkeletonPtr skelClone = bodyNode->getSkeleton();
+  SkeletonPtr skelClone = bodyNode->getSkeleton()->clone();
 
   // Create a Criteria
   Criteria newCriteria = Criteria::convert(mCriteria);

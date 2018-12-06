@@ -683,3 +683,87 @@ TEST(MetaSkeleton, ReferentialSkeletonHoldsStrongReferencesOfBodyNodes)
   EXPECT_EQ(group->getBodyNode(0)->getName(), name1);
   EXPECT_EQ(group->getBodyNode(1)->getName(), name2);
 }
+
+//==============================================================================
+template <typename RefSkelType>
+void testReferentialSkeletonClone(
+    const RefSkelType& skel, const RefSkelType& skelClone)
+{
+  EXPECT_NE(skel, nullptr);
+  EXPECT_NE(skelClone, nullptr);
+  EXPECT_EQ(skel->getName(), skelClone->getName());
+  EXPECT_EQ(skel->getNumBodyNodes(), skelClone->getNumBodyNodes());
+  EXPECT_EQ(skel->getNumJoints(), skelClone->getNumJoints());
+  EXPECT_EQ(skel->getNumDofs(), skelClone->getNumDofs());
+
+  // The skeleton instance of group clone should be different from the original,
+  // but the properties should be the same.
+  for (std::size_t i = 0u; i < skel->getNumBodyNodes(); ++i)
+  {
+    const auto& bodyNode = skel->getBodyNode(i);
+    const auto& skel = bodyNode->getSkeleton();
+
+    const auto& bodyNodeClone = skelClone->getBodyNode(i);
+    const auto& skelClone = bodyNodeClone->getSkeleton();
+
+    EXPECT_NE(skel, skelClone);
+    EXPECT_EQ(skel->getNumBodyNodes(), skelClone->getNumBodyNodes());
+    EXPECT_EQ(skel->getNumJoints(), skelClone->getNumJoints());
+    EXPECT_EQ(skel->getNumDofs(), skelClone->getNumDofs());
+  }
+  for (std::size_t i = 0u; i < skel->getNumJoints(); ++i)
+  {
+    const auto& joint = skel->getJoint(i);
+    const auto& skel = joint->getSkeleton();
+
+    const auto& jointClone = skelClone->getJoint(i);
+    const auto& skelClone = jointClone->getSkeleton();
+
+    EXPECT_NE(skel, skelClone);
+    EXPECT_EQ(skel->getNumBodyNodes(), skelClone->getNumBodyNodes());
+    EXPECT_EQ(skel->getNumJoints(), skelClone->getNumJoints());
+    EXPECT_EQ(skel->getNumDofs(), skelClone->getNumDofs());
+  }
+}
+
+//==============================================================================
+TEST(MetaSkeleton, CloneReferentialSkeletons)
+{
+  SkeletonPtr skel1 = constructLinkageTestSkeleton();
+  SkeletonPtr skel2 = constructLinkageTestSkeleton();
+
+  // Group
+  GroupPtr group = Group::create();
+  group->addBodyNode(skel1->getBodyNode(0));
+  group->addBodyNode(skel2->getBodyNode(0));
+  group->addJoint(skel1->getJoint(1));
+  group->addJoint(skel2->getJoint(1));
+  GroupPtr groupClone = std::dynamic_pointer_cast<Group>(
+      group->cloneMetaSkeleton());
+  testReferentialSkeletonClone(group, groupClone);
+
+  // Linkage
+  Linkage::Criteria criteria;
+  criteria.mStart = skel1->getBodyNode("c5b2");
+  criteria.mTargets.push_back(
+      Linkage::Criteria::Target(skel1->getBodyNode("c4b3")));
+  LinkagePtr linkage = Linkage::create(criteria);
+  LinkagePtr linkageClone = std::dynamic_pointer_cast<Linkage>(
+      linkage->cloneMetaSkeleton());
+  testReferentialSkeletonClone(linkage, linkageClone);
+
+  // Chain
+  ChainPtr chain = Chain::create(
+      skel1->getBodyNode("c1b3"), skel1->getBodyNode("c3b4"), "midchain");
+  ChainPtr chainClone = std::dynamic_pointer_cast<Chain>(
+      chain->cloneMetaSkeleton());
+  testReferentialSkeletonClone(chain, chainClone);
+
+  // Branch
+  BranchPtr branch = Branch::create(skel1->getBodyNode("c3b3"), "subtree");
+  checkForBodyNodes(
+      branch, skel1, true, "c3b3", "c3b4", "c4b1", "c4b2", "c4b3");
+  BranchPtr branchClone = std::dynamic_pointer_cast<Branch>(
+      branch->cloneMetaSkeleton());
+  testReferentialSkeletonClone(branch, branchClone);
+}

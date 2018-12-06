@@ -98,7 +98,7 @@ MetaSkeletonPtr Group::cloneMetaSkeleton() const
     mapToSkeletonClones.insert(std::make_pair(skel, skelClone));
   }
 
-  // Register BodyNode
+  // Add BodyNodes
   for (const BodyNodePtr& bodyNode : mBodyNodes)
   {
     SkeletonPtr skelClone = mapToSkeletonClones[bodyNode->getSkeleton().get()];
@@ -108,24 +108,24 @@ MetaSkeletonPtr Group::cloneMetaSkeleton() const
     newGroup->addBodyNode(bodyNodeClone);
   }
 
-  // Register Joint
+  // Add Joints
   for (const JointPtr& joint : mJoints)
   {
     SkeletonPtr skelClone = mapToSkeletonClones[joint->getSkeleton().get()];
     assert(skelClone);
     Joint* jointClone = skelClone->getJoint(joint->getName());
     assert(jointClone);
-    newGroup->addJoint(jointClone);
+    newGroup->addJoint(jointClone, false);
   }
 
-  // Register DegreeOfFreedom
+  // Add DegreeOfFreedoms
   for (const DegreeOfFreedomPtr& dof : mDofs)
   {
     SkeletonPtr skelClone = mapToSkeletonClones[dof->getSkeleton().get()];
     assert(skelClone);
     DegreeOfFreedom* dofClone = skelClone->getDof(dof->getName());
     assert(dofClone);
-    newGroup->addDof(dofClone);
+    newGroup->addDof(dofClone, false);
   }
 
   return newGroup;
