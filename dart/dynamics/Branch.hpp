@@ -62,11 +62,16 @@ public:
 
     /// Operator for implicit conversion to a Linkage::Criteria
     operator Linkage::Criteria() const;
+
+    static Criteria convertBack(const Linkage::Criteria& criteria);
   };
 
   /// Create a Branch
   static BranchPtr create(const Branch::Criteria& _criteria,
                           const std::string& _name = "Branch");
+
+  // Documentation inherited
+  MetaSkeletonPtr cloneMetaSkeleton() const override;
 
   /// Returns false if a new BodyNode has been attached to any BodyNode of this
   /// Branch, or if a BodyNode of this Branch has been detached.

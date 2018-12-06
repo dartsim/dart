@@ -1462,58 +1462,6 @@ void ReferentialSkeleton::updateCaches()
 }
 
 //==============================================================================
-SkeletonPtr ReferentialSkeleton::getOrCloneSkeleton(const Skeleton* skel, std::unordered_map<const Skeleton*, SkeletonPtr>& map)
-{
-  auto search = map.find(skel);
-  if (search == map.end())
-  {
-    SkeletonPtr skelClone = skel->clone();
-    map.insert(std::make_pair(skel, skelClone));
-    return skelClone;
-  }
-  else
-  {
-    return search->second;
-  }
-}
-
-//==============================================================================
-void ReferentialSkeleton::cloneBodyNode(
-    const BodyNode* bodyNode,
-    std::unordered_map<const Skeleton*, SkeletonPtr>& mapToSkeletonClones)
-{
-  SkeletonPtr skelClone
-      = getOrCloneSkeleton(bodyNode->getSkeleton().get(), mapToSkeletonClones);
-  BodyNode* bodyNodeClone = skelClone->getBodyNode(bodyNode->getName());
-  assert(bodyNodeClone);
-  registerBodyNode(bodyNodeClone);
-}
-
-//==============================================================================
-void ReferentialSkeleton::cloneJoint(
-    const Joint* joint,
-    std::unordered_map<const Skeleton*, SkeletonPtr>& mapToSkeletonClones)
-{
-  SkeletonPtr skelClone
-      = getOrCloneSkeleton(joint->getSkeleton().get(), mapToSkeletonClones);
-  Joint* jointClone = skelClone->getJoint(joint->getName());
-  assert(jointClone);
-  registerJoint(jointClone);
-}
-
-//==============================================================================
-void ReferentialSkeleton::cloneDegreeOfFreedom(
-    const DegreeOfFreedom* dof,
-    std::unordered_map<const Skeleton*, SkeletonPtr>& mapToSkeletonClones)
-{
-  SkeletonPtr skelClone
-      = getOrCloneSkeleton(dof->getSkeleton().get(), mapToSkeletonClones);
-  DegreeOfFreedom* dofClone = skelClone->getDof(dof->getName());
-  assert(dofClone);
-  registerDegreeOfFreedom(dofClone);
-}
-
-//==============================================================================
 void ReferentialSkeleton::registerSkeleton(const Skeleton* skel)
 {
   // We assume skel is not nullptr. If it's not, this function should be updated

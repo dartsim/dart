@@ -72,6 +72,8 @@ public:
 
     /// Operator for implicit conversion to a Linkage::Criteria
     operator Linkage::Criteria() const;
+
+    static Criteria convertBack(const Linkage::Criteria& criteria);
   };
 
   /// This enum is used to specify to the create() function that both the start

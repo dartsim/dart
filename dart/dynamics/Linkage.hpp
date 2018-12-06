@@ -168,8 +168,6 @@ public:
   static LinkagePtr create(const Criteria& _criteria,
                            const std::string& _name = "Linkage");
 
-  void cloneCriteria(const Criteria& criteria, std::unordered_map<const Skeleton*, SkeletonPtr>& mapToSkeletonClones);
-
   /// Returns false if the original assembly of this Linkage has been broken in
   /// some way
   bool isAssembled() const;
@@ -188,10 +186,6 @@ protected:
 
   /// Update any metadata needed by the Linkage or its derived classes
   virtual void update();
-
-  Criteria::Target cloneTarget(
-      std::unordered_map<const Skeleton*, SkeletonPtr>& mapToSkeletonClones,
-      const Linkage::Criteria::Target& target);
 
   /// Criteria that defines the structure of this Linkage
   Criteria mCriteria;

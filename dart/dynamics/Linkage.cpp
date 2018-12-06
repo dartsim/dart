@@ -486,47 +486,6 @@ LinkagePtr Linkage::create(const Criteria &_criteria, const std::string& _name)
 }
 
 //==============================================================================
-Linkage::Criteria::Target Linkage::cloneTarget(
-    std::unordered_map<const Skeleton*, SkeletonPtr>& mapToSkeletonClones,
-    const Linkage::Criteria::Target& target)
-{
-  Linkage::Criteria::Target newTarget;
-  BodyNodePtr bodyNodePtr = target.mNode.lock();
-  if (!bodyNodePtr)
-  {
-    newTarget.mNode = WeakBodyNodePtr();
-    // NOTE:
-  }
-  else
-  {
-    const Skeleton* skel = bodyNodePtr->getSkeleton().get();
-    auto search = mapToSkeletonClones.find(skel);
-    assert(search != mapToSkeletonClones.end());
-    const SkeletonPtr& skelClone = getOrCloneSkeleton(skel, mapToSkeletonClones);
-    BodyNode* bodyNodeInClone = skelClone->getBodyNode(bodyNodePtr->getName());
-    assert(bodyNodeInClone);
-    newTarget.mNode = WeakBodyNodePtr(bodyNodeInClone);
-  }
-  newTarget.mPolicy = target.mPolicy;
-  newTarget.mChain = target.mChain;
-
-  return newTarget;
-}
-
-//==============================================================================
-void Linkage::cloneCriteria(
-    const Criteria& criteria,
-    std::unordered_map<const Skeleton*, SkeletonPtr>& mapToSkeletonClones)
-{
-  // Create Criteria for a Linkage clone
-  Criteria newCriteria;
-  newCriteria.mStart = cloneTarget(mapToSkeletonClones, criteria.mStart);
-  for (const Linkage::Criteria::Target& target : criteria.mTargets)
-    newCriteria.mTargets.emplace_back(cloneTarget(mapToSkeletonClones, target));
-  mCriteria = newCriteria;
-}
-
-//==============================================================================
 bool Linkage::isAssembled() const
 {
   for(std::size_t i=0; i<mParentBodyNodes.size(); ++i)

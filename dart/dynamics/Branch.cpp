@@ -66,12 +66,49 @@ Branch::Criteria::operator Linkage::Criteria() const
 }
 
 //==============================================================================
+Branch::Criteria Branch::Criteria::convertBack(const Linkage::Criteria& criteria)
+{
+  BodyNodePtr startBodyNode = criteria.mStart.mNode.lock();
+  if (!startBodyNode)
+  {
+    // TODO: Warning for invalid criteria
+    return Branch::Criteria(nullptr);
+  }
+
+  return Branch::Criteria(startBodyNode.get());
+}
+
+//==============================================================================
 BranchPtr Branch::create(const Branch::Criteria& _criteria,
                          const std::string& _name)
 {
   BranchPtr branch(new Branch(_criteria, _name));
   branch->mPtr = branch;
   return branch;
+}
+
+//==============================================================================
+MetaSkeletonPtr Branch::cloneMetaSkeleton() const
+{
+  // Clone the skeleton (assuming one skeleton is involved)
+  BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
+  if (!bodyNode)
+  {
+    // TODO: Warning (failed to clone due to the invalid target)
+    return nullptr;
+  }
+  SkeletonPtr skelClone = bodyNode->getSkeleton();
+
+  // Create a Criteria
+  Criteria newCriteria = Criteria::convertBack(mCriteria);
+  assert(newCriteria.mStart.lock());
+  newCriteria.mStart
+      = skelClone->getBodyNode(newCriteria.mStart.lock()->getName());
+
+  // Create a Chain clone with the Criteria
+  BranchPtr newBranch = create(newCriteria, getName());
+
+  return newBranch;
 }
 
 //==============================================================================

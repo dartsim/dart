@@ -85,6 +85,39 @@ Linkage::Criteria Chain::Criteria::convert() const
 }
 
 //==============================================================================
+Chain::Criteria Chain::Criteria::convertBack(const Linkage::Criteria& criteria)
+{
+  BodyNodePtr startBodyNode = criteria.mStart.mNode.lock();
+  if (!startBodyNode)
+  {
+    // TODO: Warning for invalid criteria
+    return Chain::Criteria(nullptr, nullptr);
+  }
+
+  if (criteria.mTargets.size() != 1u)
+  {
+    // TODO: Warning for invalid criteria
+    return Chain::Criteria(nullptr, nullptr);
+  }
+  const Linkage::Criteria::Target& target = criteria.mTargets[0];
+  BodyNodePtr targetBodyNode = target.mNode.lock();
+  if (!targetBodyNode)
+  {
+    // TODO: Warning for invalid criteria
+    return Chain::Criteria(nullptr, nullptr);
+  }
+
+  bool includeBoth = true;
+  if (criteria.mStart.mPolicy != Linkage::Criteria::INCLUDE)
+    includeBoth = false;
+  if (target.mPolicy != Linkage::Criteria::INCLUDE)
+    includeBoth = false;
+
+  return Chain::Criteria(
+      startBodyNode.get(), targetBodyNode.get(), includeBoth);
+}
+
+//==============================================================================
 Chain::Criteria::operator Linkage::Criteria() const
 {
   return convert();
@@ -120,43 +153,28 @@ ChainPtr Chain::create(BodyNode* _start, BodyNode* _target,
 //==============================================================================
 MetaSkeletonPtr Chain::cloneMetaSkeleton() const
 {
-  // Create an empty Group
-  ChainPtr newGroup = create(nullptr, nullptr, getName());
-
-  if (getNumBodyNodes() == 0u && (getNumJoints() != 0u || getNumDofs() != 0u))
+  // Clone the skeleton (assuming one skeleton is involved)
+  BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
+  if (!bodyNode)
   {
-    dtwarn << "[Chain::cloneMetaSkeletonHelper] Attempting to "
-           << "clone a ReferentialSkeleton that doesn't include any BodyNodes "
-           << "but including some Joints or DegreeOfFreedoms. This will lead "
-           << "to dangling Joints or DegreeOfFreedoms in the cloned "
-           << "ReferentialSkeleton because it only holds the stong reference "
-           << "to the BodyNodes but not others.\n";
+    // TODO: Warning (failed to clone due to the invalid target)
+    return nullptr;
   }
+  SkeletonPtr skelClone = bodyNode->getSkeleton();
 
-  // Array for Skeleton clones that will be collected durig cloning BodyNodes,
-  // Joints, DegreeOfFreedoms.
-  //
-  // The clones will not be destroyed even after the map is destroyed because
-  // the new Linkage will hold the skeleton by holding the strong referecnes of
-  // the body nodes.
-  std::unordered_map<const Skeleton*, SkeletonPtr> mapToSkeletonClones;
-  mapToSkeletonClones.reserve(mSkeletons.size());
+  // Create a Criteria
+  Criteria newCriteria = Criteria::convertBack(mCriteria);
+  assert(newCriteria.mStart.lock());
+  assert(newCriteria.mTarget.lock());
+  newCriteria.mStart
+      = skelClone->getBodyNode(newCriteria.mStart.lock()->getName());
+  newCriteria.mTarget
+      = skelClone->getBodyNode(newCriteria.mTarget.lock()->getName());
 
-  newGroup->cloneCriteria(mCriteria, mapToSkeletonClones);
+  // Create a Chain clone with the Criteria
+  ChainPtr newChain = create(newCriteria, getName());
 
-  // Register BodyNode
-  for (const BodyNodePtr& bodyNode : mBodyNodes)
-    newGroup->cloneBodyNode(bodyNode.get(), mapToSkeletonClones);
-
-  // Register Joint
-  for (const JointPtr& joint : mJoints)
-    newGroup->cloneJoint(joint.get(), mapToSkeletonClones);
-
-  // Register DegreeOfFreedom
-  for (const DegreeOfFreedomPtr& dof : mDofs)
-    newGroup->cloneDegreeOfFreedom(dof.get(), mapToSkeletonClones);
-
-  return newGroup;
+  return newChain;
 }
 
 //==============================================================================

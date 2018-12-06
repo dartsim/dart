@@ -443,12 +443,6 @@ protected:
   /// ReferentialSkeleton
   void updateCaches();
 
-  SkeletonPtr getOrCloneSkeleton(const Skeleton* skel, std::unordered_map<const Skeleton*, SkeletonPtr>& map);
-
-  void cloneBodyNode(const BodyNode* bodyNode, std::unordered_map<const Skeleton*, SkeletonPtr>& mapToSkeletonClones);
-  void cloneJoint(const Joint* joint, std::unordered_map<const Skeleton*, SkeletonPtr>& mapToSkeletonClones);
-  void cloneDegreeOfFreedom(const DegreeOfFreedom* dof, std::unordered_map<const Skeleton*, SkeletonPtr>& mapToSkeletonClones);
-
   /// Weak pointer to this Skeleton
   std::weak_ptr<MetaSkeleton> mPtr;
 

@@ -92,18 +92,41 @@ MetaSkeletonPtr Group::cloneMetaSkeleton() const
   // the body nodes.
   std::unordered_map<const Skeleton*, SkeletonPtr> mapToSkeletonClones;
   mapToSkeletonClones.reserve(mSkeletons.size());
+  for (const Skeleton* skel : mSkeletons)
+  {
+    SkeletonPtr skelClone = skel->clone();
+    mapToSkeletonClones.insert(std::make_pair(skel, skelClone));
+  }
 
   // Register BodyNode
   for (const BodyNodePtr& bodyNode : mBodyNodes)
-    newGroup->cloneBodyNode(bodyNode.get(), mapToSkeletonClones);
+  {
+    SkeletonPtr skelClone = mapToSkeletonClones[bodyNode->getSkeleton().get()];
+    assert(skelClone);
+    BodyNode* bodyNodeClone = skelClone->getBodyNode(bodyNode->getName());
+    assert(bodyNodeClone);
+    newGroup->addBodyNode(bodyNodeClone);
+  }
 
   // Register Joint
   for (const JointPtr& joint : mJoints)
-    newGroup->cloneJoint(joint.get(), mapToSkeletonClones);
+  {
+    SkeletonPtr skelClone = mapToSkeletonClones[joint->getSkeleton().get()];
+    assert(skelClone);
+    Joint* jointClone = skelClone->getJoint(joint->getName());
+    assert(jointClone);
+    newGroup->addJoint(jointClone);
+  }
 
   // Register DegreeOfFreedom
   for (const DegreeOfFreedomPtr& dof : mDofs)
-    newGroup->cloneDegreeOfFreedom(dof.get(), mapToSkeletonClones);
+  {
+    SkeletonPtr skelClone = mapToSkeletonClones[dof->getSkeleton().get()];
+    assert(skelClone);
+    DegreeOfFreedom* dofClone = skelClone->getDof(dof->getName());
+    assert(dofClone);
+    newGroup->addDof(dofClone);
+  }
 
   return newGroup;
 }
