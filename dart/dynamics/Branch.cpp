@@ -94,7 +94,9 @@ MetaSkeletonPtr Branch::cloneMetaSkeleton() const
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
   if (!bodyNode)
   {
-    // TODO: Warning (failed to clone due to the invalid target)
+    dtwarn << "[Branch::cloneMetaSkeleton] Failed to clone because the "
+           << "start node of the criteria in this Branch is not valid anymore. "
+           << "Returning nullptr.\n";
     return nullptr;
   }
   SkeletonPtr skelClone = bodyNode->getSkeleton();
@@ -105,7 +107,7 @@ MetaSkeletonPtr Branch::cloneMetaSkeleton() const
   newCriteria.mStart
       = skelClone->getBodyNode(newCriteria.mStart.lock()->getName());
 
-  // Create a Chain clone with the Criteria
+  // Create a Branch clone with the Criteria
   BranchPtr newBranch = create(newCriteria, getName());
 
   return newBranch;

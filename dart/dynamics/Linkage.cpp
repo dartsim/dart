@@ -510,7 +510,9 @@ MetaSkeletonPtr Linkage::cloneMetaSkeleton() const
   BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
   if (!bodyNode)
   {
-    // TODO: Warning (failed to clone due to the invalid target)
+    dtwarn << "[Linkage::cloneMetaSkeleton] Failed to clone because the "
+           << "start node of the criteria in this Linkage is not valid "
+           << "anymore. Returning nullptr.\n";
     return nullptr;
   }
   SkeletonPtr skelClone = bodyNode->getSkeleton();
