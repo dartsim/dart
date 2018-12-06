@@ -176,6 +176,9 @@ public:
   /// Create an identical clone of this Skeleton.
   SkeletonPtr clone() const;
 
+  // Documentation inherited
+  MetaSkeletonPtr cloneMetaSkeleton() const override;
+
   /// Create an identical clone of this Skeleton, except that it has a new name.
   SkeletonPtr clone(const std::string& cloneName) const;
 

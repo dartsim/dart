@@ -402,6 +402,12 @@ SkeletonPtr Skeleton::clone() const
 }
 
 //==============================================================================
+MetaSkeletonPtr Skeleton::cloneMetaSkeleton() const
+{
+  return clone(getName());
+}
+
+//==============================================================================
 SkeletonPtr Skeleton::clone(const std::string& cloneName) const
 {
   SkeletonPtr skelClone = Skeleton::create(cloneName);

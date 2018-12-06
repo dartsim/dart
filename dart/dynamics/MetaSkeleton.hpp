@@ -72,7 +72,7 @@ public:
   virtual ~MetaSkeleton() = default;
 
   /// Creates an identical clone of this MetaSkeleton
-  virtual MetaSkeletonPtr cloneMetaSkeleton() const { return nullptr; }
+  virtual MetaSkeletonPtr cloneMetaSkeleton() const = 0;
 
   /// Returns mutex.
   virtual std::unique_ptr<common::LockableReference> getLockableReference()

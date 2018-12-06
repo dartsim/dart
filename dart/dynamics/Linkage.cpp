@@ -486,6 +486,50 @@ LinkagePtr Linkage::create(const Criteria &_criteria, const std::string& _name)
 }
 
 //==============================================================================
+Linkage::Criteria::Target cloneTarget(
+    Skeleton& skelClone,
+    const Linkage::Criteria::Target& target)
+{
+  Linkage::Criteria::Target newTarget;
+
+  BodyNodePtr bodyNodePtr = target.mNode.lock();
+  assert(bodyNodePtr);
+  BodyNode* bodyNodeInClone = skelClone.getBodyNode(bodyNodePtr->getName());
+  assert(bodyNodeInClone);
+  newTarget.mNode = WeakBodyNodePtr(bodyNodeInClone);
+  newTarget.mPolicy = target.mPolicy;
+  newTarget.mChain = target.mChain;
+
+   return newTarget;
+}
+
+//==============================================================================
+MetaSkeletonPtr Linkage::cloneMetaSkeleton() const
+{
+  // Clone the skeleton (assuming one skeleton is involved)
+  BodyNodePtr bodyNode = mCriteria.mStart.mNode.lock();
+  if (!bodyNode)
+  {
+    // TODO: Warning (failed to clone due to the invalid target)
+    return nullptr;
+  }
+  SkeletonPtr skelClone = bodyNode->getSkeleton();
+
+  // Create a Criteria
+  Criteria newCriteria = mCriteria;
+  assert(newCriteria.mStart.lock());
+  newCriteria.mStart = cloneTarget(*skelClone, mCriteria.mStart);
+  newCriteria.mTargets.reserve(mCriteria.mTargets.size());
+  for (const Criteria::Target& target : mCriteria.mTargets)
+    newCriteria.mTargets.emplace_back(cloneTarget(*skelClone, target));
+
+  // Create a Chain clone with the Criteria
+  LinkagePtr newLinkage = create(newCriteria, getName());
+
+  return newLinkage;
+}
+
+//==============================================================================
 bool Linkage::isAssembled() const
 {
   for(std::size_t i=0; i<mParentBodyNodes.size(); ++i)

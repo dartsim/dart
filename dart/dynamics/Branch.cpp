@@ -66,7 +66,7 @@ Branch::Criteria::operator Linkage::Criteria() const
 }
 
 //==============================================================================
-Branch::Criteria Branch::Criteria::convertBack(const Linkage::Criteria& criteria)
+Branch::Criteria Branch::Criteria::convert(const Linkage::Criteria& criteria)
 {
   BodyNodePtr startBodyNode = criteria.mStart.mNode.lock();
   if (!startBodyNode)
@@ -100,7 +100,7 @@ MetaSkeletonPtr Branch::cloneMetaSkeleton() const
   SkeletonPtr skelClone = bodyNode->getSkeleton();
 
   // Create a Criteria
-  Criteria newCriteria = Criteria::convertBack(mCriteria);
+  Criteria newCriteria = Criteria::convert(mCriteria);
   assert(newCriteria.mStart.lock());
   newCriteria.mStart
       = skelClone->getBodyNode(newCriteria.mStart.lock()->getName());

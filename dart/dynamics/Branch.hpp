@@ -63,7 +63,8 @@ public:
     /// Operator for implicit conversion to a Linkage::Criteria
     operator Linkage::Criteria() const;
 
-    static Criteria convertBack(const Linkage::Criteria& criteria);
+    /// Converts Linkage::Criteria to Branch::Criteria
+    static Criteria convert(const Linkage::Criteria& criteria);
   };
 
   /// Create a Branch
