@@ -75,8 +75,7 @@ public:
   virtual MetaSkeletonPtr cloneMetaSkeleton(
       const std::string& cloneName) const = 0;
   // TODO: In DART7, rename this to clone() and change the current
-  // Skeleton::clone() to override it. Then consider adding
-  // Skeleton::cloneSkeleton().
+  // Skeleton::clone() to override it.
 
   /// Creates an identical clone of this MetaSkeleton
   MetaSkeletonPtr cloneMetaSkeleton() const;
