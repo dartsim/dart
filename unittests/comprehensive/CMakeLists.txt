@@ -36,6 +36,9 @@ if(TARGET dart-utils)
   dart_add_test("comprehensive" test_Skeleton)
   target_link_libraries(test_Skeleton dart-utils)
 
+  dart_add_test("comprehensive" test_MetaSkeleton)
+  target_link_libraries(test_MetaSkeleton dart-utils)
+
   dart_add_test("comprehensive" test_SoftDynamics)
   target_link_libraries(test_SoftDynamics dart-utils)
 
