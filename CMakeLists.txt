@@ -431,13 +431,14 @@ find_program(
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
 list(LENGTH formatting_files formatting_files_length)
-message(STATUS "Formatting on ${formatting_files_length} source files.")
 
 if(CLANG_FORMAT_EXECUTABLE)
 
   if(DART_VERBOSE)
     message(STATUS "Looking for clang-format - found")
   endif()
+
+  message(STATUS "Formatting on ${formatting_files_length} source files.")
 
   if(formatting_files)
     add_custom_target(format
@@ -463,7 +464,9 @@ if(CLANG_FORMAT_EXECUTABLE)
 
 else()
 
-  message(STATUS "Looking for clang-format - NOT found, please install clang-format to enable automatic code formatting")
+  if(DART_VERBOSE)
+    message(STATUS "Looking for clang-format - NOT found, please install clang-format to enable automatic code formatting")
+  endif()
 
 endif()
 

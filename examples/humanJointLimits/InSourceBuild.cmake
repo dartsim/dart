@@ -8,13 +8,16 @@ if(NOT TARGET dart-utils-urdf
 endif()
 
 set(TinyDNN_USE_SERIALIZER ON)
-find_package(TinyDNN)
+find_package(TinyDNN QUIET)
 if(NOT TinyDNN_FOUND)
+  if(DART_VERBOSE)
+    message(STATUS "Failed to find TinyDNN. humanJointLimits is disabled.")
+  endif()
   return()
 endif()
 
 find_package(Threads)
-if(NOT Threads_FOUND)
+if(NOT Threads_FOUND QUIET)
   return()
 endif()
 
