@@ -30,6 +30,10 @@
 
   * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)
 
+* Misc
+
+  * Remove gtest source code from DART codebase: [#1205](https://github.com/dartsim/dart/pull/1205)
+
 ### [DART 6.6.2 (2018-09-03)](https://github.com/dartsim/dart/milestone/47?closed=1)
 
 * Utils
