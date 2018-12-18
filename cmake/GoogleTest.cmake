@@ -1,17 +1,35 @@
+# Copyright (c) 2011-2018, The DART development contributors
+# All rights reserved.
+#
+# The list of contributors can be found at:
+#   https://github.com/dartsim/dart/blob/master/LICENSE
+#
+# This file is provided under the "BSD-style" License
+#
+# This sets the following variables:
+# - GTEST_INCLUDE_DIRS
+# - GTEST_LIBRARY
+# - GTEST_MAIN_LIBRARY
+# - GMOCK_INCLUDE_DIRS
+# - GMOCK_LIBRARY
+# - GMOCK_MAIN_LIBRARY
+
 find_package(Threads REQUIRED)
 
 include(ExternalProject)
 
-ExternalProject_Add(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG release-1.8.1
-  UPDATE_COMMAND ""
-  INSTALL_COMMAND ""
-  LOG_DOWNLOAD ON
-  LOG_CONFIGURE ON
-  LOG_BUILD ON
-)
+if (NOT TARGET googletest)
+  ExternalProject_Add(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG release-1.8.1
+    UPDATE_COMMAND ""
+    INSTALL_COMMAND ""
+    LOG_DOWNLOAD ON
+    LOG_CONFIGURE ON
+    LOG_BUILD ON
+  )
+endif()
 
 ExternalProject_Get_Property(googletest source_dir)
 set(GTEST_INCLUDE_DIRS ${source_dir}/googletest/include)

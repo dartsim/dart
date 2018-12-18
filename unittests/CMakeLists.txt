@@ -31,7 +31,7 @@
 #
 
 # GoogleTest setup
-include(External_GTest)
+include(GoogleTest)
 include_directories(BEFORE SYSTEM ${GTEST_INCLUDE_DIRS})
 
 #===============================================================================
