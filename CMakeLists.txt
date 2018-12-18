@@ -24,6 +24,12 @@ if(POLICY CMP0053)
   cmake_policy(SET CMP0053 NEW)
 endif()
 
+# Stick to the legacy GL library until we need GLVND
+# (see: https://cmake.org/cmake/help/git-stage/policy/CMP0072.html)
+if(POLICY CMP0072)
+  cmake_policy(SET CMP0072 OLD)
+endif()
+
 # Variables used in Components.cmake
 set(INCLUDE_INSTALL_DIR "include")
 set(LIBRARY_INSTALL_DIR "lib")
