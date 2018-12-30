@@ -16,8 +16,11 @@ if(NOT TinyDNN_FOUND)
   return()
 endif()
 
-find_package(Threads)
-if(NOT Threads_FOUND QUIET)
+find_package(Threads QUIET)
+if(NOT Threads_FOUND)
+  if(DART_VERBOSE)
+    message(STATUS "Failed to find Threads. humanJointLimits is disabled.")
+  endif()
   return()
 endif()
 
