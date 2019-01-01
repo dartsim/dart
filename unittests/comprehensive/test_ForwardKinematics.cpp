@@ -181,7 +181,7 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_PARTIAL_CHANGE)
   SkeletonPtr skeleton1 =
       loader.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
 
-  SkeletonPtr skeleton2 = skeleton1->clone();
+  SkeletonPtr skeleton2 = skeleton1->cloneSkeleton();
 
   std::vector<std::size_t> active_indices;
   for(std::size_t i=0; i < 3; ++i)
@@ -225,7 +225,7 @@ TEST(FORWARD_KINEMATICS, JACOBIAN_END_EFFECTOR_CHANGE)
   BodyNode* last_bn1 = skeleton1->getBodyNode(skeleton1->getNumBodyNodes()-1);
   EndEffector* ee1 = last_bn1->createEndEffector();
 
-  SkeletonPtr skeleton2 = skeleton1->clone();
+  SkeletonPtr skeleton2 = skeleton1->cloneSkeleton();
   BodyNode* last_bn2 = skeleton2->getBodyNode(skeleton2->getNumBodyNodes()-1);
   EndEffector* ee2 = last_bn2->createEndEffector();
 

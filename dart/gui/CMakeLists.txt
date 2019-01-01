@@ -97,15 +97,10 @@ set(
   ${header_names}
   glut/glut.hpp
 )
-dart_generate_include_header_list(
-  gui_headers
+dart_generate_include_header_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/gui.hpp"
   "dart/gui/"
-  "gui headers"
   ${header_names}
-)
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/gui.hpp.in
-  ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp
 )
 
 # Install

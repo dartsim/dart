@@ -4,11 +4,13 @@
 
 * Build system
 
-  * Fix compilation warnings for newer versions of compilers: [#1177](https://github.com/dartsim/dart/pull/1177)
+  * Fixed compilation warnings for newer versions of compilers: [#1177](https://github.com/dartsim/dart/pull/1177)
+  * Changed to generate namespace headers without requiring *.hpp.in files: [#1192](https://github.com/dartsim/dart/pull/1192)
 
 * Collision Detection
 
   * CollisionGroups will automatically update their objects when any changes occur to Skeletons or BodyNodes that they are subscribed to: [#1112](https://github.com/dartsim/dart/pull/1112)
+  * Contact points with negative penetration depth will be ignored: [#1185](https://github.com/dartsim/dart/pull/1185)
 
 * Math
 
@@ -18,6 +20,7 @@
 
   * Refactor constraint solver: [#1099](https://github.com/dartsim/dart/pull/1099), [#1101](https://github.com/dartsim/dart/pull/1101)
   * Added mimic joint functionality as a new actuator type: [#1178](https://github.com/dartsim/dart/pull/1178)
+  * Added clone function to MetaSkeleton: [#1201](https://github.com/dartsim/dart/pull/1201)
 
 * Optimization
 
@@ -26,6 +29,10 @@
 * GUI
 
   * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)
+
+* Misc
+
+  * Remove gtest source code from DART codebase: [#1205](https://github.com/dartsim/dart/pull/1205)
 
 ### [DART 6.6.2 (2018-09-03)](https://github.com/dartsim/dart/milestone/47?closed=1)
 
@@ -299,7 +306,7 @@
 
 * Common data structures
 
-  * Added `Node`, `Aspect`, `State`, and `Properties`: [#713](https://github.com/dartsim/dart/pull/713), [#712](https://github.com/dartsim/dart/issues/712), [#708](https://github.com/dartsim/dart/pull/708), [#707](https://github.com/dartsim/dart/pull/707), [#659](https://github.com/dartsim/dart/pull/659), [#649](https://github.com/dartsim/dart/pull/649), [#645](https://github.com/dartsim/dart/issues/645), [#607](https://github.com/dartsim/dart/pull/607), [#598](https://github.com/dartsim/dart/pull/598), [#591](https://github.com/dartsim/dart/pull/591), [#531](https://github.com/dartsim/dart/pull/531) 
+  * Added `Node`, `Aspect`, `State`, and `Properties`: [#713](https://github.com/dartsim/dart/pull/713), [#712](https://github.com/dartsim/dart/issues/712), [#708](https://github.com/dartsim/dart/pull/708), [#707](https://github.com/dartsim/dart/pull/707), [#659](https://github.com/dartsim/dart/pull/659), [#649](https://github.com/dartsim/dart/pull/649), [#645](https://github.com/dartsim/dart/issues/645), [#607](https://github.com/dartsim/dart/pull/607), [#598](https://github.com/dartsim/dart/pull/598), [#591](https://github.com/dartsim/dart/pull/591), [#531](https://github.com/dartsim/dart/pull/531)
   * Added mathematical constants and user-defined literals for radian, degree, and pi: [#669](https://github.com/dartsim/dart/pull/669), [#314](https://github.com/dartsim/dart/issues/314)
   * Added `ShapeFrame` and `ShapeNode`: [#608](https://github.com/dartsim/dart/pull/608)
   * Added `BoundingBox`: [#547](https://github.com/dartsim/dart/pull/547), [#546](https://github.com/dartsim/dart/issues/546)
@@ -402,7 +409,7 @@
 
 ### Version 5.1.6 (2017-08-08)
 
-1. Improved camera movement of OpenGL GUI: smooth zooming and translation 
+1. Improved camera movement of OpenGL GUI: smooth zooming and translation
     * [Pull request #843](https://github.com/dartsim/dart/pull/843)
 
 2. Removed debian meta files from the main DART repository

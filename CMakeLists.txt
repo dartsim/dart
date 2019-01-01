@@ -24,6 +24,12 @@ if(POLICY CMP0053)
   cmake_policy(SET CMP0053 NEW)
 endif()
 
+# Stick to the legacy GL library until we need GLVND
+# (see: https://cmake.org/cmake/help/git-stage/policy/CMP0072.html)
+if(POLICY CMP0072)
+  cmake_policy(SET CMP0072 OLD)
+endif()
+
 # Variables used in Components.cmake
 set(INCLUDE_INSTALL_DIR "include")
 set(LIBRARY_INSTALL_DIR "lib")
@@ -425,13 +431,14 @@ find_program(
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
 list(LENGTH formatting_files formatting_files_length)
-message(STATUS "Formatting on ${formatting_files_length} source files.")
 
 if(CLANG_FORMAT_EXECUTABLE)
 
   if(DART_VERBOSE)
     message(STATUS "Looking for clang-format - found")
   endif()
+
+  message(STATUS "Formatting on ${formatting_files_length} source files.")
 
   if(formatting_files)
     add_custom_target(format
@@ -457,7 +464,9 @@ if(CLANG_FORMAT_EXECUTABLE)
 
 else()
 
-  message(STATUS "Looking for clang-format - NOT found, please install clang-format to enable automatic code formatting")
+  if(DART_VERBOSE)
+    message(STATUS "Looking for clang-format - NOT found, please install clang-format to enable automatic code formatting")
+  endif()
 
 endif()
 

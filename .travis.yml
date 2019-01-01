@@ -7,6 +7,12 @@ dist: trusty
 cache:
   apt: true
 
+env:
+  global:
+    - IS_PULL_REQUEST=$TRAVIS_PULL_REQUEST
+    - OS_NAME=$TRAVIS_OS_NAME
+    - BUILD_DIR=$TRAVIS_BUILD_DIR
+
 matrix:
   include:
     - os: linux
@@ -27,59 +33,59 @@ matrix:
     - os: linux
       env:
         - BUILD_NAME=XENIAL_DEBUG
-        - DOCKER_FILE="ubuntu-xenial"
+        - DOCKERFILE="Dockerfile.ubuntu-xenial"
         - BUILD_TYPE=Debug
         - COMPILER=GCC
       services: docker
     - os: linux
       env:
         - BUILD_NAME=XENIAL_RELEASE
-        - DOCKER_FILE="ubuntu-xenial"
+        - DOCKERFILE="Dockerfile.ubuntu-xenial"
         - BUILD_TYPE=Release
         - COMPILER=GCC
       services: docker
     - os: linux
       env:
         - BUILD_NAME=BIONIC_DEBUG
-        - DOCKER_FILE="ubuntu-bionic"
+        - DOCKERFILE="Dockerfile.ubuntu-bionic"
         - BUILD_TYPE=Debug
         - COMPILER=GCC
       services: docker
     - os: linux
       env:
         - BUILD_NAME=BIONIC_RELEASE
-        - DOCKER_FILE="ubuntu-bionic"
+        - DOCKERFILE="Dockerfile.ubuntu-bionic"
         - BUILD_TYPE=Release
         - COMPILER=GCC
       services: docker
     - os: linux
       env:
         - BUILD_NAME=COSMIC_DEBUG
-        - DOCKER_FILE="ubuntu-cosmic"
+        - DOCKERFILE="Dockerfile.ubuntu-cosmic"
         - BUILD_TYPE=Debug
         - COMPILER=GCC
       services: docker
     - os: linux
       env:
         - BUILD_NAME=COSMIC_RELEASE
-        - DOCKER_FILE="ubuntu-cosmic"
+        - DOCKERFILE="Dockerfile.ubuntu-cosmic"
         - BUILD_TYPE=Release
         - COMPILER=GCC
       services: docker
-    - os: osx
-      osx_image: xcode9.4
-      compiler: clang
-      env:
-        - BUILD_NAME=XCODE94_DEBUG
-        - BUILD_TYPE=Debug
-        - COMPILER=CLANG
-    - os: osx
-      osx_image: xcode9.4
-      compiler: clang
-      env:
-        - BUILD_NAME=XCODE94_RELEASE
-        - BUILD_TYPE=Release
-        - COMPILER=CLANG
+    # - os: osx
+    #   osx_image: xcode9.4
+    #   compiler: clang
+    #   env:
+    #     - BUILD_NAME=XCODE94_DEBUG
+    #     - BUILD_TYPE=Debug
+    #     - COMPILER=CLANG
+    # - os: osx
+    #   osx_image: xcode9.4
+    #   compiler: clang
+    #   env:
+    #     - BUILD_NAME=XCODE94_RELEASE
+    #     - BUILD_TYPE=Release
+    #     - COMPILER=CLANG
     - os: linux
       compiler: gcc
       env:
@@ -89,15 +95,16 @@ matrix:
         - COMPILER=GCC
 
 install:
-  - if [ -n "$DOCKER_FILE" ]; then
-      docker build -t "$DOCKER_FILE" -f ".ci/docker/$DOCKER_FILE" .;
-      docker run -itd -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR --env-file .ci/env.list --name dart-docker "$DOCKER_FILE";
+  - if [ -n "$DOCKERFILE" ]; then
+      docker build -t "${DOCKERFILE,,}" -f ".ci/docker/$DOCKERFILE" .;
+      docker run -itd -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR --env-file .ci/docker/env.list --name dart-docker "${DOCKERFILE,,}";
+      docker exec dart-docker /bin/sh -c "cd $TRAVIS_BUILD_DIR && ./.ci/install.sh";
     else
       '.ci/install.sh';
     fi
 
 script:
-  - if [ -n "$DOCKER_FILE" ]; then
+  - if [ -n "$DOCKERFILE" ]; then
       docker exec dart-docker /bin/sh -c "cd $TRAVIS_BUILD_DIR && ./.ci/script.sh";
     else
       '.ci/script.sh';

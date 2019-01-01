@@ -6,15 +6,10 @@ dart_add_core_sources(${srcs})
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "lcpsolver headers" ${hdrs})
-dart_generate_include_header_list(
-  lcpsolver_headers
+dart_generate_include_header_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.hpp"
   "dart/lcpsolver/"
-  "lcpsolver headers"
   ${header_names}
-)
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/lcpsolver.hpp.in
-  ${CMAKE_CURRENT_BINARY_DIR}/lcpsolver.hpp
 )
 
 # Install
