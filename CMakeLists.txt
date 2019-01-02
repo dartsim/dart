@@ -188,6 +188,9 @@ if(MSVC)
   add_compile_options(/wd4305)
   add_compile_options(/wd4838)
   add_compile_options(/bigobj)
+  if(MSVC_VERSION GREATER_EQUAL 1915)
+    add_compile_definitions(_ENABLE_EXTENDED_ALIGNED_STORAGE)
+  endif()
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 
