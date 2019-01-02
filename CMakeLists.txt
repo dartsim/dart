@@ -289,12 +289,20 @@ if(TARGET dart)
 
   # Add a "tests" target to build unit tests.
   enable_testing()
-  add_subdirectory(unittests EXCLUDE_FROM_ALL)
+  if(MSVC)
+    add_subdirectory(unittests)
+  else()
+    add_subdirectory(unittests EXCLUDE_FROM_ALL)
+  endif()
 
   # Add example subdirectories and an "examples" target.
-  add_subdirectory(examples EXCLUDE_FROM_ALL)
-  get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
-  add_custom_target(examples DEPENDS ${examples})
+  if(MSVC)
+    add_subdirectory(examples)
+  else()
+    add_subdirectory(examples EXCLUDE_FROM_ALL)
+    get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
+    add_custom_target(examples DEPENDS ${examples})
+  endif()
 
   if(DART_VERBOSE)
     message(STATUS "")
@@ -308,9 +316,13 @@ if(TARGET dart)
   endif(DART_VERBOSE)
 
   # Add a "tutorials" target to build tutorials.
-  add_subdirectory(tutorials EXCLUDE_FROM_ALL)
-  get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
-  add_custom_target(tutorials DEPENDS ${tutorials})
+  if(MSVC)
+    add_subdirectory(tutorials)
+  else()
+    add_subdirectory(tutorials EXCLUDE_FROM_ALL)
+    get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
+    add_custom_target(tutorials DEPENDS ${tutorials})
+  endif()
 
   if(DART_VERBOSE)
     message(STATUS "")
