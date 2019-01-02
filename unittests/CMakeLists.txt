@@ -57,19 +57,9 @@ function(dart_add_test test_type target_name) # ARGN for source files
   add_executable(${target_name} ${sources})
   add_test(${target_name} ${target_name})
 
-  if(MSVC)
-    target_link_libraries(${target_name}
-      optimized ${GTEST_MAIN_LIBRARY}
-      debug ${GTEST_MAIN_LIBRARY}${CMAKE_DEBUG_POSTFIX}
-      optimized ${GTEST_LIBRARY}
-      debug ${GTEST_LIBRARY}${CMAKE_DEBUG_POSTFIX}
-      dart
-    )
-  else()
-    target_link_libraries(${target_name}
-      ${GTEST_MAIN_LIBRARY} ${GTEST_LIBRARY} dart
-    )
-  endif()
+  target_link_libraries(${target_name}
+    ${GTEST_MAIN_LIBRARY} ${GTEST_LIBRARY} dart
+  )
 
 endfunction()
 
