@@ -122,6 +122,23 @@ function(add_component_dependencies package_name component)
 endfunction()
 
 #==============================================================================
+function(add_component_dependency_packages package_name component)
+  set(component_prefix "${package_name}_component_")
+  set(dependency_package ${ARGN})
+
+  is_component(is_valid ${package_name} "${component}")
+  if(NOT ${is_valid})
+    message(FATAL_ERROR
+      "Target '${component}' is not a component of ${package_name}.")
+  endif()
+
+  set(target "${component_prefix}${component}")
+
+  set_property(TARGET "${target}" APPEND
+    PROPERTY "${component_prefix}dependency_package" ${dependency_package})
+endfunction()
+
+#==============================================================================
 function(add_component_targets package_name component)
   set(component_prefix "${package_name}_component_")
   set(dependency_targets ${ARGN})
@@ -184,6 +201,25 @@ function(install_component_exports package_name)
       PROPERTY "${component_prefix}LIBRARIES")
     file(APPEND "${output_path}"
       "set(\"${package_name}_${component}_LIBRARIES\" ${libraries})\n")
+
+    get_property(dependency_package TARGET "${target}"
+      PROPERTY "${component_prefix}dependency_package")
+    foreach(dependent_package ${dependency_package})
+      set(findfile_name "DARTFind${dependent_package}.cmake")
+      set(findfile_path "")
+      foreach(module_path ${CMAKE_MODULE_PATH})
+        set(findfile_path_candidate "${module_path}/${findfile_name}")
+        if(EXISTS "${findfile_path_candidate}")
+          set(findfile_path ${findfile_path_candidate})
+          break()
+        endif()
+      endforeach()
+      if("${findfile_path}" STREQUAL "")
+        message(FATAL_ERROR "Failed to find '${findfile_path}'.")
+      endif()
+      file(APPEND "${output_path}" "include(\${CMAKE_CURRENT_LIST_DIR}/${findfile_name})\n")
+      install(FILES "${findfile_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
+    endforeach()
 
     install(FILES "${output_path}"
       DESTINATION "${CONFIG_INSTALL_DIR}")
