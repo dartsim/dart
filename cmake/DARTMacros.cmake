@@ -77,9 +77,9 @@ endmacro()
 # Usage:
 #   dart_add_library(_libname source1 [source2 ...])
 #===============================================================================
-function(dart_find_package _name)
+macro(dart_find_package _name)
   include(DARTFind${_name})
-endfunction()
+endmacro()
 
 #===============================================================================
 # Add library and set target properties
