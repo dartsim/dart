@@ -121,7 +121,6 @@ dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
 target_include_directories(
   dart SYSTEM
   PUBLIC
-    ${EIGEN3_INCLUDE_DIRS}
     ${CCD_INCLUDE_DIRS}
     ${FCL_INCLUDE_DIRS}
     ${ASSIMP_INCLUDE_DIRS}
@@ -132,6 +131,7 @@ target_link_libraries(
   dart
   PUBLIC
     ${CMAKE_DL_LIBS}
+    Eigen3::Eigen
     ${CCD_LIBRARIES}
     ${FCL_LIBRARIES}
     ${ASSIMP_LIBRARIES}

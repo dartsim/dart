@@ -10,7 +10,7 @@ if(DART_VERBOSE)
 endif()
 
 # Eigen
-find_package(EIGEN3 3.0.5 REQUIRED)
+dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")
 
 # CCD
