@@ -160,16 +160,9 @@ if(DART_ENABLE_SIMD)
 endif()
 
 # Default component
-add_component_targets(
-  ${PROJECT_NAME}
-  dart # component name
-  dart # target name
-)
-add_component_dependencies(
-  ${PROJECT_NAME}
-  dart
-  external-odelcpsolver
-)
+add_component_targets(${PROJECT_NAME} dart dart)
+add_component_dependencies(${PROJECT_NAME} dart external-odelcpsolver)
+add_component_dependency_packages(${PROJECT_NAME} dart Eigen3)
 
 if(MSVC)
   set_target_properties(
