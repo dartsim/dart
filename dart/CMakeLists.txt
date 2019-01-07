@@ -121,7 +121,6 @@ dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
 target_include_directories(
   dart SYSTEM
   PUBLIC
-    ${CCD_INCLUDE_DIRS}
     ${FCL_INCLUDE_DIRS}
     ${ASSIMP_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
@@ -132,7 +131,7 @@ target_link_libraries(
   PUBLIC
     ${CMAKE_DL_LIBS}
     Eigen3::Eigen
-    ${CCD_LIBRARIES}
+    ccd
     ${FCL_LIBRARIES}
     ${ASSIMP_LIBRARIES}
     ${Boost_LIBRARIES}
@@ -162,7 +161,9 @@ endif()
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
 add_component_dependencies(${PROJECT_NAME} dart external-odelcpsolver)
-add_component_dependency_packages(${PROJECT_NAME} dart Eigen3)
+add_component_dependency_packages(${PROJECT_NAME} dart
+  Eigen3 CCD
+)
 
 if(MSVC)
   set_target_properties(
