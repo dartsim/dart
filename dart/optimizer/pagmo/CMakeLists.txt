@@ -1,6 +1,11 @@
 # Dependency checks
 dart_find_package(pagmo)
 dart_check_optional_package(pagmo "dart-optimizer-pagmo" "pagmo" "2.8")
+if(pagmo_FOUND)
+  set(HAVE_PAGMO TRUE CACHE BOOL "Check if pagmo found." FORCE)
+else()
+  set(HAVE_PAGMO FALSE CACHE BOOL "Check if pagmo found." FORCE)
+endif()
 
 find_package(Threads REQUIRED)
 dart_check_optional_package(Threads "dart-optimizer-pagmo" "Threads" "")
