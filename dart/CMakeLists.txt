@@ -121,7 +121,6 @@ dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
 target_include_directories(
   dart SYSTEM
   PUBLIC
-    ${ASSIMP_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${OCTOMAP_INCLUDE_DIRS}
 )
@@ -132,7 +131,7 @@ target_link_libraries(
     Eigen3::Eigen
     ccd
     fcl
-    ${ASSIMP_LIBRARIES}
+    assimp
     ${Boost_LIBRARIES}
     ${PROJECT_NAME}-external-odelcpsolver
     ${OCTOMAP_LIBRARIES}
@@ -161,7 +160,7 @@ endif()
 add_component_targets(${PROJECT_NAME} dart dart)
 add_component_dependencies(${PROJECT_NAME} dart external-odelcpsolver)
 add_component_dependency_packages(${PROJECT_NAME} dart
-  Eigen3 ccd
+  Eigen3 ccd fcl assimp
 )
 
 if(MSVC)

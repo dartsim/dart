@@ -22,8 +22,8 @@ dart_find_package(fcl)
 dart_check_required_package(fcl "fcl")
 
 # ASSIMP
-find_package(ASSIMP 3.0.0 REQUIRED)
-dart_check_required_package(ASSIMP "assimp")
+dart_find_package(assimp)
+dart_check_required_package(assimp "assimp")
 if(ASSIMP_FOUND)
   # Check for missing symbols in ASSIMP (see #451)
   include(CheckCXXSourceCompiles)
