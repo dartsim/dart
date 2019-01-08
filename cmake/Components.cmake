@@ -227,7 +227,6 @@ function(install_component_exports package_name)
       endif()
       file(APPEND "${output_path}" "include(\${CMAKE_CURRENT_LIST_DIR}/${dart_find_pkg_name})\n")
       install(FILES "${dart_find_pkg_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
-
     endforeach()
 
     install(FILES "${output_path}"
