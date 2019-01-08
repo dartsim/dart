@@ -121,21 +121,23 @@ dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
 target_include_directories(
   dart SYSTEM
   PUBLIC
-    ${Boost_INCLUDE_DIRS}
     ${OCTOMAP_INCLUDE_DIRS}
 )
-target_link_libraries(
-  dart
+target_link_libraries(dart
   PUBLIC
     ${CMAKE_DL_LIBS}
     Eigen3::Eigen
     ccd
     fcl
     assimp
-    ${Boost_LIBRARIES}
+    Boost::system
+    Boost::filesystem
     ${PROJECT_NAME}-external-odelcpsolver
     ${OCTOMAP_LIBRARIES}
 )
+if(NOT MSVC)
+  target_link_libraries(dart PUBLIC Boost::regex)
+endif()
 
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
@@ -160,7 +162,7 @@ endif()
 add_component_targets(${PROJECT_NAME} dart dart)
 add_component_dependencies(${PROJECT_NAME} dart external-odelcpsolver)
 add_component_dependency_packages(${PROJECT_NAME} dart
-  Eigen3 ccd fcl assimp
+  Eigen3 ccd fcl assimp Boost
 )
 
 if(MSVC)
