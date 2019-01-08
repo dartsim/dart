@@ -14,7 +14,7 @@
 # CCD_LIBRARIES
 # CCD_VERSION
 
-find_package(CCD QUIET CONFIG)
+find_package(ccd QUIET CONFIG)
 # Upstream provide ccd-config.cmake since 2.1.
 
 if(NOT CCD_FOUND)

@@ -14,8 +14,8 @@ dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")
 
 # CCD
-find_package(CCD 1.4.0 REQUIRED)
-dart_check_required_package(CCD "libccd")
+find_package(ccd 1.4.0 REQUIRED)
+dart_check_required_package(ccd "libccd")
 
 # FCL
 find_package(FCL 0.2.9 REQUIRED)
