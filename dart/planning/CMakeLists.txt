@@ -1,6 +1,6 @@
 # Dependency checks
 dart_find_package(flann)
-dart_check_optional_package(flann "dart-planning" "flann" "1.8.4")
+dart_check_optional_package(FLANN "dart-planning" "flann" "1.8.4")
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
