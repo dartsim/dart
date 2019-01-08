@@ -6,7 +6,17 @@
 #
 # This file is provided under the "BSD-style" License
 
+cmake_policy(PUSH)
+
+# Stick to the legacy GL library until we need GLVND
+# (see: https://cmake.org/cmake/help/git-stage/policy/CMP0072.html)
+if(POLICY CMP0072)
+  cmake_policy(SET CMP0072 OLD)
+endif()
+
 find_package(OpenGL QUIET)
+
+cmake_policy(POP)
 
 if(OPENGL_FOUND AND NOT TARGET OpenGL::GL)
   add_library(OpenGL::GL INTERFACE IMPORTED)
