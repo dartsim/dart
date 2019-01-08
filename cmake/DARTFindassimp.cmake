@@ -8,10 +8,7 @@
 
 find_package(assimp REQUIRED)
 
-# Read version from PC file
-find_package(PkgConfig QUIET)
-pkg_check_modules(PC_ASSIMP assimp QUIET)
-set(ASSIMP_VERSION ${PC_ASSIMP_VERSION})
+set(ASSIMP_VERSION ${assimp_VERSION})
 
 # Manually check version because the upstream version compatibility policy
 # doesn't allow different major number while DART is compatible any version

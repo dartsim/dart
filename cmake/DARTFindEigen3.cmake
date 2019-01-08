@@ -18,7 +18,7 @@ endif()
 
 # Set target Eigen3::Eigen if not set
 # The target is not imported by upstream until 3.3.2
-if(EIGEN3_FOUND AND NOT TARGET Eigen3::Eigen)
+if(Eigen3_FOUND AND NOT TARGET Eigen3::Eigen)
   add_library(Eigen3::Eigen INTERFACE IMPORTED)
   set_target_properties(Eigen3::Eigen PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${EIGEN3_INCLUDE_DIRS}"
