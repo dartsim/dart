@@ -6,4 +6,4 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(CCD 2.0 REQUIRED)
+find_package(fcl 0.3.2 REQUIRED)

@@ -14,12 +14,12 @@ dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")
 
 # CCD
-find_package(ccd 1.4.0 REQUIRED)
+dart_find_package(ccd)
 dart_check_required_package(ccd "libccd")
 
 # FCL
-find_package(FCL 0.2.9 REQUIRED)
-dart_check_required_package(FCL "fcl")
+dart_find_package(fcl)
+dart_check_required_package(fcl "fcl")
 
 # ASSIMP
 find_package(ASSIMP 3.0.0 REQUIRED)

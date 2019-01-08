@@ -59,3 +59,13 @@ find_package_handle_standard_args(FCL
     REQUIRED_VARS FCL_INCLUDE_DIRS FCL_LIBRARIES
     VERSION_VAR   FCL_VERSION)
 
+# Set target fcl if not set
+# Upstream provides the target since 0.5.0 but some package managers don't
+# install the config file, which defines the target.
+if(FCL_FOUND AND NOT TARGET fcl)
+add_library(fcl INTERFACE IMPORTED)
+set_target_properties(ccd PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${FCL_INCLUDE_DIRS}"
+  INTERFACE_LINK_LIBRARIES "${FCL_LIBRARIES}"
+)
+endif()

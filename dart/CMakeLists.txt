@@ -121,7 +121,6 @@ dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
 target_include_directories(
   dart SYSTEM
   PUBLIC
-    ${FCL_INCLUDE_DIRS}
     ${ASSIMP_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${OCTOMAP_INCLUDE_DIRS}
@@ -132,7 +131,7 @@ target_link_libraries(
     ${CMAKE_DL_LIBS}
     Eigen3::Eigen
     ccd
-    ${FCL_LIBRARIES}
+    fcl
     ${ASSIMP_LIBRARIES}
     ${Boost_LIBRARIES}
     ${PROJECT_NAME}-external-odelcpsolver
