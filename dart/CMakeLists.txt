@@ -118,20 +118,22 @@ get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 
 # Add target
 dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
-#target_include_directories(
-#  dart SYSTEM
-#  PUBLIC
-#)
+target_include_directories(dart BEFORE
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+    $<INSTALL_INTERFACE:include>
+)
 target_link_libraries(dart
   PUBLIC
     ${CMAKE_DL_LIBS}
+    ${PROJECT_NAME}-external-odelcpsolver
     Eigen3::Eigen
     ccd
     fcl
     assimp
     Boost::system
     Boost::filesystem
-    ${PROJECT_NAME}-external-odelcpsolver
     octomap
 )
 if(NOT MSVC)
