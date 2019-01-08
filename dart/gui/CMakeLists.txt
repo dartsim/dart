@@ -50,6 +50,7 @@ target_link_libraries(${target_name}
   PUBLIC
     dart-utils
     GLUT::GLUT
+    OpenGL::GLU
     OpenGL::GL
     ${PROJECT_NAME}-external-lodepng
     ${PROJECT_NAME}-external-imgui
