@@ -315,6 +315,12 @@ static double getValueFromIndex(const MetaSkeleton* skel, std::size_t _index,
 }
 
 //==============================================================================
+MetaSkeletonPtr MetaSkeleton::cloneMetaSkeleton() const
+{
+  return cloneMetaSkeleton(getName());
+}
+
+//==============================================================================
 void MetaSkeleton::setCommand(std::size_t _index, double _command)
 {
   setValueFromIndex<&DegreeOfFreedom::setCommand>(

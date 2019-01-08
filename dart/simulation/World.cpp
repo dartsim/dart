@@ -101,7 +101,7 @@ WorldPtr World::clone() const
   // Clone and add each Skeleton
   for(std::size_t i=0; i<mSkeletons.size(); ++i)
   {
-    worldClone->addSkeleton(mSkeletons[i]->clone());
+    worldClone->addSkeleton(mSkeletons[i]->cloneSkeleton());
   }
 
   // Clone and add each SimpleFrame
