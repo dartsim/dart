@@ -9,10 +9,13 @@
 # Find FLANN
 #
 # This sets the following variables:
-# FLANN_FOUND
-# FLANN_INCLUDE_DIRS
-# FLANN_LIBRARIES
-# FLANN_VERSION
+#   FLANN_FOUND
+#   FLANN_INCLUDE_DIRS
+#   FLANN_LIBRARIES
+#   FLANN_VERSION
+#
+# and the following targets:
+#   flann
 
 find_package(PkgConfig QUIET)
 
@@ -38,3 +41,11 @@ find_package_handle_standard_args(FLANN
     FAIL_MESSAGE  DEFAULT_MSG
     REQUIRED_VARS FLANN_INCLUDE_DIRS FLANN_LIBRARIES
     VERSION_VAR   FLANN_VERSION)
+
+if(FLANN_FOUND AND NOT TARGET flann)
+  add_library(flann INTERFACE IMPORTED)
+  set_target_properties(flann PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${FLANN_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${FLANN_LIBRARIES}"
+  )
+endif()

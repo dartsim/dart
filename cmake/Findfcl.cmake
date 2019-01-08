@@ -9,10 +9,13 @@
 # Find FCL
 #
 # This sets the following variables:
-# FCL_FOUND
-# FCL_INCLUDE_DIRS
-# FCL_LIBRARIES
-# FCL_VERSION
+#   FCL_FOUND
+#   FCL_INCLUDE_DIRS
+#   FCL_LIBRARIES
+#   FCL_VERSION
+#
+# and the following targets:
+#   fcl
 
 find_package(PkgConfig QUIET)
 
@@ -63,9 +66,9 @@ find_package_handle_standard_args(FCL
 # Upstream provides the target since 0.5.0 but some package managers don't
 # install the config file, which defines the target.
 if(FCL_FOUND AND NOT TARGET fcl)
-add_library(fcl INTERFACE IMPORTED)
-set_target_properties(ccd PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "${FCL_INCLUDE_DIRS}"
-  INTERFACE_LINK_LIBRARIES "${FCL_LIBRARIES}"
-)
+  add_library(fcl INTERFACE IMPORTED)
+  set_target_properties(ccd PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${FCL_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${FCL_LIBRARIES}"
+  )
 endif()

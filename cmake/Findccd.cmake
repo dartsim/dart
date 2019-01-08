@@ -9,10 +9,13 @@
 # Find CCD
 #
 # This sets the following variables:
-# CCD_FOUND
-# CCD_INCLUDE_DIRS
-# CCD_LIBRARIES
-# CCD_VERSION
+#   CCD_FOUND
+#   CCD_INCLUDE_DIRS
+#   CCD_LIBRARIES
+#   CCD_VERSION
+#
+# and the following targets:
+#   ccd
 
 find_package(ccd QUIET CONFIG)
 # Upstream provide ccd-config.cmake since 2.1.

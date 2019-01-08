@@ -144,12 +144,6 @@ endif()
 include(DARTFindDependencies)
 
 #===============================================================================
-# Include directories
-#===============================================================================
-#include_directories(BEFORE ${PROJECT_SOURCE_DIR})
-#include_directories("${CMAKE_BINARY_DIR}")
-
-#===============================================================================
 # Check for non-case-sensitive filesystems
 #===============================================================================
 execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/case_sensitive_filesystem
