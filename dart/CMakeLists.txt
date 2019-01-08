@@ -118,11 +118,10 @@ get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 
 # Add target
 dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
-target_include_directories(
-  dart SYSTEM
-  PUBLIC
-    ${OCTOMAP_INCLUDE_DIRS}
-)
+#target_include_directories(
+#  dart SYSTEM
+#  PUBLIC
+#)
 target_link_libraries(dart
   PUBLIC
     ${CMAKE_DL_LIBS}
@@ -133,7 +132,7 @@ target_link_libraries(dart
     Boost::system
     Boost::filesystem
     ${PROJECT_NAME}-external-odelcpsolver
-    ${OCTOMAP_LIBRARIES}
+    octomap
 )
 if(NOT MSVC)
   target_link_libraries(dart PUBLIC Boost::regex)

@@ -88,7 +88,8 @@ endif()
 # Boost
 dart_find_package(Boost)
 
-find_package(octomap 1.6.8 QUIET)
+# octomap
+dart_find_package(octomap)
 if (octomap_FOUND AND NOT MSVC)
   if (MSVC)
     # Supporting Octomap on Windows is disabled for the following issue:
