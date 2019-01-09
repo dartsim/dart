@@ -115,6 +115,8 @@ endfunction()
 
 #===============================================================================
 function(dart_check_required_package variable dependency)
+  # TODO: Take version for the case that the version variable is not
+  # <package>_VERSION
   if(${${variable}_FOUND})
     if(DART_VERBOSE)
       message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"

@@ -16,21 +16,6 @@ env:
 matrix:
   include:
     - os: linux
-      compiler: gcc
-      env:
-        - BUILD_NAME=TRUSTY_DEBUG
-        - SUDO=sudo
-        - BUILD_TYPE=Debug
-        - COMPILER=GCC
-        - BUILD_ONLY_ON_PULL_REQUEST=ON
-    - os: linux
-      compiler: gcc
-      env:
-        - BUILD_NAME=TRUSTY_RELEASE
-        - SUDO=sudo
-        - BUILD_TYPE=Release
-        - COMPILER=GCC
-    - os: linux
       env:
         - BUILD_NAME=XENIAL_DEBUG
         - DOCKERFILE="Dockerfile.ubuntu-xenial"

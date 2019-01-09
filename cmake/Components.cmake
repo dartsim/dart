@@ -26,8 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# CMake 2.8.12 or above is required for CMakeParseArguments.
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5.1)
 
 include(CMakeParseArguments)
 
@@ -205,20 +204,28 @@ function(install_component_exports package_name)
     get_property(dependency_package TARGET "${target}"
       PROPERTY "${component_prefix}dependency_package")
     foreach(dependent_package ${dependency_package})
-      set(findfile_name "DARTFind${dependent_package}.cmake")
-      set(findfile_path "")
+      set(find_pkg_name "Find${dependent_package}.cmake")
+      set(find_pkg_path "")
+      set(dart_find_pkg_name "DARTFind${dependent_package}.cmake")
+      set(dart_find_pkg_path "")
       foreach(module_path ${CMAKE_MODULE_PATH})
-        set(findfile_path_candidate "${module_path}/${findfile_name}")
-        if(EXISTS "${findfile_path_candidate}")
-          set(findfile_path ${findfile_path_candidate})
-          break()
+        set(find_pkg_path_candidate "${module_path}/${find_pkg_name}")
+        set(dart_find_pkg_path_candidate "${module_path}/${dart_find_pkg_name}")
+        if("${find_pkg_path}" STREQUAL "" AND EXISTS "${find_pkg_path_candidate}")
+          set(find_pkg_path ${find_pkg_path_candidate})
+        endif()
+        if("${dart_find_pkg_path}" STREQUAL "" AND EXISTS "${dart_find_pkg_path_candidate}")
+          set(dart_find_pkg_path ${dart_find_pkg_path_candidate})
         endif()
       endforeach()
-      if("${findfile_path}" STREQUAL "")
-        message(FATAL_ERROR "Failed to find '${findfile_path}'.")
+      if(NOT "${find_pkg_path}" STREQUAL "")
+        install(FILES "${find_pkg_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
       endif()
-      file(APPEND "${output_path}" "include(\${CMAKE_CURRENT_LIST_DIR}/${findfile_name})\n")
-      install(FILES "${findfile_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
+      if("${dart_find_pkg_path}" STREQUAL "")
+        message(FATAL_ERROR "Failed to find '${dart_find_pkg_path}'.")
+      endif()
+      file(APPEND "${output_path}" "include(\${CMAKE_CURRENT_LIST_DIR}/${dart_find_pkg_name})\n")
+      install(FILES "${dart_find_pkg_path}" DESTINATION "${CONFIG_INSTALL_DIR}")
     endforeach()
 
     install(FILES "${output_path}"
