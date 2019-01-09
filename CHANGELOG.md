@@ -33,7 +33,7 @@
 
 * Misc
 
-  * Remove gtest source code from DART codebase: [#1205](https://github.com/dartsim/dart/pull/1205)
+  * Updated Googletest to version 1.8.1: [#1214](https://github.com/dartsim/dart/pull/1214)
 
 ### [DART 6.6.2 (2018-09-03)](https://github.com/dartsim/dart/milestone/47?closed=1)
 

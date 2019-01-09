@@ -1,6 +1,5 @@
-include(GoogleTest)
-
-include_directories(BEFORE SYSTEM ${GTEST_INCLUDE_DIRS})
+include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/unittests/gtest/include)
+include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/unittests/gtest)
 
 function(dartc_add_test test_type target_name) # ARGN for source files
 
