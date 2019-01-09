@@ -21,7 +21,7 @@ endif()
 
 # Set target assimp if not set
 # The target is not imported by upstream until 4.1
-if(ASSIMP_FOUND AND NOT TARGET assimp)
+if(assimp_FOUND AND NOT TARGET assimp)
   add_library(assimp INTERFACE IMPORTED)
   set_target_properties(assimp PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${ASSIMP_INCLUDE_DIRS}"

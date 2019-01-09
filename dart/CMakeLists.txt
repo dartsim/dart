@@ -132,6 +132,7 @@ target_link_libraries(dart
     ccd
     fcl
     assimp
+    Boost::boost
     Boost::system
     Boost::filesystem
     octomap
