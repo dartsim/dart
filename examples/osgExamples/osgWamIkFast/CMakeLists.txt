@@ -9,10 +9,6 @@ project(osgWamIkfast)
 
 find_package(DART 6.6.0 REQUIRED COMPONENTS utils-urdf gui-osg)
 
-add_compile_options(-std=c++11)
-
-include_directories(${DART_INCLUDE_DIRS})
-
 add_subdirectory(ikfast)
 
 file(GLOB srcs "*.cpp" "*.hpp")
