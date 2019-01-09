@@ -140,11 +140,7 @@ if(NOT MSVC)
   target_link_libraries(dart PUBLIC Boost::regex)
 endif()
 if(CMAKE_VERSION VERSION_LESS 3.8.2)
-  set_target_properties(dart PROPERTIES
-    CXX_STANDARD 11
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF  # use -std=c++11 instead of -std=gnu++11
-  )
+  target_compile_options(dart PUBLIC -std=c++11)
 else()
   target_compile_features(dart PUBLIC cxx_std_11)
 endif()

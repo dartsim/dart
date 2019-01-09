@@ -13,11 +13,7 @@ target_include_directories(${target_name}
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
 )
 if(CMAKE_VERSION VERSION_LESS 3.8.2)
-  set_target_properties(${target_name} PROPERTIES
-    CXX_STANDARD 11
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF  # use -std=c++11 instead of -std=gnu++11
-  )
+  target_compile_options(${target_name} PUBLIC -std=c++11)
 else()
   target_compile_features(${target_name} PUBLIC cxx_std_11)
 endif()
