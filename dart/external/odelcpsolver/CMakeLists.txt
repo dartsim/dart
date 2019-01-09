@@ -12,7 +12,11 @@ target_include_directories(${target_name}
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
 )
-set_target_properties(${target_name} PROPERTIES CXX_STANDARD 11)
+set_target_properties(${target_name} PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS ON
+)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
