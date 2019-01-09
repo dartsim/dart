@@ -18,14 +18,18 @@ find_package(TinyDNN REQUIRED)
 
 find_package(Threads REQUIRED)
 
-target_compile_options(${PROJECT_NAME} PUBLIC -std=c++14)
-
-include_directories(${DART_INCLUDE_DIRS})
-
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${PROJECT_NAME} ${srcs})
-
-target_link_libraries(${PROJECT_NAME} ${DART_LIBRARIES} ${TinyDNN_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+    dart
+    dart-utils-urdf
+    dart-gui
+    dart-collision-ode
+    dart-collision-bullet
+    ${TinyDNN_LIBRARIES}
+)
+target_compile_features(dart PUBLIC cxx_std_14)
 
 # Thread
 if(THREADS_HAVE_PTHREAD_ARG)
