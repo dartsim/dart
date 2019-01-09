@@ -139,7 +139,7 @@ target_link_libraries(dart
 if(NOT MSVC)
   target_link_libraries(dart PUBLIC Boost::regex)
 endif()
-if(CMAKE_VERSION LESS 3.8.2)
+if(CMAKE_VERSION VERSION_LESS 3.8.2)
   set_target_properties(dart PROPERTIES
     CXX_STANDARD 11
     CXX_STANDARD_REQUIRED ON

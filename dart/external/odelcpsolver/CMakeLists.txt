@@ -12,7 +12,7 @@ target_include_directories(${target_name}
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
 )
-if(CMAKE_VERSION LESS 3.8.2)
+if(CMAKE_VERSION VERSION_LESS 3.8.2)
   set_target_properties(${target_name} PROPERTIES
     CXX_STANDARD 11
     CXX_STANDARD_REQUIRED ON
