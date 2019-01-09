@@ -139,11 +139,15 @@ target_link_libraries(dart
 if(NOT MSVC)
   target_link_libraries(dart PUBLIC Boost::regex)
 endif()
-set_target_properties(dart PROPERTIES
-  CXX_STANDARD 11
-  CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS ON
-)
+if(CMAKE_VERSION LESS 3.8.2)
+  set_target_properties(dart PROPERTIES
+    CXX_STANDARD 11
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF  # use -std=c++11 instead of -std=gnu++11
+  )
+else()
+  target_compile_features(dart PUBLIC cxx_std_11)
+endif()
 
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
