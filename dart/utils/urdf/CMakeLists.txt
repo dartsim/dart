@@ -41,19 +41,10 @@ configure_file(
 install(FILES ${DART_UTILS_BACKWARDCOMPATIBILITY_HPP_OUT}
   DESTINATION include/dart/utils/urdf
 )
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})
-target_include_directories(
-  ${target_name} SYSTEM
-  PUBLIC ${urdfdom_INCLUDE_DIRS}
-)
-target_link_libraries(
-  ${target_name}
-  dart-utils
-  ${urdfdom_LIBRARIES}
-)
+target_link_libraries(${target_name} PUBLIC dart-utils urdfdom)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
