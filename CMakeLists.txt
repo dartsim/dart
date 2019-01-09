@@ -1,7 +1,6 @@
 #===============================================================================
 # CMake settings
 #===============================================================================
-# CMake 2.8.12 or above is required for CMakeParseArguments.
 if(MSVC)
   cmake_minimum_required(VERSION 3.8.0)
 else()

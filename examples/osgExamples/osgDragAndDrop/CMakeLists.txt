@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5.1)
 
 if(DART_IN_SOURCE_BUILD)
   include(${CMAKE_CURRENT_SOURCE_DIR}/InSourceBuild.cmake)
