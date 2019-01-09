@@ -139,7 +139,7 @@ target_link_libraries(dart
 if(NOT MSVC)
   target_link_libraries(dart PUBLIC Boost::regex)
 endif()
-target_compile_features(dart PUBLIC cxx_std_11)
+set_target_properties(dart PROPERTIES CXX_STANDARD 11)
 
 # Build DART with all available SIMD instructions
 if(DART_ENABLE_SIMD)
