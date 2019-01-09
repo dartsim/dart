@@ -7,5 +7,3 @@
 # This file is provided under the "BSD-style" License
 
 find_package(pagmo)
-
-message(STATUS "pagmo_VERSION: ${pagmo_VERSION}")
