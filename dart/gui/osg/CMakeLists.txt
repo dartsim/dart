@@ -88,3 +88,8 @@ install(
   DESTINATION include/dart/gui/osg
   COMPONENT headers
 )
+
+dart_format_add(
+  RealTimeWorldNode.hpp
+  RealTimeWorldNode.cpp
+)

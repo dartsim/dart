@@ -44,7 +44,6 @@ namespace osg {
 class RealTimeWorldNode : public WorldNode
 {
 public:
-
   /// Construct a world node that will attempt to run a simulation with close
   /// to real-time playback. If a simulation is too computationally expensive,
   /// the simulation might not be able to keep up with real time.
@@ -101,7 +100,6 @@ public:
   void refresh() override;
 
 protected:
-
   /// Reset each time the simulation is paused
   bool mFirstRefresh;
 

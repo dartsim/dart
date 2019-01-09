@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/gui/osg/RealTimeWorldNode.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/simulation/World.hpp"
-#include "dart/gui/osg/RealTimeWorldNode.hpp"
 
 namespace dart {
 namespace gui {
@@ -46,8 +46,8 @@ RealTimeWorldNode::RealTimeWorldNode(
     const double targetRealTimeFactor)
   : WorldNode(world, shadower),
     mFirstRefresh(true),
-    mTargetRealTimeLapse(1.0/targetFrequency),
-    mTargetSimTimeLapse(targetRealTimeFactor*mTargetRealTimeLapse),
+    mTargetRealTimeLapse(1.0 / targetFrequency),
+    mTargetSimTimeLapse(targetRealTimeFactor * mTargetRealTimeLapse),
     mLastRealTimeFactor(0.0),
     mLowestRealTimeFactor(std::numeric_limits<double>::infinity()),
     mHighestRealTimeFactor(0.0)
@@ -58,27 +58,27 @@ RealTimeWorldNode::RealTimeWorldNode(
 //==============================================================================
 void RealTimeWorldNode::setTargetFrequency(double targetFrequency)
 {
-  const double targetRTF = mTargetSimTimeLapse/mTargetRealTimeLapse;
-  mTargetRealTimeLapse = 1.0/targetFrequency;
-  mTargetSimTimeLapse = targetRTF*mTargetRealTimeLapse;
+  const double targetRTF = mTargetSimTimeLapse / mTargetRealTimeLapse;
+  mTargetRealTimeLapse = 1.0 / targetFrequency;
+  mTargetSimTimeLapse = targetRTF * mTargetRealTimeLapse;
 }
 
 //==============================================================================
 double RealTimeWorldNode::getTargetFrequency() const
 {
-  return 1.0/mTargetRealTimeLapse;
+  return 1.0 / mTargetRealTimeLapse;
 }
 
 //==============================================================================
 void RealTimeWorldNode::setTargetRealTimeFactor(double targetRTF)
 {
-  mTargetSimTimeLapse = targetRTF*mTargetRealTimeLapse;
+  mTargetSimTimeLapse = targetRTF * mTargetRealTimeLapse;
 }
 
 //==============================================================================
 double RealTimeWorldNode::getTargetRealTimeFactor() const
 {
-  return mTargetSimTimeLapse/mTargetRealTimeLapse;
+  return mTargetSimTimeLapse / mTargetRealTimeLapse;
 }
 
 //==============================================================================
@@ -126,12 +126,12 @@ void RealTimeWorldNode::refresh()
     const double startSimTime = mWorld->getTime();
     const double simTimeStep = mWorld->getTimeStep();
 
-    while(mRefreshTimer.time_s() < mTargetRealTimeLapse)
+    while (mRefreshTimer.time_s() < mTargetRealTimeLapse)
     {
-      const double nextSimTimeLapse =
-          mWorld->getTime() - startSimTime + simTimeStep;
+      const double nextSimTimeLapse
+          = mWorld->getTime() - startSimTime + simTimeStep;
 
-      if(nextSimTimeLapse <= mTargetSimTimeLapse)
+      if (nextSimTimeLapse <= mTargetSimTimeLapse)
       {
         customPreStep();
         mWorld->step();
@@ -139,12 +139,12 @@ void RealTimeWorldNode::refresh()
       }
     }
 
-    mLastRealTimeFactor =
-        (mWorld->getTime() - startSimTime)/mTargetRealTimeLapse;
-    mLowestRealTimeFactor =
-        std::min(mLastRealTimeFactor, mLowestRealTimeFactor);
-    mHighestRealTimeFactor =
-        std::max(mLastRealTimeFactor, mHighestRealTimeFactor);
+    mLastRealTimeFactor
+        = (mWorld->getTime() - startSimTime) / mTargetRealTimeLapse;
+    mLowestRealTimeFactor
+        = std::min(mLastRealTimeFactor, mLowestRealTimeFactor);
+    mHighestRealTimeFactor
+        = std::max(mLastRealTimeFactor, mHighestRealTimeFactor);
 
     mRefreshTimer.setStartTick();
   }
