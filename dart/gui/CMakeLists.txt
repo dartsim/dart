@@ -46,10 +46,11 @@ set(component_name gui)
 dart_add_library(${target_name}
   ${hdrs} ${srcs} ${dart_gui_headers} ${dart_gui_sources}
 )
+target_include_directories(${target_name} PUBLIC ${GLUT_INCLUDE_DIRS})
 target_link_libraries(${target_name}
   PUBLIC
     dart-utils
-    GLUT::GLUT
+    ${GLUT_LIBRARIES}
     OpenGL::GLU
     OpenGL::GL
     ${PROJECT_NAME}-external-lodepng
