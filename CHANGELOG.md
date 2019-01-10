@@ -30,6 +30,10 @@
 
   * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)
 
+* Misc
+
+  * Updated Googletest to version 1.8.1: [#1214](https://github.com/dartsim/dart/pull/1214)
+
 ### [DART 6.6.2 (2018-09-03)](https://github.com/dartsim/dart/milestone/47?closed=1)
 
 * Utils
