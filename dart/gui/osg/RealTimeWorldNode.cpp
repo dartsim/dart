@@ -115,14 +115,14 @@ void RealTimeWorldNode::refresh()
     mNumStepsPerCycle = 1;
   }
 
-  if (mFirstRefresh)
-  {
-    mRefreshTimer.setStartTick();
-    mFirstRefresh = false;
-  }
-
   if (mWorld && mSimulating)
   {
+    if (mFirstRefresh)
+    {
+      mRefreshTimer.setStartTick();
+      mFirstRefresh = false;
+    }
+
     const double startSimTime = mWorld->getTime();
     const double simTimeStep = mWorld->getTimeStep();
 
@@ -145,13 +145,13 @@ void RealTimeWorldNode::refresh()
         std::min(mLastRealTimeFactor, mLowestRealTimeFactor);
     mHighestRealTimeFactor =
         std::max(mLastRealTimeFactor, mHighestRealTimeFactor);
+
+    mRefreshTimer.setStartTick();
   }
   else
   {
     mFirstRefresh = true;
   }
-
-  mRefreshTimer.setStartTick();
 
   refreshSkeletons();
   refreshSimpleFrames();
