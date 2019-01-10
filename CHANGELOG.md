@@ -1,5 +1,27 @@
 ## DART 6
 
+### [DART 6.8.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/48?closed=1)
+
+#### Changes
+
+* TODO...
+
+  * TODO...
+
+#### Compilers Tested
+
+  * Linux
+
+    * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+  * Linux (32-bit)
+
+    * GCC (C++11): 5.4.0
+
+  * macOS
+
+    * AppleClang (C++11): 9.1.0
+
 ### [DART 6.7.0 (2019-01-10)](https://github.com/dartsim/dart/milestone/45?closed=1)
 
 #### Changes
