@@ -175,7 +175,7 @@ ImGuiHandler::ImGuiHandler()
     mMouseWheel{0.0f},
     mFontTexture{0u}
 {
-  // Do nothing
+  ImGui::CreateContext();
 }
 
 //==============================================================================
