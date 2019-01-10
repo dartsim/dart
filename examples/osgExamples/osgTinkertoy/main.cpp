@@ -173,7 +173,6 @@ int main()
 
   // Create the OSG Node that represents the world
   osg::ref_ptr<TinkertoyWorldNode> node = new TinkertoyWorldNode(world);
-  node->setNumStepsPerCycle(20);
 
   // Create the viewer
   dart::gui::osg::ImGuiViewer viewer;
