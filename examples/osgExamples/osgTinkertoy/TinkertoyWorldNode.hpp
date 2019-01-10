@@ -57,12 +57,12 @@ const double MinForceCoeff = 10.0;
 const double ForceIncrement = 10.0;
 
 //==============================================================================
-class TinkertoyWorldNode : public dart::gui::osg::WorldNode
+class TinkertoyWorldNode : public dart::gui::osg::RealTimeWorldNode
 {
 public:
 
   TinkertoyWorldNode(const dart::simulation::WorldPtr& world)
-    : dart::gui::osg::WorldNode(world),
+    : dart::gui::osg::RealTimeWorldNode(world),
       mForceCoeff(DefaultForceCoeff),
       mWasSimulating(false)
   {

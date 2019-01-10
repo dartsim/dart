@@ -34,12 +34,12 @@
 #include <dart/gui/osg/osg.hpp>
 
 //==============================================================================
-class CustomWorldNode : public dart::gui::osg::WorldNode
+class CustomWorldNode : public dart::gui::osg::RealTimeWorldNode
 {
 public:
 
   CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
-    : dart::gui::osg::WorldNode(world)
+    : dart::gui::osg::RealTimeWorldNode(world)
   {
     // Set up the customized WorldNode
   }
