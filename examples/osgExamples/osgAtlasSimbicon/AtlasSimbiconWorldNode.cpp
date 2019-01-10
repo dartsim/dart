@@ -36,7 +36,7 @@
 AtlasSimbiconWorldNode::AtlasSimbiconWorldNode(
     const dart::simulation::WorldPtr& world,
     const dart::dynamics::SkeletonPtr& atlas)
-  : dart::gui::osg::WorldNode(world),
+  : dart::gui::osg::RealTimeWorldNode(world),
     mExternalForce(Eigen::Vector3d::Zero()),
     mForceDuration(0.0)
 {

@@ -1,6 +1,28 @@
 ## DART 6
 
-### [DART 6.7.0 (2019-01-09)](https://github.com/dartsim/dart/milestone/45?closed=1)
+### [DART 6.8.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/48?closed=1)
+
+#### Changes
+
+* TODO...
+
+  * TODO...
+
+#### Compilers Tested
+
+  * Linux
+
+    * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+  * Linux (32-bit)
+
+    * GCC (C++11): 5.4.0
+
+  * macOS
+
+    * AppleClang (C++11): 9.1.0
+
+### [DART 6.7.0 (2019-01-10)](https://github.com/dartsim/dart/milestone/45?closed=1)
 
 #### Changes
 
@@ -8,6 +30,7 @@
 
   * Fixed compilation warnings for newer versions of compilers: [#1177](https://github.com/dartsim/dart/pull/1177)
   * Changed to generate namespace headers without requiring *.hpp.in files: [#1192](https://github.com/dartsim/dart/pull/1192)
+  * Dropped supporting Ubuntu Trusty and started using imported targets of dependencies: [#1212](https://github.com/dartsim/dart/pull/1212)
 
 * Collision Detection
 
@@ -31,6 +54,7 @@
 * GUI
 
   * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)
+  * Added the RealTimeWorldNode to display simulations at real-time rates: [#1216](https://github.com/dartsim/dart/pull/1216)
 
 * Misc
 
@@ -41,6 +65,10 @@
   * Linux
 
     * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+  * Linux (32-bit)
+
+    * GCC (C++11): 5.4.0
 
   * macOS
 

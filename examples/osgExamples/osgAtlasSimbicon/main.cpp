@@ -61,7 +61,6 @@ int main()
   // Wrap a WorldNode around it
   osg::ref_ptr<AtlasSimbiconWorldNode> node
       = new AtlasSimbiconWorldNode(world, atlas);
-  node->setNumStepsPerCycle(20);
 
   // Create a Viewer and set it up with the WorldNode
   dart::gui::osg::ImGuiViewer viewer;
