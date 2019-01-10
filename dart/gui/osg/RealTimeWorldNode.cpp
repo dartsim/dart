@@ -111,7 +111,7 @@ void RealTimeWorldNode::refresh()
            << "to [" << mNumStepsPerCycle << "], but this value is ignored by "
            << "the RealTimeWorldNode::refresh() function. Use the function "
            << "RealTimeWorldNode::setTargetRealTimeFactor(double) to change "
-           << "the simulation speed\n";
+           << "the simulation speed.\n";
     mNumStepsPerCycle = 1;
   }
 
