@@ -4,9 +4,9 @@
 
 #### Changes
 
-* TODO...
+* Planning
 
-  * TODO...
+  * Fixed linking error of FLANN by explicitly linking to lz4: [#1221](https://github.com/dartsim/dart/pull/1221)
 
 #### Compilers Tested
 
