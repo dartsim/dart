@@ -122,9 +122,6 @@ protected:
 
   /// The highest RTF that has been achieved
   double mHighestRealTimeFactor;
-
-  /// Flag to track whether we should display the real time factor
-  bool mDisplayRealTimeFactor;
 };
 
 } // namespace osg
