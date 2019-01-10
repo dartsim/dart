@@ -1,6 +1,8 @@
 ## DART 6
 
-### DART 6.7.0 (201X-XX-XX)
+### [DART 6.7.0 (2019-01-09)](https://github.com/dartsim/dart/milestone/45?closed=1)
+
+#### Changes
 
 * Build system
 
@@ -33,6 +35,16 @@
 * Misc
 
   * Updated Googletest to version 1.8.1: [#1214](https://github.com/dartsim/dart/pull/1214)
+
+#### Compilers Tested
+
+  * Linux
+
+    * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+  * macOS
+
+    * AppleClang (C++11): 9.1.0
 
 ### [DART 6.6.2 (2018-09-03)](https://github.com/dartsim/dart/milestone/47?closed=1)
 
