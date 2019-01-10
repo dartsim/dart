@@ -17,8 +17,7 @@ $SUDO apt-get -y install \
   build-essential \
   cmake \
   pkg-config \
-  curl \
-  git
+  curl
 if [ $COMPILER = clang ]; then
   $SUDO apt-get -qq -y install clang
 fi
