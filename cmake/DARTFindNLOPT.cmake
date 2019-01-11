@@ -7,3 +7,11 @@
 # This file is provided under the "BSD-style" License
 
 find_package(NLOPT 2.4.1 QUIET)
+
+if(NLOPT_FOUND AND NOT TARGET NLOPT::nlopt)
+  add_library(NLOPT::nlopt INTERFACE IMPORTED)
+  set_target_properties(NLOPT::nlopt PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${NLOPT_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${NLOPT_LIBRARIES}"
+  )
+endif()

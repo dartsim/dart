@@ -7,3 +7,11 @@
 # This file is provided under the "BSD-style" License
 
 find_package(IPOPT 3.11.9 QUIET)
+
+if(IPOPT_FOUND AND NOT TARGET IPOPT::ipopt)
+  add_library(IPOPT::ipopt INTERFACE IMPORTED)
+  set_target_properties(IPOPT::ipopt PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${IPOPT_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${IPOPT_LIBRARIES}"
+  )
+endif()
