@@ -93,8 +93,8 @@ namespace Eigen {
 namespace internal {
 
 template <typename T>
-struct functor_has_linear_access<dart::math::detail::
-                                     UniformScalarFromMatrixFunctor<T>>
+struct functor_has_linear_access<
+    dart::math::detail::UniformScalarFromMatrixFunctor<T>>
 {
   enum
   {
@@ -103,8 +103,8 @@ struct functor_has_linear_access<dart::math::detail::
 };
 
 template <typename T>
-struct functor_has_linear_access<dart::math::detail::
-                                     UniformScalarFromVectorFunctor<T>>
+struct functor_has_linear_access<
+    dart::math::detail::UniformScalarFromVectorFunctor<T>>
 {
   enum
   {
@@ -177,9 +177,9 @@ struct UniformScalarImpl
 //==============================================================================
 // Floating-point case
 template <typename S>
-struct UniformScalarImpl<S,
-                         typename std::
-                             enable_if<std::is_floating_point<S>::value>::type>
+struct UniformScalarImpl<
+    S,
+    typename std::enable_if<std::is_floating_point<S>::value>::type>
 {
   static S run(S min, S max)
   {
@@ -193,11 +193,10 @@ struct UniformScalarImpl<S,
 //==============================================================================
 // Floating-point case
 template <typename S>
-struct
-    UniformScalarImpl<S,
-                      typename std::
-                          enable_if<is_compatible_to_uniform_int_distribution<S>::
-                                        value>::type>
+struct UniformScalarImpl<
+    S,
+    typename std::enable_if<
+        is_compatible_to_uniform_int_distribution<S>::value>::type>
 {
   static S run(S min, S max)
   {
@@ -218,11 +217,11 @@ struct UniformMatrixImpl
 //==============================================================================
 // Dynamic matrix case
 template <typename Derived>
-struct UniformMatrixImpl<Derived,
-                         typename std::enable_if<!Derived::IsVectorAtCompileTime
-                                                 && Derived::SizeAtCompileTime
-                                                        == Eigen::Dynamic>::
-                             type>
+struct UniformMatrixImpl<
+    Derived,
+    typename std::enable_if<
+        !Derived::IsVectorAtCompileTime
+        && Derived::SizeAtCompileTime == Eigen::Dynamic>::type>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
@@ -246,11 +245,11 @@ struct UniformMatrixImpl<Derived,
 //==============================================================================
 // Dynamic vector case
 template <typename Derived>
-struct UniformMatrixImpl<Derived,
-                         typename std::enable_if<Derived::IsVectorAtCompileTime
-                                                 && Derived::SizeAtCompileTime
-                                                        == Eigen::Dynamic>::
-                             type>
+struct UniformMatrixImpl<
+    Derived,
+    typename std::enable_if<
+        Derived::IsVectorAtCompileTime
+        && Derived::SizeAtCompileTime == Eigen::Dynamic>::type>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
@@ -271,11 +270,11 @@ struct UniformMatrixImpl<Derived,
 //==============================================================================
 // Fixed matrix case
 template <typename Derived>
-struct UniformMatrixImpl<Derived,
-                         typename std::enable_if<!Derived::IsVectorAtCompileTime
-                                                 && Derived::SizeAtCompileTime
-                                                        != Eigen::Dynamic>::
-                             type>
+struct UniformMatrixImpl<
+    Derived,
+    typename std::enable_if<
+        !Derived::IsVectorAtCompileTime
+        && Derived::SizeAtCompileTime != Eigen::Dynamic>::type>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
@@ -296,11 +295,11 @@ struct UniformMatrixImpl<Derived,
 //==============================================================================
 // Fixed vector case
 template <typename Derived>
-struct UniformMatrixImpl<Derived,
-                         typename std::enable_if<Derived::IsVectorAtCompileTime
-                                                 && Derived::SizeAtCompileTime
-                                                        != Eigen::Dynamic>::
-                             type>
+struct UniformMatrixImpl<
+    Derived,
+    typename std::enable_if<
+        Derived::IsVectorAtCompileTime
+        && Derived::SizeAtCompileTime != Eigen::Dynamic>::type>
 {
   static typename Derived::PlainObject run(
       const Eigen::MatrixBase<Derived>& min,
@@ -327,8 +326,9 @@ struct UniformImpl
 
 //==============================================================================
 template <typename T>
-struct UniformImpl<T,
-                   typename std::enable_if<std::is_arithmetic<T>::value>::type>
+struct UniformImpl<
+    T,
+    typename std::enable_if<std::is_arithmetic<T>::value>::type>
 {
   static T run(T min, T max)
   {
@@ -338,8 +338,9 @@ struct UniformImpl<T,
 
 //==============================================================================
 template <typename T>
-struct UniformImpl<T,
-                   typename std::enable_if<is_base_of_matrix<T>::value>::type>
+struct UniformImpl<
+    T,
+    typename std::enable_if<is_base_of_matrix<T>::value>::type>
 {
   static T run(const Eigen::MatrixBase<T>& min, const Eigen::MatrixBase<T>& max)
   {
@@ -357,9 +358,9 @@ struct NormalScalarImpl
 //==============================================================================
 // Floating-point case
 template <typename S>
-struct NormalScalarImpl<S,
-                        typename std::
-                            enable_if<std::is_floating_point<S>::value>::type>
+struct NormalScalarImpl<
+    S,
+    typename std::enable_if<std::is_floating_point<S>::value>::type>
 {
   static S run(S mean, S sigma)
   {
@@ -371,11 +372,10 @@ struct NormalScalarImpl<S,
 //==============================================================================
 // Floating-point case
 template <typename S>
-struct
-    NormalScalarImpl<S,
-                     typename std::
-                         enable_if<is_compatible_to_uniform_int_distribution<S>::
-                                       value>::type>
+struct NormalScalarImpl<
+    S,
+    typename std::enable_if<
+        is_compatible_to_uniform_int_distribution<S>::value>::type>
 {
   static S run(S mean, S sigma)
   {
@@ -396,8 +396,9 @@ struct NormalImpl
 
 //==============================================================================
 template <typename T>
-struct NormalImpl<T,
-                  typename std::enable_if<std::is_arithmetic<T>::value>::type>
+struct NormalImpl<
+    T,
+    typename std::enable_if<std::is_arithmetic<T>::value>::type>
 {
   static T run(T min, T max)
   {
@@ -405,7 +406,7 @@ struct NormalImpl<T,
   }
 };
 
-} // (anonymous) namespace
+} // namespace
 
 //==============================================================================
 template <typename S>
