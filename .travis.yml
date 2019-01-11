@@ -17,13 +17,6 @@ matrix:
   include:
     - os: linux
       env:
-        - BUILD_NAME=XENIAL_DEBUG
-        - DOCKERFILE="Dockerfile.ubuntu-xenial"
-        - BUILD_TYPE=Debug
-        - COMPILER=GCC
-      services: docker
-    - os: linux
-      env:
         - BUILD_NAME=XENIAL_RELEASE
         - DOCKERFILE="Dockerfile.ubuntu-xenial"
         - BUILD_TYPE=Release
@@ -41,13 +34,6 @@ matrix:
         - BUILD_NAME=BIONIC_RELEASE
         - DOCKERFILE="Dockerfile.ubuntu-bionic"
         - BUILD_TYPE=Release
-        - COMPILER=GCC
-      services: docker
-    - os: linux
-      env:
-        - BUILD_NAME=COSMIC_DEBUG
-        - DOCKERFILE="Dockerfile.ubuntu-cosmic"
-        - BUILD_TYPE=Debug
         - COMPILER=GCC
       services: docker
     - os: linux
@@ -72,12 +58,12 @@ matrix:
     #     - BUILD_TYPE=Release
     #     - COMPILER=CLANG
     - os: linux
-      compiler: gcc
       env:
         - BUILD_NAME=DOCS
-        - SUDO=sudo
+        - DOCKERFILE="Dockerfile.ubuntu-bionic"
         - BUILD_TYPE=Release
         - COMPILER=GCC
+      services: docker
 
 install:
   - if [ -n "$DOCKERFILE" ]; then

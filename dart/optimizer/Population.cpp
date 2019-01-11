@@ -68,7 +68,7 @@ bool isValidF(const MultiObjectiveProblem& problem, const Eigen::VectorXd& f)
   return true;
 }
 
-} // (anonymous) namespace
+} // namespace
 
 //==============================================================================
 Population::Population(
