@@ -77,6 +77,15 @@ endmacro()
 # Usage:
 #   dart_add_library(_libname source1 [source2 ...])
 #===============================================================================
+macro(dart_find_package _name)
+  include(DARTFind${_name})
+endmacro()
+
+#===============================================================================
+# Add library and set target properties
+# Usage:
+#   dart_add_library(_libname source1 [source2 ...])
+#===============================================================================
 macro(dart_add_library _name)
   add_library(${_name} ${ARGN})
   set_target_properties(
@@ -106,6 +115,8 @@ endfunction()
 
 #===============================================================================
 function(dart_check_required_package variable dependency)
+  # TODO: Take version for the case that the version variable is not
+  # <package>_VERSION
   if(${${variable}_FOUND})
     if(DART_VERBOSE)
       message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -112,11 +112,11 @@ dynamics::SkeletonPtr createFloor()
 }
 
 //==============================================================================
-class CustomWorldNode : public dart::gui::osg::WorldNode
+class CustomWorldNode : public dart::gui::osg::RealTimeWorldNode
 {
 public:
   explicit CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
-    : dart::gui::osg::WorldNode(world)
+    : dart::gui::osg::RealTimeWorldNode(world)
   {
     // Set up the customized WorldNode
   }
@@ -416,9 +416,6 @@ int main()
 
   // Wrap a WorldNode around it
   osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world);
-
-  // Run 20 simulation steps per one rendering frame
-  node->setNumStepsPerCycle(20);
 
   // Create a Viewer and set it up with the WorldNode
   dart::gui::osg::ImGuiViewer viewer;

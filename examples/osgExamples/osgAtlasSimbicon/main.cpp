@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -61,7 +61,6 @@ int main()
   // Wrap a WorldNode around it
   osg::ref_ptr<AtlasSimbiconWorldNode> node
       = new AtlasSimbiconWorldNode(world, atlas);
-  node->setNumStepsPerCycle(20);
 
   // Create a Viewer and set it up with the WorldNode
   dart::gui::osg::ImGuiViewer viewer;
