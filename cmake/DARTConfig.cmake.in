@@ -2,9 +2,13 @@
 # CMake config file for DART
 #
 # This sets the following variables:
-# @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS - Directories containing the DART include files.
-# @PROJECT_NAME_UPPERCASE@_LIBRARIES    - Libraries needed to use DART.
-# @PROJECT_NAME_UPPERCASE@_VERSION      - DART version.
+#   @PROJECT_NAME_UPPERCASE@_INCLUDE_DIRS - Directories containing the DART include files.
+#   @PROJECT_NAME_UPPERCASE@_LIBRARIES    - Libraries needed to use DART.
+#   @PROJECT_NAME_UPPERCASE@_VERSION      - DART version.
+#
+# and the following `IMPORTED` targets:
+#   dart     - Main target.
+#   dart-<C> - Target for specific component (e.g., dart-collision-bullet).
 
 #===============================================================================
 # Helper Function Definitions
@@ -128,6 +132,8 @@ endfunction()
 # Main
 #===============================================================================
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+
 # Default component: dart
 list(APPEND @PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS dart)
 
@@ -141,6 +147,8 @@ if(@PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS)
 
   @PROJECT_NAME@_package_init(${@PROJECT_NAME_UPPERCASE@_FIND_COMPONENTS})
 endif()
+
+list(REMOVE_AT CMAKE_MODULE_PATH -1)
 
 # Use find_package_handle_standard_args to generate output. This handles the
 # REQUIRED keyword, sets @PROJECT_NAME_UPPERCASE@_FOUND, and generates the appropriate

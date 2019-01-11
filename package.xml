@@ -1,4 +1,4 @@
-<?xml version="1.0"?> 
+<?xml version="1.0"?>
 <package format="2">
   <!-- This is a Catkin package.xml file to optionally support building DART in
        a Catkin workspace. Catkin is not required to build DART. For more

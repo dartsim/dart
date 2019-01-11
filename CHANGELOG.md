@@ -16,12 +16,37 @@
 
 ## DART 6
 
-### DART 6.7.0 (201X-XX-XX)
+### [DART 6.8.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/48?closed=1)
+
+#### Changes
+
+* Planning
+
+  * Fixed linking error of FLANN by explicitly linking to lz4: [#1221](https://github.com/dartsim/dart/pull/1221)
+
+#### Compilers Tested
+
+  * Linux
+
+    * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+  * Linux (32-bit)
+
+    * GCC (C++11): 5.4.0
+
+  * macOS
+
+    * AppleClang (C++11): 9.1.0
+
+### [DART 6.7.0 (2019-01-10)](https://github.com/dartsim/dart/milestone/45?closed=1)
+
+#### Changes
 
 * Build system
 
   * Fixed compilation warnings for newer versions of compilers: [#1177](https://github.com/dartsim/dart/pull/1177)
   * Changed to generate namespace headers without requiring *.hpp.in files: [#1192](https://github.com/dartsim/dart/pull/1192)
+  * Dropped supporting Ubuntu Trusty and started using imported targets of dependencies: [#1212](https://github.com/dartsim/dart/pull/1212)
 
 * Collision Detection
 
@@ -36,6 +61,7 @@
 
   * Refactor constraint solver: [#1099](https://github.com/dartsim/dart/pull/1099), [#1101](https://github.com/dartsim/dart/pull/1101)
   * Added mimic joint functionality as a new actuator type: [#1178](https://github.com/dartsim/dart/pull/1178)
+  * Added clone function to MetaSkeleton: [#1201](https://github.com/dartsim/dart/pull/1201)
 
 * Optimization
 
@@ -44,6 +70,25 @@
 * GUI
 
   * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)
+  * Added the RealTimeWorldNode to display simulations at real-time rates: [#1216](https://github.com/dartsim/dart/pull/1216)
+
+* Misc
+
+  * Updated Googletest to version 1.8.1: [#1214](https://github.com/dartsim/dart/pull/1214)
+
+#### Compilers Tested
+
+  * Linux
+
+    * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+  * Linux (32-bit)
+
+    * GCC (C++11): 5.4.0
+
+  * macOS
+
+    * AppleClang (C++11): 9.1.0
 
 ### [DART 6.6.2 (2018-09-03)](https://github.com/dartsim/dart/milestone/47?closed=1)
 

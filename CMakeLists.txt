@@ -1,11 +1,10 @@
 #===============================================================================
 # CMake settings
 #===============================================================================
-# CMake 2.8.12 or above is required for CMakeParseArguments.
 if(MSVC)
   cmake_minimum_required(VERSION 3.8.0)
 else()
-  cmake_minimum_required(VERSION 2.8.12)
+  cmake_minimum_required(VERSION 3.5.1)
 endif()
 
 project(dart)
@@ -138,12 +137,6 @@ endif()
 include(DARTFindDependencies)
 
 #===============================================================================
-# Include directories
-#===============================================================================
-include_directories(BEFORE ${PROJECT_SOURCE_DIR})
-include_directories("${CMAKE_BINARY_DIR}")
-
-#===============================================================================
 # Check for non-case-sensitive filesystems
 #===============================================================================
 execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/case_sensitive_filesystem
@@ -194,8 +187,6 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CXX_COMPILER_VERSION ${GCC_VERSION})
   if(GCC_VERSION VERSION_LESS 4.8)
     message(FATAL_ERROR "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ 4.8 or greater.")
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
@@ -206,7 +197,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_DEBUG} -pg")
   set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
 
-elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=deprecated-declarations")
@@ -219,8 +210,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(CXX_COMPILER_VERSION ${CLANG_VERSION})
   if(CLANG_VERSION VERSION_LESS 3.3)
     message(FATAL_ERROR "The installed Clang version is ${CLANG_VERSION}. ${PROJECT_NAME} requires clang 3.3 or greater.")
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif()
   if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
@@ -425,13 +414,14 @@ find_program(
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)
 list(LENGTH formatting_files formatting_files_length)
-message(STATUS "Formatting on ${formatting_files_length} source files.")
 
 if(CLANG_FORMAT_EXECUTABLE)
 
   if(DART_VERBOSE)
     message(STATUS "Looking for clang-format - found")
   endif()
+
+  message(STATUS "Formatting on ${formatting_files_length} source files.")
 
   if(formatting_files)
     add_custom_target(format
@@ -457,7 +447,9 @@ if(CLANG_FORMAT_EXECUTABLE)
 
 else()
 
-  message(STATUS "Looking for clang-format - NOT found, please install clang-format to enable automatic code formatting")
+  if(DART_VERBOSE)
+    message(STATUS "Looking for clang-format - NOT found, please install clang-format to enable automatic code formatting")
+  endif()
 
 endif()
 

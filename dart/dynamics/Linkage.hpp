@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -59,7 +59,8 @@ public:
   {
     /// The ExpansionPolicy indicates how the collection of BodyNodes should
     /// expand from the starting BodyNode (mStart)
-    enum ExpansionPolicy {
+    enum ExpansionPolicy
+    {
       INCLUDE = 0,  ///< Do not expand from the target. Include everything up to the target and then stop.
       EXCLUDE,      ///< Do not expand from the target. Include everything up to the target, but NOT the target, and then stop.
       DOWNSTREAM,   ///< Include the target, and then expand downstream, toward the leaves of the tree.
@@ -166,6 +167,18 @@ public:
   /// Create a Linkage with the given Criteria
   static LinkagePtr create(const Criteria& _criteria,
                            const std::string& _name = "Linkage");
+
+  /// Creates and returns a clone of this Linkage.
+  LinkagePtr cloneLinkage() const;
+
+  /// Creates and returns a clone of this Linkage.
+  LinkagePtr cloneLinkage(const std::string& cloneName) const;
+
+  // To expose MetaSkeleton::cloneMetaSkeleton(), which takes no cloneName.
+  using MetaSkeleton::cloneMetaSkeleton;
+
+  // Documentation inherited
+  MetaSkeletonPtr cloneMetaSkeleton(const std::string& cloneName) const override;
 
   /// Returns false if the original assembly of this Linkage has been broken in
   /// some way

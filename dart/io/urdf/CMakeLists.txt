@@ -1,5 +1,5 @@
 # Dependency checks
-find_package(urdfdom QUIET)
+dart_find_package(urdfdom)
 if(urdfdom_FOUND)
   if(DART_VERBOSE)
     message(STATUS "Looking for urdfdom - ${urdfdom_headers_VERSION} found")
@@ -41,24 +41,16 @@ configure_file(
 install(FILES ${DART_IO_BACKWARDCOMPATIBILITY_HPP_OUT}
   DESTINATION include/dart/io/urdf
 )
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Add target
 dart_add_library(${target_name} ${hdrs} ${srcs})
-target_include_directories(
-  ${target_name} SYSTEM
-  PUBLIC ${urdfdom_INCLUDE_DIRS}
-)
-target_link_libraries(
-  ${target_name}
-  dart-io
-  ${urdfdom_LIBRARIES}
-)
+target_link_libraries(${target_name} PUBLIC dart-io urdfdom)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} io)
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} urdfdom)
 
 # Generate header for this namespace
 dart_get_filename_components(header_names "io_urdf headers" ${hdrs})

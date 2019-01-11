@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -398,11 +398,23 @@ Skeleton::~Skeleton()
 //==============================================================================
 SkeletonPtr Skeleton::clone() const
 {
-  return clone(getName());
+  return cloneSkeleton(getName());
 }
 
 //==============================================================================
 SkeletonPtr Skeleton::clone(const std::string& cloneName) const
+{
+  return cloneSkeleton(cloneName);
+}
+
+//==============================================================================
+SkeletonPtr Skeleton::cloneSkeleton() const
+{
+  return cloneSkeleton(getName());
+}
+
+//==============================================================================
+SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
 {
   SkeletonPtr skelClone = Skeleton::create(cloneName);
 
@@ -479,6 +491,12 @@ SkeletonPtr Skeleton::clone(const std::string& cloneName) const
   }
 
   return skelClone;
+}
+
+//==============================================================================
+MetaSkeletonPtr Skeleton::cloneMetaSkeleton(const std::string& cloneName) const
+{
+  return cloneSkeleton(cloneName);
 }
 
 //==============================================================================

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -38,12 +38,12 @@
 
 using namespace dart::dynamics;
 
-class RecordingWorld : public dart::gui::osg::WorldNode
+class RecordingWorld : public dart::gui::osg::RealTimeWorldNode
 {
 public:
 
   RecordingWorld(const dart::simulation::WorldPtr& world)
-    : dart::gui::osg::WorldNode(world)
+    : dart::gui::osg::RealTimeWorldNode(world)
   {
     grabTimeSlice();
     mCurrentIndex = 0;
@@ -218,7 +218,6 @@ int main()
   osg::ref_ptr<RecordingWorld> node = new RecordingWorld(world);
 
   node->simulate(true);
-  node->setNumStepsPerCycle(15);
 
   dart::gui::osg::Viewer viewer;
   viewer.addWorldNode(node);

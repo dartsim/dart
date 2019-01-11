@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5.1)
 
 if(DART_IN_SOURCE_BUILD)
   include(${CMAKE_CURRENT_SOURCE_DIR}/InSourceBuild.cmake)
@@ -12,11 +12,9 @@ find_package(DART 7.0.0 REQUIRED
   CONFIG
 )
 
-add_compile_options(-std=c++11)
-
-include_directories(${DART_INCLUDE_DIRS})
-
 file(GLOB srcs "*.cpp" "*.hpp")
 add_executable(${PROJECT_NAME} ${srcs})
-
-target_link_libraries(${PROJECT_NAME} ${DART_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+    dart dart-collision-bullet dart-utils-urdf dart-gui
+)

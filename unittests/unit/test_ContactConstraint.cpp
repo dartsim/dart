@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -97,6 +97,11 @@ TEST(ContactConstraint, ContactWithKinematicJoint)
   testContactWithKinematicJoint(
         std::make_shared<constraint::DantzigBoxedLcpSolver>(), 1e-6);
 
+#ifdef DART_ARCH_32BITS
+  testContactWithKinematicJoint(
+        std::make_shared<constraint::PgsBoxedLcpSolver>(), 1e-3);
+#else
   testContactWithKinematicJoint(
         std::make_shared<constraint::PgsBoxedLcpSolver>(), 1e-4);
+#endif
 }

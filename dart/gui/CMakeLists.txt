@@ -3,7 +3,7 @@ if (NOT TARGET dart-io)
   return()
 endif()
 
-find_package(OpenGL QUIET)
+dart_find_package(OpenGL)
 dart_check_optional_package(OPENGL "dart-gui" "OpenGL")
 
 if(WIN32 AND NOT CYGWIN)
@@ -11,7 +11,7 @@ if(WIN32 AND NOT CYGWIN)
   set(GLUT_LIBRARIES glut32)
   set(HAVE_GLUT TRUE)
 else()
-  find_package(GLUT QUIET)
+  dart_find_package(GLUT)
   dart_check_optional_package(GLUT "dart-gui" "freeglut3")
   if(GLUT_FOUND)
     set(HAVE_GLUT TRUE)
@@ -46,18 +46,13 @@ set(component_name gui)
 dart_add_library(${target_name}
   ${hdrs} ${srcs} ${dart_gui_headers} ${dart_gui_sources}
 )
-target_include_directories(
-  ${target_name} SYSTEM
-  PUBLIC
-    ${OPENGL_INCLUDE_DIR}
-    ${GLUT_INCLUDE_DIR}
-)
-target_link_libraries(
-  ${target_name}
+target_include_directories(${target_name} PUBLIC ${GLUT_INCLUDE_DIRS})
+target_link_libraries(${target_name}
   PUBLIC
     dart-io
     ${GLUT_LIBRARIES}
-    ${OPENGL_LIBRARIES}
+    OpenGL::GLU
+    OpenGL::GL
     ${PROJECT_NAME}-external-lodepng
     ${PROJECT_NAME}-external-imgui
 )
@@ -72,6 +67,10 @@ add_component_dependencies(
   external-lodepng
   external-imgui
 )
+add_component_dependency_packages(${PROJECT_NAME} ${component_name} OpenGL)
+if(NOT WIN32 OR CYGWIN)
+  add_component_dependency_packages(${PROJECT_NAME} ${component_name} GLUT)
+endif()
 
 # Add subdirectories
 add_subdirectory(osg)

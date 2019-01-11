@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -1379,7 +1379,7 @@ int main()
   Eigen::VectorXd positions = hubo->getPositions();
   // We make a clone to test whether the cloned version behaves the exact same
   // as the original version.
-  hubo = hubo->clone("hubo_copy");
+  hubo = hubo->cloneSkeleton("hubo_copy");
   hubo->setPositions(positions);
 
   world->addSkeleton(hubo);

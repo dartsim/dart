@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -242,7 +242,7 @@ public:
   void attemptToCreateDomino(double angle)
   {
     // Create a new domino
-    SkeletonPtr newDomino = mFirstDomino->clone();
+    SkeletonPtr newDomino = mFirstDomino->cloneSkeleton();
     newDomino->setName("domino #" + std::to_string(mDominoes.size() + 1));
 
     const SkeletonPtr& lastDomino = mDominoes.size() > 0 ?
