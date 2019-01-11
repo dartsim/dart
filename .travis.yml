@@ -77,8 +77,10 @@ matrix:
       env:
         - BUILD_NAME=DOCS
         - SUDO=sudo
+        - DOCKERFILE="Dockerfile.ubuntu-bionic"
         - BUILD_TYPE=Release
         - COMPILER=GCC
+      services: docker
 
 install:
   - if [ -n "$DOCKERFILE" ]; then
