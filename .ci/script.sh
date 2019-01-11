@@ -35,7 +35,7 @@ fi
 
 mkdir build && cd build
 
-if [ "$BUILD_NAME" = "TRUSTY_DEBUG" ]; then
+if [ "$BUILD_NAME" = "BIONIC_DEBUG" ]; then
   cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_VERBOSE=ON -DDART_TREAT_WARNINGS_AS_ERRORS=ON -DDART_BUILD_EXTRAS=ON -DDART_CODECOV=ON ..
 else
   cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DDART_VERBOSE=ON -DDART_TREAT_WARNINGS_AS_ERRORS=ON -DDART_BUILD_EXTRAS=ON -DDART_CODECOV=OFF ..
@@ -47,7 +47,7 @@ else
   make -j$num_threads all tests
 fi
 
-if [ "$OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "trusty" ]; then
+if [ "$OS_NAME" = "linux" ] && [ $(lsb_release -sc) = "bionic" ]; then
   make check-format
 fi
 
@@ -67,6 +67,6 @@ cmake ..
 make -j4
 
 # Uploading report to CodeCov
-if [ "$BUILD_NAME" = "TRUSTY_DEBUG" ]; then
+if [ "$BUILD_NAME" = "BIONIC_DEBUG" ]; then
   bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
 fi
