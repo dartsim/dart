@@ -73,10 +73,8 @@ matrix:
     #     - BUILD_TYPE=Release
     #     - COMPILER=CLANG
     - os: linux
-      compiler: gcc
       env:
         - BUILD_NAME=DOCS
-        - SUDO=sudo
         - DOCKERFILE="Dockerfile.ubuntu-bionic"
         - BUILD_TYPE=Release
         - COMPILER=GCC
