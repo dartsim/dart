@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -72,6 +72,8 @@ void MultiSphereConvexHullShape::addSpheres(const MultiSphereConvexHullShape::Sp
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -81,6 +83,8 @@ void MultiSphereConvexHullShape::addSphere(const MultiSphereConvexHullShape::Sph
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -96,6 +100,8 @@ void MultiSphereConvexHullShape::removeAllSpheres()
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================

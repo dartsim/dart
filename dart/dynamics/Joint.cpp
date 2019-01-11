@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -49,6 +49,7 @@ const Joint::ActuatorType Joint::DefaultActuatorType = detail::DefaultActuatorTy
 constexpr Joint::ActuatorType Joint::FORCE;
 constexpr Joint::ActuatorType Joint::PASSIVE;
 constexpr Joint::ActuatorType Joint::SERVO;
+constexpr Joint::ActuatorType Joint::MIMIC;
 constexpr Joint::ActuatorType Joint::ACCELERATION;
 constexpr Joint::ActuatorType Joint::VELOCITY;
 constexpr Joint::ActuatorType Joint::LOCKED;
@@ -61,12 +62,18 @@ JointProperties::JointProperties(
     const Eigen::Isometry3d& _T_ParentBodyToJoint,
     const Eigen::Isometry3d& _T_ChildBodyToJoint,
     bool _isPositionLimitEnforced,
-    ActuatorType _actuatorType)
+    ActuatorType _actuatorType,
+    const Joint* _mimicJoint,
+    double _mimicMultiplier,
+    double _mimicOffset)
   : mName(_name),
     mT_ParentBodyToJoint(_T_ParentBodyToJoint),
     mT_ChildBodyToJoint(_T_ChildBodyToJoint),
     mIsPositionLimitEnforced(_isPositionLimitEnforced),
-    mActuatorType(_actuatorType)
+    mActuatorType(_actuatorType),
+    mMimicJoint(_mimicJoint),
+    mMimicMultiplier(_mimicMultiplier),
+    mMimicOffset(_mimicOffset)
 {
   // Do nothing
 }
@@ -113,6 +120,7 @@ void Joint::setAspectProperties(const AspectProperties& properties)
   setTransformFromChildBodyNode(properties.mT_ChildBodyToJoint);
   setPositionLimitEnforced(properties.mIsPositionLimitEnforced);
   setActuatorType(properties.mActuatorType);
+  setMimicJoint(properties.mMimicJoint, properties.mMimicMultiplier, properties.mMimicOffset);
 }
 
 //==============================================================================
@@ -195,6 +203,32 @@ Joint::ActuatorType Joint::getActuatorType() const
 }
 
 //==============================================================================
+void Joint::setMimicJoint(const Joint* _mimicJoint, double _mimicMultiplier, double _mimicOffset)
+{
+  mAspectProperties.mMimicJoint = _mimicJoint;
+  mAspectProperties.mMimicMultiplier = _mimicMultiplier;
+  mAspectProperties.mMimicOffset = _mimicOffset;
+}
+
+//==============================================================================
+const Joint* Joint::getMimicJoint() const
+{
+  return mAspectProperties.mMimicJoint;
+}
+
+//==============================================================================
+double Joint::getMimicMultiplier() const
+{
+  return mAspectProperties.mMimicMultiplier;
+}
+
+//==============================================================================
+double Joint::getMimicOffset() const
+{
+  return mAspectProperties.mMimicOffset;
+}
+
+//==============================================================================
 bool Joint::isKinematic() const
 {
   switch (mAspectProperties.mActuatorType)
@@ -202,6 +236,7 @@ bool Joint::isKinematic() const
     case FORCE:
     case PASSIVE:
     case SERVO:
+    case MIMIC:
       return false;
     case ACCELERATION:
     case VELOCITY:

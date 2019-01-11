@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -48,6 +48,7 @@
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/constraint/JointLimitConstraint.hpp"
 #include "dart/constraint/ServoMotorConstraint.hpp"
+#include "dart/constraint/MimicMotorConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
 
@@ -97,7 +98,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
     return;
   }
 
-  mCollisionGroup->addShapeFramesOf(skeleton.get());
+  mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
 }
@@ -105,7 +106,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
 //==============================================================================
 void ConstraintSolver::addSkeletons(const std::vector<SkeletonPtr>& skeletons)
 {
-  for (const auto skeleton : skeletons)
+  for (const auto& skeleton : skeletons)
     addSkeleton(skeleton);
 }
 
@@ -435,6 +436,13 @@ DART_SUPPRESS_DEPRECATED_BEGIN
     shapeFrame2->asShapeNode()->getBodyNodePtr()->setColliding(true);
 DART_SUPPRESS_DEPRECATED_END
 
+    // If penetration depth is negative, then the collision isn't really
+    // happening and the contact point should be ignored.
+    // TODO(MXG): Investigate ways to leverage the proximity information of a
+    //            negative penetration to improve collision handling.
+    if (contact.penetrationDepth < 0.0)
+      continue;
+
     if (isSoftContact(contact))
     {
       mSoftContactConstraints.push_back(
@@ -471,6 +479,7 @@ DART_SUPPRESS_DEPRECATED_END
   // Destroy previous joint constraints
   mJointLimitConstraints.clear();
   mServoMotorConstraints.clear();
+  mMimicMotorConstraints.clear();
   mJointCoulombFrictionConstraints.clear();
 
   // Create new joint constraints
@@ -506,6 +515,12 @@ DART_SUPPRESS_DEPRECATED_END
         mServoMotorConstraints.push_back(
               std::make_shared<ServoMotorConstraint>(joint));
       }
+
+      if (joint->getActuatorType() == dynamics::Joint::MIMIC && joint->getMimicJoint())
+      {
+        mMimicMotorConstraints.push_back(
+              std::make_shared<MimicMotorConstraint>(joint, joint->getMimicJoint(), joint->getMimicMultiplier(), joint->getMimicOffset()));
+      }
     }
   }
 
@@ -524,6 +539,14 @@ DART_SUPPRESS_DEPRECATED_END
 
     if (servoMotorConstraint->isActive())
       mActiveConstraints.push_back(servoMotorConstraint);
+  }
+
+  for (auto& mimicMotorConstraint : mMimicMotorConstraints)
+  {
+    mimicMotorConstraint->update();
+
+    if (mimicMotorConstraint->isActive())
+      mActiveConstraints.push_back(mimicMotorConstraint);
   }
 
   for (auto& jointFrictionConstraint : mJointCoulombFrictionConstraints)

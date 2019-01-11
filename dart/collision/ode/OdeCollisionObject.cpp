@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -105,6 +105,28 @@ OdeCollisionObject::OdeCollisionObject(
     dGeomSetOffsetPosition(geomId, geomRelPos[0], geomRelPos[1], geomRelPos[2]);
     dGeomSetOffsetQuaternion(geomId, geomRelRot);
   }
+}
+
+//==============================================================================
+OdeCollisionObject& OdeCollisionObject::operator=(
+    OdeCollisionObject&& other)
+{
+  // This should only be used for refreshing the collision objects, so the
+  // detector and the shape frame should never need to change
+  assert(mCollisionDetector == other.mCollisionDetector);
+  assert(mShapeFrame == other.mShapeFrame);
+
+  // We should never be assigning a collision object to itself
+  assert(this != &other);
+
+  // There should never be duplicate body IDs or geometries
+  assert(!mBodyId || mBodyId != other.mBodyId);
+  assert(mOdeGeom.get() != other.mOdeGeom.get());
+
+  mOdeGeom = std::move(other.mOdeGeom);
+  std::swap(mBodyId, other.mBodyId);
+
+  return *this;
 }
 
 //==============================================================================

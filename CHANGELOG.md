@@ -1,14 +1,51 @@
 ## DART 6
 
-### DART 6.7.0 (201X-XX-XX)
+### [DART 6.8.0 (20XX-XX-XX)](https://github.com/dartsim/dart/milestone/48?closed=1)
+
+#### Changes
+
+* Planning
+
+  * Fixed linking error of FLANN by explicitly linking to lz4: [#1221](https://github.com/dartsim/dart/pull/1221)
+
+#### Compilers Tested
+
+  * Linux
+
+    * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+  * Linux (32-bit)
+
+    * GCC (C++11): 5.4.0
+
+  * macOS
+
+    * AppleClang (C++11): 9.1.0
+
+### [DART 6.7.0 (2019-01-10)](https://github.com/dartsim/dart/milestone/45?closed=1)
+
+#### Changes
+
+* Build system
+
+  * Fixed compilation warnings for newer versions of compilers: [#1177](https://github.com/dartsim/dart/pull/1177)
+  * Changed to generate namespace headers without requiring *.hpp.in files: [#1192](https://github.com/dartsim/dart/pull/1192)
+  * Dropped supporting Ubuntu Trusty and started using imported targets of dependencies: [#1212](https://github.com/dartsim/dart/pull/1212)
+
+* Collision Detection
+
+  * CollisionGroups will automatically update their objects when any changes occur to Skeletons or BodyNodes that they are subscribed to: [#1112](https://github.com/dartsim/dart/pull/1112)
+  * Contact points with negative penetration depth will be ignored: [#1185](https://github.com/dartsim/dart/pull/1185)
 
 * Math
 
-  * Consolidated random functions into Random class : [#1109](https://github.com/dartsim/dart/pull/1109)
+  * Consolidated random functions into Random class: [#1109](https://github.com/dartsim/dart/pull/1109)
 
 * Dynamics
 
   * Refactor constraint solver: [#1099](https://github.com/dartsim/dart/pull/1099), [#1101](https://github.com/dartsim/dart/pull/1101)
+  * Added mimic joint functionality as a new actuator type: [#1178](https://github.com/dartsim/dart/pull/1178)
+  * Added clone function to MetaSkeleton: [#1201](https://github.com/dartsim/dart/pull/1201)
 
 * Optimization
 
@@ -17,6 +54,25 @@
 * GUI
 
   * Reorganized OpenGL and GLUT files: [#1088](https://github.com/dartsim/dart/pull/1088)
+  * Added the RealTimeWorldNode to display simulations at real-time rates: [#1216](https://github.com/dartsim/dart/pull/1216)
+
+* Misc
+
+  * Updated Googletest to version 1.8.1: [#1214](https://github.com/dartsim/dart/pull/1214)
+
+#### Compilers Tested
+
+  * Linux
+
+    * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+  * Linux (32-bit)
+
+    * GCC (C++11): 5.4.0
+
+  * macOS
+
+    * AppleClang (C++11): 9.1.0
 
 ### [DART 6.6.2 (2018-09-03)](https://github.com/dartsim/dart/milestone/47?closed=1)
 
@@ -230,7 +286,7 @@
 
 * Misc
 
-  * Updated lodepng up to version 20160501 : [#791](https://github.com/dartsim/dart/pull/791)
+  * Updated lodepng up to version 20160501: [#791](https://github.com/dartsim/dart/pull/791)
 
 ### DART 6.1.0 (2016-10-07)
 
@@ -290,7 +346,7 @@
 
 * Common data structures
 
-  * Added `Node`, `Aspect`, `State`, and `Properties`: [#713](https://github.com/dartsim/dart/pull/713), [#712](https://github.com/dartsim/dart/issues/712), [#708](https://github.com/dartsim/dart/pull/708), [#707](https://github.com/dartsim/dart/pull/707), [#659](https://github.com/dartsim/dart/pull/659), [#649](https://github.com/dartsim/dart/pull/649), [#645](https://github.com/dartsim/dart/issues/645), [#607](https://github.com/dartsim/dart/pull/607), [#598](https://github.com/dartsim/dart/pull/598), [#591](https://github.com/dartsim/dart/pull/591), [#531](https://github.com/dartsim/dart/pull/531) 
+  * Added `Node`, `Aspect`, `State`, and `Properties`: [#713](https://github.com/dartsim/dart/pull/713), [#712](https://github.com/dartsim/dart/issues/712), [#708](https://github.com/dartsim/dart/pull/708), [#707](https://github.com/dartsim/dart/pull/707), [#659](https://github.com/dartsim/dart/pull/659), [#649](https://github.com/dartsim/dart/pull/649), [#645](https://github.com/dartsim/dart/issues/645), [#607](https://github.com/dartsim/dart/pull/607), [#598](https://github.com/dartsim/dart/pull/598), [#591](https://github.com/dartsim/dart/pull/591), [#531](https://github.com/dartsim/dart/pull/531)
   * Added mathematical constants and user-defined literals for radian, degree, and pi: [#669](https://github.com/dartsim/dart/pull/669), [#314](https://github.com/dartsim/dart/issues/314)
   * Added `ShapeFrame` and `ShapeNode`: [#608](https://github.com/dartsim/dart/pull/608)
   * Added `BoundingBox`: [#547](https://github.com/dartsim/dart/pull/547), [#546](https://github.com/dartsim/dart/issues/546)
@@ -393,7 +449,7 @@
 
 ### Version 5.1.6 (2017-08-08)
 
-1. Improved camera movement of OpenGL GUI: smooth zooming and translation 
+1. Improved camera movement of OpenGL GUI: smooth zooming and translation
     * [Pull request #843](https://github.com/dartsim/dart/pull/843)
 
 2. Removed debian meta files from the main DART repository

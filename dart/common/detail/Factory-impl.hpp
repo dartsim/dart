@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -174,6 +174,20 @@ HeldT Factory<KeyT, BaseT, HeldT, Args...>::create(
   }
 
   return it->second(std::forward<Args>(args)...);
+}
+
+//==============================================================================
+template <typename KeyT,
+         typename BaseT,
+         typename HeldT,
+         typename... Args>
+std::unordered_set<KeyT> Factory<KeyT, BaseT, HeldT, Args...>::getKeys() const
+{
+  std::unordered_set<KeyT> keys;
+  for(const auto& entry : mCreatorMap)
+    keys.insert(entry.first);
+
+  return keys;
 }
 
 //==============================================================================

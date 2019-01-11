@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -131,23 +131,23 @@ public:
     switch(key)
     {
       case '1':
-        addObject(mOriginalBall->clone());
+        addObject(mOriginalBall->cloneSkeleton());
         break;
 
       case '2':
-        addObject(mOriginalSoftBody->clone());
+        addObject(mOriginalSoftBody->cloneSkeleton());
         break;
 
       case '3':
-        addObject(mOriginalHybridBody->clone());
+        addObject(mOriginalHybridBody->cloneSkeleton());
         break;
 
       case '4':
-        addObject(mOriginalRigidChain->clone());
+        addObject(mOriginalRigidChain->cloneSkeleton());
         break;
 
       case '5':
-        addRing(mOriginalRigidRing->clone());
+        addRing(mOriginalRigidRing->cloneSkeleton());
         break;
 
       case 'd':

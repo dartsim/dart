@@ -1,0 +1,125 @@
+# Azure Pipeline settings
+# Ref: https://docs.microsoft.com/en-us/azure/devops/pipelines
+
+jobs:
+- job: ubuntu_xenial_gcc_debug
+  pool:
+    vmImage: 'Ubuntu 16.04'
+  variables:
+    OS_NAME: linux
+    COMPILER: gcc
+    BUILD_TYPE: Debug
+    BUILD_DIR: $(Build.SourcesDirectory)
+    SUDO: sudo
+  steps:
+  - template: .ci/azure-pipelines/native.yml
+
+- job: ubuntu_xenial_gcc_release
+  pool:
+    vmImage: 'Ubuntu 16.04'
+  variables:
+    OS_NAME: linux
+    COMPILER: gcc
+    BUILD_TYPE: Release
+    BUILD_DIR: $(Build.SourcesDirectory)
+    SUDO: sudo
+  steps:
+  - template: .ci/azure-pipelines/native.yml
+
+- job: ubuntu_xenial_32bit_gcc_release
+  pool:
+    vmImage: 'Ubuntu 16.04'
+  variables:
+    OS_NAME: linux
+    COMPILER: gcc
+    BUILD_TYPE: Release
+    BUILD_DIR: $(Build.SourcesDirectory)
+    DOCKERFILE: Dockerfile.ubuntu-xenial-32bit
+  steps:
+  - template: .ci/azure-pipelines/docker.yml
+
+- job: ubuntu_bionic_gcc_release
+  pool:
+    vmImage: 'Ubuntu 16.04'
+  variables:
+    OS_NAME: linux
+    COMPILER: gcc
+    BUILD_TYPE: Release
+    BUILD_DIR: $(Build.SourcesDirectory)
+    DOCKERFILE: Dockerfile.ubuntu-bionic
+  steps:
+  - template: .ci/azure-pipelines/docker.yml
+
+- job: ubuntu_cosmic_gcc_release
+  pool:
+    vmImage: 'Ubuntu 16.04'
+  variables:
+    OS_NAME: linux
+    COMPILER: gcc
+    BUILD_TYPE: Release
+    BUILD_DIR: $(Build.SourcesDirectory)
+    DOCKERFILE: Dockerfile.ubuntu-cosmic
+  steps:
+  - template: .ci/azure-pipelines/docker.yml
+
+- job: macos_high_seirra_clang_debug
+  pool:
+    vmImage: 'macOS 10.13'
+  variables:
+    OS_NAME: osx
+    BUILD_TYPE: Debug
+    BUILD_DIR: $(Build.SourcesDirectory)
+  steps:
+  - script: |
+      '.ci/install.sh'
+    displayName: 'Install'
+  - script: |
+      '.ci/script.sh'
+    displayName: 'Script'
+
+- job: macos_high_seirra_clang_release
+  pool:
+    vmImage: 'macOS 10.13'
+  variables:
+    OS_NAME: osx
+    BUILD_TYPE: Release
+    BUILD_DIR: $(Build.SourcesDirectory)
+  steps:
+  - script: |
+      '.ci/install.sh'
+    displayName: 'Install'
+  - script: |
+      '.ci/script.sh'
+    displayName: 'Script'
+
+# Disable windows build until we figure out how to cache vcpkg packages
+# - job: windows_vs_amd64
+#   pool: Hosted
+#   variables:
+#     ARCHITECTURE_SUFFIX: '-x64'
+#     VCPKG_ARCH: 'x64-windows'
+#     BUILD_TOOLSET_VERSION: '141'
+#     CMAKE_GENERATOR: 'Visual Studio 15 2017 Win64'
+#     VCPKG_ROOT: '$(Build.BinariesDirectory)/vcpkg'
+#   steps:
+#   - script: git clone https://github.com/Microsoft/vcpkg.git
+#     displayName: 'Clone vcpkg'
+#     workingDirectory: '$(Build.BinariesDirectory)'
+#   - script: .\bootstrap-vcpkg.bat
+#     displayName: 'Build vcpkg'
+#     workingDirectory: '$(VCPKG_ROOT)'
+#   - script: |
+#       .\vcpkg.exe remove --outdated --recurse
+#       .\vcpkg.exe install --recurse --triplet $(VCPKG_ARCH) assimp boost-system boost-filesystem ccd eigen3 fcl
+#       .\vcpkg.exe integrate install
+#     displayName: 'Install dependencies'
+#     workingDirectory: '$(VCPKG_ROOT)'
+#   - script: |
+#       mkdir build
+#       cd build
+#       cmake \
+#         .. -G "$(CMAKE_GENERATOR)" -Wno-dev -T "v$(BUILD_TOOLSET_VERSION),host=x64"
+#         -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake"
+#         -DCMAKE_INSTALL_PREFIX="$(Build.BinariesDirectory)/$(REPO_NAME)"
+#       make -j4
+#     displayName: 'Build'

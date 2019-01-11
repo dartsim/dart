@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -94,6 +94,9 @@ protected:
   // Documentation inherited
   std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) override;
+
+  // Documentation inherited
+  void refreshCollisionObject(CollisionObject* object) override;
 
 private:
   static Registrar<DARTCollisionDetector> mRegistrar;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -115,6 +115,8 @@ void VoxelGridShape::setOctree(fcl_shared_ptr<octomap::OcTree> octree)
 
   mIsBoundingBoxDirty = true;
   mIsVolumeDirty = true;
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -134,6 +136,8 @@ void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& point, bool occupied)
 {
   mOctree->updateNode(toPoint3d(point), occupied);
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -141,6 +145,8 @@ void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& from, const Eigen::Vector3d& to)
 {
   mOctree->insertRay(toPoint3d(from), toPoint3d(to));
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -152,6 +158,7 @@ void VoxelGridShape::updateOccupancy(
   if (relativeTo == Frame::World())
   {
     mOctree->insertPointCloud(pointCloud, toPoint3d(sensorOrigin));
+    incrementVersion();
   }
   else
   {
@@ -167,6 +174,8 @@ void VoxelGridShape::updateOccupancy(
 {
   mOctree->insertPointCloud(
       pointCloud, toPoint3d(sensorOrigin), toPose6d(relativeTo));
+
+  incrementVersion();
 }
 
 //==============================================================================

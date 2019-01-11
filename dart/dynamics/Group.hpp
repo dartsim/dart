@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -69,6 +69,18 @@ public:
 
   /// Destructor
   virtual ~Group() = default;
+
+  /// Creates and returns a clone of this Group.
+  GroupPtr cloneGroup() const;
+
+  /// Creates and returns a clone of this Group.
+  GroupPtr cloneGroup(const std::string& cloneName) const;
+
+  // To expose MetaSkeleton::cloneMetaSkeleton(), which takes no cloneName.
+  using MetaSkeleton::cloneMetaSkeleton;
+
+  // Documentation inherited
+  MetaSkeletonPtr cloneMetaSkeleton(const std::string& cloneName) const override;
 
   /// Swap the index of BodyNode _index1 with _index2
   void swapBodyNodeIndices(std::size_t _index1, std::size_t _index2);

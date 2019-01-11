@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2018, The DART development contributors
+# Copyright (c) 2011-2019, The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
@@ -9,10 +9,13 @@
 # Find ODE
 #
 # This sets the following variables:
-# ODE_FOUND
-# ODE_INCLUDE_DIRS
-# ODE_LIBRARIES
-# ODE_VERSION
+#   ODE_FOUND
+#   ODE_INCLUDE_DIRS
+#   ODE_LIBRARIES
+#   ODE_VERSION
+#
+# and the following targets:
+#   ODE::ODE
 
 find_package(PkgConfig QUIET)
 
@@ -44,3 +47,10 @@ find_package_handle_standard_args(ODE
     REQUIRED_VARS ODE_INCLUDE_DIRS ODE_LIBRARIES
     VERSION_VAR   ODE_VERSION)
 
+if(ODE_FOUND AND NOT TARGET ODE::ODE)
+  add_library(ODE::ODE INTERFACE IMPORTED)
+  set_target_properties(ODE::ODE PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${ODE_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${ODE_LIBRARIES}"
+  )
+endif()

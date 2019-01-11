@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -175,7 +175,7 @@ ImGuiHandler::ImGuiHandler()
     mMouseWheel{0.0f},
     mFontTexture{0u}
 {
-  // Do nothing
+  ImGui::CreateContext();
 }
 
 //==============================================================================

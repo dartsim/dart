@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -883,6 +883,100 @@ void testServoMotor()
 TEST_F(JOINTS, SERVO_MOTOR)
 {
   testServoMotor();
+}
+
+//==============================================================================
+void testMimicJoint()
+{
+  using namespace dart::math::suffixes;
+
+  double timestep = 1e-3;
+  double tol = 1e-9;
+  double tolPos = 1e-3;
+  double sufficient_force   = 1e+5;
+
+  // World
+  simulation::WorldPtr world = simulation::World::create();
+  EXPECT_TRUE(world != nullptr);
+
+  world->setGravity(Eigen::Vector3d(0, 0, -9.81));
+  world->setTimeStep(timestep);
+
+  Vector3d dim(1, 1, 1);
+  Vector3d offset(0, 0, 2);
+
+  SkeletonPtr pendulum = createNLinkPendulum(2, dim, DOF_ROLL, offset);
+  EXPECT_NE(pendulum, nullptr);
+
+  pendulum->disableSelfCollisionCheck();
+
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i)
+  {
+    auto bodyNode = pendulum->getBodyNode(i);
+    bodyNode->removeAllShapeNodesWith<CollisionAspect>();
+  }
+
+  std::vector<JointPtr> joints(2);
+
+  for (std::size_t i = 0; i < pendulum->getNumBodyNodes(); ++i)
+  {
+    dynamics::Joint* joint = pendulum->getJoint(i);
+    EXPECT_NE(joint, nullptr);
+
+    joint->setActuatorType(Joint::SERVO);
+    joint->setPosition(0, 90.0_deg);
+    joint->setDampingCoefficient(0, 0.0);
+    joint->setSpringStiffness(0, 0.0);
+    joint->setPositionLimitEnforced(true);
+    joint->setCoulombFriction(0, 0.0);
+
+    joints[i] = joint;
+  }
+
+  joints[0]->setForceUpperLimit(0, sufficient_force);
+  joints[0]->setForceLowerLimit(0, -sufficient_force);
+
+  joints[1]->setForceUpperLimit(0, sufficient_force);
+  joints[1]->setForceLowerLimit(0, -sufficient_force);
+
+  // Second joint mimics the first one
+  joints[1]->setActuatorType(Joint::MIMIC);
+  joints[1]->setMimicJoint(joints[0], 1., 0.);
+
+  world->addSkeleton(pendulum);
+
+#ifndef NDEBUG // Debug mode
+  double simTime = 0.2;
+#else
+  double simTime = 2.0;
+#endif // ------- Debug mode
+  double timeStep = world->getTimeStep();
+  int nSteps = simTime / timeStep;
+
+  // Two seconds with lower control forces than the friction
+  for (int i = 0; i < nSteps; i++)
+  {
+    const double expected_vel = std::sin(world->getTime());
+
+    joints[0]->setCommand(0, expected_vel);
+
+    world->step();
+
+    // Check if the first joint achieved the velocity at each time-step
+    EXPECT_NEAR(joints[0]->getVelocity(0), expected_vel, tol);
+
+    // Check if the mimic joint follows the "master" joint
+    EXPECT_NEAR(joints[0]->getPosition(0), joints[1]->getPosition(0), tolPos);
+  }
+
+  // In the end, check once more if the mimic joint followed the "master" joint
+  EXPECT_NEAR(joints[0]->getPosition(0), joints[1]->getPosition(0), tolPos);
+}
+
+//==============================================================================
+TEST_F(JOINTS, MIMIC_JOINT)
+{
+  testMimicJoint();
 }
 
 //==============================================================================

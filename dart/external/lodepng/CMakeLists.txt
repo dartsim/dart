@@ -7,9 +7,8 @@ set(target_name ${PROJECT_NAME}-external-lodepng)
 set(component_name external-lodepng)
 
 dart_add_library(${target_name} ${hdrs} ${srcs})
-include_directories(
-  ${target_name}
-  PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}"
+target_include_directories(${target_name}
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
 # Component

@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2018, The DART development contributors
+# Copyright (c) 2011-2019, The DART development contributors
 # All rights reserved.
 #
 # The list of contributors can be found at:
@@ -9,11 +9,14 @@
 # Find IPOPT
 #
 # This sets the following variables:
-# IPOPT_FOUND
-# IPOPT_INCLUDE_DIRS
-# IPOPT_LIBRARIES
-# IPOPT_DEFINITIONS
-# IPOPT_VERSION
+#   IPOPT_FOUND
+#   IPOPT_INCLUDE_DIRS
+#   IPOPT_LIBRARIES
+#   IPOPT_DEFINITIONS
+#   IPOPT_VERSION
+#
+# and the following targets:
+#   IPOPT::ipopt
 
 find_package(PkgConfig QUIET)
 
@@ -44,3 +47,10 @@ find_package_handle_standard_args(IPOPT
     REQUIRED_VARS IPOPT_INCLUDE_DIRS IPOPT_LIBRARIES
     VERSION_VAR   IPOPT_VERSION)
 
+if(IPOPT_FOUND AND NOT TARGET IPOPT::ipopt)
+  add_library(IPOPT::ipopt INTERFACE IMPORTED)
+  set_target_properties(IPOPT::ipopt PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${IPOPT_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${IPOPT_LIBRARIES}"
+  )
+endif()

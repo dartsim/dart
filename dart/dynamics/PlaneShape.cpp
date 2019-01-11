@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -75,6 +75,8 @@ Eigen::Matrix3d PlaneShape::computeInertia(double /*mass*/) const
 void PlaneShape::setNormal(const Eigen::Vector3d& _normal)
 {
   mNormal = _normal.normalized();
+
+  incrementVersion();
 }
 
 //==============================================================================
@@ -87,6 +89,8 @@ const Eigen::Vector3d& PlaneShape::getNormal() const
 void PlaneShape::setOffset(double _offset)
 {
   mOffset = _offset;
+
+  incrementVersion();
 }
 
 //==============================================================================

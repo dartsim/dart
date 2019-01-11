@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -66,6 +66,81 @@ GroupPtr Group::create(const std::string& _name,
   GroupPtr group(new Group(_name, _metaSkeleton));
   group->mPtr = group;
   return group;
+}
+
+//==============================================================================
+GroupPtr Group::cloneGroup() const
+{
+  return cloneGroup(getName());
+}
+
+//==============================================================================
+GroupPtr Group::cloneGroup(const std::string& cloneName) const
+{
+  // Create an empty Group
+  GroupPtr newGroup = create(cloneName, nullptr);
+
+  if (getNumBodyNodes() == 0u && (getNumJoints() != 0u || getNumDofs() != 0u))
+  {
+    dtwarn << "[Group::cloneMetaSkeletonHelper] Attempting to "
+           << "clone a ReferentialSkeleton that doesn't include any BodyNodes "
+           << "but including some Joints or DegreeOfFreedoms. This will lead "
+           << "to dangling Joints or DegreeOfFreedoms in the cloned "
+           << "ReferentialSkeleton because it only holds the stong reference "
+           << "to the BodyNodes but not others.\n";
+  }
+
+  // Array for Skeleton clones that will be collected durig cloning BodyNodes,
+  // Joints, DegreeOfFreedoms.
+  //
+  // The clones will not be destroyed even after the map is destroyed because
+  // the new Linkage will hold the skeleton by holding the strong referecnes of
+  // the body nodes.
+  std::unordered_map<const Skeleton*, SkeletonPtr> mapToSkeletonClones;
+  mapToSkeletonClones.reserve(mSkeletons.size());
+  for (const Skeleton* skel : mSkeletons)
+  {
+    SkeletonPtr skelClone = skel->cloneSkeleton();
+    mapToSkeletonClones.insert(std::make_pair(skel, skelClone));
+  }
+
+  // Add BodyNodes
+  for (const BodyNodePtr& bodyNode : mBodyNodes)
+  {
+    SkeletonPtr skelClone = mapToSkeletonClones[bodyNode->getSkeleton().get()];
+    assert(skelClone);
+    BodyNode* bodyNodeClone = skelClone->getBodyNode(bodyNode->getName());
+    assert(bodyNodeClone);
+    newGroup->addBodyNode(bodyNodeClone);
+  }
+
+  // Add Joints
+  for (const JointPtr& joint : mJoints)
+  {
+    SkeletonPtr skelClone = mapToSkeletonClones[joint->getSkeleton().get()];
+    assert(skelClone);
+    Joint* jointClone = skelClone->getJoint(joint->getName());
+    assert(jointClone);
+    newGroup->addJoint(jointClone, false);
+  }
+
+  // Add DegreeOfFreedoms
+  for (const DegreeOfFreedomPtr& dof : mDofs)
+  {
+    SkeletonPtr skelClone = mapToSkeletonClones[dof->getSkeleton().get()];
+    assert(skelClone);
+    DegreeOfFreedom* dofClone = skelClone->getDof(dof->getName());
+    assert(dofClone);
+    newGroup->addDof(dofClone, false);
+  }
+
+  return newGroup;
+}
+
+//==============================================================================
+MetaSkeletonPtr Group::cloneMetaSkeleton(const std::string& cloneName) const
+{
+  return cloneGroup(cloneName);
 }
 
 //==============================================================================

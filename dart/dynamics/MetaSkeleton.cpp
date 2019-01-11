@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -312,6 +312,12 @@ static double getValueFromIndex(const MetaSkeleton* skel, std::size_t _index,
         << "The return value will be zero.\n";
   assert(false);
   return 0.0;
+}
+
+//==============================================================================
+MetaSkeletonPtr MetaSkeleton::cloneMetaSkeleton() const
+{
+  return cloneMetaSkeleton(getName());
 }
 
 //==============================================================================

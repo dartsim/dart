@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -183,6 +183,15 @@ DynamicsAspect::DynamicsAspect(
 }
 
 //==============================================================================
+ShapeFrame::~ShapeFrame()
+{
+  // TODO(MXG): Why doesn't ScopedConnection seem to work as a member variable?
+  // If we could use a ScopedConnection for mConnectionForShapeVersionChange
+  // instead, then we wouldn't need to explicitly disconnect in this destructor.
+  mConnectionForShapeVersionChange.disconnect();
+}
+
+//==============================================================================
 void ShapeFrame::setProperties(const ShapeFrame::UniqueProperties& properties)
 {
   setAspectProperties(properties);
@@ -209,6 +218,20 @@ void ShapeFrame::setShape(const ShapePtr& shape)
   ShapePtr oldShape = ShapeFrame::mAspectProperties.mShape;
 
   ShapeFrame::mAspectProperties.mShape = shape;
+  incrementVersion();
+
+  mConnectionForShapeVersionChange.disconnect();
+
+  if(shape)
+  {
+    mConnectionForShapeVersionChange = shape->onVersionChanged.connect(
+          [this](Shape* shape, std::size_t)
+          {
+            assert(shape == this->ShapeFrame::mAspectProperties.mShape.get());
+            DART_UNUSED(shape);
+            this->incrementVersion();
+          });
+  }
 
   mShapeUpdatedSignal.raise(this, oldShape, ShapeFrame::mAspectProperties.mShape);
 }
@@ -272,8 +295,7 @@ ShapeFrame::ShapeFrame(Frame* parent, const Properties& properties)
 }
 
 //==============================================================================
-ShapeFrame::ShapeFrame(Frame* parent,
-                       const ShapePtr& shape)
+ShapeFrame::ShapeFrame(Frame* parent, const ShapePtr& shape)
   : common::Composite(),
     Entity(ConstructFrame),
     Frame(parent),

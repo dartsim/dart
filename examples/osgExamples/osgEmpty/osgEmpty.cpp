@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -34,12 +34,12 @@
 #include <dart/gui/osg/osg.hpp>
 
 //==============================================================================
-class CustomWorldNode : public dart::gui::osg::WorldNode
+class CustomWorldNode : public dart::gui::osg::RealTimeWorldNode
 {
 public:
 
   CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
-    : dart::gui::osg::WorldNode(world)
+    : dart::gui::osg::RealTimeWorldNode(world)
   {
     // Set up the customized WorldNode
   }

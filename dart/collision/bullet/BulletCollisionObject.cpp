@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -51,16 +51,19 @@ const btCollisionObject* BulletCollisionObject::getBulletCollisionObject() const
 }
 
 //==============================================================================
-BulletCollisionObject::BulletCollisionObject(CollisionDetector* collisionDetector,
+BulletCollisionObject::BulletCollisionObject(
+    CollisionDetector* collisionDetector,
     const dynamics::ShapeFrame* shapeFrame,
-    BulletCollisionShape* bulletCollisionShape)
+    const std::shared_ptr<BulletCollisionShape>& bulletCollisionShape)
   : CollisionObject(collisionDetector, shapeFrame),
-    mBulletCollisionObject(new btCollisionObject()),
-    mBulletCollisionShape(bulletCollisionShape)
+    mBulletCollisionShape(bulletCollisionShape),
+    mBulletCollisionObject(new btCollisionObject())
 {
   assert(bulletCollisionShape);
 
-  mBulletCollisionObject->setCollisionShape(mBulletCollisionShape->mCollisionShape.get());
+  mBulletCollisionObject->setCollisionShape(
+        mBulletCollisionShape->mCollisionShape.get());
+
   mBulletCollisionObject->setUserPointer(this);
 }
 

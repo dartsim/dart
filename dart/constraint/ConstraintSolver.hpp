@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -212,6 +212,9 @@ protected:
 
   /// Servo motor constraints those are automatically created
   std::vector<ServoMotorConstraintPtr> mServoMotorConstraints;
+
+  /// Mimic motor constraints those are automatically created
+  std::vector<MimicMotorConstraintPtr> mMimicMotorConstraints;
 
   /// Joint Coulomb friction constraints those are automatically created
   std::vector<JointCoulombFrictionConstraintPtr> mJointCoulombFrictionConstraints;

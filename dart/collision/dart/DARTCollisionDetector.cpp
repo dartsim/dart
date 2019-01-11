@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -305,6 +305,11 @@ std::unique_ptr<CollisionObject> DARTCollisionDetector::createCollisionObject(
         new DARTCollisionObject(this, shapeFrame));
 }
 
+//==============================================================================
+void DARTCollisionDetector::refreshCollisionObject(CollisionObject* /*object*/)
+{
+  // Do nothing
+}
 
 
 

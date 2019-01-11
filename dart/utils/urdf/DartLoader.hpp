@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -138,6 +138,11 @@ private:
       dynamics::BodyNode* _parent,
       const common::Uri& _baseUri,
       const common::ResourceRetrieverPtr& _resourceRetriever);
+
+    static bool addMimicJointsRecursive(
+      const urdf::ModelInterface* model,
+      dynamics::SkeletonPtr _skel,
+      const urdf::Link* _lk);
 
     template <class VisualOrCollision>
     static dynamics::ShapePtr createShape(const VisualOrCollision* _vizOrCol,

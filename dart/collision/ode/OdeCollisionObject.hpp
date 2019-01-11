@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -59,6 +59,10 @@ protected:
   OdeCollisionObject(
       OdeCollisionDetector* collisionDetector,
       const dynamics::ShapeFrame* shapeFrame);
+
+  /// Move assignment operator. This is used to refresh OdeCollisionObjects when
+  /// their underlying shape information needs to be updated.
+  OdeCollisionObject& operator=(OdeCollisionObject&& other);
 
   // Documentation inherited
   void updateEngineData() override;

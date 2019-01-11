@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -235,6 +235,16 @@ std::unique_ptr<CollisionObject> OdeCollisionDetector::createCollisionObject(
 {
   return std::unique_ptr<OdeCollisionObject>(
       new OdeCollisionObject(this, shapeFrame));
+}
+
+//==============================================================================
+void OdeCollisionDetector::refreshCollisionObject(CollisionObject* object)
+{
+  OdeCollisionObject temp(this, object->getShapeFrame());
+
+  static_cast<OdeCollisionObject&>(*object) =
+//      OdeCollisionObject(this, object->getShapeFrame());
+      std::move(temp);
 }
 
 //==============================================================================

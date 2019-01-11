@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -262,6 +262,10 @@ dynamics::SkeletonPtr DartLoader::modelInterfaceToSkeleton(
 
   }
 
+  // Find mimic joints
+  for(std::size_t i = 0; i < root->child_links.size(); i++)
+    addMimicJointsRecursive(_model, skeleton, root->child_links[i].get());
+
   return skeleton;
 }
 
@@ -289,7 +293,7 @@ bool DartLoader::createSkeletonRecursive(
 
   if(!result)
     return false;
-  
+
   for(std::size_t i = 0; i < _lk->child_links.size(); ++i)
   {
     if (!createSkeletonRecursive(model, _skel, _lk->child_links[i].get(), node,
@@ -299,6 +303,54 @@ bool DartLoader::createSkeletonRecursive(
   return true;
 }
 
+bool DartLoader::addMimicJointsRecursive(
+  const urdf::ModelInterface* model,
+  dynamics::SkeletonPtr _skel,
+  const urdf::Link* _lk)
+{
+  const urdf::Joint* jt = _lk->parent_joint.get();
+  if (jt->mimic)
+  {
+    const std::string& jointName = jt->name;
+    const double multiplier = jt->mimic->multiplier;
+    const double offset = jt->mimic->offset;
+    const std::string& mimicJointName = jt->mimic->joint_name;
+
+    dynamics::Joint* joint = _skel->getJoint(jointName);
+    const dynamics::Joint* mimicJoint = _skel->getJoint(mimicJointName);
+
+    if (!joint)
+    {
+      dterr << "Failed to configure a mimic joint [" << jointName
+            << "] because the joint isn't found in Skeleton ["
+            << _skel->getName() << "]\n.";
+      return false;
+    }
+
+    if (!mimicJoint)
+    {
+      dterr << "Failed to configure a mimic joint [" << jointName
+            << "] because the joint to mimic [" << mimicJoint
+            << "] isn't found in Skeleton [" << _skel->getName() << "]\n.";
+      return false;
+    }
+
+    dynamics::Joint::Properties properties = joint->getJointProperties();
+    properties.mActuatorType = dynamics::Joint::MIMIC;
+    properties.mMimicJoint = mimicJoint;
+    properties.mMimicMultiplier = multiplier;
+    properties.mMimicOffset = offset;
+    joint->setProperties(properties);
+  }
+
+  for(std::size_t i = 0; i < _lk->child_links.size(); ++i)
+  {
+    if (!addMimicJointsRecursive(model, _skel, _lk->child_links[i].get()))
+      return false;
+  }
+
+  return true;
+}
 
 /**
  * @function readXml
@@ -460,7 +512,7 @@ bool DartLoader::createDartNodeProperties(
   const common::ResourceRetrieverPtr& /*_resourceRetriever*/)
 {
   node.mName = _lk->name;
-  
+
   // Load Inertial information
   if(_lk->inertial) {
     urdf::Pose origin = _lk->inertial->origin;

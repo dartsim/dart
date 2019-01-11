@@ -43,6 +43,8 @@ macro(dart_get_subdir_list var curdir)
 endmacro()
 
 #===============================================================================
+# DEPRECATED in 6.7 (see #1081)
+#
 # Generate header file list to a cached list.
 # Usage:
 #   dart_generate_include_header_list(_var _target_dir _cacheDesc [headers...])
@@ -56,6 +58,27 @@ macro(dart_generate_include_header_list _var _target_dir _cacheDesc)
       "#include \"${_target_dir}${header}\"\n"
     )
   endforeach()
+endmacro()
+
+#===============================================================================
+# Generate header file.
+# Usage:
+#   dart_generate_include_header_file(file_path target_dir [headers...])
+#===============================================================================
+macro(dart_generate_include_header_file file_path target_dir)
+  file(WRITE ${file_path} "// Automatically generated file by cmake\n\n")
+  foreach(header ${ARGN})
+    file(APPEND ${file_path} "#include \"${target_dir}${header}\"\n")
+  endforeach()
+endmacro()
+
+#===============================================================================
+# Add library and set target properties
+# Usage:
+#   dart_add_library(_libname source1 [source2 ...])
+#===============================================================================
+macro(dart_find_package _name)
+  include(DARTFind${_name})
 endmacro()
 
 #===============================================================================
@@ -92,6 +115,8 @@ endfunction()
 
 #===============================================================================
 function(dart_check_required_package variable dependency)
+  # TODO: Take version for the case that the version variable is not
+  # <package>_VERSION
   if(${${variable}_FOUND})
     if(DART_VERBOSE)
       message(STATUS "Looking for ${dependency} - version ${${variable}_VERSION}"

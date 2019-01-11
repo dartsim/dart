@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -174,6 +174,9 @@ protected:
   virtual std::unique_ptr<CollisionObject> createCollisionObject(
       const dynamics::ShapeFrame* shapeFrame) = 0;
 
+  /// Update the collision geometry of a ShapeFrame
+  virtual void refreshCollisionObject(CollisionObject* object) = 0;
+
   /// Notify that a CollisionObject is destroying. Do nothing by default.
   virtual void notifyCollisionObjectDestroying(CollisionObject* object);
 
@@ -198,6 +201,9 @@ public:
 
   /// Returns collision detector
   CollisionDetector* getCollisionDetector();
+
+  /// Virtual destructor
+  virtual ~CollisionObjectManager() = default;
 
 protected:
 

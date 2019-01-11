@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018, The DART development contributors
+ * Copyright (c) 2011-2019, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
@@ -59,18 +59,18 @@ public:
 
 protected:
   /// Constructor
-  BulletCollisionObject(CollisionDetector* collisionDetector,
-                        const dynamics::ShapeFrame* shapeFrame,
-                        BulletCollisionShape* bulletCollisionShape);
+  BulletCollisionObject(
+      CollisionDetector* collisionDetector,
+      const dynamics::ShapeFrame* shapeFrame,
+      const std::shared_ptr<BulletCollisionShape>& bulletCollisionShape);
 
   // Documentation inherited
   void updateEngineData() override;
 
 protected:
   /// Bullet collision object
+  std::shared_ptr<BulletCollisionShape> mBulletCollisionShape;
   std::unique_ptr<btCollisionObject> mBulletCollisionObject;
-
-  BulletCollisionShape* mBulletCollisionShape;
 };
 
 }  // namespace collision
