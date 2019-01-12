@@ -42,12 +42,3 @@ find_package_handle_standard_args(ASSIMP
     FAIL_MESSAGE  DEFAULT_MSG
     REQUIRED_VARS ASSIMP_INCLUDE_DIRS ASSIMP_LIBRARIES
     VERSION_VAR   ASSIMP_VERSION)
-
-# Set target assimp if not set
-if(ASSIMP_FOUND AND NOT TARGET assimp)
-  add_library(assimp INTERFACE IMPORTED)
-  set_target_properties(assimp PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${ASSIMP_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${ASSIMP_LIBRARIES}"
-  )
-endif()

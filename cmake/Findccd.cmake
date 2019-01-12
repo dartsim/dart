@@ -68,14 +68,4 @@ if(NOT CCD_FOUND)
       REQUIRED_VARS CCD_INCLUDE_DIRS CCD_LIBRARIES
       VERSION_VAR   CCD_VERSION)
 
-  # Set target ccd if not set
-  # Upstream provides the target since 2.1
-  if(CCD_FOUND AND NOT TARGET ccd)
-  add_library(ccd INTERFACE IMPORTED)
-  set_target_properties(ccd PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${CCD_INCLUDE_DIRS}"
-    INTERFACE_LINK_LIBRARIES "${CCD_LIBRARIES}"
-  )
-  endif()
-
 endif()
