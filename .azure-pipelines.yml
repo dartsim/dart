@@ -62,6 +62,18 @@ jobs:
   steps:
   - template: .ci/azure-pipelines/docker.yml
 
+- job: ubuntu_disco_gcc_release
+  pool:
+    vmImage: 'Ubuntu 16.04'
+  variables:
+    OS_NAME: linux
+    COMPILER: gcc
+    BUILD_TYPE: Release
+    BUILD_DIR: $(Build.SourcesDirectory)
+    DOCKERFILE: Dockerfile.ubuntu-disco
+  steps:
+  - template: .ci/azure-pipelines/docker.yml
+
 - job: macos_high_seirra_clang_debug
   pool:
     vmImage: 'macOS 10.13'

@@ -12,7 +12,8 @@ $SUDO apt-get -y install \
   build-essential \
   cmake \
   pkg-config \
-  curl
+  curl \
+  git
 if [ $COMPILER = clang ]; then
   $SUDO apt-get -qq -y install clang
 fi
@@ -47,6 +48,9 @@ elif [ $(lsb_release -sc) = "bionic" ]; then
   $SUDO apt-get -y install liboctomap-dev libode-dev
   $SUDO apt-get -y install clang-format-6.0
 elif [ $(lsb_release -sc) = "cosmic" ]; then
+  $SUDO apt-get -y install libnlopt-cxx-dev
+  $SUDO apt-get -y install liboctomap-dev libode-dev
+elif [ $(lsb_release -sc) = "disco" ]; then
   $SUDO apt-get -y install libnlopt-cxx-dev
   $SUDO apt-get -y install liboctomap-dev libode-dev
 else
