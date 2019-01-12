@@ -409,7 +409,7 @@ endif()
 
 find_program(
   CLANG_FORMAT_EXECUTABLE
-  NAMES clang-format-3.8
+  NAMES clang-format-6.0
 )
 
 get_property(formatting_files GLOBAL PROPERTY DART_FORMAT_FILES)

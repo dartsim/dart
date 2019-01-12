@@ -9,10 +9,10 @@ mkdir -p ${WORK_DIR}
 # commits. This means that the clone knows nothing about other Git branches or
 # tags. We fix this by deleting and re-cloning the full repository.
 DART_CLONE_DIR="${WORK_DIR}/dart"
-git clone "https://github.com/${TRAVIS_REPO_SLUG}.git" ${DART_CLONE_DIR}
+git clone "https://github.com/${REPO_SLUG}.git" ${DART_CLONE_DIR}
 
 # Organize into "docs" directory
-DART_DOCS_OUTPUT_DIR="${TRAVIS_BUILD_DIR}/gh-pages"
+DART_DOCS_OUTPUT_DIR="${BUILD_DIR}/gh-pages"
 mkdir -p ${DART_DOCS_OUTPUT_DIR}
 
 # Initialize list of API versions

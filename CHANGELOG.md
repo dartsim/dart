@@ -38,6 +38,14 @@
 
     * AppleClang (C++11): 9.1.0
 
+### DART 6.7.1 (XXXX-XX-XX)
+
+#### Changes
+
+* Build system
+
+  * Ensure that imported targets of dependencies are always created when finding the dart package: [#1222](https://github.com/dartsim/dart/pull/1222)
+
 ### [DART 6.7.0 (2019-01-10)](https://github.com/dartsim/dart/milestone/45?closed=1)
 
 #### Changes
