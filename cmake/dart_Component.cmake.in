@@ -8,7 +8,7 @@ foreach(external_dep @external_dependencies@)
   if(NOT ${external_dep}_FOUND AND NOT ${EXTERNAL_DEP_UPPER}_FOUND)
     set_property(DIRECTORY PROPERTY @PROJECT_NAME_UPPERCASE@_@component@_FOUND FALSE)
     if(NOT @PROJECT_NAME_UPPERCASE@_FIND_QUIETLY)
-      message(
+      message(WARNING
         "Cannot retrieve @PROJECT_NAME@-@component@ because the dependency "
         "${external_dep} could not be found. This usually indicates a broken "
         "installation.")
