@@ -18,7 +18,7 @@ if(ASSIMP_VERSION VERSION_LESS 3.2)
 endif()
 
 # Set target assimp if not set
-if(ASSIMP_FOUND AND NOT TARGET assimp)
+if((ASSIMP_FOUND OR assimp_FOUND) AND NOT TARGET assimp)
   add_library(assimp INTERFACE IMPORTED)
   set_target_properties(assimp PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${ASSIMP_INCLUDE_DIRS}"
