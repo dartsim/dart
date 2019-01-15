@@ -10,7 +10,7 @@ find_package(ccd 2.0 REQUIRED)
 
 # Set target ccd if not set
 # Upstream provides the target since 2.1
-if(CCD_FOUND AND NOT TARGET ccd)
+if((CCD_FOUND OR ccd_FOUND) AND NOT TARGET ccd)
   add_library(ccd INTERFACE IMPORTED)
   set_target_properties(ccd PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${CCD_INCLUDE_DIRS}"
