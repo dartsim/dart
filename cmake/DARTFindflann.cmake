@@ -8,7 +8,7 @@
 
 find_package(flann 1.8.4 QUIET)
 
-if(FLANN_FOUND AND NOT TARGET flann)
+if((FLANN_FOUND OR flann_FOUND) AND NOT TARGET flann)
   add_library(flann INTERFACE IMPORTED)
   set_target_properties(flann PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${FLANN_INCLUDE_DIRS}"
