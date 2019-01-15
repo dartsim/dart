@@ -10,25 +10,40 @@
 
 #### Compilers Tested
 
-  * Linux
+* Linux
 
-    * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
 
-  * Linux (32-bit)
+* Linux (32-bit)
 
-    * GCC (C++11): 5.4.0
+  * GCC (C++11): 5.4.0
 
-  * macOS
+* macOS
 
-    * AppleClang (C++11): 9.1.0
+  * AppleClang (C++11): 9.1.0
 
-### DART 6.7.1 (XXXX-XX-XX)
+### [DART 6.7.1 (2019-01-15)](https://github.com/dartsim/dart/milestone/49?closed=1)
 
 #### Changes
 
 * Build system
 
   * Ensure that imported targets of dependencies are always created when finding the dart package: [#1222](https://github.com/dartsim/dart/pull/1222)
+  * Set components to not-found when their external dependencies are missing: [#1223](https://github.com/dartsim/dart/pull/1223)
+
+#### Compilers Tested
+
+* Linux
+
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+* Linux (32-bit)
+
+  * GCC (C++11): 5.4.0
+
+* macOS
+
+  * AppleClang (C++11): 9.1.0
 
 ### [DART 6.7.0 (2019-01-10)](https://github.com/dartsim/dart/milestone/45?closed=1)
 
@@ -70,17 +85,17 @@
 
 #### Compilers Tested
 
-  * Linux
+* Linux
 
-    * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
 
-  * Linux (32-bit)
+* Linux (32-bit)
 
-    * GCC (C++11): 5.4.0
+  * GCC (C++11): 5.4.0
 
-  * macOS
+* macOS
 
-    * AppleClang (C++11): 9.1.0
+  * AppleClang (C++11): 9.1.0
 
 ### [DART 6.6.2 (2018-09-03)](https://github.com/dartsim/dart/milestone/47?closed=1)
 
