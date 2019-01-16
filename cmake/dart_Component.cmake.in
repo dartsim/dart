@@ -1,6 +1,7 @@
 set("@PROJECT_NAME@_@component@_DEPENDENCIES" @internal_dependencies@)
 set("@PROJECT_NAME@_@component@_LIBRARIES" @libraries@)
 
+set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_@component@_FOUND" TRUE)
 foreach(external_dep @external_dependencies@)
   include(${CMAKE_CURRENT_LIST_DIR}/DARTFind${external_dep}.cmake)
 
