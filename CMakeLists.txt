@@ -9,6 +9,8 @@ endif()
 
 project(dart)
 
+string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)
+
 # Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
 # became default in CMake 3.0. Explicitly setting this policy is necessary to
 # suppress a warning in CMake 3.0 and above.
@@ -326,8 +328,6 @@ if(DART_VERBOSE)
   message(STATUS "")
   message(STATUS "[ Configured files ]")
 endif()
-
-string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)
 
 # Generate and install a Config.cmake file. This file includes the
 # <C>Component.cmake and <C>Targets.cmake created above. It also uses the

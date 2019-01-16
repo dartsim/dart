@@ -1,12 +1,13 @@
 ## DART 6
 
-### DART 6.7.1 (XXXX-XX-XX)
+### [DART 6.7.1 (2019-01-15)](https://github.com/dartsim/dart/milestone/49?closed=1)
 
 #### Changes
 
 * Build system
 
   * Ensure that imported targets of dependencies are always created when finding the dart package: [#1222](https://github.com/dartsim/dart/pull/1222)
+  * Set components to not-found when their external dependencies are missing: [#1223](https://github.com/dartsim/dart/pull/1223)
 
 ### [DART 6.7.0 (2019-01-10)](https://github.com/dartsim/dart/milestone/45?closed=1)
 
