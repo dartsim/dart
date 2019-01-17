@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(IPOPT 3.11.9 QUIET)
+find_package(IPOPT 3.11.9 QUIET MODULE)
 
 if(IPOPT_FOUND AND NOT TARGET IPOPT::ipopt)
   add_library(IPOPT::ipopt INTERFACE IMPORTED)

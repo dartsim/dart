@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(fcl 0.3.2 REQUIRED)
+find_package(fcl 0.3.2 REQUIRED MODULE)
 
 # Set target fcl if not set
 # Upstream provides the target since 0.5.0 but some package managers don't
