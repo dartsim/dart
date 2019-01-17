@@ -2049,8 +2049,8 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
   double TOLERANCE = 1e-3;
 
   // Lower and upper bound of configuration for system
-  double lb = -1.5 * constantsd::pi();
-  double ub =  1.5 * constantsd::pi();
+  double lb = -1.0 * constantsd::pi();
+  double ub =  1.0 * constantsd::pi();
 
   simulation::WorldPtr myWorld;
 
