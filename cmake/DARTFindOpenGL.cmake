@@ -14,7 +14,7 @@ if(POLICY CMP0072)
   cmake_policy(SET CMP0072 OLD)
 endif()
 
-find_package(OpenGL QUIET)
+find_package(OpenGL QUIET MODULE)
 
 cmake_policy(POP)
 

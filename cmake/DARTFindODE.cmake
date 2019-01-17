@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(ODE 0.13 QUIET)
+find_package(ODE 0.13 QUIET MODULE)
 
 if(ODE_FOUND AND NOT TARGET ODE::ODE)
   add_library(ODE::ODE INTERFACE IMPORTED)

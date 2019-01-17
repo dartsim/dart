@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(flann 1.8.4 QUIET)
+find_package(flann 1.8.4 QUIET MODULE)
 
 if((FLANN_FOUND OR flann_FOUND) AND NOT TARGET flann)
   add_library(flann INTERFACE IMPORTED)

@@ -6,4 +6,4 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(pagmo QUIET)
+find_package(pagmo QUIET CONFIG)

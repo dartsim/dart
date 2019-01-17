@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(urdfdom QUIET)
+find_package(urdfdom QUIET CONFIG)
 
 if(urdfdom_FOUND AND NOT TARGET urdfdom)
   add_library(urdfdom INTERFACE IMPORTED)
@@ -15,4 +15,3 @@ if(urdfdom_FOUND AND NOT TARGET urdfdom)
     INTERFACE_LINK_LIBRARIES "${urdfdom_LIBRARIES}"
   )
 endif()
-

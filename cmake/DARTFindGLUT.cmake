@@ -6,4 +6,4 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(GLUT QUIET)
+find_package(GLUT QUIET MODULE)

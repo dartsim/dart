@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(ccd 2.0 REQUIRED)
+find_package(ccd 2.0 REQUIRED MODULE)
 
 # Set target ccd if not set
 # Upstream provides the target since 2.1
