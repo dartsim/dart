@@ -6,7 +6,8 @@
 
 * Build system
 
-  * Fix #1223 for the recursive case: [#1227](https://github.com/dartsim/dart/pull/1227)
+  * Fixed #1223 for the recursive case: [#1227](https://github.com/dartsim/dart/pull/1227)
+  * Specified mode for find_package(): [#1228](https://github.com/dartsim/dart/pull/1228)
 
 ### [DART 6.7.1 (2019-01-15)](https://github.com/dartsim/dart/milestone/49?closed=1)
 
