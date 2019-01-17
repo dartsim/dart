@@ -38,7 +38,6 @@ function(@PROJECT_NAME@_traverse_components output_variable)
       if(EXISTS "${component_include}" AND EXISTS "${target_include}")
         include("${component_include}")
 
-        set_property(DIRECTORY PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_FOUND" TRUE)
         set_property(DIRECTORY
           PROPERTY "@PROJECT_NAME_UPPERCASE@_${component}_INCLUDE_DIRS"
           ${@PROJECT_NAME@_${component}_INCLUDE_DIRS})
