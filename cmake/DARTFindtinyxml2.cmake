@@ -6,7 +6,7 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(tinyxml2 QUIET)
+find_package(tinyxml2 QUIET MODULE)
 
 if((TINYXML2_FOUND OR tinyxml2_FOUND) AND NOT TARGET tinyxml2::tinyxml2)
   add_library(tinyxml2::tinyxml2 INTERFACE IMPORTED)

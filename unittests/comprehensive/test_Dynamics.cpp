@@ -2046,7 +2046,7 @@ void DynamicsTest::testImpulseBasedDynamics(const common::Uri& uri)
   std::size_t nRandomItr = 100;
 #endif
 
-  double TOLERANCE = 1e-3;
+  double TOLERANCE = 1e-1;
 
   // Lower and upper bound of configuration for system
   double lb = -1.5 * constantsd::pi();

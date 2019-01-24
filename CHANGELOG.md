@@ -22,6 +22,29 @@
 
   * AppleClang (C++11): 9.1.0
 
+### [DART 6.7.2 (2019-01-17)](https://github.com/dartsim/dart/milestone/50?closed=1)
+
+### Changes
+
+* Build system
+
+  * Fixed #1223 for the recursive case: [#1227](https://github.com/dartsim/dart/pull/1227)
+  * Specified mode for find_package(): [#1228](https://github.com/dartsim/dart/pull/1228)
+
+#### Compilers Tested
+
+* Linux
+
+  * GCC (C++11): 5.4.0, 7.3.0, 8.2.0
+
+* Linux (32-bit)
+
+  * GCC (C++11): 5.4.0
+
+* macOS
+
+  * AppleClang (C++11): 9.1.0
+
 ### [DART 6.7.1 (2019-01-15)](https://github.com/dartsim/dart/milestone/49?closed=1)
 
 #### Changes
