@@ -134,3 +134,4 @@ jobs:
         -DCMAKE_INSTALL_PREFIX="$(Build.BinariesDirectory)/$(REPO_NAME)"
       make -j4
     displayName: 'Build'
+    workingDirectory: '$(Build.BinariesDirectory)'
